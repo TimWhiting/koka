@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 
-module Type.InferMonad( Inf, InfGamma
+module Type.InferMonad( Inf, InfGamma, Res
                       , runInfer, tryRun
 
                       -- * substitutation
@@ -15,6 +15,7 @@ module Type.InferMonad( Inf, InfGamma
 
                       -- * Environment
                       , getGamma
+                      , getDefaultHandlers
                       , extendGamma, extendGammaCore
                       , extendInfGamma, extendInfGammaCore
                       , withGammaType
@@ -110,7 +111,7 @@ import Syntax.RangeMap( RangeMap, RangeInfo(..), rangeMapInsert )
 import qualified Lib.Trace( trace )
 
 trace s x =
-  -- Lib.Trace.trace (" " ++ s)
+   -- Lib.Trace.trace (" " ++ s)
    x
 
 {--------------------------------------------------------------------------
@@ -167,7 +168,7 @@ generalize contextRange range close eff0 rho0 core0
         else do -- check that the computation is total
                 if (close)
                  then inferUnify (Check "Generalized values cannot have an effect" contextRange) range typeTotal eff1
-                 else return ()
+                 else return (effectEmpty, [])
                 -- simplify and improve again since we can have substituted more
                 (ps2,(eff2,rho2),core2) <- simplifyAndImprove contextRange free ps1 (eff1,rho1)
                 -- due to improvement, our constraints may need to be split again
@@ -594,13 +595,16 @@ instance Ranged Context where
   getRange (Check _ rng) = rng
   getRange (Infer rng)   = rng
 
-inferUnify :: Context -> Range -> Type -> Type -> Inf ()
+traceDoc fdoc = do penv <- getPrettyEnv
+                   trace (show (fdoc penv)) $ return ()
+
+inferUnify :: Context -> Range -> Type -> Type -> Inf (Type, [(Name,NameInfo)])
 inferUnify context range expected tp
   = do (sexp,stp) <- subst (expected,tp)
-       -- trace ("infer unify: " ++ show (Pretty.niceTypes Pretty.defaultEnv [sexp,stp])) $ return ()
-       res <- doUnify (unify sexp stp)
+       handlers <- getDefaultHandlers
+       res <- doUnify (unifyWithDefaultHandlers sexp stp handlers)
        case res of
-         Right () -> return ()
+         Right ((),handlers) -> return (sexp, handlers)
          Left err -> unifyError context range err sexp stp
 
 
@@ -619,11 +623,11 @@ inferSubsume :: Context -> Range -> Type -> Type -> Inf (Type,Core.Expr -> Core.
 inferSubsume context range expected tp
   = do free <- freeInGamma
        (sexp,stp) <- subst (expected,tp)
-       trace ("inferSubsume: " ++ show (tupled [pretty sexp,pretty stp]) ++ " with free " ++ show (tvsList free)) $ return ()
+      --  trace ("inferSubsume: " ++ show (tupled [pretty sexp,pretty stp]) ++ " with free " ++ show (tvsList free)) $ return ()
        res <- doUnify (subsume range free sexp stp)
        case res of
-         Right (t,ps,coref) -> do addPredicates ps
-                                  return (t,coref)
+         Right ((t,ps,coref),handlers) -> do addPredicates ps
+                                             return (t,coref)
          Left err         -> do unifyError context range err sexp stp
                                 return (expected,id)
 
@@ -631,10 +635,10 @@ nofailUnify :: Unify a -> Inf a
 nofailUnify u
   = do res <- runUnify u
        case res of
-         (Right x,sub)
+         (Right x,sub, _)
           -> do extendSub sub
                 return x
-         (Left err,sub)
+         (Left err,sub, _)
           -> do extendSub sub
                 failure ("Type.InferMonad.runUnify: should never fail!")
 
@@ -677,14 +681,14 @@ checkSkolemEscape rng tp mhint skolems extraFree
 
 
 
-doUnify :: Unify a -> Inf (Either UnifyError a)
+doUnify :: Unify a -> Inf (Either UnifyError (a,[(Name, NameInfo)]))
 doUnify u
   = do res <- runUnify u
        case res of
-         (Right x,sub)
+         (Right x,sub,handlers)
           -> do extendSub sub
-                return (Right x)
-         (Left err,sub)
+                return (Right (x, handlers))
+         (Left err,sub,handlers)
           -> do extendSub sub
                 return (Left err)
 
@@ -1029,8 +1033,8 @@ extendGamma isAlreadyCanonical defs inf
       = do checkCasingOverlap (infoRange info) name name2 info
            free <- freeInGamma
            res  <- runUnify (overlaps (infoRange info) free (infoType info) (infoType info2))
-           case fst res of
-            Right _ ->
+           case res of
+            (Right _,_,_) ->
               do env <- getEnv
                  let [nice1,nice2] = Pretty.niceTypes (prettyEnv env) [infoType info,infoType info2]
                      (_,_,rho1)    = splitPredType (infoType info)
@@ -1044,7 +1048,7 @@ extendGamma isAlreadyCanonical defs inf
                                                  )
                   else infError (infoRange info) (text "definition" <+> Pretty.ppName (prettyEnv env) name <+> text "is already defined in this module" <->
                                                   text "because: only functions can have overloaded names")
-            Left _ -> return ()
+            (Left _,_,_) -> return ()
 
 
 extendInfGammaCore :: Bool -> [Core.DefGroup] -> Inf a -> Inf a
@@ -1118,6 +1122,10 @@ qualifyName :: Name -> Inf Name
 qualifyName name
   = do env <- getEnv
        return (qualify (context env) name)
+
+getDefaultHandlers
+  = do env <- getEnv
+       return [ (name,info) | (name,info) <- gammaLookup (newHiddenName "default") (gamma env) ]
 
 getModuleName :: Inf Name
 getModuleName
@@ -1451,15 +1459,15 @@ lookupNameEx infoFilter name ctx range
       = do free <- freeInGamma
            res <- runUnify (subsume range free expect (infoType info))
            case res of
-             (Right _,_)  -> return [(name,info)]
-             (Left _,_)   -> return []
+             (Right _,_,_)  -> return [(name,info)]
+             (Left _,_,_)   -> return []
 
     matchNamedArgs :: Int -> [Name] -> (Name,NameInfo) -> Inf [(Name,NameInfo)]
     matchNamedArgs n named (name,info)
       = do res <- runUnify (matchNamed range (infoType info) n named)
            case res of
-             (Right _,_)  -> return [(name,info)]
-             (Left _,_)   -> return []
+             (Right _,_,_)  -> return [(name,info)]
+             (Left _,_,_)   -> return []
 
     matchArgs :: Bool -> [Type] -> [(Name,Type)] -> (Name,NameInfo) -> Inf [(Name,NameInfo)]
     matchArgs matchSome fixed named (name,info)
@@ -1467,5 +1475,5 @@ lookupNameEx infoFilter name ctx range
         do free <- freeInGamma
            res <- runUnify (matchArguments matchSome range free (infoType info) fixed named)
            case res of
-             (Right _,_)  -> return [(name,info)]
-             (Left _,_)   -> return []
+             (Right _,_,_)  -> return [(name,info)]
+             (Left _,_,_)   -> return []

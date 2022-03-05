@@ -269,6 +269,9 @@ topdef vis
     do effectDecl vis
   <|>
     do externDecl vis
+  <|>
+    do def <- defaultHandler vis
+       return [DefValue def]
 
 {---------------------------------------------------------------
   Import declaration
@@ -1146,6 +1149,15 @@ operationDecl opCount vis forallsScoped forallsNonScoped docEffect hndName effNa
 -----------------------------------------------------------
 -- Value definitions
 -----------------------------------------------------------
+
+defaultHandler :: Visibility -> LexParser UserDef
+defaultHandler dvis
+  = do (vis,vrng,rng,doc)
+          <- try $ do (vis,vrng) <- visibility dvis
+                      do (rng, doc) <- docSpecialId "default"; return (vis, vrng, rng, doc)
+       h <- handlerExpr 
+       return (Def (ValueBinder (newHiddenName "default") () h rangeNull rangeNull) (combineRange vrng rng) vis DefDefaultHandler InlineAuto doc)
+
 
 pureDecl :: Visibility -> LexParser UserDef
 pureDecl dvis
@@ -2747,6 +2759,15 @@ specialId s
           else fail s
       <?> show s
     )
+
+
+docSpecialId :: String -> LexParser (Range,String)
+docSpecialId s
+  = do (Lexeme rng (LexId id)) <- parseLex (LexId nameNil)
+       if (showPlain id == s)
+        then return (rng, "")
+        else fail s
+  <?> show s
 
 specialConId :: String -> LexParser Range
 specialConId s

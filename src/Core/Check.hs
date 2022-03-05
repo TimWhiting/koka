@@ -278,8 +278,8 @@ findConstrArgs fdoc tpScrutinee con
        let Just (tpArgs, eff, tpRes) = splitFunType tpConInst
        ures <- runUnify (unify tpRes tpScrutinee)
        case ures of
-        (Left error, _)  -> showCheck "comparing scrutinee with branch type" "cannot unify" tpRes tpScrutinee fdoc
-        (Right _, subst) -> return $ (subst |-> map snd tpArgs)
+        (Left error, _, _)  -> showCheck "comparing scrutinee with branch type" "cannot unify" tpRes tpScrutinee fdoc
+        (Right _, subst, _) -> return $ (subst |-> map snd tpArgs)
 
 matchSub :: String -> (Env -> Doc) -> Type -> Type -> Check ()
 matchSub when fdoc a b
@@ -310,8 +310,8 @@ match :: String -> (Env -> Doc) -> Type -> Type -> Check ()
 match when fdoc a b
   = do ures <- runUnify (unify a b)
        case ures of
-         (Left error, _)  -> showCheck ("cannot unify (" ++ show error ++ ")") when a b fdoc
-         (Right _, subst) -> if subIsNull subst
+         (Left error,_,_)  -> showCheck ("cannot unify (" ++ show error ++ ")") when a b fdoc
+         (Right _, subst,_) -> if subIsNull subst
                               then return ()
                               else do showCheck "non-empty substitution" when a b (\env -> text "")
                                       return ()

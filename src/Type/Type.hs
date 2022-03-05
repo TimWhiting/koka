@@ -571,11 +571,11 @@ labelNameFull tp
 labelNameEx :: Tau -> (Name,Int,[Tau])
 labelNameEx tp
   = case expandSyn tp of
-      TCon tc -> (typeConName tc,0,[])
+      TCon tc ->  (typeConName tc,0,[])
       TApp (TCon (TypeCon name _)) [htp] | (name == nameTpHandled || name == nameTpHandled1)
-        -> labelNameEx htp -- use the handled effect name for handled<htp> types.
+        ->  labelNameEx htp -- use the handled effect name for handled<htp> types.
       TApp (TCon tc) targs@(TVar (TypeVar id kind Skolem) : _)  | isKindScope kind
-        -> (typeConName tc, idNumber id, targs)
+        ->  (typeConName tc, idNumber id, targs)
       TApp (TCon tc) targs  -> assertion ("non-expanded type synonym used as label") (typeConName tc /= nameEffectExtend) $
                                (typeConName tc,0,targs)
       _  -> failure "Type.Type.labelNameEx: label is not a constant"

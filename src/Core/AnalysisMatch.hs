@@ -192,7 +192,7 @@ instantiatePatCon tpRes conParams conTp
       Nothing -> Nothing
       Just (tforall,preds,tpars,eff,tres) 
         -> case runUnifyEx 0 (unify tpRes tres) of
-             (Right _, sub, _) -> Just ([sub |-> tpar | (_,tpar) <- tpars], sub |-> tres)
+             (Right _, sub, _,_) -> Just ([sub |-> tpar | (_,tpar) <- tpars], sub |-> tres)
              _ -> Nothing
 
 

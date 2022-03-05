@@ -38,7 +38,7 @@ data Target = CS | JS JsTarget| C CTarget | Default deriving (Eq,Ord)
 
 isTargetC (C _) = True
 isTargetC _     = False
-
+ 
 isTargetJS (JS _) = True
 isTargetJS _      = False
 
@@ -202,7 +202,7 @@ dataDefIsValue ddef
 --------------------------------------------------------------------------}
 
 data DefSort
-  = DefFun [ParamInfo] | DefVal | DefVar
+  = DefDefaultHandler | DefFun [ParamInfo] | DefVal | DefVar
   deriving Eq
 
 data ParamInfo 
@@ -221,6 +221,7 @@ instance Show DefSort where
               DefFun _ -> "fun"
               DefVal -> "val"
               DefVar -> "var"
+              DefDefaultHandler -> "default"
 
 
 data DefInline

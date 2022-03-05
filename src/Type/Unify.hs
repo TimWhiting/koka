@@ -10,7 +10,7 @@
 -- Unification and subsumption
 -----------------------------------------------------------------------------
 
-module Type.Unify ( Unify, UnifyError(..), runUnify, runUnifyEx
+module Type.Unify ( Unify, UnifyError(..), runUnify, runUnifyEx, unifyWithDefaultHandlers
                   , unify
                   , subsume
                   , overlaps
@@ -37,6 +37,8 @@ import Type.Operations
 import qualified Core.Core as Core
 
 import qualified Lib.Trace(trace)
+import Data.List (find)
+import Type.Assumption (NameInfo (InfoVal, infoCName))
 
 trace s x =
    Lib.Trace.trace s
@@ -186,14 +188,13 @@ entails skolems known (ev:evs)
 unify :: Type -> Type -> Unify ()
 
 -- effects
-unify t1@(TApp (TCon tc1) _) t2@(TApp (TCon tc2) _)  | tc2 == tconEffectExtend && tc1 == tconEffectExtend
-  = unifyEffect t1 t2
 
 unify t1@(TApp (TCon tc1) _) (TVar tv2)  | tc1 == tconEffectExtend && isMeta tv2
   = unifyEffectVar tv2 t1
 
 unify (TVar tv1) t2@(TApp (TCon tc2) _)  | tc2 == tconEffectExtend && isMeta tv1
   = unifyEffectVar tv1 t2
+
 
 -- type variables
 unify (TVar v1) (TVar v2) | v1 == v2
@@ -218,7 +219,7 @@ unify (TApp t1 ts1) (TApp u1 us2)   | length ts1 == length us2
   = do unify t1 u1
        unifies ts1 us2
 -}
-unify (TApp t1 ts1) (TApp u1 us2)   -- | length ts1 != length us2
+unify (TApp t1 ts1) (TApp u1 us2) -- | length ts1 != length us2
   = let len1 = length ts1
         len2 = length us2
     in if (len1==len2)
@@ -293,6 +294,13 @@ unify tp1 tp2
     unifyError NoMatch
 
 
+unifyWithDefaultHandlers t1@(TApp (TCon tc1) _) t2@(TApp (TCon tc2) _) handlers | tc2 == tconEffectExtend && tc1 == tconEffectExtend
+  = unifyEffect t1 t2 handlers
+
+unifyWithDefaultHandlers a b handlers
+  = unify a b
+
+
 -- | Unify a type variable with a type
 unifyTVar :: TypeVar -> Type -> Unify ()
 unifyTVar tv@(TypeVar id kind Meta) tp
@@ -361,10 +369,11 @@ unifyPred _ _
 
 
 -- | Unify effects
-unifyEffect tp1 tp2
+unifyEffect :: Type -> Type -> [(Name, NameInfo)] -> Unify ()
+unifyEffect tp1 tp2 handlers
   = do (ls1,tl1) <- extractNormalizeEffect tp1
        (ls2,tl2) <- extractNormalizeEffect tp2
-       (ds1,ds2) <- unifyLabels ls1 ls2 (isEffectEmpty tl1) (isEffectEmpty tl2)
+       (ds1,ds2,x) <- unifyLabels ls1 ls2 (isEffectEmpty tl1) (isEffectEmpty tl2) handlers
        case (expandSyn tl1, expandSyn tl2) of
          (TVar (TypeVar id1 kind1 Meta), TVar (TypeVar id2 kind2 Meta)) | id1 == id2 && not (null ds1 && null ds2)
              -> do -- trace ("unifyEffect: unification of " ++ show (tp1,tp2) ++ " is infinite") $ return ()
@@ -383,9 +392,9 @@ unifyEffect tp1 tp2
 
                    stp1 <- subst tp1
                    stp2 <- subst tp2
-                   -- trace ("unifyEffect: " ++ show (tp1,tp2) ++ " to " ++ show (stp1,stp2) ++ " with " ++ show (ds1,ds2)) $ return ()
+                   --  trace ("unifyEffect: " ++ show (tp1,tp2) ++ " to " ++ show (stp1,stp2) ++ " with " ++ show (ds1,ds2)) $ return ()
 
-                   return ()
+                   Unify (\st -> Ok () (st{ defaultHandlers = x ++ defaultHandlers st}))
 
 extractNormalizeEffect :: Type -> Unify ([Type],Type)
 extractNormalizeEffect tp
@@ -403,39 +412,98 @@ unifyEffectVar tv1 tp2
                  unifyTVar tv1 (effectExtends ls2 tl2)
 
 
+
+matchTypeX :: Bool -> Rho -> Type -> Bool
+matchTypeX exact x y =
+    (exact && matchType x y) || (not exact && matchTypeXX x y) || case x of 
+    TForall _ _ tp -> matchTypeX exact tp y
+    TFun ((_, TFun _ (TApp _ (e:_)) _):pars) _ _ -> null pars && matchTypeX exact e y
+    _ -> False
+
+matchTypeXX :: Rho -> Type -> Bool
+matchTypeXX x y =
+  case (expandSyn x,expandSyn y) of
+      (TForall vs1 pd1 r1, TForall vs2 pd2 r2)  -> vs1 == vs2 && matchPredsXX pd1 pd2 && matchTypeXX r1 r2
+      (TFun pars1 eff1 t1, TFun pars2 eff2 t2)  -> matchTypesXX (map snd pars1) (map snd pars2) && matchEffectXX eff1 eff2 && matchTypeXX t1 t2
+      (TCon c1, TCon c2)                        -> c1 == c2
+      (TVar v1, TVar v2)                        -> v1 == v2
+      (TApp t1 ts1, TApp t2 ts2)                -> matchTypeXX t1 t2 && matchTypesXX ts1 ts2
+      (TForall{}, _) -> True
+      _ -> False
+
+matchTypesXX :: [Rho] -> [Type] -> Bool
+matchTypesXX ts1 ts2
+  = and (zipWith matchTypeXX ts1 ts2)
+
+matchEffectXX :: Tau -> Tau -> Bool
+matchEffectXX eff1 eff2
+  = matchTypeXX (orderEffect eff1) (orderEffect eff2)
+
+matchPredsXX ps1 ps2
+  = and (zipWith matchPredXX ps1 ps2)
+
+matchPredXX :: Pred -> Pred -> Bool
+matchPredXX p1 p2
+  = case (p1,p2) of
+      (PredSub sub1 sup1, PredSub sub2 sup2)  -> (matchTypeXX sub1 sub2 && matchTypeXX sup1 sup2)
+      (PredIFace n1 ts1, PredIFace n2 ts2)    -> (n1 == n2 && matchTypesXX ts1 ts2)
+      _ -> False
+
+getInfoType :: (Name, NameInfo) -> Maybe Scheme
+getInfoType (_, ni) = case ni of 
+  InfoVal _ _ t _ _ -> Just t
+  _ -> Nothing
+
+aDefaultMatch :: Bool -> (Name, NameInfo) -> Type -> Bool
+aDefaultMatch exact x label =
+  case getInfoType x of 
+    Nothing -> False
+    Just xx -> matchTypeX exact xx label
+
+defaultMatch :: [(Name, NameInfo)] -> Type -> [(Name, NameInfo)]
+defaultMatch defaults label
+  = case find (\x -> aDefaultMatch True x label) defaults of
+      Just x -> trace ("Perfect match " ++ show (infoCName (snd x))) [x]
+      Nothing -> case find (\x -> aDefaultMatch False x label) defaults of
+        Just o -> trace ("Imperfect Match: " ++ show (infoCName (snd o))) [o]
+        Nothing -> []
+
+
 -- | Unify lists of ordered labels; return the differences.
-unifyLabels :: [Tau] -> [Tau] -> Bool -> Bool -> Unify ([Tau],[Tau])
-unifyLabels ls1 ls2 closed1 closed2
-  = case (ls1,ls2) of
+unifyLabels :: [Tau] -> [Tau] -> Bool -> Bool -> [(Name, NameInfo)] -> Unify ([Tau],[Tau], [(Name, NameInfo)])
+unifyLabels ls1 ls2 closed1 closed2 defaultHandlers
+  =   case (ls1,ls2) of
       ([],[])
-        -> return ([],[])
+        -> return ([],[],[])
       ((_:_),[])
-        -> return ([],ls1)
-      ([],(_:_))
-        -> return (ls2,[])
+        -> return ([],ls1,[])
+      ([],(_:_)) -> case defaultMatch defaultHandlers (head ls2) of
+            (x:xs) -> return (tail ls2,[],x:xs)
+            [] -> return (ls2,[],[])
       (l1:ll1, l2:ll2)
         -> let (name1,i1,args1) = labelNameEx l1
                (name2,i2,args2) = labelNameEx l2
            in case {-compareLabel l1 l2-} labelNameCompare name1 name2 of
-            LT ->do (ds1,ds2) <- unifyLabels ll1 ls2 closed1 closed2
-                    return (ds1,l1:ds2)
-            GT ->do (ds1,ds2) <- unifyLabels ls1 ll2 closed2 closed2
-                    return (l2:ds1,ds2)
+            LT ->do (ds1,ds2,x) <- unifyLabels ll1 ls2 closed1 closed2 defaultHandlers
+                    return (ds1,l1:ds2,x)
+            GT ->do (ds1,ds2,x) <- unifyLabels ls1 ll2 closed2 closed2 defaultHandlers
+                    return (l2:ds1,ds2,x)
             EQ -> -- labels are equal
                   case (args1,args2) of
                     ([TVar (TypeVar id1 kind1 sort1)], [TVar (TypeVar id2 kind2 sort2)])
                        | isKindScope kind1 && isKindScope kind2 && id1 /= id2 &&
                           sort1 == Skolem && sort2 == Skolem
-                      -> if (id1 < id2)
-                           then do (ds1,ds2) <- unifyLabels ll1 ls2 closed1 closed2
-                                   return (ds1,l1:ds2)
-                           else do (ds1,ds2) <- unifyLabels ls2 ll2 closed1 closed2
-                                   return (l2:ds1,ds2)
-                    _ ->
+                      ->   if (id1 < id2)
+                           then do (ds1,ds2,x) <- unifyLabels ll1 ls2 closed1 closed2 defaultHandlers
+                                   return (ds1,l1:ds2,x)
+                           else do (ds1,ds2,x) <- unifyLabels ls2 ll2 closed1 closed2 defaultHandlers
+                                   return (l2:ds1,ds2,x)
+                    _ -> 
                          do unify l1 l2  -- for heap effects and kind checks
                             ll1' <- subst ll1
                             ll2' <- subst ll2
-                            unifyLabels ll1' ll2' closed1 closed2
+                            unifyLabels ll1' ll2' closed1 closed2 defaultHandlers
+
 
 compareLabel l1 l2
   = let (name1,i1,_) = labelNameEx l1
@@ -465,7 +533,7 @@ matchKind _ _ = False
 data Unify a  = Unify (St -> Res a)
 data Res a    = Ok !a !St
               | Err UnifyError !St
-data St       = St{ uniq :: !Int, sub :: !Sub }
+data St       = St{ uniq :: !Int, sub :: !Sub, defaultHandlers :: [(Name, NameInfo)] }
 
 data UnifyError
   = NoMatch
@@ -479,18 +547,18 @@ data UnifyError
   | NoArgMatch Int Int
   deriving Show
 
-runUnifyEx :: Int -> Unify a -> (Either UnifyError a,Sub,Int)
+runUnifyEx :: Int -> Unify a -> (Either UnifyError a,Sub,Int,[(Name, NameInfo)])
 runUnifyEx i (Unify f)
-  = case f (St i subNull) of
-      Ok x (St j sub)    -> (Right x,sub,j)
-      Err err (St j sub) -> (Left err,sub,j)
+  = case f (St i subNull []) of
+      Ok x (St j sub handlers)    -> (Right x,sub,j,handlers)
+      Err err (St j sub handlers) -> (Left err,sub,j, [])
 
-runUnify :: HasUnique m => Unify a -> m (Either UnifyError a,Sub)
+runUnify :: HasUnique m => Unify a -> m (Either UnifyError a,Sub,[(Name, NameInfo)])
 runUnify u
   = do i <- unique
-       let (res,sub,j) = runUnifyEx i u
+       let (res,sub,j,handlers) = runUnifyEx i u
        setUnique j
-       return (res,sub)
+       return (res,sub,handlers)
 
 instance HasUnique Unify where
   updateUnique f = Unify (\st -> Ok (uniq st) (st{ uniq = f (uniq st) }))
