@@ -5,15 +5,28 @@
   terms of the Apache License, Version 2.0. A copy of the License can be
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
+#include <unistd.h>
 
-static kk_std_core__error kk_os_run_command_error( kk_string_t cmd, kk_context_t* ctx ) {
+static kk_std_core__error kk_os_run_command_error(kk_string_t cmd,
+                                                  kk_context_t *ctx) {
   kk_string_t output;
-  const int err = kk_os_run_command(cmd,&output,ctx);
-  if (err != 0) return kk_error_from_errno(err,ctx);
-           else return kk_error_ok(kk_string_box(output),ctx);
+  const int err = kk_os_run_command(cmd, &output, ctx);
+  if (err != 0)
+    return kk_error_from_errno(err, ctx);
+  else
+    return kk_error_ok(kk_string_box(output), ctx);
 }
 
-static kk_integer_t kk_os_run_system_prim( kk_string_t cmd, kk_context_t* ctx ) {
-  const int exitcode = kk_os_run_system(cmd,ctx);
-  return kk_integer_from_int(exitcode,ctx);
+static kk_integer_t kk_os_run_system_prim(kk_string_t cmd, kk_context_t *ctx) {
+  const int exitcode = kk_os_run_system(cmd, ctx);
+  return kk_integer_from_int(exitcode, ctx);
+}
+
+static kk_std_core__error kk_os_sleep_prim(kk_integer_t ms, kk_context_t *ctx) {
+  kk_ssize_t m = kk_integer_clamp_borrow(ms, ctx);
+  int err = sleep(m);
+  if (err != 0)
+    return kk_error_from_errno(err, ctx);
+  else
+    return kk_error_ok(kk_unit_box(kk_Unit), ctx);
 }

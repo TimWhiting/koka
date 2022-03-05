@@ -25,3 +25,7 @@ pub extern run-system-read( cmd : string ) : io error<string> {
 pub extern run-system( cmd : string ) : io int {
   c "kk_os_run_system_prim"
 }
+
+pub extern sleep(ms: int) : io error<string> {
+  c "kk_os_sleep_prim"
+}
