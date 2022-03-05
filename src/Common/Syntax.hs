@@ -38,7 +38,7 @@ data Target = CS | JS JsTarget| C CTarget | Default deriving (Eq,Ord)
 
 isTargetC (C _) = True
 isTargetC _     = False
-
+ 
 isTargetJS (JS _) = True
 isTargetJS _      = False
 
