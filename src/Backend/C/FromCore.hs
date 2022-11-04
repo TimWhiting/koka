@@ -236,6 +236,7 @@ genMain progName platform stackSize (Just (name,_))
       , ppName (qualify progName (newName ".init")) <.> parens (text "_ctx") <.> semi
       , text "atexit(&_kk_main_exit);"
       , ppName name <.> parens (text "_ctx") <.> semi
+      , text "#ifndef __EMSCRIPTEN__\nkk_event_loop(_ctx);\n#endif"
       , ppName (qualify progName (newName ".done")) <.> parens (text "_ctx") <.> semi
       , text "kk_main_end(_ctx);"
       , text "return 0;"

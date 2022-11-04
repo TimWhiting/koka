@@ -1277,7 +1277,9 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
                          ++ ccompLinkSysLibs flags
                          ++ (if onWindows && not (isTargetWasm (target flags))
                               then ["bcrypt","psapi","advapi32"]
-                              else ["m","pthread"])
+                            else if isTargetWasm (target flags)
+                              then ["m","pthread"]
+                              else ["m","pthread","uv"])
                 libs   = -- ["kklib"] -- [normalizeWith '/' (outName flags (ccLibFile cc "kklib"))] ++ ccompLinkLibs flags
                          -- ++ 
                          clibs 
@@ -1571,9 +1573,9 @@ kklibBuild term flags cc name {-kklib-} objFile {-libkklib.o-}
                                    color (colorSource (colorScheme flags)) (text name) <+>
                                     color (colorInterpreter (colorScheme flags)) (text "from:") <+>
                                      color (colorSource (colorScheme flags)) (text srcLibDir)
-                   let flags0 = if (useStdAlloc flags) then flags 
+                   let flags0 = if (useStdAlloc flags) then flags
                                   else flags{ ccompIncludeDirs = ccompIncludeDirs flags ++ [localShareDir flags ++ "/kklib/mimalloc/include"] }
-                       flags1 = flags0{ ccompDefs = ccompDefs flags ++ 
+                       flags1 = flags0{ccompDefs = ccompDefs flags ++ 
                                                     [("KK_COMP_VERSION","\"" ++ version ++ "\""),
                                                      ("KK_CC_NAME", "\"" ++ ccName cc ++ "\"")] }
                    ccompile term flags1 cc objPath [] [joinPath srcLibDir "src/all.c"] 

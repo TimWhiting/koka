@@ -43,6 +43,9 @@
 #include <math.h>             // isnan, isfinite, ...
 #include <stdio.h>            // FILE*, printf, ...
 
+#ifndef __EMSCRIPTEN__
+#include <uv.h>
+#endif
 #include "kklib/platform.h"   // Platform abstractions and portability definitions
 #include "kklib/atomic.h"     // Atomic operations
 
@@ -381,7 +384,6 @@ typedef struct kk_duration_s {
   kk_asecs_t attoseconds;  // always >= 0, use `kk_duration_norm` to normalize
 } kk_duration_t;  
 
-
 // Box any is used when yielding
 struct kk_box_any_s {
   kk_block_t    _block;
@@ -422,6 +424,9 @@ typedef struct kk_context_s {
   kk_yield_t        yield;            // inlined yield structure (for efficiency)
   int32_t           marker_unique;    // unique marker generation
   kk_block_t*       delayed_free;     // list of blocks that still need to be freed
+#ifndef __EMSCRIPTEN__
+  uv_loop_t*     loop;             // the libuv event loop
+#endif
   kk_integer_t      unique;           // thread local unique number generation
   size_t            thread_id;        // unique thread id
   kk_box_any_t      kk_box_any;       // used when yielding as a value of any type
@@ -443,6 +448,9 @@ typedef struct kk_context_s {
 // Get the current (thread local) runtime context (should always equal the `_ctx` parameter)
 kk_decl_export kk_context_t* kk_get_context(void);
 kk_decl_export void          kk_free_context(void);
+
+
+kk_decl_export void          kk_debugger_break(kk_context_t* ctx);
 
 // The current context is passed as a _ctx parameter in the generated code
 #define kk_context()  _ctx
@@ -470,8 +478,10 @@ static inline int32_t kk_marker_unique(kk_context_t* ctx) {
 }
 
 kk_decl_export kk_context_t* kk_main_start(int argc, char** argv);
+#ifndef __EMSCRIPTEN__
+kk_decl_export void          kk_event_loop(kk_context_t* ctx);
+#endif
 kk_decl_export void          kk_main_end(kk_context_t* ctx);
-
 kk_decl_export void kk_debugger_break(kk_context_t* ctx);
 kk_decl_export void kk_fatal_error(int err, const char* msg, ...);
 kk_decl_export void kk_warning_message(const char* msg, ...);
