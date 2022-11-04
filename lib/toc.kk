@@ -43,3 +43,4 @@ pub import std/time/timestamp
 // pub import std/time/download
 // pub import std/time/timezone
 // pub import std/time/ut1
+pub import std/sys/dom
