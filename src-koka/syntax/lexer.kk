@@ -374,7 +374,7 @@ fun lex-unknown()
   LexError("Illegal character: " ++ c.string)
 
 fun lex-default()
-  [lex-space, lex-newline, lex-start-comment].choose
+  [lex-space,lex-newline,lex-qconid,lex-qvarid,lex-qidop,lex-lowerid,lex-conid,lex-idchars,lex-special,lex-decfloat,lex-hexfloat,lex-integer,lex-or,lex-idop,lex-symbols].choose
 
 fun stringlit-utf8unsafe()
   // TODO
@@ -546,21 +546,23 @@ fun withRawDelim(f: (list<char>, list<char>) -> action): action
 fun constant(x)
   token(fn(cs) -> x)
 
-
-
-fun lexer(sourceName: string, line: int, input: string)
-  lexing(Source(sourceName, input) lineNo, input.list)
+fun lexer(sourceName: string, lineNo: int, input: string)
+  lexing(Source(sourceName, input), lineNo, input)
 
 fun lexing(source: source, lineNo: int, input: string)
-  with parse(s.slice)
+  with parse(input.slice)
   var initPos := Pos(source, 0, lineNo, 1)
-  var initSt := Lex-State(initPos, initPos, [0], [], '\n', input, LexWhite(""), "\"")
-  () // TODO: Start scanner
+  var initSt := Lex-state(initPos, initPos, [0], [], '\n', input.list, LexWhite(""), "\"".list)
+  lex-default.many1
+  // [lex-integer(),
+  // lex-space(),
+  // lex-symbols(),
+  // lex-space(),
+  // lex-integer()]
+  // () // TODO: Start scanner
 
-
-
-// fun main(): <io> ()
-//   val x = do-parse("-0x1a.1a")
-//   match x
-//     ParseOk(r, _) -> r.println
-//     ParseError(msg, _) -> msg.println
+fun main()
+  val x = lexer("test", 1, "1 + 2")
+  match x
+    ParseOk(r, _) -> r.map(show).join(",").println
+    ParseError(msg, _) -> msg.println
