@@ -2,6 +2,7 @@ import std/text/parse
 import std/text/regex
 import std/text/unicode
 import std/os/path
+import std/os/file
 import common/name
 import common/range
 import std/num/float64
@@ -31,7 +32,7 @@ fun underscore()
 fun dash()
   char-is("dash", fn(c) -> c == '-').string
 
-fun digit()
+fun digitChar()
   char-is("digit", fn(c) -> c >= '0' && c <= '9').string
 
 fun hexdigit()
@@ -77,7 +78,7 @@ fun finalid()
   char-is("finalid", fn(c) -> c == '\'').string
 
 fun char-esc()
-  char-is("escape", fn(c) -> c == '\\' || c == '\'' || c == '"').string
+  char-is("escape", fn(c) -> c != '\\' || c != '\'' || c != '"').string
 
 // Regular expressions
 
@@ -154,7 +155,7 @@ fun stringraw()
   [graphic-stringraw, space, tab, newline, utf8].choose
 
 fun idchar()
-  [letter, digit, underscore, dash].choose
+  [letter, digitChar, underscore, dash].choose
 
 fun lowerid()
   lower() ++ many(idchar).join ++ many(finalid).join
@@ -184,13 +185,13 @@ fun idop()
   open-paren() ++ psymbols() ++ close-paren()
 
 fun digitsep()
-  underscore() ++ many1(syntax/lexer/digit).join
+  underscore() ++ many1(digitChar).join
 
 fun hexdigitsep()
   underscore() ++ many1(hexdigit).join
 
 fun kdigits()
-  many1(syntax/lexer/digit).join ++ many(digitsep).join
+  many1(digitChar).join ++ many(digitsep).join
 
 fun hexdigits()
   many1(hexdigit).join ++ many(hexdigitsep).join
@@ -218,7 +219,7 @@ fun integer()
 fun exp()
   val x = optional("")
     char-is("prefix", fn(c) -> c == '+' || c == '-').string
-  x ++ many1(syntax/lexer/digit).join
+  x ++ many1(digitChar).join
 
 fun kexp10()
   char-is("exp10", fn(c) -> c == 'e' || c == 'E').string ++
@@ -249,18 +250,18 @@ fun lex-newline()
 fun lex-start-comment()
   pstring("/*")
   val x = many(symbol).join
-  set-lex(Comment)
+  LexError("TODO")
 
 fun lex-start-line-comment()
   pstring("//")
   val x = many(symbol).join
-  set-lex(LineComment)
+  LexError("TODO")
 
 fun lex-linedirective()
   newline()
   pstring("#")
   val x = many(symbol).join
-  set-lex(LineDirective)
+  LexError("TODO")
 
 fun lex-qconid()
   LexCons(qconid().newQName)
@@ -323,17 +324,40 @@ fun lex-symbols()
 
 fun lex-stringbegin()
   pstring("\"")
-  set-lex(StringLit)
+  val inner = many({[stringchar, {pstring("\\") ++ char-esc()}, {pstring("\\") ++ hex-esc()}, newline].choose}).join()
+  val err = illegal-str.many()
+  pstring("\"")
+  match err
+    Cons(e, _) -> e
+    Nil -> LexString(inner)
+
+fun illegal-str()
+  val res = many1({char-is("Illegal string character", fn(c) -> c != '"')}).string
+  LexError(res)
 
 fun lex-rstringbegin()
-  pstring("r\"") // TODO: r#""
-  set-lex(StringRaw)
+  pstring("r") ++ many({char-is("Raw Comment", fn(c) -> c == '#')}).string ++ pstring("\"")
+  val inner = many({[stringraw].choose}).join()
+  val err = illegal-str.many()
+  pstring("\"") ++ many({char-is("Raw Comment", fn(c) -> c == '#')}).string
+  match err
+    Cons(e, _) -> e
+    Nil -> LexString(inner)
+
+fun lex-linecomment()
+  val start = pstring("//") ++ many(symbol).join
+  val inner = many({[linechar].choose}).join()
+  val err = many({char-is("Anything", fn(c) -> c != '\n')}).string
+  newline()
+  match err.list
+    Cons(_, __) -> LexError(err)
+    _ -> LexComment(start ++ inner)
 
 fun lex-charesc()
   pstring("\'\\")
-  val c = char-esc()
+  val c = char-esc().head-char.default(' ')
   pstring("'")
-  LexChar(c.list.drop(2).head('*').fromCharEsc)
+  LexChar(c)
 
 fun lex-hexesc()
   pstring("\'\\")
@@ -362,14 +386,7 @@ fun lex-unknown()
   LexError("Illegal character: " ++ c.string)
 
 fun lex-default()
-  [lex-space,lex-newline,lex-qconid,lex-qvarid,lex-qidop,lex-lowerid,lex-conid,lex-idchars,lex-special,lex-decfloat,lex-hexfloat,lex-integer,lex-or,lex-idop,lex-symbols].choose
-
-fun stringlit-utf8unsafe()
-  // TODO
-  LexError("TODO")
-
-fun stringlit-stringchar()
-  stringchar() // TODO: Lexer transition helpers
+  [lex-space,lex-newline,lex-linecomment,lex-qconid,lex-qvarid,lex-qidop,lex-lowerid,lex-conid,lex-idchars,lex-special,lex-decfloat,lex-hexfloat,lex-integer,lex-or,lex-idop,lex-symbols,lex-stringbegin,lex-rstringbegin,lex-charesc,lex-hexesc,lex-char].choose
 
 fun stripParens(s: string)
   match s.list.reverse
@@ -470,7 +487,6 @@ val messageMalformed
 struct lex-state
   pos: pos
   startPos: pos
-  states: list<lex-part>
   retained: list<list<char>>
   previous: char
   current: list<char>
@@ -478,9 +494,6 @@ struct lex-state
   rawEnd: list<char>
 
 linear effect lexE
-  fun set-lex(s: lex-part): ()
-  fun push-lex(s: lex-part): ()
-  fun pop-lex(): ()
   fun curr-state(): lex-state
 
 type lex-part
@@ -498,29 +511,52 @@ fun lexer(sourceName: string, lineNo: int, input: string)
 fun lexEHandler(initialState:lex-state, action: () -> <lexE| e> a): e a
   var state := initialState
   with handler
-    fun set-lex(s: lex-part)
-      state := state(states=Cons(s, state.states))
-    fun push-lex(s: lex-part)
-      state := state(states=Cons(s, state.states))
-    fun pop-lex()
-      state := state(states=state.states.tail)
     fun curr-state()
       state
   action()
 
 fun lexing(source: source, lineNo: int, input: string)
-  with parse(input.slice)
+  // with parse(input.slice)
+  with parseGreedy(input.slice)
   var initPos := Pos(source, 0, lineNo, 1)
-  with lexEHandler(Lex-state(initPos, initPos, [Default], [], '\n', input.list, LexWhite(""), "\"".list))
+  with lexEHandler(Lex-state(initPos, initPos, [], '\n', input.list, LexWhite(""), "\"".list))
   var result := Nil
   while { ! current-input().is-empty() }
-    match curr-state().states.head
-      Just(Default) -> result := Cons(lex-default(), result)
-      _ -> result := Cons(lex-default(), result)
-  result
+    result := Cons(lex-default(), result)
+  result.reverse
 
 fun main()
-  val x = lexer("test", 1, "1 + 2")
+  // Make sure to set $ulimit -s unlimited$ to allow more stack space
+  val r = read-text-file("src-koka/syntax/lexer.kk".path)
+  val x = lexer("test", 0, r)
   match x
-    ParseOk(r, _) -> r.map(show).join(",").println
+    ParseOk(u, _) -> u.map(show).join(",").println
     ParseError(msg, _) -> msg.println
+
+pub fun parseGreedy(input0 : sslice, action : () -> <parse|e> a ) : e parse-error<a> 
+  var input := input0
+  with handler
+    return (x)
+      ParseOk(x, input)
+    fun current-input()
+      input
+    brk fail(msg)
+      ParseError(msg, input)
+    fun satisfy(pred)
+      val inp = input
+      val m   = fn() : total _ { pred(inp) }
+      match m() 
+        Just((x,cap)) -> { input := cap; Just(x) }
+        Nothing       -> Nothing
+    ctl pick()
+      val save = input;
+      match resume(True)
+        ParseOk(x1, rest1) -> ParseOk(x1, rest1)
+        ParseError(msg, restErr1) -> 
+          input := save
+          match resume(False)   // todo: limit lookahead?
+            ParseOk(x2, rest2) -> 
+              if restErr1.count < rest2.count then ParseError(msg, restErr1) else ParseOk(x2, rest2) 
+            ParseError(msg2, restErr2) -> 
+              if restErr2.count < restErr1.count then ParseError(msg2, restErr2) else ParseError(msg, restErr1)
+  action()

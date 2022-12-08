@@ -31,6 +31,9 @@ fun showPos(p: pos, alignWidth: int)
 fun showFullPos(p: pos, alignWidth: int)
   "[" ++ p.off.show ++ "] " ++ p.showPos(alignWidth)
 
+// about 67 million lines
+val bigLine: int = 2.pow(26)
+
 fun showLine(line: int)
   if line > bigLine then
     "(" ++ (line - bigLine).show ++ ")"
@@ -38,9 +41,6 @@ fun showLine(line: int)
     "1"
   else
     line.show
-
-// about 67 million lines
-val bigLine = 2.pow(26)
 
 fun posMoves8(p: pos, cs: list<char>): pos
   cs.foldl(p, posMove8)
@@ -56,6 +56,9 @@ val tabSize = 2 // Always 2 in koka
 
 // source range
 struct range (pub start: pos, pub end: pos)
+
+fun (==)(r1: range, r2: range): bool
+  r1.start == r2.start && r1.end == r2.end
 
 fun showRange(r: range, endToo: bool)
   if r.start.line > bigLine then 

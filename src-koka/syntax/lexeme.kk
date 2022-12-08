@@ -32,6 +32,33 @@ pub type lex
   LexInsSemi
   LexError(s: string)
 
+pub fun (==)(l1: lexeme, l2: lexeme): bool
+  l1.range == l2.range && l1.lex == l2.lex
+
+pub fun (==)(l1: lex, l2: lex): bool
+  match (l1, l2)
+    (LexInt(i1, s1), LexInt(i2, s2)) -> i1 == i2 && s1 == s2
+    (LexFloat(f1, s1), LexFloat(f2, s2)) -> f1 == f2 && s1 == s2
+    (LexChar(c1), LexChar(c2)) -> c1 == c2
+    (LexString(s1), LexString(s2)) -> s1 == s2
+    (LexId(n1), LexId(n2)) -> n1 == n2
+    (LexCons(n1), LexCons(n2)) -> n1 == n2
+    (LexOp(n1), LexOp(n2)) -> n1 == n2
+    (LexPrefix(n1), LexPrefix(n2)) -> n1 == n2
+    (LexIdOp(n1), LexIdOp(n2)) -> n1 == n2
+    (LexWildCard(n1), LexWildCard(n2)) -> n1 == n2
+    (LexKeyword(s1, k1), LexKeyword(s2, k2)) -> s1 == s2 && k1 == k2
+    (LexSpecial(s1), LexSpecial(s2)) -> s1 == s2
+    (LexComment(s1), LexComment(s2)) -> s1 == s2
+    (LexWhite(s1), LexWhite(s2)) -> s1 == s2
+    (LexModule(a1, f1), LexModule(a2, f2)) -> a1 == a2 && f1 == f2
+    (LexTypeId(n1, s1), LexTypeId(n2, s2)) -> n1 == n2 && s1 == s2
+    (LexInsLCurly, LexInsLCurly) -> True
+    (LexInsRCurly, LexInsRCurly) -> True
+    (LexInsSemi, LexInsSemi) -> True
+    (LexError(s1), LexError(s2)) -> s1 == s2
+    _ -> False
+
 pub fun lexemeIsWhite(l: lexeme): <> bool
   l.lex.lexIsWhite
 
@@ -77,7 +104,7 @@ pub fun show(l: lex): <> string
     LexInt(_, s) -> s
     LexFloat(_, s) -> s
     LexChar(c) -> c.show
-    LexString(s) -> s
+    LexString(s) -> "\"" ++ s ++ "\""
     LexId(n) -> "identifier \"" ++ n.show ++ "\""
     LexOp(n) -> "operator \"" ++ n.show ++ "\""
     LexPrefix(n) -> "prefix operator \"" ++ n.show ++ "\""
