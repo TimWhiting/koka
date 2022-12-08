@@ -238,18 +238,6 @@ fun hexfloat()
 
 // Start on tokenizing
 
-linear effect lexE
-  fun set-lex(s: lex-part) : lex
-  fun push-lex(s: lex-part) : lex
-  fun pop-lex() : lex
-
-type lex-part
-  Default
-  StringLit
-  StringRaw
-  Comment
-  LineComment
-  LineDirective
 
 fun lex-space()
   LexWhite(many1(space).join)
@@ -482,84 +470,54 @@ val messageMalformed
 struct lex-state
   pos: pos
   startPos: pos
-  states: list<int>
+  states: list<lex-part>
   retained: list<list<char>>
   previous: char
   current: list<char>
   previousLex: lex
   rawEnd: list<char>
 
-alias action = (list<char>, lex-state, lex-state) -> (maybe<lex>, lex-state)
-// Action helpers
+linear effect lexE
+  fun set-lex(s: lex-part): ()
+  fun push-lex(s: lex-part): ()
+  fun pop-lex(): ()
+  fun curr-state(): lex-state
 
-fun token(f: list<char> -> lex): action
-  fn(cs, st0, st1)
-    (Just(f(cs)), st1)
-
-fun string(f: string -> lex): action
-  token(fn(cs) -> f(cs.string))
-
-fun keyword(): action
-  string(fn(s) -> LexKeyword(s, ""))
-
-fun next(state: int, action: action): action
-  fn(cs, st0, st1)
-    val (x, st2) = action(cs, st0, st1)
-    (x, st2(states = Cons(state, st1.states)))
-
-fun push(a: action): action
-  fn(cs, st0, st1)
-    next(st1.states.head.default(-1), a)(cs, st0, st1)
-
-fun pop(a: (int) -> action): action
-  fn(cs, st0, st1)
-    val sts = st1.states.tail
-    val sts_ = match sts
-      Nil -> [0]
-      _ -> sts
-    val (x, st2) = a(sts_.head.default(-1))(cs, st0, st1)
-    (x, st2(states = sts_))
-
-fun more(f: list<char> -> list<char>): action
-  fn(cs, st0, st1)
-    (Nothing, st1(retained = Cons(f(cs), st1.retained)))
-
-fun less(n: int, a: action): action
-  fn(cs, st0, st1)
-    val cs2 = st0.current.take(n)
-    val pos2 = st0.pos.posMoves8(cs2)
-    val st2 = st1(pos = pos2, current = st0.current.drop(n))
-    a(cs2, st0, st2)
-
-fun withmore(a: action): action
-  fn(cs, st0, st1)
-    a(Cons(cs, st1.retained).reverse.concat, st0, st1(retained=[]))
-
-fun rawdelim(a: action): action
-  fn(cs, st0, st1)
-    a(cs, st0, st1(rawEnd = Cons('\"', replicate('#', cs.length - 2))))
-
-fun withRawDelim(f: (list<char>, list<char>) -> action): action
-  fn(cs, st0, st1)
-    f(cs, st1.rawEnd)(cs, st0, st1)
-
-fun constant(x)
-  token(fn(cs) -> x)
+type lex-part
+  Default
+  StringLit
+  StringRaw
+  Comment
+  LineComment
+  LineDirective
 
 fun lexer(sourceName: string, lineNo: int, input: string)
   lexing(Source(sourceName, input), lineNo, input)
 
+
+fun lexEHandler(initialState:lex-state, action: () -> <lexE| e> a): e a
+  var state := initialState
+  with handler
+    fun set-lex(s: lex-part)
+      state := state(states=Cons(s, state.states))
+    fun push-lex(s: lex-part)
+      state := state(states=Cons(s, state.states))
+    fun pop-lex()
+      state := state(states=state.states.tail)
+    fun curr-state()
+      state
+  action()
+
 fun lexing(source: source, lineNo: int, input: string)
   with parse(input.slice)
   var initPos := Pos(source, 0, lineNo, 1)
-  var initSt := Lex-state(initPos, initPos, [0], [], '\n', input.list, LexWhite(""), "\"".list)
-  lex-default.many1
-  // [lex-integer(),
-  // lex-space(),
-  // lex-symbols(),
-  // lex-space(),
-  // lex-integer()]
-  // () // TODO: Start scanner
+  with lexEHandler(Lex-state(initPos, initPos, [Default], [], '\n', input.list, LexWhite(""), "\"".list))
+  var result := Nil
+  while { ! current-input().is-empty() }
+    match curr-state().states.head
+      Just(Default) -> result := Cons(lex-default(), result)
+      _ -> result := Cons(lex-default(), result)
+  result
 
 fun main()
   val x = lexer("test", 1, "1 + 2")
