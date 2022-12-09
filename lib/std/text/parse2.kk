@@ -8,15 +8,18 @@
 
 /* Parser combinators
 */  
-module std/text/parse
+module std/text/parse2
 
 pub alias parser<e,a> = () -> <parse|e> a
+
+pub struct location { col: int; row: int }
 
 pub effect parse
   fun satisfy( pred : sslice -> total maybe<(a,sslice)> ) : maybe<a>
   ctl fail(msg : string) : a
   ctl pick() : bool
   fun current-input() : sslice
+  fun current-location(): location
 
 pub fun starts-with( s : string, p : () -> parse a )  : maybe<(a,sslice)> 
   match s.slice.parse(p)
@@ -44,12 +47,16 @@ pub fun parse-eof( input : sslice, p : () -> <parse|e> a) : e parse-error<a>
 
 pub fun parse( input0 : sslice, p : () -> <parse|e> a ) : e parse-error<a> 
   var input := input0
+  var loc := 0
   handle p 
     return(x)
       ParseOk(x,input) 
 
     fun current-input()  
       input 
+
+    fun current-location()
+      Location(loc, loc)
 
     brk fail(msg)     
       ParseError(msg,input) 
@@ -58,7 +65,10 @@ pub fun parse( input0 : sslice, p : () -> <parse|e> a ) : e parse-error<a>
       val inp = input
       val m   = fn() : total _ { pred(inp) }
       match m() 
-        Just((x,cap)) -> { input := cap; Just(x) }
+        Just((x,cap)) -> 
+          input := cap
+          loc := loc + (input.count - cap.count)
+          Just(x)
         Nothing       -> Nothing
 
     ctl pick() 

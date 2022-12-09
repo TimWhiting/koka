@@ -507,10 +507,10 @@ type lex-part
 fun lexer(sourceName: string, lineNo: int, input: string)
   lexing(Source(sourceName, input), lineNo, input)
 
-fun lex(source: source, lineNo: int, input: string): list<lexeme>
+fun lex(source: source, lineNo: int, input: string): div list<lexeme>
   match lexing(source, lineNo, input)
-    ParseOk(u, _) -> u
-    _ -> Lexeme(rangeNull, LexError("Unexpected end of input"))
+    ParseOk(u, _) -> u.map(fn(x) Lexeme(rangeNull, x))
+    _ -> Cons(Lexeme(rangeNull, LexError("Unexpected end of input")), Nil)
 
 fun lexEHandler(initialState:lex-state, action: () -> <lexE| e> a): e a
   var state := initialState
@@ -519,7 +519,7 @@ fun lexEHandler(initialState:lex-state, action: () -> <lexE| e> a): e a
       state
   action()
 
-fun lexing(source: source, lineNo: int, input: string)
+fun lexing(source: source, lineNo: int, input: string): <div> parse-error<list<lex>>
   // with parse(input.slice)
   with parseGreedy(input.slice)
   var initPos := Pos(source, 0, lineNo, 1)
