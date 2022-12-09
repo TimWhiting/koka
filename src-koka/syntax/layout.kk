@@ -15,11 +15,11 @@ fun test(xs: string)
   testEx("", xs)
 
 fun testEx(fname: string, input: string)
-  val tokens = lexer(Source(fname, input), 1, input)
+  val tokens = lexing(Source(fname, input), 1, input)
   layout(True, tokens).map(show).unlines.println
 
 fun layout(semiInsert: bool, lexemes: list<lexeme>): list<lexeme>
-  fun semi(v, f) if semiInsert then f(v) else id
+  fun semi(v: list<lexeme>, f: (list<lexeme>) -> list<lexeme>) if semiInsert then f(v) else v
   lexemes.semi(checkComments).combineLineComments.removeWhiteSpace.associateComments.removeWhite.semi(indentLayout)
 
 fun isLexError(x)
@@ -127,31 +127,32 @@ struct layout
 
 fun indentLayout(lexs: list<lexeme>): list<lexeme>
   match lexs
-    Nil -> Lexeme(rangeNull, LexInsSemi)
-    Cons(l, ls) -> 
+    Nil -> Cons(Lexeme(rangeNull, LexInsSemi), Nil)
+    Cons(l, _) -> 
       val start = Lexeme(l.range.before, LexWhite("")) // ignored
-      brace(Layout(start, 1), [], start, lexs)
+      unsafe-total
+        brace(Layout(start, 1), [], start, lexs)
 
-fun brace(layout: layout, layouts: list<layout>, prev: lexeme, lexemes: list<lexeme>): list<lexeme>
+fun brace(layout: layout, layouts: list<layout>, prev: lexeme, lexemes: list<lexeme>): <div> list<lexeme>
   match lexemes
     Nil -> match layouts
       Nil -> Nil
       // End of file ending braces
       Cons(ly, lys) -> 
         val rCurly = layout.insertRCurly(prev)
-        prev.insertSemi ++ rcurly ++ brace(ly, lys, rcurly.last, [])
+        prev.insertSemi ++ rCurly ++ brace(ly, lys, Lexeme(prev.range.after, LexInsRCurly), [])
     // ignore error lexemes
     Cons(l, ls) | l.lex.isError -> Cons(l, brace(layout, layouts, prev, ls))
     Cons(lexeme, ls) -> 
       val Layout(Lexeme(_, layoutLex), layoutCol) = layout
       val Lexeme(prevRng, prevLex) = prev
       val Lexeme(rng, lex) = lexeme
-      val newline = prevLng.endLine < rng.startLine
+      val newline = prevRng.endLine < rng.startLine
       val indent = rng.startCol
       val nextIndent = match ls
         Cons(Lexeme(r, _), _) -> r.startCol
         _ -> 1
-      if newLine && indent > layoutCol && !(prevLex.isExprContinuation(lex)) then
+      if newline && indent > layoutCol && !(prevLex.isExprContinuation(lex)) then
         brace(layout, layouts, prev, prev.insertLCurly ++ lexemes)
       elif newline && indent < layoutCol && !(lex.isCloseBrace && layoutLex == LexSpecial("{")) then
         brace(layout, layouts, prev, layout.insertRCurly(prev) ++ lexemes)
@@ -162,7 +163,7 @@ fun brace(layout: layout, layouts: list<layout>, prev: lexeme, lexemes: list<lex
         val rest = match layouts
           Nil -> Cons(Lexeme(rng.before, LexError("unmatched closing brace '}'")), brace(layout, [], lexeme, ls))
           Cons(ly, lys) -> brace(ly, lys, lexeme, ls)
-        Cons(prev.inserSemi, Cons(lexeme, rest))
+        prev.insertSemi ++ Cons(lexeme, rest)
       elif newline && indent == layoutCol && !(prevLex.isExprContinuation(lex)) then
         prev.insertSemi ++ [lexeme] ++ brace(layout, layouts, lexeme, ls)
       else
@@ -171,11 +172,16 @@ fun brace(layout: layout, layouts: list<layout>, prev: lexeme, lexemes: list<lex
 fun insertLCurly(Lexeme(prevRng, _))
   [Lexeme(prevRng.after, LexInsLCurly)]
 
-fun insertRCurly(Layout(Lexeme(layoutRng, layoutLex), layoutCol), Lexeme(prevRng, prevLex)): list<lexeme>
+fun insertRCurly(Layout(Lexeme(layoutRng, layoutLex), layoutCol), Lexeme(prevRng, _)): list<lexeme>
   if layoutLex == LexInsLCurly then [] else
-    Cons(Lexeme(prevRng.after, LexError("layout: an open brace '{' (at " ++ 
-      layoutRng.showRange(True) ++ ", layout column " ++ layoutCol.show  ++ 
-      ") is matched by an implicit closing brace")), Cons(Lexeme(prevRng.after, LexInsRCurly), Nil))
+    Cons(
+      Lexeme(prevRng.after, 
+        LexError(
+          "layout: an open brace '{' (at " ++ layoutRng.showRange(True) ++ 
+          ", layout column " ++ layoutCol.show  ++ ") is matched by an implicit closing brace"
+        )), 
+      Cons(Lexeme(prevRng.after, LexInsRCurly), Nil)
+    )
 
 fun insertSemi(Lexeme(prevRng, prevLex))
   if prevLex.isSemi then [] else [Lexeme(prevRng.after, LexInsSemi)]
@@ -218,6 +224,3 @@ fun isSemi(lex)
     LexInsSemi -> True
     _ -> False
 
-      
-
-                

@@ -59,6 +59,11 @@ pub fun (==)(l1: lex, l2: lex): bool
     (LexError(s1), LexError(s2)) -> s1 == s2
     _ -> False
 
+pub fun isError(l: lex)
+  match l
+    LexError(_) -> True
+    _ -> False
+
 pub fun lexemeIsWhite(l: lexeme): <> bool
   l.lex.lexIsWhite
 

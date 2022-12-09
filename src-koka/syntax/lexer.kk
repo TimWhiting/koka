@@ -507,6 +507,10 @@ type lex-part
 fun lexer(sourceName: string, lineNo: int, input: string)
   lexing(Source(sourceName, input), lineNo, input)
 
+fun lex(source: source, lineNo: int, input: string): list<lexeme>
+  match lexing(source, lineNo, input)
+    ParseOk(u, _) -> u
+    _ -> Lexeme(rangeNull, LexError("Unexpected end of input"))
 
 fun lexEHandler(initialState:lex-state, action: () -> <lexE| e> a): e a
   var state := initialState
