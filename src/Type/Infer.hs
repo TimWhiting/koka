@@ -558,8 +558,8 @@ inferExpr propagated expect (Lam binders body rng)
                            -- inferIsolated rng (getRange body) body $
                            inferExpr propBody expectBody body
 
-       spropEff <- subst propEff
-       seff1    <- subst eff1
+       --  spropEff <- subst propEff
+       --  seff1    <- subst eff1
        --  traceDoc $ \env -> text " inferExpr.Lam: propagated effect" <+> ppProp env spropEff <+> text ", body effect:" <+> ppType env seff1 <+> text ", unsubst " <+> ppType env eff1 <+> text ", regular eff " <+> ppType env eff
        inferUnify (checkReturnResult rng) (getRange body) returnTp tp
        inferUnify (Infer rng) (getRange body) eff eff1
@@ -1293,12 +1293,12 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
            -- show ( x ) -> handleshow (show x)
 
            --  if not (null defaults) then 
-           --   do
-           --     inferExpr propagated expect (wrapHandlers fun nargs rng defaults) 
-           --   else do
+           --    do
+           --      inferExpr propagated expect (wrapHandlers fun nargs rng defaults)
+           --    else do
            let newCore = wrapCoreHandler core defaults topEff
            --  inferUnify (checkEffectSubsume rng) (getRange fun) funEff topEff
-           -- traceDoc $ \env -> (text "inferAppFunFirst:: ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
+           traceDoc $ \env -> (text "inferAppFunFirst:: ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
 
            -- instantiate or generalize result type
            funTp1         <- subst funTp
@@ -1310,8 +1310,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
 
     inferAppFromArgs :: [Expr Type] -> [((Name,Range),Expr Type)] -> Inf (Type,Effect,Core.Expr)
     inferAppFromArgs fixed named
-      = trace ("inferApp From Args") $
-        do mbargs <- mapM (\fix -> tryRun $ inferExpr Nothing Instantiated fix) fixed
+      = do mbargs <- mapM (\fix -> tryRun $ inferExpr Nothing Instantiated fix) fixed
            let iargs = catMaybes mbargs
            if (length iargs==length mbargs && null named) -- TODO: we can extend inferAppFixedArgs to deal with named arguments?
             then inferAppFixedArgs (zipWith (\(tpArg,eff,cexpr) fix -> (tpArg,(getRange fix,eff),cexpr)) iargs fixed)
@@ -1347,8 +1346,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
     -- first we order the arguments to infer arguments with simple expressions first
     inferAppFromArgsX :: [Expr Type] -> [((Name,Range),Expr Type)] -> Inf (Type,Effect,Core.Expr)
     inferAppFromArgsX fixed named
-      = trace "From Args" $
-        do guesses <- mapM (\fix -> do tv <- Op.freshTVar kindStar Meta
+      = do guesses <- mapM (\fix -> do tv <- Op.freshTVar kindStar Meta
                                        return (tv,(getRange fix,typeTotal),failure "Infer.InferApp.inferAppFromArgs")) fixed
            inferAppArgsFirst guesses ({-sortBy (comparing (weight . snd))-} (zip [0..] fixed)) fixed named
       where

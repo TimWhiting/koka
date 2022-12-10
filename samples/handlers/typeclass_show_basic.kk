@@ -22,4 +22,4 @@ fun main(): <console> ()
   // x.println
   // println(eshow(0))
   0.eshow.println
-  1.0.eshow.println
+  // 1.0.eshow.println

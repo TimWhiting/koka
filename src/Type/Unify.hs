@@ -188,6 +188,8 @@ entails skolems known (ev:evs)
 unify :: Type -> Type -> Unify ()
 
 -- effects
+unify t1@(TApp (TCon tc1) _) t2@(TApp (TCon tc2) _) | tc2 == tconEffectExtend && tc1 == tconEffectExtend
+  = unifyEffect t1 t2 []
 
 unify t1@(TApp (TCon tc1) _) (TVar tv2)  | tc1 == tconEffectExtend && isMeta tv2
   = unifyEffectVar tv2 t1
