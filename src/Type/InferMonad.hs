@@ -168,7 +168,7 @@ generalize contextRange range close eff0 rho0 core0
         else do -- check that the computation is total
                 if (close)
                  then inferUnify (Check "Generalized values cannot have an effect" contextRange) range typeTotal eff1
-                 else return (effectEmpty, [])
+                 else return []
                 -- simplify and improve again since we can have substituted more
                 (ps2,(eff2,rho2),core2) <- simplifyAndImprove contextRange free ps1 (eff1,rho1)
                 -- due to improvement, our constraints may need to be split again
@@ -598,13 +598,13 @@ instance Ranged Context where
 traceDoc fdoc = do penv <- getPrettyEnv
                    trace (show (fdoc penv)) $ return ()
 
-inferUnify :: Context -> Range -> Type -> Type -> Inf (Type, [(Name,NameInfo)])
+inferUnify :: Context -> Range -> Type -> Type -> Inf [(Name,NameInfo)]
 inferUnify context range expected tp
   = do (sexp,stp) <- subst (expected,tp)
        handlers <- getDefaultHandlers
        res <- doUnify (unifyWithDefaultHandlers sexp stp handlers)
        case res of
-         Right ((),handlers) -> return (sexp, handlers)
+         Right ((),handlers) -> return handlers
          Left err -> unifyError context range err sexp stp
 
 

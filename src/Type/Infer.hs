@@ -1285,7 +1285,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
            -- topEff <- addTopMorphisms rng ((getRange fun, eff1):(rng,funEff):zip (map (getRange . snd) iargs) effArgs)
            -- traceDoc $ \env -> text "inferAppFunFirst:: eff1" <+> ppType env eff1 <+> text " funEff" <+> ppType env funEff
            topEff <- inferUnifies (checkEffect rng) ((getRange fun, eff1) : zip (map (getRange . snd) iargs) effArgs)
-           (newEff, defaults) <- inferUnify (Infer rng) (getRange fun) funEff topEff
+           defaults <- inferUnify (Infer rng) (getRange fun) funEff topEff
            --  traceDoc $ \env -> text "inferAppFunFirst::" <+> ppType env newEff <+> text "defaults:" <+> pretty (map (show . fst) defaults)
            --  traceDoc $ \env -> text "inferAppFunFirst:: old fun " <+> text (show fun)
            --  traceDoc $ \env -> text "inferAppFunFirst:: new fun " <+> text (show (wrapHandlers fun nargs rng defaults))
@@ -1296,17 +1296,17 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
            --   do
            --     inferExpr propagated expect (wrapHandlers fun nargs rng defaults) 
            --   else do
-           let newCore = wrapCoreHandler core defaults newEff
+           let newCore = wrapCoreHandler core defaults topEff
            --  inferUnify (checkEffectSubsume rng) (getRange fun) funEff topEff
            -- traceDoc $ \env -> (text "inferAppFunFirst:: ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
 
            -- instantiate or generalize result type
            funTp1         <- subst funTp
            -- traceDoc $ \env -> text " inferAppFunFirst: inst or gen:" <+> pretty (show expect) <+> colon <+> ppType env funTp1 <.> text ", top eff: " <+> ppType env topEff
-           (resTp,resCore) <- maybeInstantiateOrGeneralize rng (getRange fun) newEff expect funTp1 newCore
+           (resTp,resCore) <- maybeInstantiateOrGeneralize rng (getRange fun) topEff expect funTp1 newCore
            --stopEff <- subst topEff
            -- traceDoc $ \env -> text " inferAppFunFirst: resTp:" <+> ppType env resTp <.> text ", top eff: " <+> ppType env stopEff
-           return (resTp,newEff,resCore)
+           return (resTp,topEff,resCore)
 
     inferAppFromArgs :: [Expr Type] -> [((Name,Range),Expr Type)] -> Inf (Type,Effect,Core.Expr)
     inferAppFromArgs fixed named
@@ -1698,7 +1698,7 @@ inferPattern matchType branchRange (PatVar binder) withPattern inferPart
               do addRangeInfo (binderNameRange binder) (RM.Id (binderName binder) (RM.NIValue matchType) True)
                  case (binderType binder) of
                    Just tp -> inferUnify (checkAnn (getRange binder)) (binderNameRange binder) matchType tp
-                   Nothing -> return (effectEmpty, [])
+                   Nothing -> return []
                  (cpat,infGamma0) <- inferPatternX matchType branchRange (binderExpr binder)
                  let infGamma = ([(binderName binder,(createNameInfoX Public (binderName binder) DefVal (binderNameRange binder) matchType))] ++ infGamma0)
                  (btpeffs,x) <- inferPart infGamma
@@ -1781,7 +1781,7 @@ inferOptionals eff infgamma (par:pars)
             sexprEff <- subst exprEff
             case (sexprEff) of
               TVar _ -> inferUnify (checkOptionalTotal fullRange) (getRange expr) typeTotal exprEff
-              _ -> if (isTypeTotal exprEff) then return (effectEmpty, [])
+              _ -> if (isTypeTotal exprEff) then return []
                     else -- trace ("optional effect type: " ++ show exprEff) $
                          inferUnify (Infer fullRange) (getRange expr) eff exprEff
 
