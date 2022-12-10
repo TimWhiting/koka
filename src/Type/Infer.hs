@@ -1200,25 +1200,12 @@ effectNameFromLabel effect
       TApp (TCon tc) targs -> typeConName tc
       _ -> failure ("Type.Infer.effectNameFromLabel: invalid effect: " ++ show effect)
 
-
-
-wrapHandler :: Core.Expr -> NameInfo -> Effect -> Core.Expr
-wrapHandler core ni eff =
-  case core of
-      Core.Lam _ _ _ -> (Core.App (Core.Var (Core.TName (infoCName ni) (infoType ni)) Core.InfoNone) [core])
-      _ -> (Core.App (Core.Var (Core.TName (infoCName ni) (infoType ni)) Core.InfoNone) [Core.Lam [] eff core])
-
-wrapCoreHandler :: Core.Expr -> [(Name,NameInfo)] -> Effect -> Core.Expr
-wrapCoreHandler core handlers eff
-  = case handlers of
-      [] -> core
-      (n,ni):hs  -> wrapCoreHandler (wrapHandler core ni eff) hs eff
-
 wrapHandlers :: Expr a -> [(Maybe (Name,Range),Expr a)] -> Range-> [(Name,NameInfo)] -> Expr a
 wrapHandlers expr args rng handlers
   = case handlers of
       [] -> App expr args rng
-      (n,ni):hs  -> wrapHandlers (wrapWithDefaultHandler expr args rng (n,ni)) args rng hs
+      [(n,ni)] -> wrapWithDefaultHandler expr args rng (n, ni)
+      (n,ni):hs -> wrapHandlers (wrapWithDefaultHandler expr args rng (n,ni)) args rng hs
 
 wrapWithDefaultHandler :: Expr a -> [(Maybe (Name,Range),Expr a)] -> Range -> (Name, NameInfo) -> Expr a
 wrapWithDefaultHandler expr args rng (n,ni)
@@ -1291,22 +1278,24 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
            --  traceDoc $ \env -> text "inferAppFunFirst:: new fun " <+> text (show (wrapHandlers fun nargs rng defaults))
 
            -- show ( x ) -> handleshow (show x)
+           addDefaults <- getAddDefaults
+           if not (null defaults) && addDefaults then 
+             do
+               -- trace ("Before: Expr " ++ show fun ++ " Arguments " ++ show nargs) return ()
+               let newE = wrapHandlers fun nargs rng defaults
+               -- trace ("Expr " ++ show newE) return ()
+               withAddDefaults False (inferExpr propagated expect newE)
+             else do
+              inferUnify (checkEffectSubsume rng) (getRange fun) funEff topEff
+              -- traceDoc $ \env -> (text "inferAppFunFirst:: ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
 
-           --  if not (null defaults) then 
-           --    do
-           --      inferExpr propagated expect (wrapHandlers fun nargs rng defaults)
-           --    else do
-           let newCore = wrapCoreHandler core defaults topEff
-           --  inferUnify (checkEffectSubsume rng) (getRange fun) funEff topEff
-           traceDoc $ \env -> (text "inferAppFunFirst:: ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
-
-           -- instantiate or generalize result type
-           funTp1         <- subst funTp
-           -- traceDoc $ \env -> text " inferAppFunFirst: inst or gen:" <+> pretty (show expect) <+> colon <+> ppType env funTp1 <.> text ", top eff: " <+> ppType env topEff
-           (resTp,resCore) <- maybeInstantiateOrGeneralize rng (getRange fun) topEff expect funTp1 newCore
-           --stopEff <- subst topEff
-           -- traceDoc $ \env -> text " inferAppFunFirst: resTp:" <+> ppType env resTp <.> text ", top eff: " <+> ppType env stopEff
-           return (resTp,topEff,resCore)
+              -- instantiate or generalize result type
+              funTp1         <- subst funTp
+              -- traceDoc $ \env -> text " inferAppFunFirst: inst or gen:" <+> pretty (show expect) <+> colon <+> ppType env funTp1 <.> text ", top eff: " <+> ppType env topEff
+              (resTp,resCore) <- maybeInstantiateOrGeneralize rng (getRange fun) topEff expect funTp1 core
+              --stopEff <- subst topEff
+              -- traceDoc $ \env -> text " inferAppFunFirst: resTp:" <+> ppType env resTp <.> text ", top eff: " <+> ppType env stopEff
+              return (resTp,topEff,resCore)
 
     inferAppFromArgs :: [Expr Type] -> [((Name,Range),Expr Type)] -> Inf (Type,Effect,Core.Expr)
     inferAppFromArgs fixed named

@@ -20,6 +20,6 @@ default handler
 fun main(): <console> ()
   // val x = 0.eshow
   // x.println
-  // println(eshow(0))
+  println(eshow(3))
   0.eshow.println
-  // 1.0.eshow.println
+  1.1.eshow.println

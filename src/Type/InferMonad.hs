@@ -18,7 +18,8 @@ module Type.InferMonad( Inf, InfGamma, Res
                       , getDefaultHandlers
                       , extendGamma, extendGammaCore
                       , extendInfGamma, extendInfGammaCore
-                      , withGammaType
+                      , withGammaType,
+                      withAddDefaults, getAddDefaults
 
                       -- * Name resolution
                       , qualifyName
@@ -846,13 +847,14 @@ data Env    = Env{ prettyEnv :: !Pretty.Env
                  , imports :: !ImportMap
                  , returnAllowed :: Bool
                  , inLhs :: Bool
+                 , addDefaults :: Bool
                  }
 data St     = St{ uniq :: !Int, sub :: !Sub, preds :: ![Evidence], mbRangeMap :: Maybe RangeMap }
 
 
 runInfer :: Pretty.Env -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Int -> Inf a -> Error (a,Int,Maybe RangeMap)
 runInfer env mbrm syns newTypes imports assumption context unique (Inf f)
-  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False) (St unique subNull [] mbrm) of
+  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False True) (St unique subNull [] mbrm) of
       Err err warnings -> addWarnings warnings (errorMsg (ErrorType [err]))
       Ok x st warnings -> addWarnings warnings (ok (x, uniq st, (sub st) |-> mbRangeMap st))
 
@@ -912,6 +914,15 @@ infWarning :: Range -> Doc -> Inf ()
 infWarning range doc
   = do addRangeInfo range (Warning doc)
        Inf (\env st -> Ok () st [(range,doc)])
+
+withAddDefaults :: Bool -> Inf a -> Inf a
+withAddDefaults b
+  = withEnv (\env -> env{ addDefaults = b })
+
+getAddDefaults :: Inf Bool
+getAddDefaults
+  = do env <- getEnv
+       return (addDefaults env)
 
 getPrettyEnv :: Inf Pretty.Env
 getPrettyEnv
