@@ -110,7 +110,7 @@ matchArguments matchSome range free tp fixed named
          Just (pars,_,_)
           -> if (length fixed + length named > length pars)
               then unifyError NoMatch
-              else do -- subsume fixed parameters
+              else do Lib.Trace.trace "Got Here" $ return ()-- subsume fixed parameters
                       let (fpars,npars) = splitAt (length fixed) pars
                       mapM_  (\(tpar,targ) -> subsume range free (unOptional tpar) targ) (zip (map snd fpars) fixed)
                       -- subsume named parameters
@@ -415,12 +415,15 @@ unifyEffectVar tv1 tp2
 
 
 
+matchTypeY :: Bool -> Rho -> Type -> Bool
+matchTypeY exact x y =
+    case x of
+      TForall _ _ (TFun ((_, TFun _ (TApp _ (e:_)) _):pars) _ _) -> null pars && matchTypeX exact e y
+      _ -> matchTypeX exact x y
+
 matchTypeX :: Bool -> Rho -> Type -> Bool
 matchTypeX exact x y =
-    (exact && matchType x y) || (not exact && matchTypeXX x y) || case x of 
-    TForall _ _ tp -> matchTypeX exact tp y
-    TFun ((_, TFun _ (TApp _ (e:_)) _):pars) _ _ -> null pars && matchTypeX exact e y
-    _ -> False
+    (exact && matchType x y) || (not exact && matchTypeXX x y)
 
 matchTypeXX :: Rho -> Type -> Bool
 matchTypeXX x y =
@@ -430,7 +433,7 @@ matchTypeXX x y =
       (TCon c1, TCon c2)                        -> c1 == c2
       (TVar v1, TVar v2)                        -> v1 == v2
       (TApp t1 ts1, TApp t2 ts2)                -> matchTypeXX t1 t2 && matchTypesXX ts1 ts2
-      (TForall{}, _) -> True
+      (TVar _, TCon _) -> True
       _ -> False
 
 matchTypesXX :: [Rho] -> [Type] -> Bool
@@ -460,7 +463,7 @@ aDefaultMatch :: Bool -> (Name, NameInfo) -> Type -> Bool
 aDefaultMatch exact x label =
   case getInfoType x of 
     Nothing -> False
-    Just xx -> matchTypeX exact xx label
+    Just xx -> matchTypeY exact xx label
 
 defaultMatch :: [(Name, NameInfo)] -> Type -> [(Name, NameInfo)]
 defaultMatch defaults label

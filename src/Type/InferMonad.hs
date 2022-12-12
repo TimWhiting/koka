@@ -605,7 +605,13 @@ inferUnify context range expected tp
        handlers <- getDefaultHandlers
        res <- doUnify (unifyWithDefaultHandlers sexp stp handlers)
        case res of
-         Right ((),handlers) -> return handlers
+         Right ((),handlers) -> case context of
+          Infer _ -> return handlers
+          Check _ _ -> do 
+            res2 <- doUnify (unify sexp stp)
+            case res2 of
+              Right ((),handlers) -> return []
+              Left err -> unifyError context range err sexp stp
          Left err -> unifyError context range err sexp stp
 
 
@@ -847,14 +853,14 @@ data Env    = Env{ prettyEnv :: !Pretty.Env
                  , imports :: !ImportMap
                  , returnAllowed :: Bool
                  , inLhs :: Bool
-                 , addDefaults :: Bool
+                 , addDefaults :: [(Name,NameInfo)]
                  }
 data St     = St{ uniq :: !Int, sub :: !Sub, preds :: ![Evidence], mbRangeMap :: Maybe RangeMap }
 
 
 runInfer :: Pretty.Env -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Int -> Inf a -> Error (a,Int,Maybe RangeMap)
 runInfer env mbrm syns newTypes imports assumption context unique (Inf f)
-  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False True) (St unique subNull [] mbrm) of
+  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False []) (St unique subNull [] mbrm) of
       Err err warnings -> addWarnings warnings (errorMsg (ErrorType [err]))
       Ok x st warnings -> addWarnings warnings (ok (x, uniq st, (sub st) |-> mbRangeMap st))
 
@@ -915,11 +921,11 @@ infWarning range doc
   = do addRangeInfo range (Warning doc)
        Inf (\env st -> Ok () st [(range,doc)])
 
-withAddDefaults :: Bool -> Inf a -> Inf a
+withAddDefaults :: [(Name,NameInfo)] -> Inf a -> Inf a
 withAddDefaults b
   = withEnv (\env -> env{ addDefaults = b })
 
-getAddDefaults :: Inf Bool
+getAddDefaults :: Inf [(Name,NameInfo)]
 getAddDefaults
   = do env <- getEnv
        return (addDefaults env)
@@ -1441,11 +1447,13 @@ lookupNameEx infoFilter name ctx range
                                     -- lookup global candidates that match the expected type
                                     matches <- case ctx of
                                                  CtxNone         -> return candidates
-                                                 CtxType expect  -> do mss <- mapM (matchType expect) candidates
+                                                 CtxType expect  -> Lib.Trace.trace "Expect" $ 
+                                                                    do mss <- mapM (matchType expect) candidates
                                                                        return (concat mss)
                                                  CtxFunArgs n named -> do mss <- mapM (matchNamedArgs n named) candidates
                                                                           return (concat mss)
-                                                 CtxFunTypes partial fixed named -> do mss <- mapM (matchArgs partial fixed named) candidates
+                                                 CtxFunTypes partial fixed named -> Lib.Trace.trace ("Fixed " ++ show name ++ " " ++ show ctx) $ 
+                                                                                    do mss <- mapM (matchArgs partial fixed named) candidates
                                                                                        return (concat mss)
                                     case matches of
                                       [(qname,info)] -> return matches
@@ -1485,6 +1493,7 @@ lookupNameEx infoFilter name ctx range
       = -- trace ("match args: " ++ show matchSome ++ ", " ++ show fixed ++ ", " ++ show (length named) ++ " on " ++ show (infoType info)) $
         do free <- freeInGamma
            res <- runUnify (matchArguments matchSome range free (infoType info) fixed named)
+           
            case res of
-             (Right _,_,_)  -> return [(name,info)]
-             (Left _,_,_)   -> return []
+             (Right _,_,h)  -> Lib.Trace.trace ("Right " ++ show h) $ return [(name,info)]
+             (Left _,_,h)   -> Lib.Trace.trace ("Left " ++ show h) $ return []
