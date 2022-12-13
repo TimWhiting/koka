@@ -110,6 +110,7 @@ import Core.Pretty()
 import Syntax.RangeMap( RangeMap, RangeInfo(..), rangeMapInsert )
 
 import qualified Lib.Trace( trace )
+import Type.Pretty (ppType)
 
 trace s x =
    -- Lib.Trace.trace (" " ++ s)
@@ -599,19 +600,18 @@ instance Ranged Context where
 traceDoc fdoc = do penv <- getPrettyEnv
                    trace (show (fdoc penv)) $ return ()
 
+traceDocLib fdoc = do penv <- getPrettyEnv
+                      Lib.Trace.trace (show (fdoc penv)) $ return ()
+
 inferUnify :: Context -> Range -> Type -> Type -> Inf [(Name,NameInfo)]
 inferUnify context range expected tp
   = do (sexp,stp) <- subst (expected,tp)
        handlers <- getDefaultHandlers
-       res <- doUnify (unifyWithDefaultHandlers sexp stp handlers)
+       res <- do
+              traceDocLib $ \env -> text "Doing unify of " <+> ppType env expected <+> text " and " <+> ppType env tp
+              doUnify (unifyWithDefaultHandlers sexp stp handlers)
        case res of
-         Right ((),handlers) -> case context of
-          Infer _ -> return handlers
-          Check _ _ -> do 
-            res2 <- doUnify (unify sexp stp)
-            case res2 of
-              Right ((),handlers) -> return []
-              Left err -> unifyError context range err sexp stp
+         Right ((),handlers) -> return handlers
          Left err -> unifyError context range err sexp stp
 
 
@@ -1447,12 +1447,12 @@ lookupNameEx infoFilter name ctx range
                                     -- lookup global candidates that match the expected type
                                     matches <- case ctx of
                                                  CtxNone         -> return candidates
-                                                 CtxType expect  -> Lib.Trace.trace "Expect" $ 
+                                                 CtxType expect  -> -- Lib.Trace.trace "Expect" $ 
                                                                     do mss <- mapM (matchType expect) candidates
                                                                        return (concat mss)
                                                  CtxFunArgs n named -> do mss <- mapM (matchNamedArgs n named) candidates
                                                                           return (concat mss)
-                                                 CtxFunTypes partial fixed named -> Lib.Trace.trace ("Fixed " ++ show name ++ " " ++ show ctx) $ 
+                                                 CtxFunTypes partial fixed named -> -- Lib.Trace.trace ("Fixed " ++ show name ++ " " ++ show ctx) $ 
                                                                                     do mss <- mapM (matchArgs partial fixed named) candidates
                                                                                        return (concat mss)
                                     case matches of
@@ -1495,5 +1495,7 @@ lookupNameEx infoFilter name ctx range
            res <- runUnify (matchArguments matchSome range free (infoType info) fixed named)
            
            case res of
-             (Right _,_,h)  -> Lib.Trace.trace ("Right " ++ show h) $ return [(name,info)]
-             (Left _,_,h)   -> Lib.Trace.trace ("Left " ++ show h) $ return []
+             (Right _,_,h)  -> -- Lib.Trace.trace ("Right " ++ show h) $ 
+                return [(name,info)]
+             (Left _,_,h)   -> -- Lib.Trace.trace ("Left " ++ show h) $ 
+                return []

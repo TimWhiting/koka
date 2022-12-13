@@ -17,7 +17,7 @@ import Lib.Trace hiding (traceDoc)
 import Data.List(partition,sortBy,sortOn, (\\))
 import qualified Data.List(find)
 import Data.Ord(comparing)
-import Data.Maybe(catMaybes)
+import Data.Maybe(catMaybes, fromMaybe)
 import Control.Monad(when)
 import Lib.PPrint
 import Core.Pretty
@@ -73,6 +73,7 @@ import Core.BindingGroups( regroup )
 -- import Core.Simplify( uniqueSimplify )
 
 import qualified Syntax.RangeMap as RM
+import Type.Unify (showDefaults)
 
 traceDoc fdoc = do penv <- getPrettyEnv
                    trace (show (fdoc penv)) $ return ()
@@ -711,6 +712,8 @@ inferExpr propagated expect (App assign@(Var name _ _) args@[lhs@(_,Var target _
 inferExpr propagated expect (App (h@Handler{hndlrAllowMask=Nothing}) [action] rng)
   = do lvars <- getLocalVars
        let allow = not (usesLocals (S.fromList (map fst lvars)) (snd action))
+       let h' = inferExpr propagated expect h{hndlrAllowMask=Just allow}
+       let 
        inferExpr propagated expect (App h{hndlrAllowMask=Just allow} [action] rng)
 
 -- | Byref expressions
@@ -952,7 +955,7 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
        resumeArgs <- mapM (\_ -> Op.freshTVar kindStar Meta) branches  -- TODO: get operation result types to improve inference
 
        -- construct the handler
-       -- traceDoc $ \penv -> text "infer handler: heff:" <+> ppType penv heff <+> text ", propagated:" <+> (case propagated of { Nothing  -> text "none"; Just (tp,_)  -> ppType penv tp })
+       traceDoc $ \penv -> text "infer handler: heff:" <+> ppType penv heff <+> text ", propagated:" <+> (case propagated of { Nothing  -> text "none"; Just (tp,_)  -> ppType penv tp })
        let -- create expressions for each clause
            opName b1 b2 = compare (show (unqualify (hbranchName b1))) (show (unqualify (hbranchName b2)))
            clause (HandlerBranch opName pars body opSort nameRng patRng, resumeArg)
@@ -1030,7 +1033,7 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
                                      (handleExpr (Var actionName False rng)) hrng) (newName "handler") rng
 
        -- and check the handle expression
-       hres@(xhtp,_,_) <- inferExpr propagated expect handlerExpr
+       hres@(xhtp,_,_) <- inferExpr (propagated) expect handlerExpr
        htp <- subst xhtp
 
        -- extract handler effect
@@ -1211,9 +1214,32 @@ wrapWithDefaultHandler :: Expr a -> (Name, NameInfo) -> Expr a
 wrapWithDefaultHandler expr (n,ni)
   = App (Var n False rangeNull) [(Nothing, Parens (Lam [] expr (getRange expr)) nameNil rangeNull)] (getRange expr)
 
+-- inferDefaults:: Maybe (Type,Range) -> Expect -> Expr Type -> [(Maybe (Name,Range),Expr Type)] -> Range -> Tau -> Tau -> Inf (Expr Type)
+-- inferDefaults propagated expect fun nargs rng funEff topEff
+--   = do (defaults, complete) <- inferUnify (Infer rng) (getRange fun) funEff topEff
+--            --  traceDoc $ \env -> text "inferAppFunFirst::" <+> ppType env newEff <+> text "defaults:" <+> pretty (map (show . fst) defaults)
+--            --  traceDoc $ \env -> text "inferAppFunFirst:: old fun " <+> text (show fun)
+--            --  traceDoc $ \env -> text "inferAppFunFirst:: new fun " <+> text (show (wrapHandlers fun nargs rng defaults))
+
+--            -- show ( x ) -> handleshow (show x)
+--        addDefaults <- getAddDefaults
+--        trace ("Defaults: " ++ show (map (infoCName . snd) defaults)) return ()
+--        trace ("AddDefaults: " ++ show (map (infoCName . snd) addDefaults)) return ()
+--        let defs = filter (\x -> not (any (\y -> infoCName (snd y) == infoCName (snd x)) addDefaults)) defaults
+--        trace ("New Defaults: " ++ show (map (infoCName . snd) defs) ++ " in " ++ show fun) return ()
+--        trace ("Propagated: " ++ show (propagated >>= (\(t,r) -> Just (getEffectType t)))) return ()
+--        if not (null defs) then 
+--          do
+--          -- trace ("Before: Expr " ++ show fun ++ " Arguments " ++ show nargs) return ()
+--          let newE = wrapHandlers (App fun nargs rng) defs
+--          trace ("Wrapped Expr " ++ show newE) return ()
+
+--          withAddDefaults defs (inferDefaults propagated expect (inferExpr prop expect newE) [] rng funEff topEff)
+--          else return fun
+
 inferApp :: Maybe (Type,Range) -> Expect -> Expr Type -> [(Maybe (Name,Range),Expr Type)] -> Range -> Inf (Type,Effect,Core.Expr)
 inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping the Expr but add a boolean parameter to Inf to say whether to wrap or not?? 
-  = trace ("infer: App " ++ show fun) $
+  = -- trace ("infer: App " ++ show fun) $
     do (fixed,named) <- splitNamedArgs nargs
        amb <- case rootExpr fun of
                 (Var name isOp nameRange)
@@ -1240,15 +1266,45 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
            (iargs,pars,funEff,funTp,coreApp)  <- matchFunTypeArgs rng fun ftp fixed named
 
            -- todo: match propagated type with result type?
+
            -- subsume arguments
            (effArgs,coreArgs) <- -- withGammaType rng (TFun pars funEff funTp) $ -- ensure the free 'some' types are free in gamma
-                                 do let check = case (fun) of
+                                 do let check = case fun of
                                                    Var name _ _ | name == nameRunLocal
                                                      -> checkLocalScope rng
                                                    _ -> Infer rng
                                     inferSubsumeN check rng (zip (map snd pars) (map snd iargs))
            -- traceDoc $ \env -> text "inferAppFunFirst:" <+> prettyExpr env fcore
-           core <- case shortCircuit fcore coreArgs of
+           -- take top effect
+           -- todo: sub effecting should add core terms
+           -- topEff <- addTopMorphisms rng ((getRange fun, eff1):(rng,funEff):zip (map (getRange . snd) iargs) effArgs)
+           traceDoc $ \env -> text "inferAppFunFirst:: eff1" <+> ppType env eff1 <+> text " funEff" <+> ppType env funEff
+           topEff <- inferUnifies (checkEffect rng) ((getRange fun, eff1) : zip (map (getRange . snd) iargs) effArgs)
+           
+           defaults <- inferUnify (Infer rng) (getRange fun) funEff topEff
+           newProp <- subst prop
+           --  traceDoc $ \env -> text "inferAppFunFirst::" <+> ppType env newEff <+> text "defaults:" <+> pretty (map (show . fst) defaults)
+           --  traceDoc $ \env -> text "inferAppFunFirst:: old fun " <+> text (show fun)
+           --  traceDoc $ \env -> text "inferAppFunFirst:: new fun " <+> text (show (wrapHandlers fun nargs rng defaults))
+
+           -- show ( x ) -> handleshow (show x)
+           addDefaults <- getAddDefaults
+           trace ("Defaults: " ++ showDefaults defaults) return ()
+           trace ("AddDefaults: " ++ showDefaults addDefaults) return ()
+           let defs = filter (\x -> not (any (\y -> infoCName (snd y) == infoCName (snd x)) addDefaults)) defaults
+           trace ("New Defaults: " ++ showDefaults defs ++ " in " ++ show fun) return ()
+           let t = fromMaybe effectEmpty (newProp >>= (\(t,r) -> Just (t))) 
+           traceDoc $ \env -> text "Propagated: " <+> ppType env t
+
+           if not (null defs) then 
+             do
+               -- trace ("Before: Expr " ++ show fun ++ " Arguments " ++ show nargs) return ()
+               let newE = wrapHandlers (App fun nargs rng) defs
+               trace ("Wrapped Expr " ++ show newE) return ()
+
+               withAddDefaults defs (inferExpr newProp expect newE)
+             else do
+               core <- case shortCircuit fcore coreArgs of
                     Just cexpr -> return cexpr
                     Nothing -> 
                       if (monotonic (map fst iargs) || all Core.isTotal coreArgs)
@@ -1265,30 +1321,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
                                         let fdef = Core.DefNonRec (Core.Def fname ftp fcore Core.Private (DefFun [] {-all own, TODO: maintain borrow annotations?-}) InlineAuto rangeNull "")
                                             fvar = Core.Var (Core.TName fname ftp) Core.InfoNone
                                         return (Core.Let (fdef:defs) (coreApp fvar cargs))
-           -- take top effect
-           -- todo: sub effecting should add core terms
-           -- topEff <- addTopMorphisms rng ((getRange fun, eff1):(rng,funEff):zip (map (getRange . snd) iargs) effArgs)
-           -- traceDoc $ \env -> text "inferAppFunFirst:: eff1" <+> ppType env eff1 <+> text " funEff" <+> ppType env funEff
-           topEff <- inferUnifies (checkEffect rng) ((getRange fun, eff1) : zip (map (getRange . snd) iargs) effArgs)
-           defaults <- inferUnify (Infer rng) (getRange fun) funEff topEff
-           --  traceDoc $ \env -> text "inferAppFunFirst::" <+> ppType env newEff <+> text "defaults:" <+> pretty (map (show . fst) defaults)
-           --  traceDoc $ \env -> text "inferAppFunFirst:: old fun " <+> text (show fun)
-           --  traceDoc $ \env -> text "inferAppFunFirst:: new fun " <+> text (show (wrapHandlers fun nargs rng defaults))
-
-           -- show ( x ) -> handleshow (show x)
-           addDefaults <- getAddDefaults
-           trace ("Defaults: " ++ show (map (infoCName . snd) defaults)) return ()
-           trace ("AddDefaults: " ++ show (map (infoCName . snd) addDefaults)) return ()
-           let defs = filter (\x -> not (any (\y -> infoCName (snd y) == infoCName (snd x)) addDefaults)) defaults
-           trace ("New Defaults: " ++ show (map (infoCName . snd) defs)) return ()
-
-           if not (null defs) then 
-             do
-               -- trace ("Before: Expr " ++ show fun ++ " Arguments " ++ show nargs) return ()
-               let newE = wrapHandlers (App fun nargs rng) defs
-               trace ("Wrapped Expr " ++ show newE) return ()
-               withAddDefaults defs (inferExpr propagated expect newE)
-             else do
+               trace ("Checking subsume " ++ show fun) return ()
                inferUnify (checkEffectSubsume rng) (getRange fun) funEff topEff
                -- traceDoc $ \env -> (text "inferAppFunFirst:: ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
 
@@ -1302,7 +1335,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
 
     inferAppFromArgs :: [Expr Type] -> [((Name,Range),Expr Type)] -> Inf (Type,Effect,Core.Expr)
     inferAppFromArgs fixed named
-      = trace "InferApp from Args" $ 
+      = -- trace "InferApp from Args" $ 
         do mbargs <- mapM (\fix -> tryRun $ inferExpr Nothing Instantiated fix) fixed
            let iargs = catMaybes mbargs
            if (length iargs==length mbargs && null named) -- TODO: we can extend inferAppFixedArgs to deal with named arguments?
@@ -1314,7 +1347,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
                     prop <- case rootExpr fun of
                             (Var name _ nameRange) | isConstructorName name
                               -> do matches <- lookupNameEx (isInfoCon {- const True -}) name ctx nameRange
-                                    traceDoc $ \env -> text " app args matched for constructor " <+> ppName env name <+> text " = " <+> pretty (length matches)
+                                    -- traceDoc $ \env -> text " app args matched for constructor " <+> ppName env name <+> text " = " <+> pretty (length matches)
                                     case matches of
                                       [(_,info)] -> return (Just (infoType info, rng))
                                       _          -> do -- emit an error
@@ -1323,7 +1356,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
                                      -- _          -> return Nothing
                             (Var name _ nameRange)
                               -> do matches <- lookupNameEx (isInfoValFunExt {- const True -}) name ctx nameRange
-                                    traceDoc $ \env -> text " app args matched for " <+> ppName env name <+> text " = " <+> pretty (length matches) <+> text ", " <+> pretty (length fixed) <+> text ", args: " <+> list (niceTypes env argtps )
+                                    -- traceDoc $ \env -> text " app args matched for " <+> ppName env name <+> text " = " <+> pretty (length matches) <+> text ", " <+> pretty (length fixed) <+> text ", args: " <+> list (niceTypes env argtps )
                                     case matches of
                                       [(_,info)] -> return (Just (infoType info, rng))
                                       _          -> do -- emit an error
@@ -1339,7 +1372,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
     -- first we order the arguments to infer arguments with simple expressions first
     inferAppFromArgsX :: [Expr Type] -> [((Name,Range),Expr Type)] -> Inf (Type,Effect,Core.Expr)
     inferAppFromArgsX fixed named
-      = trace "InferApp from ArgsX" $ 
+      = -- trace "InferApp from ArgsX" $ 
         do guesses <- mapM (\fix -> do tv <- Op.freshTVar kindStar Meta
                                        return (tv,(getRange fix,typeTotal),failure "Infer.InferApp.inferAppFromArgs")) fixed
            inferAppArgsFirst guesses ({-sortBy (comparing (weight . snd))-} (zip [0..] fixed)) fixed named
@@ -1368,7 +1401,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
            let acc' = take idx acc ++ [(tpArg,(getRange fix,effArg),coreArg)] ++ drop (idx+1) acc
            amb <- case rootExpr fun of
                     (Var name _ nameRange) | isConstructorName name
-                      -> trace "inferAppArgsFirst: constructor" $
+                      -> -- trace "inferAppArgsFirst: constructor" $
                          do matches <- lookupNameEx (isInfoCon {- const True -}) name (CtxFunTypes True (map fst3 acc') []) nameRange
                             -- traceDoc $ \env -> text "app args matched for constructor " <+> ppName env name <+> text " = " <+> pretty (length matches) <+> text ", " <+> pretty (length fixs) <+> text ", args: " <+> list (map (ppType env) (map fst3 acc') )
                             case matches of
@@ -1378,7 +1411,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
                               [(_,info)] -> return (Just (infoType info, rng))
                               _          -> return Nothing
                     (Var name _ nameRange)
-                      -> trace "inferAppArgsFirst: function" $
+                      -> -- trace "inferAppArgsFirst: function" $
                          do matches <- lookupNameEx (isInfoValFunExt {- const True -}) name (CtxFunTypes True (map fst3 acc') []) nameRange
                             -- traceDoc $ \env -> text "app args matched for " <+> ppName env name <+> text " = " <+> pretty (length matches) <+> text ", " <+> pretty (length fixs) <+> text ", args: " <+> list (map (ppType env) (map fst3 acc)  )
                             case matches of
@@ -1461,7 +1494,7 @@ inferApp propagated expect fun nargs rng -- TODO(Tim): Switch back to wrapping t
 
 inferVar :: Maybe (Type,Range) -> Expect -> Name -> Range -> Bool -> Inf (Type,Effect,Core.Expr)
 inferVar propagated expect name rng isRhs  | isConstructorName name
-  =  trace("inferVar: constructor: " ++ show name)$
+  = -- trace("inferVar: constructor: " ++ show name)$
     do (qname1,tp1,conRepr,conInfo) <- resolveConName name (fmap fst propagated) rng
        let info1 = InfoCon Public tp1 conRepr conInfo rng
        (qname,tp,info) <- do defName <- currentDefName
@@ -1485,7 +1518,7 @@ inferVar propagated expect name rng isRhs  | isConstructorName name
        return (itp,eff,coref coreVar)
 
 inferVar propagated expect name rng isRhs
-  = -- trace("inferVar; " ++ show name) $
+  = trace("inferVar; " ++ show name) $
     do (qname,tp,info) <- resolveName name propagated rng
        -- traceDoc $ \env -> text "inferVar:" <+> pretty name <+> colon <+> ppType env{showIds=True} tp
        if (isTypeLocalVar tp && isRhs)

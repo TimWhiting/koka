@@ -47,6 +47,7 @@ module Type.Type (-- * Types
                   , typeReuse, typeLocal
 
                   --, handledToLabel
+                  , getEffectType
                   , tconHandled, tconHandled1
                   , typeCps
                   , isEffectAsync, isAsyncFunction
@@ -541,7 +542,12 @@ orderEffect tp
     in foldr effectExtend tl ls
 
 
-
+getEffectType:: Type -> Tau
+getEffectType tp
+  = let (x,y,rho) = splitPredType tp in case rho of
+      TFun _ e _ -> e
+      TSyn _ _ t -> getEffectType t
+      _          -> effectEmpty
 
 extractOrderedEffect :: Tau -> ([Tau],Tau)
 extractOrderedEffect tp
