@@ -414,12 +414,12 @@ pub fun append(xs : list<a>, ys : list<a> ) : list<a>
 
 // Fold a list from the right, i.e. `foldr([1,2],0,(+)) == 1+(2+0)`
 // Note, `foldr` is less efficient than `foldl` as it reverses the list first.
-pub fun foldr(xs,z,f)
-  xs.reverse.foldl(z) fn(x,y) f(y,x)  
+pub fun foldr(xs : list<a>, z : b, f : (b, a) -> e b) : e b
+  xs.reverse.foldl(z) fn(x,y) f(x,y)
 
 // Fold a list from the left, i.e. `foldl([1,2],0,(+)) == (0+1)+2`
 // Since `foldl` is tail recursive, it is preferred over `foldr` when using an associative function `f`
-pub fun foldl(xs,z,f)
+pub fun foldl(xs : list<a>, z : b, f : (b, a) -> e b) : e b
   match xs
     Cons(x,xx) -> foldl(xx,f(z,x),f)
     Nil        -> z
@@ -497,16 +497,16 @@ pub fun filter-map( xs : list<a>, pred : a -> e maybe<b> ) : e list<b>
       Just(y) -> Cons(y,xx.filter-map(pred))
 
 // Find the first element satisfying some predicate
-pub fun find( xs : list<a>, pred : a -> bool ) : maybe<a>
+pub fun find( xs : list<a>, pred : a -> e bool ) : e maybe<a>
   xs.foreach-while fn(x)
     if pred(x) then Just(x) else Nothing
 
 // Find the first element satisfying some predicate and return it.
-pub fun find-maybe( xs : list<a>, pred : a -> maybe<b> ) : maybe<b>
+pub fun find-maybe( xs : list<a>, pred : a -> e maybe<b> ) : e maybe<b>
   xs.foreach-while(pred)
 
 // Lookup the first element satisfying some predicate
-pub fun lookup( xs : list<(a,b)>, pred : a -> bool ) : maybe<b>
+pub fun lookup( xs : list<(a,b)>, pred : a -> e bool ) : e maybe<b>
   xs.foreach-while fn(kv)
     if pred(kv.fst) then Just(kv.snd) else Nothing
 
@@ -523,14 +523,14 @@ pub fun list( m : maybe<a> ) : list<a>
     Nothing -> Nil
     Just(x) -> Cons(x,Nil)
 
-fun index-of-acc( xs : list<a>, pred : a -> bool, idx : int ) : int
+fun index-of-acc( xs : list<a>, pred : a -> e bool, idx : int ) : e int
   match xs
     Cons(x,xx) -> if pred(x) then idx else index-of-acc(xx,pred,idx+1)
     Nil        -> -1
     
 
 // Returns the index of the first element where `pred` holds, or `-1` if no such element exists.
-pub fun index-of( xs : list<a>, pred : a -> bool ) : int
+pub fun index-of( xs : list<a>, pred : a -> e bool ) : e int
   index-of-acc( xs, pred, 0 )
 
 // Invoke `action` for each element of a list
@@ -1417,6 +1417,20 @@ pub inline extern (!=) : (string,string) -> bool
   inline "(#1 != #2)"
   js inline "(#1 !== #2)"
 
+pub inline fun (==)(l1: sslice, l2: sslice ): bool
+  match (l1, l2)
+    (Sslice(s1, i1, f1), Sslice(s2, i2, f2)) ->
+      if f1 != f2 then False
+      elif i1 != i2 then False
+      else s1 == s2
+
+pub inline fun (!=)(l1: sslice, l2: sslice ): bool
+  match (l1, l2)
+    (Sslice(s1, i1, f1), Sslice(s2, i2, f2)) ->
+      if f1 != f2 then True
+      elif i1 != i2 then True
+      else s1 != s2
+
 extern string-compare : ( x : string, y : string ) -> int
   c  "kk_string_cmp_int"
   cs inline "String.Compare(#1,#2)"
@@ -1569,6 +1583,15 @@ pub extern next( slice : sslice ) : maybe<(char,sslice)>
   c  "kk_slice_next"
   cs "Primitive.SliceNext"
   js "_sslice_next"
+
+pub fun substr( slice: sslice, start : int, end : int ): sslice
+  val Sslice(s, st, len) = slice
+  val newst = st + start
+  val newLen = end - start
+  if newst + newLen > len then
+    Sslice(s, newst, len - start)
+  else
+    Sslice(s, newst, newLen) 
 
 // Apply a function for each character in a string slice.
 // If `action` returns `Just`, the function returns immediately with that result.
