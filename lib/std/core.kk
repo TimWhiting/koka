@@ -471,7 +471,7 @@ pub fun filter( xs : list<a>, pred : a -> e bool ) : e list<a>
 
 // Remove those elements of a list that satisfy the given predicate `pred`.
 // For example: `remove([1,2,3],odd?) == [2]`
-pub fun remove( xs : list<a>, pred : a -> bool ) : list<a>
+pub fun remove( xs : list<a>, pred : a -> e bool ) : e list<a>
   xs.filter( fn(x) !pred(x) )
 
 // Partition a list in two lists where the first list contains
@@ -1776,10 +1776,10 @@ pub fun head-char( s : string ) : maybe<char>
 //
 
 // Count the number of times a predicate is true for each character in a string
-pub fun count( s : string, pred : (char) -> bool ) : int
+pub fun count( s : string, pred : (char) -> e bool ) : e int
   var cnt := 0
   s.foreach fn(c)
-    if pred(c) then cnt := cnt+1
+    if mask<local>{pred(c)} then cnt := cnt+1
   cnt
 
 // Split a string into a list of lines
@@ -2088,7 +2088,7 @@ pub fun show( xs : list<int> ) : string
 pub fun show( xs : list<bool> ) : string
   show-list(xs,show)
 
-pub fun show-tuple( x : (a,b), showfst : a -> string, showsnd : b -> string ) : string
+pub fun show-tuple( x : (a,b), showfst : a -> e string, showsnd : b -> e string ) : e string
   "(" ++ x.fst.showfst ++ "," ++ x.snd.showsnd ++ ")"
 
 
@@ -2222,7 +2222,7 @@ pub fun trace-any( message : string, x : a ) : ()
     if !trace-enabled then xtrace-any(message,x)
 
 // Disable tracing completely.
-noinline fun notrace() : st<global> ()
+pub noinline fun notrace() : st<global> ()
   trace-enabled := False
 
 extern unsafe-assert-fail( msg : string ) : ()
