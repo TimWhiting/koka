@@ -27,3 +27,4 @@ test.kk
 /*.cmake
 bench
 test/bench
+.cache
