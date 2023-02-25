@@ -23,18 +23,24 @@ static kk_box_t _function_id(kk_function_t self, kk_box_t x, kk_context_t* ctx) 
 }
 kk_function_t kk_function_id(kk_context_t* ctx) {
   kk_define_static_function(fun_id, _function_id, ctx)
-  return kk_function_dup(fun_id);
+  return kk_function_dup(fun_id,ctx);
 }
 
 // null function
 static kk_box_t _function_null(kk_function_t self, kk_context_t* ctx) {
   kk_function_drop(self, ctx);
   kk_fatal_error(EFAULT, "null function is called");
-  return kk_box_null;
+  return kk_box_null();
 }
 kk_function_t kk_function_null(kk_context_t* ctx) {
   kk_define_static_function(fun_null, _function_null, ctx)
-  return kk_function_dup(fun_null);
+  return kk_function_dup(fun_null,ctx);
+}
+bool kk_function_is_null(kk_function_t f, kk_context_t* ctx) {
+  kk_function_t fnull = kk_function_null(ctx);
+  bool eq = kk_datatype_eq(f, fnull);
+  kk_function_drop(fnull, ctx);
+  return eq;
 }
 
 
@@ -55,8 +61,8 @@ void kk_free_fun(void* p, kk_block_t* b, kk_context_t* ctx) {
 
 kk_string_t kk_get_host(kk_context_t* ctx) {
   kk_unused(ctx);
-  kk_define_string_literal(static, host, 5, "libc")
-  return kk_string_dup(host);
+  kk_define_string_literal(static, host, 5, "libc", ctx);
+  return kk_string_dup(host,ctx);
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -135,10 +141,25 @@ void kk_info_message(const char* fmt, ...) {
   va_end(args);
 }
 
+void kk_unsupported_external(const char* msg) {
+  kk_fatal_error(ENOSYS, "unsupported external: %s", msg);
+}
+
 /*--------------------------------------------------------------------------------------------------
   Process init/done
 --------------------------------------------------------------------------------------------------*/
 static bool process_initialized; // = false
+
+#if KK_COMPRESS && (KK_INTB_SIZE==4 || KK_CHERI)
+  #if defined(KK_MIMALLOC)
+    #define KK_USE_MEM_ARENA 1
+    static mi_arena_id_t arena;
+    static void*         arena_start;
+    static size_t        arena_size;
+  #else
+    #error "can only use compressed heaps with the mimalloc allocator enabled"
+  #endif
+#endif
 
 static void kklib_done(void) {
   if (!process_initialized) return;
@@ -177,6 +198,21 @@ static void kklib_init(void) {
   kk_has_tzcnt = ((cpu_info[1] & (KK_I32(1)<<3)) != 0);    // bmi1: https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set
 #endif
   atexit(&kklib_done);  
+
+  #if KK_USE_MEM_ARENA
+    #if (KK_INTB_SIZE==4)
+    const kk_ssize_t heap_size = kk_shlp(KK_IZ(1), KK_INTB_BITS + KK_BOX_PTR_SHIFT);  // 16GiB
+    #elif KK_CHERI && (KK_INTB_SIZE==8)
+    const kk_ssize_t heap_size = 128 * KK_GiB;  // todo: parameterize?
+    #else 
+    #error "define heap initialization for compressed pointers on this platform"
+    #endif
+    int err = mi_reserve_os_memory_ex(heap_size, false /* commit */, true /* allow large */, true /*exclusive*/, &arena);
+    if (err != 0) {
+      kk_fatal_error(err, "unable to reserve the initial heap of %zi bytes", heap_size);
+    }
+    arena_start = mi_arena_area(arena, &arena_size);    
+  #endif
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -186,38 +222,66 @@ static void kklib_init(void) {
 // The thread local context; usually passed explicitly for efficiency.
 static kk_decl_thread kk_context_t* context;
 
-
 static struct { kk_block_t _block; kk_integer_t cfc; } kk_evv_empty_static = {
-  { KK_HEADER_STATIC(1,KK_TAG_EVV_VECTOR) }, { ((~KK_UP(0))^0x02) /*==-1 smallint*/}
+  { KK_HEADER_STATIC(1,KK_TAG_EVV_VECTOR) }, { ((~KK_UB(0))^0x02) /*==-1 smallint*/}
 };
-kk_ptr_t kk_evv_empty_singleton = &kk_evv_empty_static._block;
+
+struct kk_evv_s {
+  kk_block_t _block;
+  kk_integer_t cfc;
+};
+
+kk_datatype_ptr_t kk_evv_empty_singleton(kk_context_t* ctx) {
+  static struct kk_evv_s* evv = NULL;
+  if (evv == NULL) {
+    evv = kk_block_alloc_as(struct kk_evv_s, 1, KK_TAG_EVV_VECTOR, ctx);
+    evv->cfc = kk_integer_from_small(-1);
+  }
+  kk_base_type_dup_as(struct kk_evv_s*, evv);
+  return kk_datatype_from_base(evv, ctx);
+} 
+
 
 // Get the thread local context (also initializes on demand)
 kk_context_t* kk_get_context(void) {
   kk_context_t* ctx = context;
   if (ctx!=NULL) return ctx;
   kklib_init();
-#ifdef KK_MIMALLOC
+#if KK_USE_MEM_ARENA
+  kk_assert_internal(arena != 0 && arena_start != NULL);
+  mi_heap_t* heap = mi_heap_new_in_arena(arena);
+  ctx = (kk_context_t*)mi_heap_zalloc(heap, sizeof(kk_context_t));
+  kk_assign_const(kk_heap_t,ctx->heap) = heap;
+  kk_assign_const(void*, ctx->heap_start) = arena_start;
+  kk_addr_t arena_start_addr;
+  #if KK_CHERI
+  arena_start_addr = __builtin_cheri_address_get(arena_start);
+  #else
+  arena_start_addr = (kk_addr_t)arena_start;
+  #endif
+  kk_assign_const(kk_addr_t, ctx->heap_mid) = arena_start_addr + (kk_addr_t)(arena_size / 2);
+#elif defined(KK_MIMALLOC)
   mi_heap_t* heap = mi_heap_get_default(); //  mi_heap_new();
   ctx = (kk_context_t*)mi_heap_zalloc(heap, sizeof(kk_context_t));
-  ctx->heap = heap;
+  kk_assign_const(kk_heap_t, ctx->heap) = heap;
 #else
-  ctx = (kk_context_t*)kk_zalloc(sizeof(kk_context_t),NULL);
+  ctx = (kk_context_t*)kk_zalloc(sizeof(kk_context_t), NULL);
 #endif
-  ctx->evv = kk_block_dup(kk_evv_empty_singleton);
   ctx->thread_id = (size_t)(&context);
   ctx->unique = kk_integer_one;
   context = ctx;
-  ctx->kk_box_any = kk_block_alloc_as(struct kk_box_any_s, 0, KK_TAG_BOX_ANY, ctx);  
-  ctx->kk_box_any->_unused = kk_integer_zero;
+  struct kk_box_any_s* boxany = kk_block_alloc_as(struct kk_box_any_s, 0, KK_TAG_BOX_ANY, ctx);  
+  boxany->_unused = kk_integer_zero;
+  ctx->kk_box_any = kk_datatype_from_base(boxany, ctx);
+  ctx->evv = kk_evv_empty_singleton(ctx);
   // todo: register a thread_done function to release the context on thread terminatation.
   return ctx;
 }
 
 void kk_free_context(void) {
   if (context != NULL) {
-    kk_block_drop(context->evv, context);
-    kk_basetype_free(context->kk_box_any,context);
+    kk_datatype_ptr_drop(context->evv, context);
+    kk_datatype_ptr_free(context->kk_box_any,context);
     // kk_basetype_drop_assert(context->kk_box_any, KK_TAG_BOX_ANY, context);
     // TODO: process delayed_free
 #ifdef KK_MIMALLOC

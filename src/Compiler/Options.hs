@@ -177,6 +177,7 @@ data Flags
          , optctail         :: Bool
          , optctailCtxPath  :: Bool 
          , optUnroll        :: Int
+         , optEagerPatBind  :: Bool      -- bind pattern fields as early as possible?
          , parcReuse        :: Bool
          , parcSpecialize   :: Bool
          , parcReuseSpec    :: Bool
@@ -271,6 +272,7 @@ flagsNull
           True -- optctail
           True -- optctailCtxPath
           (-1) -- optUnroll
+          False -- optEagerPatBind (read fields as late as possible)
           True -- parc reuse
           True -- parc specialize
           True -- parc reuse specialize
@@ -382,6 +384,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , hide $ fflag       ["trmcctx"]     (\b f -> f{optctailCtxPath=b})  "enable trmc context paths"
  , hide $ fflag       ["specialize"]  (\b f -> f{optSpecialize=b})    "enable inline specialization"
  , hide $ fflag       ["unroll"]      (\b f -> f{optUnroll=(if b then 1 else 0)}) "enable recursive definition unrolling"
+ , hide $ fflag       ["eagerpatbind"] (\b f -> f{optEagerPatBind=b}) "load pattern fields as early as possible"
 
  -- deprecated
  , hide $ option []    ["cmake"]           (ReqArg cmakeFlag "cmd")        "use <cmd> to invoke cmake"
@@ -440,6 +443,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
     [("c",      \f -> f{ target=C LibC, platform=platform64 }),
      ("c64",    \f -> f{ target=C LibC, platform=platform64 }),
      ("c32",    \f -> f{ target=C LibC, platform=platform32 }),
+     ("c64c",   \f -> f{ target=C LibC, platform=platform64c }),
      ("js",     \f -> f{ target=JS JsNode, platform=platformJS }),
      ("jsnode", \f -> f{ target=JS JsNode, platform=platformJS }),
      ("jsweb",  \f -> f{ target=JS JsWeb, platform=platformJS }),
@@ -660,9 +664,10 @@ processOptions flags0 opts
                    ccCheckExist cc
                    let stdAlloc = if asan then True else useStdAlloc flags   -- asan implies useStdAlloc
                        cdefs    = ccompDefs flags 
-                                   ++ if stdAlloc then [] else [("KK_MIMALLOC",show (sizePtr (platform flags)))]
-                                   ++ if (buildType flags > DebugFull) then [] else [("KK_DEBUG_FULL","")]
-                                   ++ if optctailCtxPath flags then [] else [("KK_CTAIL_NO_CONTEXT_PATH","")]
+                                   ++ (if stdAlloc then [] else [("KK_MIMALLOC",show (sizePtr (platform flags)))])
+                                   ++ (if (buildType flags > DebugFull) then [] else [("KK_DEBUG_FULL","")])
+                                   ++ (if optctailCtxPath flags then [] else [("KK_CTAIL_NO_CONTEXT_PATH","")])
+                                   ++ (if platformHasCompressedFields (platform flags) then [("KK_INTB_SIZE",show (sizeField (platform flags)))] else [])
                    
                    -- vcpkg
                    -- (vcpkgRoot,vcpkg) <- vcpkgFindRoot (vcpkgRoot flags)
@@ -957,7 +962,9 @@ buildVariant flags
                         Wasm   -> "-wasm" ++ show (8*sizePtr (platform flags))
                         WasmJs -> "-wasmjs"
                         WasmWeb-> "-wasmweb"
-                        _      -> "")                       
+                        _      | platformHasCompressedFields (platform flags)
+                               -> "-x" ++ show (8 * sizePtr (platform flags)) ++ "c"
+                               | otherwise -> "")                       
                  JS _  -> "js"
                  _     -> show (target flags)
     in pre ++ "-" ++ show (buildType flags)
