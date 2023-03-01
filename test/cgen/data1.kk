@@ -13,18 +13,27 @@
 type void
 
 // enum
-type unit { Unit() }
+type unit 
+  Unit
 
 // enum
-type bool { False; True }
+type bool 
+  False
+  True 
 
 // iso
-type iso { Iso(x:int) }
+type iso 
+  Iso(x:int) 
+
+ref type any 
+  Any
 
 // single struct
-type pair<a,b> { Pair(x:a, y:b) }
+value type pair<a,b> { Pair(x:a, y:b) }
 
 type triple<a,b,c> { Triple(p:pair<a,b>,z:c) }
+
+value struct vtriple<a,b,c>(p:pair<a,b>,z:c) 
 
 // single
 type single<a> { Single( x:int, y:a, z:bool ) }
@@ -41,8 +50,20 @@ type vstrct<a> { VStrct( x:a, i:int ); VStrct2(d:float64,s:string); VStrct3(i:in
 // struct
 type strct<a> { Strct( x:a, i:int ); Strct2(i:int, s:string); Strct3(x:a)  }
 
-// struct
-type maybe<a> { Just(x:a); Nothing }
+// reference maybe
+ref type rmaybe<a> { RJust(x:a); RNothing }
+
+fun test-rmaybe( m : rmaybe<int> ) : int
+  match m 
+    RJust(i) -> i
+    RNothing -> 0
+
+value type vmaybe<a> { VJust(x:a); VNothing }
+
+fun test-vmaybe( m : vmaybe<int> ) : int
+  match m 
+    VJust(i) -> i
+    VNothing -> 0
 
 // normal
 type normal<a> { One(x:a,y:pair<int,int>,z:pair<int,int>); Two(x:int); Three }
@@ -63,3 +84,10 @@ type mix<a> { Mix( p:point, m : mix<a>, i : int32, c : char ); MixNil }
 
 // ensure the tag of maybe is in the scanned fields (3+1)
 type scantag { ScanTag( i : int, z : char, m : maybe<int32>, p : point ) }
+
+
+// test padding between field and raw
+value struct intdouble( i : int, d : float64 )
+
+// test explicit padding between fields and mixed intdouble
+struct padding( x : int, y : int, id : intdouble )
