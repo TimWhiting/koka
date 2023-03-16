@@ -301,7 +301,7 @@ struct kk_std_core_Sslice kk_slice_advance_borrow( struct kk_std_core_Sslice sli
   kk_integer_drop(slice.start,ctx);
   kk_integer_drop(slice.len,ctx);
   return kk_std_core__new_Sslice(slice.str, kk_integer_from_ptrdiff_t(t0 - sstart,ctx), 
-                                            kk_integer_from_ptrdiff_t(t1 - t0,ctx), ctx);
+                                            kk_integer_from_ptrdiff_t(t1 - t0 - 1,ctx), ctx);
 }
 
 /* Borrow iupto */
