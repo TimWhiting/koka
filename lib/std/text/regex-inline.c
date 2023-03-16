@@ -8,6 +8,7 @@
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 
+#include "kklib.h"
 #pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
 #define PCRE2_CODE_UNIT_WIDTH 8
 #define PCRE2_STATIC
@@ -153,6 +154,62 @@ done:
     pcre2_match_data_free(match_data);
   }
   kk_string_drop(str,ctx);
+  kk_box_drop(bre,ctx);
+  return res;
+}
+
+static kk_std_core__list kk_regex_slice_exec_ex( pcre2_code* re, pcre2_match_data* match_data, 
+                                           kk_std_core__sslice sslice, const uint8_t* cstr, kk_ssize_t len, bool allow_empty, 
+                                           kk_ssize_t start, kk_ssize_t* mstart, kk_ssize_t* end, int* res, kk_context_t* ctx ) 
+{
+  // match
+  kk_std_core__list hd  = kk_std_core__new_Nil(ctx);
+  uint32_t options = 0;
+
+  if (!allow_empty) options |= (PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED);
+  int rc = pcre2_match( re, cstr + start, len, 0, options, match_data, match_ctx );
+  if (res != NULL) *res = rc;    
+  if (rc > 0) {    
+    // extract captures
+    uint32_t    gcount = pcre2_get_ovector_count(match_data);
+    PCRE2_SIZE* groups = pcre2_get_ovector_pointer(match_data);
+    for( uint32_t i = gcount; i > 0; ) {
+      i--;
+      kk_ssize_t sstart = groups[i*2];       // on no-match, sstart and send == -1.
+      kk_ssize_t send   = groups[i*2 + 1];
+      kk_assert(send >= sstart);
+      kk_std_core__sslice sslice_result = kk_std_core__new_Sslice( kk_string_dup(sslice.str,ctx), kk_integer_from_ssize_t(sstart + start,ctx), kk_integer_from_ssize_t(send - sstart,ctx), ctx ); 
+      hd = kk_std_core__new_Cons(kk_reuse_null,kk_std_core__sslice_box(sslice_result,ctx), hd, ctx);
+      if (i == 0) {
+        if (mstart != NULL) { *mstart = sstart; }
+        if (end    != NULL) { *end = send; }
+      }
+    }
+  }
+  return hd;
+}
+
+static kk_std_core__list kk_regex_slice_exec_borrow( kk_box_t bre, kk_std_core__sslice sslice, kk_context_t* ctx ) 
+{
+  // unpack
+  pcre2_match_data* match_data = NULL;
+  kk_std_core__list res = kk_std_core__new_Nil(ctx);
+  pcre2_code* re = (pcre2_code*)kk_cptr_raw_unbox_borrowed(bre,ctx);
+  kk_ssize_t len = 0;
+  const uint8_t* cstr = NULL;
+  if (re == NULL) goto done;    
+  match_data = pcre2_match_data_create_from_pattern(re, gen_ctx);
+  if (match_data==NULL) goto done;  
+  cstr = kk_string_buf_borrow(sslice.str, &len, ctx );  
+
+  // and match
+  res = kk_regex_slice_exec_ex( re, match_data, sslice, cstr, kk_integer_clamp_ssize_t_borrow(sslice.len, ctx), true, kk_integer_clamp_ssize_t_borrow(sslice.start, ctx), NULL, NULL, NULL, ctx );
+
+done:  
+  if (match_data != NULL) {
+    //kk_info_message( "free match data: %p\n", match_data );
+    pcre2_match_data_free(match_data);
+  }
   kk_box_drop(bre,ctx);
   return res;
 }
