@@ -41,6 +41,9 @@ extern regex-exec( regex : any, str : string, start : ssize_t) : list<sslice>
   js "$regexExec"
   cs "RegEx.Exec"
 
+extern regex-exec( regex : any, str : sslice) : list<sslice>
+  c  "kk_regex_slice_exec_borrow"
+
 extern regex-exec-all( regex : any, str : string, start : ssize_t, atmost : ssize_t) : list<list<sslice>>
   c  "kk_regex_exec_all"
   js "$regexExecAll"
@@ -64,6 +67,11 @@ pub fun regex( regex :string, ignorecase :bool = False, multiline : bool = False
 // See also `find` and `contains`
 pub fun exec( regex :regex, s : string ) : list<sslice>
   regex-exec(regex.obj,s,0.ssize_t)
+
+// Find a match for a regular expression.
+// See also `find` and `contains`
+pub fun exec( regex :regex, s : sslice ) : list<sslice>
+  regex-exec(regex.obj,s)
 
 // Match a regular expression `regex` over a string `s`. 
 // Matches at most `atmost` times (and matches all by default).
