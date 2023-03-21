@@ -182,9 +182,7 @@ fun run(parser: parser<r,a,<exn|e>>, s: string): <exn|e> either<perror<r>, a>
     fun offset()
       p.offset
     fun tryPattern(pat: regex)
-      // TODO: Not performant, we need regex for slices, or quick conversion from slice to string / offset
-      val st = rem.string
-      match pat.exec(st)
+      match pat.exec(rem)
         Nil -> 
           Left(ExpectedPatternMatch(pat.source, p))
         ms ->
