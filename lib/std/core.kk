@@ -683,6 +683,51 @@ pub fun any( xs : list<a>, predicate : a -> e bool ) : e bool
     Cons(x,xx) -> if predicate(x) then True else xx.any(predicate)
     Nil -> False
 
+fun merge(a: list<a>, b: list<a>, compare : (a, a) -> e order) : <div|e> list<a>
+  match (a, b)
+    (Cons(x, xs), Cons(y, ys)) ->
+      if mask<div>{compare(x, y)} == Gt then Cons(y, merge(a, ys, compare))
+      else Cons(x, merge(xs, b, compare))
+    (Nil, ys) -> ys
+    (xs, Nil) -> xs
+    (_, _) -> Nil
+
+fun merge-pairs(xs: list<list<a>>, compare: (a, a) -> e order): <div|e> list<list<a>>
+  match xs
+    Cons(x, Cons(y, ys)) -> Cons(merge(x, y, compare), merge-pairs(ys, compare))
+    _ -> xs
+
+fun merge-all(xs: list<list<a>>, compare: (a, a) -> e order): <div|e> list<a>
+  match xs
+    Cons(x, Nil) -> x
+    _ -> merge-all(merge-pairs(xs, compare), compare)
+
+fun ascending(a: a, aas: (list<a>) -> list<a>, bs: list<a>, compare: (a, a) -> e order): <div|e> list<list<a>>
+  match bs
+    Cons(b, bbs) ->
+      if mask<div>{compare(a, b)} != Gt then ascending(b, fn(ys) Cons(a, ys), bbs, compare)
+      else Cons(aas([a]), sequences(bs, compare))
+    Nil -> Cons(aas([a]), sequences(bs, compare))
+
+fun descending(a: a, aas: list<a>, bs: list<a>, compare: (a, a) -> e order): <div|e> list<list<a>>
+  match bs
+    Cons(b, bbs) ->
+      if mask<div>{compare(a, b)} == Gt then descending(b, Cons(a, aas), bbs, compare)
+      else Cons(Cons(a, aas), sequences(bs, compare))
+    Nil -> Cons(Cons(a, aas), sequences(bs, compare))
+
+fun sequences(xs: list<a>, compare: (a, a) -> e order): <div|e> list<list<a>>
+  match xs
+    Cons(a, Cons(b, ys)) ->
+      if mask<div>{compare(a, b)} == Gt then descending(b, [a], ys, compare)
+      else ascending(b, fn(ys') Cons(a, ys'), ys, compare)
+    _ -> [xs]
+
+pub fun sort( xs: list<a>, compare: (a, a) -> e order ) : e list<a>
+  with unsafe-no-div
+  merge-all(sequences(xs, compare), compare)
+
+
 // ----------------------------------------------------------------------------
 // Characters
 // ----------------------------------------------------------------------------
