@@ -40,6 +40,7 @@ import Common.Syntax( Platform(..) )
 import Common.Name
 import Common.NamePrim
 import Common.Syntax
+import Common.Id as CId
 import Common.File( startsWith )
 import qualified Common.NameMap as M
 import Syntax.Syntax
@@ -152,7 +153,7 @@ synTypeDef :: Name -> Core.TypeDef -> DefGroups Type
 synTypeDef modName (Core.Synonym synInfo) = []
 synTypeDef modName (Core.Data dataInfo isExtend) | isHiddenName (dataInfoName dataInfo) = []
 synTypeDef modName (Core.Data dataInfo isExtend)
-  = synAccessors modName dataInfo
+  = synAccessors modName dataInfo ++ synDebugString modName dataInfo
     ++
     (if (length (dataInfoConstrs dataInfo) == 1 && not (dataInfoIsOpen dataInfo)
          && not (isHiddenName (conInfoName (head (dataInfoConstrs dataInfo))))
@@ -199,6 +200,39 @@ hasAccessor name tp cinfo
   = not (isFieldName name || name==nameNil) &&  -- named?
     (let tvs = ftv tp          -- and no existentials?
      in all (\tv -> not (tvsMember tv tvs)) (conInfoExists cinfo))
+
+synDebugString :: Name -> DataInfo -> [DefGroup Type]
+synDebugString modName info
+  = let paramss = [TVar (TypeVar id kind Meta) | TypeVar id kind _ <- (dataInfoParams info)]
+        rc  = dataInfoRange info
+        dataName = dataInfoName info
+        arg = if all isAlphaNum (show dataName) then dataName else newName ".this"
+        fArgs = map typevarId (dataInfoParams info)
+        dataTp = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
+        -- TODO: Add generic type argument functions to the type, figure out newId here
+        fullTp = typeFun [(arg,dataTp)] (effectExtends [] (TVar (TypeVar (newId 1) kindEffect Meta))) typeString
+        expr = Ann (Lam [ValueBinder arg Nothing Nothing rc rc] caseExpr rc) fullTp rc
+        branches = concatMap makeBranch (dataInfoConstrs info)
+        name = newName "debug"
+        makeBranch :: ConInfo -> [(Visibility, Branch Type)]
+        makeBranch (con)
+          = let r = conInfoRange con
+                fields = map fst (filter (isTCon . snd) (filter (not . isFun . snd) (conInfoParams con)))
+                patterns = [(Nothing,PatVar (ValueBinder fld Nothing (PatWild r) r r)) | fld <- fields]
+                appendV = (Var (newName "++") False r)
+                appendStr expr1 expr2 = (App appendV [(Nothing, expr1), (Nothing, expr2)] r)
+                lString s = Lit (LitString s r)
+                debugFld fld = (App (Var name False r) [(Nothing, fld)] r)
+                varExprs = (intersperse  (lString ", ") (map (\fld -> (appendStr (lString ((nameId fld) ++ ": ")) (debugFld (Var fld False r)))) fields))
+                res = [Guard guardTrue (appendStr (foldr (\x acc -> (appendStr acc x)) (lString ((nameId (conInfoName con)) ++ "(")) varExprs) (lString ")"))]
+                    in [((conInfoVis con), Branch (PatCon (conInfoName con) patterns r r) 
+                      res)]
+        caseExpr = (Case (Var arg False rc) (map snd branches) rc)
+        visibility = dataInfoVis info
+        doc = "// Automatically generated. Shows a string representation of the `" ++ nameId (dataInfoName info) ++ "` type.\n"
+        def = [DefNonRec (Def (ValueBinder name () expr rc rc) rc visibility (DefFun [Borrow]) InlineAlways doc)]
+    in trace (show def) def 
+        
 
 synAccessors :: Name -> DataInfo -> [DefGroup Type]
 synAccessors modName info
