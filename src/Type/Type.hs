@@ -27,7 +27,7 @@ module Type.Type (-- * Types
                   , makeScheme
                   , quantifyType, qualifyType, applyType, tForall
                   , expandSyn
-                  , canonicalForm, minimalForm
+                  , canonicalForm, minimalForm, getTypeArgs
                   -- ** Standard types
                   , typeInt, typeBool, typeFun, typeVoid, typeInt32, typeEvIndex, typeSSizeT
                   , typeUnit, typeChar, typeString, typeFloat
@@ -80,6 +80,7 @@ import Common.Id
 import Common.Failure
 import Common.Syntax( Visibility, DataKind(..), DataDef(..), ValueRepr(..), dataDefIsRec, dataDefIsOpen, valueReprSize, Platform )
 import Kind.Kind
+import Data.Set (Set, empty, union, singleton, (\\), fromList)
 
 {--------------------------------------------------------------------------
   Types
@@ -468,6 +469,14 @@ splitFunType tp
         -> splitFunType t
       _ -> Nothing
 
+getTypeArgs :: Type -> Set TypeVar
+getTypeArgs tp
+  = case minimalForm tp of
+      TApp t args -> foldl union empty (map getTypeArgs args)
+      TVar tv     -> singleton tv
+      TFun args effect result -> foldl union empty (map getTypeArgs (map snd args ++ [effect, result]))
+      TForall vars _ t ->  getTypeArgs t \\ fromList vars
+      _           -> empty
 
 {--------------------------------------------------------------------------
   Primitive types
