@@ -10,7 +10,7 @@ type other<t>
   Char(c: char, b: bool, t: t)
   Other(f: () -> int)
   Other2(o1: other<t>, o2: other<t>)
-  Other3(o: one<t>)
+  // Other3(o: one<t>)
 
 fun main() 
   Hello.show.println
