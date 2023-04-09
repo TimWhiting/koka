@@ -147,7 +147,8 @@ extractInfos groups
 ---------------------------------------------------------------}
 synTypeDefGroup :: Name -> Core.TypeDefGroup -> DefGroups Type
 synTypeDefGroup modName (Core.TypeDefGroup ctdefs)
-  = concatMap (synTypeDef modName) ctdefs ++ concatMap (synAdvancedDef modName) ctdefs
+  = -- trace ("Group info " ++ show ctdefs ++ show (concatMap (synAdvancedDef modName) ctdefs)) 
+    concatMap (synTypeDef modName) ctdefs ++ concatMap (synAdvancedDef modName) ctdefs
 
 isPrimitive name
   = nameId name `elem` [nameId nameSystemCore, nameId nameCoreHnd, nameId nameCoreTypes]
@@ -157,7 +158,10 @@ synAdvancedDef modName (Core.Synonym synInfo) = []
 synAdvancedDef modName (Core.Data dataInfo isExtend) | isHiddenName (dataInfoName dataInfo) = []
 synAdvancedDef modName (Core.Data dataInfo isExtend) | isPrimitive modName = []
 synAdvancedDef modName (Core.Data dataInfo isExtend)
-  = synDebugString modName dataInfo ++ synEquality modName dataInfo
+--  = synEquality modName dataInfo -- For debugging
+  = if (not (dataInfoIsOpen dataInfo)
+         && not (isHiddenName (conInfoName (head (dataInfoConstrs dataInfo))))
+         && hasKindStarResult (dataInfoKind dataInfo) ) then synDebugString modName dataInfo ++ synEquality modName dataInfo else []
 
 synTypeDef :: Name -> Core.TypeDef -> DefGroups Type
 synTypeDef modName (Core.Synonym synInfo) = []
