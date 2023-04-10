@@ -148,26 +148,33 @@ extractInfos groups
 synTypeDefGroup :: Name -> Core.TypeDefGroup -> DefGroups Type
 synTypeDefGroup modName (Core.TypeDefGroup ctdefs)
   = -- trace ("Group info " ++ show ctdefs ++ show (concatMap (synAdvancedDef modName) ctdefs)) 
-    concatMap (synTypeDef modName) ctdefs ++ concatMap (synAdvancedDef modName) ctdefs
+    concatMap (synTypeDef modName) ctdefs ++ synAdvancedDef modName ctdefs
 
 isPrimitive name
   = nameId name `elem` [nameId nameSystemCore, nameId nameCoreHnd, nameId nameCoreTypes]
 
-synAdvancedDef :: Name -> Core.TypeDef -> DefGroups Type
-synAdvancedDef modName (Core.Synonym synInfo) = []
-synAdvancedDef modName (Core.Data dataInfo isExtend) | isHiddenName (dataInfoName dataInfo) = []
-synAdvancedDef modName (Core.Data dataInfo isExtend) | isPrimitive modName = []
-synAdvancedDef modName (Core.Data dataInfo isExtend)
---  = synEquality modName dataInfo -- For debugging
-  = if (not (dataInfoIsOpen dataInfo)
+doSynAdvancedDef :: Core.TypeDef -> Bool
+doSynAdvancedDef (Core.Synonym synInfo) = False
+doSynAdvancedDef (Core.Data dataInfo isExtend) | isHiddenName (dataInfoName dataInfo) = False
+doSynAdvancedDef (Core.Data dataInfo isExtend) = (not (dataInfoIsOpen dataInfo)
          && not (isHiddenName (conInfoName (head (dataInfoConstrs dataInfo))))
-         && hasKindStarResult (dataInfoKind dataInfo) ) then synDebugString modName dataInfo ++ synEquality modName dataInfo else []
+         && hasKindStarResult (dataInfoKind dataInfo) )
+
+getData :: Core.TypeDef -> [DataInfo]
+getData (Core.Synonym synInfo) = []
+getData (Core.Data dataInfo _) = [dataInfo]
+
+synAdvancedDef :: Name -> [Core.TypeDef] -> DefGroups Type
+synAdvancedDef modName xs
+  = let canGenerate = (all doSynAdvancedDef xs) && not (isPrimitive modName)
+        xs' = concatMap getData xs
+    in if canGenerate then [DefRec $ map (synDebugString modName) xs'] ++ [DefRec $ map (synEquality modName) xs'] else []
 
 synTypeDef :: Name -> Core.TypeDef -> DefGroups Type
 synTypeDef modName (Core.Synonym synInfo) = []
 synTypeDef modName (Core.Data dataInfo isExtend) | isHiddenName (dataInfoName dataInfo) = []
 synTypeDef modName (Core.Data dataInfo isExtend)
-  = synAccessors modName dataInfo 
+  = synAccessors modName dataInfo
     ++
     (if (length (dataInfoConstrs dataInfo) == 1 && not (dataInfoIsOpen dataInfo)
          && not (isHiddenName (conInfoName (head (dataInfoConstrs dataInfo))))
@@ -218,7 +225,7 @@ hasAccessor name tp cinfo
 mkBind :: Name -> Range -> ValueBinder (Maybe Type) (Maybe (Expr Type))
 mkBind arg r = ValueBinder arg Nothing Nothing r r
 
-synDebugString :: Name -> DataInfo -> [DefGroup Type]
+synDebugString :: Name -> DataInfo -> Def Type
 synDebugString modName info
   = let paramss = [TVar (TypeVar id kind Meta) | TypeVar id kind _ <- dataInfoParams info]
         rc  = dataInfoRange info
@@ -237,19 +244,19 @@ synDebugString modName info
         expr = Ann (Lam ((mkBind selfArg rc):fBinds) caseExpr rc) fullTp rc
         branches = concatMap makeBranch (dataInfoConstrs info)
         getTV :: Type -> Maybe Name
-        getTV ty = 
+        getTV ty =
           let d = find (\x -> case ty of {TVar xx -> x == xx; _ -> False }) tyParams
           in fmap tVarName d
-        
+
         tVarFnNames :: Type -> Range -> [(Maybe (Name, Range), Expr Type)]
-        tVarFnNames ty r = 
+        tVarFnNames ty r =
           let tvs = getTypeArgs ty
               d = filter (`elem` tvs) tyParams
               res :: [(Maybe (Name, Range), Expr Type)]
               res = map (\x -> (Nothing, Var (tVarName x) False r)) d
           -- in trace ("\n\nHere: " ++ show ty ++ ":= "  ++ show tvs ++":+" ++ show res) res
           in res
-          
+
         makeBranch :: ConInfo -> [(Visibility, Branch Type)]
         makeBranch con
           = let r = conInfoRange con
@@ -259,29 +266,29 @@ synDebugString modName info
                 appendOp = Var (newName "++") False r
                 appendStr expr1 expr2 = App appendOp [(Nothing, expr1), (Nothing, expr2)] r
                 lString s = Lit (LitString s r)
-                debugField fld ty = if isTCon ty then App (Var debug False r) [(Nothing, fld)] r 
+                debugField fld ty = if isTCon ty then App (Var debug False r) [(Nothing, fld)] r
                   else case getTV ty of
                     Just x -> App (Var x False r) [(Nothing, fld)] r
-                    Nothing -> App (Var debug False r) ((Nothing, fld):(tVarFnNames ty r)) r 
+                    Nothing -> App (Var debug False r) ((Nothing, fld):(tVarFnNames ty r)) r
                 nonFunctionFields = map snd (filter fst fields)
                 varExprs = map (\(fldN, fldT) -> appendStr (lString (nameId fldN ++ ": ")) (debugField (Var fldN False r) fldT)) nonFunctionFields
                 varExprs2 = intersperse  (lString ", ") varExprs
                 start = lString (nameId (conInfoName con) ++ "(")
-                toString = appendStr start (foldr appendStr (lString ")") varExprs2) 
+                toString = appendStr start (foldr appendStr (lString ")") varExprs2)
                 res = [(conInfoVis con, Branch (PatCon (conInfoName con) patterns r r) [Guard guardTrue toString])]
-                resNoFields = [(conInfoVis con, Branch (PatCon (conInfoName con) patterns r r) [Guard guardTrue (lString (nameId (conInfoName con)))])] 
-              in if (length varExprs2) == 0 then resNoFields else res
+                resNoFields = [(conInfoVis con, Branch (PatCon (conInfoName con) patterns r r) [Guard guardTrue (lString (nameId (conInfoName con)))])]
+              in if null varExprs2 then resNoFields else res
         caseExpr = Case (Var selfArg False rc) (map snd branches) rc
         visibility = dataInfoVis info
         doc = "// Automatically generated. Shows a string representation of the `" ++ nameId (dataInfoName info) ++ "` type.\n"
-        def = [DefRec [(Def (ValueBinder debug () expr rc rc) rc visibility (DefFun [Borrow]) InlineAlways doc)]]
+        def = Def (ValueBinder debug () expr rc rc) rc visibility (DefFun [Borrow]) InlineAlways doc
     -- in trace (show def) def
     in def
 
 primitiveEq:: DataInfo -> Bool
-primitiveEq info = all (\x -> 0 == length (conInfoParams x)) $ dataInfoConstrs info
+primitiveEq info = all (null . conInfoParams) (dataInfoConstrs info) || length (dataInfoConstrs info) == 1
 
-synEquality :: Name -> DataInfo -> [DefGroup Type]
+synEquality :: Name -> DataInfo -> Def Type
 synEquality modName info
   = let paramss = [TVar (TypeVar id kind Meta) | TypeVar id kind _ <- dataInfoParams info]
         rc  = dataInfoRange info
@@ -300,12 +307,12 @@ synEquality modName info
                   typeFun ((selfArg,dataTp):(otherArg,dataTp):fArgs) ee typeBool
         branches = concatMap makeBranch (dataInfoConstrs info)
         getTV :: Type -> Maybe Name
-        getTV ty = 
+        getTV ty =
           let d = find (\x -> case ty of {TVar xx -> x == xx; _ -> False }) tyParams
           in fmap tVarName d
-        
+
         tVarFnNames :: Type -> Range -> [(Maybe (Name, Range), Expr Type)]
-        tVarFnNames ty r = 
+        tVarFnNames ty r =
           let tvs = getTypeArgs ty
               d = filter (`elem` tvs) tyParams
               res :: [(Maybe (Name, Range), Expr Type)]
@@ -324,15 +331,15 @@ synEquality modName info
                 eqOp = Var (newName "&&") False r
                 eqExpr expr1 expr2 = App eqOp [(Nothing, expr1), (Nothing, expr2)] r
                 lString s = Lit (LitString s r)
-                eqField fldL fldR ty = if isTCon ty then App (Var eqName False r) [(Nothing, fldL), (Nothing, fldR)] r 
+                eqField fldL fldR ty = if isTCon ty then App (Var eqName False r) [(Nothing, fldL), (Nothing, fldR)] r
                   else case getTV ty of
                     Just x -> App (Var x False r) [(Nothing, fldL), (Nothing, fldR)] r
-                    Nothing -> App (Var eqName False r) ((Nothing, fldL):(Nothing, fldR):(tVarFnNames ty r)) r 
+                    Nothing -> App (Var eqName False r) ((Nothing, fldL):(Nothing, fldR):(tVarFnNames ty r)) r
                 nonFunctionFields = map snd (filter fst fields)
                 varExprs = map (\(fldN, fldT) -> (eqField (Var (newPrefixName "this-" fldN) False r) (Var (newPrefixName "other-" fldN) False r) fldT)) nonFunctionFields
-                guard = case varExprs of 
+                guard = case varExprs of
                   [] -> litBool True
-                  _ -> (foldr1 eqExpr varExprs)
+                  _ -> foldr1 eqExpr varExprs
               in [(conInfoVis con, tupleBranch (PatCon (conInfoName con) patternsL r r) (PatCon (conInfoName con) patternsR r r) guard r)]
         tupleBranch :: Pattern Type -> Pattern Type -> Expr Type -> Range -> Branch Type
         tupleBranch p1 p2 res r = Branch (PatCon (nameTuple 2) [(Nothing, p1), (Nothing, p2)] r r) [Guard guardTrue res]
@@ -343,7 +350,7 @@ synEquality modName info
         expr = Ann (Lam ((mkBind selfArg rc):(mkBind otherArg rc):fBinds) caseExpr rc) fullTp rc
         visibility = dataInfoVis info
         doc = "// Automatically generated. Equality comparison of the `" ++ nameId (dataInfoName info) ++ "` type (ignores function fields).\n"
-        def = [DefRec [(Def (ValueBinder eqName () expr rc rc) rc visibility (DefFun [Borrow]) InlineAlways doc)]]
+        def = Def (ValueBinder eqName () expr rc rc) rc visibility (DefFun [Borrow]) InlineAlways doc
     -- in trace (show def) def
     in def
 
