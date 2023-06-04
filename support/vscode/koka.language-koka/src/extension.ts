@@ -25,13 +25,14 @@ export function activate(context: vscode.ExtensionContext) {
 function createClient(config: vscode.WorkspaceConfiguration) {
   // TODO: Return all sdks and select default, but let user choose to switch between them
   const sdkPath = scanForSDK()
-  const command = config.get('languageServer.command') as string || `${sdkPath} --language-server`
-  console.log(`Koka: Language Server ${command} Workspace: ${vscode.workspace.workspaceFolders[0].uri.path}`)
+  const cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders[0].uri.path
+  const command = config.get('languageServer.command') as string || `${sdkPath} --language-server -i ${cwd}`
+  console.log(`Koka: Language Server ${command} Workspace: ${cwd}`)
   const serverOptions: ServerOptions = {
     command,
     options: {
       shell: true,
-      cwd: config.get('languageServer.cwd') || vscode.workspace.workspaceFolders[0].uri.path,
+      cwd,
     },
   };
   const clientOptions: LanguageClientOptions = {
