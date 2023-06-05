@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -6,33 +7,57 @@ import {
   ServerOptions,
 } from 'vscode-languageclient';
 
-import { scanForSDK } from './scan';
+
+import { KokaConfig, scanForSDK} from './workspace';
+import { CancellationToken, CodeLens, DebugConfiguration, DebugConfigurationProvider, EventEmitter, ProviderResult, TextDocument, WorkspaceFolder } from 'vscode';
+import { KokaDebugSession } from './debugger';
 
 let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext) {
-  const config = vscode.workspace.getConfiguration('koka');
+  const vsConfig = vscode.workspace.getConfiguration('koka');
   // We can always create the client, as it does nothing as long as it is not started
-  console.log(`Koka: language server enabled ${config.get('languageServer.enabled')}`)
+  console.log(`Koka: language server enabled ${vsConfig.get('languageServer.enabled')}`)
+  const sdkPath = scanForSDK()
+  const config = new KokaConfig(vsConfig, sdkPath)
   client = createClient(config);
-  if (config.get('languageServer.enabled')) {
+  if (vsConfig.get('languageServer.enabled')) {
     context.subscriptions.push(client.start());
   }
 
-  createCommands(context, config);
+  createCommands(context, vsConfig);
+
+  // Debug Adaptor stuff
+	context.subscriptions.push(vscode.commands.registerCommand('extension.language-koka.getProgramName', c => {
+		return vscode.window.showInputBox({
+			placeHolder: "Please enter the name of a koka file in the workspace folder",
+			value: path.relative(config.cwd, vscode.window.activeTextEditor?.document.fileName) || 'test.kk'
+		});
+	}));
+
+	// register a configuration provider for 'koka' debug type
+	const provider = new KokaRunConfigurationProvider();
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('koka', provider));
+
+	// debug adapters can be run in different ways by using a vscode.DebugAdapterDescriptorFactory:
+  // run the debug adapter as a separate process
+  let factory = new InlineDebugAdapterFactory(config);
+
+	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('koka', factory));
+
+  
+  const codeLensProvider = new MainCodeLensProvider(config);
+  context.subscriptions.push(vscode.languages.registerCodeLensProvider({language: "koka", scheme: "file" }, codeLensProvider));
+
 }
 
-function createClient(config: vscode.WorkspaceConfiguration) {
-  // TODO: Return all sdks and select default, but let user choose to switch between them
-  const sdkPath = scanForSDK()
-  const cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders[0].uri.path
-  const command = config.get('languageServer.command') as string || `${sdkPath} --language-server -i ${cwd}`
-  console.log(`Koka: Language Server ${command} Workspace: ${cwd}`)
+function createClient(config: KokaConfig) {
+  console.log(`Koka: Language Server ${config.langServerCommand} Workspace: ${config.cwd}`)
   const serverOptions: ServerOptions = {
-    command,
+    command: config.langServerCommand,
     options: {
       shell: true,
-      cwd,
+      cwd: config.cwd,
     },
   };
   const clientOptions: LanguageClientOptions = {
@@ -61,6 +86,17 @@ function createCommands(
   config: vscode.WorkspaceConfiguration,
 ) {
   context.subscriptions.push(
+    vscode.commands.registerCommand('koka.startWithoutDebugging', (resource: vscode.Uri) => {
+      const launchConfig = 
+				{
+					name: `koka run: ${resource.path}`,
+					request: "launch",
+					type: "koka",
+					program: resource.path,
+				};
+      console.log(`Launch config ${launchConfig}`);
+			vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration);
+		}),
     vscode.commands.registerCommand('koka.restartLanguageServer', () => {
       if (!config.get('languageServer.enabled'))
         return vscode.window.showErrorMessage('Language server is not enabled');
@@ -87,4 +123,78 @@ function createCommands(
       );
     }),
   );
+}
+
+
+class KokaRunConfigurationProvider implements DebugConfigurationProvider {
+
+	/**
+	 * Massage a debug configuration just before a debug session is being launched,
+	 * e.g. add all missing attributes to the debug configuration.
+	 */
+	resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+		// if launch.json is missing or empty
+		if (!config.type && !config.request && !config.name) {
+			const editor = vscode.window.activeTextEditor;
+			if (editor && editor.document.languageId === 'koka') {
+				config.type = 'koka';
+				config.name = 'Launch';
+				config.request = 'launch';
+				config.program = '${file}';
+				config.stopOnEntry = true;
+			}
+		}
+
+		if (!config.program) {
+			return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
+				return undefined;	// abort launch
+			});
+		}
+
+		return config;
+	}
+}
+
+class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+
+  constructor(private readonly config: KokaConfig){}
+
+	createDebugAdapterDescriptor(_session: vscode.DebugSession): ProviderResult<vscode.DebugAdapterDescriptor> {
+		// since DebugAdapterInlineImplementation is proposed API, a cast to <any> is required for now
+		return <any>new vscode.DebugAdapterInlineImplementation(new KokaDebugSession(this.config));
+	}
+}
+
+
+class MainCodeLensProvider implements vscode.CodeLensProvider {
+	private onDidChangeCodeLensesEmitter: EventEmitter<void> = new EventEmitter<void>();
+
+	constructor(private readonly config: KokaConfig) {}
+  
+  public async provideCodeLenses(document: TextDocument, token: CancellationToken): Promise<CodeLens[] | undefined> {
+		// Without version numbers, the best we have to tell if an outline is likely correct or stale is
+		// if its length matches the document exactly.
+		const doc = document.getText();
+    const main = doc.indexOf('main')
+    if (main < 0){
+      return [];
+    }
+		return [this.createCodeLens(document, main)];
+	}
+
+	private createCodeLens(document: TextDocument, offset: number): CodeLens {
+		return new CodeLens(
+			toRange(document, offset, 'main'.length),
+			{
+				arguments: [document.uri],
+				command: "koka.startWithoutDebugging",
+				title: `Run ${path.relative(this.config.cwd, document.uri.path)}`,
+			}
+		);
+	}
+
+}
+
+function toRange(document: TextDocument, offset: number, length: number): vscode.Range {
+	return new vscode.Range(document.positionAt(offset), document.positionAt(offset + length));
 }

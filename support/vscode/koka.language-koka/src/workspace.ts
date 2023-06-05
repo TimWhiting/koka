@@ -2,6 +2,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as vs from "vscode";
 import * as os from "os";
+import * as vscode from "vscode";
 
 export function scanForSDK(): string {
   const processPath = (process.env.PATH as string ) || "";
@@ -47,3 +48,20 @@ function findDevKokaSDK(dir: string): string {
 }
 
 const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka";
+
+
+export class KokaConfig {
+  constructor(config: vscode.WorkspaceConfiguration, sdkPath: string) {
+    this.config = config
+    this.sdkPath = sdkPath
+    // TODO: Return all sdks and select default, but let user choose to switch between them
+    this.cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders[0].uri.path
+    this.command = config.get('languageServer.command') as string || `${sdkPath}`
+    this.langServerCommand = `${this.command} --language-server -i${this.cwd}`
+  }
+  sdkPath: string
+  config: vscode.WorkspaceConfiguration
+  command: string
+  langServerCommand: string
+  cwd: string
+}
