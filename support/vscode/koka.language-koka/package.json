@@ -5,7 +5,7 @@
   "version": "2.0.5",
   "publisher": "koka",
   "engines": {
-    "vscode": "1.78.2"
+    "vscode": ">=1.78.2"
   },
   "icon": "images/koka-logo-filled.png",
   "galleryBanner": {
