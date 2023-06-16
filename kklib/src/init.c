@@ -8,7 +8,7 @@
 //#define _CRT_SECURE_NO_WARNINGS
 #include "kklib.h"
 #include "kklib/os.h"    // kk_timer_now
-
+#include <uv.h>
 #include <stdarg.h>
 #include <stdio.h>
 #ifdef WIN32
@@ -301,7 +301,13 @@ void kk_free_context(void) {
 static bool kk_showtime; // false
 
 kk_decl_export kk_context_t* kk_main_start(int argc, char** argv) {
-  kk_context_t* ctx = kk_get_context();
+  uv_loop_t* loop = kk_malloc(sizeof(uv_loop_t), kk_get_context());
+
+  uv_loop_init(loop);
+
+  kk_context_t* ctx = loop->data = kk_get_context();
+  ctx->loop = loop;
+
   // process kklib options
   if (argv != NULL && argc >= 1) {
     kk_ssize_t i;
@@ -322,10 +328,20 @@ kk_decl_export kk_context_t* kk_main_start(int argc, char** argv) {
     ctx->argc = argc - i;
     ctx->argv = (const char**)(argv + i);
   }
+
   return ctx;
 }
 
+kk_decl_export void kk_event_loop(kk_context_t* ctx){
+  // Run the event loop after the initial startup of the program
+  int ret = uv_run(ctx->loop, UV_RUN_DEFAULT);
+  if (ret != 0){
+    kk_info_message("Event loop closed with status %s", uv_err_name(ret));
+  }
+}
+
 kk_decl_export void  kk_main_end(kk_context_t* ctx) {
+  
   if (kk_showtime) {  // started with --kktime option
     kk_duration_t wall_time = kk_duration_sub(kk_timer_ticks(ctx), ctx->process_start);
     kk_msecs_t user_time;
@@ -341,6 +357,8 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
                     (peak_rss > 10*1024*1024 ? peak_rss/(1024*1024) : peak_rss/1024),
                     (peak_rss > 10*1024*1024 ? "mb" : "kb") );
   }
+  uv_loop_close(ctx->loop);
+  kk_free(ctx->loop, ctx);
 }
 
 

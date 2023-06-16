@@ -60,3 +60,12 @@ pub fun print-elapsed( action : () -> <ndet,console|e> a, msg : string = "elapse
   println( msg ++ " " ++ t.show(3) )
   x
 
+abstract struct timer (
+  internal: any
+)
+
+pub fun timer(d : duration, f : (timer) -> <console|e> bool, repeat: bool = True) : timer
+  xtimer(d, f, repeat)
+
+extern xtimer(d : duration, f : (timer) -> <console|e> bool, repeat: bool) : timer
+  c "kk_timer"

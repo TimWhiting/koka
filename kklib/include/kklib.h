@@ -43,6 +43,7 @@
 #include <math.h>             // isnan, isfinite, ...
 #include <stdio.h>            // FILE*, printf, ...
 
+#include <uv.h>
 #include "kklib/platform.h"   // Platform abstractions and portability definitions
 #include "kklib/atomic.h"     // Atomic operations
 
@@ -376,7 +377,6 @@ typedef struct kk_duration_s {
   kk_asecs_t attoseconds;  // always >= 0, use `kk_duration_norm` to normalize
 } kk_duration_t;  
 
-
 // Box any is used when yielding
 struct kk_box_any_s {
   kk_block_t    _block;
@@ -417,13 +417,13 @@ typedef struct kk_context_s {
   kk_yield_t        yield;            // inlined yield structure (for efficiency)
   int32_t           marker_unique;    // unique marker generation
   kk_block_t*       delayed_free;     // list of blocks that still need to be freed
+  uv_loop_t*     loop;             // the libuv event loop
   kk_integer_t      unique;           // thread local unique number generation
   size_t            thread_id;        // unique thread id
   kk_box_any_t      kk_box_any;       // used when yielding as a value of any type
   kk_function_t     log;              // logging function
   kk_function_t     out;              // std output
   kk_task_group_t*  task_group;       // task group for managing threads. NULL for the main thread.
-  
   struct kk_random_ctx_s* srandom_ctx;// strong random using chacha20, initialized on demand
   kk_ssize_t        argc;             // command line argument count 
   const char**      argv;             // command line arguments
@@ -465,6 +465,7 @@ static inline int32_t kk_marker_unique(kk_context_t* ctx) {
 }
 
 kk_decl_export kk_context_t* kk_main_start(int argc, char** argv);
+kk_decl_export void          kk_event_loop(kk_context_t* ctx);
 kk_decl_export void          kk_main_end(kk_context_t* ctx);
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx);
