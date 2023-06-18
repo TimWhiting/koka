@@ -49,7 +49,7 @@ fun model( net : list<linear<variable<h>>>, x: variable<h>): <pure,alloc<h>,deri
   match net.reverse
     Nil -> x
     Cons(l,ls) ->
-      val y = ls.foldr(x, fn(layer,y) linearE(layer,y).sigmoid)
+      val y = ls.foldr(x, fn(y, layer) linearE(layer, y).sigmoid)
       l.linearE(y)
 
 pub fun main() 

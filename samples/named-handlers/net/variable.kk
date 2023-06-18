@@ -2,7 +2,7 @@ module variable
 
 import tensor
 
-pub struct variable<h> {
+pub value struct variable<h> {
     data: tensor
     grad: ref<h, tensor>
 }

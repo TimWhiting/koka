@@ -72,7 +72,7 @@ pub fun list(ts: tensor): <> list<float64> {
 // unsafe code
 // return the element at position `index`  in vector `v`  without bounds check!
 pub inline extern unsafe-idx: forall<a> (v: vector<a>, i: ssize_t) -> <> a {
-  c inline "kk_vector_at_borrow(#1,#2)"
+  c inline "kk_vector_at_borrow(#1,#2,kk_context())"
 }
 
 // unsafe code

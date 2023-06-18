@@ -1,5 +1,3 @@
-public module test_layers
-
 import std/num/random //これがないとエラー
 import tensor
 import variable
