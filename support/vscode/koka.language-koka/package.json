@@ -110,11 +110,19 @@
     "commands": [
       {
         "command": "koka.restartLanguageServer",
-        "title": "Restart Koka Language Server"
+        "title": "Koka: Restart Language Server"
       },
       {
         "command": "koka.startWithoutDebugging",
-        "title": "Run a file"
+        "title": "Koka: Run current file"
+      },
+      {
+        "command": "koka.selectTarget",
+        "title": "Koka: Set compilation target"
+      },
+      {
+        "command": "koka.selectSDK",
+        "title": "Koka: Set sdk path"
       }
     ],
     "debuggers": [{
