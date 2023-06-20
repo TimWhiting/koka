@@ -265,14 +265,15 @@ ruTryReuseCon cname repr conApp | isConAsJust repr  -- never try to reuse a Just
 ruTryReuseCon cname repr conApp | "_noreuse" `isSuffixOf` nameId (conTypeName repr)
   = return conApp -- special case to allow benchmarking the effect of reuse analysis
 ruTryReuseCon cname repr conApp
-  = do newtypes <- getNewtypes
+  = do -- newtypes <- getNewtypes
        platform <- getPlatform
        let size = conReprAllocSize platform repr
        available <- getAvailable
        -- ruTrace $ "try reuse: " ++ show (getName cname) ++ ": " ++ show size
        case M.lookup size available of
-         Just (rinfo0:rinfos0)
-           -> do let (rinfo,rinfos) = pick cname rinfo0 rinfos0
+         Just (rinfo:rinfos)
+           -> do -- let (rinfo,rinfos) = pick cname rinfo0 rinfos0
+                 -- Picking can prevent reuse in FIP programs, disabled for now.
                  setAvailable (M.insert size rinfos available)
                  markReused (reuseName rinfo)
                  return (genAllocAt rinfo conApp)
@@ -559,6 +560,15 @@ isolateGetReused action
        setReused r0
        return (x,r1)
 
+{-
+getConstructorSize :: TName -> ConRepr -> Reuse Int
+getConstructorSize conName conRepr
+  = do newtypes <- getNewtypes
+       platform <- getPlatform
+       let (size,_) = constructorSizeOfByName platform newtypes (getName conName) conRepr
+       return size
+-}     
+
 --------------------------------------------------------------------------
 -- Tracing
 --------------------------------------------------------------------------
@@ -624,14 +634,22 @@ getFixedDataAllocSize platform newtypes dataType
 {-
 
 -- return the allocated size of a constructor. Return 0 for value types or singletons
-constructorSizeOf :: Platform -> Newtypes -> TName -> ConRepr -> (Int {- byte size -}, Int {- scan fields -})
-constructorSizeOf _ _ _ repr | "_noreuse" `isSuffixOf` nameId (conTypeName repr)
+constructorSizeOf :: Platform -> Newtypes -> ConInfo -> ConRepr -> (Int {- byte size -}, Int {- scan fields -})
+constructorSizeOf platform newtypes conInfo conRepr 
+  = constructorSizeOfX platform newtypes (TName (conInfoName conInfo) (conInfoType conInfo)) conRepr
+
+-- return the allocated size of a constructor. Return 0 for value types or singletons
+-- note: expects the general type of the constructor in TName -- not an instantiated type!
+constructorSizeOfX :: Platform -> Newtypes -> TName -> ConRepr -> (Int {- byte size -}, Int {- scan fields -})
+constructorSizeOfX _ _ _ repr | "_noreuse" `isSuffixOf` nameId (conTypeName repr)
   = (0,0) -- special case to allow benchmarking the effect of reuse analysis
-constructorSizeOf platform newtypes conName conRepr
+constructorSizeOfX platform newtypes conName conRepr
   = let dataRepr = conDataRepr conRepr
     in case splitFunScheme (typeOf conName) of
         Just (_,_,tpars,_,_)
-          -> constructorSize platform newtypes dataRepr (map snd tpars)
+          -> let (size,scan) = constructorSize platform newtypes dataRepr (map snd tpars)
+             in -- trace ("constructor: " ++ show conName ++ ": size: " ++ show size ++ ", scan: " ++ show scan ++ ", " ++ show tpars) $
+                (size,scan)
         _ -> -- trace ("constructor not a function: " ++ show conName ++ ": " ++ show (pretty (typeOf conName))) $
             (0,0)
 
@@ -652,7 +670,7 @@ constructorSize platform newtypes dataRepr paramTypes
 -- return the ordered fields, the byte size of the allocation, and the scan count (including tags)
 orderConFieldsEx :: Platform -> Newtypes -> Bool -> [(Name,Type)] -> ([(Name,Type)],Int,Int)
 orderConFieldsEx platform newtypes isOpen fields
-  = visit ([],[],[],0) fields
+  = visit ([],[],[],0) fields    
   where
     visit (rraw, rmixed, rscan, scanCount0) []
       = if (length rmixed > 1)

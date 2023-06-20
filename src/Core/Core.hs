@@ -67,7 +67,7 @@ module Core.Core ( -- Data structures
                    , isConNormal
                    , isConIso, isConAsJust
                    , isDataStruct, isDataAsMaybe, isDataStructAsMaybe
-                   , conReprAllocSize, conReprAllocSizeScan
+                   , conReprAllocSize, conReprAllocSizeScan, conReprScanCount
                    , getDataRepr, getDataReprEx, dataInfoIsValue
                    , getConRepr
                    , dataReprIsValue, conReprIsValue
@@ -122,7 +122,7 @@ import Common.Id
 import Common.Error
 import Common.NamePrim( nameTrue, nameFalse, nameTuple, nameTpBool, nameEffectOpen, nameReturn, nameTrace, nameLog,
                         nameEvvIndex, nameOpenAt, nameOpenNone, nameInt32, nameSSizeT, nameBox, nameUnbox,
-                        nameVector, nameCons, nameNull, nameTpList, nameUnit, nameTpUnit, nameTpCField,
+                        nameVector, nameCons, nameNull, nameTpList, nameUnit, nameTpUnit, nameTpFieldAddr,
                         isPrimitiveName, isSystemCoreName, nameKeep, nameDropSpecial)
 import Common.Syntax
 import Kind.Kind
@@ -278,9 +278,10 @@ data External = External{ externalName :: Name
                         , externalType :: Scheme
                         , externalParams :: [ParamInfo]
                         , externalFormat :: [(Target,String)]
-                        , externalVis' :: Visibility
+                        , externalVis'  :: Visibility
+                        , externalFip   :: Fip
                         , externalRange :: Range
-                        , externalDoc :: String
+                        , externalDoc   :: String
                         }
               | ExternalImport { externalImport :: [(Target,[(String,String)])]
                                , externalRange :: Range }
@@ -396,6 +397,9 @@ isDataStructAsMaybe _ = False
 isConAsJust (ConAsJust{}) = True 
 isConAsJust _             = False
 
+conReprScanCount :: ConRepr -> Int
+conReprScanCount conRepr = valueReprScanCount (conValRepr conRepr)
+
 -- Return the allocation size (0 for value types)
 conReprAllocSize :: Platform -> ConRepr -> Int
 conReprAllocSize platform conRepr  = fst (conReprAllocSizeScan platform conRepr)
@@ -448,7 +452,7 @@ getDataReprEx getIsValue info
          -- else if (hasExistentials)
          --  then (DataNormal, map (\con -> ConNormal typeName) conInfos)
          else if (isValue
-                    && (null (dataInfoParams info) || typeName == nameTpCField)
+                    && (null (dataInfoParams info) || typeName == nameTpFieldAddr)
                     && all (\con -> null (conInfoParams con)) conInfos)
           then (DataEnum,map (\ci -> ConEnum typeName DataEnum (conInfoValueRepr ci)) conInfos)
          else if (length conInfos == 1)
@@ -557,14 +561,14 @@ data InlineDef = InlineDef{
 defIsVal :: Def -> Bool
 defIsVal def
   = case defSort def of
-      DefFun _ -> False
+      DefFun{} -> False
       _        -> True
 
 defParamInfos :: Def -> [ParamInfo]
 defParamInfos def
   = case defSort def of
-      DefFun pinfos -> pinfos
-      _             -> []
+      DefFun pinfos _ -> pinfos
+      _               -> []
 
 inlineDefIsSpecialize :: InlineDef -> Bool
 inlineDefIsSpecialize inlDef = not (null (inlineParamSpecialize inlDef))
@@ -1072,7 +1076,7 @@ addLambdasTName pars eff e            = Lam pars eff e
 -- | Bind a variable inside a term
 addNonRec :: Name -> Type -> Expr -> (Expr -> Expr)
 addNonRec x tp e e' 
-  = Let [DefNonRec (Def x tp e Private (if isValueExpr e then DefVal else DefFun [] {-all owned?-}) InlineAuto rangeNull "")] e'
+  = Let [DefNonRec (Def x tp e Private (if isValueExpr e then DefVal else defFun [] {-all owned?-}) InlineAuto rangeNull "")] e'
 
 -- | Is an expression a value or a function
 isValueExpr :: Expr -> Bool

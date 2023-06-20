@@ -20,7 +20,7 @@ Notes:
   the same in a scope.
 ----------------------------------------------------------------------------}
 
-module Backend.C.Parc ( parcCore ) where
+module Backend.C.Parc ( parcCore, getDataDef' ) where
 
 import Lib.Trace (trace)
 import Control.Monad
@@ -87,10 +87,10 @@ parcDef topLevel def
 --------------------------------------------------------------------------
 
 parcTopLevelExpr :: DefSort -> Expr -> Parc Expr
-parcTopLevelExpr (DefFun bs) expr
+parcTopLevelExpr ds@(DefFun bs _) expr
   = case expr of
       TypeLam tpars body
-        -> TypeLam tpars <$> parcTopLevelExpr (DefFun bs) body
+        -> TypeLam tpars <$> parcTopLevelExpr ds body
       Lam pars eff body
         -> do let parsBs = zip pars $ bs ++ repeat Own
               let parsSet = S.fromList $ map fst $ filter (\x -> snd x == Own) parsBs
@@ -162,7 +162,7 @@ parcExpr expr
                               -> do name <- uniqueName "res" -- name the result
                                     return def{defName = name}
                             _ -> return def
-              body1 <- ownedInScope (bv def1) $ parcExpr (Let dgs body)
+              body1 <- ownedInScope (S.singleton $ defTName def1) $ parcExpr (Let dgs body)
               def2  <- parcDef False def1
               return $ makeLet [DefNonRec def2] body1
       Let (DefRec _ : _) _
@@ -459,10 +459,10 @@ inferShapes scrutineeNames pats
   where shapesOf :: TName -> Pattern -> Parc ShapeMap
         shapesOf parent pat
           = case pat of
-              PatCon{patConPatterns,patConName,patConRepr}
+              PatCon{patConPatterns,patConName,patConRepr,patConInfo}
                 -> do ms <- mapM shapesChild patConPatterns
-                      scan <- getConstructorScanFields patConName patConRepr
-                      let m  = M.unionsWith noDup ms
+                      let scan = conReprScanCount patConRepr
+                          m  = M.unionsWith noDup ms
                           shape = ShapeInfo (Just (tnamesFromList (map patName patConPatterns)))
                                             (Just (patConRepr,getName patConName)) (Just scan)
                       return (M.insert parent shape m)
@@ -591,7 +591,7 @@ getBoxForm' platform newtypes tp
         -> -- trace "  0 scan fields" $
            case extractDataDefType tp of
              Just name
-               | name `elem` [nameTpInt, nameTpCField] ||
+               | name `elem` [nameTpInt, nameTpFieldAddr] ||
                  ((name `elem` [nameTpInt8, nameTpInt16, nameTpFloat16]) && sizePtr platform > 2) ||
                  ((name `elem` [nameTpChar, nameTpInt32, nameTpFloat32]) && sizePtr platform > 4)
                    -> BoxIdentity
@@ -689,7 +689,7 @@ genDupDrop isDup tname mbConRepr mbScanCount
               in case mbDi of
                 Just di -> case (dataInfoDef di, dataInfoConstrs di, snd (getDataRepr di)) of
                              (DataDefNormal, [conInfo], [conRepr])  -- data with just one constructor
-                               -> do scan <- getConstructorScanFields (TName (conInfoName conInfo) (conInfoType conInfo)) conRepr
+                               -> do let scan = conReprScanCount conRepr
                                      -- parcTrace $ "  add scan fields: " ++ show scan ++ ", " ++ show tname
                                      return (Just (dupDropFun isDup tp (Just (conRepr,conInfoName conInfo)) (Just scan) (Var tname InfoNone)))
                              (DataDefValue vr, _, _) | valueReprIsRaw vr
@@ -832,17 +832,6 @@ withNewtypes f = withEnv (\e -> e { newtypes = f (newtypes e) })
 getPlatform :: Parc Platform
 getPlatform = platform <$> getEnv
 
-
-getConstructorScanFields :: TName -> ConRepr -> Parc Int
-getConstructorScanFields conName conRepr
-  = do return (valueReprScanCount (conValRepr conRepr))
-       -- platform <- getPlatform
-       -- newtypes <- getNewtypes
-       -- let (size,scan) = -- (constructorSizeOf platform newtypes conName conRepr)        
-       -- parcTrace $ "get size " ++ show conName ++ ": " ++ show (size,scan) ++ ", " ++ show conRepr
-       -- return scan
-
---
 
 getOwned :: Parc Owned
 getOwned = owned <$> getEnv

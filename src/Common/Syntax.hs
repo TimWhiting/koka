@@ -13,9 +13,10 @@ module Common.Syntax( Visibility(..)
                     , Assoc(..)
                     , Fixity(..)
                     , DataKind(..)
-                    , DefSort(..), isDefFun, defFun
+                    , DefSort(..), isDefFun, defFun, defFunEx, defSortShowFull
                     , ParamInfo(..)
                     , DefInline(..)
+                    , Fip(..), FipAlloc(..), fipIsTail, fipAlloc, noFip, isNoFip
                     , Target(..), CTarget(..), JsTarget(..), isTargetC, isTargetJS, isTargetWasm
                     , isPublic, isPrivate
                     , DataDef(..)
@@ -268,7 +269,10 @@ valueReprScan n = ValueRepr 0 n 0
 --------------------------------------------------------------------------}
 
 data DefSort
-  = DefFun [ParamInfo] | DefVal | DefVar
+  = DefFun { defFunParamInfos :: [ParamInfo],
+             defFunFip        :: Fip } 
+  | DefVal 
+  | DefVar
   deriving Eq
 
 data ParamInfo 
@@ -276,15 +280,26 @@ data ParamInfo
   | Own
   deriving(Eq,Show)  
 
-isDefFun (DefFun _)  = True
+isDefFun (DefFun {})  = True
 isDefFun _           = False
 
+defFunEx :: [ParamInfo] -> Fip -> DefSort
+defFunEx pinfos fip = if all (==Own) pinfos then DefFun [] fip else DefFun pinfos fip
+
 defFun :: [ParamInfo] -> DefSort
-defFun pinfos = if all (==Own) pinfos then DefFun [] else DefFun pinfos
+defFun pinfos = defFunEx pinfos noFip
+
+defSortShowFull :: DefSort -> String
+defSortShowFull ds
+  = case ds of
+      DefFun pinfos fip -> show fip ++ "fun"
+      DefVal -> "val"
+      DefVar -> "var"
+
 
 instance Show DefSort where
   show ds = case ds of
-              DefFun _ -> "fun"
+              DefFun{} -> "fun"
               DefVal -> "val"
               DefVar -> "var"
 
@@ -314,3 +329,72 @@ data Assoc  = AssocNone
             | AssocRight
             | AssocLeft
             deriving (Eq,Show)
+
+
+{--------------------------------------------------------------------------
+  Fip
+--------------------------------------------------------------------------}
+data Fip = Fip   { fipAlloc_ :: FipAlloc }
+         | Fbip  { fipAlloc_ :: FipAlloc, fipTail :: Bool }
+         | NoFip { fipTail :: Bool }
+         deriving (Eq,Ord)
+
+data FipAlloc = AllocAtMost Int | AllocFinitely | AllocUnlimited
+         deriving (Eq)
+
+instance Ord FipAlloc where
+  compare a1 a2
+    = case (a1, a2) of
+        (AllocAtMost n, AllocAtMost m) -> compare n m
+        (_            , AllocAtMost _) -> GT
+
+        (AllocAtMost n, AllocFinitely) -> LT
+        (AllocFinitely, AllocFinitely) -> EQ
+        (AllocUnlimited, AllocFinitely) -> GT
+
+        (AllocUnlimited, AllocUnlimited) -> EQ
+        (_             , AllocUnlimited) -> LT
+
+instance Semigroup FipAlloc where
+  AllocAtMost n <> AllocAtMost m = AllocAtMost (n + m)
+  _ <> _ = AllocFinitely
+
+instance Monoid FipAlloc where
+  mempty = AllocAtMost 0
+
+noFip :: Fip
+noFip = NoFip False
+
+isNoFip (NoFip _) = True
+isNoFip _         = False
+
+fipIsTail :: Fip -> Bool
+fipIsTail fip 
+  = case fip of 
+      Fbip _ t -> t
+      NoFip t  -> t
+      _        -> True
+
+fipAlloc :: Fip -> FipAlloc
+fipAlloc fip 
+  = case fip of
+      Fip n    -> n
+      Fbip n _ -> n
+      NoFip _  -> AllocUnlimited
+
+instance Show Fip where
+  show fip  = case fip of
+                Fip n       -> "fip" ++ showN n
+                Fbip n t    -> showTail t ++ "fbip" ++ showN n
+                NoFip t     -> showTail t
+            where
+              showN (AllocAtMost 0) = " "
+              showN (AllocAtMost n) = "(" ++ show n ++ ") "
+              showN AllocFinitely   = "(n) "
+              showN AllocUnlimited  = ""
+
+              showTail True  = "tail "
+              showTail _     = " "
+
+              
+         

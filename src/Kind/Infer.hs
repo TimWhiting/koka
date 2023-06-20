@@ -191,7 +191,7 @@ synCopyCon modName info con
         params = [ValueBinder name Nothing (if not (hasAccessor name t con) then Nothing else (Just (app (var name) [var argName]))) rc rc| (name,t) <- conInfoParams con]
         expr = Lam ([ValueBinder argName Nothing Nothing rc rc] ++ params) body rc
         body = app (var (conInfoName con)) [var name | (name,tp) <- conInfoParams con]
-        def  = DefNonRec (Def (ValueBinder nameCopy () (Ann expr fullTp rc) rc rc) rc (dataInfoVis info) (DefFun []) InlineAuto "")
+        def  = DefNonRec (Def (ValueBinder nameCopy () (Ann expr fullTp rc) rc rc) rc (dataInfoVis info) (defFun []) InlineAuto "")
     in def
 
 hasAccessor :: Name -> Type -> ConInfo -> Bool
@@ -251,7 +251,7 @@ synAccessors modName info
                 messages
                   = [Lit (LitString (sourceName (posSource (rangeStart rng)) ++ show rng) rng), Lit (LitString (show name) rng)]
                 doc = "// Automatically generated. Retrieves the `" ++ show name ++ "` constructor field of the `:" ++ nameId (dataInfoName info) ++ "` type.\n"
-            in DefNonRec (Def (ValueBinder name () expr rng rng) rng visibility (DefFun [Borrow]) InlineAlways doc)
+            in DefNonRec (Def (ValueBinder name () expr rng rng) rng visibility (defFunEx [Borrow] noFip) InlineAlways doc)
 
     in map synAccessor fields
 
@@ -269,7 +269,7 @@ synTester info con
         branch2   = Branch (PatWild rc) [Guard guardTrue (Var nameFalse False rc)]
         patterns  = [(Nothing,PatWild rc) | _ <- conInfoParams con]
         doc = "// Automatically generated. Tests for the `" ++ nameId (conInfoName con) ++ "` constructor of the `:" ++ nameId (dataInfoName info) ++ "` type.\n"
-    in [DefNonRec (Def (ValueBinder name () expr rc rc) rc (conInfoVis con) (DefFun [Borrow]) InlineAlways doc)]
+    in [DefNonRec (Def (ValueBinder name () expr rc rc) rc (conInfoVis con) (defFunEx [Borrow] (Fip (AllocAtMost 0))) InlineAlways doc)]
 
 synConstrTag :: (ConInfo) -> DefGroup Type
 synConstrTag (con)
@@ -398,7 +398,7 @@ infExternals externals
            return (ext:exts)
 
 infExternal :: [Name] -> External -> KInfer (Core.External,[Name])
-infExternal names (External name tp pinfos nameRng rng calls vis doc)
+infExternal names (External name tp pinfos nameRng rng calls vis fip doc)
   = do tp' <- infResolveType tp (Check "Externals must be values" rng)
        qname <- qualifyDef name
        let cname = let n = length (filter (==qname) names) in
@@ -409,7 +409,7 @@ infExternal names (External name tp pinfos nameRng rng calls vis doc)
                 addRangeInfo rng (Decl "external" qname (mangle cname tp'))
        -- trace ("infExternal: " ++ show cname ++ ": " ++ show (pretty tp')) $
        return (Core.External cname tp' pinfos (map (formatCall tp') calls)
-                  vis nameRng doc, qname:names)
+                  vis fip nameRng doc, qname:names)
 infExternal names (ExternalImport imports range)
   = return (Core.ExternalImport imports range, names)
 

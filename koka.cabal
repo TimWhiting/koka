@@ -53,11 +53,13 @@ executable koka
       Compiler.Module
       Compiler.Options
       Compiler.Package
+      Core.AnalysisCCtx
       Core.AnalysisMatch
       Core.AnalysisResume
       Core.BindingGroups
       Core.Borrowed
       Core.Check
+      Core.CheckFBIP
       Core.Core
       Core.CoreVar
       Core.CTail

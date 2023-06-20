@@ -446,10 +446,12 @@ genTypeDefPre (Data info isExtend)
        -- generate the type declaration
        if (dataRepr == DataEnum)
         then let enumIntTp = case (dataInfoDef info) of
-                               DataDefValue (ValueRepr 1 0 _) -> "uint8_t"
-                               DataDefValue (ValueRepr 2 0 _) -> "uint16_t"
-                               DataDefValue (ValueRepr 4 0 _) -> "uint32_t"
-                               _                              -> "uint64_t"
+                               DataDefValue (ValueRepr n 0 _) 
+                                -> if (n <= 1) then "uint8_t"
+                                   else if (n <= 2) then "uint16_t"
+                                   else if (n <= 4) then "uint32_t"
+                                   else "uint64_t"
+                               _ -> "kk_intb_t"  -- should not happen?
                  ppEnumCon (con,conRepr)
                            = ppName (conInfoName con)  -- <+> text "= datatype_enum(" <.> pretty (conTag conRepr) <.> text ")"
              in  emitToH $ ppVis (dataInfoVis info) <.> text "enum" <+> ppName (typeClassName (dataInfoName info)) <.> text "_e" <+>
@@ -1090,7 +1092,11 @@ genDropNCall tp args  = -- genDupDropCallX "dropn" tp (arguments args)
 
 genHoleCall :: Type -> Doc
 genHoleCall tp        = --  ppType tp <.> text "_hole()")
-                        text "kk_datatype_null()"
+                        case cType tp of
+                          CPrim "kk_integer_t" -> text "kk_integer_zero"
+                          CPrim "kk_string_t"  -> text "kk_string_empty()"
+                          CPrim "kk_vector_t"  -> text "kk_vector_empty()"
+                          _      -> text "kk_datatype_null()"
 
 
 conBaseCastNameInfo :: ConInfo -> Doc
@@ -1312,7 +1318,7 @@ cTypeCon c
          then CPrim "kk_box_t"
         else if (name == nameTpReuse)
          then CPrim "kk_reuse_t"
-        else if (name == nameTpCField)
+        else if (name == nameTpFieldAddr)
          then CPrim "kk_box_t*"
         else CData (typeClassName name)
 
@@ -1379,16 +1385,20 @@ tryTailCall result expr
       = fmap (debugWrap "genOverride") $
         do (stmts, varNames) <- do -- args' <- mapM tailCallArg args
                                    let args' = args
-                                   bs    <- mapM genVarBinding args'
+                                   bs    <- mapM (genTailVarBinding params) (zip params args')
                                    return (unzip bs)
            docs1             <- mapM genDefName params
            docs2             <- mapM genDefName varNames
            let assigns    = map (\(p,a)-> if p == a
                                             then debugComment ("genOverride: skipped overriding `" ++ (show p) ++ "` with itself")
-                                            else debugComment ("genOverride: preparing tailcall") <.> p <+> text "=" <+> a <.> semi
+                                            else p <+> text "=" <+> a <.> semi
                                 ) (zip docs1 docs2)
            return $ vcat (stmts ++ assigns)
 
+    genTailVarBinding params (param,expr)
+      = case expr of
+          Var tn _ | tn /= param && tn `elem` params -> genVarBindingAlways expr
+          _ -> genVarBinding expr
 
 -- | Generates a statement from an expression by applying a return context (deeply) inside
 genStat :: Result -> Expr -> Asm Doc
@@ -1511,11 +1521,11 @@ genBranch result exprDocs doTest branch@(Branch patterns guards)
 
 genGuards :: Result -> [Guard] -> Bindings -> Asm Doc
 genGuards result guards bindings
-  = do docs <- mapM (genGuard bindings result) guards
+  = do (docs, _) <- foldM (genGuard result) ([], bindings) guards
        return (vcat docs)
 
-genGuard :: Bindings -> Result -> Guard-> Asm Doc
-genGuard bindings result (Guard guard expr)
+genGuard :: Result -> ([Doc], Bindings) -> Guard -> Asm ([Doc], Bindings)
+genGuard result (docs, bindings) (Guard guard expr)
   = do let guardFree = freeLocals guard
            exprFree  = freeLocals expr
            (bindsGuard,bindsOther) = partition (\(name,_) -> tnamesMember name guardFree) bindings
@@ -1524,11 +1534,11 @@ genGuard bindings result (Guard guard expr)
        case guard of
          Con tname repr | getName tname == nameTrue
            -> do doc <- genStat result expr
-                 return (vcat (guardLocals ++ exprLocals ++ [doc]))
+                 return (docs ++ [vcat (guardLocals ++ exprLocals ++ [doc])], bindsOther)
          _ -> do (gddoc,gdoc) <- genExpr guard
                  sdoc <- genStat result expr
-                 return (vcat $ guardLocals ++ gddoc ++ [text "if" <+> parensIf gdoc <+> 
-                                                         block (vcat (exprLocals ++ [sdoc]))])
+                 return (docs ++ [vcat $ guardLocals ++ gddoc ++ [text "if" <+> parensIf gdoc <+> 
+                                                         block (vcat (exprLocals ++ [sdoc]))]], bindsOther)
 
 parensIf :: Doc -> Doc -- avoid parens if already parenthesized
 parensIf d
@@ -1753,13 +1763,16 @@ genVarBinding :: Expr -> Asm (Doc, TName)
 genVarBinding expr
   = case expr of
       Var tn _ | not (isQualified (getName tn))-> return $ (empty, tn)
-      _        -> do name <- newVarName "x"
-                     let tp = typeOf expr
-                         tname = TName name tp
-                     doc <- genStat (ResultAssign tname Nothing) expr
-                     if (dstartsWith doc (show (ppName name) ++ " ="))
-                       then return (ppType tp <+> doc, tname)
-                       else return (ppVarDecl tname <.> unitSemi tp  <-> doc, tname)
+      _        -> genVarBindingAlways expr
+        
+genVarBindingAlways expr
+  =  do name <- newVarName "x"
+        let tp = typeOf expr
+            tname = TName name tp
+        doc <- genStat (ResultAssign tname Nothing) expr
+        if (dstartsWith doc (show (ppName name) ++ " ="))
+          then return (ppType tp <+> doc, tname)
+          else return (ppVarDecl tname <.> unitSemi tp  <-> doc, tname)
 
 
 ---------------------------------------------------------------------------------
@@ -1896,23 +1909,23 @@ genAppNormal (Var (TName conFieldsAssign typeAssign) _) (Var reuseName (InfoConF
        return (decls ++ [tmpDecl] ++ assigns, result)
 
 -- special: cfield-hole
-genAppNormal (Var unbox _) [App (Var cfieldHole _) []] | getName cfieldHole == nameCFieldHole && getName unbox == nameUnbox
+genAppNormal (Var unbox _) [App (Var cfieldHole _) []] | getName cfieldHole == nameCCtxHoleCreate && getName unbox == nameUnbox
   = return ([], genHoleCall (resultType (typeOf unbox))) -- ppType (resultType (typeOf unbox)) <.> text "_hole()")
 
 -- special: cfield-of
-genAppNormal (Var cfieldOf _) [App (Var box _) [App (Var dup _) [Var con _]], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameCFieldOf && getName dup == nameDup
+genAppNormal (Var cfieldOf _) [App (Var box _) [App (Var dup _) [Var con _]], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf && getName dup == nameDup
   = do let doc = genFieldAddress con (readQualified conName) (readQualified fieldName)
        return ([],text "(kk_box_t*)" <.> parens doc)
 
-genAppNormal (Var cfieldOf _) [App (Var box _) [Var con _], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameCFieldOf
+genAppNormal (Var cfieldOf _) [App (Var box _) [Var con _], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf
  = do let drop = map (<.> semi) (genDupDropCall False (typeOf con) (ppName (getName con)))
           doc = genFieldAddress con (readQualified conName) (readQualified fieldName)
       return (drop,text "(kk_box_t*)" <.> parens doc)
 
--- special: ctail-set-context-path
-genAppNormal (Var ctailSetContextPath _) [conExpr, Lit (LitString conName), Lit (LitString fieldName)]  | getName ctailSetContextPath == nameCTailSetCtxPath
+-- special: cctx-set-context-path
+genAppNormal (Var ctailSetContextPath _) [conExpr, Lit (LitString conName), Lit (LitString fieldName)]  | getName ctailSetContextPath == nameCCtxSetCtxPath
  = do (decl,conVar) <- genVarBinding conExpr
-      let doc = genCTailSetContextPath conVar (readQualified conName) (readQualified fieldName)
+      let doc = genCCtxSetContextPath conVar (readQualified conName) (readQualified fieldName)
       return ([decl],doc)
 
 -- add/sub small constant 
@@ -1978,9 +1991,9 @@ genFieldAddress :: TName -> Name -> Name -> Doc
 genFieldAddress conVar conName fieldName
   = parens (text "&" <.> conAsNameX (conName) <.> arguments [ppName (getName conVar)] <.> text "->" <.> ppName (unqualify fieldName))
 
-genCTailSetContextPath :: TName -> Name -> Name -> Doc
-genCTailSetContextPath conVar conName fieldName
-  = text "kk_ctail_set_context_path" <.> 
+genCCtxSetContextPath :: TName -> Name -> Name -> Doc
+genCCtxSetContextPath conVar conName fieldName
+  = text "kk_cctx_setcp" <.> 
       arguments [-- conAsNameX conName, 
                  ppName (getName conVar),  
                  text "offsetof" <.> tupled [text "struct" <+> ppName conName, ppName (unqualify fieldName)]]
@@ -2126,7 +2139,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameReuse
     in return ([], call)
 
 -- special case: cfield hole
-genExprExternal tname formats [] | getName tname == nameCFieldHole
+genExprExternal tname formats [] | getName tname == nameCCtxHoleCreate
   = return ([], genHoleCall (resultType (typeOf tname))) -- ppType (resultType (typeOf tname)) <.> text "_hole()")
 
 {-
@@ -2230,7 +2243,7 @@ isInlineableExpr expr
       Lit (LitString _)-> False
 
       -- C has no guarantee on argument evaluation so we only allow a select few operations to be inlined
-      App (Var v (InfoExternal _)) [] -> getName v `elem` [nameYielding,nameReuseNull,nameCFieldHole]
+      App (Var v (InfoExternal _)) [] -> getName v `elem` [nameYielding,nameReuseNull,nameCCtxHoleCreate]
       -- App (Var v (InfoExternal _)) [arg] | getName v `elem` [nameBox,nameDup,nameInt32] -> isInlineableExpr arg
       App (Var v _) [arg] | getName v `elem` [nameBox,nameInt32,nameReuse,nameReuseIsValid,nameIsUnique] -> isInlineableExpr arg
 

@@ -292,6 +292,7 @@ reservedNames
     , "ctl", "final", "raw"
     , "if", "then", "else", "elif"
     , "return", "match", "with", "in"
+    , "ctx", "hole"
     , "forall", "exists", "some"
     , "pub", "abstract"
     , "module", "import", "as"

@@ -70,15 +70,30 @@ module Common.NamePrim
           , nameAllocAt, nameConFieldsAssign, nameConTagFieldsAssign, nameReuseDrop
           , nameDropSpecial, nameKeep, nameSetTag
 
-          -- * CTail optimization
-          , nameTpCField, nameTpCTailAcc
+          -- * TRMC optimization, constructor contexts
+          , nameTpCCtxx, nameTpCCtx
+          , nameCCtxCreate 
+          , nameCCtxHoleCreate
+          , nameCCtxEmpty
+          , nameCCtxApply
+          , nameCCtxExtend
+          , nameCCtxCompose
+          , nameCCtxComposeExtend
+          , nameCCtxSetCtxPath
+          , nameTpFieldAddr, nameFieldAddrOf
+          
+          {-
+          , nameTpCField, 
+          , nameTpCTailAcc
           , nameCFieldHole
+
           -- , nameCFieldSet
           , nameCFieldOf
           , nameCTailUnit
           , nameCTailCompose
           , nameCTailApply
           , nameCTailSetCtxPath
+          -}
 
           -- * Constructors
           , nameTrue, nameFalse
@@ -268,6 +283,7 @@ nameTpMDict     = qualify nameDict (newName "mdict")
 nameTpDict      = qualify nameDict (newName "dict")
 nameTpBuilder   = qualify (newName "std/text/string") (newName "builder")
 
+{-
 nameTpCTailAcc    = cfieldName "ctail"
 nameTpCField      = cfieldName "cfield"
 nameCFieldHole    = cfieldName ".cfield-hole"
@@ -276,7 +292,26 @@ nameCTailUnit     = cfieldName ".ctail-unit"
 nameCTailCompose  = cfieldName ".ctail-compose"
 nameCTailApply    = cfieldName ".ctail-apply"
 nameCTailSetCtxPath=cfieldName ".ctail-set-context-path"
+-}
+
 cfieldName name   = coreTypesName name
+
+nameTpCCtxx       = cfieldName "cctx"
+nameTpCCtx        = cfieldName "ctx"
+
+nameCCtxCreate    = cfieldName ".cctx-create"
+nameCCtxHoleCreate= cfieldName ".cctx-hole-create"
+nameCCtxExtend    = cfieldName ".cctx-extend"
+nameCCtxComposeExtend = cfieldName ".cctx-compose-extend"
+nameCCtxEmpty     = cfieldName "cctx-empty"
+nameCCtxSetCtxPath= cfieldName ".cctx-setcp"
+
+nameCCtxApply     = cfieldName "([])"
+nameCCtxCompose   = cfieldName "(++)"
+
+
+nameTpFieldAddr   = cfieldName "field-addr"
+nameFieldAddrOf   = cfieldName ".field-addr-of"
 
 {--------------------------------------------------------------------------
   std/core/hnd

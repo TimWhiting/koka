@@ -59,12 +59,13 @@ import Syntax.Colorize        ( colorize )
 import Core.GenDoc            ( genDoc )
 import Core.Check             ( checkCore )
 import Core.UnReturn          ( unreturn )
+import Core.CheckFBIP         ( checkFBIP )
 import Core.OpenResolve       ( openResolve )
 import Core.FunLift           ( liftFunctions )
 import Core.Monadic           ( monTransform )
 import Core.MonadicLift       ( monadicLift )
 import Core.Inlines           ( inlinesExtends, extractInlineDefs, inlinesMerge, inlinesToList, inlinesFilter, inlinesNew )
-import Core.Borrowed          ( Borrowed )
+import Core.Borrowed          ( Borrowed, borrowedExtendICore )
 import Core.Inline            ( inlineDefs )
 import Core.Specialize
 import Core.Unroll            ( unrollDefs )
@@ -215,7 +216,7 @@ compileExpression term flags loaded compileTarget program line input
                               [(qnameShow,_)]
                                 -> do let expression = mkApp (Var (qualify nameSystemCore (newName "println")) False r)
                                                         [mkApp (Var qnameShow False r) [mkApp (Var qnameExpr False r) []]]
-                                      let defMain = Def (ValueBinder (qualify (getName program) nameMain) () (Lam [] expression r) r r)  r Public (DefFun []) InlineNever ""
+                                      let defMain = Def (ValueBinder (qualify (getName program) nameMain) () (Lam [] expression r) r r)  r Public (defFun []) InlineNever ""
                                       let programDef' = programAddDefs programDef [] [defMain]
                                       compileProgram' term flags (loadedModules ld) (Executable nameMain ()) "<interactive>" programDef'
                                       return ld
@@ -486,7 +487,7 @@ compileProgram' term flags modules compileTarget fname program
                                                 expression = App (Var (if (isHiddenName mainName) then mainName -- .expr
                                                                                                   else unqualify mainName -- main
                                                                       ) False r) [] r
-                                                defMain    = Def (ValueBinder (unqualify mainName2) () (Lam [] (f expression) r) r r)  r Public (DefFun []) InlineNever  ""
+                                                defMain    = Def (ValueBinder (unqualify mainName2) () (Lam [] (f expression) r) r r)  r Public (defFun []) InlineNever ""
                                                 program2   = programAddDefs program [] [defMain]
                                             in do (loaded3,_) <- typeCheck loaded1 flags 0 coreImports program2
                                                   return (Executable mainName2 tp, loaded3) -- TODO: refine the type of main2
@@ -523,9 +524,10 @@ checkUnhandledEffects flags loaded name range tp
                                -> let defaultHandlerName = makeHiddenName "default" effName
                                   in -- trace ("looking up: " ++ show defaultHandlerName) $
                                      case gammaLookupQ defaultHandlerName (loadedGamma loaded) of
-                                        [InfoFun _ dname _ _ _]
+                                        [fun@InfoFun{}]
                                           -> trace ("add default effect for " ++ show effName) $
-                                             let g mfx expr = let r = getRange expr
+                                             let dname = infoCName fun
+                                                 g mfx expr = let r = getRange expr
                                                               in App (Var dname False r) [(Nothing,Lam [] (maybe expr (\f -> f expr) mfx) r)] r
                                              in if (effName == nameTpAsync)  -- always put async as the most outer effect
                                                  then do mf' <- combine eff mf ls
@@ -901,6 +903,8 @@ inferCheck loaded0 flags line coreImports program
        -- remove return statements
        unreturn penv
        -- checkCoreDefs "unreturn"
+       let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = cdefs }) (loadedBorrowed loaded)
+       checkFBIP penv (platform flags) (loadedNewtypes loaded) borrowed gamma
 
        -- initial simplify
        let ndebug  = optimize flags > 0
