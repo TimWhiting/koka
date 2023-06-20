@@ -43,7 +43,9 @@
 #include <math.h>             // isnan, isfinite, ...
 #include <stdio.h>            // FILE*, printf, ...
 
+#ifndef __EMSCRIPTEN__
 #include <uv.h>
+#endif
 #include "kklib/platform.h"   // Platform abstractions and portability definitions
 #include "kklib/atomic.h"     // Atomic operations
 
@@ -417,7 +419,9 @@ typedef struct kk_context_s {
   kk_yield_t        yield;            // inlined yield structure (for efficiency)
   int32_t           marker_unique;    // unique marker generation
   kk_block_t*       delayed_free;     // list of blocks that still need to be freed
-  uv_loop_t*     loop;             // the libuv event loop
+#ifndef __EMSCRIPTEN__
+  uv_loop_t*     loop;                // the libuv event loop
+#endif
   kk_integer_t      unique;           // thread local unique number generation
   size_t            thread_id;        // unique thread id
   kk_box_any_t      kk_box_any;       // used when yielding as a value of any type
@@ -465,7 +469,9 @@ static inline int32_t kk_marker_unique(kk_context_t* ctx) {
 }
 
 kk_decl_export kk_context_t* kk_main_start(int argc, char** argv);
+#ifndef __EMSCRIPTEN__
 kk_decl_export void          kk_event_loop(kk_context_t* ctx);
+#endif
 kk_decl_export void          kk_main_end(kk_context_t* ctx);
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx);

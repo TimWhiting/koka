@@ -1305,6 +1305,8 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
                          ++ ccompLinkSysLibs flags
                          ++ (if onWindows && not (isTargetWasm (target flags))
                               then ["bcrypt","psapi","advapi32"]
+                            else if isTargetWasm (target flags)
+                              then ["m","pthread"]
                               else ["m","pthread","uv"])
                 libs   = -- ["kklib"] -- [normalizeWith '/' (outName flags (ccLibFile cc "kklib"))] ++ ccompLinkLibs flags
                          -- ++ 

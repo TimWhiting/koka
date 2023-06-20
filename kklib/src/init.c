@@ -8,7 +8,9 @@
 //#define _CRT_SECURE_NO_WARNINGS
 #include "kklib.h"
 #include "kklib/os.h"    // kk_timer_now
+#ifndef __EMSCRIPTEN__
 #include <uv.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #ifdef WIN32
@@ -301,12 +303,17 @@ void kk_free_context(void) {
 static bool kk_showtime; // false
 
 kk_decl_export kk_context_t* kk_main_start(int argc, char** argv) {
+
+#ifndef __EMSCRIPTEN__
   uv_loop_t* loop = kk_malloc(sizeof(uv_loop_t), kk_get_context());
 
   uv_loop_init(loop);
 
   kk_context_t* ctx = loop->data = kk_get_context();
   ctx->loop = loop;
+#else
+  kk_context_t* ctx = kk_get_context();
+#endif
 
   // process kklib options
   if (argv != NULL && argc >= 1) {
@@ -332,6 +339,7 @@ kk_decl_export kk_context_t* kk_main_start(int argc, char** argv) {
   return ctx;
 }
 
+#ifndef __EMSCRIPTEN__
 kk_decl_export void kk_event_loop(kk_context_t* ctx){
   // Run the event loop after the initial startup of the program
   int ret = uv_run(ctx->loop, UV_RUN_DEFAULT);
@@ -339,6 +347,7 @@ kk_decl_export void kk_event_loop(kk_context_t* ctx){
     kk_info_message("Event loop closed with status %s", uv_err_name(ret));
   }
 }
+#endif
 
 kk_decl_export void  kk_main_end(kk_context_t* ctx) {
   
@@ -357,8 +366,10 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
                     (peak_rss > 10*1024*1024 ? peak_rss/(1024*1024) : peak_rss/1024),
                     (peak_rss > 10*1024*1024 ? "mb" : "kb") );
   }
+#ifndef __EMSCRIPTEN__
   uv_loop_close(ctx->loop);
   kk_free(ctx->loop, ctx);
+#endif
 }
 
 
