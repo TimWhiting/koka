@@ -11,7 +11,7 @@ export function scanForSDK(): SDKs {
   const paths = processPath.split(path.delimiter).filter((p) => p)
 
   const dev = path.join(process.env.HOME, 'koka', '.stack-work', 'install', os.arch().replace('x64', 'x86_64') + "-" + os.platform().replace('darwin', 'osx'))
-  let defaultSDK = ""
+  let defaultSDK = null
   let allSDKs = []
   if (fs.existsSync(dev)){
     // Prioritize dev
@@ -27,16 +27,16 @@ export function scanForSDK(): SDKs {
   const local = path.join(process.env.HOME,'.local/bin')
   for (const p of [local].concat(paths)){
     if (fs.existsSync(path.join(p, kokaExeName))){
-      vs.window.showInformationMessage(`Using Koka SDK at ${p}`)
       console.log("Koka: Found build of koka at " + p)
       const sdkPath = path.join(p, kokaExeName)
       allSDKs.push(sdkPath)
-      if (defaultSDK === ""){
+      if (defaultSDK === null){
         defaultSDK = sdkPath
+        vs.window.showInformationMessage(`Using Koka SDK at ${p}`)
       }
     }
   }
-  if (defaultSDK === "") {
+  if (defaultSDK === null) {
     console.log('Koka: No Koka SDK found')
     vs.window.showWarningMessage("Koka SDK not found on path or in ~/.local/bin")
   } else {
