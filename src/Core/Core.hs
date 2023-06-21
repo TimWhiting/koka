@@ -102,7 +102,7 @@ module Core.Core ( -- Data structures
                    , CorePhase
                    , getCoreDefs, setCoreDefs, withCoreDefs
                    , runCorePhase
-                   , liftCorePhase, liftCorePhaseUniq
+                   , liftCorePhase, liftCorePhaseUniq, liftCorePhaseRes
                    , liftError
                    ) where
 
@@ -642,6 +642,10 @@ runCorePhase uniq (CP cp)
 liftCorePhaseUniq :: (Int -> DefGroups -> (DefGroups,Int)) -> CorePhase ()
 liftCorePhaseUniq f
   = CP (\uniq defs -> let (defs',uniq') = f uniq defs in return (CPState () uniq' defs'))
+
+liftCorePhaseRes :: (Int -> DefGroups -> (a,Int)) -> CorePhase a
+liftCorePhaseRes f
+  = CP (\uniq defs -> let (a,uniq') = f uniq defs in return (CPState a uniq' defs))
 
 liftCorePhase :: (DefGroups -> DefGroups) -> CorePhase ()
 liftCorePhase f

@@ -32,6 +32,8 @@ extra-deps:
 - lsp-types-2.0.1.0             # only needed for language server
 - text-rope-0.2                 # needed for lsp
 - co-log-core-0.3.2.0           # needed for lsp
+- git: https://github.com/IagoAbal/haskell-z3.git
+  commit: b77a17e5eeb7db82656bcbcd66c6e952207e69ca
 
 rebuild-ghc-options: true
 allow-newer: true

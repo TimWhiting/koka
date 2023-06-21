@@ -13,6 +13,14 @@
   
 --------------------------------------------------------------------------------------*/
 
+
+#ifdef WIN32
+typedef struct _stat64  kk_stat_t;
+#else
+typedef struct stat     kk_stat_t;
+#endif
+typedef int kk_file_t;
+
 kk_decl_export kk_string_t kk_os_app_path(kk_context_t* ctx);
 kk_decl_export kk_string_t kk_os_realpath(kk_string_t fname, kk_context_t* ctx);
 kk_decl_export kk_string_t kk_os_path_sep(kk_context_t* ctx);
@@ -31,6 +39,8 @@ kk_decl_export int  kk_os_copy_file(kk_string_t from, kk_string_t to, bool prese
 kk_decl_export bool kk_os_is_directory(kk_string_t path, kk_context_t* ctx);
 kk_decl_export bool kk_os_is_file(kk_string_t path, kk_context_t* ctx);
 kk_decl_export int  kk_os_list_directory(kk_string_t dir, kk_vector_t* contents, kk_context_t* ctx);
+kk_decl_export int  kk_posix_fstat(kk_file_t f, kk_stat_t* st);
+kk_decl_export int  kk_posix_open(kk_string_t path, int flags, int create_perm, kk_file_t* f, kk_context_t* ctx);
 
 kk_decl_export int  kk_os_run_command(kk_string_t cmd, kk_string_t* output, kk_context_t* ctx);
 kk_decl_export int  kk_os_run_system(kk_string_t cmd, kk_context_t* ctx);

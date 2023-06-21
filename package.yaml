@@ -37,6 +37,7 @@ dependencies:
   - time
   - network-simple
   - network
+  - z3 >= 408.2
   - isocline >= 1.0.6
   
 executables:

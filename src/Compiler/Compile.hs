@@ -115,6 +115,7 @@ import Lib.Trace
 
 import qualified Data.Map
 import Core.Core (Core(coreProgImports))
+import Core.DemandAnalysis (analyzeProgram)
 
 
 {--------------------------------------------------------------------------
@@ -996,6 +997,8 @@ inferCheck loaded0 flags line coreImports program
        -- Assemble core program and return
        coreDefsFinal <- Core.getCoreDefs
        uniqueFinal   <- unique
+       res <- analyzeProgram loaded
+       traceM ("analyzeProgram: " ++ show res)
        -- traceM ("final: " ++ show uniqueFinal)
        let -- extract inline definitions to export
            localInlineDefs  = extractInlineDefs (optInlineMax flags) coreDefsInlined

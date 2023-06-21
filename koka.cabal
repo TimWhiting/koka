@@ -63,11 +63,13 @@ executable koka
       Core.Core
       Core.CoreVar
       Core.CTail
+      Core.DemandAnalysis
       Core.Divergent
       Core.FunLift
       Core.GenDoc
       Core.Inline
       Core.Inlines
+      Core.IntegerOptimization
       Core.Monadic
       Core.MonadicLift
       Core.OpenResolve
@@ -171,6 +173,7 @@ executable koka
     , text
     , text-rope
     , time
+    , z3 >=408.2
   default-language: Haskell2010
   if os(windows)
     cpp-options: -DWINDOWS
@@ -212,4 +215,5 @@ test-suite koka-test
     , text
     , text-rope
     , time
+    , z3 >=408.2
   default-language: Haskell2010

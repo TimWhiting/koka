@@ -32,9 +32,11 @@ import Kind.Assumption        ( kgammaFilter )
 import LanguageServer.Run     ( runLanguageServer )
 import Type.Assumption        ( ppGamma, ppGammaHidden, gammaFilter, createNameInfoX, gammaNew )
 import Type.Pretty            ( ppScheme, Env(context,importsMap) )
+import Core.IntegerOptimization (testIntZ3)
 
 
 -- compiled entry
+-- main = testIntZ3
 main      = mainArgs ""
 
 -- ghci entry
