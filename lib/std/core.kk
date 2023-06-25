@@ -1586,8 +1586,8 @@ pub fun substr( slice: sslice, start : int, end : int ): sslice
   val Sslice(s, st, len) = slice
   val newst = st + start
   val newLen = end - start
-  if newst + newLen > len then
-    Sslice(s, newst, len - start)
+  if newst + newLen > s.count then
+    Sslice(s, newst, s.count - newst)
   else
     Sslice(s, newst, newLen) 
 
