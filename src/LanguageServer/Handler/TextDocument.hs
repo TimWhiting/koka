@@ -62,7 +62,7 @@ recompileFile flags uri version force =
       vFile <- getVirtualFile normUri
       let contents = vFile <&> (T.encodeUtf8 . virtualFileText)
 
-      sendNotification J.SWindowLogMessage $ J.LogMessageParams J.MtInfo $ T.pack ("Recompiling " ++ show contents) <> T.pack filePath
+      sendNotification J.SWindowLogMessage $ J.LogMessageParams J.MtInfo $ T.pack ("Recompiling " ++ show uri) <> T.pack filePath
       loaded <- liftIO $ compileModuleOrFile terminal flags [] filePath contents True
       case checkError loaded of
         Right (l, _) -> do
