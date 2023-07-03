@@ -562,7 +562,7 @@ fun phexdouble() : parse float64
 
 fun pdecdouble() : parse float64
   val cur  = current-input()
-  val man  = digits()
+  val man  = digits0()
   val frac = optional("", { char('.'); digits0() }).trim-right("0")
   val exp : int = optional( 0, { one-of("eE"); pint() })
   //val m : int = (man ++ frac).parse-int-default(0)
