@@ -1,0 +1,38 @@
+# benchmark variant param elapsed relative stddev rss
+kk rbtree fip 100000 0.01   0
+kk rbtree fip-icfp 100000 0.01   0
+kk rbtree std-reuse 100000 0.01   0
+kk rbtree std 100000 0.01   0
+kk rbtree fip-clrs 100000 0.01   0
+c rbtree clrs 100000 0.01   0
+c rbtree clrs-mi 100000 0.01   0
+c rbtree clrs-full 100000 0.01   0
+c rbtree clrs-full-mi 100000 0.01   0
+cpp rbtree stl 100000 0.01   0
+cpp rbtree stl-mi 100000 0.01   0
+##
+
+kk ftree fip 100000 0.01   0
+kk ftree std-reuse 100000 0.01   0
+kk ftree std 100000 0.01   0
+##
+
+kk msort fip 100000 0.01   0
+kk msort std-reuse 100000 0.01   0
+kk msort std 100000 0.01   0
+##
+
+kk qsort fip 100000 0.01   0
+kk qsort std-reuse 100000 0.01   0
+kk qsort std 100000 0.01   0
+##
+
+kk tmap fip 100000 0.01   0
+kk tmap std-reuse 100000 0.01   0
+kk tmap std 100000 0.01   0
+c tmap fip 100000 0.01   0
+c tmap fip-mi 100000 0.01   0
+c tmap std 100000 0.01   0
+c tmap std-mi 100000 0.01   0
+##
+
