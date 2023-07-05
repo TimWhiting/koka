@@ -302,11 +302,32 @@ void kk_free_context(void) {
 --------------------------------------------------------------------------------------------------*/
 static bool kk_showtime; // false
 
+
+// UV allocator helpers, getting thread local context
+
+static inline void* kk_malloc_ctx(size_t size) {
+  return kk_malloc(size, kk_get_context());
+}
+
+static inline void* kk_realloc_ctx(void* p, size_t size) {
+  return kk_realloc(p, size, kk_get_context());
+}
+
+static inline void* kk_calloc_ctx(size_t count, size_t size) {
+  void* p = kk_malloc(count*size, kk_get_context());
+  kk_memset(p, 0, count*size);
+  return p;
+}
+
+static inline void kk_free_ctx(void* p) {
+  kk_free(p, kk_get_context());
+}
+
 kk_decl_export kk_context_t* kk_main_start(int argc, char** argv) {
 
 #ifndef __EMSCRIPTEN__
   uv_loop_t* loop = kk_malloc(sizeof(uv_loop_t), kk_get_context());
-
+  uv_replace_allocator(kk_malloc_ctx, kk_realloc_ctx, kk_calloc_ctx, kk_free_ctx);
   uv_loop_init(loop);
 
   kk_context_t* ctx = loop->data = kk_get_context();

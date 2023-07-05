@@ -12,7 +12,7 @@ static kk_std_core_types__tuple2_ kk_timer_ticks_tuple(kk_context_t* ctx) {
   // we cannot do this more precisely as the api expects the fraction between 0.0 and 2.0 (for leap seconds).  
   double secs = (double)d.seconds;
   double frac = (double)d.attoseconds * 1e-18;
-  return kk_std_core_types__new_dash__lp__comma__rp_( kk_double_box(secs,ctx), kk_double_box(frac,ctx), ctx );
+  return kk_std_core_types__new_dash__lp__comma__rp_( kk_double_box(secs,ctx), kk_double_box(frac, ctx), ctx );
 }
 
 static double kk_timer_dresolution(kk_context_t* ctx) {
@@ -36,9 +36,9 @@ static void kk_handle_timer(uv_timer_t* timer){
   // TODO: Is this the right context? Evidence vector should be empty since this is top level callback?
   kk_context_t* ctx = t->ctx;
   // Returns false if the timer should be canceled
-  kk_function_t f = kk_function_dup(t->fun);
-  kk_std_time_timer__timer timer_dup = kk_std_time_timer__timer_dup(t->timer);
-  bool res = kk_function_call(bool, (kk_function_t, kk_std_time_timer__timer, kk_context_t*), f, (f, timer_dup, ctx));
+  kk_function_t f = kk_function_dup(t->fun, ctx);
+  kk_std_time_timer__timer timer_dup = kk_std_time_timer__timer_dup(t->timer, ctx);
+  bool res = kk_function_call(bool, (kk_function_t, kk_std_time_timer__timer, kk_context_t*), f, (f, timer_dup, ctx), ctx);
 
   if (t->repeat == false || res == false){
     kk_info_message("Timer stopping\n");
@@ -58,7 +58,7 @@ static kk_std_time_timer__timer kk_timer(kk_std_time_duration__duration timeout,
   kk_box_t b = { (uintptr_t)timer };
   kk_std_time_timer__timer result = kk_std_time_timer__new_Timer(b, ctx);
 
-  kk_function_t f = kk_function_dup(fun);
+  kk_function_t f = kk_function_dup(fun, ctx);
   double secs = kk_std_num_ddouble_float64(timeout.secs, ctx);
   uint64_t ms = (uint64_t)(secs * 1000.0);
   kk_info_message("Timer scheduled for %d ms\n", ms);
