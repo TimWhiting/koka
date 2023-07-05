@@ -25,7 +25,6 @@ typedef struct kk_timer_s {
   kk_std_time_duration__duration duration;
   kk_std_time_timer__timer timer;
   kk_function_t fun;
-  kk_context_t* ctx;
   bool repeat;
 } kk_timer_t;
 
@@ -33,8 +32,8 @@ typedef struct kk_timer_s {
 static void kk_handle_timer(uv_timer_t* timer){
   kk_info_message("Timer being handled\n");
   kk_timer_t* t = timer->data;
-  // TODO: Is this the right context? Evidence vector should be empty since this is top level callback?
-  kk_context_t* ctx = t->ctx;
+  // TODO: The context evidence vector needs some thought. Should it be duped / saved
+  kk_context_t* ctx = kk_get_context();
   // Returns false if the timer should be canceled
   kk_function_t f = kk_function_dup(t->fun, ctx);
   kk_std_time_timer__timer timer_dup = kk_std_time_timer__timer_dup(t->timer, ctx);
@@ -67,7 +66,6 @@ static kk_std_time_timer__timer kk_timer(kk_std_time_duration__duration timeout,
   timer->duration = timeout;
   timer->timer_req.data = timer;
   timer->fun = f;
-  timer->ctx = ctx;
   timer->timer = result;
 
   uv_timer_init(ctx->loop, &timer->timer_req);

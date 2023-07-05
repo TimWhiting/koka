@@ -1342,6 +1342,7 @@ ccompile term flags cc ctargetObj extraIncDirs csources
                       , ccFlagsBuildFromFlags cc flags
                       , ccFlagsCompile cc
                       , ccIncludeDir cc (localShareDir flags ++ "/kklib/include")
+                      , ccIncludeDir cc (localShareDir flags ++ "/kklib/libuv/include")
                       ]
                       ++
                       map (ccIncludeDir cc) (extraIncDirs ++ ccompIncludeDirs flags)
