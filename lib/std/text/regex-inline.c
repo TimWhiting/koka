@@ -179,7 +179,7 @@ static kk_std_core__list kk_regex_slice_exec_ex( pcre2_code* re, pcre2_match_dat
       kk_ssize_t send   = groups[i*2 + 1];
       kk_assert(send >= sstart);
       kk_std_core__sslice sslice_result = kk_std_core__new_Sslice( kk_string_dup(sslice.str,ctx), kk_integer_from_ssize_t(sstart + start,ctx), kk_integer_from_ssize_t(send - sstart,ctx), ctx ); 
-      hd = kk_std_core__new_Cons(kk_reuse_null,kk_std_core__sslice_box(sslice_result,ctx), hd, ctx);
+      hd = kk_std_core__new_Cons(kk_reuse_null,0,kk_std_core__sslice_box(sslice_result,ctx), hd, ctx);
       if (i == 0) {
         if (mstart != NULL) { *mstart = sstart; }
         if (end    != NULL) { *end = send; }
