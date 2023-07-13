@@ -39,4 +39,8 @@
 #include "thread.c"
 #include "time.c"
 #include "vector.c"
+#if defined(__wasi__)
+#include "wasm_alloc.c"
+#include "wasm.c"
+#endif
 

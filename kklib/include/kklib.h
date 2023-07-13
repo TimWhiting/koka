@@ -523,6 +523,11 @@ static inline void kk_free_local(const void* p, kk_context_t* ctx) {
 #define kk_malloc_usable_size(p)  mi_usable_size(p)
 
 #else
+
+#if defined(__wasi__)
+#include "kklib/wasm_alloc.h"
+#endif
+
 static inline void* kk_malloc(kk_ssize_t sz, kk_context_t* ctx) {
   kk_unused(ctx);
   return malloc((size_t)sz);
@@ -551,7 +556,7 @@ static inline void kk_free_local(const void* p, kk_context_t* ctx) {
   kk_free(p,ctx);
 }
 
-#if defined(__linux__) || defined(__GLIBC__)
+#if defined(__linux__) || defined(__GLIBC__) ||  defined(__wasi__)
 #include <malloc.h>
 #define kk_malloc_usable_size(p)  malloc_usable_size(p)
 #elif defined(__APPLE__)
@@ -1368,8 +1373,9 @@ static inline kk_datatype_t kk_cctx_setcp(kk_datatype_t d, size_t field_offset, 
 #include "kklib/os.h"
 #include "kklib/thread.h"
 #include "kklib/process.h"    // Process info (memory usage, run time etc.)
-
-
+#if defined(__wasi__)
+#include "kklib/wasm.h"
+#endif
 
 /*----------------------------------------------------------------------
   Thread local context operations

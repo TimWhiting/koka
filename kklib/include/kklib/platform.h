@@ -235,7 +235,11 @@
 #define kk_assign_const(tp,field) ((tp*)&(field))[0]
 
 // Assertions; kk_assert_internal is only enabled when KK_DEBUG_FULL is defined
+#if !defined(__wasi__)
 #define kk_assert(x)          assert(x)
+#else 
+#define kk_assert(x)         ((void)0)
+#endif
 #ifdef KK_DEBUG_FULL
 #define kk_assert_internal(x) kk_assert(x)
 #else

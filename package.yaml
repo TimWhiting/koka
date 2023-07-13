@@ -38,6 +38,7 @@ dependencies:
   - network-simple
   - network
   - isocline >= 1.0.6
+  - filepath
   
 executables:
   koka:

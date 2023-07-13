@@ -127,7 +127,7 @@ genModule ctarget buildType sourceDir penv platform newtypes borrowed0 enableReu
         emitToH (linebreak <.> text "// value declarations")
         genTopGroups (coreProgDefs core)
 
-        genMain (coreProgName core) platform stackSize mbMain
+        genMain (coreProgName core) ctarget platform stackSize mbMain
 
         emitToDone $ vcat [text "static bool _kk_done = false;"
                           ,text "if (_kk_done) return;"
@@ -219,9 +219,9 @@ importExternalInclude ctarget buildType sourceDir ext
       _ -> []
 
 
-genMain :: Name -> Platform -> Int -> Maybe (Name,Bool) -> Asm ()
-genMain progName platform stackSize Nothing = return ()
-genMain progName platform stackSize (Just (name,_))
+genMain :: Name -> CTarget -> Platform -> Int -> Maybe (Name,Bool) -> Asm ()
+genMain progName target platform stackSize Nothing = return ()
+genMain progName target platform stackSize (Just (name,_))
   = emitToC $
     text "\n// main exit\nstatic void _kk_main_exit(void)" <+> block (vcat [
             text "kk_context_t* _ctx = kk_get_context();",
@@ -233,13 +233,17 @@ genMain progName platform stackSize (Just (name,_))
       , if stackSize == 0 then empty else
         text $ "kk_os_set_stack_size(KK_IZ(" ++ show stackSize ++ "));"
       , text "kk_context_t* _ctx = kk_main_start(argc, argv);"
+      , if (isCTargetWasm target) then text "kk_js_init(_ctx);" else empty
       , ppName (qualify progName (newName ".init")) <.> parens (text "_ctx") <.> semi
-      , text "atexit(&_kk_main_exit);"
+      , if (isCTargetWasm target) then empty else text "atexit(&_kk_main_exit);"
       , ppName name <.> parens (text "_ctx") <.> semi
       , ppName (qualify progName (newName ".done")) <.> parens (text "_ctx") <.> semi
       , text "kk_main_end(_ctx);"
       , text "return 0;"
-      ])
+      ]) <->
+      if (isCTargetWasm target) then text "\n// main wasm\nvoid WASM_EXPORT(_start)(int argc, char** argv)" <+> block (vcat [
+          text "main(argc, argv);"
+        ]) else empty
 
 ---------------------------------------------------------------------------------
 -- Generate C statements for value definitions
@@ -1241,7 +1245,7 @@ genLambda params eff body
        
        let 
            -- fieldDocs = [ppType tp <+> ppName name | (name,tp) <- allFields]
-           tpDecl  = if null fields then text "" else text "typedef struct" <+> ppName canonicalFunTpName <+> ppName funTpName <.> semi -- <-> text "kk_struct_packed_end"
+           tpDecl  = if null fields then empty else text "typedef struct" <+> ppName canonicalFunTpName <+> ppName funTpName <.> semi -- <-> text "kk_struct_packed_end"
 
            funSig  = text (if toH then "extern" else "static") <+> ppType (typeOf body)
                      <+> ppName funName <.> parameters ([text "kk_function_t _fself"] ++
@@ -1382,7 +1386,7 @@ cPrimCanBeBoxed prim
 getResult :: Result -> Doc -> Doc
 getResult result doc
   = if isEmptyDoc doc
-      then text ""
+      then empty
       else getResultX result doc
 
 getResultX result (retDoc)
@@ -1478,7 +1482,7 @@ genExprStat result expr
                    <- fmap unzip $
                       mapM (\e-> if isInlineableExpr e && isTypeBool (typeOf e)
                                    then do d       <- genInline e
-                                           return (text "", d)
+                                           return (empty, d)
                                    else do (sd,vn) <- genVarBinding e
                                            vd      <- genDefName vn
                                            return (sd, vd)

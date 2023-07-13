@@ -677,7 +677,7 @@ processOptions flags0 opts
                            else return (ccompPath flags)
                    (cc,asan) <- ccFromPath flags ccmd
                    ccCheckExist cc
-                   let stdAlloc = if asan then True else useStdAlloc flags   -- asan implies useStdAlloc
+                   let stdAlloc = if (asan || isTargetWasm (target flags)) then True else useStdAlloc flags   -- asan implies useStdAlloc
                        cdefs    = ccompDefs flags 
                                    ++ (if stdAlloc then [] else [("KK_MIMALLOC",show (sizePtr (platform flags)))])
                                    ++ (if (buildType flags > DebugFull) then [] else [("KK_DEBUG_FULL","")])
@@ -689,7 +689,7 @@ processOptions flags0 opts
                    -- (vcpkgRoot,vcpkg) <- vcpkgFindRoot (vcpkgRoot flags)
                    let triplet          = if (not (null (vcpkgTriplet flags))) then vcpkgTriplet flags
                                             else if (isTargetWasm (target flags))
-                                              then ("wasm" ++ show (8*sizePtr (platform flags)) ++ "-emscripten")
+                                              then ("wasm" ++ show (8*sizePtr (platform flags)))
                                               else tripletArch ++ 
                                                     (if onWindows 
                                                         then (if (ccName cc `startsWith` "mingw") 
@@ -909,6 +909,7 @@ conanSettingsFromFlags flags cc
 type Args = [String]
 
 data CC = CC{  ccName       :: String,
+               ccLinkerName   :: String,
                ccPath       :: FilePath,               
                ccFlags      :: Args,
                ccFlagsBuild :: [(BuildType,Args)],
@@ -1006,11 +1007,11 @@ ccFlagsBuildFromFlags cc flags
 
 gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
           words "-Wno-unknown-pragmas -Wno-missing-field-initializers" ++
-          words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value"
+          words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value -Wno-unused-function"
 
 ccGcc,ccMsvc :: String -> Int -> Platform -> FilePath -> CC
 ccGcc name opt platform path
-  = CC name path []
+  = CC name name path []
         ([(DebugFull,     ["-g","-O0","-fno-omit-frame-pointer"] ++ arch),
           (Debug,         ["-g","-Og"] ++ arch),
           (RelWithDebInfo,["-O2", "-g", "-DNDEBUG"] ++ arch),
@@ -1041,7 +1042,7 @@ ccGcc name opt platform path
               else []
 
 ccMsvc name opt platform path
-  = CC name path ["-DWIN32","-nologo"] 
+  = CC name name path ["-DWIN32","-nologo"] 
          [(DebugFull,words "-MDd -Zi -Od -RTC1"),
           (Debug,words "-MDd -Zi -O1"),
           (Release,words "-MD -O2 -Ob2 -DNDEBUG"),
@@ -1071,9 +1072,20 @@ ccFromPath flags path
                        ccLibFile = \lib -> "lib" ++ lib ++ ".a",
                        ccFlagStack = (\stksize -> if stksize > 0 then ["-Wl,--stack," ++ show stksize] else [])
                      }
-        emcc    = gcc{ ccFlagsCompile = ccFlagsCompile gcc ++ ["-D__wasi__"],
-                       ccFlagStack = (\stksize -> if stksize == 0 then [] else ["-s","TOTAL_STACK=" ++ show stksize]),
-                       ccFlagHeap  = (\hpsize -> if hpsize == 0 then [] else ["-s","TOTAL_MEMORY=" ++ show hpsize]),
+        clangwasm    = gcc{ ccFlagsCompile = ccFlagsCompile gcc ++ 
+                            ["-D__wasi__", "-mreference-types", "-mbulk-memory", 
+                            if System.Info.os == "darwin" then "--sysroot=/Users/timwhiting/Downloads/wasi-sysroot" else "--sysroot=/home/tim/Downloads/wasi-sysroot", 
+                            "--target=wasm32"],
+                       ccLinkerName = "wasm-ld",
+                       ccPath = if System.Info.os == "darwin" then "/Users/timwhiting/build-llvm/bin/clang" else "/home/tim/build-llvm/bin/clang",
+                       ccFlagsBuild = [(DebugFull,     ["-Oz", "-fno-builtin", "-DNDEBUG"]),
+                            (Debug,         ["-Oz", "-fno-builtin", "-DNDEBUG"]),
+                            (RelWithDebInfo,["-Oz", "-fno-builtin", "-DNDEBUG"]),
+                            (Release,       ["-Oz", "-fno-builtin", "-DNDEBUG"]) ],
+                       ccFlagStack = (\x -> []),
+                       ccFlagHeap = (\x -> []),
+                      --  ccFlagStack = (\stksize -> if stksize == 0 then [] else ["-s","TOTAL_STACK=" ++ show stksize]),
+                      --  ccFlagHeap  = (\hpsize -> if hpsize == 0 then [] else ["-s","TOTAL_MEMORY=" ++ show hpsize]),
                        ccTargetExe = (\out -> ["-o", out ++ targetExeExtension (target flags)]),
                        ccTargetObj = (\fname -> ["-o", (notext fname) ++ targetObjExtension (target flags)]),
                        ccObjFile   = (\fname -> fname ++ targetObjExtension (target flags)),
@@ -1093,7 +1105,7 @@ ccFromPath flags path
 
         cc0     | (name `startsWith` "clang-cl") = clangcl
                 | (name `startsWith` "mingw") = mingw
-                | (name `startsWith` "emcc") = emcc
+                | (name `startsWith` "clang" && isTargetWasm (target flags)) = clangwasm
                 | (name `startsWith` "clang" || name `startsWith` "musl-clang") = clang
                 | (name `startsWith` "musl-gcc" || name `startsWith` "musl-g++") = gcc
                 | (name `startsWith` "gcc" || name `startsWith` "g++")   = if onWindows then mingw else gcc
@@ -1105,7 +1117,7 @@ ccFromPath flags path
         cc = cc0{ ccFlagsCompile = ccFlagsCompile cc0 ++ ccompCompileArgs flags
                 , ccFlagsLink    = ccFlagsLink cc0 ++ ccompLinkArgs flags }
 
-    in do when (isTargetWasm (target flags) && not (name `startsWith` "emcc")) $
+    in do when (isTargetWasm (target flags) && not (name `startsWith` "clang")) $
             putStrLn ("\nwarning: a wasm target should use the emscripten compiler (emcc),\n  but currently '" 
                        ++ ccPath cc ++ "' is used." 
                        ++ "\n  hint: specify the emscripten path using --cc=<emcc path>?")   
@@ -1201,7 +1213,7 @@ detectCC :: Target -> IO String
 detectCC target
   = do paths <- getEnvPaths "PATH"
        (name,path) <- do envCC <- getEnvVar "CC"
-                         findCC paths ((if (isTargetWasm target) then ["emcc"] else []) ++
+                         findCC paths ((if (isTargetWasm target) then ["clang"] else []) ++
                                        (if (envCC=="") then [] else [envCC]) ++
                                        (if (onMacOS) then ["clang"] else []) ++
                                        (if (onWindows) then ["clang-cl","cl"] else []) ++

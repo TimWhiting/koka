@@ -32,7 +32,8 @@ module Compiler.Compile( -- * Compile
 import Lib.Trace              ( trace )
 import Data.Char              ( isAlphaNum, toLower, isSpace )
 
-import System.Directory       ( createDirectoryIfMissing, canonicalizePath, getCurrentDirectory, doesDirectoryExist )
+import System.FilePath        ( replaceFileName, takeDirectory, takeFileName )
+import System.Directory       ( copyFile, createDirectoryIfMissing, canonicalizePath, getCurrentDirectory, doesDirectoryExist, listDirectory )
 import Data.Maybe             ( catMaybes, fromJust )
 import Data.List              ( isPrefixOf, intersperse )
 import qualified Data.Set as S
@@ -115,6 +116,9 @@ import Lib.Trace
 
 import qualified Data.Map
 import Core.Core (Core(coreProgImports))
+import System.Info
+import Data.Text as T (replace,pack,unpack)
+import System.IO (readFile')
 
 
 {--------------------------------------------------------------------------
@@ -1314,7 +1318,7 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
                          ++ ccompLinkSysLibs flags
                          ++ (if onWindows && not (isTargetWasm (target flags))
                               then ["bcrypt","psapi","advapi32"]
-                              else ["m","pthread"])
+                              else if (isTargetWasm (target flags)) then ["clang_rt.builtins-wasm32", "c"] else ["m","pthread"])
                 libs   = -- ["kklib"] -- [normalizeWith '/' (outName flags (ccLibFile cc "kklib"))] ++ ccompLinkLibs flags
                          -- ++ 
                          clibs
@@ -1329,11 +1333,14 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
                 hpsize  = if (heapSize flags == 0 && isTargetWasm (target flags))
                             then 1024*1024*1024 -- default to 1Gb on wasi
                             else heapSize flags
-
+                prefix = if (onMacOS) then "/Users/timwhiting/" else "/home/tim/"
                 clink  = concat $
-                         [ [ccPath cc]
-                         , ccFlags cc
-                         , ccFlagsBuildFromFlags cc flags
+                         [ [replaceFileName (ccPath cc) (ccLinkerName cc)]
+                         , ccFlags cc ++ (if isTargetWasm (target flags) then [
+                            "--no-entry", "--import-memory", "--export-memory", 
+                            "-L" ++ prefix ++ "Downloads/wasi-sysroot/lib/wasm32-wasi", "-L" ++ prefix ++ "build-llvm/lib/wasi"
+                            ] else [])
+                         , if isTargetWasm (target flags) then [] else ccFlagsBuildFromFlags cc flags
                          , ccTargetExe cc mainExe
                          ]
                          ++ [objs]
@@ -1353,7 +1360,10 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
               termPhaseDoc term $ color (colorInterpreter (colorScheme flags)) (text "created:") <+>
                                     color (colorSource (colorScheme flags)) (text (normalizeWith pathSep mainTarget))
             let cmdflags = if (showElapsed flags) then " --kktime" else ""
-
+            if (isTargetWasm (target flags)) then do
+              createHtmlTemplate mainTarget flags
+            else return ()
+            
             case target flags of
               C Wasm
                 -> do return (Just (mainTarget,
@@ -1367,6 +1377,21 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
               _ -> do return (Just (mainTarget,
                                runSystemEcho term flags (dquote mainExe ++ cmdflags ++ " " ++ execOpts flags))) -- use shell for proper rss accounting
 
+createHtmlTemplate :: FilePath -> Flags -> IO ()
+createHtmlTemplate target flags = do
+  let html = replaceFileName target "index.html"
+  copyDirectory (localShareDir flags ++ "/kklib/js_runtime") $ takeDirectory target
+  let targetHtml = takeDirectory target ++ "/index.html"
+  fileContents <- readFile' targetHtml
+  let newContents = T.replace (T.pack "samples_web_basic.wasm") (T.pack (takeFileName target)) (T.pack fileContents)
+  writeFile targetHtml (T.unpack newContents)
+  return ()
+
+copyDirectory :: FilePath -> FilePath -> IO ()
+copyDirectory source destination = do
+  createDirectoryIfMissing True destination
+  files <- listDirectory source 
+  mapM_ (\f -> copyFile (source ++ "/" ++ f) (destination ++ "/" ++ takeFileName f)) files
 
 ccompile :: Terminal -> Flags -> CC -> FilePath -> [FilePath] -> [FilePath] -> IO ()
 ccompile term flags cc ctargetObj extraIncDirs csources
@@ -1608,7 +1633,7 @@ kklibBuild term flags cc name {-kklib-} objFile {-libkklib.o-}
                                    color (colorSource (colorScheme flags)) (text name) <+>
                                     color (colorInterpreter (colorScheme flags)) (text "from:") <+>
                                      color (colorSource (colorScheme flags)) (text srcLibDir)
-                   let flags0 = if (useStdAlloc flags) then flags
+                   let flags0 = if (useStdAlloc flags) || isTargetWasm (target flags) then flags 
                                   else flags{ ccompIncludeDirs = ccompIncludeDirs flags ++ [localShareDir flags ++ "/kklib/mimalloc/include"] }
                        flags1 = flags0{ ccompDefs = ccompDefs flags ++
                                                     [("KK_COMP_VERSION","\"" ++ version ++ "\""),

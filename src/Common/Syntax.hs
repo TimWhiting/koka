@@ -17,7 +17,7 @@ module Common.Syntax( Visibility(..)
                     , ParamInfo(..)
                     , DefInline(..)
                     , Fip(..), FipAlloc(..), fipIsTail, fipAlloc, noFip, isNoFip
-                    , Target(..), CTarget(..), JsTarget(..), isTargetC, isTargetJS, isTargetWasm
+                    , Target(..), CTarget(..), JsTarget(..), isTargetC, isTargetJS, isTargetWasm, isCTargetWasm
                     , isPublic, isPrivate
                     , DataDef(..)
                     , dataDefIsRec, dataDefIsOpen, dataDefIsValue, dataDefSize
@@ -57,6 +57,13 @@ isTargetWasm target
       C WasmWeb -> True
       _         -> False
 
+isCTargetWasm :: CTarget -> Bool
+isCTargetWasm target 
+  = case target of
+      Wasm    -> True
+      WasmJs  -> True
+      WasmWeb -> True
+      _         -> False
 
 instance Show Target where
   show tgt = case tgt of

@@ -159,6 +159,7 @@ executable koka
     , co-log-core
     , containers
     , directory
+    , filepath
     , isocline >=1.0.6
     , lens
     , lsp

@@ -173,13 +173,16 @@ static void kklib_init(void) {
   if (process_initialized) return;
   process_initialized = true;
   // for Koka, we need to be fully deterministic and careful when using C functionality that depends on global variables
+#if !defined(__wasi__)
   setlocale(LC_ALL, "C.utf8"); 
+#endif
 #if defined(WIN32) && (defined(_CONSOLE) || defined(__MINGW32__))
   SetConsoleOutputCP(65001);   // set the console to utf-8 instead of OEM page
 #endif
   kk_cpu_init();
+#if !defined(__wasi__)
   atexit(&kklib_done);  
-
+#endif
   #if KK_USE_MEM_ARENA
     #if (KK_INTB_SIZE==4)
     const kk_ssize_t heap_size = kk_shlp(KK_IZ(1), KK_INTB_BITS + KK_BOX_PTR_SHIFT);  // 16GiB
@@ -390,7 +393,7 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
 /*--------------------------------------------------------------------------------------------------
   Debugger
 --------------------------------------------------------------------------------------------------*/
-
+#ifndef __wasi__
 #include <signal.h>
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx) {
@@ -403,6 +406,7 @@ kk_decl_export void kk_debugger_break(kk_context_t* ctx) {
   abort();
 #endif
 }
+#endif
 
 /*--------------------------------------------------------------------------------------------------
   Platform specific initialization hooks
