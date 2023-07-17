@@ -1675,7 +1675,7 @@ kklibBuild term flags cc name {-kklib-} objFile {-libkklib.o-}
                                    color (colorSource (colorScheme flags)) (text name) <+>
                                     color (colorInterpreter (colorScheme flags)) (text "from:") <+>
                                      color (colorSource (colorScheme flags)) (text srcLibDir)
-                   let flags0 = if (useStdAlloc flags) then flags 
+                   let flags0 = if (useStdAlloc flags) || (isTargetWasm (target flags)) then flags 
                                   else flags{ ccompIncludeDirs = ccompIncludeDirs flags ++ [localShareDir flags ++ "/kklib/mimalloc/include"] }
                        flags1 = flags0{ ccompDefs = ccompDefs flags ++ 
                                                     [("KK_COMP_VERSION","\"" ++ version ++ "\""),

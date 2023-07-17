@@ -10,6 +10,7 @@
 #endif
 #include "kklib.h"
 #include <stdio.h>
+#include <string.h>
 
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
@@ -589,11 +590,16 @@ kk_decl_export int kk_os_run_command(kk_string_t cmd, kk_string_t* output, kk_co
   kk_with_string_as_qutf16w_borrow(cmd, wcmd, ctx) {
     f = _wpopen(wcmd, L"rt"); // todo: maybe open as binary?
   }
-#else
+#elif defined(__wasi__)
+  kk_with_string_as_qutf8_borrow(cmd, ccmd, ctx) {
+    f = fopen(ccmd, "r");
+  }
+#else 
   kk_with_string_as_qutf8_borrow(cmd, ccmd, ctx) {
     f = popen(ccmd, "r");
   }
 #endif
+
   kk_string_drop(cmd, ctx);
   if (f == NULL) return errno;
   kk_string_t out = kk_string_empty();
@@ -605,6 +611,8 @@ kk_decl_export int kk_os_run_command(kk_string_t cmd, kk_string_t* output, kk_co
   if (feof(f)) errno = 0;
 #if defined(WIN32)
   _pclose(f);
+#elif defined(__wasi__)
+  fclose(f);
 #else
   pclose(f);
 #endif

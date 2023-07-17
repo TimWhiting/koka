@@ -198,7 +198,6 @@ static void kklib_init(void) {
   kk_has_tzcnt = ((cpu_info[1] & (KK_I32(1)<<3)) != 0);    // bmi1: https://en.wikipedia.org/wiki/X86_Bit_manipulation_instruction_set
 #endif
   atexit(&kklib_done);  
-
   #if KK_USE_MEM_ARENA
     #if (KK_INTB_SIZE==4)
     const kk_ssize_t heap_size = kk_shlp(KK_IZ(1), KK_INTB_BITS + KK_BOX_PTR_SHIFT);  // 16GiB
@@ -347,7 +346,7 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
 /*--------------------------------------------------------------------------------------------------
   Debugger
 --------------------------------------------------------------------------------------------------*/
-
+#ifndef __wasi__
 #include <signal.h>
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx) {
@@ -360,6 +359,7 @@ kk_decl_export void kk_debugger_break(kk_context_t* ctx) {
   abort();
 #endif
 }
+#endif
 
 /*--------------------------------------------------------------------------------------------------
   Platform specific initialization hooks

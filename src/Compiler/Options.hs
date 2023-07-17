@@ -674,7 +674,7 @@ processOptions flags0 opts
                            else return (ccompPath flags)
                    (cc,asan) <- ccFromPath flags ccmd
                    ccCheckExist cc
-                   let stdAlloc = if asan then True else useStdAlloc flags   -- asan implies useStdAlloc
+                   let stdAlloc = if (asan || isTargetWasm (target flags)) then True else useStdAlloc flags   -- asan implies useStdAlloc
                        cdefs    = ccompDefs flags 
                                    ++ (if stdAlloc then [] else [("KK_MIMALLOC",show (sizePtr (platform flags)))])
                                    ++ (if (buildType flags > DebugFull) then [] else [("KK_DEBUG_FULL","")])
@@ -1003,7 +1003,7 @@ ccFlagsBuildFromFlags cc flags
 
 gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
           words "-Wno-unknown-pragmas -Wno-missing-field-initializers" ++
-          words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value"
+          words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value -Wno-unused-function"
 
 ccGcc,ccMsvc :: String -> Int -> Platform -> FilePath -> CC
 ccGcc name opt platform path
@@ -1072,7 +1072,8 @@ ccFromPath flags path
                        ccLibFile = \lib -> "lib" ++ lib ++ ".a",
                        ccFlagStack = (\stksize -> if stksize > 0 then ["-Wl,--stack," ++ show stksize] else [])
                      }
-        emcc    = gcc{ ccFlagsCompile = ccFlagsCompile gcc ++ ["-D__wasi__"],
+        emcc    = gcc{ ccFlagsCompile = ccFlagsCompile gcc ++ 
+                            ["-D__wasi__", "-mreference-types", "-mbulk-memory"],
                        ccFlagStack = (\stksize -> if stksize == 0 then [] else ["-s","TOTAL_STACK=" ++ show stksize]),
                        ccFlagHeap  = (\hpsize -> if hpsize == 0 then [] else ["-s","TOTAL_MEMORY=" ++ show hpsize]),
                        ccTargetExe = (\out -> ["-o", out ++ targetExeExtension (target flags)]),

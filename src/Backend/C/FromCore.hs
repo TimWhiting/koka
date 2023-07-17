@@ -233,6 +233,7 @@ genMain progName platform stackSize (Just (name,_))
       , if stackSize == 0 then empty else
         text $ "kk_os_set_stack_size(KK_IZ(" ++ show stackSize ++ "));"
       , text "kk_context_t* _ctx = kk_main_start(argc, argv);"
+      -- , if (isCTargetWasm target) then text "kk_js_init(_ctx);" else empty
       , ppName (qualify progName (newName ".init")) <.> parens (text "_ctx") <.> semi
       , text "atexit(&_kk_main_exit);"
       , ppName name <.> parens (text "_ctx") <.> semi
@@ -1241,7 +1242,7 @@ genLambda params eff body
        
        let 
            -- fieldDocs = [ppType tp <+> ppName name | (name,tp) <- allFields]
-           tpDecl  = if null fields then text "" else text "typedef struct" <+> ppName canonicalFunTpName <+> ppName funTpName <.> semi -- <-> text "kk_struct_packed_end"
+           tpDecl  = if null fields then empty else text "typedef struct" <+> ppName canonicalFunTpName <+> ppName funTpName <.> semi -- <-> text "kk_struct_packed_end"
 
            funSig  = text (if toH then "extern" else "static") <+> ppType (typeOf body)
                      <+> ppName funName <.> parameters ([text "kk_function_t _fself"] ++
@@ -1382,7 +1383,7 @@ cPrimCanBeBoxed prim
 getResult :: Result -> Doc -> Doc
 getResult result doc
   = if isEmptyDoc doc
-      then text ""
+      then empty
       else getResultX result doc
 
 getResultX result (retDoc)
@@ -1478,7 +1479,7 @@ genExprStat result expr
                    <- fmap unzip $
                       mapM (\e-> if isInlineableExpr e && isTypeBool (typeOf e)
                                    then do d       <- genInline e
-                                           return (text "", d)
+                                           return (empty, d)
                                    else do (sd,vn) <- genVarBinding e
                                            vd      <- genDefName vn
                                            return (sd, vd)

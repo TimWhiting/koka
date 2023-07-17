@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head>
+<title>A Koka Html Page</title>
+<meta name="description" content="Our first page">
+<meta name="keywords" content="HTML koka template">
+</head>
+<body>
+Content goes here.
+</body>
+<script>
+  import("./index.mjs").then((m) => {
+    let fileName = "samples_web_basic.wasm";
+    m.default(fileName);
+  });
+</script>
+</html>

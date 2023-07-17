@@ -499,6 +499,7 @@ coreHndName s
 coreTypesName s
   = qualify nameCoreTypes (newName s)
 
+nameWebWasm  = newName "web/wasm"
 nameSystemCore  = newName "std/core"
 nameCoreHnd     = newName "std/core/hnd"
 nameCoreTypes   = newName "std/core/types"
@@ -510,10 +511,10 @@ isSystemCoreName name
 
 isPrimitiveName name
   = let m = nameModule name
-    in  m `elem` [nameId nameCoreHnd, nameId nameCoreTypes]
+    in  m `elem` [nameId nameCoreHnd, nameId nameCoreTypes, nameId nameWebWasm]
 
 isPrimitiveModule name
-  = nameId name `elem` [nameId nameCoreHnd, nameId nameCoreTypes]
+  = nameId name `elem` [nameId nameCoreHnd, nameId nameCoreTypes, nameId nameWebWasm]
 
 {--------------------------------------------------------------------------
   Primitive kind constructors
