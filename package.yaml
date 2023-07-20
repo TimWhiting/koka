@@ -22,7 +22,10 @@ dependencies:
   - array
   - bytestring
   - containers
+  - co-log-core
   - directory
+  - lens
+  - lsp
   - mtl
   - parsec
   - process
