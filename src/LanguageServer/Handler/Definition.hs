@@ -29,7 +29,7 @@ definitionHandler flags = requestHandler J.SMethod_TextDocumentDefinition $ \req
       normUri = J.toNormalizedUri uri
   loaded <- getLoaded
   let defs = do
-        l <- maybeToList $ M.lookup normUri loaded
+        l <- maybeToList loaded
         rmap <- maybeToList $ modRangeMap $ loadedModule l
         (_, rinfo) <- maybeToList $ rangeMapFindAt (fromLspPos uri pos) rmap
         findDefinitions l rinfo

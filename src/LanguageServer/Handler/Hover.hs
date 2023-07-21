@@ -27,7 +27,7 @@ hoverHandler flags = requestHandler J.SMethod_TextDocumentHover $ \req responder
       normUri = J.toNormalizedUri uri
   loaded <- getLoaded
   let rsp = do
-        l <- M.lookup normUri loaded
+        l <- loaded
         rmap <- modRangeMap $ loadedModule l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
         let hc = J.InL $ J.mkMarkdown $ T.pack $ formatHoverContents rinfo

@@ -25,10 +25,10 @@ import Language.LSP.Server (LanguageContextEnv, LspT, runLspT)
 import qualified Language.LSP.Protocol.Types as J
 
 -- The language server's state, e.g. holding loaded/compiled modules.
-newtype LSState = LSState {lsLoaded :: M.Map J.NormalizedUri Loaded}
+newtype LSState = LSState {lsLoaded :: Maybe Loaded}
 
 defaultLSState :: LSState
-defaultLSState = LSState {lsLoaded = M.empty}
+defaultLSState = LSState {lsLoaded = Nothing }
 
 newLSStateVar :: IO (MVar LSState)
 newLSStateVar = newMVar defaultLSState
@@ -55,16 +55,16 @@ modifyLSState m = do
   liftIO $ modifyMVar stVar $ \s -> return (m s, ())
 
 -- Fetches the loaded state holding compiled modules
-getLoaded :: LSM (M.Map J.NormalizedUri Loaded)
+getLoaded :: LSM (Maybe Loaded)
 getLoaded = lsLoaded <$> getLSState
 
 -- Replaces the loaded state holding compiled modules
-putLoaded :: M.Map J.NormalizedUri Loaded -> LSM ()
-putLoaded l = modifyLSState $ \s -> s {lsLoaded = l}
+putLoaded :: Loaded -> LSM ()
+putLoaded l = modifyLSState $ \s -> s {lsLoaded = Just l}
 
 -- Updates the loaded state holding compiled modules
-modifyLoaded :: (M.Map J.NormalizedUri Loaded -> M.Map J.NormalizedUri Loaded) -> LSM ()
-modifyLoaded m = modifyLSState $ \s -> s {lsLoaded = m $ lsLoaded s}
+modifyLoaded :: (Maybe Loaded -> Loaded) -> LSM ()
+modifyLoaded m = modifyLSState $ \s -> s {lsLoaded = Just $ m $ lsLoaded s}
 
 -- Runs the language server's state monad.
 runLSM :: LSM a -> MVar LSState -> LanguageContextEnv () -> IO a

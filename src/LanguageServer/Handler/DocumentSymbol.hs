@@ -29,7 +29,7 @@ documentSymbolHandler flags = requestHandler J.SMethod_TextDocumentDocumentSymbo
       uri = doc ^. J.uri
       normUri = J.toNormalizedUri uri
   loaded <- getLoaded
-  let symbols = findDocumentSymbols =<< maybeToList (M.lookup normUri loaded)
+  let symbols = findDocumentSymbols =<< maybeToList loaded
   responder $ Right $ J.InR $ J.InL symbols
 
 -- Traverses the syntax tree to find document symbols

@@ -56,7 +56,7 @@ completionHandler flags = requestHandler J.SMethod_TextDocumentCompletion $ \req
   loaded <- getLoaded
   vfile <- getVirtualFile normUri
   let items = do
-        l <- maybeToList $ M.lookup normUri loaded
+        l <- maybeToList loaded
         vf <- maybeToList vfile
         pf <- maybeToList =<< getCompletionPrefix pos vf
         findCompletions l pf

@@ -12,23 +12,25 @@ module LanguageServer.Handler.TextDocument
 where
 
 import Common.Error (checkError)
-import Compiler.Compile (Terminal (..), compileModuleOrFile)
+import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..))
 import Compiler.Options (Flags)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
 import qualified Data.Map as M
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Text as T
 import Language.LSP.Diagnostics (partitionBySource)
-import Language.LSP.Server (Handlers, flushDiagnosticsBySource, notificationHandler, publishDiagnostics, sendNotification, getVirtualFile)
+import Language.LSP.Server (Handlers, flushDiagnosticsBySource, notificationHandler, publishDiagnostics, sendNotification, getVirtualFile, getVirtualFiles)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (toLspDiagnostics)
-import LanguageServer.Monad (LSM, modifyLoaded)
-import Language.LSP.VFS (virtualFileText)
+import LanguageServer.Monad (LSM, modifyLoaded, getLoaded, putLoaded)
+import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile)
 import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
 import qualified Language.LSP.Protocol.Message as J
+import Data.ByteString (ByteString)
+import Data.Map (Map)
 
 didOpenHandler :: Flags -> Handlers LSM
 didOpenHandler flags = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -52,6 +54,9 @@ didCloseHandler flags = notificationHandler J.SMethod_TextDocumentDidClose $ \_m
   -- TODO: Remove file from LSM state?
   return ()
 
+maybeContents :: Map J.NormalizedUri VirtualFile -> FilePath -> Maybe ByteString
+maybeContents vfs uri = M.lookup (J.toNormalizedUri (read uri)) vfs <&> T.encodeUtf8 . virtualFileText
+
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
 recompileFile :: Flags -> J.Uri -> Maybe J.Int32 -> Bool -> LSM ()
@@ -60,16 +65,21 @@ recompileFile flags uri version force =
     Just filePath -> do
       -- Recompile the file
       -- TODO: Abstract the logging calls in a better way
-      vFile <- getVirtualFile normUri
-      let contents = vFile <&> (T.encodeUtf8 . virtualFileText)
+      vFiles <- getVirtualFiles
 
-      sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Recompiling " ++ show contents) <> T.pack filePath
-      loaded <- liftIO $ compileModuleOrFile terminal flags [] filePath contents True
+      let vfs = _vfsMap vFiles
+          contents = maybeContents vfs filePath
+      loaded1 <- getLoaded
+      let modules = do
+            l <- loaded1
+            return $ loadedModule l : loadedModules l
+      sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Recompiling " ++ show uri) <> T.pack filePath
+      loaded <- liftIO $ compileModuleOrFile (maybeContents vfs) terminal flags (fromMaybe [] modules) filePath contents True
       case checkError loaded of
         Right (l, _) -> do
-          modifyLoaded $ M.insert normUri l
+          putLoaded l
           sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ "Successfully compiled " <> T.pack filePath
-        Left e -> 
+        Left e ->
           sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
 
       -- Emit the diagnostics (errors and warnings)
