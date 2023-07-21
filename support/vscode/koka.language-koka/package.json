@@ -88,6 +88,11 @@
           "default": "",
           "description": "If specified, the directory in which the language server will be executed."
         },
+        "koka.debugExtension": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to log stdin / stdout trace information from the language server subprocess."
+        },
         "koka.languageServer.trace.server": {
           "scope": "window",
           "type": "string",
@@ -189,6 +194,6 @@
     "@vscode/debugadapter": "^1.61.0",
     "@vscode/debugprotocol": "^1.61.0",
     "await-notify": "1.0.1",
-    "vscode-languageclient": "^6.0.0"
+    "vscode-languageclient": "^8.1.0"
   }
 }

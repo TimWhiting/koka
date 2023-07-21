@@ -161,6 +161,8 @@ executable koka
     , lens
     , lsp
     , mtl
+    , network
+    , network-simple
     , parsec
     , process
     , text
@@ -195,6 +197,8 @@ test-suite koka-test
     , lens
     , lsp
     , mtl
+    , network
+    , network-simple
     , parsec
     , process
     , regex-compat >=0.95.2.1

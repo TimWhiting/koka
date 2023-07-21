@@ -31,6 +31,8 @@ import Data.Functor ((<&>))
 import qualified Language.LSP.Protocol.Message as J
 import Data.ByteString (ByteString)
 import Data.Map (Map)
+import Text.Read (readMaybe)
+import Debug.Trace (trace)
 
 didOpenHandler :: Flags -> Handlers LSM
 didOpenHandler flags = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -55,7 +57,8 @@ didCloseHandler flags = notificationHandler J.SMethod_TextDocumentDidClose $ \_m
   return ()
 
 maybeContents :: Map J.NormalizedUri VirtualFile -> FilePath -> Maybe ByteString
-maybeContents vfs uri = M.lookup (J.toNormalizedUri (read uri)) vfs <&> T.encodeUtf8 . virtualFileText
+maybeContents vfs uri = do
+  M.lookup (J.toNormalizedUri (J.filePathToUri uri)) vfs <&> T.encodeUtf8 . virtualFileText
 
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.

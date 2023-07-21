@@ -1,20 +1,24 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as child_process from 'child_process'
+
 import {
   LanguageClient,
   LanguageClientOptions,
   RevealOutputChannelOn,
-  ServerOptions,
-} from 'vscode-languageclient'
-
+  StreamInfo,
+} from 'vscode-languageclient/node'
 
 import { KokaConfig, scanForSDK} from './workspace'
 import { CancellationToken, CodeLens, DebugConfiguration, DebugConfigurationProvider, EventEmitter, ProviderResult, TextDocument, WorkspaceFolder } from 'vscode'
 import { KokaDebugSession } from './debugger'
+import { Server, createServer } from 'net'
 
 let client: LanguageClient
+let ls: child_process.ChildProcess
+let server: Server
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   const vsConfig = vscode.workspace.getConfiguration('koka')
   // We can always create the client, as it does nothing as long as it is not started
   console.log(`Koka: language server enabled ${vsConfig.get('languageServer.enabled')}`)
@@ -22,7 +26,8 @@ export function activate(context: vscode.ExtensionContext) {
   const config = new KokaConfig(vsConfig, sdkPath, allSDKs)
   client = createClient(config)
   if (vsConfig.get('languageServer.enabled')) {
-    context.subscriptions.push(client.start())
+    await client.start()
+    // context.subscriptions.push()
   }
 
   createCommands(context, vsConfig, config)
@@ -52,13 +57,41 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function createClient(config: KokaConfig) {
-  console.log(`Koka: Language Server ${config.langServerCommand} Workspace: ${config.cwd}`)
-  const serverOptions: ServerOptions = {
-    command: config.langServerCommand,
-    options: {
-      shell: true,
-      cwd: config.cwd,
-    },
+  console.log(`Koka: Language Server ${config.command} ${config.langServerArgs.join(" ")} Workspace: ${config.cwd}`)
+  // command: config.command,
+    // args: config.langServerArgs,
+    // options: {
+    //   shell: true,
+    //   cwd: config.cwd,
+    // },
+  
+  let stderrOutputChannel: vscode.OutputChannel
+  let stdoutOutputChannel: vscode.OutputChannel
+  if (config.debugExtension) {
+    stderrOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stderr')
+    stdoutOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stdout')
+  }
+
+  function serverOptions(): Promise<StreamInfo> {
+    return new Promise((resolve, reject) => {
+      let timeout = setTimeout(() => {
+        reject("Server took too long to connect")
+      }, 2000)
+      server = createServer((s) => {
+        console.log("Got Connection to Client")
+        clearTimeout(timeout)
+        resolve({writer: s, reader: s})
+      }).listen(6061, "127.0.0.1")
+      ls = child_process.spawn(config.command, config.langServerArgs)
+      if (config.debugExtension) {
+        ls.stderr.on('data', (data) => {
+          stderrOutputChannel.append(`${data.toString()}`)
+        })
+        ls.stdout.on('data', (data) => {
+          stdoutOutputChannel.append(`${data.toString()}`)
+        })
+      }
+    })
   }
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ language: 'koka', scheme: 'file' }],
@@ -74,11 +107,11 @@ function createClient(config: KokaConfig) {
   return client
 }
 
-export function deactivate(): Thenable<void> | undefined {
+export async function deactivate() {
 	if (!client) {
 		return undefined
 	}
-	return client.stop()
+	return await client.stop()
 }
 
 function createCommands(
@@ -113,6 +146,8 @@ function createCommands(
           // Right now this produces error in console
           // Bug is upstream: https://github.com/microsoft/vscode-languageserver-node/issues/878
           await client.stop()
+          await server.close()
+          await ls.kill()
           await client.start()
           progress.report({
             message: 'Language server restarted',

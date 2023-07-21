@@ -65,6 +65,7 @@ const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka"
 export class KokaConfig {
   constructor(config: vscode.WorkspaceConfiguration, sdkPath: string, allSDKs: string[]) {
     this.config = config
+    this.debugExtension = config.get('debugExtension') as boolean
     this.defaultSDK = sdkPath
     this.sdkPath = sdkPath
     this.allSDKs = allSDKs
@@ -76,8 +77,9 @@ export class KokaConfig {
   sdkPath: string
   allSDKs: string[]
   config: vscode.WorkspaceConfiguration
+  debugExtension: boolean
   command: string
-  langServerCommand: string
+  langServerArgs: string[]
   target: string
   cwd: string
 
@@ -86,7 +88,7 @@ export class KokaConfig {
       return
     }
     this.command = this.config.get('languageServer.command') as string || `${this.sdkPath}`
-    this.langServerCommand = `${this.command} --language-server -i${this.cwd}`
+    this.langServerArgs = ["--language-server", `-i${this.cwd}`]
   }
 
   selectTarget(t: string){
