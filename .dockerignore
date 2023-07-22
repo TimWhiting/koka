@@ -1,0 +1,9 @@
+doc
+build
+.koka
+.vscode
+.stack-work
+.github
+.cache
+scratch
+**/.git

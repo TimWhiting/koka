@@ -13,41 +13,52 @@ jobs:
     container: 
       image: whitingta/koka:latest
     steps:
-      - name: Setup folders
-        run: |
-          mkdir -p /build/koka
-          mkdir -p /build/koka/test/bench
-          mkdir -p /build/koka/test/bench/build
-      - name: Build and Install Koka
-        working-directory: /build/koka
-        run: |
-          # Koka
-          stack build koka
-          stack run koka -- -e util/bundle -- --postfix=docker --vcpkg=~/vcpkg
-          util/install.sh -f -b bundle/${{ github.ref }}/koka-docker.tar.gz
-      - name: Build Benchmarks
-        working-directory: /build/koka/test/bench/build
-        run: |
-          cmake .. -DCMAKE_BUILD_TYPE=Release
-          eval $(opam env) && cmake --build .
-      - name: Run Benchmarks and tests
-        working-directory: /build/koka/test/bench
-        run: |
-          stack run koka -e bench
-          stack test
+      # - name: Setup folders 0
+      #   working-directory: /build
+      #   run: |
+      #     rm -rf koka
+      # - name: Checkout
+      #   uses: actions/checkout@v2
+      #   with:
+      #     submodules: recursive
+      #     path: /build/koka
+      # - name: Setup folders
+      #   working-directory: /build
+      #   run: |
+      #     mv /Users/timwhiting/koka/build/koka /build/koka
+      #     rm -rf /build/koka/test/bench/build
+      #     mkdir -p /build/koka/test/bench/build
+      # - name: Build and Install Koka
+      #   working-directory: /build/koka
+      #   run: |
+      #     # Koka
+      #     stack build koka
+      #     # stack run koka -- -e util/bundle --vcpkg=~/vcpkg -- --postfix=docker
+      #     # util/install.sh -f -b bundle/v2.4.2/koka-docker.tar.gz
+      # - name: Build Benchmarks
+      #   working-directory: /build/koka/test/bench/build
+      #   run: |
+      #     cmake .. -DCMAKE_BUILD_TYPE=Release
+      #     eval $(opam env) && cmake --build .
+      # - name: Run Benchmarks and tests
+      #   working-directory: /build/koka/test/bench
+      #   run: |
+      #     stack run koka -e bench
+      #     stack test
       - name: Build Extension
         working-directory: /build/koka/support/vscode/koka.language-koka
         run: |
           npm install
+          npm run build
           npm run package
       - name: Publish Extension
         uses: actions/upload-artifact@v2
         with:
-          name: koka-language-koka-${{ github.ref }}
-          path: support/vscode/koka.language-koka/koka-language-koka-${{ github.ref }}.vsix
-      - name: Publish Linux Binary
-        uses: actions/upload-artifact@v2
-        with:
-          name: koka-${{ github.ref }}-linux
-          path: /build/koka/bundle/${{ github.ref }}/koka-docker.tar.gz
+          name: koka-language-koka-v2.4.2
+          path: support/vscode/koka.language-koka/language-koka-v2.0.5.vsix
+      # - name: Publish Linux Binary
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: koka-v2.4.2-linux
+      #     path: /build/koka/bundle/v2.4.2/koka-docker.tar.gz
       # TODO: OSX and Windows, just do a release, no tests or benchmarks
