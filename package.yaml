@@ -22,12 +22,17 @@ dependencies:
   - array
   - bytestring
   - containers
+  - co-log-core
   - directory
+  - lens
+  - lsp
   - mtl
   - parsec
   - process
   - text
   - time
+  - network-simple
+  - network
   - isocline >= 1.0.6
   
 executables:
