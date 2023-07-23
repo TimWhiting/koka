@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -92,6 +92,16 @@ executable koka
       Kind.Repr
       Kind.Synonym
       Kind.Unify
+      LanguageServer.Conversions
+      LanguageServer.Handler.Completion
+      LanguageServer.Handler.Definition
+      LanguageServer.Handler.DocumentSymbol
+      LanguageServer.Handler.Hover
+      LanguageServer.Handler.Initialized
+      LanguageServer.Handler.TextDocument
+      LanguageServer.Handlers
+      LanguageServer.Monad
+      LanguageServer.Run
       Lib.JSON
       Lib.PPrint
       Lib.Printer
@@ -144,10 +154,15 @@ executable koka
       array
     , base >=4.9
     , bytestring
+    , co-log-core
     , containers
     , directory
     , isocline >=1.0.6
+    , lens
+    , lsp
     , mtl
+    , network
+    , network-simple
     , parsec
     , process
     , text
@@ -170,6 +185,7 @@ test-suite koka-test
       array
     , base >=4.9
     , bytestring
+    , co-log-core
     , containers
     , directory
     , extra
@@ -178,7 +194,11 @@ test-suite koka-test
     , hspec-core
     , isocline >=1.0.6
     , json
+    , lens
+    , lsp
     , mtl
+    , network
+    , network-simple
     , parsec
     , process
     , regex-compat >=0.95.2.1

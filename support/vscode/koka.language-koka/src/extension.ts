@@ -1,0 +1,266 @@
+import * as vscode from 'vscode'
+import * as path from 'path'
+import * as child_process from 'child_process'
+
+import {
+  LanguageClient,
+  LanguageClientOptions,
+  RevealOutputChannelOn,
+  StreamInfo,
+} from 'vscode-languageclient/node'
+
+import { KokaConfig, scanForSDK} from './workspace'
+import { CancellationToken, CodeLens, DebugConfiguration, DebugConfigurationProvider, EventEmitter, ProviderResult, TextDocument, WorkspaceFolder } from 'vscode'
+import { KokaDebugSession } from './debugger'
+import { AddressInfo, Server, createServer } from 'net'
+
+let stderrOutputChannel: vscode.OutputChannel
+let stdoutOutputChannel: vscode.OutputChannel
+let languageServer: KokaLanguageServer;
+
+export async function activate(context: vscode.ExtensionContext) {
+  const vsConfig = vscode.workspace.getConfiguration('koka')
+  // We can always create the client, as it does nothing as long as it is not started
+  console.log(`Koka: language server enabled ${vsConfig.get('languageServer.enabled')}`)
+  const {sdkPath, allSDKs} = scanForSDK()
+  const config = new KokaConfig(vsConfig, sdkPath, allSDKs)
+  if (config.debugExtension) {
+    stderrOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stderr')
+    stdoutOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stdout')
+    context.subscriptions.push(stderrOutputChannel)
+    context.subscriptions.push(stdoutOutputChannel)
+  }
+  languageServer = new KokaLanguageServer()
+  if (vsConfig.get('languageServer.enabled')) {
+    await languageServer.start(config, context)
+  }
+
+  createCommands(context, vsConfig, config)
+
+  // Debug Adaptor stuff
+	context.subscriptions.push(vscode.commands.registerCommand('extension.language-koka.getProgramName', c => {
+		return vscode.window.showInputBox({
+			placeHolder: "Please enter the name of a koka file in the workspace folder",
+			value: path.relative(config.cwd, vscode.window.activeTextEditor?.document.fileName) || 'test.kk'
+		})
+	}))
+
+	// register a configuration provider for 'koka' debug type
+	const provider = new KokaRunConfigurationProvider()
+	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('koka', provider))
+
+	// debug adapters can be run in different ways by using a vscode.DebugAdapterDescriptorFactory:
+  // run the debug adapter as a separate process
+  let factory = new InlineDebugAdapterFactory(config)
+
+	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('koka', factory))
+
+  
+  const codeLensProvider = new MainCodeLensProvider(config)
+  context.subscriptions.push(vscode.languages.registerCodeLensProvider({language: "koka", scheme: "file" }, codeLensProvider))
+}
+
+class KokaLanguageServer {
+  languageClient: LanguageClient
+  languageServerProcess: child_process.ChildProcess
+  socketServer: Server
+
+  async start(config: KokaConfig, context: vscode.ExtensionContext) {
+    console.log(`Koka: Language Server ${config.command} ${config.langServerArgs.join(" ")} Workspace: ${config.cwd}`)
+    let self = this;
+    function serverOptions(): Promise<StreamInfo> {
+      return new Promise((resolve, reject) => {
+        let timeout = setTimeout(() => {
+          reject("Server took too long to connect")
+        }, 2000)
+        self.socketServer = createServer((s) => {
+          console.log("Got Connection to Client")
+          clearTimeout(timeout)
+          resolve({writer: s, reader: s})
+        }).listen(0, "127.0.0.1", () => {
+          self.languageServerProcess = child_process.spawn(config.command, [...config.langServerArgs, "--lsport=" + (self.socketServer.address() as AddressInfo).port])
+          if (config.debugExtension) {
+            self.languageServerProcess.stderr.on('data', (data) => {
+              stderrOutputChannel.append(`${data.toString()}`)
+            })
+            self.languageServerProcess.stdout.on('data', (data) => {
+              stdoutOutputChannel.append(`${data.toString()}`)
+            })
+          }
+        })
+      })
+    }
+    const clientOptions: LanguageClientOptions = {
+      documentSelector: [{ language: 'koka', scheme: 'file' }],
+      outputChannelName: 'Koka',
+      revealOutputChannelOn: RevealOutputChannelOn.Never,
+    }
+    this.languageClient = new LanguageClient(
+      'Koka Language Client',
+      serverOptions,
+      clientOptions,
+    )
+    context.subscriptions.push(this)
+    return await this.languageClient.start()
+  }
+
+  dispose() {
+    this.languageClient?.stop()
+    this.socketServer?.close()
+    this.languageServerProcess?.kill()
+  }
+}
+
+export async function deactivate() {
+}
+
+function createCommands(
+  context: vscode.ExtensionContext,
+  config: vscode.WorkspaceConfiguration,
+  kokaConfig: KokaConfig,
+) {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('koka.startWithoutDebugging', (resource: vscode.Uri) => {
+      const launchConfig = 
+				{
+					name: `koka run: ${resource.path}`,
+					request: "launch",
+					type: "koka",
+					program: resource.path,
+				}
+      console.log(`Launch config ${launchConfig}`)
+			vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration)
+		}),
+    vscode.commands.registerCommand('koka.restartLanguageServer', () => {
+      if (!config.get('languageServer.enabled'))
+        return vscode.window.showErrorMessage('Language server is not enabled')
+
+      vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Koka',
+          cancellable: false,
+        },
+        async (progress, token) => {
+          progress.report({ message: 'Restarting language server' })
+          await languageServer.dispose()
+
+          context.subscriptions.splice(context.subscriptions.indexOf(languageServer), 1)
+
+          const {sdkPath, allSDKs} = scanForSDK()
+          const newConfig = new KokaConfig(config.vsConfig, sdkPath, allSDKs)
+          languageServer = new KokaLanguageServer()
+          await languageServer.start(newConfig, context)
+
+          progress.report({
+            message: 'Language server restarted',
+            increment: 100,
+          })
+          // Wait 3 second to allow user to read message
+          await new Promise((resolve) => setTimeout(resolve, 3000))
+        },
+      )
+      vscode.window.createQuickPick
+    }),
+    vscode.commands.registerCommand('koka.selectSDK', async () => {
+      const {sdkPath, allSDKs} = scanForSDK()
+      kokaConfig.allSDKs = allSDKs
+      const result = await vscode.window.showQuickPick(kokaConfig.allSDKs)
+      kokaConfig.selectSDK(result)
+      selectSDKMenuItem.tooltip = `${kokaConfig.sdkPath}`
+      await vscode.commands.executeCommand('koka.restartLanguageServer')
+    }),
+    vscode.commands.registerCommand('koka.selectTarget', async () => {
+      const result = await vscode.window.showQuickPick(['C', 'WASM', 'JS', 'C#'])
+      kokaConfig.selectTarget(result)
+      selectCompileTarget.text = `Koka Backend: ${kokaConfig.target}`
+    })
+  )
+
+	// create a new status bar item that we can now manage
+	const selectSDKMenuItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
+	selectSDKMenuItem.command = 'koka.selectSDK'
+	context.subscriptions.push(selectSDKMenuItem)
+  selectSDKMenuItem.show()
+  selectSDKMenuItem.text = `Koka SDK`
+  selectSDKMenuItem.tooltip = `${kokaConfig.sdkPath}`
+
+	// create a new status bar item that we can now manage
+	const selectCompileTarget = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
+	selectCompileTarget.command = 'koka.selectTarget'
+	context.subscriptions.push(selectCompileTarget)
+  selectCompileTarget.show()
+  selectCompileTarget.text = `Koka Backend: ${kokaConfig.target}`
+
+}
+
+
+class KokaRunConfigurationProvider implements DebugConfigurationProvider {
+
+	/**
+	 * Massage a debug configuration just before a debug session is being launched,
+	 * e.g. add all missing attributes to the debug configuration.
+	 */
+	resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+		// if launch.json is missing or empty
+		if (!config.type && !config.request && !config.name) {
+			const editor = vscode.window.activeTextEditor
+			if (editor && editor.document.languageId === 'koka') {
+				config.type = 'koka'
+				config.name = 'Launch'
+				config.request = 'launch'
+				config.program = '${file}'
+				config.stopOnEntry = true
+			}
+		}
+
+		if (!config.program) {
+			return vscode.window.showInformationMessage("Cannot find a program to debug").then(_ => {
+				return undefined	// abort launch
+			})
+		}
+
+		return config
+	}
+}
+
+class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+
+  constructor(private readonly config: KokaConfig){}
+
+	createDebugAdapterDescriptor(_session: vscode.DebugSession): ProviderResult<vscode.DebugAdapterDescriptor> {
+		return new vscode.DebugAdapterInlineImplementation(new KokaDebugSession(this.config))
+	}
+}
+
+
+class MainCodeLensProvider implements vscode.CodeLensProvider {
+	private onDidChangeCodeLensesEmitter: EventEmitter<void> = new EventEmitter<void>()
+
+	constructor(private readonly config: KokaConfig) {}
+  
+  public async provideCodeLenses(document: TextDocument, token: CancellationToken): Promise<CodeLens[] | undefined> {
+		const doc = document.getText()
+    const main = doc.indexOf('main')
+    if (main < 0){
+      return []
+    }
+		return [this.createCodeLens(document, main)]
+	}
+
+	private createCodeLens(document: TextDocument, offset: number): CodeLens {
+		return new CodeLens(
+			toRange(document, offset, 'main'.length),
+			{
+				arguments: [document.uri],
+				command: "koka.startWithoutDebugging",
+				title: `Run ${path.relative(this.config.cwd, document.uri.path)}`,
+			}
+		)
+	}
+
+}
+
+function toRange(document: TextDocument, offset: number, length: number): vscode.Range {
+	return new vscode.Range(document.positionAt(offset), document.positionAt(offset + length))
+}
