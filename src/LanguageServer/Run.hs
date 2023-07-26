@@ -38,16 +38,16 @@ runLanguageServer flags files = do
             interpretHandler = \env -> Iso (\lsm -> runLSM lsm state env) liftIO,
             options =
               defaultOptions
-                { optTextDocumentSync = Just syncOptions,
-                  optCompletionTriggerCharacters = Just ['.', ':', '/']
+                { optTextDocumentSync = Just syncOptions
+                  -- optCompletionTriggerCharacters = Just ['.', ':', '/']
                 -- TODO: ? https://www.stackage.org/haddock/lts-18.21/lsp-1.2.0.0/src/Language.LSP.Server.Core.html#Options
                 },
             defaultConfig = ()
           })
   where
-    prettyMsg l = "[" <> show (L.getSeverity l) <> "] " <> show (L.getMsg l)
+    prettyMsg l = "[" <> show (L.getSeverity l) <> "] " <> show (L.getMsg l) <> "\n\n"
     ioLogger :: LogAction IO (WithSeverity LspServerLog)
-    ioLogger = L.cmap (show . prettyMsg) L.logStringStderr
+    ioLogger = L.cmap prettyMsg L.logStringStdout
     lspLogger :: LogAction (LspM config) (WithSeverity LspServerLog)
     lspLogger =
       let clientLogger = L.cmap (fmap (T.pack . show)) defaultClientLogger

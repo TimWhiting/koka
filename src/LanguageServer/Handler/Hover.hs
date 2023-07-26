@@ -3,7 +3,7 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 
-module LanguageServer.Handler.Hover (hoverHandler) where
+module LanguageServer.Handler.Hover (hoverHandler, formatRangeInfoHover) where
 
 import Compiler.Module (loadedModule, modRangeMap)
 import Compiler.Options (Flags)
@@ -30,7 +30,7 @@ hoverHandler flags = requestHandler J.SMethod_TextDocumentHover $ \req responder
         l <- loaded
         rmap <- modRangeMap $ loadedModule l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
-        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatHoverContents rinfo
+        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo
             hover = J.Hover hc $ Just $ toLspRange r
         return hover
   case rsp of
@@ -38,8 +38,8 @@ hoverHandler flags = requestHandler J.SMethod_TextDocumentHover $ \req responder
     Just rsp -> responder $ Right $ J.InL rsp
 
 -- Pretty-prints type/kind information to a hover tooltip
-formatHoverContents :: RangeInfo -> String
-formatHoverContents rinfo = case rinfo of
+formatRangeInfoHover :: RangeInfo -> String
+formatRangeInfoHover rinfo = case rinfo of
   Id qname info isdef ->
     show (pretty qname) ++ " : " ++ case info of
       NIValue tp -> show $ pretty tp

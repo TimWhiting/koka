@@ -30,6 +30,7 @@ dependencies:
   - parsec
   - process
   - text
+  - text-rope
   - time
   - network-simple
   - network
