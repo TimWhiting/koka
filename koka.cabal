@@ -166,6 +166,7 @@ executable koka
     , parsec
     , process
     , text
+    , text-rope
     , time
   default-language: Haskell2010
   if os(windows)
@@ -203,5 +204,6 @@ test-suite koka-test
     , process
     , regex-compat >=0.95.2.1
     , text
+    , text-rope
     , time
   default-language: Haskell2010

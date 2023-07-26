@@ -12,6 +12,7 @@ module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
                       , rangeMapLookup
                       , rangeMapFindAt
                       , rangeMapAppend
+                      , rangeInfoType
                       , mangle
                       , mangleConName
                       , mangleTypeName
@@ -171,6 +172,15 @@ rangeMapFindAt pos (RM rm)
     shortestRange []  = Nothing
     shortestRange rs  = Just $ minimumBy cmp rs
     cmp (r1,_) (r2,_) = compare (rangeLength r1) (rangeLength r2)
+
+rangeInfoType :: RangeInfo -> Maybe Type
+rangeInfoType ri
+  = case ri of
+      Id _ info _ -> case info of
+                       NIValue tp -> Just tp
+                       NICon tp   -> Just tp
+                       _          -> Nothing
+      _ -> Nothing
 
 instance HasTypeVar RangeMap where
   sub `substitute` (RM rm)
