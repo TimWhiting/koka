@@ -13,11 +13,11 @@ import Data.Maybe (maybeToList)
 import Kind.Constructors (conInfoRange, constructorsLookup)
 import Kind.Newtypes (dataInfoRange, newtypesLookupAny)
 import Kind.Synonym (synInfoRange, synonymsLookup)
-import Language.LSP.Server (Handlers, requestHandler)
+import Language.LSP.Server (Handlers)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (fromLspPos, toLspLocation, toLspLocationLink)
-import LanguageServer.Monad (LSM, getLoaded)
+import LanguageServer.Monad (LSM, getLoaded, requestHandler)
 import Syntax.RangeMap (RangeInfo (..), rangeMapFindAt)
 import Type.Assumption (gammaLookupQ, infoRange)
 import qualified Language.LSP.Protocol.Message as J

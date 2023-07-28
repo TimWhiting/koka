@@ -292,12 +292,12 @@ loadFilesErr term startSt fileNames force
                              then compileFile term (flags st) (loadedModules (loaded0 st)) Object fname
                              else compileModule term (flags st) (loadedModules (loaded0 st)) (newName fname)
                              -}
-                             compileModuleOrFile True (const Nothing) Nothing term (flags st) [] {- (loadedModules (loaded0 st)) -} fname force
+                             compileModuleOrFile (const Nothing) Nothing term (flags st) [] {- (loadedModules (loaded0 st)) -} fname force Object
                    ; case checkError err of
                        Left msg
                           -> do messageErrorMsgLnLn st msg
                                 return (errorMsg msg)
-                       Right (ld,warnings)
+                       Right ((ld, _), warnings)
                           -> do{ -- let warnings = modWarnings (loadedModule ld)
                                ; err <- if not (null warnings)
                                          then do let msg = ErrorWarning warnings ErrorZero

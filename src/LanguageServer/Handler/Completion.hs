@@ -23,11 +23,11 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import Kind.Constructors (ConInfo (..), Constructors, constructorsList)
 import Kind.Synonym (SynInfo (..), Synonyms, synonymsToList)
-import Language.LSP.Server (Handlers, getVirtualFile, requestHandler)
+import Language.LSP.Server (Handlers, getVirtualFile)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import Language.LSP.VFS (VirtualFile (VirtualFile))
-import LanguageServer.Monad (LSM, getLoaded)
+import LanguageServer.Monad (LSM, getLoaded, requestHandler)
 import Lib.PPrint (Pretty (..))
 import Syntax.Lexer (reservedNames)
 import Type.Assumption

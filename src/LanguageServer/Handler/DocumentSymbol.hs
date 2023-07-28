@@ -15,11 +15,11 @@ import Control.Lens                      ( (^.) )
 import qualified Data.Map                as M
 import Data.Maybe                        ( maybeToList )
 import qualified Data.Text               as T
-import Language.LSP.Server               ( requestHandler, Handlers )
+import Language.LSP.Server               ( Handlers )
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions        ( toLspRange )
-import LanguageServer.Monad              ( LSM, getLoaded )
+import LanguageServer.Monad              ( LSM, getLoaded, requestHandler )
 import Syntax.Syntax
 import qualified Language.LSP.Protocol.Message as J
 

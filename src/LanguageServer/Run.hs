@@ -38,7 +38,8 @@ runLanguageServer flags files = do
             interpretHandler = \env -> Iso (\lsm -> runLSM lsm state env) liftIO,
             options =
               defaultOptions
-                { optTextDocumentSync = Just syncOptions
+                { optTextDocumentSync = Just syncOptions,
+                  optExecuteCommandCommands = Just [T.pack "koka/genCode"]
                   -- optCompletionTriggerCharacters = Just ['.', ':', '/']
                 -- TODO: ? https://www.stackage.org/haddock/lts-18.21/lsp-1.2.0.0/src/Language.LSP.Server.Core.html#Options
                 },
