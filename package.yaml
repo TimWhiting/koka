@@ -19,6 +19,7 @@ description: Please see the README on GitHub at <https://github.com/koka-lang/ko
 
 dependencies:
   - base >= 4.9
+  - aeson
   - array
   - bytestring
   - containers

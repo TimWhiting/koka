@@ -86,16 +86,16 @@ mainMode flags flags0 mode p
 compile :: ColorPrinter -> Flags -> FilePath -> IO ()
 compile p flags fname
   = do let exec = Executable (newName "main") ()
-       err <- compileFile True (const Nothing) Nothing term flags []
+       err <- compileFile (const Nothing) Nothing term flags []
                 (if (not (evaluate flags)) then (if library flags then Library else exec) else exec) fname
        case checkError err of
          Left msg
            -> do putPrettyLn p (ppErrorMessage (showSpan flags) cscheme msg)
                  -- exitFailure  -- don't fail for tests
 
-         Right (Loaded gamma kgamma synonyms newtypes constructors _ imports _
-                (Module modName _ _ _ _ _warnings rawProgram core _ _ modTime) _ _ _
-               , warnings)
+         Right ((Loaded gamma kgamma synonyms newtypes constructors _ imports _
+                (Module modName _ _ _ _ _warnings rawProgram core _ _ modTime _) _ _ _
+                , _), warnings)
            -> do when (not (null warnings))
                    (let msg = ErrorWarning warnings ErrorZero
                     in putPrettyLn p (ppErrorMessage (showSpan flags) cscheme msg))

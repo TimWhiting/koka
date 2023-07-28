@@ -78,7 +78,11 @@ class KokaLanguageServer {
           clearTimeout(timeout)
           resolve({writer: s, reader: s})
         }).listen(0, "127.0.0.1", () => {
-          self.languageServerProcess = child_process.spawn(config.command, [...config.langServerArgs, "--lsport=" + (self.socketServer.address() as AddressInfo).port])
+          console.log(`Starting language server in ${config.cwd}`)
+          self.languageServerProcess = child_process.spawn(config.command, [...config.langServerArgs, "--lsport=" + (self.socketServer.address() as AddressInfo).port], {
+            cwd: config.cwd,
+            env: process.env,
+          })
           if (config.debugExtension) {
             self.languageServerProcess.stderr.on('data', (data) => {
               stderrOutputChannel.append(`${data.toString()}`)
@@ -229,7 +233,7 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
   constructor(private readonly config: KokaConfig){}
 
 	createDebugAdapterDescriptor(_session: vscode.DebugSession): ProviderResult<vscode.DebugAdapterDescriptor> {
-		return new vscode.DebugAdapterInlineImplementation(new KokaDebugSession(this.config))
+		return new vscode.DebugAdapterInlineImplementation(new KokaDebugSession(this.config, languageServer.languageClient))
 	}
 }
 

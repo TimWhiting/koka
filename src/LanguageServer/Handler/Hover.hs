@@ -10,11 +10,11 @@ import Compiler.Options (Flags)
 import Control.Lens ((^.))
 import qualified Data.Map as M
 import qualified Data.Text as T
-import Language.LSP.Server (Handlers, requestHandler, sendNotification)
+import Language.LSP.Server (Handlers, sendNotification)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (fromLspPos, toLspRange)
-import LanguageServer.Monad (LSM, getLoaded)
+import LanguageServer.Monad (LSM, getLoaded, requestHandler)
 import Lib.PPrint (Pretty (..))
 import Syntax.RangeMap (NameInfo (..), RangeInfo (..), rangeMapFindAt)
 import qualified Language.LSP.Protocol.Message as J

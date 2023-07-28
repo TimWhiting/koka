@@ -64,6 +64,7 @@ data Module  = Module{ modName        :: Name
                      , modInlines     :: Either (Gamma -> Error [Core.InlineDef]) ([Core.InlineDef])
                      , modRangeMap    :: Maybe RangeMap
                      , modTime        :: FileTime
+                     , modOutputTime :: Maybe FileTime
                      }
 
 data Loaded = Loaded{ loadedGamma       :: Gamma
@@ -79,6 +80,10 @@ data Loaded = Loaded{ loadedGamma       :: Gamma
                     , loadedInlines     :: Inlines
                     , loadedBorrowed    :: Borrowed
                     }
+
+data ModuleStatus =
+  InMemoryModule
+  | DiskModule
 
 loadedLatest :: Loaded -> FileTime
 loadedLatest loaded
@@ -101,7 +106,7 @@ initialLoaded
 
 moduleNull :: Name -> Module
 moduleNull modName
-  = Module (modName) "" "" "" "" [] Nothing (Core.coreNull modName) (Left (\g -> return [])) Nothing fileTime0
+  = Module (modName) "" "" "" "" [] Nothing (Core.coreNull modName) (Left (\g -> return [])) Nothing fileTime0 Nothing
 
 loadedName :: Loaded -> Name
 loadedName ld
@@ -162,7 +167,7 @@ addOrReplaceModule :: Module -> Modules -> Modules
 addOrReplaceModule mod []
   = [mod]
 addOrReplaceModule mod (m:ms)
-  = if (modPath mod == modPath m)
+  = if modPath mod == modPath m
      then mod:ms
      else m : addOrReplaceModule mod ms
 

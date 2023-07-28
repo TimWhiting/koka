@@ -1,16 +1,22 @@
 import * as child_process from 'child_process'
+import * as fs from "fs"
 
 import {
 	Logger, logger,
 	LoggingDebugSession,
 	InitializedEvent, TerminatedEvent, OutputEvent,
-  Thread,
+	Thread,
 } from '@vscode/debugadapter'
 import { DebugProtocol } from '@vscode/debugprotocol'
 import { EventEmitter } from 'events'
 import { KokaConfig } from './workspace'
 import { Subject } from 'await-notify'
 import * as path from 'path'
+import {
+	LanguageClient,
+	ExecuteCommandRequest,
+	ExecuteCommandParams,
+} from 'vscode-languageclient/node'
 
 /*
  * This interface describes the mock-debug specific launch attributes
@@ -32,21 +38,21 @@ export class KokaDebugSession extends LoggingDebugSession {
 
 	private _configurationDone = new Subject()
 
-  private _runtime : KokaRuntime
+	private _runtime: KokaRuntime
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
 	 * We configure the default implementation of a debug adapter here.
 	 */
 
 
-	public constructor(private readonly config: KokaConfig) {
+	public constructor(private readonly config: KokaConfig, private readonly client: LanguageClient) {
 		super("koka-debug.txt")
 
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false)
 		this.setDebuggerColumnsStartAt1(false)
 
-		this._runtime = new KokaRuntime(config)
+		this._runtime = new KokaRuntime(config, client)
 
 		// setup event handlers
 		this._runtime.on('output', (text, category) => {
@@ -94,7 +100,7 @@ export class KokaDebugSession extends LoggingDebugSession {
 
 		this.sendResponse(response)
 
-    // we request configurations early by sending an 'initializeRequest' to the frontend.
+		// we request configurations early by sending an 'initializeRequest' to the frontend.
 		// The frontend will end the configuration sequence by calling 'configurationDone' request.
 		this.sendEvent(new InitializedEvent())
 	}
@@ -138,79 +144,93 @@ export class KokaDebugSession extends LoggingDebugSession {
 
 	protected async terminateRequest(response: DebugProtocol.TerminateResponse, args: DebugProtocol.TerminateArguments, request?: DebugProtocol.Request) {
 		await this._runtime.cancel()
-    response.success = true
-    response.message = "terminated"
-    this.sendResponse(response)
+		response.success = true
+		response.message = "terminated"
+		this.sendResponse(response)
 	}
 
 	protected async cancelRequest(response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments) {
 		await this._runtime.cancel()
-    response.success = true
-    response.message = "cancelled"
-    this.sendResponse(response)
+		response.success = true
+		response.message = "cancelled"
+		this.sendResponse(response)
 	}
 }
 
 class KokaRuntime extends EventEmitter {
-  
-  constructor(private readonly config: KokaConfig) {
-    super()
-  }
-  ps?: child_process.ChildProcess
 
-  public start(file: string){
+	constructor(private readonly config: KokaConfig, private readonly client: LanguageClient) {
+		super()
+	}
+	ps?: child_process.ChildProcess
+
+	public async start(file: string) {
 		const target = this.config.target
-		if (target == 'C') {
-			console.log(`Executing ${this.config.command} -e ${file} -i${this.config.cwd}`)
-			this.ps = child_process.spawn(this.config.command, ['-e', file, `-i${this.config.cwd}`], {cwd: this.config.cwd})
-			this.ps.stdout.on('data', (data) => {
-				this.emit('output', data.toString().trim(), 'stdout')
-			})
-			this.ps.stderr.on('data', (data) => {
-				this.emit('output', data.toString().trim(), 'stderr')
-			})
-			this.ps.on('close', (code) => {
-				this.emit('end', code)
-				this.ps = null
-			})
-		} else if (target == 'JS' || target == 'WASM'){
-      const realTarget = target == 'JS' ? 'jsweb' : 'wasmweb'
-			// TODO: Better configuration for wasm / js build outputs
-			const webBuildDir = path.join(this.config.cwd, 'web', 'build')
-			console.log(`Executing ${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`)
-			this.ps = child_process.exec(`${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`, (exitCode, stdout, stderr) => {
-				// TODO: separate output streams for compile versus running?
-				if (stdout) {
-				  this.emit('output', stdout, 'stdout')
-				}
-				if (stderr) {
-				  this.emit('output', stderr, 'stderr')
-				}
-				if (exitCode){
-					this.emit('output', `Compiler exited with error status ${exitCode}`, 'stderr')
-					this.emit('end')
-				} else {
-					this.emit('output', `Compiler exited succesfully`, 'stdout')
-					this.emit('end')
-				}
-			})
-		} else {
-			// TODO: Support C#
-			this.emit('end')
+    try {
+		  const resp = await this.client.sendRequest(ExecuteCommandRequest.type, {command: 'koka/genCode', arguments: [file]})
+			console.log(`Generated code at ${resp}`)
+			if (!fs.existsSync(path.join(this.config.cwd, resp))) {
+				console.log(`Error finding code at ${resp}`)
+				this.emit('end', -1)
+				return;
+			}
+			if (target == 'C') {
+				// console.log(`Executing ${this.config.command} -e ${file} -i${this.config.cwd}`)
+				this.ps = child_process.spawn(resp, [], {cwd: this.config.cwd, env: process.env})
+				this.ps.stdout.on('data', (data) => {
+					this.emit('output', data.toString().trim(), 'stdout')
+				})
+				this.ps.stderr.on('data', (data) => {
+					this.emit('output', data.toString().trim(), 'stderr')
+				})
+				this.ps.on('close', (code) => {
+					this.emit('end', code)
+					this.ps = null
+				})
+			} 
+				// else if (target == 'JS' || target == 'WASM') {
+				// 	const realTarget = target == 'JS' ? 'jsweb' : 'wasmweb'
+				// 	// TODO: Better configuration for wasm / js build outputs
+				// 	const webBuildDir = path.join(this.config.cwd, 'web', 'build')
+				// 	console.log(`Executing ${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`)
+				// 	this.ps = child_process.exec(`${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`, (exitCode, stdout, stderr) => {
+				// 		// TODO: separate output streams for compile versus running?
+				// 		if (stdout) {
+				// 			this.emit('output', stdout, 'stdout')
+				// 		}
+				// 		if (stderr) {
+				// 			this.emit('output', stderr, 'stderr')
+				// 		}
+				// 		if (exitCode) {
+				// 			this.emit('output', `Compiler exited with error status ${exitCode}`, 'stderr')
+				// 			this.emit('end')
+				// 		} else {
+				// 			this.emit('output', `Compiler exited succesfully`, 'stdout')
+				// 			this.emit('end')
+				// 		}
+				// 	})
+				// } else {
+				// 	// TODO: Support C#
+				// 	this.emit('end')
+				// }
+		} catch (e) {
+			this.emit('output', `Error generating code: ${e}`, 'stderr')
+			this.emit('end', -1)
 		}
-  }
-  public async cancel(){
-    if (this.ps) {
-      const result = await this.ps.kill() 
+	}
+	
+	public async cancel() {
+		if (this.ps) {
+			const result = await this.ps.kill()
 			if (!result) {
 				console.log("Escalating process kill to SIGKILL")
 				await this.ps.kill(9)
 			}
-      this.ps = null
+			this.ps = null
 			this.emit('output', `Compile was cancelled`, 'stdout')
 			this.emit('end', 1)
-    } else {
+		} else {
 			console.log("No process to cancel?")
 		}
-  }
+	}
 }
