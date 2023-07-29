@@ -6,7 +6,7 @@
 module LanguageServer.Handler.Commands (initializedHandler, commandHandler) where
 
 import Compiler.Options (Flags (outFinalPath))
-import Language.LSP.Server (Handlers, LspM, notificationHandler, sendNotification, MonadLsp, getVirtualFiles)
+import Language.LSP.Server (Handlers, LspM, notificationHandler, sendNotification, MonadLsp, getVirtualFiles, withIndefiniteProgress)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Data.Text as T
 import LanguageServer.Monad (LSM, requestHandler)
@@ -19,6 +19,7 @@ import GHC.Base (Type)
 import LanguageServer.Handler.TextDocument (recompileFile)
 import Compiler.Compile (CompileTarget(..))
 import Common.Name (newName)
+import qualified Language.LSP.Server as J
 
 initializedHandler :: Flags -> Handlers LSM
 initializedHandler flags = notificationHandler J.SMethod_Initialized $ \_not -> sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info "Initialized language server."
@@ -29,10 +30,10 @@ commandHandler flags = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req r
   if command == "koka/genCode" then
     case commandParams of
       Just [Json.String filePath] -> do
-        sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Generating code for main file " ++ T.unpack filePath)
-        res <- recompileFile (Executable (newName "main") ()) flags (J.filePathToUri $ T.unpack filePath) Nothing True
-        sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Finished generating code for main file " ++ T.unpack filePath ++ " " ++ fromMaybe "No Compiled File" res)
-        resp $ Right $ case res of {Just filePath -> J.InL $ Json.String $ T.pack filePath; Nothing -> J.InR J.Null}
+        withIndefiniteProgress (T.pack "Compiling " <> filePath) J.NotCancellable $ do
+          res <- recompileFile (Executable (newName "main") ()) flags (J.filePathToUri $ T.unpack filePath) Nothing True
+          sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Finished generating code for main file " ++ T.unpack filePath ++ " " ++ fromMaybe "No Compiled File" res)
+          resp $ Right $ case res of {Just filePath -> J.InL $ Json.String $ T.pack filePath; Nothing -> J.InR J.Null}
       _ -> do
         sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack "Invalid parameters"
         resp $ Right $ J.InR J.Null

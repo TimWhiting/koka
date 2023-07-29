@@ -21,7 +21,7 @@ import GHC.IO.IOMode (IOMode(ReadWriteMode))
 
 runLanguageServer :: Flags -> [FilePath] -> IO ()
 runLanguageServer flags files = do
-  state <- newLSStateVar 
+  state <- newLSStateVar flags
   connect "localhost" (show $ languageServerPort flags) (\(socket, _) -> do 
     handle <- socketToHandle socket ReadWriteMode
     void $

@@ -131,6 +131,10 @@
       {
         "command": "koka.selectSDK",
         "title": "Koka: Set sdk path"
+      },
+      {
+        "command": "koka.showLSPOutput",
+        "title": "Koka: Show Language Server Output"
       }
     ],
     "debuggers": [

@@ -355,7 +355,6 @@ compileProgramFromFile maybeContents contents term flags modules compileTarget r
   = do let fname = joinPath rootPath stem
        -- trace ("compileProgramFromFile: " ++ show fname ++ ", modules: " ++ show (map modName modules)) $ return ()
        liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "compile:") <+> color (colorSource (colorScheme flags)) (text (normalizeWith '/' fname)))
-       liftIO $ termPhase term ("parsing " ++ fname)
        exist <- liftIO $ doesFileExist fname
        if (exist) then return () else liftError $ errorMsg (errorFileNotFound flags fname)
        program <- lift $ case contents of { Just x -> return $ parseProgramFromString (semiInsert flags) x fname; _ -> parseProgramFromFile (semiInsert flags) fname}
@@ -1044,9 +1043,6 @@ codeGen term flags compileTarget loaded
            ifaceDoc = Core.Pretty.prettyCore env{ coreIface = True } (target flags) inlineDefs (modCore mod) <-> Lib.PPrint.empty
 
        -- create output directory if it does not exist
-
-       do cwd <- getCurrentDirectory
-          termPhase term ("Create Dir " ++ cwd ++ "/" ++ dirname outBase)
        createDirectoryIfMissing True (dirname outBase)
 
        -- remove existing kki file in case of errors
