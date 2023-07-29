@@ -80,7 +80,7 @@ recompileFile compileTarget flags uri version force =
             l <- loaded1
             return $ loadedModule l : loadedModules l
       term <- getTerminal
-      sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Recompiling " ++ show uri) <> T.pack filePath
+      sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
       result <- liftIO $ compileFile (maybeContents vfs) contents term flags (fromMaybe [] modules) compileTarget filePath 
       outFile <- case checkError result of
         Right ((l, outFile), _) -> do

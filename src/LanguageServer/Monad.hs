@@ -33,26 +33,57 @@ import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Message as J
 
 import Compiler.Compile (Terminal (..))
-import Control.Concurrent (Chan, forkIO)
-import Control.Concurrent.Chan (newChan, writeChan)
-import Lib.PPrint (Pretty(..), asString)
+import Lib.PPrint (Pretty(..), asString, writePrettyLn)
 import GHC.Conc (ThreadId)
 import Control.Concurrent.Chan (readChan)
-import Type.Pretty (ppType, defaultEnv)
+import Type.Pretty (ppType, defaultEnv, Env (context, importsMap), ppScheme)
 import Control.Concurrent (isEmptyMVar)
 import qualified Language.LSP.Server as J
 import GHC.Base (Type)
+import Lib.Printer (withColorPrinter, withColor, writeLn, ansiDefault, AnsiStringPrinter (AnsiString), Color (Red), ColorPrinter (PAnsiString))
+import Compiler.Options (Flags (..), prettyEnvFromFlags, verbose)
+import Common.Error (ppErrorMessage)
+import Common.ColorScheme (colorSource)
+import Common.Name (nameNil)
+import Kind.ImportMap (importsEmpty)
+import Platform.Var (newVar, takeVar)
+import Debug.Trace (trace)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
-data LSState = LSState {lsLoaded :: Maybe Loaded, messages :: MVar [(String, J.MessageType)]}
+data LSState = LSState {lsLoaded :: Maybe Loaded, messages :: MVar [(String, J.MessageType)], flags:: Flags, terminal:: Terminal}
 
-defaultLSState :: IO LSState
-defaultLSState = do
+trimnl :: [Char] -> [Char]
+trimnl str = reverse $ dropWhile (`elem` "\n\r\t ") $ reverse str
+
+defaultLSState :: Flags -> IO LSState
+defaultLSState flags = do
   msgVar <- newMVar []
-  return LSState {lsLoaded = Nothing, messages = msgVar}
+  let withNewPrinter f = do
+        ansiConsole <- newVar ansiDefault
+        stringVar <- newVar ""
+        let p = AnsiString ansiConsole stringVar
+        tp <- (f . PAnsiString) p
+        ansiString <- takeVar stringVar
+        addMessages msgVar (trimnl ansiString, tp)
+  
+  let cscheme = colorScheme flags
+      prettyEnv flags ctx imports = (prettyEnvFromFlags flags){ context = ctx, importsMap = imports }
+      term = Terminal (\err -> withNewPrinter $ \p -> do putErrorMessage p (showSpan flags) cscheme err; return J.MessageType_Error)
+                (if verbose flags > 1 then (\msg -> withNewPrinter $ \p -> do withColor p (colorSource cscheme) (writeLn p msg); return J.MessageType_Info)
+                                         else (\_ -> return ()))
+                 (if verbose flags > 0 then (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info) else (\_ -> return ()))
+                 (\tp -> withNewPrinter $ \p -> do putScheme p (prettyEnv flags nameNil importsEmpty) tp; return J.MessageType_Info)
+                 (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info)
+  return LSState {lsLoaded = Nothing, messages = msgVar, terminal = term, flags = flags}
 
-newLSStateVar :: IO (MVar LSState)
-newLSStateVar = defaultLSState >>= newMVar 
+putScheme p env tp
+  = writePrettyLn p (ppScheme env tp)
+
+putErrorMessage p endToo cscheme err
+  = writePrettyLn p (ppErrorMessage endToo cscheme err)
+
+newLSStateVar :: Flags -> IO (MVar LSState)
+newLSStateVar flags = defaultLSState flags >>= newMVar
 
 -- The monad holding (thread-safe) state used by the language server.
 type LSM = LspT () (ReaderT (MVar LSState) IO)
@@ -100,7 +131,7 @@ notificationHandler method handler = J.notificationHandler method $ \req -> do
 requestHandler :: forall (m :: J.Method 'J.ClientToServer 'J.Request). J.SMethod m -> J.Handler LSM m -> Handlers LSM
 requestHandler method handler = J.requestHandler method $ \req resp -> do
   handler req resp
-  flushMessages  
+  flushMessages
 
 flushMessages :: LSM ()
 flushMessages = do
@@ -113,12 +144,4 @@ addMessages msgVar msg =
   modifyMVar msgVar (\oldMsgs -> return (oldMsgs ++ [msg], ()))
 
 getTerminal :: LSM Terminal
-getTerminal = do
-  msgVar <- messages <$> getLSState
-  return $ Terminal
-    { termError = \err -> addMessages msgVar (show err, J.MessageType_Error),
-      termPhase = \phase -> addMessages msgVar (phase, J.MessageType_Info),
-      termPhaseDoc = \doc -> addMessages msgVar (asString doc, J.MessageType_Info),
-      termType = \ty -> addMessages msgVar (asString $ ppType defaultEnv ty, J.MessageType_Info),
-      termDoc = \doc -> addMessages msgVar (asString doc, J.MessageType_Info)
-    }
+getTerminal = terminal <$> getLSState

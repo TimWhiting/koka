@@ -34,7 +34,6 @@ export async function activate(context: vscode.ExtensionContext) {
   if (vsConfig.get('languageServer.enabled')) {
     await languageServer.start(config, context)
   }
-
   createCommands(context, vsConfig, config)
 
   // Debug Adaptor stuff
@@ -64,6 +63,23 @@ class KokaLanguageServer {
   languageClient: LanguageClient
   languageServerProcess: child_process.ChildProcess
   socketServer: Server
+  outputChannel: vscode.OutputChannel
+  lspWriteEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter<string>();
+  lspPty: vscode.Pseudoterminal
+  lspTerminal: vscode.Terminal
+
+  showOutputChannel() {
+    if (!this.lspTerminal.exitStatus){
+      this.outputChannel.show()
+    } else {
+      this.lspTerminal = vscode.window.createTerminal({
+        name: 'Koka Language Server',
+        pty: this.lspPty,
+        isTransient: true
+      })
+      this.lspTerminal.show()
+    }
+  }
 
   async start(config: KokaConfig, context: vscode.ExtensionContext) {
     console.log(`Koka: Language Server ${config.command} ${config.langServerArgs.join(" ")} Workspace: ${config.cwd}`)
@@ -94,9 +110,44 @@ class KokaLanguageServer {
         })
       })
     }
+    // This issue: https://github.com/microsoft/vscode/issues/571
+    // This sample: https://github.com/ShMcK/vscode-pseudoterminal/blob/master/src/extension.ts
+    this.lspPty = {
+      onDidWrite: (listener) => this.lspWriteEmitter.event((e) => listener(e.replace('\r\n', '\n').replace('\n', '\r\n'))),
+      open: () => {},
+      close: () => {}
+    };
+    this.lspTerminal = vscode.window.createTerminal({
+      name: 'Koka Language Server',
+      pty: this.lspPty,
+      isTransient: true
+    })
+    this.outputChannel = {
+      name: 'Koka Language Server', 
+      append: (value: string) => this.lspWriteEmitter.fire(value), 
+      appendLine: (value: string) => {
+        this.lspWriteEmitter.fire(value)
+        this.lspWriteEmitter.fire('\r\n')
+      },
+      clear: () => {
+        this.lspWriteEmitter.fire("\x1b[2J\x1b[3J\x1b[;H")
+      },
+      show: () => this.lspTerminal.show(),
+      hide: () => this.lspTerminal.hide(),
+      dispose: () => {
+        this.lspTerminal.dispose()
+        this.lspWriteEmitter.dispose()
+        this.lspPty.close()
+      },
+      replace: (v) => {
+        this.lspWriteEmitter.fire("\x1b[2J\x1b[3J\x1b[;H")
+        this.lspWriteEmitter.fire(v)
+      },
+
+    };
     const clientOptions: LanguageClientOptions = {
       documentSelector: [{ language: 'koka', scheme: 'file' }],
-      outputChannelName: 'Koka',
+      outputChannel: this.outputChannel,
       revealOutputChannelOn: RevealOutputChannelOn.Never,
     }
     this.languageClient = new LanguageClient(
@@ -105,13 +156,20 @@ class KokaLanguageServer {
       clientOptions,
     )
     context.subscriptions.push(this)
+    
     return await this.languageClient.start()
   }
 
-  dispose() {
-    this.languageClient?.stop()
-    this.socketServer?.close()
-    this.languageServerProcess?.kill()
+  async dispose() {
+    try {
+      await this.languageClient?.stop()
+      await this.languageClient.dispose()
+      this.languageServerProcess?.kill()
+      this.socketServer?.close()
+      // TODO: Does the terminal need to be disposed or is that handled by disposing the client
+    } catch {
+      // Ignore for now, the process should automatically die when the server / client closes the connection
+    }
   }
 }
 
@@ -148,8 +206,10 @@ function createCommands(
         async (progress, token) => {
           progress.report({ message: 'Restarting language server' })
           await languageServer.dispose()
-
-          context.subscriptions.splice(context.subscriptions.indexOf(languageServer), 1)
+          const languageServerIdx = context.subscriptions.indexOf(languageServer)
+          if (languageServerIdx != -1){
+            context.subscriptions.splice(languageServerIdx, 1)
+          }
 
           const {sdkPath, allSDKs} = scanForSDK()
           const newConfig = new KokaConfig(config.vsConfig, sdkPath, allSDKs)
@@ -178,6 +238,9 @@ function createCommands(
       const result = await vscode.window.showQuickPick(['C', 'WASM', 'JS', 'C#'])
       kokaConfig.selectTarget(result)
       selectCompileTarget.text = `Koka Backend: ${kokaConfig.target}`
+    }),
+    vscode.commands.registerCommand('koka.showLSPOutput', async () => {
+      languageServer.showOutputChannel()
     })
   )
 
