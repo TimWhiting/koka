@@ -14,18 +14,17 @@ where
 
 import Common.Error (checkError)
 import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile)
-import Compiler.Options (Flags)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Text as T
 import Language.LSP.Diagnostics (partitionBySource)
-import Language.LSP.Server (Handlers, flushDiagnosticsBySource, publishDiagnostics, sendNotification, getVirtualFile, getVirtualFiles)
+import Language.LSP.Server (Handlers, flushDiagnosticsBySource, publishDiagnostics, sendNotification, getVirtualFile, getVirtualFiles, notificationHandler)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (toLspDiagnostics)
-import LanguageServer.Monad (LSM, modifyLoaded, getLoaded, putLoaded, getTerminal, notificationHandler)
+import LanguageServer.Monad (LSM, modifyLoaded, getLoaded, putLoaded, getTerminal, getFlags)
 import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile)
 import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
@@ -35,28 +34,28 @@ import Data.Map (Map)
 import Text.Read (readMaybe)
 import Debug.Trace (trace)
 
-didOpenHandler :: Flags -> Handlers LSM
-didOpenHandler flags = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
+didOpenHandler :: Handlers LSM
+didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
   let version = msg ^. J.params . J.textDocument . J.version
-  _ <- recompileFile InMemory flags uri (Just version) True
+  _ <- recompileFile InMemory uri (Just version) True
   return ()
 
-didChangeHandler :: Flags -> Handlers LSM
-didChangeHandler flags = notificationHandler J.SMethod_TextDocumentDidChange $ \msg -> do
+didChangeHandler :: Handlers LSM
+didChangeHandler = notificationHandler J.SMethod_TextDocumentDidChange $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
   let version = msg ^. J.params . J.textDocument . J.version
-  _ <- recompileFile InMemory flags uri (Just version) True -- Need to reload
+  _ <- recompileFile InMemory uri (Just version) True -- Need to reload
   return ()
 
-didSaveHandler :: Flags -> Handlers LSM
-didSaveHandler flags = notificationHandler J.SMethod_TextDocumentDidSave $ \msg -> do
+didSaveHandler :: Handlers LSM
+didSaveHandler = notificationHandler J.SMethod_TextDocumentDidSave $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
-  _ <- recompileFile InMemory flags uri Nothing False
+  _ <- recompileFile InMemory uri Nothing False
   return()
 
-didCloseHandler :: Flags -> Handlers LSM
-didCloseHandler flags = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> do
+didCloseHandler :: Handlers LSM
+didCloseHandler = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> do
   -- TODO: Remove file from LSM state?
   return ()
 
@@ -66,10 +65,11 @@ maybeContents vfs uri = do
 
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
-recompileFile :: CompileTarget () -> Flags -> J.Uri -> Maybe J.Int32 -> Bool -> LSM (Maybe FilePath)
-recompileFile compileTarget flags uri version force =
+recompileFile :: CompileTarget () -> J.Uri -> Maybe J.Int32 -> Bool -> LSM (Maybe FilePath)
+recompileFile compileTarget uri version force =
   case J.uriToFilePath uri of
     Just filePath -> do
+      flags <- getFlags
       -- Recompile the file
       vFiles <- getVirtualFiles
 

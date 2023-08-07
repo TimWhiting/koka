@@ -21,6 +21,7 @@ dependencies:
   - base >= 4.9
   - aeson
   - array
+  - async
   - bytestring
   - containers
   - co-log-core
@@ -30,6 +31,7 @@ dependencies:
   - mtl
   - parsec
   - process
+  - stm
   - text
   - text-rope
   - time

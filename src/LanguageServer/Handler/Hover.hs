@@ -6,22 +6,21 @@
 module LanguageServer.Handler.Hover (hoverHandler, formatRangeInfoHover) where
 
 import Compiler.Module (loadedModule, modRangeMap)
-import Compiler.Options (Flags)
 import Control.Lens ((^.))
 import qualified Data.Map as M
 import qualified Data.Text as T
-import Language.LSP.Server (Handlers, sendNotification)
+import Language.LSP.Server (Handlers, sendNotification, requestHandler)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (fromLspPos, toLspRange)
-import LanguageServer.Monad (LSM, getLoaded, requestHandler)
+import LanguageServer.Monad (LSM, getLoaded)
 import Lib.PPrint (Pretty (..))
 import Syntax.RangeMap (NameInfo (..), RangeInfo (..), rangeMapFindAt)
 import qualified Language.LSP.Protocol.Message as J
 import Data.Maybe (fromMaybe)
 
-hoverHandler :: Flags -> Handlers LSM
-hoverHandler flags = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
+hoverHandler :: Handlers LSM
+hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
   let J.HoverParams doc pos _ = req ^. J.params
       uri = doc ^. J.uri
       normUri = J.toNormalizedUri uri
