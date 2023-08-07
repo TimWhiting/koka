@@ -153,6 +153,7 @@ executable koka
   build-depends:
       aeson
     , array
+    , async
     , base >=4.9
     , bytestring
     , co-log-core
@@ -166,6 +167,7 @@ executable koka
     , network-simple
     , parsec
     , process
+    , stm
     , text
     , text-rope
     , time
@@ -186,6 +188,7 @@ test-suite koka-test
   build-depends:
       aeson
     , array
+    , async
     , base >=4.9
     , bytestring
     , co-log-core
@@ -205,6 +208,7 @@ test-suite koka-test
     , parsec
     , process
     , regex-compat >=0.95.2.1
+    , stm
     , text
     , text-rope
     , time

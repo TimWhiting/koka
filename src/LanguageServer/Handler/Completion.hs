@@ -13,21 +13,19 @@ where
 
 import Common.Name (Name (..))
 import Compiler.Module (Loaded (..))
-import Compiler.Options (Flags)
 import Control.Lens ((^.))
 import qualified Data.Map as M
 import Data.Maybe (maybeToList, fromMaybe, fromJust)
-import qualified Data.Text as T
 import qualified Data.Text.Utf16.Rope as Rope
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Kind.Constructors (ConInfo (..), Constructors, constructorsList)
 import Kind.Synonym (SynInfo (..), Synonyms, synonymsToList)
-import Language.LSP.Server (Handlers, getVirtualFile)
+import Language.LSP.Server (Handlers, getVirtualFile, requestHandler)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import Language.LSP.VFS (VirtualFile (VirtualFile))
-import LanguageServer.Monad (LSM, getLoaded, requestHandler)
+import LanguageServer.Monad (LSM, getLoaded)
 import Lib.PPrint (Pretty (..))
 import Syntax.Lexer (reservedNames)
 import Type.Assumption
@@ -65,8 +63,8 @@ import Lib.Trace (trace)
 import Type.InferMonad (subst)
 import Type.TypeVar (tvsEmpty)
 
-completionHandler :: Flags -> Handlers LSM
-completionHandler flags = requestHandler J.SMethod_TextDocumentCompletion $ \req responder -> do
+completionHandler :: Handlers LSM
+completionHandler = requestHandler J.SMethod_TextDocumentCompletion $ \req responder -> do
   let J.CompletionParams doc pos _ _ context = req ^. J.params
       uri = doc ^. J.uri
       normUri = J.toNormalizedUri uri

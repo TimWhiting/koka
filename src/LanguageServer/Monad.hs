@@ -8,11 +8,10 @@ module LanguageServer.Monad
   ( LSState (..),
     defaultLSState,
     newLSStateVar,
-    notificationHandler,
-    requestHandler,
     LSM,
     getLSState,
     getTerminal,
+    getFlags,
     putLSState,
     modifyLSState,
     getLoaded,
@@ -34,10 +33,8 @@ import qualified Language.LSP.Protocol.Message as J
 
 import Compiler.Compile (Terminal (..))
 import Lib.PPrint (Pretty(..), asString, writePrettyLn)
-import GHC.Conc (ThreadId)
 import Control.Concurrent.Chan (readChan)
 import Type.Pretty (ppType, defaultEnv, Env (context, importsMap), ppScheme)
-import Control.Concurrent (isEmptyMVar)
 import qualified Language.LSP.Server as J
 import GHC.Base (Type)
 import Lib.Printer (withColorPrinter, withColor, writeLn, ansiDefault, AnsiStringPrinter (AnsiString), Color (Red), ColorPrinter (PAnsiString))
@@ -49,22 +46,33 @@ import Kind.ImportMap (importsEmpty)
 import Platform.Var (newVar, takeVar)
 import Debug.Trace (trace)
 
+import Control.Monad.STM
+import Control.Concurrent.STM.TChan
+import Control.Concurrent
+import GHC.Conc (atomically)
+import Control.Concurrent.STM (newTVarIO, TVar)
+import qualified Data.Set as Set
+import Control.Concurrent.STM.TMVar (TMVar)
+
 -- The language server's state, e.g. holding loaded/compiled modules.
-data LSState = LSState {lsLoaded :: Maybe Loaded, messages :: MVar [(String, J.MessageType)], flags:: Flags, terminal:: Terminal}
+data LSState = LSState {lsLoaded :: Maybe Loaded, messages :: TChan (String, J.MessageType), flags:: Flags, terminal:: Terminal, pendingRequests :: TVar (Set.Set J.SomeLspId), cancelledRequests :: TVar (Set.Set J.SomeLspId), documentVersions :: TVar (M.Map J.Uri J.Int32) }
 
 trimnl :: [Char] -> [Char]
 trimnl str = reverse $ dropWhile (`elem` "\n\r\t ") $ reverse str
 
 defaultLSState :: Flags -> IO LSState
 defaultLSState flags = do
-  msgVar <- newMVar []
+  msgChan <- atomically newTChan :: IO (TChan (String, J.MessageType))
+  pendingRequests <- newTVarIO Set.empty
+  cancelledRequests <- newTVarIO Set.empty
+  documentVersions <- newTVarIO M.empty
   let withNewPrinter f = do
         ansiConsole <- newVar ansiDefault
         stringVar <- newVar ""
         let p = AnsiString ansiConsole stringVar
         tp <- (f . PAnsiString) p
         ansiString <- takeVar stringVar
-        addMessages msgVar (trimnl ansiString, tp)
+        atomically $ writeTChan msgChan (trimnl ansiString, tp)
   
   let cscheme = colorScheme flags
       prettyEnv flags ctx imports = (prettyEnvFromFlags flags){ context = ctx, importsMap = imports }
@@ -74,7 +82,7 @@ defaultLSState flags = do
                  (if verbose flags > 0 then (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info) else (\_ -> return ()))
                  (\tp -> withNewPrinter $ \p -> do putScheme p (prettyEnv flags nameNil importsEmpty) tp; return J.MessageType_Info)
                  (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info)
-  return LSState {lsLoaded = Nothing, messages = msgVar, terminal = term, flags = flags}
+  return LSState {lsLoaded = Nothing, messages = msgChan, terminal = term, flags = flags, pendingRequests=pendingRequests, cancelledRequests=cancelledRequests, documentVersions=documentVersions}
 
 putScheme p env tp
   = writePrettyLn p (ppScheme env tp)
@@ -110,6 +118,10 @@ modifyLSState m = do
 getLoaded :: LSM (Maybe Loaded)
 getLoaded = lsLoaded <$> getLSState
 
+-- Fetches the loaded state holding compiled modules
+getFlags :: LSM Flags
+getFlags = flags <$> getLSState
+
 -- Replaces the loaded state holding compiled modules
 putLoaded :: Loaded -> LSM ()
 putLoaded l = modifyLSState $ \s -> s {lsLoaded = Just l}
@@ -121,27 +133,6 @@ modifyLoaded m = modifyLSState $ \s -> s {lsLoaded = Just $ m $ lsLoaded s}
 -- Runs the language server's state monad.
 runLSM :: LSM a -> MVar LSState -> LanguageContextEnv () -> IO a
 runLSM lsm stVar cfg = runReaderT (runLspT cfg lsm) stVar
-
-notificationHandler ::forall (m :: J.Method 'J.ClientToServer 'J.Notification). J.SMethod m -> J.Handler LSM m -> Handlers LSM
-notificationHandler method handler = J.notificationHandler method $ \req -> do
-  res <- handler req
-  flushMessages
-  return res
-
-requestHandler :: forall (m :: J.Method 'J.ClientToServer 'J.Request). J.SMethod m -> J.Handler LSM m -> Handlers LSM
-requestHandler method handler = J.requestHandler method $ \req resp -> do
-  handler req resp
-  flushMessages
-
-flushMessages :: LSM ()
-flushMessages = do
-  msgVar <- messages <$> getLSState
-  msgs <- liftIO $ readMVar msgVar
-  mapM_ (\(msg, tp) -> sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams tp $ T.pack msg) msgs
-
-addMessages :: MVar [(String, J.MessageType)] -> (String, J.MessageType) -> IO ()
-addMessages msgVar msg =
-  modifyMVar msgVar (\oldMsgs -> return (oldMsgs ++ [msg], ()))
 
 getTerminal :: LSM Terminal
 getTerminal = terminal <$> getLSState

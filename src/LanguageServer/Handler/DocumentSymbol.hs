@@ -9,22 +9,21 @@ module LanguageServer.Handler.DocumentSymbol( documentSymbolHandler
 import qualified Common.Range            as R
 import Common.Syntax                     ( DefSort (..) )
 import Common.Name                       ( Name (..) )
-import Compiler.Options                  ( Flags )
 import Compiler.Module                   ( modProgram, loadedModule, Loaded (..) )
 import Control.Lens                      ( (^.) )
 import qualified Data.Map                as M
 import Data.Maybe                        ( maybeToList )
 import qualified Data.Text               as T
-import Language.LSP.Server               ( Handlers )
+import Language.LSP.Server               ( Handlers, requestHandler )
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions        ( toLspRange )
-import LanguageServer.Monad              ( LSM, getLoaded, requestHandler )
+import LanguageServer.Monad              ( LSM, getLoaded )
 import Syntax.Syntax
 import qualified Language.LSP.Protocol.Message as J
 
-documentSymbolHandler :: Flags -> Handlers LSM
-documentSymbolHandler flags = requestHandler J.SMethod_TextDocumentDocumentSymbol $ \req responder -> do
+documentSymbolHandler :: Handlers LSM
+documentSymbolHandler = requestHandler J.SMethod_TextDocumentDocumentSymbol $ \req responder -> do
   let J.DocumentSymbolParams _ _ doc = req ^. J.params
       uri = doc ^. J.uri
       normUri = J.toNormalizedUri uri

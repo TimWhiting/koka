@@ -6,24 +6,23 @@
 module LanguageServer.Handler.Definition (definitionHandler) where
 
 import Compiler.Module (Loaded (..), loadedModule, modRangeMap)
-import Compiler.Options (Flags)
 import Control.Lens ((^.))
 import qualified Data.Map as M
 import Data.Maybe (maybeToList)
 import Kind.Constructors (conInfoRange, constructorsLookup)
 import Kind.Newtypes (dataInfoRange, newtypesLookupAny)
 import Kind.Synonym (synInfoRange, synonymsLookup)
-import Language.LSP.Server (Handlers)
+import Language.LSP.Server (Handlers, requestHandler)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (fromLspPos, toLspLocation, toLspLocationLink)
-import LanguageServer.Monad (LSM, getLoaded, requestHandler)
+import LanguageServer.Monad (LSM, getLoaded)
 import Syntax.RangeMap (RangeInfo (..), rangeMapFindAt)
 import Type.Assumption (gammaLookupQ, infoRange)
 import qualified Language.LSP.Protocol.Message as J
 
-definitionHandler :: Flags -> Handlers LSM
-definitionHandler flags = requestHandler J.SMethod_TextDocumentDefinition $ \req responder -> do
+definitionHandler :: Handlers LSM
+definitionHandler = requestHandler J.SMethod_TextDocumentDefinition $ \req responder -> do
   let J.DefinitionParams doc pos _ _ = req ^. J.params
       uri = doc ^. J.uri
       normUri = J.toNormalizedUri uri
