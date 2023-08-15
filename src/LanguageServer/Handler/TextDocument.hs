@@ -12,7 +12,7 @@ module LanguageServer.Handler.TextDocument
   )
 where
 
-import Common.Error (checkError)
+import Common.Error (checkError, Error)
 import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
@@ -33,6 +33,8 @@ import Data.ByteString (ByteString)
 import Data.Map (Map)
 import Text.Read (readMaybe)
 import Debug.Trace (trace)
+import Control.Exception (try)
+import qualified Control.Exception as Exc
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -81,28 +83,34 @@ recompileFile compileTarget uri version force =
             return $ loadedModule l : loadedModules l
       term <- getTerminal
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
-      result <- liftIO $ compileFile (maybeContents vfs) contents term flags (fromMaybe [] modules) compileTarget filePath 
-      outFile <- case checkError result of
-        Right ((l, outFile), _) -> do
-          putLoaded l
-          sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ "Successfully compiled " <> T.pack filePath
+     
+      let resultIO :: IO (Either Exc.ErrorCall (Error (Loaded, Maybe FilePath)))
+          resultIO = try $ compileFile (maybeContents vfs) contents term flags (fromMaybe [] modules) compileTarget filePath 
+      result <- liftIO resultIO
+      case result of
+        Right res -> do
+          outFile <- case checkError res of
+            Right ((l, outFile), _) -> do
+              putLoaded l
+              sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ "Successfully compiled " <> T.pack filePath
+              return outFile
+            Left e -> do
+              sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
+              return Nothing
+
+          -- Emit the diagnostics (errors and warnings)
+          let diagSrc = T.pack "koka"
+              diags = toLspDiagnostics diagSrc res
+              diagsBySrc = partitionBySource diags
+              maxDiags = 100
+          if null diags
+            then flushDiagnosticsBySource maxDiags (Just diagSrc)
+            else publishDiagnostics maxDiags normUri version diagsBySrc
           return outFile
         Left e -> do
-          sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
+          sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" got " ++ show e)
+          sendNotification J.SMethod_WindowShowMessage $ J.ShowMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" got " ++ show e)
           return Nothing
-
-      -- Emit the diagnostics (errors and warnings)
-      let diagSrc = T.pack "koka"
-          diags = toLspDiagnostics diagSrc result
-          diagsBySrc = partitionBySource diags
-          maxDiags = 100
-      if null diags
-        then flushDiagnosticsBySource maxDiags (Just diagSrc)
-        else publishDiagnostics maxDiags normUri version diagsBySrc
-      return outFile
     Nothing -> return Nothing
   where
     normUri = J.toNormalizedUri uri
-
--- TODO: Emit messages via LSP's logging mechanism
-
