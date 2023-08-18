@@ -85,7 +85,7 @@ recompileFile compileTarget uri version force =
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
      
       let resultIO :: IO (Either Exc.ErrorCall (Error (Loaded, Maybe FilePath)))
-          resultIO = try $ compileFile (maybeContents vfs) contents term flags (fromMaybe [] modules) compileTarget filePath 
+          resultIO = try $ compileFile (maybeContents vfs) contents term flags [] (fromMaybe [] modules) compileTarget filePath 
       result <- liftIO resultIO
       case result of
         Right res -> do
