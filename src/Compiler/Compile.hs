@@ -585,7 +585,10 @@ resolveImportModules compileTarget maybeContents mname term flags currentDir res
 resolveImportModules compileTarget maybeContents mname term flags currentDir resolved0 (imp:imps)
   = do -- trace (show mname ++ ": resolving imported modules: " ++ show (impName imp) ++ ", resolved: " ++ show (map (show . modName) resolved0)) $ return ()
        (mod,resolved1) <- case filter (\m -> impName imp == modName m) resolved0 of
-                            (mod:_) -> return (mod,resolved0)
+                            (mod:_) -> 
+                              -- Restricts resolved0 just to the recursive deps
+                              let deps = getRecursiveDeps resolved0 (modCore mod) in
+                              return (mod, deps)
                             _       -> resolveModule compileTarget maybeContents term flags currentDir resolved0 imp
        -- trace (" newly resolved from " ++ show (modName mod) ++ ": " ++ show (map (show . modName) resolved1)) $ return ()
        let imports    = Core.coreProgImports $ modCore mod
@@ -593,7 +596,7 @@ resolveImportModules compileTarget maybeContents mname term flags currentDir res
        -- trace (" resolve further imports (from " ++ show (modName mod) ++ ") (added module: " ++ show (impName imp) ++ " public imports: " ++ show (map (show . impName) pubImports) ++ ")") $ return ()
        (needed,resolved2) <- resolveImportModules compileTarget maybeContents mname term flags currentDir resolved1 (pubImports ++ imps)
        let needed1 = filter (\m -> modName m /= modName mod) needed -- no dups
-       return (mod:needed1,resolved2)
+       return (mod:needed1,addDeps resolved2 resolved1)
 
 
 searchModule :: Flags -> FilePath -> Name -> IO (Maybe FilePath)
@@ -1075,8 +1078,7 @@ codeGen term flags compileTarget loaded
                  withNewFilePrinter (outBase ++ ".xmp.html") $ \printer ->
                   genDoc cenv (loadedKGamma loaded) (loadedGamma loaded) (modCore mod) printer
 
-       let usedModules = getRecursiveDeps (loadedModules loaded) (modCore mod)
-       mbRun <- backend term flags usedModules compileTarget outBase (modCore mod)
+       mbRun <- backend term flags (loadedModules loaded) compileTarget outBase (modCore mod)
 
        -- write interface file last so on any error it will not be written
        writeDocW 10000 outIface ifaceDoc
@@ -1278,7 +1280,7 @@ codeGenC sourceFile newtypes borrowed0 unique0 term flags modules compileTarget 
       let cc       = ccomp flags
           eimports = externalImportsFromCore (target flags) bcore
           clibs    = clibsFromCore flags bcore
-      extraIncDirs <- fmap concat $ mapM (copyCLibrary term flags cc) eimports
+      extraIncDirs <- concat <$> mapM (copyCLibrary term flags cc) eimports
 
       -- compile      
       ccompile term flags cc outBase extraIncDirs [outC]
