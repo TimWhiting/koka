@@ -212,7 +212,7 @@ function createCommands(
           }
 
           const {sdkPath, allSDKs} = scanForSDK()
-          const newConfig = new KokaConfig(config.vsConfig, sdkPath, allSDKs)
+          const newConfig = new KokaConfig(config, sdkPath, allSDKs)
           languageServer = new KokaLanguageServer()
           await languageServer.start(newConfig, context)
 
