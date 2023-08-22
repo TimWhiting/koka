@@ -481,7 +481,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
        (loaded4, outFile) <- liftIO $ case newTarget of
             InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
             _ -> do
-              (loadedNew, mbRun) <- trace "Code gen" $ codeGen term flags newTarget loaded3
+              (loadedNew, mbRun) <- codeGen term flags newTarget loaded3
               -- run the program
               when (evaluate flags && isExecutable newTarget) $
                 compilerCatch "program run" term () $

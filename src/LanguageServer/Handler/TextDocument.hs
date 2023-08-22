@@ -84,7 +84,7 @@ recompileFile compileTarget uri version force =
       term <- getTerminal
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
      
-      let resultIO :: IO (Either Exc.ErrorCall (Error (Loaded, Maybe FilePath)))
+      let resultIO :: IO (Either Exc.SomeException (Error (Loaded, Maybe FilePath)))
           resultIO = try $ compileFile (maybeContents vfs) contents term flags [] (fromMaybe [] modules) compileTarget filePath 
       result <- liftIO resultIO
       case result of
@@ -108,8 +108,8 @@ recompileFile compileTarget uri version force =
             else publishDiagnostics maxDiags normUri version diagsBySrc
           return outFile
         Left e -> do
-          sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" got " ++ show e)
-          sendNotification J.SMethod_WindowShowMessage $ J.ShowMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" got " ++ show e)
+          sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" compiler threw exception " ++ show e)
+          sendNotification J.SMethod_WindowShowMessage $ J.ShowMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" compiler threw exception " ++ show e)
           return Nothing
     Nothing -> return Nothing
   where
