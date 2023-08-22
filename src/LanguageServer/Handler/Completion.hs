@@ -54,7 +54,7 @@ import Data.Char (isUpper, isAlphaNum)
 import Compiler.Compile (Module (..))
 import Type.Type (Type(..), splitFunType)
 import Syntax.RangeMap (rangeMapFindAt, rangeInfoType)
-import LanguageServer.Conversions (fromLspPos)
+import LanguageServer.Conversions (fromLspPos, loadedModuleFromUri)
 import Common.Range (makePos, posNull, Range, rangeNull)
 import LanguageServer.Handler.Hover (formatRangeInfoHover)
 import Type.Unify (runUnify, unify, runUnifyEx, matchArguments)
@@ -72,9 +72,10 @@ completionHandler = requestHandler J.SMethod_TextDocumentCompletion $ \req respo
   vfile <- getVirtualFile normUri
   let items = do
         l <- maybeToList loaded
+        lm <- maybeToList $ loadedModuleFromUri loaded uri
         vf <- maybeToList vfile
-        pi <- maybeToList =<< getCompletionInfo pos vf (loadedModule l) uri
-        findCompletions l pi
+        pi <- maybeToList =<< getCompletionInfo pos vf lm uri
+        findCompletions l lm pi
   responder $ Right $ J.InL items
 
 -- | Describes the line at the current cursor position
@@ -140,10 +141,10 @@ getCompletionInfo pos@(J.Position l c) (VirtualFile _ _ ropetext) mod uri =
 filterPrefix :: PositionInfo -> T.Text -> Bool
 filterPrefix pinfo n = (searchTerm pinfo `T.isPrefixOf` n) && ('.' /= T.head n)
 
-findCompletions :: Loaded -> PositionInfo -> [J.CompletionItem]
-findCompletions loaded pinfo@PositionInfo{isFunctionCompletion = fcomplete} = filter (filterPrefix pinfo . (^. J.label)) completions
+findCompletions :: Loaded -> Module -> PositionInfo -> [J.CompletionItem]
+findCompletions loaded mod pinfo@PositionInfo{isFunctionCompletion = fcomplete} = filter (filterPrefix pinfo . (^. J.label)) completions
   where
-    curModName = modName $ loadedModule loaded
+    curModName = modName mod
     search = searchTerm pinfo
     gamma = loadedGamma loaded
     constrs = loadedConstructors loaded

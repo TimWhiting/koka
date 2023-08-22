@@ -17,11 +17,11 @@ module LanguageServer.Monad
     getLoaded,
     putLoaded,
     modifyLoaded,
+    getLoadedModule,
     runLSM,
   )
 where
 
-import Compiler.Module (Loaded)
 import Control.Concurrent.MVar (MVar, modifyMVar, newMVar, putMVar, readMVar, newEmptyMVar)
 import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Control.Monad.Trans (lift, liftIO)
@@ -31,7 +31,7 @@ import Language.LSP.Server (LanguageContextEnv, LspT, runLspT, sendNotification,
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Message as J
 
-import Compiler.Compile (Terminal (..))
+import Compiler.Compile (Terminal (..), Loaded (loadedModules), Module (..))
 import Lib.PPrint (Pretty(..), asString, writePrettyLn)
 import Control.Concurrent.Chan (readChan)
 import Type.Pretty (ppType, defaultEnv, Env (context, importsMap), ppScheme)
@@ -53,6 +53,7 @@ import GHC.Conc (atomically)
 import Control.Concurrent.STM (newTVarIO, TVar)
 import qualified Data.Set as Set
 import Control.Concurrent.STM.TMVar (TMVar)
+import LanguageServer.Conversions (loadedModuleFromUri)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
 data LSState = LSState {lsLoaded :: Maybe Loaded, messages :: TChan (String, J.MessageType), flags:: Flags, terminal:: Terminal, pendingRequests :: TVar (Set.Set J.SomeLspId), cancelledRequests :: TVar (Set.Set J.SomeLspId), documentVersions :: TVar (M.Map J.Uri J.Int32) }
@@ -73,7 +74,7 @@ defaultLSState flags = do
         tp <- (f . PAnsiString) p
         ansiString <- takeVar stringVar
         atomically $ writeTChan msgChan (trimnl ansiString, tp)
-  
+
   let cscheme = colorScheme flags
       prettyEnv flags ctx imports = (prettyEnvFromFlags flags){ context = ctx, importsMap = imports }
       term = Terminal (\err -> withNewPrinter $ \p -> do putErrorMessage p (showSpan flags) cscheme err; return J.MessageType_Error)
@@ -124,11 +125,16 @@ getFlags = flags <$> getLSState
 
 -- Replaces the loaded state holding compiled modules
 putLoaded :: Loaded -> LSM ()
-putLoaded l = modifyLSState $ \s -> s {lsLoaded = Just l}
+putLoaded l = modifyLSState $ \s -> s {lsLoaded = case lsLoaded s of {Nothing -> Just l; Just l' -> Just $ mergeLoaded l l'}}
+
+getLoadedModule :: J.Uri -> LSM (Maybe Module)
+getLoadedModule uri = do
+  lmaybe <- getLoaded
+  return $ loadedModuleFromUri lmaybe uri
 
 -- Updates the loaded state holding compiled modules
 modifyLoaded :: (Maybe Loaded -> Loaded) -> LSM ()
-modifyLoaded m = modifyLSState $ \s -> s {lsLoaded = Just $ m $ lsLoaded s}
+modifyLoaded m = modifyLSState $ \s -> s {lsLoaded = case lsLoaded s of {Nothing -> Just (m Nothing); Just l' -> Just $ mergeLoaded (m $ Just l') l'}}
 
 -- Runs the language server's state monad.
 runLSM :: LSM a -> MVar LSState -> LanguageContextEnv () -> IO a
@@ -136,3 +142,9 @@ runLSM lsm stVar cfg = runReaderT (runLspT cfg lsm) stVar
 
 getTerminal :: LSM Terminal
 getTerminal = terminal <$> getLSState
+
+mergeLoaded :: Loaded -> Loaded -> Loaded
+mergeLoaded a b =
+  let aModules = loadedModules a
+      aModNames = map modName aModules in
+  a{loadedModules= aModules ++ filter (\m -> modName m `notElem` aModNames) (loadedModules b)}

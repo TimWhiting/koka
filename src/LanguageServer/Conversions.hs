@@ -17,6 +17,9 @@ module LanguageServer.Conversions
     fromLspPos,
     fromLspRange,
     fromLspLocation,
+
+    -- * Get loaded module from URI
+    loadedModuleFromUri
   )
 where
 import           GHC.Generics              hiding (UInt)
@@ -28,6 +31,9 @@ import Colog.Core
 import Language.LSP.Protocol.Types (UInt)
 import Lib.PPrint (Doc)
 import qualified Syntax.RangeMap as R
+import Compiler.Module (Module (..), Loaded (..))
+import Data.Maybe (fromMaybe)
+import Data.List (find)
 
 toLspPos :: R.Pos -> J.Position
 toLspPos p =
@@ -103,3 +109,9 @@ fromLspRange uri (J.Range s e) = R.makeRange (fromLspPos uri s) (fromLspPos uri 
 
 fromLspLocation :: J.Location -> R.Range
 fromLspLocation (J.Location uri rng) = fromLspRange uri rng
+
+loadedModuleFromUri :: Maybe Loaded -> J.Uri -> Maybe Module
+loadedModuleFromUri l uri = 
+  case l of
+    Nothing -> Nothing
+    Just l -> find (\m -> fromMaybe "" (J.uriToFilePath uri) == modSourcePath m) $ loadedModules l
