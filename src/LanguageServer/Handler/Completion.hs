@@ -52,7 +52,7 @@ import Type.Assumption
 import qualified Language.LSP.Protocol.Message as J
 import Data.Char (isUpper, isAlphaNum)
 import Compiler.Compile (Module (..))
-import Type.Type (Type(..), splitFunType)
+import Type.Type (Type(..), splitFunType, splitFunScheme)
 import Syntax.RangeMap (rangeMapFindAt, rangeInfoType)
 import LanguageServer.Conversions (fromLspPos, loadedModuleFromUri)
 import Common.Range (makePos, posNull, Range, rangeNull)
@@ -170,18 +170,22 @@ typeUnifies t1 t2 =
     Just t2 ->  let (res, _, _) = (runUnifyEx 0 $ matchArguments True rangeNull tvsEmpty t1 [t2] []) in  isRight res
 
 valueCompletions :: Name -> Gamma -> PositionInfo -> [J.CompletionItem]
-valueCompletions curModName gamma pinfo@PositionInfo{argumentType=tp, searchTerm=search} = map toItem . filter matchInfo $ filter (\(n, ni) -> filterInfix pinfo $ T.pack $ nameId n) $ gammaList gamma
+valueCompletions curModName gamma pinfo@PositionInfo{argumentType=tp, searchTerm=search, isFunctionCompletion} = map toItem . filter matchInfo $ filter (\(n, ni) -> filterInfix pinfo $ T.pack $ nameId n) $ gammaList gamma
   where
     isHandler n = '.' == T.head n
     matchInfo :: (Name, NameInfo) -> Bool
     matchInfo (n, ninfo) = case ninfo of
-        InfoVal {..} -> True
-        InfoFun {infoType} -> trace ("Checking " ++ show n) typeUnifies infoType tp
-        InfoExternal {infoType} -> trace ("Checking " ++ show n) typeUnifies infoType tp
-        InfoImport {infoType} -> trace ("Checking " ++ show n) typeUnifies infoType tp
-        InfoCon {infoType } -> trace ("Checking " ++ show n) typeUnifies infoType tp
+        InfoVal {infoType} -> typeUnifies infoType tp
+        InfoFun {infoType} -> typeUnifies infoType tp
+        InfoExternal {infoType} -> typeUnifies infoType tp
+        InfoImport {infoType} -> typeUnifies infoType tp
+        InfoCon {infoType } -> typeUnifies infoType tp
     toItem (n, ninfo) = case ninfo of
         InfoCon {infoCon} | isHandler $ T.pack (nameId n) -> makeHandlerCompletionItem curModName infoCon d rng (fullLine pinfo)
+        InfoFun {infoType} -> makeFunctionCompletionItem curModName n d infoType isFunctionCompletion rng (fullLine pinfo)
+        InfoVal {infoType} -> case splitFunScheme infoType of
+          Just (tvars, tpreds, pars, eff, res) -> makeFunctionCompletionItem curModName n d infoType isFunctionCompletion rng (fullLine pinfo)
+          Nothing -> makeCompletionItem curModName n k d
         _ -> makeCompletionItem curModName n k d
       where
         pos@(J.Position l c) = cursorPos pinfo
@@ -262,6 +266,68 @@ makeCompletionItem curModName n k d =
     commitChars = Just [T.pack "\t"]
     command = Nothing
     xdata = Nothing
+
+makeFunctionCompletionItem :: Name -> Name -> String -> Type -> Bool -> J.Range -> T.Text-> J.CompletionItem
+makeFunctionCompletionItem curModName funName d funType accessor rng line =
+  J.CompletionItem
+    label
+    labelDetails
+    kind
+    tags
+    detail
+    doc
+    deprecated
+    preselect
+    sortText
+    filterText
+    insertText
+    insertTextFormat
+    insertTextMode
+    textEdit
+    textEditText
+    additionalTextEdits
+    commitChars
+    command
+    xdata
+    where
+      label = T.pack $ nameId funName
+      indentation = T.length $ T.takeWhile (== ' ') line
+      trailingFunIndentation = T.replicate indentation " "
+      labelDetails = Nothing
+      kind = Just J.CompletionItemKind_Snippet
+      tags = Nothing
+      detail = Just $  T.pack d
+      doc = Just $ J.InL $ T.pack $ nameModule funName
+      deprecated = Just False
+      preselect = Nothing
+      sortText = Just $ if nameId curModName == nameModule funName then "0" <> label else "2" <> label
+      filterText = Just label
+      insertText = Nothing
+      insertTextFormat = Just InsertTextFormat_Snippet
+      insertTextMode = Nothing
+      arguments = case splitFunScheme funType
+        of Just (tvars, tpreds, pars, eff, res) -> pars
+           Nothing -> []
+      numArgs = length arguments - (if accessor then 1 else 0)
+      trailingFunArgTp = case arguments
+        of [] -> Nothing
+           xs -> let arg = last xs
+            in case splitFunScheme (snd arg) of
+              Nothing -> Nothing
+              Just (_, _, args, _, _) -> Just args
+      argumentsText =
+        if numArgs == 0 then trace ("No function arguments for " ++ show label) $ T.pack ""
+        else case trailingFunArgTp of
+          Nothing -> "(" <> T.intercalate "," (map (\i -> T.pack $ "$" ++ show i) [1..numArgs]) <> ")"
+          Just tp ->
+            let mainArgs = "(" <> T.intercalate "," (map (\i -> T.pack $ "$" ++ show i) [1..numArgs-1]) <> ")"
+            in mainArgs <> " fn(" <> T.intercalate "," (map (\i -> T.pack $ "$" ++ show i) [numArgs..numArgs+length tp-1]) <> ")\n" <> trailingFunIndentation <> "()"
+      textEdit = Just $ J.InL $ J.TextEdit rng $ label <> argumentsText
+      textEditText = Nothing
+      additionalTextEdits = Nothing
+      commitChars = Just [T.pack "\t"]
+      command = Nothing
+      xdata = Nothing
 
 makeHandlerCompletionItem :: Name -> ConInfo -> String -> J.Range -> T.Text -> J.CompletionItem
 makeHandlerCompletionItem curModName conInfo d r line =
