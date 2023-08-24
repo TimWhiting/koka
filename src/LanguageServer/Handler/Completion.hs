@@ -60,8 +60,11 @@ import LanguageServer.Handler.Hover (formatRangeInfoHover)
 import Type.Unify (runUnify, unify, runUnifyEx, matchArguments)
 import Data.Either (isRight)
 import Lib.Trace (trace)
-import Type.InferMonad (subst)
+import Type.InferMonad (subst, instantiate)
 import Type.TypeVar (tvsEmpty)
+import Data.ByteString (intercalate)
+import Control.Monad.ST (runST)
+import Language.LSP.Protocol.Types (InsertTextFormat(InsertTextFormat_Snippet))
 
 completionHandler :: Handlers LSM
 completionHandler = requestHandler J.SMethod_TextDocumentCompletion $ \req responder -> do
@@ -134,15 +137,17 @@ getCompletionInfo pos@(J.Position l c) (VirtualFile _ _ ropetext) mod uri =
             in
       trace (show result) $ return result
 
--- TODO: Make completions context-aware
 -- TODO: Complete local variables
 -- TODO: Show documentation comments in completion docs
 
-filterPrefix :: PositionInfo -> T.Text -> Bool
-filterPrefix pinfo n = (searchTerm pinfo `T.isPrefixOf` n) && ('.' /= T.head n)
+filterInfix :: PositionInfo -> T.Text -> Bool
+filterInfix pinfo n = (searchTerm pinfo `T.isInfixOf` n) && (('.' /= T.head n) || ".Hnd-" `T.isPrefixOf` n)
+
+filterInfixConstructors :: PositionInfo -> T.Text -> Bool
+filterInfixConstructors pinfo n = (searchTerm pinfo `T.isInfixOf` n) && (('.' /= T.head n) || ".Hnd-" `T.isPrefixOf` n)
 
 findCompletions :: Loaded -> Module -> PositionInfo -> [J.CompletionItem]
-findCompletions loaded mod pinfo@PositionInfo{isFunctionCompletion = fcomplete} = filter (filterPrefix pinfo . (^. J.label)) completions
+findCompletions loaded mod pinfo@PositionInfo{isFunctionCompletion = fcomplete} = filter (filterInfix pinfo . (^. J.label)) completions
   where
     curModName = modName mod
     search = searchTerm pinfo
@@ -165,8 +170,9 @@ typeUnifies t1 t2 =
     Just t2 ->  let (res, _, _) = (runUnifyEx 0 $ matchArguments True rangeNull tvsEmpty t1 [t2] []) in  isRight res
 
 valueCompletions :: Name -> Gamma -> PositionInfo -> [J.CompletionItem]
-valueCompletions curModName gamma pinfo@PositionInfo{argumentType=tp, searchTerm=search} = map toItem . filter matchInfo $ filter (\(n, ni) -> filterPrefix pinfo $ T.pack $ nameId n) $ gammaList gamma
+valueCompletions curModName gamma pinfo@PositionInfo{argumentType=tp, searchTerm=search} = map toItem . filter matchInfo $ filter (\(n, ni) -> filterInfix pinfo $ T.pack $ nameId n) $ gammaList gamma
   where
+    isHandler n = '.' == T.head n
     matchInfo :: (Name, NameInfo) -> Bool
     matchInfo (n, ninfo) = case ninfo of
         InfoVal {..} -> True
@@ -174,8 +180,12 @@ valueCompletions curModName gamma pinfo@PositionInfo{argumentType=tp, searchTerm
         InfoExternal {infoType} -> trace ("Checking " ++ show n) typeUnifies infoType tp
         InfoImport {infoType} -> trace ("Checking " ++ show n) typeUnifies infoType tp
         InfoCon {infoType } -> trace ("Checking " ++ show n) typeUnifies infoType tp
-    toItem (n, ninfo) = makeCompletionItem curModName n k d
+    toItem (n, ninfo) = case ninfo of
+        InfoCon {infoCon} | isHandler $ T.pack (nameId n) -> makeHandlerCompletionItem curModName infoCon d rng (fullLine pinfo)
+        _ -> makeCompletionItem curModName n k d
       where
+        pos@(J.Position l c) = cursorPos pinfo
+        rng = J.Range (J.Position l $ c - fromIntegral (T.length search)) pos
         k = case ninfo of
           InfoVal {..} -> J.CompletionItemKind_Constant
           InfoFun {..} -> J.CompletionItemKind_Function
@@ -187,7 +197,7 @@ valueCompletions curModName gamma pinfo@PositionInfo{argumentType=tp, searchTerm
         d = show $ pretty $ infoType ninfo
 
 constructorCompletions :: Name -> Constructors -> [J.CompletionItem]
-constructorCompletions curModName = map toItem . constructorsList
+constructorCompletions curModName cstrs = map toItem $ filter (\(n,ci) -> '.' /= T.head (T.pack $ nameId n)) (constructorsList cstrs)
   where
     toItem (n, cinfo) = makeCompletionItem curModName n k d
       where
@@ -252,6 +262,69 @@ makeCompletionItem curModName n k d =
     commitChars = Just [T.pack "\t"]
     command = Nothing
     xdata = Nothing
+
+makeHandlerCompletionItem :: Name -> ConInfo -> String -> J.Range -> T.Text -> J.CompletionItem
+makeHandlerCompletionItem curModName conInfo d r line =
+  J.CompletionItem
+    label
+    labelDetails
+    kind
+    tags
+    detail
+    doc
+    deprecated
+    preselect
+    sortText
+    filterText
+    insertText
+    insertTextFormat
+    insertTextMode
+    textEdit
+    textEditText
+    additionalTextEdits
+    commitChars
+    command
+    xdata
+  where
+    indentation = T.length $ T.takeWhile (== ' ') line
+    clauseIndentation = T.replicate indentation " "
+    clauseBodyIndentation = T.replicate (indentation + 2) " "
+    typeName = conInfoTypeName conInfo
+    typeNameId = T.replace ".hnd-" "" $ T.pack $ nameId typeName
+    label = "handler for " <> typeNameId
+    labelDetails = Nothing
+    kind = Just J.CompletionItemKind_Snippet
+    tags = Nothing
+    detail = Just $  T.pack d
+    doc = Just $ J.InL $ T.pack $ nameModule typeName
+    deprecated = Just False
+    preselect = Nothing
+    sortText = Just $ if nameId curModName == nameModule typeName then "0" <> typeNameId else "2" <> typeNameId
+    filterText = Just typeNameId
+    insertText = Nothing
+    insertTextFormat = Just InsertTextFormat_Snippet
+    insertTextMode = Nothing
+    handlerClause :: (Int, [T.Text]) -> (Name, Type) -> (Int, [T.Text])
+    handlerClause (i, acc) (name, tp) =
+      -- TODO: Consider adding snippet locations for the body of the handlers as well
+      if T.isPrefixOf "val" newName then
+        (i + 1, acc ++ [clauseIndentation <> newName <> " = $" <> T.pack (show (i + 1))])
+      else (fst (last funArgs) + 1, acc ++ [clauseIndentation <> newName <> "(" <> T.intercalate "," (map snd funArgs) <> ")\n" <> clauseBodyIndentation <> "()"])
+      where
+        funArgs = zipWith (\i s -> (i, T.pack $ "$" ++ show (i + 1))) [i..] (handlerArgs newName tp)
+        newName = T.replace "brk" "final ctl" $ T.replace "-" " " (T.pack (show name))
+    textEdit = Just $ J.InL $ J.TextEdit r $ "handler\n" <> T.intercalate "\n" (snd (foldl handlerClause (1, []) (conInfoParams conInfo)))
+    textEditText = Nothing
+    additionalTextEdits = Nothing
+    commitChars = Just [T.pack "\t"]
+    command = Nothing
+    xdata = Nothing
+
+handlerArgs :: T.Text -> Type -> [Type]
+handlerArgs name tp =
+  case tp of
+    TApp _ args -> if T.isPrefixOf "val" name then take (length args - 3) args else take (length args - 4) args
+    _ -> []
 
 makeSimpleCompletionItem :: Name -> String -> J.CompletionItemKind -> J.CompletionItem
 makeSimpleCompletionItem curModName l k =
