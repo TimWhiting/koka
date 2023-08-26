@@ -43,7 +43,10 @@ runLanguageServer flags files = do
         handle
         $
         ServerDefinition
-          { onConfigurationChange = const $ pure $ Right (),
+          { parseConfig = const $ const $ Right (),
+            onConfigChange = const $ pure (),
+            defaultConfig = (),
+            configSection = T.pack "koka",
             doInitialize = \env _ -> forkIO (reactor rin) >> forkIO (messageHandler (messages initStateVal) env) >> pure (Right env),
             staticHandlers = \_caps -> lspHandlers rin,
             interpretHandler = \env -> Iso (\lsm -> runLSM lsm state env) liftIO,
@@ -51,10 +54,9 @@ runLanguageServer flags files = do
               defaultOptions
                 { optTextDocumentSync = Just syncOptions,
                   optExecuteCommandCommands = Just [T.pack "koka/genCode"]
-                  -- optCompletionTriggerCharacters = Just ['.', ':', '/']
+                  -- optCompletionTriggerCharacters = Just ['.', ':', '/'] -- Already includes identifier characters
                 -- TODO: ? https://www.stackage.org/haddock/lts-18.21/lsp-1.2.0.0/src/Language.LSP.Server.Core.html#Options
-                },
-            defaultConfig = ()
+                }
           })
   where
     prettyMsg l = "[" <> show (L.getSeverity l) <> "] " <> show (L.getMsg l) <> "\n\n"

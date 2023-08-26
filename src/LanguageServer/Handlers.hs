@@ -16,6 +16,7 @@ import LanguageServer.Handler.Completion (completionHandler)
 import LanguageServer.Handler.Definition (definitionHandler)
 import LanguageServer.Handler.DocumentSymbol (documentSymbolHandler)
 import LanguageServer.Handler.Hover (hoverHandler)
+import LanguageServer.Handler.InlayHints (inlayHandler)
 import LanguageServer.Handler.Commands (initializedHandler, commandHandler)
 import LanguageServer.Handler.TextDocument (didChangeHandler, didCloseHandler, didOpenHandler, didSaveHandler)
 import LanguageServer.Monad (LSM, runLSM, putLSState, LSState (..))
@@ -43,7 +44,7 @@ import qualified Data.Text as T
 
 newtype ReactorInput = ReactorAction (IO ())
 
-lspHandlers rin = mapHandlers goReq goNot handle where
+lspHandlers rin = mapHandlers goReq goNot handlers where
   goReq :: forall (a :: Method ClientToServer Request). Handler LSM a -> Handler LSM a
   goReq f msg@TRequestMessage{_id} k = do
     env <- getLspEnv
@@ -89,8 +90,6 @@ lspHandlers rin = mapHandlers goReq goNot handle where
         liftIO $ atomically $ writeTChan rin $
           ReactorAction (runLSM (f msg) state env)
 
-handle = handlers
-
 handlers :: Handlers LSM
 handlers =
   mconcat
@@ -100,6 +99,7 @@ handlers =
       didSaveHandler,
       didCloseHandler,
       hoverHandler,
+      inlayHandler,
       definitionHandler,
       documentSymbolHandler,
       completionHandler,

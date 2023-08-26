@@ -11,6 +11,7 @@ module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
                       , rangeMapSort
                       , rangeMapLookup
                       , rangeMapFindAt
+                      , rangeMapFindIn
                       , rangeMapAppend
                       , rangeInfoType
                       , mangle
@@ -64,10 +65,10 @@ data RangeInfo
   | Id Name NameInfo Bool  -- qualified name, info, is the definition
 
 data NameInfo
-  = NIValue   Type
-  | NICon     Type
-  | NITypeCon Kind
-  | NITypeVar Kind
+  = NIValue   Type Bool -- type and whether the type is inferred
+  | NICon     Type Bool
+  | NITypeCon Kind Bool
+  | NITypeVar Kind Bool
   | NIModule
   | NIKind  
 
@@ -101,10 +102,10 @@ penalty name
 instance Enum NameInfo where
   fromEnum ni
     = case ni of
-        NIValue _   -> 1
-        NICon   _   -> 2
-        NITypeCon _ -> 3
-        NITypeVar _ -> 4
+        NIValue _ _   -> 1
+        NICon   _ _   -> 2
+        NITypeCon _ _ -> 3
+        NITypeVar _ _ -> 4
         NIModule    -> 5
         NIKind      -> 6
 
@@ -164,6 +165,10 @@ rangeMapLookup r (RM rm)
         eq (_,ri1) (_,ri2)  = (EQ == compare ((fromEnum ri1) `div` 10) ((fromEnum ri2) `div` 10))
         cmp (_,ri1) (_,ri2) = compare (fromEnum ri1) (fromEnum ri2)
 
+rangeMapFindIn :: Range -> RangeMap -> [(Range, RangeInfo)]
+rangeMapFindIn (Range start end) (RM rm)
+  = filter (\(rng, info) -> rangeStart rng >= start || rangeEnd rng <= end) rm
+
 rangeMapFindAt :: Pos -> RangeMap -> Maybe (Range, RangeInfo)
 rangeMapFindAt pos (RM rm)
   = shortestRange $ filter (containsPos . fst) rm
@@ -177,8 +182,8 @@ rangeInfoType :: RangeInfo -> Maybe Type
 rangeInfoType ri
   = case ri of
       Id _ info _ -> case info of
-                       NIValue tp -> Just tp
-                       NICon tp   -> Just tp
+                       NIValue tp _ -> Just tp
+                       NICon tp _   -> Just tp
                        _          -> Nothing
       _ -> Nothing
 
@@ -205,18 +210,18 @@ instance HasTypeVar RangeInfo where
 instance HasTypeVar NameInfo where
   sub `substitute` ni
     = case ni of
-        NIValue tp  -> NIValue (sub `substitute` tp)
-        NICon tp    -> NICon (sub `substitute` tp)
+        NIValue tp inf  -> NIValue (sub `substitute` tp) inf
+        NICon tp inf    -> NICon (sub `substitute` tp) inf
         _           -> ni
 
   ftv ni
     = case ni of
-        NIValue tp  -> ftv tp
-        NICon tp    -> ftv tp
+        NIValue tp _  -> ftv tp
+        NICon tp _    -> ftv tp
         _           -> tvsEmpty
 
   btv ni
     = case ni of
-        NIValue tp  -> btv tp
-        NICon tp    -> btv tp
+        NIValue tp _  -> btv tp
+        NICon tp _    -> btv tp
         _           -> tvsEmpty

@@ -40,10 +40,10 @@ formatRangeInfoHover :: RangeInfo -> String
 formatRangeInfoHover rinfo = case rinfo of
   Id qname info isdef ->
     show (pretty qname) ++ " : " ++ case info of
-      NIValue tp -> show $ pretty tp
-      NICon tp -> show $ pretty tp
-      NITypeCon k -> show $ pretty k
-      NITypeVar k -> show $ pretty k
+      NIValue tp _ -> show $ pretty tp
+      NICon tp _ -> show $ pretty tp
+      NITypeCon k _ -> show $ pretty k
+      NITypeVar k _ -> show $ pretty k
       NIModule -> "module"
       NIKind -> "kind"
   Decl s name mname -> s ++ " " ++ show (pretty name)

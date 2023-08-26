@@ -22,7 +22,8 @@ import Common.Name (newName)
 import qualified Language.LSP.Server as J
 
 initializedHandler :: Handlers LSM
-initializedHandler = notificationHandler J.SMethod_Initialized $ \_not -> sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info "Initialized language server."
+initializedHandler = notificationHandler J.SMethod_Initialized $ \_not -> 
+  sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info "Initialized language server."
 
 commandHandler :: Handlers LSM
 commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp -> do

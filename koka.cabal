@@ -98,6 +98,7 @@ executable koka
       LanguageServer.Handler.Definition
       LanguageServer.Handler.DocumentSymbol
       LanguageServer.Handler.Hover
+      LanguageServer.Handler.InlayHints
       LanguageServer.Handler.TextDocument
       LanguageServer.Handlers
       LanguageServer.Monad

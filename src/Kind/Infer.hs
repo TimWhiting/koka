@@ -405,7 +405,7 @@ infExternal names (External name tp pinfos nameRng rng calls vis fip doc)
                    canonicalName n qname
        if (isHiddenName name)
         then return ()
-        else do addRangeInfo nameRng (Id qname (NIValue tp') True)
+        else do addRangeInfo nameRng (Id qname (NIValue tp' False) True)
                 addRangeInfo rng (Decl "external" qname (mangle cname tp'))
        -- trace ("infExternal: " ++ show cname ++ ": " ++ show (pretty tp')) $
        return (Core.External cname tp' pinfos (map (formatCall tp') calls)
@@ -902,13 +902,13 @@ resolveTypeBinderDef :: TypeBinder InfKind -> KInfer (TypeBinder Kind)
 resolveTypeBinderDef (TypeBinder name infkind rngName rng)
   = do infkind' <- resolveKind infkind
        qname    <- qualifyDef name
-       addRangeInfo rngName (Id qname (NITypeCon infkind') True)
+       addRangeInfo rngName (Id qname (NITypeCon infkind' True) True)
        return (TypeBinder qname infkind' rngName rng)
 
 resolveTypeBinder :: TypeBinder InfKind -> KInfer (TypeBinder Kind)
 resolveTypeBinder (TypeBinder name infkind rngName rng)
   = do infkind' <- resolveKind infkind
-       addRangeInfo rngName (Id name (NITypeCon infkind') True)
+       addRangeInfo rngName (Id name (NITypeCon infkind' True) True)
        return (TypeBinder name infkind' rngName rng)
 
 resolveKind :: InfKind -> KInfer Kind
@@ -933,7 +933,7 @@ resolveConstructor typeName typeSort isSingleton typeResult typeParams idmap (Us
        let scheme = quantifyType (typeParams ++ existVars) $
                     if (null params') then result' else typeFun [(binderName p, binderType p) | (_,p) <- params'] typeTotal result'
        addRangeInfo rng (Decl "con" qname (mangleConName qname))
-       addRangeInfo rngName (Id qname (NICon scheme) True)
+       addRangeInfo rngName (Id qname (NICon scheme True) True)
        let fields = map (\(i,b) -> (if (nameIsNil (binderName b)) then newFieldName i else binderName b, binderType b)) (zip [1..] (map snd params'))
        --    emitError makeMsg = do cs <- getColorScheme
        --                           let nameDoc = color (colorCons cs) (pretty name)
@@ -965,7 +965,7 @@ resolveConParam idmap (vis,vb)
                  Just e  -> {- do e' <- infExpr e
                                   return (Just e') -}
                             return (Just (failure "Kind.Infer.resolveConParam: optional parameter expression in constructor"))
-       addRangeInfo (binderNameRange vb) (Id (binderName vb) (NIValue tp) True)
+       addRangeInfo (binderNameRange vb) (Id (binderName vb) (NIValue tp False) True)
        return (vis,vb{ binderType = tp, binderExpr = expr })
 
 -- | @resolveType@ takes: a map from locally quantified type name variables to types,
@@ -1042,7 +1042,7 @@ resolveApp idmap partialSyn (TpVar name r,args) rng
 
                       Just tvar -> return (TVar tvar, typevarKind tvar)
        if (not (isImplicitTypeVarName name))
-        then addRangeInfo r (Id name (NITypeVar kind) False)
+        then addRangeInfo r (Id name (NITypeVar kind True) False)
         else return ()
        args' <- mapM (resolveType idmap False) args
        return (typeApp tp' args')
@@ -1059,7 +1059,7 @@ resolveApp idmap partialSyn (TpCon name r,[fixed,ext]) rng  | name == nameEffect
 resolveApp idmap partialSyn (TpCon name r,args) rng
   =  do (qname,ikind) <- findInfKind name rng
         kind  <- resolveKind ikind
-        addRangeInfo r (Id qname (NITypeCon kind) False)
+        addRangeInfo r (Id qname (NITypeCon kind True) False)
 
         mbSyn <- lookupSynInfo name
         case mbSyn of

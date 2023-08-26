@@ -13,7 +13,7 @@
 module Common.Range
           ( Pos, makePos, minPos, maxPos, posColumn, posLine, posOfs
           , posMove8, posMoves8, posNull
-          , Range, showFullRange
+          , Range(..), showFullRange
           , makeRange, rangeNull, combineRange, rangeEnd, rangeStart, rangeLength
           , Ranged( getRange ), combineRanged
           , combineRangeds, combineRanges, extendRange
