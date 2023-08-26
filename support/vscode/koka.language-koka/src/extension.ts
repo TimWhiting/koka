@@ -308,7 +308,7 @@ class MainCodeLensProvider implements vscode.CodeLensProvider {
   
   public async provideCodeLenses(document: TextDocument, token: CancellationToken): Promise<CodeLens[] | undefined> {
 		const doc = document.getText()
-    const main = doc.indexOf('main')
+    const main = doc.indexOf('\nfun main')
     if (main < 0){
       return []
     }
