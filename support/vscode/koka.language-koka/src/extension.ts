@@ -310,9 +310,12 @@ class MainCodeLensProvider implements vscode.CodeLensProvider {
 		const doc = document.getText()
     const main = doc.indexOf('\nfun main')
     if (main < 0){
+      if (doc.startsWith('fun main')){
+        return [this.createCodeLens(document, 0)]
+      }
       return []
     }
-		return [this.createCodeLens(document, main)]
+		return [this.createCodeLens(document, main+1)]
 	}
 
 	private createCodeLens(document: TextDocument, offset: number): CodeLens {
