@@ -3,28 +3,33 @@ import * as fs from "fs"
 import * as vs from "vscode"
 import * as os from "os"
 import * as vscode from "vscode"
+import * as child_process from "child_process"
 
 interface SDKs {sdkPath: string, allSDKs: string[]}
+const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka"
 
 export function scanForSDK(): SDKs {
   const processPath = (process.env.PATH as string ) || ""
   const paths = processPath.split(path.delimiter).filter((p) => p)
 
-  const dev = path.join(process.env.HOME, 'koka', '.stack-work', 'install', os.arch().replace('x64', 'x86_64') + "-" + os.platform().replace('darwin', 'osx'))
+  const dev = path.join(process.env.HOME, 'koka')
   let defaultSDK = ""
   let allSDKs = []
   if (fs.existsSync(dev)){
+    const command = 'stack path --local-install-root'
+    const options = {cwd: dev, env: process.env}
+    const result = child_process.execSync(command, options)
+    const devPath = result.toString().trim();
     // Prioritize dev
-    const devPath = findDevKokaSDK(dev)
     if (fs.existsSync(devPath)){
       vs.window.showInformationMessage("Koka dev SDK found!")
       console.log("Koka: Found dev build of koka at " + devPath)
-      defaultSDK = path.join(devPath, kokaExeName)
+      defaultSDK = path.join(devPath, 'bin', kokaExeName)
       allSDKs.push(defaultSDK)
     }
   }
   
-  const local = path.join(process.env.HOME,'.local/bin')
+  const local = path.join(process.env.HOME, '.local/bin')
   for (const p of [local].concat(paths)){
     if (fs.existsSync(path.join(p, kokaExeName))){
       vs.window.showInformationMessage(`Using Koka SDK at ${p}`)
@@ -42,25 +47,7 @@ export function scanForSDK(): SDKs {
   } else {
     return {sdkPath: defaultSDK, allSDKs: allSDKs}
   }
-} 
-
-// Recursively find the file bin/koka ordered by latest modification time
-function findDevKokaSDK(dir: string): string {
-  const files = fs.readdirSync(dir)
-  const koka = files.filter((f) => f.endsWith(kokaExeName))
-  if (koka.length > 0) {
-    return dir
-  }
-  const dirs = files.filter((f) => fs.statSync(path.join(dir, f)).isDirectory())
-  const sorted = dirs
-    .map((d) => ({ path: findDevKokaSDK(path.join(dir, d)), mtime: fs.statSync(path.join(dir, d)).mtime }))
-    .filter((d) => d.path)
-    .sort((a, b) => a.mtime.getUTCMilliseconds() - b.mtime.getUTCMilliseconds())
-  return sorted[0]?.path
 }
-
-const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka"
-
 
 export class KokaConfig {
   constructor(config: vscode.WorkspaceConfiguration, sdkPath: string, allSDKs: string[]) {
