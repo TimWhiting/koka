@@ -5,7 +5,7 @@
 
 module LanguageServer.Handler.InlayHints (inlayHandler) where
 
-import Compiler.Module (loadedModule, modRangeMap, Loaded (loadedModules), Module (modPath, modSourcePath))
+import Compiler.Module (loadedModule, modRangeMap, Loaded (loadedModules), Module (modPath, modSourcePath, modName))
 import Control.Lens ((^.))
 import Common.Range (Range (..), rangeEnd, Pos(..), rangeNull, posNull)
 import qualified Data.Map as M
@@ -21,6 +21,8 @@ import qualified Language.LSP.Protocol.Types as J
 import LanguageServer.Handler.Hover (formatRangeInfoHover)
 import Debug.Trace (trace)
 import Data.Maybe (mapMaybe)
+import Type.Pretty (ppType, Env (fullNames, context), defaultEnv)
+import Common.Name (Name)
 
 inlayHandler :: Handlers LSM
 inlayHandler = requestHandler J.SMethod_TextDocumentInlayHint $ \req responder -> do
@@ -28,8 +30,8 @@ inlayHandler = requestHandler J.SMethod_TextDocumentInlayHint $ \req responder -
       uri = doc ^. J.uri
       newRng = fromLspRange uri rng
   loaded <- getLoadedModule uri
-  let toInlayHint :: (Range, RangeInfo) -> Maybe J.InlayHint
-      toInlayHint (rng, rngInfo) =
+  let toInlayHint :: Name -> (Range, RangeInfo) -> Maybe J.InlayHint
+      toInlayHint modName (rng, rngInfo) =
         let rngEnd = rangeEnd rng
             shouldShow =
               (rngEnd /= posNull) &&
@@ -47,23 +49,23 @@ inlayHandler = requestHandler J.SMethod_TextDocumentInlayHint $ \req responder -
               Warning _ -> False
         in
         if shouldShow then
-          Just $ J.InlayHint (toLspPos rngEnd{posColumn = posColumn rngEnd + 1}) (J.InL $ T.pack $ formatInfo rngInfo) (Just J.InlayHintKind_Type) Nothing Nothing (Just True) (Just True) Nothing
+          Just $ J.InlayHint (toLspPos rngEnd{posColumn = posColumn rngEnd + 1}) (J.InL $ T.pack $ formatInfo modName rngInfo) (Just J.InlayHintKind_Type) Nothing Nothing (Just True) (Just True) Nothing
         else Nothing
       rsp = do
         l <- loaded
         rmap <- modRangeMap l
-        return $ mapMaybe toInlayHint $ rangeMapFindIn newRng rmap
+        return $ mapMaybe (toInlayHint (modName l)) $ rangeMapFindIn newRng rmap
   case rsp of
     Nothing -> responder $ Right $ J.InR J.Null
     Just rsp -> responder $ Right $ J.InL rsp
 
 
 -- Pretty-prints type/kind information to a hover tooltip
-formatInfo :: RangeInfo -> String
-formatInfo rinfo = case rinfo of
+formatInfo :: Name -> RangeInfo -> String
+formatInfo modName rinfo = case rinfo of
   Id qname info isdef ->
     case info of
-      NIValue tp _ -> " : " ++ show (pretty tp)
+      NIValue tp _ -> " : " ++ show (ppType defaultEnv{fullNames=False, context=modName} tp)
       NICon tp _ -> ""
       NITypeCon k _ -> ""
       NITypeVar k _ -> ""
