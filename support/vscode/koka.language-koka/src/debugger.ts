@@ -169,6 +169,11 @@ class KokaRuntime extends EventEmitter {
     try {
 		  const resp = await this.client.sendRequest(ExecuteCommandRequest.type, {command: 'koka/genCode', arguments: [file]})
 			console.log(`Generated code at ${resp}`)
+			if (!resp){
+				this.emit('output', `Error generating code, see language server output for specifics`, 'stderr')
+				this.emit('end', -1)
+				return;
+			}
 			if (!fs.existsSync(path.join(this.config.cwd, resp))) {
 				console.log(`Error finding code at ${resp}`)
 				this.emit('end', -1)
@@ -213,6 +218,7 @@ class KokaRuntime extends EventEmitter {
 				// 	// TODO: Support C#
 				// 	this.emit('end')
 				// }
+
 		} catch (e) {
 			this.emit('output', `Error generating code: ${e}`, 'stderr')
 			this.emit('end', -1)
