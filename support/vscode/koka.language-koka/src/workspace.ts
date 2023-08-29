@@ -8,28 +8,45 @@ import * as child_process from "child_process"
 interface SDKs { sdkPath: string, allSDKs: string[] }
 const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka"
 
-export function scanForSDK(): SDKs {
+export function scanForSDK(): SDKs | undefined {
   const processPath = (process.env.PATH as string) || ""
   const paths = processPath.split(path.delimiter).filter((p) => p)
 
-  const dev = path.join(process.env.HOME, 'koka')
+  const dev = path.join(process.env.HOME!, 'koka')
   let defaultSDK = ""
   let allSDKs = []
   if (fs.existsSync(dev)) {
-    const command = 'stack path --local-install-root'
+    {
+      const command = 'bash -c "echo $PATH"'
+      const options = { cwd: dev, env: process.env }
+      const result = child_process.execSync(command, options)
+      console.log(`bash path ${result}`)
+    }
+
+    let command = 'stack path --local-install-root'
+    const ghc = `${process.env.HOME}/.ghcup/env`
+    if (os.platform() === "linux" && fs.existsSync(ghc)) {
+      // Linux ghcup installation does not show up in vscode's process.PATH, 
+      // ensure stack uses the correct ghc by sourcing the ghcup env script 
+      command = `bash -c "source ${ghc} && stack path --local-install-root"`
+    }
+
     const options = { cwd: dev, env: process.env }
     const result = child_process.execSync(command, options)
     const devPath = result.toString().trim();
     // Prioritize dev
-    if (fs.existsSync(devPath)) {
+    const sdkPath = path.join(devPath, 'bin', kokaExeName)
+    if (fs.existsSync(sdkPath)) {
       vs.window.showInformationMessage("Koka dev SDK found!")
       console.log("Koka: Using dev build of koka at " + devPath)
-      defaultSDK = path.join(devPath, 'bin', kokaExeName)
+      defaultSDK = sdkPath
       allSDKs.push(defaultSDK)
+    } else {
+      vs.window.showInformationMessage("Koka dev environment found, but no built SDK")
     }
   }
 
-  const local = path.join(process.env.HOME, '.local/bin')
+  const local = path.join(process.env.HOME as string, '.local/bin')
   for (const p of [local].concat(paths)) {
     if (fs.existsSync(path.join(p, kokaExeName))) {
       console.log("Koka: Found build of koka at " + p)
@@ -56,7 +73,8 @@ export class KokaConfig {
     this.defaultSDK = sdkPath
     this.sdkPath = sdkPath
     this.allSDKs = allSDKs
-    this.cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders[0].uri.path
+    this.cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders![0].uri.path
+    this.langServerArgs = []
     this.selectSDK(sdkPath)
     this.target = "C"
   }
@@ -65,13 +83,14 @@ export class KokaConfig {
   allSDKs: string[]
   config: vscode.WorkspaceConfiguration
   debugExtension: boolean
-  command: string
+  command?: string | null
   langServerArgs: string[]
   target: string
   cwd: string
 
   selectSDK(path: string) {
     if (!fs.existsSync(path)) {
+      this.command = null
       return
     }
     this.command = this.config.get('languageServer.command') as string || `${this.sdkPath}`

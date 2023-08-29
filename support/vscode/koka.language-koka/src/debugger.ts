@@ -162,14 +162,14 @@ class KokaRuntime extends EventEmitter {
 	constructor(private readonly config: KokaConfig, private readonly client: LanguageClient) {
 		super()
 	}
-	ps?: child_process.ChildProcess
+	ps?: child_process.ChildProcess | null
 
 	public async start(file: string) {
 		const target = this.config.target
-    try {
-		  const resp = await this.client.sendRequest(ExecuteCommandRequest.type, {command: 'koka/genCode', arguments: [file]})
+		try {
+			const resp = await this.client.sendRequest(ExecuteCommandRequest.type, { command: 'koka/genCode', arguments: [file] })
 			console.log(`Generated code at ${resp}`)
-			if (!resp){
+			if (!resp) {
 				this.emit('output', `Error generating code, see language server output for specifics`, 'stderr')
 				this.emit('end', -1)
 				return;
@@ -181,50 +181,50 @@ class KokaRuntime extends EventEmitter {
 			}
 			if (target == 'C') {
 				// console.log(`Executing ${this.config.command} -e ${file} -i${this.config.cwd}`)
-				this.ps = child_process.spawn(resp, [], {cwd: this.config.cwd, env: process.env})
-				this.ps.stdout.on('data', (data) => {
+				this.ps = child_process.spawn(resp, [], { cwd: this.config.cwd, env: process.env })
+				this.ps.stdout?.on('data', (data) => {
 					this.emit('output', data.toString().trim(), 'stdout')
 				})
-				this.ps.stderr.on('data', (data) => {
+				this.ps.stderr?.on('data', (data) => {
 					this.emit('output', data.toString().trim(), 'stderr')
 				})
 				this.ps.on('close', (code) => {
 					this.emit('end', code)
 					this.ps = null
 				})
-			} 
-				// else if (target == 'JS' || target == 'WASM') {
-				// 	const realTarget = target == 'JS' ? 'jsweb' : 'wasmweb'
-				// 	// TODO: Better configuration for wasm / js build outputs
-				// 	const webBuildDir = path.join(this.config.cwd, 'web', 'build')
-				// 	console.log(`Executing ${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`)
-				// 	this.ps = child_process.exec(`${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`, (exitCode, stdout, stderr) => {
-				// 		// TODO: separate output streams for compile versus running?
-				// 		if (stdout) {
-				// 			this.emit('output', stdout, 'stdout')
-				// 		}
-				// 		if (stderr) {
-				// 			this.emit('output', stderr, 'stderr')
-				// 		}
-				// 		if (exitCode) {
-				// 			this.emit('output', `Compiler exited with error status ${exitCode}`, 'stderr')
-				// 			this.emit('end')
-				// 		} else {
-				// 			this.emit('output', `Compiler exited succesfully`, 'stdout')
-				// 			this.emit('end')
-				// 		}
-				// 	})
-				// } else {
-				// 	// TODO: Support C#
-				// 	this.emit('end')
-				// }
+			}
+			// else if (target == 'JS' || target == 'WASM') {
+			// 	const realTarget = target == 'JS' ? 'jsweb' : 'wasmweb'
+			// 	// TODO: Better configuration for wasm / js build outputs
+			// 	const webBuildDir = path.join(this.config.cwd, 'web', 'build')
+			// 	console.log(`Executing ${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`)
+			// 	this.ps = child_process.exec(`${this.config.command} --target=${realTarget} ${file} -i${this.config.cwd} --outputdir=${webBuildDir}`, (exitCode, stdout, stderr) => {
+			// 		// TODO: separate output streams for compile versus running?
+			// 		if (stdout) {
+			// 			this.emit('output', stdout, 'stdout')
+			// 		}
+			// 		if (stderr) {
+			// 			this.emit('output', stderr, 'stderr')
+			// 		}
+			// 		if (exitCode) {
+			// 			this.emit('output', `Compiler exited with error status ${exitCode}`, 'stderr')
+			// 			this.emit('end')
+			// 		} else {
+			// 			this.emit('output', `Compiler exited succesfully`, 'stdout')
+			// 			this.emit('end')
+			// 		}
+			// 	})
+			// } else {
+			// 	// TODO: Support C#
+			// 	this.emit('end')
+			// }
 
 		} catch (e) {
 			this.emit('output', `Error generating code: ${e}`, 'stderr')
 			this.emit('end', -1)
 		}
 	}
-	
+
 	public async cancel() {
 		if (this.ps) {
 			const result = await this.ps.kill()
