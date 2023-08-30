@@ -375,7 +375,7 @@ makeHandlerCompletionItem curModName conInfo d r line =
       -- TODO: Consider adding snippet locations for the body of the handlers as well
       if T.isPrefixOf "val" newName then
         (i + 1, acc ++ [clauseIndentation <> newName <> " = $" <> T.pack (show (i + 1))])
-      else (fst (last funArgs) + 1, acc ++ [clauseIndentation <> newName <> "(" <> T.intercalate "," (map snd funArgs) <> ")\n" <> clauseBodyIndentation <> "()"])
+      else (if not (null funArgs) then fst (last funArgs) + 1 else 1, acc ++ [clauseIndentation <> newName <> "(" <> T.intercalate "," (map snd funArgs) <> ")\n" <> clauseBodyIndentation <> "()"])
       where
         funArgs = zipWith (\i s -> (i, T.pack $ "$" ++ show (i + 1))) [i..] (handlerArgs newName tp)
         newName = T.replace "brk" "final ctl" $ T.replace "-" " " (T.pack (show name))
