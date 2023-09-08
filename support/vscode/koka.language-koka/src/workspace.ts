@@ -69,6 +69,7 @@ export class KokaConfig {
     this.allSDKs = allSDKs
     this.cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders![0].uri.path
     this.langServerArgs = []
+    this.additionalArgs = config.get('languageServer.additionalArgs') as string[] || []
     this.selectSDK(sdkPath)
     this.target = "C"
   }
@@ -79,6 +80,7 @@ export class KokaConfig {
   debugExtension: boolean
   command?: string | null
   langServerArgs: string[]
+  additionalArgs: string[]
   target: string
   cwd: string
 
@@ -88,7 +90,7 @@ export class KokaConfig {
       return
     }
     this.command = this.config.get('languageServer.command') as string || `${this.sdkPath}`
-    this.langServerArgs = ["--language-server", `-i${this.cwd}`]
+    this.langServerArgs = ["--language-server", `-i${this.cwd}`, ...this.additionalArgs]
   }
 
   selectTarget(t: string) {

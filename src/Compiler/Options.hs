@@ -18,12 +18,14 @@ module Compiler.Options( -- * Command line options
                        , colorSchemeFromFlags
                        , prettyIncludePath
                        , isValueFromFlags
+                       , updateFlagsFromArgs
                        , CC(..), BuildType(..), ccFlagsBuildFromFlags
                        , buildType, unquote
                        , outName, fullBuildDir, buildVariant
                        , cpuArch, osName
                        , optionCompletions
                        , targetExeExtension
+                       , targets
                        , conanSettingsFromFlags
                        , vcpkgFindRoot
                        , onWindows, onMacOS
@@ -451,24 +453,6 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
   configstr short long opts argDesc f desc
     = config short long (map (\s -> (s,s)) opts) argDesc f desc
 
-
-  targets :: [(String,Flags -> Flags)]
-  targets =
-    [("c",      \f -> f{ target=C LibC, platform=platform64 }),
-     ("c64",    \f -> f{ target=C LibC, platform=platform64 }),
-     ("c32",    \f -> f{ target=C LibC, platform=platform32 }),
-     ("c64c",   \f -> f{ target=C LibC, platform=platform64c }),
-     ("js",     \f -> f{ target=JS JsNode, platform=platformJS }),
-     ("jsnode", \f -> f{ target=JS JsNode, platform=platformJS }),
-     ("jsweb",  \f -> f{ target=JS JsWeb, platform=platformJS }),
-     ("wasm",   \f -> f{ target=C Wasm, platform=platform32 }),
-     ("wasm32", \f -> f{ target=C Wasm, platform=platform32 }),
-     ("wasm64", \f -> f{ target=C Wasm, platform=platform64 }),
-     ("wasmjs", \f -> f{ target=C WasmJs, platform=platform32 }),
-     ("wasmweb",\f -> f{ target=C WasmWeb, platform=platform32 }),
-     ("cs",     \f -> f{ target=CS, platform=platformCS })
-    ]
-
   targetFlag t f
     = case lookup t targets of
         Just update -> update f
@@ -604,6 +588,23 @@ readHtmlBases s
              (_:post) -> (pre,post)
              _        -> ("",xs)
 
+targets :: [(String,Flags -> Flags)]
+targets =
+    [("c",      \f -> f{ target=C LibC, platform=platform64 }),
+     ("c64",    \f -> f{ target=C LibC, platform=platform64 }),
+     ("c32",    \f -> f{ target=C LibC, platform=platform32 }),
+     ("c64c",   \f -> f{ target=C LibC, platform=platform64c }),
+     ("js",     \f -> f{ target=JS JsNode, platform=platformJS }),
+     ("jsnode", \f -> f{ target=JS JsNode, platform=platformJS }),
+     ("jsweb",  \f -> f{ target=JS JsWeb, platform=platformJS }),
+     ("wasm",   \f -> f{ target=C Wasm, platform=platform32 }),
+     ("wasm32", \f -> f{ target=C Wasm, platform=platform32 }),
+     ("wasm64", \f -> f{ target=C Wasm, platform=platform64 }),
+     ("wasmjs", \f -> f{ target=C WasmJs, platform=platform32 }),
+     ("wasmweb",\f -> f{ target=C WasmWeb, platform=platform32 }),
+     ("cs",     \f -> f{ target=CS, platform=platformCS })
+    ]
+
 -- | Environment table
 environment :: [ (String, String, (String -> [String]), String) ]
 environment
@@ -642,6 +643,18 @@ getOptions extra
   = do env  <- getEnvOptions
        args <- getArgs
        processOptions flagsNull (env ++ words extra ++ args)
+
+updateFlagsFromArgs :: Flags -> String -> Maybe Flags
+updateFlagsFromArgs flags0 args =
+  let 
+    (preOpts,postOpts) = span (/="--") (words args)
+    flags1 = case postOpts of
+                   [] -> flags0
+                   (_:rest) -> flags0{ execOpts = concat (map (++" ") rest) }
+    (options,files,errs0) = getOpt Permute optionsAll preOpts
+    errs = errs0 ++ extractErrors options
+    in if (null errs)
+        then Just $ extractFlags flags1 options else Nothing
 
 processOptions :: Flags -> [String] -> IO (Flags,Flags,Mode)
 processOptions flags0 opts

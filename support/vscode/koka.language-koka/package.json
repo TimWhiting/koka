@@ -86,6 +86,11 @@
           "default": null,
           "description": "The command to launch the Koka language server (by default the extension assumes that 'koka' is on your PATH)"
         },
+        "koka.languageServer.additionalArgs": {
+          "type": "string",
+          "default": null,
+          "description": "Additional arguments to send to the compiler when starting the language server"
+        },
         "koka.languageServer.cwd": {
           "type": "string",
           "default": "",
@@ -155,6 +160,10 @@
                 "type": "string",
                 "description": "File to run the main function from",
                 "default": "${workspaceFolder}/${command:AskForProgramName}"
+              },
+              "args": {
+                "type": "string",
+                "description": "Additional args to pass to the compiler (separate by -- to pass args to the program)"
               }
             }
           }
@@ -164,18 +173,18 @@
             "name": "Debug Koka Program",
             "type": "koka",
             "request": "launch",
-            "program": "${workspaceFolder}/${command:AskForProgramName}"
+            "program": ""
           }
         ],
         "configurationSnippets": [
           {
-            "label": "Launch",
-            "description": "Launch a Koka program",
+            "label": "Koka: Run",
+            "description": "Compile and run a Koka program",
             "body": {
               "type": "koka",
               "request": "launch",
-              "name": "Ask for file name",
-              "program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\""
+              "program": "${0}",
+              "name": "${0}"
             }
           }
         ],

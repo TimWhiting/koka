@@ -35,25 +35,29 @@ import Text.Read (readMaybe)
 import Debug.Trace (trace)
 import Control.Exception (try)
 import qualified Control.Exception as Exc
+import Compiler.Options (Flags)
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
   let version = msg ^. J.params . J.textDocument . J.version
-  _ <- recompileFile InMemory uri (Just version) True
+  flags <- getFlags
+  _ <- recompileFile InMemory uri (Just version) True flags
   return ()
 
 didChangeHandler :: Handlers LSM
 didChangeHandler = notificationHandler J.SMethod_TextDocumentDidChange $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
   let version = msg ^. J.params . J.textDocument . J.version
-  _ <- recompileFile InMemory uri (Just version) True -- Need to reload
+  flags <- getFlags
+  _ <- recompileFile InMemory uri (Just version) True flags -- Need to reload
   return ()
 
 didSaveHandler :: Handlers LSM
 didSaveHandler = notificationHandler J.SMethod_TextDocumentDidSave $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
-  _ <- recompileFile InMemory uri Nothing False
+  flags <- getFlags
+  _ <- recompileFile InMemory uri Nothing False flags
   return()
 
 didCloseHandler :: Handlers LSM
@@ -67,11 +71,10 @@ maybeContents vfs uri = do
 
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
-recompileFile :: CompileTarget () -> J.Uri -> Maybe J.Int32 -> Bool -> LSM (Maybe FilePath)
-recompileFile compileTarget uri version force =
+recompileFile :: CompileTarget () -> J.Uri -> Maybe J.Int32 -> Bool -> Flags -> LSM (Maybe FilePath)
+recompileFile compileTarget uri version force flags =
   case J.uriToFilePath uri of
     Just filePath -> do
-      flags <- getFlags
       -- Recompile the file
       vFiles <- getVirtualFiles
 

@@ -27,6 +27,8 @@ import {
 interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/** An absolute path to the "program" to debug. */
 	program: string
+  /** Additional arguments */
+	args?: string
 	/** enable logging the Debug Adapter Protocol */
 	trace?: boolean
 }
@@ -126,7 +128,7 @@ export class KokaDebugSession extends LoggingDebugSession {
 		await this._configurationDone.wait(1)
 
 		// start the program in the runtime
-		this._runtime.start(args.program)
+		this._runtime.start(args)
 
 		this.sendResponse(response)
 	}
@@ -164,10 +166,15 @@ class KokaRuntime extends EventEmitter {
 	}
 	ps?: child_process.ChildProcess | null
 
-	public async start(file: string) {
+	public async start(args: LaunchRequestArguments) {
 		const target = this.config.target
+		// Args that are parsed by the compiler are in the args field. This leaves the rest of the object open for 
+		let additionalArgs = "--target=" + target
+		if (args.args) {
+			additionalArgs = additionalArgs + args.args 
+		}
 		try {
-			const resp = await this.client.sendRequest(ExecuteCommandRequest.type, { command: 'koka/genCode', arguments: [file] })
+			const resp = await this.client.sendRequest(ExecuteCommandRequest.type, { command: 'koka/genCode', arguments: [args.program, additionalArgs] })
 			console.log(`Generated code at ${resp}`)
 			if (!resp) {
 				this.emit('output', `Error generating code, see language server output for specifics`, 'stderr')
