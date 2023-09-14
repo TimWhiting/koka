@@ -43,6 +43,7 @@ commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp ->
           Just flags' -> return flags'
           Nothing -> do
             doc <- liftIO (commandLineHelp flags)
+            sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack "Invalid arguments " <> additionalArgs
             liftIO $ termPhaseDoc term doc
             return flags
         withIndefiniteProgress (T.pack "Compiling " <> filePath) J.NotCancellable $ do

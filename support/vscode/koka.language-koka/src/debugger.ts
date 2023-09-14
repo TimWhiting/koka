@@ -27,7 +27,7 @@ import {
 interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/** An absolute path to the "program" to debug. */
 	program: string
-  /** Additional arguments */
+	/** Additional arguments */
 	args?: string
 	/** enable logging the Debug Adapter Protocol */
 	trace?: boolean
@@ -168,10 +168,28 @@ class KokaRuntime extends EventEmitter {
 
 	public async start(args: LaunchRequestArguments) {
 		const target = this.config.target
+		let compilerTarget
+		switch (target) {
+			case 'C':
+				compilerTarget = 'c'
+				break
+			case 'JS':
+				compilerTarget = 'js'
+				break
+			case 'WASM':
+				compilerTarget = 'wasm'
+				break
+			case 'C#':
+				compilerTarget = 'cs'
+				break
+			default:
+				compilerTarget = 'c'
+				break
+		}
 		// Args that are parsed by the compiler are in the args field. This leaves the rest of the object open for 
-		let additionalArgs = "--target=" + target
+		let additionalArgs = "--target=" + compilerTarget
 		if (args.args) {
-			additionalArgs = additionalArgs + args.args 
+			additionalArgs = additionalArgs + " " + args.args
 		}
 		try {
 			const resp = await this.client.sendRequest(ExecuteCommandRequest.type, { command: 'koka/genCode', arguments: [args.program, additionalArgs] })
