@@ -50,7 +50,7 @@ didChangeHandler = notificationHandler J.SMethod_TextDocumentDidChange $ \msg ->
   let uri = msg ^. J.params . J.textDocument . J.uri
   let version = msg ^. J.params . J.textDocument . J.version
   flags <- getFlags
-  _ <- recompileFile InMemory uri (Just version) True flags -- Need to reload
+  _ <- recompileFile InMemory uri (Just version) False flags
   return ()
 
 didSaveHandler :: Handlers LSM
