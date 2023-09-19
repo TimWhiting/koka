@@ -343,6 +343,14 @@ pub fun unzip( xs : list<(a,b)> ) : (list<a>,list<b>)
       Nil            -> (reverse(acc1),reverse(acc2))
   iter(xs,[],[])
 
+pub fun unzip3( xs : list<(a,b,c)> ) : (list<a>,list<b>,list<c>)
+  // todo: implement TRMC for multiple results
+  fun iter( ys, acc1, acc2, acc3 )
+    match ys
+      Cons((x,y,z),xx) -> iter(xx,Cons(x,acc1),Cons(y,acc2),Cons(z,acc3))
+      Nil            -> (reverse(acc1),reverse(acc2),reverse(acc3))
+  iter(xs,[],[],[])
+
 // Take the first `n` elements of a list (or fewer if the list is shorter than `n`)
 pub fun take( xs : list<a>, n : int ) : list<a>
   match xs
