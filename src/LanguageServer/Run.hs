@@ -76,9 +76,9 @@ runLanguageServer flags files = do
 
 messageHandler :: TChan (String, J.MessageType) -> LanguageContextEnv () -> IO ()
 messageHandler msgs env = do
+  mVar <- newEmptyMVar
   forever $ do
     (msg, msgType) <- atomically $ readTChan msgs
-    mVar <- newEmptyMVar
     runLSM (sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams msgType $ T.pack msg) mVar env
 
 reactor :: TChan ReactorInput -> IO ()
