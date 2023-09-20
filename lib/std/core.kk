@@ -335,21 +335,28 @@ pub fun zipwith-indexed( xs0 : list<a>, ys0 :list<b>, f : (int,a,b) -> e c ) : e
   zipwith-iter(0,xs0,ys0)
 
 // Unzip a list of pairs into two lists
-pub fun unzip( xs : list<(a,b)> ) : (list<a>,list<b>)
-  // todo: implement TRMC for multiple results
-  fun iter( ys, acc1, acc2 )
+pub fun unzip( xs : list<(a,b)>) : (list<a>,list<b>)
+  fun iter(ys, acc1, acc2)
     match ys
-      Cons((x,y),xx) -> iter(xx,Cons(x,acc1),Cons(y,acc2))
-      Nil            -> (reverse(acc1),reverse(acc2))
-  iter(xs,[],[])
+      Cons((x,y),xx) -> iter(xx, acc1 ++ ctx Cons(x,_),acc2 ++ ctx Cons(y,_))
+      Nil            -> (acc1 ++. Nil,acc2 ++. Nil)
+  iter(xs, ctx _, ctx _)
 
-pub fun unzip3( xs : list<(a,b,c)> ) : (list<a>,list<b>,list<c>)
-  // todo: implement TRMC for multiple results
-  fun iter( ys, acc1, acc2, acc3 )
+// Unzip a list of triples into three lists
+pub fun unzip( xs : list<(a,b,c)> ) : (list<a>,list<b>,list<c>)
+  fun iter(ys, acc1, acc2, acc3)
     match ys
-      Cons((x,y,z),xx) -> iter(xx,Cons(x,acc1),Cons(y,acc2),Cons(z,acc3))
-      Nil            -> (reverse(acc1),reverse(acc2),reverse(acc3))
-  iter(xs,[],[],[])
+      Cons((x,y,z),xx) -> iter(xx, acc1 ++ ctx Cons(x,_),acc2 ++ ctx Cons(y,_),acc3 ++ ctx Cons(z,_))
+      Nil            -> (acc1 ++. Nil,acc2 ++. Nil,acc3 ++. Nil)
+  iter(xs, ctx _, ctx _, ctx _)
+
+// Unzip a list of quadruples into four lists
+pub fun unzip(xs: list<(a,b,c,d)>): (list<a>,list<b>,list<c>,list<d>)
+  fun iter(ys, acc1, acc2, acc3, acc4)
+    match ys
+      Cons((x,y,z,w),xx) -> iter(xx, acc1 ++ ctx Cons(x,_),acc2 ++ ctx Cons(y,_),acc3 ++ ctx Cons(z,_),acc4 ++ ctx Cons(w,_))
+      Nil            -> (acc1 ++. Nil,acc2 ++. Nil,acc3 ++. Nil,acc4 ++. Nil)
+  iter(xs, ctx _, ctx _, ctx _, ctx _)
 
 // Take the first `n` elements of a list (or fewer if the list is shorter than `n`)
 pub fun take( xs : list<a>, n : int ) : list<a>
@@ -453,9 +460,9 @@ pub fun span( xs : list<a>, predicate : a -> e bool ) : e (list<a>,list<a>)
   // todo: implement TRMC with multiple results to avoid the reverse
   fun span-acc( ys, acc)
     match ys
-      Cons(y,yy) -> if y.predicate then yy.span-acc(Cons(y,acc)) else (acc.reverse,ys)
-      _ -> (acc.reverse, ys)
-  xs.span-acc( [] )
+      Cons(y,yy) -> if y.predicate then yy.span-acc(acc ++ ctx Cons(y,_)) else (acc ++. Nil,ys)
+      _ -> (acc ++. Nil, ys)
+  xs.span-acc( ctx _ )
 
 // Keep only those initial elements that satisfy `predicate`
 pub fun take-while( xs : list<a>, predicate : a -> e bool ) : e list<a>
@@ -485,14 +492,14 @@ pub fun remove( xs : list<a>, pred : a -> e bool ) : e list<a>
 // those elements that satisfy the given predicate `pred`.
 // For example: `partition([1,2,3],odd?) == ([1,3],[2])`
 pub fun partition( xs : list<a>, pred : a -> e bool ) : e (list<a>,list<a>)
-  partition-acc( xs, pred, Nil, Nil)
+  partition-acc( xs, pred, ctx _, ctx _)
 
-fun partition-acc( xs : list<a>, pred : a -> e bool, acc1 : list<a>, acc2 : list<a> ) : e (list<a>, list<a>)
+fun partition-acc( xs : list<a>, pred : a -> e bool, acc1 : ctx<list<a>>, acc2 : ctx<list<a>> ) : e (list<a>, list<a>)
   match xs
-    Nil -> (acc1.reverse, acc2.reverse)
+    Nil -> (acc1 ++. Nil, acc2 ++. Nil)
     Cons(x,xx) -> if (pred(x))
-                    then partition-acc(xx,pred,Cons(x,acc1),acc2)
-                    else partition-acc(xx,pred,acc1,Cons(x,acc2))
+                    then partition-acc(xx,pred,acc1 ++ ctx Cons(x,_),acc2)
+                    else partition-acc(xx,pred,acc1,acc2 ++ ctx Cons(x,_))
 
 // Retain only those elements of a list that satisfy the given predicate `pred`.
 // For example: `filterMap([1,2,3],fn(i) { if i.odd? then Nothing else Just(i*i) }) == [4]`
@@ -2094,6 +2101,11 @@ pub fun show( xs : list<int> ) : string
 pub fun show( xs : list<bool> ) : string
   show-list(xs,show)
 
+pub fun show-maybe(m: maybe<a>, showA: a -> e string): e string
+  match m
+    Just(a) -> "Just(" ++ showA(a) ++ ")"
+    Nothing -> "Nothing"
+
 pub fun show-tuple( x : (a,b), showfst : a -> e string, showsnd : b -> e string ) : e string
   "(" ++ x.fst.showfst ++ "," ++ x.snd.showsnd ++ ")"
 
@@ -2388,6 +2400,10 @@ pub fun null( s : string ) : null<string>
 // Cast a boolean `False` to null
 pub fun null( b : bool ) : null<()>
     b.maybe.null
+
+// Check if two boxed values are identical (i.e. the same pointer)
+pub extern identical(a: a, b: a): bool
+  c inline "a.box == b.box"
 
 // val null-const : forall<a> null<a> = null(Nothing)
 
