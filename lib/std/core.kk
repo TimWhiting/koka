@@ -2097,6 +2097,10 @@ pub fun show( xs : list<bool> ) : string
 pub fun show-tuple( x : (a,b), showfst : a -> e string, showsnd : b -> e string ) : e string
   "(" ++ x.fst.showfst ++ "," ++ x.snd.showsnd ++ ")"
 
+pub fun show-maybe(m: maybe<a>, showA: a -> e string): e string
+  match m
+    Just(a) -> "Just(" ++ showA(a) ++ ")"
+    Nothing -> "Nothing"
 
 // ----------------------------------------------------------------------------
 // Print to the console
@@ -2527,6 +2531,10 @@ pub inline extern ".open"<e1 :: E, e2 :: E, a, b>( x : a ) : total b
 pub inline extern ".toany"( x : a ) : any
   inline "#1"
   cs inline "(object)(#1)"
+
+// Check if two boxed values are identical (i.e. the same pointer)
+pub extern identical(a: a, b: a): bool
+  c inline "a.box == b.box"
 
 // Internal: used for value effects
 // TODO: revisit value effects codegen
