@@ -709,15 +709,19 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                        -> do loadMessage "reusing:"
                              return mod
                       Nothing
-                       -> do loadMessage "loading:"
-                             ftime  <- liftIO $ getFileTime iface
-                             (core,parseInlines) <- lift $ parseCore iface
-                             -- let core = uniquefy core0
-                             outIFace <- liftIO $ copyIFaceToOutputDir term flags iface core
-                             let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal []
-                                                Nothing -- (error ("getting program from core interface: " ++ iface))
-                                                  core (Left parseInlines) Nothing ftime (Just ftime)
-                             return mod
+                       -> 
+                          case lookupImport iface cachedModules of
+                            Just mod -> do loadMessage "reusing:"
+                                           return mod
+                            Nothing -> do loadMessage "loading:"
+                                          ftime  <- liftIO $ getFileTime iface
+                                          (core,parseInlines) <- lift $ parseCore iface
+                                          -- let core = uniquefy core0
+                                          outIFace <- liftIO $ copyIFaceToOutputDir term flags iface core
+                                          let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal []
+                                                              Nothing -- (error ("getting program from core interface: " ++ iface))
+                                                                core (Left parseInlines) Nothing ftime (Just ftime)
+                                          return mod
              loadFromModule (modPath mod){-iface-} root stem mod
 
       loadFromModule iface root source mod
