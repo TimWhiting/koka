@@ -339,17 +339,27 @@ pub fun unzip( xs : list<(a,b)>) : (list<a>,list<b>)
   // todo: implement TRMC for multiple results
   fun iter( ys, acc1, acc2 )
     match ys
-      Cons((x,y),xx) -> iter(xx,Cons(x,acc1),Cons(y,acc2))
-      Nil            -> (reverse(acc1),reverse(acc2))
-  iter(xs,[],[])
+      Cons((x,y),xx) -> iter(xx,acc1 ++ ctx Cons(x,_),acc2 ++ ctx Cons(y,_))
+      Nil            -> (acc1 ++. Nil,acc2 ++. Nil)
+  iter(xs,ctx _,ctx _)
 
-pub fun unzip( xs : list<(a,b,c)> ) : (list<a>,list<b>,list<c>)
+// Unzip a list of triples into three lists
+pub fun unzip( xs : list<(a,b,c)>) : (list<a>,list<b>,list<c>)
   // todo: implement TRMC for multiple results
   fun iter( ys, acc1, acc2, acc3 )
     match ys
-      Cons((x,y,z),xx) -> iter(xx,Cons(x,acc1),Cons(y,acc2),Cons(z,acc3))
-      Nil            -> (reverse(acc1),reverse(acc2),reverse(acc3))
-  iter(xs,[],[],[])
+      Cons((x,y,z),xx) -> iter(xx,acc1 ++ ctx Cons(x,_),acc2 ++ ctx Cons(y,_),acc3 ++ ctx Cons(z,_))
+      Nil            -> (acc1 ++. Nil,acc2 ++. Nil,acc3 ++. Nil)
+  iter(xs,ctx _,ctx _,ctx _)
+
+// Unzip a list of quadruples into four lists
+pub fun unzip( xs : list<(a,b,c,d)>) : (list<a>,list<b>,list<c>,list<d>)
+  // todo: implement TRMC for multiple results
+  fun iter( ys, acc1, acc2, acc3, acc4 )
+    match ys
+      Cons((x,y,z,w),xx) -> iter(xx,acc1 ++ ctx Cons(x,_),acc2 ++ ctx Cons(y,_),acc3 ++ ctx Cons(z,_),acc4 ++ ctx Cons(w,_))
+      Nil            -> (acc1 ++. Nil,acc2 ++. Nil,acc3 ++. Nil,acc4 ++. Nil)
+  iter(xs,ctx _,ctx _,ctx _,ctx _)
 
 // Take the first `n` elements of a list (or fewer if the list is shorter than `n`)
 pub fun take( xs : list<a>, n : int ) : list<a>
@@ -493,6 +503,16 @@ fun partition-acc( xs : list<a>, pred : a -> e bool, acc1 : list<a>, acc2 : list
     Cons(x,xx) -> if (pred(x))
                     then partition-acc(xx,pred,Cons(x,acc1),acc2)
                     else partition-acc(xx,pred,acc1,Cons(x,acc2))
+
+pub fun partition-ctx( xs : list<a>, ^pred : a -> bool ) : (list<a>,list<a>)
+  partition-acc-ctx(xs, pred, ctx _, ctx _)
+
+fun partition-acc-ctx(xs: list<a>, ^pred: (a -> bool), acc1: ctx<list<a>>, acc2: ctx<list<a>>): (list<a>, list<a>)
+  match xs
+    Nil -> (acc1 ++. Nil, acc2 ++. Nil)
+    Cons(x,xx) -> if pred(x)
+      then partition-acc-ctx(xx,pred,acc1 ++ ctx Cons(x,_),acc2)
+      else partition-acc-ctx(xx,pred,acc1,acc2 ++ ctx Cons(x,_))
 
 // Retain only those elements of a list that satisfy the given predicate `pred`.
 // For example: `filterMap([1,2,3],fn(i) { if i.odd? then Nothing else Just(i*i) }) == [4]`
