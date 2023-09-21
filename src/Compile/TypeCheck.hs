@@ -31,6 +31,7 @@ import Core.CoreVar( extractDepsFromSignatures )
 
 import Core.Check( checkCore )
 import Core.CheckFBIP( checkFBIP )
+import Core.MatchMerge( matchMergeDefs )
 import Core.Simplify( simplifyDefs )
 import Core.FunLift( liftFunctions )
 import Core.UnReturn( unreturn )
@@ -115,6 +116,7 @@ typeCheck flags defs coreImports program0
         -- checkCoreDefs "unreturn"
         let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
         checkFBIP penv (platform flags) newtypes borrowed gamma
+        matchMergeDefs
 
         -- initial simplify
         let ndebug  = optimize flags > 0
