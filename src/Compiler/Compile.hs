@@ -62,6 +62,7 @@ import Core.UnReturn          ( unreturn )
 import Core.CheckFBIP         ( checkFBIP )
 import Core.OpenResolve       ( openResolve )
 import Core.FunLift           ( liftFunctions )
+import Core.MatchMerge           ( matchMergeDefs )
 import Core.Monadic           ( monTransform )
 import Core.MonadicLift       ( monadicLift )
 import Core.Inlines           ( inlinesExtends, extractInlineDefs, inlinesMerge, inlinesToList, inlinesFilter, inlinesNew )
@@ -908,6 +909,7 @@ inferCheck loaded0 flags line coreImports program
        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = cdefs }) (loadedBorrowed loaded)
        checkFBIP penv (platform flags) (loadedNewtypes loaded) borrowed gamma
 
+       matchMergeDefs
        -- initial simplify
        let ndebug  = optimize flags > 0
            simplifyX dupMax = simplifyDefs penv False {-unsafe-} ndebug (simplify flags) dupMax
