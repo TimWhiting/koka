@@ -27,6 +27,8 @@ import Core.Pretty
 import Core.CoreVar
 import Core.Uniquefy
 import Data.Tree.Lens (branches)
+import Data.Set (Set, fromList, intersection)
+import qualified Data.Set as S
 
 trace s x =
   Lib.Trace.trace s
@@ -70,13 +72,13 @@ matchMergeExpr body
 mergeBranches :: [Branch] -> Unique [Branch]
 mergeBranches [] = return []
 mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst)
-  = case splitBranchConstructors b rst of
-      ([b], []) -> return [b]
-      ([b], rst) -> 
+  = case splitBranchConstructors b rst S.empty of
+      ([b], [], s) -> return [b]
+      ([b], rst, s) -> 
         do
           rest <- mergeBranches rst 
           return $ b:rest
-      (bs, rst) -> 
+      (bs, rst, s) -> 
         do
           names <- mapM (\x -> uniqueId "case" >>= (\id -> return $ newHiddenName ("case" ++ show id))) [0..length ps-1]
           let
@@ -88,27 +90,48 @@ mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst)
             [Guard exprTrue (Case varsMatch $ map (stripOuterConstructors vars pat) bs)] : rest
 mergeBranches (b:bs) = mergeBranches bs >>= (\bs' -> return $ b:bs')
 
-splitBranchConstructors :: Branch -> [Branch] -> ([Branch], [Branch])
-splitBranchConstructors b@(Branch [p] _) branches =
+splitBranchConstructors :: Branch -> [Branch] -> Set Int -> ([Branch], [Branch], Set Int)
+splitBranchConstructors b@(Branch [p] _) branches matchingIndexes =
   case branches of
-    [] -> ([b], [])
+    [] -> ([b], [], S.empty)
     b'@(Branch [p'] _):bs ->
-      let (bs', bs2') = splitBranchConstructors b bs in
-        if patternsMatch p p' then (b':bs', bs2') else (bs', b':bs2')
+      let (bs', bs2', matchingIndexes') = splitBranchConstructors b bs matchingIndexes in
+        case patternsMatch p p' matchingIndexes' of
+          (True, x) -> (b':bs', bs2', x) 
+          _ -> (bs', b':bs2', matchingIndexes)
 
-patternsMatch :: Pattern -> Pattern -> Bool
-patternsMatch p p'
+patternsMatch :: Pattern -> Pattern -> Set Int -> (Bool, Set Int)
+patternsMatch p p' x
   = case (p, p') of
-    (PatLit l1, PatLit l2) -> l1 == l2
-    (PatVar _ v1, PatVar _ v2) -> patternsMatch v1 v2
-    (PatWild, PatWild) -> True
+    (PatLit l1, PatLit l2) -> (l1 == l2, S.empty)
+    (PatVar _ v1, PatVar _ v2) -> (True, S.empty)
+    (PatWild, PatWild) -> (True, S.empty)
     (PatCon name1 patterns1 _ targs1 exists1 res1 _ _, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) ->
-      name1 == name2 &&
-      any (\(p1,p2) -> patternsMatch p1 p2) (zip patterns1 patterns2) &&
+      if name1 == name2 &&
+      any (\(p1,p2) -> simpleMatch p1 p2) (zip patterns1 patterns2) &&
       targs1 == targs2 &&
       exists1 == exists2 &&
-      res1 == res2
-    (_, _) -> False
+      res1 == res2 then
+        (True, intersection x (fromList $ concatMap (\(i,(p1,p2)) -> if simpleMatch p1 p2 then [i] else []) (zip [0..] (zip patterns1 patterns2))))
+      else
+        (False, S.empty)
+    (_, _) -> (False, S.empty)
+
+simpleMatch p p' =
+  case (p, p') of
+    (PatLit l1, PatLit l2) -> True
+    (PatVar tn1 v1, PatVar tn2 v2) -> typeOf tn1 == typeOf tn2
+    (PatWild, PatWild) -> True
+    (PatCon name1 patterns1 _ targs1 exists1 res1 _ _, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) ->
+      if name1 == name2 &&
+      targs1 == targs2 &&
+      exists1 == exists2 &&
+      res1 == res2 then
+        True
+      else
+        False
+
+
 
 isPatLit :: Pattern -> Bool
 isPatLit (PatLit _) = True
