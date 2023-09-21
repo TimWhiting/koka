@@ -4,10 +4,10 @@ import qualified Lib.Trace
 import Control.Monad
 import Control.Monad.Identity
 import Control.Applicative
-import Data.Maybe( catMaybes )
+import Data.Maybe( catMaybes, isJust, maybeToList )
 import Lib.PPrint
 import Common.Failure
-import Common.NamePrim ( nameEffectOpen )
+import Common.NamePrim ( nameEffectOpen, namePatternMatchError )
 import Common.Name
 import Common.Range
 import Common.Unique
@@ -47,21 +47,20 @@ matchMergeDefGroups
 matchMergeDefGroup :: DefGroup -> Unique DefGroup
 matchMergeDefGroup (DefRec dgs)
   = do ndgs <- mapM matchMergeRecDef dgs
-       return $ DefRec ndgs 
+       return $ DefRec ndgs
 matchMergeDefGroup (DefNonRec def)
  = do ndef <- matchMergeRecDef def
-      return $ DefNonRec ndef 
+      return $ DefNonRec ndef
 
 matchMergeRecDef :: Def -> Unique Def
 matchMergeRecDef def
   = do e <- rewriteBottomUpM matchMergeExpr $ defExpr def
-       trace ("matchMergeRecDef: " ++ show (defName def) ++ "\n" ++ show (defExpr def) ++ "\n rewrote to: \n" ++ show e) $
-        return def{defExpr=e}
+       return def{defExpr=e}
 
 matchMergeExpr :: Expr -> Unique Expr
 matchMergeExpr body
   = case body of
-      Case exprs branches -> 
+      Case exprs branches ->
         do
           branches' <- mergeBranches branches
           return $ Case exprs branches'
@@ -71,31 +70,43 @@ mergeBranches :: [Branch] -> Unique [Branch]
 mergeBranches [] = return []
 mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst)
   = case splitBranchConstructors b rst of
-      ([b], []) -> return [b]
-      ([b], rst) -> 
+      ([b], [], err) -> return [b]
+      ([b], rst, err) ->
         do
-          rest <- mergeBranches rst 
+          rest <- mergeBranches rst
           return $ b:rest
-      (bs, rst) -> 
+      (bs, rst, err) ->
         do
           names <- mapM (\x -> uniqueId "case" >>= (\id -> return $ newHiddenName ("case" ++ show id))) [0..length ps-1]
           let
-            patterns = zipWith (\i p -> if isPatLit p then p else PatVar (TName (names !! i) (patTypeArgs pat !! i)) PatWild) [0..length ps-1] ps
+            -- TODO: Include all subpatterns that are common instead of just pattern literals
+            patterns = zipWith (\i p -> if isPatLitOrSkip p then p else PatVar (TName (names !! i) (patTypeArgs pat !! i)) PatWild) [0..length ps-1] ps
             vars = zipWith (\i p -> Var (TName (names !! i) (patTypeArgs pat !! i)) InfoNone) [0..length ps-1] ps
-            varsMatch = concat (zipWith (\i p -> if isPatLit p then [] else [Var (TName (names !! i) (patTypeArgs pat !! i)) InfoNone]) [0..length ps-1] ps)
+            -- TODO: Ignore all variables with .skip and that are already proven to match in the subexpression
+            varsMatch = concat (zipWith (\i p -> if isPatLitOrSkip p then [] else [Var (TName (names !! i) (patTypeArgs pat !! i)) InfoNone]) [0..length ps-1] ps)
           rest <- mergeBranches rst
-          return $ Branch [pat{patConPatterns = patterns}]
-            [Guard exprTrue (Case varsMatch $ map (stripOuterConstructors vars pat) bs)] : rest
+          newBranches <- mergeBranches $ map (stripOuterConstructors vars pat) bs ++ maybeToList err -- Add back error to sub branches
+          let newBranch = Branch [pat{patConPatterns = patterns}] [Guard exprTrue (Case varsMatch newBranches)] : rest
+          trace ("mergeBranches: " ++ show branches ++ "\n" ++ "\n rewrote to: \n" ++ show newBranch ++ " found err " ++ show err) $ return newBranch
 mergeBranches (b:bs) = mergeBranches bs >>= (\bs' -> return $ b:bs')
 
-splitBranchConstructors :: Branch -> [Branch] -> ([Branch], [Branch])
+splitBranchConstructors :: Branch -> [Branch] -> ([Branch], [Branch], Maybe Branch)
 splitBranchConstructors b@(Branch [p] _) branches =
   case branches of
-    [] -> ([b], [])
+    [] -> ([b], [], if isErrorBranch b then Just b else Nothing)
     b'@(Branch [p'] _):bs ->
-      let (bs', bs2') = splitBranchConstructors b bs in
-        if patternsMatch p p' then (b':bs', bs2') else (bs', b':bs2')
+      let (bs', bs2', e) = splitBranchConstructors b bs in
+      let newError
+            | isJust e = e
+            | isErrorBranch b' = Just b'
+            | otherwise = Nothing in
+        if patternsMatch p p' then (bs' ++ [b'], bs2', newError) else (bs', b':bs2', newError)
 
+isErrorBranch:: Branch -> Bool
+isErrorBranch (Branch _ [Guard _ (App (TypeApp (Var name _) _) _)]) = getName name == namePatternMatchError
+isErrorBranch _ = False
+
+-- TODO: Return largest common subpattern, with variables added where needed
 patternsMatch :: Pattern -> Pattern -> Bool
 patternsMatch p p'
   = case (p, p') of
@@ -104,15 +115,29 @@ patternsMatch p p'
     (PatWild, PatWild) -> True
     (PatCon name1 patterns1 _ targs1 exists1 res1 _ _, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) ->
       name1 == name2 &&
-      any (\(p1,p2) -> patternsMatch p1 p2) (zip patterns1 patterns2) &&
+      -- any (\(p1,p2) -> shallowMatch p1 p2) (zip patterns1 patterns2) &&
       targs1 == targs2 &&
       exists1 == exists2 &&
       res1 == res2
     (_, _) -> False
 
-isPatLit :: Pattern -> Bool
-isPatLit (PatLit _) = True
-isPatLit _ = False
+shallowMatch :: Pattern -> Pattern -> Bool
+shallowMatch p p'
+  = case (p, p') of
+    (PatLit l1, PatLit l2) -> l1 == l2
+    (PatVar tn1 _, PatVar tn2 _) -> typeOf tn1 == typeOf tn2
+    (PatWild, PatWild) -> True
+    (PatCon name1 patterns1 _ targs1 exists1 res1 _ _, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) ->
+      name1 == name2 &&
+      targs1 == targs2 &&
+      exists1 == exists2 &&
+      res1 == res2
+    (_, _) -> False
+
+isPatLitOrSkip :: Pattern -> Bool
+isPatLitOrSkip (PatLit _) = True
+isPatLitOrSkip (PatCon{patConSkip = True}) = True
+isPatLitOrSkip _ = False
 
 stripOuterConstructors :: [Expr] -> Pattern -> Branch -> Branch
 stripOuterConstructors vars pat (Branch [PatCon{patConPatterns=ps}] exprs)
