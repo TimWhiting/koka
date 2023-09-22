@@ -25,8 +25,8 @@ class KokaLexer(RegexLexer):
 
     keywords = [
         'infix', 'infixr', 'infixl',
-        'module', 'import', 'as',
-        'pub', 'abstract',
+        'module', 'import', 'as', 'mod'
+        'pub', 'abstract', 'ctx'
         'type', 'struct', 'alias', 'effect', 'con',
         'forall', 'exists', 'some',
         'fun', 'fn', 'val', 'var', 'extern',
@@ -37,7 +37,7 @@ class KokaLexer(RegexLexer):
         'override', 'named',
         'interface', 'break', 'continue', 'unsafe',
         'co', 'rec', 'open', 'extend', 'behind',
-        'linear', 'value', 'reference', 
+        'linear', 'value', 'reference',
         'inline', 'noinline'
     ]
 
@@ -87,7 +87,7 @@ class KokaLexer(RegexLexer):
             
             # special sequences of tokens (we use ?: for non-capturing group as
             # required by 'bygroups')
-            (r'(module)(\s+)(interface\s+)?((?:[a-z]\w*/)*[a-z]\w*)',
+            (r'(module|mod)(\s+)(interface\s+)?((?:[a-z]\w*/)*[a-z]\w*)',
              bygroups(Keyword, Text, Keyword, Name.Namespace)),
             (r'(import)(\s+)((?:[a-z]\w*/)*[a-z]\w*)'
               r'(?:(\s*)(=)(\s*)((?:qualified\s*)?)'

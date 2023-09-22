@@ -1909,9 +1909,59 @@ can make code that uses only linear effects more compact and efficient.
 
 ### Named and Scoped Handlers { #sec-namedh; }
 
-~ Todo
-See `samples/named-handlers`.
-~
+Named handlers allow us to define multiple handlers for the same effect that are lexically distinct from one another. For example, to define a handler for managing a file, we can write:
+```unchecked
+named effect file
+  fun read-line() : string   // `:(file)   -> <exn> a`
+
+// a (named) handler instance for files
+fun file(fname, action) 
+  var content := read-text-file(fname.path).lines
+  with f <- named handler 
+    fun read-line() 
+      match content  
+        Nil -> "" 
+        Cons(x,xx) -> { content := xx; x }
+  action(f)
+
+pub fun main() 
+  with f1 <- file("package.yaml")
+  with f2 <- file("stack.yaml")
+  println( f1.read-line() ++ "\n" ++ f2.read-line() )
+```
+This allows us to have two separate handlers for the same effect, and to use them in the same scope. The `named` keyword is used to define a handler instance, and the `with` statement is used to bind a handler instance to a variable. The handler instance can then be used as a regular handler, and it can be passed to other functions. 
+
+When used with handlers that involve multiple resumptions, you must be careful to ensure that the handler instance does not escape the scope of the resumption. For example, the following code is incorrect, and will fail at runtime:
+
+```unchecked
+fun wrong-escape1() 
+  with f <- file("stack.yaml")
+  f
+
+pub fun test() 
+  val f = wrong-escape1()
+  f.read-line.println
+```
+
+To ensure that the handler instance does not escape, you can the effect as a scoped effect. 
+
+```unchecked
+named scoped effect file<s::S> 
+  fun read-line() : string  // `: (f : file<s>) -> scope<s> string`
+
+// a handler instance for files
+fun file(fname : string, action : forall<s> file<s> -> <scope<s>|e> a ) : e a 
+  var i := 0
+  with f <- named handler 
+    fun read-line()
+      i := i + 1
+      (fname ++ ": line " ++ i.show)
+  action(f)
+``` 
+
+When creating the file the function `file` quantifies the `action` function by a polymorphic scope `s`, and connects that to the scope of the `file` instance passed to the `action`. Each action is guaranteed to not escape the scope of the action method due to the scope polymorphism. Scope types which are recognized by the `::S` kind annotation are not limited to just effect handlers, and can be used with other variables. See the [``samples/named-handlers``][named-handlers] directory on github or in your Koka installation for more complex examples of both named handlers and scoped effects and types.
+
+[named-handlers]: https://github.com/koka-lang/koka/tree/master/samples/named-handlers {target='_top'}
 
 ## FBIP: Functional but In-Place { #sec-fbip; }
 
@@ -1927,10 +1977,8 @@ describe loops in terms of regular function calls, reuse analysis lets us
 describe in-place mutating imperative algorithms in a purely functional
 way (and get persistence as well).
 
-~ Note
-FBIP is still active research. In particular we'd like to add ways to add 
-annotations to ensure reuse is taking place.
-~
+Koka has a few keywords for guaranteeing that a function is recognized as tail recursive, FBIP, or FIP by the compiler
+
 
 ### Tree Rebalancing
 
