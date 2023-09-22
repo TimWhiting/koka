@@ -155,6 +155,9 @@ extern                    { return EXTERN; }
 
 fun                       { return FUN; }
 fn                        { return FN; }
+fip                       { return FIP; }
+fbip                      { return FBIP; }
+tail                      { return TAIL; }
 val                       { return VAL; }
 var                       { return VAR; }
 con                       { return CON; }

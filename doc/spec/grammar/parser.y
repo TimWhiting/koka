@@ -57,7 +57,7 @@ void printDecl( const char* sort, const char* name );
 %token MATCH
 %token RARROW LARROW
 
-%token FUN FN VAL VAR 
+%token FUN FN FBIP FIP TAIL VAL VAR 
 %token TYPE STRUCT EFFECT
 %token ALIAS CON
 %token FORALL EXISTS SOME
@@ -349,7 +349,18 @@ operation   : pub VAL identifier typeparams ':' tatomic
 -- Pure (top-level) Declarations
 ----------------------------------------------------------*/
 puredecl    : inlinemod VAL binder '=' blockexpr      { $$ = $3; }
-            | inlinemod FUN funid funbody             { $$ = $3; }
+            | inlinemod fipmod FUN funid funbody             { $$ = $4; }
+            ;
+
+fipalloc    : '(' INT ')'
+            | '(' 'n' ')'
+            | /* empty */
+            ;
+
+fipmod      : FBIP fipalloc
+            | FIP fipalloc
+            | TAIL
+            | /* empty */
             ;
 
 inlinemod   : ID_INLINE
