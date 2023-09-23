@@ -1323,7 +1323,7 @@ depType tp
       TCon tc                 -> depName (typeConName tc)
       TVar _                  -> S.empty
       TApp tp tps             -> depsUnions (map depType (tp:tps))
-      TSyn syn args tp        -> depsUnions (map depType (tp:args))
+      TSyn syn args tp        -> depsUnions (depName (typesynName syn):(map depType (tp:args)))
 
 depDef :: Def -> Deps
 depDef def  = depsUnions [depType (defType def), depExpr (defExpr def)]

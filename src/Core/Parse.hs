@@ -1046,7 +1046,7 @@ envLookupCon :: Env -> Name -> LexParser NameInfo
 envLookupCon env name
   = case gammaLookupExactCon name (gamma env) of
      [con@(InfoCon{})] -> return con
-     res               -> fail $ "unknown constructor: " ++ show name ++ ": " ++ show res -- ++ ":\n" ++ show (gamma env)
+     res               -> fail $ "when parsing " ++ show (modName env) ++ " unknown constructor: " ++ show name ++ ": " ++ show res -- ++ ":\n" ++ show (gamma env)
 
 envLookupVar :: Env -> Name -> LexParser Expr
 envLookupVar env name

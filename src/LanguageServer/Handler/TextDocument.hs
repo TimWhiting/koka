@@ -42,7 +42,7 @@ didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
   let version = msg ^. J.params . J.textDocument . J.version
   flags <- getFlags
-  _ <- recompileFile InMemory uri (Just version) True flags
+  _ <- recompileFile InMemory uri (Just version) False flags
   return ()
 
 didChangeHandler :: Handlers LSM

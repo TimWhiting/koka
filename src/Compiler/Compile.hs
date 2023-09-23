@@ -583,25 +583,26 @@ resolveImportModules :: CompileTarget () -> (FilePath -> Maybe BString) -> Name 
 resolveImportModules compileTarget maybeContents mname term flags currentDir resolved cachedModules []
   = return ([],resolved)
 resolveImportModules compileTarget maybeContents mname term flags currentDir resolved0 cachedModules (imp:imps)
-  = do -- trace (show mname ++ ": resolving imported modules: " ++ show (impName imp) ++ ", resolved: " ++ show (map (show . modName) resolved0)) $ return ()
+  = do -- trace ("\t" ++ show mname ++ ": resolving imported modules: " ++ show (impName imp) ++ ", resolved: " ++ show (map (show . modName) resolved0)) $ return ()
        (mod,resolved1) <- case filter (\m -> impName imp == modName m) resolved0 of
-                            (mod:_) -> -- trace ("Already computed module " ++ show (modName mod) ++ " from deps " ++ (show $ map modName resolved0)) $ 
+                            (mod:_) -> -- trace ("Already computed module " ++ show (modName mod)) $ 
                               return (mod, resolved0)
                             _ ->
                               case filter (\m -> impName imp == modName m) cachedModules of
                                 (mod:_) -> -- Restricts resolved0 just to the recursive deps and core imports
                                   let deps = getRecursiveDeps cachedModules (modCore mod) in
-                                  -- trace ("Dependencies of " ++ show (modName mod) ++ " are " ++ (show $ map modName deps)) $ 
-                                  return (mod, addDeps (addDeps resolved0 deps) [mod])
-                                _ -> -- trace ("Resolving module " ++ show (impName imp)) $ 
-                                          resolveModule compileTarget maybeContents term flags currentDir resolved0 cachedModules imp
-       -- trace (" newly resolved from " ++ show (modName mod) ++ ": " ++ show (map (show . modName) resolved1)) $ return ()
+                                  -- trace ("\tDependencies of " ++ show (modName mod) ++ " are " ++ (show $ map modName deps)) $ 
+                                  return (mod, addDeps [mod] (addDeps resolved0 deps))
+                                _ -> -- trace ("\tResolving module " ++ show (impName imp)) $ do
+                                      resolveModule compileTarget maybeContents term flags currentDir resolved0 cachedModules imp
+                                      -- trace ("\tFinished module " ++ show (impName imp)) $ return res
+       -- trace ("\tnewly resolved from " ++ show (modName mod) ++ ": " ++ show (map (show . modName) resolved1)) $ return ()
        let imports    = Core.coreProgImports $ modCore mod
            pubImports = map ImpCore (filter (\imp -> Core.importVis imp == Public) imports)
        -- trace (" resolve further imports (from " ++ show (modName mod) ++ ") (added module: " ++ show (impName imp) ++ " public imports: " ++ show (map (show . impName) pubImports) ++ ")") $ return ()
        (needed,resolved2) <- resolveImportModules compileTarget maybeContents mname term flags currentDir resolved1 cachedModules (pubImports ++ imps)
        let needed1 = filter (\m -> modName m /= modName mod) needed -- no dups
-       return (mod:needed1,addDeps resolved2 resolved1)
+       return (mod:needed1,addDeps resolved1 resolved2)
 
 
 searchModule :: Flags -> FilePath -> Name -> IO (Maybe FilePath)
@@ -674,22 +675,32 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
       name = impFullName mimp
 
       loadDepend iface root stem
-         = do let srcpath = joinPath root stem
+         = -- trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
+           do let srcpath = joinPath root stem
               ifaceTime <- liftIO $ getFileTimeOrCurrent iface
               sourceTime <- liftIO $ getFileTimeOrCurrent srcpath
-              case lookupImport iface modules of
-                Just mod ->
-                  if (srcpath /= forceModule flags && modTime mod >= sourceTime)
-                   then -- trace ("module " ++ show (name) ++ " already loaded") $
-                        -- loadFromModule iface root stem mod
-                        return (mod,modules) -- TODO: revise! do proper dependency checking instead..
-                   else -- trace ("module " ++ show ( name) ++ " already loaded but not recent enough..\n " ++ show (modTime mod, sourceTime)) $
-                        loadFromSource modules root stem
-                Nothing ->
-                  -- trace ("module " ++ show (name) ++ " not yet loaded") $
-                  if (not (rebuild flags) && srcpath /= forceModule flags && ifaceTime >= sourceTime)
-                    then loadFromIface iface root stem
+              case lookupImport iface cachedModules of
+                  Just mod ->
+                    if (srcpath /= forceModule flags && modTime mod >= sourceTime)
+                     then -- trace ("module " ++ show (name) ++ " already loaded") $
+                          -- loadFromModule iface root stem mod
+                          return (mod,modules) -- TODO: revise! do proper dependency checking instead..
+                    else if (not (rebuild flags) && srcpath /= forceModule flags && ifaceTime >= sourceTime)
+                        then loadFromIface iface root stem
                     else loadFromSource modules root stem
+                  _ -> case lookupImport iface modules of
+                    Just mod ->
+                      if (srcpath /= forceModule flags && modTime mod >= sourceTime)
+                      then -- trace ("module " ++ show (name) ++ " already loaded") $
+                            -- loadFromModule iface root stem mod
+                            return (mod,modules) -- TODO: revise! do proper dependency checking instead..
+                      else -- trace ("module " ++ show ( name) ++ " already loaded but not recent enough..\n " ++ show (modTime mod, sourceTime)) $
+                            loadFromSource modules root stem
+                    Nothing ->
+                      -- trace ("module " ++ show (name) ++ " not yet loaded") $
+                      if (not (rebuild flags) && srcpath /= forceModule flags && ifaceTime >= sourceTime)
+                        then loadFromIface iface root stem
+                        else loadFromSource modules root stem
 
       loadFromSource modules1 root fname
         = -- trace ("loadFromSource: " ++ root ++ "/" ++ fname) $
