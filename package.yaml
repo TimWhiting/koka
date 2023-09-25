@@ -37,6 +37,7 @@ dependencies:
   - time
   - network-simple
   - network
+  - list-t
   - isocline >= 1.0.6
   
 executables:

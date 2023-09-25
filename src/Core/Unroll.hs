@@ -252,7 +252,7 @@ uniqueTNameFrom :: TName -> Unroll TName
 uniqueTNameFrom tname
   = do i <- unique
        let name = toHiddenUniqueName i "unroll" (getName tname)
-       return (TName name (typeOf tname))
+       return (TName name (typeOf tname) (originalRange tname))
 
 verboseDoc :: (Pretty.Env -> Doc) -> Unroll ()
 verboseDoc f

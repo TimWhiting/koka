@@ -95,8 +95,8 @@ ctailDef topLevel def
                      ctailName = makeHiddenName "trmc" (defName def)
                      ctailSlot = newHiddenName "acc"
                      ctailType = tForall tforall tpreds (TFun (targs ++ [(ctailSlot,ctailSlotType)]) teff tres)
-                     ctailTName= TName ctailName ctailType
-                     ctailTSlot= TName ctailSlot ctailSlotType
+                     ctailTName= TName ctailName ctailType Nothing
+                     ctailTSlot= TName ctailSlot ctailSlotType Nothing
 
                  let alwaysAffine = effectIsAffine teff
                  cdefExpr <- withContext ctailTName False {-isMulti-} alwaysAffine (Just ctailTSlot) $
@@ -109,8 +109,8 @@ ctailDef topLevel def
                      ctailMultiName  = makeHiddenName "trmcm" (defName def)
                      ctailMultiSlot  = newHiddenName "accm"
                      ctailMultiType  = tForall tforall tpreds (TFun (targs ++ [(ctailMultiSlot,ctailMultiSlotType)]) teff tres)
-                     ctailMultiTName = TName ctailMultiName ctailMultiType
-                     ctailMultiTSlot = TName ctailMultiSlot ctailMultiSlotType
+                     ctailMultiTName = TName ctailMultiName ctailMultiType Nothing
+                     ctailMultiTSlot = TName ctailMultiSlot ctailMultiSlotType Nothing
                      ctailMultiVar   = Var ctailMultiTName (InfoArity (length tforall) (length targs + 1))
 
                  wrapExpr <- withContext ctailTName False alwaysAffine Nothing $
@@ -183,7 +183,7 @@ makeIfIsAffine :: Expr -> Expr -> Expr
 makeIfIsAffine onTrue onFalse
   = makeIfExpr (App (Var tnameEvvIsAffine (InfoArity 0 0)) []) onTrue onFalse
   where
-    tnameEvvIsAffine = TName nameEvvIsAffine (TFun [] typeTotal typeBool)
+    tnameEvvIsAffine = TName nameEvvIsAffine (TFun [] typeTotal typeBool) Nothing
 
 
 --------------------------------------------------------------------------
@@ -441,7 +441,7 @@ ctailFoundArg cname mbC mkConsApp field mkTailApp resTp -- f fargs
 -- Polymorphic hole
 makeHole :: Type -> Expr
 makeHole tp
-  = App (TypeApp (Var (TName nameCCtxHoleCreate funType) (InfoExternal [])) [tp]) []
+  = App (TypeApp (Var (TName nameCCtxHoleCreate funType Nothing) (InfoExternal [])) [tp]) []
   where
     funType = TForall [a] [] (TFun [] typeTotal (TVar a))
     a = TypeVar 0 kindStar Bound
@@ -450,7 +450,7 @@ makeHole tp
 -- Initial empty context (@ctx hole)
 makeCCtxEmpty :: Type -> Expr
 makeCCtxEmpty tp
-  = App (TypeApp (Var (TName nameCCtxEmpty funType) 
+  = App (TypeApp (Var (TName nameCCtxEmpty funType Nothing) 
                         -- (InfoArity 1 0)
                         (InfoExternal [(C CDefault,"kk_cctx_empty(kk_context())"),(JS JsDefault,"$std_core_types._cctx_empty()")])
                       ) [tp]) []
@@ -462,7 +462,7 @@ makeCCtxEmpty tp
 -- The adress of a field in a constructor (for context holes)
 makeFieldAddrOf :: TName -> TName -> Name -> Type -> Expr
 makeFieldAddrOf objName conName fieldName tp
-  = App (TypeApp (Var (TName nameFieldAddrOf funType) (InfoExternal [])) [tp])
+  = App (TypeApp (Var (TName nameFieldAddrOf funType Nothing) (InfoExternal [])) [tp])
         [Var objName InfoNone, Lit (LitString (showTupled (getName conName))), Lit (LitString (showTupled fieldName))]
   where
     funType = TForall [a] [] (TFun [(nameNil,TVar a),(nameNil,typeString),(nameNil,typeString)]
@@ -474,7 +474,7 @@ makeFieldAddrOf objName conName fieldName tp
 makeCCtxExtend :: TName -> TName -> TName -> TName -> Name -> Type -> Bool -> Expr
 makeCCtxExtend slot resName objName conName fieldName tp alwaysAffine
   = let fieldOf = makeFieldAddrOf objName conName fieldName tp
-    in  App (TypeApp (Var (TName nameCCtxExtend funType) 
+    in  App (TypeApp (Var (TName nameCCtxExtend funType Nothing) 
                 -- (InfoArity 1 3) 
                 (InfoExternal [(C CDefault,"kk_cctx_extend(#1,#2,#3," ++ affine ++ ",kk_context())"),
                                (JS JsDefault,"$std_core_types._cctx_extend(#1,#2,#3)")])
@@ -494,7 +494,7 @@ makeCCtxApply :: Bool {-isMulti-} -> Bool {-isAlwaysAffine-} -> TName -> Expr ->
 makeCCtxApply True _ slot expr   -- slot `a -> a` is an accumulating function; apply to resolve
   = App (Var slot InfoNone) [expr]
 makeCCtxApply False alwaysAffine slot expr  -- slot is a `ctail<a>`
-  = App (TypeApp (Var (TName nameCCtxApply funType) 
+  = App (TypeApp (Var (TName nameCCtxApply funType Nothing) 
                         -- (InfoArity 1 2)
                         (InfoExternal [(C CDefault,"kk_cctx_apply(#1,#2," ++ affine ++ ",kk_context())"),
                                        (JS JsDefault,"$std_core_types._cctx_apply(#1,#2)")])
@@ -516,7 +516,7 @@ makeCCtxApply False alwaysAffine slot expr  -- slot is a `ctail<a>`
 
 -- create a unique name specific to this module
 uniqueTName :: Type -> CTail TName
-uniqueTName tp = (`TName` tp) <$> uniqueName "trmc"
+uniqueTName tp = (\n -> TName n tp Nothing) <$> uniqueName "trmc"
 
 -- for mapping over a set and collecting the results into a list.
 foldMapM :: (Monad m, Foldable t) => (a -> m b) -> t a -> m [b]
@@ -573,7 +573,7 @@ getSt = get
 ctailRun :: Pretty.Env -> Newtypes -> Gamma -> Bool -> CTail a -> Unique a
 ctailRun penv newtypes gamma useContextPath (CTail action)
   = withUnique $ \u ->
-      let env = Env [] penv newtypes gamma (TName nameNil typeUnit) Nothing True useContextPath False
+      let env = Env [] penv newtypes gamma (TName nameNil typeUnit Nothing) Nothing True useContextPath False
           st = CTailState u
           (val, st') = runState (runReaderT action env) st
        in (val, uniq st')
@@ -617,7 +617,7 @@ getFieldName cname field
                 then return (Left ("cannot optimize modulo-cons tail-call through a value type (" ++ show (getName cname) ++ ")"))
                 else do case filter (\con -> conInfoName con == getName cname) (dataInfoConstrs dataInfo) of
                           [con] -> case drop (field - 1) (conInfoParams con) of
-                                      ((fname,ftp):_) -> return $ Right (Con cname (getConRepr dataInfo con), TName fname ftp)
+                                      ((fname,ftp):_) -> return $ Right (Con cname (getConRepr dataInfo con), TName fname ftp Nothing)
                                       _ -> failure $ "Core.CTail.getFieldName: field index is off: " ++ show cname ++ ", field " ++ show  field ++ ", in " ++ show (conInfoParams con)
                           _ -> failure $ "Core.CTail.getFieldName: cannot find constructor: " ++ show cname ++ ", field " ++ show  field ++ ", in " ++ show (dataInfoConstrs dataInfo)
          _ -> failure $ "Core.CTail.getFieldName: no such constructor: " ++ show cname ++ ", field " ++ show  field
@@ -643,7 +643,7 @@ getCurrentDefName :: CTail TName
 getCurrentDefName
   = do defs <- getCurrentDef
        let def = head defs
-       return (TName (defName def) (defType def))
+       return (TName (defName def) (defType def) (Just $ defNameRange def))
 
 --
 
