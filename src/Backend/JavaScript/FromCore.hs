@@ -52,7 +52,7 @@ externalNames :: [(TName, Doc)]
 externalNames
   = [ (conName exprTrue,  text "true")
     , (conName exprFalse, text "false")
-    , (TName nameOptionalNone typeOptional, text "undefined")  -- ugly but has real performance benefit
+    , (TName nameOptionalNone typeOptional Nothing, text "undefined")  -- ugly but has real performance benefit
     ]
 
 --------------------------------------------------------------------------
@@ -388,7 +388,7 @@ tryTailCall result expr
             then return expr
             else -- trace ("Backend.JavaScript.FromCore.tailCall: capture: " ++ show captured ++ ":\n" ++ show expr) $
                  do ns <- mapM (newVarName . show) captured
-                    let cnames = [TName cn tp | (cn,TName _ tp) <- zip ns captured]
+                    let cnames = [TName cn tp Nothing | (cn,TName _ tp _) <- zip ns captured]
                         sub    = [(n,Var cn InfoNone) | (n,cn) <- zip captured cnames]
                     return $ App (Lam cnames typeTotal (sub |~> expr)) [Var arg InfoNone | arg <- captured]
 
@@ -802,7 +802,7 @@ genVarBinding expr
       Var tn _ -> return $ (empty, tn)
       _        -> do name <- newVarName "x"
                      doc  <- genStat (ResultAssign name Nothing) expr
-                     return ( doc, TName name (typeOf expr) )
+                     return ( doc, TName name (typeOf expr) Nothing )
 
 ---------------------------------------------------------------------------------
 -- Pure expressions
@@ -986,7 +986,7 @@ genVarNames i = do ns <- newVarNames i
 
 -- | Generate a name with its type in comments
 genCommentTName :: TName -> Asm Doc
-genCommentTName (TName n t)
+genCommentTName (TName n t _)
   = do env <- getPrettyEnv
        return $ ppName n <+> comment (Pretty.ppType env t )
 

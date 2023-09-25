@@ -27,6 +27,7 @@ import Kind.ImportMap
 import Type.Type
 import Type.TypeVar
 import Type.Pretty
+import Common.Range (showRange)
 
 {--------------------------------------------------------------------------
   Show pretty names (rather than numbers)
@@ -390,7 +391,9 @@ prettyExpr env (Case exprs branches)
     tab (prettyBranches env branches) <--> text "}"
 
 prettyVar env tname
-  = prettyName env (getName tname)
+  = case originalRange tname of
+      Just rng -> prettyName env (getName tname) <.> parens (text $ show rng)
+      Nothing -> prettyName env (getName tname)
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
 
 {--------------------------------------------------------------------------
@@ -484,7 +487,7 @@ showXChar c
 --------------------------------------------------------------------------}
 
 prettyTName :: Env -> TName -> Doc
-prettyTName env (TName name tp)
+prettyTName env (TName name tp _)
   = prettyName env name <.> text ":" <+> ppType env tp
 
 prettyName :: Env -> Name -> Doc
@@ -721,9 +724,9 @@ instance HasTypeVar Pattern where
 
 
 instance HasTypeVar TName where
-  sub `substitute` (TName name tp)
-    = TName name (sub `substitute` tp)
-  ftv (TName name tp)
+  sub `substitute` (TName name tp rng)
+    = TName name (sub `substitute` tp) rng
+  ftv (TName name tp _)
     = ftv tp
-  btv (TName name tp)
+  btv (TName name tp _)
     = btv tp

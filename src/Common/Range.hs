@@ -14,7 +14,7 @@ module Common.Range
           ( Pos, makePos, minPos, maxPos, posColumn, posLine, posOfs
           , posMove8, posMoves8, posNull
           , Range, showFullRange
-          , makeRange, rangeNull, combineRange, rangeEnd, rangeStart, rangeLength
+          , makeRange, rangeNull, combineRange, rangeEnd, rangeStart, rangeLength, rangesOverlap
           , Ranged( getRange ), combineRanged
           , combineRangeds, combineRanges, extendRange
           , Source(Source,sourceName, sourceBString), sourceText, sourceFromRange
@@ -270,6 +270,10 @@ makeRange p1 p2
 -- | Return the start position of a range
 rangeStart :: Range -> Pos
 rangeStart (Range p1 p2)  = p1
+
+rangesOverlap :: Range -> Range -> Bool
+rangesOverlap (Range s1 e1) (Range s2 e2) =
+  (posSource s1 == posSource s2) && (e2 >= s1 && e2 <= e1 || s2 >= s1 && s2 <= e1 || s2 <= s1 && e2 >= e1)
 
 -- | Return the end position of a range
 rangeEnd :: Range -> Pos

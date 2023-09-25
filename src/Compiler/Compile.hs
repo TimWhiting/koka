@@ -768,7 +768,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                               outIFace <- liftIO $ copyIFaceToOutputDir term flags iface core
                               let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal []
                                                   Nothing -- (error ("getting program from core interface: " ++ iface))
-                                                    core (Left parseInlines) Nothing ftime (Just ftime)
+                                                    core core (Left parseInlines) Nothing ftime (Just ftime)
                               return mod
              loadFromModule (modPath mod){-iface-} root stem mod
 
@@ -970,6 +970,7 @@ inferCheck loaded0 flags line coreImports program
               (getName program)
               defs
        Core.setCoreDefs cdefs
+       let coreProgramPostTypes = coreProgram{ Core.coreProgDefs = cdefs }
 
        -- check generated core
        let checkCoreDefs title = when (coreCheck flags) (trace ("checking " ++ title) $
@@ -1075,6 +1076,8 @@ inferCheck loaded0 flags line coreImports program
        -- Assemble core program and return
        coreDefsFinal <- Core.getCoreDefs
        uniqueFinal   <- unique
+      --  res <- analyzeProgram loaded
+      --  traceM ("analyzeProgram: " ++ show res)
        -- traceM ("final: " ++ show uniqueFinal)
        let -- extract inline definitions to export
            localInlineDefs  = extractInlineDefs (optInlineMax flags) coreDefsInlined
@@ -1092,6 +1095,7 @@ inferCheck loaded0 flags line coreImports program
                                 , loadedUnique = uniqueFinal
                                 , loadedModule = (loadedModule loaded){
                                                     modCore     = coreProgramFinal,
+                                                    modCoreNoOpt = coreProgramPostTypes,
                                                     modRangeMap = mbRangeMap,
                                                     modInlines  = Right allInlineDefs
                                                   }

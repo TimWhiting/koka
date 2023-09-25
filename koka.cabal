@@ -63,6 +63,7 @@ executable koka
       Core.Core
       Core.CoreVar
       Core.CTail
+      Core.DemandAnalysis
       Core.Divergent
       Core.FunLift
       Core.GenDoc
@@ -161,6 +162,7 @@ executable koka
     , directory
     , isocline >=1.0.6
     , lens
+    , list-t
     , lsp
     , mtl
     , network
@@ -201,6 +203,7 @@ test-suite koka-test
     , isocline >=1.0.6
     , json
     , lens
+    , list-t
     , lsp
     , mtl
     , network
