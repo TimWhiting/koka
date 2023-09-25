@@ -178,7 +178,7 @@ chkGuard (Guard test expr)
 
 -- | We ignore default branches that create a pattern match error
 isPatternMatchError :: Branch -> Bool
-isPatternMatchError (Branch pats [Guard (Con gname _) (App (TypeApp (Var (TName fnname _) _) _) _)])
+isPatternMatchError (Branch pats [Guard (Con gname _) (App (TypeApp (Var (TName fnname _ _) _) _) _)])
   | all isPatWild pats && getName gname == nameTrue && fnname == namePatternMatchError = True
   where isPatWild PatWild = True; isPatWild _ = False
 isPatternMatchError _ = False

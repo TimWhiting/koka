@@ -9,11 +9,12 @@ module LanguageServer.Handler.TextDocument
     didSaveHandler,
     didCloseHandler,
     recompileFile,
+    getCompile,
   )
 where
 
 import Common.Error (checkError, Error)
-import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile)
+import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, Module (modPath), modSourcePath)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
 import qualified Data.Map as M
@@ -38,6 +39,7 @@ import qualified Control.Exception as Exc
 import Compiler.Options (Flags)
 import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime)
 import GHC.IO (unsafePerformIO)
+import Compiler.Module (Modules)
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -82,6 +84,31 @@ diffVFS oldvfs vfs =
       Just old@(_, _, vOld) -> if vOld == vers then M.insert newK old acc else M.insert newK (text, unsafePerformIO getCurrentTime, vers) acc
       Nothing -> M.insert newK (text, unsafePerformIO getCurrentTime, vers) acc) M.empty (M.toList vfs)
 
+compile :: (FilePath -> Maybe (ByteString, FileTime)) -> Terminal -> Flags -> Maybe Modules -> Module -> IO (Either Exc.SomeException (Error (Loaded, Maybe FilePath)))
+compile maybeContents term flags modules mod = do
+  let resultIO :: IO (Either Exc.SomeException (Error (Loaded, Maybe FilePath)))
+      resultIO = try $ compileFile maybeContents (fst <$> maybeContents (modSourcePath mod)) term flags [] (fromMaybe [] modules) InMemory [] (modSourcePath mod)
+  liftIO resultIO
+
+getCompile :: LSM (Module -> IO Module)
+getCompile = 
+  do
+    flags <- getFlags
+    term <- getTerminal
+    modules <- fmap loadedModules <$> getLoaded
+    docInfos <- documentInfos <$> getLSState
+    return $ \mod -> do
+      x <- compile (maybeContents docInfos) term flags modules mod
+      case x of
+        Right y ->
+          case checkError y of
+            Right ((l, _), _) ->
+                return $ loadedModule l
+            Left e -> 
+              trace ("Error when compiling " ++ show (modSourcePath mod) ++ show e) $
+              return mod
+        Left y -> return mod
+
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
 recompileFile :: CompileTarget () -> J.Uri -> Maybe J.Int32 -> Bool -> Flags -> LSM (Maybe FilePath)
@@ -101,7 +128,7 @@ recompileFile compileTarget uri version force flags =
             return $ loadedModule l : loadedModules l
       term <- getTerminal
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
-
+      let compile' = compile (maybeContents newvfs) term flags modules
       let resultIO :: IO (Either Exc.SomeException (Error (Loaded, Maybe FilePath)))
           resultIO = try $ compileFile (maybeContents newvfs) contents term flags [] (if force then [] else fromMaybe [] modules) compileTarget [] filePath
       result <- liftIO resultIO

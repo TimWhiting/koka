@@ -204,13 +204,13 @@ urCase org scruts branches
                 pname <- uniqueName "x"
                 eff   <- getCurrentEffect
                 let tp  = typeOf org
-                    parName = TName pname tp
+                    parName = TName pname tp Nothing
                     parVar  = Var (parName) InfoNone
 
                 let f c = let lam    = Lam [parName] eff (c parVar)
                               defTp  = typeOf lam
                               def    = Def name defTp lam Private (defFun [Own]) InlineAuto rangeNull ""
-                              defVar = Var (TName name defTp) InfoNone -- (InfoArity 0 1 NoMon) -- with arity C# code gets wrong
+                              defVar = Var (TName name defTp Nothing) InfoNone -- (InfoArity 0 1 NoMon) -- with arity C# code gets wrong
                               app e  = App defVar [e]
                           in makeLet [DefNonRec def] $
                              Case scruts $
