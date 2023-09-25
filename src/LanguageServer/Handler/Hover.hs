@@ -17,18 +17,24 @@ import LanguageServer.Monad (LSM, getLoaded, getLoadedModule)
 import Lib.PPrint (Pretty (..))
 import Syntax.RangeMap (NameInfo (..), RangeInfo (..), rangeMapFindAt)
 import qualified Language.LSP.Protocol.Message as J
+import Core.DemandAnalysis (runEvalQueryFromRange)
+import Debug.Trace (trace)
+import Common.Range (showFullRange)
 
 hoverHandler :: Handlers LSM
 hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
   let J.HoverParams doc pos _ = req ^. J.params
       uri = doc ^. J.uri
       normUri = J.toNormalizedUri uri
+  allLoaded <- getLoaded
   loaded <- getLoadedModule uri
   let rsp = do
         l <- loaded
+        allMods <- allLoaded
         rmap <- modRangeMap l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
-        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo
+        let evals = trace ("Running eval for range " ++ showFullRange r) $ runEvalQueryFromRange allMods (r, rinfo) l
+        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> "\n\nevaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . show) evals))
             hover = J.Hover hc $ Just $ toLspRange r
         return hover
   case rsp of

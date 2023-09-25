@@ -119,7 +119,7 @@ predName pred
   = do name <- case pred of
                  PredSub _ _ -> Core.freshName "sub"
                  PredIFace iname _ -> Core.freshName (show iname)
-       return (Core.TName name (predType pred))
+       return (Core.TName name (predType pred) Nothing)
 
 
 freshSub :: HasUnique m => Flavour -> [TypeVar] -> m ([TypeVar],Sub)

@@ -47,6 +47,7 @@ import Core.Core
 import Core.CoreVar
 import Core.Pretty
 import Core.Borrowed
+import Common.Range (rangeNull)
 
 --------------------------------------------------------------------------
 -- Reference count transformation
@@ -126,8 +127,8 @@ parcExpr expr
                   -- parcTrace $ "Wrapping: " ++ show tname
                   case splitFunScheme $ typeOf expr of
                     Just (ts, [], as, eff, _)
-                      -> do parcExpr $ addTypeLambdas ts $ addLambdas as eff
-                              $ addApps (map (flip Var InfoNone . uncurry TName) as) $ addTypeApps ts
+                      -> do parcExpr $ addTypeLambdas ts $ addLambdas (zipWith (\a b -> (rangeNull, b)) [1..] as) eff
+                              $ addApps (map (flip Var InfoNone . (\(n,t) -> TName n t Nothing)) as) $ addTypeApps ts
                               $ Var tname info
                     Just _
                       -> do parcTrace $ "Preds not empty: " ++ show (typeOf expr)
@@ -525,7 +526,7 @@ caseExpandExpr :: Expr -> Parc (Expr, Maybe DefGroup)
 caseExpandExpr x@Var{} = return (x, Nothing)
 caseExpandExpr x = do name <- uniqueName "match"
                       let def = DefNonRec (makeDef name x)
-                      let var = Var (TName name (typeOf x)) InfoNone
+                      let var = Var (TName name (typeOf x) Nothing) InfoNone
                       return (var, Just def)
 
 normalizeBranch :: [Expr] -> Branch -> Branch
@@ -622,7 +623,7 @@ genDecRef tname
        if not needs
          then return Nothing
          else return $ Just $
-                        App (Var (TName nameDecRef funTp) (InfoExternal [(C CDefault, "decref(#1,current_context())")]))
+                        App (Var (TName nameDecRef funTp Nothing) (InfoExternal [(C CDefault, "decref(#1,current_context())")]))
                             [Var tname InfoNone]
   where
     funTp = TFun [(nameNil, typeOf tname)] typeTotal typeUnit
@@ -708,12 +709,12 @@ genDrop name = do shape <- getShapeInfo name
 dupDropFun :: Bool -> Type -> Maybe (ConRepr,Name) -> Maybe Int -> Expr -> Expr
 dupDropFun False {-drop-} tp (Just (conRepr,_)) (Just scanFields) arg  
    | not (conReprIsValue conRepr) && not (isConAsJust conRepr) && not (isBoxType tp) -- drop with known number of scan fields
-  = App (Var (TName name coerceTp) (InfoExternal [(C CDefault, "dropn(#1,#2)")])) [arg,makeInt32 (toInteger scanFields)]
+  = App (Var (TName name coerceTp Nothing) (InfoExternal [(C CDefault, "dropn(#1,#2)")])) [arg,makeInt32 (toInteger scanFields)]
   where
     name = nameDrop
     coerceTp = TFun [(nameNil,tp),(nameNil,typeInt32)] typeTotal typeUnit
 dupDropFun isDup tp mbConRepr mbScanCount arg
-  = App (Var (TName name coerceTp) (InfoExternal [(C CDefault, (if isDup then "dup" else "drop") ++ "(#1)")])) [arg]
+  = App (Var (TName name coerceTp Nothing) (InfoExternal [(C CDefault, (if isDup then "dup" else "drop") ++ "(#1)")])) [arg]
   where
     name = if isDup then nameDup else nameDrop
     coerceTp = TFun [(nameNil,tp)] typeTotal (if isDup then tp else typeUnit)
