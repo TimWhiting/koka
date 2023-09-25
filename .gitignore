@@ -30,3 +30,6 @@ test.kk
 /*.cmake
 bench
 test/bench
+.koka
+**/.cache
+scratch/

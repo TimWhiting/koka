@@ -32,15 +32,7 @@
 #include <fcntl.h>
 #endif
 
-typedef int kk_file_t;
-
-#ifdef WIN32
-typedef struct _stat64  kk_stat_t;
-#else
-typedef struct stat     kk_stat_t;
-#endif
-
-static int kk_posix_open(kk_string_t path, int flags, int create_perm, kk_file_t* f, kk_context_t* ctx) {
+kk_decl_export int kk_posix_open(kk_string_t path, int flags, int create_perm, kk_file_t* f, kk_context_t* ctx) {
   *f = 0;
 #ifdef WIN32
   kk_with_string_as_qutf16w_borrow(path, wpath, ctx) {
@@ -80,7 +72,7 @@ static int kk_posix_close(kk_file_t f) {
 #endif
 }
 
-static int kk_posix_fstat(kk_file_t f, kk_stat_t* st) {
+kk_decl_export int kk_posix_fstat(kk_file_t f, kk_stat_t* st) {
 #ifdef WIN32
   return (_fstat64(f, st) < 0 ? errno : 0);
 #else
