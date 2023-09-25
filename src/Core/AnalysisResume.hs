@@ -138,6 +138,6 @@ isScoped ResumeNormal = False
 isScoped ResumeOnce   = False
 isScoped _            = True
 
-resumeName = TName (newName "resume") typeVoid
-resumeShallowName = TName (newName "resume-shallow") typeVoid
-finalizeName = TName (newName "finalize") typeVoid
+resumeName = TName (newName "resume") typeVoid Nothing
+resumeShallowName = TName (newName "resume-shallow") typeVoid Nothing
+finalizeName = TName (newName "finalize") typeVoid Nothing

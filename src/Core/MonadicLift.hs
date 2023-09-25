@@ -92,13 +92,13 @@ liftDef topLevel def
 liftExprInl :: Bool -> Expr -> Lift (Expr,Expr)
 liftExprInl topLevel expr =
   case expr of
-    App tpApp@(TypeApp bind@(Var (TName nameB tpB) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
+    App tpApp@(TypeApp bind@(Var (TName nameB tpB rng) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
       -> -- bexpr >>= (\arg -> body)
          do (body',ibody')  <- liftExprInl False body
             bexpr'          <- liftExpr False bexpr
             f <- liftLocalFun (Lam [arg] eff body') typeTotal
             let bind = App tpApp [bexpr',f]
-                ibind = App (TypeApp (Var (TName nameBind2 typeBind2) (InfoArity 3 3)) [tpArg,tpRes,tpEff])
+                ibind = App (TypeApp (Var (TName nameBind2 typeBind2 rng) (InfoArity 3 3)) [tpArg,tpRes,tpEff])
                             [bexpr',f,(Lam [arg] eff ibody')]
                 typeBind2 = TForall [a,b,e] [] (typeFun [(nameNil,TVar a),
                                                          (nameNil,typeFun [(nameNil,TVar a)] (TVar e) (TVar b)),
@@ -152,7 +152,7 @@ liftGuardInl (Guard guard body)
 liftExpr :: Bool -> Expr -> Lift Expr
 liftExpr topLevel expr =
   case expr of
-    App tpApp@(TypeApp bind@(Var (TName nameB tpB) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
+    App tpApp@(TypeApp bind@(Var (TName nameB tpB _) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
       -> -- bexpr >>= (\arg -> body)
          do body'  <- liftExpr False body
             bexpr' <- liftExpr False bexpr
@@ -211,8 +211,8 @@ makeDef fvs tvs expr
           (Lam pars eff lbody)                 -> ([], map unwild pars, eff, lbody)
           _ -> failure $ ("Core.MonadicLift.makeDef: lifting non-function? " ++ show expr)
 
-    unwild (TName name tp)
-      = TName (if (null (nameId name) || head (nameId name) == '_') then prepend "wild" name else name) tp
+    unwild (TName name tp rng)
+      = TName (if (null (nameId name) || head (nameId name) == '_') then prepend "wild" name else name) tp rng
 
     alltpars = tvs ++ tpars
     allpars  = fvs ++ pars
@@ -224,7 +224,7 @@ makeDef fvs tvs expr
     liftedDef name inl = Def name liftedTp liftedFun Private (defFun [] {-all owned-}) InlineAuto rangeNull "// monadic lift"
 
     funExpr name
-      = Var (TName name liftedTp) (InfoArity (length alltpars) (length allargs))
+      = Var (TName name liftedTp Nothing) (InfoArity (length alltpars) (length allargs))
 
     etaExpr name
       = case (tvs,fvs) of

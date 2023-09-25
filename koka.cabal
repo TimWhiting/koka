@@ -53,6 +53,7 @@ executable koka
       Compiler.Module
       Compiler.Options
       Compiler.Package
+      Core.AbstractValue
       Core.AnalysisCCtx
       Core.AnalysisMatch
       Core.AnalysisResume
@@ -63,7 +64,10 @@ executable koka
       Core.Core
       Core.CoreVar
       Core.CTail
+      Core.DemandAnalysis
       Core.Divergent
+      Core.EffectOptimization
+      Core.FixpointMonad
       Core.FunLift
       Core.GenDoc
       Core.Inline
@@ -75,6 +79,7 @@ executable koka
       Core.Pretty
       Core.Simplify
       Core.Specialize
+      Core.StaticContext
       Core.Uniquefy
       Core.UnReturn
       Core.Unroll
@@ -161,6 +166,7 @@ executable koka
     , directory
     , isocline >=1.0.6
     , lens
+    , list-t
     , lsp
     , mtl
     , network
@@ -171,6 +177,7 @@ executable koka
     , text
     , text-rope
     , time
+    , transformers
   default-language: Haskell2010
   if os(windows)
     cpp-options: -DWINDOWS
@@ -201,6 +208,7 @@ test-suite koka-test
     , isocline >=1.0.6
     , json
     , lens
+    , list-t
     , lsp
     , mtl
     , network
@@ -212,4 +220,5 @@ test-suite koka-test
     , text
     , text-rope
     , time
+    , transformers
   default-language: Haskell2010

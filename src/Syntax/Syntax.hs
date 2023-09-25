@@ -89,7 +89,7 @@ data FixDef
   = FixDef{ fixName   :: Name
           , fixFixity :: Fixity
           , fixRange  :: Range
-          , fixVis    :: Visibility 
+          , fixVis    :: Visibility
           }
   deriving (Show)
 
@@ -104,7 +104,7 @@ data Import
           , importFullName :: Name     -- ^ fully qualified module name
           , importRange :: Range   -- ^ range of the import declaration
           , importVis   :: Visibility  -- ^ visibility of the module
-          } 
+          }
     deriving (Show)
 
 
@@ -225,20 +225,20 @@ data Expr t
   | Case   (Expr t) [Branch t]   Range
   | Parens (Expr t)              Name Range
   | Inject t (Expr t) Bool {-behind?-} Range
-  | Handler{ hndlrSort         :: HandlerSort, 
+  | Handler{ hndlrSort         :: HandlerSort,
              hndlrScope        :: HandlerScope,
              hndlrOverride     :: HandlerOverride,
              hndlrAllowMask    :: Maybe Bool,
              hndlrEffect       :: (Maybe t),
              hndlrLocalPars    :: [ValueBinder (Maybe t) ()],
-             hndlrInitially    :: (Maybe (Expr t)),             
+             hndlrInitially    :: (Maybe (Expr t)),
              hndlrReturn       :: (Maybe (Expr t)),
              hndlrFinally      :: (Maybe (Expr t)),
              hndlrBranches     :: [HandlerBranch t],
              hndlrDeclRange    :: Range,
              hndlrRange        :: Range
             }
-  deriving (Show)
+      deriving (Show)
 
 data HandlerOverride
   = HandlerNoOverride | HandlerOverride
@@ -261,8 +261,8 @@ data HandlerBranch t
 data Branch t
   = Branch{ branchPattern :: (Pattern t), branchGuards :: [Guard t] }
   deriving (Show)
-  
-data Guard t 
+
+data Guard t
   = Guard { guardTest :: (Expr t), guardExpr :: (Expr t) }
   deriving (Show)
 

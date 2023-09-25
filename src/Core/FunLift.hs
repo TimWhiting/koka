@@ -231,8 +231,8 @@ makeDef fvs tvs (pinfos, (origName, (expr, doc)))
           (Lam pars eff lbody)                 -> ([], map unwild pars, eff, lbody)
           _ -> failure $ ("Core.FunLift.makeDef: lifting non-function? " ++ show expr)
 
-    unwild (TName name tp)
-      = TName (if (head (nameId name) == '_') then prepend "wild" name else name) tp
+    unwild (TName name tp rng)
+      = TName (if (head (nameId name) == '_') then prepend "wild" name else name) tp rng
 
     alltpars = tvs ++ tpars
     allpars  = fvs ++ pars
@@ -246,7 +246,7 @@ makeDef fvs tvs (pinfos, (origName, (expr, doc)))
               $ "// lifted local: " ++ concat (intersperse ", " (map (show . unqualify) (dnames ++ [getName origName]))) ++ "\n" ++ doc
 
     funExpr name
-      = Var (TName name liftedTp) (InfoArity (length alltpars) (length allargs))
+      = Var (TName name liftedTp (originalRange origName)) (InfoArity (length alltpars) (length allargs))
 
     etaExpr name
       = case (tvs,fvs) of

@@ -258,7 +258,7 @@ getResolver :: Inf (Name -> Core.Expr)
 getResolver
   = do env <- getEnv
        return (\name -> case gammaLookup name (gamma env) of
-                          [(qname,info)] -> coreExprFromNameInfo qname info
+                          [(qname,info)] -> coreExprFromNameInfo qname info (infoRange info)
                           _              -> failure $ "Type.InferMonad:getResolver: called with unknown name: " ++ show name)
 
 

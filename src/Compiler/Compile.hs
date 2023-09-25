@@ -403,7 +403,8 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
                       modCore = failure ("Compiler.Compile.compileProgram: recursive module import (" ++ fname ++ ")"),
                       modSourceTime = ftime,
                       modTime = iftime,
-                      modOutputTime = iftime
+                      modOutputTime = iftime,
+                      modStatus = LoadedSource
                     }
            allmods = addOrReplaceModule mod modules
            loaded = initialLoaded { loadedModule = mod
@@ -457,8 +458,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
        liftIO $ termPhase term ("codegen " ++ show (getName program))
        (newTarget,loaded3) <- doCodeGen term flags loaded2 loaded1 compileTarget program coreImports
        (loaded4, outFile) <- liftIO $ case newTarget of
-            -- TODO: Quicker path from InMemory to disk when switching from InMemory to Object (we really don't need to recompile, just see if the contents changed)
-            -- InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
+            InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
             _ -> do
               -- TODO: Get output file time and check if it is different from the source time used to type-check
               (loadedNew, mbRun) <- codeGen term flags newTarget loaded3
@@ -776,7 +776,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
           do let (pkgQname,pkgLocal) = packageInfoFromDir (packages flags) (dirname iface)
                  loadMessage msg = liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text msg) <+>
                                        color (colorSource (colorScheme flags))
-                                         (pretty (if null pkgQname then "" else pkgQname ++ "/") <.>  pretty (name)))
+                                         (pretty (if null pkgQname then "" else pkgQname ++ "/") <.>  pretty name))
              mod <- case lookupImport iface modules of
                       Just mod
                        -> do loadMessage "reusing:"
@@ -796,9 +796,9 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                               (core,parseInlines) <- liftError mbCore
                               -- let core = uniquefy core0
                               outIFace <- liftIO $ copyIFaceToOutputDir term flags iface core
-                              let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal []
+                              let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal LoadedIface []
                                                   Nothing -- (error ("getting program from core interface: " ++ iface))
-                                                    core True (Left parseInlines) Nothing ftime (Just iftime) Nothing
+                                                    core core True (Left parseInlines) Nothing ftime (Just iftime) Nothing
                               return mod
              loadFromModule (modPath mod){-iface-} root stem mod
 
@@ -947,6 +947,7 @@ typeCheck loaded flags line coreImports program srcTime
                                , modWarnings   = warnings
                                , modSourceTime = srcTime
                                , modCompiled = True
+                               , modStatus = LoadedSource
                                }
            -- module0 = loadedModule loaded
            fixitiesPub = fixitiesNew [(name,fix) | FixDef name fix rng vis <- programFixDefs program0, vis == Public]
@@ -1011,6 +1012,7 @@ inferCheck loaded0 flags line coreImports program
               (getName program)
               defs
        Core.setCoreDefs cdefs
+       let coreProgramPostTypes = coreProgram{ Core.coreProgDefs = cdefs }
 
        -- check generated core
        let checkCoreDefs title = when (coreCheck flags) (trace ("checking " ++ title) $
@@ -1106,7 +1108,7 @@ inferCheck loaded0 flags line coreImports program
        inlineDefs penv (2*optInlineMax flags) inlinesX -- (loadedInlines loaded)
 
        -- remove remaining open calls; this may change effect types
-       simplifyDefs penv True {-unsafe-} ndebug (simplify flags) 0 -- remove remaining .open
+       simplifyDefs penv True {-unsafe-} ndebug (simplify  flags) 0 -- remove remaining .open
 
        -- final simplification
        simplifyDupN
@@ -1116,6 +1118,8 @@ inferCheck loaded0 flags line coreImports program
        -- Assemble core program and return
        coreDefsFinal <- Core.getCoreDefs
        uniqueFinal   <- unique
+      --  res <- analyzeProgram loaded
+      --  traceM ("analyzeProgram: " ++ show res)
        -- traceM ("final: " ++ show uniqueFinal)
        let -- extract inline definitions to export
            localInlineDefs  = extractInlineDefs (optInlineMax flags) coreDefsInlined
@@ -1133,6 +1137,7 @@ inferCheck loaded0 flags line coreImports program
                                 , loadedUnique = uniqueFinal
                                 , loadedModule = (loadedModule loaded){
                                                     modCore     = coreProgramFinal,
+                                                    modCoreNoOpt = coreProgramPostTypes,
                                                     modRangeMap = mbRangeMap,
                                                     modInlines  = Right allInlineDefs
                                                   }
@@ -1140,7 +1145,7 @@ inferCheck loaded0 flags line coreImports program
                                 }
 
            coreDoc = Core.Pretty.prettyCore (prettyEnvFromFlags flags){ coreIface = False, coreShowDef = True } (C CDefault) []
-                       (coreProgram{ Core.coreProgDefs = coreDefsInlined })
+                       (coreProgram{ Core.coreProgDefs = cdefs })
 
        return (loadedFinal, coreDoc)
 
@@ -1178,7 +1183,7 @@ codeGen term flags compileTarget loaded
 
        -- core
        let outCore  = outBase ++ ".kkc"
-           coreDoc  = Core.Pretty.prettyCore env{ coreIface = False, coreShowDef = (showCore flags) } (target flags) inlineDefs (modCore mod)
+           coreDoc  = Core.Pretty.prettyCore env{ coreIface = False, coreShowDef = (showCore flags) } (target flags) inlineDefs (modCoreNoOpt mod)
                         <-> Lib.PPrint.empty
        when (genCore flags)  $
          do termPhase term "generate core"

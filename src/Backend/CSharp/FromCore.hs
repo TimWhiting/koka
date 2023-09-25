@@ -396,7 +396,7 @@ conClassName name
 ---------------------------------------------------------------------------------
 
 unzipTNames ts
-  = [(name,tp) | TName name tp <- ts]
+  = [(name,tp) | TName name tp _ <- ts]
 
 genDefGroup (DefNonRec def)
   = genDef False def
@@ -464,7 +464,7 @@ etaExpand fun args n
   = assertion "Backend.CSharp.FromCore.etaExpand" (n > length args || (n == 0 && null args)) $
     do names <- mapM (\i -> newVarName "x") [length args + 1 .. n]
        let types = map snd (fst (splitFun (typeOf fun)))
-           tnames = zipWith TName names types
+           tnames = zipWith (\x y -> TName x y Nothing) names types
            args'  = map (\n -> Var n InfoNone) tnames
        return (Lam tnames typeTotal (App fun (args ++ args')))
 
@@ -854,7 +854,7 @@ genExprBasic expr
                       freeVars  = {- filter (\(nm,tp) -> nm /= funname) -} (localFv expr)
                   -- trace ("lift expr: " ++ show funname ++ ": " ++ show (map fst freeVars) ++ "\n" ++ show (prettyExpr defaultEnv expr)) $
                   genClass name freeTVars freeVars
-                      (text "Fun" <.> pretty (length vars) <.> angled (map (ppType ctx) ([tp | TName _ tp <- vars] ++ [typeOf e])))
+                      (text "Fun" <.> pretty (length vars) <.> angled (map (ppType ctx) ([tp | TName _ tp _ <- vars] ++ [typeOf e])))
                       ((genApplyMethod False vars e))
                   result (if null freeVars
                            then (ppQName ctx name <.> ppTypeParams freeTVars <.> dot <.> ppSingletonName)
@@ -908,7 +908,7 @@ genLamOrTypeLam tailCtx expr
                      newType   = ppQName ctx name <.> ppTypeParams freeTVars
                  -- trace("lift: " ++ show (map fst freeVars)) $
                  genClass name freeTVars freeVars
-                      (text "Fun" <.> pretty (length vars) <.> angled (map (ppType ctx) ([tp | TName _ tp <- vars] ++ [typeOf e])))
+                      (text "Fun" <.> pretty (length vars) <.> angled (map (ppType ctx) ([tp | TName _ tp _ <- vars] ++ [typeOf e])))
                       ((genApplyMethod tailCtx vars e))
                  return (newType
                         ,result (if null freeVars
@@ -946,7 +946,7 @@ genLetDefs isRec defs groups expr
                  let newName = qualify (qualifier defname) newVName -- need to qualify or otherwise its considered local
                      newDef = Def newName tp expr vis isVal inl nameRng ""
                      (m,n)  = getArity tp
-                 return ([(TName name tp,Var (TName newName (typeOf expr)) (InfoArity m n))], newDef)
+                 return ([(TName name tp Nothing,Var (TName newName (typeOf expr) Nothing) (InfoArity m n))], newDef)
 
 liftDefToTopLevel def
   = case (defExpr def) of
@@ -1169,7 +1169,7 @@ genPatternTest doTest (mbTagDoc,exprDoc,pattern)
                  ConAsCons typeName _ _ nilName _ _
                   -> do let next    = genNextPatterns (exprDoc) (typeOf tname) patterns
                         return [(test [exprDoc <+> text "!=" <+>
-                                    ppConSingleton ctx typeName (TName nilName (typeOf tname)) tpars]
+                                    ppConSingleton ctx typeName (TName nilName (typeOf tname) Nothing) tpars]
                                 ,[],next,[])]
                  ConAsJust typeName _ _ _ _
                   -> testStruct typeName
@@ -1249,7 +1249,7 @@ genNextPatterns exprDoc tp patterns
 
 tnames :: TNames -> [(Name,Type)]
 tnames tns
-  = [(name,tp) | (TName name tp) <- tnamesList tns]
+  = [(name,tp) | (TName name tp _) <- tnamesList tns]
 
 ppEvalName name
   = ppDefName (makeHiddenName "eval" name)
@@ -1298,7 +1298,7 @@ genTypeApplyMethod tvars expr
 genApplyMethod :: Bool -> [TName] -> Expr -> Asm ()
 genApplyMethod tailCtx vars expr
   = do ctx <- getModule
-       putLn (text "public" <+> text "object" {- ppType ctx (typeOf expr) -} <+> text "Apply" <.> ppParams ctx [(name,tp) | TName name tp <- vars] )
+       putLn (text "public" <+> text "object" {- ppType ctx (typeOf expr) -} <+> text "Apply" <.> ppParams ctx [(name,tp) | TName name tp _ <- vars] )
        genBody True tailCtx expr
 
 

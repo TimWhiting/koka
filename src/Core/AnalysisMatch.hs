@@ -134,7 +134,7 @@ matchPattern newtypes defName range top (match@(Match cinfos cmatches), tp, pat)
                                                 Nothing -> PatWild
                                                 Just (targs,tres)    -- only for constructors with arguments
                                                   -> -- trace (" success") $
-                                                     PatCon (TName (conInfoName con) (conInfoType con))
+                                                     PatCon (TName (conInfoName con) (conInfoType con) (Just range))
                                                             [PatWild | _ <- conInfoParams con]
                                                             (getConRepr di con)
                                                             targs [] tres con True {- skip -}
@@ -248,7 +248,7 @@ patternMatchError resultType defName range
     return $ App ( 
       Core.openEffectExpr exnEff openEff origTp openTp $ 
       Lam [] exnEff $ 
-      App (TypeApp (Var (TName name tp) (InfoArity 1 2)) [resultType])
+      App (TypeApp (Var (TName name tp Nothing) (InfoArity 1 2)) [resultType])
                 [Lit (LitString (sourceName (posSource (rangeStart range)) ++ show range)), Lit (LitString (show defName))]
      ) []
   where

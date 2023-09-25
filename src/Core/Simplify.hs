@@ -36,6 +36,7 @@ import Core.CoreVar
 import Core.Uniquefy( uniquefyExpr )
 import qualified Common.NameMap as M
 import qualified Data.Set as S
+import Data.Maybe (fromMaybe)
 
 -- data Env = Env{ inlineMap :: M.NameMap Expr }
 -- data Info = Info{ occurrences :: M.NameMap Int }
@@ -128,7 +129,7 @@ topDown (Let dgs body)
           DefNonRec def@(Def{defName=x,defType=tp,defExpr=se})  -- isTotal se
              -> -- trace ("simplify let: " ++ show x ++ " = " ++ show se) $
                 do maxSmallOccur <- getDuplicationMax  -- should be 10 or higher to inline partial bind applications
-                   let inlineExpr = topDownLet (extend (TName x tp, se) sub) acc dgs body
+                   let inlineExpr = topDownLet (extend (TName x tp Nothing, se) sub) acc dgs body
                    case occurrencesOf x (Let dgs body) of
                      -- no occurrence, disregard
                      Occur 0 m n 0
@@ -204,7 +205,7 @@ topDown expr@(App (Lam pars eff body) args) | length pars == length args
            expr' = makeLet (zipWith makeDef newNames args) (sub |~> body)
        return expr'
   where
-    makeDef (TName npar nparTp) arg
+    makeDef (TName npar nparTp Nothing) arg
       = DefNonRec (Def npar nparTp arg Private DefVal InlineAuto rangeNull "")
 
 
@@ -213,11 +214,11 @@ topDown expr@(App (TypeApp (TypeLam tpars (Lam pars eff body)) targs) args)
   | length pars == length args && length tpars == length targs
   = do let tsub    = subNew (zip tpars targs)
        newNames <- -- trace ("topDown function app: " ++ show (zip tpars targs) ++ "\n expr:" ++ show expr) $
-                   mapM uniqueTName [TName nm (tsub |-> tp) | (TName nm tp) <- pars]
+                   mapM uniqueTName [TName nm (tsub |-> tp) Nothing | (TName nm tp _) <- pars]
        let sub     = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]        
        return (Let (zipWith makeDef newNames args) (sub |~> (substitute tsub body)))  
   where
-    makeDef (TName npar nparTp) arg
+    makeDef (TName npar nparTp Nothing) arg
       = DefNonRec (Def npar nparTp arg Private DefVal InlineAuto rangeNull "")
 
 
@@ -306,7 +307,7 @@ bindExprs exprs
           Lit{} -> return ([], expr)
           Con{} -> return ([], expr)
           _     -> do name <- uniqueName "norm"
-                      let tname = TName name (typeOf expr)
+                      let tname = TName name (typeOf expr) Nothing
                       return ([DefNonRec (makeTDef tname expr)], Var tname InfoNone)
 
 
@@ -340,8 +341,8 @@ bottomUp expr@(TypeLam tvs (TypeApp body tps))
 bottomUp (App (Lam pars eff body) args) | length pars == length args  && all free pars
   = Let (zipWith makeDef pars args) body
   where
-    makeDef (TName npar nparTp) arg
-      = DefNonRec (Def npar nparTp arg Private DefVal InlineAuto rangeNull "")
+    makeDef (TName npar nparTp rng) arg
+      = DefNonRec (Def npar nparTp arg Private DefVal InlineAuto (fromMaybe rangeNull rng) "")
 
     free parName
       = not (parName `S.member` fv args)
@@ -443,7 +444,7 @@ bottomUp (App (TypeApp (Var evvIndex _) [effTp,hndTp]) [htag]) | getName evvInde
 
 -- simplify clause-tailN to clause-tail-noyieldN if it cannot yield
 bottomUp (App (TypeApp (Var clauseTail info) (effTp:tps)) [op]) | Just n <- isClauseTailName (getName clauseTail), ([],_) <- extractHandledEffect effTp
-  = (App (TypeApp (Var (TName (nameClauseTailNoYield n) (typeOf clauseTail)) info) (effTp:tps)) [op])
+  = (App (TypeApp (Var (TName (nameClauseTailNoYield n) (typeOf clauseTail) Nothing) info) (effTp:tps)) [op])
 
 -- box(unbox(e)) ~> e   unbox(box(e)) ~> e
 bottomUp (App (Var v _) [App (Var w _) [arg]])  | (getName v == nameUnbox && getName w == nameBox) || (getName w == nameUnbox && getName v == nameBox)
@@ -893,9 +894,9 @@ occurrencesDefGroup dg oc
                                       (map defName defs)
 
 
-uniqueTName (TName name tp)
+uniqueTName (TName name tp rng)
   = do i <- unique
-       return (TName (postpend ("." ++ show i) name) tp)
+       return (TName (postpend ("." ++ show i) name) tp rng)
 
 
 {--------------------------------------------------------------------------

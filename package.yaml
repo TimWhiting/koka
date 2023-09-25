@@ -35,8 +35,10 @@ dependencies:
   - text
   - text-rope
   - time
+  - transformers
   - network-simple
   - network
+  - list-t
   - isocline >= 1.0.6
   
 executables:
