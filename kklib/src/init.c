@@ -378,9 +378,9 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
     size_t page_reclaim;
     size_t peak_commit;
     kk_process_info(&user_time, &sys_time, &peak_rss, &page_faults, &page_reclaim, &peak_commit);
-    kk_info_message("elapsed: %" PRId64 ".%03lds, user: %ld.%03lds, sys : %ld.%03lds, rss : %lu%s\n", 
-                    wall_time.seconds, (long)(wall_time.attoseconds / (KK_I64(1000000) * KK_I64(1000000000))), 
-                    user_time/1000, user_time%1000, sys_time/1000, sys_time%1000, 
+    kk_info_message("elapsed: %ld.%06lds, user: %ld.%06lds, sys : %ld.%06lds, rss : %lu%s\n", 
+                    wall_time.seconds, (long)(wall_time.attoseconds / (KK_I64(1000) * KK_I64(1000000000))), 
+                    user_time/1000, user_time, sys_time/1000, sys_time, 
                     (peak_rss > 10*1024*1024 ? peak_rss/(1024*1024) : peak_rss/1024),
                     (peak_rss > 10*1024*1024 ? "mb" : "kb") );
   }
