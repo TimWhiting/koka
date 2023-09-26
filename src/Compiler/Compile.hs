@@ -452,7 +452,8 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
        liftIO $ termPhase term ("codegen " ++ show (getName program))
        (newTarget,loaded3) <- doCodeGen term flags loaded2 loaded1 compileTarget program coreImports
        (loaded4, outFile) <- liftIO $ case newTarget of
-            InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
+            -- TODO: Quicker path from InMemory to disk when switching from InMemory to Object (we really don't need to recompile, just see if the contents changed)
+            -- InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
             _ -> do
               (loadedNew, mbRun) <- codeGen term flags newTarget loaded3
               -- run the program
