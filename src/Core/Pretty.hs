@@ -391,7 +391,8 @@ prettyExpr env (Case exprs branches)
     tab (prettyBranches env branches) <--> text "}"
 
 prettyVar env tname
-  = case originalRange tname of
+  = if showRanges env then prettyName env (getName tname) else 
+    case originalRange tname of
       Just rng -> prettyName env (getName tname) <.> parens (text $ show rng)
       Nothing -> prettyName env (getName tname)
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
