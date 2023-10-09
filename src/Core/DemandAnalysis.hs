@@ -456,7 +456,9 @@ doExpr eval expr call ctx = do
   trace (query ++ "Expr " ++ show ctx)
     wrapMemo "expr" ctx $
     case ctx of
-      AppCLambda _ c _ -> return c
+      AppCLambda _ c e -> 
+        trace (query ++ "Evaluates to " ++ show e) $
+        return c
       AppCParam _ c _ _ -> do
         fn <- doAEnvMaybe query $ focusFun c
         ctxlam <- eval fn
@@ -488,7 +490,12 @@ doCall eval expr call ctx =
   wrapMemo "call" ctx $ do
   query <- lift queryId
   trace (query ++ "Call " ++ show ctx) $
-   expr ctx
+   case ctx of
+      LamCBody _ c _ _-> expr c
+      DefCNonRec _ c d -> do
+        ctx' <- lift $ findUsage2 query (lamVarDef d) c
+        L.fromFoldable ctx' >>= expr
+      _ -> return $ ExprCTerm $ "call not implemented for " ++ show ctx
 
 fix3_eval :: (t1 -> t2 -> t -> t1) -> (t1 -> t2 -> t -> t2) -> (t1 -> t2 -> t -> t) -> t1
 fix3_eval eval expr call =
