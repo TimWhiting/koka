@@ -35,7 +35,7 @@ import Data.List (find, findIndex, elemIndex, union)
 import Debug.Trace
 import Compiler.Module (Loaded (..), Module (..))
 import Lib.PPrint (Pretty(..))
-import Type.Pretty (ppType, defaultEnv)
+import Type.Pretty (ppType, defaultEnv, Env (..))
 import Kind.Kind (Kind(..))
 import Control.Monad.Trans
 import ListT (ListT)
@@ -64,7 +64,7 @@ data ExprContext =
   | CaseCMatch ExprContextId ExprContext Expr -- In a case match context working on the match expression (assumes only one)
   | CaseCBranch ExprContextId ExprContext Int Branch -- Which branch currently inspecting, as well as the Case context
   | ExprCBasic ExprContextId ExprContext Expr -- A basic expression context that has no sub expressions
-  | ExprCTerm String -- Since analysis can fail or terminate early, keep track of the query that failed
+  | ExprCTerm ExprContextId String -- Since analysis can fail or terminate early, keep track of the query that failed
 
 isApp :: ExprContext -> AEnv Bool
 isApp e = do
@@ -121,7 +121,7 @@ lamVarDef :: Def -> Expr
 lamVarDef def = Var (TName (defName def) (defType def) Nothing) InfoNone
 
 showExpr :: Expr -> String
-showExpr e = show $ prettyExpr defaultEnv e
+showExpr e = show $ prettyExpr defaultEnv{showRanges=True} e
 
 showDg d = show $ prettyDefGroup defaultEnv d
 
@@ -141,7 +141,7 @@ instance Show ExprContext where
       CaseCMatch _ _ e -> "CaseMatch " ++ showExpr e
       CaseCBranch _ _ i b -> "CaseBranch " ++ show i ++ " " ++ show b
       ExprCBasic _ _ e -> "ExprBasic " ++ showExpr e
-      ExprCTerm s -> "Query: " ++ s
+      ExprCTerm _ s -> "Query: " ++ s
 
 exprOfCtx :: ExprContext -> Expr
 exprOfCtx ctx =
@@ -189,7 +189,7 @@ contextId ctx =
     CaseCMatch c _ _ -> c
     CaseCBranch c _ _ _ -> c
     ExprCBasic c _ _ -> c
-    ExprCTerm{} -> error "Query should never be queried for context id"
+    ExprCTerm c _ -> c
 
 contextOf :: ExprContext -> Maybe ExprContext
 contextOf ctx =
@@ -232,11 +232,11 @@ instance Eq Def where
 
 type ExpressionSet = Set ExprContextId
 
-newtype AEnv a = AEnv (Env -> State -> Result a)
+newtype AEnv a = AEnv (DEnv -> State -> Result a)
 data State = State{states :: Map ExprContextId ExprContext, childrenIds :: Map ExprContextId (Set ExprContextId), memoCache :: Map String (Map ExprContextId (Set ExprContext)), unique :: Int}
 data Result a = Ok a State
 
-data Env = Env{
+data DEnv = DEnv{
   loaded :: Loaded,
   currentContext :: !ExprContext,
   currentContextId :: ExprContextId,
@@ -260,11 +260,11 @@ instance Monad AEnv where
 instance MonadFail AEnv where
   fail _ = error "fail"
 
-withEnv :: (Env -> Env) -> AEnv a -> AEnv a
+withEnv :: (DEnv -> DEnv) -> AEnv a -> AEnv a
 withEnv f (AEnv c)
   = AEnv (c . f)
 
-getEnv :: AEnv Env
+getEnv :: AEnv DEnv
 getEnv = AEnv Ok
 
 getState :: AEnv State
@@ -306,7 +306,7 @@ runQueryAtRange loaded (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (Env loaded modCtx cid "" "") (State Data.Map.empty Data.Map.empty (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
+        AEnv f -> f (DEnv loaded modCtx cid "" "") (State Data.Map.empty Data.Map.empty (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
   in case result of
     Ok a st -> a
 
@@ -450,6 +450,11 @@ doEval eval expr call ctx = do
         else do
           trace (query ++ "unhandled eval type " ++ show ctx) $ return ctx
 
+newErrTerm :: String -> ListT AEnv ExprContext
+newErrTerm s = lift $ do
+  newId <- newContextId
+  return $ ExprCTerm newId ("Error: " ++ s)
+
 doExpr :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
 doExpr eval expr call ctx = do
   query <- lift queryId
@@ -470,20 +475,21 @@ doExpr eval expr call ctx = do
         expr ctxlambody
       ExprCBasic _ c _ -> expr c
       LetCBody{} -> do
-        return $ ExprCTerm $ "expressions where let body " ++ show ctx ++ " is called"
+        newErrTerm $ "expressions where let body " ++ show ctx ++ " is called"
       LetCDef{} -> do
-        return $ ExprCTerm $ "expressions where let def " ++ show ctx ++ " is called"
+        newErrTerm $ "expressions where let def " ++ show ctx ++ " is called"
       CaseCMatch{} -> do
-        return $ ExprCTerm $ "expressions where case match " ++ show ctx ++ " is called"
+        newErrTerm $ "expressions where case match " ++ show ctx ++ " is called"
       CaseCBranch{} -> do
-        return $ ExprCTerm $ "expressions where case branch " ++ show ctx ++ " is called"
+        newErrTerm $ "expressions where case branch " ++ show ctx ++ " is called"
       DefCRec{} -> do
-        return $ ExprCTerm $ "expressions where recursive def " ++ show ctx ++ " is called"
+        newErrTerm $ "expressions where recursive def " ++ show ctx ++ " is called"
       DefCNonRec _ c d -> do
         ctx' <- lift $ findUsage2 query (lamVarDef d) c
         L.fromFoldable ctx' >>= expr
         -- trace ("Expr def non rec results " ++ show ctx') $ 
-      ModuleC _ _ nm -> return $ ExprCTerm $ "expressions where module " ++ show nm ++ " is called (should never happen)"
+      ModuleC _ _ nm -> newErrTerm $ "expressions where module " ++ show nm ++ " is called (should never happen)"
+      ExprCTerm{} -> return ctx
 
 doCall :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
 doCall eval expr call ctx = 
@@ -492,10 +498,11 @@ doCall eval expr call ctx =
   trace (query ++ "Call " ++ show ctx) $
    case ctx of
       LamCBody _ c _ _-> expr c
+      ExprCTerm{} -> return ctx
       DefCNonRec _ c d -> do
         ctx' <- lift $ findUsage2 query (lamVarDef d) c
         L.fromFoldable ctx' >>= expr
-      _ -> return $ ExprCTerm $ "call not implemented for " ++ show ctx
+      _ -> newErrTerm $ "call not implemented for " ++ show ctx
 
 fix3_eval :: (t1 -> t2 -> t -> t1) -> (t1 -> t2 -> t -> t2) -> (t1 -> t2 -> t -> t) -> t1
 fix3_eval eval expr call =
