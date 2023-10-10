@@ -34,7 +34,7 @@ hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
         rmap <- modRangeMap l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
         let evals = trace ("Running eval for range " ++ showFullRange r) $ runEvalQueryFromRange allMods (r, rinfo) l
-        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> "\n\nevaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . show) evals))
+        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> (if length evals > 1 then "\n\nEvaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . show) evals)) else "\n\nDemand CFA returned nothing")
             hover = J.Hover hc $ Just $ toLspRange r
         return hover
   case rsp of
