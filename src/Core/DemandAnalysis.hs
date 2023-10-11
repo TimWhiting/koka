@@ -462,7 +462,7 @@ doEval eval expr call ctx = do
           Just (letbodyctx@LetCBody{}, index) ->
             eval =<< doAEnvMaybe query (focusLetBinding index (letbodyctx))
           Just (lambodyctx, index) -> do
-            appctx <- trace (query ++ "Found binding for " ++ show v ++ " " ++ show lambodyctx) $ call (lambodyctx)
+            appctx <- trace (query ++ "Found binding2 for " ++ show v ++ " " ++ show lambodyctx) $ call (lambodyctx)
             param <- doAEnvMaybe query $ focusParam index appctx
             eval param
       _ -> 
