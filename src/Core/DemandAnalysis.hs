@@ -66,6 +66,27 @@ data ExprContext =
   | ExprCBasic ExprContextId ExprContext Expr -- A basic expression context that has no sub expressions
   | ExprCTerm ExprContextId String -- Since analysis can fail or terminate early, keep track of the query that failed
 
+data ConstrContext =
+  ConstrContext{
+    constrName:: Name,
+    constrType:: Type,
+    constrParams:: AbValue
+  } deriving (Eq, Ord, Show)
+
+data AbValue =
+  AbValue{
+    closures:: Set ExprContext,
+    constrs:: Set ConstrContext,
+    err:: Maybe String
+  } deriving (Eq, Ord, Show)
+
+emptyAbValue :: AbValue
+emptyAbValue = AbValue S.empty S.empty Nothing
+injClosure ctx = AbValue (S.singleton ctx) S.empty Nothing
+injErr err = AbValue S.empty S.empty (Just err)
+
+joinAbValue :: AbValue -> AbValue -> AbValue
+joinAbValue (AbValue c1 t1 e1) (AbValue c2 t2 e2) = AbValue (S.union c1 c2) (S.union t1 t2) (e1 `mplus` e2)
 
 paramIndex e =
   case e of
@@ -122,9 +143,9 @@ focusChild :: ExprContext -> Int -> AEnv (Maybe ExprContext)
 focusChild e index = do
   children <- childrenContexts e
   query <- getQueryString
-  return $ if index < length children then 
-    trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $ 
-      Just (children !! index) 
+  return $ if index < length children then
+    trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
+      Just (children !! index)
     else trace (query ++ "Children looking for child at " ++ show index ++ " " ++ show children) Nothing
 
 focusLetBinding :: Maybe Int -> ExprContext -> AEnv (Maybe ExprContext)
@@ -257,7 +278,7 @@ instance Eq Def where
 type ExpressionSet = Set ExprContextId
 
 newtype AEnv a = AEnv (DEnv -> State -> Result a)
-data State = State{states :: Map ExprContextId ExprContext, childrenIds :: Map ExprContextId (Set ExprContextId), memoCache :: Map String (Map ExprContextId (Set ExprContext)), unique :: Int}
+data State = State{states :: Map ExprContextId ExprContext, childrenIds :: Map ExprContextId (Set ExprContextId), evalCacheGeneration :: Int, evalCache ::Map ExprContextId (Int,AbValue), memoCache :: Map String (Map ExprContextId (Set ExprContext)), unique :: Int}
 data Result a = Ok a State
 
 data DEnv = DEnv{
@@ -317,11 +338,13 @@ updateState update = do
   st <- getState
   setState $ update st
 
-runEvalQueryFromRange :: Loaded -> (Range, RangeInfo) -> Module -> [ExprContext]
+runEvalQueryFromRange :: Loaded -> (Range, RangeInfo) -> Module -> [AbValue]
 runEvalQueryFromRange loaded rng mod =
   runQueryAtRange loaded rng mod $ \exprctxs ->
     case exprctxs of
-      exprctx:rst -> fixedEval exprctx
+      exprctx:rst -> do
+        res <- fixedEval exprctx
+        trace ("eval result " ++ show res) $ return [res]
       _ -> return []
 
 runQueryAtRange :: Loaded -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
@@ -330,7 +353,7 @@ runQueryAtRange loaded (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv loaded modCtx cid "" "") (State Data.Map.empty Data.Map.empty (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
+        AEnv f -> f (DEnv loaded modCtx cid "" "") (State Data.Map.empty Data.Map.empty 0 (Data.Map.empty) (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
   in case result of
     Ok a st -> a
 
@@ -437,6 +460,10 @@ doAEnvMaybe query f = do
 liftWithQuery :: MonadTrans t => String -> AEnv a -> t AEnv a
 liftWithQuery query f = lift $ withQuery query f
 
+getClosures :: Monad m => AbValue -> ListT m ExprContext
+getClosures eval =
+  L.fromFoldable $ closures eval
+
 queryId :: AEnv String
 queryId = do
   unique <- getUnique
@@ -456,24 +483,51 @@ wrapMemo name ctx f = do
       lift $ setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
       return res
 
-doEval :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
+wrapMemoEval :: ExprContext -> ListT AEnv AbValue -> ListT AEnv AbValue
+wrapMemoEval ctx f = do
+  state <- lift getState
+  case Data.Map.lookup (contextId ctx) (evalCache state) of
+    Just (gen, x) ->      
+      -- TODO: Don't recompute if the cache has not changed
+      if evalCacheGeneration state == gen then
+        return x
+      else do
+        ress <- lift $ L.toList f
+        let res = Prelude.foldl joinAbValue emptyAbValue ress
+        if x == res then return x -- dont' change the cache generation if this hasn't added anything new
+        else do
+          state <- lift getState
+          let newCacheGen = evalCacheGeneration state + 1
+          let newCache = Data.Map.insert (contextId ctx) (newCacheGen, joinAbValue x res) (evalCache state)
+          lift $ setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
+          return x
+    _ -> do
+      ress <- lift $ L.toList f
+      let res = Prelude.foldl joinAbValue emptyAbValue ress
+      state <- lift getState
+      let newCacheGen = evalCacheGeneration state + 1
+      let newCache = Data.Map.insert (contextId ctx) (newCacheGen, res) (evalCache state)
+      lift $ setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
+      return res
+
+doEval :: (ExprContext -> ListT AEnv AbValue) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv AbValue
 doEval eval expr call ctx = do
   query <- lift queryId
   trace (query ++ "Eval " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) $
-    wrapMemo "eval" ctx $
+    wrapMemoEval ctx $
     case exprOfCtx ctx of
       Lam{} -> -- LAM CLAUSE
         trace (query ++ "LAM: " ++ show ctx) $
-        return ctx 
+        return $ injClosure ctx
       v@(Var n _) | getName n == nameEffectOpen -> do -- TODO: Reevaluate eventually
         trace (query ++ "OPEN: " ++ show ctx) $ return []
         newId <- lift newContextId
-        let tvar = TypeVar 0 (kindFun kindStar kindStar) Bound 
+        let tvar = TypeVar 0 (kindFun kindStar kindStar) Bound
             x = TName (newName "x") (TVar tvar) Nothing
             def = makeDef nameEffectOpen (TypeLam [tvar] (Lam [x] effectEmpty (Var x InfoNone)))
             newCtx = DefCNonRec newId ctx [defTName def] def
         -- _ <- doAEnv query $ childrenContexts newCtx
-        return newCtx
+        return $ injClosure newCtx
       v@(Var tn _) -> do -- REF CLAUSE
 -- REF: 
 --  - When the binding is focused on a lambda body, we need to find the callers of the lambda, and proceed as original formulation. 
@@ -494,12 +548,12 @@ doEval eval expr call ctx = do
             eval param
           Just (letbodyctx@LetCBody{}, index) ->
             eval =<< doAEnvMaybe query (focusChild (fromJust $ contextOf letbodyctx) (fromJust index))
-          Just (letdefctx@LetCDef{}, index) -> 
+          Just (letdefctx@LetCDef{}, index) ->
             eval =<< doAEnvMaybe query (focusChild (fromJust $ contextOf letdefctx) (fromJust index))
           Just (matchbodyctx@CaseCBranch{}, index) -> do
             -- TODO:
             let msg = query ++ "REF: TODO: Match body context " ++ show v ++ " " ++ show matchbodyctx
-            trace msg $ newErrTerm msg
+            trace msg $ return $ injErr msg
           Just (modulectx@ModuleC{}, index) -> do
             lamctx <- doAEnv query $ getDefCtx modulectx (getName tn)
             -- Evaluates just to the lambda
@@ -507,9 +561,9 @@ doEval eval expr call ctx = do
           Just (ctxctx, index) -> do
             children <- lift (childrenContexts ctxctx)
             let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
-            trace msg $ newErrTerm msg
+            trace msg $ return $ injErr msg
           Nothing ->
-            newErrTerm $ "REF: currently doesn't support external variables such as " ++ show ctx
+            return $ injErr $ "REF: currently doesn't support external variables such as " ++ show ctx
       App f tms -> do
         fun <- doAEnvMaybe query $ focusChild ctx 0
         trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
@@ -518,35 +572,36 @@ doEval eval expr call ctx = do
           --   doAEnvMaybe query (focusChild (fromJust $ contextOf $ fromJust $ contextOf ctx) 1) >>= eval
           -- _ -> do
         lamctx <- eval fun
+        lam <- getClosures lamctx
         trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
-        bd <- doAEnvMaybe query $ focusBody lamctx
+        bd <- doAEnvMaybe query $ focusBody lam
         trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-        eval bd 
+        eval bd
         -- TODO: In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
         -- additionally, in any recursive contexts (a local find from the body of the lambda)
-      TypeApp{} -> 
+      TypeApp{} ->
         case ctx of
-          DefCNonRec{} -> return ctx 
-          DefCRec{} -> return ctx 
+          DefCNonRec{} -> return $ injClosure ctx
+          DefCRec{} -> return $ injClosure ctx
           _ -> do
             ctx' <- doAEnvMaybe query $ focusChild ctx 0
             eval ctx'
-      TypeLam{} -> 
+      TypeLam{} ->
         case ctx of
-          DefCNonRec{} -> return ctx -- Don't further evaluate if it is just the definition / lambda
-          DefCRec{} -> return ctx -- Don't further evaluate if it is just the definition / lambda
+          DefCNonRec{} -> return $ injClosure ctx -- Don't further evaluate if it is just the definition / lambda
+          DefCRec{} -> return $ injClosure ctx -- Don't further evaluate if it is just the definition / lambda
           _ -> do
             ctx' <- doAEnvMaybe query $ focusChild ctx 0
             eval ctx'
-      _ -> 
+      _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
-        trace msg $ newErrTerm msg
+        trace msg $ return $ injErr msg
         -- case ctx of -- APP CLAUSE
         --   ExprCTerm{} ->
         --     trace (query ++ "Eval ends in error " ++ show ctx)
         --     return ctx
           -- AppCLambda{} -> do
-            
+
           -- _ -> do
           --   app <- liftWithQuery query $ isApp ctx
           --   if app then do
@@ -586,7 +641,7 @@ newErrTerm s = lift $ do
 -- program. To prevent this from becoming too expensive, a module import graph should be used to
 -- work our way to only those modules that demand the current module and the symbol in question
 -- is in the import scope. This is the same rule that should happen for FIND in general
-doExpr :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
+doExpr :: (ExprContext -> ListT AEnv AbValue) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
 doExpr eval expr call ctx = do
   query <- lift queryId
   trace (query ++ "Expr " ++ show ctx ++ " parent " ++ show (contextOf ctx))
@@ -597,13 +652,14 @@ doExpr eval expr call ctx = do
         return c
       AppCParam _ c _ e -> do -- RAND Clause 
         trace (query ++ "RAND: Expr is " ++ show ctx) $ return []
-        fn <- doAEnvMaybe query $ focusFun c 
+        fn <- doAEnvMaybe query $ focusFun c
         trace (query ++ "RAND: Fn is " ++ show fn) $ return []
         ctxlam <- eval fn
-        trace (query ++ "RAND: Lam is " ++ show ctxlam) $ return []
-        bd <- doAEnvMaybe query $ focusBody ctxlam
+        lam <- getClosures ctxlam
+        trace (query ++ "RAND: Lam is " ++ show lam) $ return []
+        bd <- doAEnvMaybe query $ focusBody lam
         trace (query ++ "RAND: Lam body is " ++ show bd) $ return []
-        ctx' <- lift $ findUsage2 query (lamVar ctxlam) bd
+        ctx' <- lift $ findUsage2 query (lamVar lam) bd
         L.fromFoldable ctx' >>= expr
       LamCBody _ _ _ e -> do -- BODY Clause
 -- The expr rule creates new expr relations in a nonspecific context during the second half
@@ -617,7 +673,7 @@ doExpr eval expr call ctx = do
         trace (query ++ "BODY: Expr is " ++ show ctx) $ return []
         ctxlambody <- call ctx
         expr ctxlambody
-      ExprCBasic _ c _ -> 
+      ExprCBasic _ c _ ->
         trace (query ++ "EXPR: basic " ++ show ctx) $
         case enclosingLambda c of
           Just c' -> expr c'  --
@@ -642,11 +698,11 @@ doExpr eval expr call ctx = do
         trace (query ++ "Expr ends in error " ++ show ctx)
         return ctx
 
-doCall :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
+doCall :: (ExprContext -> ListT AEnv AbValue) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
 doCall eval expr call ctx =
   wrapMemo "call" ctx $ do
   query <- lift queryId
-  trace (query ++ "Call " ++ show ctx) $ 
+  trace (query ++ "Call " ++ show ctx) $
     -- case contextOf ctx of 
     --   Just x -> expr x
     --   Nothing -> newErrTerm $ "call not implemented for " ++ show ctx 
@@ -672,8 +728,20 @@ fix3_call :: (t1 -> t2 -> t3 -> t1) -> (t1 -> t2 -> t3 -> t2) -> (t1 -> t2 -> t3
 fix3_call eval expr call =
   call (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
 
-fixedEval e = L.toList $ fix3_eval doEval doExpr doCall e
+fixedEval :: ExprContext -> AEnv AbValue
+fixedEval e = do
+  L.toList $ fix3_eval doEval doExpr doCall e
+  state <- getState
+  let cache = evalCache state
+  case Data.Map.lookup (contextId e) cache of
+    Just (_, res) -> return res
+    Nothing -> do
+      let msg = "fixedEval: " ++ show e ++ " not in cache " ++ show (Data.Map.keys cache)
+      trace msg $ return $ injErr msg
+
+fixedExpr :: ExprContext -> AEnv [ExprContext]
 fixedExpr e = L.toList $ fix3_expr doEval doExpr doCall e
+fixedCall :: ExprContext -> AEnv [ExprContext]
 fixedCall e = L.toList $ fix3_call doEval doExpr doCall e
 
 allModules :: Loaded -> [Module]
