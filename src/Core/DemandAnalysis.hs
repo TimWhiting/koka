@@ -66,27 +66,33 @@ data ExprContext =
   | ExprCBasic ExprContextId ExprContext Expr -- A basic expression context that has no sub expressions
   | ExprCTerm ExprContextId String -- Since analysis can fail or terminate early, keep track of the query that failed
 
-isApp :: ExprContext -> AEnv Bool
-isApp e = do
-  children <- childrenContexts e
-  query <- getQueryString
-  return $ trace (query ++ "check App: is context " ++ show e ++ " with children " ++ show children) $
-   case children of
-      AppCLambda{}:_ -> True
-      ExprCBasic _ _ Var{}:AppCParam{}:_ -> True
-      ExprCBasic _ _ Var{}:_ -> True -- Zero argument function?
-      _ -> False
 
 paramIndex e =
   case e of
     AppCParam _ _ i _ -> i
+
+enclosingLambda :: ExprContext -> Maybe ExprContext
+enclosingLambda ctx =
+  case ctx of
+    LamCBody{} -> Just ctx
+    AppCLambda _ c _ -> enclosingLambda c
+    AppCParam _ c _ _ -> enclosingLambda c
+    DefCRec _ c _ _ _ -> enclosingLambda c
+    DefCNonRec _ c _ _ -> enclosingLambda c
+    LetCDef _ c _ _ _ -> enclosingLambda c
+    LetCBody _ c _ _ -> enclosingLambda c
+    CaseCMatch _ c _ -> enclosingLambda c
+    CaseCBranch _ c _ _ _ -> enclosingLambda c
+    ExprCBasic _ c _ -> enclosingLambda c
+    ExprCTerm{} -> Nothing
+    ModuleC{} -> Nothing
 
 focusParam :: Maybe Int -> ExprContext -> AEnv (Maybe ExprContext)
 focusParam index e = do
   children <- childrenContexts e
   query <- getQueryString
   return $ case index of
-    Just x | x < length children -> Just $ children !! x
+    Just x | x + 1 < length children -> Just $ children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
     _ -> trace (query ++ "Children looking for param " ++ show children ++ " in " ++ show e ++ " index " ++ show index) Nothing
 
 
@@ -349,6 +355,17 @@ analyzeCtx combine analyze ctx = do
 moduleDummyType :: Type
 moduleDummyType = TCon $ TypeCon (newName "dummy") (KCon (newName "dummy"))
 
+
+-- BIND: The resulting context is not only a nested context focused on a lambda body It is also
+-- can be focused on a Let Body or Recursive Let binding It can also be focused on a Recursive Top
+-- Level Definition Body It can be bound to a different top level definition It can also be focused on a
+-- branch of a match statement BIND requires searching the imported modules for both the name
+-- and definition. As such a module import graph should be used. The value of the parameter in the
+-- case of unknown definitions is simply the top of the type lattice for the type of the parameter in
+-- question. - Additional note: Since Koka uses interface modules to avoid re-parsing user code, we
+-- need to determine an appropriate tradeoff in precision and compilation. In particular, a full core
+-- file might be an appropriate file to output in addition to the core interface. We only load the core
+-- file with the full definitions on demand when we detect that it would increase precision?
 bind :: ExprContext -> Expr -> Maybe (ExprContext, Maybe Int)
 bind ctx var@(Var tname vInfo) =
   case ctx of
@@ -369,7 +386,7 @@ bind ctx var@(Var tname vInfo) =
       case elemIndex tname names
     -- special case this instead of using lookup name since the function is the first index in contexts when we lookup the parameter
     -- TODO: Figure out a better way of doing this
-        of Just x -> Just (ctx', Just $ x + 1)
+        of Just x -> Just (ctx, Just x)
            _ -> bind ctx' var
 
 
@@ -403,10 +420,14 @@ findUsage2 query e ctx = do
   return $ -- trace ("Looking for usages of " ++ show e ++ " in " ++ show ctx ++ " got " ++ show usage) 
     S.toList usage
 
-doAEnv :: String -> AEnv [a] -> ListT AEnv a
-doAEnv query f = do
+doAEnvList :: String -> AEnv [a] -> ListT AEnv a
+doAEnvList query f = do
   xs <- liftWithQuery query f
   L.fromFoldable xs
+
+doAEnv :: String -> AEnv a -> ListT AEnv a
+doAEnv query f = do
+  liftWithQuery query f
 
 doAEnvMaybe :: String -> AEnv (Maybe a) -> ListT AEnv a
 doAEnvMaybe query f = do
@@ -438,52 +459,94 @@ wrapMemo name ctx f = do
 doEval :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
 doEval eval expr call ctx = do
   query <- lift queryId
-  trace (query ++ "Eval " ++ show ctx) $
+  trace (query ++ "Eval " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) $
     wrapMemo "eval" ctx $
     case exprOfCtx ctx of
       Lam{} -> -- LAM CLAUSE
         trace (query ++ "LAM: " ++ show ctx) $
         return ctx 
-      v@(Var n _) | getName n == nameEffectOpen -> do
+      v@(Var n _) | getName n == nameEffectOpen -> do -- TODO: Reevaluate eventually
+        trace (query ++ "OPEN: " ++ show ctx) $ return []
         newId <- lift newContextId
         let tvar = TypeVar 0 (kindFun kindStar kindStar) Bound 
             x = TName (newName "x") (TVar tvar) Nothing
-            def = makeDef (newName "open") (TypeLam [tvar] (Lam [x] effectEmpty (Var x InfoNone)))
+            def = makeDef nameEffectOpen (TypeLam [tvar] (Lam [x] effectEmpty (Var x InfoNone)))
             newCtx = DefCNonRec newId ctx [defTName def] def
         -- _ <- doAEnv query $ childrenContexts newCtx
         return newCtx
-      v@(Var _ _) -> do -- REF CLAUSE
+      v@(Var tn _) -> do -- REF CLAUSE
+-- REF: 
+--  - When the binding is focused on a lambda body, we need to find the callers of the lambda, and proceed as original formulation. 
+--  - When the binding is in the context of a Let Body we can directly evaluate the let binding as the value of the variable being bound (indexed to match the binding).
+--  - When the binding is in the context of a Let binding, it evaluates to that binding or the indexed binding in a mutually recursive group 
+--  - When the binding is a top level definition - it evaluates to that definition 
+--  - When the binding is focused on a match body then we need to issue a subquery for the evaluation of the match expression that contributes to the binding, 
+--         and then consider the abstract value and find all abstract values that match the pattern of the branch in question 
+--         and only consider the binding we care about. 
+--         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the subquery to disregard traces that don’t contribute
         trace (query ++ "REF: " ++ show ctx) $ return []
-        case bind ctx v of
+        let binded = bind ctx v
+        trace (query ++ "REF: bound to " ++ show binded) $ return []
+        case binded of
           Just (lambodyctx@LamCBody{}, index) -> do
-            appctx <- trace (query ++ "Found binding for " ++ show v ++ " " ++ show lambodyctx) $ call (lambodyctx)
+            appctx <- call lambodyctx
             param <- doAEnvMaybe query $ focusParam index appctx
             eval param
           Just (letbodyctx@LetCBody{}, index) ->
-            eval =<< doAEnvMaybe query (focusLetBinding index (letbodyctx))
-          Just (lambodyctx, index) -> do
-            appctx <- trace (query ++ "Found binding2 for " ++ show v ++ " " ++ show lambodyctx) $ call (lambodyctx)
-            param <- doAEnvMaybe query $ focusParam index appctx
-            eval param
+            eval =<< doAEnvMaybe query (focusChild (fromJust $ contextOf letbodyctx) (fromJust index))
+          Just (letdefctx@LetCDef{}, index) -> 
+            eval =<< doAEnvMaybe query (focusChild (fromJust $ contextOf letdefctx) (fromJust index))
+          Just (matchbodyctx@CaseCBranch{}, index) -> do
+            -- TODO:
+            let msg = query ++ "REF: TODO: Match body context " ++ show v ++ " " ++ show matchbodyctx
+            trace msg $ newErrTerm msg
+          Just (modulectx@ModuleC{}, index) -> do
+            lamctx <- doAEnv query $ getDefCtx modulectx (getName tn)
+            -- Evaluates just to the lambda
+            eval lamctx
+          Just (ctxctx, index) -> do
+            children <- lift (childrenContexts ctxctx)
+            let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
+            trace msg $ newErrTerm msg
+          Nothing ->
+            newErrTerm $ "REF: currently doesn't support external variables such as " ++ show ctx
+      App f tms -> do
+        fun <- doAEnvMaybe query $ focusChild ctx 0
+        trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
+        -- case fun of
+          -- ExprCBasic _ _ (Var n i) | getName n == nameEffectOpen ->
+          --   doAEnvMaybe query (focusChild (fromJust $ contextOf $ fromJust $ contextOf ctx) 1) >>= eval
+          -- _ -> do
+        lamctx <- eval fun
+        trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
+        bd <- doAEnvMaybe query $ focusBody lamctx
+        trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
+        eval bd 
+        -- TODO: In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
+        -- additionally, in any recursive contexts (a local find from the body of the lambda)
+      TypeApp{} -> 
+        case ctx of
+          DefCNonRec{} -> return ctx 
+          DefCRec{} -> return ctx 
+          _ -> do
+            ctx' <- doAEnvMaybe query $ focusChild ctx 0
+            eval ctx'
+      TypeLam{} -> 
+        case ctx of
+          DefCNonRec{} -> return ctx -- Don't further evaluate if it is just the definition / lambda
+          DefCRec{} -> return ctx -- Don't further evaluate if it is just the definition / lambda
+          _ -> do
+            ctx' <- doAEnvMaybe query $ focusChild ctx 0
+            eval ctx'
       _ -> 
-        trace (query ++ "APP: " ++ show ctx) $
-        case ctx of -- APP CLAUSE
-          AppCParam{} -> return ctx
-          ExprCTerm{} ->
-            trace (query ++ "Eval ends in error " ++ show ctx)
-            return ctx
-          AppCLambda{} -> do
-            fun <- doAEnvMaybe query $ focusChild ctx 0
-            trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
-            -- case fun of
-              -- ExprCBasic _ _ (Var n i) | getName n == nameEffectOpen ->
-              --   doAEnvMaybe query (focusChild (fromJust $ contextOf $ fromJust $ contextOf ctx) 1) >>= eval
-              -- _ -> do
-            lamctx <- eval fun
-            trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
-            bd <- doAEnvMaybe query $ focusBody lamctx
-            trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-            eval bd
+        let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
+        trace msg $ newErrTerm msg
+        -- case ctx of -- APP CLAUSE
+        --   ExprCTerm{} ->
+        --     trace (query ++ "Eval ends in error " ++ show ctx)
+        --     return ctx
+          -- AppCLambda{} -> do
+            
           -- _ -> do
           --   app <- liftWithQuery query $ isApp ctx
           --   if app then do
@@ -500,14 +563,29 @@ doEval eval expr call ctx = do
           --         bd <- doAEnvMaybe query $ focusBody lamctx
           --         eval bd
           --   else do
-          _ ->
-            trace (query ++ "unhandled eval type " ++ show ctx) $ return ctx
+          -- _ ->
+          --   trace (query ++ "unhandled eval type " ++ show ctx) $ return ctx
 
 newErrTerm :: String -> ListT AEnv ExprContext
 newErrTerm s = lift $ do
   newId <- newContextId
   return $ ExprCTerm newId ("Error: " ++ s)
 
+-- CALL / EXPR: CALL as mentioned in the Context Sensitivity paper just relates a LAMBDA body
+-- context to and expression that relates the enclosing context to applications that bind the lambda’s
+-- variables. This can be trivially included without a separate call relation by in BIND focusing on the
+-- lambda body’s parent context.
+-- EXPR’s purpose is to relate a context which has as it’s expression a lambda, to the places where
+-- that lambda’s is called (and thus it’s variables bound).
+-- The above rules for ref make it impossible for eval to ask for a call / expr relation for Lets /
+-- Matches and Top Level Defs. i.e. the expression demanded always is a context whose expression is
+-- a lambda or var
+-- Top level definitions should never require expr, since their bindings are resolved already during
+-- the REF. However, an initial query of the CALLs / EXPRs of a top level definition could be made. As
+-- such an call on a TLD delegates immediately to expr, which then just issues a find query over the
+-- program. To prevent this from becoming too expensive, a module import graph should be used to
+-- work our way to only those modules that demand the current module and the symbol in question
+-- is in the import scope. This is the same rule that should happen for FIND in general
 doExpr :: (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> (ExprContext -> ListT AEnv ExprContext) -> ExprContext -> ListT AEnv ExprContext
 doExpr eval expr call ctx = do
   query <- lift queryId
@@ -528,28 +606,38 @@ doExpr eval expr call ctx = do
         ctx' <- lift $ findUsage2 query (lamVar ctxlam) bd
         L.fromFoldable ctx' >>= expr
       LamCBody _ _ _ e -> do -- BODY Clause
+-- The expr rule creates new expr relations in a nonspecific context during the second half
+-- of the BOD rule. This happens when the lambda is returned from the body of an expression. The
+-- initial context for BOD is not necessarily an immediate lambda body context as expected by the
+-- call relation, due to intermediate contexts including local let bindings. As such we need to take
+-- the context and work outwards on the contexts until we find the nearest lambda body context
+-- (returning immediately if it is already the case). Then we use this context to demand expressions.
+-- The body’s precondition then is either being a Basic Expression, or already a Lambda Body Context.
+-- The Basic Expressions we work outwards, prior to the call. (Note this doesn't change the body rule at all just changes the ExprCBasic case)
         trace (query ++ "BODY: Expr is " ++ show ctx) $ return []
         ctxlambody <- call ctx
         expr ctxlambody
       ExprCBasic _ c _ -> 
-        trace (query ++ "EXPR:BASIC " ++ show ctx) $
-        expr c
+        trace (query ++ "EXPR: basic " ++ show ctx) $
+        case enclosingLambda c of
+          Just c' -> expr c'  --
+          _ -> newErrTerm "Exprs has no enclosing lambda, so is always demanded (top level?)"
       LetCBody{} -> do
-        newErrTerm $ "expressions where let body " ++ show ctx ++ " is called"
+        newErrTerm $ "Exprs where let body " ++ show ctx ++ " is demanded"
       LetCDef{} -> do
-        newErrTerm $ "expressions where let def " ++ show ctx ++ " is called"
+        newErrTerm $ "Exprs where let def " ++ show ctx ++ " is demanded"
       CaseCMatch{} -> do
-        newErrTerm $ "expressions where case match " ++ show ctx ++ " is called"
+        newErrTerm $ "Exprs where case match " ++ show ctx ++ " is demanded"
       CaseCBranch{} -> do
-        newErrTerm $ "expressions where case branch " ++ show ctx ++ " is called"
+        newErrTerm $ "Exprs where case branch " ++ show ctx ++ " is demanded"
       DefCRec{} -> do
-        newErrTerm $ "expressions where recursive def " ++ show ctx ++ " is called"
+        newErrTerm $ "Exprs where recursive def " ++ show ctx ++ " is demanded"
       DefCNonRec _ c _ d -> do
-        trace (query ++ "EXPR:DEFNONREC" ++ show ctx) $ return []
+        trace (query ++ "EXPR: DefNonRec " ++ show ctx) $ return []
         ctx' <- lift $ findUsage2 query (lamVarDef d) c
         L.fromFoldable ctx' >>= expr
         -- trace ("Expr def non rec results " ++ show ctx') $ 
-      ModuleC _ _ nm -> newErrTerm $ "expressions where module " ++ show nm ++ " is called (should never happen)"
+      ModuleC _ _ nm -> newErrTerm $ "expressions where module " ++ show nm ++ " is demanded (should never happen - Module is not an expression)"
       ExprCTerm{} ->
         trace (query ++ "Expr ends in error " ++ show ctx)
         return ctx
@@ -629,6 +717,19 @@ lookupDefGroups defGs tname = any (flip lookupDefGroup tname) defGs
 
 lookupDef :: Def -> TName -> Bool
 lookupDef def tname = defName def == getName tname && tnameType tname == defType def
+
+getDefCtx :: ExprContext -> Name -> AEnv ExprContext
+getDefCtx ctx name = do
+  children <- childrenContexts ctx
+  case find (\dctx -> case dctx of
+      DefCNonRec _ _ _ d | defName d == name -> True
+      DefCRec _ _ _ _ d | defName d == name -> True
+      _ -> False
+      ) children of
+    Just dctx -> do
+      -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
+      return dctx
+    Nothing -> error $ "getDefCtx: " ++ show ctx ++ " " ++ show name
 
 addChildrenContexts :: ExprContextId -> [ExprContext] -> AEnv ()
 addChildrenContexts parentCtx contexts = do
