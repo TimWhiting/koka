@@ -22,7 +22,7 @@ module Core.DemandAnalysis(
 import Control.Monad
 import Common.Name
 import Data.Set as S hiding (findIndex, filter, map)
-import Core.Core (Expr (..), CorePhase, liftCorePhaseUniq, DefGroups, Def (..), DefGroup (..), liftCorePhaseRes, Branch (..), Guard(..), Pattern(..), TName (..), defsTNames, defGroupTNames, mapDefGroup, Core (..), VarInfo (..), liftCorePhase, defTName, makeDef)
+import Core.Core (Expr (..), CorePhase, liftCorePhaseUniq, DefGroups, Def (..), DefGroup (..), liftCorePhaseRes, Branch (..), Guard(..), Pattern(..), TName (..), defsTNames, defGroupTNames, mapDefGroup, Core (..), VarInfo (..), liftCorePhase, defTName, makeDef, Lit (..))
 import Data.Map hiding (findIndex, filter, map)
 import qualified ListT as L
 -- import Debug.Trace (trace)
@@ -73,20 +73,45 @@ data ConstrContext =
     constrParams:: AbValue
   } deriving (Eq, Ord, Show)
 
+data SimpleLattice x =
+  SimpleAbBottom
+  | Simple x
+  | SimpleAbTop
+  deriving (Eq, Ord, Show)
+
+joinL :: Eq x => SimpleLattice x -> SimpleLattice x -> SimpleLattice x
+joinL SimpleAbBottom x = x
+joinL x SimpleAbBottom = x
+joinL SimpleAbTop _ = SimpleAbTop
+joinL _ SimpleAbTop = SimpleAbTop
+joinL (Simple x) (Simple y) = if x == y then Simple x else SimpleAbTop
+
 data AbValue =
   AbValue{
     closures:: Set ExprContext,
     constrs:: Set ConstrContext,
+    intV:: SimpleLattice Integer,
+    floatV:: SimpleLattice Double,
+    charV:: SimpleLattice Char,
+    stringV:: SimpleLattice String,
     err:: Maybe String
   } deriving (Eq, Ord, Show)
 
 emptyAbValue :: AbValue
-emptyAbValue = AbValue S.empty S.empty Nothing
-injClosure ctx = AbValue (S.singleton ctx) S.empty Nothing
-injErr err = AbValue S.empty S.empty (Just err)
+emptyAbValue = AbValue S.empty S.empty SimpleAbBottom SimpleAbBottom SimpleAbBottom SimpleAbBottom Nothing
+injClosure ctx = emptyAbValue{closures= S.singleton ctx}
+injErr err = emptyAbValue{err= Just err}
+
+injLit :: Lit -> AbValue
+injLit x =
+  case x of
+    LitInt i -> emptyAbValue{intV= Simple i}
+    LitFloat f -> emptyAbValue{floatV= Simple f}
+    LitChar c -> emptyAbValue{charV= Simple c}
+    LitString s -> emptyAbValue{stringV= Simple s}
 
 joinAbValue :: AbValue -> AbValue -> AbValue
-joinAbValue (AbValue c1 t1 e1) (AbValue c2 t2 e2) = AbValue (S.union c1 c2) (S.union t1 t2) (e1 `mplus` e2)
+joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (i0 `joinL` i1) (f0 `joinL` f1) (c0 `joinL` c1) (s0 `joinL` s1) (e0 `mplus` e1)
 
 paramIndex e =
   case e of
@@ -285,6 +310,7 @@ data DEnv = DEnv{
   loaded :: Loaded,
   currentContext :: !ExprContext,
   currentContextId :: ExprContextId,
+  parameters:: [ExprContext],
   currentQuery:: String,
   queryIndentation:: String
 }
@@ -353,7 +379,7 @@ runQueryAtRange loaded (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv loaded modCtx cid "" "") (State Data.Map.empty Data.Map.empty 0 (Data.Map.empty) (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
+        AEnv f -> f (DEnv loaded modCtx cid [] "" "") (State Data.Map.empty Data.Map.empty 0 (Data.Map.empty) (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
   in case result of
     Ok a st -> a
 
@@ -483,11 +509,18 @@ wrapMemo name ctx f = do
       lift $ setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
       return res
 
+wrapWithParams :: ExprContext -> [ExprContext] -> (ExprContext -> ListT AEnv AbValue) -> ListT AEnv AbValue
+wrapWithParams ctx params f =
+  lift $ withEnv (\env -> env{parameters = params}) $ do
+    xs <- L.toList $ f ctx
+    let res = Prelude.foldl joinAbValue emptyAbValue xs
+    return res
+
 wrapMemoEval :: ExprContext -> ListT AEnv AbValue -> ListT AEnv AbValue
 wrapMemoEval ctx f = do
   state <- lift getState
   case Data.Map.lookup (contextId ctx) (evalCache state) of
-    Just (gen, x) ->      
+    Just (gen, x) ->
       -- TODO: Don't recompute if the cache has not changed
       if evalCacheGeneration state == gen then
         return x
@@ -542,10 +575,14 @@ doEval eval expr call ctx = do
         let binded = bind ctx v
         trace (query ++ "REF: bound to " ++ show binded) $ return []
         case binded of
-          Just (lambodyctx@LamCBody{}, index) -> do
-            appctx <- call lambodyctx
-            param <- doAEnvMaybe query $ focusParam index appctx
-            eval param
+          Just (lambodyctx@LamCBody{}, Just index) -> do
+            childs <- lift (parameters <$> getEnv)
+            if Just lambodyctx == enclosingLambda ctx && length childs > index then do
+              eval $ childs !! index
+            else do
+              appctx <- call lambodyctx
+              param <- doAEnvMaybe query $ focusParam (Just index) appctx
+              eval param
           Just (letbodyctx@LetCBody{}, index) ->
             eval =<< doAEnvMaybe query (focusChild (fromJust $ contextOf letbodyctx) (fromJust index))
           Just (letdefctx@LetCDef{}, index) ->
@@ -576,7 +613,8 @@ doEval eval expr call ctx = do
         trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
         bd <- doAEnvMaybe query $ focusBody lam
         trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-        eval bd
+        childs <- lift $ childrenContexts ctx
+        wrapWithParams bd (tail childs) eval
         -- TODO: In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
         -- additionally, in any recursive contexts (a local find from the body of the lambda)
       TypeApp{} ->
@@ -593,6 +631,7 @@ doEval eval expr call ctx = do
           _ -> do
             ctx' <- doAEnvMaybe query $ focusChild ctx 0
             eval ctx'
+      Lit l -> return $ injLit l
       _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
         trace msg $ return $ injErr msg
