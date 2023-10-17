@@ -191,13 +191,13 @@ compileExpression term flags loaded compileTarget program line input
          -- run a particular entry point
          Executable name ()  | name /= nameExpr
            -> do
-              (ld, _) <- compileProgram' (return Nothing) term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef
+              (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef
               return ld
          -- entry point is the expression: compile twice:
          --  first to get the type of the expression and create a 'show' wrapper,
          --  then to actually run the program
            | otherwise
-           -> do (ld, f) <- compileProgram' (return Nothing) term flags{ evaluate = False } (loadedModules loaded) [] Object {-compileTarget-}  "<interactive>" programDef
+           -> do (ld, f) <- compileProgram' (const Nothing) term flags{ evaluate = False } (loadedModules loaded) [] Object {-compileTarget-}  "<interactive>" programDef
                  let tp = infoType (gammaFind qnameExpr (loadedGamma ld))
                      (_,_,rho) = splitPredType tp
                  -- _ <- liftError $ checkUnhandledEffects flags loaded nameExpr rangeNull rho
@@ -205,7 +205,7 @@ compileExpression term flags loaded compileTarget program line input
                    -- return unit: just run the expression (for its assumed side effect)
                    Just (_,_,tres)  | isTypeUnit tres
                       -> do
-                          (ld, _) <- compileProgram' (return Nothing) term flags (loadedModules ld) [] compileTarget  "<interactive>" programDef
+                          (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules ld) [] compileTarget  "<interactive>" programDef
                           return ld
                    -- check if there is a show function, or use generic print if not.
                    Just (_,_,tres)
@@ -223,7 +223,7 @@ compileExpression term flags loaded compileTarget program line input
                                                         [mkApp (Var qnameShow False r) [mkApp (Var qnameExpr False r) []]]
                                       let defMain = Def (ValueBinder (qualify (getName program) nameMain) () (Lam [] expression r) r r)  r Public (defFun []) InlineNever ""
                                       let programDef' = programAddDefs programDef [] [defMain]
-                                      compileProgram' (return Nothing) term flags (loadedModules ld) [] (Executable nameMain ()) "<interactive>" programDef'
+                                      compileProgram' (const Nothing) term flags (loadedModules ld) [] (Executable nameMain ()) "<interactive>" programDef'
                                       return ld
 
                               _  -> liftError $ errorMsg (ErrorGeneral rangeNull (text "no 'show' function defined for values of type:" <+> ppType (prettyEnvFromFlags flags) tres))
@@ -233,7 +233,7 @@ compileExpression term flags loaded compileTarget program line input
                     -> failure ("Compile.Compile.compileExpression: should not happen")
          -- no evaluation
          _ -> do
-                (ld, _) <- compileProgram' (return Nothing)  term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef
+                (ld, _) <- compileProgram' (const Nothing)  term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef
                 return ld
 
 
@@ -263,7 +263,7 @@ compileType term flags loaded program line input
        tdef <- liftError $ parseType (semiInsert flags) (show nameInteractiveModule) line nameType input
        let programDef = programAddDefs (programRemoveAllDefs program) [tdef] []
        -- typeCheck (loaded) flags line programDef
-       (ld, _) <- compileProgram' (return Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
+       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
        return ld
 
 
@@ -272,7 +272,7 @@ compileValueDef term flags loaded program line input
   = runIOErr $
     do def <- liftError $ parseValueDef (semiInsert flags) (show nameInteractiveModule) line input
        let programDef = programAddDefs program [] [def]
-       (ld, _) <- compileProgram' (return Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
+       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
        return (qualify (getName program) (defName def),ld)
 
 compileTypeDef :: Terminal -> Flags -> Loaded -> UserProgram -> Int -> String -> IO (Error (Name,Loaded))
@@ -280,7 +280,7 @@ compileTypeDef term flags loaded program line input
   = runIOErr $
     do (tdef,cdefs) <- liftError $ parseTypeDef (semiInsert flags) (show nameInteractiveModule) line input
        let programDef = programAddDefs program [tdef] cdefs
-       (ld, _) <- compileProgram' (return Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
+       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
        return (qualify (getName program) (typeDefName tdef),ld)
 
 
@@ -348,7 +348,7 @@ compileModule term flags modules cachedModules name compileTarget-- todo: take f
 ---------------------------------------------------------------}
 compileProgram :: Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> UserProgram -> IO (Error (Loaded, Maybe FilePath))
 compileProgram term flags modules cachedModules compileTarget fname program
-  = runIOErr $ compileProgram' (return Nothing) term flags modules cachedModules compileTarget fname program
+  = runIOErr $ compileProgram' (const Nothing) term flags modules cachedModules compileTarget fname program
 
 compileProgramFromFile :: (FilePath -> Maybe BString) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> FilePath -> IOErr (Loaded, Maybe FilePath)
 compileProgramFromFile maybeContents contents term flags modules cachedModules compileTarget rootPath stem
