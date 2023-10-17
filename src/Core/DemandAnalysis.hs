@@ -222,7 +222,7 @@ exprOfCtx ctx =
     LamCBody _ _ _ e -> e
     AppCLambda _ _ f -> f
     AppCParam _ _ _ param -> param
-    LetCDef _ _ _ _ dg -> error "LetCDef has no single expr"
+    LetCDef _ _ _ i dg -> defExpr (defsOf dg !! i)
     LetCBody _ _ _ e -> e
     CaseCMatch _ _ e -> e
     CaseCBranch _ _ _ _ b -> guardExpr (head (branchGuards b))
@@ -604,19 +604,15 @@ doEval eval expr call ctx = do
       App f tms -> do
         fun <- doAEnvMaybe query $ focusChild ctx 0
         trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
-        -- case fun of
-          -- ExprCBasic _ _ (Var n i) | getName n == nameEffectOpen ->
-          --   doAEnvMaybe query (focusChild (fromJust $ contextOf $ fromJust $ contextOf ctx) 1) >>= eval
-          -- _ -> do
         lamctx <- eval fun
         lam <- getClosures lamctx
         trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
         bd <- doAEnvMaybe query $ focusBody lam
         trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
         childs <- lift $ childrenContexts ctx
+        -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
+        -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
         wrapWithParams bd (tail childs) eval
-        -- TODO: In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
-        -- additionally, in any recursive contexts (a local find from the body of the lambda)
       TypeApp{} ->
         case ctx of
           DefCNonRec{} -> return $ injClosure ctx
@@ -632,33 +628,15 @@ doEval eval expr call ctx = do
             ctx' <- doAEnvMaybe query $ focusChild ctx 0
             eval ctx'
       Lit l -> return $ injLit l
+      Case e branches -> do
+        trace (query ++ "CASE: " ++ show ctx) $ return []
+        discrim <- eval =<< doAEnvMaybe query (focusChild ctx 0)
+        let msg = query ++ "CASE: discrim is " ++ show discrim
+        return $ trace msg $ injErr msg
+      Con nm repr -> return $ injErr ("Constructor: " ++ show nm ++ " " ++ show ctx)
       _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
         trace msg $ return $ injErr msg
-        -- case ctx of -- APP CLAUSE
-        --   ExprCTerm{} ->
-        --     trace (query ++ "Eval ends in error " ++ show ctx)
-        --     return ctx
-          -- AppCLambda{} -> do
-
-          -- _ -> do
-          --   app <- liftWithQuery query $ isApp ctx
-          --   if app then do
-          --     trace (query ++ "Eval app " ++ show ctx) $ return []
-          --     fn <- doAEnvMaybe query $ focusFun ctx
-          --     case fn of
-          --       (ExprCBasic _ _ (Var n i)) | getName n == nameEffectOpen -> do
-          --         trace (query ++ "Is open") $ return []
-          --         arg <- doAEnvMaybe query $ focusParam (Just 1) (fromJust $ contextOf ctx)
-          --         eval arg
-          --       _ -> do
-          --         trace (query ++ "Is app not open") $ return []
-          --         lamctx <- eval fn
-          --         bd <- doAEnvMaybe query $ focusBody lamctx
-          --         eval bd
-          --   else do
-          -- _ ->
-          --   trace (query ++ "unhandled eval type " ++ show ctx) $ return ctx
 
 newErrTerm :: String -> ListT AEnv ExprContext
 newErrTerm s = lift $ do
@@ -731,7 +709,6 @@ doExpr eval expr call ctx = do
         trace (query ++ "EXPR: DefNonRec " ++ show ctx) $ return []
         ctx' <- lift $ findUsage2 query (lamVarDef d) c
         L.fromFoldable ctx' >>= expr
-        -- trace ("Expr def non rec results " ++ show ctx') $ 
       ModuleC _ _ nm -> newErrTerm $ "expressions where module " ++ show nm ++ " is demanded (should never happen - Module is not an expression)"
       ExprCTerm{} ->
         trace (query ++ "Expr ends in error " ++ show ctx)
@@ -742,9 +719,6 @@ doCall eval expr call ctx =
   wrapMemo "call" ctx $ do
   query <- lift queryId
   trace (query ++ "Call " ++ show ctx) $
-    -- case contextOf ctx of 
-    --   Just x -> expr x
-    --   Nothing -> newErrTerm $ "call not implemented for " ++ show ctx 
    case ctx of
       LamCBody _ c _ _-> expr c
       ExprCTerm{} ->
@@ -820,7 +794,7 @@ lookupDefGroup :: DefGroup -> TName -> Bool
 lookupDefGroup dg tname = tname `elem` defGroupTNames dg
 
 lookupDefGroups :: DefGroups -> TName -> Bool
-lookupDefGroups defGs tname = any (flip lookupDefGroup tname) defGs
+lookupDefGroups defGs tname = any (`lookupDefGroup` tname) defGs
 
 lookupDef :: Def -> TName -> Bool
 lookupDef def tname = defName def == getName tname && tnameType tname == defType def
@@ -920,7 +894,7 @@ childrenContexts ctx = do
               ExprCBasic{} -> return []
               _ -> error $ "childrenContexts: " ++ show ctx
         addChildrenContexts parentCtxId newCtxs
-        return $ newCtxs
+        return newCtxs
     Just childIds -> do
       -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
       states <- states <$> getState
