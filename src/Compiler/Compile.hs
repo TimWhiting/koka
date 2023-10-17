@@ -479,7 +479,8 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
              Library -> return (Library,loaded2)
              InMemory -> return (InMemory,loaded2)
        (loaded4, outFile) <- liftIO $ case newTarget of
-            InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
+            -- TODO: Quicker path from InMemory to disk when switching from InMemory to Object (we really don't need to recompile, just see if the contents changed)
+            -- InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
             _ -> do
               (loadedNew, mbRun) <- codeGen term flags newTarget loaded3
               -- run the program

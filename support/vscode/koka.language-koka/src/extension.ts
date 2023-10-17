@@ -168,7 +168,11 @@ class KokaLanguageServer {
     try {
       await this.languageClient?.stop()
       await this.languageClient?.dispose()
-      this.languageServerProcess?.kill()
+      const result = this.languageServerProcess?.kill('SIGINT')
+      if (!result) {
+        console.log("Failed to end language server with SIGINT, trying SIGTERM")
+        this.languageServerProcess?.kill()
+      }
       this.socketServer?.close()
       // TODO: Does the terminal need to be disposed or is that handled by disposing the client
     } catch {

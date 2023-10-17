@@ -57,8 +57,11 @@ executables:
     build-tools:
       - alex
     ghc-options:
-      - -rtsopts 
+      - -rtsopts
       - -j8
+      - -O2
+      - -threaded
+      - '"-with-rtsopts=-N8"'
     cpp-options:
       - -DKOKA_MAIN="koka"      
       - -DKOKA_VARIANT="release"
