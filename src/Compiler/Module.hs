@@ -81,10 +81,6 @@ data Loaded = Loaded{ loadedGamma       :: Gamma
                     , loadedBorrowed    :: Borrowed
                     }
 
-data ModuleStatus =
-  InMemoryModule
-  | DiskModule
-
 loadedLatest :: Loaded -> FileTime
 loadedLatest loaded
   = maxFileTimes (map modTime (loadedModules loaded))
