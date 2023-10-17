@@ -24,8 +24,8 @@ import Language.LSP.Server (Handlers, flushDiagnosticsBySource, publishDiagnosti
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (toLspDiagnostics)
-import LanguageServer.Monad (LSM, modifyLoaded, getLoaded, putLoaded, getTerminal, getFlags)
-import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile)
+import LanguageServer.Monad (LSM, modifyLoaded, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState)
+import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile, file_version, virtualFileVersion)
 import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
 import qualified Language.LSP.Protocol.Message as J
@@ -36,6 +36,8 @@ import Debug.Trace (trace)
 import Control.Exception (try)
 import qualified Control.Exception as Exc
 import Compiler.Options (Flags)
+import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime)
+import GHC.IO (unsafePerformIO)
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -58,16 +60,27 @@ didSaveHandler = notificationHandler J.SMethod_TextDocumentDidSave $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
   flags <- getFlags
   _ <- recompileFile InMemory uri Nothing False flags
-  return()
+  return ()
 
 didCloseHandler :: Handlers LSM
 didCloseHandler = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> do
   -- TODO: Remove file from LSM state?
   return ()
 
-maybeContents :: Map J.NormalizedUri VirtualFile -> FilePath -> Maybe ByteString
+maybeContents :: Map FilePath (ByteString, FileTime, J.Int32) -> FilePath -> Maybe (ByteString, FileTime)
 maybeContents vfs uri = do
-  M.lookup (J.toNormalizedUri (J.filePathToUri uri)) vfs <&> T.encodeUtf8 . virtualFileText
+  (text, ftime, vers) <- M.lookup uri vfs
+  return (text, ftime)
+
+diffVFS :: Map FilePath (ByteString, FileTime, J.Int32) -> Map J.NormalizedUri VirtualFile -> Map FilePath (ByteString, FileTime, J.Int32)
+diffVFS oldvfs vfs =
+  foldl (\acc (k, v) ->
+    let newK = J.fromNormalizedFilePath $ fromJust $ J.uriToNormalizedFilePath k
+        text = T.encodeUtf8 $ virtualFileText v
+        vers = virtualFileVersion v
+    in case M.lookup newK oldvfs of
+      Just old@(_, _, vOld) -> if vOld == vers then M.insert newK old acc else M.insert newK (text, unsafePerformIO getCurrentTime, vers) acc
+      Nothing -> M.insert newK (text, unsafePerformIO getCurrentTime, vers) acc) M.empty (M.toList vfs)
 
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
@@ -77,18 +90,20 @@ recompileFile compileTarget uri version force flags =
     Just filePath -> do
       -- Recompile the file
       vFiles <- getVirtualFiles
-
       let vfs = _vfsMap vFiles
-          contents = maybeContents vfs filePath
+      oldvfs <- documentInfos <$> getLSState
+      let newvfs = diffVFS oldvfs vfs
+      modifyLSState (\old -> old{documentInfos = newvfs})
+      let contents = fst <$> maybeContents newvfs filePath
       loaded1 <- getLoaded
       let modules = do
             l <- loaded1
             return $ loadedModule l : loadedModules l
       term <- getTerminal
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
-     
+
       let resultIO :: IO (Either Exc.SomeException (Error (Loaded, Maybe FilePath)))
-          resultIO = try $ compileFile (maybeContents vfs) contents term flags [] (if force then [] else fromMaybe [] modules) compileTarget filePath 
+          resultIO = try $ compileFile (maybeContents newvfs) contents term flags [] (if force then [] else fromMaybe [] modules) compileTarget filePath
       result <- liftIO resultIO
       case result of
         Right res -> do

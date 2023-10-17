@@ -54,9 +54,19 @@ import Control.Concurrent.STM (newTVarIO, TVar)
 import qualified Data.Set as Set
 import Control.Concurrent.STM.TMVar (TMVar)
 import LanguageServer.Conversions (loadedModuleFromUri)
+import qualified Data.ByteString as D
+import Platform.Filetime (FileTime)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
-data LSState = LSState {lsLoaded :: Maybe Loaded, messages :: TChan (String, J.MessageType), flags:: Flags, terminal:: Terminal, pendingRequests :: TVar (Set.Set J.SomeLspId), cancelledRequests :: TVar (Set.Set J.SomeLspId), documentVersions :: TVar (M.Map J.Uri J.Int32) }
+data LSState = LSState {
+  lsLoaded :: Maybe Loaded, 
+  messages :: TChan (String, J.MessageType), 
+  flags:: Flags, 
+  terminal:: Terminal, 
+  pendingRequests :: TVar (Set.Set J.SomeLspId), 
+  cancelledRequests :: TVar (Set.Set J.SomeLspId), 
+  documentVersions :: TVar (M.Map J.Uri J.Int32),
+  documentInfos :: M.Map FilePath (D.ByteString, FileTime, J.Int32) }
 
 trimnl :: [Char] -> [Char]
 trimnl str = reverse $ dropWhile (`elem` "\n\r\t ") $ reverse str
@@ -66,7 +76,7 @@ defaultLSState flags = do
   msgChan <- atomically newTChan :: IO (TChan (String, J.MessageType))
   pendingRequests <- newTVarIO Set.empty
   cancelledRequests <- newTVarIO Set.empty
-  documentVersions <- newTVarIO M.empty
+  fileVersions <- newTVarIO M.empty
   let withNewPrinter f = do
         ansiConsole <- newVar ansiDefault
         stringVar <- newVar ""
@@ -83,7 +93,7 @@ defaultLSState flags = do
                  (if verbose flags > 0 then (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info) else (\_ -> return ()))
                  (\tp -> withNewPrinter $ \p -> do putScheme p (prettyEnv flags nameNil importsEmpty) tp; return J.MessageType_Info)
                  (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info)
-  return LSState {lsLoaded = Nothing, messages = msgChan, terminal = term, flags = flags, pendingRequests=pendingRequests, cancelledRequests=cancelledRequests, documentVersions=documentVersions}
+  return LSState {lsLoaded = Nothing, messages = msgChan, terminal = term, flags = flags, pendingRequests=pendingRequests, cancelledRequests=cancelledRequests, documentInfos = M.empty, documentVersions = fileVersions}
 
 putScheme p env tp
   = writePrettyLn p (ppScheme env tp)
