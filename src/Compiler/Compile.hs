@@ -399,7 +399,8 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
                       modSourcePath = fname,
                       modProgram = (Just program),
                       modCore = failure "Compiler.Compile.compileProgram: recursive module import",
-                      modTime = ftime
+                      modTime = ftime,
+                      modStatus = LoadedSource
                     }
            allmods = addOrReplaceModule mod modules
            loaded = initialLoaded { loadedModule = mod
@@ -748,7 +749,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
           do let (pkgQname,pkgLocal) = packageInfoFromDir (packages flags) (dirname iface)
                  loadMessage msg = liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text msg) <+>
                                        color (colorSource (colorScheme flags))
-                                         (pretty (if null pkgQname then "" else pkgQname ++ "/") <.>  pretty (name)))
+                                         (pretty (if null pkgQname then "" else pkgQname ++ "/") <.>  pretty name))
              mod <- case lookupImport iface modules of
                       Just mod
                        -> do loadMessage "reusing:"
@@ -766,7 +767,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                               (core,parseInlines) <- lift $ parseCore iface
                               -- let core = uniquefy core0
                               outIFace <- liftIO $ copyIFaceToOutputDir term flags iface core
-                              let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal []
+                              let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal LoadedIface []
                                                   Nothing -- (error ("getting program from core interface: " ++ iface))
                                                     core core (Left parseInlines) Nothing ftime (Just ftime)
                               return mod
@@ -905,6 +906,7 @@ typeCheck loaded flags line coreImports program
                                , modPath = outName flags (showModName (getName program)) ++ ifaceExtension
                                , modProgram    = Just program
                                , modWarnings   = warnings
+                               , modStatus = LoadedSource
                                }
            -- module0 = loadedModule loaded
            fixitiesPub = fixitiesNew [(name,fix) | FixDef name fix rng vis <- programFixDefs program0, vis == Public]

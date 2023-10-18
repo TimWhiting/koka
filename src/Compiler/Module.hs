@@ -10,7 +10,7 @@
 -}
 -----------------------------------------------------------------------------
 module Compiler.Module( Module(..), Modules, moduleNull
-                      , Loaded(..), initialLoaded
+                      , Loaded(..), ModStatus(..), initialLoaded
                       , loadedImportModule
                       , loadedName
                       , loadedLatest
@@ -52,12 +52,18 @@ import qualified Core.Core as Core
 --------------------------------------------------------------------------}
 type Modules = [Module]
 
+data ModStatus =
+  LoadedIface
+  | LoadedSource
+  | NotLoaded
+  deriving (Eq, Ord, Show)
 
 data Module  = Module{ modName        :: Name
                      , modPath        :: FilePath          -- interface file
                      , modSourcePath  :: FilePath          -- maybe empty
                      , modPackageQName:: FilePath          -- A/B/C
                      , modPackageLocal:: FilePath          -- lib
+                     , modStatus      :: ModStatus
                      , modWarnings    :: [(Range,Doc)]
                      , modProgram     :: Maybe (Program UserType UserKind) -- not for interfaces
                      , modCore        :: Core.Core
@@ -103,7 +109,7 @@ initialLoaded
 
 moduleNull :: Name -> Module
 moduleNull modName
-  = Module (modName) "" "" "" "" [] Nothing (Core.coreNull modName) (Core.coreNull modName) (Left (\g -> return [])) Nothing fileTime0 Nothing
+  = Module (modName) "" "" "" "" NotLoaded [] Nothing (Core.coreNull modName) (Core.coreNull modName) (Left (\g -> return [])) Nothing fileTime0 Nothing
 
 loadedName :: Loaded -> Name
 loadedName ld

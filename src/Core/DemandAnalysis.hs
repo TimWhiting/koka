@@ -22,7 +22,7 @@ module Core.DemandAnalysis(
 import Control.Monad
 import Common.Name
 import Data.Set as S hiding (findIndex, filter, map)
-import Core.Core (Expr (..), CorePhase, liftCorePhaseUniq, DefGroups, Def (..), DefGroup (..), liftCorePhaseRes, Branch (..), Guard(..), Pattern(..), TName (..), defsTNames, defGroupTNames, mapDefGroup, Core (..), VarInfo (..), liftCorePhase, defTName, makeDef, Lit (..))
+import Core.Core (Expr (..), DefGroups, Def (..), DefGroup (..), Branch (..), Guard(..), Pattern(..), TName (..), defsTNames, defGroupTNames, mapDefGroup, Core (..), VarInfo (..), defTName, makeDef, Lit (..))
 import Data.Map hiding (findIndex, filter, map)
 import qualified ListT as L
 -- import Debug.Trace (trace)
@@ -33,7 +33,7 @@ import qualified Data.Sequence as Seq
 import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe)
 import Data.List (find, findIndex, elemIndex, union)
 import Debug.Trace
-import Compiler.Module (Loaded (..), Module (..))
+import Compiler.Module (Loaded (..), Module (..), ModStatus (LoadedIface), addOrReplaceModule)
 import Lib.PPrint (Pretty(..))
 import Type.Pretty (ppType, defaultEnv, Env (..))
 import Kind.Kind (Kind(..), kindFun, kindStar)
@@ -43,6 +43,7 @@ import Common.Range (Range, rangesOverlap, showFullRange)
 import Syntax.RangeMap (RangeInfo)
 import Common.NamePrim (nameOpen, nameEffectOpen)
 import Core.CoreVar
+import GHC.IO (unsafePerformIO)
 
 data AbstractLattice =
   AbBottom | AbTop
@@ -303,16 +304,24 @@ instance Eq Def where
 type ExpressionSet = Set ExprContextId
 
 newtype AEnv a = AEnv (DEnv -> State -> Result a)
-data State = State{states :: Map ExprContextId ExprContext, childrenIds :: Map ExprContextId (Set ExprContextId), evalCacheGeneration :: Int, evalCache ::Map ExprContextId (Int,AbValue), memoCache :: Map String (Map ExprContextId (Set ExprContext)), unique :: Int}
+data State = State{
+  loaded :: Loaded,
+  states :: Map ExprContextId ExprContext, 
+  childrenIds :: Map ExprContextId (Set ExprContextId), 
+  evalCacheGeneration :: Int, 
+  evalCache ::Map ExprContextId (Int,AbValue), 
+  memoCache :: Map String (Map ExprContextId (Set ExprContext)), 
+  unique :: Int
+}
 data Result a = Ok a State
 
 data DEnv = DEnv{
-  loaded :: Loaded,
   currentContext :: !ExprContext,
   currentContextId :: ExprContextId,
   parameters:: [ExprContext],
   currentQuery:: String,
-  queryIndentation:: String
+  queryIndentation:: String,
+  loadModuleFromSource :: (Module -> IO Module)
 }
 
 instance Functor AEnv where
@@ -364,22 +373,22 @@ updateState update = do
   st <- getState
   setState $ update st
 
-runEvalQueryFromRange :: Loaded -> (Range, RangeInfo) -> Module -> [AbValue]
-runEvalQueryFromRange loaded rng mod =
-  runQueryAtRange loaded rng mod $ \exprctxs ->
+runEvalQueryFromRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> [AbValue]
+runEvalQueryFromRange loaded loadModuleFromSource rng mod =
+  runQueryAtRange loaded loadModuleFromSource rng mod $ \exprctxs ->
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx
         trace ("eval result " ++ show res) $ return [res]
       _ -> return []
 
-runQueryAtRange :: Loaded -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
-runQueryAtRange loaded (r, ri) mod query =
+runQueryAtRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
+runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
   let cid = ExprContextId (-1) (modName mod) (newName "module") moduleDummyType
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv loaded modCtx cid [] "" "") (State Data.Map.empty Data.Map.empty 0 (Data.Map.empty) (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
+        AEnv f -> f (DEnv modCtx cid [] "" "" loadModuleFromSource) (State loaded Data.Map.empty Data.Map.empty 0 (Data.Map.empty) (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
   in case result of
     Ok a st -> a
 
@@ -438,6 +447,23 @@ bind ctx var@(Var tname vInfo) =
         of Just x -> Just (ctx, Just x)
            _ -> bind ctx' var
 
+bindExternal :: Expr -> AEnv (Maybe (ExprContext, Maybe Int))
+bindExternal var@(Var tn@(TName name tp _) vInfo) = do
+  deps <- loadedModules . loaded <$> getState
+  let x = find (\m -> modName m == newName (nameModule name)) deps
+  case x of
+    Just mod -> do
+      ctxId <- newContextId
+      mod' <- if modStatus mod == LoadedIface then do
+                load <- loadModuleFromSource <$> getEnv
+                let mod' = unsafePerformIO $ load mod
+                updateState (\state -> 
+                  let ld = loaded state
+                  in state{loaded = ld{loadedModules = addOrReplaceModule mod' (loadedModules (ld)) }})
+                return mod'
+              else return mod
+      return $ if lookupDefGroups (coreProgDefs $ modCoreNoOpt mod') tn then Just (ModuleC ctxId mod' (modName mod'), Nothing) else trace ("External variable binding " ++ show tn ++ ": " ++ show vInfo) Nothing
+    _ -> return Nothing
 
 findUsage :: Expr -> ExprContext -> AEnv (Set ExprContext)
 findUsage  expr@Var{varName=tname@TName{getName = name}} ctx =
@@ -599,8 +625,14 @@ doEval eval expr call ctx = do
             children <- lift (childrenContexts ctxctx)
             let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
             trace msg $ return $ injErr msg
-          Nothing ->
-            return $ injErr $ "REF: currently doesn't support external variables such as " ++ show ctx
+          Nothing -> do
+            ext <- lift $ bindExternal v
+            case ext of
+              Just (modulectx@ModuleC{}, index) -> do
+                lamctx <- doAEnv query $ getDefCtx modulectx (getName tn)
+                -- Evaluates just to the lambda
+                eval lamctx
+              _ -> return $ injErr $ "REF: can't find what the following refers to " ++ show ctx
       App f tms -> do
         fun <- doAEnvMaybe query $ focusChild ctx 0
         trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
@@ -759,26 +791,6 @@ fixedCall e = L.toList $ fix3_call doEval doExpr doCall e
 
 allModules :: Loaded -> [Module]
 allModules loaded = loadedModule loaded : loadedModules loaded
-
-getModule :: String -> AEnv Module
-getModule name = do
-  modules <- allModules . loaded <$> getEnv
-  return $ head $ filter (\mod -> (nameModule . modName) mod == name) modules
-
-getDefAndGroup :: Module -> TName -> DefGroups -> Maybe (Module, Def, Int, DefGroup)
-getDefAndGroup mod tname defGs =
-  let def = find (\def -> defName def == getName tname && defType def == tnameType tname) (concatMap defsOf defGs)
-  in case def of
-    Just d -> let group = head $ filter (\dg -> tname `elem` defGroupTNames dg) defGs in
-                Just (mod, d, fromJust (elemIndex d (defsOf group)), group)
-    Nothing -> Nothing
-
-findTopDefRef :: TName -> AEnv (Maybe (Module, Def, Int, DefGroup))
-findTopDefRef tname = do
-  loaded <- loaded <$> getEnv
-  mod <- getModule (nameModule (getName tname))
-  let defs = coreProgDefs . modCoreNoOpt $ mod
-  return $ getDefAndGroup mod tname defs
 
 basicExprOf :: ExprContext -> Maybe Expr
 basicExprOf ctx =
