@@ -47,7 +47,7 @@ commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp ->
             liftIO $ termPhaseDoc term doc
             return flags
         withIndefiniteProgress (T.pack "Compiling " <> filePath) J.NotCancellable $ do
-          res <- recompileFile (Executable (newName "main") ()) (J.filePathToUri $ T.unpack filePath) Nothing True newFlags
+          res <- recompileFile (Executable (newName "main") ()) (J.filePathToUri $ T.unpack filePath) Nothing False newFlags
           sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack ("Finished generating code for main file " ++ T.unpack filePath ++ " " ++ fromMaybe "No Compiled File" res)
           resp $ Right $ case res of {Just filePath -> J.InL $ Json.String $ T.pack filePath; Nothing -> J.InR J.Null}
       _ -> do

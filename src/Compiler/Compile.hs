@@ -411,7 +411,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
        -- trace ("compile file: " ++ show fname ++ "\n time: "  ++ show ftime ++ "\n latest: " ++ show (loadedLatest loaded)) $ return ()
        liftIO $ termPhase term ("resolve imports " ++ show (getName program))
        loaded1 <- resolveImports depTarget maybeContents (getName program) term flags (dirname fname) loaded cachedModules (map ImpProgram (programImports program))
-       --trace (" loaded modules: " ++ show (map modName (loadedModules loaded1))) $ return ()
+       -- trace (" loaded modules: " ++ show (map modName (loadedModules loaded1))) $ return ()
        --trace ("------\nloaded1:\n" ++ show (loadedNewtypes loaded1) ++ "\n----") $ return ()       
        -- trace ("inlines: "  ++ show (loadedInlines loaded1)) $ return ()
 
@@ -448,7 +448,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
 
        -- codegen
        liftIO $ termPhase term ("codegen " ++ show (getName program))
-       (newTarget,loaded3) <- doCodeGen term flags loaded2 compileTarget program coreImports
+       (newTarget,loaded3) <- doCodeGen term flags loaded2 loaded1 compileTarget program coreImports
        (loaded4, outFile) <- liftIO $ case newTarget of
             InMemory -> return (loaded3{loadedModule = (loadedModule loaded3){modOutputTime = Nothing}}, Nothing)
             _ -> do
@@ -463,11 +463,11 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
                     _  -> termDoc term space
               return (loadedNew, fmap fst mbRun)
        -- liftIO $ termDoc term (text $ show (loadedGamma loaded4))
-       -- trace (" final loaded modules: " ++ show (map modName (loadedModules loaded4))) $ return ()
+       --trace (" final loaded modules: " ++ show (map modName (loadedModules loaded4))) $ return ()
        return (loaded4{ loadedModules = addOrReplaceModule (loadedModule loaded4) (loadedModules loaded4) }, outFile)
 
-doCodeGen :: Terminal -> Flags -> Loaded -> CompileTarget a -> Program UserType UserKind -> [Core.Import] -> IOErr (CompileTarget Scheme, Loaded)
-doCodeGen  term flags loaded0 compileTarget program coreImports = do
+doCodeGen :: Terminal -> Flags -> Loaded -> Loaded -> CompileTarget a -> Program UserType UserKind -> [Core.Import] -> IOErr (CompileTarget Scheme, Loaded)
+doCodeGen  term flags loaded0 loaded1 compileTarget program coreImports = do
   liftIO $ termPhase term ("codegen " ++ show (getName program))
   liftError $
       case compileTarget of
@@ -491,7 +491,7 @@ doCodeGen  term flags loaded0 compileTarget program coreImports = do
                                                                 ) False r) [] r
                                           defMain    = Def (ValueBinder (unqualify mainName2) () (Lam [] (f expression) r) r r)  r Public (defFun []) InlineNever ""
                                           program2   = programAddDefs program [] [defMain]
-                                      in do (loaded3,_) <- ignoreWarnings $ typeCheck loaded0 flags 0 coreImports program2
+                                      in do (loaded3,_) <- ignoreWarnings $ typeCheck loaded1 flags 0 coreImports program2
                                             return (Executable mainName2 tp, loaded3) -- TODO: refine the type of main2
                           [info]
                             -> errorMsg (ErrorGeneral (infoRange info) (text "'main' must be declared as a function (fun)"))
@@ -682,7 +682,6 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
       tryLoadFromCache iface root stem 
         = do 
           let srcpath = joinPath root stem
-          ifaceTime <- liftIO $ getCurrentFileTime iface maybeContents
           sourceTime <- liftIO $ getCurrentFileTime srcpath maybeContents
           case lookupImport iface cachedModules of
               Just mod ->
@@ -783,7 +782,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                                   }
                       let ci = coreProgImports (modCore mod)
                       -- TODO: Ensure this fromJust won't throw, and loaded has everything it needs
-                      doCodeGen term flags loaded compileTarget (fromJust $ modProgram mod) ci 
+                      doCodeGen term flags loaded loaded compileTarget (fromJust $ modProgram mod) ci 
                       return ()
                     else return ()
                     return result
