@@ -7,8 +7,8 @@ fun iterate(xs : list<a> ) : yield<a> ()
       iterate(xx)
     Nil -> ()
 
-fun handleint(i: int, res)
-  println(i.show)
+fun handleint(i1: int, res)
+  println(i1.show)
   res(())
 
 fun main()

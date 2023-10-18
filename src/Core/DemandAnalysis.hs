@@ -182,11 +182,12 @@ focusLetBinding index e = do
     Just x | x < length children -> Just $ children !! x
     _ -> trace (query ++ "Children looking for let binding " ++ show children) Nothing
 
-lamVar :: ExprContext -> Expr
-lamVar ctx =
+lamVar :: Int -> ExprContext -> Expr
+lamVar index ctx =
   case maybeExprOfCtx ctx of
-    Just (Lam names _ _) -> Var (head names) InfoNone
-    _ -> trace ("DemandAnalysis.lamVar: not a lambda" ++ show ctx) error "Not a lambda"
+    Just (Lam names _ _) -> Var (names !! index) InfoNone
+    Just (TypeLam e (Lam names _ _)) -> Var (names !! index) InfoNone
+    _ -> trace ("DemandAnalysis.lamVar: not a lambda " ++ show ctx) error "Not a lambda"
 
 lamVarDef :: Def -> Expr
 lamVarDef def = Var (TName (defName def) (defType def) Nothing) InfoNone
@@ -698,7 +699,7 @@ doExpr eval expr call ctx = do
       AppCLambda _ c e -> -- RATOR Clause
         trace (query ++ "RATOR: Expr is " ++ show ctx) $
         return c
-      AppCParam _ c _ e -> do -- RAND Clause 
+      AppCParam _ c index e -> do -- RAND Clause 
         trace (query ++ "RAND: Expr is " ++ show ctx) $ return []
         fn <- doAEnvMaybe query $ focusFun c
         trace (query ++ "RAND: Fn is " ++ show fn) $ return []
@@ -707,7 +708,7 @@ doExpr eval expr call ctx = do
         trace (query ++ "RAND: Lam is " ++ show lam) $ return []
         bd <- doAEnvMaybe query $ focusBody lam
         trace (query ++ "RAND: Lam body is " ++ show bd) $ return []
-        ctx' <- lift $ findUsage2 query (lamVar lam) bd
+        ctx' <- lift $ findUsage2 query (lamVar index lam) bd
         L.fromFoldable ctx' >>= expr
       LamCBody _ _ _ e -> do -- BODY Clause
 -- The expr rule creates new expr relations in a nonspecific context during the second half
