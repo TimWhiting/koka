@@ -177,21 +177,21 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
                                 if (isHandlerFree expr) 
                                  then trace ("***  remove open-none") $  -- fully total with using any operations that need evidence; just leave it as is
                                       expr
-                                else if (n <= 4) 
+                                else if (n <= 6) 
                                  then wrapper (resolve (nameOpenNone n)) []  -- fails in perf1c with exceeded stack size if --optmaxdup < 500 (since it prevents a tailcall)
                                       -- expr  -- fails in nim as it evidence is not cleared
                                  else wrapperThunk (resolve (nameOpenNone 0)) []
                                       
                  [l] -> -- just one: used open-atN for efficiency
                         trace ("  one handled effect; use at: " ++ show (ppType penv l)) $
-                        if (n <= 4) 
+                        if (n <= 6) 
                          then wrapper (resolve (nameOpenAt n)) [evIndexOf l]
                          else wrapperThunk (resolve (nameOpenAt 0)) [evIndexOf l]
 
                  _ -> --failure $ "Core.OpenResolve.resOpen: todo: from: " ++ show (ppType penv effFrom) ++ ", to " ++ show (ppType penv effTo)
                       --           ++ " with handled: " ++ show (map (ppType penv) lsFrom, map (ppType penv) lsTo)
                       let indices = makeVector typeEvIndex (map evIndexOf lsFrom)
-                      in if (n <= 3) 
+                      in if (n <= 6) 
                           then wrapper (resolve (nameOpen n)) [indices]
                           else wrapperThunk (resolve (nameOpen 0)) [indices]
 
