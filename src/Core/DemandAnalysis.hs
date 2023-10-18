@@ -442,8 +442,6 @@ bind ctx var@(Var tname vInfo) =
   where
     lookupName names ctx' =
       case elemIndex tname names
-    -- special case this instead of using lookup name since the function is the first index in contexts when we lookup the parameter
-    -- TODO: Figure out a better way of doing this
         of Just x -> Just (ctx, Just x)
            _ -> bind ctx' var
 
