@@ -455,11 +455,12 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
     Just mod -> do
       ctxId <- newContextId
       mod' <- if modStatus mod == LoadedIface then do
+        -- TODO: set some level of effort / time required for loading externals, but potentially load all core modules on startup
                 load <- loadModuleFromSource <$> getEnv
                 let mod' = unsafePerformIO $ load mod
                 updateState (\state -> 
                   let ld = loaded state
-                  in state{loaded = ld{loadedModules = addOrReplaceModule mod' (loadedModules (ld)) }})
+                  in state{loaded = ld{loadedModules = addOrReplaceModule mod' (loadedModules ld) }})
                 return mod'
               else return mod
       return $ if lookupDefGroups (coreProgDefs $ modCoreNoOpt mod') tn then Just (ModuleC ctxId mod' (modName mod'), Nothing) else trace ("External variable binding " ++ show tn ++ ": " ++ show vInfo) Nothing
