@@ -12,6 +12,7 @@ fun main()
     fun extend(a: string, i: int)
       info := Cons((a, i), info)
   do-something()
+  ()
 
 // We can split the linear and nonlinear parts of the handler to avoid the overhead of the monadic translation. 
 // Actually we could just at the operations if we know the target of the operation is linear omit the monadic translation - just for that operation

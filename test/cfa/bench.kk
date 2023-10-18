@@ -37,7 +37,7 @@ val all-test-variants = [
   TestVariants("effects_2", "linear_effs", 
     [Variant("nonlinear_2", "linear-in-practice", True), Variant("linear_2", "linear-keyword")]),
   TestVariants("effects_2_poly", "linear_effs", 
-    [Variant("nonlinear_2_poly", "linear-in-practice", True), Variant("linear_2_poly", "linear-keyword")]),
+    [Variant("nonlinear_2_poly", "linear-in-practice", True), Variant("linear_2_poly", "linear-keyword")])
 ].flatmap fn(tv) 
   val newVars = tv.variants.map(fn(v) { v(file=v.file ++ "_optimized")})
   [tv, tv(variants=newVars, name=tv.name ++ "_optimized")]

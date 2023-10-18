@@ -7,7 +7,7 @@ fun random(res, v: int)
   val x = random-int() % 2 == v
   res(x)
 
-fun main()
+fun do-something()
   var x := 0
   with handler
     return(x':bool) 
@@ -25,3 +25,6 @@ fun main()
         x := x + 2
         False
   flip() && flip()
+
+fun main()
+  do-something()

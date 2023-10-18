@@ -15,7 +15,7 @@ fun main()
   with handler
     ctl yield(a)
       if a == 2 then 
-        print("Found a 2!")
+        println("Found a 2!")
         handleint(a, resume)
       else
         println(a)

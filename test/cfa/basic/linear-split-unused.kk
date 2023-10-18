@@ -12,6 +12,7 @@ fun main()
     fun extend(a: string, i: int)
       info := Cons((a, i), info)
   do-something()
+  ()
 
 // Harder, but if we can determine that lookup will never fail, we can make this linear
 fun do-something()
