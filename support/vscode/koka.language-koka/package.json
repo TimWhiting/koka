@@ -69,7 +69,7 @@
     ],
     "configuration": {
       "type": "object",
-      "title": "Koka configuration",
+      "title": "Koka",
       "properties": {
         "koka.indentationRules.enabled": {
           "type": "boolean",
@@ -124,6 +124,14 @@
       {
         "command": "koka.restartLanguageServer",
         "title": "Koka: Restart Language Server"
+      },
+      {
+        "command": "koka.downloadLatest",
+        "title": "Koka: Download and Install Latest Version"
+      },
+      {
+        "command": "koka.uninstall",
+        "title": "Koka: Uninstall System SDK"
       },
       {
         "command": "koka.startWithoutDebugging",

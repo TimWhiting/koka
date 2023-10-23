@@ -55,10 +55,51 @@ export function scanForSDK(): SDKs | undefined {
   if (defaultSDK === "") {
     console.log('Koka: No Koka SDK found')
     vs.window.showWarningMessage("Koka SDK not found on path or in ~/.local/bin")
+    downloadSDK()
   } else {
     return { sdkPath: defaultSDK, allSDKs: allSDKs }
   }
 }
+
+export async function downloadSDK() {
+  const decision = await vscode.window.showInformationMessage(
+    `Download and Install the lastest Koka, continue?`,
+    { modal: true },
+    'Yes',
+    'No'
+  )
+  if (decision == 'No'){
+    return
+  }
+  let command = "curl -sSL https://github.com/koka-lang/koka/releases/latest/download/install.sh | sh"
+  if (os.platform() === "win32") {
+    command = "curl -sSL -o %tmp%\install-koka.bat https://github.com/koka-lang/koka/releases/latest/download/install.bat && %tmp%\install-koka.bat"
+  }
+  const term = vscode.window.createTerminal({name: "Install Koka", cwd: process.env.HOME, shellPath: DefaultShellPath, isTransient: true, message: "Installing Koka, restart your editor when finished"}) 
+  term.sendText(command)
+  term.show()
+}
+
+export async function uninstallSDK() {
+  const decision = await vscode.window.showInformationMessage(
+    `Uninstall the system Koka installation, continue?`,
+    { modal: true },
+    'Yes',
+    'No'
+  )
+  if (decision == 'No'){
+    return
+  }
+  let command = "curl -sSL https://github.com/koka-lang/koka/releases/latest/download/install.sh | sh -s -- -u -f"
+  if (os.platform() === "win32") {
+    command = "curl -sSL -o %tmp%\install-koka.bat https://github.com/koka-lang/koka/releases/latest/download/install.bat && %tmp%\install-koka.bat -u -f"
+  }
+  const term = vscode.window.createTerminal({name: "Uninstall Koka", cwd: process.env.HOME, shellPath: DefaultShellPath, isTransient: true, message: "Uninstalling Koka, you can close the terminal when done"}) 
+  term.sendText(command)
+  term.show()
+}
+
+const DefaultShellPath = os.platform() === "win32" ? "C:\Windows\System32\cmd.exe" : null
 
 export class KokaConfig {
   constructor(config: vscode.WorkspaceConfiguration, sdkPath: string, allSDKs: string[]) {

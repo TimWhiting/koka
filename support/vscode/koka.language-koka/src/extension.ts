@@ -9,7 +9,7 @@ import {
   StreamInfo,
 } from 'vscode-languageclient/node'
 
-import { KokaConfig, scanForSDK } from './workspace'
+import { KokaConfig, downloadSDK, scanForSDK, uninstallSDK } from './workspace'
 import { CancellationToken, CodeLens, DebugConfiguration, DebugConfigurationProvider, EventEmitter, ProviderResult, TextDocument, WorkspaceFolder } from 'vscode'
 import { KokaDebugSession } from './debugger'
 import { AddressInfo, Server, createServer } from 'net'
@@ -200,6 +200,12 @@ function createCommands(
       }
       console.log(`Launch config ${launchConfig}`)
       vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration)
+    }),
+    vscode.commands.registerCommand('koka.downloadLatest', (resource: vscode.Uri) => {
+      downloadSDK()
+    }),
+    vscode.commands.registerCommand('koka.uninstall', (resource: vscode.Uri) => {
+      uninstallSDK()
     }),
     vscode.commands.registerCommand('koka.restartLanguageServer', () => {
       if (!config.get('languageServer.enabled'))
