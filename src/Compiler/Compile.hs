@@ -435,6 +435,8 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
            text "-------------------------"
          ]))
 
+       -- use time of type check as modTime
+       time <- liftIO getCurrentTime
        -- cull imports to only the real dependencies
        let mod = loadedModule loaded2a
            inlineDefs = case (modInlines mod) of
@@ -443,7 +445,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
            deps  = Core.dependencies inlineDefs (modCore mod)
            imps  = filter (\imp -> isPublic (Core.importVis imp) || Core.importName imp == nameSystemCore
                                     || S.member (Core.importName imp) deps) (Core.coreProgImports (modCore mod))
-           mod'  = mod{ modCore = (modCore mod){ Core.coreProgImports = imps }, modTime = ftime }
+           mod'  = mod{ modCore = (modCore mod){ Core.coreProgImports = imps }, modTime = time }
            loaded2 = loaded2a{ loadedModule = mod' }
 
        -- codegen
@@ -679,18 +681,22 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
       name = impFullName mimp
       
       tryLoadFromCache :: Name -> FilePath -> FilePath -> IOErr (Maybe (Module, Modules))
-      tryLoadFromCache modName root stem 
+      tryLoadFromCache mname root stem 
         = do 
           let srcpath = joinPath root stem
           sourceTime <- liftIO $ getCurrentFileTime srcpath maybeContents
-          case lookupImportName modName cachedModules of
+          case lookupImportName mname cachedModules of
               Just mod ->
                 if srcpath /= forceModule flags && modTime mod >= sourceTime
                   then do
                     x <- loadFromModule (modPath mod) root stem mod
                     return $ Just x
-                else return Nothing
-              _ -> return Nothing
+                else 
+                  -- trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
+                  return Nothing
+              _ -> 
+                -- trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modName cachedModules)) $
+                return Nothing
 
       loadDepend iface root stem mname
          = -- trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
@@ -721,8 +727,8 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                           else loadFromSource False modules root stem (nameFromFile iface)
 
       loadFromSource force modules1 root fname mname
-        = -- trace ("loadFromSource: " ++ show force ++ " " ++ root ++ "/" ++ fname) $
-         do 
+        = -- trace ("loadFromSource: " ++ show force ++ " " ++ root ++ "/" ++ fname) $ 
+        do 
           cached <- if force then return Nothing else tryLoadFromCache mname root fname
           case cached of
             Just (mod, modules) -> 
@@ -774,7 +780,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
              (imports,resolved1) <- resolveImportModules compileTarget maybeContents name term flags (dirname iface) modules cachedModules (map ImpCore (Core.coreProgImports (modCore mod)))
              let latest = maxFileTimes (map modTime imports)
              -- trace ("loaded iface: " ++ show iface ++ "\n time: "  ++ show (modTime mod) ++ "\n latest: " ++ show (latest)) $ return ()
-             if (latest >= modTime mod
+             if (latest > modTime mod
                   && not (null source)) -- happens if no source is present but (package) depencies have updated...
                then 
                 loadFromSource True resolved1 root source (nameFromFile iface)-- load from source after all
@@ -810,8 +816,8 @@ lookupImport imp (mod:mods)
 lookupImportName :: Name -> Modules -> Maybe Module
 lookupImportName imp [] = Nothing
 lookupImportName imp (mod:mods)
-  = if ( (modName mod) == imp)
-     then Just (mod)
+  = if modName mod == imp
+     then Just mod
      else
       -- trace ("lookupImportName: " ++ show imp ++ " /= " ++ show (modName mod)) $ 
       lookupImportName imp mods
