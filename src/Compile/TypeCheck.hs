@@ -117,6 +117,9 @@ typeCheck flags defs coreImports program0
         let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
         checkFBIP penv (platform flags) newtypes borrowed gamma
         matchMergeDefs
+        --  coreDefs <- Core.getCoreDefs
+        --  let coreDoc2 = Core.Pretty.prettyCore (prettyEnvFromFlags flags){ coreIface = False, coreShowDef = True } (C CDefault) [] 
+        --                  (coreProgram{ Core.coreProgDefs = coreDefs })
 
         -- initial simplify
         let ndebug  = optimize flags > 0
