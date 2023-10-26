@@ -450,7 +450,7 @@ moduleDummyType = TCon $ TypeCon (newName "dummy") (KCon (newName "dummy"))
 -- file might be an appropriate file to output in addition to the core interface. We only load the core
 -- file with the full definitions on demand when we detect that it would increase precision?
 bind :: ExprContext -> Expr -> EnvCtx -> Maybe ((ExprContext, EnvCtx), Maybe Int)
-bind ctx var@(Var tname vInfo) env@(EnvCtx env') =
+bind ctx var@(Var tname vInfo) env =
   case ctx of
     ModuleC _ mod _ -> if lookupDefGroups (coreProgDefs $ modCoreNoOpt mod) tname then Just ((ctx, env), Nothing) else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) Nothing
     DefCRec _ ctx' names i d -> lookupName names ctx'
@@ -468,7 +468,7 @@ bind ctx var@(Var tname vInfo) env@(EnvCtx env') =
     lookupNameNewCtx names ctx' =
       case elemIndex tname names
         of Just x -> Just ((ctx, env), Just x)
-           _ -> bind ctx' var (EnvCtx env') -- lambdas introduce a new binding context that relates to calls. Other binding expressions do not
+           _ -> bind ctx' var (envtail env) -- lambdas introduce a new binding context that relates to calls. Other binding expressions do not
     lookupName names ctx' = 
       case elemIndex tname names
         of Just x -> Just ((ctx, env), Just x)
@@ -612,19 +612,22 @@ wrapMemoEval ctx env f = do
       lift $ setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
       return res
 
-succAEnv :: Ctx -> EnvCtx -> AEnv [Ctx]
-succAEnv newctx (EnvCtx (cc:p)) = do
+succAEnv :: Ctx -> AEnv Ctx
+succAEnv newctx = do
   length <- contextLength <$> getEnv
-  return $ succm (newctx:cc:p) length
+  return $ succm newctx length
 
-succm :: [Ctx] -> Int -> [Ctx]
+succm :: Ctx -> Int -> Ctx
 succm envctx m =
-  if m == 0 then if envctx == [TopCtx] then [TopCtx] else [DegenCtx]
+  if m == 0 then if envctx == TopCtx then TopCtx else DegenCtx
   else
     case envctx of
-      i@IndetCtx{}:rst -> i:succm rst (m - 1)
-      c@CallCtx{}:rst -> c:succm rst (m - 1)
+      CallCtx c e -> CallCtx c (succmenv e (m - 1))
       _ -> envctx
+
+succmenv :: EnvCtx -> Int -> EnvCtx
+succmenv (EnvCtx e) m =
+  EnvCtx (map (\x -> succm x m) e)
 
 doEval :: (ExprContext -> EnvCtx -> ListT AEnv AbValue) -> (ExprContext -> EnvCtx -> ListT AEnv (ExprContext, EnvCtx)) -> (ExprContext -> EnvCtx -> ListT AEnv (ExprContext, EnvCtx)) -> ExprContext -> EnvCtx -> ListT AEnv AbValue
 doEval eval expr call ctx env = do
@@ -697,7 +700,7 @@ doEval eval expr call ctx env = do
         childs <- lift $ childrenContexts ctx
         -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
         -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
-        (succ:_) <- lift $ succAEnv (CallCtx (contextId ctx) env) env
+        succ <- lift $ succAEnv (CallCtx (contextId ctx) env)
         eval bd (EnvCtx (succ:lamenv))
       TypeApp{} ->
         case ctx of
@@ -763,7 +766,7 @@ doExpr eval expr call ctx env = do
         trace (query ++ "RAND: Lam is " ++ show lam) $ return []
         bd <- doAEnvMaybe query $ focusBody lam
         trace (query ++ "RAND: Lam body is " ++ show bd) $ return []
-        (succ:_) <- lift $ succAEnv (CallCtx (contextId c) env) env
+        succ <- lift $ succAEnv (CallCtx (contextId c) env)
         ctxs <- lift $ findUsage2 query (lamVar index lam) bd (EnvCtx $ succ:lamenv)
         L.fromFoldable ctxs >>= (\(rf,refCtx) -> expr rf refCtx)
       LamCBody _ _ _ e -> do -- BODY Clause
