@@ -87,7 +87,7 @@ compile :: ColorPrinter -> Flags -> FilePath -> IO ()
 compile p flags fname
   = do let exec = Executable (newName "main") ()
        err <- compileFile (const Nothing) Nothing term flags [] []
-                (if (not (evaluate flags)) then (if library flags then Library else exec) else exec) fname
+                (if (not (evaluate flags)) then (if library flags then Library else exec) else exec) [] fname
        case checkError err of
          Left msg
            -> do putPrettyLn p (ppErrorMessage (showSpan flags) cscheme msg)
