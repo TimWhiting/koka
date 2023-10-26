@@ -191,13 +191,13 @@ compileExpression term flags loaded compileTarget program line input
          -- run a particular entry point
          Executable name ()  | name /= nameExpr
            -> do
-              (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef
+              (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef [] 
               return ld
          -- entry point is the expression: compile twice:
          --  first to get the type of the expression and create a 'show' wrapper,
          --  then to actually run the program
            | otherwise
-           -> do (ld, f) <- compileProgram' (const Nothing) term flags{ evaluate = False } (loadedModules loaded) [] Object {-compileTarget-}  "<interactive>" programDef
+           -> do (ld, f) <- compileProgram' (const Nothing) term flags{ evaluate = False } (loadedModules loaded) [] Object {-compileTarget-}  "<interactive>" programDef []
                  let tp = infoType (gammaFind qnameExpr (loadedGamma ld))
                      (_,_,rho) = splitPredType tp
                  -- _ <- liftError $ checkUnhandledEffects flags loaded nameExpr rangeNull rho
@@ -205,7 +205,7 @@ compileExpression term flags loaded compileTarget program line input
                    -- return unit: just run the expression (for its assumed side effect)
                    Just (_,_,tres)  | isTypeUnit tres
                       -> do
-                          (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules ld) [] compileTarget  "<interactive>" programDef
+                          (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules ld) [] compileTarget  "<interactive>" programDef [] 
                           return ld
                    -- check if there is a show function, or use generic print if not.
                    Just (_,_,tres)
@@ -223,7 +223,7 @@ compileExpression term flags loaded compileTarget program line input
                                                         [mkApp (Var qnameShow False r) [mkApp (Var qnameExpr False r) []]]
                                       let defMain = Def (ValueBinder (qualify (getName program) nameMain) () (Lam [] expression r) r r)  r Public (defFun []) InlineNever ""
                                       let programDef' = programAddDefs programDef [] [defMain]
-                                      compileProgram' (const Nothing) term flags (loadedModules ld) [] (Executable nameMain ()) "<interactive>" programDef'
+                                      compileProgram' (const Nothing) term flags (loadedModules ld) [] (Executable nameMain ()) "<interactive>" programDef' [] 
                                       return ld
 
                               _  -> liftError $ errorMsg (ErrorGeneral rangeNull (text "no 'show' function defined for values of type:" <+> ppType (prettyEnvFromFlags flags) tres))
@@ -233,7 +233,7 @@ compileExpression term flags loaded compileTarget program line input
                     -> failure ("Compile.Compile.compileExpression: should not happen")
          -- no evaluation
          _ -> do
-                (ld, _) <- compileProgram' (const Nothing)  term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef
+                (ld, _) <- compileProgram' (const Nothing)  term flags (loadedModules loaded) [] compileTarget "<interactive>" programDef [] 
                 return ld
 
 
@@ -263,7 +263,7 @@ compileType term flags loaded program line input
        tdef <- liftError $ parseType (semiInsert flags) (show nameInteractiveModule) line nameType input
        let programDef = programAddDefs (programRemoveAllDefs program) [tdef] []
        -- typeCheck (loaded) flags line programDef
-       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
+       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef [] 
        return ld
 
 
@@ -272,7 +272,7 @@ compileValueDef term flags loaded program line input
   = runIOErr $
     do def <- liftError $ parseValueDef (semiInsert flags) (show nameInteractiveModule) line input
        let programDef = programAddDefs program [] [def]
-       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
+       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef [] 
        return (qualify (getName program) (defName def),ld)
 
 compileTypeDef :: Terminal -> Flags -> Loaded -> UserProgram -> Int -> String -> IO (Error (Name,Loaded))
@@ -280,7 +280,7 @@ compileTypeDef term flags loaded program line input
   = runIOErr $
     do (tdef,cdefs) <- liftError $ parseTypeDef (semiInsert flags) (show nameInteractiveModule) line input
        let programDef = programAddDefs program [tdef] cdefs
-       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef
+       (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef [] 
        return (qualify (getName program) (typeDefName tdef),ld)
 
 
@@ -289,9 +289,9 @@ compileTypeDef term flags loaded program line input
   These are meant to be called from the interpreter/main compiler
 ---------------------------------------------------------------}
 
-compileModuleOrFile :: (FilePath -> Maybe (BString, FileTime)) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> String -> Bool -> CompileTarget () -> IO (Error (Loaded, Maybe FilePath))
-compileModuleOrFile maybeContents contents term flags modules cachedModules fname force compileTarget
-  | any (not . validModChar) fname = compileFile maybeContents contents term flags modules cachedModules compileTarget fname
+compileModuleOrFile :: (FilePath -> Maybe (BString, FileTime)) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> String -> Bool -> CompileTarget () -> [Name] -> IO (Error (Loaded, Maybe FilePath))
+compileModuleOrFile maybeContents contents term flags modules cachedModules fname force compileTarget importPath
+  | any (not . validModChar) fname = compileFile maybeContents contents term flags modules cachedModules compileTarget importPath fname
   | otherwise
     = -- trace ("compileModuleOrFile: " ++ show fname ++ ", modules: " ++ show (map modName modules)) $
       do
@@ -299,27 +299,27 @@ compileModuleOrFile maybeContents contents term flags modules cachedModules fnam
         exist <- searchModule flags "" modName
         case (exist) of
           Just (fpath) -> compileModule term (if force then flags{ forceModule = fpath } else flags)
-                                      modules cachedModules modName compileTarget
+                                      modules cachedModules modName compileTarget importPath
           _       -> do
             fexist <- searchSourceFile flags "" fname
             runIOErr $
               case (fexist) of
                 Just (root,stem)
-                  -> compileProgramFromFile maybeContents contents term flags modules cachedModules Object root stem
+                  -> compileProgramFromFile maybeContents contents term flags modules cachedModules Object importPath root stem
                 Nothing
                   -> liftError $ errorMsg $ errorFileNotFound flags fname
   where
     validModChar c
       = isAlphaNum c || c `elem` "/_"
 
-compileFile :: (FilePath -> Maybe (BString, FileTime)) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> IO (Error (Loaded, Maybe FilePath))
-compileFile maybeContents contents term flags modules cachedModules compileTarget fpath
+compileFile :: (FilePath -> Maybe (BString, FileTime)) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> [Name] -> FilePath -> IO (Error (Loaded, Maybe FilePath))
+compileFile maybeContents contents term flags modules cachedModules compileTarget importPath fpath
   = runIOErr $
     do mbP <- liftIO $ searchSourceFile flags "" fpath
        case mbP of
          Nothing -> liftError $ errorMsg (errorFileNotFound flags fpath)
          Just (root,stem)
-           -> compileProgramFromFile maybeContents contents term flags modules cachedModules compileTarget root stem
+           -> compileProgramFromFile maybeContents contents term flags modules cachedModules compileTarget importPath root stem
 
 -- | Make a file path relative to a set of given paths: return the (maximal) root and stem
 -- if it is not relative to the paths, return dirname/notdir
@@ -332,11 +332,11 @@ makeRelativeToPaths paths fname
        (root,stem)
 
 
-compileModule :: Terminal -> Flags -> Modules -> Modules -> Name -> CompileTarget () -> IO (Error (Loaded, Maybe FilePath))
-compileModule term flags modules cachedModules name compileTarget-- todo: take force into account
+compileModule :: Terminal -> Flags -> Modules -> Modules -> Name -> CompileTarget () -> [Name] -> IO (Error (Loaded, Maybe FilePath))
+compileModule term flags modules cachedModules name compileTarget importPath -- todo: take force into account
   = runIOErr $
     do let imp = ImpProgram (Import name name rangeNull Private)
-       loaded <- resolveImports compileTarget (const Nothing) name term flags "" initialLoaded{ loadedModules = modules } cachedModules [imp]
+       loaded <- resolveImports compileTarget (const Nothing) name term flags "" initialLoaded{ loadedModules = modules } cachedModules importPath [imp]
        -- trace ("compileModule: loaded modules: " ++ show (map modName (loadedModules loaded))) $ return ()
        case filter (\m -> modName m == name) (loadedModules loaded) of
          (mod:_) -> return (loaded{ loadedModule = mod }, Nothing)
@@ -346,12 +346,12 @@ compileModule term flags modules cachedModules name compileTarget-- todo: take f
 {---------------------------------------------------------------
   Internal compilation
 ---------------------------------------------------------------}
-compileProgram :: Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> UserProgram -> IO (Error (Loaded, Maybe FilePath))
-compileProgram term flags modules cachedModules compileTarget fname program
-  = runIOErr $ compileProgram' (const Nothing) term flags modules cachedModules compileTarget fname program
+compileProgram :: Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> UserProgram -> [Name] -> IO (Error (Loaded, Maybe FilePath))
+compileProgram term flags modules cachedModules compileTarget fname program importPath
+  = runIOErr $ compileProgram' (const Nothing) term flags modules cachedModules compileTarget fname program importPath
 
-compileProgramFromFile :: (FilePath -> Maybe (BString, FileTime)) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> FilePath -> IOErr (Loaded, Maybe FilePath)
-compileProgramFromFile maybeContents contents term flags modules cachedModules compileTarget rootPath stem
+compileProgramFromFile :: (FilePath -> Maybe (BString, FileTime)) -> Maybe BString -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> [Name] -> FilePath -> FilePath -> IOErr (Loaded, Maybe FilePath)
+compileProgramFromFile maybeContents contents term flags modules cachedModules compileTarget importPath rootPath stem 
   = do let fname = joinPath rootPath stem
        -- trace ("compileProgramFromFile: " ++ show fname ++ ", modules: " ++ show (map modName modules)) $ return ()
        liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "compile:") <+> color (colorSource (colorScheme flags)) (text (normalizeWith '/' fname)))
@@ -373,7 +373,7 @@ compileProgramFromFile maybeContents contents term flags modules cachedModules c
                                      ))
        let stemName = nameFromFile stem
       --  let flags2 = flags{forceModule = fname}
-       compileProgram' maybeContents term flags modules cachedModules compileTarget fname program{ programName = stemName }
+       compileProgram' maybeContents term flags modules cachedModules compileTarget fname program{ programName = stemName } importPath
 
 nameFromFile :: FilePath -> Name
 nameFromFile fname
@@ -388,8 +388,8 @@ data CompileTarget a
 isExecutable (Executable _ _) = True
 isExecutable _ = False
 
-compileProgram' :: (FilePath -> Maybe (BString, FileTime)) -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> UserProgram -> IOErr (Loaded, Maybe FilePath)
-compileProgram' maybeContents term flags modules cachedModules compileTarget fname program
+compileProgram' :: (FilePath -> Maybe (BString, FileTime)) -> Terminal -> Flags -> Modules -> Modules -> CompileTarget () -> FilePath -> UserProgram -> [Name] -> IOErr (Loaded, Maybe FilePath)
+compileProgram' maybeContents term flags modules cachedModules compileTarget fname program importPath
   = do liftIO $ termPhase term ("compile program' " ++ show (getName program))
        ftime <- liftIO (getCurrentFileTime fname maybeContents)
        let name   = getName program
@@ -410,7 +410,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
               _ -> Object
        -- trace ("compile file: " ++ show fname ++ "\n time: "  ++ show ftime ++ "\n latest: " ++ show (loadedLatest loaded)) $ return ()
        liftIO $ termPhase term ("resolve imports " ++ show (getName program))
-       loaded1 <- resolveImports depTarget maybeContents (getName program) term flags (dirname fname) loaded cachedModules (map ImpProgram (programImports program))
+       loaded1 <- resolveImports depTarget maybeContents (getName program) term flags (dirname fname) loaded cachedModules importPath (map ImpProgram (programImports program))
        -- trace (" loaded modules: " ++ show (map modName (loadedModules loaded1))) $ return ()
        --trace ("------\nloaded1:\n" ++ show (loadedNewtypes loaded1) ++ "\n----") $ return ()       
        -- trace ("inlines: "  ++ show (loadedInlines loaded1)) $ return ()
@@ -558,10 +558,10 @@ impFullName (ImpProgram imp)  = importFullName imp
 impFullName (ImpCore cimp)    = Core.importName cimp
 
 
-resolveImports :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Name -> Terminal -> Flags -> FilePath -> Loaded -> Modules -> [ModImport] -> IOErr Loaded
-resolveImports compileTarget maybeContents mname term flags currentDir loaded0 cachedModules imports0
+resolveImports :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Name -> Terminal -> Flags -> FilePath -> Loaded -> Modules -> [Name] -> [ModImport] -> IOErr Loaded
+resolveImports compileTarget maybeContents mname term flags currentDir loaded0 cachedModules importPath imports0
   = do -- trace (show mname ++ ": resolving imports: current modules: " ++ show (map (show . modName) (loadedModules loaded0)) ++ "\n") $ return ()
-       (imports,resolved) <- resolveImportModules compileTarget maybeContents mname term flags currentDir (removeModule mname (loadedModules loaded0)) cachedModules imports0
+       (imports,resolved) <- resolveImportModules compileTarget maybeContents mname term flags currentDir (removeModule mname (loadedModules loaded0)) cachedModules (mname:importPath) imports0
        -- trace (show mname ++ ": resolved imports, imported: " ++ show (map (show . modName) imports) ++ "\n  resolved to: " ++ show (map (show . modName) resolved) ++ "\n") $ return ()
        let load msg loaded []
              = return loaded
@@ -589,19 +589,23 @@ resolveImports compileTarget maybeContents mname term flags currentDir loaded0 c
        -- trace ("resolved inlines: " ++ show (length inlineDefss, length inlineDefs)) $ return ()
        return loadedImp{ loadedModules = modsFull, loadedInlines = inlines }
 
-resolveImportModules :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Name -> Terminal -> Flags -> FilePath -> [Module] -> Modules -> [ModImport] -> IOErr ([Module],[Module])
-resolveImportModules compileTarget maybeContents mname term flags currentDir resolved cachedModules []
+resolveImportModules :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Name -> Terminal -> Flags -> FilePath -> [Module] -> Modules -> [Name] -> [ModImport] -> IOErr ([Module],[Module])
+resolveImportModules compileTarget maybeContents mname term flags currentDir resolved cachedModules importPath []
   = return ([],resolved)
-resolveImportModules compileTarget maybeContents mname term flags currentDir resolved0 cachedModules (imp:imps)
-  = do -- trace ("\t" ++ show mname ++ ": resolving imported modules: " ++ show (impName imp) ++ ", resolved: " ++ show (map (show . modName) resolved0)) $ return ()
+resolveImportModules compileTarget maybeContents mname term flags currentDir resolved0 cachedModules importPath (imp:imps)
+  = if impName imp `elem` importPath then do
+        liftError $ errorMsg $ ErrorStatic [(getRange imp, text "cyclic module dependency detected when importing: " <+> ppName (prettyEnvFromFlags flags) mname <+> text " import path: " <-> vsep (reverse (map (ppName (prettyEnvFromFlags flags)) importPath)))]
+        return (resolved0,resolved0)
+      else
+    do trace ("\t" ++ show mname ++ ": resolving imported modules: " ++ show (impName imp) ++ ", resolved: " ++ show (map (show . modName) resolved0) ++ ", path:" ++ show importPath) $ return ()
        (mod,resolved1) <- case filter (\m -> impName imp == modName m) resolved0 of
                             (mod:_) -> return (mod,resolved0)
-                            _       -> resolveModule compileTarget maybeContents term flags currentDir resolved0 cachedModules imp
+                            _       -> resolveModule compileTarget maybeContents term flags currentDir resolved0 cachedModules importPath imp
        -- trace ("\tnewly resolved from " ++ show (modName mod) ++ ": " ++ show (map (show . modName) resolved1)) $ return ()
        let imports    = Core.coreProgImports $ modCore mod
            pubImports = map ImpCore (filter (\imp -> Core.importVis imp == Public) imports)
        -- trace (" resolve further imports (from " ++ show (modName mod) ++ ") (added module: " ++ show (impName imp) ++ " public imports: " ++ show (map (show . impName) pubImports) ++ ")") $ return ()
-       (needed,resolved2) <- resolveImportModules compileTarget maybeContents mname term flags currentDir resolved1 cachedModules (pubImports ++ imps)
+       (needed,resolved2) <- resolveImportModules compileTarget maybeContents mname term flags currentDir resolved1 cachedModules importPath (pubImports ++ imps)
        let needed1 = filter (\m -> modName m /= modName mod) needed -- no dups
        return (mod:needed1,resolved2)
 
@@ -622,8 +626,8 @@ getCurrentFileTime fp maybeContents =
     Just (_, t) -> return t
     Nothing -> getFileTimeOrCurrent fp
 
-resolveModule :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Terminal -> Flags -> FilePath -> [Module] -> Modules -> ModImport -> IOErr (Module,[Module])
-resolveModule compileTarget maybeContents term flags currentDir modules cachedModules mimp
+resolveModule :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Terminal -> Flags -> FilePath -> [Module] -> Modules -> [Name] -> ModImport -> IOErr (Module,[Module])
+resolveModule compileTarget maybeContents term flags currentDir modules cachedModules importPath mimp
   = -- trace ("resolve module: " ++ show (impFullName mimp) ++ ", resolved: " ++ show (map (show . modName) modules) ++ ", in " ++ show currentDir) $
     case mimp of
       -- program import
@@ -679,10 +683,10 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
 
     where
       name = impFullName mimp
-      
+
       tryLoadFromCache :: Name -> FilePath -> FilePath -> IOErr (Maybe (Module, Modules))
-      tryLoadFromCache mname root stem 
-        = do 
+      tryLoadFromCache mname root stem
+        = do
           let srcpath = joinPath root stem
           sourceTime <- liftIO $ getCurrentFileTime srcpath maybeContents
           case lookupImportName mname cachedModules of
@@ -691,10 +695,10 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                   then do
                     x <- loadFromModule (modPath mod) root stem mod
                     return $ Just x
-                else 
+                else
                   -- trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
                   return Nothing
-              _ -> 
+              _ ->
                 -- trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modName cachedModules)) $
                 return Nothing
 
@@ -715,7 +719,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                   _ -> do
                     cached <- tryLoadFromCache mname root stem
                     case cached of
-                      Just (mod, mods) -> 
+                      Just (mod, mods) ->
                         do liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "reusing:") <+>
                                        color (colorSource (colorScheme flags))
                                           (pretty (nameFromFile iface)))
@@ -728,16 +732,16 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
 
       loadFromSource force modules1 root fname mname
         = -- trace ("loadFromSource: " ++ show force ++ " " ++ root ++ "/" ++ fname) $ 
-        do 
+        do
           cached <- if force then return Nothing else tryLoadFromCache mname root fname
           case cached of
-            Just (mod, modules) -> 
+            Just (mod, modules) ->
               do liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "reusing:") <+>
                                        color (colorSource (colorScheme flags))
                                           (pretty mname))
                  return (mod, modules)
             _ -> do
-              (loadedImp, _) <- compileProgramFromFile maybeContents (fst <$> maybeContents fname) term flags modules1 cachedModules compileTarget root fname
+              (loadedImp, _) <- compileProgramFromFile maybeContents (fst <$> maybeContents fname) term flags modules1 cachedModules compileTarget importPath root fname
               let mod = loadedModule loadedImp
                   allmods = addOrReplaceModule mod modules
               return (mod, loadedModules loadedImp)
@@ -756,10 +760,10 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                        -> do
                         cached <- tryLoadFromCache mname root stem
                         case cached of
-                            Just (mod, mods) -> 
+                            Just (mod, mods) ->
                               do loadMessage "reusing:"
                                  return mod
-                            Nothing -> do 
+                            Nothing -> do
                               loadMessage "loading:"
                               ftime  <- liftIO $ getFileTime iface
                               (core,parseInlines) <- lift $ parseCore iface
@@ -777,14 +781,14 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
              --                            , loadedModules = allmods
              --                            }
              -- (loadedImp,impss) <- resolveImports term flags (dirname iface) loaded (map ImpCore (Core.coreProgImports (modCore mod)))
-             (imports,resolved1) <- resolveImportModules compileTarget maybeContents name term flags (dirname iface) modules cachedModules (map ImpCore (Core.coreProgImports (modCore mod)))
+             (imports,resolved1) <- resolveImportModules compileTarget maybeContents name term flags (dirname iface) modules cachedModules (name:importPath) (map ImpCore (Core.coreProgImports (modCore mod)))
              let latest = maxFileTimes (map modTime imports)
              -- trace ("loaded iface: " ++ show iface ++ "\n time: "  ++ show (modTime mod) ++ "\n latest: " ++ show (latest)) $ return ()
              if (latest > modTime mod
                   && not (null source)) -- happens if no source is present but (package) depencies have updated...
-               then 
+               then
                 loadFromSource True resolved1 root source (nameFromFile iface)-- load from source after all
-               else 
+               else
                 let allmods = addOrReplaceModule mod resolved1
                     result = (mod{ modSourcePath = joinPath root source }, allmods)
                 in case compileTarget of
@@ -798,7 +802,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                                   }
                       let ci = coreProgImports (modCore mod)
                       -- TODO: Ensure this fromJust won't throw, and loaded has everything it needs
-                      doCodeGen term flags loaded loaded compileTarget (fromJust $ modProgram mod) ci 
+                      doCodeGen term flags loaded loaded compileTarget (fromJust $ modProgram mod) ci
                       return ()
                     else return ()
                     return result
