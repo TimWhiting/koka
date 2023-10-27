@@ -327,7 +327,7 @@ data State = State{
   states :: Map ExprContextId ExprContext,
   childrenIds :: Map ExprContextId (Set ExprContextId),
   evalCacheGeneration :: Int,
-  evalCache :: Map (ExprContextId, EnvCtx) (Int, AbValue),
+  evalCache :: Map ExprContextId (Map EnvCtx (Int, AbValue)),
   memoCache :: Map String (Map (ExprContextId, EnvCtx) (Set (ExprContext, EnvCtx))),
   unique :: Int
 }
@@ -398,13 +398,13 @@ updateState update = do
   st <- getState
   setState $ update st
 
-runEvalQueryFromRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> [AbValue]
+runEvalQueryFromRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> [(EnvCtx, AbValue)]
 runEvalQueryFromRange loaded loadModuleFromSource rng mod =
   runQueryAtRange loaded loadModuleFromSource rng mod $ \exprctxs ->
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
-        trace ("eval result " ++ show res) $ return [res]
+        trace ("eval result " ++ show res) $ return res
       _ -> return []
 
 runQueryAtRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
@@ -512,32 +512,29 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
     _ -> return Nothing
 
 findUsage :: Expr -> ExprContext -> EnvCtx -> AEnv (Set (ExprContext, EnvCtx))
-findUsage  expr@Var{varName=tname@TName{getName = name}} ctx env@(EnvCtx cc) =
+findUsage expr@Var{varName=tname@TName{getName = name}} ctx env@(EnvCtx cc) =
   let nameEq = (== name)
       empty = return S.empty
       childrenUsages =
-        visitChildrenCtxs S.unions ctx $ do
+        visitChildrenCtxs S.unions ctx $ do -- visitChildrenCtxs sets the currentContext
           childCtx <- currentContext <$> getEnv
           -- trace ("Looking for usages of " ++ show name ++ " in " ++ show ctx) $ return empty
           findUsage expr childCtx env in
-  case ctx of -- shadowing
-    DefCRec _ _ _ _ d -> if nameEq $ defName d then empty else childrenUsages -- TODO: Consider index
-    DefCNonRec _ _ _ d -> if nameEq $ defName d then empty else childrenUsages
-    LamCBody _ _ names _ -> 
-      if any (nameEq . getName) names then empty else
-        visitChildrenCtxs S.unions ctx $ do
-          childCtx <- currentContext <$> getEnv
-          findUsage expr childCtx (EnvCtx (IndetCtx:cc))
-    LetCDef _ _ _ _ d -> if any (nameEq . defName) (defsOf d) then empty else childrenUsages
-    CaseCBranch _ _ _ _ b -> if branchContainsBinding b tname then empty else childrenUsages
-    ExprCBasic id _ Var{varName=TName{getName=name2}} ->
+  case exprOfCtx ctx of
+    Lam params _ _ ->
+      let paramNames = map getName params in
+      if name `elem` paramNames then -- shadowing
+        empty
+      else
+        childrenUsages
+    Var{varName=TName{getName=name2}} ->
       if nameEq name2 then do
         query <- getQueryString
-        return $ trace (query ++ "Found usage in " ++ show (fromJust $ contextOf ctx)) $ S.singleton (fromJust $ contextOf ctx, env)
+        return $ trace (query ++ "Found usage in " ++ show ctx) $ S.singleton (ctx, env)
       else
         -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
         empty
-    _ -> childrenUsages
+    _ -> childrenUsages -- TODO Avoid shadowing let bindings
 
 findUsage2 :: String -> Expr -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
 findUsage2 query e ctx env = do
@@ -588,29 +585,42 @@ wrapMemo name ctx env f = do
 wrapMemoEval :: ExprContext -> EnvCtx -> ListT AEnv AbValue -> ListT AEnv AbValue
 wrapMemoEval ctx env f = do
   state <- lift getState
-  case Data.Map.lookup (contextId ctx, env) (evalCache state) of
-    Just (gen, x) ->
-      -- TODO: Don't recompute if the cache has not changed
-      if evalCacheGeneration state == gen then
-        return x
-      else do
-        ress <- lift $ L.toList f
-        let res = Prelude.foldl joinAbValue emptyAbValue ress
-        if x == res then return x -- dont' change the cache generation if this hasn't added anything new
-        else do
+  case Data.Map.lookup (contextId ctx) (evalCache state) of
+    Just ctxmap ->
+      case Data.Map.lookup env ctxmap of 
+        Just (gen, oldAbValue) -> 
+          -- TODO: Don't recompute if the cache has not changed
+          if evalCacheGeneration state == gen then
+            return oldAbValue
+          else do
+            ress <- lift $ L.toList f
+            let newAbValue = Prelude.foldl joinAbValue oldAbValue ress
+            if oldAbValue == newAbValue then return oldAbValue -- dont' change the cache generation if this hasn't added anything new
+            else do
+              state <- lift getState
+              let newCacheGen = evalCacheGeneration state + 1
+              let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) ctxmap
+              let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
+              lift $ setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
+              return newAbValue
+        _ -> do
+          ress <- lift $ L.toList f
+          let newAbValue = Prelude.foldl joinAbValue emptyAbValue ress
           state <- lift getState
           let newCacheGen = evalCacheGeneration state + 1
-          let newCache = Data.Map.insert (contextId ctx, env) (newCacheGen, joinAbValue x res) (evalCache state)
+          let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) ctxmap 
+          let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
           lift $ setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
-          return x
+          return newAbValue
     _ -> do
       ress <- lift $ L.toList f
-      let res = Prelude.foldl joinAbValue emptyAbValue ress
+      let newAbValue = Prelude.foldl joinAbValue emptyAbValue ress
       state <- lift getState
       let newCacheGen = evalCacheGeneration state + 1
-      let newCache = Data.Map.insert (contextId ctx, env) (newCacheGen, res) (evalCache state)
+      let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) Data.Map.empty
+      let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
       lift $ setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
-      return res
+      return newAbValue
 
 succAEnv :: Ctx -> AEnv Ctx
 succAEnv newctx = do
@@ -657,12 +667,13 @@ doEval eval expr call ctx env = do
 --         and then consider the abstract value and find all abstract values that match the pattern of the branch in question 
 --         and only consider the binding we care about. 
 --         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the subquery to disregard traces that don’t contribute
-        trace (query ++ "REF: " ++ show ctx) $ return []
+        -- trace (query ++ "REF: " ++ show ctx) $ return []
         let binded = bind ctx v env
         trace (query ++ "REF: bound to " ++ show binded) $ return []
         case binded of
           Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
             (appctx, appenv) <- call lambodyctx bindedenv
+            trace (query ++ "REF: found application" ++ show appctx ++ " " ++ show appenv ++ " param index " ++ show index) $ return []
             param <- doAEnvMaybe query $ focusParam (Just index) appctx
             eval param appenv
           -- Just ((letbodyctx@LetCBody{}, bindedenv), index) ->
@@ -765,9 +776,10 @@ doExpr eval expr call ctx env = do
         (lam, EnvCtx lamenv) <- getClosures ctxlam
         trace (query ++ "RAND: Lam is " ++ show lam) $ return []
         bd <- doAEnvMaybe query $ focusBody lam
-        trace (query ++ "RAND: Lam body is " ++ show bd) $ return []
+        trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
         succ <- lift $ succAEnv (CallCtx (contextId c) env)
         ctxs <- lift $ findUsage2 query (lamVar index lam) bd (EnvCtx $ succ:lamenv)
+        trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
         L.fromFoldable ctxs >>= (\(rf,refCtx) -> expr rf refCtx)
       LamCBody _ _ _ e -> do -- BODY Clause
 -- The expr rule creates new expr relations in a nonspecific context during the second half
@@ -814,10 +826,12 @@ doCall eval expr call ctx env@(EnvCtx cc) =
       LamCBody _ c _ _->
         case cc of
           (CallCtx id p'):p -> do
+            trace (query ++ "Call Known: " ++ show id) $ return ()
             callctx <- lift $ getContext id
             pnew <- lift $ calibratem p'
             return (callctx, pnew)
           _ -> do
+            trace (query ++ "Call Unknown") $ return ()
             expr c (envtail env)
       ExprCTerm{} ->
         trace (query ++ "Call ends in error " ++ show ctx)
@@ -858,16 +872,16 @@ fix3_expr eval expr call =
 fix3_call eval expr call =
   call (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
 
-fixedEval :: ExprContext -> EnvCtx -> AEnv AbValue
+fixedEval :: ExprContext -> EnvCtx -> AEnv [(EnvCtx, AbValue)]
 fixedEval e env = do
   L.toList $ fix3_eval doEval doExpr doCall e env
   state <- getState
   let cache = evalCache state
-  case Data.Map.lookup (contextId e, env) cache of
-    Just (_, res) -> return res
+  case Data.Map.lookup (contextId e) cache of
+    Just res -> return (map (\(k, (_, v)) -> (k, v)) (Data.Map.assocs res))
     Nothing -> do
       let msg = "fixedEval: " ++ show e ++ " not in cache " ++ show (Data.Map.keys cache)
-      trace msg $ return $ injErr msg
+      trace msg $ return [(EnvCtx [IndetCtx], injErr msg)]
 
 fixedExpr :: ExprContext -> AEnv [(ExprContext, EnvCtx)]
 fixedExpr e = L.toList $ fix3_expr doEval doExpr doCall e (EnvCtx [])
