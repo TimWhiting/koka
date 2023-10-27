@@ -77,13 +77,13 @@ instance Show EnvCtx where
 data Ctx =
   IndetCtx
   | DegenCtx
-  | CallCtx ExprContextId EnvCtx
+  | CallCtx ExprContext EnvCtx
   | TopCtx
   deriving (Eq, Ord)
 
 instance Show Ctx where
   show ctx =
-    case ctx of 
+    case ctx of
       IndetCtx -> "?"
       DegenCtx -> "[]"
       CallCtx id env -> "call(" ++ show id ++ "," ++ show env ++ ")"
@@ -128,7 +128,17 @@ data AbValue =
     charV:: SimpleLattice Char,
     stringV:: SimpleLattice String,
     err:: Maybe String
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord)
+
+instance Show AbValue where
+  show (AbValue cls cntrs i f c s e) =
+    (if S.null cls then "" else "closures: " ++ show (S.toList cls)) ++
+    (if S.null cntrs then "" else " constrs: " ++ show (S.toList cntrs)) ++
+    (if Data.Map.null i then "" else " ints: " ++ show (Data.Map.toList i)) ++
+    (if f == SimpleAbBottom then "" else " float: " ++ show f) ++
+    (if c == SimpleAbBottom then "" else " char: " ++ show c) ++
+    (if s == SimpleAbBottom then "" else " string: " ++ show s) ++
+    maybe "" (" err: " ++) e
 
 emptyAbValue :: AbValue
 emptyAbValue = AbValue S.empty S.empty Data.Map.empty SimpleAbBottom SimpleAbBottom SimpleAbBottom Nothing
@@ -557,7 +567,7 @@ newQuery kind exprctx envctx d = do
   unique <- getUnique
   withEnv (\env -> env{currentContext = exprctx, currentEnv = envctx, currentQuery = "q" ++ show unique ++ "(" ++ kind ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
-    d query 
+    d query
 
 wrapMemo :: String -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)] -> AEnv [(ExprContext, EnvCtx)]
 wrapMemo name ctx env f = do
@@ -646,8 +656,8 @@ doForContexts init l doA = do
     res' <- doA x
     return $ res ++ res') init l
 
-doEval :: (ExprContext -> EnvCtx -> AEnv AbValue) -> (ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]) -> ExprContext -> EnvCtx -> AEnv AbValue
-doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
+doEval :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> AEnv AbValue
+doEval eval expr call (ctx, env) = newQuery "EVAL" ctx env (\query -> do
   trace (query ++ "EVAL: " ++ show env ++ " " ++ show (exprOfCtx ctx)) $
     wrapMemoEval ctx env $
     case exprOfCtx ctx of
@@ -661,8 +671,7 @@ doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
             x = TName (newName "x") (TVar tvar) Nothing
             def = makeDef nameEffectOpen (TypeLam [tvar] (Lam [x] effectEmpty (Var x InfoNone)))
             newCtx = DefCNonRec newId ctx [defTName def] def
-        -- _ <- withQuery query $ childrenContexts newCtx
-        return $ injClosure newCtx (EnvCtx [IndetCtx]) -- TODO: Fix env ctx
+        return $ injClosure newCtx (EnvCtx [TopCtx])
       v@(Var tn _) -> do -- REF CLAUSE
 -- REF: 
 --  - When the binding is focused on a lambda body, we need to find the callers of the lambda, and proceed as original formulation. 
@@ -678,11 +687,11 @@ doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
         trace (query ++ "REF: bound to " ++ show binded) $ return []
         case binded of
           Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
-            calls <- call lambodyctx bindedenv
+            calls <- call (lambodyctx, bindedenv)
             doForAbValue emptyAbValue calls (\(appctx, appenv) -> do
               trace (query ++ "REF: found application " ++ show appctx ++ " " ++ show appenv ++ " param index " ++ show index) $ return []
               param <- focusParam (Just index) appctx
-              doMaybeAbValue emptyAbValue param (`eval` appenv))
+              doMaybeAbValue emptyAbValue param (\param -> eval (param, appenv)))
           -- Just ((letbodyctx@LetCBody{}, bindedenv), index) ->
           --   eval =<< withQuery query (focusChild (fromJust $ contextOf letbodyctx) (fromJust index))
           -- Just ((letdefctx@LetCDef{}, bindedenv), index) ->
@@ -694,7 +703,7 @@ doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
           Just ((modulectx@ModuleC{}, bindedenv), index) -> do
             lamctx <- getDefCtx modulectx (getName tn)
             -- Evaluates just to the lambda
-            eval lamctx (EnvCtx [TopCtx]) -- TODO: Fix
+            eval (lamctx, EnvCtx [TopCtx])
           Just ((ctxctx, bindedenv), index) -> do
             children <- childrenContexts ctxctx
             let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
@@ -705,13 +714,13 @@ doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
               Just (modulectx@ModuleC{}, index) -> do
                 lamctx <- getDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
-                eval lamctx (EnvCtx [TopCtx]) -- TODO: Fix
+                eval (lamctx, EnvCtx [TopCtx])
               _ -> return $ injErr $ "REF: can't find what the following refers to " ++ show ctx
       App f tms -> do
         fun <- focusChild ctx 0
         doMaybeAbValue emptyAbValue fun (\fun -> do
             trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
-            lamctx <- eval fun env
+            lamctx <- eval (fun, env)
             let clss = closures lamctx
             doForAbValue emptyAbValue (S.toList clss) (\(lam, EnvCtx lamenv) -> do
               trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
@@ -721,8 +730,8 @@ doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
                 childs <- childrenContexts ctx
                 -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
-                succ <- succAEnv (CallCtx (contextId ctx) env)
-                eval bd (EnvCtx (succ:lamenv))
+                succ <- succAEnv (CallCtx ctx env)
+                eval (bd, EnvCtx (succ:lamenv))
                 )
               )
           )
@@ -732,14 +741,14 @@ doEval eval expr call ctx env = newQuery "EVAL" ctx env (\query -> do
           DefCRec{} -> return $ injClosure ctx env
           _ -> do
             ctx' <- focusChild ctx 0
-            doMaybeAbValue emptyAbValue ctx' (`eval` env)
+            doMaybeAbValue emptyAbValue ctx' (\ctx -> eval (ctx,env))
       TypeLam{} ->
         case ctx of
           DefCNonRec{} -> return $ injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
           DefCRec{} -> return $ injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
           _ -> do
             ctx' <- focusChild ctx 0
-            doMaybeAbValue emptyAbValue ctx' (`eval` env)
+            doMaybeAbValue emptyAbValue ctx' (\ctx -> eval (ctx,env))
       Lit l -> return $ injLit l env
       Case e branches -> do
         trace (query ++ "CASE: " ++ show ctx) $ return []
@@ -758,9 +767,9 @@ newErrTerm s = do
   newId <- newContextId
   return [(ExprCTerm newId ("Error: " ++ s), EnvCtx [DegenCtx])]
 
-doExpr :: (ExprContext -> EnvCtx -> AEnv AbValue) -> (ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]) -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
-doExpr eval expr call ctx env = newQuery "EXPR" ctx env (\query -> do
-  trace (query ++ "EXPR " ++ show env ++ " "  ++ show (exprOfCtx ctx)) $
+doExpr :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]
+doExpr eval expr call (ctx, env) = newQuery "EXPR" ctx env (\query -> do
+  trace (query ++ "EXPR " ++ show env ++ " "  ++ show (maybeExprOfCtx ctx)) $
     wrapMemo "expr" ctx env $
     case ctx of
       AppCLambda _ c e -> -- RATOR Clause
@@ -772,7 +781,7 @@ doExpr eval expr call ctx env = newQuery "EXPR" ctx env (\query -> do
         case fn of
           Just fn -> do
             -- trace (query ++ "RAND: Fn is " ++ show fn) $ return []
-            ctxlam <- eval fn env
+            ctxlam <- eval (fn, env)
             let clss = closures ctxlam
             doForContexts [] (S.toList clss) (\(lam, EnvCtx lamenv) -> do
               -- trace (query ++ "RAND: Lam is " ++ show lam) $ return []
@@ -781,50 +790,51 @@ doExpr eval expr call ctx env = newQuery "EXPR" ctx env (\query -> do
                 Nothing -> return []
                 Just bd -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
-                  succ <- succAEnv (CallCtx (contextId c) env)
+                  succ <- succAEnv (CallCtx ctx env)
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-                  ress <- mapM (\(rf,refCtx) -> expr rf refCtx) (S.toList ctxs)
+                  ress <- mapM expr (S.toList ctxs)
                   return $ concat ress
               )
           Nothing -> return []
       LamCBody _ _ _ e -> do -- BODY Clause
         trace (query ++ "BODY: Expr is " ++ show ctx) $ return []
-        res <- call ctx env
-        ress <- mapM (\(rf,refCtx) -> expr rf refCtx) res
+        res <- call (ctx, env)
+        ress <- mapM expr res
         return $ concat ress
       ExprCTerm{} ->
         trace (query ++ "ends in error " ++ show ctx)
         return [(ctx, env)]
-      DefCNonRec _ c _ df -> do
-        succ <- succAEnv (CallCtx (contextId c) env)
-        ctxs <- findUsage (lamVarDef df) c env -- TODO: Find usages in all modules that depend on this one
-        ress <- mapM (\(rf,refCtx) -> expr rf refCtx) (S.toList ctxs)
-        return $ concat ress 
+      DefCNonRec _ c index df -> do
+        trace (query ++ "DEF: Expr is " ++ show ctx) $ return []
+        ctxs <- findUsage (lamVarDef df) c (EnvCtx [TopCtx])
+        trace (query ++ "Def: Usages are " ++ show ctxs) $ return []
+        ress <- mapM expr (S.toList ctxs)
+        return $ concat ress
+      ExprCBasic _ c _ -> expr (c, env)
       _ ->
         case contextOf ctx of
-          Just c -> 
+          Just c ->
             case enclosingLambda c of
-              Just c' -> expr c' env
+              Just c' -> expr (c', env)
               _ -> newErrTerm $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
           Nothing -> newErrTerm $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
   )
 
-doCall :: (ExprContext -> EnvCtx -> AEnv AbValue) -> (ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]) -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
-doCall eval expr call ctx env@(EnvCtx cc) =
+doCall :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]
+doCall eval expr call (ctx, env@(EnvCtx cc)) =
   wrapMemo "call" ctx env $ newQuery "CALL" ctx env (\query -> do
    trace (query ++ "CALL " ++ show env ++ " " ++ show (exprOfCtx ctx)) $
     case ctx of
         LamCBody _ c _ _->
           case cc of
-            (CallCtx id p'):p -> do
-              trace (query ++ "Known: " ++ show id) $ return ()
-              callctx <- getContext id
+            (CallCtx callctx p'):p -> do
+              trace (query ++ "Known: " ++ show callctx) $ return ()
               pnew <- calibratem p'
               return [(callctx, pnew)]
             _ -> do
               trace (query ++ "Unknown") $ return ()
-              expr c (envtail env)
+              expr (c, envtail env)
         ExprCTerm{} ->
           trace (query ++ "ends in error " ++ show ctx)
           return [(ctx, env)]
@@ -857,18 +867,21 @@ calibratemctx mlimit p =
     TopCtx -> TopCtx
 
 
+fix3_eval :: (t1 -> t2 -> t3 -> t1) -> (t1 -> t2 -> t3 -> t2) -> (t1 -> t2 -> t3 -> t3) -> t1
 fix3_eval eval expr call =
   eval (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
 
+fix3_expr :: (t -> t2 -> t3 -> t) -> (t -> t2 -> t3 -> t2) -> (t -> t2 -> t3 -> t3) -> t2
 fix3_expr eval expr call =
   expr (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
 
+fix3_call :: (t -> t2 -> t3 -> t) -> (t -> t2 -> t3 -> t2) -> (t -> t2 -> t3 -> t3) -> t3
 fix3_call eval expr call =
   call (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
 
 fixedEval :: ExprContext -> EnvCtx -> AEnv [(EnvCtx, AbValue)]
 fixedEval e env = do
-  fix3_eval doEval doExpr doCall e env
+  fix3_eval doEval doExpr doCall (e, env)
   state <- getState
   let cache = evalCache state
   case Data.Map.lookup (contextId e) cache of
@@ -878,9 +891,9 @@ fixedEval e env = do
       trace msg $ return [(EnvCtx [IndetCtx], injErr msg)]
 
 fixedExpr :: ExprContext -> AEnv [(ExprContext, EnvCtx)]
-fixedExpr e = fix3_expr doEval doExpr doCall e (EnvCtx [])
+fixedExpr e = fix3_expr doEval doExpr doCall (e, EnvCtx [])
 fixedCall :: ExprContext -> AEnv [(ExprContext, EnvCtx)]
-fixedCall e = fix3_call doEval doExpr doCall e (EnvCtx [])
+fixedCall e = fix3_call doEval doExpr doCall (e, EnvCtx [])
 
 allModules :: Loaded -> [Module]
 allModules loaded = loadedModule loaded : loadedModules loaded
