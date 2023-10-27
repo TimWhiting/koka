@@ -98,7 +98,7 @@ makeDiagnostic s src r doc =
 
 fromLspPos :: J.Uri -> J.Position -> R.Pos
 fromLspPos uri (J.Position l c) =
-  R.makePos src (-1) (fromIntegral l + 1) (fromIntegral c + 0)
+  R.makePos src (-1) (fromIntegral l + 1) (fromIntegral c + 1)
   where
     src = case J.uriToFilePath uri of
       Just filePath -> R.Source filePath R.bstringEmpty -- TODO: Read file here (and compute the offset correctly)
