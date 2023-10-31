@@ -2660,6 +2660,7 @@ reserved
     , "instanceof"
     , "new"
     , "return"
+    , "register"
     , "switch"
     , "this"
     , "throw"

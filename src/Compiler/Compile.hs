@@ -796,13 +796,16 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                   _ -> do
                   -- Compile from cache if CompileTarget is Executable / Object and module is InMemory and outputFileTime < modTime
                     if (Just (modTime mod) > modOutputTime mod) then do
+                      liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "generating:") <+>
+                                       color (colorSource (colorScheme flags))
+                                          (pretty (modName mod)))
                       liftIO $ copyPkgIFaceToOutputDir term flags iface (modCore mod) (modPackageQPath mod) imports
                       let loaded = initialLoaded { loadedModule = mod
                                   , loadedModules = allmods
                                   }
                       let ci = coreProgImports (modCore mod)
-                      -- TODO: Ensure this fromJust won't throw, and loaded has everything it needs
-                      doCodeGen term flags loaded loaded compileTarget (fromJust $ modProgram mod) ci
+                      -- TODO: Ensure loaded has everything it needs
+                      liftIO $! codeGen term flags Object loaded
                       return ()
                     else return ()
                     return result
