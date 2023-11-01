@@ -9,8 +9,7 @@
 {-
     Check if a constructor context is well formed, and create a context path
 -}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Core.DemandAnalysis(
                           AbstractLattice(..),
@@ -47,6 +46,7 @@ import Core.CoreVar
 import GHC.IO (unsafePerformIO)
 import Syntax.Syntax (UserExpr, UserProgram, UserDef, Program (..), DefGroups, UserType, DefGroup (..), Def (..), ValueBinder (..), UserValueBinder)
 import qualified Syntax.Syntax as Syn
+import qualified Data.Map
 data AbstractLattice =
   AbBottom | AbTop
 
@@ -91,13 +91,6 @@ instance Show Ctx where
       CallCtx id env -> "call(" ++ show (contextId id) ++ "," ++ show env ++ ")"
       TopCtx -> "()"
 
--- data Ctx =
---   DegenCtx -- Degenerate bottom of Ctx sequence (means we were limited by m)
---   | TopCtx -- Empty top context (called from top level)
---   | IndetCtx ExprContextId -- Indeterminate context for a particular set of bindings
---   | CallCtx ExprContextId -- Call context for a particular call
---   deriving (Eq, Ord, Show)
-
 data ConstrContext =
   ConstrContext{
     constrName:: Name,
@@ -126,9 +119,9 @@ data AbValue =
     closures:: Set (ExprContext, EnvCtx),
     constrs:: Set ConstrContext,
     intV:: Map EnvCtx (SimpleLattice Integer),
-    floatV:: SimpleLattice Double,
-    charV:: SimpleLattice Char,
-    stringV:: SimpleLattice String,
+    floatV:: Map EnvCtx (SimpleLattice Double),
+    charV:: Map EnvCtx (SimpleLattice Char),
+    stringV:: Map EnvCtx (SimpleLattice String),
     err:: Maybe String
   } deriving (Eq, Ord)
 
@@ -137,13 +130,13 @@ instance Show AbValue where
     (if S.null cls then "" else "closures: " ++ show (S.toList cls)) ++
     (if S.null cntrs then "" else " constrs: " ++ show (S.toList cntrs)) ++
     (if Data.Map.null i then "" else " ints: " ++ show (Data.Map.toList i)) ++
-    (if f == SimpleAbBottom then "" else " float: " ++ show f) ++
-    (if c == SimpleAbBottom then "" else " char: " ++ show c) ++
-    (if s == SimpleAbBottom then "" else " string: " ++ show s) ++
+    (if Data.Map.null f then "" else " floats: " ++ show (Data.Map.toList f)) ++
+    (if Data.Map.null c then "" else " chars: " ++ show (Data.Map.toList c)) ++
+    (if Data.Map.null s then "" else " strings: " ++ show (Data.Map.toList s)) ++
     maybe "" (" err: " ++) e
 
 emptyAbValue :: AbValue
-emptyAbValue = AbValue S.empty S.empty Data.Map.empty SimpleAbBottom SimpleAbBottom SimpleAbBottom Nothing
+emptyAbValue = AbValue S.empty S.empty Data.Map.empty Data.Map.empty Data.Map.empty Data.Map.empty Nothing
 injClosure ctx env = emptyAbValue{closures= S.singleton (ctx, env)}
 injErr err = emptyAbValue{err= Just err}
 
@@ -151,12 +144,12 @@ injLit :: Lit -> EnvCtx -> AbValue
 injLit x env =
   case x of
     LitInt i -> emptyAbValue{intV= Data.Map.singleton env $ Simple i}
-    LitFloat f -> emptyAbValue{floatV= Simple f}
-    LitChar c -> emptyAbValue{charV= Simple c}
-    LitString s -> emptyAbValue{stringV= Simple s}
+    LitFloat f -> emptyAbValue{floatV= Data.Map.singleton env $ Simple f}
+    LitChar c -> emptyAbValue{charV= Data.Map.singleton env $ Simple c}
+    LitString s -> emptyAbValue{stringV= Data.Map.singleton env $ Simple s}
 
 joinAbValue :: AbValue -> AbValue -> AbValue
-joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (i0 `joinML` i1) (f0 `joinL` f1) (c0 `joinL` c1) (s0 `joinL` s1) (e0 `mplus` e1)
+joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (i0 `joinML` i1) (f0 `joinML` f1) (c0 `joinML` c1) (s0 `joinML` s1) (e0 `mplus` e1)
 
 paramIndex e =
   case e of
@@ -310,7 +303,7 @@ contextId ctx =
 contextOf :: ExprContext -> Maybe ExprContext
 contextOf ctx =
   case ctx of
-    ModuleC _ _ _ -> Nothing
+    ModuleC{} -> Nothing
     DefCRec _ c _ _ _ -> Just c
     DefCNonRec _ c _ _ -> Just c
     LamCBody _ c _ _ -> Just c
@@ -350,14 +343,43 @@ instance Eq Core.Core.Def where
 
 type ExpressionSet = Set ExprContextId
 
+newtype EnvCtxLattice t = EnvCtxLattice (Map EnvCtx (Int, t))
+
+addAbValue :: EnvCtxLattice AbValue -> Int -> EnvCtx -> AbValue -> (Bool, EnvCtxLattice AbValue)
+addAbValue (EnvCtxLattice m) version env ab =
+  let (changed, newMap) = Data.Map.mapAccumWithKey (\acc k (v, ab') -> if k `subsumes` env then (ab' /= ab || acc, (version, ab' `joinAbValue` ab)) else (acc, (v, ab'))) False m in
+  let oldV = snd (fromMaybe (version, emptyAbValue) (Data.Map.lookup env m)) in
+  (changed || oldV /= ab, EnvCtxLattice $ Data.Map.insert env (version, oldV `joinAbValue` ab) newMap)
+
+addLamSet :: EnvCtxLattice (Set (ExprContext, EnvCtx)) -> Int -> EnvCtx -> Set (ExprContext, EnvCtx) -> (Bool, EnvCtxLattice (Set (ExprContext, EnvCtx)))
+addLamSet (EnvCtxLattice m) version env ab =
+  let (changed, newMap) = Data.Map.mapAccumWithKey (\acc k (v, ab') -> if k `subsumes` env then (ab' /= ab || acc, (version, ab' `S.union` ab)) else (acc, (v, ab'))) False m in
+  let oldV = snd (fromMaybe (version, S.empty) (Data.Map.lookup env m)) in
+  (changed || oldV /= ab, EnvCtxLattice $ Data.Map.insert env (version, oldV `S.union` ab) newMap)
+
+-- If the first subsumes the second, then the first is more general than the second, and thus any value in the second should also be in the first
+subsumes :: EnvCtx -> EnvCtx -> Bool
+subsumes (EnvCtx ctxs1) (EnvCtx ctxs2) =
+  and $ zipWith subsumesCtx ctxs1 ctxs2
+
+subsumesCtx :: Ctx -> Ctx -> Bool
+subsumesCtx c1 c2 =
+  case (c1, c2) of
+    (IndetCtx, IndetCtx) -> True
+    (DegenCtx, DegenCtx) -> True
+    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
+    (TopCtx, TopCtx) -> True
+    (IndetCtx, CallCtx id env2) -> True
+    _ -> False
+
 newtype AEnv a = AEnv (DEnv -> State -> Result a)
 data State = State{
   loaded :: Loaded,
   states :: Map ExprContextId ExprContext,
   childrenIds :: Map ExprContextId (Set ExprContextId),
   evalCacheGeneration :: Int,
-  evalCache :: Map ExprContextId (Map EnvCtx (Int, AbValue)),
-  memoCache :: Map String (Map (ExprContextId, EnvCtx) (Set (ExprContext, EnvCtx))),
+  evalCache :: Map ExprContextId (EnvCtxLattice AbValue),
+  memoCache :: Map String (Map ExprContextId (EnvCtxLattice (Set (ExprContext, EnvCtx)))),
   unique :: Int
 }
 data Result a = Ok a State
@@ -368,7 +390,7 @@ data DEnv = DEnv{
   currentEnv:: EnvCtx,
   currentQuery:: String,
   queryIndentation:: String,
-  loadModuleFromSource :: (Module -> IO Module)
+  loadModuleFromSource :: Module -> IO Module
 }
 
 instance Functor AEnv where
@@ -419,7 +441,6 @@ getUnique = do
   setState st{unique = u + 1}
   return u
 
-
 updateState :: (State -> State) -> AEnv ()
 updateState update = do
   st <- getState
@@ -440,14 +461,15 @@ runEvalQueryFromRangeSource loaded loadModuleFromSource rng mod =
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
-        let lams = map fst $ concatMap (S.toList . closures) (map snd res)
-            i = mapMaybe toSynLit $ concatMap Data.Map.elems $ map intV (map snd res)
-            f = mapMaybe toSynLitD $ map floatV (map snd res)
-            c = mapMaybe toSynLitC $ map charV (map snd res)
-            s = mapMaybe toSynLitS $ map stringV (map snd res)
+        let vals = map snd res
+            lams = map fst $ concatMap (S.toList . closures) vals
+            i = concatMap ((mapMaybe toSynLit . Data.Map.elems) . intV) vals
+            f = concatMap ((mapMaybe toSynLitD . Data.Map.elems) . floatV) vals
+            c = concatMap ((mapMaybe toSynLitC . Data.Map.elems) . charV) vals
+            s = concatMap ((mapMaybe toSynLitS . Data.Map.elems) . stringV) vals
             vs = i ++ f ++ c ++ s
-        sourceLams <- mapM findSourceLambda lams
-        trace ("eval result " ++ show res) $ return $ (catMaybes sourceLams, vs)
+        sourceLams <- mapM findSourceExpr lams
+        trace ("eval result " ++ show res) $ return (catMaybes sourceLams, vs)
       _ -> return ([],[])
 
 toSynLit :: SimpleLattice Integer -> Maybe Syn.Lit
@@ -466,19 +488,20 @@ toSynLitS :: SimpleLattice String -> Maybe Syn.Lit
 toSynLitS (Simple i) = Just $ Syn.LitString i rangeNull
 toSynLitS _ = Nothing
 
-findSourceLambda :: ExprContext -> AEnv (Maybe UserExpr)
-findSourceLambda ctx =
+findSourceExpr :: ExprContext -> AEnv (Maybe UserExpr)
+findSourceExpr ctx =
   case maybeExprOfCtx ctx of
     Just (Lam (n:_) _ _) -> findForName n
     Just (TypeLam _ (Lam (n:_) _ _)) -> findForName n
-    _ -> 
-      case ctx of 
+    Just (App (Var tn _) _) -> findForApp tn
+    _ ->
+      case ctx of
         DefCNonRec _ _ _ d -> findDef d
         DefCRec _ _ _ _ d -> findDef d
-        _ -> 
+        _ ->
           trace ("Unknown lambda type " ++ show ctx) $ return Nothing
-  where 
-    findDef d = 
+  where
+    findDef d =
       return $! Just $! Syn.Var (defName d) False (defNameRange d)
       -- program <- modProgram <$> getModule (moduleName $ contextId ctx)
       -- case (program, defNameRange d) of
@@ -487,12 +510,84 @@ findSourceLambda ctx =
     findForName n = do
       program <- modProgram <$> getModule (moduleName $ contextId ctx)
       case (program, originalRange n) of
-        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
+        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLambdaFromRange prog rng
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
+    findForApp n = do
+      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      case (program, originalRange n) of
+        (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ return $! findApplicationFromRange prog rng
         _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
 
+findApplicationFromRange :: UserProgram -> Range -> Maybe UserExpr
+findApplicationFromRange prog rng =
+  findInDefGs (programDefs prog)
+  where
+    findInDefGs :: Syntax.Syntax.DefGroups UserType -> Maybe UserExpr
+    findInDefGs defgs = case mapMaybe findInDefG defgs of
+      [l] -> Just l
+      _ -> Nothing
+    findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
+      case def of
+        Syntax.Syntax.DefNonRec df -> findInDef df
+        Syntax.Syntax.DefRec dfs -> case mapMaybe findInDef dfs of [l] -> Just l; _ -> Nothing
+    findInDef :: UserDef -> Maybe UserExpr
+    findInDef def =
+      case def of
+        Syntax.Syntax.Def vb rng0 _ _ _ _ -> -- trace ("Looking in def " ++ show def) $ 
+          if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else Nothing
+    findInBinder :: ValueBinder () UserExpr -> Maybe UserExpr
+    findInBinder vb =
+      case vb of
+        Syntax.Syntax.ValueBinder _ _ e _ _ -> -- trace ("Looking in binder " ++ show vb) $ 
+          findInExpr e
+    findInExpr :: UserExpr -> Maybe UserExpr
+    findInExpr e =
+      -- trace ("Looking in expr " ++ show e) $ 
+      case e of
+        Syn.Lam _ body rng0 -> findInExpr body
+        Syn.App f args rng0 -> if rng `rangesOverlap` rng0 then case mapMaybe findInExpr (f:map snd args) of [x] -> Just x; _ -> Nothing else Nothing
+        Syn.Let dg body _ ->
+          case findInDefG dg of
+            Just x -> Just x
+            _ -> findInExpr body
+        Syn.Bind d e _ ->
+          case findInDef d of
+            Just x -> Just x
+            _ -> findInExpr e
+        Syn.Case e bs _ ->
+          case findInExpr e of
+            Just x -> Just x
+            _ -> case mapMaybe findInBranch bs of
+              [x] -> Just x
+              _ -> Nothing
+        Syn.Parens e _ _ -> findInExpr e
+        Syn.Inject _ e _ _ -> findInExpr e
+        Syn.Var{} -> Nothing
+        Syn.Lit _ -> Nothing
+        Syn.Ann e _ _ -> findInExpr e
+        Syn.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
+          let exprs = catMaybes [init, ret, fin]
+              exprs' = mapMaybe findInExpr exprs
+          in case exprs' of
+            [x] -> Just x
+            _ -> case mapMaybe findInHandlerBranch bs of
+              [x] -> Just x
+              _ -> Nothing
+    findInHandlerBranch :: Syn.HandlerBranch UserType -> Maybe UserExpr
+    findInHandlerBranch (Syn.HandlerBranch _ _ body _ _ _) = findInExpr body
+    findInBranch :: Syn.Branch UserType -> Maybe UserExpr
+    findInBranch (Syn.Branch pat guards) =
+      case mapMaybe findInGuard guards of
+          [x] -> Just x
+          _ -> Nothing
+    findInGuard :: Syn.Guard UserType -> Maybe UserExpr
+    findInGuard (Syn.Guard e body) =
+      case findInExpr e of
+        Just x -> Just x
+        _ -> findInExpr body
 
-findLocation :: UserProgram -> Range -> Maybe UserExpr
-findLocation prog rng =
+findLambdaFromRange :: UserProgram -> Range -> Maybe UserExpr
+findLambdaFromRange prog rng =
   findInDefGs (programDefs prog)
   where
     findInDefGs :: Syntax.Syntax.DefGroups UserType -> Maybe UserExpr
@@ -562,14 +657,13 @@ findLocation prog rng =
         Just x -> Just x
         _ -> findInExpr body
 
-
 runQueryAtRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
 runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded Data.Map.empty Data.Map.empty 0 (Data.Map.empty) (Data.Map.fromList [("eval", Data.Map.empty), ("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
+        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded Data.Map.empty Data.Map.empty 0 Data.Map.empty (Data.Map.fromList [("call", Data.Map.empty), ("expr", Data.Map.empty) ]) 0)
   in case result of
     Ok a st -> a
 
@@ -704,68 +798,69 @@ wrapMemo :: String -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)] -> A
 wrapMemo name ctx env f = do
   state <- getState
   let cache = memoCache state ! name
-  case Data.Map.lookup (contextId ctx, env) cache of
-    Just x -> return $! S.toAscList x
+      version = evalCacheGeneration state 
+  case Data.Map.lookup (contextId ctx) cache of
+    Just (EnvCtxLattice x) -> 
+      case Data.Map.lookup env x of
+        Just (v, x) ->
+          if version == v then return $! S.toAscList x
+          else runAndUpdate
+        _ -> do
+          let cache = memoCache state ! name
+          let newCache = Data.Map.insert (contextId ctx) (EnvCtxLattice $ Data.Map.singleton env (version, S.empty)) cache
+          setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
+          runAndUpdate
     _ -> do
       -- trace ("Pre memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
       let cache = memoCache state ! name
-      let newCache = Data.Map.insertWith S.union (contextId ctx, env) S.empty cache
+      let newCache = Data.Map.insert (contextId ctx) (EnvCtxLattice $ Data.Map.singleton env (version, S.empty)) cache
       setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
+      runAndUpdate
+  where 
+    runAndUpdate = do
       res <- f
       state <- getState
       -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
       let cache = memoCache state ! name
-      let newCache = Data.Map.insertWith S.union (contextId ctx, env) (S.fromList res) cache
-      setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
+      let (changed, newCache) = addLamSet (cache ! contextId ctx) (evalCacheGeneration state) env (S.fromList res)
+      let newGen = if changed then evalCacheGeneration state + 1 else evalCacheGeneration state
+      let newCache' = Data.Map.insert (contextId ctx) newCache cache
+      setState state{memoCache = Data.Map.insert name newCache' (memoCache state), evalCacheGeneration = newGen}
       return res
 
 wrapMemoEval :: ExprContext -> EnvCtx -> AEnv AbValue -> AEnv AbValue
 wrapMemoEval ctx env f = do
   state <- getState
-  case Data.Map.lookup (contextId ctx) (evalCache state) of
-    Just ctxmap ->
-      case Data.Map.lookup env ctxmap of
-        Just (gen, oldAbValue) ->
-          -- TODO: Don't recompute if the cache has not changed
-          if evalCacheGeneration state == gen then
-            return oldAbValue
-          else do
-            ress <- f
-            let newAbValue = joinAbValue oldAbValue ress
-            if oldAbValue == newAbValue then return oldAbValue -- dont' change the cache generation if this hasn't added anything new
-            else do
-              state <- getState
-              let newCacheGen = evalCacheGeneration state + 1
-              let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) (evalCache state ! contextId ctx) 
-              let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
-              setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
-              return newAbValue
+  let cache = evalCache state
+      version = evalCacheGeneration state 
+  case Data.Map.lookup (contextId ctx) cache of
+    Just (EnvCtxLattice x) -> 
+      case Data.Map.lookup env x of
+        Just (v, x) ->
+          if version == v then return x
+          else runAndUpdate
         _ -> do
-          -- trace ("Pre memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-          let newCtxMap = Data.Map.insert env (evalCacheGeneration state, emptyAbValue) ctxmap
-          let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
+          let cache = evalCache state
+          let newCache = Data.Map.insert (contextId ctx) (EnvCtxLattice $ Data.Map.singleton env (version, emptyAbValue)) cache
           setState state{evalCache = newCache}
-          newAbValue <- f
-          state <- getState
-          -- trace ("Post memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return ()
-          let newCacheGen = evalCacheGeneration state + 1
-          let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) (evalCache state ! contextId ctx) 
-          let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
-          setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
-          return newAbValue
+          runAndUpdate
     _ -> do
-      -- trace ("Pre memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-      let newCtxMap = Data.Map.insert env (evalCacheGeneration state, emptyAbValue) Data.Map.empty
-      let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
+      -- trace ("Pre memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
+      let cache = evalCache state
+      let newCache = Data.Map.insert (contextId ctx) (EnvCtxLattice $ Data.Map.singleton env (version, emptyAbValue)) cache
       setState state{evalCache = newCache}
-      newAbValue <- f
+      runAndUpdate
+  where 
+    runAndUpdate = do
+      res <- f
       state <- getState
-      -- trace ("Post memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-      let newCacheGen = evalCacheGeneration state + 1
-      let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) (evalCache state ! contextId ctx) 
-      let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
-      setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
-      return newAbValue
+      -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
+      let cache = evalCache state
+      let (changed, newCache) = addAbValue (cache ! contextId ctx) (evalCacheGeneration state) env res
+      let newGen = if changed then evalCacheGeneration state + 1 else evalCacheGeneration state
+      let newCache' = Data.Map.insert (contextId ctx) newCache cache
+      setState state{evalCache = newCache', evalCacheGeneration = newGen}
+      return res
 
 succAEnv :: Ctx -> AEnv Ctx
 succAEnv newctx = do
@@ -951,7 +1046,7 @@ doExpr eval expr call (ctx, env) = newQuery "EXPR" ctx env (\query -> do
       ExprCTerm{} ->
         trace (query ++ "ends in error " ++ show ctx)
         -- return [(ctx, env)]
-        newErrTerm $ "Exprs led to ExprCTerm" ++ show ctx 
+        newErrTerm $ "Exprs led to ExprCTerm" ++ show ctx
       DefCNonRec _ c index df -> do
         trace (query ++ "DEF: Expr is " ++ show ctx) $ return []
         ctxs <- findUsage (lamVarDef df) c (EnvCtx [TopCtx])
@@ -974,6 +1069,12 @@ doCall eval expr call (ctx, env@(EnvCtx cc)) =
    trace (query ++ "CALL " ++ show env ++ " " ++ show ctx) $
     case ctx of
         LamCBody _ c _ _->
+          -- TODO: 
+          -- 1. result, resultenv = expr(cc0.tail)
+          -- 2. cc1 = succ_m(result, resultenv)
+          -- 3. if cc0 == cc1 then return (result, resultenv)
+          -- 4. elif cc0 subsumes cc1 then
+          -- 5. instantiate queries such that any cc0:env can be refined by cc1:env (i.e. add a subquery for cc1:env for all queries in the cache that have cc0:env)
           case cc of
             (CallCtx callctx p'):p -> do
               trace (query ++ "Known: " ++ show callctx) $ return ()
@@ -1033,7 +1134,7 @@ fixedEval e env = do
   state <- getState
   let cache = evalCache state
   case Data.Map.lookup (contextId e) cache of
-    Just res -> trace "Found Answer" $ return (map (\(k, (_, v)) -> (k, v)) (Data.Map.assocs res))
+    Just (EnvCtxLattice res) -> trace "Found Answer" $ return (map (\(k, (_, v)) -> (k, v)) (Data.Map.assocs res))
     Nothing -> do
       let msg = "fixedEval: " ++ show e ++ " not in cache " ++ show (Data.Map.keys cache)
       trace msg $ return [(EnvCtx [IndetCtx], injErr msg)]
