@@ -11,13 +11,14 @@
 -----------------------------------------------------------------------------
 module Syntax.Syntax where
 
-import Common.NamePrim( nameTrue, nameSystemCore )
+import Common.NamePrim( nameTrue, nameSystemCore, nameOpExpr )
 import Common.Name
 import Common.Range
 import Common.Failure( failure )
 import Common.ResumeKind
 import Common.Syntax
 import qualified Common.NameSet as S
+import Data.List (intercalate)
 
 
 
@@ -89,7 +90,7 @@ data FixDef
   = FixDef{ fixName   :: Name
           , fixFixity :: Fixity
           , fixRange  :: Range
-          , fixVis    :: Visibility 
+          , fixVis    :: Visibility
           }
   deriving (Show)
 
@@ -104,7 +105,7 @@ data Import
           , importFullName :: Name     -- ^ fully qualified module name
           , importRange :: Range   -- ^ range of the import declaration
           , importVis   :: Visibility  -- ^ visibility of the module
-          } 
+          }
     deriving (Show)
 
 
@@ -225,20 +226,60 @@ data Expr t
   | Case   (Expr t) [Branch t]   Range
   | Parens (Expr t)              Name Range
   | Inject t (Expr t) Bool {-behind?-} Range
-  | Handler{ hndlrSort         :: HandlerSort, 
+  | Handler{ hndlrSort         :: HandlerSort,
              hndlrScope        :: HandlerScope,
              hndlrOverride     :: HandlerOverride,
              hndlrAllowMask    :: Maybe Bool,
              hndlrEffect       :: (Maybe t),
              hndlrLocalPars    :: [ValueBinder (Maybe t) ()],
-             hndlrInitially    :: (Maybe (Expr t)),             
+             hndlrInitially    :: (Maybe (Expr t)),
              hndlrReturn       :: (Maybe (Expr t)),
              hndlrFinally      :: (Maybe (Expr t)),
              hndlrBranches     :: [HandlerBranch t],
              hndlrDeclRange    :: Range,
              hndlrRange        :: Range
             }
-  deriving (Show)
+      deriving (Show)
+
+showSyntaxDef :: Show t => Def t -> String
+showSyntaxDef (Def binder range vis sort inline doc)
+  = show vis ++ " " ++ show (binderName binder) ++ "\n\t" ++ showSyntax (binderExpr binder)
+
+showValBinder :: Show t => ValueBinder (Maybe t) (Maybe (Expr t)) -> String
+showValBinder (ValueBinder name (Just tp) (Just expr) nameRange range)
+  = show name ++ ": " ++ show tp ++ " = " ++ show expr
+showValBinder (ValueBinder name Nothing (Just expr) nameRange range)
+  = show name ++ " = " ++ show expr
+showValBinder (ValueBinder name (Just tp) Nothing nameRange range)
+  = show name ++ ": " ++ show tp
+showValBinder (ValueBinder name Nothing Nothing nameRange range)
+  = show name
+
+showArg :: Show t => (Maybe (Name,Range),Expr t) -> String
+showArg (Nothing,expr) = showSyntax expr
+showArg (Just (name,_),expr) = show name ++ "= " ++ showSyntax expr
+
+showSyntax :: Show t => Expr t -> String
+showSyntax (Lam pars expr range) = "fn(" ++ intercalate "," (map showValBinder pars) ++ ") " ++ showSyntax expr
+showSyntax (Let defs expr range) =  show defs ++ "\n" ++ showSyntax expr
+showSyntax (Bind def expr range) =  show def ++ "\n" ++ showSyntax expr
+showSyntax (App (Var name _ _) args range) | name == nameOpExpr = unwords (map showArg args)
+showSyntax (App fun args range)  =  showSyntax fun ++ "(" ++ intercalate "," (map showArg args) ++ ")"
+showSyntax (Var name isop range) = nameId name
+showSyntax (Lit lit)             = showLit lit
+showSyntax (Ann expr tp range)   = showSyntax expr ++ ": " ++ show tp
+showSyntax (Case expr branches range) = "match " ++ showSyntax expr ++ "\n" ++ intercalate "\n\t" (map show branches)
+showSyntax (Parens expr name range) = "(" ++ showSyntax expr ++ ")"
+showSyntax (Inject tp expr behind range) = "mask<" ++ show tp ++ ">{" ++ showSyntax expr ++ "}"
+showSyntax (Handler sort scope override allowmask eff pars reinit ret final branches drange range)
+  = "handler " ++ show reinit ++ " " ++ show ret ++ " " ++ show final ++ " " ++ show branches
+  -- TODO: More show here
+
+showLit :: Lit -> String
+showLit (LitInt i range) = show i
+showLit (LitFloat f range) = show f
+showLit (LitChar c range) = show c
+showLit (LitString s range) = show s
 
 data HandlerOverride
   = HandlerNoOverride | HandlerOverride
@@ -261,8 +302,8 @@ data HandlerBranch t
 data Branch t
   = Branch{ branchPattern :: (Pattern t), branchGuards :: [Guard t] }
   deriving (Show)
-  
-data Guard t 
+
+data Guard t
   = Guard { guardTest :: (Expr t), guardExpr :: (Expr t) }
   deriving (Show)
 
