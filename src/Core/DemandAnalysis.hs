@@ -88,7 +88,7 @@ instance Show Ctx where
     case ctx of
       IndetCtx -> "?"
       DegenCtx -> "[]"
-      CallCtx id env -> "call(" ++ show id ++ "," ++ show env ++ ")"
+      CallCtx id env -> "call(" ++ show (contextId id) ++ "," ++ show env ++ ")"
       TopCtx -> "()"
 
 -- data Ctx =
@@ -441,11 +441,11 @@ runEvalQueryFromRangeSource loaded loadModuleFromSource rng mod =
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
         let lams = map fst $ concatMap (S.toList . closures) (map snd res)
-        let i = mapMaybe toSynLit $ concatMap Data.Map.elems $ map intV (map snd res)
-        let f = mapMaybe toSynLitD $ map floatV (map snd res)
-        let c = mapMaybe toSynLitC $ map charV (map snd res)
-        let s = mapMaybe toSynLitS $ map stringV (map snd res)
-        let vs = i ++ f ++ c ++ s
+            i = mapMaybe toSynLit $ concatMap Data.Map.elems $ map intV (map snd res)
+            f = mapMaybe toSynLitD $ map floatV (map snd res)
+            c = mapMaybe toSynLitC $ map charV (map snd res)
+            s = mapMaybe toSynLitS $ map stringV (map snd res)
+            vs = i ++ f ++ c ++ s
         sourceLams <- mapM findSourceLambda lams
         trace ("eval result " ++ show res) $ return $ (catMaybes sourceLams, vs)
       _ -> return ([],[])
@@ -936,7 +936,7 @@ doExpr eval expr call (ctx, env) = newQuery "EXPR" ctx env (\query -> do
                 Nothing -> return []
                 Just bd -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
-                  succ <- succAEnv (CallCtx ctx env)
+                  succ <- succAEnv (CallCtx c env)
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
                   ress <- mapM expr (S.toList ctxs)
@@ -950,7 +950,8 @@ doExpr eval expr call (ctx, env) = newQuery "EXPR" ctx env (\query -> do
         return $ concat ress
       ExprCTerm{} ->
         trace (query ++ "ends in error " ++ show ctx)
-        return [(ctx, env)]
+        -- return [(ctx, env)]
+        newErrTerm $ "Exprs led to ExprCTerm" ++ show ctx 
       DefCNonRec _ c index df -> do
         trace (query ++ "DEF: Expr is " ++ show ctx) $ return []
         ctxs <- findUsage (lamVarDef df) c (EnvCtx [TopCtx])
@@ -970,7 +971,7 @@ doExpr eval expr call (ctx, env) = newQuery "EXPR" ctx env (\query -> do
 doCall :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]
 doCall eval expr call (ctx, env@(EnvCtx cc)) =
   wrapMemo "call" ctx env $ newQuery "CALL" ctx env (\query -> do
-   trace (query ++ "CALL " ++ show env ++ " " ++ show (exprOfCtx ctx)) $
+   trace (query ++ "CALL " ++ show env ++ " " ++ show ctx) $
     case ctx of
         LamCBody _ c _ _->
           case cc of
