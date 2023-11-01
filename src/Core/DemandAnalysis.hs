@@ -16,6 +16,7 @@ module Core.DemandAnalysis(
                           AbstractLattice(..),
                           ExprContext(..),
                           runEvalQueryFromRange,
+                          runEvalQueryFromRangeSource,
                         ) where
 
 
@@ -23,14 +24,14 @@ import Control.Monad
 import Common.Name
 import Data.Set as S hiding (findIndex, filter, map)
 import Core.Core (Expr (..), DefGroups, Def (..), DefGroup (..), Branch (..), Guard(..), Pattern(..), TName (..), defsTNames, defGroupTNames, mapDefGroup, Core (..), VarInfo (..), defTName, makeDef, Lit (..))
-import Data.Map hiding (findIndex, filter, map)
+import Data.Map hiding (mapMaybe, findIndex, filter, map)
 import qualified ListT as L
 -- import Debug.Trace (trace)
 import Core.Pretty
 import Type.Type (isTypeInt, isTypeInt32, Type (..), expandSyn, TypeCon (..), ConInfo (..), Flavour (Bound), TypeVar (TypeVar), effectEmpty)
 import Data.Sequence (mapWithIndex, fromList)
 import qualified Data.Sequence as Seq
-import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe)
+import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe, catMaybes)
 import Data.List (find, findIndex, elemIndex, union)
 import Debug.Trace
 import Compiler.Module (Loaded (..), Module (..), ModStatus (LoadedIface), addOrReplaceModule)
@@ -39,12 +40,13 @@ import Type.Pretty (ppType, defaultEnv, Env (..))
 import Kind.Kind (Kind(..), kindFun, kindStar)
 import Control.Monad.Trans
 import ListT (ListT)
-import Common.Range (Range, rangesOverlap, showFullRange)
+import Common.Range (Range, rangesOverlap, showFullRange, rangeNull)
 import Syntax.RangeMap (RangeInfo)
 import Common.NamePrim (nameOpen, nameEffectOpen)
 import Core.CoreVar
 import GHC.IO (unsafePerformIO)
-
+import Syntax.Syntax (UserExpr, UserProgram, UserDef, Program (..), DefGroups, UserType, DefGroup (..), Def (..), ValueBinder (..), UserValueBinder)
+import qualified Syntax.Syntax as Syn
 data AbstractLattice =
   AbBottom | AbTop
 
@@ -55,13 +57,13 @@ data AbstractLattice =
 data ExprContext =
   -- Current expression context
   ModuleC ExprContextId Module Name -- Module context
-  | DefCRec ExprContextId ExprContext [TName] Int Def -- A recursive definition context, working on the index'th definition
-  | DefCNonRec ExprContextId ExprContext [TName] Def -- In a non recursive definition context, working on Def
+  | DefCRec ExprContextId ExprContext [TName] Int Core.Core.Def -- A recursive definition context, working on the index'th definition
+  | DefCNonRec ExprContextId ExprContext [TName] Core.Core.Def -- In a non recursive definition context, working on Def
   | LamCBody ExprContextId ExprContext [TName] Expr -- Inside a lambda body expression
   | AppCLambda ExprContextId ExprContext Expr -- Application context inside function context
   | AppCParam ExprContextId ExprContext Int Expr -- Application context inside param context
   -- TODO: This needs adjustment, currently it flatmaps over the defgroup and indexes over that
-  | LetCDef ExprContextId ExprContext [TName] Int DefGroup -- In a let definition context working on a particular defgroup
+  | LetCDef ExprContextId ExprContext [TName] Int Core.Core.DefGroup -- In a let definition context working on a particular defgroup
   | LetCBody ExprContextId ExprContext [TName] Expr -- In a let body expression
   | CaseCMatch ExprContextId ExprContext Expr -- In a case match context working on the match expression (assumes only one)
   | CaseCBranch ExprContextId ExprContext [TName] Int Branch -- Which branch currently inspecting, as well as the Case context
@@ -231,7 +233,7 @@ lamVar index ctx =
     Just (TypeLam e (Lam names _ _)) -> Var (names !! index) InfoNone
     _ -> trace ("DemandAnalysis.lamVar: not a lambda " ++ show ctx) error "Not a lambda"
 
-lamVarDef :: Def -> Expr
+lamVarDef :: Core.Core.Def -> Expr
 lamVarDef def = Var (TName (defName def) (defType def) Nothing) InfoNone
 
 showExpr :: Expr -> String
@@ -343,7 +345,7 @@ instance Ord ExprContext where
 instance Ord Type where
   compare tp1 tp2 = compare (show $ ppType defaultEnv tp1) (show $ ppType defaultEnv tp2)
 
-instance Eq Def where
+instance Eq Core.Core.Def where
   def1 == def2 = defName def1 == defName def2 && defType def1 == defType def2
 
 type ExpressionSet = Set ExprContextId
@@ -431,6 +433,118 @@ runEvalQueryFromRange loaded loadModuleFromSource rng mod =
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
         trace ("eval result " ++ show res) $ return res
       _ -> return []
+
+runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> [UserExpr]
+runEvalQueryFromRangeSource loaded loadModuleFromSource rng mod =
+  runQueryAtRange loaded loadModuleFromSource rng mod $ \exprctxs ->
+    case exprctxs of
+      exprctx:rst -> do
+        res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
+        let lams = map fst $ concatMap (S.toList . closures) (map snd res)
+        sourceLams <- mapM findSourceLambda lams
+        trace ("eval result " ++ show res) $ return $ catMaybes sourceLams 
+      _ -> return []
+
+findSourceLambda :: ExprContext -> AEnv (Maybe UserExpr)
+findSourceLambda ctx =
+  case maybeExprOfCtx ctx of
+    Just (Lam (n:_) _ _) -> do
+      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      case (program, originalRange n) of
+        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
+    Just (TypeLam _ (Lam (n:_) _ _)) -> do
+      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      case (program, originalRange n) of
+        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
+    _ -> 
+      case ctx of 
+        DefCNonRec _ _ _ d -> do -- Fix this (not actually showing up currently)
+          program <- modProgram <$> getModule (moduleName $ contextId ctx)
+          case (program, defNameRange d) of
+            (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
+            _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
+        DefCRec _ _ _ _ d -> do
+          program <- modProgram <$> getModule (moduleName $ contextId ctx)
+          case (program, defNameRange d) of
+            (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
+            _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
+        _ -> 
+          trace ("Unknown lambda type " ++ show ctx) $ return Nothing
+
+
+findLocation :: UserProgram -> Range -> Maybe UserExpr
+findLocation prog rng =
+  findInDefGs (programDefs prog)
+  where
+    findInDefGs :: Syntax.Syntax.DefGroups UserType -> Maybe UserExpr
+    findInDefGs defgs = case mapMaybe findInDefG defgs of
+      [l] -> Just l
+      _ -> Nothing
+    findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
+      case def of
+        Syntax.Syntax.DefNonRec df -> findInDef df
+        Syntax.Syntax.DefRec dfs -> case mapMaybe findInDef dfs of [l] -> Just l; _ -> Nothing
+    findInDef :: UserDef -> Maybe UserExpr
+    findInDef def =
+      case def of
+        Syntax.Syntax.Def vb rng0 _ _ _ _ -> -- trace ("Looking in def " ++ show def) $ 
+          if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else Nothing
+    findInBinder :: ValueBinder () UserExpr -> Maybe UserExpr
+    findInBinder vb =
+      case vb of
+        Syntax.Syntax.ValueBinder _ _ e _ _ -> -- trace ("Looking in binder " ++ show vb) $ 
+          findInExpr e
+    findInExpr :: UserExpr -> Maybe UserExpr
+    findInExpr e =
+      -- trace ("Looking in expr " ++ show e) $ 
+      case e of
+        Syn.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then Just $ fromMaybe e (findInExpr body) else Nothing
+        Syn.App f args _ ->
+          case mapMaybe findInExpr (f:map snd args) of
+            [x] -> Just x
+            _ -> Nothing
+        Syn.Let dg body _ ->
+          case findInDefG dg of
+            Just x -> Just x
+            _ -> findInExpr body
+        Syn.Bind d e _ ->
+          case findInDef d of
+            Just x -> Just x
+            _ -> findInExpr e
+        Syn.Case e bs _ ->
+          case findInExpr e of
+            Just x -> Just x
+            _ -> case mapMaybe findInBranch bs of
+              [x] -> Just x
+              _ -> Nothing
+        Syn.Parens e _ _ -> findInExpr e
+        Syn.Inject _ e _ _ -> findInExpr e
+        Syn.Var{} -> Nothing
+        Syn.Lit _ -> Nothing
+        Syn.Ann e _ _ -> findInExpr e
+        Syn.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
+          let exprs = catMaybes [init, ret, fin]
+              exprs' = mapMaybe findInExpr exprs
+          in case exprs' of
+            [x] -> Just x
+            _ -> case mapMaybe findInHandlerBranch bs of
+              [x] -> Just x
+              _ -> Nothing
+    findInHandlerBranch :: Syn.HandlerBranch UserType -> Maybe UserExpr
+    findInHandlerBranch (Syn.HandlerBranch _ _ body _ _ _) = findInExpr body
+    findInBranch :: Syn.Branch UserType -> Maybe UserExpr
+    findInBranch (Syn.Branch pat guards) =
+      case mapMaybe findInGuard guards of
+          [x] -> Just x
+          _ -> Nothing
+    findInGuard :: Syn.Guard UserType -> Maybe UserExpr
+    findInGuard (Syn.Guard e body) =
+      case findInExpr e of
+        Just x -> Just x
+        _ -> findInExpr body
+
 
 runQueryAtRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
 runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
@@ -904,17 +1018,17 @@ basicExprOf ctx =
     ExprCBasic _ ctx e -> Just e
     _ -> Nothing
 
-defsOf :: DefGroup -> [Def]
-defsOf (DefNonRec d) = [d]
-defsOf (DefRec ds) = ds
+defsOf :: Core.Core.DefGroup -> [Core.Core.Def]
+defsOf (Core.Core.DefNonRec d) = [d]
+defsOf (Core.Core.DefRec ds) = ds
 
-lookupDefGroup :: DefGroup -> TName -> Bool
+lookupDefGroup :: Core.Core.DefGroup -> TName -> Bool
 lookupDefGroup dg tname = tname `elem` defGroupTNames dg
 
-lookupDefGroups :: DefGroups -> TName -> Bool
+lookupDefGroups :: Core.Core.DefGroups -> TName -> Bool
 lookupDefGroups defGs tname = any (`lookupDefGroup` tname) defGs
 
-lookupDef :: Def -> TName -> Bool
+lookupDef :: Core.Core.Def -> TName -> Bool
 lookupDef def tname = defName def == getName tname && tnameType tname == defType def
 
 getDefCtx :: ExprContext -> Name -> AEnv ExprContext
@@ -929,6 +1043,14 @@ getDefCtx ctx name = do
       -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
       return dctx
     Nothing -> error $ "getDefCtx: " ++ show ctx ++ " " ++ show name
+
+getModule :: Name -> AEnv Module
+getModule name = do
+  deps <- loadedModules . loaded <$> getState
+  let x = find (\m -> modName m == name) deps
+  case x of
+    Just mod -> return mod
+    _ -> error $ "getModule: " ++ show name
 
 addChildrenContexts :: ExprContextId -> [ExprContext] -> AEnv ()
 addChildrenContexts parentCtx contexts = do
@@ -979,11 +1101,11 @@ childrenOfExpr ctx expr =
 branchVars :: Branch -> [TName]
 branchVars (Branch pat guards) = S.toList $ bv pat -- TODO: Is this deterministic? Assuming so since it is ordered
 
-childrenOfDef :: ExprContext -> DefGroup -> AEnv [ExprContext]
+childrenOfDef :: ExprContext -> Core.Core.DefGroup -> AEnv [ExprContext]
 childrenOfDef ctx def =
   case def of
-    DefNonRec d -> addContextId (\newId -> DefCNonRec newId ctx [defTName d] d) >>= (\x -> return [x])
-    DefRec ds -> zipWithM (\i d -> addContextId (\newId -> DefCRec newId ctx (map defTName ds) i d)) [0..] ds
+    Core.Core.DefNonRec d -> addContextId (\newId -> DefCNonRec newId ctx [defTName d] d) >>= (\x -> return [x])
+    Core.Core.DefRec ds -> zipWithM (\i d -> addContextId (\newId -> DefCRec newId ctx (map defTName ds) i d)) [0..] ds
 
 childrenContexts :: ExprContext -> AEnv [ExprContext]
 childrenContexts ctx = do
