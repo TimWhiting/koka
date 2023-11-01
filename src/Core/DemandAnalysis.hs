@@ -434,44 +434,61 @@ runEvalQueryFromRange loaded loadModuleFromSource rng mod =
         trace ("eval result " ++ show res) $ return res
       _ -> return []
 
-runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> [UserExpr]
+runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [Syn.Lit])
 runEvalQueryFromRangeSource loaded loadModuleFromSource rng mod =
   runQueryAtRange loaded loadModuleFromSource rng mod $ \exprctxs ->
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
         let lams = map fst $ concatMap (S.toList . closures) (map snd res)
+        let i = mapMaybe toSynLit $ concatMap Data.Map.elems $ map intV (map snd res)
+        let f = mapMaybe toSynLitD $ map floatV (map snd res)
+        let c = mapMaybe toSynLitC $ map charV (map snd res)
+        let s = mapMaybe toSynLitS $ map stringV (map snd res)
+        let vs = i ++ f ++ c ++ s
         sourceLams <- mapM findSourceLambda lams
-        trace ("eval result " ++ show res) $ return $ catMaybes sourceLams 
-      _ -> return []
+        trace ("eval result " ++ show res) $ return $ (catMaybes sourceLams, vs)
+      _ -> return ([],[])
+
+toSynLit :: SimpleLattice Integer -> Maybe Syn.Lit
+toSynLit (Simple i) = Just $ Syn.LitInt i rangeNull
+toSynLit _ = Nothing
+
+toSynLitD :: SimpleLattice Double -> Maybe Syn.Lit
+toSynLitD (Simple i) = Just $ Syn.LitFloat i rangeNull
+toSynLitD _ = Nothing
+
+toSynLitC :: SimpleLattice Char -> Maybe Syn.Lit
+toSynLitC (Simple i) = Just $ Syn.LitChar i rangeNull
+toSynLitC _ = Nothing
+
+toSynLitS :: SimpleLattice String -> Maybe Syn.Lit
+toSynLitS (Simple i) = Just $ Syn.LitString i rangeNull
+toSynLitS _ = Nothing
 
 findSourceLambda :: ExprContext -> AEnv (Maybe UserExpr)
 findSourceLambda ctx =
   case maybeExprOfCtx ctx of
-    Just (Lam (n:_) _ _) -> do
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
-      case (program, originalRange n) of
-        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
-    Just (TypeLam _ (Lam (n:_) _ _)) -> do
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
-      case (program, originalRange n) of
-        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
+    Just (Lam (n:_) _ _) -> findForName n
+    Just (TypeLam _ (Lam (n:_) _ _)) -> findForName n
     _ -> 
       case ctx of 
-        DefCNonRec _ _ _ d -> do -- Fix this (not actually showing up currently)
-          program <- modProgram <$> getModule (moduleName $ contextId ctx)
-          case (program, defNameRange d) of
-            (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
-            _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
-        DefCRec _ _ _ _ d -> do
-          program <- modProgram <$> getModule (moduleName $ contextId ctx)
-          case (program, defNameRange d) of
-            (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
-            _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
+        DefCNonRec _ _ _ d -> findDef d
+        DefCRec _ _ _ _ d -> findDef d
         _ -> 
           trace ("Unknown lambda type " ++ show ctx) $ return Nothing
+  where 
+    findDef d = 
+      return $! Just $! Syn.Var (defName d) False (defNameRange d)
+      -- program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      -- case (program, defNameRange d) of
+      --   (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in module " ++ show (moduleName $ contextId ctx)) $ return $! findLocation prog rng
+      --   _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
+    findForName n = do
+      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      case (program, originalRange n) of
+        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLocation prog rng
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
 
 
 findLocation :: UserProgram -> Range -> Maybe UserExpr
@@ -636,7 +653,7 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
   let x = find (\m -> modName m == newName (nameModule name)) deps
   case x of
     Just mod -> do
-      ctxId <- newContextId
+      ctxId <- newModContextId mod
       mod' <- if modStatus mod == LoadedIface then do
         -- TODO: set some level of effort / time required for loading externals, but potentially load all core modules on startup
                 load <- loadModuleFromSource <$> getEnv
@@ -686,13 +703,18 @@ newQuery kind exprctx envctx d = do
 wrapMemo :: String -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)] -> AEnv [(ExprContext, EnvCtx)]
 wrapMemo name ctx env f = do
   state <- getState
-  let cache = (Data.Map.!) (memoCache state) name
+  let cache = memoCache state ! name
   case Data.Map.lookup (contextId ctx, env) cache of
-    Just x -> return $ S.toAscList x
+    Just x -> return $! S.toAscList x
     _ -> do
+      -- trace ("Pre memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
+      let cache = memoCache state ! name
+      let newCache = Data.Map.insertWith S.union (contextId ctx, env) S.empty cache
+      setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
       res <- f
       state <- getState
-      let cache = (Data.Map.!) (memoCache state) name
+      -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
+      let cache = memoCache state ! name
       let newCache = Data.Map.insertWith S.union (contextId ctx, env) (S.fromList res) cache
       setState state{memoCache = Data.Map.insert name newCache (memoCache state)}
       return res
@@ -714,23 +736,33 @@ wrapMemoEval ctx env f = do
             else do
               state <- getState
               let newCacheGen = evalCacheGeneration state + 1
-              let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) ctxmap
+              let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) (evalCache state ! contextId ctx) 
               let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
               setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
               return newAbValue
         _ -> do
+          -- trace ("Pre memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return () 
+          let newCtxMap = Data.Map.insert env (evalCacheGeneration state, emptyAbValue) ctxmap
+          let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
+          setState state{evalCache = newCache}
           newAbValue <- f
           state <- getState
+          -- trace ("Post memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return ()
           let newCacheGen = evalCacheGeneration state + 1
-          let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) ctxmap
+          let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) (evalCache state ! contextId ctx) 
           let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
           setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
           return newAbValue
     _ -> do
+      -- trace ("Pre memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return () 
+      let newCtxMap = Data.Map.insert env (evalCacheGeneration state, emptyAbValue) Data.Map.empty
+      let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
+      setState state{evalCache = newCache}
       newAbValue <- f
       state <- getState
+      -- trace ("Post memo eval " ++ " " ++ show ctx ++ " " ++ show env) $ return () 
       let newCacheGen = evalCacheGeneration state + 1
-      let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) Data.Map.empty
+      let newCtxMap = Data.Map.insert env (newCacheGen, newAbValue) (evalCache state ! contextId ctx) 
       let newCache = Data.Map.insert (contextId ctx) newCtxMap (evalCache state)
       setState state{evalCache = newCache, evalCacheGeneration = newCacheGen}
       return newAbValue
@@ -996,10 +1028,11 @@ fix3_call eval expr call =
 fixedEval :: ExprContext -> EnvCtx -> AEnv [(EnvCtx, AbValue)]
 fixedEval e env = do
   fix3_eval doEval doExpr doCall (e, env)
+  trace "Finished eval" $ return ()
   state <- getState
   let cache = evalCache state
   case Data.Map.lookup (contextId e) cache of
-    Just res -> return (map (\(k, (_, v)) -> (k, v)) (Data.Map.assocs res))
+    Just res -> trace "Found Answer" $ return (map (\(k, (_, v)) -> (k, v)) (Data.Map.assocs res))
     Nothing -> do
       let msg = "fixedEval: " ++ show e ++ " not in cache " ++ show (Data.Map.keys cache)
       trace msg $ return [(EnvCtx [IndetCtx], injErr msg)]
@@ -1033,6 +1066,7 @@ lookupDef def tname = defName def == getName tname && tnameType tname == defType
 
 getDefCtx :: ExprContext -> Name -> AEnv ExprContext
 getDefCtx ctx name = do
+
   children <- childrenContexts ctx
   case find (\dctx -> case dctx of
       DefCNonRec _ _ _ d | defName d == name -> True
@@ -1065,6 +1099,11 @@ newContextId = do
   state <- getState
   id <- currentContext <$> getEnv
   return $ ExprContextId (Data.Map.size $ states state) (moduleName (contextId id))
+
+newModContextId :: Module -> AEnv ExprContextId
+newModContextId mod = do
+  state <- getState
+  return $ ExprContextId (Data.Map.size $ states state) (modName mod)
 
 addContextId :: (ExprContextId -> ExprContext) -> AEnv ExprContext
 addContextId f = do
@@ -1109,35 +1148,36 @@ childrenOfDef ctx def =
 
 childrenContexts :: ExprContext -> AEnv [ExprContext]
 childrenContexts ctx = do
-  let parentCtxId = contextId ctx
-  children <- childrenIds <$> getState
-  let childIds = Data.Map.lookup parentCtxId children
-  case childIds of
-    Nothing -> do
-        -- trace ("No children for " ++ show ctx) $ return ()
-        newCtxs <- case ctx of
-              ModuleC _ mod _ -> do
-                res <- mapM (childrenOfDef ctx) (coreProgDefs $ modCoreNoOpt mod)
-                return $ concat res
-              DefCRec _ _ _ _ d -> childrenOfExpr ctx (defExpr d)
-              DefCNonRec _ _ _ d -> childrenOfExpr ctx (defExpr d)
-              LamCBody _ _ names body -> childrenOfExpr ctx body
-              AppCLambda _ _ f -> childrenOfExpr ctx f
-              AppCParam _ _ _ param -> childrenOfExpr ctx param
-              LetCDef _ _ _ _ defg -> childrenOfDef ctx defg
-              LetCBody _ _ _ e -> childrenOfExpr ctx e
-              CaseCMatch _ _ e -> childrenOfExpr ctx e
-              CaseCBranch _ _ _ _ b -> do
-                x <- mapM (childrenOfExpr ctx . guardExpr) $ branchGuards b -- TODO Better context for branch guards
-                return $ concat x
-              ExprCBasic{} -> return []
-              ExprCTerm{} -> return []
-        addChildrenContexts parentCtxId newCtxs
-        return newCtxs
-    Just childIds -> do
-      -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
-      states <- states <$> getState
-      return $ map (states Data.Map.!) (S.toList childIds)
+  withEnv (\env -> env{currentContext = ctx}) $ do
+    let parentCtxId = contextId ctx
+    children <- childrenIds <$> getState
+    let childIds = Data.Map.lookup parentCtxId children
+    case childIds of
+      Nothing -> do
+          -- trace ("No children for " ++ show ctx) $ return ()
+          newCtxs <- case ctx of
+                ModuleC _ mod _ -> do
+                  res <- mapM (childrenOfDef ctx) (coreProgDefs $ modCoreNoOpt mod)
+                  return $ concat res
+                DefCRec _ _ _ _ d -> childrenOfExpr ctx (defExpr d)
+                DefCNonRec _ _ _ d -> childrenOfExpr ctx (defExpr d)
+                LamCBody _ _ names body -> childrenOfExpr ctx body
+                AppCLambda _ _ f -> childrenOfExpr ctx f
+                AppCParam _ _ _ param -> childrenOfExpr ctx param
+                LetCDef _ _ _ _ defg -> childrenOfDef ctx defg
+                LetCBody _ _ _ e -> childrenOfExpr ctx e
+                CaseCMatch _ _ e -> childrenOfExpr ctx e
+                CaseCBranch _ _ _ _ b -> do
+                  x <- mapM (childrenOfExpr ctx . guardExpr) $ branchGuards b -- TODO Better context for branch guards
+                  return $ concat x
+                ExprCBasic{} -> return []
+                ExprCTerm{} -> return []
+          addChildrenContexts parentCtxId newCtxs
+          return newCtxs
+      Just childIds -> do
+        -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
+        states <- states <$> getState
+        return $ map (states Data.Map.!) (S.toList childIds)
 
 visitChildrenCtxs :: ([a] -> a) -> ExprContext -> AEnv a -> AEnv a
 visitChildrenCtxs combine ctx analyze = do
