@@ -21,7 +21,7 @@ import Core.DemandAnalysis (runEvalQueryFromRange, runEvalQueryFromRangeSource)
 import Debug.Trace (trace)
 import Common.Range (showFullRange)
 import LanguageServer.Handler.TextDocument (getCompile)
-import Syntax.Syntax (showSyntax)
+import Syntax.Syntax (showSyntax, showLit)
 
 hoverHandler :: Handlers LSM
 hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
@@ -39,7 +39,7 @@ hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
         let evals = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
         -- TODO: Parse module, get tokens of the lambda and colorize it, see colorize for a start 
         -- (just need to use AnsiString printer and working from a string/part of file rather than a whole file)
-        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> (if not (null evals) then "\n\nEvaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . showSyntax) evals)) else "\n\nDemand CFA returned nothing")
+        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> (if not (null evals) then "\n\nEvaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . showSyntax) (fst evals) ++ map (T.pack . showLit) (snd evals))) else "\n\nDemand CFA returned nothing")
             hover = J.Hover hc $ Just $ toLspRange r
         return hover
   case rsp of
