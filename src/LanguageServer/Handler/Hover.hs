@@ -13,7 +13,7 @@ import Language.LSP.Server (Handlers, sendNotification, requestHandler)
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (fromLspPos, toLspRange)
-import LanguageServer.Monad (LSM, getLoaded, getLoadedModule)
+import LanguageServer.Monad (LSM, getLoaded, getLoadedModule, putLoaded)
 import Lib.PPrint (Pretty (..))
 import Syntax.RangeMap (NameInfo (..), RangeInfo (..), rangeMapFindAt)
 import qualified Language.LSP.Protocol.Message as J
@@ -36,15 +36,17 @@ hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
         allMods <- allLoaded
         rmap <- modRangeMap l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
-        let evals = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
+        let (fns, lits, newLoaded) = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
         -- TODO: Parse module, get tokens of the lambda and colorize it, see colorize for a start 
         -- (just need to use AnsiString printer and working from a string/part of file rather than a whole file)
-        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> (if not (null evals) then "\n\nEvaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . showSyntax) (fst evals) ++ map (T.pack . showLit) (snd evals))) else "\n\nDemand CFA returned nothing")
+        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> ("\n\nEvaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . showSyntax) fns ++ map (T.pack . showLit) lits)))
             hover = J.Hover hc $ Just $ toLspRange r
-        return hover
+        return (hover, newLoaded)
   case rsp of
     Nothing -> responder $ Right $ J.InR J.Null
-    Just rsp -> responder $ Right $ J.InL rsp
+    Just (rsp, ld) -> do
+      putLoaded ld
+      responder $ Right $ J.InL rsp
 
 -- Pretty-prints type/kind information to a hover tooltip
 formatRangeInfoHover :: RangeInfo -> String

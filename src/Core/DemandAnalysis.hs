@@ -456,9 +456,9 @@ runEvalQueryFromRange loaded loadModuleFromSource rng mod =
         trace ("eval result " ++ show res) $ return res
       _ -> return []
 
-runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [Syn.Lit])
-runEvalQueryFromRangeSource loaded loadModuleFromSource rng mod =
-  runQueryAtRange loaded loadModuleFromSource rng mod $ \exprctxs ->
+runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [Syn.Lit], Loaded)
+runEvalQueryFromRangeSource ld loadModuleFromSource rng mod =
+  runQueryAtRange ld loadModuleFromSource rng mod $ \exprctxs ->
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
@@ -470,8 +470,9 @@ runEvalQueryFromRangeSource loaded loadModuleFromSource rng mod =
             s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
             vs = i ++ f ++ c ++ s
         sourceLams <- mapM findSourceExpr lams
-        trace ("eval result " ++ show res) $ return (catMaybes sourceLams, vs)
-      _ -> return ([],[])
+        loaded1 <- loaded <$> getState
+        trace ("eval result " ++ show res) $ return (catMaybes sourceLams, vs, loaded1)
+      _ -> return ([],[], ld)
 
 toSynLit :: SimpleLattice Integer -> Maybe Syn.Lit
 toSynLit (Simple i) = Just $ Syn.LitInt i rangeNull
