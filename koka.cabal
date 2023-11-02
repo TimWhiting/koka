@@ -53,6 +53,7 @@ executable koka
       Compiler.Module
       Compiler.Options
       Compiler.Package
+      Core.AbstractValue
       Core.AnalysisCCtx
       Core.AnalysisMatch
       Core.AnalysisResume
@@ -76,6 +77,7 @@ executable koka
       Core.Pretty
       Core.Simplify
       Core.Specialize
+      Core.StaticContext
       Core.Uniquefy
       Core.UnReturn
       Core.Unroll
