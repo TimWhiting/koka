@@ -1064,25 +1064,40 @@ doExpr eval expr call (ctx, env) = newQuery "EXPR" ctx env (\query -> do
   )
 
 doCall :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]
-doCall eval expr call (ctx, env@(EnvCtx cc)) =
+doCall eval expr call (ctx, env@(EnvCtx (cc0:p))) =
   wrapMemo "call" ctx env $ newQuery "CALL" ctx env (\query -> do
    trace (query ++ "CALL " ++ show env ++ " " ++ show ctx) $
     case ctx of
-        LamCBody _ c _ _->
+        LamCBody _ c _ _-> do
+          calls <- expr (c, envtail env)
+          doForContexts [] calls (\(call, callenv) -> do
+              cc1 <- succAEnv $ CallCtx call callenv
+              if cc1 == cc0 then
+                trace (query ++ "KNOWN CALL: " ++ show cc1 ++ " " ++ show cc0)
+                return [(call, callenv)]
+              else if cc0 `subsumesCtx` cc1 then
+                trace (query ++ "UNKNOWN CALL: " ++ show cc1 ++ " " ++ show cc0)
+                -- TODO: Instantiate, all instantiated queries will be joined with the current result
+                return [(call, EnvCtx (cc1:p))]
+              else
+                return []
+            )
+
+
           -- TODO: 
           -- 1. result, resultenv = expr(cc0.tail)
           -- 2. cc1 = succ_m(result, resultenv)
           -- 3. if cc0 == cc1 then return (result, resultenv)
           -- 4. elif cc0 subsumes cc1 then
           -- 5. instantiate queries such that any cc0:env can be refined by cc1:env (i.e. add a subquery for cc1:env for all queries in the cache that have cc0:env)
-          case cc of
-            (CallCtx callctx p'):p -> do
-              trace (query ++ "Known: " ++ show callctx) $ return ()
-              pnew <- calibratem p'
-              return [(callctx, pnew)]
-            _ -> do
-              trace (query ++ "Unknown") $ return ()
-              expr (c, envtail env)
+          -- case cc of
+          --   (CallCtx callctx p'):p -> do
+          --     trace (query ++ "Known: " ++ show callctx) $ return ()
+          --     pnew <- calibratem p'
+          --     return [(callctx, pnew)]
+          --   _ -> do
+          --     trace (query ++ "Unknown") $ return ()
+          --     expr (c, envtail env)
         ExprCTerm{} ->
           trace (query ++ "ends in error " ++ show ctx)
           return [(ctx, env)]
@@ -1091,6 +1106,11 @@ doCall eval expr call (ctx, env@(EnvCtx cc)) =
         --   L.fromFoldable ctx' >>= expr
         _ -> newErrTerm $ "CALL not implemented for " ++ show ctx
   )
+
+data Query = 
+  Call (ExprContext, EnvCtx) |
+  Expr (ExprContext, EnvCtx) |
+  Eval (ExprContext, EnvCtx)
 
 envtail :: EnvCtx -> EnvCtx
 envtail (EnvCtx (c:p)) = EnvCtx p
