@@ -2066,7 +2066,7 @@ extern show-expx( d : float64, prec : int32 ) : string
   js "_double_show_exp"
 
 // Show a character as a string
-fun show-char( c : char ) : string
+pub fun show-char( c : char ) : string
 
   if c < ' ' || c > '~' then
     if c == '\n' then "\\n"
