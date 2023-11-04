@@ -27,6 +27,7 @@ import Network.Simple.TCP
 import Network.Socket hiding (connect)
 import GHC.IO.IOMode (IOMode(ReadWriteMode))
 import GHC.Conc (atomically)
+import LanguageServer.Handler.TextDocument (persistModules)
 
 runLanguageServer :: Flags -> [FilePath] -> IO ()
 runLanguageServer flags files = do
@@ -44,7 +45,7 @@ runLanguageServer flags files = do
         $
         ServerDefinition
           { onConfigurationChange = const $ pure $ Right (),
-            doInitialize = \env _ -> forkIO (reactor rin) >> forkIO (messageHandler (messages initStateVal) env) >> pure (Right env),
+            doInitialize = \env _ -> forkIO (doPersist state env) >> forkIO (reactor rin) >> forkIO (messageHandler (messages initStateVal) env) >> pure (Right env),
             staticHandlers = \_caps -> lspHandlers rin,
             interpretHandler = \env -> Iso (\lsm -> runLSM lsm state env) liftIO,
             options =
@@ -87,3 +88,7 @@ reactor inp = do
     ReactorAction act <- atomically $ readTChan inp
     act
 
+doPersist state env =
+  forever $ do
+    threadDelay 1000000
+    runLSM persistModules state env

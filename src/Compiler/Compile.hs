@@ -20,6 +20,7 @@ module Compiler.Compile( -- * Compile
                        , compileValueDef, compileTypeDef
                        , compileProgram
                        , gammaFind
+                       , codeGen
 
                          -- * Types
                        , Module(..)
