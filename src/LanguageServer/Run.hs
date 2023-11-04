@@ -27,6 +27,7 @@ import Network.Simple.TCP
 import Network.Socket hiding (connect)
 import GHC.IO.IOMode (IOMode(ReadWriteMode))
 import GHC.Conc (atomically)
+import LanguageServer.Handler.TextDocument (persistModules)
 
 runLanguageServer :: Flags -> [FilePath] -> IO ()
 runLanguageServer flags files = do
@@ -87,3 +88,7 @@ reactor inp = do
     ReactorAction act <- atomically $ readTChan inp
     act
 
+doPersist state env =
+  forever $ do
+    threadDelay 1000000
+    runLSM persistModules state env

@@ -16,7 +16,6 @@ module LanguageServer.Monad
     modifyLSState,
     getLoaded,
     putLoaded,
-    modifyLoaded,
     getLoadedModule,
     runLSM,
   )
@@ -31,7 +30,7 @@ import Language.LSP.Server (LanguageContextEnv, LspT, runLspT, sendNotification,
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Message as J
 
-import Compiler.Compile (Terminal (..), Loaded (loadedModules), Module (..))
+import Compiler.Compile (Terminal (..), Loaded (..), Module (..))
 import Lib.PPrint (Pretty(..), asString, writePrettyLn)
 import Control.Concurrent.Chan (readChan)
 import Type.Pretty (ppType, defaultEnv, Env (context, importsMap), ppScheme)
@@ -59,12 +58,12 @@ import Platform.Filetime (FileTime)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
 data LSState = LSState {
-  lsLoaded :: Maybe Loaded, 
-  messages :: TChan (String, J.MessageType), 
-  flags:: Flags, 
-  terminal:: Terminal, 
-  pendingRequests :: TVar (Set.Set J.SomeLspId), 
-  cancelledRequests :: TVar (Set.Set J.SomeLspId), 
+  lsLoaded :: Maybe Loaded,
+  messages :: TChan (String, J.MessageType),
+  flags:: Flags,
+  terminal:: Terminal,
+  pendingRequests :: TVar (Set.Set J.SomeLspId),
+  cancelledRequests :: TVar (Set.Set J.SomeLspId),
   documentVersions :: TVar (M.Map J.Uri J.Int32),
   documentInfos :: M.Map FilePath (D.ByteString, FileTime, J.Int32) }
 
@@ -142,10 +141,6 @@ getLoadedModule uri = do
   lmaybe <- getLoaded
   return $ loadedModuleFromUri lmaybe uri
 
--- Updates the loaded state holding compiled modules
-modifyLoaded :: (Maybe Loaded -> Loaded) -> LSM ()
-modifyLoaded m = modifyLSState $ \s -> s {lsLoaded = case lsLoaded s of {Nothing -> Just (m Nothing); Just l' -> Just $ mergeLoaded (m $ Just l') l'}}
-
 -- Runs the language server's state monad.
 runLSM :: LSM a -> MVar LSState -> LanguageContextEnv () -> IO a
 runLSM lsm stVar cfg = runReaderT (runLspT cfg lsm) stVar
@@ -154,7 +149,8 @@ getTerminal :: LSM Terminal
 getTerminal = terminal <$> getLSState
 
 mergeLoaded :: Loaded -> Loaded -> Loaded
-mergeLoaded a b =
-  let aModules = loadedModules a
-      aModNames = map modName aModules in
-  a{loadedModules= aModules ++ filter (\m -> modName m `notElem` aModNames) (loadedModules b)}
+mergeLoaded newL oldL =
+  let compiledName = modName $ loadedModule newL
+      newModules = filter (\m -> modName m /= compiledName) (loadedModules newL)
+      newModNames = compiledName:map modName newModules in
+  newL{loadedModules=  loadedModule newL:newModules ++ filter (\m -> modName m `notElem` newModNames) (loadedModules oldL)}

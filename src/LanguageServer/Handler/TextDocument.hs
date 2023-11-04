@@ -9,11 +9,12 @@ module LanguageServer.Handler.TextDocument
     didSaveHandler,
     didCloseHandler,
     recompileFile,
+    persistModules,
   )
 where
 
 import Common.Error (checkError, Error)
-import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile)
+import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, codeGen)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
 import qualified Data.Map as M
@@ -24,7 +25,7 @@ import Language.LSP.Server (Handlers, flushDiagnosticsBySource, publishDiagnosti
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (toLspDiagnostics)
-import LanguageServer.Monad (LSM, modifyLoaded, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState)
+import LanguageServer.Monad (LSM, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState)
 import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile, file_version, virtualFileVersion)
 import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
@@ -38,6 +39,9 @@ import qualified Control.Exception as Exc
 import Compiler.Options (Flags)
 import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime)
 import GHC.IO (unsafePerformIO)
+import Compiler.Module (Module(..))
+import Control.Monad (when)
+import Data.Time (addUTCTime, addLocalTime)
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -132,3 +136,40 @@ recompileFile compileTarget uri version force flags =
     Nothing -> return Nothing
   where
     normUri = J.toNormalizedUri uri
+
+persistModules :: LSM ()
+persistModules = do
+  mld <- getLoaded
+  case mld of
+    Just ld -> mapM_ persistModule (loadedModules ld)
+    Nothing -> return ()
+
+persistModule :: Module -> LSM ()
+persistModule m = do
+  return ()
+  -- TODO: This works, but needs to check that the dependencies are persisted first.
+  -- let generate = do
+  --       -- trace "Generating" $ return ()
+  --       mld <- getLoaded
+  --       case mld of
+  --         Just loaded -> do
+  --           term <- getTerminal
+  --           flags <- getFlags
+  --           (loaded, file) <- liftIO $ codeGen term flags Object loaded{loadedModule = m}
+  --           putLoaded loaded
+  --           return ()
+  --         Nothing -> return ()
+  -- -- trace ("Module " ++ show (modName m)) $ 
+  -- case modOutputTime m of
+  --   Nothing -> do
+  --     -- trace "No output time" $ return ()
+  --     generate
+  --   -- If it has been 5 seconds since the last time the module was changed
+  --   --  and it isn't updated on disk persist again.
+  --   --  We don't do it all the time, because with virtual files and editor changes it would be too much
+  --   Just t -> do
+  --     ct <- liftIO getCurrentTime
+  --     when ((ct > addUTCTime 5 (modTime m)) && (modTime m > t)) $ do
+  --       -- trace ("Last output time" ++ show t) $ return ()
+  --       generate
+  -- return ()
