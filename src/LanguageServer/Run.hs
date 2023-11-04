@@ -45,7 +45,7 @@ runLanguageServer flags files = do
         $
         ServerDefinition
           { onConfigurationChange = const $ pure $ Right (),
-            doInitialize = \env _ -> forkIO (reactor rin) >> forkIO (messageHandler (messages initStateVal) env) >> pure (Right env),
+            doInitialize = \env _ -> forkIO (doPersist state env) >> forkIO (reactor rin) >> forkIO (messageHandler (messages initStateVal) env) >> pure (Right env),
             staticHandlers = \_caps -> lspHandlers rin,
             interpretHandler = \env -> Iso (\lsm -> runLSM lsm state env) liftIO,
             options =
