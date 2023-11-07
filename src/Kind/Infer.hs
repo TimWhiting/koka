@@ -106,6 +106,8 @@ inferKinds isValue colors platform mbRangeMap imports kgamma0 syns0 data0
           errs      = errs1 ++ errs2 ++ errs3 ++ errs4
           warns     = warns1 ++ warns2 ++ warns3
           dgroups   = concatMap (synTypeDefGroup modName) cgroups
+      let core = Core.Core modName [] [] cgroups [] externals1 doc
+      -- trace (show core) $ return ()
       setUnique unique3
       Core.liftError  (addWarnings warns $
                         if (null errs)
