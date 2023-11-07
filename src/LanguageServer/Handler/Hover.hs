@@ -41,7 +41,7 @@ hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
         let (fns, defs, lits, topTypes, newLoaded) = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
         -- TODO: Parse module, get tokens of the lambda and colorize it, see colorize for a start 
         -- (just need to use AnsiString printer and working from a string/part of file rather than a whole file)
-        let literalsText = T.unpack (T.intercalate ", " (map (T.pack .  (\d -> "```koka\n" ++  showSyntax 0 d ++ "\n```")) fns ++ map (T.pack . showLit) lits))
+        let literalsText = T.unpack (T.intercalate "\n" (map (T.pack .  (\d -> "```koka\n" ++  showSyntax 0 d ++ "\n```")) fns ++ map (T.pack . showLit) lits))
         let defsText = T.unpack (T.intercalate "\n\n " $ map (T.pack . (\d -> "```koka\n" ++ showSyntaxDef 0 d ++ "\n```")) defs)
         let topTypesText = T.unpack (T.intercalate " " $  map (T.pack . show . ppType defaultEnv) (S.toList topTypes))
         let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <>

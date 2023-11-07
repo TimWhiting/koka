@@ -1,4 +1,10 @@
-
+-----------------------------------------------------------------------------
+-- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
+--
+-- This is free software; you can redistribute it and/or modify it under the
+-- terms of the Apache License, Version 2.0. A copy of the License can be
+-- found in the LICENSE file at the root of this distribution.
+-----------------------------------------------------------------------------
 module Core.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
@@ -69,7 +75,7 @@ instance Show Ctx where
     case ctx of
       IndetCtx -> "?"
       DegenCtx -> "[]"
-      CallCtx id env -> "call(" ++ show id ++ "," ++ show env ++ ")"
+      CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
       TopCtx -> "()"
 
 data ConstrContext =
@@ -135,17 +141,48 @@ joinML = M.unionWith joinL
 joinAbValue :: AbValue -> AbValue -> AbValue
 joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (i0 `joinML` i1) (f0 `joinML` f1) (c0 `joinML` c1) (s0 `joinML` s1) (e0 `mplus` e1)
 
-addAbValue :: EnvCtxLattice AbValue -> Int -> EnvCtx -> AbValue -> (Bool, EnvCtxLattice AbValue)
+addAbValue :: EnvCtxLattice AbValue -> Int -> EnvCtx -> AbValue -> (Bool, S.Set EnvCtx, EnvCtxLattice AbValue)
 addAbValue (EnvCtxLattice m) version env ab =
-  let (changed, newMap) = M.mapAccumWithKey (\acc k (v, ab') -> if k `subsumes` env then (ab' /= ab || acc, (version, ab' `joinAbValue` ab)) else (acc, (v, ab'))) False m in
+  let ((changed, newAb, s), newMap) = M.mapAccumWithKey (\(changed, newAb, s) k (v, ab') -> 
+        if k `subsumes` env then -- i.e. env refines k -- add to the more general value
+          -- TODO: Problem -- updating the version doesn't actually guarantee that the query is rerun for this more general context
+          -- Adding something to a more specific context, so we need to update the more general context (assuming it exists)
+          if ab' `joinAbValue` ab == ab' then 
+            ((changed, newAb, s), (v, ab' `joinAbValue` ab))
+          else
+            ((ab' /= ab || changed, newAb, S.insert k s), (version, ab' `joinAbValue` ab))
+        else if env `subsumes` k then -- i.e. k refines env -- include it in our new value
+          let newV = newAb `joinAbValue` ab' in
+          -- Adding to a more general context, so we need to keep track of any more specific contexts that should be incorporated into the general value
+          -- But not changing the more specific context
+          ((newAb /= newV || changed, newV, s), (v, ab'))
+        else ((changed, newAb, s), (v, ab'))) (False, ab, S.empty) m in
   let oldV = snd (fromMaybe (version, emptyAbValue) (M.lookup env m)) in
-  (changed || oldV /= ab, EnvCtxLattice $ M.insert env (version, oldV `joinAbValue` ab) newMap)
+  if oldV `joinAbValue` newAb == oldV then 
+    (changed || oldV /= newAb, s, EnvCtxLattice newMap)
+  else 
+    (changed || oldV /= newAb, s, EnvCtxLattice $ M.insert env (version, oldV `joinAbValue` newAb) newMap)
 
-addLamSet :: EnvCtxLattice (Set (ExprContext, EnvCtx)) -> Int -> EnvCtx -> Set (ExprContext, EnvCtx) -> (Bool, EnvCtxLattice (Set (ExprContext, EnvCtx)))
+addLamSet :: EnvCtxLattice (Set (ExprContext, EnvCtx)) -> Int -> EnvCtx -> Set (ExprContext, EnvCtx) -> (Bool, S.Set EnvCtx, EnvCtxLattice (Set (ExprContext, EnvCtx)))
 addLamSet (EnvCtxLattice m) version env ab =
-  let (changed, newMap) = M.mapAccumWithKey (\acc k (v, ab') -> if k `subsumes` env then (ab' /= ab || acc, (version, ab' `S.union` ab)) else (acc, (v, ab'))) False m in
+  let ((changed, newAb, s), newMap) = M.mapAccumWithKey (\(changed, newAb, s) k (v, ab') -> 
+        if k `subsumes` env then -- i.e. env refines k -- add to the more general value
+          -- Adding something to a more specific context, so we need to update the more general context (assuming it exists)
+          if ab' `S.union` ab == ab' then 
+            ((changed, newAb, s), (v, ab' `S.union` ab))
+          else
+            ((ab' /= ab || changed, newAb, S.insert k s), (version, ab' `S.union` ab))
+        else if env `subsumes` k then -- i.e. k refines env -- include it in our new value
+          let newV = newAb `S.union` ab' in
+          -- Adding to a more general context, so we need to keep track of any more specific contexts that should be incorporated into the general value
+          -- But not changing the more specific context
+          ((newAb /= newV || changed, newV, s), (v, ab'))
+        else ((changed, newAb, s), (v, ab'))) (False, ab, S.empty) m in
   let oldV = snd (fromMaybe (version, S.empty) (M.lookup env m)) in
-  (changed || oldV /= ab, EnvCtxLattice $ M.insert env (version, oldV `S.union` ab) newMap)
+  if oldV `S.union` newAb == oldV then 
+    (changed || oldV /= newAb, s, EnvCtxLattice newMap)
+  else 
+    (changed || oldV /= newAb, s, EnvCtxLattice $ M.insert env (version, oldV `S.union` newAb) newMap)
 
 -- Environment Subsumption
 -- If the first subsumes the second, then the first is more general than the second, and thus any value in the second should also be in the first
@@ -160,7 +197,7 @@ subsumesCtx c1 c2 =
     (DegenCtx, DegenCtx) -> True
     (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
     (TopCtx, TopCtx) -> True
-    (IndetCtx, CallCtx id env2) -> True
+    (IndetCtx, _) -> True
     _ -> False
 
 -- Converting to user visible expressions

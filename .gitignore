@@ -32,3 +32,4 @@ test/bench
 .koka
 **/.cache
 scratch/
+kklib/libuv/

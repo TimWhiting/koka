@@ -1,3 +1,10 @@
+-----------------------------------------------------------------------------
+-- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
+--
+-- This is free software; you can redistribute it and/or modify it under the
+-- terms of the Apache License, Version 2.0. A copy of the License can be
+-- found in the LICENSE file at the root of this distribution.
+-----------------------------------------------------------------------------
 
 module Core.StaticContext(
                           ExprContext(..),
@@ -110,7 +117,7 @@ lamVarDef :: C.Def -> C.Expr
 lamVarDef def = C.Var (TName (C.defName def) (C.defType def) Nothing) InfoNone
 
 showExpr :: C.Expr -> String
-showExpr e = show $ prettyExpr defaultEnv{showRanges=True} e
+showExpr e = show $ prettyExpr defaultEnv e
 
 showDg d = show $ prettyDefGroup defaultEnv d
 

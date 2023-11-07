@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
--- Copyright 2012-2023, Microsoft Research, Daan Leijen.
+-- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
 --
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be
@@ -52,11 +52,12 @@ newtype AEnv a = AEnv (DEnv -> State -> Result a)
 data State = State{
   loaded :: Loaded,
   states :: M.Map ExprContextId ExprContext,
-  maxContextId:: Int, 
+  maxContextId:: Int,
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
   evalCacheGeneration :: Int,
   evalCache :: M.Map ExprContextId (EnvCtxLattice AbValue),
   memoCache :: M.Map String (M.Map ExprContextId (EnvCtxLattice (Set (ExprContext, EnvCtx)))),
+  instantiateCache :: Set (Query, [Ctx], [Ctx]),
   reachable :: M.Map Query (Set Query),
   unique :: Int
 }
@@ -182,7 +183,7 @@ runEvalQueryFromRange loaded loadModuleFromSource rng mod =
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
-        trace ("eval result " ++ show res) $ return res
+        trace ("eval result: " ++ show res) $ return res
       _ -> return []
 
 runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [UserDef], [Syn.Lit], Set Type, Loaded)
@@ -191,13 +192,14 @@ runEvalQueryFromRangeSource ld loadModuleFromSource rng mod =
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
+        res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
         let vals = map snd res
             lams = map fst $ concatMap (S.toList . closures) vals
             i = concatMap ((mapMaybe toSynLit . M.elems) . intV) vals
             f = concatMap ((mapMaybe toSynLitD . M.elems) . floatV) vals
             c = concatMap ((mapMaybe toSynLitC . M.elems) . charV) vals
             s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
-            topTypes = unions $ map topTypesOf vals 
+            topTypes = unions $ map topTypesOf vals
             vs = i ++ f ++ c ++ s
         sourceLams <- mapM findSourceExpr lams
         let (sourceLambdas, sourceDefs) = unzip sourceLams
@@ -245,7 +247,7 @@ runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) M.empty 0)
+        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) S.empty M.empty 0)
   in case result of
     Ok a st -> a
 
@@ -328,13 +330,13 @@ newQuery kind exprctx envctx d = do
     query <- getQueryString
     d query
 
-wrapMemo :: String -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)] -> AEnv [(ExprContext, EnvCtx)]
-wrapMemo name ctx env f = do
+wrapMemo :: ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) ->  String -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)] -> AEnv [(ExprContext, EnvCtx)]
+wrapMemo expr call name ctx env f = do
   state <- getState
   let cache = memoCache state M.! name
-      version = evalCacheGeneration state 
+      version = evalCacheGeneration state
   case M.lookup (contextId ctx) cache of
-    Just (EnvCtxLattice x) -> 
+    Just (EnvCtxLattice x) ->
       case M.lookup env x of
         Just (v, x) ->
           if version == v then return $! S.toAscList x
@@ -350,79 +352,69 @@ wrapMemo name ctx env f = do
       let newCache = M.insert (contextId ctx) (EnvCtxLattice $ M.singleton env (version, S.empty)) cache
       setState state{memoCache = M.insert name newCache (memoCache state)}
       runAndUpdate
-  where 
+  where
     runAndUpdate = do
       res <- f
       state <- getState
       -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
       let cache = memoCache state M.! name
-      let (changed, newCache) = addLamSet (cache M.! contextId ctx) (evalCacheGeneration state) env (S.fromList res)
+      let (changed, s, newCache) = addLamSet (cache M.! contextId ctx) (evalCacheGeneration state) env (S.fromList res)
       let newGen = if changed then evalCacheGeneration state + 1 else evalCacheGeneration state
       let newCache' = M.insert (contextId ctx) newCache cache
       setState state{memoCache = M.insert name newCache' (memoCache state), evalCacheGeneration = newGen}
+      mapM_ (\env -> do
+          mapM_ (\query ->
+              case name of
+                "expr" -> expr (ctx, env) query
+                "call" -> call (ctx, env) query
+            ) (case name of 
+                 "expr" -> reachable state M.! ExprQ (ctx, env)
+                 "call" -> reachable state M.! CallQ (ctx, env)
+                 )
+        ) (S.toList s)
       return res
 
 instantiate :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> Query -> [Ctx] -> [Ctx] -> AEnv ()
 instantiate eval expr call q c1 c0 = do
-  trace ("instantiating " ++ show c0 ++ " to " ++ show c1) $ return () 
+  -- trace ("instantiating " ++ show c0 ++ " to " ++ show c1) $ return ()
   st <- getState
-  let reach = reachable st M.! q
-  -- trace back through reachable, adding reachable relations and instantiating / evaluating them
-  mapM_ (\query -> -- Instantiate Reachable / Instantiate
-      case query of
-        EvalQ (ctx, env) -> do
-          let newEnv@(EnvCtx p') = env `refine` (c1, c0)
-          if newEnv == env then return ()
-          else do
-            eval (ctx, newEnv) q
-            case maybeExprOfCtx ctx of
-              Just App{} -> do
-                f <- focusChild ctx 0
-                case f of
-                  Just f -> do
-                    ress <- eval (f, newEnv) (EvalQ (ctx,newEnv))
-                    doForAbValue emptyAbValue (S.toList $ closures ress) (\(callctx, env@(EnvCtx p'')) -> do 
-                        ctx1 <- succAEnv (CallCtx callctx newEnv)
-                        instantiate eval expr call (EvalQ (ctx,newEnv)) (ctx1:p'') (IndetCtx:p'')
-                        return emptyAbValue
-                      )
-                    return ()
-              _ -> return ()
-            return ()
-        ExprQ (ctx, env) -> do
-          let newEnv = env `refine` (c1, c0)
-          if newEnv == env then return ()
-          else do
-            expr (ctx, newEnv) q
-            case ctx of
-              AppCParam _ c _ _ -> do
-                f <- focusFun c
-                case f of
-                  Just f -> do
-                    lams <- eval (f,newEnv) (ExprQ (ctx, newEnv))
-                    doForContexts [] (S.toList $ closures lams) (\(callctx, env@(EnvCtx p')) -> do
-                        ctx1 <- succAEnv (CallCtx callctx newEnv)
-                        instantiate eval expr call (ExprQ (ctx,newEnv)) (ctx1:p') (IndetCtx:p')
-                        return []
-                      )
-                    return ()
-                  _ -> return ()
+  if S.member (q, c1, c0) (instantiateCache st) then return ()
+  else do
+    updateState (\state -> state{instantiateCache = S.insert (q, c1, c0) (instantiateCache state)})
+    let reach = reachable st M.! q
+    -- trace back through reachable, adding reachable relations and instantiating / evaluating them
+    mapM_ (\query -> do -- Instantiate Reachable / Instantiate
+        if q == query || c1 == c0 then return ()
+        else do
+          instantiate eval expr call query c1 c0
+          case query of
+            EvalQ (ctx, env) -> do
+              let newEnv@(EnvCtx p') = env `refine` (c1, c0)
+              if newEnv == env then return ()
+              else do
+                eval (ctx, newEnv) q
+                return ()
+            ExprQ (ctx, env) -> do
+              let newEnv = env `refine` (c1, c0)
+              if newEnv == env then return ()
+              else do
+                expr (ctx, newEnv) q
+                return ()
+            CallQ (ctx, env) -> do
+              let newEnv = env `refine` (c1, c0)
+              if newEnv == env then return ()
+              else do
+                call (ctx, newEnv) q
+                return ()
+      ) reach
 
-        CallQ (ctx, env) -> do
-          let newEnv = env `refine` (c1, c0)
-          if newEnv == env then return ()
-          else do
-            call (ctx, newEnv) q
-            return ()
-    ) reach
-
-wrapMemoEval :: ExprContext -> EnvCtx -> AEnv AbValue -> AEnv AbValue
-wrapMemoEval ctx env f = do
+wrapMemoEval :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ExprContext -> EnvCtx -> AEnv AbValue -> AEnv AbValue
+wrapMemoEval eval ctx env f = do
   state <- getState
   let cache = evalCache state
-      version = evalCacheGeneration state 
+      version = evalCacheGeneration state
   case M.lookup (contextId ctx) cache of
-    Just (EnvCtxLattice x) -> 
+    Just (EnvCtxLattice x) ->
       case M.lookup env x of
         Just (v, x) ->
           if version == v then return x
@@ -438,16 +430,21 @@ wrapMemoEval ctx env f = do
       let newCache = M.insert (contextId ctx) (EnvCtxLattice $ M.singleton env (version, emptyAbValue)) cache
       setState state{evalCache = newCache}
       runAndUpdate
-  where 
+  where
     runAndUpdate = do
       res <- f
       state <- getState
       -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
       let cache = evalCache state
-      let (changed, newCache) = addAbValue (cache M.! contextId ctx) (evalCacheGeneration state) env res
+      let (changed, s, newCache) = addAbValue (cache M.! contextId ctx) (evalCacheGeneration state) env res
       let newGen = if changed then evalCacheGeneration state + 1 else evalCacheGeneration state
       let newCache' = M.insert (contextId ctx) newCache cache
       setState state{evalCache = newCache', evalCacheGeneration = newGen}
+      mapM_ (\env -> do
+          mapM_ (\query -> do
+              eval (ctx, env) query
+            ) (reachable state M.! EvalQ (ctx, env))
+        ) (S.toList s)
       return res
 
 succAEnv :: Ctx -> AEnv Ctx
@@ -474,13 +471,13 @@ doForContexts init l doA = do
     return $! res ++ res') init l
 
 makeReachable :: Query -> Query -> AEnv ()
-makeReachable q1 q2 =
-  updateState (\state -> state{reachable = M.insertWith S.union q1 (S.singleton q2) $ reachable state})
+makeReachable q1 q2 = -- Query q2 is reachable from q1
+  updateState (\state -> state{reachable = M.insertWith S.union q2 (S.singleton q1) $ reachable state})
 
 doEval :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query-> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv AbValue
 doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
   trace (query ++ "EVAL: " ++ show env ++ " " ++ show (exprOfCtx ctx)) $
-    wrapMemoEval ctx env $ do
+    wrapMemoEval eval ctx env $ do
     let cq = EvalQ (ctx, env)
     makeReachable q cq
     case exprOfCtx ctx of
@@ -559,6 +556,7 @@ doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
                 succ <- succAEnv (CallCtx ctx env)
                 let newEnv = EnvCtx (succ:lamenv)
+                instantiate eval expr call cq (succ:lamenv) (IndetCtx:lamenv)
                 eval (bd, newEnv) cq
                 )
               )
@@ -598,7 +596,7 @@ newErrTerm s = do
 doExpr :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]
 doExpr eval expr call (ctx, env) q = newQuery "EXPR" ctx env (\query -> do
   trace (query ++ "EXPR " ++ show env ++ " "  ++ show (maybeExprOfCtx ctx)) $
-    wrapMemo "expr" ctx env $ do
+    wrapMemo expr call "expr" ctx env $ do
     let cq = ExprQ (ctx, env)
     makeReachable q cq
     case ctx of
@@ -622,6 +620,7 @@ doExpr eval expr call (ctx, env) q = newQuery "EXPR" ctx env (\query -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
                   succ <- succAEnv (CallCtx c env)
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
+                  instantiate eval expr call cq (succ:lamenv) (IndetCtx:lamenv)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
                   ress <- mapM (\ctx -> expr ctx cq) (S.toList ctxs)
                   return $! concat ress
@@ -654,40 +653,34 @@ doExpr eval expr call (ctx, env) q = newQuery "EXPR" ctx env (\query -> do
 
 doCall :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]
 doCall eval expr call (ctx, env@(EnvCtx cc@(cc0:p))) q =
-  wrapMemo "call" ctx env $ newQuery "CALL" ctx env (\query ->
+  wrapMemo expr call "call" ctx env $ newQuery "CALL" ctx env (\query ->
   trace (query ++ "CALL " ++ show env ++ " " ++ show ctx) $ do
       let cq = CallQ (ctx, env)
       makeReachable q cq
       case ctx of
           LamCBody _ c _ _-> do
-          --   calls <- expr (c, envtail env) cq
-          --   doForContexts [] calls (\(callctx, callenv) -> do
-          --       cc1 <- succAEnv $ CallCtx callctx callenv
-          --       if cc1 == cc0 then
-          --         trace (query ++ "KNOWN CALL: " ++ show cc1 ++ " " ++ show cc0)
-          --         return [(callctx, callenv)]
-          --       else if cc0 `subsumesCtx` cc1 then do
-          --         trace (query ++ "UNKNOWN CALL: " ++ show cc1 ++ " " ++ show cc0) $
-          --           instantiate eval expr call q (cc1:p) (cc0:p)
-          --         -- TODO: Instantiate, all instantiated queries will be joined with the current result
-          --         return []
-          --       else
-          --         return []
-          --     )
-            -- TODO: 
-            -- 1. result, resultenv = expr(cc0.tail)
-            -- 2. cc1 = succ_m(result, resultenv)
-            -- 3. if cc0 == cc1 then return (result, resultenv)
-            -- 4. elif cc0 subsumes cc1 then
-            -- 5. instantiate queries such that any cc0:env can be refined by cc1:env (i.e. add a subquery for cc1:env for all queries in the cache that have cc0:env)
-            case cc of
-              (CallCtx callctx p'):p -> do
-                trace (query ++ "Known: " ++ show callctx) $ return ()
-                pnew <- calibratem p'
-                return [(callctx, pnew)]
-              _ -> do
-                trace (query ++ "Unknown") $ return ()
-                expr (c, envtail env) cq 
+            calls <- expr (c, envtail env) cq
+            doForContexts [] calls (\(callctx, callenv) -> do
+                cc1 <- succAEnv $ CallCtx callctx callenv
+                if cc1 == cc0 then
+                  trace (query ++ "KNOWN CALL: " ++ show cc1 ++ " " ++ show cc0)
+                  return [(callctx, callenv)]
+                else if cc0 `subsumesCtx` cc1 then do
+                  trace (query ++ "UNKNOWN CALL: " ++ show cc1 ++ " " ++ show cc0) $
+                    instantiate eval expr call cq (cc1:p) (cc0:p)
+                  return []
+                else
+                  return []
+              )
+            -- Lightweight Version
+            -- case cc of
+            --   (CallCtx callctx p'):p -> do
+            --     trace (query ++ "Known: " ++ show callctx) $ return ()
+            --     pnew <- calibratem p'
+            --     return [(callctx, pnew)]
+            --   _ -> do
+            --     trace (query ++ "Unknown") $ return ()
+            --     expr (c, envtail env) cq 
           ExprCTerm{} ->
             trace (query ++ "ends in error " ++ show ctx)
             return [(ctx, env)]
@@ -697,11 +690,10 @@ doCall eval expr call (ctx, env@(EnvCtx cc@(cc0:p))) q =
           _ -> newErrTerm $ "CALL not implemented for " ++ show ctx
     )
 
-data Query = 
+data Query =
   CallQ (ExprContext, EnvCtx) |
   ExprQ (ExprContext, EnvCtx) |
   EvalQ (ExprContext, EnvCtx) deriving (Eq, Ord)
-
 
 calibratem :: EnvCtx -> AEnv EnvCtx
 calibratem ctx = do
@@ -728,7 +720,9 @@ fixedEval e env = do
   state <- getState
   let cache = evalCache state
   case M.lookup (contextId e) cache of
-    Just (EnvCtxLattice res) -> trace "Found Answer" $ return (map (\(k, (_, v)) -> (k, v)) (M.assocs res))
+    Just (EnvCtxLattice res) ->
+      let result = map (\(k, (_, v)) -> (k, v)) (M.assocs res)
+      in return result
     Nothing -> do
       let msg = "fixedEval: " ++ show e ++ " not in cache " ++ show (M.keys cache)
       trace msg $ return [(EnvCtx [IndetCtx], injErr msg)]
@@ -743,7 +737,6 @@ allModules loaded = loadedModule loaded : loadedModules loaded
 
 getDefCtx :: ExprContext -> Name -> AEnv ExprContext
 getDefCtx ctx name = do
-
   children <- childrenContexts ctx
   case find (\dctx -> case dctx of
       DefCNonRec _ _ _ d | defName d == name -> True
