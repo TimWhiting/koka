@@ -17,11 +17,15 @@ module Core.StaticContext(
                           branchVars,
                           findApplicationFromRange,
                           findLambdaFromRange,
+                          findDefFromRange,
                           basicExprOf,
                           defsOf,
                           lookupDefGroup,
                           lookupDefGroups,
-                          lookupDef
+                          lookupDef,
+                          showSyntaxDef,
+                          showSyntax,
+                          showLit,
                         ) where
 import Core.Core as C
 import Common.Name
@@ -35,6 +39,8 @@ import Data.Maybe (mapMaybe, catMaybes, fromMaybe)
 import Core.CoreVar (bv)
 import Core.Pretty
 import Debug.Trace (trace)
+import Data.List (intercalate)
+import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 
 -- Uniquely identifies expressions despite naming
 data ExprContext =
@@ -265,6 +271,77 @@ findApplicationFromRange prog rng =
         Just x -> Just x
         _ -> findInExpr body
 
+findDefFromRange :: UserProgram -> Range -> Maybe UserDef
+findDefFromRange prog rng =
+  findInDefGs (programDefs prog)
+  where
+    findInDefGs :: S.DefGroups UserType -> Maybe UserDef
+    findInDefGs defgs = case mapMaybe findInDefG defgs of
+      [l] -> Just l
+      _ -> Nothing
+    findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
+      case def of
+        S.DefNonRec df -> findInDef df
+        S.DefRec dfs -> case mapMaybe findInDef dfs of [l] -> Just l; _ -> Nothing
+    findInDef :: UserDef -> Maybe UserDef
+    findInDef def =
+      case def of
+        S.Def vb rng0 _ _ _ _ -> -- trace ("Looking in def " ++ show def) $ 
+          if rng `rangesOverlap` rng0 then Just $ fromMaybe def (findInBinder vb) else Nothing
+    findInBinder :: ValueBinder () UserExpr -> Maybe UserDef
+    findInBinder vb =
+      case vb of
+        S.ValueBinder _ _ e _ _ -> -- trace ("Looking in binder " ++ show vb) $ 
+          findInExpr e
+    findInExpr :: UserExpr -> Maybe UserDef
+    findInExpr e =
+      -- trace ("Looking in expr " ++ show e) $ 
+      case e of
+        S.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then findInExpr body else Nothing
+        S.App f args _ ->
+          case mapMaybe findInExpr (f:map snd args) of
+            [x] -> Just x
+            _ -> Nothing
+        S.Let dg body _ ->
+          case findInDefG dg of
+            Just x -> Just x
+            _ -> findInExpr body
+        S.Bind d e rng0 ->
+          case findInDef d of
+            Just x -> Just x
+            _ -> findInExpr e
+        S.Case e bs _ ->
+          case findInExpr e of
+            Just x -> Just x
+            _ -> case mapMaybe findInBranch bs of
+              [x] -> Just x
+              _ -> Nothing
+        S.Parens e _ _ -> findInExpr e
+        S.Inject _ e _ _ -> findInExpr e
+        S.Var{} -> Nothing
+        S.Lit _ -> Nothing
+        S.Ann e _ _ -> findInExpr e
+        S.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
+          let exprs = catMaybes [init, ret, fin]
+              exprs' = mapMaybe findInExpr exprs
+          in case exprs' of
+            [x] -> Just x
+            _ -> case mapMaybe findInHandlerBranch bs of
+              [x] -> Just x
+              _ -> Nothing
+    findInHandlerBranch :: S.HandlerBranch UserType -> Maybe UserDef
+    findInHandlerBranch (S.HandlerBranch _ _ body _ _ _) = findInExpr body
+    findInBranch :: S.Branch UserType -> Maybe UserDef
+    findInBranch (S.Branch pat guards) =
+      case mapMaybe findInGuard guards of
+          [x] -> Just x
+          _ -> Nothing
+    findInGuard :: S.Guard UserType -> Maybe UserDef
+    findInGuard (S.Guard e body) =
+      case findInExpr e of
+        Just x -> Just x
+        _ -> findInExpr body
+
 findLambdaFromRange :: UserProgram -> Range -> Maybe UserExpr
 findLambdaFromRange prog rng =
   findInDefGs (programDefs prog)
@@ -354,3 +431,93 @@ lookupDefGroups defGs tname = any (`lookupDefGroup` tname) defGs
 
 lookupDef :: C.Def -> TName -> Bool
 lookupDef def tname = C.defName def == C.getName tname && tnameType tname == C.defType def
+
+
+showSyntaxDef :: Show t => Int -> S.Def t -> String
+showSyntaxDef indent (S.Def binder range vis sort inline doc)
+  = concat (replicate indent " ") ++ "val " ++ show (binderName binder) ++ " = " ++ showSyntax indent (binderExpr binder)
+
+showValBinder :: Show t => ValueBinder (Maybe t) (Maybe (S.Expr t)) -> String
+showValBinder (ValueBinder name (Just tp) (Just expr) nameRange range)
+  = show name ++ ": " ++ show tp ++ " = " ++ show expr
+showValBinder (ValueBinder name Nothing (Just expr) nameRange range)
+  = show name ++ " = " ++ show expr
+showValBinder (ValueBinder name (Just tp) Nothing nameRange range)
+  = show name ++ ": " ++ show tp
+showValBinder (ValueBinder name Nothing Nothing nameRange range)
+  = show name
+
+showArg :: Show t => (Maybe (Name,Range),S.Expr t) -> String
+showArg (Nothing,expr) = showSyntax 0 expr
+showArg (Just (name,_),expr) = show name ++ "= " ++ showSyntax 0 expr
+
+allDefs :: S.DefGroup t -> [S.Def t]
+allDefs defs =
+  case defs of 
+    S.DefNonRec d -> [d]
+    S.DefRec ds   -> ds
+
+showSyntax :: Show t => Int -> S.Expr t -> String
+showSyntax indent (S.Lam pars expr range) =
+  "fn(" ++ intercalate "," (map showValBinder pars) ++ ")\n" ++ concat (replicate (indent + 2) " ") ++ 
+    showSyntax (indent + 2) expr
+showSyntax indent (S.Let defs expr range) =  
+  intercalate ("\n" ++ concat (replicate indent " ")) (map (showSyntaxDef indent) (allDefs defs)) ++ 
+  "\n" ++ concat (replicate indent " ") ++ showSyntax (indent + 2) expr
+showSyntax indent (Bind def expr range) =  
+  showSyntaxDef indent def ++ "\n" ++ concat (replicate indent " ") ++ showSyntax (indent + 2) expr
+showSyntax indent (S.App (S.Var name _ _) args range) | name == nameOpExpr = 
+  unwords (map showArg args)
+showSyntax indent (S.App fun args range)  =  
+  showSyntax indent fun ++ "(" ++ intercalate "," (map showArg args) ++ ")"
+showSyntax indent (S.Var name isop range) = nameId name
+showSyntax indent (S.Lit lit)             = showLit lit
+showSyntax indent (Ann expr tp range)   = showSyntax indent expr
+showSyntax indent (S.Case expr branches range) = 
+  "match " ++ showSyntax 0 expr ++ "\n" ++ concat (replicate (indent + 2) " ") ++ 
+    intercalate ("\n" ++ concat (replicate (indent + 2) " ")) (map (showSyntaxBranch (indent + 2)) branches)
+showSyntax indent (Parens expr name range) = 
+  "(" ++ showSyntax indent expr ++ ")"
+showSyntax indent (Inject tp expr behind range) = 
+  "mask<" ++ show tp ++ ">{" ++ showSyntax 0 expr ++ "}"
+showSyntax indent (Handler sort scope override allowmask eff pars reinit ret final branches drange range) = 
+  "handler " ++ show reinit ++ " " ++ show ret ++ " " ++ show final ++ " " ++ show branches
+  -- TODO: More show here
+
+showSyntaxBranch :: Show t => Int -> S.Branch t -> String
+showSyntaxBranch indent (S.Branch pat [S.Guard (S.Var n _ _) body]) | nameTrue == n
+  = showSyntaxPattern pat ++ " ->\n" ++  concat (replicate (indent + 2) " ") ++ showSyntax indent body 
+showSyntaxBranch indent (S.Branch pat [guard])
+  = showSyntaxPattern pat ++ " | " ++ showSyntaxGuard indent guard
+showSyntaxBranch indent b = show b
+
+showPatBinder :: Show t => ValueBinder (Maybe t) (S.Pattern t) -> String
+showPatBinder (ValueBinder name _ (S.PatWild rng) nameRange range)
+  = nameId name
+showPatBinder (ValueBinder name _ pat nameRange range)
+  = nameId name ++ " as " ++ showSyntaxPattern pat
+
+showSyntaxPattern :: Show t => S.Pattern t -> String
+showSyntaxPattern (S.PatWild range) = "_"
+showSyntaxPattern (S.PatVar binder) = showPatBinder binder
+showSyntaxPattern (PatAnn pat tp range) = showSyntaxPattern pat
+showSyntaxPattern (S.PatCon name args nameRng range) =
+  if isNameTuple name then "(" ++ intercalate ","  (map showPatternArg args) ++ ")"
+  else nameId name ++ "(" ++ intercalate "," (map showPatternArg args) ++ ")"
+showSyntaxPattern (PatParens pat range) = "(" ++ showSyntaxPattern pat ++ ")"
+showSyntaxPattern (S.PatLit lit) = showLit lit
+
+showPatternArg :: Show t => (Maybe (Name,Range), S.Pattern t) -> String
+showPatternArg (Nothing,pat) = showSyntaxPattern pat
+showPatternArg (Just (name,_),S.PatWild rng) = nameId name
+showPatternArg (Just (name,_),pat) = nameId name ++ "= " ++ showSyntaxPattern pat
+
+showSyntaxGuard :: Show t => Int -> S.Guard t -> String
+showSyntaxGuard indent (S.Guard guard body)
+  = showSyntax indent guard ++ " -> " ++ "\n" ++ concat (replicate (indent + 2) " ") ++ showSyntax (indent + 2) body
+
+showLit :: S.Lit -> String
+showLit (S.LitInt i range) = show i
+showLit (S.LitFloat f range) = show f
+showLit (S.LitChar c range) = show c
+showLit (S.LitString s range) = show s

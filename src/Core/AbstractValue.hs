@@ -22,6 +22,7 @@ module Core.AbstractValue(
                           toSynLitD,
                           toSynLitC,
                           toSynLitS,
+                          topTypesOf,
                           bind,
                           indeterminateStaticCtx,
                           refine,
@@ -43,7 +44,7 @@ import Data.List (elemIndex)
 import Compiler.Module
 import Debug.Trace (trace)
 import Common.Range
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, catMaybes)
 import GHC.Base (mplus)
 
 data AbstractLattice =
@@ -178,6 +179,26 @@ toSynLitC _ = Nothing
 toSynLitS :: SimpleLattice String -> Maybe S.Lit
 toSynLitS (Simple i) = Just $ S.LitString i rangeNull
 toSynLitS _ = Nothing
+
+maybeTopI :: SimpleLattice Integer -> Maybe Type
+maybeTopI SimpleAbTop = Just typeInt
+maybeTopI _ = Nothing
+
+maybeTopD :: SimpleLattice Double -> Maybe Type
+maybeTopD SimpleAbTop = Just typeFloat
+maybeTopD _ = Nothing
+
+maybeTopC :: SimpleLattice Char -> Maybe Type
+maybeTopC SimpleAbTop = Just typeChar
+maybeTopC _ = Nothing
+
+maybeTopS :: SimpleLattice String -> Maybe Type
+maybeTopS SimpleAbTop = Just typeString
+maybeTopS _ = Nothing
+
+topTypesOf :: AbValue -> Set Type
+topTypesOf ab =
+  S.fromList $ catMaybes (map maybeTopI (M.elems (intV ab)) ++ map maybeTopD (M.elems (floatV ab)) ++ map maybeTopC (M.elems (charV ab)) ++ map maybeTopS (M.elems (stringV ab)))
 
 
 -- Other static information

@@ -52,6 +52,7 @@ newtype AEnv a = AEnv (DEnv -> State -> Result a)
 data State = State{
   loaded :: Loaded,
   states :: M.Map ExprContextId ExprContext,
+  maxContextId:: Int, 
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
   evalCacheGeneration :: Int,
   evalCache :: M.Map ExprContextId (EnvCtxLattice AbValue),
@@ -184,7 +185,7 @@ runEvalQueryFromRange loaded loadModuleFromSource rng mod =
         trace ("eval result " ++ show res) $ return res
       _ -> return []
 
-runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [Syn.Lit], Loaded)
+runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [UserDef], [Syn.Lit], Set Type, Loaded)
 runEvalQueryFromRangeSource ld loadModuleFromSource rng mod =
   runQueryAtRange ld loadModuleFromSource rng mod $ \exprctxs ->
     case exprctxs of
@@ -196,13 +197,15 @@ runEvalQueryFromRangeSource ld loadModuleFromSource rng mod =
             f = concatMap ((mapMaybe toSynLitD . M.elems) . floatV) vals
             c = concatMap ((mapMaybe toSynLitC . M.elems) . charV) vals
             s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
+            topTypes = unions $ map topTypesOf vals 
             vs = i ++ f ++ c ++ s
         sourceLams <- mapM findSourceExpr lams
+        let (sourceLambdas, sourceDefs) = unzip sourceLams
         loaded1 <- loaded <$> getState
-        trace ("eval result " ++ show res) $ return (catMaybes sourceLams, vs, loaded1)
-      _ -> return ([],[], ld)
+        trace ("eval result " ++ show res) $ return (catMaybes sourceLambdas, catMaybes sourceDefs, vs, topTypes, loaded1)
+      _ -> return ([],[],[],S.empty, ld)
 
-findSourceExpr :: ExprContext -> AEnv (Maybe UserExpr)
+findSourceExpr :: ExprContext -> AEnv (Maybe UserExpr, Maybe (Syn.Def UserType))
 findSourceExpr ctx =
   case maybeExprOfCtx ctx of
     Just (Lam (n:_) _ _) -> findForName n
@@ -212,25 +215,29 @@ findSourceExpr ctx =
       case ctx of
         DefCNonRec _ _ _ d -> findDef d
         DefCRec _ _ _ _ d -> findDef d
+        LetCDef _ _ _ i d -> findDef (defsOf d !! i)
         _ ->
-          trace ("Unknown lambda type " ++ show ctx) $ return Nothing
+          trace ("Unknown lambda type " ++ show ctx ++ ": " ++ show (maybeExprOfCtx ctx)) $ return (Nothing, Nothing)
   where
-    findDef d =
-      return $! Just $! Syn.Var (defName d) False (defNameRange d)
-      -- program <- modProgram <$> getModule (moduleName $ contextId ctx)
+    findDef d = do
+      -- return $! Just $! Syn.Var (defName d) False (defNameRange d)
+      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      case (program, C.defNameRange d) of
+        (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return (Nothing, findDefFromRange prog rng)
+        _ -> trace ("No program or rng" ++ show d ++ " " ++ show program) $ return (Nothing, Nothing)
       -- case (program, defNameRange d) of
       --   (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in module " ++ show (moduleName $ contextId ctx)) $ return $! findLocation prog rng
       --   _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
     findForName n = do
       program <- modProgram <$> getModule (moduleName $ contextId ctx)
       case (program, originalRange n) of
-        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return $! findLambdaFromRange prog rng
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
+        (Just prog, Just rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ return (findLambdaFromRange prog rng, Nothing)
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
     findForApp n = do
       program <- modProgram <$> getModule (moduleName $ contextId ctx)
       case (program, originalRange n) of
-        (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ return $! findApplicationFromRange prog rng
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return Nothing
+        (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ return (findApplicationFromRange prog rng, Nothing)
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
 
 runQueryAtRange :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([ExprContext] -> AEnv a) -> a
 runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
@@ -238,7 +245,7 @@ runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) M.empty 0)
+        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) M.empty 0)
   in case result of
     Ok a st -> a
 
@@ -249,6 +256,13 @@ findContext r ri = do
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng -> trace ("found overlapping range " ++ showFullRange rng ++ " " ++ show ctx) $ return [ctx]
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
       return []
+    -- Hovering over a lambda parameter should query what values that parameter can evaluate to -- need to create an artificial Var expression
+    LamCBody _ _ tnames _ ->
+      case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
+        [tn] -> do
+          id <- newContextId
+          return [ExprCBasic id ctx (Var tn InfoNone)]
+        _ -> return []
     _ -> return []
 
 analyzeCtx :: (a -> [a] -> a) -> (ExprContext -> AEnv a) -> ExprContext -> AEnv a
@@ -500,13 +514,15 @@ doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
             doForAbValue emptyAbValue calls (\(appctx, appenv) -> do
               -- trace (query ++ "REF: found application " ++ show appctx ++ " " ++ show appenv ++ " param index " ++ show index) $ return []
               param <- focusParam (Just index) appctx
-              doMaybeAbValue emptyAbValue param (\param -> do
+              doMaybeAbValue emptyAbValue param (\param ->
                   eval (param, appenv) cq)
-                )
-          -- Just ((letbodyctx@LetCBody{}, bindedenv), index) ->
-          --   eval =<< withQuery query (focusChild (fromJust $ contextOf letbodyctx) (fromJust index))
-          -- Just ((letdefctx@LetCDef{}, bindedenv), index) ->
-          --   eval =<< withQuery query (focusChild (fromJust $ contextOf letdefctx) (fromJust index))
+              )
+          Just ((letbodyctx@LetCBody{}, bindedenv), index) -> do
+            param <- focusChild (fromJust $ contextOf letbodyctx) (fromJust index)
+            doMaybeAbValue emptyAbValue param (\ctx -> eval (ctx, bindedenv) cq)
+          Just ((letdefctx@LetCDef{}, bindedenv), index) -> do
+            param <- focusChild (fromJust $ contextOf letdefctx) (fromJust index)
+            doMaybeAbValue emptyAbValue param (\ctx -> eval (ctx, bindedenv) cq)
           Just ((matchbodyctx@CaseCBranch{}, bindedenv), index) -> do
             -- TODO:
             let msg = query ++ "REF: TODO: Match body context " ++ show v ++ " " ++ show matchbodyctx
@@ -637,41 +653,41 @@ doExpr eval expr call (ctx, env) q = newQuery "EXPR" ctx env (\query -> do
   )
 
 doCall :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]
-doCall eval expr call (ctx, env@(EnvCtx (cc0:p))) q =
+doCall eval expr call (ctx, env@(EnvCtx cc@(cc0:p))) q =
   wrapMemo "call" ctx env $ newQuery "CALL" ctx env (\query ->
   trace (query ++ "CALL " ++ show env ++ " " ++ show ctx) $ do
       let cq = CallQ (ctx, env)
       makeReachable q cq
       case ctx of
           LamCBody _ c _ _-> do
-            calls <- expr (c, envtail env) cq
-            doForContexts [] calls (\(callctx, callenv) -> do
-                cc1 <- succAEnv $ CallCtx callctx callenv
-                if cc1 == cc0 then
-                  trace (query ++ "KNOWN CALL: " ++ show cc1 ++ " " ++ show cc0)
-                  return [(callctx, callenv)]
-                else if cc0 `subsumesCtx` cc1 then do
-                  trace (query ++ "UNKNOWN CALL: " ++ show cc1 ++ " " ++ show cc0) $
-                    instantiate eval expr call q (cc1:p) (cc0:p)
-                  -- TODO: Instantiate, all instantiated queries will be joined with the current result
-                  return []
-                else
-                  return []
-              )
+          --   calls <- expr (c, envtail env) cq
+          --   doForContexts [] calls (\(callctx, callenv) -> do
+          --       cc1 <- succAEnv $ CallCtx callctx callenv
+          --       if cc1 == cc0 then
+          --         trace (query ++ "KNOWN CALL: " ++ show cc1 ++ " " ++ show cc0)
+          --         return [(callctx, callenv)]
+          --       else if cc0 `subsumesCtx` cc1 then do
+          --         trace (query ++ "UNKNOWN CALL: " ++ show cc1 ++ " " ++ show cc0) $
+          --           instantiate eval expr call q (cc1:p) (cc0:p)
+          --         -- TODO: Instantiate, all instantiated queries will be joined with the current result
+          --         return []
+          --       else
+          --         return []
+          --     )
             -- TODO: 
             -- 1. result, resultenv = expr(cc0.tail)
             -- 2. cc1 = succ_m(result, resultenv)
             -- 3. if cc0 == cc1 then return (result, resultenv)
             -- 4. elif cc0 subsumes cc1 then
             -- 5. instantiate queries such that any cc0:env can be refined by cc1:env (i.e. add a subquery for cc1:env for all queries in the cache that have cc0:env)
-            -- case cc of
-            --   (CallCtx callctx p'):p -> do
-            --     trace (query ++ "Known: " ++ show callctx) $ return ()
-            --     pnew <- calibratem p'
-            --     return [(callctx, pnew)]
-            --   _ -> do
-            --     trace (query ++ "Unknown") $ return ()
-            --     expr (c, envtail env)
+            case cc of
+              (CallCtx callctx p'):p -> do
+                trace (query ++ "Known: " ++ show callctx) $ return ()
+                pnew <- calibratem p'
+                return [(callctx, pnew)]
+              _ -> do
+                trace (query ++ "Unknown") $ return ()
+                expr (c, envtail env) cq 
           ExprCTerm{} ->
             trace (query ++ "ends in error " ++ show ctx)
             return [(ctx, env)]
@@ -759,12 +775,16 @@ newContextId :: AEnv ExprContextId
 newContextId = do
   state <- getState
   id <- currentContext <$> getEnv
-  return $! ExprContextId (M.size $ states state) (moduleName (contextId id))
+  let newCtxId = maxContextId state + 1
+  updateState (\s -> s{maxContextId = newCtxId})
+  return $! ExprContextId newCtxId (moduleName (contextId id))
 
 newModContextId :: Module -> AEnv ExprContextId
 newModContextId mod = do
   state <- getState
-  return $! ExprContextId (M.size $ states state) (modName mod)
+  let newCtxId = maxContextId state + 1
+  updateState (\s -> s{maxContextId = newCtxId})
+  return $! ExprContextId newCtxId (modName mod)
 
 addContextId :: (ExprContextId -> ExprContext) -> AEnv ExprContext
 addContextId f = do

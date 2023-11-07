@@ -21,7 +21,9 @@ import Core.DemandAnalysis (runEvalQueryFromRange, runEvalQueryFromRangeSource)
 import Debug.Trace (trace)
 import Common.Range (showFullRange)
 import LanguageServer.Handler.TextDocument (getCompile)
-import Syntax.Syntax (showSyntax, showLit)
+import Core.StaticContext (showSyntax, showLit, showSyntaxDef)
+import qualified Data.Set as S
+import Type.Pretty (ppType, defaultEnv)
 
 hoverHandler :: Handlers LSM
 hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
@@ -36,10 +38,14 @@ hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
         allMods <- allLoaded
         rmap <- modRangeMap l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
-        let (fns, lits, newLoaded) = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
+        let (fns, defs, lits, topTypes, newLoaded) = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
         -- TODO: Parse module, get tokens of the lambda and colorize it, see colorize for a start 
         -- (just need to use AnsiString printer and working from a string/part of file rather than a whole file)
-        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <> ("\n\nEvaluates to:\n\n" <> T.unpack (T.intercalate "\n\n" (map (T.pack . showSyntax) fns ++ map (T.pack . showLit) lits)))
+        let literalsText = T.unpack (T.intercalate ", " (map (T.pack .  (\d -> "```koka\n" ++  showSyntax 0 d ++ "\n```")) fns ++ map (T.pack . showLit) lits))
+        let defsText = T.unpack (T.intercalate "\n\n " $ map (T.pack . (\d -> "```koka\n" ++ showSyntaxDef 0 d ++ "\n```")) defs)
+        let topTypesText = T.unpack (T.intercalate " " $  map (T.pack . show . ppType defaultEnv) (S.toList topTypes))
+        let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <>
+             ("\n\nEvaluates to:\n\n" <> literalsText <> "\n\nDefinitions:\n\n" <> defsText <> "\n\nTop-level types:\n\n" <> topTypesText)
             hover = J.Hover hc $ Just $ toLspRange r
         return (hover, newLoaded)
   case rsp of
