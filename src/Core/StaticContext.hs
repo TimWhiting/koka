@@ -10,29 +10,18 @@ module Core.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,
-                          contextId,
-                          contextOf,
-                          exprOfCtx,
+                          contextId,contextOf,exprOfCtx,
                           maybeExprOfCtx,
-                          lamVar,
-                          lamVarDef,
-                          showExpr,
-                          showDg,
-                          showDef,
+                          lamVar,lamVarDef,lamNames,
+                          showExpr,showDg,showDef,
                           enclosingLambda,
                           branchContainsBinding,
                           branchVars,
-                          findApplicationFromRange,
-                          findLambdaFromRange,
-                          findDefFromRange,
-                          basicExprOf,
-                          defsOf,
-                          lookupDefGroup,
-                          lookupDefGroups,
-                          lookupDef,
-                          showSyntaxDef,
-                          showSyntax,
-                          showLit,
+                          findApplicationFromRange,findLambdaFromRange,findDefFromRange,
+                          basicExprOf,defsOf,
+                          lookupDefGroup,lookupDefGroups,lookupDef,
+                          showSyntaxDef,showSyntax,showLit,
+                          showSimpleContext,
                         ) where
 import Core.Core as C
 import Common.Name
@@ -65,6 +54,13 @@ data ExprContext =
   | CaseCBranch !ExprContextId !ExprContext ![TName] !Int !C.Branch -- Which branch currently inspecting, as well as the Case context
   | ExprCBasic !ExprContextId !ExprContext !C.Expr -- A basic expression context that has no sub expressions
   | ExprCTerm !ExprContextId !String -- Since analysis can fail or terminate early, keep track of the query that failed
+
+lamNames :: ExprContext -> [TName]
+lamNames ctx =
+  case maybeExprOfCtx ctx of
+    Just (C.Lam names _ _) -> names
+    Just (C.TypeLam _ (C.Lam names _ _)) -> names
+    _ -> error ("Not a lambda: " ++ show ctx)
 
 data ExprContextId = ExprContextId{
   exprId:: !Int,
@@ -122,6 +118,48 @@ showExpr e = show $ prettyExpr defaultEnv e
 showDg d = show $ prettyDefGroup defaultEnv d
 
 showDef d = show $ prettyDef defaultEnv d
+
+closestRange :: ExprContext -> Range
+closestRange ctx =
+  case ctx of
+    ModuleC{} -> rangeNull
+    DefCRec _ _ _ _ d -> C.defNameRange d 
+    DefCNonRec _ _ _ d -> C.defNameRange d
+    LamCBody _ c tn _ -> 
+      case tn of
+        t:_ -> case C.originalRange t
+          of Just r -> r
+             Nothing -> closestRange c
+        _ -> closestRange c
+    AppCLambda _ c _ -> closestRange c
+    AppCParam _ c _ _ -> closestRange c
+    LetCDef _ _ _ i dg -> C.defNameRange (defsOf dg !! i)
+    LetCBody _ c _ _ -> closestRange c
+    CaseCMatch _ c _ -> closestRange c
+    CaseCBranch _ c tn _ _ -> 
+      case tn of
+        t:_ -> case C.originalRange t
+          of Just r -> r
+             Nothing -> closestRange c
+        _ -> closestRange c
+    ExprCBasic _ c _ -> closestRange c
+    ExprCTerm _ _ -> rangeNull
+
+showSimpleContext ctx =
+  let r = show (closestRange ctx) in
+  case ctx of
+    ModuleC{} -> "Module " ++ r
+    DefCRec{} -> "DefRec " ++ r
+    DefCNonRec{} -> "DefNonRec " ++ r
+    LamCBody{} -> "LamBody " ++ r
+    AppCLambda{} -> "AppLambda " ++ r
+    AppCParam{} -> "AppParam " ++ r
+    LetCDef{} -> "LetDef " ++ r
+    LetCBody{} -> "LetBody " ++ r
+    CaseCMatch{} -> "CaseMatch " ++ r
+    CaseCBranch{} -> "CaseBranch " ++ r
+    ExprCBasic{} -> "ExprBasic " ++ r
+    ExprCTerm{} -> "Query Error"
 
 instance Show ExprContext where
   show e =

@@ -13,29 +13,19 @@ module Core.AbstractValue(
                           AbstractLattice(..),
                           SimpleLattice(..),
                           EnvCtxLattice(..),
+                          showSimpleClosure, showSimpleCtx, showSimpleEnv,
                           emptyAbValue,
-                          injClosure,
-                          injErr,
-                          injLit,
-                          joinAbValue,
-                          joinL,
-                          joinML,
-                          addAbValue,
-                          addLamSet,
-                          subsumes,
-                          subsumesCtx,
-                          toSynLit,
-                          toSynLitD,
-                          toSynLitC,
-                          toSynLitS,
+                          injClosure,injErr,injLit,
+                          joinAbValue,joinL,joinML,
+                          addAbValue,addLamSet,
+                          subsumes,subsumesCtx,
+                          toSynLit,toSynLitD,toSynLitC,toSynLitS,
                           topTypesOf,
                           bind,
                           indeterminateStaticCtx,
                           refine,
-                          succm,
-                          succmenv,
-                          calibratemenv,
-                          calibratemctx,
+                          succm,succmenv,
+                          calibratemenv,calibratemctx,
                           envtail,
                         ) where
 import Data.Map.Strict as M hiding (map)
@@ -46,12 +36,13 @@ import Data.Set hiding (map, map)
 import Data.Set as S hiding (map)
 import Core.Core as C
 import Syntax.Syntax as S
-import Data.List (elemIndex)
+import Data.List (elemIndex, intercalate)
 import Compiler.Module
 import Debug.Trace (trace)
 import Common.Range
 import Data.Maybe (fromMaybe, catMaybes)
 import GHC.Base (mplus)
+import Common.Failure (assertion)
 
 data AbstractLattice =
   AbBottom | AbTop
@@ -64,7 +55,7 @@ instance Show EnvCtx where
   show (EnvCtx ctxs) = show ctxs
 
 data Ctx =
-  IndetCtx
+  IndetCtx [TName]
   | DegenCtx
   | CallCtx !ExprContext !EnvCtx
   | TopCtx
@@ -73,7 +64,7 @@ data Ctx =
 instance Show Ctx where
   show ctx =
     case ctx of
-      IndetCtx -> "?"
+      IndetCtx tn -> "?(" ++ show tn ++ ")"
       DegenCtx -> "[]"
       CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
       TopCtx -> "()"
@@ -104,7 +95,7 @@ data AbValue =
 
 instance Show AbValue where
   show (AbValue cls cntrs i f c s e) =
-    (if S.null cls then "" else "closures: " ++ show (S.toList cls)) ++
+    (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (S.toList cntrs)) ++
     (if M.null i then "" else " ints: " ++ show (M.toList i)) ++
     (if M.null f then "" else " floats: " ++ show (M.toList f)) ++
@@ -113,6 +104,20 @@ instance Show AbValue where
     maybe "" (" err: " ++) e
 
 -- Basic creating of abstract values
+showSimpleClosure :: (ExprContext, EnvCtx) -> String
+showSimpleClosure (ctx, env) = showSimpleContext ctx ++ " in " ++ showSimpleEnv env
+
+showSimpleEnv :: EnvCtx -> String
+showSimpleEnv (EnvCtx ctxs) = 
+  "<" ++ intercalate "," (map showSimpleCtx ctxs) ++ ">"
+
+showSimpleCtx :: Ctx -> String
+showSimpleCtx ctx =
+  case ctx of
+    IndetCtx tn -> show tn
+    DegenCtx -> "-"
+    CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
+    TopCtx -> "()"
 
 emptyAbValue :: AbValue
 emptyAbValue = AbValue S.empty S.empty M.empty M.empty M.empty M.empty Nothing
@@ -143,11 +148,11 @@ joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) 
 
 addAbValue :: EnvCtxLattice AbValue -> Int -> EnvCtx -> AbValue -> (Bool, S.Set EnvCtx, EnvCtxLattice AbValue)
 addAbValue (EnvCtxLattice m) version env ab =
-  let ((changed, newAb, s), newMap) = M.mapAccumWithKey (\(changed, newAb, s) k (v, ab') -> 
+  let ((changed, newAb, s), newMap) = M.mapAccumWithKey (\(changed, newAb, s) k (v, ab') ->
         if k `subsumes` env then -- i.e. env refines k -- add to the more general value
           -- TODO: Problem -- updating the version doesn't actually guarantee that the query is rerun for this more general context
           -- Adding something to a more specific context, so we need to update the more general context (assuming it exists)
-          if ab' `joinAbValue` ab == ab' then 
+          if ab' `joinAbValue` ab == ab' then
             ((changed, newAb, s), (v, ab' `joinAbValue` ab))
           else
             ((ab' /= ab || changed, newAb, S.insert k s), (version, ab' `joinAbValue` ab))
@@ -158,17 +163,17 @@ addAbValue (EnvCtxLattice m) version env ab =
           ((newAb /= newV || changed, newV, s), (v, ab'))
         else ((changed, newAb, s), (v, ab'))) (False, ab, S.empty) m in
   let oldV = snd (fromMaybe (version, emptyAbValue) (M.lookup env m)) in
-  if oldV `joinAbValue` newAb == oldV then 
+  if oldV `joinAbValue` newAb == oldV then
     (changed || oldV /= newAb, s, EnvCtxLattice newMap)
-  else 
+  else
     (changed || oldV /= newAb, s, EnvCtxLattice $ M.insert env (version, oldV `joinAbValue` newAb) newMap)
 
 addLamSet :: EnvCtxLattice (Set (ExprContext, EnvCtx)) -> Int -> EnvCtx -> Set (ExprContext, EnvCtx) -> (Bool, S.Set EnvCtx, EnvCtxLattice (Set (ExprContext, EnvCtx)))
 addLamSet (EnvCtxLattice m) version env ab =
-  let ((changed, newAb, s), newMap) = M.mapAccumWithKey (\(changed, newAb, s) k (v, ab') -> 
+  let ((changed, newAb, s), newMap) = M.mapAccumWithKey (\(changed, newAb, s) k (v, ab') ->
         if k `subsumes` env then -- i.e. env refines k -- add to the more general value
           -- Adding something to a more specific context, so we need to update the more general context (assuming it exists)
-          if ab' `S.union` ab == ab' then 
+          if ab' `S.union` ab == ab' then
             ((changed, newAb, s), (v, ab' `S.union` ab))
           else
             ((ab' /= ab || changed, newAb, S.insert k s), (version, ab' `S.union` ab))
@@ -179,9 +184,9 @@ addLamSet (EnvCtxLattice m) version env ab =
           ((newAb /= newV || changed, newV, s), (v, ab'))
         else ((changed, newAb, s), (v, ab'))) (False, ab, S.empty) m in
   let oldV = snd (fromMaybe (version, S.empty) (M.lookup env m)) in
-  if oldV `S.union` newAb == oldV then 
+  if oldV `S.union` newAb == oldV then
     (changed || oldV /= newAb, s, EnvCtxLattice newMap)
-  else 
+  else
     (changed || oldV /= newAb, s, EnvCtxLattice $ M.insert env (version, oldV `S.union` newAb) newMap)
 
 -- Environment Subsumption
@@ -193,11 +198,11 @@ subsumes (EnvCtx ctxs1) (EnvCtx ctxs2) =
 subsumesCtx :: Ctx -> Ctx -> Bool
 subsumesCtx c1 c2 =
   case (c1, c2) of
-    (IndetCtx, IndetCtx) -> True
     (DegenCtx, DegenCtx) -> True
-    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
     (TopCtx, TopCtx) -> True
-    (IndetCtx, _) -> True
+    (IndetCtx tn1, IndetCtx tn2) -> tn1 == tn2
+    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
+    (IndetCtx{}, CallCtx{}) -> True
     _ -> False
 
 -- Converting to user visible expressions
@@ -281,9 +286,9 @@ indeterminateStaticCtx ctx =
     ModuleC _ mod _ -> EnvCtx [TopCtx]
     DefCRec _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
     DefCNonRec _ ctx' _ _ -> indeterminateStaticCtx ctx'
-    LamCBody _ ctx' _ _ ->
+    LamCBody _ ctx' tn _ ->
       let (EnvCtx parent) = indeterminateStaticCtx ctx'
-      in EnvCtx (IndetCtx:parent)
+      in EnvCtx (IndetCtx tn:parent)
     AppCLambda _ ctx _ -> indeterminateStaticCtx ctx
     AppCParam _ ctx _ _ -> indeterminateStaticCtx ctx
     LetCDef _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
@@ -293,9 +298,16 @@ indeterminateStaticCtx ctx =
     ExprCBasic _ ctx _ -> indeterminateStaticCtx ctx
     ExprCTerm{} -> error "Never should occur"
 
-refine :: EnvCtx -> ([Ctx], [Ctx]) -> EnvCtx
-refine env@(EnvCtx p) (c1, c0) =
-  if p == c0 then EnvCtx c1 else env
+refine :: (Ctx, Ctx) -> EnvCtx -> EnvCtx
+refine (c1, c0) env@(EnvCtx p)  =
+  EnvCtx (map (refineCtx (c1, c0)) p)
+
+refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx
+refineCtx (c1, c0) c =
+  if c == c0 then c1 else
+    case c of
+      CallCtx c' e -> CallCtx c' (refine (c1, c0) e)
+      _ -> c
 
 succm :: Ctx -> Int -> Ctx
 succm envctx m =
@@ -321,7 +333,7 @@ calibratemctx :: Int -> Ctx -> Ctx
 calibratemctx mlimit p =
   if mlimit == 0 then DegenCtx
   else case p of
-    IndetCtx -> IndetCtx
-    DegenCtx -> IndetCtx
+    IndetCtx tn -> IndetCtx tn
+    DegenCtx -> IndetCtx [] -- TODO: Fix this?
     CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
     TopCtx -> TopCtx
