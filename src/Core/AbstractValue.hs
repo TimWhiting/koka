@@ -15,7 +15,7 @@ module Core.AbstractValue(
                           EnvCtxLattice(..),
                           showSimpleClosure, showSimpleCtx, showSimpleEnv,
                           emptyAbValue,
-                          injClosure,injErr,injLit,
+                          injClosure,injErr,injLit,injCon,
                           joinAbValue,joinL,joinML,
                           addAbValue,addLamSet,
                           subsumes,subsumesCtx,
@@ -71,9 +71,9 @@ instance Show Ctx where
 
 data ConstrContext =
   ConstrContext{
-    constrName:: !Name,
-    constrType:: !Type,
-    constrParams:: !AbValue
+    constrName:: !TName,
+    constrType:: !Name,
+    constrParams:: ![ExprContext]
   } deriving (Eq, Ord, Show)
 
 data SimpleLattice x =
@@ -85,7 +85,7 @@ data SimpleLattice x =
 data AbValue =
   AbValue{
     closures:: !(Set (ExprContext, EnvCtx)),
-    constrs:: !(Set ConstrContext),
+    constrs:: M.Map EnvCtx (Set ConstrContext),
     intV:: M.Map EnvCtx (SimpleLattice Integer),
     floatV:: M.Map EnvCtx (SimpleLattice Double),
     charV:: M.Map EnvCtx (SimpleLattice Char),
@@ -96,7 +96,7 @@ data AbValue =
 instance Show AbValue where
   show (AbValue cls cntrs i f c s e) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-    (if S.null cntrs then "" else " constrs: " ++ show (S.toList cntrs)) ++
+    (if M.null cntrs then "" else " constrs: " ++ show (M.toList cntrs)) ++
     (if M.null i then "" else " ints: " ++ show (M.toList i)) ++
     (if M.null f then "" else " floats: " ++ show (M.toList f)) ++
     (if M.null c then "" else " chars: " ++ show (M.toList c)) ++
@@ -120,7 +120,7 @@ showSimpleCtx ctx =
     TopCtx -> "()"
 
 emptyAbValue :: AbValue
-emptyAbValue = AbValue S.empty S.empty M.empty M.empty M.empty M.empty Nothing
+emptyAbValue = AbValue S.empty M.empty M.empty M.empty M.empty M.empty Nothing
 injClosure ctx env = emptyAbValue{closures= S.singleton (ctx, env)}
 injErr err = emptyAbValue{err= Just err}
 
@@ -131,6 +131,10 @@ injLit x env =
     C.LitFloat f -> emptyAbValue{floatV= M.singleton env $ Simple f}
     C.LitChar c -> emptyAbValue{charV= M.singleton env $ Simple c}
     C.LitString s -> emptyAbValue{stringV= M.singleton env $ Simple s}
+
+injCon :: TName -> Name -> [ExprContext] -> EnvCtx -> AbValue
+injCon nm tp args env =
+  emptyAbValue{constrs=M.singleton env $ S.singleton $ ConstrContext nm tp args}
 
 --- JOINING
 joinL :: Eq x => SimpleLattice x -> SimpleLattice x -> SimpleLattice x
@@ -143,8 +147,11 @@ joinL (Simple x) (Simple y) = if x == y then Simple x else SimpleAbTop
 joinML :: Eq x => M.Map EnvCtx (SimpleLattice x) -> M.Map EnvCtx (SimpleLattice x) -> M.Map EnvCtx (SimpleLattice x)
 joinML = M.unionWith joinL
 
+joinMC :: Map EnvCtx (Set ConstrContext) -> Map EnvCtx (Set ConstrContext) -> Map EnvCtx (Set ConstrContext)
+joinMC = M.unionWith S.union
+
 joinAbValue :: AbValue -> AbValue -> AbValue
-joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (i0 `joinML` i1) (f0 `joinML` f1) (c0 `joinML` c1) (s0 `joinML` s1) (e0 `mplus` e1)
+joinAbValue (AbValue cls0 cs0 i0 f0 c0 s0 e0) (AbValue cls1 cs1 i1 f1 c1 s1 e1) = AbValue (S.union cls0 cls1) (cs0 `joinMC` cs1) (i0 `joinML` i1) (f0 `joinML` f1) (c0 `joinML` c1) (s0 `joinML` s1) (e0 `mplus` e1)
 
 addAbValue :: EnvCtxLattice AbValue -> Int -> EnvCtx -> AbValue -> (Bool, S.Set EnvCtx, EnvCtxLattice AbValue)
 addAbValue (EnvCtxLattice m) version env ab =

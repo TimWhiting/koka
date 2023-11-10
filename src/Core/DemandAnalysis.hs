@@ -565,6 +565,9 @@ doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
                 -- Evaluates just to the lambda
                 eval (lamctx, EnvCtx [TopCtx]) cq
               _ -> return $! injErr $ "REF: can't find what the following refers to " ++ show ctx
+      App (Con nm repr) args -> do
+        children <- childrenContexts ctx
+        return $ injCon nm (conTypeName repr) children env
       App f tms -> do
         fun <- focusChild ctx 0
         doMaybeAbValue emptyAbValue fun (\fun -> do
@@ -607,7 +610,7 @@ doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
         -- let msg = query ++ "CASE: discrim is " ++ show discrim
         let msg = "Case not implemented"
         return $! trace msg $! injErr msg
-      Con nm repr -> return $! injErr ("Constructor: " ++ show nm ++ " " ++ show ctx)
+      Con nm repr -> return $! injErr ("Not supported not applied constructor: " ++ show nm ++ " " ++ show ctx)
       _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
         trace msg $! return $! injErr msg
