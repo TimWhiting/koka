@@ -10,6 +10,7 @@
     Check if a constructor context is well formed, and create a context path
 -}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Core.DemandAnalysis(
                           AbstractLattice(..),
@@ -183,10 +184,10 @@ runEvalQueryFromRange loaded loadModuleFromSource rng mod =
     case exprctxs of
       exprctx:rst -> do
         res <- fixedEval exprctx (indeterminateStaticCtx exprctx)
-        trace ("eval result: " ++ show res) $ return res
+        trace ("eval result:\n----------------------\n" ++ intercalate "\n\n" (map show res) ++ "\n----------------------\n") $ return res
       _ -> return []
 
-runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [UserDef], [Syn.Lit], Set Type, Loaded)
+runEvalQueryFromRangeSource :: Loaded -> (Module -> IO Module) -> (Range, RangeInfo) -> Module -> ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type, Loaded)
 runEvalQueryFromRangeSource ld loadModuleFromSource rng mod =
   runQueryAtRange ld loadModuleFromSource rng mod $ \exprctxs ->
     case exprctxs of
@@ -200,11 +201,20 @@ runEvalQueryFromRangeSource ld loadModuleFromSource rng mod =
             s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
             topTypes = unions $ map topTypesOf vals
             vs = i ++ f ++ c ++ s
+            cs = concatMap S.toList $ concatMap (M.elems . constrs) vals
+        consts <- mapM toSynConstr cs
         sourceLams <- mapM findSourceExpr lams
         let (sourceLambdas, sourceDefs) = unzip sourceLams
         loaded1 <- loaded <$> getState
-        trace ("eval result " ++ show res) $ return (catMaybes sourceLambdas, catMaybes sourceDefs, vs, topTypes, loaded1)
-      _ -> return ([],[],[],S.empty, ld)
+        trace ("eval result:\n----------------------\n" ++ intercalate "\n----\n" (map show res) ++ "\n----------------------\n") $ return (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes, loaded1)
+      _ -> return ([],[],[],[],S.empty, ld)
+
+toSynConstr :: ConstrContext -> AEnv (Maybe String)
+toSynConstr (ConstrContext nm tp args) = do
+  args' <- mapM findSourceExpr args
+  return (Just $ nameId (getName nm))
+
+
 
 sourceEnv :: EnvCtx -> AEnv String
 sourceEnv (EnvCtx env) = do
@@ -214,7 +224,7 @@ sourceEnv (EnvCtx env) = do
 sourceEnvCtx :: Ctx -> AEnv String
 sourceEnvCtx ctx =
   case ctx of
-    IndetCtx tn -> return $ "?" ++ intercalate "," (map show tn)
+    IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
     TopCtx -> return "T"
     DegenCtx -> return "[]"
     CallCtx c env -> do
@@ -333,7 +343,7 @@ findUsage expr@Var{varName=tname@TName{getName = name}} ctx env@(EnvCtx cc) =
       else
         visitChildrenCtxs S.unions ctx $ do
           childCtx <- currentContext <$> getEnv
-          findUsage expr childCtx (EnvCtx (IndetCtx params:cc))
+          findUsage expr childCtx (EnvCtx (IndetCtx params ctx:cc))
     Just (Var{varName=TName{getName=name2}}) ->
       if nameEq name2 then do
         query <- getQueryString
@@ -584,7 +594,7 @@ doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
                 succ <- succAEnv (CallCtx ctx env)
                 let newEnv = EnvCtx (succ:lamenv)
-                instantiate eval expr call cq succ (IndetCtx (lamNames lam))
+                instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
                 eval (bd, newEnv) cq
                 )
               )
@@ -610,7 +620,7 @@ doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
         -- let msg = query ++ "CASE: discrim is " ++ show discrim
         let msg = "Case not implemented"
         return $! trace msg $! injErr msg
-      Con nm repr -> return $! injErr ("Not supported not applied constructor: " ++ show nm ++ " " ++ show ctx)
+      Con nm repr -> return $! injCon nm (conTypeName repr) [] env -- TODO: Check that the constructor is a singleton
       _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
         trace msg $! return $! injErr msg
@@ -648,7 +658,7 @@ doExpr eval expr call (ctx, env) q = newQuery "EXPR" ctx env (\query -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
                   succ <- succAEnv (CallCtx c env)
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
-                  instantiate eval expr call cq succ (IndetCtx (lamNames lam))
+                  instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
                   ress <- mapM (\ctx -> expr ctx cq) (S.toList ctxs)
                   return $! concat ress
@@ -751,7 +761,7 @@ fixedEval e env = do
   let cache = evalCache state
   case M.lookup (contextId e) cache of
     Just (EnvCtxLattice res) ->
-      let result = map (\(k, (_, v)) -> (k, v)) (M.assocs res)
+      let !result = map (\(k, (_, v)) -> (k, v)) (M.assocs res)
       in return result
     Nothing -> do
       let msg = "fixedEval: " ++ show e ++ " not in cache " ++ show (M.keys cache)

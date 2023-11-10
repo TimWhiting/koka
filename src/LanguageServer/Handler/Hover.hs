@@ -38,14 +38,15 @@ hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
         allMods <- allLoaded
         rmap <- modRangeMap l
         (r, rinfo) <- rangeMapFindAt (fromLspPos uri pos) rmap
-        let (fns, defs, lits, topTypes, newLoaded) = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
+        let (fns, defs, lits, constrs, topTypes, newLoaded) = trace ("Running eval for position " ++ show (fromLspPos uri pos)) $ runEvalQueryFromRangeSource allMods compile (r, rinfo) l
         -- TODO: Parse module, get tokens of the lambda and colorize it, see colorize for a start 
         -- (just need to use AnsiString printer and working from a string/part of file rather than a whole file)
         let literalsText = T.unpack (T.intercalate "\n" (map (T.pack .  (\d -> "```koka\n" ++  showSyntax 0 d ++ "\n```")) fns ++ map (T.pack . showLit) lits))
         let defsText = T.unpack (T.intercalate "\n\n " $ map (T.pack . (\d -> "```koka\n" ++ showSyntaxDef 0 d ++ "\n```")) defs)
+        let constrsText = T.unpack (T.intercalate "\n\n " $ map (T.pack . (\d -> "```koka\n" ++ d ++ "\n```")) constrs)
         let topTypesText = T.unpack (T.intercalate " " $  map (T.pack . show . ppType defaultEnv) (S.toList topTypes))
         let hc = J.InL $ J.mkMarkdown $ T.pack $ formatRangeInfoHover rinfo <>
-             ("\n\nEvaluates to:\n\n" <> literalsText <> "\n\nDefinitions:\n\n" <> defsText <> "\n\nTop-level types:\n\n" <> topTypesText)
+             ("\n\nEvaluates to:\n\n" <> literalsText <> "\n\nDefinitions:\n\n" <> defsText <> "\n\nConstructors:\n\n" <> constrsText <> "\n\nTop-level types:\n\n" <> topTypesText)
             hover = J.Hover hc $ Just $ toLspRange r
         return (hover, newLoaded)
   case rsp of

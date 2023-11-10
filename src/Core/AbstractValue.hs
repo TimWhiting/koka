@@ -55,7 +55,7 @@ instance Show EnvCtx where
   show (EnvCtx ctxs) = show ctxs
 
 data Ctx =
-  IndetCtx [TName]
+  IndetCtx [TName] ExprContext
   | DegenCtx
   | CallCtx !ExprContext !EnvCtx
   | TopCtx
@@ -64,7 +64,7 @@ data Ctx =
 instance Show Ctx where
   show ctx =
     case ctx of
-      IndetCtx tn -> "?(" ++ show tn ++ ")"
+      IndetCtx tn c -> "?(" ++ show tn ++ ")"
       DegenCtx -> "[]"
       CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
       TopCtx -> "()"
@@ -114,7 +114,7 @@ showSimpleEnv (EnvCtx ctxs) =
 showSimpleCtx :: Ctx -> String
 showSimpleCtx ctx =
   case ctx of
-    IndetCtx tn -> show tn
+    IndetCtx tn c -> show tn
     DegenCtx -> "-"
     CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
     TopCtx -> "()"
@@ -207,7 +207,7 @@ subsumesCtx c1 c2 =
   case (c1, c2) of
     (DegenCtx, DegenCtx) -> True
     (TopCtx, TopCtx) -> True
-    (IndetCtx tn1, IndetCtx tn2) -> tn1 == tn2
+    (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
     (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
     (IndetCtx{}, CallCtx{}) -> True
     _ -> False
@@ -295,7 +295,7 @@ indeterminateStaticCtx ctx =
     DefCNonRec _ ctx' _ _ -> indeterminateStaticCtx ctx'
     LamCBody _ ctx' tn _ ->
       let (EnvCtx parent) = indeterminateStaticCtx ctx'
-      in EnvCtx (IndetCtx tn:parent)
+      in EnvCtx (IndetCtx tn ctx:parent)
     AppCLambda _ ctx _ -> indeterminateStaticCtx ctx
     AppCParam _ ctx _ _ -> indeterminateStaticCtx ctx
     LetCDef _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
@@ -340,7 +340,7 @@ calibratemctx :: Int -> Ctx -> Ctx
 calibratemctx mlimit p =
   if mlimit == 0 then DegenCtx
   else case p of
-    IndetCtx tn -> IndetCtx tn
-    DegenCtx -> IndetCtx [] -- TODO: Fix this?
+    IndetCtx tn c -> IndetCtx tn c
+    DegenCtx -> let id = (ExprContextId (-1) (newName "_err")) in IndetCtx [] (ExprCTerm id "Err") -- TODO: Fix this?
     CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
     TopCtx -> TopCtx
