@@ -226,7 +226,7 @@ sourceEnvCtx ctx =
   case ctx of
     IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
     TopCtx -> return "T"
-    DegenCtx -> return "[]"
+    DegenCtx -> return "~"
     CallCtx c env -> do
       se <- findSourceExpr c
       e <- sourceEnv env
@@ -278,7 +278,7 @@ runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv 2 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) S.empty M.empty 0)
+        AEnv f -> f (DEnv 3 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) S.empty M.empty 0)
   in case result of
     Ok a st -> a
 
@@ -509,8 +509,17 @@ makeReachable :: Query -> Query -> AEnv ()
 makeReachable q1 q2 = -- Query q2 is reachable from q1
   updateState (\state -> state{reachable = M.insertWith S.union q2 (S.singleton q1) $ reachable state})
 
-doEval :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query-> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv AbValue
-doEval eval expr call (ctx, env) q = newQuery "EVAL" ctx env (\query -> do
+loop :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> Query -> AEnv ()
+loop eval expr call query = do
+  case query of
+    EvalQ ctxEnv -> do
+      nextQ <- eval ctxEnv
+      return ()
+  return ()
+
+
+doEval :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> (ExprContext, EnvCtx) -> AEnv AbValue
+doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
   trace (query ++ "EVAL: " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $
     wrapMemoEval eval ctx env $ do
     let cq = EvalQ (ctx, env)
