@@ -13,7 +13,7 @@ module Core.StaticContext(
                           contextId,contextOf,exprOfCtx,
                           maybeExprOfCtx,
                           lamVar,lamVarDef,lamNames,
-                          showExpr,showDg,showDef,
+                          showExpr,showDg,showDef,showCtxExpr,
                           enclosingLambda,
                           branchContainsBinding,
                           branchVars,
@@ -208,6 +208,12 @@ maybeExprOfCtx ctx =
     CaseCBranch _ _ _ _ b -> Just $ C.guardExpr (head (C.branchGuards b))
     ExprCBasic _ _ e -> Just e
     ExprCTerm{} -> error "Query should never be queried for expression"
+
+showCtxExpr :: ExprContext -> String
+showCtxExpr ctx =
+  case maybeExprOfCtx ctx of
+    Just e -> showExpr e
+    Nothing -> show ctx
 
 contextId :: ExprContext -> ExprContextId
 contextId ctx =

@@ -71,7 +71,7 @@ instance Show Ctx where
       IndetCtx tn c -> "?(" ++ show tn ++ ")"
       DegenCtx -> "[]"
       CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
-      BCallCtx ctx cc -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show cc ++ ")"
+      BCallCtx ctx cc -> "bcall(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show cc ++ ")"
       TopCtx -> "()"
 
 showSimpleCtx :: Ctx -> String
@@ -80,7 +80,7 @@ showSimpleCtx ctx =
     IndetCtx tn c -> show tn
     DegenCtx -> "-"
     CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
-    BCallCtx ctx cc -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ ")"
+    BCallCtx ctx cc -> "bcall(" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ ")"
     TopCtx -> "()"
 
 subsumesCtx :: Ctx -> Ctx -> Bool
@@ -93,6 +93,7 @@ subsumesCtx c1 c2 =
     (BCallCtx id1 env1, BCallCtx id2 env2) -> id1 == id2 && env1 `subsumesCtx` env2
     (IndetCtx{}, CallCtx{}) -> True
     (IndetCtx{}, BCallCtx{}) -> True
+    (IndetCtx{}, TopCtx{}) -> True
     _ -> False
 
 refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx

@@ -380,16 +380,16 @@ findUsage expr@Var{varName=tname@TName{getName = name}} ctx env@(EnvCtx cc) =
         empty
     _ -> childrenUsages -- TODO Avoid shadowing let bindings
 
-newQuery :: String -> ExprContext -> EnvCtx -> (String -> AEnv a) -> AEnv a
-newQuery kind exprctx envctx d = do
+newQuery :: Query -> (String -> AEnv a) -> AEnv a
+newQuery q d = do
   unique <- getUnique
-  withEnv (\env -> env{currentContext = exprctx, currentEnv = envctx, currentQuery = "q" ++ show unique ++ "(" ++ kind ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
+  withEnv (\env -> env{currentContext = queryCtx q, currentEnv = queryEnv q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
     d query
 
 instantiate ::  (Query -> AEnv AbValue) -> Query -> Ctx -> Ctx -> AEnv ()
 instantiate loop q c1 c0 = do
-  -- trace ("instantiating " ++ show c0 ++ " to " ++ show c1) $ return ()
+  trace ("instantiating " ++ show q ++ " " ++ showSimpleCtx c0 ++ " to " ++ showSimpleCtx c1) $ return ()
   st <- getState
   if S.member (q, c1, c0) (instantiateCache st) then return ()
   else do
@@ -479,7 +479,7 @@ makeReachable q1 q2 = -- Query q2 is reachable from q1
 
 loop :: (Query -> Query -> AEnv AbValue) -> Query -> Query -> AEnv AbValue
 loop l parentQuery currentQuery = do
-  makeReachable currentQuery parentQuery
+  makeReachable parentQuery currentQuery
   let memo = memoJoin currentQuery
   let loop = l currentQuery
   case currentQuery of
@@ -487,9 +487,12 @@ loop l parentQuery currentQuery = do
     CallQ{} -> memo $ doCall loop parentQuery currentQuery
     ExprQ{} -> memo $ doExpr loop parentQuery currentQuery
 
+instance Show Query where
+  show q = (queryKindCaps q ++ ": " ++ showSimpleEnv (queryEnv q) ++ " " ++ showSimpleContext (queryCtx q))
+
 doEval :: (Query -> AEnv AbValue) -> Query -> Query -> AEnv AbValue
-doEval loop pq cq@(EvalQ (ctx, env)) = newQuery "EVAL" ctx env (\query -> do
-  trace (query ++ "EVAL: " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
+doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
+   trace (query ++ show cq) $ do
     case exprOfCtx ctx of
       Lam{} -> -- LAM CLAUSE
         -- trace (query ++ "LAM: " ++ show ctx) $
@@ -605,51 +608,59 @@ newErrTerm s = do
   newId <- newContextId
   return [(ExprCTerm newId ("Error: " ++ s), EnvCtx [DegenCtx])]
 
-doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery "EXPR" ctx env (\query -> do
-  trace (query ++ "EXPR " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
+doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery cq (\query -> do
+  trace (query ++ show cq) $ do
     case ctx of
       AppCLambda _ c e -> -- RATOR Clause
-        -- trace (query ++ "RATOR: Expr is " ++ show ctx) $
+        trace (query ++ "OPERATOR: Application is " ++ showCtxExpr c) $
         return $ injClosure c env
       AppCParam _ c index e -> do -- RAND Clause 
-        -- trace (query ++ "RAND: Expr is " ++ show ctx) $ return []
+        trace (query ++ "OPERAND: Expr is " ++ showCtxExpr ctx) $ return []
         fn <- focusFun c
         case fn of
           Just fn -> do
-            -- trace (query ++ "RAND: Fn is " ++ show fn) $ return []
+            trace (query ++ "OPERAND: Evaluating To Closure " ++ showCtxExpr fn) $ return []
             ctxlam <- loop $ EvalQ (fn, env)
             doForList emptyAbValue ctxlam (\(lam, EnvCtx lamenv) -> do
-              -- trace (query ++ "RAND: Lam is " ++ show lam) $ return []
+              trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
               bd <- focusBody lam
               case bd of
                 Nothing -> return emptyAbValue
                 Just bd -> do
-                  -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
+                  trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
+                  trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
                   succ <- succAEnv c env
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
                   instantiate loop cq succ (IndetCtx (lamNames lam) lam)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
                   ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList ctxs)
-                  return $! Prelude.foldl join emptyAbValue ress
+                  let result = Prelude.foldl join emptyAbValue ress
+                  trace (query ++ "OPERAND RESULT: Callers of operand bound to are " ++ show result) $ return []
+                  return result
               )
           Nothing -> return emptyAbValue
       LamCBody _ _ _ e -> do -- BODY Clause
-        -- trace (query ++ "BODY: Expr is " ++ show ctx) $ return []
+        trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
         res <- loop $ CallQ (ctx, env)
+        trace (query ++ "BODY RESULT: Callers of returned closure are " ++ show res) $ return []
         ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList $ closures res)
-        return $! Prelude.foldl join emptyAbValue ress
+        let result = Prelude.foldl join emptyAbValue ress
+        trace (query ++ "BODY RESULT: Callers of returned closure are " ++ show result) $ return []
+        return result
       ExprCTerm{} ->
         -- trace (query ++ "ends in error " ++ show ctx)
         -- return [(ctx, env)]
         return $ injErr $ "Exprs led to ExprCTerm" ++ show ctx
       DefCNonRec _ c index df -> do
-        -- trace (query ++ "DEF: Env is " ++ show env) $ return []
+        trace (query ++ "DEF: Env is " ++ show env) $ return []
         ctxs <- case c of
           LetCDef{} -> findUsage (lamVarDef df) (fromJust $ contextOf c) env
           _ -> findUsage (lamVarDef df) c env
-        trace (query ++ "Def: Usages are " ++ show ctxs) $ return []
+        trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
         ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList ctxs)
-        return $! Prelude.foldl join emptyAbValue  ress
+        let result =  Prelude.foldl join emptyAbValue ress
+        trace (query ++ "DEF: Calls are " ++ show result) $ return []
+        return result
       ExprCBasic _ c _ -> loop $ ExprQ (c, env)
       _ ->
         case contextOf ctx of
@@ -661,8 +672,8 @@ doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery "EXPR" ctx env (\query -> do
   )
 
 doCall loop pq cq@(CallQ(ctx, env@(EnvCtx cc@(cc0:p)))) =
-  newQuery "CALL" ctx env (\query ->
-  trace (query ++ "CALL " ++  showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
+  newQuery cq (\query ->
+  trace (query ++ show cq) $ do
       case ctx of
           LamCBody _ c _ _-> do
             calls <- loop $ ExprQ (c, envtail env)
@@ -672,10 +683,12 @@ doCall loop pq cq@(CallQ(ctx, env@(EnvCtx cc@(cc0:p)))) =
                   trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
                   return $! injClosure callctx callenv
                 else if cc0 `subsumesCtx` cc1 then do
-                  trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
+                  trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()                  
+                  result <- loop $ CallQ (ctx, EnvCtx (cc1:p))
                   instantiate loop cq cc1 cc0
                   loop $ CallQ (ctx, EnvCtx (cc1:p))
-                else
+                else do
+                  trace (query ++ "CALL IS NOT SUBSUMED: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
                   return emptyAbValue
               )
             -- Lightweight Version
@@ -716,10 +729,10 @@ queryKind (CallQ _) = "call"
 queryKind (ExprQ _) = "expr"
 queryKind (EvalQ _) = "eval"
 
--- calibratem :: EnvCtx -> AEnv EnvCtx
--- calibratem ctx = do
---   mlimit <- contextLength <$> getEnv
---   return $! calibratemenv mlimit ctx
+queryKindCaps :: Query -> String
+queryKindCaps (CallQ _) = "CALL"
+queryKindCaps (ExprQ _) = "EXPR"
+queryKindCaps (EvalQ _) = "EVAL"
 
 fix :: (a -> a) -> a
 fix f = f (fix f)
