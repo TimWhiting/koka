@@ -19,7 +19,7 @@ module Core.DemandAnalysis(
                           runEvalQueryFromRangeSource,
                         ) where
 
-import Control.Monad
+import Control.Monad hiding (join)
 import Common.Name
 import Data.Set as S hiding (findIndex, filter, map)
 import Core.Core as C
@@ -56,8 +56,7 @@ data State = State{
   maxContextId:: Int,
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
   evalCacheGeneration :: Int,
-  evalCache :: M.Map ExprContextId (EnvCtxLattice AbValue),
-  memoCache :: M.Map String (M.Map ExprContextId (EnvCtxLattice (Set (ExprContext, EnvCtx)))),
+  memoCache :: M.Map String (M.Map ExprContextId (EnvCtxLattice AbValue)),
   instantiateCache :: Set (Query, Ctx, Ctx),
   reachable :: M.Map Query (Set Query),
   unique :: Int
@@ -278,7 +277,7 @@ runQueryAtRange loaded loadModuleFromSource (r, ri) mod query =
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\a l -> a ++ concat l) (const $ findContext r ri) modCtx
       result = case focalContext >>= query of
-        AEnv f -> f (DEnv 3 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 M.empty (M.fromList [("call", M.empty), ("expr", M.empty) ]) S.empty M.empty 0)
+        AEnv f -> f (DEnv 3 modCtx (EnvCtx []) "" "" loadModuleFromSource) (State loaded M.empty 0 M.empty 0 (M.fromList [("call", M.empty), ("expr", M.empty), ("eval", M.empty)]) S.empty M.empty 0)
   in case result of
     Ok a st -> a
 
@@ -361,52 +360,6 @@ newQuery kind exprctx envctx d = do
     query <- getQueryString
     d query
 
-wrapMemo :: ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) ->  String -> ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)] -> AEnv [(ExprContext, EnvCtx)]
-wrapMemo expr call name ctx env f = do
-  state <- getState
-  let cache = memoCache state M.! name
-      version = evalCacheGeneration state
-  case M.lookup (contextId ctx) cache of
-    Just (EnvCtxLattice x) ->
-      case M.lookup env x of
-        Just (v, x) ->
-          if version == v then return $! S.toAscList x
-          else runAndUpdate
-        _ -> do
-          let cache = memoCache state M.! name
-          let newCache = M.insert (contextId ctx) (EnvCtxLattice $ M.singleton env (version, S.empty)) cache
-          setState state{memoCache = M.insert name newCache (memoCache state)}
-          runAndUpdate
-    _ -> do
-      -- trace ("Pre memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-      let cache = memoCache state M.! name
-      let newCache = M.insert (contextId ctx) (EnvCtxLattice $ M.singleton env (version, S.empty)) cache
-      setState state{memoCache = M.insert name newCache (memoCache state)}
-      runAndUpdate
-  where
-    runAndUpdate = do
-      res <- f
-      state <- getState
-      query <- getQueryString
-      trace (query ++ "RESULT: [" ++ intercalate ", " (map showSimpleClosure res) ++ "]") $ return ()
-      -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-      let cache = memoCache state M.! name
-      let (changed, s, newCache) = addLamSet (cache M.! contextId ctx) (evalCacheGeneration state + 1) env (S.fromList res)
-      let newGen = if changed then evalCacheGeneration state + 1 else evalCacheGeneration state
-      let newCache' = M.insert (contextId ctx) newCache cache
-      setState state{memoCache = M.insert name newCache' (memoCache state), evalCacheGeneration = newGen}
-      mapM_ (\env -> do
-          mapM_ (\query ->
-              case name of
-                "expr" -> expr (ctx, env) query
-                "call" -> call (ctx, env) query
-            ) (case name of
-                 "expr" -> reachable state M.! ExprQ (ctx, env)
-                 "call" -> reachable state M.! CallQ (ctx, env)
-                 )
-        ) (S.toList s)
-      return res
-
 instantiate :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> Query -> Ctx -> Ctx -> AEnv ()
 instantiate eval expr call q c1 c0 = do
   -- trace ("instantiating " ++ show c0 ++ " to " ++ show c1) $ return ()
@@ -441,45 +394,43 @@ instantiate eval expr call q c1 c0 = do
                 return ()
       ) reach
 
-wrapMemoEval :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ExprContext -> EnvCtx -> AEnv AbValue -> AEnv AbValue
-wrapMemoEval eval ctx env f = do
+memoJoin :: Query -> AEnv AbValue -> AEnv AbValue
+memoJoin q f = do
   state <- getState
-  let cache = evalCache state
+  let cache = memoCache state M.! kind
       version = evalCacheGeneration state
   case M.lookup (contextId ctx) cache of
     Just (EnvCtxLattice x) ->
       case M.lookup env x of
         Just (v, x) ->
-          if version == v then return x
+          if version == v then return $! x
           else runAndUpdate
         _ -> do
-          let cache = evalCache state
+          let cache = memoCache state M.! kind
           let newCache = M.insert (contextId ctx) (EnvCtxLattice $ M.singleton env (version, emptyAbValue)) cache
-          setState state{evalCache = newCache}
+          setState state{memoCache = M.insert kind newCache (memoCache state)}
           runAndUpdate
     _ -> do
       -- trace ("Pre memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-      let cache = evalCache state
+      let cache = memoCache state M.! kind
       let newCache = M.insert (contextId ctx) (EnvCtxLattice $ M.singleton env (version, emptyAbValue)) cache
-      setState state{evalCache = newCache}
+      setState state{memoCache = M.insert kind newCache (memoCache state)}
       runAndUpdate
   where
+    ctx = queryCtx q
+    env = queryEnv q
+    kind = queryKind q
     runAndUpdate = do
       res <- f
-      query <- getQueryString
-      trace (query ++ "RESULT: " ++ show res) $ return ()
       state <- getState
+      query <- getQueryString
+      trace (query ++ "RESULT: [" ++ show res ++ "]") $ return ()
       -- trace ("Post memo " ++ show name ++ " " ++ show ctx ++ " " ++ show env) $ return () 
-      let cache = evalCache state
-      let (changed, s, newCache) = addAbValue (cache M.! contextId ctx) (evalCacheGeneration state + 1) env res
+      let cache = memoCache state M.! kind
+      let (changed, s, newCache) = addJoin (cache M.! contextId ctx) (evalCacheGeneration state + 1) env res
       let newGen = if changed then evalCacheGeneration state + 1 else evalCacheGeneration state
       let newCache' = M.insert (contextId ctx) newCache cache
-      setState state{evalCache = newCache', evalCacheGeneration = newGen}
-      mapM_ (\env -> do
-          mapM_ (\query -> do
-              eval (ctx, env) query
-            ) (reachable state M.! EvalQ (ctx, env))
-        ) (S.toList s)
+      setState state{memoCache = M.insert kind newCache' (memoCache state), evalCacheGeneration = newGen}
       return res
 
 succAEnv :: Ctx -> AEnv Ctx
@@ -487,43 +438,35 @@ succAEnv newctx = do
   length <- contextLength <$> getEnv
   return $! succm newctx length
 
-doForAbValue :: AbValue -> [a] -> (a -> AEnv AbValue) -> AEnv AbValue
-doForAbValue init l doA = do
-  foldM (\res x -> do
-    res' <- doA x
-    return $! joinAbValue res res') init l
-
 doMaybeAbValue :: AbValue -> Maybe a -> (a -> AEnv AbValue) -> AEnv AbValue
 doMaybeAbValue init l doA = do
   case l of
     Just x -> doA x
     Nothing -> return init
 
-doForContexts :: [(ExprContext, EnvCtx)] -> [a] -> (a -> AEnv [(ExprContext, EnvCtx)]) -> AEnv [(ExprContext, EnvCtx)]
-doForContexts init l doA = do
+doForList :: AbValue -> AbValue -> ((ExprContext, EnvCtx) -> AEnv AbValue) -> AEnv AbValue
+doForList init l doA = do
   foldM (\res x -> do
     res' <- doA x
-    return $! res ++ res') init l
+    return $! join res res') init (S.toList $ closures l)
 
 makeReachable :: Query -> Query -> AEnv ()
 makeReachable q1 q2 = -- Query q2 is reachable from q1
   updateState (\state -> state{reachable = M.insertWith S.union q2 (S.singleton q1) $ reachable state})
 
-loop :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> AEnv [(ExprContext, EnvCtx)]) -> Query -> AEnv ()
-loop eval expr call query = do
-  case query of
-    EvalQ ctxEnv -> do
-      nextQ <- eval ctxEnv
-      return ()
-  return ()
+loop :: (Query -> Query -> AEnv AbValue) -> Query -> Query -> AEnv AbValue
+loop l parentQuery currentQuery = do
+  makeReachable currentQuery parentQuery
+  let memo = memoJoin currentQuery
+  let loop = l currentQuery
+  case currentQuery of
+    EvalQ{} -> memo $ doEval loop parentQuery currentQuery
+    CallQ{} -> memo $ doCall loop parentQuery currentQuery
+    ExprQ{} -> memo $ doExpr loop parentQuery currentQuery
 
-
-doEval :: ((ExprContext, EnvCtx) -> AEnv AbValue) -> (ExprContext, EnvCtx) -> AEnv AbValue
-doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
-  trace (query ++ "EVAL: " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $
-    wrapMemoEval eval ctx env $ do
-    let cq = EvalQ (ctx, env)
-    makeReachable q cq
+doEval :: (Query -> AEnv AbValue) -> Query -> Query -> AEnv AbValue
+doEval loop pq cq@(EvalQ (ctx, env)) = newQuery "EVAL" ctx env (\query -> do
+  trace (query ++ "EVAL: " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
     case exprOfCtx ctx of
       Lam{} -> -- LAM CLAUSE
         -- trace (query ++ "LAM: " ++ show ctx) $
@@ -551,19 +494,19 @@ doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
         -- trace (query ++ "REF: bound to " ++ show binded) $ return []
         case binded of
           Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
-            calls <- call (lambodyctx, bindedenv) cq
-            doForAbValue emptyAbValue calls (\(appctx, appenv) -> do
+            calls <- loop $ CallQ (lambodyctx, bindedenv)
+            doForList emptyAbValue calls (\(appctx, appenv) -> do
               -- trace (query ++ "REF: found application " ++ show appctx ++ " " ++ show appenv ++ " param index " ++ show index) $ return []
               param <- focusParam (Just index) appctx
               doMaybeAbValue emptyAbValue param (\param ->
-                  eval (param, appenv) cq)
+                  loop $ EvalQ (param, appenv))
               )
           Just ((letbodyctx@LetCBody{}, bindedenv), index) -> do
             param <- focusChild (fromJust $ contextOf letbodyctx) (fromJust index)
-            doMaybeAbValue emptyAbValue param (\ctx -> eval (ctx, bindedenv) cq)
+            doMaybeAbValue emptyAbValue param (\ctx -> loop $ EvalQ (ctx, bindedenv))
           Just ((letdefctx@LetCDef{}, bindedenv), index) -> do
             param <- focusChild (fromJust $ contextOf letdefctx) (fromJust index)
-            doMaybeAbValue emptyAbValue param (\ctx -> eval (ctx, bindedenv) cq)
+            doMaybeAbValue emptyAbValue param (\ctx -> loop $ EvalQ (ctx, bindedenv))
           Just ((matchbodyctx@CaseCBranch{}, bindedenv), index) -> do
             -- TODO:
             let msg = query ++ "REF: TODO: Match body context " ++ show v ++ " " ++ show matchbodyctx
@@ -571,7 +514,7 @@ doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
           Just ((modulectx@ModuleC{}, bindedenv), index) -> do
             lamctx <- getDefCtx modulectx (getName tn)
             -- Evaluates just to the lambda
-            eval (lamctx, EnvCtx [TopCtx]) cq
+            loop $ EvalQ (lamctx, EnvCtx [TopCtx])
           Just ((ctxctx, bindedenv), index) -> do
             children <- childrenContexts ctxctx
             let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
@@ -582,7 +525,7 @@ doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
               Just (modulectx@ModuleC{}, index) -> do
                 lamctx <- getDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
-                eval (lamctx, EnvCtx [TopCtx]) cq
+                loop (EvalQ (lamctx, EnvCtx [TopCtx]))
               _ -> return $! injErr $ "REF: can't find what the following refers to " ++ show ctx
       App (Con nm repr) args -> do
         children <- childrenContexts ctx
@@ -591,9 +534,8 @@ doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
         fun <- focusChild ctx 0
         doMaybeAbValue emptyAbValue fun (\fun -> do
             -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
-            lamctx <- eval (fun, env) cq
-            let clss = closures lamctx
-            doForAbValue emptyAbValue (S.toList clss) (\(lam, EnvCtx lamenv) -> do
+            lamctx <- loop $ EvalQ (fun, env)
+            doForList emptyAbValue lamctx (\(lam, EnvCtx lamenv) -> do
               -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
               bd <- focusBody lam
               doMaybeAbValue emptyAbValue bd (\bd -> do
@@ -603,8 +545,8 @@ doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
                 succ <- succAEnv (CallCtx ctx env)
                 let newEnv = EnvCtx (succ:lamenv)
-                instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
-                eval (bd, newEnv) cq
+                -- instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
+                loop $ EvalQ (bd, newEnv)
                 )
               )
           )
@@ -614,14 +556,14 @@ doEval eval (ctx, env) = newQuery "EVAL" ctx env (\query -> do
           DefCRec{} -> return $! injClosure ctx env
           _ -> do
             ctx' <- focusChild ctx 0
-            doMaybeAbValue emptyAbValue ctx' (\ctx -> eval (ctx,env) cq)
+            doMaybeAbValue emptyAbValue ctx' (\ctx -> loop $ EvalQ (ctx,env))
       TypeLam{} ->
         case ctx of
           DefCNonRec{} -> return $! injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
           DefCRec{} -> return $! injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
           _ -> do
             ctx' <- focusChild ctx 0
-            doMaybeAbValue emptyAbValue ctx' (\ctx -> eval (ctx,env) cq)
+            doMaybeAbValue emptyAbValue ctx' (\ctx -> loop $ EvalQ (ctx,env))
       Lit l -> return $! injLit l env
       Case e branches -> do
         trace (query ++ "CASE: " ++ show ctx) $ return []
@@ -640,103 +582,95 @@ newErrTerm s = do
   newId <- newContextId
   return [(ExprCTerm newId ("Error: " ++ s), EnvCtx [DegenCtx])]
 
-doExpr :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]
-doExpr eval expr call (ctx, env) q = newQuery "EXPR" ctx env (\query -> do
-  trace (query ++ "EXPR " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $
-    wrapMemo expr call "expr" ctx env $ do
-    let cq = ExprQ (ctx, env)
-    makeReachable q cq
+doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery "EXPR" ctx env (\query -> do
+  trace (query ++ "EXPR " ++ showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
     case ctx of
       AppCLambda _ c e -> -- RATOR Clause
         -- trace (query ++ "RATOR: Expr is " ++ show ctx) $
-        return [(c, env)]
+        return $ injClosure c env
       AppCParam _ c index e -> do -- RAND Clause 
         -- trace (query ++ "RAND: Expr is " ++ show ctx) $ return []
         fn <- focusFun c
         case fn of
           Just fn -> do
             -- trace (query ++ "RAND: Fn is " ++ show fn) $ return []
-            ctxlam <- eval (fn, env) cq
-            let clss = closures ctxlam
-            doForContexts [] (S.toList clss) (\(lam, EnvCtx lamenv) -> do
+            ctxlam <- loop $ EvalQ (fn, env)
+            doForList emptyAbValue ctxlam (\(lam, EnvCtx lamenv) -> do
               -- trace (query ++ "RAND: Lam is " ++ show lam) $ return []
               bd <- focusBody lam
               case bd of
-                Nothing -> return []
+                Nothing -> return emptyAbValue
                 Just bd -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
                   succ <- succAEnv (CallCtx c env)
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
-                  instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
+                  -- instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-                  ress <- mapM (\ctx -> expr ctx cq) (S.toList ctxs)
-                  return $! concat ress
+                  ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList ctxs)
+                  return $! Prelude.foldl join emptyAbValue ress
               )
-          Nothing -> return []
+          Nothing -> return emptyAbValue
       LamCBody _ _ _ e -> do -- BODY Clause
         -- trace (query ++ "BODY: Expr is " ++ show ctx) $ return []
-        res <- call (ctx, env) cq
-        ress <- mapM (\ctx -> expr ctx cq) res
-        return $! concat ress
+        res <- loop $ CallQ (ctx, env)
+        ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList $ closures res)
+        return $! Prelude.foldl join emptyAbValue ress
       ExprCTerm{} ->
         -- trace (query ++ "ends in error " ++ show ctx)
         -- return [(ctx, env)]
-        newErrTerm $ "Exprs led to ExprCTerm" ++ show ctx
+        return $ injErr $ "Exprs led to ExprCTerm" ++ show ctx
       DefCNonRec _ c index df -> do
         -- trace (query ++ "DEF: Env is " ++ show env) $ return []
         ctxs <- case c of
           LetCDef{} -> findUsage (lamVarDef df) (fromJust $ contextOf c) env
           _ -> findUsage (lamVarDef df) c env
         trace (query ++ "Def: Usages are " ++ show ctxs) $ return []
-        ress <- mapM (\ctx -> expr ctx cq) (S.toList ctxs)
-        return $! concat ress
-      ExprCBasic _ c _ -> expr (c, env) cq
+        ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList ctxs)
+        return $! Prelude.foldl join emptyAbValue  ress
+      ExprCBasic _ c _ -> loop $ ExprQ (c, env)
       _ ->
         case contextOf ctx of
           Just c ->
             case enclosingLambda c of
-              Just c' -> expr (c', env) cq
-              _ -> newErrTerm $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
-          Nothing -> newErrTerm $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
+              Just c' -> loop $ ExprQ (c', env)
+              _ -> return $ injErr $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
+          Nothing -> return $ injErr $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
   )
 
-doCall :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> (ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]
-doCall eval expr call (ctx, env@(EnvCtx cc@(cc0:p))) q =
-  wrapMemo expr call "call" ctx env $ newQuery "CALL" ctx env (\query ->
+doCall loop pq cq@(CallQ(ctx, env@(EnvCtx cc@(cc0:p)))) =
+  newQuery "CALL" ctx env (\query ->
   trace (query ++ "CALL " ++  showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
-      let cq = CallQ (ctx, env)
-      makeReachable q cq
       case ctx of
           LamCBody _ c _ _-> do
-            calls <- expr (c, envtail env) cq
-            doForContexts [] calls (\(callctx, callenv) -> do
-                cc1 <- succAEnv $ CallCtx callctx callenv
-                if cc1 == cc0 then
-                  trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-                  return [(callctx, callenv)]
-                else if cc0 `subsumesCtx` cc1 then do
-                  trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $
-                    instantiate eval expr call cq cc1 cc0
-                  call (ctx, EnvCtx (cc1:p)) q
-                else
-                  return []
-              )
+            -- calls <- loop $ ExprQ (c, envtail env)
+            -- doForList emptyAbValue calls (\(callctx, callenv) -> do
+            --     cc1 <- succAEnv $ CallCtx callctx callenv
+            --     if cc1 == cc0 then
+            --       trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+            --       return $! injClosure callctx callenv
+            --     else if cc0 `subsumesCtx` cc1 then do
+            --       -- trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $
+            --       --   instantiate eval expr call cq cc1 cc0
+            --       loop $ CallQ (ctx, EnvCtx (cc1:p))
+            --     else
+            --       return emptyAbValue
+            --   )
             -- Lightweight Version
-            -- case cc of
-            --   (CallCtx callctx p'):p -> do
-            --     trace (query ++ "Known: " ++ show callctx) $ return ()
-            --     pnew <- calibratem p'
-            --     return [(callctx, pnew)]
-            --   _ -> do
-            --     trace (query ++ "Unknown") $ return ()
-            --     expr (c, envtail env) cq 
-          ExprCTerm{} ->
-            trace (query ++ "ends in error " ++ show ctx)
-            return [(ctx, env)]
+            case cc of
+              (CallCtx callctx p'):p -> do
+                trace (query ++ "Known: " ++ show callctx) $ return ()
+                pnew <- calibratem p'
+                return $ injClosure callctx pnew
+              _ -> do
+                trace (query ++ "Unknown") $ return ()
+                loop $ ExprQ (c, envtail env)
+          -- ExprCTerm{} ->
+          --   trace (query ++ "ends in error " ++ show ctx)
+          --   return $! injClosure ctx env
           -- DefCNonRec _ c _ d -> do
           --   ctx' <- findUsage2 query (lamVarDef d) c
           --   L.fromFoldable ctx' >>= expr
-          _ -> newErrTerm $ "CALL not implemented for " ++ show ctx
+          _ -> return $ injErr $ "CALL not implemented for " ++ show ctx
     )
 
 data Query =
@@ -744,30 +678,37 @@ data Query =
   ExprQ (ExprContext, EnvCtx) |
   EvalQ (ExprContext, EnvCtx) deriving (Eq, Ord)
 
+queryCtx :: Query -> ExprContext
+queryCtx (CallQ (ctx, _)) = ctx
+queryCtx (ExprQ (ctx, _)) = ctx
+queryCtx (EvalQ (ctx, _)) = ctx
+
+queryEnv :: Query -> EnvCtx
+queryEnv (CallQ (_, env)) = env
+queryEnv (ExprQ (_, env)) = env
+queryEnv (EvalQ (_, env)) = env
+
+queryKind :: Query -> String
+queryKind (CallQ _) = "call"
+queryKind (ExprQ _) = "expr"
+queryKind (EvalQ _) = "eval"
+
 calibratem :: EnvCtx -> AEnv EnvCtx
 calibratem ctx = do
   mlimit <- contextLength <$> getEnv
   return $! calibratemenv mlimit ctx
 
-fix3_eval :: (t1 -> t2 -> t3 -> t1) -> (t1 -> t2 -> t3 -> t2) -> (t1 -> t2 -> t3 -> t3) -> t1
-fix3_eval eval expr call =
-  eval (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
-
-fix3_expr :: (t -> t2 -> t3 -> t) -> (t -> t2 -> t3 -> t2) -> (t -> t2 -> t3 -> t3) -> t2
-fix3_expr eval expr call =
-  expr (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
-
-fix3_call :: (t -> t2 -> t3 -> t) -> (t -> t2 -> t3 -> t2) -> (t -> t2 -> t3 -> t3) -> t3
-fix3_call eval expr call =
-  call (fix3_eval eval expr call) (fix3_expr eval expr call) (fix3_call eval expr call)
+fix :: (a -> a) -> a
+fix f = f (fix f)
 
 fixedEval :: ExprContext -> EnvCtx -> AEnv [(EnvCtx, AbValue)]
 fixedEval e env = do
   let q = EvalQ (e, env)
-  fix3_eval doEval doExpr doCall (e, env) q
+  let doLoop = fix loop
+  doLoop q q
   trace "Finished eval" $ return ()
   state <- getState
-  let cache = evalCache state
+  let cache = memoCache state M.! "eval"
   case M.lookup (contextId e) cache of
     Just (EnvCtxLattice res) ->
       let !result = map (\(k, (_, v)) -> (k, v)) (M.assocs res)
@@ -777,9 +718,13 @@ fixedEval e env = do
       trace msg $ return [(EnvCtx [], injErr msg)]
 
 fixedExpr :: ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
-fixedExpr e env = fix3_expr doEval doExpr doCall (e, env) (ExprQ (e, env))
+fixedExpr e env = do
+  res <- fix loop (ExprQ (e, env)) (ExprQ (e, env))
+  return $ S.toList $ closures $ res
 fixedCall :: ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
-fixedCall e env = fix3_call doEval doExpr doCall (e, env) (CallQ (e, env))
+fixedCall e env = do
+  res <- fix loop (CallQ (e, env)) (CallQ (e, env))
+  return $ S.toList $ closures $ res
 
 allModules :: Loaded -> [Module]
 allModules loaded = loadedModule loaded : loadedModules loaded
