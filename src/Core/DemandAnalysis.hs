@@ -315,14 +315,16 @@ findContext r ri = do
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng -> trace ("found overlapping range " ++ showFullRange rng ++ " " ++ show ctx) $ return [ctx]
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
       return []
+    LetCDef _ _ _ i dg -> fromNames ctx [defTName (defsOf dg !! i)]
     -- Hovering over a lambda parameter should query what values that parameter can evaluate to -- need to create an artificial Var expression
-    LamCBody _ _ tnames _ ->
-      case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
-        [tn] -> do
-          id <- newContextId
-          return [ExprCBasic id ctx (Var tn InfoNone)]
-        _ -> return []
+    LamCBody _ _ tnames _ -> fromNames ctx tnames      
     _ -> return []
+  where fromNames ctx tnames =
+          case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
+              [tn] -> do
+                id <- newContextId
+                return [ExprCBasic id ctx (Var tn InfoNone)]
+              _ -> return []
 
 analyzeCtx :: (a -> [a] -> a) -> (ExprContext -> AEnv a) -> ExprContext -> AEnv a
 analyzeCtx combine analyze ctx = do
@@ -517,7 +519,7 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
 --         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the subquery to disregard traces that don’t contribute
         -- trace (query ++ "REF: " ++ show ctx) $ return []
         let binded = bind ctx v env
-        -- trace (query ++ "REF: bound to " ++ show binded) $ return []
+        trace (query ++ "REF: bound to " ++ show binded) $ return []
         case binded of
           Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
             calls <- loop $ CallQ (lambodyctx, bindedenv)
@@ -533,10 +535,14 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
           Just ((letdefctx@LetCDef{}, bindedenv), index) -> do
             param <- focusChild (fromJust $ contextOf letdefctx) (fromJust index)
             doMaybeAbValue emptyAbValue param (\ctx -> loop $ EvalQ (ctx, bindedenv))
-          Just ((matchbodyctx@CaseCBranch{}, bindedenv), index) -> do
-            -- TODO:
-            let msg = query ++ "REF: TODO: Match body context " ++ show v ++ " " ++ show matchbodyctx
-            trace msg $ return $! injErr msg
+          Just ((CaseCBranch _ c _ _ (Branch pat guard), bindedenv), index) -> do
+            scrutinee <- focusChild c 0
+            doMaybeAbValue emptyAbValue scrutinee (\scrutinee -> do
+                scruinteeval <- loop $ EvalQ (scrutinee, bindedenv)
+                let msg = query ++ "REF: TODO: Match body context " ++ show v ++ " " ++ show binded ++ " val " ++ show scruinteeval
+                trace msg $ return $! injErr msg
+
+              )
           Just ((modulectx@ModuleC{}, bindedenv), index) -> do
             lamctx <- getDefCtx modulectx (getName tn)
             -- Evaluates just to the lambda
@@ -594,10 +600,13 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
       Lit l -> return $! injLit l env
       Case e branches -> do
         trace (query ++ "CASE: " ++ show ctx) $ return []
-        -- discrim <- eval =<< withQuery query (focusChild ctx 0)
-        -- let msg = query ++ "CASE: discrim is " ++ show discrim
-        let msg = "Case not implemented"
-        return $! trace msg $! injErr msg
+        e <- focusChild ctx 0
+        doMaybeAbValue emptyAbValue e (\e -> do 
+            scrutinee <- loop $ EvalQ (e, env)
+            trace (query ++ "CASE: scrutinee is " ++ show scrutinee) $ return []
+            let msg = "Case not implemented"
+            return $! trace msg $! injErr msg
+          )
       Con nm repr -> return $! injCon nm (conTypeName repr) [] env -- TODO: Check that the constructor is a singleton
       _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
