@@ -55,10 +55,69 @@ newtype EnvCtx = EnvCtx [Ctx] deriving (Eq, Ord)
 instance Show EnvCtx where
   show (EnvCtx ctxs) = show ctxs
 
-data Ctx =
+---------------- Environment Based Ctx -------------------
+-- data Ctx =
+--   IndetCtx [TName] ExprContext
+--   | DegenCtx
+--   | CallCtx !ExprContext !EnvCtx
+--   | TopCtx
+--   deriving (Eq, Ord)
+
+-- instance Show Ctx where
+--   show ctx =
+--     case ctx of
+--       IndetCtx tn c -> "?(" ++ show tn ++ ")"
+--       DegenCtx -> "[]"
+--       CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
+--       TopCtx -> "()"
+
+-- showSimpleCtx :: Ctx -> String
+-- showSimpleCtx ctx =
+--   case ctx of
+--     IndetCtx tn c -> show tn
+--     DegenCtx -> "-"
+--     CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
+--     TopCtx -> "()"
+
+-- subsumesCtx :: Ctx -> Ctx -> Bool
+-- subsumesCtx c1 c2 =
+--   case (c1, c2) of
+--     (DegenCtx, DegenCtx) -> True
+--     (TopCtx, TopCtx) -> True
+--     (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
+--     (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
+--     (IndetCtx{}, CallCtx{}) -> True
+--     _ -> False
+
+-- refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx
+-- refineCtx (c1, c0) c =
+--   if c == c0 then c1 else
+--     case c of
+--       CallCtx c' e -> CallCtx c' (refine (c1, c0) e)
+--       _ -> c
+
+-- succm :: Ctx -> Int -> Ctx
+-- succm envctx m =
+--   if m == 0 then if envctx == TopCtx then TopCtx else DegenCtx
+--   else
+--     case envctx of
+--       CallCtx c e -> CallCtx c (succmenv e (m - 1))
+--       _ -> envctx
+
+-- calibratemctx :: Int -> Ctx -> Ctx
+-- calibratemctx mlimit p =
+--   if mlimit == 0 then DegenCtx
+--   else case p of
+--     IndetCtx tn c -> IndetCtx tn c
+--     DegenCtx -> let id = ExprContextId (-1) (newName "_err") in IndetCtx [] (ExprCTerm id "Err") -- TODO: Fix this?
+--     CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
+--     TopCtx -> TopCtx
+
+---------------- Basic Ctx -------------------
+data Ctx = 
   IndetCtx [TName] ExprContext
   | DegenCtx
-  | CallCtx !ExprContext !EnvCtx
+  | CallCtx !ExprContext Ctx
   | TopCtx
   deriving (Eq, Ord)
 
@@ -67,8 +126,51 @@ instance Show Ctx where
     case ctx of
       IndetCtx tn c -> "?(" ++ show tn ++ ")"
       DegenCtx -> "[]"
-      CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
+      CallCtx ctx cc -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show cc ++ ")"
       TopCtx -> "()"
+
+showSimpleCtx :: Ctx -> String
+showSimpleCtx ctx =
+  case ctx of
+    IndetCtx tn c -> show tn
+    DegenCtx -> "-"
+    CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx env ++ ")"
+    TopCtx -> "()"
+
+subsumesCtx :: Ctx -> Ctx -> Bool
+subsumesCtx c1 c2 =
+  case (c1, c2) of
+    (DegenCtx, DegenCtx) -> True
+    (TopCtx, TopCtx) -> True
+    (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
+    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumesCtx` env2
+    (IndetCtx{}, CallCtx{}) -> True
+    _ -> False
+
+refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx
+refineCtx (c1, c0) c =
+  if c == c0 then c1 else
+    case c of
+      CallCtx c' e -> CallCtx c' (refineCtx (c1, c0) e)
+      _ -> c
+
+succm :: Ctx -> Int -> Ctx
+succm envctx m =
+  if m == 0 then if envctx == TopCtx then TopCtx else DegenCtx
+  else
+    case envctx of
+      CallCtx c e -> CallCtx c (succm e (m - 1))
+      _ -> envctx
+
+calibratemctx :: Int -> Ctx -> Ctx
+calibratemctx mlimit p =
+  if mlimit == 0 then DegenCtx
+  else case p of
+    IndetCtx tn c -> IndetCtx tn c
+    DegenCtx -> let id = ExprContextId (-1) (newName "_err") in IndetCtx [] (ExprCTerm id "Err") -- TODO: Fix this?
+    CallCtx c p' -> CallCtx c (calibratemctx (mlimit - 1) p')
+    TopCtx -> TopCtx
+---------------- End Basic Ctx -------------------
 
 data ConstrContext =
   ConstrContext{
@@ -125,13 +227,6 @@ showSimpleEnv :: EnvCtx -> String
 showSimpleEnv (EnvCtx ctxs) = 
   "<" ++ intercalate "," (map showSimpleCtx ctxs) ++ ">"
 
-showSimpleCtx :: Ctx -> String
-showSimpleCtx ctx =
-  case ctx of
-    IndetCtx tn c -> show tn
-    DegenCtx -> "-"
-    CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
-    TopCtx -> "()"
 
 emptyAbValue :: AbValue
 emptyAbValue = AbValue S.empty M.empty M.empty M.empty M.empty M.empty Nothing
@@ -195,16 +290,6 @@ addJoin (EnvCtxLattice m) version env ab =
 subsumes :: EnvCtx -> EnvCtx -> Bool
 subsumes (EnvCtx ctxs1) (EnvCtx ctxs2) =
   and $ zipWith subsumesCtx ctxs1 ctxs2
-
-subsumesCtx :: Ctx -> Ctx -> Bool
-subsumesCtx c1 c2 =
-  case (c1, c2) of
-    (DegenCtx, DegenCtx) -> True
-    (TopCtx, TopCtx) -> True
-    (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
-    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
-    (IndetCtx{}, CallCtx{}) -> True
-    _ -> False
 
 -- Converting to user visible expressions
 toSynLit :: SimpleLattice Integer -> Maybe S.Lit
@@ -303,21 +388,6 @@ refine :: (Ctx, Ctx) -> EnvCtx -> EnvCtx
 refine (c1, c0) env@(EnvCtx p)  =
   EnvCtx (map (refineCtx (c1, c0)) p)
 
-refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx
-refineCtx (c1, c0) c =
-  if c == c0 then c1 else
-    case c of
-      CallCtx c' e -> CallCtx c' (refine (c1, c0) e)
-      _ -> c
-
-succm :: Ctx -> Int -> Ctx
-succm envctx m =
-  if m == 0 then if envctx == TopCtx then TopCtx else DegenCtx
-  else
-    case envctx of
-      CallCtx c e -> CallCtx c (succmenv e (m - 1))
-      _ -> envctx
-
 succmenv :: EnvCtx -> Int -> EnvCtx
 succmenv (EnvCtx e) m =
   EnvCtx (map (\x -> succm x m) e)
@@ -329,12 +399,3 @@ calibratemenv mlimit (EnvCtx ps) = do
 envtail :: EnvCtx -> EnvCtx
 envtail (EnvCtx (c:p)) = EnvCtx p
 envtail (EnvCtx []) = EnvCtx []
-
-calibratemctx :: Int -> Ctx -> Ctx
-calibratemctx mlimit p =
-  if mlimit == 0 then DegenCtx
-  else case p of
-    IndetCtx tn c -> IndetCtx tn c
-    DegenCtx -> let id = (ExprContextId (-1) (newName "_err")) in IndetCtx [] (ExprCTerm id "Err") -- TODO: Fix this?
-    CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
-    TopCtx -> TopCtx

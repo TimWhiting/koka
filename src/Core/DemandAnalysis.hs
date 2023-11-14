@@ -220,19 +220,49 @@ sourceEnv (EnvCtx env) = do
   envs <- mapM sourceEnvCtx env
   return $ "<" ++ intercalate "," envs ++ ">"
 
+
+------------------- Basic Ctx Abstraction ------------------
 sourceEnvCtx :: Ctx -> AEnv String
 sourceEnvCtx ctx =
   case ctx of
     IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
     TopCtx -> return "T"
     DegenCtx -> return "~"
-    CallCtx c env -> do
+    CallCtx c cc -> do
       se <- findSourceExpr c
-      e <- sourceEnv env
+      e <- sourceEnvCtx cc
       return $ case se of
         (Just se, _) -> showSyntax 0 se ++ " " ++ e
         (_, Just de) -> showSyntaxDef 0 de ++ " " ++ e
         _ -> show c ++ " " ++ e
+
+succAEnv :: (Ctx -> Ctx) -> EnvCtx -> AEnv Ctx
+succAEnv newctx (EnvCtx (cc:_)) = do
+  length <- contextLength <$> getEnv
+  return $! succm (newctx cc) length
+
+
+------------------- Env Ctx Abstraction ------------------
+-- succAEnv :: (EnvCtx -> Ctx) -> EnvCtx -> AEnv Ctx
+-- succAEnv newctx env = do
+--   length <- contextLength <$> getEnv
+--   return $! succm (newctx env) length
+
+-- sourceEnvCtx :: Ctx -> AEnv String
+-- sourceEnvCtx ctx =
+--   case ctx of
+--     IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
+--     TopCtx -> return "T"
+--     DegenCtx -> return "~"
+--     CallCtx c env -> do
+--       se <- findSourceExpr c
+--       e <- sourceEnv env
+--       return $ case se of
+--         (Just se, _) -> showSyntax 0 se ++ " " ++ e
+--         (_, Just de) -> showSyntaxDef 0 de ++ " " ++ e
+--         _ -> show c ++ " " ++ e
+
+------------------- End Env Ctx Abstraction ------------------
 
 findSourceExpr :: ExprContext -> AEnv (Maybe UserExpr, Maybe (Syn.Def UserType))
 findSourceExpr ctx =
@@ -433,10 +463,6 @@ memoJoin q f = do
       setState state{memoCache = M.insert kind newCache' (memoCache state), evalCacheGeneration = newGen}
       return res
 
-succAEnv :: Ctx -> AEnv Ctx
-succAEnv newctx = do
-  length <- contextLength <$> getEnv
-  return $! succm newctx length
 
 doMaybeAbValue :: AbValue -> Maybe a -> (a -> AEnv AbValue) -> AEnv AbValue
 doMaybeAbValue init l doA = do
@@ -543,7 +569,7 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery "EVAL" ctx env (\query -> do
                 childs <- childrenContexts ctx
                 -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
-                succ <- succAEnv (CallCtx ctx env)
+                succ <- succAEnv (CallCtx ctx) env
                 let newEnv = EnvCtx (succ:lamenv)
                 -- instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
                 loop $ EvalQ (bd, newEnv)
@@ -602,7 +628,7 @@ doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery "EXPR" ctx env (\query -> do
                 Nothing -> return emptyAbValue
                 Just bd -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
-                  succ <- succAEnv (CallCtx c env)
+                  succ <- succAEnv (CallCtx c) env
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
                   -- instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
@@ -642,28 +668,28 @@ doCall loop pq cq@(CallQ(ctx, env@(EnvCtx cc@(cc0:p)))) =
   trace (query ++ "CALL " ++  showSimpleEnv env ++ " " ++ showSimpleContext ctx) $ do
       case ctx of
           LamCBody _ c _ _-> do
-            -- calls <- loop $ ExprQ (c, envtail env)
-            -- doForList emptyAbValue calls (\(callctx, callenv) -> do
-            --     cc1 <- succAEnv $ CallCtx callctx callenv
-            --     if cc1 == cc0 then
-            --       trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-            --       return $! injClosure callctx callenv
-            --     else if cc0 `subsumesCtx` cc1 then do
-            --       -- trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $
-            --       --   instantiate eval expr call cq cc1 cc0
-            --       loop $ CallQ (ctx, EnvCtx (cc1:p))
-            --     else
-            --       return emptyAbValue
-            --   )
+            calls <- loop $ ExprQ (c, envtail env)
+            doForList emptyAbValue calls (\(callctx, callenv) -> do
+                cc1 <- succAEnv (CallCtx callctx) callenv
+                if cc1 == cc0 then
+                  trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+                  return $! injClosure callctx callenv
+                else if cc0 `subsumesCtx` cc1 then do
+                  -- trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $
+                  --   instantiate eval expr call cq cc1 cc0
+                  loop $ CallQ (ctx, EnvCtx (cc1:p))
+                else
+                  return emptyAbValue
+              )
             -- Lightweight Version
-            case cc of
-              (CallCtx callctx p'):p -> do
-                trace (query ++ "Known: " ++ show callctx) $ return ()
-                pnew <- calibratem p'
-                return $ injClosure callctx pnew
-              _ -> do
-                trace (query ++ "Unknown") $ return ()
-                loop $ ExprQ (c, envtail env)
+            -- case cc of
+            --   (CallCtx callctx p'):p -> do
+            --     trace (query ++ "Known: " ++ show callctx) $ return ()
+            --     pnew <- calibratem p'
+            --     return $ injClosure callctx pnew
+            --   _ -> do
+            --     trace (query ++ "Unknown") $ return ()
+            --     loop $ ExprQ (c, envtail env)
           -- ExprCTerm{} ->
           --   trace (query ++ "ends in error " ++ show ctx)
           --   return $! injClosure ctx env
@@ -693,10 +719,10 @@ queryKind (CallQ _) = "call"
 queryKind (ExprQ _) = "expr"
 queryKind (EvalQ _) = "eval"
 
-calibratem :: EnvCtx -> AEnv EnvCtx
-calibratem ctx = do
-  mlimit <- contextLength <$> getEnv
-  return $! calibratemenv mlimit ctx
+-- calibratem :: EnvCtx -> AEnv EnvCtx
+-- calibratem ctx = do
+--   mlimit <- contextLength <$> getEnv
+--   return $! calibratemenv mlimit ctx
 
 fix :: (a -> a) -> a
 fix f = f (fix f)
