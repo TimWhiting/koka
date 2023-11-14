@@ -14,7 +14,7 @@ module Core.AbstractValue(
                           SimpleLattice(..),
                           EnvCtxLattice(..),
                           Joinable(..),
-                          showSimpleClosure, showSimpleCtx, showSimpleEnv,
+                          showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
                           emptyAbValue,
                           injClosure,injErr,injLit,injCon,injClosures,
                           joinAbValue,joinL,joinML,
@@ -50,74 +50,18 @@ data AbstractLattice =
 
 newtype EnvCtxLattice t = EnvCtxLattice (M.Map EnvCtx (Int, t))
 
-newtype EnvCtx = EnvCtx [Ctx] deriving (Eq, Ord)
+newtype EnvCtx = EnvCtx [Ctx]
+  deriving (Eq, Ord)
 
 instance Show EnvCtx where
   show (EnvCtx ctxs) = show ctxs
 
 ---------------- Environment Based Ctx -------------------
--- data Ctx =
---   IndetCtx [TName] ExprContext
---   | DegenCtx
---   | CallCtx !ExprContext !EnvCtx
---   | TopCtx
---   deriving (Eq, Ord)
-
--- instance Show Ctx where
---   show ctx =
---     case ctx of
---       IndetCtx tn c -> "?(" ++ show tn ++ ")"
---       DegenCtx -> "[]"
---       CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
---       TopCtx -> "()"
-
--- showSimpleCtx :: Ctx -> String
--- showSimpleCtx ctx =
---   case ctx of
---     IndetCtx tn c -> show tn
---     DegenCtx -> "-"
---     CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
---     TopCtx -> "()"
-
--- subsumesCtx :: Ctx -> Ctx -> Bool
--- subsumesCtx c1 c2 =
---   case (c1, c2) of
---     (DegenCtx, DegenCtx) -> True
---     (TopCtx, TopCtx) -> True
---     (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
---     (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
---     (IndetCtx{}, CallCtx{}) -> True
---     _ -> False
-
--- refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx
--- refineCtx (c1, c0) c =
---   if c == c0 then c1 else
---     case c of
---       CallCtx c' e -> CallCtx c' (refine (c1, c0) e)
---       _ -> c
-
--- succm :: Ctx -> Int -> Ctx
--- succm envctx m =
---   if m == 0 then if envctx == TopCtx then TopCtx else DegenCtx
---   else
---     case envctx of
---       CallCtx c e -> CallCtx c (succmenv e (m - 1))
---       _ -> envctx
-
--- calibratemctx :: Int -> Ctx -> Ctx
--- calibratemctx mlimit p =
---   if mlimit == 0 then DegenCtx
---   else case p of
---     IndetCtx tn c -> IndetCtx tn c
---     DegenCtx -> let id = ExprContextId (-1) (newName "_err") in IndetCtx [] (ExprCTerm id "Err") -- TODO: Fix this?
---     CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
---     TopCtx -> TopCtx
-
----------------- Basic Ctx -------------------
-data Ctx = 
+data Ctx =
   IndetCtx [TName] ExprContext
   | DegenCtx
-  | CallCtx !ExprContext Ctx
+  | CallCtx !ExprContext !EnvCtx
+  | BCallCtx !ExprContext !Ctx
   | TopCtx
   deriving (Eq, Ord)
 
@@ -126,7 +70,8 @@ instance Show Ctx where
     case ctx of
       IndetCtx tn c -> "?(" ++ show tn ++ ")"
       DegenCtx -> "[]"
-      CallCtx ctx cc -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show cc ++ ")"
+      CallCtx ctx env -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show env ++ ")"
+      BCallCtx ctx cc -> "call(" ++ showExpr (exprOfCtx ctx) ++ "," ++ show cc ++ ")"
       TopCtx -> "()"
 
 showSimpleCtx :: Ctx -> String
@@ -134,7 +79,8 @@ showSimpleCtx ctx =
   case ctx of
     IndetCtx tn c -> show tn
     DegenCtx -> "-"
-    CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx env ++ ")"
+    CallCtx ctx env -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ ")"
+    BCallCtx ctx cc -> "call(" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ ")"
     TopCtx -> "()"
 
 subsumesCtx :: Ctx -> Ctx -> Bool
@@ -143,15 +89,17 @@ subsumesCtx c1 c2 =
     (DegenCtx, DegenCtx) -> True
     (TopCtx, TopCtx) -> True
     (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
-    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumesCtx` env2
+    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
+    (BCallCtx id1 env1, BCallCtx id2 env2) -> id1 == id2 && env1 `subsumesCtx` env2
     (IndetCtx{}, CallCtx{}) -> True
+    (IndetCtx{}, BCallCtx{}) -> True
     _ -> False
 
 refineCtx ::(Ctx, Ctx) -> Ctx -> Ctx
 refineCtx (c1, c0) c =
   if c == c0 then c1 else
     case c of
-      CallCtx c' e -> CallCtx c' (refineCtx (c1, c0) e)
+      CallCtx c' e -> CallCtx c' (refine (c1, c0) e)
       _ -> c
 
 succm :: Ctx -> Int -> Ctx
@@ -159,7 +107,8 @@ succm envctx m =
   if m == 0 then if envctx == TopCtx then TopCtx else DegenCtx
   else
     case envctx of
-      CallCtx c e -> CallCtx c (succm e (m - 1))
+      CallCtx c e -> CallCtx c (succmenv e (m - 1))
+      BCallCtx c e -> BCallCtx c (succm e (m - 1))
       _ -> envctx
 
 calibratemctx :: Int -> Ctx -> Ctx
@@ -168,8 +117,10 @@ calibratemctx mlimit p =
   else case p of
     IndetCtx tn c -> IndetCtx tn c
     DegenCtx -> let id = ExprContextId (-1) (newName "_err") in IndetCtx [] (ExprCTerm id "Err") -- TODO: Fix this?
-    CallCtx c p' -> CallCtx c (calibratemctx (mlimit - 1) p')
+    CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
+    BCallCtx c p' -> BCallCtx c (calibratemctx (mlimit - 1) p')
     TopCtx -> TopCtx
+
 ---------------- End Basic Ctx -------------------
 
 data ConstrContext =
@@ -227,6 +178,28 @@ showSimpleEnv :: EnvCtx -> String
 showSimpleEnv (EnvCtx ctxs) = 
   "<" ++ intercalate "," (map showSimpleCtx ctxs) ++ ">"
 
+
+showSimpleAbValueCtx :: (EnvCtx, AbValue) -> String
+showSimpleAbValueCtx (env, ab) =
+  showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
+
+showSimpleAbValue :: AbValue -> String
+showSimpleAbValue (AbValue cls cntrs i f c s e) =
+  (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
+  (if M.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleConstructor (M.toList cntrs)) ++ "]") ++
+  (if M.null i then "" else " ints: " ++ show (M.toList i)) ++
+  (if M.null f then "" else " floats: " ++ show (M.toList f)) ++
+  (if M.null c then "" else " chars: " ++ show (M.toList c)) ++
+  (if M.null s then "" else " strings: " ++ show (M.toList s)) ++
+  maybe "" (" err: " ++) e
+
+showSimpleConstructor :: (EnvCtx, Set ConstrContext) -> String
+showSimpleConstructor (env, cntrs) =
+  showSimpleEnv env ++ " {" ++ intercalate "," (map showSimpleConstructorContext (S.toList cntrs)) ++ "}"
+
+showSimpleConstructorContext :: ConstrContext -> String
+showSimpleConstructorContext (ConstrContext nm tp args) =
+  show nm ++ ":" ++ intercalate "," (map showSimpleContext args)
 
 emptyAbValue :: AbValue
 emptyAbValue = AbValue S.empty M.empty M.empty M.empty M.empty M.empty Nothing
