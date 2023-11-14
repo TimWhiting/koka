@@ -387,8 +387,8 @@ newQuery kind exprctx envctx d = do
     query <- getQueryString
     d query
 
-instantiate :: ((ExprContext, EnvCtx) -> Query -> AEnv AbValue) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> ((ExprContext, EnvCtx) -> Query -> AEnv [(ExprContext, EnvCtx)]) -> Query -> Ctx -> Ctx -> AEnv ()
-instantiate eval expr call q c1 c0 = do
+instantiate ::  (Query -> AEnv AbValue) -> Query -> Ctx -> Ctx -> AEnv ()
+instantiate loop q c1 c0 = do
   -- trace ("instantiating " ++ show c0 ++ " to " ++ show c1) $ return ()
   st <- getState
   if S.member (q, c1, c0) (instantiateCache st) then return ()
@@ -399,25 +399,25 @@ instantiate eval expr call q c1 c0 = do
     mapM_ (\query -> do -- Instantiate Reachable / Instantiate
         if q == query || c1 == c0 then return ()
         else do
-          instantiate eval expr call query c1 c0
+          instantiate loop query c1 c0
           case query of
             EvalQ (ctx, env) -> do
               let newEnv@(EnvCtx p') = (c1, c0) `refine` env
               if newEnv == env then return ()
               else do
-                eval (ctx, newEnv) q
+                loop $ EvalQ (ctx, newEnv)
                 return ()
             ExprQ (ctx, env) -> do
               let newEnv = (c1, c0) `refine` env
               if newEnv == env then return ()
               else do
-                expr (ctx, newEnv) q
+                loop $ ExprQ (ctx, newEnv)
                 return ()
             CallQ (ctx, env) -> do
               let newEnv = (c1, c0) `refine` env
               if newEnv == env then return ()
               else do
-                call (ctx, newEnv) q
+                loop $ CallQ (ctx, newEnv)
                 return ()
       ) reach
 
@@ -568,7 +568,7 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery "EVAL" ctx env (\query -> do
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
                 succ <- succAEnv ctx env
                 let newEnv = EnvCtx (succ:lamenv)
-                -- instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
+                instantiate loop cq succ (IndetCtx (lamNames lam) lam)
                 loop $ EvalQ (bd, newEnv)
                 )
               )
@@ -627,7 +627,7 @@ doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery "EXPR" ctx env (\query -> do
                   -- trace (query ++ "RAND: Lam body is " ++ show bd ++ " looking for usages of " ++ show (lamVar index lam)) $ return []
                   succ <- succAEnv c env
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
-                  -- instantiate eval expr call cq succ (IndetCtx (lamNames lam) lam)
+                  instantiate loop cq succ (IndetCtx (lamNames lam) lam)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
                   ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList ctxs)
                   return $! Prelude.foldl join emptyAbValue ress
@@ -673,7 +673,7 @@ doCall loop pq cq@(CallQ(ctx, env@(EnvCtx cc@(cc0:p)))) =
                   return $! injClosure callctx callenv
                 else if cc0 `subsumesCtx` cc1 then do
                   trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
-                  --   instantiate eval expr call cq cc1 cc0
+                  instantiate loop cq cc1 cc0
                   loop $ CallQ (ctx, EnvCtx (cc1:p))
                 else
                   return emptyAbValue

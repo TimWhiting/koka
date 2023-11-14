@@ -1113,7 +1113,7 @@ inferCheck loaded0 flags line coreImports program
                                 }
 
            coreDoc = Core.Pretty.prettyCore (prettyEnvFromFlags flags){ coreIface = False, coreShowDef = True } (C CDefault) []
-                       (coreProgram{ Core.coreProgDefs = coreDefsInlined })
+                       (coreProgram{ Core.coreProgDefs = cdefs })
 
        return (loadedFinal, coreDoc)
 
