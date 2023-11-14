@@ -571,6 +571,7 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
                 -- TODO: How does this affect any recursive contexts? (a local find from the body of the lambda)
                 succ <- succAEnv ctx env
                 let newEnv = EnvCtx (succ:lamenv)
+                loop $ EvalQ (bd, newEnv)
                 instantiate loop cq succ (IndetCtx (lamNames lam) lam)
                 loop $ EvalQ (bd, newEnv)
                 )
@@ -631,11 +632,11 @@ doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery cq (\query -> do
                   trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
                   succ <- succAEnv c env
                   ctxs <- findUsage (lamVar index lam) bd (EnvCtx $ succ:lamenv)
-                  instantiate loop cq succ (IndetCtx (lamNames lam) lam)
                   -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
                   ress <- mapM (\ctx -> loop $ ExprQ ctx) (S.toList ctxs)
                   let result = Prelude.foldl join emptyAbValue ress
                   trace (query ++ "OPERAND RESULT: Callers of operand bound to are " ++ show result) $ return []
+                  instantiate loop cq succ (IndetCtx (lamNames lam) lam)
                   return result
               )
           Nothing -> return emptyAbValue
