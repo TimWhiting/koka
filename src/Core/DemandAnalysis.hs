@@ -11,6 +11,7 @@
 -}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Core.DemandAnalysis(
                           AbstractLattice(..),
@@ -248,7 +249,7 @@ succAEnv :: ExprContext -> EnvCtx -> AEnv Ctx
 succAEnv newctx p'@(EnvCtx (cc:_)) = do
   length <- contextLength <$> getEnv
   basic <- basicEnvs <$> getEnv
-  if basic then 
+  if basic then
     return $ succm (BCallCtx newctx cc) length
   else
     return $ succm (CallCtx newctx p') length
@@ -317,7 +318,7 @@ findContext r ri = do
       return []
     LetCDef _ _ _ i dg -> fromNames ctx [defTName (defsOf dg !! i)]
     -- Hovering over a lambda parameter should query what values that parameter can evaluate to -- need to create an artificial Var expression
-    LamCBody _ _ tnames _ -> fromNames ctx tnames      
+    LamCBody _ _ tnames _ -> fromNames ctx tnames
     _ -> return []
   where fromNames ctx tnames =
           case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
@@ -375,7 +376,7 @@ findUsage expr@Var{varName=tname@TName{getName = name}} ctx env@(EnvCtx cc) =
     Just (Var{varName=TName{getName=name2}}) ->
       if nameEq name2 then do
         query <- getQueryString
-        return $! trace (query ++ "Found usage in " ++ show ctx) $ 
+        return $! trace (query ++ "Found usage in " ++ show ctx) $
           S.singleton (ctx, env)
       else
         -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
@@ -469,11 +470,24 @@ doMaybeAbValue init l doA = do
     Just x -> doA x
     Nothing -> return init
 
-doForList :: AbValue -> AbValue -> ((ExprContext, EnvCtx) -> AEnv AbValue) -> AEnv AbValue
-doForList init l doA = do
+doForClosures :: AbValue -> AbValue -> ((ExprContext, EnvCtx) -> AEnv AbValue) -> AEnv AbValue
+doForClosures init l doA = do
   foldM (\res x -> do
     res' <- doA x
     return $! join res res') init (S.toList $ closures l)
+
+doForConstructors :: AbValue -> AbValue -> ((EnvCtx, ConstrContext) -> AEnv AbValue) -> AEnv AbValue
+doForConstructors init l doA = do
+  foldM (\res x -> do
+    res' <- doA x
+    return $! join res res') init (concatMap (\(f,s) -> map (\s -> (f, s)) $ S.toList s) (M.toList $ constrs l))
+
+
+doForConstructorsJoin :: a -> AbValue -> (a -> a -> a) -> ((EnvCtx, ConstrContext) -> AEnv a) -> AEnv a
+doForConstructorsJoin init l join doA = do
+  foldM (\res x -> do
+    res' <- doA x
+    return $! join res res') init (concatMap (\(f,s) -> map (\s -> (f, s)) $ S.toList s) (M.toList $ constrs l))
 
 makeReachable :: Query -> Query -> AEnv ()
 makeReachable q1 q2 = -- Query q2 is reachable from q1
@@ -490,7 +504,7 @@ loop l parentQuery currentQuery = do
     ExprQ{} -> memo $ doExpr loop parentQuery currentQuery
 
 instance Show Query where
-  show q = (queryKindCaps q ++ ": " ++ showSimpleEnv (queryEnv q) ++ " " ++ showSimpleContext (queryCtx q))
+  show q = queryKindCaps q ++ ": " ++ showSimpleEnv (queryEnv q) ++ " " ++ showSimpleContext (queryCtx q)
 
 doEval :: (Query -> AEnv AbValue) -> Query -> Query -> AEnv AbValue
 doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
@@ -513,17 +527,17 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
 --  - When the binding is in the context of a Let Body we can directly evaluate the let binding as the value of the variable being bound (indexed to match the binding).
 --  - When the binding is in the context of a Let binding, it evaluates to that binding or the indexed binding in a mutually recursive group 
 --  - When the binding is a top level definition - it evaluates to that definition 
---  - When the binding is focused on a match body then we need to issue a subquery for the evaluation of the match expression that contributes to the binding, 
+--  - When the binding is focused on a match body then we need to issue a sub-query for the evaluation of the match expression that contributes to the binding, 
 --         and then consider the abstract value and find all abstract values that match the pattern of the branch in question 
 --         and only consider the binding we care about. 
---         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the subquery to disregard traces that don’t contribute
+--         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the sub-query to disregard traces that don’t contribute
         -- trace (query ++ "REF: " ++ show ctx) $ return []
         let binded = bind ctx v env
         trace (query ++ "REF: bound to " ++ show binded) $ return []
         case binded of
           Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
             calls <- loop $ CallQ (lambodyctx, bindedenv)
-            doForList emptyAbValue calls (\(appctx, appenv) -> do
+            doForClosures emptyAbValue calls (\(appctx, appenv) -> do
               -- trace (query ++ "REF: found application " ++ show appctx ++ " " ++ show appenv ++ " param index " ++ show index) $ return []
               param <- focusParam (Just index) appctx
               doMaybeAbValue emptyAbValue param (\param ->
@@ -567,7 +581,7 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
         doMaybeAbValue emptyAbValue fun (\fun -> do
             -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
             lamctx <- loop $ EvalQ (fun, env)
-            doForList emptyAbValue lamctx (\(lam, EnvCtx lamenv) -> do
+            doForClosures emptyAbValue lamctx (\(lam, EnvCtx lamenv) -> do
               -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
               bd <- focusBody lam
               doMaybeAbValue emptyAbValue bd (\bd -> do
@@ -601,17 +615,64 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
       Case e branches -> do
         trace (query ++ "CASE: " ++ show ctx) $ return []
         e <- focusChild ctx 0
-        doMaybeAbValue emptyAbValue e (\e -> do 
+        doMaybeAbValue emptyAbValue e (\e -> do
             scrutinee <- loop $ EvalQ (e, env)
             trace (query ++ "CASE: scrutinee is " ++ show scrutinee) $ return []
-            let msg = "Case not implemented"
-            return $! trace msg $! injErr msg
+            doForConstructors emptyAbValue scrutinee (\(cenv, con) -> do
+                branches <- findBranch loop con ctx cenv
+                foldM (\acc branch -> do
+                    res <- loop $ EvalQ (branch, cenv)
+                    return $! join acc res
+                  ) emptyAbValue branches
+              )
           )
       Con nm repr -> return $! injCon nm (conTypeName repr) [] env -- TODO: Check that the constructor is a singleton
       _ ->
         let msg =  (query ++ "TODO: Not Handled Eval: " ++ show ctx ++ " expr: " ++ show (exprOfCtx ctx)) in
         trace msg $! return $! injErr msg
   )
+
+matchesPattern :: ConstrContext -> Pattern -> Maybe [Pattern]
+matchesPattern cc pat =
+  case pat of
+    PatCon{patConName} -> if patConName == constrName cc then Just (patConPatterns pat) else Nothing
+    PatVar _ p -> matchesPattern cc p
+    PatWild -> Just []
+    _ -> Nothing
+
+matchesPatternCtx :: (Query -> AEnv AbValue) -> ConstrContext -> Pattern -> EnvCtx -> AEnv Bool
+matchesPatternCtx loop cc pat env = do
+  let childMatches = matchesPattern cc pat
+  case childMatches of
+    Just [] -> return True -- No need to evaluate further (Pattern is a wildcard)
+    Just x -> matchesPatternsCtx loop (constrParams cc) x env
+    Nothing -> return False
+
+matchesPatternsCtx :: (Query -> AEnv AbValue) -> [ExprContext] -> [Pattern] -> EnvCtx -> AEnv Bool
+matchesPatternsCtx loop childrenCC pats env = do
+  childrenEval <- mapM (\cc -> loop $ EvalQ (cc, env)) childrenCC
+  res <- zipWithM (\abv subPat -> doForConstructorsJoin True abv (&&) (\(cenv, con) -> matchesPatternCtx loop con subPat cenv)) childrenEval pats
+  return $ and res
+
+findBranch :: (Query -> AEnv AbValue) -> ConstrContext -> ExprContext -> EnvCtx -> AEnv [ExprContext]
+findBranch loop cc ctx env = do
+  let Case e branches = exprOfCtx ctx
+  children <- childrenContexts ctx
+  let childMatches = zipWith (\i (Branch [p] _ ) -> case matchesPattern cc p of {Just x -> Just (x, i); Nothing -> Nothing}) [0..] branches
+  let childrenCC = constrParams cc
+  case catMaybes childMatches of
+    [] -> return []
+    [([], i)] -> return [children !! (i + 1)] -- +1 to skip the scrutinee
+    matches -> do -- Many, need to evaluate sub-pieces and match nested sub-expressions
+      res <- mapM (\(pats, i) -> do
+          x <- matchesPatternsCtx loop childrenCC pats env
+          return $ if x then Just i else Nothing
+        ) matches
+      case catMaybes res of
+        [] -> return []
+        xs -> return $ map (\i -> children !! (i + 1)) xs -- +1 to skip the scrutinee
+      return []
+  return []
 
 newErrTerm :: String -> AEnv [(ExprContext, EnvCtx)]
 newErrTerm s = do
@@ -631,7 +692,7 @@ doExpr loop pq cq@(ExprQ (ctx,env)) = newQuery cq (\query -> do
           Just fn -> do
             trace (query ++ "OPERAND: Evaluating To Closure " ++ showCtxExpr fn) $ return []
             ctxlam <- loop $ EvalQ (fn, env)
-            doForList emptyAbValue ctxlam (\(lam, EnvCtx lamenv) -> do
+            doForClosures emptyAbValue ctxlam (\(lam, EnvCtx lamenv) -> do
               trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
               bd <- focusBody lam
               case bd of
@@ -687,13 +748,13 @@ doCall loop pq cq@(CallQ(ctx, env@(EnvCtx cc@(cc0:p)))) =
       case ctx of
           LamCBody _ c _ _-> do
             calls <- loop $ ExprQ (c, envtail env)
-            doForList emptyAbValue calls (\(callctx, callenv) -> do
+            doForClosures emptyAbValue calls (\(callctx, callenv) -> do
                 cc1 <- succAEnv callctx callenv
                 if cc1 == cc0 then
                   trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
                   return $! injClosure callctx callenv
                 else if cc0 `subsumesCtx` cc1 then do
-                  trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()                  
+                  trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
                   result <- loop $ CallQ (ctx, EnvCtx (cc1:p))
                   instantiate loop cq cc1 cc0
                   loop $ CallQ (ctx, EnvCtx (cc1:p))
@@ -766,11 +827,11 @@ fixedEval e env = do
 fixedExpr :: ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
 fixedExpr e env = do
   res <- fix loop (ExprQ (e, env)) (ExprQ (e, env))
-  return $ S.toList $ closures $ res
+  return $ S.toList $ closures res
 fixedCall :: ExprContext -> EnvCtx -> AEnv [(ExprContext, EnvCtx)]
 fixedCall e env = do
   res <- fix loop (CallQ (e, env)) (CallQ (e, env))
-  return $ S.toList $ closures $ res
+  return $ S.toList $ closures res
 
 allModules :: Loaded -> [Module]
 allModules loaded = loadedModule loaded : loadedModules loaded

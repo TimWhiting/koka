@@ -47,7 +47,7 @@ data ExprContext =
   | LamCBody !ExprContextId !ExprContext ![TName] !C.Expr -- Inside a lambda body expression
   | AppCLambda !ExprContextId !ExprContext !C.Expr -- Application context inside function context
   | AppCParam !ExprContextId !ExprContext !Int !C.Expr -- Application context inside param context
-  -- TODO: This needs adjustment, currently it flatmaps over the defgroup and indexes over that
+  -- TODO: This needs adjustment, currently it flat-maps over the defgroup and indexes over that
   | LetCDef !ExprContextId !ExprContext ![TName] !Int !C.DefGroup -- In a let definition context working on a particular defgroup
   | LetCBody !ExprContextId !ExprContext ![TName] !C.Expr -- In a let body expression
   | CaseCMatch !ExprContextId !ExprContext !C.Expr -- In a case match context working on the match expression (assumes only one)
