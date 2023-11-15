@@ -619,7 +619,8 @@ doEval loop pq cq@(EvalQ (ctx, env)) = newQuery cq (\query -> do
             scrutinee <- loop $ EvalQ (e, env)
             trace (query ++ "CASE: scrutinee is " ++ show scrutinee) $ return []
             doForConstructors emptyAbValue scrutinee (\(cenv, con) -> do
-                branches <- findBranch loop con ctx cenv
+                branches <- findBranch loop con ctx cenv 
+                -- TODO: Consider just the first branch that matches? Need to make sure that works with approximation
                 foldM (\acc branch -> do
                     res <- loop $ EvalQ (branch, cenv)
                     return $! join acc res
