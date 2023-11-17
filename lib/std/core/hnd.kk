@@ -522,7 +522,12 @@ pub fun clause-tail1<e,r,a,b>(op : a -> e b) : clause1<a,b,h,e,r>
   Clause1(fn(_m,ev,x){ under1(ev,op,x) })
 
 pub fun clause-tail-noyield1<e,r,a,b>(op : a -> e b) : clause1<a,b,h,e,r> 
-  Clause1(fn(_m,_ev,x){ op(x) })
+  Clause1(fn(_m,ev,x){ 
+    val w0 = evv-swap-with(ev)
+    val res = op(x) 
+    evv-set(w0)
+    res
+  })
 
 pub fun clause-never1( op : a -> e r ) : clause1<a,b,h,e,r> 
   Clause1(fn(m,_ev,x){ yield-to-final(m, fn(_k) op(x) ) })
@@ -565,7 +570,12 @@ pub fun clause-tail0<e,r,b>(op : () -> e b) : clause0<b,h,e,r>
   Clause0(fn(_m,ev){ under0(ev,op) })
 
 pub fun clause-tail-noyield0<e,r,b>(op : () -> e b) : clause0<b,h,e,r> 
-  Clause0(fn(_m,_ev){ op() })
+  Clause0(fn(_m,ev){ 
+    val w0 = evv-swap-with(ev)
+    val res = op()
+    evv-set(w0)
+    res 
+  })
 
 pub fun clause-value(v : b) : clause0<b,h,e,r> 
   Clause0(fn(_m,_ev){ v })
@@ -607,7 +617,12 @@ pub fun clause-tail2<e,r,a1,a2,b>(op : (a1,a2) -> e b) : clause2<a1,a2,b,h,e,r>
   Clause2(fn(m,ev,x1,x2){ under2(ev,op,x1,x2) })
 
 pub fun clause-tail-noyield2<e,r,a1,a2,b>(op : (a1,a2) -> e b) : clause2<a1,a2,b,h,e,r> 
-  Clause2(fn(_m,_ev,x1,x2){ op(x1,x2) })
+  Clause2(fn(_m,_ev,x1,x2){ 
+    val w0 = evv-swap-with(ev)
+    val res = op(x1,x2)
+    evv-set(w0)
+    res 
+  })
 
 pub inline fun ".perform2"( evx : ev<h>, op : (forall<e1,r> h<e1,r> -> clause2<a,b,c,h,e1,r>), x : a, y : b ) : e c 
   match evx
