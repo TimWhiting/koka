@@ -617,7 +617,7 @@ pub fun clause-tail2<e,r,a1,a2,b>(op : (a1,a2) -> e b) : clause2<a1,a2,b,h,e,r>
   Clause2(fn(m,ev,x1,x2){ under2(ev,op,x1,x2) })
 
 pub fun clause-tail-noyield2<e,r,a1,a2,b>(op : (a1,a2) -> e b) : clause2<a1,a2,b,h,e,r> 
-  Clause2(fn(_m,_ev,x1,x2){ 
+  Clause2(fn(_m,ev,x1,x2){ 
     val w0 = evv-swap-with(ev)
     val res = op(x1,x2)
     evv-set(w0)
