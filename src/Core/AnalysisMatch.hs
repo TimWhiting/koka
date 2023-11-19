@@ -248,7 +248,7 @@ patternMatchError resultType defName range
     return $ App ( 
       Core.openEffectExpr exnEff openEff origTp openTp $ 
       Lam [] exnEff $ 
-      App (TypeApp (Var (TName name tp Nothing) (InfoArity 1 2)) [resultType])
+      App (TypeApp (Var (TName name tp) (InfoArity 1 2)) [resultType])
                 [Lit (LitString (sourceName (posSource (rangeStart range)) ++ show range)), Lit (LitString (show defName))]
      ) []
   where
