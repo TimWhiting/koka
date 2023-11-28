@@ -82,7 +82,7 @@ traceDoc fdoc = do penv <- getPrettyEnv
   Infer Types
 --------------------------------------------------------------------------}
 inferTypes :: Env -> Maybe RM.RangeMap -> Synonyms -> Newtypes -> Constructors -> ImportMap -> Gamma -> Name -> DefGroups Type
-                -> Core.CorePhase (Gamma, Core.DefGroups, Maybe RM.RangeMap )
+                -> Core.CorePhase b (Gamma, Core.DefGroups, Maybe RM.RangeMap )
 inferTypes prettyEnv mbRangeMap syns newTypes cons imports gamma0 context defs
   = -- error "Type.Infer.inferTypes: not yet implemented"
     -- return (gamma0,[],uniq0)

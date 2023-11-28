@@ -58,7 +58,7 @@ toLspLocationLink src r =
   where
     uri = J.filePathToUri $ R.sourceName $ R.rangeSource r
 
-toLspDiagnostics :: T.Text -> E.Error a -> [J.Diagnostic]
+toLspDiagnostics :: T.Text -> E.Error b a -> [J.Diagnostic]
 toLspDiagnostics src err =
   case E.checkError err of
     Right (_, ws) -> map (uncurry $ toLspWarningDiagnostic src) ws
