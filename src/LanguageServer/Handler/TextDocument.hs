@@ -121,14 +121,17 @@ recompileFile compileTarget uri version force flags =
       case result of
         Right res -> do
           outFile <- case checkPartial res of
-            Right ((l, outFile), _) -> do
+            Right ((l, outFile), _, _) -> do
               putLoaded l
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ "Successfully compiled " <> T.pack filePath
               return outFile
             Left (e, m) -> do
               case m of
-                Nothing -> return ()
+                Nothing -> 
+                  trace ("Error when compiling, no cached modules " ++ show e) $
+                  return ()
                 Just l -> do
+                  trace ("Error when compiling have cached" ++ show (map modSourcePath $ loadedModules l)) $ return ()
                   putLoaded l
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
               return Nothing

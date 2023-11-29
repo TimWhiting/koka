@@ -84,7 +84,7 @@ optional p  = do { p; return True } <|> return False
 -----------------------------------------------------------
 -- Parse varieties
 -----------------------------------------------------------
-parseProgramFromFile :: Bool -> FilePath -> IO (Error () UserProgram)
+parseProgramFromFile :: Bool -> FilePath -> IO (Error a UserProgram)
 parseProgramFromFile semiInsert fname
   = do input <- readInput fname
        let result = parseProgramFromString semiInsert input fname
@@ -99,7 +99,7 @@ logSyntaxWarnings :: [(Range, Doc)] -> IO ()
 logSyntaxWarnings warnings
   = putPretty (prettyWarnings True defaultColorScheme warnings) 
 
-parseProgramFromString :: Bool -> BString -> FilePath -> Error () UserProgram
+parseProgramFromString :: Bool -> BString -> FilePath -> Error a UserProgram
 parseProgramFromString semiInsert input fname
   = do (result, syntaxWarnings) <- lexParse semiInsert id program fname 1 input
        addWarnings (map (\(s, r) -> (r, text s)) syntaxWarnings) $ return result
