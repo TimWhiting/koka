@@ -135,8 +135,8 @@ data IOErr b a = IOErr (IO (Error b a))
 runIOErr :: IOErr b a -> IO (Error b a)
 runIOErr (IOErr ie) = ie
 
-liftErrorPartial :: (b -> Maybe c) -> Error b a -> IOErr c a
-liftErrorPartial partialT err = IOErr (return $ transformPartial partialT err)
+liftErrorPartial :: c -> Error b a -> IOErr c a
+liftErrorPartial partialT err = IOErr (return $ setPartial (Just partialT) err)
 
 liftError :: Error c a -> IOErr c a
 liftError err = IOErr (return err)
@@ -173,7 +173,7 @@ bindIO io f
   = do err <- io
        case checkPartial err of
          Left (msg, b) -> return (errorMsgPartial msg b)
-         Right (x,w,b)  -> fmap (flip addPartialResult b. addWarnings w) (f x) 
+         Right (x,w,b)  -> fmap (flip addPartialResult b . addWarnings w) (f x) 
 
 gammaFind name g
   = case (gammaLookupQ name g) of
@@ -185,7 +185,7 @@ compileExpression :: Terminal -> Flags -> Loaded -> CompileTarget () -> UserProg
 compileExpression term flags loaded compileTarget program line input
   = runIOErr $
     do let qnameExpr = (qualify (getName program) nameExpr)
-       def <- liftErrorPartial (const (Just loaded)) (parseExpression (semiInsert flags) (show nameInteractiveModule) line qnameExpr input)
+       def <- liftErrorPartial loaded (parseExpression (semiInsert flags) (show nameInteractiveModule) line qnameExpr input)
        let programDef = programAddDefs program [] [def]
        -- specialized code: either just call the expression, or wrap in a show function
        case compileTarget of
@@ -227,7 +227,7 @@ compileExpression term flags loaded compileTarget program line input
                                       compileProgram' (const Nothing) term flags (loadedModules ld) [] (Executable nameMain ()) "<interactive>" programDef' []
                                       return ld
 
-                              _  -> liftErrorPartial (const (Just loaded)) $ errorMsg (ErrorGeneral rangeNull (text "no 'show' function defined for values of type:" <+> ppType (prettyEnvFromFlags flags) tres))
+                              _  -> liftErrorPartial loaded $ errorMsg (ErrorGeneral rangeNull (text "no 'show' function defined for values of type:" <+> ppType (prettyEnvFromFlags flags) tres))
                                                      -- mkApp (Var (qualify nameSystemCore (newName "gprintln")) False r)
                                                      --   [mkApp (Var nameExpr False r) []]
                    Nothing
@@ -261,7 +261,7 @@ compileType :: Terminal -> Flags -> Loaded -> UserProgram -> Int -> String -> IO
 compileType term flags loaded program line input
   = runIOErr $
     do let qnameType = qualify (getName program) nameType
-       tdef <- liftErrorPartial (const (Just loaded)) $ parseType (semiInsert flags) (show nameInteractiveModule) line nameType input
+       tdef <- liftErrorPartial loaded $ parseType (semiInsert flags) (show nameInteractiveModule) line nameType input
        let programDef = programAddDefs (programRemoveAllDefs program) [tdef] []
        -- typeCheck (loaded) flags line programDef
        (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef []
@@ -271,7 +271,7 @@ compileType term flags loaded program line input
 compileValueDef :: Terminal -> Flags -> Loaded -> UserProgram -> Int -> String -> IO (Error Loaded (Name,Loaded))
 compileValueDef term flags loaded program line input
   = runIOErr $
-    do def <- liftErrorPartial (const (Just loaded)) $ parseValueDef (semiInsert flags) (show nameInteractiveModule) line input
+    do def <- liftErrorPartial loaded $ parseValueDef (semiInsert flags) (show nameInteractiveModule) line input
        let programDef = programAddDefs program [] [def]
        (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef []
        return (qualify (getName program) (defName def),ld)
@@ -279,7 +279,7 @@ compileValueDef term flags loaded program line input
 compileTypeDef :: Terminal -> Flags -> Loaded -> UserProgram -> Int -> String -> IO (Error Loaded (Name,Loaded))
 compileTypeDef term flags loaded program line input
   = runIOErr $
-    do (tdef,cdefs) <- liftErrorPartial (const (Just loaded)) $ parseTypeDef (semiInsert flags) (show nameInteractiveModule) line input
+    do (tdef,cdefs) <- liftErrorPartial loaded $ parseTypeDef (semiInsert flags) (show nameInteractiveModule) line input
        let programDef = programAddDefs program [tdef] cdefs
        (ld, _) <- compileProgram' (const Nothing) term flags (loadedModules loaded) [] Object "<interactive>" programDef []
        return (qualify (getName program) (typeDefName tdef),ld)
@@ -358,8 +358,7 @@ compileProgramFromFile maybeContents contents term flags modules cachedModules c
        liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "compile:") <+> color (colorSource (colorScheme flags)) (text (normalizeWith '/' fname)))
        exist <- liftIO $ doesFileExist fname
        if (exist) then return () else liftError $ errorMsg (errorFileNotFound flags fname)
-       programErr <- liftIO $ case contents of { Just x -> return $ parseProgramFromString (semiInsert flags) x fname; _ -> parseProgramFromFile (semiInsert flags) fname}
-       program <- liftError programErr
+       program <- lift $ case contents of { Just x -> return $ parseProgramFromString (semiInsert flags) x fname; _ -> parseProgramFromFile (semiInsert flags) fname}
        let isSuffix = -- asciiEncode True (noexts stem) `endsWith` asciiEncode True (show (programName program))
                       -- map (\c -> if isPathSep c then '/' else c) (noexts stem)
                       show (pathToModuleName (noexts stem)) `endsWith` show (programName program)
@@ -430,7 +429,8 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
                                           (imp:_) -> importVis imp -- TODO: get max
                               in if (modName mod == name) then []
                                   else [Core.Import (modName mod) (modPackagePath mod) vis (Core.coreProgDoc (modCore mod))]
-       (loaded2a, coreDoc) <- liftErrorPartial (const (Just loaded1)) $ typeCheck loaded1 flags 0 coreImports program ftime
+        
+       (loaded2a, coreDoc) <- liftErrorPartial loaded1 $ addPartialResult (typeCheck loaded1 flags 0 coreImports program ftime) (Just loaded1)
        when (showCore flags) $
          liftIO (termDoc term (vcat [
            text "-------------------------",
@@ -477,7 +477,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
 doCodeGen :: Terminal -> Flags -> Loaded -> Loaded -> CompileTarget a -> Program UserType UserKind -> [Core.Import] -> IOErr Loaded (CompileTarget Scheme, Loaded)
 doCodeGen  term flags loaded0 loaded1 compileTarget program coreImports = do
   liftIO $ termPhase term ("codegen " ++ show (getName program))
-  liftErrorPartial (const (Just loaded1)) $
+  liftErrorPartial loaded1 $
       case compileTarget of
         Executable entryName _
           -> let mainName = if (isQualified entryName) then entryName else qualify (getName program) (entryName) in
@@ -574,7 +574,7 @@ resolveImports compileTarget maybeContents mname term flags currentDir loaded0 c
            load msg loaded (mod:mods)
              = do let (loaded1,errs) = loadedImportModule (isValueFromFlags flags) loaded mod (rangeNull) (modName mod)
                   -- trace ("loaded " ++ msg ++ " module: " ++ show (modName mod)) $ return ()
-                  mapM_ (\err -> liftErrorPartial (const (Just loaded0)) (errorMsg err)) errs
+                  mapM_ (\err -> liftErrorPartial loaded0 (errorMsg err)) errs
                   load msg loaded1 mods
 
            loadInlines :: Loaded -> Module -> IOErr Loaded [Core.InlineDef]
@@ -583,7 +583,7 @@ resolveImports compileTarget maybeContents mname term flags currentDir loaded0 c
                  Right idefs -> return idefs
                  Left parseInlines ->
                    do -- trace ("load module inline defs: " ++ show (modName mod)) $ return ()
-                      liftErrorPartial (const (Just loaded)) $ parseInlines (loadedGamma loaded) -- process inlines after all have been loaded
+                      liftErrorPartial loaded $ parseInlines (loadedGamma loaded) -- process inlines after all have been loaded
 
 
        loadedImp  <- load "import" loaded0 imports

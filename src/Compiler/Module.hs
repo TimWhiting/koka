@@ -83,6 +83,10 @@ data Loaded = Loaded{ loadedGamma       :: Gamma
                     , loadedBorrowed    :: Borrowed
                     }
 
+instance Show Loaded where
+  show ld
+    = show (map modName $ loadedModules ld)
+
 loadedLatest :: Loaded -> FileTime
 loadedLatest loaded
   = maxFileTimes (map (fromJust . modTime) (loadedModules loaded))

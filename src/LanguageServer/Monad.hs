@@ -15,7 +15,7 @@ module LanguageServer.Monad
     putLSState,
     modifyLSState,
     getLoaded,
-    putLoaded,
+    putLoaded,removeLoaded,
     getLoadedModule,
     runLSM,
   )
@@ -55,6 +55,7 @@ import Control.Concurrent.STM.TMVar (TMVar)
 import LanguageServer.Conversions (loadedModuleFromUri)
 import qualified Data.ByteString as D
 import Platform.Filetime (FileTime)
+import Data.Maybe (isJust)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
 data LSState = LSState {
@@ -136,6 +137,9 @@ getFlags = flags <$> getLSState
 putLoaded :: Loaded -> LSM ()
 putLoaded l = modifyLSState $ \s -> s {lsLoaded = case lsLoaded s of {Nothing -> Just l; Just l' -> Just $ mergeLoaded l l'}}
 
+removeLoaded :: Module -> LSM ()
+removeLoaded m = modifyLSState $ \s -> s {lsLoaded = case lsLoaded s of {Nothing -> Nothing; Just l -> Just $ l{loadedModules = filter (\m' -> modName m' /= modName m) (loadedModules l)}}}
+
 getLoadedModule :: J.Uri -> LSM (Maybe Module)
 getLoadedModule uri = do
   lmaybe <- getLoaded
@@ -152,5 +156,6 @@ mergeLoaded :: Loaded -> Loaded -> Loaded
 mergeLoaded newL oldL =
   let compiledName = modName $ loadedModule newL
       newModules = filter (\m -> modName m /= compiledName) (loadedModules newL)
-      newModNames = compiledName:map modName newModules in
-  newL{loadedModules=  loadedModule newL:newModules ++ filter (\m -> modName m `notElem` newModNames) (loadedModules oldL)}
+      newModNames = compiledName:map modName newModules
+      news = loadedModule newL:newModules ++ filter (\m -> modName m `notElem` newModNames) (loadedModules oldL) in
+  newL{loadedModules= filter (isJust . modTime) news}

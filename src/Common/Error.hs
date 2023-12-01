@@ -10,7 +10,7 @@
 -}
 -----------------------------------------------------------------------------
 module Common.Error( Error, ErrorMessage(..), errorMsg, errorMsgPartial, ok
-                   , catchError, checkError, checkPartial, transformPartial, warningMsg, addWarnings, addPartialResult, ignoreWarnings
+                   , catchError, checkError, checkPartial, setPartial, warningMsg, addWarnings, addPartialResult, ignoreWarnings
                    , ppErrorMessage, errorWarning, prettyWarnings ) where
 
 import Control.Monad
@@ -53,11 +53,11 @@ checkPartial err
       Error msg w m -> Left (errorWarning w msg,m)
       Ok x w m     -> Right (x,w,m)
 
-transformPartial :: (b -> Maybe c) -> Error b a -> Error c a
-transformPartial f err
+setPartial :: Maybe c -> Error b a -> Error c a
+setPartial c err
   = case err of
-      Error msg w m -> Error msg w (m >>= f)
-      Ok x w m     -> Ok x w (m >>= f)
+      Error msg w m -> Error msg w c
+      Ok x w m     -> Ok x w c
 
 catchError :: Error b a -> (ErrorMessage -> Error b a) -> Error b a
 catchError err handle
@@ -88,8 +88,8 @@ addWarnings ws err
 addPartialResult :: Error b a -> Maybe b -> Error b a
 addPartialResult err m
   = case err of
-      Error msg ws _ -> Error msg ws m
-      Ok x ws _   -> Ok x ws m
+      Error msg ws m1 -> Error msg ws (m <|> m1)
+      Ok x ws m1   -> Ok x ws (m <|> m1)
 
 errorWarning :: [(Range,Doc)] -> ErrorMessage -> ErrorMessage
 errorWarning [] msg                                 = msg
@@ -156,7 +156,7 @@ instance Functor (Error b) where
 
 instance Applicative (Error b) where
   pure x = Ok x [] Nothing
-  (<*>) = ap                    
+  (<*>) = ap               
 
 instance Monad (Error b) where
   -- return = pure
@@ -172,7 +172,7 @@ instance MonadPlus (Error b) where
   mplus e1 e2   = case e1 of
                     Ok{}  -> e1
                     Error m1 w1 m11 -> case e2 of
-                                      Ok{}  -> e2
+                                      Ok{}  -> addPartialResult e2 m11
                                       Error m2 w2 m12 -> Error (errorMerge m1 m2) (w1 ++ w2) (m11 `mplus` m12)
 
 

@@ -13,7 +13,7 @@ module LanguageServer.Handler.TextDocument
   )
 where
 
-import Common.Error (checkError, Error, checkPartial)
+import Common.Error (Error, checkPartial)
 import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, codeGen)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
@@ -25,7 +25,7 @@ import Language.LSP.Server (Handlers, flushDiagnosticsBySource, publishDiagnosti
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (toLspDiagnostics)
-import LanguageServer.Monad (LSM, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState)
+import LanguageServer.Monad (LSM, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState, removeLoaded)
 import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile, file_version, virtualFileVersion)
 import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
@@ -133,6 +133,7 @@ recompileFile compileTarget uri version force flags =
                 Just l -> do
                   trace ("Error when compiling have cached" ++ show (map modSourcePath $ loadedModules l)) $ return ()
                   putLoaded l
+                  removeLoaded (loadedModule l)
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
               return Nothing
           -- Emit the diagnostics (errors and warnings)
