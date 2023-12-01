@@ -430,7 +430,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
                               in if (modName mod == name) then []
                                   else [Core.Import (modName mod) (modPackagePath mod) vis (Core.coreProgDoc (modCore mod))]
         
-       (loaded2a, coreDoc) <- liftErrorPartial loaded1 $ addPartialResult (typeCheck loaded1 flags 0 coreImports program ftime) (Just loaded1)
+       (loaded2a, coreDoc) <- liftErrorPartial loaded1 $ typeCheck loaded1 flags 0 coreImports program ftime
        when (showCore flags) $
          liftIO (termDoc term (vcat [
            text "-------------------------",
@@ -600,7 +600,7 @@ resolveImportModules compileTarget maybeContents mname term flags currentDir res
   = return ([],resolved)
 resolveImportModules compileTarget maybeContents mname term flags currentDir resolved0 cachedModules importPath (imp:imps)
   = if impName imp `elem` importPath then do
-        liftError $ errorMsg (ErrorStatic [(getRange imp, text "cyclic module dependency detected when importing: " <+> ppName (prettyEnvFromFlags flags) mname <+> text " import path: " <-> vsep (reverse (map (ppName (prettyEnvFromFlags flags)) importPath)))])
+        liftError $ errorMsg $ ErrorStatic [(getRange imp, text "cyclic module dependency detected when importing: " <+> ppName (prettyEnvFromFlags flags) mname <+> text " import path: " <-> vsep (reverse (map (ppName (prettyEnvFromFlags flags)) importPath)))]
         return (resolved0,resolved0)
       else
     do -- trace ("\t" ++ show mname ++ ": resolving imported modules: " ++ show (impName imp) ++ ", resolved: " ++ show (map (show . modName) resolved0) ++ ", path:" ++ show importPath) $ return ()
@@ -656,7 +656,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                     Nothing -> -- still nothing: search the packages with an unknown package name
                                do mbIface <- liftIO $ searchPackageIface flags currentDir Nothing name
                                   case mbIface of
-                                    Nothing -> liftError $ errorMsg (errorModuleNotFound flags (importRange imp) name)
+                                    Nothing -> liftError $ errorMsg $ errorModuleNotFound flags (importRange imp) name
                                     Just iface -> -- it is a package interface
                                       do -- TODO: check there is no (left-over) iface in the outputDir?
                                          loadFromIface iface "" "" (importName imp)
@@ -676,7 +676,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
            -- trace ("source core: found: " ++ show (mbIface,mbSource)) $ return ()
            case (mbIface,mbSource) of
              (Nothing,Nothing)
-                -> liftError $ errorMsg (errorModuleNotFound flags rangeNull name)
+                -> liftError $ errorMsg $ errorModuleNotFound flags rangeNull name
              (Nothing,Just (root,stem,mname))
                 -> loadFromSource False False modules root stem mname
              (Just iface,Nothing)
@@ -692,7 +692,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
         do mbIface <- liftIO $ searchPackageIface flags currentDir (Just (Core.importPackage cimp)) name
            -- trace ("core import pkg: " ++ Core.importPackage cimp ++ "/" ++ show name ++ ": found: " ++ show (mbIface)) $ return ()
            case mbIface of
-             Nothing    -> liftError $ errorMsg (errorModuleNotFound flags rangeNull name)
+             Nothing    -> liftError $ errorMsg $ errorModuleNotFound flags rangeNull name
              Just iface -> loadFromIface iface "" "" (Core.importName cimp)
 
     where
@@ -713,22 +713,22 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                     x <- loadFromModule (modPath mod) root stem mod
                     return $ Just x
                 else
-                  trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modSourceTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
+                  -- trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modSourceTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
                   return Nothing
               _ ->
-                trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modSourcePath cachedModules)) $
+                -- trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modSourcePath cachedModules)) $
                 return Nothing
 
       loadDepend iface root stem mname
-         = trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
+         = -- trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
            do let srcpath = joinPath root stem
               ifaceTime <- liftIO $ getCurrentFileTime iface maybeContents
               sourceTime <- liftIO $ getCurrentFileTime srcpath maybeContents
-              trace ("loadDepend: " ++ show (ifaceTime, sourceTime)) $ return ()
+              -- trace ("loadDepend: " ++ show (ifaceTime, sourceTime)) $ return ()
               case lookupImport iface modules of
                   Just mod ->
                     if (srcpath /= forceModule flags && modSourceTime mod == sourceTime)
-                     then trace ("module " ++ show (name) ++ " already loaded") $
+                     then -- trace ("module " ++ show (name) ++ " already loaded") $
                           -- loadFromModule iface root stem mod
                           return (mod,modules) -- TODO: revise! do proper dependency checking instead..
                     else if (not (rebuild flags) && srcpath /= forceModule flags && ifaceTime >= sourceTime)
@@ -743,13 +743,13 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                                           (pretty (nameFromFile iface)))
                            return (mod, mods)
                       Nothing ->
-                        trace ("module " ++ show (name) ++ " not yet loaded") $
+                        -- trace ("module " ++ show (name) ++ " not yet loaded") $
                         if (not (rebuild flags) && srcpath /= forceModule flags && ifaceTime >= sourceTime)
                           then loadFromIface iface root stem mname
                           else loadFromSource False True modules root stem (nameFromFile iface)
 
       loadFromSource force genUpdate modules1 root fname mname
-        = trace ("loadFromSource: " ++ show force ++ " " ++ root ++ "/" ++ fname) $
+        = -- trace ("loadFromSource: " ++ show force ++ " " ++ root ++ "/" ++ fname) $
         do
           cached <- if force then return Nothing else tryLoadFromCache mname root fname
           case cached of
@@ -765,7 +765,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
               return (mod, loadedModules loadedImp)              
 
       loadFromIface iface root stem mname
-        = trace ("loadFromIFace: " ++  iface ++ ": " ++ root ++ "/" ++ stem ++ "\n in modules: " ++ show (map modName modules)) $
+        = -- trace ("loadFromIFace: " ++  iface ++ ": " ++ root ++ "/" ++ stem ++ "\n in modules: " ++ show (map modName modules)) $
           do let (pkgQname,pkgLocal) = packageInfoFromDir (packages flags) (dirname iface)
                  loadMessage msg = liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text msg) <+>
                                        color (colorSource (colorScheme flags))
@@ -796,7 +796,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
              loadFromModule (modPath mod){-iface-} root stem mod
 
       loadFromModule iface root source mod
-        = trace ("load from module: " ++ iface ++ ": " ++ root ++ "/" ++ source) $
+        = -- trace ("load from module: " ++ iface ++ ": " ++ root ++ "/" ++ source) $
           do --     loaded = initialLoaded { loadedModule = mod
              --                            , loadedModules = allmods
              --                            }
@@ -810,31 +810,30 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
              if (latest > (fromJust $ modTime mod)
                   && not (null source)) -- happens if no source is present but (package) depencies have updated...
                then do
-                trace ("iface " ++ show (modName mod) ++ " is out of date, reloading..." ++ (show (modTime mod) ++ " dependencies:\n" ++ intercalate "\n" (map (\m -> show (modName m, modTime m)) imports))) $ return ()
-                (mod, allmods) <- loadFromSource True True resolved1 root source (nameFromFile iface)-- load from source after all
-                return (mod, allmods)
+                -- trace ("iface " ++ show (modName mod) ++ " is out of date, reloading..." ++ (show (modTime mod) ++ " dependencies:\n" ++ intercalate "\n" (map (\m -> show (modName m, modTime m)) imports))) $ return ()
+                -- load from source after all
+                loadFromSource True True resolved1 root source (nameFromFile iface)
                else
                 -- trace ("using loaded module: " ++ show (modName mod)) $
                 case compileTarget of
                   InMemory -> return result
                   _ -> do
                     outputTime <- liftIO $ getFileTime iface
-                    if fromJust (modTime mod) > outputTime then compile iface mod allmods imports
+                    if fromJust (modTime mod) > outputTime then do
+                      -- Compile from cache if CompileTarget is Executable / Object and module is InMemory and outputFileTime < modTime
+                      liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "generating:") <+>
+                                        color (colorSource (colorScheme flags))
+                                          (pretty (modName mod)))
+                      liftIO $ copyPkgIFaceToOutputDir term flags iface (modCore mod) (modPackageQPath mod) imports
+                      let loaded = initialLoaded { 
+                                    loadedModule = mod,
+                                    loadedModules = allmods
+                                  }
+                      let ci = coreProgImports (modCore mod)
+                      (newLoaded, _) <- liftIO $! codeGen term flags Object loaded
+                      return (loadedModule newLoaded, loadedModules newLoaded)
                     else return result
-      
-      compile iface mod allmods imports = do
-          -- Compile from cache if CompileTarget is Executable / Object and module is InMemory and outputFileTime < modTime
-          liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "generating:") <+>
-                            color (colorSource (colorScheme flags))
-                              (pretty (modName mod)))
-          liftIO $ copyPkgIFaceToOutputDir term flags iface (modCore mod) (modPackageQPath mod) imports
-          let loaded = initialLoaded { loadedModule = mod
-                      , loadedModules = allmods
-                      }
-          let ci = coreProgImports (modCore mod)
-          -- TODO: Ensure loaded has everything it needs
-          (newLoaded, _) <- liftIO $! codeGen term flags Object loaded
-          return (loadedModule newLoaded, loadedModules newLoaded)
+          
 
 
 lookupImport :: FilePath {- interface name -} -> Modules -> Maybe Module
@@ -988,7 +987,6 @@ inferCheck loaded0 flags line coreImports program
               where
                 showDef def = show (Core.Pretty.prettyDef (penv{coreShowDef=True}) def)
       
-       trace ("inferTypes: " ++ show (getName program)) $ return ()
        -- Type inference
        (gamma,cdefs,mbRangeMap)
          <- inferTypes
@@ -1001,7 +999,6 @@ inferCheck loaded0 flags line coreImports program
               (loadedGamma loaded)
               (getName program)
               defs
-       trace ("done inferTypes: " ++ show (getName program)) $ return ()
        Core.setCoreDefs cdefs
 
        -- check generated core
