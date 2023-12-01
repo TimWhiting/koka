@@ -703,21 +703,21 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
         = do
           let srcpath = joinPath root stem
           sourceTime0 <- liftIO $ maybeGetCurrentFileTime srcpath maybeContents
-          sourceTime <- case sourceTime0 of
-                             Just t -> return t
-                             Nothing -> fail $ "Error " ++ show srcpath ++ " doesn't exist"
-          case lookupImportName mname cachedModules of
-              Just mod ->
-                if srcpath /= forceModule flags && modSourceTime mod == sourceTime
-                  then do
-                    x <- loadFromModule (modPath mod) root stem mod
-                    return $ Just x
-                else
-                  -- trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modSourceTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
-                  return Nothing
-              _ ->
-                -- trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modSourcePath cachedModules)) $
-                return Nothing
+          case sourceTime0 of
+            Nothing -> trace ("Error " ++ show srcpath ++ " doesn't exist") $ return Nothing
+            Just sourceTime ->
+              case lookupImportName mname cachedModules of
+                  Just mod ->
+                    if srcpath /= forceModule flags && modSourceTime mod == sourceTime
+                      then do
+                        x <- loadFromModule (modPath mod) root stem mod
+                        return $ Just x
+                    else
+                      -- trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modSourceTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
+                      return Nothing
+                  _ ->
+                    -- trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modSourcePath cachedModules)) $
+                    return Nothing
 
       loadDepend iface root stem mname
          = -- trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
