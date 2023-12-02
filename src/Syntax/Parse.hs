@@ -84,7 +84,7 @@ optional p  = do { p; return True } <|> return False
 -----------------------------------------------------------
 -- Parse varieties
 -----------------------------------------------------------
-parseProgramFromFile :: Bool -> FilePath -> IO (Error UserProgram)
+parseProgramFromFile :: Bool -> FilePath -> IO (Error a UserProgram)
 parseProgramFromFile semiInsert fname
   = do input <- readInput fname
        let result = parseProgramFromString semiInsert input fname
@@ -99,33 +99,33 @@ logSyntaxWarnings :: [(Range, Doc)] -> IO ()
 logSyntaxWarnings warnings
   = putPretty (prettyWarnings True defaultColorScheme warnings) 
 
-parseProgramFromString :: Bool -> BString -> FilePath -> Error UserProgram
+parseProgramFromString :: Bool -> BString -> FilePath -> Error a UserProgram
 parseProgramFromString semiInsert input fname
   = do (result, syntaxWarnings) <- lexParse semiInsert id program fname 1 input
        addWarnings (map (\(s, r) -> (r, text s)) syntaxWarnings) $ return result
 
-parseValueDef :: Bool -> FilePath -> Int -> String -> Error UserDef
+parseValueDef :: Bool -> FilePath -> Int -> String -> Error () UserDef
 parseValueDef semiInsert sourceName line input
   = lexParseS semiInsert (const valueDefinition)  sourceName line input
 
-parseTypeDef :: Bool -> FilePath -> Int -> String -> Error (UserTypeDef,[UserDef])
+parseTypeDef :: Bool -> FilePath -> Int -> String -> Error () (UserTypeDef,[UserDef])
 parseTypeDef semiInsert sourceName line input
   = lexParseS semiInsert (const typeDefinition)  sourceName line input
 
-parseType :: Bool -> FilePath -> Int -> Name -> String -> Error UserTypeDef
+parseType :: Bool -> FilePath -> Int -> Name -> String -> Error () UserTypeDef
 parseType semiInsert sourceName line name input
   = lexParseS semiInsert (const (userType name))  sourceName line input
 
-parseExpression :: Bool -> FilePath -> Int -> Name -> String -> Error UserDef
+parseExpression :: Bool -> FilePath -> Int -> Name -> String -> Error () UserDef
 parseExpression semiInsert sourceName line name input
   = lexParseS semiInsert (const (expression name))  sourceName line input
 
-ignoreSyntaxWarnings :: Error (a, [(String, Range)]) -> Error a
+ignoreSyntaxWarnings :: Error b (a, [(String, Range)]) -> Error b a
 ignoreSyntaxWarnings result =
   do (x, syntaxWarnings) <- result
      return x
 
-lexParseS :: Bool -> (Source -> LexParser b) -> FilePath -> Int -> String -> Error b
+lexParseS :: Bool -> (Source -> LexParser b) -> FilePath -> Int -> String -> Error a b
 lexParseS semiInsert p sourceName line str
   = do
       (result, syntaxWarnings) <- (lexParse semiInsert id p sourceName line (stringToBString str))
@@ -140,7 +140,7 @@ runStateParser p sourceName lex =
          s <- getState
          return (r, s)
 
-lexParse :: Bool -> ([Lexeme]-> [Lexeme]) -> (Source -> LexParser a) -> FilePath -> Int -> BString -> Error (a, [(String, Range)])
+lexParse :: Bool -> ([Lexeme]-> [Lexeme]) -> (Source -> LexParser a) -> FilePath -> Int -> BString -> Error b (a, [(String, Range)])
 lexParse semiInsert preprocess p sourceName line rawinput
   = let source = Source sourceName rawinput
         input  = if (isLiteralDoc sourceName) then extractLiterate rawinput else rawinput
@@ -151,14 +151,14 @@ lexParse semiInsert preprocess p sourceName line rawinput
           Left err -> makeParseError (errorRangeLexeme xs source) err
           Right x  -> return x
 
-parseLexemes :: LexParser a -> Source -> [Lexeme] -> Error (a, [(String, Range)])
+parseLexemes :: LexParser a -> Source -> [Lexeme] -> Error () (a, [(String, Range)])
 parseLexemes p source@(Source sourceName _) lexemes
   = case (runStateParser p sourceName lexemes) of
       Left err -> makeParseError (errorRangeLexeme lexemes source) err
       Right x  -> return x
 
 
-makeParseError :: (ParseError -> Range) -> ParseError -> Error a
+makeParseError :: (ParseError -> Range) -> ParseError -> Error b a
 makeParseError toRange perr
   = errorMsg (ErrorParse (toRange perr) errorDoc)
   where

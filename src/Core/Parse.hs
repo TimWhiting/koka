@@ -41,9 +41,9 @@ import Lib.Trace
 {--------------------------------------------------------------------------
   Parse core interface files
 --------------------------------------------------------------------------}
-type ParseInlines = Gamma -> Error [InlineDef]
+type ParseInlines = Gamma -> Error () [InlineDef]
 
-parseCore :: FilePath -> IO (Error (Core, ParseInlines))
+parseCore :: FilePath -> IO (Error b (Core, ParseInlines))
 parseCore fname
   = do input <- readInput fname
        return $ ignoreSyntaxWarnings $ lexParse False (requalify . allowDotIds) program fname 1 input

@@ -13,7 +13,7 @@ module LanguageServer.Handler.TextDocument
   )
 where
 
-import Common.Error (checkError, Error)
+import Common.Error (Error, checkPartial)
 import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, codeGen)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
@@ -25,7 +25,7 @@ import Language.LSP.Server (Handlers, flushDiagnosticsBySource, publishDiagnosti
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
 import LanguageServer.Conversions (toLspDiagnostics)
-import LanguageServer.Monad (LSM, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState)
+import LanguageServer.Monad (LSM, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState, removeLoaded)
 import Language.LSP.VFS (virtualFileText, VFS(..), VirtualFile, file_version, virtualFileVersion)
 import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
@@ -40,8 +40,9 @@ import Compiler.Options (Flags)
 import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime)
 import GHC.IO (unsafePerformIO)
 import Compiler.Module (Module(..))
-import Control.Monad (when)
+import Control.Monad (when, foldM)
 import Data.Time (addUTCTime, addLocalTime)
+import qualified Data.ByteString as J
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -73,18 +74,28 @@ didCloseHandler = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> 
 
 maybeContents :: Map FilePath (ByteString, FileTime, J.Int32) -> FilePath -> Maybe (ByteString, FileTime)
 maybeContents vfs uri = do
+  -- trace ("Maybe contents " ++ show uri ++ " " ++ show (M.keys vfs)) $ return ()
   (text, ftime, vers) <- M.lookup uri vfs
   return (text, ftime)
 
-diffVFS :: Map FilePath (ByteString, FileTime, J.Int32) -> Map J.NormalizedUri VirtualFile -> Map FilePath (ByteString, FileTime, J.Int32)
+diffVFS :: Map FilePath (ByteString, FileTime, J.Int32) -> Map J.NormalizedUri VirtualFile -> LSM (Map FilePath (ByteString, FileTime, J.Int32))
 diffVFS oldvfs vfs =
-  foldl (\acc (k, v) ->
+  foldM (\acc (k, v) ->
     let newK = J.fromNormalizedFilePath $ fromJust $ J.uriToNormalizedFilePath k
         text = T.encodeUtf8 $ virtualFileText v
         vers = virtualFileVersion v
     in case M.lookup newK oldvfs of
-      Just old@(_, _, vOld) -> if vOld == vers then M.insert newK old acc else M.insert newK (text, unsafePerformIO getCurrentTime, vers) acc
-      Nothing -> M.insert newK (text, unsafePerformIO getCurrentTime, vers) acc) M.empty (M.toList vfs)
+      Just old@(_, _, vOld) -> 
+        if vOld == vers then 
+          return $ M.insert newK old acc 
+        else do
+          time <- liftIO getCurrentTime 
+          return $ M.insert newK (text, time, vers) acc
+      Nothing -> do
+        time <- liftIO $ getFileTime newK
+        -- trace ("New file " ++ show newK ++ " " ++ show time) $ return ()
+        return $ M.insert newK (text, time, vers) acc)
+    M.empty (M.toList vfs)
 
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
@@ -96,7 +107,7 @@ recompileFile compileTarget uri version force flags =
       vFiles <- getVirtualFiles
       let vfs = _vfsMap vFiles
       oldvfs <- documentInfos <$> getLSState
-      let newvfs = diffVFS oldvfs vfs
+      newvfs <- diffVFS oldvfs vfs
       modifyLSState (\old -> old{documentInfos = newvfs})
       let contents = fst <$> maybeContents newvfs filePath
       loaded1 <- getLoaded
@@ -106,20 +117,27 @@ recompileFile compileTarget uri version force flags =
       term <- getTerminal
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
 
-      let resultIO :: IO (Either Exc.SomeException (Error (Loaded, Maybe FilePath)))
+      let resultIO :: IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
           resultIO = try $ compileFile (maybeContents newvfs) contents term flags [] (if force then [] else fromMaybe [] modules) compileTarget [] filePath
       result <- liftIO resultIO
       case result of
         Right res -> do
-          outFile <- case checkError res of
-            Right ((l, outFile), _) -> do
+          outFile <- case checkPartial res of
+            Right ((l, outFile), _, _) -> do
               putLoaded l
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ "Successfully compiled " <> T.pack filePath
               return outFile
-            Left e -> do
+            Left (e, m) -> do
+              case m of
+                Nothing -> 
+                  trace ("Error when compiling, no cached modules " ++ show e) $
+                  return ()
+                Just l -> do
+                  trace ("Error when compiling have cached" ++ show (map modSourcePath $ loadedModules l)) $ return ()
+                  putLoaded l
+                  removeLoaded (loadedModule l)
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
               return Nothing
-
           -- Emit the diagnostics (errors and warnings)
           let diagSrc = T.pack "koka"
               diags = toLspDiagnostics diagSrc res
