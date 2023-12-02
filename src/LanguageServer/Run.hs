@@ -31,7 +31,7 @@ import LanguageServer.Handler.TextDocument (persistModules)
 
 runLanguageServer :: Flags -> [FilePath] -> IO ()
 runLanguageServer flags files = do
-  connect "localhost" (show $ languageServerPort flags) (\(socket, _) -> do
+  connect "127.0.0.1" (show $ languageServerPort flags) (\(socket, _) -> do
     handle <- socketToHandle socket ReadWriteMode
     state <- newLSStateVar flags
     initStateVal <- liftIO $ readMVar state

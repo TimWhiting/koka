@@ -8,17 +8,18 @@ import * as child_process from "child_process"
 interface SDKs { sdkPath: string, allSDKs: string[] }
 const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka"
 
+const home = os.homedir();
 export function scanForSDK(): SDKs | undefined {
   const processPath = (process.env.PATH as string) || ""
   const paths = processPath.split(path.delimiter).filter((p) => p)
 
-  const dev = path.join(process.env.HOME!, 'koka')
+  const dev = path.join(home, 'koka')
   let defaultSDK = ""
   let allSDKs = []
   if (fs.existsSync(dev)) {
 
     let command = 'stack path --local-install-root'
-    const ghc = `${process.env.HOME}/.ghcup/env`
+    const ghc = `${home}/.ghcup/env`
     if (fs.existsSync(ghc)) {
       // Linux ghcup installation does not show up in vscode's process.PATH, 
       // ensure stack uses the correct ghc by sourcing the ghcup env script 
@@ -40,7 +41,7 @@ export function scanForSDK(): SDKs | undefined {
     }
   }
 
-  const local = path.join(process.env.HOME as string, '.local/bin')
+  const local = path.join(home, '.local/bin')
   for (const p of [local].concat(paths)) {
     if (fs.existsSync(path.join(p, kokaExeName))) {
       console.log("Koka: Found build of koka at " + p)
@@ -75,7 +76,7 @@ export async function downloadSDK() {
   if (os.platform() === "win32") {
     command = "curl -sSL -o %tmp%\install-koka.bat https://github.com/koka-lang/koka/releases/latest/download/install.bat && %tmp%\install-koka.bat"
   }
-  const term = vscode.window.createTerminal({name: "Install Koka", cwd: process.env.HOME, shellPath: DefaultShellPath, isTransient: true, message: "Installing Koka, restart your editor when finished"}) 
+  const term = vscode.window.createTerminal({name: "Install Koka", cwd: home, shellPath: DefaultShellPath, isTransient: true, message: "Installing Koka, restart your editor when finished"}) 
   term.sendText(command)
   term.show()
 }
@@ -94,7 +95,7 @@ export async function uninstallSDK() {
   if (os.platform() === "win32") {
     command = "curl -sSL -o %tmp%\install-koka.bat https://github.com/koka-lang/koka/releases/latest/download/install.bat && %tmp%\install-koka.bat -u -f"
   }
-  const term = vscode.window.createTerminal({name: "Uninstall Koka", cwd: process.env.HOME, shellPath: DefaultShellPath, isTransient: true, message: "Uninstalling Koka, you can close the terminal when done"}) 
+  const term = vscode.window.createTerminal({name: "Uninstall Koka", cwd: home, shellPath: DefaultShellPath, isTransient: true, message: "Uninstalling Koka, you can close the terminal when done"}) 
   term.sendText(command)
   term.show()
 }
@@ -106,12 +107,12 @@ export class KokaConfig {
     this.config = config
     this.debugExtension = config.get('debugExtension') as boolean
     this.defaultSDK = sdkPath
-    this.sdkPath = sdkPath
+    this.sdkPath = config.get('languageServer.kokaExecutable') as string || sdkPath
     this.allSDKs = allSDKs
-    this.cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders![0].uri.path
+    this.cwd = config.get('languageServer.cwd') as string || vscode.workspace.workspaceFolders![0].uri.fsPath
     this.langServerArgs = []
     this.additionalArgs = config.get('languageServer.additionalArgs') as string[] || []
-    this.selectSDK(sdkPath)
+    this.selectSDK(this.sdkPath)
     this.target = "C"
   }
   defaultSDK: string
@@ -127,10 +128,13 @@ export class KokaConfig {
 
   selectSDK(path: string) {
     if (!fs.existsSync(path)) {
+      console.log(`Koka executable not found at this location ${path}`)
       this.command = null
       return
     }
-    this.command = this.config.get('languageServer.command') as string || `${this.sdkPath}`
+    // Test we can execute the sdk command
+    fs.accessSync(path, fs.constants.X_OK)
+    this.command = this.sdkPath
     this.langServerArgs = ["--language-server", `-i${this.cwd}`, ...this.additionalArgs]
   }
 

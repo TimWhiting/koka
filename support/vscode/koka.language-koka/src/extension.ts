@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const { sdkPath, allSDKs } = scanForSDK()
   const config = new KokaConfig(vsConfig, sdkPath, allSDKs)
   if (!config.command) {
-    vscode.window.showInformationMessage(`Koka SDK found but not working ${sdkPath}\n All SDKs: ${allSDKs}`)
+    vscode.window.showInformationMessage(`Koka SDK found but not working ${config.sdkPath}\n All SDKs: ${allSDKs}`)
     return
   }
   if (config.debugExtension) {
@@ -92,14 +92,15 @@ class KokaLanguageServer {
       return new Promise((resolve, reject) => {
         let timeout = setTimeout(() => {
           reject("Server took too long to connect")
-        }, 2000)
+        }, 3000)
         self.socketServer = createServer((s) => {
           console.log("Got Connection to Client")
           clearTimeout(timeout)
           resolve({ writer: s, reader: s })
         }).listen(0, "127.0.0.1", () => {
-          console.log(`Starting language server in ${config.cwd}`)
-          self.languageServerProcess = child_process.spawn(config.command, [...config.langServerArgs, "--lsport=" + (self.socketServer!.address() as AddressInfo).port], {
+          const port = (self.socketServer!.address() as AddressInfo).port
+          console.log(`Starting language server in ${config.cwd} on port ${port}`)
+          self.languageServerProcess = child_process.spawn(config.command, [...config.langServerArgs, `--lsport=${port}`], {
             cwd: config.cwd,
             env: process.env,
           })
@@ -196,7 +197,7 @@ function createCommands(
         name: `koka run: ${resource.path}`,
         request: "launch",
         type: "koka",
-        program: resource.path,
+        program: resource.fsPath,
       }
       console.log(`Launch config ${launchConfig}`)
       vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration)
@@ -234,8 +235,8 @@ function createCommands(
             message: 'Language server restarted',
             increment: 100,
           })
-          // Wait 3 second to allow user to read message
-          await new Promise((resolve) => setTimeout(resolve, 3000))
+          // Wait 2 seconds to allow user to read message
+          await new Promise((resolve) => setTimeout(resolve, 2000))
         },
       )
       vscode.window.createQuickPick
@@ -339,7 +340,7 @@ class MainCodeLensProvider implements vscode.CodeLensProvider {
       {
         arguments: [document.uri],
         command: "koka.startWithoutDebugging",
-        title: `Run ${path.relative(this.config.cwd, document.uri.path)}`,
+        title: `Run ${path.relative(this.config.cwd, document.uri.fsPath)}`,
       }
     )
   }

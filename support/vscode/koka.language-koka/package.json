@@ -81,7 +81,7 @@
           "default": true,
           "description": "Set to 'true' to enable smarter language support (e.g. hover, code completion, ...) for Koka. Requires specifying the path to the Koka compiler under 'koka.languageServer.path'."
         },
-        "koka.languageServer.command": {
+        "koka.languageServer.kokaExecutable": {
           "type": "string",
           "default": null,
           "description": "The command to launch the Koka language server (by default the extension assumes that 'koka' is on your PATH)"
