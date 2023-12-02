@@ -55,7 +55,6 @@ import Control.Concurrent.STM.TMVar (TMVar)
 import LanguageServer.Conversions (loadedModuleFromUri)
 import qualified Data.ByteString as D
 import Platform.Filetime (FileTime)
-import Data.Maybe (isJust)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
 data LSState = LSState {
@@ -158,4 +157,4 @@ mergeLoaded newL oldL =
       newModules = filter (\m -> modName m /= compiledName) (loadedModules newL)
       newModNames = compiledName:map modName newModules
       news = loadedModule newL:newModules ++ filter (\m -> modName m `notElem` newModNames) (loadedModules oldL) in
-  newL{loadedModules= filter (isJust . modTime) news}
+  newL{loadedModules= filter modCompiled news}

@@ -42,6 +42,7 @@ import GHC.IO (unsafePerformIO)
 import Compiler.Module (Module(..))
 import Control.Monad (when, foldM)
 import Data.Time (addUTCTime, addLocalTime)
+import qualified Data.ByteString as J
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -73,6 +74,7 @@ didCloseHandler = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> 
 
 maybeContents :: Map FilePath (ByteString, FileTime, J.Int32) -> FilePath -> Maybe (ByteString, FileTime)
 maybeContents vfs uri = do
+  trace ("Maybe contents " ++ show uri ++ " " ++ show (M.keys vfs)) $ return ()
   (text, ftime, vers) <- M.lookup uri vfs
   return (text, ftime)
 
