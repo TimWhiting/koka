@@ -74,7 +74,7 @@ didCloseHandler = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> 
 
 maybeContents :: Map FilePath (ByteString, FileTime, J.Int32) -> FilePath -> Maybe (ByteString, FileTime)
 maybeContents vfs uri = do
-  trace ("Maybe contents " ++ show uri ++ " " ++ show (M.keys vfs)) $ return ()
+  -- trace ("Maybe contents " ++ show uri ++ " " ++ show (M.keys vfs)) $ return ()
   (text, ftime, vers) <- M.lookup uri vfs
   return (text, ftime)
 
@@ -93,7 +93,7 @@ diffVFS oldvfs vfs =
           return $ M.insert newK (text, time, vers) acc
       Nothing -> do
         time <- liftIO $ getFileTime newK
-        trace ("New file " ++ show newK ++ " " ++ show time) $ return ()
+        -- trace ("New file " ++ show newK ++ " " ++ show time) $ return ()
         return $ M.insert newK (text, time, vers) acc)
     M.empty (M.toList vfs)
 

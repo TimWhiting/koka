@@ -639,9 +639,10 @@ maybeGetCurrentFileTime fp maybeContents = do
   case maybeContents f of
     Just (_, t) -> return $ Just t
     Nothing -> do
-      trace ("File " ++ show fp ++ " not in virtual filesystem") $ return ()
+      -- trace ("File " ++ show fp ++ " not in virtual filesystem") $ return ()
       ft <- getFileTime fp
-      if ft == fileTime0 then return Nothing else return $ (trace $ "Get maybe " ++ show ft) $ Just ft
+      if ft == fileTime0 then return Nothing else return $ -- (trace $ "Get maybe " ++ show ft) $ 
+        Just ft
 
 resolveModule :: CompileTarget () -> (FilePath -> Maybe (BString, FileTime)) -> Terminal -> Flags -> FilePath -> [Module] -> Modules -> [Name] -> ModImport -> IOErr Loaded (Module,[Module])
 resolveModule compileTarget maybeContents term flags currentDir modules cachedModules importPath mimp
@@ -713,18 +714,18 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                   Just mod ->
                     if srcpath /= forceModule flags && modSourceTime mod == sourceTime
                       then do
-                        trace ("Loading module " ++ show mname ++ " from cache") $ return ()
+                        -- trace ("Loading module " ++ show mname ++ " from cache") $ return ()
                         x <- loadFromModule (modPath mod) root stem mod
                         return $ Just x
                     else
-                      trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modSourceTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
+                      -- trace ("Found mod " ++ show mname ++ " in cache but was forced or old modTime " ++ show (modSourceTime mod) ++ " srctime " ++ show sourceTime ++ " force " ++ forceModule flags )
                       return Nothing
                   _ ->
-                    trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modSourcePath cachedModules)) $
+                    -- trace ("Could not find mod " ++ show mname ++ " in cache " ++ show (map modSourcePath cachedModules)) $
                     return Nothing
 
       loadDepend iface root stem mname
-         = trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
+         = -- trace ("loadDepend " ++ iface ++ " " ++ root ++ "/" ++ stem) $
            do let srcpath = joinPath root stem
               ifaceTime <- liftIO $ getCurrentFileTime iface maybeContents
               sourceTime <- liftIO $ getCurrentFileTime srcpath maybeContents
@@ -753,7 +754,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                           else loadFromSource False True modules root stem (nameFromFile iface)
 
       loadFromSource force genUpdate modules1 root fname mname
-        = trace ("loadFromSource: " ++ show force ++ " " ++ " update " ++ show genUpdate ++ " " ++ root ++ "/" ++ fname) $
+        = -- trace ("loadFromSource: " ++ show force ++ " " ++ " update " ++ show genUpdate ++ " " ++ root ++ "/" ++ fname) $
         do
           cached <- if force then return Nothing else tryLoadFromCache mname root fname
           case cached of
@@ -770,7 +771,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
               return (mod, loadedModules loadedImp)              
 
       loadFromIface iface root stem mname
-        = trace ("loadFromIFace: " ++  iface ++ ": " ++ root ++ "/" ++ stem ++ "\n in modules: " ++ show (map modName modules)) $
+        = -- trace ("loadFromIFace: " ++  iface ++ ": " ++ root ++ "/" ++ stem ++ "\n in modules: " ++ show (map modName modules)) $
           do let (pkgQname,pkgLocal) = packageInfoFromDir (packages flags) (dirname iface)
                  loadMessage msg = liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text msg) <+>
                                        color (colorSource (colorScheme flags))
@@ -801,7 +802,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
              loadFromModule (modPath mod){-iface-} root stem mod
 
       loadFromModule iface root source mod
-        = trace ("load from module: " ++ iface ++ ": " ++ root ++ "/" ++ source) $
+        = -- trace ("load from module: " ++ iface ++ ": " ++ root ++ "/" ++ source) $
           do --     loaded = initialLoaded { loadedModule = mod
              --                            , loadedModules = allmods
              --                            }
@@ -815,15 +816,15 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
              if (latest > (fromJust $ modTime mod)
                   && not (null source)) -- happens if no source is present but (package) depencies have updated...
                then do
-                trace ("iface " ++ show (modName mod) ++ " is out of date, reloading..." ++ (show (modTime mod) ++ " dependencies:\n" ++ intercalate "\n" (map (\m -> show (modName m, modTime m)) imports))) $ return ()
+                -- trace ("iface " ++ show (modName mod) ++ " is out of date, reloading..." ++ (show (modTime mod) ++ " dependencies:\n" ++ intercalate "\n" (map (\m -> show (modName m, modTime m)) imports))) $ return ()
                 -- load from source after all
                 loadFromSource True True resolved1 root source (nameFromFile iface)
                else
-                trace ("using loaded module: " ++ show (modName mod)) $
+                -- trace ("using loaded module: " ++ show (modName mod)) $
                 case compileTarget of
                   InMemory -> return result
                   _ -> do
-                    trace ("loaded module requires compiling") $ return ()
+                    -- trace ("loaded module requires compiling") $ return ()
                     outputTime <- liftIO $ getFileTime iface
                     if fromJust (modTime mod) > outputTime then do
                       (imports,resolved1) <- resolveImportModules Object maybeContents name term flags (dirname iface) modules cachedModules (name:importPath) (map ImpCore (Core.coreProgImports (modCore mod)))
