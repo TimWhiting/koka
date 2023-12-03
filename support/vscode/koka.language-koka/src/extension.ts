@@ -22,7 +22,7 @@ export async function activate(context: vscode.ExtensionContext) {
   const vsConfig = vscode.workspace.getConfiguration('koka')
   // We can always create the client, as it does nothing as long as it is not started
   console.log(`Koka: language server enabled ${vsConfig.get('languageServer.enabled')}`)
-  const { sdkPath, allSDKs } = scanForSDK()
+  const { sdkPath, allSDKs } = scanForSDK(vsConfig)
   const config = new KokaConfig(vsConfig, sdkPath, allSDKs)
   if (!config.command) {
     vscode.window.showInformationMessage(`Koka SDK found but not working ${config.sdkPath}\n All SDKs: ${allSDKs}`)
@@ -226,7 +226,7 @@ function createCommands(
             context.subscriptions.splice(languageServerIdx, 1)
           }
 
-          const { sdkPath, allSDKs } = scanForSDK()
+          const { sdkPath, allSDKs } = scanForSDK(config)
           const newConfig = new KokaConfig(config, sdkPath, allSDKs)
           languageServer = new KokaLanguageServer()
           await languageServer.start(newConfig, context)
@@ -242,7 +242,7 @@ function createCommands(
       vscode.window.createQuickPick
     }),
     vscode.commands.registerCommand('koka.selectSDK', async () => {
-      const { sdkPath, allSDKs } = scanForSDK()
+      const { sdkPath, allSDKs } = scanForSDK(config)
       kokaConfig.allSDKs = allSDKs
       const result = await vscode.window.showQuickPick(kokaConfig.allSDKs)
       if (result) kokaConfig.selectSDK(result)

@@ -9,7 +9,7 @@ interface SDKs { sdkPath: string, allSDKs: string[] }
 const kokaExeName = os.platform() === "win32" ? "koka.exe" : "koka"
 
 const home = os.homedir();
-export function scanForSDK(): SDKs | undefined {
+export function scanForSDK(config: vscode.WorkspaceConfiguration): SDKs | undefined {
   const processPath = (process.env.PATH as string) || ""
   const paths = processPath.split(path.delimiter).filter((p) => p)
 
@@ -53,13 +53,12 @@ export function scanForSDK(): SDKs | undefined {
       }
     }
   }
-  if (defaultSDK === "") {
+  if (defaultSDK === "" && !config.get('languageServer.kokaExecutable')) {
     console.log('Koka: No Koka SDK found')
     vs.window.showWarningMessage("Koka SDK not found on path or in ~/.local/bin")
     downloadSDK()
-  } else {
-    return { sdkPath: defaultSDK, allSDKs: allSDKs }
-  }
+  } 
+  return { sdkPath: defaultSDK, allSDKs: allSDKs }
 }
 
 export async function downloadSDK() {
