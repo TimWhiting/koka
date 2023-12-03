@@ -22,7 +22,6 @@ hoverHandler :: Handlers LSM
 hoverHandler = requestHandler J.SMethod_TextDocumentHover $ \req responder -> do
   let J.HoverParams doc pos _ = req ^. J.params
       uri = doc ^. J.uri
-      normUri = J.toNormalizedUri uri
   loaded <- getLoadedModule uri
   let rsp = do
         l <- loaded

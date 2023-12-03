@@ -337,7 +337,7 @@ compileModule :: Terminal -> Flags -> Modules -> Modules -> Name -> CompileTarge
 compileModule term flags modules cachedModules name compileTarget importPath -- todo: take force into account
   = runIOErr $
     do let imp = ImpProgram (Import name name rangeNull Private)
-       loaded <- resolveImports compileTarget (const Nothing) name term flags "" initialLoaded{ loadedModules = modules } cachedModules importPath [imp]
+       loaded <- resolveImports compileTarget (const Nothing) (newName "") term flags "" initialLoaded{ loadedModules = modules } cachedModules importPath [imp]
        -- trace ("compileModule: loaded modules: " ++ show (map modName (loadedModules loaded))) $ return ()
        case filter (\m -> modName m == name) (loadedModules loaded) of
          (mod:_) -> return (loaded{ loadedModule = mod }, Nothing)
@@ -827,7 +827,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                     -- trace ("loaded module requires compiling") $ return ()
                     outputTime <- liftIO $ getFileTime iface
                     if fromJust (modTime mod) > outputTime then do
-                      (imports,resolved1) <- resolveImportModules Object maybeContents name term flags (dirname iface) modules cachedModules (name:importPath) (map ImpCore (Core.coreProgImports (modCore mod)))
+                      -- (imports,resolved1) <- resolveImportModules Object maybeContents name term flags (dirname iface) modules cachedModules (name:importPath) (map ImpCore (Core.coreProgImports (modCore mod)))
                       let allmods = addOrReplaceModule mod resolved1
                       -- Compile from cache if CompileTarget is Executable / Object and module is InMemory and outputFileTime < modTime
                       liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "generating:") <+>
@@ -838,7 +838,6 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                                     loadedModule = mod,
                                     loadedModules = allmods
                                   }
-                      let ci = coreProgImports (modCore mod)
                       (newLoaded, _) <- liftIO $! codeGen term flags Object loaded
                       return (loadedModule newLoaded, loadedModules newLoaded)
                     else return result
