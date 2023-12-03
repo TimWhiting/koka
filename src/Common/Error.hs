@@ -88,6 +88,12 @@ addWarnings ws err
 addPartialResult :: Error b a -> Maybe b -> Error b a
 addPartialResult err m
   = case err of
+      Error msg ws m1 -> Error msg ws (m1 <|> m)
+      Ok x ws m1   -> Ok x ws (m1 <|> m)
+
+overridePartialResult :: Error b a -> Maybe b -> Error b a
+overridePartialResult err m
+  = case err of
       Error msg ws m1 -> Error msg ws (m <|> m1)
       Ok x ws m1   -> Ok x ws (m <|> m1)
 
@@ -173,7 +179,7 @@ instance MonadPlus (Error b) where
                     Ok{}  -> e1
                     Error m1 w1 m11 -> case e2 of
                                       Ok{}  -> addPartialResult e2 m11
-                                      Error m2 w2 m12 -> Error (errorMerge m1 m2) (w1 ++ w2) (m11 `mplus` m12)
+                                      Error m2 w2 m12 -> Error (errorMerge m1 m2) (w1 ++ w2) (m12 `mplus` m11)
 
 
 instance Alternative (Error b) where

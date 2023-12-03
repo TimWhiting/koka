@@ -400,7 +400,7 @@ compileProgram' maybeContents term flags modules cachedModules compileTarget fna
                       modPath = outIFace,
                       modSourcePath = fname,
                       modProgram = (Just program),
-                      modCore = failure "Compiler.Compile.compileProgram: recursive module import",
+                      modCore = failure ("Compiler.Compile.compileProgram: recursive module import (" ++ fname ++ ")"),
                       modSourceTime = ftime,
                       modTime = iftime,
                       modOutputTime = iftime
