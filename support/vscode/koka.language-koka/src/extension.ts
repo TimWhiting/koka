@@ -328,8 +328,17 @@ class MainCodeLensProvider implements vscode.CodeLensProvider {
     if (main < 0) {
       if (doc.startsWith('fun main')) {
         return [this.createCodeLens(document, 0)]
+      } else {
+        const main1 = doc.indexOf(`\npub fun main`)
+        if (main1 < 0) {
+          if (doc.startsWith('pub fun main')) {
+            return [this.createCodeLens(document, 0)]
+          }
+          return []
+        } else {
+          return [this.createCodeLens(document, main1 + 1)]
+        }
       }
-      return []
     }
     return [this.createCodeLens(document, main + 1)]
   }

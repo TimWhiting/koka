@@ -37,7 +37,7 @@ import Debug.Trace (trace)
 import Control.Exception (try)
 import qualified Control.Exception as Exc
 import Compiler.Options (Flags)
-import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime)
+import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime, normalize)
 import GHC.IO (unsafePerformIO)
 import Compiler.Module (Module(..))
 import Control.Monad (when, foldM)
@@ -81,7 +81,7 @@ maybeContents vfs uri = do
 diffVFS :: Map FilePath (ByteString, FileTime, J.Int32) -> Map J.NormalizedUri VirtualFile -> LSM (Map FilePath (ByteString, FileTime, J.Int32))
 diffVFS oldvfs vfs =
   foldM (\acc (k, v) ->
-    let newK = J.fromNormalizedFilePath $ fromJust $ J.uriToNormalizedFilePath k
+    let newK = normalize $ J.fromNormalizedFilePath $ fromJust $ J.uriToNormalizedFilePath k
         text = T.encodeUtf8 $ virtualFileText v
         vers = virtualFileVersion v
     in case M.lookup newK oldvfs of
@@ -102,7 +102,8 @@ diffVFS oldvfs vfs =
 recompileFile :: CompileTarget () -> J.Uri -> Maybe J.Int32 -> Bool -> Flags -> LSM (Maybe FilePath)
 recompileFile compileTarget uri version force flags =
   case J.uriToFilePath uri of
-    Just filePath -> do
+    Just filePath0 -> do
+      let filePath = normalize filePath0
       -- Recompile the file
       vFiles <- getVirtualFiles
       let vfs = _vfsMap vFiles

@@ -34,6 +34,7 @@ import qualified Syntax.RangeMap as R
 import Compiler.Module (Module (..), Loaded (..))
 import Data.Maybe (fromMaybe)
 import Data.List (find)
+import Common.File (normalize)
 
 toLspPos :: R.Pos -> J.Position
 toLspPos p =
@@ -101,7 +102,7 @@ fromLspPos uri (J.Position l c) =
   R.makePos src (-1) (fromIntegral l + 1) (fromIntegral c + 1)
   where
     src = case J.uriToFilePath uri of
-      Just filePath -> R.Source filePath R.bstringEmpty -- TODO: Read file here (and compute the offset correctly)
+      Just filePath -> R.Source (normalize filePath) R.bstringEmpty -- TODO: Read file here (and compute the offset correctly)
       Nothing -> R.sourceNull
 
 fromLspRange :: J.Uri -> J.Range -> R.Range
@@ -114,4 +115,4 @@ loadedModuleFromUri :: Maybe Loaded -> J.Uri -> Maybe Module
 loadedModuleFromUri l uri = 
   case l of
     Nothing -> Nothing
-    Just l -> find (\m -> fromMaybe "" (J.uriToFilePath uri) == modSourcePath m) $ loadedModules l
+    Just l -> find (\m -> maybe "" normalize (J.uriToFilePath uri) == modSourcePath m) $ loadedModules l
