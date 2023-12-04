@@ -288,6 +288,7 @@ calibratemctx mlimit p =
       CutUnknown -> CutUnknown
   else case p of
     IndetCtx tn c -> IndetCtx tn c
+    -- TODO: Get previous call context and look up the lexically enclosing lambda to get the correct IndetCtx
     CutKnown -> let id = ExprContextId (-1) (newName "_err") in IndetCtx [] (ExprCTerm id "Err") 
     CutUnknown -> let id = ExprContextId (-1) (newName "_err") in IndetCtx [] (ExprCTerm id "Err") 
     CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) p')
