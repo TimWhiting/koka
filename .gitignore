@@ -32,4 +32,7 @@ test.kk
 bench
 test/bench
 .koka
-scratch
+**/.cache
+scratch/
+kklib/libuv/
+libuv

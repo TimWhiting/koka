@@ -10,7 +10,7 @@
 -}
 -----------------------------------------------------------------------------
 module Compiler.Module( Module(..), Modules, moduleNull
-                      , Loaded(..), initialLoaded
+                      , Loaded(..), ModStatus(..), initialLoaded
                       , loadedImportModule
                       , loadedName
                       , loadedLatest
@@ -56,15 +56,22 @@ import Compiler.Options (Flags)
 --------------------------------------------------------------------------}
 type Modules = [Module]
 
+data ModStatus =
+  LoadedIface
+  | LoadedSource
+  | NotLoaded
+  deriving (Eq, Ord, Show)
 
 data Module  = Module{ modName        :: Name
                      , modPath        :: FilePath          -- interface file
                      , modSourcePath  :: FilePath          -- maybe empty
                      , modPackageQName:: FilePath          -- A/B/C
                      , modPackageLocal:: FilePath          -- lib
+                     , modStatus      :: ModStatus
                      , modWarnings    :: [(Range,Doc)]
                      , modProgram     :: Maybe (Program UserType UserKind) -- not for interfaces
                      , modCore        :: Core.Core
+                     , modCoreNoOpt   :: Core.Core
                      , modInlines     :: Either (Gamma -> Error () [Core.InlineDef]) ([Core.InlineDef])
                      , modCompiled    :: Bool
                      , modRangeMap    :: Maybe RangeMap
@@ -110,7 +117,7 @@ initialLoaded
 
 moduleNull :: Name -> Module
 moduleNull modName
-  = Module (modName) "" "" "" "" [] Nothing (Core.coreNull modName) (Left (\g -> return [])) False Nothing fileTime0
+  = Module (modName) "" "" "" "" NotLoaded [] Nothing (Core.coreNull modName) (Core.coreNull modName) (Left (\g -> return [])) False Nothing fileTime0 
 
 loadedName :: Loaded -> Name
 loadedName ld

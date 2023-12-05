@@ -17,7 +17,7 @@ module LanguageServer.Run (runLanguageServer) where
 import System.Exit            ( exitFailure )
 import GHC.IO.IOMode (IOMode(ReadWriteMode))
 import GHC.Conc (atomically)
-import GHC.IO.Handle (BufferMode(NoBuffering), hSetBuffering)
+import GHC.IO.Handle (BufferMode(LineBuffering), hSetBuffering)
 import GHC.IO.StdHandles (stdout, stderr)
 import Control.Monad (void, forever)
 import Control.Monad.IO.Class (liftIO)
@@ -47,8 +47,8 @@ runLanguageServer flags files = do
     exitFailure
   else return ()
   -- Have to set line buffering, otherwise the client doesn't receive data until buffers fill up
-  hSetBuffering stdout NoBuffering
-  hSetBuffering stderr NoBuffering
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
   -- Connect to localhost on the port given by the client
   connect "127.0.0.1" (show $ languageServerPort flags) (\(socket, _) -> do
     -- Create a handle to the client from the socket

@@ -17,7 +17,8 @@ module LanguageServer.Handler.TextDocument
     didSaveHandler,
     didCloseHandler,
     recompileFile,
-    compileEditorExpression
+    compileEditorExpression,
+    getCompile
   )
 where
 
@@ -52,12 +53,13 @@ import Common.Error
 import Core.Core (Visibility(Private))
 import Compiler.Options (Flags, colorSchemeFromFlags, includePath)
 import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, codeGen, compileExpression)
-import Compiler.Module (Module(..), initialLoaded)
+import Compiler.Module (Module(..), initialLoaded, Modules)
 import LanguageServer.Conversions (toLspDiagnostics, makeDiagnostic, fromLspUri)
 import LanguageServer.Monad (LSM, getLoaded, putLoaded, getTerminal, getFlags, LSState (documentInfos), getLSState, modifyLSState, removeLoaded, getModules, putDiagnostics, getDiagnostics, clearDiagnostics, removeLoadedUri, getLastChangedFileLoaded, putLoadedSuccess, getLoadedLatest)
 
 
 import Syntax.Syntax ( programNull, programAddImports, Import(..) )
+
 -- Compile the file on opening
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -140,6 +142,31 @@ updateVFS = do
   -- Update the virtual files in the state
   modifyLSState (\old -> old{documentInfos = newvfs})
   return newvfs
+
+compile :: (FilePath -> Maybe (ByteString, FileTime)) -> Terminal -> Flags -> Modules -> Module -> IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
+compile maybeContents term flags modules mod = do
+  let resultIO :: IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
+      resultIO = try $ compileFile maybeContents (fst <$> maybeContents (modSourcePath mod)) term flags modules Object [] (modSourcePath mod)
+  liftIO resultIO
+
+getCompile :: LSM (Module -> IO Module)
+getCompile = 
+  do
+    flags <- getFlags
+    term <- getTerminal
+    modules <- getModules
+    docInfos <- documentInfos <$> getLSState
+    return $ \mod -> do
+      x <- compile (maybeContents docInfos) term flags modules mod
+      case x of
+        Right y ->
+          case checkPartial y of
+            Right ((l, _), _, _) ->
+                return $ loadedModule l
+            Left e -> 
+              trace ("Error when compiling " ++ show (modSourcePath mod) ++ show e) $
+              return mod
+        Left y -> return mod
 
 -- Compiles a single expression (calling a top level function with no arguments) - such as a test method
 compileEditorExpression :: J.Uri -> Flags -> Bool -> String -> String -> LSM (Maybe FilePath)

@@ -414,7 +414,8 @@ compileProgram' maybeContents term flags modules compileTarget fname program imp
                       modSourcePath = fname,
                       modProgram = (Just program),
                       modCore = failure ("Compiler.Compile.compileProgram: recursive module import (" ++ fname ++ ")"),
-                      modTime = ftime
+                      modTime = ftime,
+                      modStatus = LoadedSource
                     }
            allmods = addOrReplaceModule mod modules
            loaded = initialLoaded { loadedModule = mod
@@ -742,7 +743,7 @@ resolveModule maybeContents term flags currentDir modules importPath mimp
           do let (pkgQname,pkgLocal) = packageInfoFromDir (packages flags) (dirname iface)
                  loadMessage msg = liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text msg) <+>
                                        color (colorSource (colorScheme flags))
-                                         (pretty (if null pkgQname then "" else pkgQname ++ "/") <.>  pretty (name)))
+                                         (pretty (if null pkgQname then "" else pkgQname ++ "/") <.>  pretty name))
              mod <- case lookupImport iface modules of
                       Just mod
                        -> do loadMessage "reusing:"
@@ -755,9 +756,9 @@ resolveModule maybeContents term flags currentDir modules importPath mimp
                           (core,parseInlines) <- liftError mbCore
                           -- let core = uniquefy core0
                           outIFace <- liftIO $ copyIFaceToOutputDir term flags iface core
-                          let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal []
+                          let mod = Module (Core.coreName core) outIFace (joinPath root stem) pkgQname pkgLocal LoadedIface []
                                               Nothing -- (error ("getting program from core interface: " ++ iface))
-                                                core (case parseInlines of
+                                                core core (case parseInlines of
                                                         Nothing -> Right []
                                                         Just f  -> Left f) True Nothing ftime
                           return mod
@@ -867,6 +868,7 @@ typeCheck loaded flags line coreImports program
                                , modPath = outName flags (showModName (getName program)) ++ ifaceExtension
                                , modProgram    = Just program
                                , modWarnings   = warnings
+                               , modStatus = LoadedSource
                                }
            -- module0 = loadedModule loaded
            fixitiesPub = fixitiesNew [(name,fix) | FixDef name fix rng vis <- programFixDefs program0, vis == Public]
@@ -932,6 +934,7 @@ inferCheck loaded0 flags line coreImports program
               defs
        Core.setCoreDefs cdefs
        -- trace (show (color (colorInterpreter (colorScheme flags)) (text "codegen"))) $ return ()
+       let coreProgramPostTypes = coreProgram{ Core.coreProgDefs = cdefs }
 
        -- check generated core
        let checkCoreDefs title = when (coreCheck flags) (trace ("checking " ++ title) $
@@ -1028,7 +1031,7 @@ inferCheck loaded0 flags line coreImports program
        inlineDefs penv (2*optInlineMax flags) inlinesX -- (loadedInlines loaded)
 
        -- remove remaining open calls; this may change effect types
-       simplifyDefs penv True {-unsafe-} ndebug (simplify flags) 0 -- remove remaining .open
+       simplifyDefs penv True {-unsafe-} ndebug (simplify  flags) 0 -- remove remaining .open
 
        -- final simplification
        simplifyDupN
@@ -1038,6 +1041,8 @@ inferCheck loaded0 flags line coreImports program
        -- Assemble core program and return
        coreDefsFinal <- Core.getCoreDefs
        uniqueFinal   <- unique
+      --  res <- analyzeProgram loaded
+      --  traceM ("analyzeProgram: " ++ show res)
        -- traceM ("final: " ++ show uniqueFinal)
        let -- extract inline definitions to export
            localInlineDefs  = extractInlineDefs (optInlineMax flags) coreDefsInlined
@@ -1055,6 +1060,7 @@ inferCheck loaded0 flags line coreImports program
                                 , loadedUnique = uniqueFinal
                                 , loadedModule = (loadedModule loaded){
                                                     modCore     = coreProgramFinal,
+                                                    modCoreNoOpt = coreProgramPostTypes,
                                                     modRangeMap = fmap rangeMapSort mbRangeMap,
                                                     modInlines  = Right allInlineDefs
                                                   }
@@ -1062,7 +1068,7 @@ inferCheck loaded0 flags line coreImports program
                                 }
 
            coreDoc = Core.Pretty.prettyCore (prettyEnvFromFlags flags){ coreIface = False, coreShowDef = True } (C CDefault) []
-                       (coreProgram{ Core.coreProgDefs = coreDefsInlined })
+                       (coreProgram{ Core.coreProgDefs = cdefs })
 
        return (loadedFinal, coreDoc)
 
@@ -1100,7 +1106,7 @@ codeGen term flags compileTarget loaded
 
        -- core
        let outCore  = outBase ++ ".kkc"
-           coreDoc  = Core.Pretty.prettyCore env{ coreIface = False, coreShowDef = (showCore flags) } (target flags) inlineDefs (modCore mod)
+           coreDoc  = Core.Pretty.prettyCore env{ coreIface = False, coreShowDef = (showCore flags) } (target flags) inlineDefs (modCoreNoOpt mod)
                         <-> Lib.PPrint.empty
        when (genCore flags)  $
          do termPhase term "generate core"

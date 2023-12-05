@@ -106,7 +106,7 @@ compile p flags fname
                  -- exitFailure  -- don't fail for tests
                  return False
          Right ((Loaded gamma kgamma synonyms newtypes constructors _ imports _
-                (Module modName _ _ _ _ _ rawProgram core _ _ _ modTime) _ _ _
+                (Module modName _ _ _ _ _ _ rawProgram core _ _ _ _ modTime) _ _ _
                 , _), Errors warnings)
            -> do when (not (null warnings))
                    (mapM_ (\err -> putPrettyLn p (ppErrorMessage cwd (showSpan flags) cscheme err)) warnings)
