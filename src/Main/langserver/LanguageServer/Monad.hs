@@ -24,11 +24,11 @@ module LanguageServer.Monad
     getInlayHintOptions,
     runLSM,
     getProgress,setProgress, maybeContents,
-
+    getBuildContext, updateBuildContext,
     liftBuild, liftBuildWith,
     lookupModuleName, lookupRangeMap, lookupProgram, lookupLexemes,
     lookupDefinitions, lookupVisibleDefinitions, Definitions(..),
-    lookupModulePaths,
+    lookupModulePaths, lookupModule,
     getPrettyEnv, getPrettyEnvFor, prettyMarkdown,
     emitInfo, emitNotification
   )
@@ -72,6 +72,7 @@ import Kind.ImportMap (importsEmpty)
 import qualified Type.Pretty as TP
 import Compile.Options (Flags (..), prettyEnvFromFlags, verbose, Terminal(..))
 import Compile.BuildContext
+import Compile.Module
 import LanguageServer.Conversions ({-toLspUri,-} fromLspUri)
 
 import Data.Map.Strict(Map)
@@ -308,6 +309,10 @@ getBuildContext
   = do ls <- getLSState
        return (buildContext ls)
 
+updateBuildContext :: BuildContext -> LSM ()
+updateBuildContext buildc
+  = modifyLSState (\s -> s{ buildContext = buildc })
+
 -- Module name from URI
 lookupModuleName :: J.NormalizedUri -> LSM (Maybe (FilePath,ModuleName))
 lookupModuleName uri
@@ -323,6 +328,11 @@ lookupLexemes :: ModuleName -> LSM (Maybe [Lexeme])
 lookupLexemes mname
   = do buildc <- getBuildContext
        return (buildcGetLexemes mname buildc)
+
+lookupModule :: ModuleName -> LSM (Maybe Module)
+lookupModule mname
+  = do buildc <- getBuildContext
+       return (buildcLookupModule mname buildc)
 
 -- RangeMap from module name
 lookupRangeMap :: ModuleName -> LSM (Maybe (RangeMap,[Lexeme]))

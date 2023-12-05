@@ -11,7 +11,7 @@
     other libraries should use BuildContext if possible.
 -}
 -----------------------------------------------------------------------------
-module Compile.Module( Module(..), ModulePhase(..)
+module Compile.Module( Module(..), ModulePhase(..), ModStatus(..)
                      , moduleNull, moduleCreateInitial
                      , modCoreImports, modImportNames
 
@@ -71,8 +71,15 @@ data ModulePhase
   | PhaseLinked         -- kki and object files are generated (and exe linked for a main module)
   deriving (Eq,Ord,Show)
 
+data ModStatus =
+  NotLoaded
+  | LoadedIface
+  | LoadedSource
+  deriving (Eq, Ord, Show)
+
 data Module  = Module{ -- initial
                        modPhase       :: !ModulePhase
+                     , modStatus      :: !ModStatus
                      , modName        :: !Name
                      , modRange       :: !Range             -- (1,1) in the source (or pre-compiled iface)
                      , modErrors      :: !Errors            -- collected errors; set for Phase<xxx>Error phases
@@ -115,7 +122,7 @@ data Module  = Module{ -- initial
 
 moduleNull :: Name -> Module
 moduleNull modName
-  = Module  PhaseInit modName rangeNull errorsNil
+  = Module  PhaseInit NotLoaded modName rangeNull errorsNil
             "" fileTime0 "" fileTime0 "" "" fileTime0
             -- lex
             sourceNull [] []

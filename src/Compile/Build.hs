@@ -559,6 +559,7 @@ moduleLex mod
                          }
          Right (imports,warns)
             -> return mod{ modPhase   = PhaseLexed
+                         , modStatus = LoadedSource
                          , modErrors  = mergeErrors warns (modErrors mod)
                          , modLexemes = lexemes
                          , modDeps    = seqqList $ lexImportNub $
@@ -586,6 +587,7 @@ modFromIface core parseInlines mod
   =  mod{ modPhase       = PhaseLinked
         , modDeps        = seqqList $ [LexImport (Core.importName imp) nameNil (Core.importVis imp) False {- @open -}
                                        | imp <- Core.coreProgImports core, not (Core.isCompilerImport imp) ]
+        , modStatus      = LoadedIface
         , modCore        = Just $! core
         , modDefinitions = Just $! defsFromCore False core
         , modInlines     = case parseInlines of
