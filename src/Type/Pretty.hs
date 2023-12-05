@@ -150,6 +150,7 @@ data Env     = Env{ showKinds      :: Bool
 
                   -- should not be here either: was the verbose flag set?
                   , verbose   :: Int
+                  , showRanges :: Bool
                   }
 
 
@@ -168,6 +169,7 @@ defaultEnv
         True  -- coreShowVis
         False -- coreShowDef
         0     -- verbose
+        False
 
 
 -- | Pretty print a type.

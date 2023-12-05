@@ -10,7 +10,7 @@
 -}
 -----------------------------------------------------------------------------
 module Compiler.Module( Module(..), Modules, moduleNull
-                      , Loaded(..), initialLoaded
+                      , Loaded(..), ModStatus(..), initialLoaded
                       , loadedImportModule
                       , loadedName
                       , loadedLatest
@@ -53,15 +53,22 @@ import Data.Maybe (fromJust)
 --------------------------------------------------------------------------}
 type Modules = [Module]
 
+data ModStatus =
+  LoadedIface
+  | LoadedSource
+  | NotLoaded
+  deriving (Eq, Ord, Show)
 
 data Module  = Module{ modName        :: Name
                      , modPath        :: FilePath          -- interface file
                      , modSourcePath  :: FilePath          -- maybe empty
                      , modPackageQName:: FilePath          -- A/B/C
                      , modPackageLocal:: FilePath          -- lib
+                     , modStatus      :: ModStatus
                      , modWarnings    :: [(Range,Doc)]
                      , modProgram     :: Maybe (Program UserType UserKind) -- not for interfaces
                      , modCore        :: Core.Core
+                     , modCoreNoOpt   :: Core.Core
                      , modCompiled    :: Bool
                      , modInMemory    :: Bool
                      , modInlines     :: Either (Gamma -> Error () [Core.InlineDef]) ([Core.InlineDef])
@@ -110,7 +117,7 @@ initialLoaded
 
 moduleNull :: Name -> Module
 moduleNull modName
-  = Module (modName) "" "" "" "" [] Nothing (Core.coreNull modName) False True (Left (\g -> return [])) Nothing fileTime0 Nothing Nothing
+  = Module (modName) "" "" "" "" NotLoaded [] Nothing (Core.coreNull modName) (Core.coreNull modName) False True (Left (\g -> return [])) Nothing fileTime0 Nothing Nothing
 
 loadedName :: Loaded -> Name
 loadedName ld

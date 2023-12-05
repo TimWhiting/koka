@@ -137,13 +137,13 @@ monExpr' topLevel expr
                         nameY <- uniqueName "y"
                         return $ \k ->
                           let resTp = typeOf expr
-                              tnameY = TName nameY resTp
+                              tnameY = TName nameY resTp Nothing
                               contBody = k (Var tnameY InfoNone)
                               cont = case contBody of
                                         -- optimize (fun(y) { let x = y in .. })
                                        Let [DefNonRec def@(Def{ defExpr = Var v _ })] body
                                         | getName v == nameY
-                                        -> Lam [TName (defName def) (defType def)] feff body
+                                        -> Lam [TName (defName def) (defType def) (Just $ defNameRange def)] feff body
                                        -- TODO: optimize (fun (y) { lift(expr) } )?
                                        body -> Lam [tnameY] feff body
                           in
@@ -161,16 +161,16 @@ monExpr' topLevel expr
                then return $ \k -> exprs' (\xxs -> k (Case xxs bs'))
                else do nameC <- uniqueName "c"
                        let resTp = typeOf expr
-                           tnameC = TName nameC resTp
+                           tnameC = TName nameC resTp Nothing
                        return $ \k ->
                          let effTp    = typeTotal
                              contBody = k (Var tnameC InfoNone)
                              cont = Lam [tnameC] effTp contBody
                          in  exprs' (\xss -> applyBind resTp effTp (typeOf contBody) (Case xss bs')  cont)
 
-      Var (TName name tp) info
+      Var (TName name tp rng) info
         -> do -- tp' <- monTypeX tp
-              return (\k -> k (Var (TName name tp) info))
+              return (\k -> k (Var (TName name tp rng) info))
 
       -- type application and abstraction
       TypeLam tvars body
@@ -261,7 +261,7 @@ applyBind tpArg tpEff tpRes expr cont
     
 monMakeBind :: Type -> Effect -> Type -> Expr -> Expr -> Expr
 monMakeBind tpArg tpEff tpRes arg next
-  =  App (TypeApp (Var (TName nameBind typeBind) info) [tpArg, tpRes, tpEff]) [arg,next]
+  =  App (TypeApp (Var (TName nameBind typeBind Nothing) info) [tpArg, tpRes, tpEff]) [arg,next]
   where
     info = Core.InfoArity 2 3 -- Core.InfoExternal [(CS,"Eff.Op.Bind<##1,##2>(#1,#2)"),(JS,"$std_core._bind(#1,#2)")]
     

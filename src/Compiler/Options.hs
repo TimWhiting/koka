@@ -1020,7 +1020,7 @@ ccFlagsBuildFromFlags cc flags
 
 gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
           words "-Wno-unknown-pragmas -Wno-missing-field-initializers" ++
-          words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value"
+          words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value -Wno-unused-function" 
 
 ccGcc,ccMsvc :: String -> Int -> Platform -> FilePath -> CC
 ccGcc name opt platform path

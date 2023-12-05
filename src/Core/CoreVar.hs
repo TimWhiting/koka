@@ -37,7 +37,7 @@ isTopLevel (Def name tp expr vis isVal inl nameRng doc)
 
 freeLocals :: HasExpVar a => a -> TNames
 freeLocals expr
-  = S.filter (\(TName nm _) -> not (isQualified nm)) (fv expr)
+  = S.filter (\(TName nm _ _) -> not (isQualified nm)) (fv expr)
 
 
 {--------------------------------------------------------------------------
@@ -73,7 +73,7 @@ instance HasExpVar DefGroup where
 
 instance HasExpVar Def where
   fv (Def name tp expr vis isVal inl nameRng doc) = fv expr
-  bv (Def name tp expr vis isVal inl nameRng doc) = S.singleton (TName name tp)
+  bv (Def name tp expr vis isVal inl nameRng doc) = S.singleton (TName name tp (Just nameRng))
 
 fvDefGroups defGroups expr
   = case defGroups of

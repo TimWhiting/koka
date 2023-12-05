@@ -124,7 +124,7 @@ matchPattern newtypes defName range top (match@(Match cinfos cmatches), tp, pat)
                                                 Nothing -> PatWild
                                                 Just (targs,tres)    -- only for constructors with arguments
                                                   -> -- trace (" success") $
-                                                     PatCon (TName (conInfoName con) (conInfoType con))
+                                                     PatCon (TName (conInfoName con) (conInfoType con) (Just range))
                                                             [PatWild | _ <- conInfoParams con]
                                                             (getConRepr di con)
                                                             targs [] tres con True {- skip -}

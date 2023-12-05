@@ -114,9 +114,9 @@ specOneExpr :: Name -> Expr -> SpecM Expr
 specOneExpr thisDefName
   = rewriteTopDownM $ \e ->
     case e of
-      App (Var (TName name _) _) args
+      App (Var (TName name _ _) _) args
         -> go name e
-      App (TypeApp (Var (TName name _) _) typVars) args
+      App (TypeApp (Var (TName name _ _) _) typVars) args
         -> go name e
       e -> pure e
   where
@@ -144,11 +144,11 @@ partitionBools bools as = foldr f ([], []) $ zip bools as
 specOneCall :: InlineDef -> Expr -> SpecM Expr
 specOneCall inlineDef@(InlineDef{ inlineName=specName, inlineExpr=specExpr, inlineParamSpecialize=specArgs, inlineSort=sort }) e
   = case e of
-      App (Var (TName name _) _) args
+      App (Var (TName name _ _) _) args
        | gArgs <- goodArgs specArgs args
        , any isJust gArgs
         -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) Nothing
-      App (TypeApp (Var (TName name ty) _) typeArgs) args
+      App (TypeApp (Var (TName name ty _) _) typeArgs) args
        | gArgs <- goodArgs specArgs args
        , any isJust gArgs
         -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) $ Just typeArgs
@@ -319,20 +319,20 @@ replaceCall name expr0 sort bools args mybeTypeArgs
                 Just typeArgs -> subNew (zip (fnTypeParams expr) typeArgs) |-> body)
               $ Lam newParams (fnEffect expr)  -- fn <newparams>
               $ Let [DefNonRec $ Def param typ arg Private DefVal InlineAuto rangeNull ""  -- bind specialized parameters
-                      | (TName param typ, arg) <- zip speccedParams speccedArgs]
+                      | (TName param typ _, arg) <- zip speccedParams speccedArgs]
               $ fnBody expr
 
 
       -- substitute self-recursive calls to call our new specialized definition (without the specialized arguments!)
       specName <- uniqueName "spec"
       let specType  = typeOf specBody0
-          specTName = TName specName specType
+          specTName = TName specName specType Nothing
           specBody  = case specBody0 of
                         Lam args eff (Let specArgs body)
                           -> -- uniquefyExpr $
                              Lam args eff $
-                               (Let specArgs $
-                                specInnerCalls (TName name (typeOf expr)) specTName bools speccedParams body)
+                               (Let specArgs $ 
+                                specInnerCalls (TName name (typeOf expr) Nothing) specTName bools speccedParams body)
                         _ -> failure "Specialize.replaceCall: Unexpected output from specialize pass"
 
       -- simplify so the new specialized arguments are potentially inlined unlocking potential further specialization
@@ -426,7 +426,7 @@ usedInThisDef :: Def -> S.NameSet
 usedInThisDef def
   = foldMapExpr go $ defExpr def
   where
-    go (Var (TName name _) _) = S.singleton name
+    go (Var (TName name _ _) _) = S.singleton name
     go _ = mempty
 
 allEq :: (Eq a) => [a] -> Bool
@@ -450,9 +450,9 @@ recursiveCalls Def{ defName=thisDefName, defExpr=expr }
       -- assumption: all applications are TypeApps, or no applications are
       in (sequence types, args)
 
-    f (App (Var (TName name _) _) args)
+    f (App (Var (TName name _ _) _) args)
       | name == thisDefName = [(Nothing, args)]
-    f (App (TypeApp (Var (TName name _) _) types) args)
+    f (App (TypeApp (Var (TName name _ _) _) types) args)
       | name == thisDefName = [(Just types, args)]
     f _ = []
 
@@ -474,8 +474,8 @@ multiStepInlines loadedInlines inlines = snd . foldl' f (inlines `inlinesMerge` 
     -- look for calls to specializable functions where we don't know the RHS of an argument
     -- references that aren't calls aren't eligible for multi-step specialization; we don't have the specializable args anyway
     callsSpecializable inlines def = getAlt $ flip foldMapExpr (defExpr def) $ \e -> case e of
-      App (Var (TName name _) _) args -> goCommon name args
-      App (TypeApp (Var (TName name _) _) _) args -> goCommon name args
+      App (Var (TName name _ _) _) args -> goCommon name args
+      App (TypeApp (Var (TName name _ _) _) _) args -> goCommon name args
       e -> mempty
 
       where

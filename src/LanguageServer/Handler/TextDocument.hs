@@ -11,11 +11,12 @@ module LanguageServer.Handler.TextDocument
     recompileFile,
     compileEditorExpression,
     persistModules,
+    getCompile,
   )
 where
 
 import Common.Error (Error, checkPartial)
-import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, codeGen, compileExpression)
+import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, Module(modPath), modSourcePath, codeGen, compileExpression)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
 import qualified Data.Map as M
@@ -40,8 +41,8 @@ import qualified Control.Exception as Exc
 import Compiler.Options (Flags)
 import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime, normalize, realPath)
 import GHC.IO (unsafePerformIO)
-import Compiler.Module (Module(..))
 import Control.Monad (when, foldM)
+import Compiler.Module (Module(..), Modules)
 import Data.Time (addUTCTime, addLocalTime)
 import qualified Data.ByteString as J
 import Syntax.Syntax (programNull, programAddImports)
@@ -148,6 +149,31 @@ compileEditorExpression uri flags filePath functionName = do
           sendNotification J.SMethod_WindowShowMessage $ J.ShowMessageParams J.MessageType_Error $ "When compiling file " <> T.pack filePath <> T.pack (" compiler threw exception " ++ show e)
           return Nothing
 
+compile :: (FilePath -> Maybe (ByteString, FileTime)) -> Terminal -> Flags -> Modules -> Module -> IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
+compile maybeContents term flags modules mod = do
+  let resultIO :: IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
+      resultIO = try $ compileFile maybeContents (fst <$> maybeContents (modSourcePath mod)) term flags [] modules InMemory [] (modSourcePath mod)
+  liftIO resultIO
+
+getCompile :: LSM (Module -> IO Module)
+getCompile = 
+  do
+    flags <- getFlags
+    term <- getTerminal
+    modules <- getModules
+    docInfos <- documentInfos <$> getLSState
+    return $ \mod -> do
+      x <- compile (maybeContents docInfos) term flags modules mod
+      case x of
+        Right y ->
+          case checkPartial y of
+            Right ((l, _), _, _) ->
+                return $ loadedModule l
+            Left e -> 
+              trace ("Error when compiling " ++ show (modSourcePath mod) ++ show e) $
+              return mod
+        Left y -> return mod
+
 -- Recompiles the given file, stores the compilation result in
 -- LSM's state and emits diagnostics.
 recompileFile :: CompileTarget () -> J.Uri -> Maybe J.Int32 -> Bool -> Flags -> LSM (Maybe FilePath)
@@ -167,7 +193,7 @@ recompileFile compileTarget uri version force flags =
       loaded <- getLoaded uri
       term <- getTerminal
       sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Info $ T.pack $ "Recompiling " ++ filePath
-
+      let compile' = compile (maybeContents newvfs) term flags modules
       let resultIO :: IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
           -- Don't use the cached modules as regular modules (they may be out of date, so we want to resolveImports fully over again)
           resultIO = try $ compileFile (maybeContents newvfs) contents term flags [] (if force then [] else modules) compileTarget [] filePath
