@@ -165,7 +165,7 @@ uniquefyExprX expr
                                return (Lam tnames1 eff expr1)
       Var tname info    -> do renaming <- getRenaming
                               case M.lookup (getName tname) renaming of
-                                Just name -> return $ Var (TName name (typeOf tname)) info
+                                Just name -> return $ Var (TName name (typeOf tname) (originalRange tname)) info
                                 Nothing   -> return expr
       App f args        -> do f1 <- uniquefyExprX f
                               args1 <- mapM uniquefyExprX args
@@ -203,7 +203,7 @@ uniquefyPattern (pattern, patTp)
       _ -> do -- insert PatVar
               name <- uniquefyName (newHiddenName "pat")
               pat  <- uniquefyPatternX pattern patTp
-              return (PatVar (TName name patTp) pat)
+              return (PatVar (TName name patTp Nothing) pat)
               
 
 uniquefyPatternX pattern patTp           
@@ -222,7 +222,7 @@ uniquefyPatternX pattern patTp
 uniquefyTName :: TName -> Un TName
 uniquefyTName tname
   = do name1 <- uniquefyName (getName tname)
-       return (TName name1 (typeOf tname))
+       return (TName name1 (typeOf tname) Nothing)
 
 uniquefyName :: Name -> Un Name
 uniquefyName name | nameIsNil name

@@ -188,12 +188,12 @@ ruToAssign (NoMatch expr)
      then return ([],(expr,False))
      else do name <- uniqueName "ru"
              let def = DefNonRec (makeDef name expr)
-             let var = Var (TName name (typeOf expr)) InfoNone
+             let var = Var (TName name (typeOf expr) Nothing) InfoNone
              return ([def],(var,False))
 
 genReuseIsValid :: TName -> Expr
 genReuseIsValid reuseName
-  = App (Var (TName nameReuseIsValid typeReuseIsValid) (InfoExternal [(C CDefault,"kk_likely(#1!=NULL)")])) [Var reuseName InfoNone]
+  = App (Var (TName nameReuseIsValid typeReuseIsValid Nothing) (InfoExternal [(C CDefault,"kk_likely(#1!=NULL)")])) [Var reuseName InfoNone]
   where
     typeReuseIsValid = TFun [(nameNil,typeReuse)] typeTotal typeBool
 
@@ -201,8 +201,8 @@ genReuseIsValid reuseName
 -- generates:  c = (conName*)reuseName; c->field1 := expr1; ... ; c->fieldN := exprN; (tp*)(c)
 genConTagFieldsAssign :: Type -> TName -> ConRepr -> TName -> Int -> [(Name,Expr)] -> Expr
 genConTagFieldsAssign resultType conName conRepr reuseName tag fieldExprs
-  = App (Var (TName nameConTagFieldsAssign typeConFieldsAssign) (InfoArity 0 (length fieldExprs + 1)))
-        ([Var reuseName (InfoConField conName conRepr nameNil), Var (TName (newName (show tag)) typeUnit) InfoNone] ++ map snd fieldExprs)
+  = App (Var (TName nameConTagFieldsAssign typeConFieldsAssign Nothing) (InfoArity 0 (length fieldExprs + 1)))
+        ([Var reuseName (InfoConField conName conRepr nameNil), Var (TName (newName (show tag)) typeUnit Nothing) InfoNone] ++ map snd fieldExprs)
   where
     fieldTypes = [(name,typeOf expr) | (name,expr) <- fieldExprs]
     typeConFieldsAssign = TFun ([(nameNil,typeOf reuseName), (nameNil, typeUnit)] ++ fieldTypes) typeTotal resultType
@@ -211,7 +211,7 @@ genConTagFieldsAssign resultType conName conRepr reuseName tag fieldExprs
 -- generates:  c = (conName*)reuseName; c->field1 := expr1; ... ; c->fieldN := exprN; (tp*)(c)
 genConFieldsAssign :: Type -> TName -> ConRepr -> TName -> [(Name,Expr)] -> Expr
 genConFieldsAssign resultType conName conRepr reuseName fieldExprs
-  = App (Var (TName nameConFieldsAssign typeConFieldsAssign) (InfoArity 0 (length fieldExprs + 1)))
+  = App (Var (TName nameConFieldsAssign typeConFieldsAssign Nothing) (InfoArity 0 (length fieldExprs + 1)))
         (Var reuseName (InfoConField conName conRepr nameNil) : map snd fieldExprs)
   where
     fieldTypes = [(name,typeOf expr) | (name,expr) <- fieldExprs]
@@ -239,7 +239,7 @@ getConInfo dataType conName
 
 -- create a unique name specific to this module
 uniqueTName :: Type -> Reuse TName
-uniqueTName tp = (`TName` tp) <$> uniqueName "ru"
+uniqueTName tp = (\n -> TName n tp Nothing) <$> uniqueName "ru"
 
 
 --------------------------------------------------------------------------

@@ -33,6 +33,7 @@ dependencies:
   - text
   - time
   - async
+  - transformers
   - isocline >= 1.0.6
   - FloatingHex >= 0.5
   - hashable >= 1.4

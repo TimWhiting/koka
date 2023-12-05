@@ -9,7 +9,7 @@
 -}
 -----------------------------------------------------------------------------
 
-module Core.Pretty( prettyCore, prettyExpr, prettyPattern, prettyDef, prettyDefs, prettyDefGroup, source ) where
+module Core.Pretty( prettyCore, prettyExpr, prettyVar, prettyPattern, prettyDef, prettyDefs, prettyDefGroup, source ) where
 
 import Lib.Trace
 import Data.Char( isAlphaNum )
@@ -28,6 +28,7 @@ import Kind.ImportMap
 import Type.Type
 import Type.TypeVar
 import Type.Pretty
+import Common.Range (showRange)
 
 {--------------------------------------------------------------------------
   Show pretty names (rather than numbers)
@@ -329,7 +330,7 @@ prettyExpr :: Env -> Expr -> Doc
 prettyExpr env lam@(Lam tnames eff expr)
   = pparens (prec env) precArrow $
     keyword env "fn" <.>
-      (if isTypeTotal eff then empty else color (colorType (colors env)) (text "<" <.> prettyType env' eff <.> text ">")) <.>
+      (if (coreShowTypes env) then (if isTypeTotal eff then empty else color (colorType (colors env)) (text "<" <.> prettyType env' eff <.> text ">")) else empty) <.>
       tupled [prettyTName env' tname | tname <- tnames] <.> text "{" <-->
       tab (prettyExpr env expr <.> semi) <-->
       text "}"
@@ -403,9 +404,13 @@ prettyExpr env (Case exprs branches)
 
 prettyVar env tname
   = if (coreIface env)
-      then prettyCoreName (colors env) (getName tname)
-      else prettyName (colors env) (getName tname)
+      then prettyCoreName (colors env) (envQualify env (getName tname))
+      else prettyName (colors env) (envQualify env (getName tname))
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
+
+envQualify env name
+  = if (fullNames env) then name
+    else newName (nameStem name)
 
 {--------------------------------------------------------------------------
   Case branches
@@ -496,8 +501,8 @@ showXChar c
 --------------------------------------------------------------------------}
 
 prettyTName :: Env -> TName -> Doc
-prettyTName env (TName name tp)
-  = prettyCoreName (colors env) name <.> text ":" <+> ppType env tp
+prettyTName env (TName name tp _)
+  = prettyCoreName (colors env) name <.> (if coreShowTypes env then text ":" <+> ppType env tp else empty)
 
 
 prettyModuleName :: Env -> Name -> Doc
@@ -759,11 +764,11 @@ instance HasTypeVar Pattern where
          tcs
 
 instance HasTypeVar TName where
-  sub `substitute` (TName name tp)
-    = TName name (sub `substitute` tp)
-  ftv (TName name tp)
+  sub `substitute` (TName name tp rng)
+    = TName name (sub `substitute` tp) rng
+  ftv (TName name tp _)
     = ftv tp
-  btv (TName name tp)
+  btv (TName name tp _)
     = btv tp
-  ftc (TName name tp)
+  ftc (TName name tp _)
     = ftc tp

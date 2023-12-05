@@ -20,6 +20,7 @@ module Core.Core ( -- Data structures
                    , Branch(..), Guard(..), Pattern(..)
                    , TName(..), typeDefName
                    , showTName
+                   , isDefNonRec
                    , flattenTypeDefGroups
                    , flattenDefGroups
                    , flattenAllDefGroups
@@ -104,7 +105,7 @@ module Core.Core ( -- Data structures
                    , CorePhase
                    , getCoreDefs, setCoreDefs, withCoreDefs
                    , runCorePhase
-                   , liftCorePhase, liftCorePhaseUniq
+                   , liftCorePhase, liftCorePhaseUniq, liftCorePhaseRes
                    , liftError
                    ) where
 
@@ -146,14 +147,14 @@ isExprFalse (Con tname _)  = (getName tname == nameFalse)
 isExprFalse _              = False
 
 exprUnit :: Expr
-exprUnit = Con (TName nameUnit typeUnit) (ConEnum nameTpUnit DataEnum valueReprZero 0)
+exprUnit = Con (TName nameUnit typeUnit Nothing) (ConEnum nameTpUnit DataEnum valueReprZero 0)
            -- (ConInfo nameUnit typeUnit [] [] [] (TFun [] typeTotal typeUnit) Inductive rangeNull [] [] False Public "")
 
 (patFalse,exprFalse) = patExprBool nameFalse 0
 (patTrue,exprTrue)   = patExprBool nameTrue 1
 
 patExprBool name tag
-  = let tname   = TName name typeBool
+  = let tname   = TName name typeBool Nothing
         conEnum = ConEnum nameTpBool DataEnum valueReprZero tag
         conInfo = ConInfo name nameTpBool [] [] [] (TFun [] typeTotal typeBool) Inductive rangeNull [] [] False
                             [] valueReprZero Public ""
@@ -171,21 +172,21 @@ makeVector tp exprs
   = App (TypeApp vectorFromList [tp]) [makeList tp exprs]
   where
     vectorFromList
-      = Var (TName nameVector (TForall [a] [] (typeFun [(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeVector [TVar a]))))
+      = Var (TName nameVector (TForall [a] [] (typeFun [(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeVector [TVar a]))) Nothing)
             (InfoArity 1 1)
     a = TypeVar (0) kindStar Bound
 
-wrapOptional :: Type -> Expr -> Expr
-wrapOptional tp expr
-  = App (TypeApp (Con (TName nameOptional tpOptional) conInfo) [tp]) [expr]
+wrapOptional :: Type -> Expr -> Maybe Range -> Expr
+wrapOptional tp expr rng
+  = App (TypeApp (Con (TName nameOptional tpOptional rng) conInfo) [tp]) [expr]
   where
     conInfo    = ConAsJust nameTpOptional DataAsMaybe (valueReprScan 1) nameOptionalNone {-the Nothing-} 0
     tpOptional = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
     a = TypeVar (0) kindStar Bound
 
-makeOptionalNone :: Type -> Expr
-makeOptionalNone tp
-  = TypeApp (Con (TName nameOptionalNone tpOptionalNone) conInfo) [tp]
+makeOptionalNone :: Type -> Range -> Expr
+makeOptionalNone tp rng
+  = TypeApp (Con (TName nameOptionalNone tpOptionalNone (Just rng)) conInfo) [tp]
   where
     conInfo    = ConSingleton nameTpOptional DataAsMaybe valueReprZero 1
     tpOptionalNone = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
@@ -196,10 +197,10 @@ makeList tp exprs
   = foldr cons nil exprs
   where
     nilTp    = TForall [a] [] (TApp typeList [TVar a])
-    nilCon   = Con (TName nameListNil nilTp) (ConSingleton nameTpList DataAsList valueReprZero 0)
+    nilCon   = Con (TName nameListNil nilTp Nothing) (ConSingleton nameTpList DataAsList valueReprZero 0)
     nil      = TypeApp nilCon [tp]
     consTp   = TForall [a] [] (typeFun [(nameNil,TVar a),(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeList [TVar a]))
-    consCon  = Con (TName nameCons consTp) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2)  -- NOTE: depends on Cons being second in the definition in std/core :-(
+    consCon  = Con (TName nameCons consTp Nothing) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2)  -- NOTE: depends on Cons being second in the definition in std/core :-(
     cons expr xs = App (TypeApp consCon [tp]) [expr,xs]
     a = TypeVar (0) kindStar Bound
 
@@ -208,7 +209,7 @@ makeDef name expr
   = Def name (typeOf expr) expr Private DefVal InlineNever rangeNull ""
 
 makeTDef :: TName -> Expr -> Def
-makeTDef (TName name tp) expr
+makeTDef (TName name tp _) expr
   = Def name tp expr Private DefVal InlineNever rangeNull ""
 
 
@@ -246,7 +247,7 @@ unzipM m = fmap unzip m
 -- If this remains in the source after Reuse Analyis an error will be thrown!
 makeDropSpecial :: TName -> Expr -> Expr -> Expr -> Expr
 makeDropSpecial y xUnique xShared xDecRef
-  = App (Var (TName nameDropSpecial tp) (InfoExternal [])) [Var y InfoNone, xUnique, xShared, xDecRef]
+  = App (Var (TName nameDropSpecial tp Nothing) (InfoExternal [])) [Var y InfoNone, xUnique, xShared, xDecRef]
   where
     tp = typeFun [(nameNil,t) | t <- [typeOf y, typeOf xUnique, typeOf xShared, typeOf xDecRef]] typeTotal typeUnit
 
@@ -573,6 +574,10 @@ data DefGroup =
 
 type Defs = [Def]
 
+isDefNonRec :: DefGroup -> Bool
+isDefNonRec (DefNonRec _) = True
+isDefNonRec _             = False
+
 flattenDefGroups :: [DefGroup] -> [Def]
 flattenDefGroups defGroups
   = concatMap (\defg -> case defg of { DefRec defs -> defs; DefNonRec def -> [def]}) defGroups
@@ -678,6 +683,10 @@ liftCorePhase :: (DefGroups -> DefGroups) -> CorePhase b ()
 liftCorePhase f
   = liftCorePhaseUniq (\u defs -> (f defs, u))
 
+liftCorePhaseRes :: (Int -> DefGroups -> (a,Int)) -> CorePhase b a
+liftCorePhaseRes f
+  = CP (\uniq defs -> let (a,uniq') = f uniq defs in return (CPState a uniq' defs))
+
 liftError :: Error b a -> CorePhase b a
 liftError err
   = CP (\uniq defs -> do x <- err
@@ -745,17 +754,18 @@ data VarInfo
   | InfoConField !TName !ConRepr !Name  -- constructor name, repr, field name (inserted by reuse specialization)
 
 data TName = TName
-  { getName :: !Name
-  , tnameType :: !Type
+  { getName :: Name
+  , tnameType :: Type
+  , originalRange :: Maybe Range
   }
 
-showTName (TName name tp)
+showTName (TName name tp rng)
     = show name -- ++ ": " ++ show tp -- ++ ": " ++ minCanonical tp
 
 
 defTName :: Def -> TName
 defTName def
-  = TName (defName def) (defType def)
+  = TName (defName def) (defType def) (Just $ defNameRange def)
 
 defsTNames :: [Def] -> TNames
 defsTNames defs = S.fromList (map defTName defs)
@@ -1065,10 +1075,10 @@ tnamesDisjoint :: TNames -> TNames -> Bool
 tnamesDisjoint n1 n2 = null (S.intersection n1 n2) -- S.disjoint n1 n2  -- build with ghc8.0.2
 
 instance Eq TName where
-  (TName name1 tp1) == (TName name2 tp2)  = (name1 == name2) --  && matchType tp1 tp2)
+  (TName name1 tp1 rng1) == (TName name2 tp2 rng2)  = (name1 == name2) --  && matchType tp1 tp2)
 
 instance Ord TName where
-  compare (TName name1 tp1) (TName name2 tp2)
+  compare (TName name1 tp1 rng1) (TName name2 tp2 rng2)
     = compare name1 name2
        {- EQ  -> compare (minCanonical tp1) (minCanonical tp2)
         lgt -> lgt -}
@@ -1114,10 +1124,10 @@ addTypeLambdas pars (TypeLam ps e) = TypeLam (pars ++ ps) e
 addTypeLambdas pars e              = TypeLam pars e
 
 -- | Add term lambdas
-addLambdas :: [(Name, Type)] -> (Type -> Expr -> Expr)
+addLambdas :: [(Range, (Name, Type))] -> (Type -> Expr -> Expr)
 addLambdas [] eff e              = e
-addLambdas pars eff (Lam ps _ e) = Lam ([TName x tp | (x,tp) <- pars] ++ ps) eff e
-addLambdas pars eff e            = Lam [TName x tp | (x,tp) <- pars] eff e
+addLambdas pars eff (Lam ps _ e) = Lam ([TName x tp (Just rng) | (rng, (x,tp)) <- pars] ++ ps) eff e
+addLambdas pars eff e            = Lam [TName x tp (Just rng) | (rng, (x,tp)) <- pars] eff e
 
 -- | Add term lambdas
 addLambdasTName :: [TName] -> (Type -> Expr -> Expr)
@@ -1158,7 +1168,7 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
      else --trace ("open effect: " ++ show (map pretty [effFrom,effTo,tpFrom,tpTo])) $
           App (TypeApp varOpen [effFrom,effTo,tpFrom,tpTo]) [expr]
   where
-    varOpen = Var (TName nameEffectOpen tpOpen) (InfoExternal [(Default,"#1")])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
+    varOpen = Var (TName nameEffectOpen tpOpen Nothing) (InfoExternal [(Default,"#1")])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
     tpOpen  = TForall [e1,e2,a,b] [] (TFun [(newName "x", tpFrom)] typeTotal tpTo)
     a       = TypeVar (-1) kindStar Bound
     b       = TypeVar (-2) kindStar Bound
@@ -1175,19 +1185,19 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
 
 makeInt32 :: Integer -> Expr
 makeInt32 i
-  = let int32 = Var (TName nameInternalInt32 (typeFun [(nameNil,typeInt)] typeTotal typeInt32)) (InfoArity 1 0 )
+  = let int32 = Var (TName nameInternalInt32 (typeFun [(nameNil,typeInt)] typeTotal typeInt32) Nothing) (InfoArity 1 0 )
     in App int32 [Lit (LitInt i)]
 
 makeEvIndex :: Integer -> Expr
 makeEvIndex i | i < 0 = failure $ ("Core.Core.makeEvIndex: index < 0: " ++ show i)
 makeEvIndex i
-  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeEvIndex)) (InfoArity 1 0 )
+  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeEvIndex) Nothing) (InfoArity 1 0 )
     in App sizet [Lit (LitInt i)]
 
 makeSizeT :: Integer -> Expr
 makeSizeT i | i < 0 = failure $ ("Core.Core.makeSizeT: size_t < 0: " ++ show i)
 makeSizeT i
-  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeSSizeT)) (InfoArity 1 0 )
+  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeSSizeT) Nothing) (InfoArity 1 0 )
     in App sizet [Lit (LitInt i)]
 
 ---------------------------------------------------------------------------
@@ -1200,12 +1210,12 @@ instance HasType Def where
   typeOf def  = defType def
 
 instance HasType TName where
-  typeOf (TName _ tp)   = tp
+  typeOf (TName _ tp _)   = tp
 
 instance HasType Expr where
   -- Lambda abstraction
   typeOf (Lam pars eff expr)
-    = typeFun [(name,tp) | TName name tp <- pars] eff (typeOf expr)
+    = typeFun [(name,tp) | TName name tp _ <- pars] eff (typeOf expr)
 
   -- Variables
   typeOf (Var tname info)
@@ -1221,7 +1231,7 @@ instance HasType Expr where
       case splitFunScheme (typeOf fun) of
         Just (_,_,targs,eff,tres)          -- ignore forall as we can call this after box/unbox
            | length args == length targs || length targs == 0 -> tres
-           | length args > length targs  -> typeOf (App (Var (TName (newName "tmp") tres) InfoNone) (drop (length targs) args))
+           | length args > length targs  -> typeOf (App (Var (TName (newName "tmp") tres Nothing) InfoNone) (drop (length targs) args))
            | otherwise -> TFun (drop (length args) targs) eff tres
         _ -> error ("Core.Core.typeOf.App: Expected function: " ++ show (pretty (typeOf fun)) ++ show (map (pretty . typeOf) args))  -- ++ " in the application " ++ show expr
 
