@@ -1609,6 +1609,22 @@ pub fun substr( slice: sslice, start : int, end : int ): sslice
   else
     Sslice(s, newst, newLen)
 
+pub fun take( slice: sslice, n : int): sslice
+  val Sslice(s, st, _) = slice
+  if st + n < s.count then
+    Sslice(s, st, n)
+  else
+    Sslice(s, st, s.count - n)
+
+pub fun drop( slice: sslice, n : int): sslice
+  val Sslice(s, st, end) = slice
+  val newst = st + n
+  val newLen = s.count - newst
+  if newLen < 0 then
+    Sslice(s, end, 0)
+  else
+    Sslice(s, newst, newLen)
+
 // Apply a function for each character in a string slice.
 // If `action` returns `Just`, the function returns immediately with that result.
 pub fun foreach-while( slice : sslice, action : (c : char) -> e maybe<a> ) : e maybe<a>
