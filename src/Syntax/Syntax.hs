@@ -183,14 +183,15 @@ type Defs t
 
 data ValueBinder t e
   = ValueBinder{ binderName :: Name    -- ^ name
-               , binderType :: t        -- ^ Type. Always present for constructors.
+               , binderType :: t       -- ^ Type. Always present for constructors.
                , binderExpr  :: e      -- ^ Expression: always present for definitions as 'Expr t'
-                                       -- Function and constructor parameters use 'Maybe (Expr t)' for default values.
+                                       -- functions and constructor parameters use 'Maybe (Expr t)' for default values.
                                        -- Pattern bindings ('PatVar') use unit '()'.
                , binderNameRange :: Range  -- ^ name range
                , binderRange :: Range      -- ^ full range
                }
   deriving (Show)
+
 
 --  | A value or function definition
 data Def t

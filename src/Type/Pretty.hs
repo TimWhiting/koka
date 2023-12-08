@@ -427,6 +427,8 @@ ppTypeName :: Env -> Name -> Doc
 ppTypeName env name
   = color (colorType (colors env)) $ ppNameEx env name
 
+ppNameEx env name | isImplicitParamName name
+  = text "?" <.> ppNameEx env (plainImplicitParamName name)
 ppNameEx env name
   = if (fullNames env)
      then pretty name

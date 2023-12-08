@@ -725,7 +725,7 @@ constructorId
   <?> "constructor"
 
 -----------------------------------------------------------
--- Implicit Parameters
+-- value operations
 -----------------------------------------------------------
 
 type Param = (Visibility, ValueBinder UserType (Maybe UserExpr))
@@ -1250,7 +1250,7 @@ funDecl rng doc vis inline fip
   = do spars <- squantifier
        -- tpars <- aquantifier  -- todo: store somewhere
        (name,nameRng) <- funid
-       (tpars,pars,pinfos,parsRng,mbtres,preds,ann) <- funDef True {-allowBorrow-}
+       (tpars,pars,pinfos,parsRng,mbtres,preds,ann) <- funDef True {-allowBorrow-} True {- allow implicits -}
        body   <- bodyexpr
        let fun = promote spars tpars preds mbtres
                   (Lam pars body (combineRanged rng body))
@@ -1258,10 +1258,10 @@ funDecl rng doc vis inline fip
                        (defFunEx pinfos fip) inline doc)
 
 -- fundef: forall parameters, parameters, (effecttp, resulttp), annotation
-funDef :: Bool -> LexParser ([TypeBinder UserKind],[ValueBinder (Maybe UserType) (Maybe UserExpr)], [ParamInfo], Range, Maybe (Maybe UserType, UserType),[UserType], UserExpr -> UserExpr)
-funDef allowBorrow
+funDef :: Bool -> Bool -> LexParser ([TypeBinder UserKind],[ValueBinder (Maybe UserType) (Maybe UserExpr)], [ParamInfo], Range, Maybe (Maybe UserType, UserType),[UserType], UserExpr -> UserExpr)
+funDef allowBorrow allowImplicits
   = do tpars  <- typeparams
-       (pars, pinfos, transform, rng) <- parameters allowBorrow True {-allowDefault-}
+       (pars, pinfos, transform, rng) <- parameters allowBorrow True {-allowDefault-} allowImplicits
        resultTp <- annotRes
        preds <- do keyword "with"
                    parens (many1 predicate)
@@ -1286,19 +1286,21 @@ typeparams
   <|>
     do return []
 
-parameters :: Bool -> Bool -> LexParser ([(ValueBinder (Maybe UserType) (Maybe UserExpr))], [ParamInfo], UserExpr -> UserExpr, Range)
-parameters allowBorrow allowDefaults = do
-  (results, rng) <- parensCommasRng (parameter allowBorrow allowDefaults)
+
+parameters :: Bool -> Bool -> Bool -> LexParser ([(ValueBinder (Maybe UserType) (Maybe UserExpr))], [ParamInfo], UserExpr -> UserExpr, Range)
+parameters allowBorrow allowDefaults allowImplicits = do
+  (results, rng) <- parensCommasRng (parameter allowBorrow allowDefaults allowImplicits)
   let (binders, pinfos, transforms) = unzip3 results
       transform = appEndo $ foldMap Endo transforms  -- right-to-left so the left-most parameter matches first
   pure (binders, pinfos, transform, rng)
 
-parameter :: Bool -> Bool -> LexParser (ValueBinder (Maybe UserType) (Maybe UserExpr), ParamInfo, UserExpr -> UserExpr)
-parameter allowBorrow allowDefaults = do
+parameter :: Bool -> Bool -> Bool -> LexParser (ValueBinder (Maybe UserType) (Maybe UserExpr), ParamInfo, UserExpr -> UserExpr)
+parameter allowBorrow allowDefaults allowImplicits = do
   pinfo <- if allowBorrow then paramInfo else return Own
-  pat <- patAtom
-  tp  <- optionMaybe typeAnnotPar
-  (opt,drng) <- if allowDefaults then defaultExpr else return (Nothing,rangeNull)
+  pat   <- if allowImplicits then parImplicit <|> patAtom else patAtom
+  tp    <- optionMaybe typeAnnotPar
+  (opt,drng) <- if allowDefaults then defaultExpr  -- todo: restricted to names for implicits
+                                 else return (Nothing,rangeNull)
 
   let rng = case pat of
               PatVar binder -> getRange (binderExpr binder)
@@ -1328,6 +1330,11 @@ defaultExpr
        return (Just e, combineRanged krng e)
   <|>
     return (Nothing,rangeNull)
+
+parImplicit
+  = do specialOp "?"
+       (name,rng) <- identifier
+       return (PatVar (ValueBinder (toImplicitParamName name) Nothing (PatWild rng) rng rng))
 
 
 {--------------------------------------------------------------------------
@@ -1466,7 +1473,7 @@ localUsingDecl
 withstat :: LexParser (UserExpr -> UserExpr)
 withstat
   = do krng <- keyword "with"
-       (do (par, _, transform) <- try $ parameter False{-allowBorrow-} False{-allowDefault-} <*  (keyword "=" <|> keyword "<-")
+       (do (par, _, transform) <- try $ parameter False{-allowBorrow-} False{-allowDefault-} False{-allowImplicit-} <*  (keyword "=" <|> keyword "<-")
            e <- basicexpr <|> handlerExprStat krng HandlerInstance
            pure $ applyToContinuation krng [promoteValueBinder par] $ transform e
         <|>
@@ -1554,7 +1561,7 @@ funblock
 lambda alts
   = do rng <- keyword "fn" -- keywordOr "fn" alts
        spars <- squantifier
-       (tpars,pars,_,parsRng,mbtres,preds,ann) <- funDef False {-allowBorrow-}
+       (tpars,pars,_,parsRng,mbtres,preds,ann) <- funDef False {-allowBorrow-} True {-allow implicits-}
        body <- bodyexpr
        let fun = promote spars tpars preds mbtres
                   (Lam pars body (combineRanged rng body))
@@ -2731,6 +2738,12 @@ typeid
        if (isQualified name)
         then fail "qualified type variable"
         else return (name,rng)
+  {-
+  -- secretly allow definition of any name
+  <|>
+    do (s,rng) <- stringLit
+       return (newName s, rng)
+  -}
 
 ensureUnqualified :: String -> LexParser (Name,Range) -> LexParser (Name,Range)
 ensureUnqualified entity p
