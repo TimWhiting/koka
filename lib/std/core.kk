@@ -2202,7 +2202,7 @@ pub fun print( u : () )
   prints(show(()))
 
 // Print a string to the console, including a final newline character.
-pub fun println(s : string)
+pub fun println(s : string) : console ()
   printsln(s)
 
 // Print an integer to the console, including a final newline character.
@@ -2280,7 +2280,7 @@ pub effect exn
   // Throw an exception
   ctl throw-exn( exn : exception ) : a
 
-pub fun ".default-exn"(action)
+pub fun ".default-exn"(action : () -> <exn,console|e> () ) : <console|e> ()
   handle( action )
     final ctl throw-exn( exn : exception )
       "uncaught exception: ".prints
