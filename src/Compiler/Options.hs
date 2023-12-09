@@ -53,6 +53,7 @@ import Core.Core( dataInfoIsValue )
   Convert flags to pretty environment
 --------------------------------------------------------------------------}
 import qualified Type.Pretty as TP
+import Data.Coerce (coerce)
 
 prettyEnvFromFlags :: Flags -> TP.Env
 prettyEnvFromFlags flags
@@ -77,7 +78,7 @@ prettyIncludePath flags
   = let cscheme = colorScheme flags
         path    = includePath flags
     in align (if null path then color (colorSource cscheme) (text "<empty>")
-               else cat (punctuate comma (map (\p -> color (colorSource cscheme) (text p)) path)))
+               else cat (punctuate comma (map (\p -> color (colorSource cscheme) (text p)) (coerce path))))
 
 {--------------------------------------------------------------------------
   Options
@@ -126,37 +127,37 @@ data Flags
          , simplify         :: Int
          , simplifyMaxDup   :: Int
          , colorScheme      :: ColorScheme
-         , buildDir         :: FilePath      -- kkbuild
+         , buildDir         :: OSDirPath      -- kkbuild
          , buildTag         :: String
-         , outBuildDir      :: FilePath      -- actual build output: <builddir>/<version>-<buildtag>/<ccomp>-<variant>
-         , outBaseName      :: String
-         , outFinalPath     :: FilePath        
-         , includePath      :: [FilePath]    -- .kk/.kki files 
-         , csc              :: FileName
-         , node             :: FileName
-         , wasmrun          :: FileName
-         , cmake            :: FileName
+         , outBuildDir      :: OSDirPath      -- actual build output: <builddir>/<version>-<buildtag>/<ccomp>-<variant>
+         , outBaseName      :: FileName
+         , outFinalPath     :: OSFileLocation        
+         , includePath      :: [OSDirPath]    -- .kk/.kki files 
+         , csc              :: OSCommand
+         , node             :: OSCommand
+         , wasmrun          :: OSCommand
+         , cmake            :: OSCommand
          , cmakeArgs        :: String
-         , ccompPath        :: FilePath
+         , ccompPath        :: OSCommand
          , ccompCompileArgs :: Args
-         , ccompIncludeDirs :: [FilePath]
+         , ccompIncludeDirs :: [OSDirPath]
          , ccompDefs        :: [(String,String)]
          , ccompLinkArgs    :: Args
          , ccompLinkSysLibs :: [String]      -- just core lib name
-         , ccompLinkLibs    :: [FilePath]    -- full path to library
+         , ccompLinkLibs    :: [OSFileLocation]    -- full path to library
          , ccomp            :: CC
-         , ccompLibDirs     :: [FilePath]    -- .a/.lib dirs
+         , ccompLibDirs     :: [OSDirPath]    -- .a/.lib dirs
          , autoInstallLibs  :: Bool
-         , vcpkgRoot        :: FilePath
+         , vcpkgRoot        :: OSDirPath
          , vcpkgTriplet     :: String
          {-
          , vcpkg            :: FilePath
          , vcpkgLibDir      :: FilePath
          , vcpkgIncludeDir  :: FilePath
          -}
-         , conan            :: FilePath
+         , conan            :: OSCommand
          , editor           :: String
-         , redirectOutput   :: FileName
+         , redirectOutput   :: OSFileLocation
          , outHtml          :: Int
          , htmlBases        :: [(String,String)]
          , htmlCss          :: String
@@ -171,12 +172,12 @@ data Flags
          , semiInsert       :: Bool
          , genRangeMap      :: Bool
          , languageServerPort :: Int
-         , localBinDir      :: FilePath  -- directory of koka executable
-         , localDir         :: FilePath  -- install prefix: /usr/local
-         , localLibDir      :: FilePath  -- precompiled object files: <prefix>/lib/koka/v2.x.x  /<cc>-<config>/libkklib.a, /<cc>-<config>/std_core.kki, ...
-         , localShareDir    :: FilePath  -- sources: <prefix>/share/koka/v2.x.x  /lib/std, /lib/samples, /kklib
+         , localBinDir      :: OSDirPath  -- directory of koka executable
+         , localDir         :: OSDirPath  -- install prefix: /usr/local
+         , localLibDir      :: OSDirPath  -- precompiled object files: <prefix>/lib/koka/v2.x.x  /<cc>-<config>/libkklib.a, /<cc>-<config>/std_core.kki, ...
+         , localShareDir    :: OSDirPath  -- sources: <prefix>/share/koka/v2.x.x  /lib/std, /lib/samples, /kklib
          , packages         :: Packages
-         , forceModule      :: FilePath
+         , forceModule      :: FileLocation
          , debug            :: Bool      -- emit debug info
          , optimize         :: Int       -- optimization level; 0 or less is off
          , optInlineMax     :: Int
@@ -219,19 +220,19 @@ flagsNull
           5     -- simplify passes
           10    -- simplify dup max (must be at least 10 to inline partial applications across binds)
           defaultColorScheme
-          ""       -- builddir 
+          (OSDirPath "")       -- builddir 
           ""       -- buildtag
-          ("")     -- build dir
-          ""       -- exe base name
-          ""       -- final exe output path
+          (OSDirPath "")     -- build dir
+          (FileName "")       -- exe base name
+          (OSFileLocation "")       -- final exe output path
           []       -- include paths
-          "csc"
-          "node"
-          "wasmtime"
-          "cmake"
+          (OSCommand "csc")
+          (OSCommand "node")
+          (OSCommand "wasmtime")
+          (OSCommand "cmake")
           ""       -- cmake args
           
-          ""       -- ccompPath
+          (OSCommand "")       -- ccompPath
           []       -- ccomp args
           []       -- ccomp include dirs
           []       -- ccomp defs
@@ -240,21 +241,21 @@ flagsNull
           []       -- clink full lib paths
           (ccGcc "gcc" 0 platform64 "gcc")
           (if onWindows then []        -- ccomp library dirs
-                        else (["/usr/local/lib","/usr/lib","/lib"]
-                               ++ if onMacOS then ["/opt/homebrew/lib"] else []))
+                        else ([(OSDirPath "/usr/local/lib"),(OSDirPath "/usr/lib"),(OSDirPath "/lib")]
+                               ++ if onMacOS then [(OSDirPath "/opt/homebrew/lib")] else []))
           
           True     -- auto install libraries
-          ""       -- vcpkg root
+          (OSDirPath "")       -- vcpkg root
           ""       -- vcpkg triplet
           {-
           ""       -- vcpkg
           ""       -- vcpkg libdir
           ""       -- vcpkg incdir
           -}
-          "conan"  -- conan command
+          (OSCommand "conan")  -- conan command
 
           ""       -- editor
-          ""
+          (OSFileLocation "")
           0        -- out html
           []
           ("styles/" ++ programName ++ ".css")
@@ -269,12 +270,12 @@ flagsNull
           True  -- semi colon insertion
           False -- generate range map
           6061  -- language server port
-          ""    -- koka executable dir
-          ""    -- prefix dir (default: <program-dir>/..)
-          ""    -- localLib dir
-          ""    -- localShare dir
+          (OSDirPath "")    -- koka executable dir
+          (OSDirPath "")    -- prefix dir (default: <program-dir>/..)
+          (OSDirPath "")    -- localLib dir
+          (OSDirPath "")    -- localShare dir
           packagesEmpty -- packages
-          "" -- forceModule
+          (FileLocation "") -- forceModule
           True -- debug
           0    -- optimize
           12   -- inlineMax
@@ -469,32 +470,32 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
 
   includePathFlag mbs
     = Flag (\f -> f{ includePath = case mbs of
-                                     Just s | not (null s) -> includePath f ++ undelimPaths s
+                                     Just s | not (null s) -> includePath f ++ map OSDirPath (undelimPaths s)
                                      _ -> [] })
 
   buildDirFlag s
-    = Flag (\f -> f{ buildDir = s })
+    = Flag (\f -> f{ buildDir = OSDirPath s })
 
   buildTagFlag s
     = Flag (\f -> f{ buildTag = s })    
 
   outBuildDirFlag s
-    = Flag (\f -> f{ outBuildDir = s })
+    = Flag (\f -> f{ outBuildDir = OSDirPath s })
 
   libDirFlag s
-    = Flag (\f -> f{ localLibDir = s })
+    = Flag (\f -> f{ localLibDir = OSDirPath s })
 
   shareDirFlag s
-    = Flag (\f -> f{ localShareDir = s })
+    = Flag (\f -> f{ localShareDir = OSDirPath s })
 
   outBaseNameFlag s
-    = Flag (\f -> f{ outBaseName = s })
+    = Flag (\f -> f{ outBaseName = FileName s })
 
   outFinalPathFlag s
-    = Flag (\f -> f{ outFinalPath = s })    
+    = Flag (\f -> f{ outFinalPath = OSFileLocation s })    
 
   ccFlag s
-    = Flag (\f -> f{ ccompPath = s })
+    = Flag (\f -> f{ ccompPath = OSCommand s })
 
   extendArgs prev mbs 
     = case mbs of Just s | not (null s) -> prev ++ unquote s
@@ -505,11 +506,11 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
 
   ccIncDirs mbs
     = Flag (\f -> f{ ccompIncludeDirs = case mbs of
-                                          Just s | not (null s) -> ccompIncludeDirs f ++ undelimPaths s
+                                          Just s | not (null s) -> ccompIncludeDirs f ++ map OSDirPath (undelimPaths s)
                                           _ -> [] })
   ccLibDirs mbs
     = Flag (\f -> f{ ccompLibDirs = case mbs of
-                                          Just s | not (null s) -> ccompLibDirs f ++ undelimPaths s
+                                          Just s | not (null s) -> ccompLibDirs f ++ map OSDirPath (undelimPaths s)
                                           _ -> [] })
 
 
@@ -520,34 +521,34 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
     = Flag (\f -> f{ ccompLinkSysLibs = ccompLinkSysLibs f ++ undelimPaths s })
   ccLinkLibs mbs
     = Flag (\f -> f{ ccompLinkLibs = case mbs of
-                                      Just s | not (null s) -> ccompLinkLibs f ++ undelimPaths s
+                                      Just s | not (null s) -> ccompLinkLibs f ++ map OSFileLocation (undelimPaths s)
                                       _ -> [] })
   ccVcpkgRoot dir
-    = Flag (\f -> f{vcpkgRoot = dir })
+    = Flag (\f -> f{vcpkgRoot = OSDirPath dir })
 
   ccVcpkgTriplet triplet
     = Flag (\f -> f{vcpkgTriplet = triplet })
 
   ccConan cmd
-    = Flag (\f -> f{conan = cmd })
+    = Flag (\f -> f{conan = OSCommand cmd })
 
   cscFlag s
-    = Flag (\f -> f{ csc = s })
+    = Flag (\f -> f{ csc = OSCommand s })
 
   nodeFlag s
-    = Flag (\f -> f{ node = s })
+    = Flag (\f -> f{ node = OSCommand s })
 
   wasmrunFlag s
-    = Flag (\f -> f{ wasmrun = s })
+    = Flag (\f -> f{ wasmrun = OSCommand s })
 
   editorFlag s
     = Flag (\f -> f{ editor = s })
 
   redirectFlag s
-    = Flag (\f -> f{ redirectOutput = s })
+    = Flag (\f -> f{ redirectOutput = OSFileLocation s })
 
   cmakeFlag s
-      = Flag (\f -> f{ cmake = s })
+      = Flag (\f -> f{ cmake = OSCommand s })
 
   cmakeArgsFlag s
       = Flag (\f -> f{ cmakeArgs = s })

@@ -21,7 +21,7 @@ module Common.File(
                   , startsWith, endsWith, splitOn, trim
 
                   -- * File names
-                  , FileName
+                  , FileName(..), FileNameNoExt(..), FilePathNoExt(..), FileExt(..), DirPath(..), FileLocation(..), OSFileLocation(..), OSDirPath(..), OSCommand(..), IFacePath(..), SourcePath(..), ObjectPath(..), ExePath(..), ModulePath(..), ModuleRoot(..)
                   , basename, notdir, notext, joinPath, joinPaths, extname, dirname, noexts
                   , splitPath, undelimPaths
                   , isPathSep, isPathDelimiter
@@ -62,6 +62,35 @@ import System.Directory ( doesFileExist, doesDirectoryExist
 import Lib.Trace
 import Platform.Filetime
 
+-- File location (OS path operators)
+newtype OSFileLocation = OSFileLocation FilePath deriving Eq
+newtype OSDirPath = OSDirPath FilePath deriving Eq
+-- File location path to executable, or just the command if on the OS PATH
+newtype OSCommand = OSCommand FilePath deriving Eq
+-- File location (OS independant)
+newtype FileLocation = FileLocation FilePath deriving Eq
+newtype FilePathNoExt = FilePathNoExt FilePath deriving Eq
+-- Directory full path without file
+newtype DirPath = DirPath FilePath deriving Eq
+-- File name with potential extension
+newtype FileName = FileName FilePath deriving Eq
+-- File name without extension
+newtype FileNameNoExt = FileNameNoExt FilePath deriving Eq
+-- File extension
+newtype FileExt = FileExt String deriving Eq
+-- Location of IFace file
+newtype IFacePath = IFacePath FilePath deriving Eq
+-- Location of Source file
+newtype SourcePath = SourcePath FilePath deriving Eq
+-- Location of Object file
+newtype ObjectPath = ObjectPath FilePath deriving Eq
+-- Location of final exe
+newtype ExePath = ExePath FilePath deriving Eq
+-- Path of a module (relative to -i include directories)
+newtype ModulePath = ModulePath FilePath deriving Eq
+-- Root of a module
+newtype ModuleRoot = ModuleRoot FilePath deriving Eq
+
 startsWith, endsWith :: String -> String -> Bool
 startsWith s  [] = True
 startsWith [] _  = False
@@ -83,7 +112,7 @@ trim s
   = reverse $ dropWhile isSpace $ reverse $ dropWhile isSpace $ s
 
 isLiteralDoc :: FileName -> Bool
-isLiteralDoc fname
+isLiteralDoc (FileName fname)
   = endsWith fname (sourceExtension ++ ".md") ||
     endsWith fname (sourceExtension ++ ".mdk")
 
@@ -91,46 +120,49 @@ isLiteralDoc fname
   File names
 --------------------------------------------------------------------------}
 -- | File name
-type FileName = FilePath
 
 -- | Remove the extension and directory part
-basename :: FileName -> FileName
+basename :: FilePath -> FileName
 basename fname
-  = case dropWhile (/='.') (reverse (notdir fname)) of
-      '.':rbase -> reverse rbase
-      _         -> notdir fname
+  = case dropWhile (/='.') (reverse n) of
+      '.':rbase -> FileName $ reverse rbase
+      _         -> end
+    where end@(FileName n) = notdir fname
 
 
 -- | Get the file extension
-extname :: FileName -> FileName
-extname fname
-  = let (pre,post) = span (/='.') (reverse (notdir fname))
+extname :: FileName -> FileExt
+extname (FileName fname)
+  = let (pre,post) = span (/='.') (reverse n)
     in if null post
-        then ""
-        else ("." ++ reverse pre)
+        then FileExt ""
+        else FileExt ("." ++ reverse pre)
+    where end@(FileName n) = notdir fname
 
-ensureExt :: FileName -> String -> FileName
+ensureExt :: FilePath -> String -> FileName
 ensureExt fname ext
-  = if (extname fname == ext) then fname else fname ++ ext        
+  = if extname (FileName fname) == FileExt ext then FileName fname else FileName (fname ++ ext)
 
 -- | Return the directory prefix (including last separator if present)
-dirname :: FileName -> FileName
+dirname :: FilePath -> DirPath
 dirname fname
-  = joinPaths (init (splitPath fname))
+  = DirPath $ joinPaths (init (splitPath fname))
 
 -- | Remove the directory prefix
-notdir :: FileName -> FileName
+notdir :: FilePath -> FileName
 notdir fname
-  = last (splitPath fname)
+  = FileName $ last (splitPath fname)
 
+notext :: FileName -> FileNameNoExt
+notext fn@(FileName fname)
+  = FileNameNoExt $ reverse (drop (length ext) (reverse fname))
+  where FileExt ext = extname fn
 
-notext :: FileName -> FileName
-notext fname
-  = reverse (drop (length (extname fname)) (reverse fname))
-
-noexts :: FileName -> FileName
+noexts :: FilePath -> FilePath
 noexts fname
-  = joinPaths [dirname fname, takeWhile (/='.') (notdir fname)]
+  = joinPaths [dirn, takeWhile (/='.') fn]
+  where DirPath dirn = dirname fname
+        FileName fn = notdir fname
 
 -- | Split a (semi-)colon separated list of directories into a directory list
 undelimPaths :: String -> [FilePath]
@@ -249,12 +281,12 @@ runCmd cmd args
 runCmdRead :: [(String,String)] -> String -> [String] -> IO String
 runCmdRead extraEnv cmd args
   = do mbEnv <- buildEnv extraEnv
-       (_, Just hout, _, process) <- createProcess (proc cmd args){ env = mbEnv, std_out = CreatePipe }          
+       (_, Just hout, _, process) <- createProcess (proc cmd args){ env = mbEnv, std_out = CreatePipe }
        exitCode <- waitForProcess process
        case exitCode of
           ExitFailure i -> do -- hClose hout
                               raiseIO ("command failed (exit code " ++ show i ++ ")") -- \n  " ++ concat (intersperse " " (cmd:args)))
-          ExitSuccess   -> do out <- hGetContents hout                              
+          ExitSuccess   -> do out <- hGetContents hout
                               -- hClose hout
                               return out
 
@@ -262,7 +294,7 @@ runCmdRead extraEnv cmd args
 runCmdEnv :: [(String,String)] -> String -> [String] -> IO ()
 runCmdEnv extraEnv cmd args
   = do mbEnv <- buildEnv extraEnv
-       (_, _, _, process) <- createProcess (proc cmd args){ env = mbEnv }          
+       (_, _, _, process) <- createProcess (proc cmd args){ env = mbEnv }
        exitCode <- waitForProcess process
        case exitCode of
           ExitFailure i -> do -- hClose hout
@@ -271,7 +303,7 @@ runCmdEnv extraEnv cmd args
 
 buildEnv :: [(String,String)] -> IO (Maybe [(String,String)])
 buildEnv extraEnv
-  = if null extraEnv then return Nothing 
+  = if null extraEnv then return Nothing
       else do oldEnv <- getEnvironment
               let newKeys = map fst extraEnv
               return (Just (extraEnv ++ filter (\(k,_) -> not (k `elem` newKeys)) oldEnv))
@@ -325,12 +357,13 @@ copyTextFileWith :: FilePath -> FilePath -> (String -> String) -> IO ()
 copyTextFileWith src dest transform
   = if (src == dest)
      then return ()
-     else catchIO (do createDirectoryIfMissing True (dirname dest)
+     else catchIO (do createDirectoryIfMissing True dir 
                       ftime   <- getFileTime src
                       content <- readFile src
                       writeFile dest (transform content)
                       setFileTime dest ftime)
             (error ("could not copy file " ++ show src ++ " to " ++ show dest))
+    where DirPath dir = dirname dest
 
 copyBinaryFile :: FilePath -> FilePath -> IO ()
 copyBinaryFile src dest
@@ -339,7 +372,7 @@ copyBinaryFile src dest
      else catchIO (
             -- do not use as the source may come from a (readonly) admin permission and should got to user permission
             -- B.copyBinaryFile src dest) (\_ -> error ("could not copy file " ++ show src ++ " to " ++ show dest))
-             do createDirectoryIfMissing True (dirname dest)
+             do createDirectoryIfMissing True dir
                 ftime <- getFileTime src
                 withBinaryFile src ReadMode $ \hsrc ->
                   withBinaryFile dest WriteMode $ \hdest ->
@@ -347,6 +380,7 @@ copyBinaryFile src dest
                        hPutStr hdest content
                 setFileTime dest ftime)
             (error ("could not copy file " ++ show src ++ " to " ++ show dest))
+    where DirPath dir = dirname dest
 
 copyBinaryIfNewer :: Bool -> FilePath -> FilePath -> IO ()
 copyBinaryIfNewer always srcName outName
@@ -377,7 +411,7 @@ copyTextIfNewerWith always srcName outName transform
         else do return ()
 
 removeFileIfExists :: FilePath -> IO ()
-removeFileIfExists fname 
+removeFileIfExists fname
   = B.exCatch (removeFile fname)
               (\exn -> return ())
 
@@ -423,36 +457,37 @@ searchPaths path exts name
 
 searchPathsSuffixes :: [FilePath] -> [String] -> [String] -> String -> IO (Maybe (FilePath))
 searchPathsSuffixes path exts suffixes name
-  = fmap (fmap (\(root,name) -> joinPath root name)) (searchPathsEx path (filter (not.null) exts) suffixes name)
+  = fmap (fmap (\(DirPath root,FileName name) -> joinPath root name)) (searchPathsEx path (filter (not . null) exts) suffixes name)
 
 
-searchPathsEx :: [FilePath] -> [String] -> [String] -> String -> IO (Maybe (FilePath,FilePath))
+searchPathsEx :: [FilePath] -> [String] -> [String] -> String -> IO (Maybe (DirPath,FileName))
 searchPathsEx path exts suffixes name
   = search (concatMap (\dir -> map (\n -> (dir,n)) nameext) ("":path))
   where
     search [] = return Nothing  -- notfound envname nameext path
     search ((dir,fname):xs)
-      = do{ let fullName = joinPath dir fname
-          -- ; trace ("search: " ++ fullName) $ return ()
-          ; exist <- doesFileExist fullName
-          ; if exist
-             then return (Just (dir,fname))
-             else search xs
-          }
+      = do { let fullName = joinPath dir fname
+           -- ; trace ("search: " ++ fullName) $ return ()
+           ; exist <- doesFileExist fullName
+           ; if exist
+              then return (Just (DirPath dir,FileName fname))
+              else search xs
+           }
 
     nameext
       = concatMap (\fname -> fname : map (fname++) exts) $
-        map (\suffix -> (notext nname) ++ suffix ++ (extname nname)) ("" : suffixes)
-
+        map (\suffix -> (notextn nname) ++ suffix ++ (extn nname)) ("" : suffixes)
     nname
       = joinPaths $ dropWhile (==".") $ splitPath name
+    notextn nname = let FileNameNoExt fn = notext (FileName nname) in fn
+    extn nname = let FileExt ext = extname (FileName nname) in ext
 
 
 getEnvPaths :: String -> IO [FilePath]
 getEnvPaths name
-  = do{ xs <- getEnvVar name
-      ; return (undelimPaths xs)
-      }
+  = do { xs <- getEnvVar name
+       ; return (undelimPaths xs)
+       }
   `catchIO` \err -> return []
 
 getEnvVar :: String -> IO String
@@ -463,7 +498,7 @@ getEnvVar name
          Nothing  -> return ""
 
 realPath :: FilePath -> IO FilePath
-realPath fpath 
+realPath fpath
   = canonicalizePath fpath
 
 
@@ -472,13 +507,13 @@ searchProgram ""
   = return Nothing
 searchProgram fname | isAbsolute fname || fname `startsWith` "."
   = do exist <- doesFileExist fname
-       if exist  
+       if exist
          then return (Just fname)
          else return Nothing
-searchProgram fname          
+searchProgram fname
   = do paths  <- getEnvPaths "PATH"
        searchPaths paths [exeExtension] fname
-       
+
 
 {-
 splitPath :: String -> [String]
