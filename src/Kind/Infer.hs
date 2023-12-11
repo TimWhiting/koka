@@ -527,7 +527,12 @@ infLamValueBinder (ValueBinder name mbTp mbExpr nameRng rng)
                   Just tp -> do tp' <- infResolveType tp (Check "Function parameters must be values" rng)
                                 return (Just tp')
        mbExpr' <- case mbExpr of
-                  Nothing -> return Nothing
+                  Nothing   -> return Nothing
+                  Just (Parens (Var iname _ nrng) nm prng)  | isImplicitParamName name  -- ?? unpack
+                            -> do (qname,ikind) <- findInfKind iname rng
+                                  -- kind          <- resolveKind ikind
+                                  -- addRangeInfo r (Id qname (NITypeCon kind) False)
+                                  return (Just (Parens (Var qname False nrng) nm prng))
                   Just expr -> do expr' <- infExpr expr
                                   return (Just expr')
        return (ValueBinder name mbTp' mbExpr' nameRng rng)

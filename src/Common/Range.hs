@@ -314,7 +314,7 @@ combineRanges rs
 
 -- | Return the minimal position
 minPos :: Pos -> Pos -> Pos
-minPos (Pos _ _ l _) p  | l <= 0 = p       -- for combining nullRanges sensably
+minPos (Pos _ _ l _) p  | l <= 0 = p       -- for combining nullRanges sensibly
 minPos p (Pos _ _ l _)  | l <= 0 = p
 minPos p1 p2  = if (p1 <= p2) then p1 else p2
 
