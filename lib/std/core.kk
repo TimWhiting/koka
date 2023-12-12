@@ -1600,7 +1600,6 @@ pub extern next( slice : sslice ) : maybe<(char,sslice)>
   cs "Primitive.SliceNext"
   js "_sslice_next"
 
-/*
 pub fun substr( slice: sslice, start : int, end : int ): sslice
   val Sslice(s, st, _) = slice
   val newst = st + start
@@ -1609,7 +1608,6 @@ pub fun substr( slice: sslice, start : int, end : int ): sslice
     Sslice(s, newst, s.count - newst)
   else
     Sslice(s, newst, newLen)
-*/
 
 // Apply a function for each character in a string slice.
 // If `action` returns `Just`, the function returns immediately with that result.
