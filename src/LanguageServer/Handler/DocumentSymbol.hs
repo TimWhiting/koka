@@ -11,7 +11,7 @@ import Common.Syntax                     ( DefSort (..) )
 import Common.Name                       ( Name (..) )
 import Compiler.Module                   ( modProgram, loadedModule, Loaded (..) )
 import Control.Lens                      ( (^.) )
-import qualified Data.Map                as M
+import qualified Data.Map.Strict                as M
 import Data.Maybe                        ( maybeToList )
 import qualified Data.Text               as T
 import Language.LSP.Server               ( Handlers, requestHandler )

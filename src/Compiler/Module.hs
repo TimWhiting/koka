@@ -71,18 +71,18 @@ data Module  = Module{ modName        :: Name
                      , modOutputTime  :: Maybe FileTime
                      }
 
-data Loaded = Loaded{ loadedGamma       :: Gamma
-                    , loadedKGamma      :: KGamma
-                    , loadedSynonyms    :: Synonyms
-                    , loadedNewtypes    :: Newtypes
-                    , loadedConstructors:: Constructors
-                    , loadedFixities    :: Fixities
-                    , loadedImportMap   :: ImportMap
-                    , loadedUnique      :: Int
-                    , loadedModule      :: Module
-                    , loadedModules     :: [Module]
-                    , loadedInlines     :: Inlines
-                    , loadedBorrowed    :: Borrowed
+data Loaded = Loaded{ loadedGamma       :: !Gamma
+                    , loadedKGamma      :: !KGamma
+                    , loadedSynonyms    :: !Synonyms
+                    , loadedNewtypes    :: !Newtypes
+                    , loadedConstructors:: !Constructors
+                    , loadedFixities    :: !Fixities
+                    , loadedImportMap   :: !ImportMap
+                    , loadedUnique      :: !Int
+                    , loadedModule      :: !Module
+                    , loadedModules     :: ![Module]
+                    , loadedInlines     :: !Inlines
+                    , loadedBorrowed    :: !Borrowed
                     }
 
 instance Show Loaded where

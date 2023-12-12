@@ -7,7 +7,7 @@ module LanguageServer.Handler.Definition (definitionHandler) where
 
 import Compiler.Module (Loaded (..), loadedModule, modRangeMap)
 import Control.Lens ((^.))
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe (maybeToList)
 import Kind.Constructors (conInfoRange, constructorsLookup)
 import Kind.Newtypes (dataInfoRange, newtypesLookupAny)

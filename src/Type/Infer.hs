@@ -45,7 +45,7 @@ import Common.Range
 import Common.Unique
 import Common.Syntax
 import qualified Common.NameSet as S
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 
 import Syntax.Syntax
 import qualified Core.Core as Core

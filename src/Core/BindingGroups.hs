@@ -15,7 +15,7 @@ module Core.BindingGroups( regroup ) where
 
 
 import qualified Data.Set as S
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Lib.Scc( scc )  -- determine strongly connected components
 import Common.Failure(failure)
 import Common.Name

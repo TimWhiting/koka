@@ -8,7 +8,6 @@ module LanguageServer.Handler.Hover (hoverHandler, formatRangeInfoHover) where
 
 import Compiler.Module (loadedModule, modRangeMap, Loaded (loadedModules, loadedImportMap), Module (modPath, modSourcePath))
 import Control.Lens ((^.))
-import qualified Data.Map as M
 import qualified Data.Text as T
 import Language.LSP.Server (Handlers, sendNotification, requestHandler)
 import qualified Language.LSP.Protocol.Types as J

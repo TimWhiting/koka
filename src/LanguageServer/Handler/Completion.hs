@@ -14,7 +14,7 @@ where
 import Common.Name (Name (..))
 import Compiler.Module (Loaded (..))
 import Control.Lens ((^.))
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe (maybeToList, fromMaybe, fromJust)
 import qualified Data.Text.Utf16.Rope as Rope
 import qualified Data.Set as S

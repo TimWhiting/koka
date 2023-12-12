@@ -20,7 +20,7 @@ module Type.Pretty (-- * Pretty
 
 
 import Data.Char( isSpace )
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Platform.Config( programName )
 import Data.List( partition )
 import Lib.PPrint

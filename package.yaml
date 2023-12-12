@@ -58,10 +58,13 @@ executables:
       - alex
     ghc-options:
       - -rtsopts
-      - -j8
+      # - -j8
       - -O2
-      - -threaded
-      - '"-with-rtsopts=-N8"'
+      # - -threaded
+      # - -fprof-late
+      - -finfo-table-map
+      # - -fforce-recomp
+      - -fdistinct-constructor-tables
     cpp-options:
       - -DKOKA_MAIN="koka"      
       - -DKOKA_VARIANT="release"

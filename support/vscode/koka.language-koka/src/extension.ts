@@ -37,6 +37,7 @@ export async function activate(context: vscode.ExtensionContext) {
   languageServer = new KokaLanguageServer()
   if (vsConfig.get('languageServer.enabled')) {
     await languageServer.start(config, context)
+    context.subscriptions.push(languageServer)
   }
   createCommands(context, vsConfig, config)
 

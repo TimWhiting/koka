@@ -32,7 +32,7 @@ import Control.Lens ((^.))
 import Control.Concurrent (modifyMVar)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Language.LSP.Protocol.Lens hiding (retry)
 import Prelude hiding (id)

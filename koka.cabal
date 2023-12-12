@@ -142,7 +142,7 @@ executable koka
   other-extensions:
       CPP
       OverloadedStrings
-  ghc-options: -rtsopts -j8 -O2 -threaded "-with-rtsopts=-N8"
+  ghc-options: -rtsopts -O2 -finfo-table-map -fdistinct-constructor-tables
   cpp-options: -DKOKA_MAIN="koka" -DKOKA_VARIANT="release" -DKOKA_VERSION="2.4.3" -DREADLINE=0
   include-dirs:
       src/Platform/cpp/Platform

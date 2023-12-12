@@ -18,7 +18,7 @@ import Common.Error (Error, checkPartial)
 import Compiler.Compile (Terminal (..), compileModuleOrFile, Loaded (..), CompileTarget (..), compileFile, codeGen, compileExpression)
 import Control.Lens ((^.))
 import Control.Monad.Trans (liftIO)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import qualified Data.Text as T
 import Language.LSP.Diagnostics (partitionBySource)
@@ -32,7 +32,6 @@ import qualified Data.Text.Encoding as T
 import Data.Functor ((<&>))
 import qualified Language.LSP.Protocol.Message as J
 import Data.ByteString (ByteString)
-import Data.Map (Map)
 import Text.Read (readMaybe)
 import Debug.Trace (trace)
 import Control.Exception (try)
@@ -79,13 +78,13 @@ didCloseHandler = notificationHandler J.SMethod_TextDocumentDidClose $ \_msg -> 
   -- TODO: Remove file from LSM state?
   return ()
 
-maybeContents :: Map FilePath (ByteString, FileTime, J.Int32) -> FilePath -> Maybe (ByteString, FileTime)
+maybeContents :: M.Map FilePath (ByteString, FileTime, J.Int32) -> FilePath -> Maybe (ByteString, FileTime)
 maybeContents vfs uri = do
   -- trace ("Maybe contents " ++ show uri ++ " " ++ show (M.keys vfs)) $ return ()
   (text, ftime, vers) <- M.lookup uri vfs
   return (text, ftime)
 
-diffVFS :: Map FilePath (ByteString, FileTime, J.Int32) -> Map J.NormalizedUri VirtualFile -> LSM (Map FilePath (ByteString, FileTime, J.Int32))
+diffVFS :: M.Map FilePath (ByteString, FileTime, J.Int32) -> M.Map J.NormalizedUri VirtualFile -> LSM (M.Map FilePath (ByteString, FileTime, J.Int32))
 diffVFS oldvfs vfs =
   foldM (\acc (k, v) ->
     let newK = normalize $ J.fromNormalizedFilePath $ fromJust $ J.uriToNormalizedFilePath k

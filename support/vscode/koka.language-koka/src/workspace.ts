@@ -18,12 +18,12 @@ export function scanForSDK(config: vscode.WorkspaceConfiguration): SDKs | undefi
   let allSDKs = []
   if (fs.existsSync(dev)) {
 
-    let command = 'stack path --local-install-root'
+    let command = 'stack path --local-install-root --profile'
     const ghc = `${home}/.ghcup/env`
     if (fs.existsSync(ghc)) {
       // Linux ghcup installation does not show up in vscode's process.PATH, 
       // ensure stack uses the correct ghc by sourcing the ghcup env script 
-      command = `${process.env.SHELL} -c "source ${ghc} && stack path --local-install-root"`
+      command = `${process.env.SHELL} -c "source ${ghc} && stack path --local-install-root --profile"`
     }
 
     const options = { cwd: dev, env: process.env }

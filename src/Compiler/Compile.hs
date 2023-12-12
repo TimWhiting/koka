@@ -114,7 +114,7 @@ import Compiler.Package
 -- Debugging
 import Lib.Trace
 
-import qualified Data.Map
+import qualified Data.Map.Strict
 import Core.Core (Core(coreProgImports))
 
 
@@ -747,7 +747,7 @@ resolveModule compileTarget maybeContents term flags currentDir modules cachedMo
                       Just (mod, mods) ->
                         do liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "reusing:") <+>
                                        color (colorSource (colorScheme flags))
-                                          (pretty (nameFromFile iface)))
+                                          (pretty mname))
                            return (mod, mods)
                       Nothing ->
                         -- trace ("module " ++ show (name) ++ " not yet loaded") $
