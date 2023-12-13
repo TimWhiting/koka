@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE BangPatterns #-}
 module LanguageServer.Monad
   ( LSState (..),
     defaultLSState,
@@ -54,6 +55,8 @@ import Debug.Trace (trace)
 import Control.Monad.STM
 import Control.Concurrent.STM.TChan
 import Control.Concurrent
+import Data.Sequence (Seq (Empty), (<|), (><)) 
+import qualified Data.Sequence as Seq
 import GHC.Conc (atomically)
 import Control.Concurrent.STM (newTVarIO, TVar)
 import qualified Data.Set as Set
@@ -64,10 +67,11 @@ import Platform.Filetime (FileTime)
 import Common.File (realPath,normalize)
 import Compiler.Module (Modules)
 import Data.Maybe (fromMaybe)
+import Data.Foldable (toList)
 
 -- The language server's state, e.g. holding loaded/compiled modules.
 data LSState = LSState {
-  lsModules :: ![Module],
+  lsModules :: !(Seq Module),
   lsLoaded :: !(M.Map FilePath Loaded),
   messages :: !(TChan (String, J.MessageType)),
   flags:: !Flags,
@@ -77,7 +81,7 @@ data LSState = LSState {
   cancelledRequests :: !(TVar (Set.Set J.SomeLspId)),
   documentVersions :: !(TVar (M.Map J.Uri J.Int32)),
   documentInfos :: !(M.Map FilePath (D.ByteString, FileTime, J.Int32)),
-  diagnostics :: !(M.Map J.NormalizedUri [J.Diagnostic])
+  diagnostics :: !(M.Map J.NormalizedUri (Seq J.Diagnostic))
 }
 
 trimnl :: [Char] -> [Char]
@@ -112,7 +116,7 @@ defaultLSState flags = do
                  (if verbose flags > 0 then (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info) else (\_ -> return ()))
                  (\tp -> withNewPrinter $ \p -> do putScheme p (prettyEnv flags nameNil importsEmpty) tp; return J.MessageType_Info)
                  (\msg -> withNewPrinter $ \p -> do writePrettyLn p msg; return J.MessageType_Info)
-  return LSState {lsLoaded = M.empty,lsModules=[], messages = msgChan, terminal = term, htmlPrinter = htmlTextColorPrinter, flags = flags, pendingRequests=pendingRequests, cancelledRequests=cancelledRequests, documentInfos = M.empty, documentVersions = fileVersions, diagnostics = M.empty}
+  return LSState {lsLoaded = M.empty,lsModules=Empty, messages = msgChan, terminal = term, htmlPrinter = htmlTextColorPrinter, flags = flags, pendingRequests=pendingRequests, cancelledRequests=cancelledRequests, documentInfos = M.empty, documentVersions = fileVersions, diagnostics = M.empty}
 
 putScheme p env tp
   = writePrettyLn p (ppScheme env tp)
@@ -130,29 +134,29 @@ type LSM = LspT () (ReaderT (MVar LSState) IO)
 getLSState :: LSM LSState
 getLSState = do
   stVar <- lift ask
-  liftIO $ readMVar stVar
+  liftIO $! readMVar stVar
 
 -- Replaces the language server's state inside the LSM monad
 putLSState :: LSState -> LSM ()
 putLSState s = do
   stVar <- lift ask
-  liftIO $ putMVar stVar s
+  liftIO $! putMVar stVar s
 
 -- Updates the language server's state inside the LSM monad
 modifyLSState :: (LSState -> LSState) -> LSM ()
 modifyLSState m = do
   stVar <- lift ask
-  liftIO $ modifyMVar stVar $ \s -> return (m s, ())
+  liftIO $! modifyMVar stVar $ \s -> return (m s, ())
 
 getModules :: LSM Modules
 getModules = lsModules <$> getLSState
 
 putDiagnostics :: M.Map J.NormalizedUri [J.Diagnostic] -> LSM ()
 putDiagnostics diags = -- Left biased union prefers more recent diagnostics
-  modifyLSState $ \s -> s {diagnostics = M.union diags (diagnostics s)}
+  modifyLSState $ \s -> s {diagnostics = M.union (M.map Seq.fromList diags) (diagnostics s)}
 
 getDiagnostics :: LSM (M.Map J.NormalizedUri [J.Diagnostic])
-getDiagnostics = diagnostics <$> getLSState
+getDiagnostics = M.map toList . diagnostics <$> getLSState
 
 clearDiagnostics :: J.NormalizedUri -> LSM ()
 clearDiagnostics uri = modifyLSState $ \s -> s {diagnostics = M.delete uri (diagnostics s)}
@@ -161,10 +165,10 @@ clearDiagnostics uri = modifyLSState $ \s -> s {diagnostics = M.delete uri (diag
 getLoaded :: J.Uri -> LSM (Maybe Loaded)
 getLoaded uri = do
   st <- getLSState
-  case J.uriToFilePath uri of 
+  case J.uriToFilePath uri of
     Nothing -> return Nothing
     Just uri -> do
-      path <- liftIO $ realPath uri
+      path <- liftIO $! realPath uri
       let p = normalize path
       return $ M.lookup p (lsLoaded st)
 
@@ -180,10 +184,11 @@ getColorScheme = colorScheme <$> getFlags
 
 -- Replaces the loaded state holding compiled modules
 putLoaded :: Loaded -> LSM ()
-putLoaded l = modifyLSState $ \s -> s {lsModules = mergeModules (loadedModule l:loadedModules l) (lsModules s), lsLoaded = M.insert (modSourcePath $ loadedModule l) l (lsLoaded s)}
+putLoaded !l = 
+  modifyLSState $ \s -> s {lsModules = mergeModules (loadedModule l<|loadedModules l) (lsModules s), lsLoaded = M.insert (modSourcePath $ loadedModule l) l (lsLoaded s)}
 
 removeLoaded :: Module -> LSM ()
-removeLoaded m = modifyLSState $ \s -> s {lsModules = filter (\m1 -> modName m1 /= modName m) (lsModules s), lsLoaded = M.delete (modSourcePath m) (lsLoaded s)}
+removeLoaded m = modifyLSState $ \s -> s {lsModules = Seq.filter (\m1 -> modName m1 /= modName m) (lsModules s), lsLoaded = M.delete (modSourcePath m) (lsLoaded s)}
 
 getLoadedModule :: J.Uri -> LSM (Maybe Module)
 getLoadedModule uri = do
@@ -197,8 +202,8 @@ runLSM lsm stVar cfg = runReaderT (runLspT cfg lsm) stVar
 getTerminal :: LSM Terminal
 getTerminal = terminal <$> getLSState
 
-mergeModules :: Modules -> Modules -> Modules
+mergeModules :: Seq Module -> Seq Module -> Seq Module
 mergeModules newModules oldModules =
-  let nModValid = filter modCompiled newModules -- only add modules that sucessfully compiled
-      newModNames = map modName nModValid
-  in nModValid ++ filter (\m -> modName m `notElem` newModNames) oldModules
+  let nModValid = Seq.filter modCompiled newModules -- only add modules that sucessfully compiled
+      newModNames = fmap modName nModValid
+  in nModValid >< Seq.filter (\m -> modName m `notElem` newModNames) oldModules

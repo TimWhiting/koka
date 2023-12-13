@@ -40,7 +40,7 @@ runLanguageServer flags files = do
     state <- newLSStateVar flags
     initStateVal <- liftIO $ readMVar state
     rin <- atomically newTChan :: IO (TChan ReactorInput)
-    void $
+    void $!
       runServerWithHandles
         ioLogger
         lspLogger
@@ -84,16 +84,16 @@ runLanguageServer flags files = do
 messageHandler :: TChan (String, J.MessageType) -> LanguageContextEnv () -> MVar LSState -> IO ()
 messageHandler msgs env state = do
   forever $ do
-    (msg, msgType) <- atomically $ readTChan msgs
+    (msg, msgType) <- atomically $! readTChan msgs
     runLSM (sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams msgType $ T.pack msg) state env
 
 reactor :: TChan ReactorInput -> IO ()
 reactor inp = do
-  forever $ do
+  forever $! do
     ReactorAction act <- atomically $ readTChan inp
     act
 
 doPersist state env =
-  forever $ do
+  forever $! do
     threadDelay 1000000
     runLSM persistModules state env

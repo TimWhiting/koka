@@ -47,51 +47,54 @@ import Syntax.RangeMap
 import Compiler.Package       ( PackageName, joinPkg )
 import qualified Core.Core as Core
 import Data.Maybe (fromJust)
+import qualified Data.Sequence as Seq
+import Data.Sequence (Seq(..), (<|))
+import Data.Foldable (toList)
 
 {--------------------------------------------------------------------------
   Compilation
 --------------------------------------------------------------------------}
-type Modules = [Module]
+type Modules = Seq Module
 
 
-data Module  = Module{ modName        :: Name
-                     , modPath        :: FilePath          -- interface file
-                     , modSourcePath  :: FilePath          -- maybe empty
-                     , modPackageQName:: FilePath          -- A/B/C
-                     , modPackageLocal:: FilePath          -- lib
-                     , modWarnings    :: [(Range,Doc)]
+data Module  = Module{ modName        :: !Name
+                     , modPath        :: !FilePath          -- interface file
+                     , modSourcePath  :: !FilePath          -- maybe empty
+                     , modPackageQName:: !FilePath          -- A/B/C
+                     , modPackageLocal:: !FilePath          -- lib
+                     , modWarnings    :: !(Seq (Range,Doc))
                      , modProgram     :: Maybe (Program UserType UserKind) -- not for interfaces
                      , modCore        :: Core.Core
-                     , modCompiled    :: Bool
-                     , modInMemory    :: Bool
-                     , modInlines     :: Either (Gamma -> Error () [Core.InlineDef]) ([Core.InlineDef])
-                     , modRangeMap    :: Maybe RangeMap
-                     , modSourceTime  :: FileTime
-                     , modTime        :: Maybe FileTime
-                     , modOutputTime  :: Maybe FileTime
+                     , modCompiled    :: !Bool
+                     , modInMemory    :: !Bool
+                     , modInlines     :: !(Either (Gamma -> Error () [Core.InlineDef]) ([Core.InlineDef]))
+                     , modRangeMap    :: !(Maybe RangeMap)
+                     , modSourceTime  :: !FileTime
+                     , modTime        :: !(Maybe FileTime)
+                     , modOutputTime  :: !(Maybe FileTime)
                      }
 
-data Loaded = Loaded{ loadedGamma       :: Gamma
-                    , loadedKGamma      :: KGamma
-                    , loadedSynonyms    :: Synonyms
-                    , loadedNewtypes    :: Newtypes
-                    , loadedConstructors:: Constructors
-                    , loadedFixities    :: Fixities
-                    , loadedImportMap   :: ImportMap
-                    , loadedUnique      :: Int
-                    , loadedModule      :: Module
-                    , loadedModules     :: [Module]
-                    , loadedInlines     :: Inlines
-                    , loadedBorrowed    :: Borrowed
+data Loaded = Loaded{ loadedGamma       :: !Gamma
+                    , loadedKGamma      :: !KGamma
+                    , loadedSynonyms    :: !Synonyms
+                    , loadedNewtypes    :: !Newtypes
+                    , loadedConstructors:: !Constructors
+                    , loadedFixities    :: !Fixities
+                    , loadedImportMap   :: !ImportMap
+                    , loadedUnique      :: !Int
+                    , loadedModule      :: !Module
+                    , loadedModules     :: !(Seq Module)
+                    , loadedInlines     :: !Inlines
+                    , loadedBorrowed    :: !Borrowed
                     }
 
 instance Show Loaded where
   show ld
-    = show (map modName $ loadedModules ld)
+    = show (fmap modName $! loadedModules ld)
 
 loadedLatest :: Loaded -> FileTime
 loadedLatest loaded
-  = maxFileTimes (map (fromJust . modTime) (loadedModules loaded))
+  = maxFileTimes $ toList (fmap (fromJust . modTime) (loadedModules loaded))
 
 initialLoaded :: Loaded
 initialLoaded
@@ -104,13 +107,13 @@ initialLoaded
            importsEmpty
            0
            (moduleNull (newName "Interactive"))
-           []
+           Empty
            inlinesEmpty
            borrowedEmpty
 
 moduleNull :: Name -> Module
 moduleNull modName
-  = Module (modName) "" "" "" "" [] Nothing (Core.coreNull modName) False True (Left (\g -> return [])) Nothing fileTime0 Nothing Nothing
+  = Module (modName) "" "" "" "" Empty Nothing (Core.coreNull modName) False True (Left (\g -> return [])) Nothing fileTime0 Nothing Nothing
 
 loadedName :: Loaded -> Name
 loadedName ld
@@ -168,16 +171,16 @@ loadedImportModule isValue (Loaded gamma1 kgamma1 syns1 data1 cons1 fix1 imps1 u
     in (loaded,errs)
 
 addOrReplaceModule :: Module -> Modules -> Modules
-addOrReplaceModule mod []
-  = [mod]
-addOrReplaceModule mod (m:ms)
+addOrReplaceModule mod Empty
+  = Seq.singleton mod
+addOrReplaceModule mod (m:<|ms)
   = if modPath mod == modPath m
-     then mod:ms
-     else m : addOrReplaceModule mod ms
+     then mod <| ms
+     else m <| addOrReplaceModule mod ms
 
 removeModule :: Name -> Modules -> Modules
 removeModule name modules
-  = filter (\m -> modName m /= name) modules
+  = Seq.filter (\m -> modName m /= name) modules
 
 extractFixities :: Core.Core -> Fixities
 extractFixities core

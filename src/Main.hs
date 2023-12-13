@@ -32,6 +32,7 @@ import Kind.Assumption        ( kgammaFilter )
 import LanguageServer.Run     ( runLanguageServer )
 import Type.Assumption        ( ppGamma, ppGammaHidden, gammaFilter, createNameInfoX, gammaNew )
 import Type.Pretty            ( ppScheme, Env(context,importsMap) )
+import Data.Sequence (Seq(Empty))
 
 
 -- compiled entry
@@ -86,7 +87,7 @@ mainMode flags flags0 mode p
 compile :: ColorPrinter -> Flags -> FilePath -> IO ()
 compile p flags fname
   = do let exec = Executable (newName "main") ()
-       err <- compileFile (const Nothing) Nothing term flags [] []
+       err <- compileFile (const Nothing) Nothing term flags Empty Empty
                 (if (not (evaluate flags)) then (if library flags then Library else exec) else exec) [] fname
        case checkError err of
          Left msg

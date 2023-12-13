@@ -47,6 +47,8 @@ import Compiler.Options
 import Compiler.Compile
 import Compiler.Module 
 import Interpreter.Command
+import Data.Sequence (Seq(..))
+import Data.Foldable (toList)
 
 {---------------------------------------------------------------
   interpreter state
@@ -283,7 +285,7 @@ loadFilesErr term startSt fileNames force
 
                       else return () -- remark st "nothing to load"
                     messageLn st ""
-                    let st' = st{ program = programAddImports (program st) ({- map toImport imports ++ -} map toImport (loadedModules (loaded st))) }
+                    let st' = st{ program = programAddImports (program st) ({- map toImport imports ++ -} toList $ fmap toImport (loadedModules (loaded st))) }
                         toImport mod
                             = Import (modName mod) (modName mod) rangeNull Private
                     return (return st')
@@ -292,7 +294,7 @@ loadFilesErr term startSt fileNames force
                              then compileFile term (flags st) (loadedModules (loaded0 st)) Object fname
                              else compileModule term (flags st) (loadedModules (loaded0 st)) (newName fname)
                              -}
-                             compileModuleOrFile (const Nothing) Nothing term (flags st) [] [] {- (loadedModules (loaded0 st)) -} fname force Object []
+                             compileModuleOrFile (const Nothing) Nothing term (flags st) Empty Empty {- (loadedModules (loaded0 st)) -} fname force Object []
                    ; case checkError err of
                        Left msg
                           -> do messageErrorMsgLnLn st msg
@@ -411,7 +413,7 @@ prettySchemeEffect st tp
 
 lastSource st
   = -- trace ("lastSource: " ++ show (map modSourcePath (loadedModules (loaded0 st))) ++ "," ++ modSourcePath (loadedModule (loaded0 st)) ++ ", " ++ show (errorRange st)) $
-    let fsource = Source (head $ filter (not . null) $ map modSourcePath $  [loadedModule (loaded0 st)] ++ reverse (loadedModules $ loaded0 st))
+    let fsource = Source (head $ filter (not . null) $ map modSourcePath $  [loadedModule (loaded0 st)] ++ reverse (toList (loadedModules $ loaded0 st)))
                          bstringEmpty
         -- fsource = Source (modSourcePath (last (loadedModules (loaded0 st)))) bstringEmpty
         source  = case errorRange st of

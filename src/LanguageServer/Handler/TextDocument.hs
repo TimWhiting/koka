@@ -50,6 +50,7 @@ import Core.Core (Visibility(Private))
 import Common.NamePrim (nameInteractiveModule, nameExpr, nameSystemCore)
 import Common.Name (newName)
 import Syntax.Syntax (Import(..))
+import Data.Sequence (Seq(..))
 
 didOpenHandler :: Handlers LSM
 didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
@@ -129,7 +130,7 @@ compileEditorExpression uri flags filePath functionName = do
                   trace ("Error when compiling, no cached modules " ++ show e) $
                   return ()
                 Just l -> do
-                  trace ("Error when compiling have cached" ++ show (map modSourcePath $ loadedModules l)) $ return ()
+                  trace ("Error when compiling have cached" ++ show (fmap modSourcePath $ loadedModules l)) $ return ()
                   putLoaded l
                   removeLoaded (loadedModule l)
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
@@ -172,7 +173,7 @@ recompileFile compileTarget uri version force flags =
 
       let resultIO :: IO (Either Exc.SomeException (Error Loaded (Loaded, Maybe FilePath)))
           -- Don't use the cached modules as regular modules (they may be out of date, so we want to resolveImports fully over again)
-          resultIO = try $ compileFile (maybeContents newvfs) contents term flags [] (if force then [] else modules) compileTarget [] filePath
+          resultIO = try $ compileFile (maybeContents newvfs) contents term flags Empty (if force then Empty else modules) compileTarget [] filePath
       result <- liftIO resultIO
       case result of
         Right res -> do
@@ -187,7 +188,7 @@ recompileFile compileTarget uri version force flags =
                   trace ("Error when compiling, no cached modules " ++ show e) $
                   return ()
                 Just l -> do
-                  trace ("Error when compiling have cached" ++ show (map modSourcePath $ loadedModules l)) $ return ()
+                  trace ("Error when compiling have cached" ++ show (fmap modSourcePath $ loadedModules l)) $ return ()
                   putLoaded l
                   removeLoaded (loadedModule l)
               sendNotification J.SMethod_WindowLogMessage $ J.LogMessageParams J.MessageType_Error $ T.pack ("Error when compiling " ++ show e) <> T.pack filePath
