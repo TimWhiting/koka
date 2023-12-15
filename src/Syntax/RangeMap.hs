@@ -10,7 +10,10 @@ module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
                       , rangeMapInsert
                       , rangeMapSort
                       , rangeMapLookup
+                      , rangeMapFindAt
+                      , rangeMapFindIn
                       , rangeMapAppend
+                      , rangeInfoType
                       , mangle
                       , mangleConName
                       , mangleTypeName
@@ -19,7 +22,7 @@ module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
 -- import Lib.Trace
 import Data.Char    ( isSpace )
 import Common.Failure 
-import Data.List    (sortBy, groupBy)
+import Data.List    (sortBy, groupBy, minimumBy, foldl')
 import Lib.PPrint
 import Common.Range
 import Common.Name
@@ -29,8 +32,10 @@ import Type.Type
 import Kind.Kind
 import Type.TypeVar
 import Type.Pretty() 
+import Data.Maybe (fromMaybe)
 
 newtype RangeMap = RM [(Range,RangeInfo)]
+  deriving Show
 
 mangleConName :: Name -> Name
 mangleConName name
@@ -61,7 +66,7 @@ data RangeInfo
   | Id Name NameInfo Bool  -- qualified name, info, is the definition
 
 data NameInfo
-  = NIValue   Type
+  = NIValue   Type Bool -- Has annotated type already
   | NICon     Type
   | NITypeCon Kind
   | NITypeVar Kind
@@ -98,7 +103,7 @@ penalty name
 instance Enum NameInfo where
   fromEnum ni
     = case ni of
-        NIValue _   -> 1
+        NIValue _ _   -> 1
         NICon   _   -> 2
         NITypeCon _ -> 3
         NITypeVar _ -> 4
@@ -161,6 +166,39 @@ rangeMapLookup r (RM rm)
         eq (_,ri1) (_,ri2)  = (EQ == compare ((fromEnum ri1) `div` 10) ((fromEnum ri2) `div` 10))
         cmp (_,ri1) (_,ri2) = compare (fromEnum ri1) (fromEnum ri2)
 
+rangeMapFindIn :: Range -> RangeMap -> [(Range, RangeInfo)]
+rangeMapFindIn rng (RM rm)
+  = filter (\(rng, info) -> rangeStart rng >= start || rangeEnd rng <= end) rm
+    where start = rangeStart rng
+          end = rangeEnd rng
+
+rangeMapFindAt :: Pos -> RangeMap -> Maybe [(Range, RangeInfo)]
+rangeMapFindAt pos (RM rm)
+  = shortestRange $ filter (containsPos . fst) rm
+  where
+    containsPos rng   = rangeStart rng <= pos && rangeEnd rng >= pos
+    shortestRange []  = Nothing
+    shortestRange rs  = Just $ minimumByList cmp rs
+    cmp (r1,_) (r2,_) = compare (rangeLength r1) (rangeLength r2)
+
+minimumByList :: Foldable t => (a -> a -> Ordering) -> t a -> [a]
+minimumByList cmp la = fromMaybe [] (foldl' min' Nothing la)
+  where
+    min' mx y = Just $! case mx of
+      Nothing -> [y]
+      Just (x:xs) -> case cmp x y of
+        GT -> [y]
+        EQ -> y:x:xs
+        _ -> x:xs
+
+rangeInfoType :: RangeInfo -> Maybe Type
+rangeInfoType ri
+  = case ri of
+      Id _ info _ -> case info of
+                       NIValue tp _ -> Just tp
+                       NICon tp   -> Just tp
+                       _          -> Nothing
+      _ -> Nothing
 
 instance HasTypeVar RangeMap where
   sub `substitute` (RM rm)
@@ -185,18 +223,18 @@ instance HasTypeVar RangeInfo where
 instance HasTypeVar NameInfo where
   sub `substitute` ni
     = case ni of
-        NIValue tp  -> NIValue (sub `substitute` tp)
+        NIValue tp annotated  -> NIValue (sub `substitute` tp) annotated
         NICon tp    -> NICon (sub `substitute` tp)
         _           -> ni
 
   ftv ni
     = case ni of
-        NIValue tp  -> ftv tp
+        NIValue tp _  -> ftv tp
         NICon tp    -> ftv tp
         _           -> tvsEmpty
 
   btv ni
     = case ni of
-        NIValue tp  -> btv tp
+        NIValue tp _  -> btv tp
         NICon tp    -> btv tp
         _           -> tvsEmpty

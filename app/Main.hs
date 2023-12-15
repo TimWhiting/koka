@@ -53,7 +53,7 @@ mainArgs args
   = do (flags,flags0,mode) <- getOptions args
        let with = if (not (null (redirectOutput flags)))
                    then withFileNoColorPrinter (redirectOutput flags)
-                   else if (console flags == "html") 
+                   else if (console flags == "html")
                     then withHtmlColorPrinter
                    else if (console flags == "ansi")
                     then withColorPrinter
@@ -73,26 +73,30 @@ mainMode flags flags0 mode p
      ModeHelp
       -> showHelp flags p
      ModeVersion
-      -> withNoColorPrinter (\monop -> showVersion flags monop)
+      -> withNoColorPrinter (showVersion flags)
      ModeCompiler files
       -> mapM_ (compile p flags) files
      ModeInteractive files
       -> interpret p flags flags0 files
+     ModeLanguageServer files
+      -> do 
+            putStr "Language server mode not supported in this build.\n"
+            exitFailure
 
 
 compile :: ColorPrinter -> Flags -> FilePath -> IO ()
 compile p flags fname
   = do let exec = Executable (newName "main") ()
-       err <- compileFile term flags []
-                (if (not (evaluate flags)) then (if library flags then Library else exec) else exec) fname
+       err <- compileFile (const Nothing) Nothing term flags [] []
+                (if (not (evaluate flags)) then (if library flags then Library else exec) else exec) [] fname
        case checkError err of
          Left msg
            -> do putPrettyLn p (ppErrorMessage (showSpan flags) cscheme msg)
                  -- exitFailure  -- don't fail for tests
 
-         Right (Loaded gamma kgamma synonyms newtypes constructors _ imports _ 
-                (Module modName _ _ _ _ _warnings rawProgram core _ _ modTime) _ _ _
-               , warnings)
+         Right ((Loaded gamma kgamma synonyms newtypes constructors _ imports _
+                (Module modName _ _ _ _ _ rawProgram core _ _ _ _ modTime _ _) _ _ _
+                , _), warnings)
            -> do when (not (null warnings))
                    (let msg = ErrorWarning warnings ErrorZero
                     in putPrettyLn p (ppErrorMessage (showSpan flags) cscheme msg))
