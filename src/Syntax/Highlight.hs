@@ -80,11 +80,11 @@ fmtAttr cscheme tok lexeme display
 -----------------------------------------------------------
 -- | Print source in color, given a color scheme, source name, initial line number, the input string, and
 -- a 'Printer'.
-highlightPrint :: Printer p => ColorScheme -> FilePath -> Int -> BString -> p -> IO ()
+highlightPrint :: (Monad m, Printer p m) => ColorScheme -> FilePath -> Int -> BString -> p -> m ()
 highlightPrint cscheme sourceName lineNo input p
   = sequence_ $ highlight (fmtPrint cscheme p) id CtxNormal sourceName lineNo input
 
-fmtPrint :: Printer p => ColorScheme -> p -> Token (Lexeme) -> Lexeme -> String -> IO ()
+fmtPrint :: (Monad m, Printer p m) => ColorScheme -> p -> Token (Lexeme) -> Lexeme -> String -> m ()
 fmtPrint cscheme p token _
   = case token of
       TokId _ _    -> write p

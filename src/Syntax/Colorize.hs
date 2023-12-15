@@ -59,7 +59,7 @@ import Type.Assumption
 -----------------------------------------------------------
 -- | Print source in color, given a color scheme, source name, initial line number, the input string, and
 -- a 'Printer'.
-colorize :: Printer p => Maybe RangeMap -> Env -> KGamma -> Gamma -> Bool -> FilePath -> Int -> BString -> p -> IO ()
+colorize :: (Monad m, Printer p m) => Maybe RangeMap -> Env -> KGamma -> Gamma -> Bool -> FilePath -> Int -> BString -> p -> m ()
 colorize mbRangeMap env kgamma gamma fullHtml sourceName lineNo input p
   | extname sourceName == ".md" && extname (notext sourceName) == sourceExtension -- ".kk.md"
   = let coms = lexComment sourceName lineNo (bstringToString input)
@@ -549,7 +549,7 @@ startTag name cls
 endTag name
   = "</" ++ name ++ ">"
 
-writeSpan :: Printer p => p -> String -> String -> IO ()
+writeSpan :: (Monad m, Printer p m) => p -> String -> String -> m ()
 writeSpan p span content
   = write p ("<span class=\"" ++ prefix ++ span ++ "\">" ++ concatMap escape content ++ "</span>")
 

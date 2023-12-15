@@ -1260,13 +1260,13 @@ invokeError errs
     helpMessage = "use \"--help\" for help on command line options"
 
 -- | Show command line help
-showHelp :: Printer p => Flags -> p -> IO ()
+showHelp :: (Monad m, Printer p m) => Flags -> p -> m ()
 showHelp flags p
   = do doc <- commandLineHelp flags
        writePrettyLn p doc
 
 -- | Show the morrow environment variables
-showEnv :: Printer p => Flags -> p -> IO ()
+showEnv :: Printer p m => Flags -> p -> IO ()
 showEnv flags p
   = do doc <- environmentInfo (colorSchemeFromFlags flags)
        writePrettyLn p (showIncludeInfo flags <-> doc)
@@ -1330,7 +1330,7 @@ environmentInfo colors
             else return (name,text s)
 
 
-showVersion :: Printer p => Flags -> p -> IO ()
+showVersion :: (Monad m, Printer p m) => Flags -> p -> m ()
 showVersion flags p
   = writePrettyLn p (versionMessage flags)
 

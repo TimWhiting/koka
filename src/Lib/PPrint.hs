@@ -547,7 +547,7 @@ displayS (SLine i x)        = showString ('\n':(replicate i ' ')) . displayS x
 displayS (SColorOpen f c x) = displayS x
 displayS (SColorClose x)    = displayS x
 
-displayP :: Printer p => p -> Int -> SimpleDoc -> IO ()
+displayP :: (Monad m, Printer p m) => p -> Int -> SimpleDoc -> m ()
 displayP p w simpleDoc
    = do display 0 simpleDoc
         return ()
@@ -576,11 +576,11 @@ displayP p w simpleDoc
 
 
 -- | Display a document on a 'Printer'.
-writePretty :: Printer p => p -> Doc -> IO ()
+writePretty :: (Monad m, Printer p m) => p -> Doc -> m ()
 writePretty p doc
   = displayP p defaultWidth (renderPretty 0.8 defaultWidth doc)
 
-writePrettyLn :: Printer p => p -> Doc -> IO ()
+writePrettyLn :: (Monad m, Printer p m) => p -> Doc -> m ()
 writePrettyLn p doc
   = writePretty p (doc <.> linebreak)
 
