@@ -1,9 +1,62 @@
-# Koka Syntax Highlighting
+# Koka Syntax Highlighting and Language Server
 
-Syntax highlighting support for the 
+Syntax highlighting and language server support for the
 Koka programming language in Visual Studio Code.
 
 Visit <https://koka-lang.github.io> for more information.
+
+# Language Server
+
+The language server continously analyses the code to show
+parse- and type errors, complete identifiers,
+show type information on hover, and
+can execute `main`, `test-xxx`, and `example-xxx` functions
+directly in the debug console.
+
+## Install the latest Koka compiler
+
+Open the command panel in VSCode `(Ctrl/Cmd+Shift+P)` and run the
+`Koka: Download and Install Latest Version` command (when you start
+typing the command and it should surface to the top).
+In the extension settings, you can also set the Koka compiler
+path and specific compiler flags manually.
+
+## Customization
+
+The extension shows _inlay hints_ for inferred types of parameters
+and local declarations. You can toggle the visibility of inlay hints
+in the editor _inlay hints_ settings.
+
+You can create custom launch configurations in your `launch.json` file.
+The following settings are available:
+```json
+{
+  "type": "koka",
+  "request": "launch",
+  "program": "",      // The path to the file you want to run
+  "name": "",         // The name as you want it to appear in the run configurations dropdown
+  "functionName": "", // optional function name to run
+  "programArgs": [],  // optional arguments you want to give to the compiled program
+  "compilerArgs": "", // optional arguments you want to give to the compiler (e.g. --verbose or -O2)
+}
+```
+
+Compilation progress is shown in the language server _terminal_ window,
+while the _debug console_ shows the output of the program.
+
+## Supported Language Server Aspects
+
+- [x] Diagnostics (parse and type errors)
+- [x] Code completion
+- [x] Hover information
+- [x] Find definitions
+- [x] Inlay hints (shows inferred types)
+- [x] Document outline
+- [x] Code folding ranges
+- [x] Code Lenses (`run debug` and `run optimized`)
+
+
+# Syntax Highlighting
 
 ## Token Classes
 
@@ -27,9 +80,9 @@ Visit <https://koka-lang.github.io> for more information.
 ## Customize
 
 You can customize the Koka syntax highlighting by editing
-the `settings.json` file of VS Code (press `Ctrl/Cmd+Shift+P` and 
+the `settings.json` file of VS Code (press `Ctrl/Cmd+Shift+P` and
 select "Open Settings (JSON)" to open it).
-Then add a [editor.tokenColorCustomizations](https://code.visualstudio.com/docs/getstarted/themes#_editor-syntax-highlighting) 
+Then add a [editor.tokenColorCustomizations](https://code.visualstudio.com/docs/getstarted/themes#_editor-syntax-highlighting)
 entry, for example:
 ```json
 "editor.tokenColorCustomizations": {
@@ -45,8 +98,7 @@ entry, for example:
     },
     { "scope": "koka.id.decl.function",
       "settings": { "foreground": "#cac199" }
-    },      
+    },
   ]
 }
 ```
-
