@@ -120,7 +120,7 @@ prettyImport env imp
     prettyVis env (importVis imp) $
     keyword env "import"
       <+> pretty (importsAlias (importName imp) (importsMap env)) <+> text "="
-      <+> prettyName env (importName imp)
+      <+> prettyName (colors env) (importName imp)
       <+> text "=" <+> prettyLit env (LitString (importPackage imp))
       <.> semi
 
@@ -290,7 +290,6 @@ prettyDefX env isRec def@(Def name scheme expr vis sort inl nameRng doc)
   where
     ppBody = prettyExpr env{coreShowVis=False} expr
 
-
 prettyVis env vis doc
   = if (not (coreShowVis env)) then doc else
     case vis of
@@ -376,8 +375,7 @@ prettyExpr env (Let ([DefNonRec (Def x tp e vis isVal inl nameRng doc)]) e')
            in {- if (nameIsNil x) then exprDoc
                else -}
               (keyword env "val" <+> hang 2 (
-                (if nameIsNil x then text "_" else prettyDefName env x) <.> prettyRange env nameRng
-                <+> text ":" <+> prettyType env tp
+                (if nameIsNil x then text "_" else prettyDefName env x) <.> prettyRange env nameRng <+> text ":" <+> prettyType env tp
                 <-> text "=" <+> exprDoc))
          , prettyExpr env e'
          ]
@@ -395,7 +393,7 @@ prettyExpr env (Case exprs branches)
     tab (prettyBranches env branches) <--> text "}"
 
 prettyVar env tname
-  = prettyName env (getName tname)
+  = prettyName (colors env) (getName tname)
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
 
 {--------------------------------------------------------------------------
@@ -458,7 +456,7 @@ prettyPattern env pat
     commaSep :: [Doc] -> Doc
     commaSep = hcat . punctuate comma
     prettyArg :: TName -> Doc
-    prettyArg tname = parens (prettyName env (getName tname) <+> text "::" <+> prettyType env (typeOf tname))
+    prettyArg tname = parens (prettyName (colors env) (getName tname) <+> text "::" <+> prettyType env (typeOf tname))
 
     prettyConName env tname
       = pretty (getName tname)
@@ -490,18 +488,8 @@ showXChar c
 
 prettyTName :: Env -> TName -> Doc
 prettyTName env (TName name tp)
-  = prettyName env name <.> text ":" <+> ppType env tp
+  = prettyName (colors env) name <.> text ":" <+> ppType env tp
 
-prettyName :: Env -> Name -> Doc
-prettyName env name
-  = if (isQualified name)
-      then color (colorNameQual (colors env)) (text (nameModule name ++ "/")) <.>
-           color (colorSource (colors env)) (pretty (unqualify name))
-      else color (colorSource (colors env)) $ pretty name
-  {-
-    let (nm,post) = canonicalSplit name
-    in if (post=="") then pretty name else pretty nm <.> text post
-    -}
 
 prettyDefName :: Env -> Name -> Doc
 prettyDefName env name
