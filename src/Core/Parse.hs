@@ -318,7 +318,7 @@ defDecl env
   = do (vis,sort0,inl,doc) <- try $ do vis <- vispub
                                        (sort,inl,isRec,doc) <- pdefSort
                                        return (vis,sort,inl,doc)
-       (name,_) <- funid <|> idop
+       (name,_) <- qfunid <|> idop
        range    <- prange env
        -- inl      <- parseInline
        -- trace ("core def: " ++ show name) $ return ()
@@ -357,7 +357,7 @@ externDecl env
                                   fip <- parseFip
                                   (_,doc) <- dockeyword "extern"
                                   return (vis,fip,doc)
-       (name,_) <- funid
+       (name,_) <- qfunid
        range    <- prange env
        -- trace ("core def: " ++ show name) $ return ()
        keyword ":"
@@ -430,7 +430,7 @@ inlineDef env
   = do (sort,inl,isRec,specArgs,doc) <- inlineDefSort
        -- inl        <- parseInline
        -- trace ("core inline def: " ++ show name) $ return ()
-       (name,_) <- funid
+       (name,_) <- qfunid
        expr <- parseBody env
        return (InlineDef (envQualify env name) expr isRec inl (if (inl==InlineAlways) then 0 else costExpr expr) sort specArgs)
 
@@ -570,7 +570,7 @@ parseDefGroups0 env
 parseDefGroup :: Env -> LexParser (Env,DefGroup)
 parseDefGroup env
   = do (sort,inl,isRec,doc) <- pdefSort
-       (name,_)   <- funid <|> do{ wildcard; return (nameNil,rangeNull) }
+       (name,tp)   <- qfunid <|> do{ wildcard; return (nameNil,rangeNull) }
        range      <- prange env
        -- inl        <- parseInline
        tp         <- typeAnnot env
@@ -704,6 +704,10 @@ qualifiedConId
         return name
 
 
+qfunid :: LexParser (Name,Range)
+qfunid
+  = do (name,range) <- funid True  -- allow qualified identifier (for a definition)
+       return (unqualifyAsName name, range)
 
 {--------------------------------------------------------------------------
   Type signatures, parameters, kind annotations etc
