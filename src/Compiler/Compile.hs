@@ -397,11 +397,12 @@ compileProgram' maybeContents term flags modules compileTarget fname program imp
                                   , loadedModules = allmods
                                   }
        -- trace ("compile file: " ++ show fname ++ "\n time: "  ++ show ftime ++ "\n latest: " ++ show (loadedLatest loaded)) $ return ()
-       liftIO $ termPhase term ("resolve imports " ++ show (getName program))
+       liftIO $ termPhase term ("resolve imports " ++ show (getName program) ++ ": " ++ show (programImports program))
        loaded1 <- resolveImports maybeContents (getName program) term flags (dirname fname) loaded importPath (map ImpProgram (programImports program))
-       -- trace (" loaded modules: " ++ show (map modName (loadedModules loaded1))) $ return ()
+       --trace (" loaded modules: " ++ show (map modName (loadedModules loaded1))) $ return ()
        --trace ("------\nloaded1:\n" ++ show (loadedNewtypes loaded1) ++ "\n----") $ return ()
        -- trace ("inlines: "  ++ show (loadedInlines loaded1)) $ return ()
+       trace ("imports: " ++ show (importsList (loadedImportMap loaded1))) $ return ()
 
        if (name /= nameInteractiveModule || verbose flags > 0)
         then liftIO $ termPhaseDoc term (color (colorInterpreter (colorScheme flags)) (text "check  :") <+>
@@ -548,12 +549,12 @@ resolveImports :: (FilePath -> Maybe (BString, FileTime)) -> Name -> Terminal ->
 resolveImports maybeContents mname term flags currentDir loaded0 importPath imports0
   = do -- trace (show mname ++ ": resolving imports: current modules: " ++ show (map (show . modName) (loadedModules loaded0)) ++ "\n") $ return ()
        (imports,resolved) <- resolveImportModules maybeContents mname term flags currentDir (removeModule mname (loadedModules loaded0)) (mname:importPath) imports0
-       -- trace (show mname ++ ": resolved imports, imported: " ++ show (map (show . modName) imports) ++ "\n  resolved to: " ++ show (map (show . modName) resolved) ++ "\n") $ return ()
+       -- trace (show mname ++ ": resolved imports, imported: " ++ show (map (show . fst) imports) ++ "\n  resolved to: " ++ show (map (show . modName) resolved) ++ "\n") $ return ()
        let load msg loaded []
              = return loaded
            load msg loaded ((malias,mod):mods)
              = do let (loaded1,errs) = loadedImportModule (isValueFromFlags flags) loaded mod (rangeNull) malias
-                  -- trace ("loaded " ++ msg ++ " module: " ++ show (modName mod)) $ return ()
+                  -- trace ("loaded " ++ msg ++ " module: " ++ show alias ++ " = " ++ show (modName mod)) $ return ()
                   mapM_ (\err -> liftErrorPartial loaded0 (errorMsg err)) errs
                   load msg loaded1 mods
 
@@ -567,7 +568,7 @@ resolveImports maybeContents mname term flags currentDir loaded0 importPath impo
 
 
        loadedImp  <- load "import" loaded0 imports
-       loadedFull <- load "inline import" loaded0 (map (\m -> (modName m, m)) resolved) -- todo: is it ok to ignore module aliases here?
+       loadedFull <- load "inline import" loaded0 (map (\mod -> (modName mod, mod)) resolved)
        inlineDefss   <- mapM (loadInlines loadedFull) resolved
        let modsFull   = zipWith (\mod idefs -> mod{ modInlines = Right idefs }) resolved inlineDefss
            inlineDefs = concat inlineDefss
