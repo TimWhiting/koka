@@ -17,7 +17,7 @@ type tree<a>
   Leaf
 
 
-fun is-red(t : tree<a>) : bool
+fun tree/is-red(t : tree<a>) : bool
   match t
     Node(Red) -> True
     _         -> False

@@ -193,7 +193,7 @@ pub fun main()
   42
 
 
-fun show( xs : list<(bool,int)> ) : string
+fun tuplelist/show( xs : list<(bool,int)> ) : string
   xs.show-list fn(x)
     x.show-tuple(show,show)
 

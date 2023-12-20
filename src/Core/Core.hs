@@ -123,7 +123,7 @@ import Common.Failure
 import Common.Unique
 import Common.Id
 import Common.Error
-import Common.NamePrim( nameTrue, nameFalse, nameTuple, nameTpBool, nameEffectOpen, nameReturn, nameTrace, nameLog,
+import Common.NamePrim( nameTrue, nameFalse, nameTuple, nameUnit, nameTpBool, nameEffectOpen, nameReturn, nameTrace, nameLog,
                         nameEvvIndex, nameOpenAt, nameOpenNone, nameInt32, nameSSizeT, nameBox, nameUnbox,
                         nameVector, nameCons, nameNull, nameTpList, nameUnit, nameTpUnit, nameTpFieldAddr,
                         isPrimitiveName, isSystemCoreName, nameKeep, nameDropSpecial, nameOptional, nameOptionalNone, nameTpOptional)
@@ -136,7 +136,7 @@ import Type.Kind    ( getKind, getHandledEffect, HandledSort(ResumeMany), isHand
 
 import Lib.Trace
 
-isExprUnit (Con tname _)  = getName tname == nameTuple 0
+isExprUnit (Con tname _)  = getName tname == nameUnit
 isExprUnit _              = False
 
 isExprTrue (Con tname _)  = (getName tname == nameTrue)
@@ -1132,7 +1132,7 @@ coreNull name = Core name [] [] [] [] [] ""
 freshName :: HasUnique m => String -> m Name
 freshName prefix
   = do id <- unique
-       return (newName $ prefix ++ "." ++ show id)
+       return (newName $ prefix ++ "@" ++ show id)
 
 openEffectExpr :: Effect -> Effect -> Type -> Type -> Expr -> Expr
 openEffectExpr effFrom effTo tpFrom tpTo expr

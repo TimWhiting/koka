@@ -35,11 +35,11 @@ pub fun bool( i : int64 ) : bool
 
 
 // Convert a boolean to an `:int64`.
-pub fip fun int64( b : bool ) : int64
+pub fip fun bool/int64( b : bool ) : int64
   if b then one else zero
 
 // Convert an `:int32` to an `:int64` (using sign extension).
-pub inline fip extern int64( i : int32 ) : int64
+pub inline fip extern int32/int64( i : int32 ) : int64
   c inline "(int64_t)(#1)"
   js "$std_core._int64_from_int32"
 
@@ -65,7 +65,7 @@ pub inline fip extern uint32( i : int64 ) : int32
 
 // Create an `:int64` `i` from the bits of `lo` and `hi` such
 // that `i.int = hi.int * 0x1_0000_0000 + lo.uint`.
-pub inline fip extern int64( hi : int32, lo : int32 ) : int64
+pub inline fip extern hilo32/int64( hi : int32, lo : int32 ) : int64
   c inline "kk_int64_hi_lo(#1,#2)"
   js "$std_core._int64_hi_lo"
 
@@ -88,12 +88,12 @@ pub fip fun hilo( hi : int64, lo : int64 ) : int64
 // `0x7FFF_FFFF_FFFF_FFFF.uint64 == 0x7FFF_FFFF_FFFF_FFFF.int64 == max-int64`\
 // `0x8000_0000_0000_0000.uint64 == -0x8000_0000_0000_0000.int64 == min-int64`\
 // `0xFFFF_FFFF_FFFF_FFFF.uint64 == -1.int64`\
-pub fun uint64( i : int ) : int64
+pub fun int/uint64( i : int ) : int64
   if i > max-int64.int then (i - 0x1_0000_0000_0000_0000).int64 else i.int64
 
 
 // Convert an `:int64` to an `:int` but interpret the `:int64` as a 64-bit unsigned value.
-pub fip fun uint( i : int64 ) : int
+pub fip fun int64/uint( i : int64 ) : int
   if i.is-neg then 0x1_0000_0000_0000_0000 + i.int else i.int
 
 
@@ -257,7 +257,7 @@ pub fip fun sar( i : int64, shift : int) : int64
 
 // Bitwise rotate an `:int64` `n % 64` bits to the left.
 inline fip extern rotl64( i : int64, n : int64 ) : int64
-  c inline "(int64_t)kk_bits_rotl64(#1,(int)#2)"
+  c inline "(int64_t)kk_bits_rotl64(#1,#2)"
   js "$std_core._int64_rotl"
 
 // Bitwise rotate an `:int64` `n % 64` bits to the left.
@@ -266,7 +266,7 @@ pub fun rotl( i : int64, shift : int) : int64
 
 // Bitwise rotate an `:int64` `n % 64` bits to the right.
 inline fip extern rotr64( i : int64, n : int64 ) : int64
-  c inline "(int64_t)kk_bits_rotr64(#1,(int)#2)"
+  c inline "(int64_t)kk_bits_rotr64(#1,#2)"
   js "$std_core._int64_rotr"
 
 // Bitwise rotate an `:int64` `n % 64` bits to the right.

@@ -21,13 +21,13 @@ fun (==)(p1, p2)
     _             -> False
 
 
-pub fun show(p:player) : string
+pub fun player/show(p:player) : string
   match p
     Bob   -> "bob"
     Alice -> "alice"
 
 
-pub fun show(ps : list<player> ) : string
+pub fun playerlist/show(ps : list<player> ) : string
   ps.show-list(show)
 
 
