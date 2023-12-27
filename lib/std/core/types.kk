@@ -83,6 +83,9 @@ pub value type float32
 // The type of immutable arrays is called `:vector`.
 pub type vector<a>
 
+// A raw wrapper around a uint8 character array.
+pub type bytes
+
 // An any type. Used for external calls
 pub type any
 
