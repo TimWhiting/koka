@@ -63,7 +63,7 @@ type user
   Alice
   Bob
 
-fun show( user : user ) : string
+fun user/show( user : user ) : string
   match user
     Root  -> "root"
     Alice -> "alice"
@@ -86,10 +86,10 @@ pub fun example3()
   echo(whoami())
 
 
-fun show( (_,s) : ((),string) ) : string
+fun unitstr/show( (_,s) : ((),string) ) : string
   show(s)
 
-fun show( (i,s) : (int,string) ) : string
+fun intstr/show( (i,s) : (int,string) ) : string
   "exit with status " ++ i.show ++ "\n" ++ show(s)
 
 

@@ -438,8 +438,8 @@ ppNameEx env name | isImplicitParamName name
 ppNameEx env name
   = if (fullNames env)
      then prettyName (colors env) name
-     else if (context env == qualifier name
-               || ((qualifier name == nameSystemCore || qualifier name == nameCoreTypes) && not (coreIface env))
+     else if (context env == qualifier name ||
+                ((qualifier name == nameSystemCore || qualifier name == nameCoreTypes) && not (coreIface env))
               -- || isNameTuple name
               )
            then prettyName (colors env) (unqualify name)

@@ -12,16 +12,17 @@ import syntax/with
 import handlers/ambient
 import handlers/basic
 import handlers/nim
-import handlers/parser
-import handlers/scoped
 import handlers/vec
 import handlers/yield
 import handlers/unix
 
-import named-handlers/ask
-import named-handlers/file
-import named-handlers/file-scoped
-import named-handlers/heap
+//import handlers/parser
+//import handlers/scoped
+
+// import named-handlers/ask
+// import named-handlers/file
+// import named-handlers/file-scoped
+// import named-handlers/heap
 
 pub fun main()
   caesar/main()
@@ -29,8 +30,8 @@ pub fun main()
   garsia-wachs/main()
   rbtree/main()
   nim/main()
-  parser/main()
-  handlers/scoped/main()
+//  parser/main()
+//  handlers/scoped/main()
   ambient/main()
   unix/main()
 
