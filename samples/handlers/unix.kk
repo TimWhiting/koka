@@ -217,5 +217,5 @@ pub fun example6()
     su(Bob)
     hamlet()
 
-pub fun main()
-  example5()
+fun main()
+  example6()
