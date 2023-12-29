@@ -166,9 +166,9 @@ prettyExternal env (External name tp pinfos body vis fip nameRng doc)
     prettyVis env vis $
     keyword env (show fip ++ "extern") <+> prettyDefName env name <+> text ":" <+> prettyDefFunType env pinfos tp <+> prettyEntries body
   where
-    prettyEntries [(Default,content)] = keyword env "= inline" <+> prettyLit env (LitString content) <.> semi
+    prettyEntries [(Default,(content,isRaw))] = (if isRaw then keyword env "= rinline" else keyword env "= inline") <+> prettyLit env (LitString content) <.> semi
     prettyEntries entries             = text "{" <-> tab (vcat (map prettyEntry entries)) <-> text "};"
-    prettyEntry (target,content)      = ppTarget env target <.> keyword env "inline" <+> prettyLit env (LitString content) <.> semi
+    prettyEntry (target,(content,isRaw))      = ppTarget env target <.> (if isRaw then keyword env "rinline" else keyword env "inline") <+> prettyLit env (LitString content) <.> semi
 
 prettyExternal env (ExternalImport imports range)
   = empty

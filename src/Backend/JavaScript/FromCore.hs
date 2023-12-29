@@ -868,7 +868,7 @@ genInline expr
 
       _ -> failure ("JavaScript.FromCore.genInline: invalid expression:\n" ++ show expr)
 
-extractExtern :: Expr -> Maybe (TName,[(Target,String)])
+extractExtern :: Expr -> Maybe (TName,[(Target,(String,Bool))])
 extractExtern expr
   = case expr of
       TypeApp (Var tname (InfoExternal formats)) targs -> Just (tname,formats)
@@ -876,7 +876,7 @@ extractExtern expr
       _ -> Nothing
 
 -- not fully applied external gets wrapped in a function
-genWrapExternal :: TName -> [(Target,String)] -> Asm Doc
+genWrapExternal :: TName -> [(Target,(String,Bool))] -> Asm Doc
 genWrapExternal tname formats
   = do let n = snd (getTypeArities (typeOf tname))
        vs  <- genVarNames n
@@ -884,7 +884,7 @@ genWrapExternal tname formats
        return $ parens (text "function" <.> tupled vs <+> block (vcat (decls ++ [text "return" <+> doc <.> semi])))
 
 -- inlined external sometimes  needs wrapping in a applied function block
-genInlineExternal :: TName -> [(Target,String)] -> [Doc] -> Asm Doc
+genInlineExternal :: TName -> [(Target,(String,Bool))] -> [Doc] -> Asm Doc
 genInlineExternal tname formats argDocs
   = do (decls,doc) <- genExprExternal tname formats argDocs
        if (null decls)
@@ -892,7 +892,7 @@ genInlineExternal tname formats argDocs
         else return $ parens $ parens (text "function()" <+> block (vcat (decls ++ [text "return" <+> doc <.> semi]))) <.> text "()"
 
 -- generate external: needs to add try blocks for primitives that can throw exceptions
-genExprExternal :: TName -> [(Target,String)] -> [Doc] -> Asm ([Doc],Doc)
+genExprExternal :: TName -> [(Target,(String,Bool))] -> [Doc] -> Asm ([Doc],Doc)
 genExprExternal tname formats argDocs0
   = do (decls,doc) <- genExprExternalPrim tname formats argDocs0
        case splitFunType (typeOf tname) of
@@ -911,7 +911,7 @@ genExprExternal tname formats argDocs0
                          in return ([],try)
 
 -- special case: .cctx-hole-create
-genExprExternalPrim :: TName -> [(Target,String)] -> [Doc] -> Asm ([Doc],Doc)
+genExprExternalPrim :: TName -> [(Target,(String,Bool))] -> [Doc] -> Asm ([Doc],Doc)
 genExprExternalPrim tname formats [] | getName tname == nameCCtxHoleCreate
   = return ([],text "undefined")
 
@@ -947,13 +947,13 @@ genExprExternalPrim tname formats argDocs0
     ppExternalF name (x:xs)  args
      = char x <.> ppExternalF name xs args
 
-getFormat :: TName -> [(Target,String)] -> String
+getFormat :: TName -> [(Target,(String,Bool))] -> String
 getFormat tname formats
   = case lookupTarget (JS JsDefault) formats of  -- TODO: pass specific target from the flags
       Nothing -> -- failure ("backend does not support external in " ++ show tname ++ ": " ++ show formats)
                  trace( "warning: backend does not support external in " ++ show tname ) $
                     ("$std_core._unsupported_external(\"" ++ (show tname) ++ "\")")
-      Just s -> s
+      Just s -> fst s
 
 genDefName :: TName -> Asm Doc
 genDefName tname
@@ -1014,7 +1014,7 @@ extractExternal expr
     format tn fs
       = case lookupTarget (JS JsDefault) fs of  -- TODO: pass real target from flags
           Nothing -> failure ("backend does not support external in " ++ show tn ++ show fs)
-          Just s -> s
+          Just s -> fst s
 
 isFunExpr :: Expr -> Bool
 isFunExpr expr

@@ -191,7 +191,7 @@ topDown expr@(App app@(TypeApp (Var openName _) _) [arg])  | getName openName ==
 
 -- Remove identity externals of the form "#1"; only if 'unsafe' is enabled since
 -- usually the effect types won't match up
-topDown expr@(App app@(TypeApp (Var _ (InfoExternal [(Default,"#1")])) _) [arg])
+topDown expr@(App app@(TypeApp (Var _ (InfoExternal [(Default,("#1",False))])) _) [arg])
   = do unsafe <- getUnsafe
        if (unsafe)
         then return arg

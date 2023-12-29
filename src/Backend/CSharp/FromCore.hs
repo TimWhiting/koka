@@ -586,7 +586,7 @@ genExpr expr
 
 
 
-genExternal :: TName -> [(Target,String)] -> [Type] -> [Expr] -> Asm ()
+genExternal :: TName -> [(Target,(String,Bool))] -> [Type] -> [Expr] -> Asm ()
 genExternal  tname formats targs args
  = do let (m,n) = getTypeArities (typeOf tname)
       cps <- useCps
@@ -786,7 +786,7 @@ ppConSingleton :: ModuleName -> Name -> TName -> [Type] -> Doc
 ppConSingleton ctx typeName tname targs
   = ppQName ctx (typeClassName typeName) <.> ppTypeArgs ctx targs <.> text "." <.> ppDefName (conClassName (getName tname))
 
-ppExternal :: Name -> TName -> [(Target,String)] -> Doc -> [Doc] -> [Doc] -> Doc
+ppExternal :: Name -> TName -> [(Target,(String,Bool))] -> Doc -> [Doc] -> [Doc] -> Doc
 ppExternal currentDef extName formats resTp targs args0
   = let args = map (\argDoc -> if (all (\c -> isAlphaNum c || c == '_') (asString argDoc)) then argDoc else parens argDoc) args0
     in case lookup CS formats of
@@ -795,8 +795,8 @@ ppExternal currentDef extName formats resTp targs args0
         trace( "warning: backend does not support external in " ++ show currentDef ) $
         (text "Primitive.UnsupportedExternal<" <.>
           resTp <.> text ">(\"" <.> text (show currentDef) <.> text "\")")
-      Just s  -> ppExternalF s targs args
-     Just s -> ppExternalF s targs args
+      Just s  -> ppExternalF (fst s) targs args
+     Just s -> ppExternalF (fst s) targs args
   where
     ppExternalF :: String -> [Doc] -> [Doc] -> Doc
     ppExternalF fmt targs args

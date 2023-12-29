@@ -135,6 +135,7 @@ import Type.TypeVar
 import Type.Kind    ( getKind, getHandledEffect, HandledSort(ResumeMany), isHandledEffect, extractHandledEffect )
 
 import Lib.Trace
+import Data.List (find)
 
 isExprUnit (Con tname _)  = getName tname == nameTuple 0
 isExprUnit _              = False
@@ -289,7 +290,7 @@ type Externals = [External]
 data External = External{ externalName :: Name
                         , externalType :: Scheme
                         , externalParams :: [ParamInfo]
-                        , externalFormat :: [(Target,String)]
+                        , externalFormat :: [(Target,(String,Bool))]
                         , externalVis'  :: Visibility
                         , externalFip   :: Fip
                         , externalRange :: Range
@@ -328,7 +329,7 @@ lookupTarget target imports
                     JS _ -> [target,JS JsDefault,Default]
                     _    -> [target,Default]
     in case catMaybes (map (\t -> lookup t imports) targets) of
-         (x:_) -> Just x
+         (a:_) -> Just a 
          _     -> Nothing
     
 
@@ -723,7 +724,7 @@ data Lit =
 data VarInfo
   = InfoNone
   | InfoArity Int Int               -- #Type parameters, #parameters
-  | InfoExternal [(Target,String)]  -- inline body
+  | InfoExternal [(Target,(String,Bool))]  -- inline body
   | InfoReuse Pattern
   | InfoConField TName ConRepr Name  -- constructor name, repr, field name (inserted by reuse specialization)
 
@@ -1141,7 +1142,7 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
      else --trace ("open effect: " ++ show (map pretty [effFrom,effTo,tpFrom,tpTo])) $
           App (TypeApp varOpen [effFrom,effTo,tpFrom,tpTo]) [expr]
   where
-    varOpen = Var (TName nameEffectOpen tpOpen) (InfoExternal [(Default,"#1")])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
+    varOpen = Var (TName nameEffectOpen tpOpen) (InfoExternal [(Default,("#1",False))])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
     tpOpen  = TForall [e1,e2,a,b] [] (TFun [(newName "x", tpFrom)] typeTotal tpTo)
     a       = TypeVar (-1) kindStar Bound
     b       = TypeVar (-2) kindStar Bound

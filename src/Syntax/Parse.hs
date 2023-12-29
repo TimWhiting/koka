@@ -500,6 +500,9 @@ externalCall
   = do f <- do specialId "inline"
                return ExternalInline
             <|>
+            do specialId "rinline"
+               return ExternalRawCall
+            <|>
             do return ExternalCall
        (s,rng) <- stringLit
        return (f s,rng)

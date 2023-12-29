@@ -413,13 +413,47 @@ infExternal names (External name tp pinfos nameRng rng calls vis fip doc)
 infExternal names (ExternalImport imports range)
   = return (Core.ExternalImport imports range, names)
 
-formatCall tp (target,ExternalInline inline) = (target,inline)
+formatCall tp (target,ExternalInline inline) = (target,(inline,False))
+formatCall tp (target,ExternalRawCall fname)
+ = case target of
+      CS      -> (target,(formatCS,True))
+      JS _    -> (target,(formatJS,True))
+      C _     -> (target,(formatC,True))
+      Default -> (target,(formatJS,True))
+  where
+    (foralls,preds,rho) = splitPredType tp
+
+    argumentCount
+      = case splitFunType rho of
+          Just (args,eff,res) -> length args
+          Nothing             -> 0
+
+    arguments
+      = "(" ++ concat (intersperse "," ["#" ++ show i | i <- [1..argumentCount]]) ++ ")"
+
+    typeArguments
+      = if null foralls then ""
+        else ("<" ++ concat (intersperse "," ["##" ++ show i | i <- [1..length foralls]]) ++ ">")
+
+    formatJS
+      = fname ++ arguments
+
+    formatCS
+      = fname ++ typeArguments ++ arguments
+
+    formatC
+      = fname ++ argumentsC
+    argumentsC
+      = "(" ++ concat (intersperse "," (["#" ++ show i | i <- [1..argumentCount]] ++ ctx)) ++ ")"
+    ctx
+      = if (fname `startsWith` "kk_") then ["kk_context()"] else []
+
 formatCall tp (target,ExternalCall fname)
   = case target of
-      CS      -> (target,formatCS)
-      JS _    -> (target,formatJS)
-      C _     -> (target,formatC)
-      Default -> (target,formatJS)
+      CS      -> (target,(formatCS,False))
+      JS _    -> (target,(formatJS,False))
+      C _     -> (target,(formatC,False))
+      Default -> (target,(formatJS,False))
   where
     (foralls,preds,rho) = splitPredType tp
 

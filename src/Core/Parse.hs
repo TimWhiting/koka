@@ -163,7 +163,7 @@ localAlias env
        kind     <- kindAnnotFull
        keyword "="
        tp       <- ptype env
-       (rank,_)  <- do{ keyword "="; integer } <|> return (0::Integer,rangeNull)
+       (rank,_)  <- do { keyword "="; integer } <|> return (0::Integer,rangeNull)
        let synInfo = SynInfo name kind params tp (fromInteger rank) rangeNull Private ""
        return (synInfo, envExtendSynonym env synInfo)
 
@@ -194,7 +194,7 @@ importDecl
                              (_,doc) <- dockeyword "import"
                              return (vis,doc)
        (asname,name,_) <- importAlias
-       pkg <- (do{ keyword "="; (s,_) <- stringLit; return s } <|> return "")
+       pkg <- (do { keyword "="; (s,_) <- stringLit; return s } <|> return "")
        return (Import name pkg vis doc, (asname, name))
 
 fixDecl :: LexParser [FixDef]
@@ -251,7 +251,7 @@ typeDecl env
        kind     <- kindAnnotFull
        keyword "="
        tp       <- ptype env
-       (rank,_)  <- do{ keyword "="; integer } <|> return (0::Integer,rangeNull)
+       (rank,_)  <- do { keyword "="; integer } <|> return (0::Integer,rangeNull)
        let qname   = qualify (modName env) name
        let synInfo = SynInfo qname kind params tp (fromInteger rank) rangeNull vis doc
        return (Synonym synInfo, envExtendSynonym env synInfo)
@@ -276,7 +276,7 @@ conDecl tname foralls sort env
 
 typeSort :: LexParser (DataDef, Bool, DataKind,String)
 typeSort
-  = do isRecursive <- do{ specialId "recursive"; return True } <|> return False
+  = do isRecursive <- do { specialId "recursive"; return True } <|> return False
        (ddef0,isExtend,sort) <- parseTypeMod
        (_,doc) <- dockeyword "type"
        let ddef = case (isRecursive, ddef0) of
@@ -286,13 +286,13 @@ typeSort
 
 parseTypeMod :: LexParser (DataDef,Bool,DataKind)
 parseTypeMod
- =   do{ specialId "open"; return (DataDefOpen, False, Inductive) }
- <|> do{ specialId "extend"; return (DataDefOpen, True, Inductive) }
+ =   do { specialId "open"; return (DataDefOpen, False, Inductive) }
+ <|> do { specialId "extend"; return (DataDefOpen, True, Inductive) }
  <|> do specialId "value"
         vrepr <- parseValueRepr
         return (DataDefValue vrepr, False, Inductive)
- <|> do{ specialId "co"; return (DataDefNormal, False, CoInductive) }
- <|> do{ specialId "rec"; return (DataDefNormal, False, Retractive) }
+ <|> do { specialId "co"; return (DataDefNormal, False, CoInductive) }
+ <|> do { specialId "rec"; return (DataDefNormal, False, Retractive) }
  <|> return (DataDefNormal, False, Inductive)
  <?> ""
 
@@ -328,7 +328,7 @@ defDecl env
                    vis sort inl rangeNull doc)
 
 pdefSort
-  = do isRec <- do{ specialId "recursive"; return True } <|> return False
+  = do isRec <- do { specialId "recursive"; return True } <|> return False
        inl <- parseInline
        (do fip <- try parseFip
            (_,doc) <- dockeyword "fun"
@@ -359,7 +359,7 @@ externDecl env
        return (External (qualify (modName env) name) tp pinfos formats vis fip rangeNull doc)
 
 
-externalBody :: LexParser [(Target,String)]
+externalBody :: LexParser [(Target,(String,Bool))]
 externalBody
   = do keyword "="
        call <- externalEntry
@@ -367,11 +367,19 @@ externalBody
   <|>
     do semiBraces externalEntry
 
+
+externalEntry :: LexParser (Target,(String,Bool))
 externalEntry
   = do target <- externalTarget
-       optional (specialId "inline")
-       (s,_)  <- stringLit
-       return (target,s)
+       (do
+          (specialId "rinline")
+          (s, _) <- stringLit
+          return (target,(s,True))
+        <|>
+        do
+            optional (specialId "inline")
+            (s,_)  <- stringLit
+            return (target,(s,False)))
 
 externalTarget
   = do specialId "c"
@@ -410,7 +418,7 @@ externalImportBody
            return (target,keyvals)
 
     externalImportKeyVal
-      = do key <- do{ (s,_) <- stringLit; return s }
+      = do key <- do { (s,_) <- stringLit; return s }
            keyword "="
            (val,_) <- stringLit
            return (key,val)
@@ -429,7 +437,7 @@ inlineDef env
 
 
 inlineDefSort
-  = do isRec <- do{ specialId "recursive"; return True } <|> return False
+  = do isRec <- do { specialId "recursive"; return True } <|> return False
        inl <- parseInline
        spec <- do specialId "specialize"
                   (s,_) <- stringLit
@@ -563,7 +571,7 @@ parseDefGroups0 env
 parseDefGroup :: Env -> LexParser (Env,DefGroup)
 parseDefGroup env
   = do (sort,inl,isRec,doc) <- pdefSort
-       (name,tp)  <- funid <|> do{ wildcard; return (nameNil,rangeNull) }
+       (name,tp)  <- funid <|> do { wildcard; return (nameNil,rangeNull) }
        -- inl        <- parseInline
        tp         <- typeAnnot env
        expr       <- parseBody env

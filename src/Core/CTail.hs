@@ -452,7 +452,7 @@ makeCCtxEmpty :: Type -> Expr
 makeCCtxEmpty tp
   = App (TypeApp (Var (TName nameCCtxEmpty funType) 
                         -- (InfoArity 1 0)
-                        (InfoExternal [(C CDefault,"kk_cctx_empty(kk_context())"),(JS JsDefault,"$std_core_types._cctx_empty()")])
+                        (InfoExternal [(C CDefault,("kk_cctx_empty(kk_context())",False)),(JS JsDefault,("$std_core_types._cctx_empty()",False))])
                       ) [tp]) []
   where
     funType = TForall [a] [] (TFun [] typeTotal (typeCCtx (TVar a)))
@@ -476,8 +476,8 @@ makeCCtxExtend slot resName objName conName fieldName tp alwaysAffine
   = let fieldOf = makeFieldAddrOf objName conName fieldName tp
     in  App (TypeApp (Var (TName nameCCtxExtend funType) 
                 -- (InfoArity 1 3) 
-                (InfoExternal [(C CDefault,"kk_cctx_extend(#1,#2,#3," ++ affine ++ ",kk_context())"),
-                               (JS JsDefault,"$std_core_types._cctx_extend(#1,#2,#3)")])
+                (InfoExternal [(C CDefault,("kk_cctx_extend(#1,#2,#3," ++ affine ++ ",kk_context())", False)),
+                               (JS JsDefault,("$std_core_types._cctx_extend(#1,#2,#3)",False))])
             ) [tp])
             [Var slot InfoNone, Var resName InfoNone, fieldOf]
   where
@@ -496,8 +496,8 @@ makeCCtxApply True _ slot expr   -- slot `a -> a` is an accumulating function; a
 makeCCtxApply False alwaysAffine slot expr  -- slot is a `ctail<a>`
   = App (TypeApp (Var (TName nameCCtxApply funType) 
                         -- (InfoArity 1 2)
-                        (InfoExternal [(C CDefault,"kk_cctx_apply(#1,#2," ++ affine ++ ",kk_context())"),
-                                       (JS JsDefault,"$std_core_types._cctx_apply(#1,#2)")])
+                        (InfoExternal [(C CDefault,("kk_cctx_apply(#1,#2," ++ affine ++ ",kk_context())",False)),
+                                       (JS JsDefault,("$std_core_types._cctx_apply(#1,#2)",False))])
                       ) [tp])
         [Var slot InfoNone, expr]
   where

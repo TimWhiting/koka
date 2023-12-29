@@ -2078,7 +2078,7 @@ genAppInline f args
 -- Externals
 ---------------------------------------------------------------------------------
 
-extractExtern :: Expr -> Maybe (TName,[(Target,String)])
+extractExtern :: Expr -> Maybe (TName,[(Target,(String,Bool))])
 extractExtern expr
   = case expr of
       TypeApp (Var tname (InfoExternal formats)) targs -> Just (tname,formats)
@@ -2086,7 +2086,7 @@ extractExtern expr
       _ -> Nothing
 
 -- inlined external sometimes  needs wrapping in a applied function block
-genInlineExternal :: TName -> [(Target,String)] -> [Doc] -> Asm Doc
+genInlineExternal :: TName -> [(Target,(String,Bool))] -> [Doc] -> Asm Doc
 genInlineExternal tname formats argDocs
   = do (decls,doc) <- genExprExternal tname formats argDocs
        if (null decls)
@@ -2094,7 +2094,7 @@ genInlineExternal tname formats argDocs
         else error ("Backend.C.FromCore.genInlineExternal: TODO: inline external declarations: " ++ show (vcat (decls++[doc])))
 
 -- generate external: needs to add try blocks for primitives that can throw exceptions
-genExprExternal :: TName -> [(Target,String)] -> [Doc] -> Asm ([Doc],Doc)
+genExprExternal :: TName -> [(Target,(String,Bool))] -> [Doc] -> Asm ([Doc],Doc)
 
 -- special case box/unbox
 genExprExternal tname formats [argDoc] | getName tname == nameBox || getName tname == nameUnbox
@@ -2201,13 +2201,13 @@ genExprExternal tname formats argDocs0
     ppExternalF name (x:xs)  args
      = char x <.> ppExternalF name xs args
 
-getFormat :: TName -> [(Target,String)] -> String
+getFormat :: TName -> [(Target,(String,Bool))] -> String
 getFormat tname formats
   = case lookupTarget (C CDefault) formats of  -- TODO: pass real ctarget from flags
       Nothing -> -- failure ("backend does not support external in " ++ show tname ++ ": " ++ show formats)
                  trace( "warning: C backend does not support external in " ++ show tname ++ " looking in " ++ show formats ) $
                       ("kk_unsupported_external(\"" ++ (show tname) ++ "\")")
-      Just s -> s
+      Just s -> fst s
 
 genDefName :: TName -> Asm Doc
 genDefName tname
@@ -2246,7 +2246,7 @@ extractExternal expr
     format tn fs
       = case lookupTarget (C CDefault) fs of  -- TODO: pass real target from flags
           Nothing -> failure ("backend does not support external in " ++ show tn ++ show fs)
-          Just s -> s
+          Just s -> fst s
 
 isFunExpr :: Expr -> Bool
 isFunExpr expr

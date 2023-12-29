@@ -80,6 +80,7 @@ data External
 data ExternalCall
   = ExternalInline String  -- inline everywhere
   | ExternalCall String    -- create a function call
+  | ExternalRawCall String -- create a raw function call (wrapping function arguments in a raw c callback that passes kk_context() to the callback)
   deriving (Show)
 
 type FixDefs
