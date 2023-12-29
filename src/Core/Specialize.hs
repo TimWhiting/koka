@@ -42,6 +42,7 @@ import Core.Inlines
 import Core.Uniquefy
 
 import Lib.Trace
+import Control.Monad (guard)
 
 {-
   Specialization

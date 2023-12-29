@@ -92,6 +92,9 @@ pub type any
 // Internal type used for in-place update of unique pattern matches
 pub type reuse
 
+// TODO: Untuple arguments at codegen step, or provide limited varargs?
+pub alias rawfun<a,e,r> = (a) -> e r
+
 pub extern no-reuse() : reuse
   c inline  "NULL"
   js inline "null"

@@ -109,7 +109,7 @@ module Core.Core ( -- Data structures
                    ) where
 
 import Control.Applicative (liftA2)
-import Control.Monad (forM)
+import Control.Monad (forM, ap)
 import Control.Monad.Identity
 
 import Data.Char( isDigit )
