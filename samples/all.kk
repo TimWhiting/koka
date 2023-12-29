@@ -19,10 +19,10 @@ import handlers/unix
 import handlers/parser
 import handlers/scoped
 
-// import named-handlers/ask
-// import named-handlers/file
-// import named-handlers/file-scoped
-// import named-handlers/heap
+import named-handlers/ask
+import named-handlers/file
+import named-handlers/file-scoped
+import named-handlers/heap
 
 pub fun main()
   caesar/main()
