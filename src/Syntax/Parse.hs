@@ -354,41 +354,55 @@ externDecl dvis
                       warnDeprecated "include" "import" krng
                       return (Left (externalImport krng)))
             <|>
+             try ( do (krng,doc) <- dockeyword "extern"
+                      specialId "struct"
+                      (structName, structRng) <- stringLit
+                      let externName = drop 1 (take (length structName - 1) structName)
+                      return (Right (combineRange structRng krng, Public, doc, InlineNever, NoFip False, Just externName)))
+            <|>
              try ( do (vis,vrng) <- visibility dvis
                       inline     <- parseInline
                       fip        <- parseFip
                       (krng,doc) <- dockeyword "extern"
-                      return (Right (combineRange vrng krng, vis, doc, inline, fip)))
+                      return (Right (combineRange vrng krng, vis, doc, inline, fip, Nothing)))
        case lr of
          Left p -> do extern <- p
                       return [DefExtern extern]
-         Right (krng,vis,doc,inline,fip)
-           -> do (name,nameRng) <- funid
-                 (pars,pinfos,args,tp,annotate)
-                   <- do keyword ":"
-                         tp <- ptype  -- no "some" allowed
-                         (pars,args) <- genParArgs (promoteType tp)
-                         return (pars,[]{-all owned-},args,tp,\body -> Ann body tp (getRange tp))
-                      <|>
-                      do tpars <- typeparams
-                         (pars, pinfos, parRng) <- declParams True {-allowBorrow-} (inline /= InlineAlways) -- allow defaults?
-                         (teff,tres)   <- annotResult
-                         let tp = typeFromPars nameRng pars teff tres
-                             lift :: ValueBinder UserType (Maybe UserExpr) -> ValueBinder (Maybe UserType) (Maybe UserExpr)
-                             lift (ValueBinder name tp expr rng1 rng2) = ValueBinder name (Just tp) expr rng1 rng2
-                         genParArgs tp -- checks the type
-                         return (map lift pars,pinfos,genArgs pars,tp,\body -> promote [] tpars [] (Just (Just teff, tres)) body)
-                 (exprs,rng) <- externalBody
-                 if (inline == InlineAlways)
-                  then return [DefExtern (External name tp pinfos nameRng (combineRanges [krng,rng]) exprs vis fip doc)]
-                  else do let  externName = newHiddenExternalName name
-                               fullRng    = combineRanges [krng,rng]
-                               extern     = External externName tp pinfos (before nameRng) (before fullRng) exprs Private fip doc
-                               body       = annotate (Lam pars (App (Var externName False rangeNull) args fullRng) fullRng)
-                               binder     = ValueBinder name () body nameRng fullRng
-                               extfun     = Def binder fullRng vis (defFunEx pinfos fip) InlineNever doc
-                          return [DefExtern extern, DefValue extfun]
-  where
+         Right (krng,vis,doc,inline,fip,struct) -> 
+          case struct of
+            (Just structName) -> do
+              (tid, trng) <- typeid
+              (pars,prng)  <- conPars Public 
+              let conId     = toConstructorName tid
+              return [DefExtern (ExternalStruct conId (TpCon conId trng) trng krng doc structName)]
+            _ -> do
+              (name,nameRng) <- funid
+              (pars,pinfos,args,tp,annotate) <- 
+                  (do keyword ":"
+                      tp <- ptype  -- no "some" allowed
+                      (pars,args) <- genParArgs (promoteType tp)
+                      return (pars,[]{-all owned-},args,tp,\body -> Ann body tp (getRange tp))
+                  <|>
+                  do tpars <- typeparams
+                     (pars, pinfos, parRng) <- declParams True {-allowBorrow-} (inline /= InlineAlways) -- allow defaults?
+                     (teff,tres)   <- annotResult
+                     let tp = typeFromPars nameRng pars teff tres
+                         lift :: ValueBinder UserType (Maybe UserExpr) -> ValueBinder (Maybe UserType) (Maybe UserExpr)
+                         lift (ValueBinder name tp expr rng1 rng2) = ValueBinder name (Just tp) expr rng1 rng2
+                     genParArgs tp -- checks the type
+                     return (map lift pars,pinfos,genArgs pars,tp,\body -> promote [] tpars [] (Just (Just teff, tres)) body))
+            
+              (exprs,rng) <- externalBody
+              if (inline == InlineAlways)
+                then return [DefExtern (External name tp pinfos nameRng (combineRanges [krng,rng]) exprs vis fip doc)]
+                else do let  externName = newHiddenExternalName name
+                             fullRng    = combineRanges [krng,rng]
+                             extern     = External externName tp pinfos (before nameRng) (before fullRng) exprs Private fip doc
+                             body       = annotate (Lam pars (App (Var externName False rangeNull) args fullRng) fullRng)
+                             binder     = ValueBinder name () body nameRng fullRng
+                             extfun     = Def binder fullRng vis (defFunEx pinfos fip) InlineNever doc
+                        return [DefExtern extern, DefValue extfun]
+    where
     typeFromPars :: Range -> [ValueBinder UserType (Maybe UserExpr)] -> UserType -> UserType -> UserType
     typeFromPars rng pars teff tres
       = promoteType $ TpFun [(binderName p, binderType p) | p <- pars] teff tres rng

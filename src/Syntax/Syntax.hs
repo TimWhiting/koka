@@ -70,6 +70,14 @@ data External
             , extFip  :: Fip
             , extDoc :: String
             }
+  | ExternalStruct {
+      extName :: Name,
+      extType :: UserType,
+      extNameRange :: Range,
+      extRange :: Range,
+      extDoc :: String,
+      extStructName :: String
+   }
   | ExternalImport{ extImport :: [(Target,[(String,String)])]
                   , extRange :: Range }
   deriving (Show)
@@ -331,6 +339,7 @@ data UserKind
   = KindCon    Name Range
   | KindArrow  UserKind UserKind
   | KindParens UserKind Range
+  | KindExtern Name
   | KindNone  -- flags that there is no explicit kind annotation
   deriving (Show)
 
