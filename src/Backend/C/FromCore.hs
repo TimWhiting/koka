@@ -1134,12 +1134,16 @@ ntparameters :: [(Name,Type)] -> Doc
 ntparameters pars
   = parameters (map param pars)
   where
+    param (name,tp) | isRawFun tp = ppRawRnType tp (unqualify name)
     param (name,tp) = ppType tp <+> ppName (unqualify name)
 
 parameters :: [Doc] -> Doc
 parameters pars
   = tupled (pars ++ [contextParam])
 
+rawparameters :: [Doc] -> Doc
+rawparameters pars
+  = tupled (pars)
 
 arguments :: [Doc] -> Doc
 arguments args
@@ -1244,6 +1248,29 @@ genLambda params eff body
 
        let funNew = ppName newName <.> arguments [ppName name | (name,_) <- fields]
        return funNew
+
+genRawLambda :: [TName] -> Effect -> Expr -> Asm Doc
+genRawLambda params eff body
+  = do funName <- newDefVarName "rawfun"
+       toH     <- getDefToHeader
+       let funTpName = postpend "_t" funName
+           structDoc = text "struct" <+> ppName funTpName
+           freeVars  = [(nm,tp) | (TName nm tp) <- tnamesList (freeLocals (Lam params eff body))]
+
+       platform <- getPlatform
+       env <- getEnv
+       let emitError doc     = do let msg = show doc
+                                  failure ("Backend.C.genRawLambda: " ++ msg)
+       when (not (null freeVars)) $ 
+         emitError (text "Backend.C.genRawLambda: free variables cannot be used in lambdas passed as raw functions: " <+> text (show freeVars))
+           
+       let 
+           funSig  = text (if toH then "extern" else "static") <+> ppType (typeOf body)
+                     <+> ppName funName <.> rawparameters ([ppType tp <+> ppName name | (TName name tp) <- params])
+       bodyDoc <- genStat (ResultReturn Nothing params) body
+       let funDef = funSig <+> block (vcat [text ("kk_context_t* _ctx = kk_context();"), bodyDoc])
+       emitToC funDef  -- TODO: make  static if for a Private definition
+       return (ppName funName)
 
 ---------------------------------------------------------------------------------
 -- Types
@@ -1433,14 +1460,14 @@ genExprStat result expr
   = case expr of
       -- If expression is inlineable, inline it
       _  | isInlineableExpr expr
-        -> do exprDoc <- genInline expr
+        -> do exprDoc <- genInline False expr
               return (getResult result exprDoc)
 
       Case exprs branches
          -> do (docs, scrutinees)
                    <- fmap unzip $
                       mapM (\e-> if isInlineableExpr e && isTypeBool (typeOf e)
-                                   then do d       <- genInline e
+                                   then do d       <- genInline False e
                                            return (text "", d)
                                    else do (sd,vn) <- genVarBinding e
                                            vd      <- genDefName vn
@@ -1459,7 +1486,7 @@ genExprStat result expr
                      return (vcat docs1 <-> doc2)
 
       -- Handling all other cases
-      _ -> do (statDocs,exprDoc) <- genExpr expr
+      _ -> do (statDocs,exprDoc) <- genExpr False expr
               return (vcat statDocs <-> getResult result exprDoc)
 
 ---------------------------------------------------------------------------------
@@ -1544,7 +1571,7 @@ genGuard result (docs, bindings) (Guard guard expr)
          Con tname repr | getName tname == nameTrue
            -> do doc <- genStat result expr
                  return (docs ++ [vcat (guardLocals ++ exprLocals ++ [doc])], bindsOther)
-         _ -> do (gddoc,gdoc) <- genExpr guard
+         _ -> do (gddoc,gdoc) <- genExpr False guard
                  sdoc <- genStat result expr
                  return (docs ++ [vcat $ guardLocals ++ gddoc ++ [text "if" <+> parensIf gdoc <+>
                                                          block (vcat (exprLocals ++ [sdoc]))]], bindsOther)
@@ -1690,28 +1717,28 @@ genNextPatterns select exprDoc tp patterns
 ---------------------------------------------------------------------------------
 
 -- | Generates javascript statements and a javascript expression from core expression
-genExpr :: Expr -> Asm ([Doc],Doc)
-genExpr expr  | isInlineableExpr expr
-  = do doc <- genInline expr
+genExpr :: Bool -> Expr -> Asm ([Doc],Doc)
+genExpr raw expr  | isInlineableExpr expr
+  = do doc <- genInline raw expr
        return ([],doc)
-genExpr expr
-  = genExprPrim expr
+genExpr raw expr
+  = genExprPrim raw expr
 
-genExprPrim expr
+genExprPrim raw expr
   = -- trace ("genExpr: " ++ show expr) $
     case expr of
      Con _ _              -> genConEtaExpand expr
      TypeApp (Con _ _) _  -> genConEtaExpand expr
 
-     TypeApp e _ -> genExpr e
-     TypeLam _ e -> genExpr e
+     TypeApp e _ -> genExpr raw e
+     TypeLam _ e -> genExpr raw e
 
      App f args
        -> genApp f args
 
      Let groups body
        -> do decls1       <- genLocalGroups groups
-             (decls2,doc) <- genExpr body
+             (decls2,doc) <- genExpr False body
              return (decls1 ++ decls2, doc)
 
      Case _ _
@@ -1732,7 +1759,7 @@ genExprPrim expr
             Just(_,_,tpars,teff,tres)
               -> do names <- newVarNames (length tpars)
                     let tnames = [TName name tp | (name,(_,tp)) <- zip names tpars]
-                    genExpr $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames])
+                    genExpr False $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames])
             _ -> failure ("Backend.C.FromCore.genExpr: invalid partially applied external:\n" ++ show expr)
      _ -> failure ("Backend.C.FromCore.genExpr: invalid expression:\n" ++ show expr)
 
@@ -1742,26 +1769,35 @@ genConEtaExpand cexpr
       Just (_,_,tpars,teff,tres)
         -> do names <- newVarNames (length tpars)
               let tnames = [TName name tp | (name,(_,tp)) <- zip names tpars]
-              genExpr $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames])
+              genExpr False $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames])
       _ ->failure ("Backend.C.FromCore.genExpr: invalid partially applied constructor:\n" ++ show cexpr)
 
 genExprs :: [Expr] -> Asm ([Doc],[Doc])
 genExprs exprs
-  = do xs <- mapM genExpr exprs
+  = do xs <- mapM (genExpr False) exprs
        let (declss,docs) = unzip xs
        return (concat declss, docs)
 
-genInlineableExprs :: [Expr] -> Asm ([Doc],[Doc])
-genInlineableExprs exprs
-  = do xs <- mapM genInlineableExpr exprs
+genInlineableExprs :: [Type] -> [Expr] -> Asm ([Doc],[Doc])
+genInlineableExprs types exprs
+  = do xs <- zipWithM genInlineableExpr types exprs
        let (declss,docs) = unzip xs
        return (concat declss, docs)
 
-genInlineableExpr :: Expr -> Asm ([Doc],Doc)
-genInlineableExpr expr  | isInlineableExpr expr
-  = do doc <- genInline expr
+ppRawRnType tp name =
+  let Just ([(_, tupleTp)],eff,res) = splitFunType tp in
+  (ppType res <.> lparen <.> text "*" <.> ppName name <.> rparen <.> tupled (map ppType (typeUnmakeTuple tupleTp)))
+
+genInlineableExpr :: Type -> Expr -> Asm ([Doc],Doc)
+genInlineableExpr tp expr  | isRawFun tp && isInlineableExpr expr
+  = do doc <- genInline True expr
        return ([],doc)
-genInlineableExpr expr
+genInlineableExpr tp expr | isRawFun tp
+  = do failure ("Backend.C.FromCore.genInlineableExpr: a raw function is not a valid raw function\n" ++ show expr)
+genInlineableExpr tp expr  | isInlineableExpr expr
+  = do doc <- genInline False expr
+       return ([],doc)
+genInlineableExpr tp expr
   = do (doc,var) <- genVarBinding expr
        return ([doc],ppName (getName var))
 
@@ -1788,11 +1824,11 @@ genVarBindingAlways expr
 -- Pure expressions
 ---------------------------------------------------------------------------------
 
-genPure   :: Expr -> Asm Doc
-genPure expr
+genPure   :: Bool -> Expr -> Asm Doc
+genPure raw expr
   = case expr of
-     TypeApp e _ -> genPure e
-     TypeLam _ e -> genPure e
+     TypeApp e _ -> genPure raw e
+     TypeLam _ e -> genPure raw e
      -- Var name (InfoExternal formats)
      --   -> genWrapExternal name formats  -- unapplied inlined external: wrap as function
      Var name info
@@ -1801,7 +1837,7 @@ genPure expr
               -> do argNames <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
                     let tnames = [TName name tp | (name,(_,tp)) <- zip argNames argTps]
                         body   = (App expr [Var name InfoNone | name <- tnames])
-                    genLambda tnames eff body
+                    if raw then genRawLambda tnames eff body else genLambda tnames eff body
             _ -> case info of
                    InfoExternal formats -> genInlineExternal name formats []
                    _ -> return (ppName (getName name))
@@ -1818,7 +1854,7 @@ genPure expr
              bodyDoc <- genStat (ResultReturn Nothing params) body
              return (text "function" <.> tupled args <+> block bodyDoc)
           -}
-          genLambda params eff body
+          if raw then genRawLambda params eff body else genLambda params eff body
      _ -> failure ("Backend.C.FromCore.genPure: invalid expression:\n" ++ show expr)
 
 {-
@@ -1841,11 +1877,11 @@ isPat b q
 
 -- | Generates an effect-free expression
 --   NOTE: Throws an error if expression is not guaranteed to be effectfree
-genInline :: Expr -> Asm Doc
-genInline expr | isPureExpr expr
-  = genPure expr
-genInline expr
-  = do (decls,doc) <- genExprPrim expr
+genInline :: Bool -> Expr -> Asm Doc
+genInline raw expr | isPureExpr expr
+  = genPure raw expr
+genInline raw expr
+  = do (decls,doc) <- genExprPrim raw expr
        when (not (null decls)) $
          failure ("Backend.C.FromCore.genInline: not an inlineable expression? " ++ show expr)
        return doc
@@ -1889,15 +1925,15 @@ genApp f args
 genAppNormal :: Expr -> [Expr] -> Asm ([Doc],Doc)
 -- special: allocat
 genAppNormal (Var allocAt _) [Var at _, App (Con tname repr) args]  | getName allocAt == nameAllocAt
-  = do (decls,argDocs) <- genInlineableExprs args
+  = do (decls,argDocs) <- genInlineableExprs (map typeOf args) args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
 genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr) targs) args]  | getName allocAt == nameAllocAt
-  = do (decls,argDocs) <- genInlineableExprs args
+  = do (decls,argDocs) <- genInlineableExprs (map typeOf args) args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
 genAppNormal v@(Var allocAt _) [at, Let dgs expr]  | getName allocAt == nameAllocAt  -- can happen due to box operations
-  = genExpr (Let dgs (App v [at,expr]))
+  = genExpr False (Let dgs (App v [at,expr]))
 
 -- special: conAssignFields
 genAppNormal (Var (TName conTagFieldsAssign typeAssign) _) (Var reuseName (InfoConField conName conRepr nameNil):(Var tag _):fieldValues) | conTagFieldsAssign == nameConTagFieldsAssign
@@ -1939,21 +1975,22 @@ genAppNormal (Var ctailSetContextPath _) [conExpr, Lit (LitString conName), Lit 
 
 -- add/sub small constant
 genAppNormal (Var add _) [arg, Lit (LitInt i)] | getName add == nameIntAdd && isSmallInt i  -- arg + i
- = do (decls,argDocs) <- genInlineableExprs [arg]
+ = do (decls,argDocs) <- genInlineableExprs (map typeOf [arg]) [arg]
       return (decls, text "kk_integer_add_small_const" <.> arguments (argDocs ++ [pretty i]))
 
 genAppNormal (Var add _) [Lit (LitInt i),arg] | getName add == nameIntAdd && isSmallInt i   -- i + arg
- = do (decls,argDocs) <- genInlineableExprs [arg]
+ = do (decls,argDocs) <- genInlineableExprs (map typeOf [arg]) [arg]
       return (decls, text "kk_integer_add_small_const" <.> arguments (argDocs ++ [pretty i]))
 
 genAppNormal (Var sub _) [arg, Lit (LitInt i)] | getName sub == nameIntSub && isSmallInt i  -- arg - i
- = do (decls,argDocs) <- genInlineableExprs [arg]
+ = do (decls,argDocs) <- genInlineableExprs (map typeOf [arg]) [arg]
       return (decls, text "kk_integer_add_small_const" <.> arguments (argDocs ++ [pretty (-i)]))
 
 
 -- normal
 genAppNormal f args
-  = do (decls,argDocs) <- genInlineableExprs args
+  = do 
+       (decls,argDocs) <- genInlineableExprs (argTypes f) args
        case extractExtern f of
          -- known external
          Just (tname,formats)
@@ -1982,6 +2019,12 @@ genAppNormal f args
                                                                            [text "kk_context_t*"]))
                                                _ -> failure $ ("Backend.C.genAppNormal: expecting function type: " ++ show (pretty (typeOf f)))
                        return (fdecls ++ decls, text "kk_function_call" <.> arguments [cresTp,cargTps,fdoc,arguments (fdoc:argDocs)])
+
+argTypes :: Expr -> [Type]
+argTypes expr =
+  case splitFunScheme (typeOf expr) of
+    Just (_, _, args, _, _) -> trace ("arg types of " ++ show expr ++ " " ++ show args) $ map snd args
+    _ -> failure ("Backend.C.FromCore.argTypes: expecting function type: " ++ show (pretty (typeOf expr)))
 
 ppCtxPath :: ConRepr -> TName -> Bool -> [Doc]
 ppCtxPath repr cname True = []

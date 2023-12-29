@@ -110,7 +110,7 @@ module Common.NamePrim
           , nameTpString, nameTpBytes
           -- , nameTpByte
           , nameTpInt8, nameTpInt16, nameTpInt32, nameTpInt64
-          , nameTpSSizeT,nameTpIntPtrT
+          , nameTpSSizeT,nameTpIntPtrT,nameTpRawFun
           , nameTpAny
           , nameTpNull
           , nameTpException
@@ -440,6 +440,7 @@ nameTpInt32     = coreTypesName "int32"
 nameTpInt64     = coreTypesName "int64"
 nameTpSSizeT    = coreTypesName "ssize_t"
 nameTpIntPtrT   = coreTypesName "intptr_t"
+nameTpRawFun    = coreTypesName "rawfun"
 
 nameTpFloat     = coreTypesName "float64"
 nameTpFloat32   = coreTypesName "float32"

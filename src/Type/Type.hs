@@ -41,7 +41,7 @@ module Type.Type (-- * Types
                   , isEffectEmpty, isEffectFixed, shallowEffectExtend, shallowExtractEffectExtend
 
                   , typeDivergent, typeTotal, typePartial, typePure
-                  , typeList, typeVector, typeApp, typeRef, typeNull, typeOptional, typeMakeTuple
+                  , typeList, typeVector, typeApp, typeRef, typeNull, typeOptional, typeMakeTuple, typeUnmakeTuple
                   , typeCCtx, typeCCtxx, typeFieldAddr
                   , isOptional, makeOptionalType, unOptional
                   , typeReuse, typeLocal
@@ -56,7 +56,7 @@ module Type.Type (-- * Types
                   , isTau, isRho, isTVar, isTCon
                   , tconTotal, tconList
                   , isTypeTotal
-                  , isTypeBool, isTypeInt, isTypeString, isTypeChar
+                  , isTypeBool, isTypeInt, isTypeString, isTypeChar, isRawFun
                   , isTypeUnit
                   , isTypeLocalVar
                   , isValueOperation
@@ -453,6 +453,12 @@ isTau tp
       TVar    _      -> True
       TApp    a b    -> isTau a && all isTau b
       TSyn    _ ts t -> isTau t
+
+isRawFun :: Type -> Bool
+isRawFun tp
+  = case tp of 
+      TSyn syn _ _ -> typesynName syn == nameTpRawFun
+      _ -> False
 
 -- | is this a function type
 isFun :: Type -> Bool
@@ -872,6 +878,13 @@ typeMakeTuple tps
       [] -> typeUnit
       [tp] -> tp
       _    -> typeApp (typeTuple (length tps)) tps
+
+typeUnmakeTuple :: Tau -> [Tau]
+typeUnmakeTuple tp
+  = case expandSyn tp of
+      TApp (TCon tc) tps | isNameTuple (typeConName tc) -> tps
+      tp | tp == typeUnit -> []
+      tp -> [tp]
 
 typeTuple :: Int -> Tau
 typeTuple n
