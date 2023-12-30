@@ -280,8 +280,10 @@ toVarName name
 -- various special names
 ----------------------------------------------------------------
 
-newHiddenName s
-  = newName ("." ++ s)
+-- Need to keep an invariant that all hidden names have a prefix otherwise just adding "." to a name can clash with special names that are hidden
+-- e.g. https://github.com/koka-lang/koka/issues/405
+newHiddenName prefix s
+  = newName ("." ++ prefix ++ s)
 
 isHiddenName name
   = case nameId name of
@@ -324,7 +326,7 @@ toHiddenUniqueName i s name
 
 
 newPaddingName i
-  = newHiddenName ("padding" ++ show i)
+  = newHiddenName "padding" (show i)
 
 isPaddingName name
   = -- hiddenNameStartsWith name "padding"
@@ -336,14 +338,14 @@ isCCtxName name
 
 
 newFieldName i
-  = newHiddenName ("field" ++ show i)
+  = newHiddenName "field" (show i)
 
 isFieldName name
   = isHiddenName name -- hiddenNameStartsWith name "field"
 
 
 newImplicitTypeVarName i
-  = newHiddenName ("t" ++ show i)
+  = newHiddenName "t" (show i)
 
 isImplicitTypeVarName name 
   = isHiddenName name

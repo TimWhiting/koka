@@ -797,11 +797,11 @@ inferExpr propagated expect (Handler handlerSort scoped HandlerOverride mbAllowM
        inferExpr propagated expect lam
        -}
        let h = (Handler handlerSort scoped HandlerNoOverride mbAllowMask mbEff pars reinit ret final branches hrng rng)
-           actionName = newHiddenName "override-action"
+           actionName = newHiddenName "override-action" ""
            actionVar  = Var actionName False rng
            actionBind = ValueBinder actionName Nothing Nothing rng rng
            mask   = if (isHandlerInstance handlerSort)
-                      then let instName = newHiddenName "override-inst"
+                      then let instName = newHiddenName "override-inst" ""
                                instBind = ValueBinder instName Nothing Nothing rng rng
                                instVar  = Var instName False rng
                                instLam  = Lam [] (App actionVar [(Nothing,instVar)] rng) rng
@@ -1066,10 +1066,10 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
                                         OpExcept -> 0
                                         _        -> 3 --multi/wild
            -- create handler expression
-           actionName = newHiddenName "action"
+           actionName = newHiddenName "action" ""
            handleName = makeHiddenName "handle" effectName
            handleRet  = case ret of -- todo: optimize return by using maybe<a->b> value in case no clause was given?
-                          Nothing -> let argName = (newHiddenName "x")
+                          Nothing -> let argName = (newHiddenName "x" "")
                                      in Lam [ValueBinder argName Nothing Nothing rng rng] (Var argName False rng) hrng -- don't pass `id` as it needs to be opened
                           Just expr -> expr
            handleExpr action = App (Var handleName False rng)
@@ -1112,7 +1112,7 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
                  let actionTp2  = removeLocalEffect penv actionTp1
                      handlerExprMask
                         = if isInstance
-                           then let instName   = newHiddenName "hname"
+                           then let instName   = newHiddenName "hname" ""
                                 in Lam [ValueBinder actionName (Just actionTp2) Nothing rng rng]
                                     (handleExpr (Lam [ValueBinder instName Nothing Nothing rng rng]
                                                    (Inject (TApp typeLocal [hp])
@@ -1172,7 +1172,7 @@ inferHandledEffect rng handlerSort mbeff ops
              do (qname,tp,info) <- resolveFunName name (CtxFunArgs (length pars) [] Nothing) rng nameRng
                 (rho,_,_) <- instantiateEx nameRng tp
                 case splitFunType rho of
-                  Just((opname,rtp):_,_,_) | isHandlerInstance handlerSort && opname == newHiddenName "hname"
+                  Just((opname,rtp):_,_,_) | isHandlerInstance handlerSort && opname == newHiddenName "hname" ""
                                 -> do -- traceDoc $ \env -> text "effect instance: " <+> ppType env rtp
                                       return rtp
                   Just(_,eff,_) | not (isHandlerInstance handlerSort)

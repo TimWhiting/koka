@@ -474,7 +474,7 @@ wrapMain  term flags loaded0 loaded1 compileTarget program coreImports = do
                                   case mbF of
                                     Nothing -> return (Executable mainName tp, loaded0)
                                     Just f  ->
-                                      let mainName2  = qualify (getName program) (newHiddenName "hmain")
+                                      let mainName2  = qualify (getName program) (newHiddenName "" "hmain")
                                           expression = App (Var (if (isHiddenName mainName) then mainName -- .expr
                                                                                             else unqualify mainName -- main
                                                                 ) False r) [] r

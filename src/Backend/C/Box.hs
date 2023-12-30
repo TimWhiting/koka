@@ -135,7 +135,7 @@ boxPattern fromTp pat | cType (fromTp) /= cType toTp
                        PatVar tname PatWild
                          -> -- ok, no nested match
                             do i <- unique
-                               let uname = newHiddenName ("fun-unbox-x" ++ show i)
+                               let uname = newHiddenName "fun-unbox-x" (show i)
                                coerce <- bcoerce fromTp toTp (Var (TName uname fromTp) InfoNone)  -- regenerate the coercion
                                let def = makeTDef (TName (getName tname) toTp) coerce
                                --trace ("unbox function: " ++ show uname ++ ": " ++ show (pretty fromTp) ++ " to " ++ show (pretty toTp)
@@ -144,7 +144,7 @@ boxPattern fromTp pat | cType (fromTp) /= cType toTp
                        _ -> failure "Backend/C/FromCore.boxPattern: nested match on a function?"
                 else -- regular box/unbox
                      do i <- unique
-                        let uname = newHiddenName ("box-x" ++ show i)
+                        let uname = newHiddenName "box-x" (show i)
                         (bpat,defs) <- boxPatternX toTp pat
                         -- trace ("unbox pattern: " ++ show uname ++ ": " ++ show (pretty toTp)) $
                         -- return (PatVar (TName uname toTp) bpat, defs)  -- toTp for generating correct unbox call in the C backend

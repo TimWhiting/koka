@@ -649,8 +649,8 @@ genConstructorCreate info dataRepr con conRepr allFields scanCount maxScanCount
          else return ()
        -}
        when (dataRepr == DataOpen) $ emitToH $ text "extern kk_string_t" <+> conTagName con <.> semi
-       let at = newHiddenName "at"
-           cpath = newHiddenName "cpath"
+       let at = newHiddenName "at" ""
+           cpath = newHiddenName "cpath" ""
            hasCPath = conReprHasCtxPath conRepr && not (null allFields)
            (paddingFields,conFields) = partition (isPaddingName . fst) allFields
        emitToH $

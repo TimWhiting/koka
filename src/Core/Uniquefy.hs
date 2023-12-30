@@ -201,7 +201,7 @@ uniquefyPattern (pattern, patTp)
                              pat'   <- uniquefyPatternX pat patTp
                              return (PatVar tname' pat')
       _ -> do -- insert PatVar
-              name <- uniquefyName (newHiddenName "pat")
+              name <- uniquefyName (newHiddenName "pat" "")
               pat  <- uniquefyPatternX pattern patTp
               return (PatVar (TName name patTp) pat)
               

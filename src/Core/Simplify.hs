@@ -542,7 +542,7 @@ kmatchBranch scruts branch@(Branch pats guards)
 kmatchPatterns :: [Expr] -> [Pattern] -> Match Defs
 kmatchPatterns scruts pats
   = do ds <- matchAll (zipWith kmatchPattern scruts pats)
-       Match (concatMap (\(defs,newscrut) -> defs ++ [makeDef (newHiddenName "scrut") newscrut]) ds)
+       Match (concatMap (\(defs,newscrut) -> defs ++ [makeDef (newHiddenName "scrut" "") newscrut]) ds)
 
 -- Returns the bindings and modified scrutinee if the scrutinee and the pattern match
 kmatchPattern :: Expr -> Pattern -> Match (Defs, Expr)

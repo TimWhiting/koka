@@ -411,7 +411,7 @@ externDecl dvis
       = unzip (map genParArg (zip pars [1..]))
 
     genParArg ((name,tp),idx)
-      = let fullName = if name == nameNil then newHiddenName ("arg" ++ show idx) else name
+      = let fullName = if name == nameNil then newHiddenName "arg" (show idx) else name
             rng = rangeNull -- before (getRange tp)
         in (ValueBinder fullName Nothing Nothing rng rng
            ,(Nothing,Var fullName False rng))
@@ -868,8 +868,8 @@ makeEffectDecl decl =
       kindEffect = KindCon nameKindEffect krng
       kindStar   = KindCon nameKindStar krng
       hndName    = toHandlerName id
-      hndEffTp   = TypeBinder (newHiddenName "e") (KindCon nameKindEffect krng) krng krng
-      hndResTp   = TypeBinder (newHiddenName "r") kindStar krng krng
+      hndEffTp   = TypeBinder (newHiddenName "e" "") (KindCon nameKindEffect krng) krng krng
+      hndResTp   = TypeBinder (newHiddenName "r" "") kindStar krng krng
       hndTpName  = TypeBinder hndName KindNone krng krng
       hndTp      = makeTpApp (tpCon hndTpName) (map tpVar (tparsNonScoped ++ [hndEffTp,hndResTp])) grng
 
@@ -907,7 +907,7 @@ makeEffectDecl decl =
 
       -- declare the handle function
 
-      handleRetTp= TypeBinder (newHiddenName "b") kindStar krng krng
+      handleRetTp= TypeBinder (newHiddenName "b" "") kindStar krng krng
       handleName = toHandleName id
       handleEff  = if isInstance
                     then if (isScoped)
@@ -1148,7 +1148,7 @@ operationDecl opCount vis forallsScoped forallsNonScoped docEffect hndName effNa
 
 
                         zeroIdx        = App (Var nameSSizeT False krng) [(Nothing,Lit (LitInt 0 krng))] krng
-                        resourceName   = newHiddenName "hname"
+                        resourceName   = newHiddenName "hname" ""
                         resourceBinder = ValueBinder resourceName effTp  Nothing krng grng
                         perform        = Var (namePerform (length pars)) False krng
 
@@ -1659,8 +1659,8 @@ handlerClauses rng mbEff scoped override hsort
        handler <- case (mbEff,ops) of
                    (Nothing,[]) -- no ops, and no annotation: this is not a handler; just apply return
                      -> do -- TODO: error on override/scoped/instance?
-                           let handlerExpr f = Lam [ValueBinder (newHiddenName "action") Nothing Nothing rng rng]
-                                                   (f (Var (newHiddenName "action") False rng)) fullrange
+                           let handlerExpr f = Lam [ValueBinder (newHiddenName "action" "") Nothing Nothing rng rng]
+                                                   (f (Var (newHiddenName "action" "") False rng)) fullrange
                                retExpr = case ret of
                                            Nothing -> id
                                            Just f  -> \actionExpr -> App f [(Nothing,App actionExpr [] fullrange)] fullrange
@@ -1672,7 +1672,7 @@ handlerClauses rng mbEff scoped override hsort
 applyMaybe :: Range -> Maybe UserExpr -> Maybe UserExpr -> UserExpr -> UserExpr
 applyMaybe rng Nothing Nothing f  = f
 applyMaybe rng reinit final f
-  = Lam [ValueBinder (newHiddenName "act") Nothing Nothing rng rng] bodyI rng
+  = Lam [ValueBinder (newHiddenName "act" "") Nothing Nothing rng rng] bodyI rng
   where
     bodyI = case reinit of
               Nothing  -> bodyF
@@ -1682,7 +1682,7 @@ applyMaybe rng reinit final f
               Nothing  -> applyH
               Just fin -> App (Var nameFinally False rng) [(Nothing,fin),(Nothing,Lam [] applyH rng)] rng
 
-    applyH = App f [(Nothing,Var (newHiddenName "act") False rng)] rng
+    applyH = App f [(Nothing,Var (newHiddenName "act" "") False rng)] rng
 
 
 data Clause = ClauseRet UserExpr
@@ -1835,7 +1835,7 @@ handlerPar
 -- default return clause: return x -> x
 handlerReturnDefault :: Range -> UserExpr
 handlerReturnDefault rng
-  = let xname = newHiddenName "x"
+  = let xname = newHiddenName "x" ""
         xbind = ValueBinder xname Nothing Nothing rng rng
         xvar  = Var xname False rng
     in Lam [xbind] xvar rng
@@ -2071,7 +2071,7 @@ injectExpr
        (do exp <- parens expr <|> funblock      -- need apply or the escape check may fail if it becomes a separate lambda
            return (mkInj exp)
         <|>
-        do let name = newHiddenName "mask-action"
+        do let name = newHiddenName "mask-action" ""
            return $ Lam [ValueBinder name Nothing Nothing rng rng] (mkInj (Var name False rng)) rng)
 
 injectType :: LexParser (Range, UserExpr -> UserExpr)
@@ -2929,7 +2929,7 @@ uniqueRngHiddenName :: Range -> String -> Name
 uniqueRngHiddenName rng prefix =
   let pos  = rangeStart rng
       uniq = show (posLine pos) ++ "_" ++ show (posColumn pos)
-  in newHiddenName (prefix ++ "_" ++ uniq)
+  in newHiddenName prefix ("_" ++ uniq)
 
 uniqueRngName :: Range -> String -> Name
 uniqueRngName rng prefix =

@@ -93,7 +93,7 @@ ctailDef topLevel def
            -> do -- ctailTrace "- has reference type result"
                  let ctailSlotType = typeCCtx tres
                      ctailName = makeHiddenName "trmc" (defName def)
-                     ctailSlot = newHiddenName "acc"
+                     ctailSlot = newHiddenName "acc" ""
                      ctailType = tForall tforall tpreds (TFun (targs ++ [(ctailSlot,ctailSlotType)]) teff tres)
                      ctailTName= TName ctailName ctailType
                      ctailTSlot= TName ctailSlot ctailSlotType
@@ -107,7 +107,7 @@ ctailDef topLevel def
                      needsMulti = not (useContextPath || alwaysAffine)
                      ctailMultiSlotType = TFun [(nameNil,tres)] typeTotal tres
                      ctailMultiName  = makeHiddenName "trmcm" (defName def)
-                     ctailMultiSlot  = newHiddenName "accm"
+                     ctailMultiSlot  = newHiddenName "accm" ""
                      ctailMultiType  = tForall tforall tpreds (TFun (targs ++ [(ctailMultiSlot,ctailMultiSlotType)]) teff tres)
                      ctailMultiTName = TName ctailMultiName ctailMultiType
                      ctailMultiTSlot = TName ctailMultiSlot ctailMultiSlotType
