@@ -5,7 +5,7 @@
 -- terms of the Apache License, Version 2.0. A copy of the License can be
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
-module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..) 
+module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
                       , rangeMapNew
                       , rangeMapInsert
                       , rangeMapSort
@@ -27,7 +27,7 @@ import Data.List    (sortBy, groupBy, minimumBy, foldl')
 import Lib.PPrint
 import Common.Range
 import Common.Name
-import Common.NamePrim (nameUnit, nameNull, isNameTuple)
+import Common.NamePrim (nameUnit, nameListNil, isNameTuple)
 import Common.File( startsWith )
 import Type.Type
 import Kind.Kind
@@ -55,7 +55,7 @@ mangle name tp
       = case cs of
           [] -> []
           (c:cc) ->
-            if (isSpace c) 
+            if (isSpace c)
              then ' ' : compress (dropWhile isSpace cc)
              else c : compress cc
 
@@ -63,7 +63,7 @@ data RangeInfo
   = Decl String Name Name      -- alias, type, cotype, rectype, fun, val
   | Block String      -- type, kind, pattern
   | Error Doc
-  | Warning Doc 
+  | Warning Doc
   | Id Name NameInfo Bool  -- qualified name, info, is the definition
 
 data NameInfo
@@ -76,14 +76,14 @@ data NameInfo
 
 
 instance Show RangeInfo where
-  show ri 
+  show ri
     = case ri of
         Decl kind nm1 nm2 -> "Decl " ++ kind ++ " " ++ show nm1 ++ " " ++ show nm2
         Block kind -> "Block " ++ kind
         Error doc  -> "Error"
         Warning doc -> "Warning"
         Id name info isDef -> "Id " ++ show name ++ (if isDef then " (def)" else "")
-        
+
 instance Enum RangeInfo where
   fromEnum r
     = case r of
@@ -114,7 +114,7 @@ instance Enum NameInfo where
   toEnum i
     = failure "Syntax.RangeMap.NameInfo.toEnum"
 
-isHidden ri 
+isHidden ri
   = case ri of
       Decl kind nm1 nm2  -> isHiddenName nm1
       Id name info isDef -> isHiddenName name
@@ -122,7 +122,7 @@ isHidden ri
 
 
 rangeMapNew :: RangeMap
-rangeMapNew 
+rangeMapNew
   = RM []
 
 cut r
@@ -131,15 +131,15 @@ cut r
 rangeMapInsert :: Range -> RangeInfo -> RangeMap -> RangeMap
 rangeMapInsert r info (RM rm)
   = -- trace ("insert: " ++ showFullRange (r) ++ ": " ++ show info) $
-    if isHidden info 
-     then RM rm 
-    else if beginEndToken info 
+    if isHidden info
+     then RM rm
+    else if beginEndToken info
      then RM ((r,info):(makeRange (rangeEnd r) (rangeEnd r),info):rm)
      else RM ((r,info):rm)
-  where 
+  where
     beginEndToken info
       = case info of
-          Id name _ _ -> (name == nameUnit || name == nameNull || isNameTuple name)
+          Id name _ _ -> (name == nameUnit || name == nameListNil || isNameTuple name)
           _ -> False
 
 rangeMapAppend :: RangeMap -> RangeMap -> RangeMap
