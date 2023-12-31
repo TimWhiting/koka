@@ -1264,12 +1264,12 @@ genRawLambda params eff body
        when (not (null freeVars)) $ 
          emitError (text "Backend.C.genRawLambda: free variables cannot be used in lambdas passed as raw functions: " <+> text (show freeVars))
        
-       trace ("genRawLambda: " ++ show (map tnameType params)) $ return ()
+       -- trace ("genRawLambda: " ++ show (map tnameType params)) $ return ()
        let 
            funSig  = text ("static") <+> ppType (typeOf body)
                      <+> ppName funName <.> rawparameters ([ppType tp <+> ppName name | (TName name tp) <- params])
        bodyDoc <- genStat (ResultReturn Nothing params) body
-       let funDef = funSig <+> block (vcat [text ("kk_context_t* _ctx = kk_context();"), bodyDoc])
+       let funDef = funSig <+> block (vcat [text ("kk_context_t* _ctx = kk_get_context();"), bodyDoc])
        emitToCurrentDef funDef  -- TODO: make  static if for a Private definition
        return (ppName funName)
 
@@ -1306,7 +1306,7 @@ cType tp
         -> cType t
       TCon c
         -> cTypeCon c
-      TExtern n s -> trace "CExtern" $ CPrim s
+      TExtern n s -> CPrim s
       TVar v
         -> CBox
       TSyn syn args t

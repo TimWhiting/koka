@@ -72,6 +72,7 @@ data External
             }
   | ExternalStruct {
       extName :: Name,
+      extFields :: [(Visibility, ValueBinder UserType (Maybe (Expr UserType)))],
       extType :: UserType,
       extNameRange :: Range,
       extRange :: Range,

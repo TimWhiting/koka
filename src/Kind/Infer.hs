@@ -109,7 +109,7 @@ inferKinds isValue colors platform mbRangeMap imports kgamma0 syns0 data0
           warns     = warns1 ++ warns2 ++ warns3
           dgroups   = concatMap (synTypeDefGroup modName) cgroups'
       setUnique unique3
-      trace ("inferKinds: dataInfos:\n" ++ intercalate "\n\n" (map show defs1) ++ "\ncgroups:\n" ++ show (map Core.typeDefName (Core.flattenTypeDefGroups cgroups'))) $ return ()
+      -- trace ("inferKinds: dataInfos:\n" ++ intercalate "\n\n" (map show defs1) ++ "\ncgroups:\n" ++ show (map Core.typeDefName (Core.flattenTypeDefGroups cgroups'))) $ return ()
       Core.liftError  (addWarnings warns $
                         if (null errs)
                           then return (dgroups ++ defs1
@@ -383,7 +383,7 @@ bindTypeBinder (TypeBinder name userKind rngName rng)
 
 
 bindExternal :: External -> KInfer (Maybe (TypeBinder InfKind))
-bindExternal (ExternalStruct name tp nameRng rng doc structName)
+bindExternal (ExternalStruct name params tp nameRng rng doc structName)
   = do qname <- qualifyDef name
        return $ Just (TypeBinder qname (KICon kindStar) nameRng rng)
 bindExternal _ = return Nothing
@@ -441,9 +441,9 @@ infExternal names (External name tp pinfos nameRng rng calls vis fip doc)
        -- trace ("infExternal: " ++ show cname ++ ": " ++ show (pretty tp')) $
        return (Core.External cname tp' pinfos (map (formatCall tp') calls)
                   vis fip nameRng doc, qname:names, [])
-infExternal names (ExternalStruct name tp nameRng rng doc structName)
+infExternal names (ExternalStruct name params tp nameRng rng doc structName)
   = do tp' <- infResolveEX tp (Check "Externals must be values" rng)
-       trace ("infExternal: " ++ show name ++ ": " ++ show tp') $ return ()
+       -- trace ("infExternal: " ++ show name ++ ": " ++ show tp') $ return ()
        qname <- qualifyDef name
        -- TODO Error if name is already defined
        let cname = let n = length (filter (==qname) names) in

@@ -372,8 +372,9 @@ externDecl dvis
           case struct of
             (Just structName) -> do
               (tid, trng) <- typeid
-              (pars,prng)  <- conPars Public 
-              return [DefExtern (ExternalStruct tid (TpExtern tid structName trng) trng krng doc structName)]
+              (fields,prng)  <- conPars Public 
+              let rng = combineRanges [trng, prng, krng]
+              return [DefExtern (ExternalStruct tid fields (TpExtern tid structName trng) trng rng doc structName)]
             _ -> do
               (name,nameRng) <- funid
               (pars,pinfos,args,tp,annotate) <- 
