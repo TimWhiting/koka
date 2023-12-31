@@ -289,6 +289,7 @@ isSimpleFunc expr =
        isSimpleTArg TCon{}        = True
        isSimpleTArg (TVar x)      = True
        isSimpleTArg (TApp ty tys) = all isSimpleTArg (ty:tys)
+       isSimpleTArg TExtern{}     = True
        isSimpleTArg _             = False
 
        isSimpleArg Con{}      = True

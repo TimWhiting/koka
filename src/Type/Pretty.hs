@@ -249,9 +249,10 @@ prettyDataInfo env0 showBody publicOnly isExtend info@(DataInfo datakind name ki
                DataDefRec -> text "recursive "
                DataDefOpen -> text "open "
                DataDefValue v -> text ("value" ++ show v ++ " ")
+               DataDefExtern s -> text ("extern ")
                _ -> empty) <.>
       (case datakind of
-         Inductive -> keyword env "type"
+         Inductive -> keyword env "type" <.> (case datadef of DataDefExtern s -> text (" " ++ (show s) ++ " "); _ -> empty)
          CoInductive -> keyword env "co type"
          Retractive  -> keyword env "rec type") <+>  -- this "rec" means a retractive type
       -- ppVis env vis <+>
@@ -368,6 +369,7 @@ ppType env tp
                        --  then ppNameEx env nameTpTotal
                       --  else
                         ppTypeCon env cv
+      TExtern n s    -> ppNameEx env n <.> text "(" <.> text s <.> text ")"
       TApp (TCon con) [_,_] | typeConName con == nameEffectExtend
                     -> let (ls,tl) = shallowExtractEffectExtend tp
                            tldoc   = if (tl == effectEmpty)

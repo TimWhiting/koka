@@ -172,7 +172,11 @@ prettyExternal env (External name tp pinfos body vis fip nameRng doc)
     prettyEntries [(Default,content)] = keyword env "= inline" <+> prettyLit env (LitString content) <.> semi
     prettyEntries entries             = text "{" <-> tab (vcat (map prettyEntry entries)) <-> text "};"
     prettyEntry (target,content)      = ppTarget env target <.> keyword env "inline" <+> prettyLit env (LitString content) <.> semi
-
+prettyExternal env (ExternalStruct name tp nameRng rng doc structName)
+  = prettyComment env doc $
+    keyword env "extern struct" <+> prettyLit env (LitString structName) <+> prettyDefName env name <.> prettyRange env nameRng
+  where
+    prettyField (name,tp) = prettyDefName env name <+> text ":" <+> prettyType env tp <.> semi
 prettyExternal env (ExternalImport imports range)
   = empty
 
@@ -575,6 +579,7 @@ extractImportsFromSynonyms imps syns
           TFun args eff res  -> extractTypes (res:eff:map snd args)
           TForall _ _ body   -> extractType body
           TCon tcon          -> [qualifier (typeConName tcon)]
+          TExtern n s        -> [n]
           TVar _             -> []
     extractTypes tps
       = concatMap extractType tps

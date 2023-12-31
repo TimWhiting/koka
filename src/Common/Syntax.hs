@@ -188,12 +188,14 @@ data DataDef = DataDefValue !ValueRepr  -- value type
              | DataDefNormal            -- reference type
              | DataDefRec
              | DataDefOpen
+             | DataDefExtern String     -- external type
              | DataDefAuto              -- Value or Normal; determined by kind inference             
              deriving Eq
 
 instance Show DataDef where
   show dd = case dd of
               DataDefValue v   -> "val" ++ show v
+              DataDefExtern s  -> "extern " ++ s
               DataDefNormal    -> "normal"
               DataDefRec       -> "rec"
               DataDefOpen      -> "open"

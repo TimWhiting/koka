@@ -159,6 +159,7 @@ module Common.NamePrim
           , nameKindPred, nameKindEffect
           , nameKindHeap, nameKindScope
           , nameKindHandled1, nameKindHandled
+          , nameKindExtern
 
           , namesSameSize
 
@@ -531,3 +532,4 @@ nameKindHeap    = newName "H"
 nameKindScope   = newName "S"
 nameKindHandled = newName "HX"
 nameKindHandled1 = newName "HX1"
+nameKindExtern = newName "EX"

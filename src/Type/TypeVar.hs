@@ -378,6 +378,7 @@ instance HasTypeVar Type where
                                    in TForall vars (sub' |-> preds) (sub' |-> tp)
         TFun args effect result -> TFun (map (\(name,tp) -> (name,sub `substitute` tp)) args) (sub `substitute` effect) (sub `substitute` result)
         TCon tcon               -> TCon tcon
+        TExtern tname s         -> TExtern tname s
         TVar tvar               -> subFind tvar sub
         TApp tp arg             -> TApp (sub `substitute` tp) (sub `substitute` arg)
         TSyn syn xs tp          -> TSyn syn (sub `substitute` xs) (sub `substitute` tp)
@@ -387,6 +388,7 @@ instance HasTypeVar Type where
         TForall vars preds tp   -> tvsRemove vars (tvsUnion (ftv preds) (ftv tp))
         TFun args effect result -> tvsUnions (ftv effect : ftv result : map (ftv . snd) args)
         TCon tcon               -> tvsEmpty
+        TExtern _ _             -> tvsEmpty
         TVar tvar               -> tvsSingle tvar
         TApp tp arg             -> tvsUnion (ftv tp) (ftv arg)
         TSyn syn xs tp          -> tvsUnion (ftv xs) (ftv tp)
@@ -410,6 +412,7 @@ instance HasOrderedTypeVar Type where
         TForall vars preds tp   -> filter (\tv -> not (tv `elem` vars)) (odftv tp ++ odftv preds)
         TFun args effect result -> concatMap odftv (map snd args ++ [effect,result])
         TCon tcon               -> []
+        TExtern{}               -> []
         TVar tvar               -> [tvar]
         TApp tp arg             -> odftv tp ++ odftv arg
         TSyn syn xs tp          -> odftv tp ++ concatMap odftv xs
@@ -459,6 +462,7 @@ posneg isPos tp
       TForall vars preds tp   -> tvsRemove vars (posneg isPos tp)
       TFun args effect result -> tvsUnions (posneg isPos effect : posneg isPos result : map (posneg (not isPos) . snd) args)
       TCon tcon               -> tvsEmpty
+      TExtern _ _             -> tvsEmpty
       TVar tvar               -> if (isPos) then tvsSingle tvar else tvsEmpty
       TApp tp args            -> tvsUnions (posneg isPos tp : map (posneg isPos) args)
       TSyn syn xs tp          -> posneg isPos tp
@@ -494,6 +498,7 @@ matchType tp1 tp2
                                                           else False
       (TFun pars1 eff1 t1, TFun pars2 eff2 t2)  -> (matchTypes (map snd pars1) (map snd pars2) && matchEffect eff1 eff2 && matchType t1 t2)
       (TCon c1, TCon c2)                        -> c1 == c2
+      (TExtern n1 s1, TExtern n2 s2)            -> (n1 == n2 && s1 == s2)
       (TVar v1, TVar v2)                        -> v1 == v2
       (TApp t1 ts1, TApp t2 ts2)                -> (matchType t1 t2 && matchTypes ts1 ts2)
       -- (TSyn syn1 ts1 t1, TSyn syn2 ts2 t2)      -> (syn1 == syn2 && matchTypes ts1 ts2 && matchType t1 t2)
@@ -529,6 +534,7 @@ showTp tp
   = case tp of
       TVar tvar   -> showTypeVar tvar
       TCon tcon   -> show (typeconName tcon) ++ "::" ++ show (typeconKind tcon)
+      TExtern tname s -> show tname ++ "(\"" ++ show s ++ "\")"
       TApp tp args-> showTp tp ++ "<" ++ concatMap (\t -> showTp t ++ ",") args ++ ">"
       TSyn syn args body -> "(syn:" ++ show (typesynName syn) ++ "::" ++ show (typesynKind syn) ++ "<" ++ concatMap (\t -> showTp t ++ ",") args ++ ">" ++ "[" ++ showTp body ++ "])"
       _ -> "?"

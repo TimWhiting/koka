@@ -1376,6 +1376,7 @@ ppType ctx tp
            ppTypeApp ctx t ts
       TCon c
         -> ppTypeCon ctx c (getKind tp)
+      TExtern n s -> text s
       TVar v
         -> ppTypeVar v
       TSyn syn args t

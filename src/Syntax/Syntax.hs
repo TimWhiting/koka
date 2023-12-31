@@ -328,6 +328,7 @@ data KUserType k
   | TpCon      Name                  Range
   | TpParens   (KUserType k)         Range
   | TpAnn      (KUserType k)  k
+  | TpExtern   Name String           Range
   deriving (Show)
 
 type UserType
@@ -339,7 +340,7 @@ data UserKind
   = KindCon    Name Range
   | KindArrow  UserKind UserKind
   | KindParens UserKind Range
-  | KindExtern Name
+  | KindExtern Range
   | KindNone  -- flags that there is no explicit kind annotation
   deriving (Show)
 
@@ -371,6 +372,7 @@ instance Ranged k => Ranged (KUserType k) where
        TpCon      name range      -> range
        TpParens   userTp range    -> range
        TpAnn      userTp kind -> combineRange (getRange userTp) (getRange kind)
+       TpExtern   _ _ range       -> range
 
 instance Ranged (TypeBinder k) where
   getRange (TypeBinder _ _ _ range) = range
@@ -388,6 +390,7 @@ instance Ranged UserKind where
         KindCon    name range -> range
         KindArrow  k1 k2      -> combineRange (getRange k1) (getRange k2)
         KindParens knd range  -> range
+        KindExtern name       -> rangeNull
         KindNone              -> rangeNull
 
 
@@ -499,6 +502,7 @@ instance HasFreeTypeVar (KUserType k) where
        TpApp      tp args range       -> S.union (freeTypeVars tp) (freeTypeVars args)
        TpVar      name range          -> S.singleton name
        TpCon      name range          -> S.empty
+       TpExtern   name s range        -> S.empty
        TpParens   tp range            -> freeTypeVars tp
        TpAnn      tp kind             -> freeTypeVars tp
 

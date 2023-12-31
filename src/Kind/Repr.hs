@@ -43,6 +43,7 @@ createDataDef emitError emitWarning lookupDataInfo
            isIso      = canbeValue && maxMembers == 1 && conCount == 1
                                     
        ddef  <- case defaultDef of
+                  DataDefExtern name -> return (DataDefExtern name)
                   DataDefOpen
                     -> return DataDefOpen
                   DataDefRec
@@ -259,5 +260,6 @@ getDataDef lookupDI tp
             TApp t _      -> extractDataDefType t
             TForall _ _ t -> extractDataDefType t
             TCon tc       -> Just (typeConName tc)
+            TExtern n _   -> Just n
             _             -> Nothing
 

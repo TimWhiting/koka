@@ -133,6 +133,7 @@ instance HasKind Type where
         TFun _ _ _     -> kindStar
         TVar v         -> getKind v
         TCon c         -> getKind c
+        TExtern{}      -> kindStar
         TSyn syn xs tp -> -- getKind tp {- this is wrong for partially applied type synonym arguments, see "kind/alias3" test -}
                           -- if (null xs) then getKind tp else
                           kindApply xs (getKind syn)  

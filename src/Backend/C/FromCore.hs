@@ -1263,13 +1263,14 @@ genRawLambda params eff body
                                   failure ("Backend.C.genRawLambda: " ++ msg)
        when (not (null freeVars)) $ 
          emitError (text "Backend.C.genRawLambda: free variables cannot be used in lambdas passed as raw functions: " <+> text (show freeVars))
-           
+       
+       trace ("genRawLambda: " ++ show (map tnameType params)) $ return ()
        let 
-           funSig  = text (if toH then "extern" else "static") <+> ppType (typeOf body)
+           funSig  = text ("static") <+> ppType (typeOf body)
                      <+> ppName funName <.> rawparameters ([ppType tp <+> ppName name | (TName name tp) <- params])
        bodyDoc <- genStat (ResultReturn Nothing params) body
        let funDef = funSig <+> block (vcat [text ("kk_context_t* _ctx = kk_context();"), bodyDoc])
-       emitToC funDef  -- TODO: make  static if for a Private definition
+       emitToCurrentDef funDef  -- TODO: make  static if for a Private definition
        return (ppName funName)
 
 ---------------------------------------------------------------------------------
@@ -1305,6 +1306,7 @@ cType tp
         -> cType t
       TCon c
         -> cTypeCon c
+      TExtern n s -> trace "CExtern" $ CPrim s
       TVar v
         -> CBox
       TSyn syn args t
@@ -2023,7 +2025,8 @@ genAppNormal f args
 argTypes :: Expr -> [Type]
 argTypes expr =
   case splitFunScheme (typeOf expr) of
-    Just (_, _, args, _, _) -> trace ("arg types of " ++ show expr ++ " " ++ show args) $ map snd args
+    Just (_, _, args, _, _) -> -- trace ("arg types of " ++ show expr ++ " " ++ show args) $ 
+      map snd args
     _ -> failure ("Backend.C.FromCore.argTypes: expecting function type: " ++ show (pretty (typeOf expr)))
 
 ppCtxPath :: ConRepr -> TName -> Bool -> [Doc]

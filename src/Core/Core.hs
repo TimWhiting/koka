@@ -295,6 +295,14 @@ data External = External{ externalName :: Name
                         , externalRange :: Range
                         , externalDoc   :: String
                         }
+              | ExternalStruct { 
+                      extName :: Name,
+                      extType :: Type,
+                      extNameRange :: Range,
+                      extRange :: Range,
+                      extDoc :: String,
+                      extStructName :: String
+                  }
               | ExternalImport { externalImport :: [(Target,[(String,String)])]
                                , externalRange :: Range }
 
@@ -1335,6 +1343,7 @@ depType tp
       TForall vars preds rho  -> depType rho
       TFun args eff tp        -> depsUnions (map depType (tp:eff:map snd args))
       TCon tc                 -> depName (typeConName tc)
+      TExtern name _          -> depName name
       TVar _                  -> S.empty
       TApp tp tps             -> depsUnions (map depType (tp:tps))
       TSyn syn args tp        -> depsUnions (depName (typesynName syn):(map depType (tp:args)))

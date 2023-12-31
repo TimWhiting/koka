@@ -355,9 +355,9 @@ externDecl dvis
                       return (Left (externalImport krng)))
             <|>
              try ( do (krng,doc) <- dockeyword "extern"
-                      specialId "struct"
+                      dockeyword "struct"
                       (structName, structRng) <- stringLit
-                      let externName = drop 1 (take (length structName - 1) structName)
+                      let externName = structName
                       return (Right (combineRange structRng krng, Public, doc, InlineNever, NoFip False, Just externName)))
             <|>
              try ( do (vis,vrng) <- visibility dvis
@@ -373,8 +373,7 @@ externDecl dvis
             (Just structName) -> do
               (tid, trng) <- typeid
               (pars,prng)  <- conPars Public 
-              let conId     = toConstructorName tid
-              return [DefExtern (ExternalStruct conId (TpCon conId trng) trng krng doc structName)]
+              return [DefExtern (ExternalStruct tid (TpExtern tid structName trng) trng krng doc structName)]
             _ -> do
               (name,nameRng) <- funid
               (pars,pinfos,args,tp,annotate) <- 
@@ -2568,6 +2567,9 @@ katom
   <|>
     do rng <- specialConId "HX1"
        return (KindCon nameKindHandled1 rng)
+  <|>
+    do rng <- specialConId "EX"
+       return (KindExtern rng)
   <?> "kind constant (V,E,H,S,X,HX,HX1, or P)"
 
 -----------------------------------------------------------

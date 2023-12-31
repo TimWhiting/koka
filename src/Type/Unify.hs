@@ -222,6 +222,9 @@ unify tp (TVar tv@(TypeVar id kind Meta))
 unify (TCon tc1) (TCon tc2)  | tc1 == tc2
   = return ()
 
+-- constants
+unify (TExtern n1 s1) (TExtern n2 s2)  | n1 == n2 && s1 == s2
+  = return ()
 -- applications
 {-
 unify (TApp t1 ts1) (TApp u1 us2)   | length ts1 == length us2

@@ -377,6 +377,7 @@ cType tp
         -> CBox
       TSyn syn args t
         -> cType t
+      TExtern s n -> CData
 
 
 typeBoxStar = typeBox kindStar

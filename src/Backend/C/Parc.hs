@@ -1025,6 +1025,7 @@ extractDataDefType tp
       TApp t _      -> extractDataDefType t
       TForall _ _ t -> extractDataDefType t
       TCon tc       -> Just (typeConName tc)
+      TExtern{}     -> Nothing
       _             -> Nothing
 
 

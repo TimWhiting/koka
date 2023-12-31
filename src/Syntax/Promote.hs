@@ -184,5 +184,6 @@ promoteTpVars vars tp
      TpApp      tp args range       -> TpApp (promoteTpVars vars tp) (map (promoteTpVars vars) args) range
      TpVar      name range          -> TpVar name range
      TpCon      name rng            -> if (S.member name vars) then TpVar name rng else TpCon name rng
+     TpExtern   name s rng          -> TpExtern name s rng
      TpParens   tp range            -> TpParens (promoteTpVars vars tp) range
      TpAnn      tp kind             -> TpAnn (promoteTpVars vars tp) kind

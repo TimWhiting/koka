@@ -26,7 +26,7 @@ import Lib.Trace
 -- import Type.Pretty
 
 import Data.Char(isAlphaNum)
-import Data.List(groupBy,intersperse,nubBy,sortOn)
+import Data.List(groupBy,intersperse,nubBy,sortOn, intercalate)
 import Data.Maybe(catMaybes)
 import Control.Monad(when)
 
@@ -94,31 +94,33 @@ inferKinds
 inferKinds isValue colors platform mbRangeMap imports kgamma0 syns0 data0
             (Program source modName nameRange tdgroups defs importdefs externals fixdefs doc)
   =do unique0 <- unique
-      let (errs1,warns1,rm1,unique1,(cgroups,kgamma1,syns1,data1)) = runKindInfer colors platform mbRangeMap modName imports kgamma0 syns0 data0 unique0 (infTypeDefGroups tdgroups)
-          (errs2,warns2,rm2,unique2,externals1)              = runKindInfer colors platform rm1 modName imports kgamma1 syns1 data1 unique1 (infExternals externals)
-          (errs3,warns3,rm3,unique3,defs1)                   = runKindInfer colors platform rm2 modName imports kgamma1 syns1 data1 unique2 (infDefGroups defs)
-          (_,_,rm4,_,_) = runKindInfer colors platform rm3 modName imports kgamma1 syns1 data1 unique3 (infImports importdefs)
+      let (errs1,warns1,rm1,unique1,(cgroups1,kgamma1,syns1,data1)) = runKindInfer colors platform mbRangeMap modName imports kgamma0 syns0 data0 unique0 (infTypeDefGroups tdgroups)
+          (errs2,warns2,rm2,unique2,(externals1,kgamma2,datas2,cgroups2)) = runKindInfer colors platform rm1 modName imports kgamma1 syns1 data1 unique1 (infExternals externals)
+          (errs3,warns3,rm3,unique3,defs1)                   = runKindInfer colors platform rm2 modName imports kgamma2 syns1 datas2 unique2 (infDefGroups defs)
+          (_,_,rm4,_,_) = runKindInfer colors platform rm3 modName imports kgamma2 syns1 datas2 unique3 (infImports importdefs)
   --        (errs4,warns4,unique4,cgroups)                 = runKindInfer colors modName imports kgamma1 syns1 unique3 (infCoreTDGroups cgroups)
-          (synInfos,dataInfos) = unzipEither (extractInfos cgroups)
+          cgroups' = cgroups1 ++ cgroups2
+          (synInfos,dataInfos) = unzipEither (extractInfos cgroups')
           conInfos  = concatMap dataInfoConstrs dataInfos
           cons1     = constructorsFromList conInfos
           gamma1    = constructorGamma isValue dataInfos
           errs4     = constructorCheckDuplicates colors conInfos
           errs      = errs1 ++ errs2 ++ errs3 ++ errs4
           warns     = warns1 ++ warns2 ++ warns3
-          dgroups   = concatMap (synTypeDefGroup modName) cgroups
+          dgroups   = concatMap (synTypeDefGroup modName) cgroups'
       setUnique unique3
+      trace ("inferKinds: dataInfos:\n" ++ intercalate "\n\n" (map show defs1) ++ "\ncgroups:\n" ++ show (map Core.typeDefName (Core.flattenTypeDefGroups cgroups'))) $ return ()
       Core.liftError  (addWarnings warns $
                         if (null errs)
                           then return (dgroups ++ defs1
                                       -- ,gamma1
-                                      ,kgamma1
+                                      ,kgamma2
                                       ,syns1
-                                      ,data1 -- newtypesNew dataInfos
+                                      ,datas2 -- newtypesNew dataInfos
                                       ,cons1
                                       -- ,cgroups
                                       -- ,externals1
-                                      ,Core.Core modName [] [] cgroups [] externals1 doc
+                                      ,Core.Core modName [] [] cgroups' [] externals1 doc
                                       ,rm4
                                       )
                           else errorMsg (ErrorKind errs))
@@ -379,6 +381,13 @@ bindTypeBinder (TypeBinder name userKind rngName rng)
   = do kind <- userKindToKind userKind
        return (TypeBinder name kind rngName rng)
 
+
+bindExternal :: External -> KInfer (Maybe (TypeBinder InfKind))
+bindExternal (ExternalStruct name tp nameRng rng doc structName)
+  = do qname <- qualifyDef name
+       return $ Just (TypeBinder qname (KICon kindStar) nameRng rng)
+bindExternal _ = return Nothing
+
 userKindToKind :: UserKind -> KInfer InfKind
 userKindToKind userKind
   = convert userKind
@@ -392,23 +401,34 @@ userKindToKind userKind
                                    (KICon kk1,KICon kk2) -> return (KICon (kindFun kk1 kk2))
                                    _ -> return $ KIApp k1' k2'
           KindParens k rng -> convert k
+          KindExtern rng   -> return (KICon kindStar)
           KindNone         -> freshKind -- failure ("Kind.Infer.userKindToKind.convert: unexpected kindNone")
 
 
 {---------------------------------------------------------------
   Infer kinds of external definitions
 ---------------------------------------------------------------}
-infExternals :: [External] -> KInfer Core.Externals
+infExternals :: [External] -> KInfer (Core.Externals, KGamma, Newtypes, Core.TypeDefGroups)
 infExternals externals
-  = walk [] externals
+  = do 
+      -- Set up recursive environment
+      binds <- mapM bindExternal externals
+      let infgamma = catMaybes binds
+      extendInfGamma infgamma $ do
+        -- Infer kinds of all externals
+        walk [] externals
   where
-    walk names [] = return []
+    walk names [] = do
+      kgamma <- getKGamma
+      datas <- getAllNewtypes
+      return ([], kgamma, datas, [])
     walk names (external:externals)
-      = do (ext,names2)  <- infExternal names external
-           exts <- walk names2 externals
-           return (ext:exts)
+      = do (ext,names2,tdefs)  <- infExternal names external
+           let tdg = Core.TypeDefGroup tdefs
+           (exts,kgamma,datas,tdgs') <- extendKGamma (map (dataInfoRange . Core.typeDefDataInfo) tdefs) tdg $ walk names2 externals
+           return (ext:exts, kgamma, datas, tdg:tdgs')
 
-infExternal :: [Name] -> External -> KInfer (Core.External,[Name])
+infExternal :: [Name] -> External -> KInfer (Core.External,[Name],[Core.TypeDef])
 infExternal names (External name tp pinfos nameRng rng calls vis fip doc)
   = do tp' <- infResolveType tp (Check "Externals must be values" rng)
        qname <- qualifyDef name
@@ -420,9 +440,21 @@ infExternal names (External name tp pinfos nameRng rng calls vis fip doc)
                 addRangeInfo rng (Decl "external" qname (mangle cname tp'))
        -- trace ("infExternal: " ++ show cname ++ ": " ++ show (pretty tp')) $
        return (Core.External cname tp' pinfos (map (formatCall tp') calls)
-                  vis fip nameRng doc, qname:names)
+                  vis fip nameRng doc, qname:names, [])
+infExternal names (ExternalStruct name tp nameRng rng doc structName)
+  = do tp' <- infResolveEX tp (Check "Externals must be values" rng)
+       trace ("infExternal: " ++ show name ++ ": " ++ show tp') $ return ()
+       qname <- qualifyDef name
+       -- TODO Error if name is already defined
+       let cname = let n = length (filter (==qname) names) in
+                   canonicalName n qname
+       if (isHiddenName name)
+        then return ()
+        else do addRangeInfo nameRng (Id qname (NIValue tp' doc True) True)
+                addRangeInfo rng (Decl "external struct" qname (mangle cname tp'))
+       return (Core.ExternalStruct name tp' nameRng rng doc structName, qname:names, [Core.Data (DataInfo Inductive qname kindStar [] [] rng (DataDefExtern structName) Public doc) False ])
 infExternal names (ExternalImport imports range)
-  = return (Core.ExternalImport imports range, names)
+  = return (Core.ExternalImport imports range, names, [])
 
 formatCall tp (target,ExternalInline inline) = (target,inline)
 formatCall tp (target,ExternalCall fname)
@@ -464,6 +496,11 @@ formatCall tp (target,ExternalCall fname)
 
 infResolveType :: UserType -> Context -> KInfer Type
 infResolveType tp ctx
+  = do infTp <- infUserType infKindStar ctx tp
+       resolveType M.empty False infTp
+
+infResolveEX :: UserType -> Context -> KInfer Type
+infResolveEX tp ctx
   = do infTp <- infUserType infKindStar ctx tp
        resolveType M.empty False infTp
 
@@ -746,6 +783,10 @@ infUserType expected  context userType
         -> do (qname,kind) <- findInfKind name rng
               unify context range expected kind
               return (TpVar qname rng)
+      TpExtern name str rng 
+        -> do (qname, kind) <- findInfKind name rng
+              unify context range expected kind 
+              return $ TpExtern qname str rng
       TpCon name rng
         -> do (qname,kind) <- findInfKind name rng
               unify context range expected kind
@@ -804,7 +845,7 @@ resolveTypeDef isRec recNames (Synonym syn params tp range vis doc)
     kindArity _ = []
 
 resolveTypeDef isRec recNames (DataType newtp params constructors range vis sort ddef isExtend doc)
-  = do -- trace ("datatype: " ++ show(tbinderName newtp) ++ " " ++ show isExtend) $ return ()
+  = do trace ("datatype: " ++ show(tbinderName newtp) ++ " " ++ show isExtend) $ return ()
        newtp' <- if isExtend
                   then do (qname,ikind) <- findInfKind (tbinderName newtp) (tbinderRange newtp)
                           kind  <- resolveKind ikind
@@ -899,6 +940,8 @@ occurs names isNeg tp
       TCon tcon               -> -- trace ("con name: " ++ show (typeConName tcon)) $
                                  if (typeConName tcon `elem` names) then isNeg
                                   -- else if (toOperationsName (typeConName tcon) `elem` names) then isNeg
+                                    else False
+      TExtern n _             -> if (n `elem` names) then isNeg
                                     else False
       TVar tvar               -> False
       TApp tp args            -> any (occurs names isNeg) (tp:args)
@@ -1019,6 +1062,8 @@ resolveType idmap partialSyn userType
         -> resolveType idmap partialSyn tp
       TpAnn tp userKind
         -> resolveType idmap partialSyn tp
+      TpExtern name str rng 
+        -> return $ TExtern name str
 
   where
     resolveParam (name,tp)
@@ -1091,8 +1136,12 @@ resolveApp idmap partialSyn (TpCon name r,args) rng
                   -- NOTE: on partially applied type synonyms, we get a funky body type with free parameters but this
                   -- is only inside synonyms arguments so we are ok.
           Nothing
-            -> do args' <- mapM (resolveType idmap False) args
-                  return (typeApp (TCon (TypeCon name kind)) args')
+            -> do mbDI <- lookupDataInfo name
+                  case mbDI of
+                    Just (DataInfo _ name _ _ _ _ (DataDefExtern s) _ _) -> return (TExtern name s)
+                    _ -> do
+                      args' <- mapM (resolveType idmap False) args
+                      return (typeApp (TCon (TypeCon name kind)) args')
 
 resolveApp idmap partialSyn _ rng
   = failure "Kind.Infer.resolveApp: this case should never occur after kind checking"

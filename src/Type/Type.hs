@@ -98,6 +98,7 @@ data Type   = TForall  [TypeVar] [Pred] Rho  -- ^ forall a b c. phi, psi => rho
             | TSyn     TypeSyn [Type] Type   -- ^ type synonym indirection
                                              -- first [Type] list is the actual arguments
                                              -- final Type is the "real" type (expanded) (always has kind *)
+            | TExtern  Name String           -- external type
             deriving (Show)
 
 data Pred
@@ -153,6 +154,7 @@ maxSynonymRank tp
       TForall vars preds rho  -> maxSynonymRank rho
       TFun args eff tp        -> maxSynonymRanks (tp:eff:map snd args)
       TCon _                  -> 0
+      TExtern _ _             -> 0
       TVar _                  -> 0
       TApp tp tps             -> maxSynonymRanks (tp:tps)
       TSyn syn args tp        -> max (synonymRank syn) (maxSynonymRanks (tp:args))
@@ -450,6 +452,7 @@ isTau tp
       TForall _ _ _  -> False
       TFun xs e r    -> all (isTau . snd) xs && isTau e && isTau r -- TODO e should always be tau
       TCon    _      -> True
+      TExtern{}      -> True
       TVar    _      -> True
       TApp    a b    -> isTau a && all isTau b
       TSyn    _ ts t -> isTau t
@@ -961,6 +964,7 @@ matchType tp1 tp2
       (TForall vs1 ps1 t1, TForall vs2 ps2 t2)  -> (vs1==vs2 && matchPreds ps1 ps2 && matchType t1 t2)
       (TFun pars1 eff1 t1, TFun pars2 eff2 t2)  -> (matchTypes (map snd pars1) (map snd pars2) && matchEffect eff1 eff2 && matchType t1 t2)
       (TCon c1, TCon c2)                        -> c1 == c2
+      (TExtern n1 s1, TExtern n2 s2)            -> (n1 == n2 && s1 == s2)
       (TVar v1, TVar v2)                        -> v1 == v2
       (TApp t1 ts1, TApp t2 ts2)                -> (matchType t1 t2 && matchTypes ts1 ts2)
       -- (TSyn syn1 ts1 t1, TSyn syn2 ts2 t2)      -> (syn1 == syn2 && matchTypes ts1 ts2 && matchType t1 t2)
