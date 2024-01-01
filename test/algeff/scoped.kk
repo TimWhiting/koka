@@ -30,7 +30,7 @@ val solutions = handler {
   ctl flip() -> resume(True) ++ resume(False)
 }
 
-fun show( xss : list<list<int>> ) : string {
+fun listlist/show( xss : list<list<int>> ) : string {
   xss.show-list(fn(xs) { xs.show-list(core/show) } )
 }
 
@@ -75,11 +75,19 @@ val choices = handler {
   ctl flip() -> { incr(); resume(flip()) }
 }
 
+<<<<<<< HEAD
 fun show(x : (int,list<list<int>>)) : string {
   "(state=" ++ x.fst.show ++ ", " ++ x.snd.show ++ ")"
 }
 
 fun show(xs : list<(int,list<int>)>) : string {
+=======
+fun intlist/show(x : (int,list<list<int>>)) : string {
+  "(state=" ++ x.fst.show ++ ", " ++ x.snd.show ++ ")"
+}
+
+fun listint/show(xs : list<(int,list<int>)>) : string {
+>>>>>>> upstream/dev-overload
   xs.show-list fn(x) {
     "(state=" ++ x.fst.show ++ ", " ++ x.snd.show ++ ")"
   }
@@ -221,17 +229,29 @@ fun factor() {
   }
 }
 
+<<<<<<< HEAD
 /*
+=======
+
+>>>>>>> upstream/dev-overload
 fun test5() {
   solutions{ parse("2+8*5"){ expr() } }
 }
 
 
+<<<<<<< HEAD
 
 // --------------------------------------------------------------
 // Scoped handlers
 // --------------------------------------------------------------
 /*
+=======
+/*
+// --------------------------------------------------------------
+// Scoped handlers
+// --------------------------------------------------------------
+
+>>>>>>> upstream/dev-overload
 effect call {
   bcall() : ();
   ecall() : ()
@@ -279,7 +299,10 @@ fun test6() {
 }
 */
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> upstream/dev-overload
 // --------------------------------------------------------------
 // Main
 // --------------------------------------------------------------
@@ -299,4 +322,7 @@ fun mymap( xs, f ) {
     Cons(x,xx) -> Cons(f(x),mymap(xx,f))
   }
 }
+<<<<<<< HEAD
 */
+=======
+>>>>>>> upstream/dev-overload

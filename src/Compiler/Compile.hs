@@ -349,7 +349,7 @@ compileProgramFromFile maybeContents contents term flags modules compileTarget i
        liftIO $ termPhase term ("parsing " ++ fname)
        exist <- liftIO $ doesFileExist fname
        if (exist) then return () else liftError $ errorMsg (errorFileNotFound flags fname)
-       program <- lift $ case contents of { Just x -> return $ parseProgramFromString (semiInsert flags) x fname; _ -> parseProgramFromFile (semiInsert flags) fname}
+       program <- lift $ case contents of { Just x -> return $ parseProgramFromString False (semiInsert flags) x fname; _ -> parseProgramFromFile False (semiInsert flags) fname}
        let isSuffix = -- asciiEncode True (noexts stem) `endsWith` asciiEncode True (show (programName program))
                       -- map (\c -> if isPathSep c then '/' else c) (noexts stem)
                       show (pathToModuleName (noexts stem)) `endsWith` show (programName program)

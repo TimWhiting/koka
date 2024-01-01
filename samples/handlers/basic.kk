@@ -24,7 +24,11 @@ fun hello()
   println("Hello " ++ name ++ ", " ++ ask())  // "Hello <ask>, <ask>"
 
 
+<<<<<<< HEAD
 pub fun example2()
+=======
+pub fun test2()
+>>>>>>> upstream/dev-overload
   with fun ask() "there"    // a `fun` operation resumes implicitly with its result
   hello()
 
@@ -62,7 +66,11 @@ fun to-maybe(action)
   Just(action())
 
 
+<<<<<<< HEAD
 pub fun example1()
+=======
+pub fun test1()
+>>>>>>> upstream/dev-overload
   zerodiv(10,0).println
 
 
@@ -93,7 +101,11 @@ fun state(init, action)
     fun put(x) s := x
 
 
+<<<<<<< HEAD
 pub fun example3()
+=======
+pub fun test3()
+>>>>>>> upstream/dev-overload
   state(1,counter).snd
 
 
@@ -121,11 +133,19 @@ fun foreach( f : a -> e bool, action : () -> <yield<a>|e> () ) : e ()
   action()
 
 
+<<<<<<< HEAD
 pub fun example4()
   foreach( fn(x:int){ println(x); x <= 1 } )
     [1,2,3].iterate
 
 pub fun example4b()
+=======
+pub fun test4()
+  foreach( fn(x:int){ println(x); x <= 1 } )
+    [1,2,3].iterate
+
+fun test4b()
+>>>>>>> upstream/dev-overload
   with return(x) ()                // just force final result to ()
   with amb
   with foreach fn(x:int)
@@ -157,7 +177,11 @@ val amb = handler
   ctl flip() resume(False) ++ resume(True)
 
 
+<<<<<<< HEAD
 pub fun example5()
+=======
+pub fun test5()
+>>>>>>> upstream/dev-overload
   amb(xor).show.println
 
 
@@ -173,7 +197,11 @@ fun surprising() : <flip,state<int>> bool
   if (i>0 && p) then xor() else False
 
 
+<<<<<<< HEAD
 pub fun example6()
+=======
+pub fun test6()
+>>>>>>> upstream/dev-overload
   state(0){ amb(surprising) }.show.println
 
 pub fun example7()
@@ -184,12 +212,21 @@ pub fun example7()
 //  Testing
 // --------------------------------------------------------
 pub fun main()
+<<<<<<< HEAD
   example1()
   example2()
   example3()
   example4()
   example5()
   example6()
+=======
+  test1()
+  test2()
+  test3()
+  test4()
+  test5()
+  test6()
+>>>>>>> upstream/dev-overload
   42
 
 

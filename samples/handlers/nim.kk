@@ -57,12 +57,20 @@ fun game(n)
 
 val perfect = handler fun move(_p,n){ max(1,n%4) }
 
+<<<<<<< HEAD
 pub fun example-perfect1()
+=======
+pub fun test-perfect1()
+>>>>>>> upstream/dev-overload
   with perfect
   game(7)        // alice
 
 
+<<<<<<< HEAD
 pub fun example-perfect2()
+=======
+pub fun test-perfect2()
+>>>>>>> upstream/dev-overload
   with perfect
   game(12)  // bob
 
@@ -128,14 +136,22 @@ val check = handler
       else cheat(p)
 
 
+<<<<<<< HEAD
 pub fun example-check()
+=======
+pub fun test-check()
+>>>>>>> upstream/dev-overload
   with perfect
   with cheat-report
   with check
   game(7)  // alice
 
 
+<<<<<<< HEAD
 pub fun example-use()
+=======
+pub fun test-use()
+>>>>>>> upstream/dev-overload
   with x = map([1,2,3])
   x+2
 
@@ -150,14 +166,22 @@ val pc = handler
       Bob   -> n
 
 
+<<<<<<< HEAD
 pub fun example-pc1()
+=======
+pub fun test-pc1()
+>>>>>>> upstream/dev-overload
   with pc
   with cheat-report
   with check
   game(12)
 
 
+<<<<<<< HEAD
 pub fun example-pc2()
+=======
+pub fun test-pc2()
+>>>>>>> upstream/dev-overload
   // the `perfect` on the outside is necessary as the type system
   // does not detect that `check` will never perform a `move`.
   with perfect
@@ -184,7 +208,11 @@ val all-results = handler
   ctl choose() resume(True) ++ resume(False)
 
 
+<<<<<<< HEAD
 pub fun example-choose()
+=======
+pub fun test-choose()
+>>>>>>> upstream/dev-overload
   with ctl choose() resume(True) ++ (resume(False):list<_>)
   with bob-chooses
   [game(7)]   // [bob,alice]
@@ -193,7 +221,11 @@ pub fun example-choose()
 val coin = handler
   fun choose() srandom-float64() > 0.5
 
+<<<<<<< HEAD
 pub fun example-coin()
+=======
+pub fun test-coin()
+>>>>>>> upstream/dev-overload
   with coin
   with bob-chooses
   game(7)
@@ -235,7 +267,11 @@ fun print-board( gs : gstate ) : io ()
   scores.join("\n").println
 
 
+<<<<<<< HEAD
 pub fun example-print1()
+=======
+pub fun test-print1()
+>>>>>>> upstream/dev-overload
   with state(s0)
   with printer
   with coin
@@ -249,7 +285,11 @@ fun replay(n : int, action : () -> <div|e> a) : <div|e> a
   action()
 
 
+<<<<<<< HEAD
 pub fun example-print2()
+=======
+pub fun test-print2()
+>>>>>>> upstream/dev-overload
   with state(s0)
   with printer
   with replay(10)

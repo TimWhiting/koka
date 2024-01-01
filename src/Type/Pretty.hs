@@ -25,8 +25,8 @@ import Platform.Config( programName )
 import Data.List( partition )
 import Lib.PPrint
 import Common.Name
-import Common.NamePrim( isNameTuple, nameTpOptional, nameEffectExtend, nameTpTotal, nameEffectEmpty,
-                        nameTpHandled, nameTpHandled1, nameTpDelay, nameSystemCore, nameCoreTypes, nameUnit )
+import Common.NamePrim( isNameTpTuple, nameTpOptional, nameEffectExtend, nameTpTotal, nameEffectEmpty,
+                        nameTpHandled, nameTpHandled1, nameTpDelay, nameSystemCore, nameCoreTypes, nameTpUnit )
 import Common.ColorScheme
 import Common.IdNice
 import Common.Syntax
@@ -157,10 +157,9 @@ data Env     = Env{ showKinds      :: Bool
 -- | Default pretty print environment
 defaultEnv :: Env
 defaultEnv
-  = Env False False
-        True -- showFlavours
-        False
-        defaultColorScheme niceEmpty (precTop-1) M.empty (newName "Main") (importsEmpty) False
+  = Env False False False False
+        defaultColorScheme niceEmpty (precTop-1) M.empty (newName "Main") (importsEmpty)
+        False     -- fullNames
         False
         []
         ("styles/" ++ programName ++ ".css") -- [("System.","file://c:/users/daan/dev/koka/out/lib/")]
@@ -390,7 +389,7 @@ ppType env tp
                     -> text "?" <.> ppType env{prec=precAtom} arg
                     | (typeConName con == nameTpHandled || typeConName con == nameTpHandled1) && not (coreIface env)
                     -> ppType env arg
-      TApp (TCon (TypeCon name _)) args | isNameTuple (name)
+      TApp (TCon (TypeCon name _)) args | isNameTpTuple (name)
                     -> parens (commaSep (map (ppType env{prec = precTop}) args))
       TApp f args   -> pparens (prec env) precApp $
                        ppType env{ prec = precAtom } f <.>
@@ -488,7 +487,7 @@ ppTypeCon env (TypeCon name kind)
     = colorByKindDef env kind colorTypeCon $
       --(if name == nameEffectEmpty then id else)
       (wrapKind (showKinds env) env kind) $
-      if name == nameUnit then text "()" else ppNameEx env name
+      if name == nameTpUnit then text "()" else ppNameEx env name
 
 ppTypeSyn :: Env -> TypeSyn -> Doc
 ppTypeSyn env (TypeSyn name kind rank _)

@@ -31,7 +31,11 @@ fun listlist/show( xss : list<list<int>> ) : string
     xs.show-list(int/show)
 
 
+<<<<<<< HEAD
 pub fun example1() 
+=======
+fun test1()
+>>>>>>> upstream/dev-overload
   with solutions
   knapsack(3,[3,2,1])
 
@@ -85,12 +89,20 @@ fun intlist/show(xs : list<(int,list<int>)>) : string
     "(state=" ++ x.fst.show ++ ", " ++ x.snd.show ++ ")"
 
 
+<<<<<<< HEAD
 pub fun example2() 
+=======
+fun test2()
+>>>>>>> upstream/dev-overload
   with global(0)
   with choices
   knapsack(3,[3,2,1])
 
+<<<<<<< HEAD
 pub fun example3() 
+=======
+fun test3()
+>>>>>>> upstream/dev-overload
   with local(0)
   with choices
   knapsack(3,[3,2,1])
@@ -141,7 +153,11 @@ fun call(p)
 fun once(p)
   call{ val x = p(); cut(); x }
 
+<<<<<<< HEAD
 pub fun example4() 
+=======
+fun test4()
+>>>>>>> upstream/dev-overload
   with solutions
   with once
   knapsack(3,[3,2,1])
@@ -215,7 +231,11 @@ fun factor()
     i
 
 
+<<<<<<< HEAD
 pub fun example5()   
+=======
+fun test5()
+>>>>>>> upstream/dev-overload
   with solutions
   parse("2+8*5"){ expr() }
 
@@ -224,10 +244,19 @@ pub fun example5()
 // Main
 // --------------------------------------------------------------
 
+<<<<<<< HEAD
 pub fun main() 
   example1().show.println
   example2().show.println
   example3().show.println
   example4().show.println
   example5().show.println
+=======
+pub fun main()
+  test1().show.println
+  test2().show.println
+  test3().show.println
+  test4().show.println
+  test5().show.println
+>>>>>>> upstream/dev-overload
 

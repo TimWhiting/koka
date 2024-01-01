@@ -220,19 +220,57 @@ gammaLookup name (Gamma gamma)
   = let stemName = unqualifyFull name
     in case M.lookup stemName gamma of
       Nothing -> []
-      Just candidates
+      Just candidates0
          -> -- trace ("gamma lookup: " ++ show name ++ ": " ++ show (map fst candidates)) $
-            filter (\(_,info) -> infoIsVisible info) $
-            if stemName == name then candidates
-             else let qual = fullQualifier name    -- todo: resolve module aliases first
-                  in let candidates' = filter (\(n,_) -> matchQualifier qual n) candidates
-                     in -- trace ("gamma lookup: " ++ show name ++ ": " ++ show (map fst candidates')) $
-                        candidates'
+            let candidates1 = filter (\(_,info) -> infoIsVisible info) candidates0
+            in  if stemName == name then candidates1  -- fast path for unqualified names
+                 else let qpaths      = splitRevQualifiers name
+                          candidates2 = filter (\(n,_) -> matchRevQualifierPaths qpaths (splitRevQualifiers n)) candidates1
+                      in -- trace ("gamma lookup matched: " ++ show name ++ ": " ++ show (map fst candidates2)) $
+                          candidates2
 
-matchQualifier :: String -> Name -> Bool
-matchQualifier qual name
-  = let qualn = fullQualifier name
-    in isPrefixOf (reverse qual) (reverse qualn)
+-- Given a user qualified name, see if the qualifiers match a resolved name.
+-- The user qualified name has already been de-aliased in kind inference (see `Kind/ImportMap/importsExpand`)
+-- The user qualified name may not distinguish local qualification from module qualification,
+-- e.g. `std/core/int/show` vs  `std/core/#int/show`.
+-- ambiguities may occur, where `std/num/float32/foo` should match both `std/num/#float32/foo` and `std/num/float32/#foo`
+matchQualifiers :: Name -> Name -> Bool
+matchQualifiers uname name
+  = matchRevQualifierPaths (splitRevQualifiers uname) (splitRevQualifiers name)
+
+matchRevQualifierPaths :: ([String],[String]) -> ([String],[String]) -> Bool
+matchRevQualifierPaths upaths paths
+  = matchPaths upaths paths
+  where
+    -- not qualified
+    matchPaths ([],[]) (mpath,lpath)
+      = True
+
+    -- no user specified local path
+    matchPaths (umpath,[]) (mpath,[])
+      = umpath `isPrefixOf` mpath
+
+    matchPaths (umpath,[]) (mpath,lpath)  -- not (null lpath)
+      = (umpath `isPrefixOf` lpath) ||    -- user module is a postfix the local qualifier
+        (lpath `isPrefixOf` umpath && (drop (length lpath) umpath) `isPrefixOf` mpath) ||  -- stradle both
+        (umpath `isPrefixOf` mpath)       -- user module is postfix of the module qualifier
+                                          -- (we can not mention local qualifiers, so `std/core/show` matches `std/core/#int/show` for example)
+
+    -- user specified local path: umpath/#ulpath must be a valid postfix of  mpath/#lpath
+    matchPaths (umpath,ulpath) (mpath,lpath)  -- not (null ulpath)
+      = case umpath of
+          [] -> ulpath `isPrefixOf` lpath
+          _  -> ulpath == lpath && umpath `isPrefixOf` mpath
+
+
+-- Split out the module and local qualifier as a _reverse_ list of components
+-- e.g. `std/core/#int/show` -> (["core","std"],["int"])
+splitRevQualifiers :: Name -> ([String],[String])
+splitRevQualifiers name
+  = let mpath = reverse (splitModuleName name)
+        lpath = reverse (splitLocalQualName name)
+    in (mpath,lpath)
+
 
 
 gammaLookupPrefix :: Name -> Gamma -> [(Name,NameInfo)]
@@ -384,12 +422,13 @@ instance Pretty Gamma where
 
 ppGammaInternal :: Bool -> Env -> Gamma -> Doc
 ppGammaInternal showHidden env gamma
-    = vcat [fill maxwidth (prettyName (colors env) name) {-(ppName env name)-} <.> color (colorSep (colors env)) (typeColon (colors env)) <+> align (nice scheme)
+    = vcat [fill maxwidth (prettyName (colors env) name) {-(ppName env name)-} <.>
+             color (colorSep (colors env)) (typeColon (colors env)) <+> align (nice scheme)
         | (name,scheme) <- nameSchemes,
           showHidden || not (isHiddenName name)
         ]
     where
-      nameSchemes   = [(name,infoType info) | (name,info) <- gammaList gamma]
+      nameSchemes   = [(name,infoType info) | (name,info) <- gammaList gamma, not (isInfoImport info)]
       maxwidth      = 12 `min` foldl max 0 [length (show name) | (name,scheme) <- nameSchemes]
       nice scheme   = align (head (niceTypes env [scheme]))
 

@@ -1275,11 +1275,6 @@ effectNameFromLabel effect
   infer applications and resolve overloaded identifiers
 --------------------------------------------------------------------------}
 
-getRangeArg :: ArgExpr -> Range
-getRangeArg (ArgExpr expr)        = getRange expr
-getRangeArg (ArgCore (rng,_,_,_)) = rng
-getRangeArg (ArgImplicit _ rng)   = rng
-
 inferApp :: Maybe (Type,Range) -> Expect -> Expr Type -> [(Maybe (Name,Range),Expr Type)] -> Range -> Inf (Type,Effect,Core.Expr)
 inferApp propagated expect fun nargs rng
   = -- trace "infer: App" $
@@ -1287,17 +1282,14 @@ inferApp propagated expect fun nargs rng
        amb <- case rootExpr fun of
                 (Var name _ nameRange)
                   -> do let sctx = fixedCountContext propagated (length fixed) (map (fst . fst) named)
-                        matches <- lookupAppNameX False name sctx nameRange
-                        -- traceDoc $ \env -> text "matched for: " <+> ppName env name <+> text " = " <+> pretty (length matches)
+                        matches <- lookupAppName False name sctx nameRange
+                        -- traceDefDoc $ \env -> text "matched for: " <+> ppName env name <+> text " = " <+> pretty (length matches)
                         case matches of
-                          {-
-                          (Left [])  -> do -- emit an error
-                                           resolveAppName name sctx rng nameRange
-                                           return (Just (Nothing,fun,[]))  -- error
-                          -}
                           Right (tp,funExpr,implicits)
                               -> return (Just (Just (tp,rng), funExpr, implicits)) -- known type, propagate the function type into the parameters
                           _   -> return Nothing -- many matches, -- start with argument inference and try to resolve the function type
+                                 -- note: lookupAppName never unifies type variables so we should not emit errors on `Left []`.
+                                 -- for example, in `fn(f) f()` the `f` has a type `_a` and will not match `sctx`.
                 _ -> return (Just (Nothing,fun,[])) -- function expression first
        case amb of
          Just (prop,funExpr,implicits)
@@ -1313,7 +1305,7 @@ inferApp propagated expect fun nargs rng
       = do -- traceDefDoc $ \penv -> text " inferAppFunFirst: fun:" <+> text (show funExpr) <+>
                                   -- text ("fixed count: " ++ show (length fixed)) <.>
                                   -- text (", named: " ++ show named0 ++ ", implicits: " ++ show implicits) <->
-                                  -- text "  :" <+> ppProp penv prop
+                                  -- text (", fres count: " ++ show (length fresolved)) <+> text ":" <+> ppProp penv prop
 
            -- only add resolved implicits that were not already named
            let alreadyGiven = [name | ((name,_),_) <- named0]
@@ -1329,10 +1321,9 @@ inferApp propagated expect fun nargs rng
 
 
            -- match propagated type with the function result type
-           -- todo: is not always correct so only do this if required to resolve implicit parameters.
+           -- note: we may disable this in the future?
            (pars,funEff,funTp) <- case propagated of
-              Just (propRes,propRng) -- | null fixed && any (isImplicitParamName . fst) pars0
-                                     -> do inferSubsume (checkAnn propRng) rng funTp0 propRes
+              Just (propRes,propRng) -> do inferSubsume (checkAnn propRng) rng funTp0 propRes
                                            pars1   <- subst pars0
                                            funEff1 <- subst funEff0
                                            funTp1  <- subst funTp0
@@ -1414,32 +1405,37 @@ inferApp propagated expect fun nargs rng
            let fresolved' = fresolved ++ [(idx,(getRange fix,tpArg,effArg,coreArg))]
            amb <- case rootExpr fun of
                     (Var name _ nameRange)
-                      -> do sctx <- fixedContext propagated fresolved' (length fixed) (map (fst . fst) named)
-                            matches <- lookupAppNameX (null fixs {- allow disambiguate -}) name sctx nameRange
+                      -> do sctx    <- fixedContext propagated fresolved' (length fixed) (map (fst . fst) named)
+                            matches <- lookupAppName (null fixs {- allow disambiguate -}) name sctx nameRange
                             -- traceDoc $ \env -> text "app args matched for " <+> ppName env name <+>
                             --                    text " = " <+> pretty (length matches) <+> text ", " <+> pretty (length fixs) <+>
                             --                    text ", res: " <+> ppProp env propagated <+>
                             --                    text ", args: " <+> list (map (ppType env) (map (\(_,(_,tp,_,_)) -> tp) fresolved'))
                             case matches of
-                              {-
-                              Left []    -> do -- emit an error
-                                               resolveAppName name sctx rng nameRange
-                                               return Nothing
-                              -}
-                              Right (itp,funExpr,implicits) -> return (Just ((itp,rng),funExpr,implicits))
-                              _          -> return Nothing
+                              Right (itp,funExpr,implicits)
+                                 -> return (Just ((itp,rng),funExpr,implicits))
+                              _  -> return Nothing
                     _ -> return Nothing
 
            case amb of
-             Just (prop,funExpr,implicits)  -> inferAppFunFirst (Just prop) funExpr fresolved' fixed named implicits
-             Nothing    -> inferAppArgsFirst fresolved' fixs fixed named
+             Just (prop,funExpr,implicits)
+                      -> inferAppFunFirst (Just prop) funExpr fresolved' fixed named implicits
+             Nothing  -> inferAppArgsFirst fresolved' fixs fixed named
+
+
+getRangeArg :: ArgExpr -> Range
+getRangeArg (ArgExpr expr)        = getRange expr
+getRangeArg (ArgCore (rng,_,_,_)) = rng
+getRangeArg (ArgImplicit _ rng)   = rng
 
 
 {--------------------------------------------------------------------------
-  infer variable
+  infer variables
 --------------------------------------------------------------------------}
 
 inferVar :: Maybe (Type,Range) -> Expect -> Name -> Range -> Bool -> Inf (Type,Effect,Core.Expr)
+
+-- constructor
 inferVar propagated expect name rng isRhs  | isConstructorName name
   = -- trace("inferVar: constructor: " ++ show name)$
     do (qname1,tp1,conRepr,conInfo) <- resolveConName name (fmap fst propagated) rng
@@ -1464,13 +1460,14 @@ inferVar propagated expect name rng isRhs  | isConstructorName name
        eff <- freshEffect
        return (itp,eff,coref coreVar)
 
+-- variable
 inferVar propagated expect name rng isRhs
   = -- trace("inferVar: " ++ show name) $
     -- we cannot directly "resolveName" with a propagated type
     -- as sometimes the types do not match and need to coerce due to local variables or references on the right-hand-side
     do vinfo <- case propagated of
                   Just prop | isRhs -> resolveRhsName name prop rng
-                  _  -> resolveName name propagated rng
+                  _                 -> resolveName name propagated rng
        inferVarName propagated expect name rng isRhs vinfo
 
 inferVarName propagated expect name rng isRhs (qname,tp,info)
@@ -1503,32 +1500,7 @@ inferVarName propagated expect name rng isRhs (qname,tp,info)
                  eff <- freshEffect
                  return (itp,eff,coref coreVar)
 
-{-
-inferVar propagated expect name rng isRhs
-  = do (qname1,tp1,info1) <- resolveName name (propagated) rng
-       inferVarX propagated expect name rng qname1 tp1 info1
 
-inferVarX propagated expect name rng qname1 tp1 info1
-  = do (qname,tp,info,rngConValue)
-                      <- case info1 of
-                           InfoCon{ infoCon = conInfo } -- conInfoCreator conInfo -- does it have a special creator function?
-                            -> do defName <- currentDefName
-                                  let creatorName = newCreatorName qname1
-                                  -- trace ("inferCon: " ++ show (defName,creatorName,qname1)) $ return ()
-                                  if (defName /= unqualify creatorName && defName /= nameCopy) -- a bit hacky, but ensure we don't call the creator function inside itself or the copy function
-                                   then do mbRes <- lookupFunName creatorName propagated rng
-                                           case mbRes of
-                                              Just (qname',tp',info') -> return (qname',tp',info',RM.NICon)
-                                              Nothing  -> return (qname1,tp1,info1,RM.NICon)
-                                   else return (qname1,tp1,info1,RM.NICon)
-                           _ -> return (qname1,tp1,info1,RM.NIValue)
-       let coreVar = coreExprFromNameInfo qname info
-       addRangeInfo rng (RM.Id (infoCanonicalName qname1 info1) (rngConValue tp) False)
-       (itp,coref) <- maybeInstantiate rng expect tp
-       -- trace ("Type.Infer.Var: " ++ show (name,itp)) $ return ()
-       eff <- freshEffect
-       return (itp,eff,coref coreVar)
--}
 
 {--------------------------------------------------------------------------
   infer branches and patterns
@@ -1670,25 +1642,15 @@ inferPattern matchType branchRange (PatCon name patterns0 nameRange range) withP
 
 
 inferPattern matchType branchRange (PatVar binder) withPattern inferPart
-  = do {-
-       mb <- lookupConName (binderName binder) (binderType binder) (binderNameRange binder)
-       case mb of
-         Just (qname,conTp,info)
-           -- it is actually a constructor
-           -> do checkCasing (binderNameRange binder) (binderName binder) qname info
-                 inferPattern matchType branchRange (PatCon qname [] (binderNameRange binder) (binderNameRange binder))
-         Nothing
-           -- it is a variable indeed
-           -> -}
-              do addRangeInfo (binderNameRange binder) (RM.Id (binderName binder) (RM.NIValue matchType "" (isAnnotatedBinder binder)) True)
-                 case (binderType binder) of
-                   Just tp -> inferUnify (checkAnn (getRange binder)) (binderNameRange binder) matchType tp
-                   Nothing -> return ()
-                 (cpat,infGamma0) <- inferPatternX matchType branchRange (binderExpr binder)
-                 let infGamma = ([(binderName binder,(createNameInfoX Public (binderName binder) DefVal (binderNameRange binder) matchType ""))] ++ infGamma0)
-                 (btpeffs,x) <- inferPart infGamma
-                 res <- withPattern (Core.PatVar (Core.TName (binderName binder) matchType) cpat) x
-                 return (btpeffs,res)
+  =  do addRangeInfo (binderNameRange binder) (RM.Id (binderName binder) (RM.NIValue matchType "" False) True)
+        case (binderType binder) of
+          Just tp -> inferUnify (checkAnn (getRange binder)) (binderNameRange binder) matchType tp
+          Nothing -> return ()
+        (cpat,infGamma0) <- inferPatternX matchType branchRange (binderExpr binder)
+        let infGamma = ([(binderName binder,(createNameInfoX Public (binderName binder) DefVal (binderNameRange binder) matchType ""))] ++ infGamma0)
+        (btpeffs,x) <- inferPart infGamma
+        res <- withPattern (Core.PatVar (Core.TName (binderName binder) matchType) cpat) x
+        return (btpeffs,res)
 
 inferPattern matchType branchRange (PatWild range) withPattern inferPart
   =  do (btpeffs,x) <- inferPart []
@@ -1892,19 +1854,6 @@ checkEffectTp   = Check "operator type does not match the effect type"
 
 checkLocalScope = Check "a reference to a local variable escapes it's scope"
 
-isAmbiguous :: NameContext -> Expr Type -> Inf Bool
-isAmbiguous ctx expr
-  = case expr of
-      (Var name isOp nameRange)
-        -> do matches <- lookupNameEx (const True) name ctx nameRange
-              case matches of
-                []  -> return False
-                [_] -> return False
-                _   -> return True
-      -- Handler{}        -> return True
-      Parens (Lam{}) _ _ -> return True -- make parenthesized lambdas later in inference
-      Parens body _ _    -> isAmbiguous ctx body
-      _ -> return False
 
 
 rootExpr expr
@@ -1937,73 +1886,43 @@ inferArgsN ctx range parArgs
       = return (reverse acc)
     inferArg acc ((tpar,arg):args)
       = do tpar0 <- subst tpar
-           (targ,teff,core) <- case arg of
-                                 ArgExpr argexpr
-                                   -> inferArgExpr tpar0 argexpr
-                                 ArgCore (_,ctp,ceff,carg)
-                                   -> do -- traceDefDoc $ \penv -> text "inferArgN: argCore:" <+>
-                                         --                            ppType penv tpar0 <+> text ", ctp:"
-                                         --                            <+> ppType penv ctp
-                                         if isRho tpar0
-                                           then return (ctp,ceff,carg)
-                                           else do (gtp,garg) <- generalize range range False ceff ctp carg
-                                                   return (gtp,ceff,garg)
-                                         -- return (ctp,ceff,carg)  -- TODO: generalize polymorphic parameters?
-                                 ArgImplicit name rng
-                                   -> do argExpr <- resolveImplicitName name tpar0 rng
-                                         inferArgExpr tpar0 argExpr
+           let subsumeArg (targ,teff,core)
+                 = do tpar1  <- subst tpar0
+                      (_,coref)  <- inferSubsume ctx (getRangeArg arg) tpar1 targ
+                                    {- case arg of
+                                      ArgExpr argexpr | isAnnot argexpr
+                                        -> do -- traceDefDoc $ \env -> text "inferArgN1:" <+> ppType env tpar1 <+> text "~" <+> ppType env targ
+                                              inferSubsume ctx (getRangeArg arg) tpar1 targ
+                                              -- inferUnify ctx (getRange argexpr) tpar1 targ
+                                              return (tpar1,id)
+                                      _ -> do -- traceDefDoc $ \env -> text "inferArgN2:" <+> (ppType env teff) <+> colon <+> ppType env tpar1 <+> text "~" <+> ppType env targ
+                                              inferSubsume ctx (getRangeArg arg) tpar1 targ
+                                      -}
 
-           tpar1  <- subst tpar0
-           (_,coref)  <- case arg of
-                           ArgExpr argexpr | isAnnot argexpr
-                             -> do -- traceDefDoc $ \env -> text "inferArgN1:" <+> ppType env tpar1 <+> text "~" <+> ppType env targ
-                                   inferSubsume ctx (getRangeArg arg) tpar1 targ
-                                   -- inferUnify ctx (getRange argexpr) tpar1 targ
-                                   return (tpar1,id)
-                           _ -> do -- traceDefDoc $ \env -> text "inferArgN2:" <+> (ppType env teff) <+> colon <+> ppType env tpar1 <+> text "~" <+> ppType env targ
-                                   inferSubsume ctx (getRangeArg arg) tpar1 targ
-           teff1  <- subst teff
-           inferArg ((teff1,coref core) : acc) args
+                      teff1  <- subst teff
+                      return (teff1,coref core)
 
-{-
--- | Infer types of function arguments
-inferSubsumeN :: Context -> Range -> [(Type,Expr Type)] -> Inf ([Effect],[Core.Expr])
-inferSubsumeN ctx range parArgs
-  = do res <- inferSubsumeN' ctx range [] (zip [1..] parArgs)
-       return (unzip res)
+           (eff,core)  <- case arg of
+                            ArgExpr argexpr
+                              -> do res <- inferArgExpr tpar0 argexpr
+                                    subsumeArg res
+                            ArgCore (_,ctp,ceff,carg)
+                              -> do -- traceDefDoc $ \penv -> text "inferArgN: argCore:" <+>
+                                    --                            ppType penv tpar0 <+> text ", ctp:"
+                                    --                            <+> ppType penv ctp
+                                    res <- if isRho tpar0
+                                            then return (ctp,ceff,carg)
+                                            else do (gtp,garg) <- generalize range range False ceff ctp carg
+                                                    return (gtp,ceff,garg)
+                                    subsumeArg res
+                            ArgImplicit name rng
+                              -> do (argExpr,termDoc) <- resolveImplicitName name tpar0 rng
+                                    withHiddenTermDoc rng termDoc $
+                                      do res <- inferArgExpr tpar0 argExpr
+                                         subsumeArg res
 
-inferSubsumeN' ctx range acc []
-  = return (map snd (sortBy (\(i,_) (j,_) -> compare i j) acc))
-inferSubsumeN' ctx range acc parArgs
-  = do lsArgs <- pickArgument parArgs
-       let ((i,(tpar,arg)):rest) = lsArgs
-       -- traceDoc $ \env -> text "inferSubsume: enter " <+> text (if isRho tpar then "instantiated" else "generalized") <+> text "expression"
-       (targ,teff,core) <- allowReturn False $ inferExpr (Just (tpar,getRange arg)) (if isRho tpar then Instantiated else Generalized False) arg
-       tpar1  <- subst tpar
-       steff  <- subst teff
-       (_,coref)  <- if isAnnot arg
-                      then do -- traceDoc $ \env -> text "inferSubsumeN1:" <+> ppType env tpar1 <+> text "~" <+> ppType env targ
-                              inferUnify ctx (getRange arg) tpar1 targ
-                              return (tpar1,id)
-                      else do -- traceDoc $ \env -> text "inferSubsumeN2:" <+> parens (ppType env steff) <+> colon <+> ppType env tpar1 <+> text "~" <+> ppType env targ
-                              inferSubsume ctx (getRange arg) tpar1 targ
-       rest1 <- mapM (\(j,(tpar,arg)) -> do{ stpar <- subst tpar; return (j,(stpar,arg)) }) rest
-       teff1 <- subst teff
-       -- traceDoc $ \env -> text " inferSubsumeEffect: " <+> ppType env teff <+> text " ~> " <+> ppType env teff1
-       inferSubsumeN' ctx range ((i,(teff1,coref core)):acc) rest1
+           inferArg ((eff,core) : acc) args
 
--- | Pick an argument that can be subsumed unambigiously..
--- split arguments on non-ambiguous variables and ambiguous ones
--- then we look for annotated arguments since their type is fully determined (and need no type propagation)
--- finally we look at parameters that are not a type variable since those are unambigiously determined (and benefit from type propagation)
--- and finally, we do the ones that are left over (the order of those does not matter)
-pickArgument args
-  = do ambs  <- mapM (\(i,(tpar,arg)) -> isAmbiguous (CtxType tpar) arg) args
-       let (ambargs,args1)   = partition fst (zip ambs args)
-           (annots,args2)    = partition (\(i,(tp,arg)) -> isAnnot arg) (map snd args1)
-           (nonvars,args3)   = partition (\(i,(tp,arg)) -> not (isTVar tp)) args2
-       return (annots ++ nonvars ++ args3 ++ map snd ambargs)
--}
 
 -- | Is an expression annotated?
 isAnnot (Parens expr _ rng)   = isAnnot expr
@@ -2113,7 +2032,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
                                  extendSub (subSingle tv (TFun targs teff tres))
                                  return (zip [0..] (map ArgExpr (fixed ++ map snd named)), targs,teff,tres,Core.App)
        _  -> do -- apply the copy constructor if we can find it
-                matches <- lookupNameEx (const True) nameCopy (CtxFunTypes True [tp] [] Nothing) range
+                matches <- lookupNameCtx isInfoValFunExt nameCopy (CtxFunTypes True [tp] [] Nothing) range
                 case matches of
                   [(qname,info)]
                     -> do (contp,_,coreInst) <- instantiateEx range (infoType info)
@@ -2215,7 +2134,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
         isDelayed expr
           = case expr of
               Lam [] _ _   -> return True
-              Var name _ _ -> do matches <- lookupNameEx (const True) name (CtxFunArgs 0 [] Nothing) (getRange expr)
+              Var name _ _ -> do matches <- lookupNameCtx isInfoValFunExt name (CtxFunArgs 0 [] Nothing) (getRange expr)
                                  case matches of
                                    [(_,info)] -> return (isDelayedType (infoType info))
                                    _          -> return False
@@ -2236,23 +2155,6 @@ matchFunTypeArgs context fun tp fresolved fixed named
           TSyn syn [_,_] _ -> (typesynName syn == nameTpDelay)
           _ -> False
 
-{-
-resolveImplicits :: Range -> [(Name,Type)] -> Inf [Expr Type]
-resolveImplicits rng []
-  = return []
-
-resolveImplicits rng ((name,tp0):pars)
-  = do env <- getPrettyEnv
-       let (pname,iname) = splitImplicitParamName name
-       tp <- subst tp0
-       traceDoc $ \env -> text "resolving" <+> ppParam env (iname,tp)
-       (ename,etp,info) <- resolveImplicitName iname tp rng
-       traceDoc $ \env -> text "resolved to" <+> ppParam env (ename,etp)
-       -- infError rng (text "cannot resolve implicit parameter" <+> ppParam env (iname,tp))
-       let arg = Var ename False rng
-       args <- resolveImplicits rng pars
-       return (arg:args)
--}
 
 {--------------------------------------------------------------------------
   Effects

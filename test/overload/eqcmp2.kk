@@ -53,8 +53,13 @@ fun list/cmp<a>( xs : list<a>, ys : list<a>, ?cmp : (a,a) -> order ) : order
 // We cannot just prefer values, since `eq([1],[2])`
 // can be resolved as `eq = list/eq(int/eq)` but also as `eq = cmp/eq(list/cmp(int/cmp))`.
 // For implicits we instead prefer shortest chains originating from the most locals.
+<<<<<<< HEAD
 fun cmp/eq( x : a, y : a, ?cmp : (a,a) -> order ) : bool
   cmp(x,y) == Eq
+=======
+// fun cmp/eq( x : a, y : a, ?cmp : (a,a) -> order ) : bool
+//   cmp(x,y) == Eq
+>>>>>>> upstream/dev-overload
 
 fun test3()
   // equal(1,2)  // use `int/eq` instead of `cmp/eq(int/cmp)` as it is shorter
@@ -95,13 +100,10 @@ fun cmp-and-eq(xs : list<a>, y : a, ?cmp : (a,a) -> order) : bool
   int/cmp(1,2) == Eq  &&
   // cmp(1,2) == Eq  &&         // we cannot resolve this to `int/cmp` unless we allow a bypass
   xcompare(1,2) == Eq           // we can resolve ?cmp=int/cmp as we allow bypass for implicits.. (as long as a local cmp does not type check)
-  
 
 // foo :: Ord a => [a] -> a -> Bool
 // foo xs y   = (1 == 2) &&    // use `instance Eq Int`
 //              xs == xs       // use `class Eq a => Ord a`, and `instance Ord a => Ord [a]`
 
-fun test4()
-  (1 + 1).println
-  (0.1 + 1.0).println
+fun test6()
   ['a','b'].cmp-and-eq('a')

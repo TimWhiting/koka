@@ -84,10 +84,10 @@ optional p  = do { p; return True } <|> return False
 -----------------------------------------------------------
 -- Parse varieties
 -----------------------------------------------------------
-parseProgramFromFile :: Bool -> FilePath -> IO (Error a UserProgram)
-parseProgramFromFile semiInsert fname
+parseProgramFromFile :: Bool -> Bool -> FilePath -> IO (Error a UserProgram)
+parseProgramFromFile allowAt semiInsert fname
   = do input <- readInput fname
-       let result = parseProgramFromString semiInsert input fname
+       let result = parseProgramFromString allowAt semiInsert input fname
        case checkError result of
           Right (a, warnings) ->
             do
@@ -99,9 +99,9 @@ logSyntaxWarnings :: [(Range, Doc)] -> IO ()
 logSyntaxWarnings warnings
   = putPretty (prettyWarnings "" True defaultColorScheme warnings)
 
-parseProgramFromString :: Bool -> BString -> FilePath -> Error a UserProgram
-parseProgramFromString semiInsert input fname
-  = do (result, syntaxWarnings) <- lexParse semiInsert id program fname 1 input
+parseProgramFromString :: Bool -> Bool -> BString -> FilePath -> Error a UserProgram
+parseProgramFromString allowAt semiInsert input fname
+  = do (result, syntaxWarnings) <- lexParse allowAt semiInsert id program fname 1 input
        addWarnings (map (\(s, r) -> (r, text s)) syntaxWarnings) $ return result
 
 parseValueDef :: Bool -> FilePath -> Int -> String -> Error () UserDef
@@ -128,7 +128,7 @@ ignoreSyntaxWarnings result =
 lexParseS :: Bool -> (Source -> LexParser b) -> FilePath -> Int -> String -> Error a b
 lexParseS semiInsert p sourceName line str
   = do
-      (result, syntaxWarnings) <- (lexParse semiInsert id p sourceName line (stringToBString str))
+      (result, syntaxWarnings) <- (lexParse False semiInsert id p sourceName line (stringToBString str))
       return $ trace (concat (intersperse "\n" (map fst syntaxWarnings))) $ result
 
 runStateParser :: LexParser a -> SourceName -> [Lexeme] -> Either ParseError (a, [(String, Range)])
@@ -140,12 +140,12 @@ runStateParser p sourceName lex =
          s <- getState
          return (r, s)
 
-lexParse :: Bool -> ([Lexeme]-> [Lexeme]) -> (Source -> LexParser a) -> FilePath -> Int -> BString -> Error b (a, [(String, Range)])
-lexParse semiInsert preprocess p sourceName line rawinput
+lexParse :: Bool -> Bool -> ([Lexeme]-> [Lexeme]) -> (Source -> LexParser a) -> FilePath -> Int -> BString -> Error b (a, [(String, Range)])
+lexParse allowAt semiInsert preprocess p sourceName line rawinput
   = let source = Source sourceName rawinput
         input  = if (isLiteralDoc sourceName) then extractLiterate rawinput else rawinput
         xs = lexing source line input
-        lexemes = preprocess $ layout semiInsert xs
+        lexemes = preprocess $ layout allowAt semiInsert xs
     in  -- trace  (unlines (map show lexemes)) $
         case (runStateParser (p source) sourceName lexemes) of
           Left err -> makeParseError (errorRangeLexeme xs source) err

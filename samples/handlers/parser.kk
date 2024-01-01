@@ -135,6 +135,7 @@ fun eparse(p,input)
   parse(input,p)
 
 
+<<<<<<< HEAD
 pub fun example1() 
   mparse( expr, "1+2*3").show-parse-int.println
 
@@ -146,6 +147,19 @@ pub fun example2()
 pub fun main() 
   example1()
   example2()
+=======
+fun test1()
+  mparse( expr, "1+2*3").show-parse-int.println
+
+
+fun test2()
+  eparse( expr, "1+2*3").show-parse-int.println
+
+
+pub fun main()
+  test1()
+  test2()
+>>>>>>> upstream/dev-overload
 
 
 // Some show functions

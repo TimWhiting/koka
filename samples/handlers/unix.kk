@@ -218,4 +218,8 @@ pub fun example6()
     hamlet()
 
 fun main()
+<<<<<<< HEAD
   example6()
+=======
+  example6()
+>>>>>>> upstream/dev-overload

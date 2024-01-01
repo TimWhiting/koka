@@ -42,7 +42,7 @@ module Common.Name
           , toConstructorName, isConstructorName, toVarName
           , toOpenTagName, isOpenTagName
           , toValueOperationName, isValueOperationName, fromValueOperationsName
-          , splitModuleName, unsplitModuleName, mergeCommonPath
+          , splitModuleName, unsplitModuleName, mergeCommonPath, splitLocalQualName
           , isEarlyBindName
           , toImplicitParamName, isImplicitParamName, plainImplicitParamName
           , namedImplicitParamName, splitImplicitParamName
@@ -78,12 +78,22 @@ type Names = [Name]
 -- such that they can be compared too. (h1 > h2 => name1 > name2)
 -- The hash is case-insensitive, just like comparisions on names.
 -- Use 'nameCaseEqual' for case-sensitive comparisions.
+--
+-- Notes:
+-- - We use `nameLocal` for the locally qualified name in the module (`int/show`)
+-- - The stem is the plain name and operators are not parenthesized (`++`)
+-- - The stem should always be a valid identifier; this means that an operator
+--   must keep ending with symbols. When hiding names etc, we can get names like `@temp12-++` for example
+-- - We assume that users cannot start identifiers with an `@`. (We may in the future allow
+--   user identifiers to contain `@` though after the first character.)
+-- - Plain module names have an empty local qualifier and stem
+-- - If there is a local qualifier, the stem cannot be empty
 data Name  = Name
-             { nameModule     :: !String
+             { nameModule     :: !String        -- module name (`std/core`)
              , hashModule     :: !Int
-             , nameLocalQual  :: !String
+             , nameLocalQual  :: !String        -- local qualifier (`int`)
              , hashLocalQual  :: !Int
-             , nameStem       :: !String
+             , nameStem       :: !String        -- the stem (`show`)
              , hashStem       :: !Int
              }
 
@@ -160,17 +170,24 @@ labelNameCompare (Name m1 hm1 l1 hl1 n1 hn1) (Name m2 hm2 l2 hl2 n2 hn2)
       lg -> lg
 
 
+isIdChar :: Char -> Bool
 isIdChar c
   = (isAlphaNum c || c == '_' || c == '@' || c == '-')
 
+isIdStartChar :: Char -> Bool
+isIdStartChar c
+  = (isAlpha c || c == '_' || c == '@')
+
+isIdEndChar :: Char -> Bool
+isIdEndChar c
+  = isIdChar c || c == '\''
+
 isSymbolId :: String -> Bool
-isSymbolId s
-  = case s of
-      c:cs -> not (isIdStartChar c) || any (not . isIdChar) cs
-      _    -> False
-  where
-    isIdStartChar c  = (isAlpha c || c == '_' || c == '@')
-    isIdEndChar c    = (c == '\'' || c == '?')
+isSymbolId "" = False
+isSymbolId s  = not (isIdStartChar (head s)) || not (isIdEndChar (last s))
+  -- where
+  --
+  --   isIdEndChar c    = (c == '\'' || c == '?')
 
 wrapId :: String -> String
 wrapId s
@@ -193,7 +210,7 @@ showPlain (Name m _ l _ n _)
 
 instance Show Name where
   show name
-   = showName False name
+   = showExplicit name
 
 instance Pretty Name where
   pretty name
@@ -362,10 +379,10 @@ nameIsNil name
   = null (nameStem name) && null (nameModule name)
 
 qualify :: Name -> Name -> Name
-qualify (Name m hm _ 0 _ 0) (Name _ 0 l hl n hn)  = Name m hm l hl n hn
+qualify (Name m hm _ 0 _ 0) (Name _ 0 l hl n hn)     = Name m hm l hl n hn
 qualify (Name m1 _ _ 0 _ 0) name@(Name m2 _ _ _ _ _) | m1 == m2 = name
 qualify n1 n2
-  = failure ("Common.Name.qualify: Cannot use qualify on qualified names: " ++ show (n1,n2))
+  = failure ("Common.Name.qualify: illegal qualification: " ++ show (n1,n2))
 
 unqualify :: Name -> Name
 unqualify (Name _ _ l hl n hn)
@@ -376,8 +393,8 @@ qualifier (Name m hm _ _ _ _)
   = Name m hm "" 0 "" 0
 
 nameAsModuleName :: Name -> Name
-nameAsModuleName name
-  = newModuleName (showPlain name)
+nameAsModuleName (Name m _ l _ n _)
+  = newModuleName (join m (join l n))
 
 qualifyLocally :: Name -> Name -> Name
 qualifyLocally (Name loc _ _ 0 _ 0) (Name m _ l _ n _)
@@ -385,18 +402,22 @@ qualifyLocally (Name loc _ _ 0 _ 0) (Name m _ l _ n _)
 qualifyLocally name1 name2
   = failure ("Common.Name.qualifyLocally: illegal qualification: " ++ showExplicit name1 ++ ", " ++ showExplicit name2)
 
+-- move the module qualifier to the local qualifier
 requalifyLocally :: Name -> Name
 requalifyLocally name@(Name m _ l _ n _)
   = if null m then name else newLocallyQualified "" (join m l) n
 
+-- only keep the stem
 unqualifyFull :: Name -> Name
 unqualifyFull (Name _ _ _ _ n hn)
   = Name "" 0 "" 0 n hn
 
+-- full qualifier: module + local qualifier
 fullQualifier :: Name -> String
 fullQualifier name
   = nameModule (unqualifyLocally name)
 
+-- add the local qualifier to the module qualifier
 unqualifyLocally :: Name -> Name
 unqualifyLocally name@(Name m _ l _ n _)
   = if null l then name else newQualified (join m l) n
@@ -430,6 +451,10 @@ mergeCommonPath mname name
     merge (m:ms) (n:ns) | m==n && and (zipWith (==) ms ns) = (m:ms) ++ (drop (length ms) ns)
     merge (m:ms) ns     = m : merge ms ns
     merge [] ns         = ns
+
+splitLocalQualName :: Name -> [String]
+splitLocalQualName name
+  = splitOn (=='/') (nameLocalQual name)
 
 
 ----------------------------------------------------------------
