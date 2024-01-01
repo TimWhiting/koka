@@ -1425,7 +1425,7 @@ ppCandidates :: Env -> String -> [(Name,NameInfo)] -> [(Doc,Doc)]
 ppCandidates env hint nameInfos
    = let penv = prettyEnv env
          modName = context env
-         n = 6
+         n = 100
          sorted      = sortBy (\(name1,info1) (name2,info2) ->
                                 if (qualifier name1 == modName && qualifier name2 /= modName)
                                  then LT
