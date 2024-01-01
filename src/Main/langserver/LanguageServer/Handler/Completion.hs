@@ -158,17 +158,17 @@ getCompletionInfo pos vf mod uri = do
   -- trace ("Prior: " ++ intercalate "\n" (map show context) ++ " row" ++ show row ++ " pos: " ++ show pos' ++ "\n") $ return ()
   return $! case context of
     [(Lexeme rng1 (LexKeyword "." _)), (Lexeme rng2 (LexId nm))] -> completeFunction line "" rng2 False
-    [(Lexeme rng0 (LexId partial)), (Lexeme rng1 (LexKeyword "." _)), (Lexeme rng2 (LexId nm))] -> completeFunction line (T.pack $ nameId partial) rng2 False
+    [(Lexeme rng0 (LexId partial)), (Lexeme rng1 (LexKeyword "." _)), (Lexeme rng2 (LexId nm))] -> completeFunction line (T.pack $ nameStem partial) rng2 False
     (Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexId nm)):_ -> completeFunction line "" rng2 True
-    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexId nm)):_-> completeFunction line (T.pack $ nameId partial) rng2 True
+    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexId nm)):_-> completeFunction line (T.pack $ nameStem partial) rng2 True
     (Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexString _)):_ -> completeString line ""
-    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexString _)):_ -> completeString line (T.pack $ nameId partial)
+    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexString _)):_ -> completeString line (T.pack $ nameStem partial)
     (Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexChar _)):_ -> completeChar line ""
-    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexChar _)):_ -> completeChar line (T.pack $ nameId partial)
+    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexChar _)):_ -> completeChar line (T.pack $ nameStem partial)
     (Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexInt _ _)):_ -> completeInt line ""
-    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexInt _ _)):_ -> completeInt line (T.pack $ nameId partial)
+    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexInt _ _)):_ -> completeInt line (T.pack $ nameStem partial)
     (Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexFloat _ _)):_ -> completeFloat line ""
-    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexFloat _ _)):_ -> completeFloat line (T.pack $ nameId partial)
+    (Lexeme rng0 (LexId partial)):(Lexeme rng1 (LexKeyword "." _)):(Lexeme rng2 (LexFloat _ _)):_ -> completeFloat line (T.pack $ nameStem partial)
     _ -> Nothing
   where
     completeString line partial =
@@ -229,7 +229,7 @@ typeUnifies t1 t2 =
     Just t2 ->  let (res, _, _) = (runUnifyEx 0 $ matchArguments True rangeNull tvsEmpty t1 [t2] [] Nothing) in isRight res
 
 valueCompletions :: Name -> Gamma -> CompletionInfo -> [J.CompletionItem]
-valueCompletions curModName gamma cinfo@CompletionInfo{argumentType=tp, searchTerm=search, isFunctionCompletion} = map toItem . filter matchInfo $ filter (\(n, ni) -> filterInfix cinfo $ T.pack $ nameId n) $ gammaList gamma
+valueCompletions curModName gamma cinfo@CompletionInfo{argumentType=tp, searchTerm=search, isFunctionCompletion} = map toItem . filter matchInfo $ filter (\(n, ni) -> filterInfix cinfo $ T.pack $ nameStem n) $ gammaList gamma
   where
     isHandler n = '.' == T.head n
     matchInfo :: (Name, NameInfo) -> Bool
@@ -240,7 +240,7 @@ valueCompletions curModName gamma cinfo@CompletionInfo{argumentType=tp, searchTe
         InfoImport {infoType} -> typeUnifies infoType tp
         InfoCon {infoType } -> typeUnifies infoType tp
     toItem (n, ninfo) = case ninfo of
-        InfoCon {infoCon} | isHandler $ T.pack (nameId n) -> makeHandlerCompletionItem curModName infoCon d rng (fullLine cinfo)
+        InfoCon {infoCon} | isHandler $ T.pack (nameStem n) -> makeHandlerCompletionItem curModName infoCon d rng (fullLine cinfo)
         InfoFun {infoType} -> makeFunctionCompletionItem curModName n d infoType isFunctionCompletion rng (fullLine cinfo)
         InfoVal {infoType} -> case splitFunScheme infoType of
           Just (tvars, tpreds, pars, eff, res) -> makeFunctionCompletionItem curModName n d infoType isFunctionCompletion rng (fullLine cinfo)
@@ -260,7 +260,7 @@ valueCompletions curModName gamma cinfo@CompletionInfo{argumentType=tp, searchTe
         d = show $ pretty $ infoType ninfo
 
 constructorCompletions :: Name -> Constructors -> [J.CompletionItem]
-constructorCompletions curModName cstrs = map toItem $ filter (\(n,ci) -> '.' /= T.head (T.pack $ nameId n)) (constructorsList cstrs)
+constructorCompletions curModName cstrs = map toItem $ filter (\(n,ci) -> '.' /= T.head (T.pack $ nameStem n)) (constructorsList cstrs)
   where
     toItem (n, cinfo) = makeCompletionItem curModName n k d
       where
@@ -306,7 +306,7 @@ makeCompletionItem curModName n k d =
     command
     xdata
   where
-    label = T.pack $ nameId n
+    label = T.pack $ nameStem n
     labelDetails = Nothing
     kind = Just k
     tags = Nothing
@@ -314,7 +314,7 @@ makeCompletionItem curModName n k d =
     doc = Just $ J.InL $ T.pack $ nameModule n
     deprecated = Just False
     preselect = Nothing
-    sortText = Just $ if nameId curModName == nameModule n then T.pack $ "0" ++ nameId n else T.pack $ "2" ++ nameId n
+    sortText = Just $ if nameStem curModName == nameModule n then T.pack $ "0" ++ nameStem n else T.pack $ "2" ++ nameStem n
     filterText = Nothing
     insertText = Nothing
     insertTextFormat = Nothing
@@ -349,7 +349,7 @@ makeFunctionCompletionItem curModName funName d funType accessor rng line =
     command
     xdata
     where
-      label = T.pack $ nameId funName
+      label = T.pack $ nameStem funName
       indentation = T.length $ T.takeWhile (== ' ') line
       trailingFunIndentation = T.replicate indentation " "
       labelDetails = Nothing
@@ -359,7 +359,7 @@ makeFunctionCompletionItem curModName funName d funType accessor rng line =
       doc = Just $ J.InL $ T.pack $ nameModule funName
       deprecated = Just False
       preselect = Nothing
-      sortText = Just $ if nameId curModName == nameModule funName then "0" <> label else "2" <> label
+      sortText = Just $ if nameStem curModName == nameModule funName then "0" <> label else "2" <> label
       filterText = Just label
       insertText = Nothing
       insertTextFormat = Just InsertTextFormat_Snippet
@@ -416,7 +416,7 @@ makeHandlerCompletionItem curModName conInfo d r line =
     clauseIndentation = T.replicate indentation " "
     clauseBodyIndentation = T.replicate (indentation + 2) " "
     typeName = conInfoTypeName conInfo
-    typeNameId = T.replace ".hnd-" "" $ T.pack $ nameId typeName
+    typeNameId = T.replace ".hnd-" "" $ T.pack $ nameStem typeName
     label = "handler for " <> typeNameId
     labelDetails = Nothing
     kind = Just J.CompletionItemKind_Snippet
@@ -425,7 +425,7 @@ makeHandlerCompletionItem curModName conInfo d r line =
     doc = Just $ J.InL $ T.pack $ nameModule typeName
     deprecated = Just False
     preselect = Nothing
-    sortText = Just $ if nameId curModName == nameModule typeName then "0" <> typeNameId else "2" <> typeNameId
+    sortText = Just $ if nameStem curModName == nameModule typeName then "0" <> typeNameId else "2" <> typeNameId
     filterText = Just typeNameId
     insertText = Nothing
     insertTextFormat = Just InsertTextFormat_Snippet

@@ -1605,7 +1605,7 @@ pub extern next( slice : sslice ) : maybe<(char,sslice)>
   js "_sslice_next"
 
 // Truncates a slice to length 0
-pub fun truncate( slice: sslice ): sslice
+pub fun slice/truncate( slice: sslice ): sslice
   Sslice(slice.str, slice.start, 0)
 
 // Gets up to (`end`-`start`) characters from the slice beginning from `start`.
@@ -1616,14 +1616,14 @@ pub fun subslice( slice: sslice, start : int, end : int ): sslice
     slice.advance(start).truncate.extend(end - start)
 
 // Gets a slice that only includes up to n characters from the start of the slice.
-pub fun take( slice: sslice, n : int): sslice
+pub fun slice/take( slice: sslice, n : int): sslice
   if n <= 0 then return slice else slice.truncate.extend(n)
 
 // Gets a slice that drops the first n characters, shrinking the length of the slice by n accordingly.
 // If the slice does not have n characters, then the slice is shrunk to an empty slice.
 //
 // If maintaining the length of the slice is important, use `advance` instead.
-pub fun drop( slice: sslice, n : int): sslice
+pub fun slice/drop( slice: sslice, n : int): sslice
   if n <= 0 then return slice else slice.advance(n).truncate.extend(slice.count - n)
 
 // Apply a function for each character in a string slice.

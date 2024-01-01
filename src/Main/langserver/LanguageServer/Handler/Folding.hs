@@ -17,7 +17,7 @@ import qualified Language.LSP.Protocol.Message as J
 import qualified Language.LSP.Protocol.Lens as J
 import Language.LSP.Protocol.Types (FoldingRangeKind(FoldingRangeKind_Region))
 import Language.LSP.Server (Handlers, requestHandler)
-import Common.Name (nameNil, Name (nameId))
+import Common.Name (Name (..))
 import qualified Common.Range            as R
 import Common.Range (Pos(..), Ranged (getRange))
 import Common.Syntax
@@ -155,7 +155,7 @@ makeFoldingNoName r = [J.FoldingRange lineStart (Just charStart) lineEnd (Just c
 
 makeFolding :: R.Range -> Name -> [J.FoldingRange]
 makeFolding r n =
-  [J.FoldingRange lineStart (Just charStart) lineEnd (Just charEnd) (Just J.FoldingRangeKind_Region) (Just (T.pack $ nameId n)) |  rangeSpansLine r]
+  [J.FoldingRange lineStart (Just charStart) lineEnd (Just charEnd) (Just J.FoldingRangeKind_Region) (Just (T.pack $ nameStem n)) |  rangeSpansLine r]
   where J.Range {_start=J.Position{_line=lineStart, _character=charStart}, _end=J.Position{_line=lineEnd, _character=charEnd}} = toLspRange r
 
 
