@@ -240,17 +240,6 @@ pub noinline extern "@open"<e1::E,e2::E,a,b>( x : a ) : e2 b
 // References
 // ----------------------------------------------------------------------------
 
-// The predicate `:hdiv<h,a,e>` signifies that if the type `:a` contains a reference to `:h`,
-// then the effect `:e` must contain the divergent effect (`:div`). This constraint is generated
-// when reading from the heap (see `(!)`) and is necessary to catch cases where code can diverge
-// by storing self referential functions in the heap.
-pub type hdiv :: (H,V,E) -> P
-
-// The predicate `:ediv<x,a,e>` signifies that if the type `:a` contains a reference to effect constant `:x",
-// then the effect `:e` must contain the divergent effect (`:div`). This constraint is generated
-// for operations on first-class effects where code can diverge through operations.
-pub type ediv :: (X,V,E) -> P
-
 
 // A reference `:ref<h,a>` points to a value of type `:a` in heap `:h`.
 pub type ref :: (H,V) -> V
@@ -268,7 +257,7 @@ pub inline extern set( ^ref : ref<h,a>, assigned : a) : <write<h>> ()
   js inline "((#1).value = #2)"
 
 // Read the value of a reference.
-pub inline extern ref/(!) : forall<h,a,e> ( ref : ref<h,a>) -> <read<h>|e> a with(hdiv<h,a,e>)
+pub inline extern ref/(!) : forall<h,a,e> ( ref : ref<h,a>) -> <read<h>|e> a
   c  "kk_ref_get"
   cs inline "#1.Value"
   js inline "#1.value"
@@ -278,7 +267,7 @@ pub inline extern ref/(!) : forall<h,a,e> ( ref : ref<h,a>) -> <read<h>|e> a wit
 // getting the vector into a local variable and then setting it back into the reference later
 // would mean that we hold on to a copy (and we can't update the vector in place then!).
 // In contrast, this function passes the ownership to the given function.
-pub inline extern modify : forall<h,a,b,e> ( ref : ref<h,a>, f : forall<s> local-var<s,a> -> <local<s>|e> b) -> <read<h>,write<h>|e> b with(hdiv<h,a,e>)
+pub inline extern modify : forall<h,a,b,e> ( ref : ref<h,a>, f : forall<s> local-var<s,a> -> <local<s>|e> b) -> <read<h>,write<h>|e> b
   c  "kk_ref_modify"
   js inline "((#2)(#1))"
 
@@ -311,7 +300,7 @@ pub inline extern local-set<a,s,e>( ^v: local-var<s,a>, assigned: a) : <local<s>
   js inline "((#1).value = #2)"
 
 // Read the value of a local variable.
-pub inline extern local-get : forall<a,s,e> (v: local-var<s,a>) -> <local<s>|e> a with(hdiv<s,a,e>)
+pub inline extern local-get : forall<a,s,e> (v: local-var<s,a>) -> <local<s>|e> a
   c  "kk_ref_get"
   cs inline "#1.Value";
   js inline "((#1).value)";

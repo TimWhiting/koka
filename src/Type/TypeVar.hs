@@ -374,8 +374,8 @@ instance HasOrderedTypeVar a => HasOrderedTypeVar [a] where
 instance HasTypeVar Type where
   sub `substitute` tp
     = case tp of
-        TForall vars preds tp   -> let sub' = subRemove vars sub
-                                   in TForall vars (sub' |-> preds) (sub' |-> tp)
+        TForall vars tp   -> let sub' = subRemove vars sub
+                                   in TForall vars (sub' |-> tp)
         TFun args effect result -> TFun (map (\(name,tp) -> (name,sub `substitute` tp)) args) (sub `substitute` effect) (sub `substitute` result)
         TCon tcon               -> TCon tcon
         TVar tvar               -> subFind tvar sub
@@ -384,7 +384,7 @@ instance HasTypeVar Type where
 
   ftv tp
     = case tp of
-        TForall vars preds tp   -> tvsRemove vars (tvsUnion (ftv preds) (ftv tp))
+        TForall vars tp   -> tvsRemove vars (ftv tp)
         TFun args effect result -> tvsUnions (ftv effect : ftv result : map (ftv . snd) args)
         TCon tcon               -> tvsEmpty
         TVar tvar               -> tvsSingle tvar
@@ -393,7 +393,7 @@ instance HasTypeVar Type where
 
   btv tp
     = case tp of
-        TForall vars preds tp   -> tvsInsertAll vars (tvsUnion (ftv preds) (btv tp))
+        TForall vars tp   -> tvsInsertAll vars (btv tp)
         TFun args effect result -> tvsUnions (btv effect : btv result : map (btv . snd) args)
         TSyn syn xs tp          -> btv tp
         TApp tp arg             -> tvsUnion (btv tp) (btv arg)
@@ -407,34 +407,12 @@ instance HasTypeVar Name where
 instance HasOrderedTypeVar Type where
   odftv tp
     = case tp of
-        TForall vars preds tp   -> filter (\tv -> not (tv `elem` vars)) (odftv tp ++ odftv preds)
+        TForall vars tp   -> filter (\tv -> not (tv `elem` vars)) (odftv tp)
         TFun args effect result -> concatMap odftv (map snd args ++ [effect,result])
         TCon tcon               -> []
         TVar tvar               -> [tvar]
         TApp tp arg             -> odftv tp ++ odftv arg
         TSyn syn xs tp          -> odftv tp ++ concatMap odftv xs
-
-
-instance HasTypeVar Pred where
-  subst `substitute` pred
-    = case pred of
-        PredSub sub super      -> PredSub (subst `substitute` sub) (subst `substitute` super)
-        PredIFace name args    -> PredIFace name (subst `substitute` args)
-
-  ftv pred
-    = case pred of
-        PredSub sub super      -> tvsUnion (ftv sub) (ftv super)
-        PredIFace name args    -> ftv args
-
-  btv pred
-    = tvsEmpty
-
-instance HasOrderedTypeVar Pred where
-  odftv pred
-    = case pred of
-        PredSub sub super      -> odftv [sub,super]
-        PredIFace name args    -> odftv args
-
 
 {--------------------------------------------------------------------------
   Strictly positive and negative type variables
@@ -456,7 +434,7 @@ negative = posneg False
 posneg :: Bool -> Type -> Tvs
 posneg isPos tp
   = case tp of
-      TForall vars preds tp   -> tvsRemove vars (posneg isPos tp)
+      TForall vars tp   -> tvsRemove vars (posneg isPos tp)
       TFun args effect result -> tvsUnions (posneg isPos effect : posneg isPos result : map (posneg (not isPos) . snd) args)
       TCon tcon               -> tvsEmpty
       TVar tvar               -> if (isPos) then tvsSingle tvar else tvsEmpty
@@ -486,11 +464,11 @@ freshTypeVar kind flavour
 matchType :: Type -> Type -> Bool
 matchType tp1 tp2
   = case (expandSyn tp1,expandSyn tp2) of
-      (TForall vs1 ps1 t1, TForall vs2 ps2 t2)  -> if (vs1==vs2)
-                                                    then (matchPreds ps1 ps2 && matchType t1 t2)
+      (TForall vs1 t1, TForall vs2 t2)  -> if vs1==vs2
+                                                    then matchType t1 t2
                                                     else if (length vs1 == length vs2 && all (\(v1,v2) -> getKind v1 == getKind v2) (zip vs1 vs2))
                                                           then let sub = subNew (zip vs1 (map TVar vs2))
-                                                               in (matchPreds (sub |-> ps1) ps2 && matchType (sub |-> t1) t2)
+                                                               in matchType (sub |-> t1) t2
                                                           else False
       (TFun pars1 eff1 t1, TFun pars2 eff2 t2)  -> (matchTypes (map snd pars1) (map snd pars2) && matchEffect eff1 eff2 && matchType t1 t2)
       (TCon c1, TCon c2)                        -> c1 == c2
@@ -504,16 +482,6 @@ matchTypes ts1 ts2
 
 matchEffect eff1 eff2
   = matchType (orderEffect eff1) (orderEffect eff2)
-
-matchPreds ps1 ps2
-  = and (zipWith matchPred ps1 ps2)
-
-matchPred :: Pred -> Pred -> Bool
-matchPred p1 p2
-  = case (p1,p2) of
-      (PredSub sub1 sup1, PredSub sub2 sup2)  -> (matchType sub1 sub2 && matchType sup1 sup2)
-      (PredIFace n1 ts1, PredIFace n2 ts2)    -> (n1 == n2 && matchTypes ts1 ts2)
-      (_,_) -> False
 
 
 

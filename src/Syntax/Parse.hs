@@ -376,7 +376,7 @@ externDecl dvis
                              lift :: ValueBinder UserType (Maybe UserExpr) -> ValueBinder (Maybe UserType) (Maybe UserExpr)
                              lift (ValueBinder name tp expr rng1 rng2) = ValueBinder name (Just tp) expr rng1 rng2
                          genParArgs tp -- checks the type
-                         return (map lift pars,pinfos,genArgs pars,tp,\body -> promote [] tpars [] (Just (Just teff, tres)) body)
+                         return (map lift pars,pinfos,genArgs pars,tp,\body -> promote [] tpars (Just (Just teff, tres)) body)
                  (exprs,rng) <- externalBody
                  if (inline == InlineAlways)
                   then return [DefExtern (External name tp pinfos nameRng (combineRanges [krng,rng]) exprs vis fip doc)]
@@ -400,7 +400,6 @@ externDecl dvis
           TpQuan QSome _ _ _ -> fail "external types cannot contain unspecified ('_') types"
           TpQuan QExists _ _ _ -> fail "external types cannot contain existential types"
           TpQuan _ _ t _ -> genParArgs t
-          TpQual _ t     -> genParArgs t
           TpParens t _   -> genParArgs t
           TpAnn t _      -> genParArgs t
           TpFun pars _ _ _ -> return $ genFunParArgs pars
@@ -1250,23 +1249,20 @@ funDecl toplevel rng doc vis inline fip
   = do spars <- squantifier
        -- tpars <- aquantifier  -- todo: store somewhere
        (name,nameRng) <- funid toplevel
-       (tpars,pars,pinfos,parsRng,mbtres,preds,ann) <- funDef True {-allowBorrow-} True {- allow implicits -}
+       (tpars,pars,pinfos,parsRng,mbtres,ann) <- funDef True {-allowBorrow-} True {- allow implicits -}
        body   <- bodyexpr
-       let fun = promote spars tpars preds mbtres
+       let fun = promote spars tpars mbtres
                   (Lam pars body (combineRanged rng body))
        return (Def (ValueBinder name () (ann fun) nameRng nameRng) (combineRanged rng fun) vis
                        (defFunEx pinfos fip) inline doc)
 
 -- fundef: forall parameters, parameters, (effecttp, resulttp), annotation
-funDef :: Bool -> Bool -> LexParser ([TypeBinder UserKind],[ValueBinder (Maybe UserType) (Maybe UserExpr)], [ParamInfo], Range, Maybe (Maybe UserType, UserType),[UserType], UserExpr -> UserExpr)
+funDef :: Bool -> Bool -> LexParser ([TypeBinder UserKind],[ValueBinder (Maybe UserType) (Maybe UserExpr)], [ParamInfo], Range, Maybe (Maybe UserType, UserType),UserExpr -> UserExpr)
 funDef allowBorrow allowImplicits
   = do tpars  <- typeparams
        (pars, pinfos, transform, rng) <- parameters allowBorrow True {-allowDefault-} allowImplicits
        resultTp <- annotRes
-       preds <- do keyword "with"
-                   parens (many1 predicate)
-                <|> return []
-       return (tpars,pars,pinfos,rng,resultTp,preds,transform)
+       return (tpars,pars,pinfos,rng,resultTp,transform)
 
 annotRes :: LexParser (Maybe (Maybe UserType,UserType))
 annotRes
@@ -1578,9 +1574,9 @@ funblock
 lambda alts
   = do rng <- keyword "fn" -- keywordOr "fn" alts
        spars <- squantifier
-       (tpars,pars,_,parsRng,mbtres,preds,ann) <- funDef False {-allowBorrow-} True {-allow implicits-}
+       (tpars,pars,_,parsRng,mbtres,ann) <- funDef False {-allowBorrow-} True {-allow implicits-}
        body <- bodyexpr
-       let fun = promote spars tpars preds mbtres
+       let fun = promote spars tpars mbtres
                   (Lam pars body (combineRanged rng body))
        return (ann fun)
 
@@ -2246,7 +2242,7 @@ ptype
   <|>
     pquanSome
   <|>
-    do tqual
+    do tarrow
   <?> "type"
 
 
@@ -2265,7 +2261,7 @@ pquanSome
   = pquantifier QSome ptype
 
 pquanForall
-  = pquantifier QForall tqual
+  = pquantifier QForall tarrow
 
 pquanExists
   = pquantifier QExists ptype
@@ -2277,23 +2273,6 @@ pquantifier quan next
        tp <- next
        let makeQuan = \tname tp -> TpQuan quan tname tp (combineRanged rng tp)
        return (foldr makeQuan tp params)
-
-
-tqual
-  = do tp  <- tarrow
-       pqualifier tp
-
-pqualifier tp
-  = do keyword "with"
-       ps <- parens (many1 predicate)
-       return (TpQual ps tp)
-  <|>
-    return tp
-
-predicate
-  = do tp <- tid
-       typeApp tp
-  <?> "predicate" -- fail "predicates are not allowed for now"
 
 tarrow :: LexParser UserType
 tarrow
@@ -2581,15 +2560,12 @@ katom
     do rng <- specialConId "S"
        return (KindCon nameKindScope rng)
   <|>
-    do rng <- specialConId "P"
-       return (KindCon nameKindPred rng)
-  <|>
     do rng <- specialConId "HX"
        return (KindCon nameKindHandled rng)
   <|>
     do rng <- specialConId "HX1"
        return (KindCon nameKindHandled1 rng)
-  <?> "kind constant (V,E,H,S,X,HX,HX1, or P)"
+  <?> "kind constant (V,E,H,S,X,HX, or HX1)"
 
 -----------------------------------------------------------
 -- Braces and parenthesis

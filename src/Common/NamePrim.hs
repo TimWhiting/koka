@@ -142,7 +142,8 @@ module Common.NamePrim
           , nameTpOptional
           , nameTpArray, nameTpVector, nameVector
 
-          , nameTpTotal, nameTpDiv, nameTpPartial, nameTpPure
+          , nameTpDiv, nameTpEDiv, nameTpHDiv, nameTpRDiv 
+          , nameTpTotal, nameTpPartial, nameTpPure
           , nameTpST
           , nameTpWrite, nameTpRead
           , nameTpIO
@@ -152,14 +153,13 @@ module Common.NamePrim
           , nameTpTuple, isNameTpTuple
           , nameAnd, nameOr
 
-          , namePredHeapDiv, namePredEffDiv
 
           -- * Kind constructors
           , nameKindStar, nameKindFun
           , nameKindLabel
-          , nameKindPred, nameKindEffect
           , nameKindHeap, nameKindScope
           , nameKindHandled1, nameKindHandled
+          , nameKindEffect
 
           , namesSameSize
 
@@ -380,9 +380,6 @@ nameLocalSet    = coreTypesName "local-set"
 nameLocalGet    = coreTypesName "local-get"
 nameDeref       = qualifyLocally (newModuleName "ref") (coreTypesName "!")
 nameByref       = coreTypesName "byref"
-
-namePredHeapDiv = coreTypesName "hdiv"
-namePredEffDiv  = coreTypesName "ediv"
 nameReturn      = coreTypesName "@return"
 
 nameTpRef       = coreTypesName "ref"
@@ -395,6 +392,9 @@ nameRunLocal    = coreTypesName "local-scope"
 
 nameTpTotal     = nameEffectEmpty -- coreTypesName "total"
 nameTpDiv       = coreTypesName "div"
+nameTpHDiv      = coreTypesName "hdiv"
+nameTpEDiv      = coreTypesName "ediv"
+nameTpRDiv      = coreTypesName "rdiv"
 nameTpAlloc     = coreTypesName "alloc"
 nameTpRead      = coreTypesName "read"
 nameTpWrite     = coreTypesName "write"
@@ -543,7 +543,6 @@ isPrimitiveModule name
 nameKindStar    = newName "V"
 nameKindLabel   = newName "X"
 nameKindFun     = newName "->"
-nameKindPred    = newName "P"
 nameKindEffect  = newName "E"
 nameKindHeap    = newName "H"
 nameKindScope   = newName "S"

@@ -198,7 +198,7 @@ compileExpression maybeContents term flags loaded compileTarget program line inp
            | otherwise
            -> do (ld, f) <- compileProgram' maybeContents term flags{ evaluate = False } (loadedModules loaded) Object {-compileTarget-}  "<interactive>" programDef []
                  let tp = infoType (gammaFind qnameExpr (loadedGamma ld))
-                     (_,_,rho) = splitPredType tp
+                     (_,rho) = splitQuantType tp
                  -- _ <- liftError $ checkUnhandledEffects flags loaded nameExpr rangeNull rho
                  case splitFunType rho of
                    -- return unit: just run the expression (for its assumed side effect)
@@ -207,7 +207,7 @@ compileExpression maybeContents term flags loaded compileTarget program line inp
                    -- check if there is a show function, or use generic print if not.
                    Just (_,_,tres)
                       -> do -- ld <- compileProgram' term flags (loadedModules ld0) Nothing "<interactive>" programDef
-                            let matchShow (_,info) = let (_,_,itp) = splitPredType (infoType info)
+                            let matchShow (_,info) = let (_,itp) = splitQuantType (infoType info)
                                                      in case splitFunType itp of
                                                           Just (targ:targs,_,_) | tres == snd targ && all (isOptional . snd) targs
                                                             -> True

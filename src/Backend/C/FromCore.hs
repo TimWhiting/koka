@@ -350,7 +350,7 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
                              -- will have InfoArity and call it directly (so it cannot be a function_t)
                              case splitFunScheme tp of
                                Nothing -> failure ("Backend.C.FromCore.getTopDefDecl: function def has not a function type: " ++ show (name,tp))
-                               Just (_,_,argTps,_,resTp)
+                               Just (_,argTps,_,resTp)
                                  -> do names <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
                                        let tnames = [TName name tp | (name,(_,tp)) <- zip names argTps]
                                            app    = App expr [Var tname InfoNone | tname <- tnames]
@@ -380,7 +380,7 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
 
     resTp = case splitFunScheme tp of
                     Nothing -> tp
-                    Just (_,_,argTps,_,resTp0) -> resTp0
+                    Just (_,argTps,_,resTp0) -> resTp0
 
     genFunDef :: [TName] -> Expr -> Asm ()
     genFunDef params body
@@ -1269,7 +1269,7 @@ data CType
 cType :: Type -> CType
 cType tp
   = case tp of
-      TForall vars preds t
+      TForall vars t
         -> cType t
       TFun pars eff res
         -> CFun (map (cType . snd) pars) (cType res)
@@ -1659,7 +1659,7 @@ genNextPatterns :: (Doc -> Doc -> Doc) -> Doc -> Type -> [Pattern] -> [(Doc,Patt
 genNextPatterns select exprDoc tp []
   = []
 genNextPatterns select exprDoc tp patterns
-  = let (vars,preds,rho) = splitPredType tp
+  = let (vars,rho) = splitQuantType tp
     in case expandSyn rho of
          TFun args eff res
           -> case patterns of
@@ -1726,7 +1726,7 @@ genExprPrim expr
 
      Var vname (InfoExternal formats)
        -> case splitFunScheme (typeOf vname) of
-            Just(_,_,tpars,teff,tres)
+            Just(_,tpars,teff,tres)
               -> do names <- newVarNames (length tpars)
                     let tnames = [TName name tp | (name,(_,tp)) <- zip names tpars]
                     genExpr $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames])
@@ -1736,7 +1736,7 @@ genExprPrim expr
 
 genConEtaExpand cexpr
   = case splitFunScheme (typeOf cexpr) of
-      Just (_,_,tpars,teff,tres)
+      Just (_,tpars,teff,tres)
         -> do names <- newVarNames (length tpars)
               let tnames = [TName name tp | (name,(_,tp)) <- zip names tpars]
               genExpr $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames])
@@ -1794,7 +1794,7 @@ genPure expr
      --   -> genWrapExternal name formats  -- unapplied inlined external: wrap as function
      Var name info
        -> case splitFunScheme (typeOf name) of
-            Just (_,_,argTps,eff,resTp) | isQualified (getName name) && isInfoArity info -- wrap bare top-level functions
+            Just (_,argTps,eff,resTp) | isQualified (getName name) && isInfoArity info -- wrap bare top-level functions
               -> do argNames <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
                     let tnames = [TName name tp | (name,(_,tp)) <- zip argNames argTps]
                         body   = (App expr [Var name InfoNone | name <- tnames])
@@ -1901,7 +1901,7 @@ genAppNormal (Var (TName conTagFieldsAssign typeAssign) _) (Var reuseName (InfoC
   = do tmp <- genVarName "con"
        let setTag = tmp <.> text "->_base._block.header.tag = (kk_tag_t)" <.> parens (text (show tag)) <.> semi
            fieldNames = case splitFunScheme typeAssign of
-                          Just (_,_,args,_,_) -> tail (tail (map fst args))
+                          Just (_,args,_,_) -> tail (tail (map fst args))
                           _ -> failure ("Backend.C.FromCore: illegal conAssignFields type: " ++ show (pretty typeAssign))
        (decls, tmpDecl, assigns, result) <- genAssignFields tmp conName conRepr reuseName fieldNames fieldValues
        return (decls ++ [tmpDecl, setTag] ++ assigns, result)
@@ -1909,7 +1909,7 @@ genAppNormal (Var (TName conTagFieldsAssign typeAssign) _) (Var reuseName (InfoC
 genAppNormal (Var (TName conFieldsAssign typeAssign) _) (Var reuseName (InfoConField conName conRepr nameNil):fieldValues) | conFieldsAssign == nameConFieldsAssign
   = do tmp <- genVarName "con"
        let fieldNames = case splitFunScheme typeAssign of
-                          Just (_,_,args,_,_) -> tail (map fst args)
+                          Just (_,args,_,_) -> tail (map fst args)
                           _ -> failure ("Backend.C.FromCore: illegal conAssignFields type: " ++ show (pretty typeAssign))
        (decls, tmpDecl, assigns, result) <- genAssignFields tmp conName conRepr reuseName fieldNames fieldValues
        return (decls ++ [tmpDecl] ++ assigns, result)
@@ -1973,7 +1973,7 @@ genAppNormal f args
                                           _ -> do (fdecl,fname) <- genVarBinding f
                                                   return ([fdecl],ppName (getName fname))
                        let (cresTp,cargTps) = case splitFunScheme (typeOf f) of
-                                               Just (_,_,argTps,_,resTp)
+                                               Just (_,argTps,_,resTp)
                                                  -> (ppType resTp, tupled ([text "kk_function_t"] ++
                                                                            (map (ppType . snd) argTps) ++
                                                                            [text "kk_context_t*"]))
@@ -2759,7 +2759,7 @@ tparameters tnames
 resultType :: Type -> Type
 resultType tp
   = case splitFunScheme tp of
-      Just (_,_,_,_,resTp) -> resTp
+      Just (_,_,_,resTp) -> resTp
       _ -> failure ("Backend.C.FromCore.resultType: not a function type: " ++ show (pretty tp))
 
 unzip4 xs = unzipx4 [] [] [] [] xs

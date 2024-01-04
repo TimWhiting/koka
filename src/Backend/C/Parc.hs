@@ -125,13 +125,10 @@ parcExpr expr
                 else do
                   -- parcTrace $ "Wrapping: " ++ show tname
                   case splitFunScheme $ typeOf expr of
-                    Just (ts, [], as, eff, _)
+                    Just (ts, as, eff, _)
                       -> do parcExpr $ addTypeLambdas ts $ addLambdas as eff
                               $ addApps (map (flip Var InfoNone . uncurry TName) as) $ addTypeApps ts
                               $ Var tname info
-                    Just _
-                      -> do parcTrace $ "Preds not empty: " ++ show (typeOf expr)
-                            return expr
                     Nothing
                       -> return expr
 
@@ -1023,7 +1020,7 @@ extractDataDefType :: Type -> Maybe Name
 extractDataDefType tp
   = case expandSyn tp of
       TApp t _      -> extractDataDefType t
-      TForall _ _ t -> extractDataDefType t
+      TForall _ t -> extractDataDefType t
       TCon tc       -> Just (typeConName tc)
       _             -> Nothing
 

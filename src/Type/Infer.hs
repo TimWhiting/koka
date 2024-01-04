@@ -432,9 +432,8 @@ inferRecDef topLevel infgamma def
                                           Core.TypeLam tvars ((CoreVar.|~>) [(Core.TName (unqualify name) (Core.defType coreDef), Core.TypeApp (Core.Var (Core.TName (unqualify name) (resTp1)) Core.InfoNone) (map TVar tvars))] expr)
                                    _  -> resCore1
 
-                  coref2      <- checkEmptyPredicates rng
                   resTp2      <- subst resTp1
-                  coreDef2    <- subst (Core.Def (Core.defName coreDef) resTp2 (coref2 coreExpr) (Core.defVis coreDef) (Core.defSort coreDef) (Core.defInline coreDef) (Core.defNameRange coreDef) (Core.defDoc coreDef))
+                  coreDef2    <- subst (Core.Def (Core.defName coreDef) resTp2 coreExpr (Core.defVis coreDef) (Core.defSort coreDef) (Core.defInline coreDef) (Core.defNameRange coreDef) (Core.defDoc coreDef))
 
                   if (False && not topLevel && not (CoreVar.isTopLevel coreDef2) && not (isRho (Core.typeOf coreDef2)))
                    then do -- trace ("local rec with free vars: " ++ show coreDef2) $ return ()
@@ -931,9 +930,9 @@ inferExpr propagated expect (Inject label expr behind rng)
        let tfun r = typeFun [] eff r
            prop = case propagated of
                     Nothing  -> Nothing
-                    Just (ptp,prng) -> case splitPredType ptp of
-                                        (foralls,preds,rho)
-                                          -> Just (quantifyType foralls $ qualifyType preds $ tfun rho, prng)
+                    Just (ptp,prng) -> case splitQuantType ptp of
+                                        (foralls,rho)
+                                          -> Just (quantifyType foralls $ tfun rho, prng)
        (exprTp,exprEff,exprCore) <- inferExpr prop Instantiated expr
 
        res <- Op.freshTVar kindStar Meta
@@ -1011,7 +1010,7 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
        res  <- case (propagated,ret) of
                 (Nothing,Just expr) -> do (tp,_,_) <- inferExpr propagated Instantiated expr
                                           case splitFunScheme tp of
-                                            Just (_,_,_,_,retTp) -> return retTp
+                                            Just (_,_,_,retTp) -> return retTp
                                             _ -> Op.freshTVar kindStar Meta
                 (Just (retTp,_),_) -> return retTp
                 _ -> Op.freshTVar kindStar Meta
@@ -1103,7 +1102,7 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
 
        -- extract handler effect
        let (actionTp1,heffect) = case splitFunScheme(htp) of
-                        Just (_,_,[arg],heff,hresTp) -> (snd arg,heff)
+                        Just (_,[arg],heff,hresTp) -> (snd arg,heff)
                         _ -> failure $ "Type.Infer.inferHandler: unexpected handler type: " ++ show (ppType penv htp)
 
        if (not (labelIsLinear heff))
@@ -1135,7 +1134,7 @@ containsLocalEffect eff
 
 removeLocalEffect penv funTp
   = case splitFunScheme  funTp of
-      Just (foralls,[],argTps,eff,resTp)
+      Just (foralls,argTps,eff,resTp)
         -> let (ls,tl) = extractOrderedEffect eff
            in quantifyType foralls (TFun argTps (foldr effectExtend tl (filter (\l -> labelName l /= nameTpLocal) ls)) resTp)
       _ -> failure $ "Type.Infer.removeLocaEffect: unexpected type:" ++ show (ppType penv funTp)
@@ -1638,9 +1637,9 @@ inferPattern matchType branchRange (PatCon name patterns0 nameRange range) withP
 
     useSkolemizedCon coninfo gconTp range nameRange cont
       = do conResTp <- Op.freshTVar kindStar Meta
-           let conExistsTp = TForall (conInfoExists coninfo) [] (if (null (conInfoParams coninfo)) then conResTp else TFun (conInfoParams coninfo) typeTotal conResTp)
+           let conExistsTp = TForall (conInfoExists coninfo) (if (null (conInfoParams coninfo)) then conResTp else TFun (conInfoParams coninfo) typeTotal conResTp)
            withSkolemized range conExistsTp Nothing $ \conXRho0 xvars ->
-            do conXRho <- Op.instantiate nameRange (TForall (conInfoForalls coninfo) [] conXRho0)
+            do conXRho <- Op.instantiate nameRange (TForall (conInfoForalls coninfo) conXRho0)
                (iconRho,_,_)  <- instantiate nameRange gconTp
                -- traceDoc $ \env -> text " conXRho:" <+> ppType env conXRho <+> text ", versus iconRho:" <+> ppType env iconRho
                inferUnify (checkOp range) nameRange conXRho iconRho
@@ -2226,7 +2225,7 @@ matchFun nArgs mbType
       Just (tp,rng) -> do -- (rho,_,_) <- instantiate rng tp
                           -- let skolems = []
                           -- traceDoc $ \penv -> text "matchFun: " <+> ppType penv{showKinds=True,showIds=True} tp
-                          (skolems,_,rho,_) <- Op.skolemizeEx rng tp
+                          (skolems,rho,_) <- Op.skolemizeEx rng tp
                           -- traceDoc $ \penv -> text " skolemized: " <+> ppType penv rho
                           -- let sub = subNew [(tv,TVar (tv{typevarFlavour=Meta})) | tv <- skolems]
                           case splitFunType rho of

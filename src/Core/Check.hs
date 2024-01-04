@@ -209,14 +209,14 @@ check expr
               return (quantifyType tvars tp)
       TypeApp e tps
         -> do tpTForall <- check e
-              let (tvars,_,tp) = splitPredType tpTForall
+              let (tvars,tp) = splitQuantType tpTForall
               -- We can use actual equality for kinds, because any kind variables will have been
               -- substituted when doing kind application (above)
               -- when (length tps /= length tvars || or [getKind t /= getKind tp | (t,tp) <- zip tvars tps]) $
               when (length tps > length tvars || or [getKind t /= getKind tp | (t,tp) <- zip tvars tps]) $
                 failDoc (\env -> let penv = env{coreShowTypes=True,showKinds=True}
                                  in text "kind error in type application:" <+> prettyExpr expr penv </> text " applied to: " <+> ppType penv tpTForall)
-              return (tForall (drop (length tps) tvars) [] (subNew (zip tvars tps) |-> tp))
+              return (tForall (drop (length tps) tvars) (subNew (zip tvars tps) |-> tp))
       Lit lit
         -> return (typeOf lit)
 
@@ -274,7 +274,7 @@ findConstrArgs fdoc tpScrutinee con
   = do tpCon <- lookupVar con
        -- Until we add qualifiers to constructor types, the list of predicates
        -- returned by instantiate' must always be empty
-       (_,_,tpConInst,_) <- Op.instantiateNoEx rangeNull tpCon
+       (_,tpConInst,_) <- Op.instantiateNoEx rangeNull tpCon
        let Just (tpArgs, eff, tpRes) = splitFunType tpConInst
        ures <- runUnify (unify tpRes tpScrutinee)
        case ures of

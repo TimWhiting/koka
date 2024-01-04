@@ -176,13 +176,13 @@ synCopyCon modName info con
         tp = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) [TVar (TypeVar id kind Meta) | TypeVar id kind _ <- (dataInfoParams info)]
         defName = unqualify $ copyNameOf (dataInfoName info)
 
-        fullTp = let (vars,preds,rho) = splitPredType (conInfoType con)
+        fullTp = let (vars,rho) = splitQuantType (conInfoType con)
                  in case splitFunType rho of
                       Just (args,eff,res)
-                        -> TForall vars preds (TFun ([(argName,res)] ++ [(name,if not (hasAccessor name t con)
+                        -> TForall vars (TFun ([(argName,res)] ++ [(name,if not (hasAccessor name t con)
                                                                                  then t else makeOptionalType t) | (name,t) <- args]) eff res)
                       Nothing
-                        -> TForall vars preds (TFun [(argName,rho)] typeTotal rho)    -- for unary constructors, like unit
+                        -> TForall vars (TFun [(argName,rho)] typeTotal rho)    -- for unary constructors, like unit
 
         var n = Var n False rc
         app x []  = x
@@ -227,8 +227,8 @@ synAccessors modName info
                 fld = newName "@x"
 
                 dataTp = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
-                fullTp = let (foralls,preds,rho) = splitPredType tp
-                         in tForall (dataInfoParams info ++ foralls) preds $
+                fullTp = let (foralls,rho) = splitQuantType tp
+                         in tForall (dataInfoParams info ++ foralls) $
                             typeFun [(arg,dataTp)] (if isPartial then typePartial else typeTotal) rho
 
                 expr       = Ann (Lam [ValueBinder arg Nothing Nothing rng rng] caseExpr rng) fullTp rng
@@ -436,7 +436,7 @@ formatCall tp (target,ExternalCall fname)
       C _     -> (target,formatC)
       Default -> (target,formatJS)
   where
-    (foralls,preds,rho) = splitPredType tp
+    (foralls,rho) = splitQuantType tp
 
     argumentCount
       = case splitFunType rho of
@@ -704,10 +704,6 @@ infUserType expected  context userType
               tp'    <- extendInfGamma [tname'] $
                         infUserType ikind (checkQuant range) tp
               return (TpQuan quant tname' tp' rng)
-      TpQual preds tp
-        -> do preds' <- mapM (infUserType (KICon kindPred) (checkPred range)) preds
-              tp'    <- infUserType expected context tp
-              return (TpQual preds' tp')
       TpFun args effect tp rng
         -> do unify context range expected infKindStar
               args'   <- mapM (infParam infKindStar (checkArg range)) args
@@ -890,7 +886,7 @@ resolveTypeDef isRec recNames (DataType newtp params constructors range vis sort
 
 occursNegativeCon :: [Name] -> ConInfo -> Bool
 occursNegativeCon names conInfo
-  = let (_,_,rho) = splitPredType (conInfoType conInfo)
+  = let (_,rho) = splitQuantType (conInfoType conInfo)
     in case splitFunType rho of
          Just (pars,eff,res) -> any (occursNegative names) (map snd pars) || occursNegative names res
          Nothing -> False
@@ -902,7 +898,7 @@ occursNegative names tp
 occurs :: [Name] -> Bool -> Type -> Bool
 occurs names isNeg tp
   = case tp of
-      TForall vars preds tp   -> occurs names isNeg tp
+      TForall vars tp   -> occurs names isNeg tp
       TFun args effect result -> any (occurs names (not isNeg)) (map snd args) || occurs names (not isNeg) effect
                                        || occurs names isNeg result
       TCon tcon               -> -- trace ("con name: " ++ show (typeConName tcon)) $
@@ -1009,10 +1005,6 @@ resolveType idmap partialSyn userType
               return tp'
       TpQuan QExists tname tp rng
         -> todo "Kind.Infer.resolveType: existentials are not supported yet"
-      TpQual preds tp
-        -> do preds' <- mapM (resolvePredicate idmap) preds
-              tp'    <- resolveType idmap False tp
-              return (qualifyType preds' tp')
       TpFun args effect tp rng
         -> do args' <- mapM resolveParam args
               effect' <- resolveType idmap False effect
@@ -1040,16 +1032,6 @@ resolveType idmap partialSyn userType
           TpParens tp' _    -> collectArgs tp' args
           TpAnn tp' _       -> collectArgs tp' args
           _                 -> (tp, args)
-
-resolvePredicate :: M.NameMap TypeVar -> KUserType InfKind -> KInfer Pred
-resolvePredicate idmap tp
-  = do tp' <- resolveType idmap False tp
-       case tp' of
-         TApp (TCon tc) targs
-            -> return (PredIFace (typeconName tc) targs)
-         TCon tc
-            -> return (PredIFace (typeconName tc) [])
-         _  -> failure ("Kind.Infer.resolvePredicate: invalid predicate: " ++ show tp')
 
 
 resolveApp idmap partialSyn (TpVar name r,args) rng

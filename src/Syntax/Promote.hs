@@ -57,13 +57,13 @@ promoteFree bound tps
   foo : some(a,a1) forall(b,c) (a,b,a1) -> total c  = fun(x,y,z){ .. }
 --------------------------------------------------------------------------}
 
-promote :: [TypeBinder UserKind] -> [TypeBinder UserKind] -> [UserType] -> Maybe (Maybe UserType,UserType) -> UserExpr -> UserExpr
-promote somePars forallPars preds mbResTp expr
+promote :: [TypeBinder UserKind] -> [TypeBinder UserKind] -> Maybe (Maybe UserType,UserType) -> UserExpr -> UserExpr
+promote somePars forallPars mbResTp expr
   = let (argresTps,expr') = argresTypes expr
     in if (all (isRight . snd) argresTps)
         then -- no annotation, no promotion
              expr
-        else promoteEx somePars forallPars preds argresTps expr'
+        else promoteEx somePars forallPars argresTps expr'
   where
     isRight (Right rng) = True
     isRight (Left tp)   = False
@@ -102,8 +102,8 @@ promote somePars forallPars preds mbResTp expr
                                     Nothing            -> ([(nameNil, Right (getRange expr)), (nameNil, Right (getRange expr))],expr)
 
 
-promoteEx :: [TypeBinder UserKind] -> [TypeBinder UserKind] -> [UserType] -> [(Name,Either UserType Range)] -> UserExpr -> UserExpr
-promoteEx somePars forallPars preds argresTypes body
+promoteEx :: [TypeBinder UserKind] -> [TypeBinder UserKind] -> [(Name,Either UserType Range)] -> UserExpr -> UserExpr
+promoteEx somePars forallPars argresTypes body
   = let -- promote quantified variables of TpCon to TpVar
         quantified   = S.fromList (map getName somePars) `S.union` S.fromList (map getName forallPars)
         argresTypes1 = map (promoteTVars quantified) argresTypes
@@ -122,7 +122,6 @@ promoteEx somePars forallPars preds argresTypes body
         (impSome,impForall) = partition isSomeVar implicit
         fullTp = quantify QSome (somePars ++ (map toTypeBinder (names ++ impSome))) $
                  quantify QForall (forallPars ++ (map toTypeBinder impForall)) $
-                 qualify preds $
                  funTp
      in
         Ann body fullTp (combineRanged body fullTp)
@@ -164,9 +163,6 @@ extract tp
            in (lab:labs,tl)
       _ -> ([],tp)
 
-qualify [] tp = tp
-qualify preds tp = TpQual preds tp
-
 quantify :: UserQuantifier -> [UserTypeBinder] -> UserType -> UserType
 quantify quan tbinders tp
   = foldr (\tb t -> TpQuan quan tb t (combineRanged tb t)) tp tbinders
@@ -185,7 +181,6 @@ promoteTpVars :: S.NameSet -> UserType -> UserType
 promoteTpVars vars tp
   = case tp of
      TpQuan quant tb tp rng         -> TpQuan quant tb (promoteTpVars (S.delete (getName tb) vars) tp) rng
-     TpQual     preds tp            -> TpQual (map (promoteTpVars vars) preds) (promoteTpVars vars tp)
      TpFun      args effect tp rng  -> TpFun [(name,promoteTpVars vars tp) | (name,tp) <- args] (promoteTpVars vars effect) (promoteTpVars vars tp) rng
      TpApp      tp args range       -> TpApp (promoteTpVars vars tp) (map (promoteTpVars vars) args) range
      TpVar      name range          -> TpVar name range

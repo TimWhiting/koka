@@ -227,5 +227,5 @@ isHandlerFree expr
 handlerFreeFunType :: Type -> Maybe Bool
 handlerFreeFunType tp
   = case splitFunScheme tp of
-      Just (_,_,_,eff,_) -> Just (not (containsHandledEffect [] eff))
+      Just (_,_,eff,_) -> Just (not (containsHandledEffect [] eff))
       _ -> Nothing

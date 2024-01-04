@@ -555,7 +555,7 @@ extractImportsFromSynonyms imps syns
           TSyn syn args body -> qualifier (typesynName syn) : extractTypes (body:args)
           TApp con args      -> extractTypes (con:args)
           TFun args eff res  -> extractTypes (res:eff:map snd args)
-          TForall _ _ body   -> extractType body
+          TForall _ body   -> extractType body
           TCon tcon          -> [qualifier (typeConName tcon)]
           TVar _             -> []
     extractTypes tps
@@ -580,7 +580,7 @@ extractImportedSynonyms core
                                    Nothing   -> syns
           TApp con args       -> extractSynonyms (con:args)
           TFun args eff res   -> extractSynonyms (res:eff:map snd args)
-          TForall _ _ body    -> extractSynonym body
+          TForall _ body    -> extractSynonym body
           _                   -> synonymsEmpty
 
     extractSynonyms :: [Type] -> Synonyms
