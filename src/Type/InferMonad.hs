@@ -398,7 +398,7 @@ normalizeX close free tp
                           _ -> do ls' <- mapM (normalizex Pos) ls
                                   tl' <- normalizex Pos tl
                                   return (effectExtends ls' tl')
-              args' <- mapM (\(name,arg) -> do{arg' <- normalizex Neg arg; return (name,arg')}) args
+              args' <- mapM (\(name,arg) -> do {arg' <- normalizex Neg arg; return (name,arg')}) args
               res'  <- normalizex Pos res
               niceEff <- nicefyEffect eff'
               return (TFun args' niceEff res')
@@ -421,7 +421,7 @@ normalizeX close free tp
                               _ -> do ls' <- mapM (normalizex var) ls
                                       tl' <- normalizex var tl
                                       return $ effectExtends ls' tl'
-                  args' <- mapM (\(name,arg) -> do{arg' <- normalizex (vflip var) arg; return (name,arg')}) args
+                  args' <- mapM (\(name,arg) -> do {arg' <- normalizex (vflip var) arg; return (name,arg')}) args
                   res'  <- normalizex var res
                   niceEff <- nicefyEffect eff'
                   return (TFun args' niceEff res')
@@ -963,7 +963,9 @@ resolveNameEx infoFilter mbInfoFilterAmb name ctx rangeContext range
 ----------------------------------------------------------------
 
 -- An implicit expression is an expression that can be passed to an implicit parameter.
-data ImplicitExpr = ImplicitExpr{ ieDoc        :: Doc,            -- pretty expression
+data ImplicitExpr = ImplicitExpr{ ieName       :: Name,
+                                  ieArgs       :: [Name],         -- direct children
+                                  ieDoc        :: Doc,            -- pretty expression
                                   ieType       :: Type,           -- type of the expression
                                   ieExpr       :: Expr Type,      -- the expression
                                   ieDepth      :: Int,            -- depth of the recursive implicit arguments, e.g. depth `list/eq(_,_,?eq=int/eq)` is 2
@@ -1002,14 +1004,14 @@ lookupAppName allowDisambiguate name ctx range
        -- try to find a best candidate
        case pick allowDisambiguate fst iapps of
           Right (imp,(qname,info,itp,iexprs))
-            -> do -- traceDefDoc $ \penv -> text "resolved app name" <+> pretty imp
+            -> do traceDefDoc $ \penv -> text "resolved app name" <+> pretty imp
                   return (Right (itp, Var qname False range, [((iname,range),ieExpr iexpr,ieDoc iexpr) | (iname,iexpr) <- iexprs]))
           Left xs
             -> let matches = nubBy (\x y -> fst x == fst y) [(name,info) | (_,(name,info,_,_)) <- xs]
               in if (allowDisambiguate && not (null matches))
                     then do env <- getEnv
                             let hintQualify = "qualify the name to disambiguate it?"
-                            infError range (text "identifier" <+> Pretty.ppName (prettyEnv env) name <+> text "is ambiguous" <.> ppAmbiguous env hintQualify matches)
+                            infError range (text "identifier" <+> Pretty.ppName (prettyEnv env) name <+> text "is ambiguous" <.> ppAmbiguous env hintQualify matches <+> text "Got" <+> vcat [ieDoc ie | (ie,(name,info,_,_)) <- xs])
                             return (Left matches)
                     else return (Left matches)
   where
@@ -1080,7 +1082,7 @@ toImplicitAppExpr shorten penv prefix name range (iname,info,itp,iargs)
                       <.> withColor colorImplicitExpr (Pretty.ppNamePlain penv iname)
             -- coreVar = coreExprFromNameInfo iname info
        in case iargs of
-            [] -> ImplicitExpr docName itp (Var iname False range) 1 (if isLocal then [iname] else [])
+            [] -> ImplicitExpr iname (map fst iargs) docName itp (Var iname False range) 1 (if isLocal then [iname] else [])
             _  -> case splitFunType itp of
                     Just (ipars,ieff,iresTp) | any Op.isOptionalOrImplicit ipars -- eta-expand
                       -- eta-expand and resolve further implicit parameters
@@ -1104,7 +1106,7 @@ toImplicitAppExpr shorten penv prefix name range (iname,info,itp,iargs)
                               doc           = docName <.> withColor colorImplicitExpr (
                                                             parens (hcat (intersperse comma ([text "_" | _ <- fixed] ++ [ieDoc iexpr | (_,iexpr) <- iargs])))
                                                           )
-                          in ImplicitExpr doc etaTp eta depth localRoots
+                          in ImplicitExpr iname (map fst iargs) doc etaTp eta depth localRoots
                     _ -> failure ("Type.InferMonad.toImplicitAppExpr: illegal type for implicit? " ++ show range ++ ", " ++ show (ppNameType penv (name,itp)))
 
 
@@ -1112,7 +1114,7 @@ toImplicitAppExpr shorten penv prefix name range (iname,info,itp,iargs)
 -- types of (partially) inferred (fixed) arguments.
 -- Returns list of resolved names together with any required implicit arguments.
 lookupAppNames :: Int -> Bool -> (NameInfo -> Bool) -> Name -> NameContext -> Range -> Inf [(Name,NameInfo,Rho,[(Name,ImplicitExpr)])]
-lookupAppNames recurseDepth allowUnitFunVal infoFilter name ctx range | recurseDepth > 5
+lookupAppNames recurseDepth allowUnitFunVal infoFilter name ctx range | recurseDepth > 2
   = return []
 lookupAppNames recurseDepth allowUnitFunVal infoFilter name ctx range
   = do candidates0 <- lookupNames infoFilter name ctx range
@@ -1150,16 +1152,27 @@ lookupAppNames recurseDepth allowUnitFunVal infoFilter name ctx range
     resolveImplicits []  = return [[]]
     resolveImplicits implicits
       = -- recursively lookup required implicit arguments
-        sequence <$> -- cartesian product of all possible argument
+        -- trace ("resolveImplicits: " ++ show (tupled [pretty name,pretty implicits])) $
+        reduceImplicits <$> sequence <$> -- cartesian product of all possible argument
         mapM (\(pname,ptp) ->
                 let (pnameName,pnameExpr) = splitImplicitParamName pname
                 in do iexprs <- lookupImplicitNames recurseDepth
-                                    infoFilter (pnameExpr)
-                                    (implicitTypeContext ptp) (endOfRange range) -- use end of range to deprioritize with hover info
+                                  infoFilter (pnameExpr)
+                                  (implicitTypeContext ptp) (endOfRange range) -- use end of range to deprioritize with hover info
                       return [(pnameName,iexpr) | iexpr <- iexprs]
-            ) implicits
+              ) implicits
 
-
+    -- If an implicit can be created more than one way, discard duplicates, TODO: Sort by depth
+    reduceImplicits :: [[(Name,ImplicitExpr)]] -> [[(Name,ImplicitExpr)]]
+    reduceImplicits implicits =
+      let result = nubBy (\x y -> and $ zipWith equivalentImplicit x y) implicits
+      in -- trace ("reduceImplicits: " ++ show (vcat [pretty name,vcat (map (\args -> tupled (map (ieDoc . snd) args)) implicits)]) ++ "\n -> \n" ++ show (vcat [pretty name,vcat (map (\args -> tupled (map (ieDoc . snd) args)) result)])) $
+         result
+    
+    equivalentImplicit :: (Name, ImplicitExpr) -> (Name, ImplicitExpr) -> Bool
+    equivalentImplicit (name1, expr1) (name2, expr2) = 
+      ieName expr1 == ieName expr2 && ieArgs expr1 == ieArgs expr2
+      
 ----------------------------------------------------------------
 -- Lookup names
 ----------------------------------------------------------------
@@ -1329,7 +1342,7 @@ fixedContext propagated fresolved fixedCount named
 
     namedGuessed :: Inf [(Name,Type)]
     namedGuessed
-      = mapM (\name -> do{ tv <- Op.freshTVar kindStar Meta; return (name,tv) }) named
+      = mapM (\name -> do { tv <- Op.freshTVar kindStar Meta; return (name,tv) }) named
 
 implicitTypeContext :: Type -> NameContext
 implicitTypeContext tp
@@ -1574,18 +1587,18 @@ useHole
 
 disallowHole :: Inf a -> Inf a
 disallowHole action
-  = do st0 <- updateSt(\st -> st{ holeAllowed = False })
+  = do st0 <- updateSt (\st -> st{ holeAllowed = False })
        let prev = holeAllowed st0
        x <- action
-       updateSt(\st -> st{ holeAllowed = prev })
+       updateSt (\st -> st{ holeAllowed = prev })
        return x
 
 allowHole :: Inf a -> Inf (a,Bool {- was the hole used? -})
 allowHole action
-  = do st0 <- updateSt(\st -> st{ holeAllowed = True })
+  = do st0 <- updateSt (\st -> st{ holeAllowed = True })
        let prev = holeAllowed st0
        x <- action
-       st1 <- updateSt(\st -> st{ holeAllowed = prev })
+       st1 <- updateSt (\st -> st{ holeAllowed = prev })
        return (x,not (holeAllowed st1))
 
 
