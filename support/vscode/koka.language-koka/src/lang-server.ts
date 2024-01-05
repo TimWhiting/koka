@@ -142,6 +142,7 @@ export class KokaLanguageServer {
           executeCommand: async (command, args, next) => {
             console.log("intercepted command", command, args)
             if (command == "koka/signature-help/set-context") {
+              // Workaround for this issue: https://github.com/microsoft/language-server-protocol/issues/274
               // Trigger the signature help but with some context set on the backend
               console.log("Sending set-context request to server")
               next(command, args)

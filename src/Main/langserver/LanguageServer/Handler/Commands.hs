@@ -81,7 +81,7 @@ commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp ->
           resp $ Right $ case res of {Just filePath -> J.InL $ Json.String $ T.pack filePath; Nothing -> J.InR J.Null}
       _ -> parameterError
   else if command == "koka/signature-help/set-context" then
-    case commandParams of
+    case commandParams of -- Workaround for this issue: https://github.com/microsoft/language-server-protocol/issues/274
       Just [a@(Json.Object _)] ->
         case fromJSON a of
           A.Success context -> updateSignatureContext context
