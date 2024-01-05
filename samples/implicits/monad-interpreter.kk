@@ -25,12 +25,8 @@ struct interpm<t>
   interp: some<e> t -> e interpm<t>
 
 fun main()
-  val x: or<int,or<string,()>> = (or/subtype.inj)(1)  // using or<int,or<func,()>> gives weird errors
+  val x: evalue = (convert/subtype().inj)(Funct(fn(i) i))  // using or<int,or<func,()>> gives weird errors
   x.show.println
-
-fun test3()
-  val x: evalue = (convert/subtype().inj)(Funct(fn(i) i))
-  x.show
 
 fun test1( x : or<int,()> )
   x.show
