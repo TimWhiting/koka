@@ -206,6 +206,7 @@ executable koka
 executable koka-plain
   main-is: Main.hs
   other-modules:
+      Datatypes
       Paths_koka
   hs-source-dirs:
       src/Main/plain
