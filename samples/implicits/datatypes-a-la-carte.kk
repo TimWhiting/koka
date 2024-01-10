@@ -65,35 +65,32 @@ val addExample = In(Inr(Add1(In(Inl(Val1(118))), In(Inl(Val1(1219))))))
 fun doEval/runEval(e: expr1<f>, ?eval: f<int> -> div int, ?map: forall<b,c> (f<b>, (b -> div c)) -> div f<c>): div int
   expr1/fold(e, ?eval, ?map=?map)
 
-// fun test()
-//   val res = doEval/runEval(addExample, ?map=fn(a, b) sum/map(a,b))
-//   res.show.println
+fun test()
+  val res = doEval/runEval(addExample, ?map=fn(a, b) sum/map(a,b))
+  res.show.println
 
-fun val1(x : int, ?inj : (val1<a>) -> e b<expr1<b>>): e expr1<b>
+fun val1(x : int, ?inj : (val1<a>) -> e sum<f,g,expr1<sum<f,g>>>): e expr1<sum<f,g>>
   In(?inj(Val1(x)))
 
-fun add1(x: a, y: a, ?inj : (add1<a>) -> e1 b<expr1<b>>): e1 expr1<b>
+fun add1(x : a, y : a, ?inj : (add1<a>) -> e sum<f,g,expr1<sum<f,g>>>): e expr1<sum<f,g>>
   In(?inj(Add1(x, y)))
 
-fun inl1/inj(x: a<b>): e sum<a,c,b>
-  Inl(x)
+fun inl/inj(x, ?inj1)
+  Inl(?inj1(x))
 
-fun inl/inj(x: a<b>, ?inj1): e sum<a,c,b>
-  Inl(x)
+fun inl/inj1(x, ?inj1)
+  Inl(?inj1(x))
 
-fun inl/inj1(x: a<b>, ?inj1): e sum<a,c,b>
-  Inl(x)
+fun inr/inj(x)
+  Inr(x)
 
-fun inr/inj(x : a, ?inj1 : (a) -> e b<c>): e sum<d,b,c>
-  Inr(?inj1(x))
-
-fun inr/inj1(x : a, ?inj1 : (a) -> e b<c>): e sum<d,b,c>
+fun inr/inj1(x, ?inj1)
   Inr(?inj1(x))
 
 fun idx/inj1(x)
   x
 
-val addExample2 = val1(30000).add1(val1(1330)) // .add1(odd/val1(7))
+val addExample2 = val1(30000).add1(val1(1330)).add1(val1(7))
 
 fun test2()
   val res = doEval/runEval(addExample2, ?map=fn(a, b) sum/map(a,b))
@@ -111,10 +108,13 @@ fun mul1/map<a,b>(e: mul1<a>, f: (a) -> div b): div mul1<b>
 fun mul1/eval(a: mul1<int>): div int
   a.x * a.y
 
-fun mul1(x: a, y: a, ?inj : (mul1<a>) -> e1 b<expr1<b>>): e1 expr1<b>
+fun mul1(x: a, y: a, ?inj : (mul1<a>) -> e sum<f,g,expr1<sum<f,g>>>): e expr1<sum<f,g>>
   In(inj(Mul1(x, y)))
 
 // fun test3()
-//   val mulExample = val1(80).mul1(val1(5)).add1(val1(4))
-//   val res = doEval/runEval(mulExample, ?map=fn(a, b) sum/map(a,b))
-//   res.show.println
+  // val justMul = mul1(val1(80), val1(5))
+  // val val0 = val1(4)
+  // val mulExample = add1(val0, justMul)
+  // val mulExample = In(Inl(Add1(In(Inr(In(Inl(Val1(4))))), In(Inr(Mul1(In(Inl(Val1(80))), In(Inl(Val1(5)))))))))
+  // val res = doEval/runEval(mulExample, ?map=fn(a, b) sum/map(a,b))
+  // res.show.println
