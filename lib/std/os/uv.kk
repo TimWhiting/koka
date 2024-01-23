@@ -43,6 +43,9 @@ extern close-uv(): ()
 pub extern int/status-code(code: int32): uvStatusCode
   c "kk_uv_status_to_status_code"
 
+pub inline extern uv-error<a>(code: int32): io-noexn error<a>
+  c "kk_async_error_from_errno"
+
 pub extern close(hnd: uvHandle, callback: () -> io-noexn ()): io-noexn ()
   c "kk_uv_close"
 
@@ -54,6 +57,14 @@ pub inline fun unit/untry(code: uvStatusCode): exn ()
   if code.is-uv_OK then ()
   else throw-exn(Exception(code.message, AsyncExn(code)))
 
+inline extern uv-callback-ext(hnd: uvHandle, cb: () -> io-noexn ()): io-noexn intptr_t
+  c inline "(intptr_t)kk_new_uv_callback(#2, (uv_handle_t*)#1.internal, kk_context())"
+
+pub inline fun uv-setup-callback(hnd: uvHandle, cb: () -> io-noexn ()): io-noexn intptr_t
+  uv-callback-ext(hnd, cb)
+
+pub inline extern callback-free(hnd: intptr_t): io-noexn ()
+  c inline "kk_free((void*)#1, kk_context())"
 
 pub type uvStatusCode
   UV_OK

@@ -49,16 +49,16 @@ void kk_uv_timer_unit_cb(uv_timer_t* uv_timer) {
   kk_function_call(void, (kk_function_t, kk_context_t*), cb, (cb, _ctx), _ctx);
 }
 
-kk_std_core_exn__error kk_timer_start(kk_std_time_timer__timer timer, int64_t timeout, int64_t repeat, kk_function_t cb, kk_context_t* _ctx) {
-  kk_uv_callback_t* wrapper = kk_new_uv_callback(cb, (uv_handle_t*)timer.internal, _ctx); 
-  int ret = uv_timer_start((uv_timer_t*)timer.internal, kk_uv_timer_unit_cb, timeout, repeat);
-  if (ret < 0) {
-    kk_free(wrapper, _ctx);
-    return kk_async_error_from_errno(ret, _ctx);
-  } else {
-    return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), _ctx);
-  }
-}
+// kk_std_core_exn__error kk_timer_start(kk_std_time_timer__timer timer, int64_t timeout, int64_t repeat, kk_function_t cb, kk_context_t* _ctx) {
+//   kk_uv_callback_t* wrapper = kk_new_uv_callback(cb, (uv_handle_t*)timer.internal, _ctx); 
+//   int ret = uv_timer_start((uv_timer_t*)timer.internal, kk_uv_timer_unit_cb, timeout, repeat);
+//   if (ret < 0) {
+//     kk_free(wrapper, _ctx);
+//     return kk_async_error_from_errno(ret, _ctx);
+//   } else {
+//     return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), _ctx);
+//   }
+// }
 
 kk_std_core_exn__error kk_timer_again(kk_std_time_timer__timer timer, kk_context_t* _ctx) {
   int ret = uv_timer_again((uv_timer_t*)timer.internal);
@@ -67,19 +67,4 @@ kk_std_core_exn__error kk_timer_again(kk_std_time_timer__timer timer, kk_context
   } else {
     return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), _ctx);
   }
-}
-
-kk_unit_t kk_timer_set_repeat(kk_std_time_timer__timer timer, int64_t repeat, kk_context_t* _ctx) {
-  uv_timer_set_repeat((uv_timer_t*)timer.internal, repeat);
-  return kk_Unit;
-}
-
-int64_t kk_timer_get_repeat(kk_std_time_timer__timer timer, kk_context_t* _ctx) {
-  uint64_t repeat = uv_timer_get_repeat((uv_timer_t*)timer.internal);
-  return repeat;
-}
-
-int64_t kk_timer_get_due_in(kk_std_time_timer__timer timer, kk_context_t* _ctx) {
-  uint64_t due_in = uv_timer_get_due_in((uv_timer_t*)timer.internal);
-  return due_in;
 }

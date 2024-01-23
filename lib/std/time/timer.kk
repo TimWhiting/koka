@@ -12,6 +12,7 @@ module std/time/timer
 
 pub import std/os/uv
 import std/num/int64
+import std/num/int32
 import std/num/float64
 import std/num/ddouble
 import std/time/duration
@@ -69,12 +70,27 @@ abstract struct timer (
 pub extern timer-init(): io-noexn timer
   c inline "kk_timer_init(kk_context())"
 
+pub inline fun hnd(t: timer): uvHandle
+  UvHandle(t.internal)
+
 // Start the timer. timeout and repeat are in milliseconds.
 //
 // If timeout is zero, the callback fires on the next event loop iteration. 
 // If repeat is non-zero, the callback fires first after timeout milliseconds and then repeatedly after repeat milliseconds.
-pub extern timer-start(t: timer, timeout: int64, repeat: int64, cb: () -> io-noexn ()): io-noexn error<()>
-  c  "kk_timer_start"
+// pub extern timer-start(t: timer, timeout: int64, repeat: int64, cb: () -> io-noexn ()): io-noexn error<()>
+//   c  "kk_timer_start"
+
+pub fun start(t: timer, timeout: int64, repeat: int64, cb: () -> io-noexn ()): io-noexn error<()>
+  val wrapper = uv-setup-callback(t.hnd, cb)
+  val ret = timer-start-ext(t.internal, timeout, repeat)
+  if (ret < 0.int32) then 
+    callback-free(wrapper)
+    ret.uv-error
+  else
+    Ok(())
+
+pub inline extern timer-start-ext(t: intptr_t, timeout: int64, repeat: int64): io-noexn int32
+  c inline "uv_timer_start((uv_timer_t*)#1, kk_uv_timer_unit_cb, #2, #3)"
 
 pub extern timer-stop(t: timer): io-noexn ()
   c  "kk_timer_stop"
@@ -83,6 +99,12 @@ pub extern timer-stop(t: timer): io-noexn ()
 // If the timer has never been started before it returns UV_EINVAL
 extern timer-again(t: timer): io-noexn error<()>
   c  "kk_timer_again"
+
+extern timer-set-repeat(t: timer, repeat: int64): io-noexn ()
+  c inline "uv_timer_set_repeat((uv_timer_t*)#1.internal, #2)"
+
+extern timer-get-repeat(t: timer): io-noexn int64
+  c inline "uv_timer_get_repeat((uv_timer_t*)#1.internal)"
 
 // Set the repeat interval value in milliseconds. 
 //
@@ -98,16 +120,19 @@ extern timer-again(t: timer): io-noexn error<()>
 // NOTE: If the repeat value is set from a timer callback it does not immediately take effect.
 // If the timer was non-repeating before, it will have been stopped. If it was repeating,
 // then the old repeat value will have been used to schedule the next timeout
-extern timer-set-repeat(t: timer, repeat: int64): io-noexn ()
-  c  "kk_timer_set_repeat"
+pub fun set-repeat(t: timer, repeat: duration): io-noexn ()
+  t.timer-set-repeat(repeat.milli-seconds.int64)
 
-extern timer-get-repeat(t: timer): io-noexn int64
-  c  "kk_timer_get_repeat"
+pub fun get-repeat(t: timer): io-noexn int64
+  t.timer-get-repeat
 
 // Get the timer due value or 0 if it has expired.
 // The time is relative to uv_now()
+pub fun get-due-in(t: timer): io-noexn int64
+  t.timer-get-due-in
+
 extern timer-get-due-in(t: timer): io-noexn int64
-  c  "kk_timer_get_due_in"
+  c inline "uv_timer_get_due_in((uv_timer_t*)#1.internal)"
 
 // Creates a timer that repeats every `d` duration and calls `f` with the timer as argument.
 // 
@@ -115,7 +140,7 @@ extern timer-get-due-in(t: timer): io-noexn int64
 pub fun timer(d: duration, f: (timer) -> io-noexn bool): io-noexn timer
   val ms = d.milli-seconds.int64
   val t = timer-init()
-  t.timer-start(ms, ms) fn()
+  t.start(ms, ms) fn()
     if !f(t) then
       t.timer-stop()
     ()

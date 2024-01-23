@@ -3,7 +3,7 @@
 
 kk_box_t kk_set_timeout(kk_function_t cb, int64_t time, kk_context_t* _ctx) {
   kk_std_time_timer__timer t = kk_std_time_timer_timer_init(_ctx);
-  kk_std_time_timer_timer_start(t, time, 0, cb, _ctx);
+  kk_std_time_timer_start(t, time, 0, cb, _ctx);
   return kk_std_time_timer__timer_box(t, _ctx);
 }
 
