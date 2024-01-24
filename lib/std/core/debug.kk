@@ -33,6 +33,18 @@ pub val file/kk-file : string = ""
 pub fun file/kk-file-line( ?kk-file, ?kk-line )
   ?kk-file ++ "(line " ++ ?kk-line ++ ")"
 
+pub type kk-con<a>
+  Con0(name: string)
+  Con1(name: string, args: a -> (string,b,kk-type<b>))
+  Con2(name: string, args: a -> ((string,b,kk-type<b>),(string,c,kk-type<c>)))
+
+pub fun to-json(a: a, ?kk-con: kk-con<a>, start: bool=True): string
+  match a
+    Con2(c, f) | c == kk-con-name(Cons) -> 
+      val (head, tail) = f(a)
+      (if start then "[" else "") ++ to-json(head) ++ "," ++ to-json(tail,False)
+    Con0(c) | c == kk-con-name(Nil) -> "]"
+    
 // ----------------------------------------------------------------------------
 // Trace, assert, todo
 // ----------------------------------------------------------------------------
