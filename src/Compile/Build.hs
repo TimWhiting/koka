@@ -127,6 +127,17 @@ modulesReValidate rebuild forced cachedImports roots
                   This produces the user program (`modProgram`), the lexemes (`modLexemes`) and
                   a rangemap (`modRangeMap`).
 
+  - kind check  : As soon as the user+pub imports are type checked, a module can be checked as well.
+                  This produces the initial core (`modCore`) and the "definitions" (`modDefinitions`)
+                  that contain the kind gamma.
+
+  - macro gen   : As soon as we have the type / synonym definitions as supplied by the kind check
+                  we can move on to generating macros / derives based on the types.
+                  The output of this phase is additional lexemes and modProgram definitions 
+                  and the module is put back in the kind check phase with only these new definitions
+                  until no new definitions are created (we stop after 10 of these phases to prevent infinite recursion).
+                  The definitions and core are merged prior to type checking
+
   - type check  : As soon as the user+pub imports are type checked, a module can be checked as well.
                   This produces the initial core (`modCore`) and the "definitions" (`modDefinitions`)
                   that contain the gamma, kind gamma, etc.
