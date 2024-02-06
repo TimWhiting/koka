@@ -99,8 +99,8 @@ withEnv = local
 getEnv :: FixDemandR x s e (DEnv e)
 getEnv = ask
 
-type FixDemand x s e = FixDemandR x s e (BasicLattice AFixOutput)
-type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput BasicLattice AFixOutput a
+type FixDemand x s e = FixDemandR x s e (BasicLattice AFixOutput AFixOutput)
+type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput BasicLattice AFixOutput AFixOutput a
 
 -- A query type representing the mutually recursive queries we can make that result in an abstract value
 data Query =
@@ -124,7 +124,7 @@ data AFixOutput =
   | N deriving (Show, Eq)
 
 -- The real output however is a basic lattice of the above
-type FixOutput = BasicLattice AFixOutput
+type FixOutput = BasicLattice AFixOutput AFixOutput
 
 -- Implement the needed operations for the output to be a lattice
 instance Semigroup AFixOutput where
@@ -155,7 +155,7 @@ qeval = toAbValue . loop . QueryInput . EvalQ
 toAbValue :: FixDemand x s e -> FixDemandR x s e AbValue
 toAbValue c = toAbValue2 <$> c
 
-toAbValue2 :: BasicLattice AFixOutput -> AbValue
+toAbValue2 :: BasicLattice AFixOutput AFixOutput -> AbValue
 toAbValue2 c =
   case c of
     BL (A x) -> x
@@ -248,7 +248,7 @@ instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
 instantiate query c1 c0 = if c1 == c0 then return () else do
   trace (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1) $ return ()
   loop (EnvInput c0)
-  push (EnvInput c0) (BL (E (S.singleton c1)))
+  push (EnvInput c0) (E (S.singleton c1))
   return ()
 
 calibratem :: ExprContext -> EnvCtx -> FixDemandR x s e EnvCtx
@@ -582,7 +582,7 @@ getPrimitive name = do
     Just ctx -> qeval (ctx, EnvTail TopCtx)
     Nothing -> error ("getPrimitive: " ++ show name)
 
-doEval :: Query -> String -> FixDemandR x s e AbValue
+doEval :: Query -> String -> FixDemandR x s e AFixOutput
 doEval cq@(EvalQ (ctx, env)) query = do
    trace (query ++ show cq) $ do
     case maybeExprOfCtx ctx of
@@ -1236,7 +1236,7 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   return $ trace (show lattice) x
 
 
-runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO (FixOutput, M.Map FixInput (BasicLattice AFixOutput), Maybe x)
+runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO (FixOutput, M.Map FixInput (BasicLattice AFixOutput AFixOutput), Maybe x)
 runQueryAtRange buildc term flags (r, ri) mod  kind m query = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)

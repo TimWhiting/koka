@@ -43,7 +43,7 @@ import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
-import Core.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..))
+import Core.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange, SLattice)
 
 
 data EnvCtx = EnvCtx Ctx EnvCtx
@@ -99,16 +99,16 @@ data ConstrContext =
 
 data LiteralContext =
     LiteralContext{
-      intVL :: SimpleLattice Integer,
-      floatVL :: SimpleLattice Double,
-      charVL :: SimpleLattice Char,
-      stringVL :: SimpleLattice String
+      intVL :: SLattice Integer,
+      floatVL :: SLattice Double,
+      charVL :: SLattice Char,
+      stringVL :: SLattice String
     } deriving (Eq, Ord)
 
 instance Show LiteralContext where
   show (LiteralContext i f c s) = intercalate "," [show i, show f, show c, show s]
 
-type AbValue = BasicLattice AValue
+type AbValue = BasicLattice AValue AValue
 
 data AValue =
   AValue{
@@ -221,7 +221,7 @@ injCon nm tp args env =
   BL emptyAValue{aconstrs=M.singleton env (S.singleton $ ConstrContext nm tp args env, LiteralContext LBottom LBottom LBottom LBottom)}
 
 --- JOINING
-joinML :: Ord x => M.Map EnvCtx (SimpleLattice x) -> M.Map EnvCtx (SimpleLattice x) -> M.Map EnvCtx (SimpleLattice x)
+joinML :: Ord x => M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x)
 joinML = M.unionWith join
 
 
@@ -235,48 +235,48 @@ joinAbValue (AValue cls0 cs0 e0) (AValue cls1 cs1 e1) = AValue (S.union cls0 cls
 
 
 -- Converting to user visible expressions
-toSynLit :: SimpleLattice Integer -> Maybe S.Lit
+toSynLit :: SLattice Integer -> Maybe S.Lit
 toSynLit (LSingle i) = Just $ S.LitInt i rangeNull
 toSynLit _ = Nothing
 
-toSynLitD :: SimpleLattice Double -> Maybe S.Lit
+toSynLitD :: SLattice Double -> Maybe S.Lit
 toSynLitD (LSingle i) = Just $ S.LitFloat i rangeNull
 toSynLitD _ = Nothing
 
-toSynLitC :: SimpleLattice Char -> Maybe S.Lit
+toSynLitC :: SLattice Char -> Maybe S.Lit
 toSynLitC (LSingle i) = Just $ S.LitChar i rangeNull
 toSynLitC _ = Nothing
 
-toSynLitS :: SimpleLattice String -> Maybe S.Lit
+toSynLitS :: SLattice String -> Maybe S.Lit
 toSynLitS (LSingle i) = Just $ S.LitString i rangeNull
 toSynLitS _ = Nothing
 
-maybeTopI :: SimpleLattice Integer -> Maybe Type
+maybeTopI :: SLattice Integer -> Maybe Type
 maybeTopI LTop = Just typeInt
 maybeTopI _ = Nothing
 
-maybeTopD :: SimpleLattice Double -> Maybe Type
+maybeTopD :: SLattice Double -> Maybe Type
 maybeTopD LTop = Just typeFloat
 maybeTopD _ = Nothing
 
-maybeTopC :: SimpleLattice Char -> Maybe Type
+maybeTopC :: SLattice Char -> Maybe Type
 maybeTopC LTop = Just typeChar
 maybeTopC _ = Nothing
 
-maybeTopS :: SimpleLattice String -> Maybe Type
+maybeTopS :: SLattice String -> Maybe Type
 maybeTopS LTop = Just typeString
 maybeTopS _ = Nothing
 
-intV :: AbValue -> M.Map EnvCtx (SimpleLattice Integer)
+intV :: AbValue -> M.Map EnvCtx (SLattice Integer)
 intV (BL a) = fmap (intVL . snd) (aconstrs a)
 
-floatV :: AbValue -> M.Map EnvCtx (SimpleLattice Double)
+floatV :: AbValue -> M.Map EnvCtx (SLattice Double)
 floatV (BL a) = fmap (floatVL . snd) (aconstrs a)
 
-charV :: AbValue -> M.Map EnvCtx (SimpleLattice Char)
+charV :: AbValue -> M.Map EnvCtx (SLattice Char)
 charV (BL a) = fmap (charVL . snd) (aconstrs a)
 
-stringV :: AbValue -> M.Map EnvCtx (SimpleLattice String)
+stringV :: AbValue -> M.Map EnvCtx (SLattice String)
 stringV (BL a) = fmap (stringVL . snd) (aconstrs a)
 
 topTypesOf :: AbValue -> Set Type
