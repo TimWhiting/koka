@@ -8,26 +8,22 @@ found in the LICENSE file at the root of this distribution.
 
 import * as vscode from "vscode"
 import * as child_process from "child_process"
-import { AddressInfo, Server, createServer } from 'net'
 
 import {
   DidChangeConfigurationNotification,
-  ExecuteCommandRequest,
   LanguageClient,
   LanguageClientOptions,
   RevealOutputChannelOn,
-  StreamInfo,
+  ServerOptions,
 } from 'vscode-languageclient/node'
 import { KokaConfig } from "./workspace"
 
 let stderrOutputChannel: vscode.OutputChannel
-let stdoutOutputChannel: vscode.OutputChannel
 let firstRun = true
 
 export class KokaLanguageServer {
   languageClient?: LanguageClient
   languageServerProcess?: child_process.ChildProcess
-  socketServer?: Server
   outputChannel?: vscode.OutputChannel
   traceOutputChannel?: vscode.OutputChannel
   lspWriteEmitter: vscode.EventEmitter<string> = new vscode.EventEmitter<string>();
@@ -36,10 +32,8 @@ export class KokaLanguageServer {
 
   constructor(context: vscode.ExtensionContext) {
     if (firstRun) {
-      stderrOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stderr')
-      stdoutOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stdout')
+      stderrOutputChannel = vscode.window.createOutputChannel('Koka Language Server Stderr')      
       context.subscriptions.push(stderrOutputChannel)
-      context.subscriptions.push(stdoutOutputChannel)
       firstRun = false;
     }
   }
@@ -59,36 +53,12 @@ export class KokaLanguageServer {
 
   async start(config: KokaConfig, context: vscode.ExtensionContext) {
     console.log(`Koka: Language Server: ${config.compilerPath} ${config.languageServerArgs.join(" ")}, Workspace: ${config.cwd}`)
-    let self = this;
-    function serverOptions(): Promise<StreamInfo> {
-      return new Promise((resolve, reject) => {
-        let timeout = setTimeout(() => {
-          reject("Server took too long to connect")
-        }, 3000)
-        self.socketServer = createServer((s) => {
-          console.log("Got Connection to Client")
-          clearTimeout(timeout)
-          resolve({ writer: s, reader: s })
-        }).listen(0, "127.0.0.1", () => {
-          const port = (self.socketServer!.address() as AddressInfo).port
-          console.log(`Starting language server in ${config.cwd} on port ${port}`)
-          self.languageServerProcess = child_process.spawn(config.compilerPath, [...config.languageServerArgs, `--lsport=${port}`], {
-            cwd: config.cwd,
-            env: process.env,
-          })
-          if (config.enableDebugExtension) {
-            self.languageServerProcess?.stderr?.on('data', (data) => {
-              // console.log(data.toString())
-              stderrOutputChannel.append(`${data.toString()}`)
-            })
-            self.languageServerProcess?.stdout?.on('data', (data) => {
-              // console.log(data.toString())
-              stdoutOutputChannel.append(`${data.toString()}`)
-            })
-          }
-        })
-      })
-    }
+    const serverOptions: ServerOptions = 
+      {
+        command: config.compilerPath,
+        args: [...config.languageServerArgs, '--lsstdio'],
+        options: { cwd: config.cwd, env: process.env }
+      }
     // This issue: https://github.com/microsoft/vscode/issues/571
     // This sample: https://github.com/ShMcK/vscode-pseudoterminal/blob/master/src/extension.ts
     const formatText = (text: string) => `\r${text.split(/(\r?\n)/g).join("\r")}\r`;
@@ -108,8 +78,8 @@ export class KokaLanguageServer {
       append: (value: string) => this.lspWriteEmitter.fire(value),
       appendLine: (value: string) => {
         this.lspWriteEmitter.fire(value)
-        if (config.autoFocusTerminal){
-          if (value.match(/error/gi)){
+        if (config.autoFocusTerminal) {
+          if (value.match(/error/gi)) {
             this.lspTerminal?.show(true)
           }
         }
@@ -134,28 +104,29 @@ export class KokaLanguageServer {
       documentSelector: [{ language: 'koka', scheme: 'file' }],
       outputChannel: this.outputChannel,
       revealOutputChannelOn: RevealOutputChannelOn.Info,
+      traceOutputChannel: stderrOutputChannel,
       markdown: {
         isTrusted: true,
         supportHtml: true,
       },
       middleware: {
-          executeCommand: async (command, args, next) => {
-            console.log("intercepted command", command, args)
-            if (command == "koka/signature-help/set-context") {
-              // Trigger the signature help but with some context set on the backend
-              console.log("Sending set-context request to server")
-              next(command, args)
-              console.log("Asking VSCode to trigger parameter hints")
-              vscode.commands.executeCommand("editor.action.triggerParameterHints")
-            } else {
-              next(command, args)
-            }
+        executeCommand: async (command, args, next) => {
+          console.log("intercepted command", command, args)
+          if (command == "koka/signature-help/set-context") {
+            // Trigger the signature help but with some context set on the backend
+            console.log("Sending set-context request to server")
+            next(command, args)
+            console.log("Asking VSCode to trigger parameter hints")
+            vscode.commands.executeCommand("editor.action.triggerParameterHints")
+          } else {
+            next(command, args)
           }
+        }
       }
     }
     this.languageClient = new LanguageClient(
       'koka',
-      "Koka Language Server - Client",
+      "Koka Language Server Client",
       serverOptions,
       clientOptions
     )
@@ -166,17 +137,20 @@ export class KokaLanguageServer {
     return this.languageClient
   }
 
-  onConfigChanged(config: KokaConfig){
+  onConfigChanged(config: KokaConfig) {
     let isDark = vscode.window.activeColorTheme.kind == vscode.ColorThemeKind.Dark
-    this.languageClient.sendNotification(DidChangeConfigurationNotification.type, { settings:
-      { colors: { mode: isDark ? "dark" : "light" } ,
+    this.languageClient.sendNotification(DidChangeConfigurationNotification.type, {
+      settings:
+      {
+        colors: { mode: isDark ? "dark" : "light" },
         inlayHints: {
-          showImplicitArguments : config.showImplicitArguments,
+          showImplicitArguments: config.showImplicitArguments,
           showInferredTypes: config.showInferredTypes,
           showFullQualifiers: config.showFullQualifiers,
         }
 
-    } })
+      }
+    })
   }
 
 
@@ -191,7 +165,6 @@ export class KokaLanguageServer {
         console.log("Failed to end language server with SIGINT, trying SIGTERM")
         this.languageServerProcess?.kill()
       }
-      this.socketServer?.close()
       // TODO: Does the terminal need to be disposed or is that handled by disposing the client
     } catch {
       // Ignore for now, the process should automatically die when the server / client closes the connection
