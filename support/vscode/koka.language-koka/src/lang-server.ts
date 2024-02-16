@@ -62,8 +62,9 @@ export class KokaLanguageServer {
   async start(config: KokaConfig, context: vscode.ExtensionContext) {
     console.log(`Koka: Language Server: ${config.compilerPath} ${config.languageServerArgs.join(" ")}, Workspace: ${config.cwd}`)
     let serverOptions: ServerOptions;
-    if (semver.lt(config.compilerVersion, "3.0.5")) {
-      // TODO: Remove the old socket connection when we get to 3.1.0 or something
+    if (semver.lt(config.compilerVersion, "3.1.0") || config.useSocketServer) {
+      // TODO: Remove the old socket connection when we get to 3.2.0 or something
+      console.log("Using socket server")
       let self = this;
       serverOptions = function (): Promise<StreamInfo> {
         return new Promise((resolve, reject) => {

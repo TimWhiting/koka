@@ -79,6 +79,7 @@ executables:
       - network-simple
       - network
       - text-rope
+      - sorted-list
       - stm
     ghc-options:
       - -rtsopts

@@ -307,7 +307,7 @@ liftBuildWith mbFlags action
            flgs = case mbFlags of
                     Nothing    -> flags ls
                     Just flags -> flags
-       res <- seq flgs $ seq VFS $ liftIO $ runBuild (terminal ls) flgs $ withVFS vfs $ action (buildContext ls)
+       res <- seq flgs $! seq VFS $! liftIO $! runBuild (terminal ls) flgs $! withVFS vfs $! action (buildContext ls)
        case res of
          Left errs               -> return (Left errs)
          Right ((buildc,x),errs) -> do when (isNothing mbFlags) $

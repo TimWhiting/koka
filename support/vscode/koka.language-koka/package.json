@@ -151,6 +151,12 @@
           "description": "Show disambiguated qualified names as inlay hints.",
           "order": 8
         },
+        "koka.languageServer.useSocketServer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use the socket connection to the language server instead of using stdio.",
+          "order": 9
+        },
         "koka.dev.developmentPath": {
           "type": "string",
           "default": "",

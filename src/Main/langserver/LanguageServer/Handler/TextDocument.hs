@@ -34,6 +34,7 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Functor ((<&>))
 import qualified Data.Map as M
 import qualified Data.Text as T
+import qualified Data.SortedList as SL
 import qualified Data.Text.Encoding as T
 import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Lens as J
@@ -54,6 +55,7 @@ import LanguageServer.Monad
 import qualified Language.LSP.Server as J
 import Compile.Build (searchSourceFile)
 import Platform.Config (sourceExtension)
+import qualified Language.LSP.Diagnostics as J
 
 
 -- Compile the file on opening
@@ -67,6 +69,7 @@ didOpenHandler = notificationHandler J.SMethod_TextDocumentDidOpen $ \msg -> do
 didChangeHandler :: Handlers LSM
 didChangeHandler = notificationHandler J.SMethod_TextDocumentDidChange $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
+  trace ("koka: did change " ++ show uri) $ return ()
   rebuildUri Nothing Nothing (J.toNormalizedUri uri)
   return ()
 
@@ -155,7 +158,7 @@ rebuildFile mbFlags mbRun uri fpath
             mbRes <- -- run build with diagnostics
                      liftBuildDiag mbFlags uri $ \buildc0 ->
                      -- get all errors from the returned build context
-                     buildcLiftErrors fst $
+                     buildcLiftErrors fst $!
                      -- we build with a focus so we only build what is needed for file, avoiding rebuilding non-dependencies
                      do (buildc1,[focus]) <- buildcAddRootSources [fpath] buildc0
                         buildcFocus [focus] buildc1 $ \focusMods buildcF ->
@@ -175,7 +178,7 @@ rebuildFile mbFlags mbRun uri fpath
             case mbRes of
               Just mbPath -> return mbPath
               Nothing     -> return Nothing
-            
+
 
 
 -- Run a build monad and emit diagnostics if needed.
@@ -193,17 +196,33 @@ liftBuildDiag mbflags defaultUri build
 -- A build retains all errors over all loaded modules, so we can always publish all
 diagnoseErrors :: J.NormalizedUri -> [ErrorMessage] -> LSM ()
 diagnoseErrors defaultUri errs
-  = -- trace ("koka: diagnose errors: " ++ show errs) $
+  = trace ("koka: diagnose errors: " ++ show errs) $
     do flags <- getFlags
+       paths <- lookupModulePaths
+       let defaultErrs = M.fromList [(uri, []) | uri <- map (J.toNormalizedUri . filePathToUri . snd) paths]
        let diagSource = diagSourceKoka
            maxDiags   = maxErrors flags
-           diagss     = M.toList $ M.map partitionBySource $ M.fromListWith (++) $  -- group all errors per file uri
+           basicDiags = M.fromListWith (++) $  -- group all errors per file uri
                         map (errorMessageToDiagnostic diagSource defaultUri) errs
-       -- flushDiagnosticsBySource maxDiags diagSource
-       mapM_ (\(uri, diags) -> if null diags then return ()
-                                else do mversion <- getVirtualFileVersion uri
-                                        publishDiagnostics maxDiags uri mversion diags) diagss
+           diagss     = M.toList $ M.map partition $! M.unionWith (++) defaultErrs basicDiags
+       flushDiagnosticsBySource maxDiags diagSource
+       trace ("koka: diagnostics " ++ show diagss) $ return ()
+       mapM_ (\(uri, diags) -> do mversion <- getVirtualFileVersion uri
+                                  publishDiagnostics maxDiags uri mversion diags) diagss
 
 diagSourceKoka :: Maybe T.Text
 diagSourceKoka
   = Just (T.pack "koka")
+
+partition ::
+  [J.Diagnostic] ->
+  J.DiagnosticsBySource
+partition diagnostics = M.unions (diagnostics' : [emptyDiagnostic])
+  where
+  emptyDiagnostic ::
+    J.DiagnosticsBySource
+  emptyDiagnostic =
+    M.singleton diagSourceKoka (SL.toSortedList [])
+
+  diagnostics' :: J.DiagnosticsBySource
+  diagnostics' = J.partitionBySource diagnostics

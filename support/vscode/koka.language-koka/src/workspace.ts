@@ -55,6 +55,7 @@ export class KokaConfig {
   compilerPaths: string[]           // all found paths to koka compilers in the system
 
   // Configuration options for the language server
+  useSocketServer: boolean
   // Inlay Hints Options
   showInferredTypes: boolean
   showImplicitArguments: boolean
@@ -69,6 +70,7 @@ export class KokaConfig {
     this.showImplicitArguments = vsConfig.get('languageServer.inlayHints.showImplicitArguments') as boolean ?? false;
     this.showInferredTypes = vsConfig.get('languageServer.inlayHints.showInferredTypes') as boolean ?? false;
     this.showFullQualifiers = vsConfig.get('languageServer.inlayHints.showFullQualifiers') as boolean ?? false;
+    this.useSocketServer = vsConfig.get('languageServer.useSocketServer') as boolean ?? true
   }
 
   // Does the compiler path point to a valid compiler?
