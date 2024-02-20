@@ -39,6 +39,25 @@ abstract value struct sslice( str : string, start : int, len : int )
 pub fun @new-sslice( str :string, start: int, len : int )
   Sslice(str,start,len)
 
+// Retrieves the start position of the slice in bytes
+// Cannot be used to create new slices since the slice type is abstract and guaranteed to be valid utf8
+pub fun start-bytes(s: sslice): int
+  s.start
+
+// Retrieves the end position of the slice in bytes
+// Cannot be used to create new slices since the slice type is abstract and guaranteed to be valid utf8
+pub fun end-bytes(s: sslice): int
+  s.start + s.len
+
+// Retrieves the length of the slice in bytes
+// Cannot be used to create new slices since the slice type is abstract and guaranteed to be valid utf8
+pub fun len-bytes(s: sslice): int
+  s.len
+
+// Retrieves the full string of the slice
+pub fun full-string(s: sslice): string
+  s.str
+
 // Equality based on contents of the slice
 // O(`n`+`m`) where `n` and `m` are the lengths of the two strings
 pub fun (==)(slice1: sslice, slice2: sslice ): bool

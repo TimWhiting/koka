@@ -65,6 +65,11 @@ pub fun regex( regex :string, ignorecase :bool = False, multiline : bool = False
 pub fun exec( regex :regex, s : string ) : list<sslice>
   regex-exec(regex.obj,s,0.ssize_t)
 
+// Find a match for a regular expression.
+// See also `find` and `contains`
+pub fun slice/exec( regex :regex, s : sslice ) : list<sslice>
+  regex-exec(regex.obj,s.full-string,s.start-bytes.ssize_t)
+
 // Match a regular expression `regex` over a string `s`.
 // Matches at most `atmost` times (and matches all by default).
 // Returns always an odd number of elements where every even

@@ -106,14 +106,15 @@ static kk_std_core_types__list kk_regex_exec_ex( pcre2_code* re, pcre2_match_dat
 {
   // match
   kk_std_core_types__list hd  = kk_std_core_types__new_Nil(ctx);
-  uint32_t options = 0;
-  if (!allow_empty) options |= (PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED);
+  uint32_t options = PCRE2_ANCHORED;
+  if (!allow_empty) options |= PCRE2_NOTEMPTY_ATSTART;
   int rc = pcre2_match( re, cstr, len, start, options, match_data, match_ctx );
   if (res != NULL) *res = rc;
   if (rc > 0) {
     // extract captures
     uint32_t    gcount = pcre2_get_ovector_count(match_data);
     PCRE2_SIZE* groups = pcre2_get_ovector_pointer(match_data);
+    // kk_info_message("%d groups\n", gcount);
     for( uint32_t i = gcount; i > 0; ) {
       i--;
       kk_ssize_t sstart = groups[i*2];       // on no-match, sstart and send == -1.
@@ -127,6 +128,7 @@ static kk_std_core_types__list kk_regex_exec_ex( pcre2_code* re, pcre2_match_dat
       }
     }
   }
+  // kk_info_message("no match for %s\n", cstr + start);
   return hd;
 }
 

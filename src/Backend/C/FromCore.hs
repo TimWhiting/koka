@@ -14,7 +14,7 @@ import Lib.Trace
 import Control.Applicative hiding (empty)
 import Control.Monad
 import Data.List ( intersperse, partition, sortOn )
-import Data.Char
+import Data.Char ( isDigit, isAlphaNum, isSpace )
 -- import Data.Maybe
 -- import Data.Monoid ( mappend )
 import qualified Data.Set as S
