@@ -58,6 +58,10 @@ import Syntax.RangeMap (RangeInfo)
 import Syntax.Syntax (UserExpr, UserProgram, UserDef, Program (..), DefGroups, UserType, DefGroup (..), Def (..), ValueBinder (..), UserValueBinder)
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
+import Core.AbstractValue (AbValue)
+
+type FixDemand x s e = FixDemandR x s e AFixChange
+type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput SimpleLattice FixOutput a
 
 data State a x = State{
   buildc :: BuildContext,
@@ -99,9 +103,6 @@ withEnv = local
 getEnv :: FixDemandR x s e (DEnv e)
 getEnv = ask
 
-type FixDemand x s e = FixDemandR x s e (BasicLattice AFixOutput AFixOutput)
-type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput BasicLattice AFixOutput AFixOutput a
-
 -- A query type representing the mutually recursive queries we can make that result in an abstract value
 data Query =
   CallQ (ExprContext, EnvCtx) |
@@ -116,31 +117,33 @@ data FixInput =
   QueryInput Query
   | EnvInput EnvCtx deriving (Ord, Eq, Show)
 
+data AFixChange =
+  CA AChange
+  | CE EnvCtx
+  deriving (Show, Eq)
+
 -- The output of the fixpoint is either a value, or set of environments 
 -- (depending on whether the input is a query or wanting the refined environments for a particular environment)
-data AFixOutput =
+data FixOutput =
   A AbValue
   | E (S.Set EnvCtx)
   | N deriving (Show, Eq)
 
--- The real output however is a basic lattice of the above
-type FixOutput = BasicLattice AFixOutput AFixOutput
-
 -- Implement the needed operations for the output to be a lattice
-instance Semigroup AFixOutput where
+instance Semigroup FixOutput where
   (<>) (A a) (A b) = A (a <> b)
   (<>) (E e) (E e1) = E (e <> e1)
   (<>) N x = x
   (<>) x N = x
   (<>) x y = error $ "Unexpected semigroup combination " ++ show x ++ " " ++ show y
 
-instance Contains AFixOutput where
+instance Contains FixOutput where
   contains (A (BL a)) (A (BL b)) = a `contains` b
   contains (E e) (E e1) = e1 `isSubsetOf` e
   contains _ N = True
   contains _ _ = False
 
-instance Monoid AFixOutput where
+instance Monoid FixOutput where
   mempty = N
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
@@ -155,7 +158,7 @@ qeval = toAbValue . loop . QueryInput . EvalQ
 toAbValue :: FixDemand x s e -> FixDemandR x s e AbValue
 toAbValue c = toAbValue2 <$> c
 
-toAbValue2 :: BasicLattice AFixOutput AFixOutput -> AbValue
+toAbValue2 :: BasicLattice FixOutput FixOutput -> AbValue
 toAbValue2 c =
   case c of
     BL (A x) -> x
@@ -261,61 +264,6 @@ tryCalibratem call env = do
   length <- contextLength <$> getEnv
   return $ tryCalibratemenv length (indeterminateStaticCtx call) env
 
-calibratemenv :: Int -> EnvCtx -> EnvCtx -> EnvCtx
-calibratemenv mlimit (EnvCtx call calls) (EnvCtx ps tail) = do
-  EnvCtx (calibratemctx mlimit call ps) (calibratemenv mlimit calls tail)
-calibratemenv mlimit (EnvTail call) (EnvTail ctx) = EnvTail $! calibratemctx mlimit call ctx
-
-tryCalibratemenv :: Int -> EnvCtx -> EnvCtx -> Maybe EnvCtx
-tryCalibratemenv mlimit (EnvCtx call calls) (EnvCtx ps tail) = do
-  ps' <- tryCalibratemctx mlimit call ps
-  tail' <- tryCalibratemenv mlimit calls tail
-  return $ EnvCtx ps' tail'
-tryCalibratemenv mlimit (EnvTail call) (EnvTail ctx) =
-  tryCalibratemctx mlimit call ctx >>= (\ctx -> return $ EnvTail ctx)
-
--- TODO: Degen needs a way to be converted to Indet (calibration makes environments longer (to m))
--- Probably needs more information to determine static context
-calibratemctx :: Int -> Ctx -> Ctx -> Ctx
-calibratemctx mlimit call p =
-  if mlimit == 0 then
-    case p of
-      CallCtx{} -> CutKnown
-      BCallCtx{} -> CutKnown
-      CutKnown -> CutKnown
-      TopCtx -> TopCtx
-      IndetCtx{} -> CutUnknown
-      CutUnknown -> CutUnknown
-  else case p of
-    IndetCtx tn c -> IndetCtx tn c
-    CutKnown -> call
-    CutUnknown -> call
-    CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) (indeterminateStaticCtx c) p')
-    BCallCtx c p' -> BCallCtx c (calibratemctx (mlimit - 1) (envhead $ indeterminateStaticCtx c) p')
-    x -> x
-
-
--- TODO: Degen needs a way to be converted to Indet (calibration makes environments longer (to m))
--- Probably needs more information to determine static context
-tryCalibratemctx :: Int -> Ctx -> Ctx -> Maybe Ctx
-tryCalibratemctx mlimit call p =
-  if mlimit == 0 then
-    case p of
-      CallCtx{} -> Just CutKnown
-      BCallCtx{} -> Just CutKnown
-      CutKnown -> Just CutKnown
-      TopCtx -> Just TopCtx
-      IndetCtx{} -> Just CutUnknown
-      CutUnknown -> Just CutUnknown
-  else case p of
-    IndetCtx tn c -> Just $ IndetCtx tn c
-    CutKnown -> Nothing -- We cut a previously known context, so we can't reconstruct it without doing a full expr / refinement
-    CutUnknown -> Just call
-    CallCtx c p' -> Just $ CallCtx c (calibratemenv (mlimit - 1) (indeterminateStaticCtx c) p')
-    BCallCtx c p' -> Just $ BCallCtx c (calibratemctx (mlimit - 1) (envhead $ indeterminateStaticCtx c) p')
-    x -> Just x
-
-
 succAEnv :: ExprContext -> EnvCtx -> FixDemandR x s e Ctx
 succAEnv newctx p' = do
   length <- contextLength <$> getEnv
@@ -324,21 +272,6 @@ succAEnv newctx p' = do
     BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
     _ -> return $ CallCtx newctx (limitmenv p' (length - 1))
 
-ccDeterminedEnv :: EnvCtx -> Bool
-ccDeterminedEnv env =
-  case env of
-    EnvCtx cc tail -> ccDetermined cc && ccDeterminedEnv tail
-    EnvTail cc -> ccDetermined cc
-
-ccDetermined :: Ctx -> Bool
-ccDetermined ctx =
-  case ctx of
-    IndetCtx{} -> False
-    CallCtx c env -> ccDeterminedEnv env
-    TopCtx -> True
-    CutKnown -> False
-    CutUnknown -> True
-    BCallCtx c rst -> ccDetermined rst
 
 getEnvs :: FixDemand x s e -> FixDemandR x s e (Set EnvCtx)
 getEnvs c = do
@@ -363,36 +296,6 @@ doMaybeAbValue init l doA = do
   case l of
     Just x -> doA x
     Nothing -> return init
-
-doForClosures :: AbValue -> AbValue -> ((ExprContext, EnvCtx) -> FixDemandR x s e AbValue) -> FixDemandR x s e AbValue
-doForClosures init l doA = do
-  foldM (\res x -> do
-    res' <- doA x
-    return $! join res res') init (S.toList $ closures l)
-
-doForConstructors :: AbValue -> AbValue -> ((EnvCtx, ConstrContext) -> FixDemandR x s e AbValue) -> FixDemandR x s e AbValue
-doForConstructors init l doA = do
-  foldM (\res x -> do
-    res' <- doA x
-    return $! join res res') init (concatMap (\(f,s) -> map (\s -> (f, s)) $ S.toList s) (M.toList $ constrs l))
-
-doForConstructorsJoin :: a -> AbValue -> (a -> a -> a) -> ((EnvCtx, ConstrContext) -> FixDemandR x s e a) -> FixDemandR x s e a
-doForConstructorsJoin init l join doA = do
-  foldM (\res x -> do
-    res' <- doA x
-    return $! join res res') init (concatMap (\(f,s) -> map (\s -> (f, s)) $ S.toList s) (M.toList $ constrs l))
-
-doForLits :: AbValue -> AbValue -> ((EnvCtx, LiteralContext) -> FixDemandR x s e AbValue) -> FixDemandR x s e AbValue
-doForLits init l doA = do
-  foldM (\res x -> do
-    res' <- doA x
-    return $! join res res') init (M.toList $ lits l)
-
-doForLitsJoin :: a -> AbValue -> (a -> a -> a) -> ((EnvCtx, LiteralContext) -> FixDemandR x s e a) -> FixDemandR x s e a
-doForLitsJoin init l join doA = do
-  foldM (\res x -> do
-    res' <- doA x
-    return $! join res res') init (M.toList $ lits l)
 
 --------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
 fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
@@ -796,7 +699,7 @@ matchesPatternsCtx childrenCC pats env = do
     return $ litMatch || conMatch) childrenEval pats
   return $ and res
 
-matchesPatternLit :: LiteralContext -> Pattern -> Maybe [Pattern]
+matchesPatternLit :: LiteralLattice -> Pattern -> Maybe [Pattern]
 matchesPatternLit litc pat =
   case pat of
     PatLit{} | pat `patSubsumed` litc -> Just []
@@ -804,18 +707,18 @@ matchesPatternLit litc pat =
     PatWild -> Just []
     _ -> Nothing
 
-patSubsumed :: Pattern -> LiteralContext -> Bool
-patSubsumed (PatLit (LitInt i)) (LiteralContext (LSingle x) _ _ _) = i == x
-patSubsumed (PatLit (LitFloat i)) (LiteralContext _ (LSingle x) _ _) = i == x
-patSubsumed (PatLit (LitChar i)) (LiteralContext _ _ (LSingle x) _) = i == x
-patSubsumed (PatLit (LitString i)) (LiteralContext _ _ _ (LSingle x)) = i == x
-patSubsumed (PatLit (LitInt i)) (LiteralContext LTop _ _ _) = True
-patSubsumed (PatLit (LitFloat i)) (LiteralContext _ LTop _ _) = True
-patSubsumed (PatLit (LitChar i)) (LiteralContext _ _ LTop _) = True
-patSubsumed (PatLit (LitString i)) (LiteralContext _ _ _ LTop) = True
+patSubsumed :: Pattern -> LiteralLattice -> Bool
+patSubsumed (PatLit (LitInt i)) (LiteralLattice (LSingle x) _ _ _) = i == x
+patSubsumed (PatLit (LitFloat i)) (LiteralLattice _ (LSingle x) _ _) = i == x
+patSubsumed (PatLit (LitChar i)) (LiteralLattice _ _ (LSingle x) _) = i == x
+patSubsumed (PatLit (LitString i)) (LiteralLattice _ _ _ (LSingle x)) = i == x
+patSubsumed (PatLit (LitInt i)) (LiteralLattice LTop _ _ _) = True
+patSubsumed (PatLit (LitFloat i)) (LiteralLattice _ LTop _ _) = True
+patSubsumed (PatLit (LitChar i)) (LiteralLattice _ _ LTop _) = True
+patSubsumed (PatLit (LitString i)) (LiteralLattice _ _ _ LTop) = True
 patSubsumed _ _ = False
 
-findBranchLit :: LiteralContext -> ExprContext -> FixDemandR x s e [ExprContext]
+findBranchLit :: LiteralLattice -> ExprContext -> FixDemandR x s e [ExprContext]
 findBranchLit litc ctx = do
   let Case e branches = exprOfCtx ctx
   children <- childrenContexts ctx
@@ -826,7 +729,7 @@ findBranchLit litc ctx = do
     matches -> do -- Many, should never happen
       return []
 
-findBranch :: ConstrContext -> ExprContext -> EnvCtx -> FixDemandR x s e [ExprContext]
+findBranch :: ExprContext -> ExprContext -> EnvCtx -> FixDemandR x s e [ExprContext]
 findBranch cc ctx env = do
   let Case e branches = exprOfCtx ctx
   children <- childrenContexts ctx
@@ -1132,9 +1035,9 @@ visitChildrenCtxs combine ctx analyze = do
 
 --------------------------- CONVERTING RESULTS TO HUMAN READABLE STRINGS AND RUNNING THE QUERIES -----------------------------------------
 
-toSynConstr :: ConstrContext -> FixDemandR x s e (Maybe String)
-toSynConstr (ConstrContext nm tp args env) = do
-  args' <- mapM findSourceExpr args
+toSynConstr :: ExprContext -> FixDemandR x s e (Maybe String)
+toSynConstr ctx = do
+  app <- findSourceExpr ctx
   return (Just $ nameStem (getName nm))
 
 sourceEnv :: EnvCtx -> FixDemandR x s e String
@@ -1236,7 +1139,7 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   return $ trace (show lattice) x
 
 
-runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO (FixOutput, M.Map FixInput (BasicLattice AFixOutput AFixOutput), Maybe x)
+runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO (FixOutput, M.Map FixInput (BasicLattice FixOutput FixOutput), Maybe x)
 runQueryAtRange buildc term flags (r, ri) mod  kind m query = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)

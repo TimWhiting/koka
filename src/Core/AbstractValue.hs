@@ -9,13 +9,12 @@
 module Core.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
-                          ConstrContext(..),
-                          LiteralContext(..),
+                          LiteralLattice(..),
                           AbValue,
                           AValue,
                           closures,constrs,lits,err,intV,floatV,charV,stringV,
                           showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
-                          showNoEnvClosure, showNoEnvConstructor, showNoEnvAbValue,
+                          showNoEnvClosure, showNoEnvAbValue,
                           emptyAbValue,
                           injClosure,injErr,injLit,injCon,injClosures,
                           joinAbValue,joinML,
@@ -45,75 +44,37 @@ import GHC.Base (mplus)
 import Common.Failure (assertion)
 import Core.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange, SLattice)
 
-
-data EnvCtx = EnvCtx Ctx EnvCtx
-            | EnvTail Ctx
-  deriving (Eq, Ord)
-
-instance Show EnvCtx where
-  show c = "<<" ++ showEnvCtx c ++ ">>"
-
-showEnvCtx :: EnvCtx -> String
-showEnvCtx (EnvCtx ctx tail) = show ctx ++ ":::" ++ showEnvCtx tail
-showEnvCtx (EnvTail ctx) = show ctx
-
----------------- Environment Based Ctx -------------------
-data Ctx =
-  IndetCtx [TName] ExprContext
-  | CallCtx !ExprContext !EnvCtx
-  | BCallCtx !ExprContext !Ctx
-  | CutKnown
-  | CutUnknown
-  | TopCtx
-  deriving (Eq, Ord)
-
-instance Show Ctx where
-  show ctx =
-    case ctx of
-      IndetCtx tn c -> "?(" ++ show tn ++ ")"
-      CallCtx ctx env -> "call{" ++ showSimpleContext ctx ++ "," ++ show env ++ "}"
-      BCallCtx ctx cc -> "bcall{" ++ showSimpleContext ctx ++ "," ++ show cc ++ "}"
-      TopCtx -> "Top"
-      CutKnown -> "~!~"
-      CutUnknown -> "~?~"
-
-showSimpleCtx :: Ctx -> String
-showSimpleCtx ctx =
-  case ctx of
-    IndetCtx tn c -> show tn
-    CallCtx ctx env -> "call{" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ "}"
-    BCallCtx ctx cc -> "bcall{" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ "}"
-    TopCtx -> "Top"
-    CutKnown -> "~!~"
-    CutUnknown -> "~?~"
-
--- TODO: Top Constructor Context (name, type, env, but eval params to top of their type)
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
-data ConstrContext =
-  ConstrContext{
-    constrName:: !TName,
-    constrType:: !Name,
-    constrParams:: ![ExprContext],
-    constrEnv:: !EnvCtx
-  } deriving (Eq, Ord, Show)
 
-data LiteralContext =
-    LiteralContext{
+data LiteralLattice =
+    LiteralLattice{
       intVL :: SLattice Integer,
       floatVL :: SLattice Double,
       charVL :: SLattice Char,
       stringVL :: SLattice String
     } deriving (Eq, Ord)
 
-instance Show LiteralContext where
-  show (LiteralContext i f c s) = intercalate "," [show i, show f, show c, show s]
+data LiteralChange =
+  LiteralChangeInt (SimpleChange Integer)
+  | LiteralChangeFloat (SimpleChange Double)
+  | LiteralChangeChar (SimpleChange Char)
+  | LiteralChangeString (SimpleChange String)
+
+instance Show LiteralLattice where
+  show (LiteralLattice i f c s) = intercalate "," [show i, show f, show c, show s]
 
 type AbValue = BasicLattice AValue AValue
 
+data AChange =
+  AChangeClos EnvCtx ExprContext
+  | AChangeConstr EnvCtx ExprContext
+  | AChangeLit EnvCtx LiteralChange
+
 data AValue =
   AValue{
-    aclosures:: !(Set (ExprContext, EnvCtx)),
-    aconstrs:: M.Map EnvCtx (Set ConstrContext, LiteralContext),
+    aclos:: !(Set (ExprContext, EnvCtx)),
+    acons:: !(Set (ExprContext, EnvCtx)),
+    alits:: !(Map EnvCtx LiteralLattice),
     aerr:: Maybe String
   } deriving (Eq, Ord)
 
@@ -121,13 +82,13 @@ getV :: (AValue -> b) -> AbValue -> b
 getV f (BL a) = f a
 
 closures :: AbValue -> Set (ExprContext, EnvCtx)
-closures = getV aclosures
+closures = getV aclos
 
-constrs :: AbValue -> Map EnvCtx (S.Set ConstrContext)
-constrs a = mapMaybe (\(s, l) -> if S.null s then Nothing else Just s) (getV aconstrs a)
+constrs :: AbValue -> Set (ExprContext, EnvCtx)
+constrs = getV acons
 
-lits :: AbValue -> Map EnvCtx LiteralContext
-lits a = fmap snd (getV aconstrs a)
+lits :: AbValue -> Map EnvCtx LiteralLattice
+lits = getV alits
 
 err = getV aerr
 
@@ -140,9 +101,10 @@ instance Monoid AValue where
   mappend = (<>)
 
 instance Show AValue where
-  show (AValue cls cntrs e) =
+  show (AValue cls cntrs lit e) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-    (if M.null cntrs then "" else " constrs: " ++ show (map show (M.toList cntrs))) ++
+    (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
+    (if M.null lit then "" else " lit: " ++ show (map show (M.toList lit))) ++
     maybe "" (" err: " ++) e
 
 -- Basic creating of abstract values
@@ -172,66 +134,54 @@ showNoEnvAbValue :: AbValue -> String
 showNoEnvAbValue (BL a) = showNoEnvAValue a
 
 showSimpleAValue :: AValue -> String
-showSimpleAValue (AValue cls cntrs e) =
+showSimpleAValue (AValue cls cntrs lit e) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-  (if M.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleConstructor (M.toList cntrs)) ++ "]") ++
+  (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleClosure (S.toList cntrs)) ++ "]") ++
+  (if M.null lit then "" else " lits: " ++ show (M.toList lit)) ++
   maybe "" (" err: " ++) e
 
 showNoEnvAValue :: AValue -> String
-showNoEnvAValue (AValue cls cntrs e) =
+showNoEnvAValue (AValue cls cntrs lit e) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-  (if M.null cntrs then "" else " constrs: [" ++ intercalate "," (map showNoEnvConstructor (M.toList cntrs)) ++ "]") ++
+  (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showNoEnvClosure (S.toList cntrs)) ++ "]") ++
+  (if M.null lit then "" else " lits: " ++ show (map snd (M.toList lit))) ++
   maybe "" (" err: " ++) e
-
-showSimpleConstructor :: (EnvCtx, (Set ConstrContext, LiteralContext)) -> String
-showSimpleConstructor (env, (cntrs, lits)) =
-  showSimpleEnv env ++ " {" ++ intercalate "," (map showSimpleConstructorContext (S.toList cntrs)) ++ show lits ++ "}"
-
-showNoEnvConstructor :: (EnvCtx, (Set ConstrContext, LiteralContext)) -> String
-showNoEnvConstructor (env, (cntrs, lits)) =
-   "{" ++ intercalate "," (map showSimpleConstructorContext (S.toList cntrs)) ++ show lits ++ "}"
-
-showSimpleConstructorContext :: ConstrContext -> String
-showSimpleConstructorContext (ConstrContext nm tp args env) =
-  show nm ++ ":" ++ intercalate "," (map showSimpleContext args)
 
 instance Contains AValue where
   contains :: AValue -> AValue -> Bool
-  contains (AValue cls0 cntrs0 e0) (AValue cls1 cntrs1 e1) =
-    S.isSubsetOf cls1 cls0 && cntrs1 `M.isSubmapOf` cntrs0 && e1 == e0
+  contains (AValue cls0 cntrs0 lit0 e0) (AValue cls1 cntrs1 lit1 e1) =
+    S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && e1 == e0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 < lit1) lit0 lit1
 
 emptyAbValue = BL emptyAValue
 
 emptyAValue :: AValue
-emptyAValue = AValue S.empty M.empty Nothing
-injClosure ctx env = BL emptyAValue{aclosures= S.singleton (ctx, env)}
-injClosures cls = BL emptyAValue{aclosures= S.fromList cls}
+emptyAValue = AValue S.empty S.empty M.empty Nothing
+injClosure ctx env = BL emptyAValue{acons= S.singleton (ctx, env)}
+injClosures cls = BL emptyAValue{aclos= S.fromList cls}
 injErr err = BL emptyAValue{aerr= Just err}
 
 injLit :: C.Lit -> EnvCtx -> AbValue
 injLit x env =
   case x of
-    C.LitInt i -> BL emptyAValue{aconstrs= M.singleton env (S.empty, LiteralContext (LSingle i) LBottom LBottom LBottom)}
-    C.LitFloat f -> BL emptyAValue{aconstrs= M.singleton env (S.empty, LiteralContext LBottom (LSingle f) LBottom LBottom)}
-    C.LitChar c -> BL emptyAValue{aconstrs= M.singleton env (S.empty, LiteralContext LBottom LBottom (LSingle c) LBottom )}
-    C.LitString s -> BL emptyAValue{aconstrs= M.singleton env (S.empty, LiteralContext LBottom LBottom LBottom (LSingle s) )}
+    C.LitInt i -> BL emptyAValue{alits= M.singleton env (LiteralLattice (LSingle i) LBottom LBottom LBottom)}
+    C.LitFloat f -> BL emptyAValue{alits= M.singleton env (LiteralLattice LBottom (LSingle f) LBottom LBottom)}
+    C.LitChar c -> BL emptyAValue{alits= M.singleton env (LiteralLattice LBottom LBottom (LSingle c) LBottom )}
+    C.LitString s -> BL emptyAValue{alits= M.singleton env (LiteralLattice LBottom LBottom LBottom (LSingle s) )}
 
-injCon :: TName -> Name -> [ExprContext] -> EnvCtx -> AbValue
-injCon nm tp args env =
-  BL emptyAValue{aconstrs=M.singleton env (S.singleton $ ConstrContext nm tp args env, LiteralContext LBottom LBottom LBottom LBottom)}
+injCon :: ExprContext -> EnvCtx -> AbValue
+injCon cnstr env =
+  BL emptyAValue{acons=S.singleton (cnstr, env)}
 
 --- JOINING
 joinML :: Ord x => M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x)
 joinML = M.unionWith join
 
 
-joinLit :: LiteralContext -> LiteralContext -> LiteralContext
-joinLit (LiteralContext i1 f1 c1 s1) (LiteralContext i2 f2 c2 s2) = LiteralContext (i1 `join` i2) (f1 `join` f2) (c1 `join` c2) (s1 `join` s2)
-
-joinMC = M.unionWith (\(s1, k1) (s2, k2) -> (S.union s1 s2, joinLit k1 k2))
+joinLit :: LiteralLattice -> LiteralLattice -> LiteralLattice
+joinLit (LiteralLattice i1 f1 c1 s1) (LiteralLattice i2 f2 c2 s2) = LiteralLattice (i1 `join` i2) (f1 `join` f2) (c1 `join` c2) (s1 `join` s2)
 
 joinAbValue :: AValue -> AValue -> AValue
-joinAbValue (AValue cls0 cs0 e0) (AValue cls1 cs1 e1) = AValue (S.union cls0 cls1) (cs0 `joinMC` cs1) (e0 `mplus` e1)
+joinAbValue (AValue cls0 cs0 lit0 e0) (AValue cls1 cs1 lit1 e1) = AValue (S.union cls0 cls1) (S.union cs0 cs1) (M.unionWith joinLit lit0 lit1) (e0 `mplus` e1)
 
 
 -- Converting to user visible expressions
@@ -268,22 +218,35 @@ maybeTopS LTop = Just typeString
 maybeTopS _ = Nothing
 
 intV :: AbValue -> M.Map EnvCtx (SLattice Integer)
-intV (BL a) = fmap (intVL . snd) (aconstrs a)
+intV (BL a) = fmap intVL (alits a)
 
 floatV :: AbValue -> M.Map EnvCtx (SLattice Double)
-floatV (BL a) = fmap (floatVL . snd) (aconstrs a)
+floatV (BL a) = fmap floatVL (alits a)
 
 charV :: AbValue -> M.Map EnvCtx (SLattice Char)
-charV (BL a) = fmap (charVL . snd) (aconstrs a)
+charV (BL a) = fmap charVL (alits a)
 
 stringV :: AbValue -> M.Map EnvCtx (SLattice String)
-stringV (BL a) = fmap (stringVL . snd) (aconstrs a)
+stringV (BL a) = fmap stringVL (alits a)
 
 topTypesOf :: AbValue -> Set Type
 topTypesOf ab =
   S.fromList $ catMaybes (map maybeTopI (M.elems (intV ab)) ++ map maybeTopD (M.elems (floatV ab)) ++ map maybeTopC (M.elems (charV ab)) ++ map maybeTopS (M.elems (stringV ab)))
 
 -- Other static information
+
+data PatBinding =
+  PatVar -- This is the variable it is bound to
+  -- The variable is bound in the subpattern at the given index with the given constructor
+  | SubPatIndex Name Int PatBinding 
+
+data BindInfo =
+  BoundLam ExprContext EnvCtx Int
+  | BoundTopDef ExprContext EnvCtx
+  | BoundTopDefRec ExprContext EnvCtx Int
+  | BoundLet ExprContext EnvCtx Int
+  | BoundLetRec ExprContext EnvCtx Int Int
+  | BoundCase ExprContext EnvCtx Int {- which match branch -} PatBinding
 
 -- BIND: The resulting context is not only a nested context focused on a lambda body It is also
 -- can be focused on a Let Body or Recursive Let binding It can also be focused on a Recursive Top
@@ -326,6 +289,48 @@ bind ctx var@(C.Var tname vInfo) env =
       case elemIndex tname names
         of Just x -> Just ((ctx, env), Just i)
            _ -> bind ctx' var env
+
+
+data EnvCtx = EnvCtx Ctx EnvCtx
+            | EnvTail Ctx
+  deriving (Eq, Ord)
+
+instance Show EnvCtx where
+  show c = "<<" ++ showEnvCtx c ++ ">>"
+
+showEnvCtx :: EnvCtx -> String
+showEnvCtx (EnvCtx ctx tail) = show ctx ++ ":::" ++ showEnvCtx tail
+showEnvCtx (EnvTail ctx) = show ctx
+
+---------------- Environment Based Ctx -------------------
+data Ctx =
+  IndetCtx [TName] ExprContext
+  | CallCtx !ExprContext !EnvCtx
+  | BCallCtx !ExprContext !Ctx
+  | CutKnown
+  | CutUnknown
+  | TopCtx
+  deriving (Eq, Ord)
+
+instance Show Ctx where
+  show ctx =
+    case ctx of
+      IndetCtx tn c -> "?(" ++ show tn ++ ")"
+      CallCtx ctx env -> "call{" ++ showSimpleContext ctx ++ "," ++ show env ++ "}"
+      BCallCtx ctx cc -> "bcall{" ++ showSimpleContext ctx ++ "," ++ show cc ++ "}"
+      TopCtx -> "Top"
+      CutKnown -> "~!~"
+      CutUnknown -> "~?~"
+
+showSimpleCtx :: Ctx -> String
+showSimpleCtx ctx =
+  case ctx of
+    IndetCtx tn c -> show tn
+    CallCtx ctx env -> "call{" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ "}"
+    BCallCtx ctx cc -> "bcall{" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ "}"
+    TopCtx -> "Top"
+    CutKnown -> "~!~"
+    CutUnknown -> "~?~"
 
 indeterminateStaticCtx :: ExprContext -> EnvCtx
 indeterminateStaticCtx ctx =
@@ -416,3 +421,73 @@ refineCtx (c1, c0) c =
     case c of
       EnvCtx ctx tail -> EnvCtx ctx (refineCtx (c1, c0) tail)
       EnvTail ctx -> EnvTail ctx
+
+calibratemenv :: Int -> EnvCtx -> EnvCtx -> EnvCtx
+calibratemenv mlimit (EnvCtx call calls) (EnvCtx ps tail) = do
+  EnvCtx (calibratemctx mlimit call ps) (calibratemenv mlimit calls tail)
+calibratemenv mlimit (EnvTail call) (EnvTail ctx) = EnvTail $! calibratemctx mlimit call ctx
+
+tryCalibratemenv :: Int -> EnvCtx -> EnvCtx -> Maybe EnvCtx
+tryCalibratemenv mlimit (EnvCtx call calls) (EnvCtx ps tail) = do
+  ps' <- tryCalibratemctx mlimit call ps
+  tail' <- tryCalibratemenv mlimit calls tail
+  return $ EnvCtx ps' tail'
+tryCalibratemenv mlimit (EnvTail call) (EnvTail ctx) =
+  tryCalibratemctx mlimit call ctx >>= (\ctx -> return $ EnvTail ctx)
+
+-- TODO: Degen needs a way to be converted to Indet (calibration makes environments longer (to m))
+-- Probably needs more information to determine static context
+calibratemctx :: Int -> Ctx -> Ctx -> Ctx
+calibratemctx mlimit call p =
+  if mlimit == 0 then
+    case p of
+      CallCtx{} -> CutKnown
+      BCallCtx{} -> CutKnown
+      CutKnown -> CutKnown
+      TopCtx -> TopCtx
+      IndetCtx{} -> CutUnknown
+      CutUnknown -> CutUnknown
+  else case p of
+    IndetCtx tn c -> IndetCtx tn c
+    CutKnown -> call
+    CutUnknown -> call
+    CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) (indeterminateStaticCtx c) p')
+    BCallCtx c p' -> BCallCtx c (calibratemctx (mlimit - 1) (envhead $ indeterminateStaticCtx c) p')
+    x -> x
+
+
+-- TODO: Degen needs a way to be converted to Indet (calibration makes environments longer (to m))
+-- Probably needs more information to determine static context
+tryCalibratemctx :: Int -> Ctx -> Ctx -> Maybe Ctx
+tryCalibratemctx mlimit call p =
+  if mlimit == 0 then
+    case p of
+      CallCtx{} -> Just CutKnown
+      BCallCtx{} -> Just CutKnown
+      CutKnown -> Just CutKnown
+      TopCtx -> Just TopCtx
+      IndetCtx{} -> Just CutUnknown
+      CutUnknown -> Just CutUnknown
+  else case p of
+    IndetCtx tn c -> Just $ IndetCtx tn c
+    CutKnown -> Nothing -- We cut a previously known context, so we can't reconstruct it without doing a full expr / refinement
+    CutUnknown -> Just call
+    CallCtx c p' -> Just $ CallCtx c (calibratemenv (mlimit - 1) (indeterminateStaticCtx c) p')
+    BCallCtx c p' -> Just $ BCallCtx c (calibratemctx (mlimit - 1) (envhead $ indeterminateStaticCtx c) p')
+    x -> Just x
+
+ccDeterminedEnv :: EnvCtx -> Bool
+ccDeterminedEnv env =
+  case env of
+    EnvCtx cc tail -> ccDetermined cc && ccDeterminedEnv tail
+    EnvTail cc -> ccDetermined cc
+
+ccDetermined :: Ctx -> Bool
+ccDetermined ctx =
+  case ctx of
+    IndetCtx{} -> False
+    CallCtx c env -> ccDeterminedEnv env
+    TopCtx -> True
+    CutKnown -> False
+    CutUnknown -> True
+    BCallCtx c rst -> ccDetermined rst
