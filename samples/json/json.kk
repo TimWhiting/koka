@@ -3,6 +3,7 @@ import std/num/random
 import std/time
 import std/num/ddouble
 import std/num/float64
+import std/data/json-parser
 
 struct person
   name: string
@@ -14,14 +15,14 @@ value struct child
   name: string
 
 fun child/to-json(c: child)
-  JObj([("name", c.name.to-json)])
+  JSObj([("name", c.name.to-json)])
 
 fun person/to-json(p: person)
-  JObj([("name", p.name.to-json), ("age", p.age.to-json), ("children", p.children.to-json), ("adult-children", p.adult-children.to-json)])
+  JSObj([("name", p.name.to-json), ("age", p.age.to-json), ("children", p.children.to-json), ("adult-children", p.adult-children.to-json)])
 
 fun child/from-json(j: json, path: string): pure child
   match j
-    JObj(l) ->
+    JSObj(l) ->
       Child(
         l.from-json("name", path)
       )
@@ -29,7 +30,7 @@ fun child/from-json(j: json, path: string): pure child
 
 fun person/from-json(j: json, path: string): pure person
   match j
-    JObj(l) ->
+    JSObj(l) ->
       Person(
         l.from-json("name", path),
         l.from-json("age", path),
@@ -53,11 +54,11 @@ fun test1()
   r#"{"name": "Gpa", "age": 58, "children": [], "adult-children": []}"#.str/parse.parse(person/from-json).show.println
   r#"{"name":"Gpa142749579","age":365380512,"children":[{"name":"another child219059342"}],"adult-children":[]}"#.str/parse.parse(person/from-json).show.println
 
-  val o = JObj([
+  val o = JSObj([
       ("name", "Gpa".to-json), 
       ("age", 56.to-json), 
-      ("children", JList([])), 
-      ("adult-children", JList([Child("F").to-json]))])
+      ("children", JSList([])), 
+      ("adult-children", JSList([Child("F").to-json]))])
   o.parse(person/from-json).show.println
 
 fun generatePerson()

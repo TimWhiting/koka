@@ -94,6 +94,17 @@ pub fun vector( ^n : int, default : a) : vector<a>
 pub fun vector-init-total( ^n : int, f : int -> a ) : e vector<a>
   vector-alloc-total( n.ssize_t, fn(i) f(i.int) )
 
+pub fun vector-init-list( ^n: int, xs: list<(int, a)>): vector<a>
+  val v = unsafe-vector(n.ssize_t) 
+  fun assigns(xs': some<a> list<(int,a)>) : total ()
+    match xs'
+      Cons((i,x), xss) -> 
+        unsafe-assign(v, i.ssize_t, x)
+        assigns(xss)
+      Nil -> ()
+  assigns(xs)
+  v
+
 // Create a new vector of length `n`  with initial elements given by function `f` which can have a control effect.
 pub fun vector-init( ^n : int, f : int -> e a ) : e vector<a>
   val len = n.ssize_t

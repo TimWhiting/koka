@@ -1,6 +1,7 @@
 import json
 
 import std/data/json
+import std/data/json-parser
 import std/data/bytes
 import std/os/net-async
 import std/os/net
@@ -39,7 +40,7 @@ fun request/from-json(j: json, path: string, ?from-json: (json, string) -> pure 
   Request(j1.from-json("id", path), j1.from-json("method", path), j1.from-json("data", path))
 
 fun request/to-json(self: request<p>, ?p/to-json: (p) -> pure json): pure json
-  JObj([
+  JSObj([
     ("id", self.request/id.to-json),
     ("method", self.method.to-json),
     ("data", self.params.to-json),
@@ -51,7 +52,7 @@ fun response/from-json(j: json, path: string, ?from-json: (json, string) -> pure
   Response(j1.from-json("id", path), j1.from-json("error", "result", path))
 
 fun response/to-json(self: response<p>, ?to-json: (p) -> pure json): pure json
-  JObj([
+  JSObj([
     ("id", self.response/id.to-json),
     ("jsonrpc", "2.0".to-json),
     self.res.to-json("error", "result")
@@ -62,7 +63,7 @@ fun error/from-json(j: json, path: string): pure rpc/error
   Error(j1.from-json("code", path), j1.from-json("message", path), j1.from-json("data", path))
 
 fun error/to-json(j: rpc/error): pure json
-  JObj([
+  JSObj([
     ("code", j.code.to-json),
     ("message", j.message.to-json),
     ("data", j.data.to-json)
