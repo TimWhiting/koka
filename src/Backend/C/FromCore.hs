@@ -343,7 +343,7 @@ genTopDef genSig inlineC def@(Def name tp expr vis sort inl rng comm)
 genTopDefDecl :: Bool -> Bool -> Def -> Asm ()
 genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm) | isValueOperation tp
   = return () -- don't generate code for phantom definitions for value operations (these were only needed for type checking)
-genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
+genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm ann)
   = let tryFun expr = case expr of
                         TypeApp e _   -> tryFun e
                         TypeLam _ e   -> tryFun e

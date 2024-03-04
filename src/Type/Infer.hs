@@ -455,7 +455,7 @@ inferRecDef topLevel infgamma def
 
 
 inferDef :: Expect -> Def Type -> Inf Core.Def
-inferDef expect (Def (ValueBinder name mbTp expr nameRng vrng) rng vis sort inl doc)
+inferDef expect (Def (ValueBinder name mbTp expr nameRng vrng) rng vis sort inl doc ann)
  =do penv <- getPrettyEnv
      if (verbose penv >= 4)
       then Lib.Trace.trace ("infer: " ++ show sort ++ " " ++ show name) $ return ()
@@ -481,7 +481,7 @@ inferDef expect (Def (ValueBinder name mbTp expr nameRng vrng) rng vis sort inl 
                     in addRangeInfo (endOfRange vrng {-')'-}) (RM.Id (newName "result") (RM.NIValue "expr" tp "" False) [] True)
                _ -> return ()
 
-           subst (Core.Def name resTp resCore vis sort inl nameRng doc)  -- must 'subst' since the total unification can cause substitution. (see test/type/hr1a)
+           subst (Core.Def name resTp resCore vis sort inl nameRng doc ann)  -- must 'subst' since the total unification can cause substitution. (see test/type/hr1a)
 
 isAnnotatedBinder :: ValueBinder (Maybe Type) x -> Bool
 isAnnotatedBinder (ValueBinder _ Just{} _ _ _) = True
