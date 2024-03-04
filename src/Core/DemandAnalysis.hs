@@ -325,16 +325,17 @@ fixedCall e env = do
   return (S.toList $ closures $ toAbValue2 res)
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
-newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
+newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e FixOutput
 newQuery q d = do
   unique <- getUnique
   withEnv (\env -> env{currentContext = queryCtx q, currentEnv = queryEnv q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
     res <- d query
-    return $ FA res
+    return $ A $ FA res
 
-loop :: FixInput -> FixDemand x s e
+loop :: FixInput -> FixDemandR x s e FixOutput
 loop fixinput = do
+  let e = each fixinput
   memo fixinput $ \i ->
     case i of
       QueryInput cq ->
@@ -370,7 +371,7 @@ loop fixinput = do
                 trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
               )
       EnvInput env ->
-        return $ BL $ E S.empty
+        return $ AChangeNone
 
 
 bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))

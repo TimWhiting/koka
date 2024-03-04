@@ -23,6 +23,7 @@ module Core.FixpointMonad(
   Contains(..),
   memo,
   push,
+  each,
   runFixAEnv,
   runFix,
   runFixWithCache,
@@ -166,8 +167,9 @@ each :: (Ord i, DiffBottom d, Lattice l a d) => i -> [FixTR e s i l a d d] -> Fi
 each key [] = return diffBottom
 each key (x:xs) = do
   x' <- x
-  xs' <- each xs
-  return $ x' `join` xs'
+  push key x'
+  xs' <- each key xs
+  return x'
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Ord i, Lattice l a d) => i -> d -> FixTS e s i l a d
