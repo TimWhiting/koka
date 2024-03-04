@@ -49,7 +49,7 @@ $hex          = [0-9a-fA-F]
               | '-' digit
               | '-' $onenine @digits
 
-@number       = integer fraction? exponent?
+@number       = @integer @fraction? @exponent?
 @escape       = \" | '\\' | '\/' | 'b' | 'f' | 'n' | 'r' | 't' | 'u' $hex $hex $hex $hex
 @character    = [\x0020 - \x10FFFF] # [\"\\] | '\\' @escape
 @string       = \" @character* \"

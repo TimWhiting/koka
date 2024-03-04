@@ -17,8 +17,19 @@ fun show(j: jslex): string
     JSWhite -> " "
 
 fun main()
-  match r#"{"name":"Gpa142749579","age":365380512,"children":[{"name":"another child219059342"}],"adult-children":[]}"#.slice.alexScan(0)
-    AlexToken(s,_,p) -> p(s).show.println
-    AlexEOF -> "EOF".println
-    AlexSkip -> "skip".println
-    AlexError -> "error".println
+  val done = ref(False)
+  var s := r#"{"name":"Gpa142749579","age":365380512,"children":[{"name":"another child219059342"}],"adult-children":[]}"#.slice
+  while({!(!done)})
+    match s.alexScan(0)
+      AlexToken(s',_,p) -> 
+        p(s').show.println
+        s := s'
+      AlexEOF -> 
+        "EOF".println
+        done := True
+      AlexSkip -> 
+        "skip".println
+        done := True
+      AlexError -> 
+        "error".println
+        done := True
