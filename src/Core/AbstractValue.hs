@@ -10,8 +10,10 @@ module Core.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
                           LiteralLattice(..),
+                          LiteralChange(..),
                           AbValue,
                           AValue,
+                          AChange(..),
                           closures,constrs,lits,err,intV,floatV,charV,stringV,
                           showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
                           showNoEnvClosure, showNoEnvAbValue,
@@ -25,6 +27,8 @@ module Core.AbstractValue(
                           indeterminateStaticCtx,maybeModOfEnv,maybeModOfCtx,
                           refineCtx,
                           limitm,limitmenv,
+                          calibratemenv, tryCalibratemenv,
+                          ccDeterminedEnv, ccDetermined,
                           envtail,envhead
                         ) where
 import Data.Map.Strict as M hiding (map)
@@ -42,7 +46,7 @@ import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
-import Core.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange, SLattice)
+import Core.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
@@ -59,6 +63,7 @@ data LiteralChange =
   | LiteralChangeFloat (SimpleChange Double)
   | LiteralChangeChar (SimpleChange Char)
   | LiteralChangeString (SimpleChange String)
+ deriving (Show, Eq)
 
 instance Show LiteralLattice where
   show (LiteralLattice i f c s) = intercalate "," [show i, show f, show c, show s]
@@ -66,9 +71,12 @@ instance Show LiteralLattice where
 type AbValue = BasicLattice AValue AValue
 
 data AChange =
-  AChangeClos EnvCtx ExprContext
-  | AChangeConstr EnvCtx ExprContext
-  | AChangeLit EnvCtx LiteralChange
+  AChangeClos ExprContext EnvCtx
+  | AChangeConstr ExprContext EnvCtx
+  | AChangeLit LiteralChange EnvCtx
+  | AChangeErr String 
+  | AChangeNone
+  deriving (Show, Eq)
 
 data AValue =
   AValue{
@@ -156,21 +164,21 @@ emptyAbValue = BL emptyAValue
 
 emptyAValue :: AValue
 emptyAValue = AValue S.empty S.empty M.empty Nothing
-injClosure ctx env = BL emptyAValue{acons= S.singleton (ctx, env)}
+injClosure ctx env = AChangeClos ctx env
 injClosures cls = BL emptyAValue{aclos= S.fromList cls}
-injErr err = BL emptyAValue{aerr= Just err}
+injErr err = AChangeErr err
 
-injLit :: C.Lit -> EnvCtx -> AbValue
+injLit :: C.Lit -> EnvCtx -> AChange
 injLit x env =
   case x of
-    C.LitInt i -> BL emptyAValue{alits= M.singleton env (LiteralLattice (LSingle i) LBottom LBottom LBottom)}
-    C.LitFloat f -> BL emptyAValue{alits= M.singleton env (LiteralLattice LBottom (LSingle f) LBottom LBottom)}
-    C.LitChar c -> BL emptyAValue{alits= M.singleton env (LiteralLattice LBottom LBottom (LSingle c) LBottom )}
-    C.LitString s -> BL emptyAValue{alits= M.singleton env (LiteralLattice LBottom LBottom LBottom (LSingle s) )}
+    C.LitInt i -> (AChangeLit $ LiteralChangeInt $ LChangeSingle i) env 
+    C.LitFloat f -> (AChangeLit $ LiteralChangeFloat $ LChangeSingle f) env 
+    C.LitChar c -> (AChangeLit $ LiteralChangeChar $ LChangeSingle c) env 
+    C.LitString s -> (AChangeLit $ LiteralChangeString $ LChangeSingle s) env 
 
-injCon :: ExprContext -> EnvCtx -> AbValue
+injCon :: ExprContext -> EnvCtx -> AChange
 injCon cnstr env =
-  BL emptyAValue{acons=S.singleton (cnstr, env)}
+  AChangeConstr cnstr env
 
 --- JOINING
 joinML :: Ord x => M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x)

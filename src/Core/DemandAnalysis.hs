@@ -15,8 +15,7 @@
 
 module Core.DemandAnalysis(
   fixedEval,fixedExpr,fixedCall,loop,qcall,qexpr,qeval,
-  doForClosures,doForConstructors,doForConstructorsJoin,doForLits,doForLitsJoin,
-  FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),AFixOutput(..),FixOutput,Query(..),AnalysisKind(..),
+  FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),FixOutput,Query(..),AnalysisKind(..),
   toAbValue,toAbValue2,
   refineQuery,queryCtx,queryEnv,queryKind,queryKindCaps,getEnv,withEnv,
   getQueryString,getState,setState,updateState,setResult,getUnique,
@@ -61,7 +60,7 @@ import Compile.Options (Flags (..), Terminal(..))
 import Core.AbstractValue (AbValue)
 
 type FixDemand x s e = FixDemandR x s e AFixChange
-type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput SimpleLattice FixOutput a
+type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput SimpleLattice AFixChange FixOutput a
 
 data State a x = State{
   buildc :: BuildContext,
@@ -118,8 +117,9 @@ data FixInput =
   | EnvInput EnvCtx deriving (Ord, Eq, Show)
 
 data AFixChange =
-  CA AChange
-  | CE EnvCtx
+  FA AChange
+  | FE EnvCtx
+  | B
   deriving (Show, Eq)
 
 -- The output of the fixpoint is either a value, or set of environments 
@@ -147,15 +147,15 @@ instance Monoid FixOutput where
   mempty = N
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
-qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AbValue
+qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qcall = toAbValue . loop . QueryInput . CallQ
-qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AbValue
+qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qexpr = toAbValue . loop . QueryInput . ExprQ
-qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AbValue
+qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qeval = toAbValue . loop . QueryInput . EvalQ
 
 -- Takes in a fixpoint computation and returns a fixpoint computation that unwraps an abstract value result
-toAbValue :: FixDemand x s e -> FixDemandR x s e AbValue
+toAbValue :: FixDemand x s e -> FixDemandR x s e AChange
 toAbValue c = toAbValue2 <$> c
 
 toAbValue2 :: BasicLattice FixOutput FixOutput -> AbValue
@@ -243,7 +243,7 @@ updateState update = do
 setResult :: x -> FixDemand x s e
 setResult x = do
   updateState (\st -> st{finalResult = Just x})
-  return $ BL N
+  return B
 
 ------------------------------ Environment FIXPOINT -----------------------------------
 
@@ -291,11 +291,11 @@ getRefines1 env =
     EnvTail cc -> getEnvs (loop (EnvInput env))
 
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
-doMaybeAbValue :: AbValue -> Maybe a -> (a -> FixDemandR x s e AbValue) -> FixDemandR x s e AbValue
-doMaybeAbValue init l doA = do
+doMaybeAbValue :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
+doMaybeAbValue l doA = do
   case l of
     Just x -> doA x
-    Nothing -> return init
+    Nothing -> return AChangeNone
 
 --------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
 fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
@@ -325,13 +325,13 @@ fixedCall e env = do
   return (S.toList $ closures $ toAbValue2 res)
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
-newQuery :: Query -> (String -> FixDemandR x s e AbValue) -> FixDemandR x s e FixOutput
+newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
 newQuery q d = do
   unique <- getUnique
   withEnv (\env -> env{currentContext = queryCtx q, currentEnv = queryEnv q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
     res <- d query
-    return $ BL $ A res
+    return $ FA res
 
 loop :: FixInput -> FixDemand x s e
 loop fixinput = do
@@ -478,14 +478,14 @@ addPrimitive :: Name -> ExprContext -> FixDemandR x s e ()
 addPrimitive name ctx = do
   updateState (\state -> state{primitives = M.insert name ctx (primitives state)})
 
-getPrimitive :: TName -> FixDemandR x s e AbValue
+getPrimitive :: TName -> FixDemandR x s e AChange
 getPrimitive name = do
   prims <- primitives <$> getState
   case M.lookup (getName name) prims of
     Just ctx -> qeval (ctx, EnvTail TopCtx)
     Nothing -> error ("getPrimitive: " ++ show name)
 
-doEval :: Query -> String -> FixDemandR x s e AFixOutput
+doEval :: Query -> String -> FixDemandR x s e AChange
 doEval cq@(EvalQ (ctx, env)) query = do
    trace (query ++ show cq) $ do
     case maybeExprOfCtx ctx of
@@ -514,17 +514,16 @@ doEval cq@(EvalQ (ctx, env)) query = do
             -- trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
             case binded of
               Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
-                calls <- qcall (lambodyctx, bindedenv)
-                doForClosures emptyAbValue calls (\(appctx, appenv) -> do
-                  trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
-                  param <- focusParam (Just index) appctx
-                  doMaybeAbValue emptyAbValue param (\param -> qeval (param, appenv)))
+                AChangeClos appctx appenv <- qcall (lambodyctx, bindedenv)
+                trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
+                param <- focusParam (Just index) appctx
+                doMaybeAbValue param (\param -> qeval (param, appenv))
               Just ((letbodyctx@LetCBody{}, bindedenv), index) -> do
                 param <- focusChild (fromJust $ contextOf letbodyctx) (fromJust index)
-                doMaybeAbValue emptyAbValue param (\ctx -> qeval (ctx, bindedenv))
+                doMaybeAbValue param (\ctx -> qeval (ctx, bindedenv))
               Just ((letdefctx@LetCDef{}, bindedenv), index) -> do
                 param <- focusChild (fromJust $ contextOf letdefctx) (fromJust index)
-                doMaybeAbValue emptyAbValue param (\ctx -> qeval (ctx, bindedenv))
+                doMaybeAbValue param (\ctx -> qeval (ctx, bindedenv))
               Just ((CaseCBranch _ c _ _ (Branch pat guard), bindedenv), index) -> do
                 mscrutinee <- focusChild c 0
                 case mscrutinee of
@@ -555,29 +554,27 @@ doEval cq@(EvalQ (ctx, env)) query = do
           App (TypeApp (Con nm repr) _) args -> do
             trace (query ++ "APPCon: " ++ show ctx) $ return []
             children <- childrenContexts ctx
-            return $ injCon nm (conTypeName repr) (tail children) env
+            return $ injCon ctx env
           App (Con nm repr) args -> do
             trace (query ++ "APPCon: " ++ show ctx) $ return []
             children <- childrenContexts ctx
-            return $ injCon nm (conTypeName repr) children env
+            return $ injCon ctx env
           App f tms -> do
             trace (query ++ "APP: " ++ show ctx) $ return []
             fun <- focusChild ctx 0
-            doMaybeAbValue emptyAbValue fun (\fun -> do
+            doMaybeAbValue fun (\fun -> do
                 -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
-                lamctx <- qeval (fun, env)
-                doForClosures emptyAbValue lamctx (\(lam, lamenv) -> do
-                  -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
-                  bd <- focusBody lam
-                  doMaybeAbValue emptyAbValue bd (\bd -> do
-                    -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-                    childs <- childrenContexts ctx
-                    -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
-                    succ <- succAEnv ctx env
-                    let newEnv = EnvCtx succ lamenv
-                    result <- qeval (bd, newEnv)
-                    qeval (bd, newEnv)
-                    )
+                AChangeClos lam lamenv <- qeval (fun, env)
+                -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
+                bd <- focusBody lam
+                doMaybeAbValue bd (\bd -> do
+                  -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
+                  childs <- childrenContexts ctx
+                  -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
+                  succ <- succAEnv ctx env
+                  let newEnv = EnvCtx succ lamenv
+                  result <- qeval (bd, newEnv)
+                  qeval (bd, newEnv)
                   )
               )
           TypeApp{} ->
@@ -587,7 +584,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
               DefCRec{} -> return $! injClosure ctx env
               _ -> do
                 ctx' <- focusChild ctx 0
-                doMaybeAbValue emptyAbValue ctx' (\ctx -> qeval (ctx,env))
+                doMaybeAbValue ctx' (\ctx -> qeval (ctx,env))
           TypeLam{} ->
             trace (query ++ "TYPE LAM: " ++ show ctx) $
             case ctx of
@@ -595,20 +592,21 @@ doEval cq@(EvalQ (ctx, env)) query = do
               DefCRec{} -> return $! injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
               _ -> do
                 ctx' <- focusChild ctx 0
-                doMaybeAbValue emptyAbValue ctx' (\ctx -> qeval (ctx,env))
+                doMaybeAbValue ctx' (\ctx -> qeval (ctx,env))
           Lit l -> return $! injLit l env
           Let defs e -> do
             trace (query ++ "LET: " ++ show ctx) $ return []
             ex <- focusChild ctx 0 -- Lets have their return expression as first child
-            doMaybeAbValue emptyAbValue ex (\ex -> qeval (ex, env))
+            doMaybeAbValue ex (\ex -> qeval (ex, env))
           Case expr branches -> do
             trace (query ++ "CASE: " ++ show ctx) $ return []
             e <- focusChild ctx 0
-            doMaybeAbValue emptyAbValue e (\e -> do
-                scrutinee <- qeval (e, env)
-                trace (query ++ "CASE: scrutinee is " ++ showNoEnvAbValue scrutinee) $ return []
-                -- return emptyAbValue
-                res <- doForConstructors emptyAbValue scrutinee (\(cenv, con) -> do
+            doMaybeAbValue e (\e -> do
+                res <- qeval (e, env)
+                case res of
+                  AChangeConstr con cenv -> do
+                    trace (query ++ "CASE: scrutinee is " ++ showCtxExpr con) $ return []
+                    -- return emptyAbValue
                     trace (query ++ "CASE: Looking for branch matching " ++ show con) $ return ()
                     branches <- findBranch con ctx cenv
                     -- trace (query ++ "CASE: branches are " ++ show branches) $ return []
@@ -617,23 +615,21 @@ doEval cq@(EvalQ (ctx, env)) query = do
                         res <- qeval (branch, cenv)
                         return $! join acc res
                       ) emptyAbValue branches
-                  )
-                -- trace (query ++ "CASE: result is " ++ show res) $ return []
-                res' <- doForLits res scrutinee (\(cenv, lit) -> do
+                  AChangeLit lit cenv -> do
+                    -- trace (query ++ "CASE: result is " ++ show res) $ return []
                     branches <- findBranchLit lit ctx
                     trace (query ++ "CASE: branches' are " ++ show branches) $ return []
                     foldM (\acc branch -> do
                         res <- qeval (branch, cenv)
                         return $! join acc res
                       ) emptyAbValue branches
-                    )
                 -- trace (query ++ "CASE: result' is " ++ show res') $ return []
                 -- if res' == emptyAbValue then
                 --   return $ injErr $ "No branches matched in case statement:\n\n" ++ show (exprOfCtx ctx)
                 -- else 
                 return res'
               )
-          Con nm repr -> return $! injCon nm (conTypeName repr) [] env -- TODO: Check that the constructor is a singleton
+          Con nm repr -> return $! injCon ctx env -- TODO: Check that the constructor is a singleton
 
 --------------------------------- PATTERN EVALUATION HELPERS -----------------------------------------------
 evalPatternRef :: ExprContext -> EnvCtx -> Pattern -> TName -> FixDemandR x s e AbValue
@@ -656,7 +652,7 @@ evalPatternRef expr env pat tname = do
               Just (pat, expr) -> evalPatternRef expr cenv pat tname
         )
 
-matchesPattern :: ConstrContext -> Pattern -> Maybe (EnvCtx, [ExprContext], [Pattern])
+matchesPattern :: ExprContext -> Pattern -> Maybe (EnvCtx, [ExprContext], [Pattern])
 matchesPattern cc pat =
   -- trace ("Matching " ++ show pat ++ " against " ++ show cc) $
   case pat of
@@ -668,7 +664,7 @@ matchesPattern cc pat =
     PatWild -> Just (constrEnv cc, constrParams cc, [])
     _ -> Nothing
 
-matchesPatternCtx :: ConstrContext -> Pattern -> FixDemandR x s e Bool
+matchesPatternCtx :: ExprContext -> Pattern -> FixDemandR x s e Bool
 matchesPatternCtx cc pat = do
   let childMatches = matchesPattern cc pat
   case childMatches of
@@ -699,7 +695,7 @@ matchesPatternsCtx childrenCC pats env = do
     return $ litMatch || conMatch) childrenEval pats
   return $ and res
 
-matchesPatternLit :: LiteralLattice -> Pattern -> Maybe [Pattern]
+matchesPatternLit :: LiteralChange -> Pattern -> Maybe [Pattern]
 matchesPatternLit litc pat =
   case pat of
     PatLit{} | pat `patSubsumed` litc -> Just []
@@ -707,18 +703,18 @@ matchesPatternLit litc pat =
     PatWild -> Just []
     _ -> Nothing
 
-patSubsumed :: Pattern -> LiteralLattice -> Bool
-patSubsumed (PatLit (LitInt i)) (LiteralLattice (LSingle x) _ _ _) = i == x
-patSubsumed (PatLit (LitFloat i)) (LiteralLattice _ (LSingle x) _ _) = i == x
-patSubsumed (PatLit (LitChar i)) (LiteralLattice _ _ (LSingle x) _) = i == x
-patSubsumed (PatLit (LitString i)) (LiteralLattice _ _ _ (LSingle x)) = i == x
-patSubsumed (PatLit (LitInt i)) (LiteralLattice LTop _ _ _) = True
-patSubsumed (PatLit (LitFloat i)) (LiteralLattice _ LTop _ _) = True
-patSubsumed (PatLit (LitChar i)) (LiteralLattice _ _ LTop _) = True
-patSubsumed (PatLit (LitString i)) (LiteralLattice _ _ _ LTop) = True
+patSubsumed :: Pattern -> LiteralChange -> Bool
+patSubsumed (PatLit (LitInt i)) (LiteralChangeInt (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitChar i)) (LiteralChangeChar (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitString i)) (LiteralChangeString (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitInt i)) (LiteralChangeInt LChangeTop) = True
+patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat LChangeTop) = True
+patSubsumed (PatLit (LitChar i)) (LiteralChangeChar LChangeTop) = True
+patSubsumed (PatLit (LitString i)) (LiteralChangeString LChangeTop) = True
 patSubsumed _ _ = False
 
-findBranchLit :: LiteralLattice -> ExprContext -> FixDemandR x s e [ExprContext]
+findBranchLit :: LiteralChange -> ExprContext -> FixDemandR x s e [ExprContext]
 findBranchLit litc ctx = do
   let Case e branches = exprOfCtx ctx
   children <- childrenContexts ctx
@@ -755,7 +751,7 @@ newErrTerm s = do
   return [(ExprCTerm newId ("Error: " ++ s), EnvTail CutUnknown)]
 
 -- TODO: This still sometimes returns emptyAbValue
-doExpr :: Query -> String -> FixDemandR x s e AbValue
+doExpr :: Query -> String -> FixDemandR x s e AChange
 doExpr cq@(ExprQ (ctx,env)) query = do
   trace (query ++ show cq) $ do
     case ctx of
@@ -768,33 +764,24 @@ doExpr cq@(ExprQ (ctx,env)) query = do
         case fn of
           Just fn -> do
             -- trace (query ++ "OPERAND: Evaluating To Closure " ++ showCtxExpr fn) $ return []
-            ctxlam <- qeval (fn, env)
-            doForClosures emptyAbValue ctxlam (\(lam, lamenv) -> do
-              -- trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
-              bd <- focusBody lam
-              case bd of
-                Nothing -> return emptyAbValue
-                Just bd -> do
-                  -- trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
-                  -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
-                  succ <- succAEnv c env
-                  m <- contextLength <$> getEnv
-                  ctxs <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
-                  -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-                  ress <- mapM qexpr (S.toList ctxs)
-                  let result = Prelude.foldl join emptyAbValue ress
-                  -- trace (query ++ "OPERAND RESULT: Callers of operand bound to are " ++ show result) $ return []
-                  return result
-              )
-          Nothing -> return emptyAbValue
+            AChangeClos lam lamenv <- qeval (fn, env)
+            -- trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
+            bd <- focusBody lam
+            case bd of
+              Nothing -> return AChangeNone
+              Just bd -> do
+                -- trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
+                -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
+                succ <- succAEnv c env
+                m <- contextLength <$> getEnv
+                ctxs <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
+                -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
+                each $ mapM qexpr (S.toList ctxs)
+          Nothing -> return AChangeNone
       LamCBody _ _ _ e -> do -- BODY Clause
         -- trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
-        res <- qcall (ctx, env)
-        -- trace (query ++ "BODY RESULT: Callers of returned closure are " ++ show res) $ return []
-        ress <- mapM qexpr (S.toList $ closures res)
-        let result = Prelude.foldl join emptyAbValue ress
-        -- trace (query ++ "BODY RESULT: Callers of returned closure are " ++ show result) $ return []
-        return result
+        AChangeClos lamctx lamenv <- qcall (ctx, env)
+        qexpr (lamctx, lamenv)
       ExprCTerm{} ->
         -- trace (query ++ "ends in error " ++ show ctx)
         -- return [(ctx, env)]
@@ -838,7 +825,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
               _ -> return $ injErr $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
           Nothing -> return $ injErr $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
 
-doCall :: Query -> String -> FixDemandR x s e AbValue
+doCall :: Query -> String -> FixDemandR x s e AChange
 doCall cq@(CallQ(ctx, env)) query =
   trace (query ++ show cq) $ do
     -- TODO: Treat top level functions specially in call, not in expr
@@ -849,21 +836,19 @@ doCall cq@(CallQ(ctx, env)) query =
               BasicEnvs -> do
                 let cc0 = envhead env
                     p = envtail env
-                calls <- qexpr (c, p)
-                doForClosures emptyAbValue calls (\(callctx, callenv) -> do
-                    m <- contextLength <$> getEnv
-                    cc1 <- succAEnv callctx callenv
-                    if cc1 == cc0 then
-                      trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-                      return $! injClosure callctx callenv
-                    else if cc0 `subsumesCtx` cc1 then do
-                      trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
-                      instantiate query (EnvCtx cc1 p) env
-                      return emptyAbValue
-                    else do
-                      -- trace (query ++ "CALL IS NOT SUBSUMED:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
-                      return emptyAbValue
-                  )
+                AChangeClos callctx callenv <- qexpr (c, p)
+                m <- contextLength <$> getEnv
+                cc1 <- succAEnv callctx callenv
+                if cc1 == cc0 then
+                  trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+                  return $! injClosure callctx callenv
+                else if cc0 `subsumesCtx` cc1 then do
+                  trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
+                  instantiate query (EnvCtx cc1 p) env
+                  return AChangeNone
+                else do
+                  -- trace (query ++ "CALL IS NOT SUBSUMED:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+                  return AChangeNone
               LightweightEnvs -> do
                 -- Lightweight Version
                 case envhead env of
@@ -879,21 +864,19 @@ doCall cq@(CallQ(ctx, env)) query =
                 let fallback = do
                       let cc0 = envhead env
                           p = envtail env
-                      calls <- qexpr (c, p)
-                      doForClosures emptyAbValue calls (\(callctx, callenv) -> do
-                          m <- contextLength <$> getEnv
-                          cc1 <- succAEnv callctx callenv
-                          if cc1 == cc0 then
-                            trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-                            return $! injClosure callctx callenv
-                          else if cc0 `subsumesCtx` cc1 then do
-                            trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
-                            instantiate query (EnvCtx cc1 p) env
-                            return emptyAbValue
-                          else do
-                            trace (query ++ "CALL IS NOT SUBSUMED:") $ return () -- \n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
-                            return emptyAbValue
-                        )
+                      AChangeClos callctx callenv <- qexpr (c, p)
+                      m <- contextLength <$> getEnv
+                      cc1 <- succAEnv callctx callenv
+                      if cc1 == cc0 then
+                        trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+                        return $! injClosure callctx callenv
+                      else if cc0 `subsumesCtx` cc1 then do
+                        trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
+                        instantiate query (EnvCtx cc1 p) env
+                        return AChangeNone
+                      else do
+                        trace (query ++ "CALL IS NOT SUBSUMED:") $ return () -- \n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+                        return AChangeNone
                 case envhead env of
                   (CallCtx callctx p') -> do
                     pnew <- tryCalibratem callctx p'

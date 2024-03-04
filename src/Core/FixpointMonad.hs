@@ -51,6 +51,9 @@ class Lattice l a d where
   lte :: d -> l a d -> Bool
   elems :: l a d -> [d]
 
+class DiffBottom d where
+  diffBottom :: d
+
 -- A simple lattice is a lattice where we just have bottom, top, and a singleton value
 -- An abstract value of an integer can be represented using this. Top means any integer, bottom means no integers, and a singleton value means a single integer value.
 -- lte is just equality and joining just goes to top if the values are different
@@ -62,7 +65,7 @@ data SimpleLattice a d = LBottom
 
 type SLattice a = SimpleLattice a (SimpleChange a)
 
-data SimpleChange a = LChangeTop | LChangeSingle a
+data SimpleChange a = LChangeTop | LChangeSingle a deriving (Show,Eq)
 
 instance Show a => Show (SimpleLattice a d) where
   show LBottom = "LBottom"
@@ -158,6 +161,13 @@ memo key f = do
         push key x
         return x
     )
+
+each :: (Ord i, DiffBottom d, Lattice l a d) => i -> [FixTR e s i l a d d] -> FixTR e s i l a d d
+each key [] = return diffBottom
+each key (x:xs) = do
+  x' <- x
+  xs' <- each xs
+  return $ x' `join` xs'
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Ord i, Lattice l a d) => i -> d -> FixTS e s i l a d
