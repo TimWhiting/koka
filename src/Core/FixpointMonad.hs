@@ -163,12 +163,12 @@ memo key f = do
         return x
     )
 
-each :: (Ord i, DiffBottom d, Lattice l a d) => i -> [FixTR e s i l a d d] -> FixTR e s i l a d d
-each key [] = return diffBottom
-each key (x:xs) = do
-  x' <- x
+each :: (Ord i, DiffBottom d, Lattice l a d) => i -> [x] -> (x -> FixTR e s i l a d d) -> FixTR e s i l a d d
+each key [] f = return diffBottom
+each key (x:xs) f = do
+  x' <- f x
   push key x'
-  xs' <- each key xs
+  xs' <- each key xs f
   return x'
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
