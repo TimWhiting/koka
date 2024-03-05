@@ -6,20 +6,29 @@
 -- terms of the Apache License, Version 2.0. A copy of the License can be
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
-
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Demand.Syntax() where
+module Demand.Syntax where
+
+import Data.List (intercalate)
+import qualified Data.Map.Strict as M
+import qualified Data.Set as S
+import Data.Maybe (catMaybes)
+import Data.Set(Set)
 import Demand.StaticContext
+import Demand.FixpointMonad
 import Demand.DemandMonad
 import Demand.AbstractValue
-import Core.Core
-import qualified Syntax.Syntax as Syn
-import Debug.Trace (trace)
 import Compile.Module (Module(..))
+import qualified Syntax.Syntax as Syn
+import qualified Syntax.Syntax as S
 import qualified Core.Core as C
+import Common.Range
+import Syntax.RangeMap
 import Common.Name (Name(..))
-import Data.List (intercalate)
+import Core.Core
+import Type.Type
+import Debug.Trace (trace)
 
 toSynConstr :: ExprContext -> FixDemandR x s e (Maybe String)
 toSynConstr ctx = do
@@ -126,17 +135,22 @@ maybeTopS LTop = Just typeString
 maybeTopS _ = Nothing
 
 intV :: AbValue -> M.Map EnvCtx (SLattice Integer)
-intV (BL a) = fmap intVL (alits a)
+intV a = fmap intVL (alits a)
 
 floatV :: AbValue -> M.Map EnvCtx (SLattice Double)
-floatV (BL a) = fmap floatVL (alits a)
+floatV a = fmap floatVL (alits a)
 
 charV :: AbValue -> M.Map EnvCtx (SLattice Char)
-charV (BL a) = fmap charVL (alits a)
+charV a = fmap charVL (alits a)
 
 stringV :: AbValue -> M.Map EnvCtx (SLattice String)
-stringV (BL a) = fmap stringVL (alits a)
+stringV a = fmap stringVL (alits a)
 
 topTypesOf :: AbValue -> Set Type
 topTypesOf ab =
-  S.fromList $ catMaybes (map maybeTopI (M.elems (intV ab)) ++ map maybeTopD (M.elems (floatV ab)) ++ map maybeTopC (M.elems (charV ab)) ++ map maybeTopS (M.elems (stringV ab)))
+  S.fromList $ catMaybes (
+    map maybeTopI (M.elems (intV ab)) ++
+    map maybeTopD (M.elems (floatV ab)) ++ 
+    map maybeTopC (M.elems (charV ab)) ++ 
+    map maybeTopS (M.elems (stringV ab))
+  )

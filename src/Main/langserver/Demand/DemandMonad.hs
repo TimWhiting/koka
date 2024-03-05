@@ -9,15 +9,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Demand.DemandMonad(
-  FixDemandR, FixDemand, State(..),  
-  AnalysisKind(..), DEnv(..), Query(..), 
+  AFixChange(..), FixInput(..), FixOutput(..),
+  FixDemandR, FixDemand, 
+  AnalysisKind(..),
   -- Cache / State stuff
-  toAbValue, toEnv, getAllRefines, getState, getCache, cacheLookup, updateState, setResult,
+  State(..), toAbValue, toEnv, getAllRefines, getAllStates, getState, getCache, cacheLookup, updateState, setResult,
   -- Context stuff
   getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts, 
-  childrenContexts, focusParam, focusBody, focusChild,
+  childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs,
   -- Env stuff
-  getEnv, withEnv, getUnique, newQuery,
+  DEnv(..), getEnv, withEnv, getUnique, newQuery,
+  -- Query stuff
+  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps,
   ) where
 
 import Control.Monad.State (gets, MonadState (..))
@@ -150,15 +153,24 @@ getAllRefines :: EnvCtx -> FixDemandR x s e (Set EnvCtx)
 getAllRefines env = do
   res <- cacheLookup (EnvInput env)
   let res' = fmap (\(E e) -> e) res
-  return $ fromMaybe S.empty res'
+  return (S.insert env (fromMaybe S.empty res'))
+
+getAllStates :: Query -> FixDemandR x s e AbValue
+getAllStates q = do
+  res <- cacheLookup (QueryInput q)
+  let res' = fmap (\(A a) -> a) res
+  return $ fromMaybe emptyAbValue res'
 
 instance Lattice FixOutput AFixChange where
   bottom = N
   join N x = x
   join x N = x
-  join (A a) (A b) = A (a `join` b)
-  join (E e) (E e1) = E (e `join` e1)
-  insert (FA a) N = bottom addChange a
+  join (A a) (A b) = A (a `joinAbValue` b)
+  join (E e) (E e1) = E (S.union e e1)
+  insert (FA a) N = A $ addChange emptyAbValue a
+  insert (FA a) (A b) = A (addChange b a)
+  insert (FE e) N = E $ S.singleton e
+  insert (FE e) (E e1) = E (S.insert e e1)
 
 -- Implement the needed operations for the output to be a lattice
 instance Semigroup (FixOutput d) where

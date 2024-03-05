@@ -10,7 +10,7 @@ module Demand.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,
-                          contextId,contextOf,exprOfCtx,modCtx,showContextPath,
+                          contextId,contextOf,exprOfCtx,modCtx,showContextPath,modCtxOf,
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamNames,

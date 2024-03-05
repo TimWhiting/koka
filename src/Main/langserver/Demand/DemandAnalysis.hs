@@ -16,9 +16,9 @@
 
 module Demand.DemandAnalysis(
   fixedEval,fixedExpr,fixedCall,loop,qcall,qexpr,qeval,
-  FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),FixOutput,Query(..),AnalysisKind(..),
-  refineQuery,queryCtx,queryEnv,queryKind,queryKindCaps,getEnv,withEnv,
-  getQueryString,getState,setState,updateState,setResult,getUnique,
+  FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
+  refineQuery,getEnv,withEnv,
+  getQueryString,getState,updateState,setResult,getUnique,
   childrenContexts,analyzeCtx,findContext,visitChildrenCtxs,
   createPrimitives,
   runEvalQueryFromRangeSource,
@@ -40,14 +40,24 @@ import Data.List (find, findIndex, elemIndex, union, intercalate)
 import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
 import Common.NamePrim (nameOpen, nameEffectOpen)
+import Compile.Module (Module(..), ModStatus (..), moduleNull)
+import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
+import Syntax.RangeMap
 import Lib.PPrint (Pretty(..))
 import Debug.Trace
 import Demand.StaticContext
 import Demand.AbstractValue
 import Demand.DemandMonad
 import Demand.FixpointMonad
+import Demand.Syntax
+import Syntax.Syntax (UserExpr, UserDef)
+import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
 import Core.Core
+import Core.Core as C
+import Type.Type
+import Compile.Build (runBuild)
+import Kind.Kind
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
@@ -90,8 +100,8 @@ succAEnv newctx p' = do
     _ -> return $ CallCtx newctx (limitmenv p' (length - 1))
 
 
-getRefines :: EnvCtx -> FixDemandR x s e EnvCtx
-getRefines env =
+getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
+getRefine env =
   case env of
     EnvCtx cc tail -> do
       let f = if ccDetermined cc then doBottom else 
@@ -99,7 +109,7 @@ getRefines env =
                 res <- loop (EnvInput env)
                 return $ toEnv res
           t = do
-                tailRefine <- getRefines tail
+                tailRefine <- getRefine tail
                 return (EnvCtx cc tailRefine)
       each [f,t]
     EnvTail cc -> 
@@ -118,33 +128,44 @@ doMaybeAbValue l doA = do
 fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedEval e env = do
   let q = EvalQ (e, env)
-  res <- loop (QueryInput q)
-  st <- getState
-  refines <- getRefines env
-  res2 <- mapM (\env -> do
-    res <- loop (QueryInput (EvalQ (e, env)))
-    return (env, res))
-      (S.toList refines)
+  loop (QueryInput q)
+  refines <- getAllRefines env
+  res <- mapM (\env -> 
+    do 
+      st <- getAllStates (EvalQ (e, env))
+      return (env, st)
+    ) (S.toList refines)
   trace "Finished eval" $ return ()
-  return $ map (\(f, s) -> (f, toAbValue2 s)) ((env,res):res2)
+  return res
 
 fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
 fixedExpr e env = do
   let q = ExprQ (e, env)
-  res <- loop (QueryInput q)
-  trace "Finished eval" $ return ()
-  return (S.toList $ closures $ toAbValue2 res)
-
+  loop (QueryInput q)
+  refines <- getAllRefines env
+  res <- mapM (\env -> 
+    do 
+      st <- getAllStates (ExprQ (e, env))
+      return (e, env)
+    ) (S.toList refines)
+  trace "Finished expr" $ return ()
+  return res
+  
 fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
 fixedCall e env = do
   let q = CallQ (e, env)
-  res <- loop (QueryInput q)
-  trace "Finished eval" $ return ()
-  return (S.toList $ closures $ toAbValue2 res)
+  loop (QueryInput q)
+  refines <- getAllRefines env
+  res <- mapM (\env -> 
+    do 
+      st <- getAllStates (CallQ (e, env))
+      return (e, env)
+    ) (S.toList refines)
+  trace "Finished call" $ return ()
+  return res
 
 loop :: FixInput -> FixDemandR x s e AFixChange
 loop fixinput = do
-  let e = each fixinput
   memo fixinput $ \i ->
     case i of
       QueryInput cq ->
@@ -152,43 +173,28 @@ loop fixinput = do
           EvalQ{} -> do
             newQuery cq (\queryStr -> do
                 let evalRefine = do 
-                      refine <- getRefines (queryEnv cq)
+                      refine <- getRefine (queryEnv cq)
                       doEval (EvalQ (queryCtx cq, refine)) queryStr
-                each
-                  [
-                    doEval cq queryStr,
-                    evalRefine
-                  ]
-                -- refines <- getRefines (queryEnv cq)
-                -- res2 <- foldM (\res env -> do
-                --     x <- doEval (EvalQ (queryCtx cq, env)) queryStr
-                --     return $ res `join` x
-                --   ) res refines
+                each [ doEval cq queryStr, evalRefine ]
                 -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
               )
           CallQ{} -> do
             newQuery cq (\queryStr -> do
-                res <- doCall cq queryStr
-                refines <- getRefines (queryEnv cq)
-                res2 <- foldM (\res env -> do
-                    x <- doCall (CallQ (queryCtx cq, env)) queryStr
-                    return $ res `join` x
-                  ) res refines
-                trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
+                let callRefine = do 
+                      refine <- getRefine (queryEnv cq)
+                      doCall (CallQ (queryCtx cq, refine)) queryStr
+                each [ doCall cq queryStr, callRefine ]
+                -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
               )
           ExprQ{} -> do
             newQuery cq (\queryStr -> do
-                res <- doExpr cq queryStr
-                refines <- getRefines1 (queryEnv cq)
-                res2 <- foldM (\res env -> do
-                    x <- doExpr (ExprQ (queryCtx cq, env)) queryStr
-                    return $ res `join` x
-                  ) res refines
-                trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
+                let exprRefine = do 
+                      refine <- getRefine (queryEnv cq)
+                      doExpr (ExprQ (queryCtx cq, refine)) queryStr
+                each [ doExpr cq queryStr, exprRefine ]
+                -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
               )
-      EnvInput env ->
-        return $ AChangeNone
-
+      EnvInput env -> return B
 
 bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))
 bindExternal var@(Var tn@(TName name tp _) vInfo) = do
