@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
-module Core.AbstractValue(
+module Demand.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
                           LiteralLattice(..),
@@ -32,7 +32,7 @@ module Core.AbstractValue(
                           envtail,envhead
                         ) where
 import Data.Map.Strict as M hiding (map)
-import Core.StaticContext
+import Demand.StaticContext
 import Common.Name
 import Type.Type
 import Data.Set hiding (map, map)
@@ -46,7 +46,7 @@ import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
-import Core.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
+import Demand.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 

@@ -14,7 +14,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 
-module Core.FixpointMonad(
+module Demand.FixpointMonad(
   SimpleLattice(..),
   SLattice,
   SimpleChange(..),

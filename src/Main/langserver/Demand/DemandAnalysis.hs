@@ -13,7 +13,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Core.DemandAnalysis(
+module Demand.DemandAnalysis(
   fixedEval,fixedExpr,fixedCall,loop,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),FixOutput,Query(..),AnalysisKind(..),
   toAbValue,toAbValue2,
@@ -43,9 +43,9 @@ import Common.NamePrim (nameOpen, nameEffectOpen)
 import Lib.PPrint (Pretty(..))
 import Debug.Trace
 import Core.Core as C
-import Core.StaticContext
-import Core.AbstractValue
-import Core.FixpointMonad
+import Demand.StaticContext
+import Demand.AbstractValue
+import Demand.FixpointMonad
 import Core.Pretty
 import Core.CoreVar
 import Compile.BuildContext
@@ -57,7 +57,7 @@ import Syntax.RangeMap (RangeInfo)
 import Syntax.Syntax (UserExpr, UserProgram, UserDef, Program (..), DefGroups, UserType, DefGroup (..), Def (..), ValueBinder (..), UserValueBinder)
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
-import Core.AbstractValue (AbValue)
+import Demand.AbstractValue (AbValue)
 
 type FixDemand x s e = FixDemandR x s e AFixChange
 type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput SimpleLattice AFixChange FixOutput a

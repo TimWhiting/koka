@@ -56,7 +56,6 @@ library
       Compile.Options
       Compile.Package
       Compile.TypeCheck
-      Core.AbstractValue
       Core.AnalysisCCtx
       Core.AnalysisMatch
       Core.AnalysisResume
@@ -67,10 +66,7 @@ library
       Core.Core
       Core.CoreVar
       Core.CTail
-      Core.DemandAnalysis
       Core.Divergent
-      Core.EffectOptimization
-      Core.FixpointMonad
       Core.FunLift
       Core.Inline
       Core.Inlines
@@ -81,7 +77,6 @@ library
       Core.Pretty
       Core.Simplify
       Core.Specialize
-      Core.StaticContext
       Core.Uniquefy
       Core.UnReturn
       Core.Unroll
@@ -175,6 +170,11 @@ library
 executable koka
   main-is: Main.hs
   other-modules:
+      Demand.AbstractValue
+      Demand.DemandAnalysis
+      Demand.EffectOptimization
+      Demand.FixpointMonad
+      Demand.StaticContext
       LanguageServer.Conversions
       LanguageServer.Handler.Commands
       LanguageServer.Handler.Completion

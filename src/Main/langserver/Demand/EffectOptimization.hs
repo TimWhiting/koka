@@ -1,4 +1,4 @@
-module Core.EffectOptimization(
+module Demand.EffectOptimization(
                           
                         ) where
 
@@ -13,10 +13,10 @@ module Core.EffectOptimization(
 -- import Core.Core as C
 -- import Core.Monadic
 -- import Common.Unique
--- import Core.StaticContext
--- import Core.AbstractValue
--- import Core.FixpointMonad
--- import Core.DemandAnalysis
+-- import Demand.StaticContext
+-- import Demand.AbstractValue
+-- import Demand.FixpointMonad
+-- import Demand.DemandAnalysis
 -- import Compiler.Module
 -- import Data.Maybe (fromMaybe)
 

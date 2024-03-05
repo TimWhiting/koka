@@ -68,8 +68,8 @@ import Syntax.RangeMap
       NameInfo(..),
       RangeInfo(..),
       rangeMapFindAt )
-import Core.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
-import Core.StaticContext (showSyntax, showLit, showSyntaxDef)
+import Demand.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
+import Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
 import Debug.Trace (trace)
 
 toAbValueText (env, (fns, defs, lits, constrs, topTypes, errs)) =
