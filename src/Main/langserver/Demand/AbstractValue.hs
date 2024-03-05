@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
--- Copyright 2012-2023, Microsoft Research, Daan Leijen. Tim Whiting.
+-- Copyright 2024, Tim Whiting.
 --
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be
@@ -11,18 +11,14 @@ module Demand.AbstractValue(
                           EnvCtx(..),
                           LiteralLattice(..),
                           LiteralChange(..),
-                          AbValue,
-                          AValue,
+                          AbValue(..),
                           AChange(..),
-                          closures,constrs,lits,err,intV,floatV,charV,stringV,
+                          addChange,
                           showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
                           showNoEnvClosure, showNoEnvAbValue,
                           emptyAbValue,
-                          injClosure,injErr,injLit,injCon,injClosures,
                           joinAbValue,joinML,
                           subsumes,subsumesCtx,
-                          toSynLit,toSynLitD,toSynLitC,toSynLitS,
-                          topTypesOf,
                           bind,
                           indeterminateStaticCtx,maybeModOfEnv,maybeModOfCtx,
                           refineCtx,
@@ -47,6 +43,7 @@ import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
 import Demand.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
+import qualified Demand.FixpointMonad as FM
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
@@ -68,8 +65,6 @@ data LiteralChange =
 instance Show LiteralLattice where
   show (LiteralLattice i f c s) = intercalate "," [show i, show f, show c, show s]
 
-type AbValue = BasicLattice AValue AValue
-
 data AChange =
   AChangeClos ExprContext EnvCtx
   | AChangeConstr ExprContext EnvCtx
@@ -78,42 +73,33 @@ data AChange =
   | AChangeNone
   deriving (Show, Eq)
 
-data AValue =
-  AValue{
+data AbValue =
+  AbValue{
     aclos:: !(Set (ExprContext, EnvCtx)),
     acons:: !(Set (ExprContext, EnvCtx)),
     alits:: !(Map EnvCtx LiteralLattice),
     aerr:: Maybe String
   } deriving (Eq, Ord)
 
-getV :: (AValue -> b) -> AbValue -> b
-getV f (BL a) = f a
-
-closures :: AbValue -> Set (ExprContext, EnvCtx)
-closures = getV aclos
-
-constrs :: AbValue -> Set (ExprContext, EnvCtx)
-constrs = getV acons
-
-lits :: AbValue -> Map EnvCtx LiteralLattice
-lits = getV alits
-
-err = getV aerr
-
-instance Semigroup AValue where
-  (<>) :: AValue -> AValue -> AValue
+instance Semigroup AbValue where
+  (<>) :: AbValue -> AbValue -> AbValue
   (<>) = joinAbValue
 
-instance Monoid AValue where
-  mempty = emptyAValue
+instance Monoid AbValue where
+  mempty = emptyAbValue
   mappend = (<>)
 
-instance Show AValue where
-  show (AValue cls cntrs lit e) =
+instance Show AbValue where
+  show (AbValue cls cntrs lit e) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
     (if M.null lit then "" else " lit: " ++ show (map show (M.toList lit))) ++
     maybe "" (" err: " ++) e
+
+instance Contains AbValue where
+  contains :: AbValue -> AbValue -> Bool
+  contains (AbValue cls0 cntrs0 lit0 e0) (AbValue cls1 cntrs1 lit1 e1) =
+    S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && e1 == e0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 < lit1) lit0 lit1
 
 -- Basic creating of abstract values
 showSimpleClosure :: (ExprContext, EnvCtx) -> String
@@ -132,46 +118,25 @@ showSimpleEnv_ (EnvCtx ctx tail) =
 showSimpleEnv_ (EnvTail ctx) = showSimpleCtx ctx
 
 showSimpleAbValueCtx :: (EnvCtx, AbValue) -> String
-showSimpleAbValueCtx (env, BL ab) =
-  showSimpleEnv env ++ ": " ++ showSimpleAValue ab ++ "\n"
+showSimpleAbValueCtx (env, ab) =
+  showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
 
 showSimpleAbValue :: AbValue -> String
-showSimpleAbValue (BL a) = showSimpleAValue a
-
-showNoEnvAbValue :: AbValue -> String
-showNoEnvAbValue (BL a) = showNoEnvAValue a
-
-showSimpleAValue :: AValue -> String
-showSimpleAValue (AValue cls cntrs lit e) =
+showSimpleAbValue (AbValue cls cntrs lit e) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleClosure (S.toList cntrs)) ++ "]") ++
   (if M.null lit then "" else " lits: " ++ show (M.toList lit)) ++
   maybe "" (" err: " ++) e
 
-showNoEnvAValue :: AValue -> String
-showNoEnvAValue (AValue cls cntrs lit e) =
+showNoEnvAbValue :: AbValue -> String
+showNoEnvAbValue (AbValue cls cntrs lit e) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showNoEnvClosure (S.toList cntrs)) ++ "]") ++
   (if M.null lit then "" else " lits: " ++ show (map snd (M.toList lit))) ++
   maybe "" (" err: " ++) e
 
-instance Contains AValue where
-  contains :: AValue -> AValue -> Bool
-  contains (AValue cls0 cntrs0 lit0 e0) (AValue cls1 cntrs1 lit1 e1) =
-    S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && e1 == e0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 < lit1) lit0 lit1
-
-emptyAbValue = BL emptyAValue
-
-emptyAValue :: AValue
-emptyAValue = AValue S.empty S.empty M.empty Nothing
-
-injClosure :: ExprContext -> EnvCtx -> AChange
-injClosure = AChangeClos
-
-injClosures cls = BL emptyAValue{aclos= S.fromList cls}
-
-injErr :: String -> AChange
-injErr = AChangeErr
+emptyAbValue :: AbValue
+emptyAbValue = AbValue S.empty S.empty M.empty Nothing
 
 injLit :: C.Lit -> EnvCtx -> AChange
 injLit x env =
@@ -181,69 +146,32 @@ injLit x env =
     C.LitChar c -> (AChangeLit $ LiteralChangeChar $ LChangeSingle c) env
     C.LitString s -> (AChangeLit $ LiteralChangeString $ LChangeSingle s) env
 
-injCon :: ExprContext -> EnvCtx -> AChange
-injCon = AChangeConstr
-
 --- JOINING
 joinML :: Ord x => M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x)
 joinML = M.unionWith join
 
+addChange :: AbValue -> AChange -> AbValue
+addChange ab@(AbValue cls cs lit er) change =
+  case change of
+    AChangeNone -> ab
+    AChangeErr err -> AbValue cls cs lit (Just err)
+    AChangeClos lam env -> AbValue (S.insert (lam,env) cls) cs lit er
+    AChangeConstr c env -> AbValue cls (S.insert (c,env) cs) lit er
+    AChangeLit l env -> AbValue cls cs (M.insertWith joinLit env (litLattice l) lit) er
+
+litLattice :: LiteralChange -> LiteralLattice
+litLattice lit = 
+  case lit of
+    LiteralChangeInt ch -> LiteralLattice (ch `FM.insert` LBottom) LBottom LBottom LBottom
+    LiteralChangeFloat ch -> LiteralLattice LBottom (ch `FM.insert` LBottom) LBottom LBottom
+    LiteralChangeChar ch -> LiteralLattice LBottom LBottom (ch `FM.insert` LBottom) LBottom
+    LiteralChangeString ch -> LiteralLattice LBottom LBottom LBottom (ch `FM.insert` LBottom)
 
 joinLit :: LiteralLattice -> LiteralLattice -> LiteralLattice
 joinLit (LiteralLattice i1 f1 c1 s1) (LiteralLattice i2 f2 c2 s2) = LiteralLattice (i1 `join` i2) (f1 `join` f2) (c1 `join` c2) (s1 `join` s2)
 
-joinAbValue :: AValue -> AValue -> AValue
-joinAbValue (AValue cls0 cs0 lit0 e0) (AValue cls1 cs1 lit1 e1) = AValue (S.union cls0 cls1) (S.union cs0 cs1) (M.unionWith joinLit lit0 lit1) (e0 `mplus` e1)
-
-
--- Converting to user visible expressions
-toSynLit :: SLattice Integer -> Maybe S.Lit
-toSynLit (LSingle i) = Just $ S.LitInt i rangeNull
-toSynLit _ = Nothing
-
-toSynLitD :: SLattice Double -> Maybe S.Lit
-toSynLitD (LSingle i) = Just $ S.LitFloat i rangeNull
-toSynLitD _ = Nothing
-
-toSynLitC :: SLattice Char -> Maybe S.Lit
-toSynLitC (LSingle i) = Just $ S.LitChar i rangeNull
-toSynLitC _ = Nothing
-
-toSynLitS :: SLattice String -> Maybe S.Lit
-toSynLitS (LSingle i) = Just $ S.LitString i rangeNull
-toSynLitS _ = Nothing
-
-maybeTopI :: SLattice Integer -> Maybe Type
-maybeTopI LTop = Just typeInt
-maybeTopI _ = Nothing
-
-maybeTopD :: SLattice Double -> Maybe Type
-maybeTopD LTop = Just typeFloat
-maybeTopD _ = Nothing
-
-maybeTopC :: SLattice Char -> Maybe Type
-maybeTopC LTop = Just typeChar
-maybeTopC _ = Nothing
-
-maybeTopS :: SLattice String -> Maybe Type
-maybeTopS LTop = Just typeString
-maybeTopS _ = Nothing
-
-intV :: AbValue -> M.Map EnvCtx (SLattice Integer)
-intV (BL a) = fmap intVL (alits a)
-
-floatV :: AbValue -> M.Map EnvCtx (SLattice Double)
-floatV (BL a) = fmap floatVL (alits a)
-
-charV :: AbValue -> M.Map EnvCtx (SLattice Char)
-charV (BL a) = fmap charVL (alits a)
-
-stringV :: AbValue -> M.Map EnvCtx (SLattice String)
-stringV (BL a) = fmap stringVL (alits a)
-
-topTypesOf :: AbValue -> Set Type
-topTypesOf ab =
-  S.fromList $ catMaybes (map maybeTopI (M.elems (intV ab)) ++ map maybeTopD (M.elems (floatV ab)) ++ map maybeTopC (M.elems (charV ab)) ++ map maybeTopS (M.elems (stringV ab)))
+joinAbValue :: AbValue -> AbValue -> AbValue
+joinAbValue (AbValue cls0 cs0 lit0 e0) (AbValue cls1 cs1 lit1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (M.unionWith joinLit lit0 lit1) (e0 `mplus` e1)
 
 -- Other static information
 

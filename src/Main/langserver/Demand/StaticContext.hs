@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
--- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
+-- Copyright 2024 Tim Whiting.
 --
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be

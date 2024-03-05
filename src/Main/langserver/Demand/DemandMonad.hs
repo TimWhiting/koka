@@ -1,22 +1,43 @@
+-----------------------------------------------------------------------------
+-- Copyright 2024, Tim Whiting.
+--
+-- This is free software; you can redistribute it and/or modify it under the
+-- terms of the Apache License, Version 2.0. A copy of the License can be
+-- found in the LICENSE file at the root of this distribution.
+-----------------------------------------------------------------------------
+
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Demand.DemandMonad(
   FixDemandR, FixDemand, State(..),  
-  AnalysisKind, DEnv(..), Query(..),
-  getState, getCache, cacheLookup) where
+  AnalysisKind(..), DEnv(..), Query(..), 
+  -- Cache / State stuff
+  toAbValue, toEnv, getAllRefines, getState, getCache, cacheLookup, updateState, setResult,
+  -- Context stuff
+  getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts, 
+  childrenContexts, focusParam, focusBody, focusChild,
+  -- Env stuff
+  getEnv, withEnv, getUnique, newQuery,
+  ) where
 
 import Control.Monad.State (gets, MonadState (..))
 import Control.Monad.Reader
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Set (Set)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust)
 import Demand.AbstractValue
 import Demand.StaticContext
 import Demand.FixpointMonad
 import Compile.Options
 import Compile.BuildContext
 import Common.Name
+import Core.Core
+import Compile.Module
+import qualified Core.Core as C
+import Control.Monad (zipWithM)
+import Debug.Trace (trace)
+import Data.List (find)
 
 type FixDemand x s e = FixDemandR x s e AFixChange
 type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput FixOutput AFixChange a
@@ -137,7 +158,7 @@ instance Lattice FixOutput AFixChange where
   join x N = x
   join (A a) (A b) = A (a `join` b)
   join (E e) (E e1) = E (e `join` e1)
-  insert (FA a) N = bottom `join` a
+  insert (FA a) N = bottom addChange a
 
 -- Implement the needed operations for the output to be a lattice
 instance Semigroup (FixOutput d) where
@@ -148,7 +169,7 @@ instance Semigroup (FixOutput d) where
   (<>) x y = error $ "Unexpected semigroup combination " ++ show x ++ " " ++ show y
 
 instance Contains (FixOutput d) where
-  contains (A (BL a)) (A (BL b)) = a `contains` b
+  contains (A a) (A b) = a `contains` b
   contains (E e) (E e1) = e1 `S.isSubsetOf` e
   contains _ N = True
   contains _ _ = False
@@ -210,12 +231,6 @@ setResult x = do
   updateState (\st -> st{finalResult = Just x})
   return B
 
-instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
-instantiate query c1 c0 = if c1 == c0 then return () else do
-  trace (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1) $ return ()
-  loop (EnvInput c0)
-  push (EnvInput c0) (FE c1)
-  return ()
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
 newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
@@ -224,4 +239,131 @@ newQuery q d = do
   withEnv (\env -> env{currentContext = queryCtx q, currentEnv = queryEnv q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
     res <- d query
-    return $ A $ FA res
+    return $ FA res
+
+--------------------------------------- ExprContext Helpers -------------------------------------
+
+allModules :: BuildContext -> [Module]
+allModules buildc = buildcModules buildc
+
+getTopDefCtx :: ExprContext -> Name -> FixDemandR x s e ExprContext
+getTopDefCtx ctx name = do
+  children <- childrenContexts ctx
+  case find (\dctx -> case dctx of
+      DefCNonRec{} | defName (defOfCtx dctx) == name -> True
+      DefCRec{} | defName (defOfCtx dctx) == name -> True
+      _ -> False
+      ) children of
+    Just dctx -> do
+      -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
+      return dctx
+    Nothing -> error $ "getTopDefCtx: " ++ show ctx ++ " " ++ show name
+
+getModule :: Name -> FixDemandR x s e Module
+getModule name = do
+  deps <- buildcModules . buildc <$> getState
+  let x = find (\m -> modName m == name) deps
+  case x of
+    Just mod -> return mod
+    _ -> error $ "getModule: " ++ show name
+
+addChildrenContexts :: ExprContextId -> [ExprContext] -> FixDemandR x s e ()
+addChildrenContexts parentCtx contexts = do
+  state <- getState
+  let newIds = map contextId contexts
+      newChildren = M.insert parentCtx (S.fromList newIds) (childrenIds state)
+   -- trace ("Adding " ++ show childStates ++ " previously " ++ show (M.lookup parentCtx (childrenIds state))) 
+  setState state{childrenIds = newChildren}
+
+newContextId :: FixDemandR x s e ExprContextId
+newContextId = do
+  state <- getState
+  id <- currentContext <$> getEnv
+  let newCtxId = maxContextId state + 1
+  updateState (\s -> s{maxContextId = newCtxId})
+  return $! ExprContextId newCtxId (moduleName (contextId id))
+
+newModContextId :: Module -> FixDemandR x s e ExprContextId
+newModContextId mod = do
+  state <- getState
+  let newCtxId = maxContextId state + 1
+  updateState (\s -> s{maxContextId = newCtxId})
+  return $! ExprContextId newCtxId (modName mod)
+
+addContextId :: (ExprContextId -> ExprContext) -> FixDemandR x s e ExprContext
+addContextId f = do
+  newId <- newContextId
+  state <- getState
+  let x = f newId
+  setState state{states=M.insert newId x (states state)}
+  return x
+
+childrenOfExpr :: ExprContext -> Expr -> FixDemandR x s e [ExprContext]
+childrenOfExpr ctx expr =
+  case expr of
+    Lam names eff e -> addContextId (\newId -> LamCBody newId ctx names e) >>= single
+    App f vs -> do
+      x <- addContextId (\newId -> AppCLambda newId ctx f )
+      rest <- zipWithM (\i x -> addContextId (\newId -> AppCParam newId ctx i x)) [0..] vs
+      return $! x : rest
+    Let defs result -> do
+      let defNames = map defTName (concatMap defsOf defs)
+      defs <- zipWithM (\i x -> addContextId (\newId -> LetCDef newId ctx defNames i defs)) [0..] defs
+      result <- addContextId (\newId -> LetCBody newId ctx defNames result)
+      return $! result:defs
+    Case exprs branches -> do
+      match <- addContextId (\newId -> CaseCMatch newId ctx (head exprs))
+      branches <- zipWithM (\i x -> addContextId (\newId -> CaseCBranch newId ctx (branchVars x) i x)) [0..] branches
+      return $! match : branches
+    Var name info -> addContextId (\newId -> ExprCBasic newId ctx expr ) >>= single
+    TypeLam tvars expr -> childrenOfExpr ctx expr
+    TypeApp expr tps -> childrenOfExpr ctx expr
+    Con name repr -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
+    Lit lit -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
+  where single x = return [x]
+
+childrenOfDef :: ExprContext -> C.DefGroup -> FixDemandR x s e [ExprContext]
+childrenOfDef ctx def =
+  case def of
+    C.DefNonRec d -> addContextId (\newId -> DefCNonRec newId ctx [defTName d] def) >>= (\x -> return [x])
+    C.DefRec ds -> zipWithM (\i d -> addContextId (\newId -> DefCRec newId ctx (map defTName ds) i def)) [0..] ds
+
+childrenContexts :: ExprContext -> FixDemandR x s e [ExprContext]
+childrenContexts ctx = do
+  withEnv (\env -> env{currentContext = ctx, currentModContext = case ctx of {ModuleC{} -> ctx; _ -> currentModContext env}}) $ do
+    let parentCtxId = contextId ctx
+    children <- childrenIds <$> getState
+    let childIds = M.lookup parentCtxId children
+    case childIds of
+      Nothing -> do
+          -- trace ("No children for " ++ show ctx) $ return ()
+          newCtxs <- case ctx of
+                ModuleC _ mod _ -> do
+                  res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCore mod)
+                  return $! concat res
+                DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
+                DefCNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
+                LamCBody _ _ names body -> childrenOfExpr ctx body
+                AppCLambda _ _ f -> childrenOfExpr ctx f
+                AppCParam _ _ _ param -> childrenOfExpr ctx param
+                LetCDef{} -> childrenOfExpr ctx (exprOfCtx ctx)
+                LetCBody _ _ _ e -> childrenOfExpr ctx e
+                CaseCMatch _ _ e -> childrenOfExpr ctx e
+                CaseCBranch _ _ _ _ b -> do
+                  x <- mapM (childrenOfExpr ctx . guardExpr) $ branchGuards b -- TODO Better context for branch guards
+                  return $! concat x
+                ExprCBasic{} -> return []
+                ExprCTerm{} -> return []
+          addChildrenContexts parentCtxId newCtxs
+          return newCtxs
+      Just childIds -> do
+        -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
+        states <- states <$> getState
+        return $! map (states M.!) (S.toList childIds)
+
+visitChildrenCtxs :: ([a] -> a) -> ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
+visitChildrenCtxs combine ctx analyze = do
+  children <- childrenContexts ctx
+  -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
+  res <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
+  return $! combine res

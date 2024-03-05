@@ -42,23 +42,12 @@ import Common.Range (Range, showFullRange, rangeNull)
 import Common.NamePrim (nameOpen, nameEffectOpen)
 import Lib.PPrint (Pretty(..))
 import Debug.Trace
-import Core.Core as C
 import Demand.StaticContext
 import Demand.AbstractValue
-import Demand.FixpointMonad
-import Core.Pretty
-import Core.CoreVar
-import Compile.BuildContext
-import Type.Pretty (ppType, defaultEnv, Env (..))
-import Type.Type (isTypeInt, isTypeInt32, Type (..), expandSyn, TypeCon (..), ConInfo (..), Flavour (Bound), TypeVar (TypeVar), effectEmpty)
-import Kind.Kind (Kind(..), kindFun, kindStar)
-import Compile.Module (Module (..), ModStatus (LoadedIface, LoadedSource), moduleNull)
-import Syntax.RangeMap (RangeInfo)
-import Syntax.Syntax (UserExpr, UserProgram, UserDef, Program (..), DefGroups, UserType, DefGroup (..), Def (..), ValueBinder (..), UserValueBinder)
-import qualified Syntax.Syntax as Syn
-import Compile.Options (Flags (..), Terminal(..))
-import Demand.AbstractValue (AbValue)
 import Demand.DemandMonad
+import Demand.FixpointMonad
+import Compile.Options (Flags (..), Terminal(..))
+import Core.Core
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
@@ -315,12 +304,12 @@ doEval :: Query -> String -> FixDemandR x s e AChange
 doEval cq@(EvalQ (ctx, env)) query = do
    trace (query ++ show cq) $ do
     case maybeExprOfCtx ctx of
-      Nothing -> return $ injErr "doEval: can't find expression"
+      Nothing -> return $ AChangeErr "doEval: can't find expression"
       Just expr ->
         case expr of
           Lam{} -> -- LAM CLAUSE
             -- trace (query ++ "LAM: " ++ show ctx) $
-            return $! injClosure ctx env
+            return $! AChangeClos ctx env
           v@(Var n _) | getName n == nameEffectOpen -> do
             getPrimitive n
           v@(Var tn _) -> do -- REF CLAUSE
@@ -353,7 +342,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
               Just ((CaseCBranch _ c _ _ (Branch pat guard), bindedenv), index) -> do
                 mscrutinee <- focusChild c 0
                 case mscrutinee of
-                  Nothing -> return $! injErr $ "REF: can't find scrutinee of case " ++ show ctx
+                  Nothing -> return $! AChangeErr $ "REF: can't find scrutinee of case " ++ show ctx
                   Just scrutinee -> do
                     -- trace (query ++ "REF: scrutinee of case " ++ show scrutinee) $ return []
                     evalPatternRef scrutinee bindedenv (head pat) tn
@@ -368,7 +357,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
               Just ((ctxctx, bindedenv), index) -> do
                 children <- childrenContexts ctxctx
                 let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
-                trace msg $ return $! injErr msg
+                trace msg $ return $! AChangeErr msg
               Nothing -> do
                 ext <- bindExternal v
                 case ext of
@@ -376,15 +365,15 @@ doEval cq@(EvalQ (ctx, env)) query = do
                     lamctx <- getTopDefCtx modulectx (getName tn)
                     -- Evaluates just to the lambda
                     qeval (lamctx, EnvTail TopCtx)
-                  _ -> return $! injErr $ "REF: can't find what the following refers to " ++ show ctx
+                  _ -> return $! AChangeErr $ "REF: can't find what the following refers to " ++ show ctx
           App (TypeApp (Con nm repr) _) args -> do
             trace (query ++ "APPCon: " ++ show ctx) $ return []
             children <- childrenContexts ctx
-            return $ injCon ctx env
+            return $ AChangeConstr ctx env
           App (Con nm repr) args -> do
             trace (query ++ "APPCon: " ++ show ctx) $ return []
             children <- childrenContexts ctx
-            return $ injCon ctx env
+            return $ AChangeConstr ctx env
           App f tms -> do
             trace (query ++ "APP: " ++ show ctx) $ return []
             fun <- focusChild ctx 0
@@ -406,16 +395,16 @@ doEval cq@(EvalQ (ctx, env)) query = do
           TypeApp{} ->
             trace (query ++ "TYPEAPP: " ++ show ctx) $
             case ctx of
-              DefCNonRec{} -> return $! injClosure ctx env
-              DefCRec{} -> return $! injClosure ctx env
+              DefCNonRec{} -> return $! AChangeClos ctx env
+              DefCRec{} -> return $! AChangeClos ctx env
               _ -> do
                 ctx' <- focusChild ctx 0
                 doMaybeAbValue ctx' (\ctx -> qeval (ctx,env))
           TypeLam{} ->
             trace (query ++ "TYPE LAM: " ++ show ctx) $
             case ctx of
-              DefCNonRec{} -> return $! injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
-              DefCRec{} -> return $! injClosure ctx env-- Don't further evaluate if it is just the definition / lambda
+              DefCNonRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
+              DefCRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
               _ -> do
                 ctx' <- focusChild ctx 0
                 doMaybeAbValue ctx' (\ctx -> qeval (ctx,env))
@@ -451,11 +440,11 @@ doEval cq@(EvalQ (ctx, env)) query = do
                       ) emptyAbValue branches
                 -- trace (query ++ "CASE: result' is " ++ show res') $ return []
                 -- if res' == emptyAbValue then
-                --   return $ injErr $ "No branches matched in case statement:\n\n" ++ show (exprOfCtx ctx)
+                --   return $ AChangeErr $ "No branches matched in case statement:\n\n" ++ show (exprOfCtx ctx)
                 -- else 
                 return res'
               )
-          Con nm repr -> return $! injCon ctx env -- TODO: Check that the constructor is a singleton
+          Con nm repr -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
 
 --------------------------------- PATTERN EVALUATION HELPERS -----------------------------------------------
 evalPatternRef :: ExprContext -> EnvCtx -> Pattern -> TName -> FixDemandR x s e AbValue
@@ -571,11 +560,6 @@ findBranch cc ctx env = do
         xs -> return $ map (\i -> children !! (i + 1)) xs -- +1 to skip the scrutinee
       return []
 
-newErrTerm :: String -> FixDemandR x s e [(ExprContext, EnvCtx)]
-newErrTerm s = do
-  newId <- newContextId
-  return [(ExprCTerm newId ("Error: " ++ s), EnvTail CutUnknown)]
-
 -- TODO: This still sometimes returns emptyAbValue
 doExpr :: Query -> String -> FixDemandR x s e AChange
 doExpr cq@(ExprQ (ctx,env)) query = do
@@ -583,7 +567,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
     case ctx of
       AppCLambda _ c e -> -- RATOR Clause
         -- trace (query ++ "OPERATOR: Application is " ++ showCtxExpr c) $
-        return $ injClosure c env
+        return $ AChangeClos c env
       AppCParam _ c index e -> do -- RAND Clause 
         -- trace (query ++ "OPERAND: Expr is " ++ showCtxExpr ctx) $ return []
         fn <- focusChild c 0
@@ -611,7 +595,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
       ExprCTerm{} ->
         -- trace (query ++ "ends in error " ++ show ctx)
         -- return [(ctx, env)]
-        return $ injErr $ "Exprs led to ExprCTerm" ++ show ctx
+        return $ AChangeErr $ "Exprs led to ExprCTerm" ++ show ctx
       DefCNonRec _ c index _ -> do
         trace (query ++ "DEF NonRec: Env is " ++ show env) $ return []
         let df = defOfCtx ctx
@@ -648,8 +632,8 @@ doExpr cq@(ExprQ (ctx,env)) query = do
           Just c ->
             case enclosingLambda c of
               Just c' -> qexpr (c', env)
-              _ -> return $ injErr $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
-          Nothing -> return $ injErr $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
+              _ -> return $ AChangeErr $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
+          Nothing -> return $ AChangeErr $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
 
 doCall :: Query -> String -> FixDemandR x s e AChange
 doCall cq@(CallQ(ctx, env)) query =
@@ -667,7 +651,7 @@ doCall cq@(CallQ(ctx, env)) query =
                 cc1 <- succAEnv callctx callenv
                 if cc1 == cc0 then
                   trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-                  return $! injClosure callctx callenv
+                  return $! AChangeClos callctx callenv
                 else if cc0 `subsumesCtx` cc1 then do
                   trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
                   instantiate query (EnvCtx cc1 p) env
@@ -681,7 +665,7 @@ doCall cq@(CallQ(ctx, env)) query =
                   (CallCtx callctx p') -> do
                     trace (query ++ "Known: " ++ show callctx) $ return ()
                     pnew <- calibratem callctx p'
-                    return $ injClosure callctx pnew
+                    return $ AChangeClos callctx pnew
                   _ -> do
                     trace (query ++ "Unknown") $ return ()
                     qexpr (c, envtail env)
@@ -695,7 +679,7 @@ doCall cq@(CallQ(ctx, env)) query =
                       cc1 <- succAEnv callctx callenv
                       if cc1 == cc0 then
                         trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-                        return $! injClosure callctx callenv
+                        return $! AChangeClos callctx callenv
                       else if cc0 `subsumesCtx` cc1 then do
                         trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
                         instantiate query (EnvCtx cc1 p) env
@@ -709,211 +693,17 @@ doCall cq@(CallQ(ctx, env)) query =
                     case pnew of
                       Just pnew -> do
                         trace (query ++ "Known: " ++ show callctx) $ return ()
-                        return $ injClosure callctx pnew
+                        return $ AChangeClos callctx pnew
                       Nothing -> fallback
                   _ -> fallback
-          _ -> return $ injErr $ "CALL not implemented for " ++ show ctx
+          _ -> return $ AChangeErr $ "CALL not implemented for " ++ show ctx
 
-
---------------------------------------- ExprContext Helpers -------------------------------------
-
-allModules :: BuildContext -> [Module]
-allModules buildc = buildcModules buildc
-
-getTopDefCtx :: ExprContext -> Name -> FixDemandR x s e ExprContext
-getTopDefCtx ctx name = do
-  children <- childrenContexts ctx
-  case find (\dctx -> case dctx of
-      DefCNonRec{} | defName (defOfCtx dctx) == name -> True
-      DefCRec{} | defName (defOfCtx dctx) == name -> True
-      _ -> False
-      ) children of
-    Just dctx -> do
-      -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
-      return dctx
-    Nothing -> error $ "getTopDefCtx: " ++ show ctx ++ " " ++ show name
-
-getModule :: Name -> FixDemandR x s e Module
-getModule name = do
-  deps <- buildcModules . buildc <$> getState
-  let x = find (\m -> modName m == name) deps
-  case x of
-    Just mod -> return mod
-    _ -> error $ "getModule: " ++ show name
-
-addChildrenContexts :: ExprContextId -> [ExprContext] -> FixDemandR x s e ()
-addChildrenContexts parentCtx contexts = do
-  state <- getState
-  let newIds = map contextId contexts
-      newChildren = M.insert parentCtx (S.fromList newIds) (childrenIds state)
-   -- trace ("Adding " ++ show childStates ++ " previously " ++ show (M.lookup parentCtx (childrenIds state))) 
-  setState state{childrenIds = newChildren}
-
-newContextId :: FixDemandR x s e ExprContextId
-newContextId = do
-  state <- getState
-  id <- currentContext <$> getEnv
-  let newCtxId = maxContextId state + 1
-  updateState (\s -> s{maxContextId = newCtxId})
-  return $! ExprContextId newCtxId (moduleName (contextId id))
-
-newModContextId :: Module -> FixDemandR x s e ExprContextId
-newModContextId mod = do
-  state <- getState
-  let newCtxId = maxContextId state + 1
-  updateState (\s -> s{maxContextId = newCtxId})
-  return $! ExprContextId newCtxId (modName mod)
-
-addContextId :: (ExprContextId -> ExprContext) -> FixDemandR x s e ExprContext
-addContextId f = do
-  newId <- newContextId
-  state <- getState
-  let x = f newId
-  setState state{states=M.insert newId x (states state)}
-  return x
-
-childrenOfExpr :: ExprContext -> Expr -> FixDemandR x s e [ExprContext]
-childrenOfExpr ctx expr =
-  case expr of
-    Lam names eff e -> addContextId (\newId -> LamCBody newId ctx names e) >>= single
-    App f vs -> do
-      x <- addContextId (\newId -> AppCLambda newId ctx f )
-      rest <- zipWithM (\i x -> addContextId (\newId -> AppCParam newId ctx i x)) [0..] vs
-      return $! x : rest
-    Let defs result -> do
-      let defNames = map defTName (concatMap defsOf defs)
-      defs <- zipWithM (\i x -> addContextId (\newId -> LetCDef newId ctx defNames i defs)) [0..] defs
-      result <- addContextId (\newId -> LetCBody newId ctx defNames result)
-      return $! result:defs
-    Case exprs branches -> do
-      match <- addContextId (\newId -> CaseCMatch newId ctx (head exprs))
-      branches <- zipWithM (\i x -> addContextId (\newId -> CaseCBranch newId ctx (branchVars x) i x)) [0..] branches
-      return $! match : branches
-    Var name info -> addContextId (\newId -> ExprCBasic newId ctx expr ) >>= single
-    TypeLam tvars expr -> childrenOfExpr ctx expr
-    TypeApp expr tps -> childrenOfExpr ctx expr
-    Con name repr -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
-    Lit lit -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
-  where single x = return [x]
-
-childrenOfDef :: ExprContext -> C.DefGroup -> FixDemandR x s e [ExprContext]
-childrenOfDef ctx def =
-  case def of
-    C.DefNonRec d -> addContextId (\newId -> DefCNonRec newId ctx [defTName d] def) >>= (\x -> return [x])
-    C.DefRec ds -> zipWithM (\i d -> addContextId (\newId -> DefCRec newId ctx (map defTName ds) i def)) [0..] ds
-
-childrenContexts :: ExprContext -> FixDemandR x s e [ExprContext]
-childrenContexts ctx = do
-  withEnv (\env -> env{currentContext = ctx, currentModContext = case ctx of {ModuleC{} -> ctx; _ -> currentModContext env}}) $ do
-    let parentCtxId = contextId ctx
-    children <- childrenIds <$> getState
-    let childIds = M.lookup parentCtxId children
-    case childIds of
-      Nothing -> do
-          -- trace ("No children for " ++ show ctx) $ return ()
-          newCtxs <- case ctx of
-                ModuleC _ mod _ -> do
-                  res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCore mod)
-                  return $! concat res
-                DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
-                DefCNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
-                LamCBody _ _ names body -> childrenOfExpr ctx body
-                AppCLambda _ _ f -> childrenOfExpr ctx f
-                AppCParam _ _ _ param -> childrenOfExpr ctx param
-                LetCDef{} -> childrenOfExpr ctx (exprOfCtx ctx)
-                LetCBody _ _ _ e -> childrenOfExpr ctx e
-                CaseCMatch _ _ e -> childrenOfExpr ctx e
-                CaseCBranch _ _ _ _ b -> do
-                  x <- mapM (childrenOfExpr ctx . guardExpr) $ branchGuards b -- TODO Better context for branch guards
-                  return $! concat x
-                ExprCBasic{} -> return []
-                ExprCTerm{} -> return []
-          addChildrenContexts parentCtxId newCtxs
-          return newCtxs
-      Just childIds -> do
-        -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
-        states <- states <$> getState
-        return $! map (states M.!) (S.toList childIds)
-
-visitChildrenCtxs :: ([a] -> a) -> ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
-visitChildrenCtxs combine ctx analyze = do
-  children <- childrenContexts ctx
-  -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
-  res <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
-  return $! combine res
-
---------------------------- CONVERTING RESULTS TO HUMAN READABLE STRINGS AND RUNNING THE QUERIES -----------------------------------------
-
-toSynConstr :: ExprContext -> FixDemandR x s e (Maybe String)
-toSynConstr ctx = do
-  app <- findSourceExpr ctx
-  return (Just $ nameStem (getName nm))
-
-sourceEnv :: EnvCtx -> FixDemandR x s e String
-sourceEnv (EnvCtx env tail) = do
-  envs <- sourceEnvCtx env
-  envt <- sourceEnv tail
-  return $ envs ++ ":::" ++ envt
-sourceEnv (EnvTail env) = sourceEnvCtx env
-
-sourceEnvCtx :: Ctx -> FixDemandR x s e String
-sourceEnvCtx ctx =
-  case ctx of
-    IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
-    TopCtx -> return "Top"
-    CutKnown -> return "~!~"
-    CutUnknown -> return "~?~"
-    CallCtx c env -> do
-      se <- findSourceExpr c
-      e <- sourceEnv env
-      return $ case se of
-        (Just se, _) -> showSyntax 0 se ++ " <<" ++ e ++ ">>"
-        (_, Just de) -> showSyntaxDef 0 de ++ " <<" ++ e ++ ">>"
-        _ -> show c ++ " " ++ e
-    BCallCtx c cc -> do
-      se <- findSourceExpr c
-      e <- sourceEnvCtx cc
-      return $ case se of
-        (Just se, _) -> showSyntax 0 se ++ " " ++ e
-        (_, Just de) -> showSyntaxDef 0 de ++ " " ++ e
-        _ -> show c ++ " " ++ e
-
-findSourceExpr :: ExprContext -> FixDemandR x s e (Maybe UserExpr, Maybe (Syn.Def UserType))
-findSourceExpr ctx =
-  case maybeExprOfCtx ctx of
-    Just (Lam (n:_) _ _) -> findForName n
-    Just (TypeLam _ (Lam (n:_) _ _)) -> findForName n
-    Just (App (Var tn _) _) -> findForApp tn
-    _ ->
-      case ctx of
-        DefCNonRec{} -> findDef (defOfCtx ctx)
-        DefCRec{} -> findDef (defOfCtx ctx)
-        LetCDef{} -> findDef (defOfCtx ctx)
-        _ ->
-          trace ("Unknown lambda type " ++ show ctx ++ ": " ++ show (maybeExprOfCtx ctx)) $ return (Nothing, Nothing)
-  where
-    findDef d = do
-      -- return $! Just $! Syn.Var (defName d) False (defNameRange d)
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
-      case (program, C.defNameRange d) of
-        (Just prog, rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
-          return (Nothing, findDefFromRange prog rng)
-        _ -> trace ("No program or rng" ++ show d ++ " " ++ show program) $ return (Nothing, Nothing)
-      -- case (program, defNameRange d) of
-      --   (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in module " ++ show (moduleName $ contextId ctx)) $ return $! findLocation prog rng
-      --   _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
-    findForName n = do
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
-      case (program, originalRange n) of
-        (Just prog, Just rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
-          return (findLambdaFromRange prog rng, Nothing)
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
-    findForApp n = do
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
-      case (program, originalRange n) of
-        (Just prog, Just rng) -> -- trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ 
-          return (findApplicationFromRange prog rng, Nothing)
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
+instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
+instantiate query c1 c0 = if c1 == c0 then return () else do
+  trace (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1) $ return ()
+  loop (EnvInput c0)
+  push (EnvInput c0) (FE c1)
+  return ()
 
 getAbResult :: (EnvCtx, AbValue) -> FixDemandR x s e (EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type, Set String))
 getAbResult (envctx, res) = do

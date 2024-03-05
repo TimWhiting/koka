@@ -176,6 +176,7 @@ executable koka
       Demand.EffectOptimization
       Demand.FixpointMonad
       Demand.StaticContext
+      Demand.Syntax
       LanguageServer.Conversions
       LanguageServer.Handler.Commands
       LanguageServer.Handler.Completion
