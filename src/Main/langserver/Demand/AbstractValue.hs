@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
--- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
+-- Copyright 2012-2023, Microsoft Research, Daan Leijen. Tim Whiting.
 --
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be
@@ -74,7 +74,7 @@ data AChange =
   AChangeClos ExprContext EnvCtx
   | AChangeConstr ExprContext EnvCtx
   | AChangeLit LiteralChange EnvCtx
-  | AChangeErr String 
+  | AChangeErr String
   | AChangeNone
   deriving (Show, Eq)
 
@@ -164,21 +164,25 @@ emptyAbValue = BL emptyAValue
 
 emptyAValue :: AValue
 emptyAValue = AValue S.empty S.empty M.empty Nothing
-injClosure ctx env = AChangeClos ctx env
+
+injClosure :: ExprContext -> EnvCtx -> AChange
+injClosure = AChangeClos
+
 injClosures cls = BL emptyAValue{aclos= S.fromList cls}
-injErr err = AChangeErr err
+
+injErr :: String -> AChange
+injErr = AChangeErr
 
 injLit :: C.Lit -> EnvCtx -> AChange
 injLit x env =
   case x of
-    C.LitInt i -> (AChangeLit $ LiteralChangeInt $ LChangeSingle i) env 
-    C.LitFloat f -> (AChangeLit $ LiteralChangeFloat $ LChangeSingle f) env 
-    C.LitChar c -> (AChangeLit $ LiteralChangeChar $ LChangeSingle c) env 
-    C.LitString s -> (AChangeLit $ LiteralChangeString $ LChangeSingle s) env 
+    C.LitInt i -> (AChangeLit $ LiteralChangeInt $ LChangeSingle i) env
+    C.LitFloat f -> (AChangeLit $ LiteralChangeFloat $ LChangeSingle f) env
+    C.LitChar c -> (AChangeLit $ LiteralChangeChar $ LChangeSingle c) env
+    C.LitString s -> (AChangeLit $ LiteralChangeString $ LChangeSingle s) env
 
 injCon :: ExprContext -> EnvCtx -> AChange
-injCon cnstr env =
-  AChangeConstr cnstr env
+injCon = AChangeConstr
 
 --- JOINING
 joinML :: Ord x => M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x)
@@ -246,7 +250,7 @@ topTypesOf ab =
 data PatBinding =
   PatVar -- This is the variable it is bound to
   -- The variable is bound in the subpattern at the given index with the given constructor
-  | SubPatIndex Name Int PatBinding 
+  | SubPatIndex Name Int PatBinding
 
 data BindInfo =
   BoundLam ExprContext EnvCtx Int
@@ -284,7 +288,7 @@ bind ctx var@(C.Var tname vInfo) env =
   where
     lookupNameNewCtx names ctx' =
       case elemIndex tname names
-        of Just x -> 
+        of Just x ->
             case ctx' of
               -- DefCNonRec{} -> Just ((ctx', env), Just x)
               _ -> Just ((ctx, env), Just x)

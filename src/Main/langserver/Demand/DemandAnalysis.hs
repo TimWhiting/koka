@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
--- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
+-- Copyright 2024, Tim Whiting.
 --
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be
@@ -12,11 +12,11 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Demand.DemandAnalysis(
   fixedEval,fixedExpr,fixedCall,loop,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),FixOutput,Query(..),AnalysisKind(..),
-  toAbValue,toAbValue2,
   refineQuery,queryCtx,queryEnv,queryKind,queryKindCaps,getEnv,withEnv,
   getQueryString,getState,setState,updateState,setResult,getUnique,
   childrenContexts,analyzeCtx,findContext,visitChildrenCtxs,
@@ -58,133 +58,21 @@ import Syntax.Syntax (UserExpr, UserProgram, UserDef, Program (..), DefGroups, U
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
 import Demand.AbstractValue (AbValue)
-
-type FixDemand x s e = FixDemandR x s e AFixChange
-type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput SimpleLattice AFixChange FixOutput a
-
-data State a x = State{
-  buildc :: BuildContext,
-  states :: M.Map ExprContextId ExprContext,
-  maxContextId :: Int,
-  childrenIds :: M.Map ExprContextId (Set ExprContextId),
-  unique :: Int,
-  finalResult :: Maybe a,
-  primitives :: M.Map Name ExprContext,
-  additionalState :: x
-}
-
-getState :: FixDemandR x s e (State x s)
-getState = gets snd
-
-setState :: State x s -> FixDemandR x s e ()
-setState x = do
-  st <- get
-  put (fst st, x)
-
-data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
-
-data DEnv x = DEnv{
-  contextLength :: !Int,
-  term :: !Terminal,
-  flags :: !Flags,
-  analysisKind :: !AnalysisKind,
-  currentContext :: !ExprContext,
-  currentModContext :: !ExprContext,
-  currentEnv :: !EnvCtx,
-  currentQuery :: !String,
-  queryIndentation :: !String,
-  additionalEnv :: x
-}
-
-withEnv :: (DEnv e -> DEnv e) -> FixDemandR x s e a -> FixDemandR x s e a
-withEnv = local
-
-getEnv :: FixDemandR x s e (DEnv e)
-getEnv = ask
-
--- A query type representing the mutually recursive queries we can make that result in an abstract value
-data Query =
-  CallQ (ExprContext, EnvCtx) |
-  ExprQ (ExprContext, EnvCtx) |
-  EvalQ (ExprContext, EnvCtx) deriving (Eq, Ord)
-
-instance Show Query where
-  show q = queryKindCaps q ++ ": " ++ showSimpleEnv (queryEnv q) ++ " " ++ showSimpleContext (queryCtx q)
-
--- The fixpoint input is either a query to get an abstract value result, or an environment to get a set of refined environments
-data FixInput =
-  QueryInput Query
-  | EnvInput EnvCtx deriving (Ord, Eq, Show)
-
-data AFixChange =
-  FA AChange
-  | FE EnvCtx
-  | B
-  deriving (Show, Eq)
-
--- The output of the fixpoint is either a value, or set of environments 
--- (depending on whether the input is a query or wanting the refined environments for a particular environment)
-data FixOutput =
-  A AbValue
-  | E (S.Set EnvCtx)
-  | N deriving (Show, Eq)
-
--- Implement the needed operations for the output to be a lattice
-instance Semigroup FixOutput where
-  (<>) (A a) (A b) = A (a <> b)
-  (<>) (E e) (E e1) = E (e <> e1)
-  (<>) N x = x
-  (<>) x N = x
-  (<>) x y = error $ "Unexpected semigroup combination " ++ show x ++ " " ++ show y
-
-instance Contains FixOutput where
-  contains (A (BL a)) (A (BL b)) = a `contains` b
-  contains (E e) (E e1) = e1 `isSubsetOf` e
-  contains _ N = True
-  contains _ _ = False
-
-instance Monoid FixOutput where
-  mempty = N
+import Demand.DemandMonad
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qcall = toAbValue . loop . QueryInput . CallQ
+qcall c = do
+  res <- loop $ QueryInput (CallQ c)
+  return $ toAbValue res
 qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qexpr = toAbValue . loop . QueryInput . ExprQ
+qexpr c = do
+  res <- loop $ QueryInput (ExprQ c)
+  return $ toAbValue res
 qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qeval = toAbValue . loop . QueryInput . EvalQ
-
--- Takes in a fixpoint computation and returns a fixpoint computation that unwraps an abstract value result
-toAbValue :: FixDemand x s e -> FixDemandR x s e AChange
-toAbValue c = toAbValue2 <$> c
-
-toAbValue2 :: BasicLattice FixOutput FixOutput -> AbValue
-toAbValue2 c =
-  case c of
-    BL (A x) -> x
-    BL N -> emptyAbValue
-    _ -> error $ "toAbValue: " ++ show c
-
--- Unwraps query pieces
-queryCtx :: Query -> ExprContext
-queryCtx (CallQ (ctx, _)) = ctx
-queryCtx (ExprQ (ctx, _)) = ctx
-queryCtx (EvalQ (ctx, _)) = ctx
-
-queryEnv :: Query -> EnvCtx
-queryEnv (CallQ (_, env)) = env
-queryEnv (ExprQ (_, env)) = env
-queryEnv (EvalQ (_, env)) = env
-
-queryKind :: Query -> String
-queryKind (CallQ _) = "call"
-queryKind (ExprQ _) = "expr"
-queryKind (EvalQ _) = "eval"
-
-queryKindCaps :: Query -> String
-queryKindCaps (CallQ _) = "CALL"
-queryKindCaps (ExprQ _) = "EXPR"
-queryKindCaps (EvalQ _) = "EVAL"
+qeval c = do 
+  res <- loop $ QueryInput (EvalQ c)
+  return $ toAbValue res
 
 -- Refines a query given a more specific environment
 refineQuery :: Query -> EnvCtx -> Query
@@ -192,67 +80,7 @@ refineQuery (CallQ (ctx, env0)) env = CallQ (ctx, env)
 refineQuery (ExprQ (ctx, env0)) env = ExprQ (ctx, env)
 refineQuery (EvalQ (ctx, env0)) env = EvalQ (ctx, env)
 
------------------------- Navigating the syntax tree ----------------------------------
-focusParam :: Maybe Int -> ExprContext -> FixDemandR x s e (Maybe ExprContext)
-focusParam index e = do
-  children <- childrenContexts e
-  query <- getQueryString
-  return $ case index of
-    Just x | x + 1 < length children -> Just $ children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
-    _ -> error (query ++ "Children looking for param " ++ show children ++ " in " ++ show e ++ " index " ++ show index) Nothing
-
-focusBody :: ExprContext -> FixDemandR x s e (Maybe ExprContext)
-focusBody e = do
-  children <- childrenContexts e
-  query <- getQueryString
-  return $ case find (\x -> case x of
-              LamCBody{} -> True
-              _ -> False) children of
-    Just x -> Just x
-    Nothing -> error (query ++ "Children looking for body " ++ show children) Nothing
-
-focusChild :: ExprContext -> Int -> FixDemandR x s e (Maybe ExprContext)
-focusChild e index = do
-  children <- childrenContexts e
-  query <- getQueryString
-  return $ if index < length children then
-    -- trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
-      Just (children !! index)
-    else error (query ++ "Children looking for child at " ++ show index ++ " " ++ show children) Nothing
-
------------------- State and Environment Helpers -----------------------------------
-
--- Gets a string representing the current query
-getQueryString :: FixDemandR x s e String
-getQueryString = do
-  env <- getEnv
-  return $ queryIndentation env ++ currentQuery env ++ show (contextId $ currentContext env) ++ " "
-
-getUnique :: FixDemandR x s e Int
-getUnique = do
-  st <- getState
-  let u = unique st
-  setState st{unique = u + 1}
-  return u
-
-updateState :: (State x s -> State x s) -> FixDemandR x s e ()
-updateState update = do
-  st <- getState
-  setState $ update st
-
-setResult :: x -> FixDemand x s e
-setResult x = do
-  updateState (\st -> st{finalResult = Just x})
-  return B
-
 ------------------------------ Environment FIXPOINT -----------------------------------
-
-instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
-instantiate query c1 c0 = if c1 == c0 then return () else do
-  trace (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1) $ return ()
-  loop (EnvInput c0)
-  push (EnvInput c0) (E (S.singleton c1))
-  return ()
 
 calibratem :: ExprContext -> EnvCtx -> FixDemandR x s e EnvCtx
 calibratem call env = do
@@ -273,22 +101,22 @@ succAEnv newctx p' = do
     _ -> return $ CallCtx newctx (limitmenv p' (length - 1))
 
 
-getEnvs :: FixDemand x s e -> FixDemandR x s e (Set EnvCtx)
-getEnvs c = do
-  res <- c
-  case res of
-    BL (E x) -> return x
-    BL N -> return S.empty
-    _ -> error $ "getEnvs: " ++ show res
-
-getRefines1 :: EnvCtx -> FixDemandR x s e (Set EnvCtx)
-getRefines1 env =
+getRefines :: EnvCtx -> FixDemandR x s e EnvCtx
+getRefines env =
   case env of
     EnvCtx cc tail -> do
-      curRefine <- if ccDetermined cc then return S.empty else getEnvs (loop (EnvInput env))
-      tailRefines <- getRefines1 tail
-      return $ curRefine `S.union` S.fromList (fmap (EnvCtx cc) (S.toList tailRefines))
-    EnvTail cc -> getEnvs (loop (EnvInput env))
+      let f = if ccDetermined cc then doBottom else 
+              do 
+                res <- loop (EnvInput env)
+                return $ toEnv res
+          t = do
+                tailRefine <- getRefines tail
+                return (EnvCtx cc tailRefine)
+      each [f,t]
+    EnvTail cc -> 
+      do 
+        res <- loop (EnvInput env)
+        return $ toEnv res
 
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
 doMaybeAbValue :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
@@ -302,7 +130,8 @@ fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedEval e env = do
   let q = EvalQ (e, env)
   res <- loop (QueryInput q)
-  refines <- getRefines1 env
+  st <- getState
+  refines <- getRefines env
   res2 <- mapM (\env -> do
     res <- loop (QueryInput (EvalQ (e, env)))
     return (env, res))
@@ -324,15 +153,6 @@ fixedCall e env = do
   trace "Finished eval" $ return ()
   return (S.toList $ closures $ toAbValue2 res)
 
---- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
-newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
-newQuery q d = do
-  unique <- getUnique
-  withEnv (\env -> env{currentContext = queryCtx q, currentEnv = queryEnv q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
-    query <- getQueryString
-    res <- d query
-    return $ A $ FA res
-
 loop :: FixInput -> FixDemandR x s e AFixChange
 loop fixinput = do
   let e = each fixinput
@@ -342,18 +162,25 @@ loop fixinput = do
         case cq of
           EvalQ{} -> do
             newQuery cq (\queryStr -> do
-                res <- doEval cq queryStr
-                refines <- getRefines1 (queryEnv cq)
-                res2 <- foldM (\res env -> do
-                    x <- doEval (EvalQ (queryCtx cq, env)) queryStr
-                    return $ res `join` x
-                  ) res refines
-                trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
+                let evalRefine = do 
+                      refine <- getRefines (queryEnv cq)
+                      doEval (EvalQ (queryCtx cq, refine)) queryStr
+                each
+                  [
+                    doEval cq queryStr,
+                    evalRefine
+                  ]
+                -- refines <- getRefines (queryEnv cq)
+                -- res2 <- foldM (\res env -> do
+                --     x <- doEval (EvalQ (queryCtx cq, env)) queryStr
+                --     return $ res `join` x
+                --   ) res refines
+                -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
               )
           CallQ{} -> do
             newQuery cq (\queryStr -> do
                 res <- doCall cq queryStr
-                refines <- getRefines1 (queryEnv cq)
+                refines <- getRefines (queryEnv cq)
                 res2 <- foldM (\res env -> do
                     x <- doCall (CallQ (queryCtx cq, env)) queryStr
                     return $ res `join` x
@@ -398,8 +225,6 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
       return $ if lookupDefGroups (coreProgDefs $ fromJust $ modCore mod') tn then Just (ModuleC ctxId mod' (modName mod'), Nothing) else trace ("External variable binding " ++ show tn ++ ": " ++ show vInfo) Nothing
     _ -> return Nothing
 
-modCtxOf :: Module -> ExprContext
-modCtxOf mod = ModuleC (ExprContextId (-1) (modName mod)) mod (modName mod)
 
 findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (Set (ExprContext, EnvCtx))
 findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
@@ -1123,7 +948,7 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   return $ trace (show lattice) x
 
 
-runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO (FixOutput, M.Map FixInput (BasicLattice FixOutput FixOutput), Maybe x)
+runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO ((FixOutput AFixChange), M.Map FixInput (FixOutput AFixChange), Maybe x)
 runQueryAtRange buildc term flags (r, ri) mod  kind m query = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)

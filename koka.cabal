@@ -172,6 +172,7 @@ executable koka
   other-modules:
       Demand.AbstractValue
       Demand.DemandAnalysis
+      Demand.DemandMonad
       Demand.EffectOptimization
       Demand.FixpointMonad
       Demand.StaticContext

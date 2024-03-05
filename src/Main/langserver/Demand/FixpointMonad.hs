@@ -1,10 +1,10 @@
--- -----------------------------------------------------------------------------
--- -- Copyright 2012-2023, Microsoft Research, Daan Leijen. Brigham Young University, Tim Whiting.
--- --
--- -- This is free software; you can redistribute it and/or modify it under the
--- -- terms of the Apache License, Version 2.0. A copy of the License can be
--- -- found in the LICENSE file at the root of this distribution.
--- -----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-- Copyright 2024 Tim Whiting.
+--
+-- This is free software; you can redistribute it and/or modify it under the
+-- terms of the Apache License, Version 2.0. A copy of the License can be
+-- found in the LICENSE file at the root of this distribution.
+-----------------------------------------------------------------------------
 
 -- {-
 --     Check if a constructor context is well formed, and create a context path
@@ -24,6 +24,7 @@ module Demand.FixpointMonad(
   memo,
   push,
   each,
+  doBottom,
   runFixAEnv,
   runFix,
   runFixWithCache,
@@ -45,12 +46,12 @@ import Control.Monad (foldM, ap)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
-class Lattice l a d where
-  bottom :: l a d
-  join :: l a d -> l a d -> l a d
-  insert :: d -> l a d -> l a d
-  lte :: d -> l a d -> Bool
-  elems :: l a d -> [d]
+class Lattice l d where
+  bottom :: l d
+  join :: l d -> l d -> l d
+  insert :: d -> l d -> l d
+  lte :: d -> l d -> Bool
+  elems :: l d -> [d]
 
 class DiffBottom d where
   diffBottom :: d
@@ -73,7 +74,7 @@ instance Show a => Show (SimpleLattice a d) where
   show (LSingle a) = "LSingle " ++ show a
   show LTop = "LTop"
 
-instance (Ord a) => Lattice SimpleLattice a (SimpleChange a) where
+instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
   bottom = LBottom
   insert (LChangeSingle a) b = LSingle a `join` b
   insert LChangeTop b = LTop 
@@ -101,7 +102,7 @@ class Contains a where
 data BasicLattice d a = BL a deriving (Eq, Ord)
 
 -- The `bottom` value is just the monoid's `mempty` value, `join` is implemented with `mappend`, and the `contains` relation defines `subsumption` (i.e. `a` contains `b` if `a` is a superset of `b`)
-instance (Contains a, Monoid a) => Lattice BasicLattice a a where
+instance (Contains a, Monoid a) => Lattice (BasicLattice a) a where
   bottom = BL mempty
   join (BL a) (BL b) = BL $ a `mappend` b
   lte m (BL m') = m' `contains` m
@@ -111,41 +112,41 @@ instance (Contains a, Monoid a) => Lattice BasicLattice a a where
 instance Functor (BasicLattice a) where
   fmap f (BL a) = BL $ f a
 
-instance (Contains a, Contains d) => Contains (BasicLattice a d) where
+instance (Contains a) => Contains (BasicLattice d a) where
   contains (BL a) (BL b) = a `contains` b
-instance (Show a, Show d) => Show (BasicLattice a d) where
+instance (Show a) => Show (BasicLattice d a) where
   show (BL a) = show a
 
-instance (Semigroup a, Semigroup d) => Semigroup (BasicLattice a d) where
+instance (Semigroup a) => Semigroup (BasicLattice d a) where
   (BL a) <> (BL b) = BL $ a <> b
 
-instance (Monoid a, Monoid d) => Monoid (BasicLattice a d) where
+instance (Monoid a) => Monoid (BasicLattice d a) where
   mempty = BL mempty
   mappend = (<>)
 
 data ChangeSet a d = ChangeSet (S.Set a)
 
 -- Simple implementation of a set lattice
-instance Ord a => Lattice ChangeSet a a where
+instance Ord a => Lattice (ChangeSet a) a where
   bottom = ChangeSet S.empty
   insert a (ChangeSet s) = ChangeSet $ S.insert a s
   join (ChangeSet a) (ChangeSet b) = ChangeSet $ S.union a b
   lte a (ChangeSet sb) = S.member a sb
   elems (ChangeSet a) = S.elems a
 
-type FixTS e s i l a d = FixT e s i (l a d) a d (l a d)
-type FixTR e s i l a d = FixT e s i (l a d) a d
-newtype ContX e s i l a d x = ContX { c:: d -> FixT e s i l a d l} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
-instance Show (ContX e s i l a d x) where
+type FixTS e s i l d = FixT e s i (l d) d (l d)
+type FixTR e s i l d = FixT e s i (l d) d
+newtype ContX e s i l d x = ContX { c:: d -> FixT e s i l d l} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
+instance Show (ContX e s i l d x) where
   show _ = ""
 
-type FixT e s i l a d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l a d l]), s) IO))
+type FixT e s i l d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l d l]), s) IO))
 
 -- instance MonadFail (FixT i l s e a) where
 --   fail = error
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
-memo :: (Ord i, Lattice l a d) => i -> (i -> FixTR e s i l a d d) -> FixTR e s i l a d d
+memo :: (Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
 memo key f = do
   callCC (\k -> do
     (cache, state) <- get
@@ -163,16 +164,20 @@ memo key f = do
         return x
     )
 
-each :: (Ord i, DiffBottom d, Lattice l a d) => i -> [x] -> (x -> FixTR e s i l a d d) -> FixTR e s i l a d d
-each key [] f = return diffBottom
-each key (x:xs) f = do
-  x' <- f x
-  push key x'
-  xs' <- each key xs f
-  return x'
+each :: (Ord i, Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
+each (x:xs) =
+  callCC (\k -> do
+    x' <- x
+    x'' <- k x'
+    each xs
+    return x''
+  )
+
+doBottom :: (DiffBottom b) => FixTR e s i l d b
+doBottom = callCC (\k -> return diffBottom)
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
-push :: (Ord i, Lattice l a d) => i -> d -> FixTS e s i l a d
+push :: (Ord i, Lattice l d) => i -> d -> FixTS e s i l d
 push key value = do
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state) <- get
@@ -223,7 +228,7 @@ newtype State = State{
 -- The fixpoint computation threads through State
 -- The fixpoint computation doesn't use any environment monad
 -- The fixpoint computation returns an integer encapsulated in a SimpleLattice
-fib :: Int -> FixTR () State (String, Int) SimpleLattice Int (SimpleChange Int) (SimpleChange Int)
+fib :: Int -> FixTR () State (String, Int) (SimpleLattice Int) (SimpleChange Int) (SimpleChange Int)
 fib n =
   -- memo using the key ("fib", n) 
   -- (note: "fib" is not actually required, but for mutual recursion you need some way of dispatching based on the function name)
@@ -235,7 +240,7 @@ fib n =
       case (x, y) of
         (LChangeSingle x, LChangeSingle y) -> return $ LChangeSingle (x + y)
 
-incrementUnique :: FixTR e State b c Int (SimpleChange Int) ()
+incrementUnique :: FixTR e State b c (SimpleChange Int) ()
 incrementUnique = do
   (cache, state) <- get
   put (cache, state{unique = unique state + 1})

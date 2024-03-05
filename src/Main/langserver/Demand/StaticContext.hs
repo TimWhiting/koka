@@ -57,6 +57,9 @@ data ExprContext =
   | ExprCBasic !ExprContextId !ExprContext !C.Expr -- A basic expression context that has no sub expressions
   | ExprCTerm !ExprContextId !String -- Since analysis can fail or terminate early, keep track of the query that failed
 
+modCtxOf :: Module -> ExprContext
+modCtxOf mod = ModuleC (ExprContextId (-1) (modName mod)) mod (modName mod)
+
 lamNames :: ExprContext -> [TName]
 lamNames ctx =
   case maybeExprOfCtx ctx of
