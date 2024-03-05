@@ -432,46 +432,33 @@ doEval cq@(EvalQ (ctx, env)) query = do
                     branches <- findBranch con ctx cenv
                     -- trace (query ++ "CASE: branches are " ++ show branches) $ return []
                     -- TODO: Consider just the first branch that matches? Need to make sure that works with approximation
-                    foldM (\acc branch -> do
-                        res <- qeval (branch, cenv)
-                        return $! join acc res
-                      ) emptyAbValue branches
+                    each $ map (\branch -> qeval (branch, cenv)) branches
                   AChangeLit lit cenv -> do
                     -- trace (query ++ "CASE: result is " ++ show res) $ return []
                     branches <- findBranchLit lit ctx
                     trace (query ++ "CASE: branches' are " ++ show branches) $ return []
-                    foldM (\acc branch -> do
-                        res <- qeval (branch, cenv)
-                        return $! join acc res
-                      ) emptyAbValue branches
-                -- trace (query ++ "CASE: result' is " ++ show res') $ return []
-                -- if res' == emptyAbValue then
-                --   return $ AChangeErr $ "No branches matched in case statement:\n\n" ++ show (exprOfCtx ctx)
-                -- else 
-                return res'
+                    each $ map (\branch -> qeval (branch, cenv)) branches
               )
           Con nm repr -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
 
 --------------------------------- PATTERN EVALUATION HELPERS -----------------------------------------------
-evalPatternRef :: ExprContext -> EnvCtx -> Pattern -> TName -> FixDemandR x s e AbValue
+evalPatternRef :: ExprContext -> EnvCtx -> Pattern -> TName -> FixDemandR x s e AChange
 evalPatternRef expr env pat tname = do
   case pat of
     PatVar tn pat' ->
       if tn == tname then qeval (expr, env)
       else evalPatternRef expr env pat' tname
-    PatLit{} -> return emptyAbValue
+    PatLit{} -> return AChangeNone
     PatWild{} -> qeval (expr, env)
     PatCon{patConName=name, patConPatterns=pats} -> do
-      exprV <- qeval (expr, env)
-      doForConstructors emptyAbValue exprV (\(cenv, con) ->
-          if constrName con /= name then
-            return emptyAbValue
-          else do
-            let x = selectPatternExpr (constrParams con) pats tname
-            case x of
-              Nothing -> return emptyAbValue
-              Just (pat, expr) -> evalPatternRef expr cenv pat tname
-        )
+      AChangeConstr con cenv <- qeval (expr, env)
+      if constrName con /= name then
+        doBottom
+      else do
+        let x = selectPatternExpr (constrParams con) pats tname
+        case x of
+          Nothing -> doBottom
+          Just (pat, expr) -> evalPatternRef expr cenv pat tname
 
 matchesPattern :: ExprContext -> Pattern -> Maybe (EnvCtx, [ExprContext], [Pattern])
 matchesPattern cc pat =
@@ -592,7 +579,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
                 m <- contextLength <$> getEnv
                 ctxs <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
                 -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-                each $ mapM qexpr (S.toList ctxs)
+                each $ map qexpr (S.toList ctxs)
           Nothing -> return AChangeNone
       LamCBody _ _ _ e -> do -- BODY Clause
         -- trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
@@ -613,10 +600,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
         -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-        ress <- mapM qexpr (S.toList ctxs)
-        let result =  Prelude.foldl join emptyAbValue ress
-        -- trace (query ++ "DEF: Calls are " ++ show result) $ return []
-        return result
+        each $ map qexpr (S.toList ctxs)
       DefCRec _ c _ _ _ -> do
         trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
         let df = defOfCtx ctx
@@ -628,10 +612,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
         -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-        ress <- mapM qexpr (S.toList ctxs)
-        let result =  Prelude.foldl join emptyAbValue ress
-        -- trace (query ++ "DEF: Calls are " ++ show result) $ return []
-        return result
+        each $ map qexpr (S.toList ctxs)
       ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)
       _ ->
         case contextOf ctx of
@@ -714,21 +695,23 @@ instantiate query c1 c0 = if c1 == c0 then return () else do
 getAbResult :: (EnvCtx, AbValue) -> FixDemandR x s e (EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type, Set String))
 getAbResult (envctx, res) = do
   let vals = [res]
-      lams = map fst $ concatMap (S.toList . closures) vals
+      lams = map fst $ concatMap (S.toList . aclos) vals
       i = concatMap ((mapMaybe toSynLit . M.elems) . intV) vals
       f = concatMap ((mapMaybe toSynLitD . M.elems) . floatV) vals
       c = concatMap ((mapMaybe toSynLitC . M.elems) . charV) vals
       s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
       topTypes = unions $ map topTypesOf vals
       vs = i ++ f ++ c ++ s
-      cs = concatMap S.toList $ concatMap (M.elems . constrs) vals
-      errs = S.fromList $ mapMaybe err vals
+      cs = map fst $ concatMap (S.toList . acons) vals
+      errs = S.fromList $ mapMaybe aerr vals
   consts <- mapM toSynConstr cs
   sourceLams <- mapM findSourceExpr lams
   let (sourceLambdas, sourceDefs) = unzip sourceLams
   return $ trace ("eval result:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n") (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes, errs))
 
-runEvalQueryFromRangeSource :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> IO ([(EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type, Set String))], BuildContext)
+runEvalQueryFromRangeSource :: BuildContext 
+  -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int 
+  -> IO ([(EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type, Set String))], BuildContext)
 runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   (r, lattice, Just x) <- runQueryAtRange bc term flags rng mod kind m $ \exprctxs ->
         case exprctxs of
@@ -744,8 +727,12 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   return $ trace (show lattice) x
 
 
-runQueryAtRange :: BuildContext -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> ([ExprContext] -> FixDemand x () ()) -> IO ((FixOutput AFixChange), M.Map FixInput (FixOutput AFixChange), Maybe x)
-runQueryAtRange buildc term flags (r, ri) mod  kind m query = do
+runQueryAtRange :: BuildContext
+  -> Terminal -> Flags -> (Range, RangeInfo) 
+  -> Module -> AnalysisKind -> Int 
+  -> ([ExprContext] -> FixDemand x () ()) 
+  -> IO ((FixOutput AFixChange), M.Map FixInput (FixOutput AFixChange), Maybe x)
+runQueryAtRange buildc term flags (r, ri) mod kind m query = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)
       focalContext = analyzeCtx (\parentRes childRes -> case concat childRes of {x:_ -> [x]; _ -> parentRes}) (const $ findContext r ri) modCtx

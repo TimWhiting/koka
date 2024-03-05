@@ -13,7 +13,7 @@ module Demand.AbstractValue(
                           LiteralChange(..),
                           AbValue(..),
                           AChange(..),
-                          addChange,
+                          addChange, injLit,
                           showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
                           showNoEnvClosure, showNoEnvAbValue,
                           emptyAbValue,
