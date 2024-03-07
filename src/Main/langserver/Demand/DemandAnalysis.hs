@@ -85,17 +85,19 @@ succAEnv newctx p' = do
     BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
     _ -> return $ CallCtx newctx (limitmenv p' (length - 1))
 
-getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
+getRefine :: EnvCtx -> FixDemandR x s e (Maybe EnvCtx)
 getRefine env =
   case env of
     EnvCtx cc tail -> do
-      let f = if ccDetermined cc then doBottom else 
+      let f = if ccDetermined cc then return Nothing else 
               do 
                 res <- loop (EnvInput env)
                 return $ toEnv res
           t = do
                 tailRefine <- getRefine tail
-                return (EnvCtx cc tailRefine)
+                case tailRefine of
+                  Just tailRefine -> return $ Just (EnvCtx cc tailRefine)
+                  Nothing -> return Nothing
       each [f,t]
     EnvTail cc -> 
       do 
@@ -103,8 +105,8 @@ getRefine env =
         return $ toEnv res
 
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
-doMaybeAbValue :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
-doMaybeAbValue l doA = do
+doMaybe :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
+doMaybe l doA = do
   case l of
     Just x -> doA x
     Nothing -> return AChangeNone
@@ -133,19 +135,19 @@ loop fixinput = do
           EvalQ{} -> do
             newQuery cq (\queryStr -> do
                 refine <- getRefine (queryEnv cq)
-                doEval (EvalQ (queryCtx cq, refine)) queryStr
+                doMaybe refine (\refine -> doEval (EvalQ (queryCtx cq, refine)) queryStr)
               )
           CallQ{} -> do
             newQuery cq (\queryStr -> do
                 refine <- getRefine (queryEnv cq)
-                doCall (CallQ (queryCtx cq, refine)) queryStr
+                doMaybe refine (\refine -> doCall (CallQ (queryCtx cq, refine)) queryStr)
               )
           ExprQ{} -> do
             newQuery cq (\queryStr -> do
                 refine <- getRefine (queryEnv cq)
-                doExpr (ExprQ (queryCtx cq, refine)) queryStr
+                doMaybe refine (\refine -> doExpr (ExprQ (queryCtx cq, refine)) queryStr)
               )
-      EnvInput env -> return $ FE env -- TODO: Will this cause an infinite loop?
+      EnvInput env -> return (FE env) -- TODO: Will this cause an infinite loop?
 
 bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))
 bindExternal var@(Var tn@(TName name tp _) vInfo) = do
@@ -172,7 +174,7 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
     _ -> return Nothing
 
 
-findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
+findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (Maybe (ExprContext, EnvCtx))
 findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   case ctx of
     ModuleC{} -> do
@@ -186,13 +188,13 @@ findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
 
 -- TODO: Fix map example, not working for recursive call? 
 -- finds usages of a variable expression within a (context,env) and returns the set of (context,env) pairs that reference it
-findUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
+findUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (Maybe (ExprContext, EnvCtx))
 findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   -- trace ("Looking for usages of " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env ++ " first " ++ show first) $ return ()
   let nameEq = (== name)
-      empty = doBottom
+      empty = return Nothing
       childrenNoShadow tn =
-        if first || tname `notElem` tn then childrenUsages else doBottom
+        if first || tname `notElem` tn then childrenUsages else return Nothing
       childrenUsages = do
         -- trace ("Looking for " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env) $ return ()
         visitEachChild ctx $ do
@@ -219,7 +221,7 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
         if nameEq name2 then do
           query <- getQueryString
           return $! trace (query ++ "Found usage in " ++ showContextPath ctx) $
-            (c, env)
+            return (c, env)
         else
           -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
           empty
@@ -288,13 +290,13 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 AChangeClos appctx appenv <- qcall (lamctx, lamenv)
                 trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
                 param <- focusParam (Just index) appctx
-                doMaybeAbValue param (\param -> qeval (param, appenv))
+                doMaybe param (\param -> qeval (param, appenv))
               BoundDef parentCtx ctx boundEnv index -> do
                 param <- focusChild parentCtx index
-                doMaybeAbValue param (\ctx -> qeval (ctx, boundEnv))
+                doMaybe param (\ctx -> qeval (ctx, boundEnv))
               BoundDefRec parentCtx ctx boundEnv index -> do
                 param <- focusChild parentCtx index
-                doMaybeAbValue param (\ctx -> qeval (ctx, boundEnv))
+                doMaybe param (\ctx -> qeval (ctx, boundEnv))
               BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
                 mscrutinee <- focusChild parentCtx 0
                 case mscrutinee of
@@ -326,21 +328,21 @@ doEval cq@(EvalQ (ctx, env)) query = do
           App f tms -> do
             trace (query ++ "APP: " ++ show ctx) $ return []
             fun <- focusChild ctx 0
-            doMaybeAbValue fun (\fun -> do
+            case fun of
+              Just fun -> do
                 -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
                 AChangeClos lam lamenv <- qeval (fun, env)
                 -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
                 bd <- focusBody lam
-                doMaybeAbValue bd (\bd -> do
-                  -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-                  childs <- childrenContexts ctx
-                  -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
-                  succ <- succAEnv ctx env
-                  let newEnv = EnvCtx succ lamenv
-                  result <- qeval (bd, newEnv)
-                  qeval (bd, newEnv)
-                  )
-              )
+                case bd of
+                  Just bd -> do
+                    -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
+                    childs <- childrenContexts ctx
+                    -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
+                    succ <- succAEnv ctx env
+                    let newEnv = EnvCtx succ lamenv
+                    result <- qeval (bd, newEnv)
+                    qeval (bd, newEnv)
           TypeApp{} ->
             trace (query ++ "TYPEAPP: " ++ show ctx) $
             case ctx of
@@ -348,7 +350,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
               DefCRec{} -> return $! AChangeClos ctx env
               _ -> do
                 ctx' <- focusChild ctx 0
-                doMaybeAbValue ctx' (\ctx -> qeval (ctx,env))
+                doMaybe ctx' (\ctx -> qeval (ctx,env))
           TypeLam{} ->
             trace (query ++ "TYPE LAM: " ++ show ctx) $
             case ctx of
@@ -356,31 +358,32 @@ doEval cq@(EvalQ (ctx, env)) query = do
               DefCRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
               _ -> do
                 ctx' <- focusChild ctx 0
-                doMaybeAbValue ctx' (\ctx -> qeval (ctx,env))
+                doMaybe ctx' (\ctx -> qeval (ctx,env))
           Lit l -> return $! injLit l env
           Let defs e -> do
             trace (query ++ "LET: " ++ show ctx) $ return []
             ex <- focusChild ctx 0 -- Lets have their return expression as first child
-            doMaybeAbValue ex (\ex -> qeval (ex, env))
+            doMaybe ex (\ex -> qeval (ex, env))
           Case expr branches -> do
             trace (query ++ "CASE: " ++ show ctx) $ return []
             e <- focusChild ctx 0
-            doMaybeAbValue e (\e -> do
+            doMaybe e (\e -> do
                 res <- qeval (e, env)
-                case res of
-                  AChangeConstr con cenv -> do
-                    trace (query ++ "CASE: scrutinee is " ++ showCtxExpr con) $ return []
-                    -- return emptyAbValue
-                    trace (query ++ "CASE: Looking for branch matching " ++ show con) $ return ()
-                    branches <- findBranch con ctx cenv
-                    -- trace (query ++ "CASE: branches are " ++ show branches) $ return []
-                    -- TODO: Consider just the first branch that matches? Need to make sure that works with approximation
-                    each $ map (\branch -> qeval (branch, cenv)) branches
-                  AChangeLit lit cenv -> do
-                    -- trace (query ++ "CASE: result is " ++ show res) $ return []
-                    branches <- findBranchLit lit ctx
-                    trace (query ++ "CASE: branches' are " ++ show branches) $ return []
-                    each $ map (\branch -> qeval (branch, cenv)) branches
+                evalBranches res ctx env (zip branches ([0..]))
+                -- case res of
+                --   AChangeConstr con cenv -> do
+                --     trace (query ++ "CASE: scrutinee is " ++ showCtxExpr con) $ return []
+                --     -- return emptyAbValue
+                --     trace (query ++ "CASE: Looking for branch matching " ++ show con) $ return ()
+                --     branches <- findBranch con ctx cenv
+                --     -- trace (query ++ "CASE: branches are " ++ show branches) $ return []
+                --     -- TODO: Consider just the first branch that matches? Need to make sure that works with approximation
+                --     each $ map (\branch -> qeval (branch, cenv)) branches
+                --   AChangeLit lit cenv -> do
+                --     -- trace (query ++ "CASE: result is " ++ show res) $ return []
+                --     branches <- findBranchLit lit ctx
+                --     trace (query ++ "CASE: branches' are " ++ show branches) $ return []
+                --     each $ map (\branch -> qeval (branch, cenv)) branches
               )
           Con nm repr -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
 
@@ -394,50 +397,65 @@ evalPatternRef expr env pat = do
       AChangeConstr conApp cenv <- qeval (expr, env)
       let App (Con nm _) tms = exprOfCtx expr -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
       if con /= nm then
-        doBottom
+        return AChangeNone
       else do
         x <- focusChild conApp i
         case x of
-          Nothing -> doBottom
+          Nothing -> return AChangeNone
           Just expr -> evalPatternRef expr cenv pat
 
-matchesPattern :: ExprContext -> Pattern -> Maybe (EnvCtx, [ExprContext], [Pattern])
-matchesPattern cc pat =
-  -- trace ("Matching " ++ show pat ++ " against " ++ show cc) $
+evalBranches :: AChange -> ExprContext -> EnvCtx -> [(Branch, Int)] -> FixDemandR x s e AChange
+evalBranches ch ctx env branches =
+  case branches of
+    [] -> return AChangeNone
+    (Branch [p] _, i):xs -> do
+      matches <- matchesPattern ch p
+      if matches then do
+        -- trace ("Found matching branch " ++ show p) $ return ()
+        e <- focusChild ctx (i + 1) -- +1 to skip the scrutinee
+        doMaybe e (\e -> qeval (e, env))
+      else evalBranches ch ctx env xs
+
+matchesPattern :: AChange -> Pattern -> FixDemandR x s e Bool
+matchesPattern ch pat =
+  case ch of 
+    AChangeConstr conApp env -> matchesPatternConstr conApp env pat
+    AChangeLit lit env -> return $ matchesPatternLit lit env pat
+
+matchesPatternConstr :: ExprContext -> EnvCtx -> Pattern -> FixDemandR x s e Bool
+matchesPatternConstr conApp env pat = do
   case pat of
     PatCon{patConName} ->
-      if patConName == constrName cc then -- trace "Found constr" 
-        Just (constrEnv cc, constrParams cc, patConPatterns pat)
-      else Nothing
-    PatVar _ p -> matchesPattern cc p
-    PatWild -> Just (constrEnv cc, constrParams cc, [])
-    _ -> Nothing
-
-matchesPatternCtx :: ExprContext -> Pattern -> FixDemandR x s e Bool
-matchesPatternCtx cc pat = do
-  let childMatches = matchesPattern cc pat
-  case childMatches of
-    Just (_, _, []) -> return True -- No need to evaluate further (Pattern is a wildcard)
-    Just (env, cp, xs) -> matchesPatternsCtx cp xs env
-    Nothing -> return False
+      case exprOfCtx conApp of
+        App (Con nm _) _ | nm == patConName -> 
+          do 
+            childs <- childrenContexts conApp
+            matchesPatternsCtx 
+              (Prelude.drop 1 childs) -- Drop the constructor
+              (patConPatterns pat) env
+        _ -> return False
+    PatVar _ p -> matchesPatternConstr conApp env p
+    PatWild -> return True
+    _ -> return False
 
 matchesPatternsCtx :: [ExprContext] -> [Pattern] -> EnvCtx -> FixDemandR x s e Bool
 matchesPatternsCtx childrenCC pats env = do
   childrenEval <- mapM (\cc -> qeval (cc, env)) childrenCC
   res <- zipWithM (\ch subPat ->
     case ch of
-      AChangeLit l env -> return $ isJust $ matchesPatternLit l subPat
-      AChangeConstr con env -> matchesPatternCtx con subPat
+      AChangeLit l env -> return $ matchesPatternLit l env subPat
+      AChangeConstr con env -> matchesPatternConstr con env subPat
     ) childrenEval pats
   return $ and res
 
-matchesPatternLit :: LiteralChange -> Pattern -> Maybe [Pattern]
-matchesPatternLit litc pat =
+matchesPatternLit :: LiteralChange -> EnvCtx -> Pattern -> Bool
+matchesPatternLit litc env pat =
   case pat of
-    PatLit{} | pat `patSubsumed` litc -> Just []
-    PatVar _ p -> matchesPatternLit litc p
-    PatWild -> Just []
-    _ -> Nothing
+    PatLit{} | pat `patSubsumed` litc -> True
+    PatVar _ p -> matchesPatternLit litc env p
+    PatWild -> True
+    _ -> False
+
 
 patSubsumed :: Pattern -> LiteralChange -> Bool
 patSubsumed (PatLit (LitInt i)) (LiteralChangeInt (LChangeSingle x)) = i == x
@@ -449,42 +467,6 @@ patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat LChangeTop) = True
 patSubsumed (PatLit (LitChar i)) (LiteralChangeChar LChangeTop) = True
 patSubsumed (PatLit (LitString i)) (LiteralChangeString LChangeTop) = True
 patSubsumed _ _ = False
-
-findBranchLit :: LiteralChange -> ExprContext -> FixDemandR x s e [ExprContext]
-findBranchLit litc ctx = do
-  let Case e branches = exprOfCtx ctx
-  children <- childrenContexts ctx
-  let childMatches = zipWith (\i (Branch [p] _ ) -> case matchesPatternLit litc p of {Just x -> Just (x, i); Nothing -> Nothing}) [0..] branches
-  case catMaybes childMatches of
-    [] -> return []
-    [([], i)] -> return [children !! (i + 1)] -- +1 to skip the scrutinee
-    matches -> do -- Many, should never happen
-      return []
-
-findBranch :: ExprContext -> ExprContext -> EnvCtx -> FixDemandR x s e [ExprContext]
-findBranch cc ctx env = do
-  let Case e branches = exprOfCtx ctx
-  children <- childrenContexts ctx
-  let childMatches = catMaybes $ 
-        zipWith (\i (Branch [p] _ ) -> 
-          case matchesPattern cc p of 
-            Just x -> Just (x, i)
-            Nothing -> Nothing
-          ) [0..] branches
-  -- trace ("Found matching branch patterns " ++ show childMatches) $ return ()
-  case childMatches of
-    [] -> return []
-    [((_, _, _), i)] -> -- trace ("matching expr context" ++ show (children !! (i + 1))) 
-      return [children !! (i + 1)] -- +1 to skip the scrutinee
-    matches -> do -- Many, need to evaluate sub-pieces and match nested sub-expressions
-      res <- mapM (\((env, cp, pats), i) -> do
-          x <- matchesPatternsCtx cp pats env
-          return $ if x then Just i else Nothing
-        ) matches
-      case catMaybes res of
-        [] -> return []
-        xs -> return $ map (\i -> children !! (i + 1)) xs -- +1 to skip the scrutinee
-      return []
 
 -- TODO: This still sometimes returns emptyAbValue
 doExpr :: Query -> String -> FixDemandR x s e AChange
@@ -512,7 +494,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
                 m <- contextLength <$> getEnv
                 call <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
                 -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-                qexpr call
+                doMaybe call qexpr 
           Nothing -> return AChangeNone
       LamCBody _ _ _ e -> do -- BODY Clause
         -- trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
@@ -533,7 +515,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
         -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-        qexpr call
+        doMaybe call qexpr
       DefCRec _ c _ _ _ -> do
         trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
         let df = defOfCtx ctx
@@ -545,7 +527,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
         -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-        qexpr call
+        doMaybe call qexpr
       ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)
       _ ->
         case contextOf ctx of

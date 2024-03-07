@@ -15,7 +15,7 @@ module Demand.AbstractValue(
                           AChange(..),
                           BindInfo(..),
                           PatBinding(..),
-                          addChange, injLit,
+                          addChange, injLit, litLattice,
                           showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
                           showNoEnvClosure, showNoEnvAbValue,
                           emptyAbValue,

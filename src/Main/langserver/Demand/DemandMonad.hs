@@ -10,12 +10,12 @@
 
 module Demand.DemandMonad(
   AFixChange(..), FixInput(..), FixOutput(..),
-  FixDemandR, FixDemand, 
+  FixDemandR, FixDemand,
   AnalysisKind(..),
   -- Cache / State stuff
   State(..), toAbValue, toEnv, getAllRefines, getAllStates, getState, getCache, cacheLookup, updateState, setResult,
   -- Context stuff
-  getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts, 
+  getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
   childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs, visitEachChild,
   -- Env stuff
   DEnv(..), getEnv, withEnv, getUnique, newQuery,
@@ -28,7 +28,7 @@ import Control.Monad.Reader
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Set (Set)
-import Data.Maybe (fromMaybe, fromJust)
+import Data.Maybe (fromMaybe, fromJust, maybeToList)
 import Demand.AbstractValue
 import Demand.StaticContext
 import Demand.FixpointMonad
@@ -42,7 +42,7 @@ import Control.Monad (zipWithM)
 import Debug.Trace (trace)
 import Data.List (find)
 
-type FixDemand x s e = FixDemandR x s e AFixChange
+type FixDemand x s e = FixDemandR x s e (FixOutput AFixChange)
 type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput FixOutput AFixChange a
 
 data State a x = State{
@@ -60,7 +60,7 @@ getState :: FixDemandR x s e (State x s)
 getState = gets snd
 
 getCache :: FixDemandR x s e (M.Map FixInput (FixOutput AFixChange))
-getCache = do 
+getCache = do
   res <- gets fst
   return $ M.map fst res
 
@@ -139,8 +139,9 @@ data AFixChange =
 toAbValue :: AFixChange -> AChange
 toAbValue (FA a) = a
 
-toEnv :: AFixChange -> EnvCtx
-toEnv (FE e) = e
+toEnv :: AFixChange -> Maybe EnvCtx
+toEnv (FE e) = Just e
+toEnv _ = Nothing
 
 -- The output of the fixpoint is either a value, or set of environments 
 -- (depending on whether the input is a query or wanting the refined environments for a particular environment)
@@ -171,6 +172,46 @@ instance Lattice FixOutput AFixChange where
   insert (FA a) (A b) = A (addChange b a)
   insert (FE e) N = E $ S.singleton e
   insert (FE e) (E e1) = E (S.insert e e1)
+  lte B N = True
+  lte (FA ch) (A a) = ch `changeIn` a
+  lte (FE e) (E e1) = e `S.member` e1
+  lte _ _ = False
+  elems (A a) = map FA $ changes a
+  elems (E e) = map FE $ S.toList e
+  elems N = []
+
+
+changes :: AbValue -> [AChange]
+changes (AbValue clos constrs lits err) =
+  closs ++ constrss ++ litss ++ errs
+  where
+    closs = map (uncurry AChangeClos) $ S.toList clos
+    constrss = map (uncurry AChangeConstr) $ S.toList constrs
+    litss = concatMap (\(env,lat) -> changesLit lat env) $ M.toList lits
+    errs = map AChangeErr $ maybeToList err
+
+changesLit :: LiteralLattice -> EnvCtx -> [AChange]
+changesLit (LiteralLattice ints floats chars strings) env =
+  intChanges ++ floatChanges ++ charChanges ++ stringChanges
+  where
+    intChanges = map (\x -> AChangeLit (LiteralChangeInt x) env) $ elems ints
+    floatChanges = map (\x -> AChangeLit (LiteralChangeFloat x) env) $ elems floats
+    charChanges = map (\x -> AChangeLit (LiteralChangeChar x) env) $ elems chars
+    stringChanges = map (\x -> AChangeLit (LiteralChangeString x) env) $ elems strings
+
+changeIn :: AChange -> AbValue -> Bool
+changeIn (AChangeClos ctx env) (AbValue clos _ _ _) = S.member (ctx,env) clos
+changeIn (AChangeConstr ctx env) (AbValue _ constr _ _) = S.member (ctx,env) constr
+changeIn (AChangeLit lit env) (AbValue _ _ lits _) =
+  case M.lookup env lits of
+    Just (LiteralLattice ints floats chars strings) ->
+      case lit of
+        LiteralChangeInt i -> i `lte` ints
+        LiteralChangeFloat f -> f `lte` floats
+        LiteralChangeChar c -> c `lte` chars
+        LiteralChangeString s -> s `lte` strings
+    Nothing -> False
+changeIn (AChangeErr a) (AbValue _ _ _ err) = Just a == err
 
 -- Implement the needed operations for the output to be a lattice
 instance Semigroup (FixOutput d) where
@@ -241,7 +282,7 @@ updateState update = do
 setResult :: x -> FixDemand x s e
 setResult x = do
   updateState (\st -> st{finalResult = Just x})
-  return B
+  return N
 
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging

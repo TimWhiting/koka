@@ -24,7 +24,6 @@ module Demand.FixpointMonad(
   memo,
   push,
   each,
-  doBottom,
   runFixAEnv,
   runFix,
   runFixWithCache,
@@ -52,9 +51,6 @@ class Lattice l d where
   insert :: d -> l d -> l d
   lte :: d -> l d -> Bool
   elems :: l d -> [d]
-
-class DiffBottom d where
-  diffBottom :: d
 
 -- A simple lattice is a lattice where we just have bottom, top, and a singleton value
 -- An abstract value of an integer can be represented using this. Top means any integer, bottom means no integers, and a singleton value means a single integer value.
@@ -142,8 +138,8 @@ instance Show (ContX e s i l d x) where
 
 type FixT e s i l d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l d l]), s) IO))
 
--- instance MonadFail (FixT i l s e a) where
---   fail = error
+-- instance Lattice l d => MonadFail (FixTR e s i l d) where
+--   fail = bottom
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
 memo :: (Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
@@ -172,9 +168,6 @@ each (x:xs) =
     each xs
     return x''
   )
-
-doBottom :: (DiffBottom b) => FixTR e s i l d b
-doBottom = callCC (\k -> return diffBottom)
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Ord i, Lattice l d) => i -> d -> FixTS e s i l d
