@@ -16,7 +16,7 @@ module Demand.DemandMonad(
   State(..), toAbValue, toEnv, getAllRefines, getAllStates, getState, getCache, cacheLookup, updateState, setResult,
   -- Context stuff
   getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts, 
-  childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs,
+  childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs, visitEachChild,
   -- Env stuff
   DEnv(..), getEnv, withEnv, getUnique, newQuery,
   -- Query stuff
@@ -379,3 +379,9 @@ visitChildrenCtxs combine ctx analyze = do
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   res <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
   return $! combine res
+
+visitEachChild :: ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
+visitEachChild ctx analyze = do
+  children <- childrenContexts ctx
+  -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
+  each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children

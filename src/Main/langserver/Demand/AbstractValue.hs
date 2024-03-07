@@ -13,6 +13,8 @@ module Demand.AbstractValue(
                           LiteralChange(..),
                           AbValue(..),
                           AChange(..),
+                          BindInfo(..),
+                          PatBinding(..),
                           addChange, injLit,
                           showSimpleClosure, showSimpleCtx, showSimpleEnv, showSimpleAbValue, showSimpleAbValueCtx,
                           showNoEnvClosure, showNoEnvAbValue,
@@ -44,6 +46,8 @@ import GHC.Base (mplus)
 import Common.Failure (assertion)
 import Demand.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
 import qualified Demand.FixpointMonad as FM
+import Core.CoreVar (bv)
+import Data.Foldable (find)
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
@@ -160,7 +164,7 @@ addChange ab@(AbValue cls cs lit er) change =
     AChangeLit l env -> AbValue cls cs (M.insertWith joinLit env (litLattice l) lit) er
 
 litLattice :: LiteralChange -> LiteralLattice
-litLattice lit = 
+litLattice lit =
   case lit of
     LiteralChangeInt ch -> LiteralLattice (ch `FM.insert` LBottom) LBottom LBottom LBottom
     LiteralChangeFloat ch -> LiteralLattice LBottom (ch `FM.insert` LBottom) LBottom LBottom
@@ -176,17 +180,19 @@ joinAbValue (AbValue cls0 cs0 lit0 e0) (AbValue cls1 cs1 lit1 e1) = AbValue (S.u
 -- Other static information
 
 data PatBinding =
-  PatVar -- This is the variable it is bound to
+  BoundPatVar C.Pattern -- This is the PatVar variable it is bound to
   -- The variable is bound in the subpattern at the given index with the given constructor
-  | SubPatIndex Name Int PatBinding
+  | BoundConIndex TName Int PatBinding
+  | BoundPatIndex Int PatBinding
 
 data BindInfo =
   BoundLam ExprContext EnvCtx Int
-  | BoundTopDef ExprContext EnvCtx
-  | BoundTopDefRec ExprContext EnvCtx Int
-  | BoundLet ExprContext EnvCtx Int
-  | BoundLetRec ExprContext EnvCtx Int Int
-  | BoundCase ExprContext EnvCtx Int {- which match branch -} PatBinding
+  | BoundDef ExprContext ExprContext EnvCtx Int
+  | BoundDefRec ExprContext ExprContext EnvCtx Int
+  | BoundCase ExprContext ExprContext EnvCtx Int {- which match branch -} PatBinding
+  | BoundModule ExprContext EnvCtx
+  | BoundGlobal TName VarInfo
+  | BoundError ExprContext
 
 -- BIND: The resulting context is not only a nested context focused on a lambda body It is also
 -- can be focused on a Let Body or Recursive Let binding It can also be focused on a Recursive Top
@@ -198,36 +204,49 @@ data BindInfo =
 -- need to determine an appropriate tradeoff in precision and compilation. In particular, a full core
 -- file might be an appropriate file to output in addition to the core interface. We only load the core
 -- file with the full definitions on demand when we detect that it would increase precision?
-bind :: ExprContext -> C.Expr -> EnvCtx -> Maybe ((ExprContext, EnvCtx), Maybe Int)
+bind :: ExprContext -> C.Expr -> EnvCtx -> BindInfo
 bind ctx var@(C.Var tname vInfo) env =
   case ctx of
-    ModuleC _ mod _ -> if lookupDefGroups (coreProgDefs $ fromJust $ modCore mod) tname then Just ((ctx, env), Nothing) else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) Nothing
-    DefCRec _ ctx' names i d -> lookupName names ctx'
-    DefCNonRec _ ctx' names d -> lookupName names ctx'
-    LamCBody _ ctx' names _  -> lookupNameNewCtx names ctx'
+    ModuleC _ mod _ ->
+      if lookupDefGroups (coreProgDefs $ fromJust $ modCore mod) tname then BoundModule ctx env
+      else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) (BoundGlobal tname vInfo) 
+    DefCRec _ ctx' names i d -> lookupName (BoundDefRec ctx') names ctx'
+    DefCNonRec _ ctx' names d -> lookupName (BoundDef ctx') names ctx'
+    LamCBody _ ctx' names _  -> lookupNameNewCtx BoundLam names ctx'
     AppCLambda _ ctx _ -> bind ctx var env
     AppCParam _ ctx _ _ -> bind ctx var env
-    LetCDef _ ctx' names i _ -> lookupNameI (i + 1) names ctx'
-    LetCBody _ ctx' names _ -> lookupNameI 0 names ctx'
+    LetCDef _ ctx' names i _ -> lookupNameI (BoundDef ctx') (i + 1) names ctx'
+    LetCBody _ ctx' names _ -> lookupName (BoundDef ctx') names ctx'
     CaseCMatch _ ctx _ -> bind ctx var env
-    CaseCBranch _ ctx' names _ b -> lookupName names ctx'
+    CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
     ExprCBasic _ ctx _ -> bind ctx var env
-    ExprCTerm{} -> Nothing
+    ExprCTerm{} -> BoundError ctx
   where
-    lookupNameNewCtx names ctx' =
+    caseBinding ctx' names i b =
+      case find (\(p, i) -> tname `elem` bv p) (zip (branchPatterns b) [0..]) of
+        Just (pat, index) -> BoundCase ctx' ctx env i (BoundPatIndex index (findPatBinding pat))
+        Nothing -> bind ctx' var env
+    findPatBinding :: C.Pattern -> PatBinding
+    findPatBinding pat = 
+      case pat of
+        C.PatVar tn sub -> if tn == tname then BoundPatVar pat else findPatBinding sub
+        C.PatCon con fields _ _ _ _ _ _ -> 
+          case find (\(p, i) -> tname `elem` bv p) (zip fields [0..]) of
+            Just (subPat, i) -> BoundConIndex con i (findPatBinding subPat)
+        C.PatLit _ -> error "PatLit should not occur"
+        C.PatWild -> error "PatWild should not occur"
+    lookupNameNewCtx mk names ctx' =
       case elemIndex tname names
-        of Just x ->
-            case ctx' of
-              -- DefCNonRec{} -> Just ((ctx', env), Just x)
-              _ -> Just ((ctx, env), Just x)
-           _ -> bind ctx' var (envtail env) -- lambdas introduce a new binding context that relates to calls. Other binding expressions do not
-    lookupName names ctx' =
+        of Just x -> mk ctx env x
+           -- lambdas introduce a new binding context that relates to calls. Other binding expressions do not
+           _ -> bind ctx' var (envtail env)
+    lookupName mk names ctx' =
       case elemIndex tname names
-        of Just x -> Just ((ctx, env), Just x)
+        of Just x -> mk ctx env x
            _ -> bind ctx' var env
-    lookupNameI i names ctx' =
+    lookupNameI mk i names ctx' =
       case elemIndex tname names
-        of Just x -> Just ((ctx, env), Just i)
+        of Just x -> mk ctx env i
            _ -> bind ctx' var env
 
 

@@ -59,20 +59,6 @@ import Type.Type
 import Compile.Build (runBuild)
 import Kind.Kind
 
--- Convenience functions to set up the mutual recursion between the queries and unwrap the result
-qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qcall c = do
-  res <- loop $ QueryInput (CallQ c)
-  return $ toAbValue res
-qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qexpr c = do
-  res <- loop $ QueryInput (ExprQ c)
-  return $ toAbValue res
-qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qeval c = do 
-  res <- loop $ QueryInput (EvalQ c)
-  return $ toAbValue res
-
 -- Refines a query given a more specific environment
 refineQuery :: Query -> EnvCtx -> Query
 refineQuery (CallQ (ctx, env0)) env = CallQ (ctx, env)
@@ -99,7 +85,6 @@ succAEnv newctx p' = do
     BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
     _ -> return $ CallCtx newctx (limitmenv p' (length - 1))
 
-
 getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
 getRefine env =
   case env of
@@ -124,46 +109,21 @@ doMaybeAbValue l doA = do
     Just x -> doA x
     Nothing -> return AChangeNone
 
---------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
-fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
-fixedEval e env = do
-  let q = EvalQ (e, env)
-  loop (QueryInput q)
-  refines <- getAllRefines env
-  res <- mapM (\env -> 
-    do 
-      st <- getAllStates (EvalQ (e, env))
-      return (env, st)
-    ) (S.toList refines)
-  trace "Finished eval" $ return ()
-  return res
+-- Convenience functions to set up the mutual recursion between the queries and unwrap the result
+qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+qcall c = do
+  res <- loop $ QueryInput (CallQ c)
+  return $ toAbValue res
+qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+qexpr c = do
+  res <- loop $ QueryInput (ExprQ c)
+  return $ toAbValue res
+qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+qeval c = do 
+  res <- loop $ QueryInput (EvalQ c)
+  return $ toAbValue res
 
-fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
-fixedExpr e env = do
-  let q = ExprQ (e, env)
-  loop (QueryInput q)
-  refines <- getAllRefines env
-  res <- mapM (\env -> 
-    do 
-      st <- getAllStates (ExprQ (e, env))
-      return (e, env)
-    ) (S.toList refines)
-  trace "Finished expr" $ return ()
-  return res
-  
-fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
-fixedCall e env = do
-  let q = CallQ (e, env)
-  loop (QueryInput q)
-  refines <- getAllRefines env
-  res <- mapM (\env -> 
-    do 
-      st <- getAllStates (CallQ (e, env))
-      return (e, env)
-    ) (S.toList refines)
-  trace "Finished call" $ return ()
-  return res
-
+-- The main fixpoint loop
 loop :: FixInput -> FixDemandR x s e AFixChange
 loop fixinput = do
   memo fixinput $ \i ->
@@ -172,29 +132,20 @@ loop fixinput = do
         case cq of
           EvalQ{} -> do
             newQuery cq (\queryStr -> do
-                let evalRefine = do 
-                      refine <- getRefine (queryEnv cq)
-                      doEval (EvalQ (queryCtx cq, refine)) queryStr
-                each [ doEval cq queryStr, evalRefine ]
-                -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
+                refine <- getRefine (queryEnv cq)
+                doEval (EvalQ (queryCtx cq, refine)) queryStr
               )
           CallQ{} -> do
             newQuery cq (\queryStr -> do
-                let callRefine = do 
-                      refine <- getRefine (queryEnv cq)
-                      doCall (CallQ (queryCtx cq, refine)) queryStr
-                each [ doCall cq queryStr, callRefine ]
-                -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
+                refine <- getRefine (queryEnv cq)
+                doCall (CallQ (queryCtx cq, refine)) queryStr
               )
           ExprQ{} -> do
             newQuery cq (\queryStr -> do
-                let exprRefine = do 
-                      refine <- getRefine (queryEnv cq)
-                      doExpr (ExprQ (queryCtx cq, refine)) queryStr
-                each [ doExpr cq queryStr, exprRefine ]
-                -- trace (queryStr ++ "RESULT: " ++ showNoEnvAbValue res2) $ return res2
+                refine <- getRefine (queryEnv cq)
+                doExpr (ExprQ (queryCtx cq, refine)) queryStr
               )
-      EnvInput env -> return B
+      EnvInput env -> return $ FE env -- TODO: Will this cause an infinite loop?
 
 bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))
 bindExternal var@(Var tn@(TName name tp _) vInfo) = do
@@ -221,31 +172,30 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
     _ -> return Nothing
 
 
-findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (Set (ExprContext, EnvCtx))
+findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   case ctx of
     ModuleC{} -> do
       mods <- buildcModules . buildc <$> getState
       let lds = mapMaybe (\m -> if modStatus m == LoadedSource then Just m else Nothing) mods
-      foldM (\res m -> do
+      each $ map (\m -> do
           let mdctx = modCtxOf m
-          usages <- withEnv (\e -> e{currentModContext=mdctx, currentContext=mdctx}) $ findUsage first expr mdctx env
-          return $ res `S.union` usages
-        ) S.empty lds
+          withEnv (\e -> e{currentModContext=mdctx, currentContext=mdctx}) $ findUsage first expr mdctx env
+        ) lds
     _ -> findUsage first expr ctx env
 
 -- TODO: Fix map example, not working for recursive call? 
 -- finds usages of a variable expression within a (context,env) and returns the set of (context,env) pairs that reference it
-findUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (Set (ExprContext, EnvCtx))
+findUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   -- trace ("Looking for usages of " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env ++ " first " ++ show first) $ return ()
   let nameEq = (== name)
-      empty = return S.empty
+      empty = doBottom
       childrenNoShadow tn =
-        if first || tname `notElem` tn then childrenUsages else empty
+        if first || tname `notElem` tn then childrenUsages else doBottom
       childrenUsages = do
         -- trace ("Looking for " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env) $ return ()
-        visitChildrenCtxs S.unions ctx $ do
+        visitEachChild ctx $ do
           -- visitChildrenCtxs sets the currentContext
           childCtx <- currentContext <$> getEnv
           findUsage False expr childCtx env in
@@ -261,7 +211,7 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
         else if tname `elem` tn then
           empty
         else
-          visitChildrenCtxs S.unions ctx $ do
+          visitEachChild ctx $ do
             childCtx <- currentContext <$> getEnv
             m <- contextLength <$> getEnv
             findUsage False expr childCtx (limitmenv (EnvCtx (IndetCtx tn ctx) env) m)
@@ -269,12 +219,12 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
         if nameEq name2 then do
           query <- getQueryString
           return $! trace (query ++ "Found usage in " ++ showContextPath ctx) $
-            S.singleton (c, env)
+            (c, env)
         else
           -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
           empty
       ModuleC{} -> do
-        visitChildrenCtxs S.unions ctx $ do
+        visitEachChild ctx $ do
           -- visitChildrenCtxs sets the currentContext
           childCtx <- currentContext <$> getEnv
           findUsage first expr childCtx env
@@ -334,37 +284,30 @@ doEval cq@(EvalQ (ctx, env)) query = do
             let binded = bind ctx v env
             -- trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
             case binded of
-              Just ((lambodyctx@LamCBody{}, bindedenv), Just index) -> do
-                AChangeClos appctx appenv <- qcall (lambodyctx, bindedenv)
+              BoundLam lamctx lamenv index -> do
+                AChangeClos appctx appenv <- qcall (lamctx, lamenv)
                 trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
                 param <- focusParam (Just index) appctx
                 doMaybeAbValue param (\param -> qeval (param, appenv))
-              Just ((letbodyctx@LetCBody{}, bindedenv), index) -> do
-                param <- focusChild (fromJust $ contextOf letbodyctx) (fromJust index)
-                doMaybeAbValue param (\ctx -> qeval (ctx, bindedenv))
-              Just ((letdefctx@LetCDef{}, bindedenv), index) -> do
-                param <- focusChild (fromJust $ contextOf letdefctx) (fromJust index)
-                doMaybeAbValue param (\ctx -> qeval (ctx, bindedenv))
-              Just ((CaseCBranch _ c _ _ (Branch pat guard), bindedenv), index) -> do
-                mscrutinee <- focusChild c 0
+              BoundDef parentCtx ctx boundEnv index -> do
+                param <- focusChild parentCtx index
+                doMaybeAbValue param (\ctx -> qeval (ctx, boundEnv))
+              BoundDefRec parentCtx ctx boundEnv index -> do
+                param <- focusChild parentCtx index
+                doMaybeAbValue param (\ctx -> qeval (ctx, boundEnv))
+              BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
+                mscrutinee <- focusChild parentCtx 0
                 case mscrutinee of
                   Nothing -> return $! AChangeErr $ "REF: can't find scrutinee of case " ++ show ctx
                   Just scrutinee -> do
                     -- trace (query ++ "REF: scrutinee of case " ++ show scrutinee) $ return []
-                    evalPatternRef scrutinee bindedenv (head pat) tn
-              Just ((modulectx@ModuleC{}, bindedenv), index) -> do
+                    evalPatternRef scrutinee caseEnv patBinding
+              BoundModule modulectx modenv -> do
                 lamctx <- getTopDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
                 qeval (lamctx, EnvTail TopCtx)
-              Just ((defctx@DefCNonRec{}, bindedenv), Just index) -> do
-                qeval (defctx, bindedenv)
-              Just ((defctx@DefCRec{}, bindedenv), Just index) -> do
-                qeval (defctx, bindedenv)
-              Just ((ctxctx, bindedenv), index) -> do
-                children <- childrenContexts ctxctx
-                let msg = query ++ "REF: unexpected context in result of bind: " ++ show v ++ " " ++ show ctxctx ++ " children: " ++ show children
-                trace msg $ return $! AChangeErr msg
-              Nothing -> do
+              BoundError e -> return $ AChangeErr "Binding Error" 
+              BoundGlobal _ _ -> do
                 ext <- bindExternal v
                 case ext of
                   Just (modulectx@ModuleC{}, index) -> do
@@ -442,23 +385,21 @@ doEval cq@(EvalQ (ctx, env)) query = do
           Con nm repr -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
 
 --------------------------------- PATTERN EVALUATION HELPERS -----------------------------------------------
-evalPatternRef :: ExprContext -> EnvCtx -> Pattern -> TName -> FixDemandR x s e AChange
-evalPatternRef expr env pat tname = do
+evalPatternRef :: ExprContext -> EnvCtx -> PatBinding -> FixDemandR x s e AChange
+evalPatternRef expr env pat = do
   case pat of
-    PatVar tn pat' ->
-      if tn == tname then qeval (expr, env)
-      else evalPatternRef expr env pat' tname
-    PatLit{} -> return AChangeNone
-    PatWild{} -> qeval (expr, env)
-    PatCon{patConName=name, patConPatterns=pats} -> do
-      AChangeConstr con cenv <- qeval (expr, env)
-      if constrName con /= name then
+    BoundPatVar _ -> qeval (expr, env)
+    BoundPatIndex 0 b -> evalPatternRef expr env b -- Only support singleton patterns for now
+    BoundConIndex con i b -> do
+      AChangeConstr conApp cenv <- qeval (expr, env)
+      let App (Con nm _) tms = exprOfCtx expr -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
+      if con /= nm then
         doBottom
       else do
-        let x = selectPatternExpr (constrParams con) pats tname
+        x <- focusChild conApp i
         case x of
           Nothing -> doBottom
-          Just (pat, expr) -> evalPatternRef expr cenv pat tname
+          Just expr -> evalPatternRef expr cenv pat
 
 matchesPattern :: ExprContext -> Pattern -> Maybe (EnvCtx, [ExprContext], [Pattern])
 matchesPattern cc pat =
@@ -480,27 +421,14 @@ matchesPatternCtx cc pat = do
     Just (env, cp, xs) -> matchesPatternsCtx cp xs env
     Nothing -> return False
 
-findPath :: [Pattern] -> TName -> Maybe Int
-findPath pats tname =
-  findIndex (\pat ->
-    case pat of
-      PatVar tn p -> tname == tn || isJust (findPath [p] tname)
-      PatCon{patConPatterns = patterns} -> isJust $ findPath patterns tname
-      _ -> False
-    ) pats
-
-selectPatternExpr :: [ExprContext] -> [Pattern] -> TName -> Maybe (Pattern, ExprContext)
-selectPatternExpr expr pats tname = do
-  path <- findPath pats tname
-  return (pats !! path, expr !! path)
-
 matchesPatternsCtx :: [ExprContext] -> [Pattern] -> EnvCtx -> FixDemandR x s e Bool
 matchesPatternsCtx childrenCC pats env = do
   childrenEval <- mapM (\cc -> qeval (cc, env)) childrenCC
-  res <- zipWithM (\abv subPat -> do
-    litMatch <- doForLitsJoin True abv (&&) (\(cenv, lit) -> return $ isJust $ matchesPatternLit lit subPat)
-    conMatch <- doForConstructorsJoin True abv (&&) (\(cenv, con) -> matchesPatternCtx con subPat)
-    return $ litMatch || conMatch) childrenEval pats
+  res <- zipWithM (\ch subPat ->
+    case ch of
+      AChangeLit l env -> return $ isJust $ matchesPatternLit l subPat
+      AChangeConstr con env -> matchesPatternCtx con subPat
+    ) childrenEval pats
   return $ and res
 
 matchesPatternLit :: LiteralChange -> Pattern -> Maybe [Pattern]
@@ -537,7 +465,12 @@ findBranch :: ExprContext -> ExprContext -> EnvCtx -> FixDemandR x s e [ExprCont
 findBranch cc ctx env = do
   let Case e branches = exprOfCtx ctx
   children <- childrenContexts ctx
-  let childMatches = catMaybes $ zipWith (\i (Branch [p] _ ) -> case matchesPattern cc p of {Just x -> Just (x, i); Nothing -> Nothing}) [0..] branches
+  let childMatches = catMaybes $ 
+        zipWith (\i (Branch [p] _ ) -> 
+          case matchesPattern cc p of 
+            Just x -> Just (x, i)
+            Nothing -> Nothing
+          ) [0..] branches
   -- trace ("Found matching branch patterns " ++ show childMatches) $ return ()
   case childMatches of
     [] -> return []
@@ -577,9 +510,9 @@ doExpr cq@(ExprQ (ctx,env)) query = do
                 -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
                 succ <- succAEnv c env
                 m <- contextLength <$> getEnv
-                ctxs <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
+                call <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
                 -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-                each $ map qexpr (S.toList ctxs)
+                qexpr call
           Nothing -> return AChangeNone
       LamCBody _ _ _ e -> do -- BODY Clause
         -- trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
@@ -592,7 +525,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
       DefCNonRec _ c index _ -> do
         trace (query ++ "DEF NonRec: Env is " ++ show env) $ return []
         let df = defOfCtx ctx
-        ctxs <- case c of
+        call <- case c of
           ModuleC{} -> do
             trace (query ++ "DEF NonRec: In module binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) c env
@@ -600,11 +533,11 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
         -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-        each $ map qexpr (S.toList ctxs)
+        qexpr call
       DefCRec _ c _ _ _ -> do
         trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
         let df = defOfCtx ctx
-        ctxs <- case c of
+        call <- case c of
           ModuleC{} -> do
             trace (query ++ "DEF Rec: In module binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) c env
@@ -612,7 +545,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
             findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
         -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-        each $ map qexpr (S.toList ctxs)
+        qexpr call
       ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)
       _ ->
         case contextOf ctx of
@@ -692,6 +625,48 @@ instantiate query c1 c0 = if c1 == c0 then return () else do
   push (EnvInput c0) (FE c1)
   return ()
 
+
+
+--------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
+fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
+fixedEval e env = do
+  let q = EvalQ (e, env)
+  loop (QueryInput q)
+  refines <- getAllRefines env
+  res <- mapM (\env -> 
+    do 
+      st <- getAllStates (EvalQ (e, env))
+      return (env, st)
+    ) (S.toList refines)
+  trace "Finished eval" $ return ()
+  return res
+
+fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
+fixedExpr e env = do
+  let q = ExprQ (e, env)
+  loop (QueryInput q)
+  refines <- getAllRefines env
+  res <- mapM (\env -> 
+    do 
+      st <- getAllStates (ExprQ (e, env))
+      return (e, env)
+    ) (S.toList refines)
+  trace "Finished expr" $ return ()
+  return res
+  
+fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
+fixedCall e env = do
+  let q = CallQ (e, env)
+  loop (QueryInput q)
+  refines <- getAllRefines env
+  res <- mapM (\env -> 
+    do 
+      st <- getAllStates (CallQ (e, env))
+      return (e, env)
+    ) (S.toList refines)
+  trace "Finished call" $ return ()
+  return res
+
 getAbResult :: (EnvCtx, AbValue) -> FixDemandR x s e (EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type, Set String))
 getAbResult (envctx, res) = do
   let vals = [res]
@@ -725,7 +700,6 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
           _ ->
             setResult ([(EnvTail CutUnknown, ([],[],[],[],S.empty,S.empty))], bc)
   return $ trace (show lattice) x
-
 
 runQueryAtRange :: BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo) 
