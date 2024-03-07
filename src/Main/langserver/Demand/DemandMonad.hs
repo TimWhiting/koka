@@ -179,6 +179,8 @@ instance Lattice FixOutput AFixChange where
   elems (A a) = map FA $ changes a
   elems (E e) = map FE $ S.toList e
   elems N = []
+  isBottom N = True
+  isBottom _ = False
 
 
 changes :: AbValue -> [AChange]
@@ -419,7 +421,7 @@ visitChildrenCtxs combine ctx analyze = do
   res <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
   return $! combine res
 
-visitEachChild :: ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
+visitEachChild :: Show a => ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
 visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()

@@ -38,17 +38,18 @@ import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import Control.Monad.Reader (lift, ReaderT (runReaderT))
-import Control.Monad.Trans.Cont (ContT(..), resetT, shiftT, mapContT, evalContT, callCC)
+import Control.Monad.Trans.Cont (ContT(..), evalContT)
 import Control.Monad.State (StateT (..), MonadState (..), liftIO)
 import Control.Monad.Identity (IdentityT, Identity (..))
 import Data.List (intercalate)
 import Control.Monad (foldM, ap)
-import Control.Monad.Cont (withContT)
+import Control.Monad.Cont (withContT, MonadCont (..))
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
 class Lattice l d where
   bottom :: l d
+  isBottom :: l d -> Bool
   join :: l d -> l d -> l d
   insert :: d -> l d -> l d
   lte :: d -> l d -> Bool
@@ -75,7 +76,7 @@ instance Show a => Show (SimpleLattice a d) where
 instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
   bottom = LBottom
   insert (LChangeSingle a) b = LSingle a `join` b
-  insert LChangeTop b = LTop 
+  insert LChangeTop b = LTop
   join a b =
     case (a, b) of
       (LBottom, x) -> x
@@ -88,6 +89,8 @@ instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
   elems LTop = [LChangeTop]
   elems LBottom = []
   elems (LSingle a) = [LChangeSingle a]
+  isBottom LBottom = True
+  isBottom _ = False
 
 -- A type class to allow us to easily define lattices for types that can implement a contains relation
 -- 
@@ -100,12 +103,13 @@ class Contains a where
 data BasicLattice d a = BL a deriving (Eq, Ord)
 
 -- The `bottom` value is just the monoid's `mempty` value, `join` is implemented with `mappend`, and the `contains` relation defines `subsumption` (i.e. `a` contains `b` if `a` is a superset of `b`)
-instance (Contains a, Monoid a) => Lattice (BasicLattice a) a where
+instance (Eq a, Contains a, Monoid a) => Lattice (BasicLattice a) a where
   bottom = BL mempty
   join (BL a) (BL b) = BL $ a `mappend` b
   lte m (BL m') = m' `contains` m
   elems (BL m) = [m]
   insert a (BL b) = BL (a `mappend` b)
+  isBottom (BL a) = a == mempty
 
 instance Functor (BasicLattice a) where
   fmap f (BL a) = BL $ f a
@@ -131,10 +135,11 @@ instance Ord a => Lattice (ChangeSet a) a where
   join (ChangeSet a) (ChangeSet b) = ChangeSet $ S.union a b
   lte a (ChangeSet sb) = S.member a sb
   elems (ChangeSet a) = S.elems a
+  isBottom (ChangeSet a) = S.null a
 
 type FixTS e s i l d = FixT e s i (l d) d (l d)
 type FixTR e s i l d = FixT e s i (l d) d
-newtype ContX e s i l d x = ContX { c:: d -> FixT e s i l d l} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
+newtype ContX e s i l d x = ContX { c:: d -> FixT e s i l d d} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
 instance Show (ContX e s i l d x) where
   show _ = ""
 
@@ -144,54 +149,92 @@ type FixT e s i l d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l d l
 --   fail = bottom
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
-memo :: (Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
+memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
 memo key f = do
-  callCC (\k -> do
+  callCCx (\k -> do
     (cache, state) <- get
     case M.lookup key cache of
       Just (xss, conts) -> do
         put (M.insert key (xss, ContX k:conts) cache, state)
-        -- trace ("New dependant on " ++ show key ++ " calling with current state " ++ show xss) $ return ()
-        x <- mapM k (elems xss)
-        return $ head (elems xss)
+        trace ("New dependant on " ++ show key ++ " calling with current state " ++ show xss) $ return ()
+        xs <- mapM k (elems xss)
+        mapM_ (push key) xs
+        trace ("Calling memo for " ++ show key) $ return ()
+        -- x <- f key
+        -- trace ("Got memoized result for " ++ show key ++ " " ++ show x) $ return ()
+        -- push key x
+        -- return x
+        doBottom
       Nothing -> do
+        trace ("Memoizing new result for " ++ show key) $ return ()
         put (M.insert key (bottom, [ContX k]) cache, state)
         x <- f key
-        -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
+        trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
         push key x
         return x
     )
 
-each :: (Ord i, Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
-each (x:xs) =
-  callCC (\k -> do
-    x' <- x
-    x'' <- k x'
-    each xs
-    return x''
-  )
+callCCx :: Monad m => ((a -> ContT r m a) -> ContT r m a) -> ContT r m a
+callCCx f = ContT $ \ c -> 
+  runContT (f (\ x -> ContT $ \ b -> c x)) c
+    
+
+each :: (Show d, Show b, Ord i, Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
+each xs = do
+  case xs of
+    [x] -> 
+      callCC (\k -> do
+        trace "Each" $ return ()
+        x' <- x
+        trace "Each 2" $ return ()
+        k x'
+        )
+    x:xs -> do
+      callCC (\k -> do
+        trace "Each" $ return ()
+        x' <- x
+        trace "Each 2" $ return ()
+        k x'
+        )
+      each xs
+  --   trace "Each" $ return ()
+  --   xs' <- sequence xs
+  --   trace "Each 2" $ return ()
+  --   mapM_ (\x -> 
+  --       do 
+  --         trace ("Each 3' " ++ show x) $ return ()
+  --         x' <- k x
+  --         trace ("Each 3 " ++ show x) $ return ()
+  --         return x'
+  --     ) xs'
+  --   trace "Each 4" $ return ()
+  --   doBottom
+  -- )
 
 doBottom :: (Lattice l d) => FixTR e s i l d b
-doBottom = ContT $ \c -> return bottom
+doBottom = ContT $ \c -> do
+  trace "Bottom" $ return ()
+  return bottom
+
+pushMissing :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> l d -> FixTR e s i l d ()
+pushMissing key values = do
+  mapM_ (push key) (elems values)
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
-push :: (Ord i, Lattice l d) => i -> d -> FixTS e s i l d
+push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixTR e s i l d ()
 push key value = do
-  -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
+  trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state) <- get
   let cur = M.lookup key cache
   let (xs, conts) = fromMaybe (bottom, []) cur
   if lte value xs then do
-    -- trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ return ()
-    return xs
+    trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ return ()
   else do
     let added = value `insert` xs
-    -- trace ("Calling continuations for " ++ show key) $ return ()
     put (M.insert key (added, conts) cache, state)
-    foldM (\acc (ContX c) -> do
-        x' <- c value
-        return $ acc `join` x'
-      ) added conts
+    trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
+    mapM_ (\(ContX c) -> c value) conts
+    trace ("Finished calling continuations for " ++ show key) $ return ()
 
 -- Runs a fixpoint computation with an environment and a state, and an input value
 runFixAEnv :: (t -> ContT a (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a) -> t -> r -> c -> IO (a, M.Map k b1, c)
@@ -238,6 +281,15 @@ fib n =
       case (x, y) of
         (LChangeSingle x, LChangeSingle y) -> return $ LChangeSingle (x + y)
 
+swap :: [Int] -> FixTR () () [Int] (SimpleLattice [Int]) (SimpleChange [Int]) (SimpleChange [Int])
+swap l = do
+  trace ("Swapping " ++ show l) $ return ()
+  memo l $ \l ->
+    trace ("Memoizing " ++ show l) $ 
+    case l of
+      [x, y, z] -> each [swap [y, x], swap [z, y]]
+      [x, z] -> return $ LChangeSingle [z, x]
+
 incrementUnique :: FixTR e State b c (SimpleChange Int) ()
 incrementUnique = do
   (cache, state) <- get
@@ -245,5 +297,7 @@ incrementUnique = do
 
 runExample :: IO ()
 runExample = do
-  comp <- runStateT (runReaderT (runContT (fib 6) (\x -> return (insert x bottom))) ()) (M.empty, (State 0)) 
+  comp <- runStateT (runReaderT (runContT (fib 6) (\x -> return (insert x bottom))) ()) (M.empty, State 0)
   trace (show comp) $ return ()
+  comp2 <- runStateT (runReaderT (runContT (swap [1, 2, 3]) (\x -> return (insert x bottom))) ()) (M.empty, ())
+  trace (show comp2) $ return ()
