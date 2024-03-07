@@ -66,8 +66,7 @@ getCache = do
 
 cacheLookup :: FixInput -> FixDemandR x s e (Maybe (FixOutput AFixChange))
 cacheLookup i = do
-  res <- getCache
-  return $ M.lookup i res
+  M.lookup i <$> getCache
 
 setState :: State x s -> FixDemandR x s e ()
 setState x = do
@@ -297,7 +296,7 @@ newQuery q d = do
 --------------------------------------- ExprContext Helpers -------------------------------------
 
 allModules :: BuildContext -> [Module]
-allModules buildc = buildcModules buildc
+allModules = buildcModules
 
 getTopDefCtx :: ExprContext -> Name -> FixDemandR x s e ExprContext
 getTopDefCtx ctx name = do
@@ -425,4 +424,4 @@ visitEachChild :: Show a => ExprContext -> FixDemandR x s e a -> FixDemandR x s 
 visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
-  each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
+  each doBottom $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children

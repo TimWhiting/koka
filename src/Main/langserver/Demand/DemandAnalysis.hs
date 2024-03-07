@@ -52,7 +52,6 @@ import Demand.Syntax
 import Syntax.Syntax (UserExpr, UserDef)
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
-import Core.Core
 import Core.Core as C
 import Type.Type
 import Compile.Build (runBuild)
@@ -97,7 +96,7 @@ getRefine env =
                 case tailRefine of
                   Just tailRefine -> return $ Just (EnvCtx cc tailRefine)
                   Nothing -> return Nothing
-      each [f,t]
+      each f [t]
     EnvTail cc ->
       do
         res <- loop (EnvInput env)
@@ -106,9 +105,7 @@ getRefine env =
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
 doMaybe :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
 doMaybe l doA = do
-  case l of
-    Just x -> doA x
-    Nothing -> doBottom
+  maybe doBottom doA l
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
@@ -159,7 +156,7 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
       ctxId <- newModContextId mod
       mod' <- if modStatus mod == LoadedIface then do
         -- TODO: set some level of effort / time required for loading externals, but potentially load all core modules on startup
-                buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [(modName mod)] bc))
+                buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [modName mod] bc))
                 case buildc' of
                   Left err -> do
                     trace ("Error loading module " ++ show (modName mod) ++ " " ++ show err) $ return ()
@@ -180,7 +177,7 @@ findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
       if nameStem name == "main" then return $ Just (ctx, env) else do
         mods <- buildcModules . buildc <$> getState
         let lds = mapMaybe (\m -> if modStatus m == LoadedSource then Just m else Nothing) mods
-        each $ map (\m -> do
+        each doBottom $ map (\m -> do
             let mdctx = modCtxOf m
             withEnv (\e -> e{currentModContext=mdctx, currentContext=mdctx}) $ findUsage first expr mdctx env
           ) lds
@@ -262,7 +259,7 @@ doEval :: Query -> String -> FixDemandR x s e AChange
 doEval cq@(EvalQ (ctx, env)) query = do
    trace (query ++ show cq) $ do
     case maybeExprOfCtx ctx of
-      Nothing -> error $ "doEval: can't find expression"
+      Nothing -> error "doEval: can't find expression"
       Just expr ->
         case expr of
           Lam{} -> -- LAM CLAUSE
@@ -308,7 +305,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 lamctx <- getTopDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
                 qeval (lamctx, EnvTail TopCtx)
-              BoundError e -> error $ "Binding Error"
+              BoundError e -> error "Binding Error"
               BoundGlobal _ _ -> do
                 ext <- bindExternal v
                 case ext of
@@ -369,7 +366,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
             e <- focusChild ctx 0
             doMaybe e (\e -> do
                 res <- qeval (e, env)
-                evalBranches res ctx env (zip branches ([0..]))
+                evalBranches res ctx env (zip branches [0..])
                 -- case res of
                 --   AChangeConstr con cenv -> do
                 --     trace (query ++ "CASE: scrutinee is " ++ showCtxExpr con) $ return []
@@ -685,7 +682,7 @@ runQueryAtRange :: BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int
   -> ([ExprContext] -> FixDemand x () ())
-  -> IO ((FixOutput AFixChange), M.Map FixInput (FixOutput AFixChange), Maybe x)
+  -> IO (FixOutput AFixChange, M.Map FixInput (FixOutput AFixChange), Maybe x)
 runQueryAtRange buildc term flags (r, ri) mod kind m query = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)

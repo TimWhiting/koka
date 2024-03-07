@@ -13,6 +13,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Demand.FixpointMonad(
   SimpleLattice(..),
@@ -38,12 +39,15 @@ import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import Control.Monad.Reader (lift, ReaderT (runReaderT))
-import Control.Monad.Trans.Cont (ContT(..), evalContT)
 import Control.Monad.State (StateT (..), MonadState (..), liftIO)
 import Control.Monad.Identity (IdentityT, Identity (..))
 import Data.List (intercalate)
 import Control.Monad (foldM, ap)
-import Control.Monad.Cont (withContT, MonadCont (..))
+import qualified Control.Monad.Fail as Fail
+import Control.Monad.Trans
+import Control.Monad.Trans.Cont (ContT (..))
+import Control.Monad.Cont.Class (callCC)
+import Data.Foldable (foldlM)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
@@ -151,7 +155,7 @@ type FixT e s i l d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l d l
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
 memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
 memo key f = do
-  callCCx (\k -> do
+  callCC (\k -> do
     (cache, state) <- get
     case M.lookup key cache of
       Just (xss, conts) -> do
@@ -174,42 +178,17 @@ memo key f = do
         return x
     )
 
-callCCx :: Monad m => ((a -> ContT r m a) -> ContT r m a) -> ContT r m a
-callCCx f = ContT $ \ c -> 
-  runContT (f (\ x -> ContT $ \ b -> c x)) c
-    
 
-each :: (Show d, Show b, Ord i, Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
-each xs = do
-  case xs of
-    [x] -> 
-      callCC (\k -> do
-        trace "Each" $ return ()
-        x' <- x
-        trace "Each 2" $ return ()
-        k x'
-        )
-    x:xs -> do
-      callCC (\k -> do
-        trace "Each" $ return ()
-        x' <- x
-        trace "Each 2" $ return ()
-        k x'
-        )
-      each xs
-  --   trace "Each" $ return ()
-  --   xs' <- sequence xs
-  --   trace "Each 2" $ return ()
-  --   mapM_ (\x -> 
-  --       do 
-  --         trace ("Each 3' " ++ show x) $ return ()
-  --         x' <- k x
-  --         trace ("Each 3 " ++ show x) $ return ()
-  --         return x'
-  --     ) xs'
-  --   trace "Each 4" $ return ()
-  --   doBottom
-  -- )
+each :: (Show d, Show b, Ord i, Lattice l d) => FixTR e s i l d b -> [FixTR e s i l d b] -> FixTR e s i l d b
+each x xs = do
+  callCC (\k -> do
+      x' <- x
+      x'' <- k x'
+      foldlM (\acc x -> do
+          x' <- x
+          k x'
+        ) x'' xs
+    )
 
 doBottom :: (Lattice l d) => FixTR e s i l d b
 doBottom = ContT $ \c -> do
@@ -287,7 +266,7 @@ swap l = do
   memo l $ \l ->
     trace ("Memoizing " ++ show l) $ 
     case l of
-      [x, y, z] -> each [swap [y, x], swap [z, y]]
+      [x, y, z] -> each (swap [y, x]) [swap [z, y]]
       [x, z] -> return $ LChangeSingle [z, x]
 
 incrementUnique :: FixTR e State b c (SimpleChange Int) ()
