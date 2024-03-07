@@ -23,6 +23,7 @@ module Demand.StaticContext(
                           lookupDefGroup,lookupDefGroups,lookupDef,
                           showSyntaxDef,showSyntax,showLit,
                           showSimpleContext,
+                          isMain
                         ) where
 import Core.Core as C
 import Common.Name
@@ -59,6 +60,9 @@ data ExprContext =
 
 modCtxOf :: Module -> ExprContext
 modCtxOf mod = ModuleC (ExprContextId (-1) (modName mod)) mod (modName mod)
+
+isMain :: ExprContext -> Bool
+isMain ctx = nameStem (C.defName (defOfCtx ctx)) == "main"
 
 lamNames :: ExprContext -> [TName]
 lamNames ctx =

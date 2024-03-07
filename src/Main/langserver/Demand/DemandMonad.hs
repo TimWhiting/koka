@@ -182,13 +182,12 @@ instance Lattice FixOutput AFixChange where
 
 
 changes :: AbValue -> [AChange]
-changes (AbValue clos constrs lits err) =
-  closs ++ constrss ++ litss ++ errs
+changes (AbValue clos constrs lits) =
+  closs ++ constrss ++ litss
   where
     closs = map (uncurry AChangeClos) $ S.toList clos
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     litss = concatMap (\(env,lat) -> changesLit lat env) $ M.toList lits
-    errs = map AChangeErr $ maybeToList err
 
 changesLit :: LiteralLattice -> EnvCtx -> [AChange]
 changesLit (LiteralLattice ints floats chars strings) env =
@@ -200,9 +199,9 @@ changesLit (LiteralLattice ints floats chars strings) env =
     stringChanges = map (\x -> AChangeLit (LiteralChangeString x) env) $ elems strings
 
 changeIn :: AChange -> AbValue -> Bool
-changeIn (AChangeClos ctx env) (AbValue clos _ _ _) = S.member (ctx,env) clos
-changeIn (AChangeConstr ctx env) (AbValue _ constr _ _) = S.member (ctx,env) constr
-changeIn (AChangeLit lit env) (AbValue _ _ lits _) =
+changeIn (AChangeClos ctx env) (AbValue clos _ _) = S.member (ctx,env) clos
+changeIn (AChangeConstr ctx env) (AbValue _ constr _) = S.member (ctx,env) constr
+changeIn (AChangeLit lit env) (AbValue _ _ lits) =
   case M.lookup env lits of
     Just (LiteralLattice ints floats chars strings) ->
       case lit of
@@ -211,7 +210,6 @@ changeIn (AChangeLit lit env) (AbValue _ _ lits _) =
         LiteralChangeChar c -> c `lte` chars
         LiteralChangeString s -> s `lte` strings
     Nothing -> False
-changeIn (AChangeErr a) (AbValue _ _ _ err) = Just a == err
 
 -- Implement the needed operations for the output to be a lattice
 instance Semigroup (FixOutput d) where

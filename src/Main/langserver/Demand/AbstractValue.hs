@@ -73,16 +73,13 @@ data AChange =
   AChangeClos ExprContext EnvCtx
   | AChangeConstr ExprContext EnvCtx
   | AChangeLit LiteralChange EnvCtx
-  | AChangeErr String
-  | AChangeNone
   deriving (Show, Eq)
 
 data AbValue =
   AbValue{
     aclos:: !(Set (ExprContext, EnvCtx)),
     acons:: !(Set (ExprContext, EnvCtx)),
-    alits:: !(Map EnvCtx LiteralLattice),
-    aerr:: Maybe String
+    alits:: !(Map EnvCtx LiteralLattice)
   } deriving (Eq, Ord)
 
 instance Semigroup AbValue where
@@ -94,16 +91,15 @@ instance Monoid AbValue where
   mappend = (<>)
 
 instance Show AbValue where
-  show (AbValue cls cntrs lit e) =
+  show (AbValue cls cntrs lit) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
-    (if M.null lit then "" else " lit: " ++ show (map show (M.toList lit))) ++
-    maybe "" (" err: " ++) e
+    (if M.null lit then "" else " lit: " ++ show (map show (M.toList lit)))
 
 instance Contains AbValue where
   contains :: AbValue -> AbValue -> Bool
-  contains (AbValue cls0 cntrs0 lit0 e0) (AbValue cls1 cntrs1 lit1 e1) =
-    S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && e1 == e0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 < lit1) lit0 lit1
+  contains (AbValue cls0 cntrs0 lit0) (AbValue cls1 cntrs1 lit1) =
+    S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 < lit1) lit0 lit1
 
 -- Basic creating of abstract values
 showSimpleClosure :: (ExprContext, EnvCtx) -> String
@@ -126,21 +122,19 @@ showSimpleAbValueCtx (env, ab) =
   showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
 
 showSimpleAbValue :: AbValue -> String
-showSimpleAbValue (AbValue cls cntrs lit e) =
+showSimpleAbValue (AbValue cls cntrs lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleClosure (S.toList cntrs)) ++ "]") ++
-  (if M.null lit then "" else " lits: " ++ show (M.toList lit)) ++
-  maybe "" (" err: " ++) e
+  (if M.null lit then "" else " lits: " ++ show (M.toList lit))
 
 showNoEnvAbValue :: AbValue -> String
-showNoEnvAbValue (AbValue cls cntrs lit e) =
+showNoEnvAbValue (AbValue cls cntrs lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showNoEnvClosure (S.toList cntrs)) ++ "]") ++
-  (if M.null lit then "" else " lits: " ++ show (map snd (M.toList lit))) ++
-  maybe "" (" err: " ++) e
+  (if M.null lit then "" else " lits: " ++ show (map snd (M.toList lit)))
 
 emptyAbValue :: AbValue
-emptyAbValue = AbValue S.empty S.empty M.empty Nothing
+emptyAbValue = AbValue S.empty S.empty M.empty
 
 injLit :: C.Lit -> EnvCtx -> AChange
 injLit x env =
@@ -155,13 +149,11 @@ joinML :: Ord x => M.Map EnvCtx (SLattice x) -> M.Map EnvCtx (SLattice x) -> M.M
 joinML = M.unionWith join
 
 addChange :: AbValue -> AChange -> AbValue
-addChange ab@(AbValue cls cs lit er) change =
+addChange ab@(AbValue cls cs lit) change =
   case change of
-    AChangeNone -> ab
-    AChangeErr err -> AbValue cls cs lit (Just err)
-    AChangeClos lam env -> AbValue (S.insert (lam,env) cls) cs lit er
-    AChangeConstr c env -> AbValue cls (S.insert (c,env) cs) lit er
-    AChangeLit l env -> AbValue cls cs (M.insertWith joinLit env (litLattice l) lit) er
+    AChangeClos lam env -> AbValue (S.insert (lam,env) cls) cs lit
+    AChangeConstr c env -> AbValue cls (S.insert (c,env) cs) lit
+    AChangeLit l env -> AbValue cls cs (M.insertWith joinLit env (litLattice l) lit)
 
 litLattice :: LiteralChange -> LiteralLattice
 litLattice lit =
@@ -175,7 +167,7 @@ joinLit :: LiteralLattice -> LiteralLattice -> LiteralLattice
 joinLit (LiteralLattice i1 f1 c1 s1) (LiteralLattice i2 f2 c2 s2) = LiteralLattice (i1 `join` i2) (f1 `join` f2) (c1 `join` c2) (s1 `join` s2)
 
 joinAbValue :: AbValue -> AbValue -> AbValue
-joinAbValue (AbValue cls0 cs0 lit0 e0) (AbValue cls1 cs1 lit1 e1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (M.unionWith joinLit lit0 lit1) (e0 `mplus` e1)
+joinAbValue (AbValue cls0 cs0 lit0) (AbValue cls1 cs1 lit1) = AbValue (S.union cls0 cls1) (S.union cs0 cs1) (M.unionWith joinLit lit0 lit1)
 
 -- Other static information
 

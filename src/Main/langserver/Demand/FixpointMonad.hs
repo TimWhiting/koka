@@ -21,6 +21,7 @@ module Demand.FixpointMonad(
   BasicLattice(..),
   Lattice(..),
   Contains(..),
+  doBottom,
   memo,
   push,
   each,
@@ -37,11 +38,12 @@ import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
 import Control.Monad.Reader (lift, ReaderT (runReaderT))
-import Control.Monad.Trans.Cont (ContT(runContT), resetT, shiftT, mapContT, evalContT, callCC)
+import Control.Monad.Trans.Cont (ContT(..), resetT, shiftT, mapContT, evalContT, callCC)
 import Control.Monad.State (StateT (..), MonadState (..), liftIO)
 import Control.Monad.Identity (IdentityT, Identity (..))
 import Data.List (intercalate)
 import Control.Monad (foldM, ap)
+import Control.Monad.Cont (withContT)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
@@ -168,6 +170,9 @@ each (x:xs) =
     each xs
     return x''
   )
+
+doBottom :: (Lattice l d) => FixTR e s i l d b
+doBottom = ContT $ \c -> return bottom
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Ord i, Lattice l d) => i -> d -> FixTS e s i l d

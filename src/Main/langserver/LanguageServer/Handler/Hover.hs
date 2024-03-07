@@ -72,16 +72,15 @@ import Demand.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
 import Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
 import Debug.Trace (trace)
 
-toAbValueText (env, (fns, defs, lits, constrs, topTypes, errs)) =
+toAbValueText (env, (fns, defs, lits, constrs, topTypes)) =
   let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++  showSyntax 0 d ++ "\n```") fns)
       litsText = if null lits then "" else intercalate "\n" (map showLit lits)
       defsText = if null defs then "" else "\n\nDefinitions:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ showSyntaxDef 0 d ++ "\n```") defs)
       constrsText = if null constrs then "" else "\n\nConstructors:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ d ++ "\n```") constrs)
       topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
       resText = closureText <> litsText <> defsText <> constrsText <> topTypesText
-      errText = if null errs then "" else "\n\nIncomplete Evaluation: Stuck at errors:\n\n" <> intercalate "\n\n" (S.toList errs)
       hc =
-        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if (not . null) errText then errText else if null resText then "(unknown error)" else resText))
+        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if null resText then "(unknown error)" else resText))
   in T.pack hc
 
 -- Handles hover requests
@@ -116,16 +115,23 @@ hoverHandler
                  flags <- getFlags
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
-                 (!xs, !newBuildContext) <- liftIO $ trace ("Running eval for position " ++ show pos) $ runEvalQueryFromRangeSource buildContext term flags (rng, rngInfo) (fromJust mod) HybridEnvs 2
-                 updateBuildContext newBuildContext
-                 tend <- liftIO getCurrentTime
-                 markdown <- prettyMarkdown doc
-                 let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <> 
-                                                    T.intercalate "\n\n" (map toAbValueText xs) <> 
-                                                    "\n\n" <> T.pack (show $ diffUTCTime tend tstart)))) 
-                                                    (Just (toLspRange rng))
-                 -- trace ("hover markdown:\n" ++ show markdown) $
-                 responder $ Right $ J.InL rsp
+                 !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ runEvalQueryFromRangeSource buildContext term flags (rng, rngInfo) (fromJust mod) HybridEnvs 2
+                 case res of
+                    Just (!xs, !newBuildContext) -> do
+                      updateBuildContext newBuildContext
+                      tend <- liftIO getCurrentTime
+                      markdown <- prettyMarkdown doc
+                      let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <> 
+                                                          T.intercalate "\n\n" (map toAbValueText xs) <> 
+                                                          "\n\n" <> T.pack (show $ diffUTCTime tend tstart)))) 
+                                                          (Just (toLspRange rng))
+                      -- trace ("hover markdown:\n" ++ show markdown) $
+                      responder $ Right $ J.InL rsp
+                    Nothing -> do
+                      markdown <- prettyMarkdown doc
+                      let rsp = J.Hover (J.InL (J.mkMarkdown markdown)) (Just (toLspRange rng))
+                      -- trace ("hover markdown:\n" ++ show markdown) $
+                      responder $ Right $ J.InL rsp
 
 
 -- Pretty-prints type/kind information to a hover tooltip given a type pretty environment, color scheme
