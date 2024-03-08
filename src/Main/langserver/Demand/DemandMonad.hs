@@ -20,7 +20,7 @@ module Demand.DemandMonad(
   -- Env stuff
   DEnv(..), getEnv, withEnv, getUnique, newQuery,
   -- Query stuff
-  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps,
+  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal
   ) where
 
 import Control.Monad.State (gets, MonadState (..))
@@ -100,11 +100,21 @@ data Query =
   ExprQ (ExprContext, EnvCtx) |
   EvalQ (ExprContext, EnvCtx) deriving (Eq, Ord)
 
+queryVal :: Query -> (ExprContext, EnvCtx)
+queryVal (CallQ x) = x
+queryVal (ExprQ x) = x
+queryVal (EvalQ x) = x
+
 -- Unwraps query pieces
 queryCtx :: Query -> ExprContext
 queryCtx (CallQ (ctx, _)) = ctx
 queryCtx (ExprQ (ctx, _)) = ctx
 queryCtx (EvalQ (ctx, _)) = ctx
+
+refineQuery :: Query -> EnvCtx -> Query
+refineQuery (CallQ (ctx, _)) env = CallQ (ctx, env)
+refineQuery (ExprQ (ctx, _)) env = ExprQ (ctx, env)
+refineQuery (EvalQ (ctx, _)) env = EvalQ (ctx, env)
 
 queryEnv :: Query -> EnvCtx
 queryEnv (CallQ (_, env)) = env
@@ -387,7 +397,7 @@ childrenContexts ctx = do
     let childIds = M.lookup parentCtxId children
     case childIds of
       Nothing -> do
-          -- trace ("No children for " ++ show ctx) $ return ()
+          trace ("No children for " ++ show ctx) $ return ()
           newCtxs <- case ctx of
                 ModuleC _ mod _ -> do
                   res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
@@ -406,6 +416,7 @@ childrenContexts ctx = do
                 ExprCBasic{} -> return []
                 ExprCTerm{} -> return []
           addChildrenContexts parentCtxId newCtxs
+          trace ("Got children for " ++ show ctx ++ " " ++ show newCtxs) $ return newCtxs
           return newCtxs
       Just childIds -> do
         -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
@@ -423,5 +434,4 @@ visitEachChild :: Show a => ExprContext -> FixDemandR x s e a -> FixDemandR x s 
 visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
-  childs <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
-  each childs
+  each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children

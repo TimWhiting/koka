@@ -440,10 +440,10 @@ moduleTypeCheck parsedMap tcheckedMap
                       -> done mod{ modPhase  = PhaseTypedError
                                  , modErrors = mergeErrors errs (modErrors mod)
                                  }
-                    Right ((core,mbRangeMap),warns)
+                    Right ((simple,core,mbRangeMap),warns)
                       -> do let mod' = mod{ modPhase       = PhaseTyped
                                           , modCore        = Just $! core
-                                          , modCoreUnopt   = Just $! core
+                                          , modCoreUnopt   = Just $! simple
                                           , modErrors      = mergeErrors warns (modErrors mod)
                                           , modRangeMap    = seqqMaybe mbRangeMap
                                           , modDefinitions = Just $! defsFromCore False core

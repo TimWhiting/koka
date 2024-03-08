@@ -176,10 +176,13 @@ memo key f = do
           )
       )
 
-each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [b] -> FixTR e s i l d b
+each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
 each xs = do
   ContT $ \c -> do
-    mapM_ (\x -> c x) xs
+    mapM_ (\x -> 
+      runContT x $ \x ->  
+      c x
+      ) xs
     return bottom
 
 doBottom :: (Lattice l d) => FixTR e s i l d b
@@ -254,9 +257,7 @@ swap l = do
     trace ("Memoizing " ++ show l) $
     case l of
       [x, y, z] -> do
-        x' <- swap [y, x]
-        y' <- swap [z, y]
-        each [x', y']
+        each [swap [y, x], swap [z, y]]
       [x, z] -> return $ LChangeSingle [z, x]
 
 incrementUnique :: FixTR e State b c (SimpleChange Int) ()
