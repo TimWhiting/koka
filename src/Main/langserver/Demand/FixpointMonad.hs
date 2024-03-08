@@ -180,21 +180,22 @@ memo key f = do
         return x
     )
 
+callCCx f =
+  ContT $ \c -> do
+    runContT (f (\a -> ContT $ \b -> 
+      do
+        c a
+        b' <- b
+        c
+      )) c
 
 each :: (Show d, Show b, Ord i, Lattice l d) => FixTR e s i l d b -> [FixTR e s i l d b] -> FixTR e s i l d b
 each x xs = do
-  k' <- liftIO $ newIORef Nothing
-  let x = runContT    
-            (callCC 
-              (\k -> do
-                  x' <- x
-                  xs' <- sequence xs
-                  trace ("Each " ++ show x' ++ " " ++ show xs') $ return ()
-                  liftIO $ writeIORef k' (Just k)
-                  return (x':xs')
-            ) return)
-  map 
-  
+  xs' <- sequence (x:xs)
+  callCC (\k -> do
+      res <- mapM (\x -> k x) xs'
+      return $ head res
+    )
 
 doBottom :: (Lattice l d) => FixTR e s i l d b
 doBottom = ContT $ \c -> do
