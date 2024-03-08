@@ -14,7 +14,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Demand.DemandAnalysis(
+module Core.Demand.DemandAnalysis(
   fixedEval,fixedExpr,fixedCall,loop,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,
@@ -44,11 +44,11 @@ import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeChe
 import Syntax.RangeMap
 import Lib.PPrint (Pretty(..))
 import Debug.Trace
-import Demand.StaticContext
-import Demand.AbstractValue
-import Demand.DemandMonad
-import Demand.FixpointMonad
-import Demand.Syntax
+import Core.Demand.StaticContext
+import Core.Demand.AbstractValue
+import Core.Demand.DemandMonad
+import Core.Demand.FixpointMonad
+import Core.Demand.Syntax
 import Syntax.Syntax (UserExpr, UserDef)
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))

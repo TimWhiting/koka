@@ -8,17 +8,17 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Demand.Syntax where
+module Core.Demand.Syntax where
 
 import Data.List (intercalate)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Maybe (catMaybes)
 import Data.Set(Set)
-import Demand.StaticContext
-import Demand.FixpointMonad
-import Demand.DemandMonad
-import Demand.AbstractValue
+import Core.Demand.StaticContext
+import Core.Demand.FixpointMonad
+import Core.Demand.DemandMonad
+import Core.Demand.AbstractValue
 import Compile.Module (Module(..))
 import qualified Syntax.Syntax as Syn
 import qualified Syntax.Syntax as S

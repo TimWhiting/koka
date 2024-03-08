@@ -50,8 +50,8 @@ import Syntax.RangeMap
       RangeInfo(..),
       rangeMapFindAt )
 import Syntax.Colorize ( removeComment, removeComment )
-import Demand.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
-import Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
+import Core.Demand.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
+import Core.Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
 import LanguageServer.Conversions (fromLspPos, toLspRange)
 import LanguageServer.Monad
 import LanguageServer.Handler.Pretty (ppComment, asKokaCode)

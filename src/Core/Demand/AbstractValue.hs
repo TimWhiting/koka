@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
-module Demand.AbstractValue(
+module Core.Demand.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
                           LiteralLattice(..),
@@ -30,7 +30,6 @@ module Demand.AbstractValue(
                           envtail,envhead
                         ) where
 import Data.Map.Strict as M hiding (map)
-import Demand.StaticContext
 import Common.Name
 import Type.Type
 import Data.Set hiding (map, map)
@@ -44,8 +43,9 @@ import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
-import Demand.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
-import qualified Demand.FixpointMonad as FM
+import Core.Demand.StaticContext
+import Core.Demand.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
+import qualified Core.Demand.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)
 

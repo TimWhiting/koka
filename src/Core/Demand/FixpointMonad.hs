@@ -15,7 +15,7 @@
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
 
-module Demand.FixpointMonad(
+module Core.Demand.FixpointMonad(
   SimpleLattice(..),
   SLattice,
   SimpleChange(..),

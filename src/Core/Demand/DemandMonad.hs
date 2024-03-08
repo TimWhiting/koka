@@ -8,7 +8,7 @@
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Demand.DemandMonad(
+module Core.Demand.DemandMonad(
   AFixChange(..), FixInput(..), FixOutput(..),
   FixDemandR, FixDemand,
   AnalysisKind(..),
@@ -29,9 +29,9 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Set (Set)
 import Data.Maybe (fromMaybe, fromJust, maybeToList)
-import Demand.AbstractValue
-import Demand.StaticContext
-import Demand.FixpointMonad
+import Core.Demand.AbstractValue
+import Core.Demand.StaticContext
+import Core.Demand.FixpointMonad
 import Compile.Options
 import Compile.BuildContext
 import Common.Name
