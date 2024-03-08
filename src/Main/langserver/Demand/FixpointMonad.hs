@@ -48,6 +48,8 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Cont (ContT (..))
 import Control.Monad.Cont.Class (callCC)
 import Data.Foldable (foldlM)
+import GHC.IORef (newIORef)
+import Data.IORef (writeIORef)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
@@ -181,14 +183,18 @@ memo key f = do
 
 each :: (Show d, Show b, Ord i, Lattice l d) => FixTR e s i l d b -> [FixTR e s i l d b] -> FixTR e s i l d b
 each x xs = do
-  callCC (\k -> do
-      x' <- x
-      x'' <- k x'
-      foldlM (\acc x -> do
-          x' <- x
-          k x'
-        ) x'' xs
-    )
+  k' <- liftIO $ newIORef Nothing
+  let x = runContT    
+            (callCC 
+              (\k -> do
+                  x' <- x
+                  xs' <- sequence xs
+                  trace ("Each " ++ show x' ++ " " ++ show xs') $ return ()
+                  liftIO $ writeIORef k' (Just k)
+                  return (x':xs')
+            ) return)
+  map 
+  
 
 doBottom :: (Lattice l d) => FixTR e s i l d b
 doBottom = ContT $ \c -> do
