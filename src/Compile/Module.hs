@@ -105,6 +105,7 @@ data Module  = Module{ -- initial
 
                        -- type check; modCore is initial core that is not yet core-compiled
                      , modRangeMap    :: !(Maybe RangeMap)
+                     , modCoreUnopt   :: !(Maybe Core.Core)
                      , modCore        :: !(Maybe Core.Core)
                      , modDefinitions :: !(Maybe Definitions)
 
@@ -132,7 +133,7 @@ moduleNull modName
             -- parse
             Nothing
             -- type check
-            Nothing Nothing Nothing
+            Nothing Nothing Nothing Nothing
             -- core compiled
             (Right [])
             -- codegen

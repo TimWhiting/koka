@@ -143,13 +143,14 @@ instance Ord a => Lattice (ChangeSet a) a where
   elems (ChangeSet a) = S.elems a
   isBottom (ChangeSet a) = S.null a
 
-type FixTS e s i l d = FixT e s i (l d) d (l d)
-type FixTR e s i l d = FixT e s i (l d) d
-newtype ContX e s i l d x = ContX { c:: d -> FixT e s i l d d} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
-instance Show (ContX e s i l d x) where
+type FixTS e s i l d = FixT e s i l d d
+type FixTR e s i l d = FixT e s i l d
+newtype ContX e s i l d = ContX { c:: d -> FixIn e s i l d (l d)} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
+instance Show (ContX e s i l d) where
   show _ = ""
 
-type FixT e s i l d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l d l]), s) IO))
+type FixT e s i l d = ContT (l d) (FixIn e s i l d)
+type FixIn e s i l d = (ReaderT e (StateT (M.Map i (l d, [ContX e s i l d]), s) IO))
 
 -- instance Lattice l d => MonadFail (FixTR e s i l d) where
 --   fail = bottom
@@ -157,70 +158,49 @@ type FixT e s i l d = ContT l (ReaderT e (StateT (M.Map i (l, [ContX e s i l d l
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
 memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
 memo key f = do
-  callCC (\k -> do
+  ContT (\c -> do
     (cache, state) <- get
     case M.lookup key cache of
       Just (xss, conts) -> do
-        put (M.insert key (xss, ContX k:conts) cache, state)
-        trace ("New dependant on " ++ show key ++ " calling with current state " ++ show xss) $ return ()
-        xs <- mapM k (elems xss)
-        mapM_ (push key) xs
-        trace ("Calling memo for " ++ show key) $ return ()
-        -- x <- f key
-        -- trace ("Got memoized result for " ++ show key ++ " " ++ show x) $ return ()
-        -- push key x
-        -- return x
-        doBottom
+        put (M.insert key (xss, ContX c:conts) cache, state)
+        -- trace ("New dependant on " ++ show key ++ " calling with current state " ++ show xss) $ return ()
+        mapM_ c (elems xss)
+        return bottom
       Nothing -> do
-        trace ("Memoizing new result for " ++ show key) $ return ()
-        put (M.insert key (bottom, [ContX k]) cache, state)
-        x <- f key
-        trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
-        push key x
-        return x
-    )
+        -- trace ("Memoizing new result for " ++ show key) $ return ()
+        put (M.insert key (bottom, [ContX c]) cache, state)
+        runContT (f key) (\x -> do
+            push key x
+            -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
+            return bottom
+          )
+      )
 
-callCCx f =
+each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [b] -> FixTR e s i l d b
+each xs = do
   ContT $ \c -> do
-    runContT (f (\a -> ContT $ \b -> 
-      do
-        c a
-        b' <- b
-        c
-      )) c
-
-each :: (Show d, Show b, Ord i, Lattice l d) => FixTR e s i l d b -> [FixTR e s i l d b] -> FixTR e s i l d b
-each x xs = do
-  xs' <- sequence (x:xs)
-  callCC (\k -> do
-      res <- mapM (\x -> k x) xs'
-      return $ head res
-    )
+    mapM_ (\x -> c x) xs
+    return bottom
 
 doBottom :: (Lattice l d) => FixTR e s i l d b
-doBottom = ContT $ \c -> do
-  trace "Bottom" $ return ()
-  return bottom
-
-pushMissing :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> l d -> FixTR e s i l d ()
-pushMissing key values = do
-  mapM_ (push key) (elems values)
+doBottom = ContT $ \c -> return bottom
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
-push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixTR e s i l d ()
+push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
-  trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
+  -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state) <- get
   let cur = M.lookup key cache
   let (xs, conts) = fromMaybe (bottom, []) cur
-  if lte value xs then do
-    trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ return ()
+  if lte value xs then
+    -- trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ 
+    return ()
   else do
     let added = value `insert` xs
     put (M.insert key (added, conts) cache, state)
-    trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
+    -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c) -> c value) conts
-    trace ("Finished calling continuations for " ++ show key) $ return ()
+    -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
 -- Runs a fixpoint computation with an environment and a state, and an input value
 runFixAEnv :: (t -> ContT a (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a) -> t -> r -> c -> IO (a, M.Map k b1, c)
@@ -271,9 +251,12 @@ swap :: [Int] -> FixTR () () [Int] (SimpleLattice [Int]) (SimpleChange [Int]) (S
 swap l = do
   trace ("Swapping " ++ show l) $ return ()
   memo l $ \l ->
-    trace ("Memoizing " ++ show l) $ 
+    trace ("Memoizing " ++ show l) $
     case l of
-      [x, y, z] -> each (swap [y, x]) [swap [z, y]]
+      [x, y, z] -> do
+        x' <- swap [y, x]
+        y' <- swap [z, y]
+        each [x', y']
       [x, z] -> return $ LChangeSingle [z, x]
 
 incrementUnique :: FixTR e State b c (SimpleChange Int) ()

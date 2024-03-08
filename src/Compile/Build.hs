@@ -443,6 +443,7 @@ moduleTypeCheck parsedMap tcheckedMap
                     Right ((core,mbRangeMap),warns)
                       -> do let mod' = mod{ modPhase       = PhaseTyped
                                           , modCore        = Just $! core
+                                          , modCoreUnopt   = Just $! core
                                           , modErrors      = mergeErrors warns (modErrors mod)
                                           , modRangeMap    = seqqMaybe mbRangeMap
                                           , modDefinitions = Just $! defsFromCore False core

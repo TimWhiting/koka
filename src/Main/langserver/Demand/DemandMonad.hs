@@ -138,9 +138,8 @@ data AFixChange =
 toAbValue :: AFixChange -> AChange
 toAbValue (FA a) = a
 
-toEnv :: AFixChange -> Maybe EnvCtx
-toEnv (FE e) = Just e
-toEnv _ = Nothing
+toEnv :: AFixChange -> EnvCtx
+toEnv (FE e) = e
 
 -- The output of the fixpoint is either a value, or set of environments 
 -- (depending on whether the input is a query or wanting the refined environments for a particular environment)
@@ -230,31 +229,31 @@ instance Monoid (FixOutput d) where
   mempty = N
 
 ------------------------ Navigating the syntax tree ----------------------------------
-focusParam :: Maybe Int -> ExprContext -> FixDemandR x s e (Maybe ExprContext)
+focusParam :: Maybe Int -> ExprContext -> FixDemandR x s e ExprContext
 focusParam index e = do
   children <- childrenContexts e
   query <- getQueryString
   return $ case index of
-    Just x | x + 1 < length children -> Just $ children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
+    Just x | x + 1 < length children -> children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
     _ -> error (query ++ "Children looking for param " ++ show children ++ " in " ++ show e ++ " index " ++ show index) Nothing
 
-focusBody :: ExprContext -> FixDemandR x s e (Maybe ExprContext)
+focusBody :: ExprContext -> FixDemandR x s e ExprContext
 focusBody e = do
   children <- childrenContexts e
   query <- getQueryString
   return $ case find (\x -> case x of
               LamCBody{} -> True
               _ -> False) children of
-    Just x -> Just x
+    Just x -> x
     Nothing -> error (query ++ "Children looking for body " ++ show children) Nothing
 
-focusChild :: ExprContext -> Int -> FixDemandR x s e (Maybe ExprContext)
+focusChild :: ExprContext -> Int -> FixDemandR x s e ExprContext
 focusChild e index = do
   children <- childrenContexts e
   query <- getQueryString
   return $ if index < length children then
     -- trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
-      Just (children !! index)
+      children !! index
     else error (query ++ "Children looking for child at " ++ show index ++ " " ++ show children) Nothing
 
 
@@ -391,7 +390,7 @@ childrenContexts ctx = do
           -- trace ("No children for " ++ show ctx) $ return ()
           newCtxs <- case ctx of
                 ModuleC _ mod _ -> do
-                  res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCore mod)
+                  res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
                   return $! concat res
                 DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 DefCNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
@@ -424,4 +423,5 @@ visitEachChild :: Show a => ExprContext -> FixDemandR x s e a -> FixDemandR x s 
 visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
-  each doBottom $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
+  childs <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
+  each childs

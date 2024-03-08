@@ -15,25 +15,13 @@
 
 module LanguageServer.Handler.Hover (hoverHandler, formatRangeInfoHover) where
 
-import Debug.Trace (trace)
-import Data.Char(isSpace)
-import Data.List(find)
-import Data.Maybe (fromJust)
 import Control.Lens ((^.))
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
-
-import Lib.PPrint
-import Common.Name
-import Common.Range as R
-import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
-import Kind.Pretty (prettyKind)
-import Type.Pretty (ppScheme, defaultEnv, Env(..), ppName, keyword)
-import Syntax.RangeMap (NameInfo (..), RangeInfo (..), rangeMapFindAt)
-import Syntax.Colorize( removeComment )
-
 import qualified Data.Set as S
-import Data.List (intercalate)
+import Data.List (intercalate,find)
+import Data.Char(isSpace)
+import Data.Maybe (fromJust)
 import Data.Time (diffUTCTime)
 import Data.Time.Clock (getCurrentTime)
 import qualified Language.LSP.Protocol.Types as J
@@ -43,24 +31,17 @@ import Language.LSP.Server (Handlers, sendNotification, requestHandler)
 
 import Common.Range as R
 import Common.Range (showFullRange)
-import Common.Name (nameNil)
+import Common.Name (nameNil, ModuleName)
 import Common.ColorScheme (ColorScheme (colorNameQual, colorSource), Color (Gray))
-import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
-import Lib.PPrint
 import Compile.Module (modRangeMap, modLexemes, Module (modSourcePath))
 import Compile.Options (Flags, colorSchemeFromFlags, prettyEnvFromFlags)
+import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
 import Kind.Pretty (prettyKind)
 import Kind.ImportMap (importsEmpty, ImportMap)
 import Type.Pretty (ppScheme, defaultEnv, Env(..), ppName, keyword)
 import Type.Type (Name)
-import Syntax.RangeMap (NameInfo (..), RangeInfo (..), rangeMapFindAt)
-import Syntax.Colorize( removeComment )
-import LanguageServer.Conversions (fromLspPos, toLspRange)
-import LanguageServer.Monad
-import LanguageServer.Handler.Pretty (ppComment, asKokaCode)
-
 import Lib.PPrint
-    ( Pretty(..), Doc, text, (<+>), color, Pretty(..) )
+    ( Pretty(..), Doc, text, (<+>), color, empty, (<.>), (<->), vcat)
 import Syntax.RangeMap
     ( NameInfo(..),
       RangeInfo(..),
@@ -68,8 +49,12 @@ import Syntax.RangeMap
       NameInfo(..),
       RangeInfo(..),
       rangeMapFindAt )
+import Syntax.Colorize ( removeComment, removeComment )
 import Demand.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
 import Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
+import LanguageServer.Conversions (fromLspPos, toLspRange)
+import LanguageServer.Monad
+import LanguageServer.Handler.Pretty (ppComment, asKokaCode)
 import Debug.Trace (trace)
 
 toAbValueText (env, (fns, defs, lits, constrs, topTypes)) =
@@ -95,9 +80,7 @@ hoverHandler
 
             liftMaybe :: LSM (Maybe a) -> (a -> LSM ()) -> LSM ()
             liftMaybe action next = do res <- action
-                                       case res of
-                                         Nothing -> done
-                                         Just x  -> next x
+                                       maybe done next res
 
         pos <- liftIO $ fromLspPos uri pos0
         -- trace ("hover: lookup: " ++ show uri) $
@@ -115,15 +98,15 @@ hoverHandler
                  flags <- getFlags
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
-                 !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ runEvalQueryFromRangeSource buildContext term flags (rng, rngInfo) (fromJust mod) HybridEnvs 2
+                 !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ runEvalQueryFromRangeSource buildContext term flags (rng, rngInfo) (fromJust mod) BasicEnvs 1
                  case res of
                     Just (!xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext
                       tend <- liftIO getCurrentTime
                       markdown <- prettyMarkdown doc
-                      let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <> 
-                                                          T.intercalate "\n\n" (map toAbValueText xs) <> 
-                                                          "\n\n" <> T.pack (show $ diffUTCTime tend tstart)))) 
+                      let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <>
+                                                          T.intercalate "\n\n" (map toAbValueText xs) <>
+                                                          "\n\n" <> T.pack (show $ diffUTCTime tend tstart))))
                                                           (Just (toLspRange rng))
                       -- trace ("hover markdown:\n" ++ show markdown) $
                       responder $ Right $ J.InL rsp
@@ -137,7 +120,7 @@ hoverHandler
 -- Pretty-prints type/kind information to a hover tooltip given a type pretty environment, color scheme
 formatRangeInfoHover :: Env -> [(ModuleName,FilePath)] -> RangeInfo -> Doc
 formatRangeInfoHover env mods rinfo
-  = let kw s = keyword env s
+  = let kw = keyword env
     in case rinfo of
       Decl s name mname mbType -> asKokaCode (kw s <+> pretty name <.>
                                               case mbType of
@@ -171,5 +154,5 @@ formatRangeInfoHover env mods rinfo
                         NICon tp doc       -> ppComment doc
                         NITypeCon k doc    -> ppComment doc
                         _                  -> empty
-        in asKokaCode (if null docs then signature else (signature <.> text "  " <-> color Gray (vcat docs)))
+        in asKokaCode (if null docs then signature else signature <.> text "  " <-> color Gray (vcat docs))
           <.> comment

@@ -17,6 +17,6 @@ import Demand.FixpointMonad(runExample)
 
 main :: IO ()
 main
-  = do 
-    runExample
-    -- runWithLS (\p flags files -> runLanguageServer flags files)
+  = -- do 
+    -- runExample
+    runWithLS (\p flags files -> runLanguageServer flags files)
