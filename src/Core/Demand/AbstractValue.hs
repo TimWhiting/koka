@@ -25,7 +25,6 @@ module Core.Demand.AbstractValue(
                           indeterminateStaticCtx,maybeModOfEnv,maybeModOfCtx,
                           refineCtx,
                           limitm,limitmenv,
-                          calibratemenv, tryCalibratemenv,
                           ccDeterminedEnv, ccDetermined,
                           envtail,envhead
                         ) where
@@ -64,7 +63,17 @@ data LiteralChange =
   | LiteralChangeFloat (SimpleChange Double)
   | LiteralChangeChar (SimpleChange Char)
   | LiteralChangeString (SimpleChange String)
- deriving (Show, Eq)
+ deriving (Eq)
+
+instance Show LiteralChange where
+  show (LiteralChangeInt LChangeTop) = "int -> top"
+  show (LiteralChangeFloat LChangeTop) = "float -> top"
+  show (LiteralChangeChar LChangeTop) = "char -> top"
+  show (LiteralChangeString LChangeTop) = "string -> top"
+  show (LiteralChangeInt (LChangeSingle l)) = "int -> " ++ show l
+  show (LiteralChangeFloat (LChangeSingle l)) = "float -> " ++ show l
+  show (LiteralChangeChar (LChangeSingle l)) = "char -> " ++ show l
+  show (LiteralChangeString (LChangeSingle l)) = "string -> " ++ show l
 
 instance Show LiteralLattice where
   show (LiteralLattice i f c s) = intercalate "," [show i, show f, show c, show s]
@@ -73,7 +82,15 @@ data AChange =
   AChangeClos ExprContext EnvCtx
   | AChangeConstr ExprContext EnvCtx
   | AChangeLit LiteralChange EnvCtx
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show AChange where
+  show (AChangeClos expr env) =
+    showNoEnvClosure (expr, env)
+  show (AChangeConstr expr env) = 
+    showNoEnvClosure (expr, env)
+  show (AChangeLit lit env) =
+    show lit
 
 data AbValue =
   AbValue{
@@ -256,32 +273,26 @@ showEnvCtx (EnvTail ctx) = show ctx
 ---------------- Environment Based Ctx -------------------
 data Ctx =
   IndetCtx [TName] ExprContext
-  | CallCtx !ExprContext !EnvCtx
   | BCallCtx !ExprContext !Ctx
-  | CutKnown
-  | CutUnknown
   | TopCtx
+  | CtxEnd
   deriving (Eq, Ord)
 
 instance Show Ctx where
   show ctx =
     case ctx of
       IndetCtx tn c -> "?(" ++ show tn ++ ")"
-      CallCtx ctx env -> "call{" ++ showSimpleContext ctx ++ "," ++ show env ++ "}"
-      BCallCtx ctx cc -> "bcall{" ++ showSimpleContext ctx ++ "," ++ show cc ++ "}"
+      BCallCtx ctx cc -> "call{" ++ showSimpleContext ctx ++ "," ++ show cc ++ "}"
       TopCtx -> "Top"
-      CutKnown -> "~!~"
-      CutUnknown -> "~?~"
+      CtxEnd -> "."
 
 showSimpleCtx :: Ctx -> String
 showSimpleCtx ctx =
   case ctx of
     IndetCtx tn c -> show tn
-    CallCtx ctx env -> "call{" ++ showSimpleContext ctx ++ ", " ++ showSimpleEnv env ++ "}"
-    BCallCtx ctx cc -> "bcall{" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ "}"
+    BCallCtx ctx cc -> "call{" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ "}"
     TopCtx -> "Top"
-    CutKnown -> "~!~"
-    CutUnknown -> "~?~"
+    CtxEnd -> "."
 
 indeterminateStaticCtx :: ExprContext -> EnvCtx
 indeterminateStaticCtx ctx =
@@ -307,7 +318,6 @@ maybeModOfEnv env = maybeModOfCtx $ envhead env
 maybeModOfCtx :: Ctx -> Maybe ExprContext
 maybeModOfCtx ctx =
   case ctx of
-    CallCtx ctx env -> modCtx ctx
     BCallCtx ctx cc -> maybeModOfCtx cc -- Could also potentially use indeterminate contexts
     _ -> Nothing
 
@@ -328,15 +338,12 @@ limitm :: Ctx -> Int -> Ctx
 limitm ctx m =
   if m == 0 then
     case ctx of
-      CallCtx{} -> CutKnown
-      BCallCtx{} -> CutKnown
-      CutKnown -> CutKnown
+      BCallCtx{} -> CtxEnd
       TopCtx -> TopCtx
-      IndetCtx{} -> CutUnknown
-      CutUnknown -> CutUnknown
+      IndetCtx{} -> CtxEnd
+      CtxEnd -> CtxEnd
   else
     case ctx of
-      CallCtx c e -> CallCtx c (limitmenv e (m - 1))
       BCallCtx c e -> BCallCtx c (limitm e (m - 1))
       _ -> ctx
 
@@ -352,18 +359,14 @@ subsumes p1 p2 =
 subsumesCtx :: Ctx -> Ctx -> Bool
 subsumesCtx c1 c2 =
   case (c1, c2) of
-    (CutUnknown, CutUnknown) -> True
-    (CutKnown, CutKnown) -> True
-    (CutKnown, CutUnknown) -> True
-    (CutUnknown, CutKnown) -> True
     (TopCtx, TopCtx) -> True
+    (CtxEnd, CtxEnd) -> True
     (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
-    (CallCtx id1 env1, CallCtx id2 env2) -> id1 == id2 && env1 `subsumes` env2
     (BCallCtx id1 env1, BCallCtx id2 env2) -> id1 == id2 && env1 `subsumesCtx` env2
-    (IndetCtx{}, CallCtx{}) -> True
     (IndetCtx{}, BCallCtx{}) -> True
     (IndetCtx{}, TopCtx{}) -> True
-    -- TODO: More subsumption rules for CutContexts
+    (CtxEnd, TopCtx{}) -> True
+    (CtxEnd, BCallCtx{}) -> True
     _ -> False
 
 refineCtx :: (EnvCtx, EnvCtx) -> EnvCtx -> EnvCtx
@@ -372,60 +375,6 @@ refineCtx (c1, c0) c =
     case c of
       EnvCtx ctx tail -> EnvCtx ctx (refineCtx (c1, c0) tail)
       EnvTail ctx -> EnvTail ctx
-
-calibratemenv :: Int -> EnvCtx -> EnvCtx -> EnvCtx
-calibratemenv mlimit (EnvCtx call calls) (EnvCtx ps tail) = do
-  EnvCtx (calibratemctx mlimit call ps) (calibratemenv mlimit calls tail)
-calibratemenv mlimit (EnvTail call) (EnvTail ctx) = EnvTail $! calibratemctx mlimit call ctx
-
-tryCalibratemenv :: Int -> EnvCtx -> EnvCtx -> Maybe EnvCtx
-tryCalibratemenv mlimit (EnvCtx call calls) (EnvCtx ps tail) = do
-  ps' <- tryCalibratemctx mlimit call ps
-  tail' <- tryCalibratemenv mlimit calls tail
-  return $ EnvCtx ps' tail'
-tryCalibratemenv mlimit (EnvTail call) (EnvTail ctx) =
-  tryCalibratemctx mlimit call ctx >>= (\ctx -> return $ EnvTail ctx)
-
--- TODO: Degen needs a way to be converted to Indet (calibration makes environments longer (to m))
--- Probably needs more information to determine static context
-calibratemctx :: Int -> Ctx -> Ctx -> Ctx
-calibratemctx mlimit call p =
-  if mlimit == 0 then
-    case p of
-      CallCtx{} -> CutKnown
-      BCallCtx{} -> CutKnown
-      CutKnown -> CutKnown
-      TopCtx -> TopCtx
-      IndetCtx{} -> CutUnknown
-      CutUnknown -> CutUnknown
-  else case p of
-    IndetCtx tn c -> IndetCtx tn c
-    CutKnown -> call
-    CutUnknown -> call
-    CallCtx c p' -> CallCtx c (calibratemenv (mlimit - 1) (indeterminateStaticCtx c) p')
-    BCallCtx c p' -> BCallCtx c (calibratemctx (mlimit - 1) (envhead $ indeterminateStaticCtx c) p')
-    x -> x
-
-
--- TODO: Degen needs a way to be converted to Indet (calibration makes environments longer (to m))
--- Probably needs more information to determine static context
-tryCalibratemctx :: Int -> Ctx -> Ctx -> Maybe Ctx
-tryCalibratemctx mlimit call p =
-  if mlimit == 0 then
-    case p of
-      CallCtx{} -> Just CutKnown
-      BCallCtx{} -> Just CutKnown
-      CutKnown -> Just CutKnown
-      TopCtx -> Just TopCtx
-      IndetCtx{} -> Just CutUnknown
-      CutUnknown -> Just CutUnknown
-  else case p of
-    IndetCtx tn c -> Just $ IndetCtx tn c
-    CutKnown -> Nothing -- We cut a previously known context, so we can't reconstruct it without doing a full expr / refinement
-    CutUnknown -> Just call
-    CallCtx c p' -> Just $ CallCtx c (calibratemenv (mlimit - 1) (indeterminateStaticCtx c) p')
-    BCallCtx c p' -> Just $ BCallCtx c (calibratemctx (mlimit - 1) (envhead $ indeterminateStaticCtx c) p')
-    x -> Just x
 
 ccDeterminedEnv :: EnvCtx -> Bool
 ccDeterminedEnv env =
@@ -436,9 +385,7 @@ ccDeterminedEnv env =
 ccDetermined :: Ctx -> Bool
 ccDetermined ctx =
   case ctx of
+    CtxEnd -> True
     IndetCtx{} -> False
-    CallCtx c env -> ccDeterminedEnv env
     TopCtx -> True
-    CutKnown -> False
-    CutUnknown -> True
     BCallCtx c rst -> ccDetermined rst

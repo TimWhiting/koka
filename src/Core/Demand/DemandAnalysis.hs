@@ -19,10 +19,9 @@ module Core.Demand.DemandAnalysis(
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,
   getQueryString,getState,updateState,setResult,getUnique,
-  childrenContexts,analyzeCtx,findContext,visitChildrenCtxs,
+  childrenContexts,analyzeEachChild,visitChildrenCtxs,
   createPrimitives,
-  runEvalQueryFromRangeSource,
-                        ) where
+) where
 import GHC.IO (unsafePerformIO)
 import Control.Monad hiding (join)
 import Control.Monad.Reader (lift, ReaderT (runReaderT), local, ask)
@@ -48,7 +47,6 @@ import Core.Demand.StaticContext
 import Core.Demand.AbstractValue
 import Core.Demand.DemandMonad
 import Core.Demand.FixpointMonad
-import Core.Demand.Syntax
 import Syntax.Syntax (UserExpr, UserDef)
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
@@ -66,36 +64,23 @@ refineQuery (EvalQ (ctx, env0)) env = EvalQ (ctx, env)
 
 ------------------------------ Environment FIXPOINT -----------------------------------
 
-calibratem :: ExprContext -> EnvCtx -> FixDemandR x s e EnvCtx
-calibratem call env = do
-  length <- contextLength <$> getEnv
-  return $ calibratemenv length (indeterminateStaticCtx call) env
-
-tryCalibratem :: ExprContext -> EnvCtx -> FixDemandR x s e (Maybe EnvCtx)
-tryCalibratem call env = do
-  length <- contextLength <$> getEnv
-  return $ tryCalibratemenv length (indeterminateStaticCtx call) env
-
 succAEnv :: ExprContext -> EnvCtx -> FixDemandR x s e Ctx
 succAEnv newctx p' = do
   length <- contextLength <$> getEnv
   kind <- analysisKind <$> getEnv
   case kind of
     BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
-    _ -> return $ CallCtx newctx (limitmenv p' (length - 1))
 
 getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
 getRefine env =
   case env of
     EnvCtx cc tail -> do
-      let f = if ccDetermined cc then doBottom else loop (EnvInput env) <&> toEnv
-          t = do
-                tailRefine <- getRefine tail
-                return (EnvCtx cc tailRefine)
-      each [f, t]
-    EnvTail cc ->
-      do
-        loop (EnvInput env) <&> toEnv
+      each [
+        loop (EnvInput env) <&> toEnv, 
+        do
+          tailRefine <- getRefine tail
+          return (EnvCtx cc tailRefine)]      
+    EnvTail cc -> loop (EnvInput env) <&> toEnv
 
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
 doMaybe :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
@@ -106,15 +91,15 @@ doMaybe l doA = do
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qcall c = do
   res <- loop $ QueryInput (CallQ c)
-  return $ toAbValue res
+  return $ toAChange res
 qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qexpr c = do
   res <- loop $ QueryInput (ExprQ c)
-  return $ toAbValue res
+  return $ toAChange res
 qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qeval c = do
   res <- loop $ QueryInput (EvalQ c)
-  return $ toAbValue res
+  return $ toAChange res
 
 -- The main fixpoint loop
 loop :: FixInput -> FixDemandR x s e AFixChange
@@ -127,9 +112,9 @@ loop fixinput = do
         newQuery nq (\queryStr -> do
             trace (queryStr ++ show nq) $ return ()
             x <- doQuery nq queryStr
-            trace (queryStr ++ " result: " ++ show x) $ return x
+            trace (queryStr ++ "==> " ++ show x) $ return x
           )
-      EnvInput env -> return (FE env) -- TODO: Will this cause an infinite loop?
+      EnvInput env -> return (FE env)
 
 doQuery :: Query -> String -> FixDemandR x s e AChange
 doQuery q query = do
@@ -180,12 +165,12 @@ findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
 -- finds usages of a variable expression within a (context,env) and returns the set of (context,env) pairs that reference it
 findUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
-  trace ("Looking for usages of " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env ++ " first " ++ show first) $ return ()
+  -- trace ("Looking for usages of " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env ++ " first " ++ show first) $ return ()
   let nameEq = (== name)
       childrenNoShadow tn =
         if first || tname `notElem` tn then childrenUsages else doBottom
       childrenUsages = do
-        trace ("Looking for " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env) $ return ()
+        -- trace ("Looking for " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env) $ return ()
         visitEachChild ctx $ do
           -- visitChildrenCtxs sets the currentContext
           childCtx <- currentContext <$> getEnv
@@ -518,43 +503,6 @@ doCall cq@(CallQ(ctx, env)) query =
             else do
               -- trace (query ++ "CALL IS NOT SUBSUMED:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
               doBottom
-          LightweightEnvs -> do
-            -- Lightweight Version
-            case envhead env of
-              (CallCtx callctx p') -> do
-                trace (query ++ "Known: " ++ show callctx) $ return ()
-                pnew <- calibratem callctx p'
-                return $ AChangeClos callctx pnew
-              _ -> do
-                trace (query ++ "Unknown") $ return ()
-                qexpr (c, envtail env)
-          HybridEnvs -> do
-            -- Hybrid Version
-            let fallback = do
-                  let cc0 = envhead env
-                      p = envtail env
-                  AChangeClos callctx callenv <- qexpr (c, p)
-                  m <- contextLength <$> getEnv
-                  cc1 <- succAEnv callctx callenv
-                  if cc1 == cc0 then
-                    trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-                    return $! AChangeClos callctx callenv
-                  else if cc0 `subsumesCtx` cc1 then do
-                    trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
-                    instantiate query (EnvCtx cc1 p) env
-                    doBottom
-                  else do
-                    trace (query ++ "CALL IS NOT SUBSUMED:") $ return () -- \n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
-                    doBottom
-            case envhead env of
-              (CallCtx callctx p') -> do
-                pnew <- tryCalibratem callctx p'
-                case pnew of
-                  Just pnew -> do
-                    trace (query ++ "Known: " ++ show callctx) $ return ()
-                    return $ AChangeClos callctx pnew
-                  Nothing -> fallback
-              _ -> fallback
       _ -> error $ "CALL not implemented for " ++ show ctx
 
 instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
@@ -565,113 +513,42 @@ instantiate query c1 c0 = if c1 == c0 then return () else do
   return ()
 
 --------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
+
+getResults :: Query -> FixDemandR x s e [(EnvCtx, AbValue)]
+getResults q = do
+  refines <- getAllRefines (queryEnv q)
+  mapM (\env ->
+    do
+      st <- getAllStates (refineQuery q env)
+      return (env, st)
+    ) (S.toList refines)
+
 fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedEval e env = do
   let q = EvalQ (e, env)
   loop (QueryInput q)
-  refines <- getAllRefines env
-  res <- mapM (\env ->
-    do
-      st <- getAllStates (EvalQ (e, env))
-      return (env, st)
-    ) (S.toList refines)
   trace "Finished eval" $ return ()
-  return res
+  getResults q
 
-fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
+fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedExpr e env = do
   let q = ExprQ (e, env)
   loop (QueryInput q)
-  refines <- getAllRefines env
-  res <- mapM (\env ->
-    do
-      st <- getAllStates (ExprQ (e, env))
-      return (e, env)
-    ) (S.toList refines)
   trace "Finished expr" $ return ()
-  return res
+  getResults q
 
-fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(ExprContext, EnvCtx)]
+fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedCall e env = do
   let q = CallQ (e, env)
   loop (QueryInput q)
-  refines <- getAllRefines env
-  res <- mapM (\env ->
-    do
-      st <- getAllStates (CallQ (e, env))
-      return (e, env)
-    ) (S.toList refines)
   trace "Finished call" $ return ()
-  return res
+  getResults q
 
-getAbResult :: (EnvCtx, AbValue) -> FixDemandR x s e (EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type))
-getAbResult (envctx, res) = do
-  let vals = [res]
-      lams = map fst $ concatMap (S.toList . aclos) vals
-      i = concatMap ((mapMaybe toSynLit . M.elems) . intV) vals
-      f = concatMap ((mapMaybe toSynLitD . M.elems) . floatV) vals
-      c = concatMap ((mapMaybe toSynLitC . M.elems) . charV) vals
-      s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
-      topTypes = unions $ map topTypesOf vals
-      vs = i ++ f ++ c ++ s
-      cs = map fst $ concatMap (S.toList . acons) vals
-  consts <- mapM toSynConstr cs
-  sourceLams <- mapM findSourceExpr lams
-  let (sourceLambdas, sourceDefs) = unzip sourceLams
-  return $ trace ("eval result:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n") (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes))
-
-runEvalQueryFromRangeSource :: BuildContext
-  -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
-  -> IO (Maybe ([(EnvCtx, ([UserExpr], [UserDef], [Syn.Lit], [String], Set Type))], BuildContext))
-runEvalQueryFromRangeSource bc term flags rng mod kind m = do
-  (r, lattice, x) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
-    trace ("evaluating " ++ show ctx) $ return ()
-    createPrimitives
-    ress <- fixedEval ctx (indeterminateStaticCtx ctx)
-    res' <- mapM getAbResult ress
-    buildc' <- buildc <$> getState
-    setResult (res', buildc')
-  return $ trace (show lattice) x
-
-runQueryAtRange :: BuildContext
-  -> Terminal -> Flags -> (Range, RangeInfo)
-  -> Module -> AnalysisKind -> Int
-  -> (ExprContext -> FixDemand x () ())
-  -> IO (FixOutput AFixChange, M.Map FixInput (FixOutput AFixChange), Maybe x)
-runQueryAtRange buildc term flags (r, ri) mod kind m query = do
-  let cid = ExprContextId (-1) (modName mod)
-      modCtx = ModuleC cid mod (modName mod)
-      focalContext = analyzeCtx (const $ findContext r ri) modCtx
-  result <- runFix (focalContext >>= query) (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ()) (State buildc M.empty 0 M.empty 0 Nothing M.empty ())
-  return $ case result of
-    (a, b, s) -> (a, b, finalResult s)
-
-findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
-findContext r ri = do
-  ctx <- currentContext <$> getEnv
-  case ctx of
-    ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng -> 
-      trace ("found overlapping range " ++ showFullRange "" rng ++ " " ++ show ctx) $ 
-        return ctx
-    ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
-      doBottom
-    LetCDef{} -> fromNames ctx [defTName (defOfCtx ctx)]
-    -- Hovering over a lambda parameter should query what values that parameter can evaluate to -- need to create an artificial Var expression
-    LamCBody _ _ tnames _ -> fromNames ctx tnames
-    CaseCBranch _ _ tnames _ _ -> fromNames ctx tnames
-    _ -> doBottom
-  where fromNames ctx tnames =
-          case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
-              [tn] -> do
-                id <- newContextId
-                return $ ExprCBasic id ctx (Var tn InfoNone)
-              _ -> doBottom
-
-analyzeCtx :: Show a => (ExprContext -> FixDemandR x s e a) -> ExprContext -> FixDemandR x s e a
-analyzeCtx analyze ctx = do
+analyzeEachChild :: Show a => (ExprContext -> FixDemandR x s e a) -> ExprContext -> FixDemandR x s e a
+analyzeEachChild analyze ctx = do
   let self = analyze ctx
       children = do
         visitEachChild ctx $ do
           childCtx <- currentContext <$> getEnv
-          analyzeCtx analyze childCtx
+          analyzeEachChild analyze childCtx
   each [self, children]

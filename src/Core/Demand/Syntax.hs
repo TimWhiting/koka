@@ -13,7 +13,7 @@ module Core.Demand.Syntax where
 import Data.List (intercalate)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, mapMaybe)
 import Data.Set(Set)
 import Core.Demand.StaticContext
 import Core.Demand.FixpointMonad
@@ -29,6 +29,76 @@ import Common.Name (Name(..))
 import Core.Core
 import Type.Type
 import Debug.Trace (trace)
+import Compile.BuildContext (BuildContext)
+import Compile.Options (Terminal, Flags)
+import Core.Demand.DemandAnalysis (createPrimitives, fixedEval, analyzeEachChild)
+
+findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
+findContext r ri = do
+  ctx <- currentContext <$> getEnv
+  case ctx of
+    ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng -> 
+      trace ("found overlapping range " ++ showFullRange "" rng ++ " " ++ show ctx) $ 
+        return ctx
+    ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
+      doBottom
+    LetCDef{} -> fromNames ctx [defTName (defOfCtx ctx)]
+    -- Hovering over a lambda parameter should query what values that parameter can evaluate to -- need to create an artificial Var expression
+    LamCBody _ _ tnames _ -> fromNames ctx tnames
+    CaseCBranch _ _ tnames _ _ -> fromNames ctx tnames
+    _ -> doBottom
+  where fromNames ctx tnames =
+          case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
+              [tn] -> do
+                id <- newContextId
+                return $ ExprCBasic id ctx (Var tn InfoNone)
+              _ -> doBottom
+
+runEvalQueryFromRangeSource :: BuildContext
+  -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
+  -> IO (Maybe ([(EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))], BuildContext))
+runEvalQueryFromRangeSource bc term flags rng mod kind m = do
+  (lattice, x) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
+    createPrimitives
+    ress <- fixedEval ctx (indeterminateStaticCtx ctx)
+    res' <- mapM getAbResult ress
+    buildc' <- buildc <$> getState
+    setResult (res', buildc')
+  return x
+
+runQueryAtRange :: BuildContext
+  -> Terminal -> Flags -> (Range, RangeInfo)
+  -> Module -> AnalysisKind -> Int
+  -> (ExprContext -> FixDemand x () ())
+  -> IO (M.Map FixInput (FixOutput AFixChange), Maybe x)
+runQueryAtRange buildc term flags (r, ri) mod kind m query = do
+  let cid = ExprContextId (-1) (modName mod)
+      modCtx = ModuleC cid mod (modName mod)
+  result <- runFix (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ()) (State buildc M.empty 0 M.empty 0 Nothing M.empty ()) $
+            do 
+              ctx <- analyzeEachChild (const $ findContext r ri) modCtx
+              query ctx
+  return $ case result of
+    (b, s) -> (b, finalResult s)
+
+getAbResult :: (EnvCtx, AbValue) -> FixDemandR x s e (EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))
+getAbResult (envctx, res) = do
+  let vals = [res]
+      lams = map fst $ concatMap (S.toList . aclos) vals
+      i = concatMap ((mapMaybe toSynLit . M.elems) . intV) vals
+      f = concatMap ((mapMaybe toSynLitD . M.elems) . floatV) vals
+      c = concatMap ((mapMaybe toSynLitC . M.elems) . charV) vals
+      s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
+      topTypes = S.unions $ map topTypesOf vals
+      vs = i ++ f ++ c ++ s
+      cs = map fst $ concatMap (S.toList . acons) vals
+  consts <- mapM toSynConstr cs
+  sourceLams <- mapM findSourceExpr lams
+  let (sourceLambdas, sourceDefs) = unzip sourceLams
+  return $ trace 
+    ("eval " ++ showSimpleEnv envctx ++
+     "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n") 
+    (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes))
 
 toSynConstr :: ExprContext -> FixDemandR x s e (Maybe String)
 toSynConstr ctx = do
@@ -47,15 +117,6 @@ sourceEnvCtx ctx =
   case ctx of
     IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
     TopCtx -> return "Top"
-    CutKnown -> return "~!~"
-    CutUnknown -> return "~?~"
-    CallCtx c env -> do
-      se <- findSourceExpr c
-      e <- sourceEnv env
-      return $ case se of
-        (Just se, _) -> showSyntax 0 se ++ " <<" ++ e ++ ">>"
-        (_, Just de) -> showSyntaxDef 0 de ++ " <<" ++ e ++ ">>"
-        _ -> show c ++ " " ++ e
     BCallCtx c cc -> do
       se <- findSourceExpr c
       e <- sourceEnvCtx cc

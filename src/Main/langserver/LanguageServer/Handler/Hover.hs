@@ -50,7 +50,8 @@ import Syntax.RangeMap
       RangeInfo(..),
       rangeMapFindAt )
 import Syntax.Colorize ( removeComment, removeComment )
-import Core.Demand.DemandAnalysis (runEvalQueryFromRangeSource, AnalysisKind (..))
+import Core.Demand.Syntax (runEvalQueryFromRangeSource)
+import Core.Demand.DemandAnalysis (AnalysisKind (..))
 import Core.Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
 import LanguageServer.Conversions (fromLspPos, toLspRange)
 import LanguageServer.Monad
@@ -98,7 +99,10 @@ hoverHandler
                  flags <- getFlags
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
-                 !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ runEvalQueryFromRangeSource buildContext term flags (rng, rngInfo) (fromJust mod) BasicEnvs 1
+                 !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
+                            runEvalQueryFromRangeSource 
+                              buildContext term flags (rng, rngInfo) 
+                              (fromJust mod) BasicEnvs 3
                  case res of
                     Just (!xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext

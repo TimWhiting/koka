@@ -22,10 +22,10 @@ module Core.Demand.FixpointMonad(
   BasicLattice(..),
   Lattice(..),
   Contains(..),
-  doBottom,
   memo,
   push,
   each,
+  doBottom,
   runFixAEnv,
   runFix,
   runFixWithCache,
@@ -145,15 +145,15 @@ instance Ord a => Lattice (ChangeSet a) a where
 
 type FixTS e s i l d = FixT e s i l d d
 type FixTR e s i l d = FixT e s i l d
-newtype ContX e s i l d = ContX { c:: d -> FixIn e s i l d (l d)} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
+newtype ContX e s i l d = ContX { c:: d -> FixIn e s i l d ()} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
 instance Show (ContX e s i l d) where
   show _ = ""
 
-type FixT e s i l d = ContT (l d) (FixIn e s i l d)
+type FixT e s i l d = ContT () (FixIn e s i l d)
 type FixIn e s i l d = (ReaderT e (StateT (M.Map i (l d, [ContX e s i l d]), s) IO))
 
--- instance Lattice l d => MonadFail (FixTR e s i l d) where
---   fail = bottom
+doBottom :: FixTR e s i l d b
+doBottom = ContT (\x -> return ())
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
 memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
@@ -161,32 +161,27 @@ memo key f = do
   ContT (\c -> do
     (cache, state) <- get
     case M.lookup key cache of
+      -- Requesting the result of the memoized function from a different dependant
       Just (xss, conts) -> do
         put (M.insert key (xss, ContX c:conts) cache, state)
         -- trace ("New dependant on " ++ show key ++ " calling with current state " ++ show xss) $ return ()
         mapM_ c (elems xss)
-        return bottom
+      -- First time requesting the memoed function with this key
       Nothing -> do
         -- trace ("Memoizing new result for " ++ show key) $ return ()
         put (M.insert key (bottom, [ContX c]) cache, state)
-        runContT (f key) (\x -> do
+        runContT (f key) (\x ->
+            -- For all results push them into the cache
             push key x
             -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
-            return bottom
           )
       )
 
 each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
-each xs = do
-  ContT $ \c -> do
-    mapM_ (\x -> 
-      runContT x $ \x ->  
-      c x
-      ) xs
-    return bottom
-
-doBottom :: (Lattice l d) => FixTR e s i l d b
-doBottom = ContT $ \c -> return bottom
+each xs =
+  ContT $ \c -> -- Get the continuation
+    -- For each monadic fixpoint, run the continuation piece, and call our continuation with each result
+    mapM_ (\comp -> runContT comp (\result -> c result)) xs
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
@@ -194,36 +189,39 @@ push key value = do
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state) <- get
   let cur = M.lookup key cache
-  let (xs, conts) = fromMaybe (bottom, []) cur
-  if lte value xs then
+  let (values, conts) = fromMaybe (bottom, []) cur
+  if lte value values then 
+    -- If the value already exists in the cache
     -- trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ 
     return ()
   else do
-    let added = value `insert` xs
+    -- Otherwise, insert the value into the cache and call all continuations in the cache
+    -- that depend on changes to this key
+    let added = value `insert` values
     put (M.insert key (added, conts) cache, state)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c) -> c value) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
 -- Runs a fixpoint computation with an environment and a state, and an input value
-runFixAEnv :: (t -> ContT a (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a) -> t -> r -> c -> IO (a, M.Map k b1, c)
-runFixAEnv f a e s = do
-  (res, (cache, state)) <- runStateT (runReaderT (runContT (f a) return) e) (M.empty, s)
-  return (res, fmap fst cache, state)
+runFixAEnv :: t -> r -> c -> (t -> ContT () (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a) -> IO (M.Map k b1, c)
+runFixAEnv a e s f = do
+  (_, (cache, state)) <- runStateT (runReaderT (runContT (f a) (\x -> return ())) e) (M.empty, s)
+  return (fmap fst cache, state)
 
 -- Runs a fixpoint computation with an environment and state
-runFix :: ContT a (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a -> r -> c -> IO (a, M.Map k b1, c)
-runFix f e s = do
-  (res, (cache, state)) <- runStateT (runReaderT (runContT f return) e) (M.empty, s)
-  return (res, fmap fst cache, state)
+runFix :: r -> c -> ContT () (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a -> IO (M.Map k b1, c)
+runFix e s f = do
+  (_, (cache, state)) <- runStateT (runReaderT (runContT f (\x -> return ())) e) (M.empty, s)
+  return (fmap fst cache, state)
 
 -- Runs a fixpoint computation with an environment, state, and cache 
 -- (this allows us to use prior results when those results would not have changed)
 -- CAUTION: Results should be invalidated if any of the inputs to the computation change
-runFixWithCache :: ContT a (ReaderT r (StateT (b, c) IO)) a -> r -> b -> c -> IO (a, b, c)
+runFixWithCache :: ContT () (ReaderT r (StateT (b, c) IO)) a -> r -> b -> c -> IO (b, c)
 runFixWithCache f e c s = do
-  (res, (cache, state)) <- runStateT (runReaderT (runContT f return) e) (c, s)
-  return (res, cache, state)
+  (_, (cache, state)) <- runStateT (runReaderT (runContT f (\x -> return ())) e) (c, s)
+  return (cache, state)
 
 
 ------------------------------ EXAMPLE USAGE ---------------------------------
@@ -267,7 +265,7 @@ incrementUnique = do
 
 runExample :: IO ()
 runExample = do
-  comp <- runStateT (runReaderT (runContT (fib 6) (\x -> return (insert x bottom))) ()) (M.empty, State 0)
+  comp <- runFix () (State 0) $ fib 6
   trace (show comp) $ return ()
-  comp2 <- runStateT (runReaderT (runContT (swap [1, 2, 3]) (\x -> return (insert x bottom))) ()) (M.empty, ())
+  comp2 <- runFix () () $ swap [1, 2, 3]
   trace (show comp2) $ return ()

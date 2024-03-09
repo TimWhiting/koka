@@ -13,7 +13,7 @@ module Core.Demand.DemandMonad(
   FixDemandR, FixDemand,
   AnalysisKind(..),
   -- Cache / State stuff
-  State(..), toAbValue, toEnv, getAllRefines, getAllStates, getState, getCache, cacheLookup, updateState, setResult,
+  State(..), toAChange, toEnv, getAllRefines, getAllStates, getState, getCache, cacheLookup, updateState, setResult,
   -- Context stuff
   getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
   childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs, visitEachChild,
@@ -145,8 +145,8 @@ data AFixChange =
   | B
   deriving (Show, Eq)
 
-toAbValue :: AFixChange -> AChange
-toAbValue (FA a) = a
+toAChange :: AFixChange -> AChange
+toAChange (FA a) = a
 
 toEnv :: AFixChange -> EnvCtx
 toEnv (FE e) = e
@@ -397,7 +397,7 @@ childrenContexts ctx = do
     let childIds = M.lookup parentCtxId children
     case childIds of
       Nothing -> do
-          trace ("No children for " ++ show ctx) $ return ()
+          -- trace ("No children for " ++ show ctx) $ return ()
           newCtxs <- case ctx of
                 ModuleC _ mod _ -> do
                   res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
@@ -416,7 +416,7 @@ childrenContexts ctx = do
                 ExprCBasic{} -> return []
                 ExprCTerm{} -> return []
           addChildrenContexts parentCtxId newCtxs
-          trace ("Got children for " ++ show ctx ++ " " ++ show newCtxs) $ return newCtxs
+          -- trace ("Got children for " ++ show ctx ++ " " ++ show newCtxs) $ return newCtxs
           return newCtxs
       Just childIds -> do
         -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
