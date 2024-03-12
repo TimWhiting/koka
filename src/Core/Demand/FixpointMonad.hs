@@ -16,30 +16,24 @@
 {-# HLINT ignore "Use newtype instead of data" #-}
 
 module Core.Demand.FixpointMonad(
-  SimpleLattice(..),
-  SLattice,
+  FixTS, FixT, FixTR,
   SimpleChange(..),
-  BasicLattice(..),
-  Lattice(..),
+  SimpleLattice(..), SLattice,
+  BasicLattice(..), Lattice(..),
   Contains(..),
-  memo,
-  push,
-  each,
-  doBottom,
-  runFixAEnv,
-  runFix,
-  runFixWithCache,
-  runExample,
-  FixTS,
-  FixT,
-  FixTR,
-                        ) where
+  memo, push, each, doBottom,
+  withEnv, getEnv,
+  getCache, cacheLookup,
+  getState, setState, updateState,
+  runFix, runFixWithCache,
+  runExample
+  ) where
 import Debug.Trace (trace)
 import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe)
-import Control.Monad.Reader (lift, ReaderT (runReaderT))
-import Control.Monad.State (StateT (..), MonadState (..), liftIO)
+import Control.Monad.Reader (lift, ReaderT (runReaderT), ask, local)
+import Control.Monad.State (StateT (..), MonadState (..), liftIO, get, put)
 import Control.Monad.Identity (IdentityT, Identity (..))
 import Data.List (intercalate)
 import Control.Monad (foldM, ap)
@@ -145,32 +139,80 @@ instance Ord a => Lattice (ChangeSet a) a where
 
 type FixTS e s i l d = FixT e s i l d d
 type FixTR e s i l d = FixT e s i l d
-newtype ContX e s i l d = ContX { c:: d -> FixIn e s i l d ()} -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
+data ContX e s i l d = ContX { 
+                            cont :: d -> FixIn e s i l d (), -- The continuation to call when the cache changes
+                            from :: Maybe i,
+                            fromId :: Integer,
+                            to :: i, -- The query that the continuation is used with
+                            toId :: Integer
+                          } -- ReaderT DEnv (StateT (M.Map i (S.Set o, [ContX i o a]), State) Identity) a 
 instance Show (ContX e s i l d) where
   show _ = ""
 
 type FixT e s i l d = ContT () (FixIn e s i l d)
-type FixIn e s i l d = (ReaderT e (StateT (M.Map i (l d, [ContX e s i l d]), s) IO))
+type FixIn e s i l d = (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, [ContX e s i l d]), s, Integer) IO))
+
+
+withEnv :: (e -> e) -> FixT e s i l d a -> FixT e s i l d a
+withEnv f = local (\(e, i, id) -> (f e, i, id)) 
+
+getEnv :: FixT e s i l d e
+getEnv = do 
+  (f, s, t) <- ask
+  return f
+
+getCache :: FixT e s i l d (M.Map i (l d))
+getCache = do
+  (res, _, _) <- get
+  return $ M.map fst res
+
+cacheLookup :: Ord i => i -> FixT e s i l d (Maybe (l d))
+cacheLookup i = do
+  M.lookup i <$> getCache
+
+getState :: FixT e s i l d s
+getState = do
+  (_, res, _) <- get
+  return res
+
+setState :: s -> FixT e s i l d  ()
+setState x = do
+  (f, s, t) <- get
+  put (f, x, t)
+
+updateState :: (s -> s) -> FixT e s i l d  ()
+updateState update = do
+  st <- getState
+  setState $ update st
 
 doBottom :: FixTR e s i l d b
 doBottom = ContT (\x -> return ())
+
+localCtx :: Maybe i -> Integer -> FixIn e s i l d a -> FixIn e s i l d a
+localCtx i id = local (\(e,_,_) -> (e,i,id))
+
+localCtxT :: Maybe i -> Integer -> FixT e s i l d a -> FixT e s i l d a
+localCtxT i id = local (\(e,_,_) -> (e,i,id))
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
 memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
 memo key f = do
   ContT (\c -> do
-    (cache, state) <- get
+    (cache, state, newId) <- get
+    (env, from, fromId) <- ask
+    let cont = ContX c from fromId key
     case M.lookup key cache of
       -- Requesting the result of the memoized function from a different dependant
-      Just (xss, conts) -> do
-        put (M.insert key (xss, ContX c:conts) cache, state)
-        -- trace ("New dependant on " ++ show key ++ " calling with current state " ++ show xss) $ return ()
-        mapM_ c (elems xss)
+      Just (xss, conts) -> do        
+        let tid = (toId $ head conts)
+        put (M.insert key (xss, cont tid:conts) cache, state, newId)
+        trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        mapM_ (\x -> localCtx (Just key) tid $ c x) (elems xss)
       -- First time requesting the memoed function with this key
       Nothing -> do
-        -- trace ("Memoizing new result for " ++ show key) $ return ()
-        put (M.insert key (bottom, [ContX c]) cache, state)
-        runContT (f key) (\x ->
+        trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        put (M.insert key (bottom, [cont newId]) cache, state, newId + 1)
+        runContT (localCtxT (Just key) newId $ f key) (\x ->
             -- For all results push them into the cache
             push key x
             -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
@@ -187,7 +229,7 @@ each xs =
 push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
-  (cache, state) <- get
+  (cache, state, idV) <- get
   let cur = M.lookup key cache
   let (values, conts) = fromMaybe (bottom, []) cur
   if lte value values then 
@@ -198,30 +240,36 @@ push key value = do
     -- Otherwise, insert the value into the cache and call all continuations in the cache
     -- that depend on changes to this key
     let added = value `insert` values
-    put (M.insert key (added, conts) cache, state)
+    put (M.insert key (added, conts) cache, state, idV)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
-    mapM_ (\(ContX c) -> c value) conts
+    mapM_ (\(ContX c f fi t ti) -> do
+      trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show t ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
+      localCtx (Just t) ti (c value)
+      ) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
--- Runs a fixpoint computation with an environment and a state, and an input value
-runFixAEnv :: t -> r -> c -> (t -> ContT () (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a) -> IO (M.Map k b1, c)
-runFixAEnv a e s f = do
-  (_, (cache, state)) <- runStateT (runReaderT (runContT (f a) (\x -> return ())) e) (M.empty, s)
-  return (fmap fst cache, state)
+writeDependencyGraph :: (Show i, Show d, Show (l d), Ord i) => M.Map i (l d, [ContX e s i l d]) -> IO ()
+writeDependencyGraph cache = do
+  let edges = M.foldlWithKey (\acc k (v, conts) -> acc ++ (fmap (\(ContX _ f fi t ti) -> (f, fi, ti)) conts)) [] cache
+  let nodes = S.toList $ S.fromList $ fmap (\(k, fi, ti) -> (fi, k)) edges
+  let dot = "digraph G {\n" ++ (intercalate "\n" $ fmap (\(_, a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n" ++ (intercalate "\n" $ fmap (\(fi, k) -> show fi ++ " [label=\"" ++ show k ++ "\"]") nodes) ++ "\n}"
+  writeFile "graph.dot" dot
+  return ()
 
 -- Runs a fixpoint computation with an environment and state
-runFix :: r -> c -> ContT () (ReaderT r (StateT (M.Map k (b1, b2), c) IO)) a -> IO (M.Map k b1, c)
+runFix :: (Show i, Show d, Show (l d), Ord i) => e -> s -> ContT () (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, [ContX e s i l d]), s, Integer) IO)) x -> IO (M.Map i (l d), s)
 runFix e s f = do
-  (_, (cache, state)) <- runStateT (runReaderT (runContT f (\x -> return ())) e) (M.empty, s)
+  (_, (cache, state, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 0)
+  writeDependencyGraph cache
   return (fmap fst cache, state)
 
 -- Runs a fixpoint computation with an environment, state, and cache 
 -- (this allows us to use prior results when those results would not have changed)
 -- CAUTION: Results should be invalidated if any of the inputs to the computation change
-runFixWithCache :: ContT () (ReaderT r (StateT (b, c) IO)) a -> r -> b -> c -> IO (b, c)
-runFixWithCache f e c s = do
-  (_, (cache, state)) <- runStateT (runReaderT (runContT f (\x -> return ())) e) (c, s)
-  return (cache, state)
+runFixWithCache :: ContT () (ReaderT (r,Maybe i,Integer) (StateT (b, c, Integer) IO)) a -> r -> b -> c -> Integer -> IO (b, Integer, c)
+runFixWithCache f e c s i = do
+  (_, (cache, state, i)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,i)) (c, s, i)
+  return (cache, i, state)
 
 
 ------------------------------ EXAMPLE USAGE ---------------------------------
@@ -259,9 +307,7 @@ swap l = do
       [x, z] -> return $ LChangeSingle [z, x]
 
 incrementUnique :: FixTR e State b c (SimpleChange Int) ()
-incrementUnique = do
-  (cache, state) <- get
-  put (cache, state{unique = unique state + 1})
+incrementUnique = updateState (\state -> state{unique = unique state + 1})
 
 runExample :: IO ()
 runExample = do

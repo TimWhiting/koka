@@ -13,12 +13,12 @@ module Core.Demand.DemandMonad(
   FixDemandR, FixDemand,
   AnalysisKind(..),
   -- Cache / State stuff
-  State(..), toAChange, toEnv, getAllRefines, getAllStates, getState, getCache, cacheLookup, updateState, setResult,
+  State(..), toAChange, toEnv, getAllRefines, getAllStates, setResult,
   -- Context stuff
   getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
   childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs, visitEachChild,
   -- Env stuff
-  DEnv(..), getEnv, withEnv, getUnique, newQuery,
+  DEnv(..), getUnique, newQuery,
   -- Query stuff
   Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal
   ) where
@@ -56,22 +56,6 @@ data State a x = State{
   additionalState :: x
 }
 
-getState :: FixDemandR x s e (State x s)
-getState = gets snd
-
-getCache :: FixDemandR x s e (M.Map FixInput (FixOutput AFixChange))
-getCache = do
-  res <- gets fst
-  return $ M.map fst res
-
-cacheLookup :: FixInput -> FixDemandR x s e (Maybe (FixOutput AFixChange))
-cacheLookup i = do
-  M.lookup i <$> getCache
-
-setState :: State x s -> FixDemandR x s e ()
-setState x = do
-  st <- get
-  put (fst st, x)
 
 data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
 
@@ -87,13 +71,6 @@ data DEnv x = DEnv{
   queryIndentation :: !String,
   additionalEnv :: x
 }
-
-withEnv :: (DEnv e -> DEnv e) -> FixDemandR x s e a -> FixDemandR x s e a
-withEnv = local
-
-getEnv :: FixDemandR x s e (DEnv e)
-getEnv = ask
-
 -- A query type representing the mutually recursive queries we can make that result in an abstract value
 data Query =
   CallQ (ExprContext, EnvCtx) |
@@ -282,10 +259,6 @@ getUnique = do
   setState st{unique = u + 1}
   return u
 
-updateState :: (State x s -> State x s) -> FixDemandR x s e ()
-updateState update = do
-  st <- getState
-  setState $ update st
 
 setResult :: x -> FixDemand x s e
 setResult x = do
