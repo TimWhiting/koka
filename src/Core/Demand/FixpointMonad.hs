@@ -139,8 +139,8 @@ instance Ord a => Lattice (ChangeSet a) a where
 
 type FixTS e s i l d = FixT e s i l d d
 type FixTR e s i l d = FixT e s i l d
-data ContX e s i l d = ContX { 
-                            cont :: d -> FixIn e s i l d (), -- The continuation to call when the cache changes
+data ContX e s i l d = ContX {
+                            contV :: d -> FixIn e s i l d (), -- The continuation to call when the cache changes
                             from :: Maybe i,
                             fromId :: Integer,
                             to :: i, -- The query that the continuation is used with
@@ -152,12 +152,11 @@ instance Show (ContX e s i l d) where
 type FixT e s i l d = ContT () (FixIn e s i l d)
 type FixIn e s i l d = (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, [ContX e s i l d]), s, Integer) IO))
 
-
 withEnv :: (e -> e) -> FixT e s i l d a -> FixT e s i l d a
-withEnv f = local (\(e, i, id) -> (f e, i, id)) 
+withEnv f = local (\(e, i, id) -> (f e, i, id))
 
 getEnv :: FixT e s i l d e
-getEnv = do 
+getEnv = do
   (f, s, t) <- ask
   return f
 
@@ -203,11 +202,11 @@ memo key f = do
     let cont = ContX c from fromId key
     case M.lookup key cache of
       -- Requesting the result of the memoized function from a different dependant
-      Just (xss, conts) -> do        
-        let tid = (toId $ head conts)
+      Just (xss, conts) -> do
+        let tid = toId $ head conts
         put (M.insert key (xss, cont tid:conts) cache, state, newId)
         trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
-        mapM_ (\x -> localCtx (Just key) tid $ c x) (elems xss)
+        mapM_ (contV (cont tid)) (elems xss)
       -- First time requesting the memoed function with this key
       Nothing -> do
         trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
@@ -232,7 +231,7 @@ push key value = do
   (cache, state, idV) <- get
   let cur = M.lookup key cache
   let (values, conts) = fromMaybe (bottom, []) cur
-  if lte value values then 
+  if lte value values then
     -- If the value already exists in the cache
     -- trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ 
     return ()
@@ -244,7 +243,7 @@ push key value = do
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi t ti) -> do
       trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show t ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
-      localCtx (Just t) ti (c value)
+      c value
       ) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 

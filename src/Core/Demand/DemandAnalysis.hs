@@ -493,22 +493,20 @@ doCall cq@(CallQ(ctx, env)) query =
             AChangeClos callctx callenv <- qexpr (c, p)
             m <- contextLength <$> getEnv
             cc1 <- succAEnv callctx callenv
-            if cc1 == cc0 then
+            if cc1 `subsumesCtx` cc0 then
               trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               return $! AChangeClos callctx callenv
             else if cc0 `subsumesCtx` cc1 then do
               trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
               instantiate query (EnvCtx cc1 p) env
               doBottom
-            else do
+            else doBottom
               -- trace (query ++ "CALL IS NOT SUBSUMED:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
-              doBottom
       _ -> error $ "CALL not implemented for " ++ show ctx
 
 instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
 instantiate query c1 c0 = if c1 == c0 then return () else do
   trace (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1) $ return ()
-  loop (EnvInput c0)
   lift $ push (EnvInput c0) (FE c1)
   return ()
 
