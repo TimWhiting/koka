@@ -16,16 +16,17 @@
 {-# HLINT ignore "Use newtype instead of data" #-}
 
 module Core.Demand.FixpointMonad(
-  FixTS, FixT, FixTR,
+  FixTS, FixT, FixIn,
   SimpleChange(..),
   SimpleLattice(..), SLattice,
-  BasicLattice(..), Lattice(..),
+  Lattice(..),
   Contains(..),
+  Label(..),
   memo, push, each, doBottom,
   withEnv, getEnv,
   getCache, cacheLookup,
-  getState, setState, updateState,
-  runFix, runFixWithCache,
+  getState, getStateR, setState, updateState,
+  runFix, runFixCont, runFixFinish,
   runExample
   ) where
 import Debug.Trace (trace)
@@ -55,6 +56,9 @@ class Lattice l d where
   lte :: d -> l d -> Bool
   elems :: l d -> [d]
 
+class Label a where
+  label :: a -> String
+
 -- A simple lattice is a lattice where we just have bottom, top, and a singleton value
 -- An abstract value of an integer can be represented using this. Top means any integer, bottom means no integers, and a singleton value means a single integer value.
 -- lte is just equality and joining just goes to top if the values are different
@@ -72,6 +76,11 @@ instance Show a => Show (SimpleLattice a d) where
   show LBottom = "LBottom"
   show (LSingle a) = "LSingle " ++ show a
   show LTop = "LTop"
+
+instance Label a => Label (SimpleLattice a d) where
+  label LBottom = "⊥"
+  label (LSingle a) = label a
+  label LTop = "⊤"
 
 instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
   bottom = LBottom
@@ -99,33 +108,6 @@ instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
 class Contains a where
   contains :: a -> a -> Bool
 
--- A Basic Lattice just delegates to the underlying type assuming that the underlying type implements the Contains type class and is a Monoid
-data BasicLattice d a = BL a deriving (Eq, Ord)
-
--- The `bottom` value is just the monoid's `mempty` value, `join` is implemented with `mappend`, and the `contains` relation defines `subsumption` (i.e. `a` contains `b` if `a` is a superset of `b`)
-instance (Eq a, Contains a, Monoid a) => Lattice (BasicLattice a) a where
-  bottom = BL mempty
-  join (BL a) (BL b) = BL $ a `mappend` b
-  lte m (BL m') = m' `contains` m
-  elems (BL m) = [m]
-  insert a (BL b) = BL (a `mappend` b)
-  isBottom (BL a) = a == mempty
-
-instance Functor (BasicLattice a) where
-  fmap f (BL a) = BL $ f a
-
-instance (Contains a) => Contains (BasicLattice d a) where
-  contains (BL a) (BL b) = a `contains` b
-instance (Show a) => Show (BasicLattice d a) where
-  show (BL a) = show a
-
-instance (Semigroup a) => Semigroup (BasicLattice d a) where
-  (BL a) <> (BL b) = BL $ a <> b
-
-instance (Monoid a) => Monoid (BasicLattice d a) where
-  mempty = BL mempty
-  mappend = (<>)
-
 data ChangeSet a d = ChangeSet (S.Set a)
 
 -- Simple implementation of a set lattice
@@ -138,7 +120,6 @@ instance Ord a => Lattice (ChangeSet a) a where
   isBottom (ChangeSet a) = S.null a
 
 type FixTS e s i l d = FixT e s i l d d
-type FixTR e s i l d = FixT e s i l d
 data ContX e s i l d = ContX {
                             contV :: d -> FixIn e s i l d (), -- The continuation to call when the cache changes
                             from :: Maybe i,
@@ -158,17 +139,13 @@ getEnv = do
   (f, s, t) <- ask
   return f
 
-getCache :: FixT e s i l d (M.Map i (l d))
-getCache = do
-  (res, _, _) <- get
-  return $ M.map (\(f,s,t) -> f) res
-
-cacheLookup :: Ord i => i -> FixT e s i l d (Maybe (l d))
-cacheLookup i = do
-  M.lookup i <$> getCache
-
 getState :: FixT e s i l d s
 getState = do
+  (_, res, _) <- get
+  return res
+
+getStateR :: FixIn e s i l d s
+getStateR = do
   (_, res, _) <- get
   return res
 
@@ -177,12 +154,21 @@ setState x = do
   (f, s, t) <- get
   put (f, x, t)
 
+getCache :: FixIn e s i l d (M.Map i (l d))
+getCache = do
+  (res, _, _) <- get
+  return $ M.map (\(f,s,t) -> f) res
+
+cacheLookup :: Ord i => i -> FixIn e s i l d (Maybe (l d))
+cacheLookup i = do
+  M.lookup i <$> getCache
+
 updateState :: (s -> s) -> FixT e s i l d  ()
 updateState update = do
   st <- getState
   setState $ update st
 
-doBottom :: FixTR e s i l d b
+doBottom :: FixT e s i l d b
 doBottom = ContT (\x -> return ())
 
 localCtx :: Maybe i -> Integer -> FixIn e s i l d a -> FixIn e s i l d a
@@ -192,7 +178,7 @@ localCtxT :: Maybe i -> Integer -> FixT e s i l d a -> FixT e s i l d a
 localCtxT i id = local (\(e,_,_) -> (e,i,id))
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
-memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixTR e s i l d d -> FixTR e s i l d d
+memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d d -> FixT e s i l d d
 memo key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
@@ -216,7 +202,7 @@ memo key f = do
           )
       )
 
-each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [FixTR e s i l d b] -> FixTR e s i l d b
+each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [FixT e s i l d b] -> FixT e s i l d b
 each xs =
   ContT $ \c -> -- Get the continuation
     -- For each monadic fixpoint, run the continuation piece, and call our continuation with each result
@@ -248,32 +234,36 @@ push key value = do
       ) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
-writeDependencyGraph :: (Show i, Show d, Show (l d), Ord i) => M.Map i (l d, Integer, [ContX e s i l d]) -> IO ()
+writeDependencyGraph :: (Label i, Show d, Label (l d), Ord i) => M.Map i (l d, Integer, [ContX e s i l d]) -> IO ()
 writeDependencyGraph cache = do
   let values = M.foldl (\acc (v, toId, conts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache
   let nodes = M.foldlWithKey (\acc k (v, toId, conts) -> (toId,k,v):acc) [] cache
   let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
   let dot = "digraph G {\n"
             ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
-            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ show k ++ "\"]") nodes) ++ "\n}"
+            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes) 
+            ++ "\n 0 [label=\"Start\"]\n"
+            ++ "\n}"
   writeFile "graph.dot" dot
   return ()
 
 -- Runs a fixpoint computation with an environment and state
-runFix :: (Show i, Show d, Show (l d), Ord i) => e -> s -> ContT () (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, Integer, [ContX e s i l d]), s, Integer) IO)) x -> IO (M.Map i (l d), s)
+runFix :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixT e s i l d x -> IO (M.Map i (l d), s)
 runFix e s f = do
-  (_, (cache, state, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 0)
+  (_, (cache, state, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 1)
   writeDependencyGraph cache
   return (fmap (\(f, s, t) -> f) cache, state)
 
--- Runs a fixpoint computation with an environment, state, and cache 
--- (this allows us to use prior results when those results would not have changed)
--- CAUTION: Results should be invalidated if any of the inputs to the computation change
-runFixWithCache :: ContT () (ReaderT (r,Maybe i,Integer) (StateT (b, c, Integer) IO)) a -> r -> b -> c -> Integer -> IO (b, Integer, c)
-runFixWithCache f e c s i = do
-  (_, (cache, state, i)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,i)) (c, s, i)
-  return (cache, i, state)
+-- Runs a fixpoint computation with an environment and state
+runFixCont :: (Show i, Show d, Show (l d), Ord i) => FixT e s i l d x -> FixIn e s i l d ()
+runFixCont f = 
+  runContT f (\x -> return ())
 
+runFixFinish :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d), s, x)
+runFixFinish e s f = do
+  (x, (cache, state, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1)
+  writeDependencyGraph cache
+  return (fmap (\(f, s, t) -> f) cache, state, x)
 
 ------------------------------ EXAMPLE USAGE ---------------------------------
 ---- An Example of how to use the fixpoint interface -- used for testing
@@ -287,7 +277,7 @@ newtype State = State{
 -- The fixpoint computation threads through State
 -- The fixpoint computation doesn't use any environment monad
 -- The fixpoint computation returns an integer encapsulated in a SimpleLattice
-fib :: Int -> FixTR () State (String, Int) (SimpleLattice Int) (SimpleChange Int) (SimpleChange Int)
+fib :: Int -> FixT () State (String, Int) (SimpleLattice Int) (SimpleChange Int) (SimpleChange Int)
 fib n =
   -- memo using the key ("fib", n) 
   -- (note: "fib" is not actually required, but for mutual recursion you need some way of dispatching based on the function name)
@@ -299,7 +289,7 @@ fib n =
       case (x, y) of
         (LChangeSingle x, LChangeSingle y) -> return $ LChangeSingle (x + y)
 
-swap :: [Int] -> FixTR () () [Int] (SimpleLattice [Int]) (SimpleChange [Int]) (SimpleChange [Int])
+swap :: [Int] -> FixT () () [Int] (SimpleLattice [Int]) (SimpleChange [Int]) (SimpleChange [Int])
 swap l = do
   trace ("Swapping " ++ show l) $ return ()
   memo l $
@@ -309,7 +299,16 @@ swap l = do
         each [swap [y, x], swap [z, y]]
       [x, z] -> return $ LChangeSingle [z, x]
 
-incrementUnique :: FixTR e State b c (SimpleChange Int) ()
+instance Label (String, Int) where
+  label (s, i) = s ++ " " ++ show i
+
+instance Label [Int] where
+  label l = show l
+
+instance Label Int where
+  label i = show i
+
+incrementUnique :: FixT e State b c (SimpleChange Int) ()
 incrementUnique = updateState (\state -> state{unique = unique state + 1})
 
 runExample :: IO ()

@@ -10,12 +10,12 @@
 
 module Core.Demand.DemandMonad(
   AFixChange(..), FixInput(..), FixOutput(..),
-  FixDemandR, FixDemand,
+  FixDemandR, FixDemand, PostFixR, PostFix,
   AnalysisKind(..),
   -- Cache / State stuff
-  State(..), toAChange, toEnv, getAllRefines, getAllStates, setResult,
+  State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult,
   -- Context stuff
-  getModule, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
+  getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
   childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs, visitEachChild,
   -- Env stuff
   DEnv(..), getUnique, newQuery,
@@ -42,8 +42,10 @@ import Control.Monad (zipWithM)
 import Debug.Trace (trace)
 import Data.List (find)
 
+type FixDemandR x s e a = FixT (DEnv e) (State x s) FixInput FixOutput AFixChange a
 type FixDemand x s e = FixDemandR x s e (FixOutput AFixChange)
-type FixDemandR x s e a = FixTR (DEnv e) (State x s) FixInput FixOutput AFixChange a
+type PostFixR x s e a = FixIn (DEnv e) (State x s) FixInput FixOutput AFixChange a
+type PostFix x s e = PostFixR x s e (FixOutput AFixChange)
 
 data State a x = State{
   buildc :: BuildContext,
@@ -51,7 +53,7 @@ data State a x = State{
   maxContextId :: Int,
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
   unique :: Int,
-  finalResult :: Maybe a,
+  finalResults :: Set a,
   primitives :: M.Map Name ExprContext,
   additionalState :: x
 }
@@ -135,7 +137,7 @@ data FixOutput d =
   | E (S.Set EnvCtx)
   | N deriving (Show, Eq)
 
-getAllRefines :: EnvCtx -> FixDemandR x s e (Set EnvCtx)
+getAllRefines :: EnvCtx -> PostFixR x s e(Set EnvCtx)
 getAllRefines env = do
   res <- cacheLookup (EnvInput env)
   let res' = fmap (\v -> 
@@ -145,7 +147,7 @@ getAllRefines env = do
                   ) res
   return (S.insert env (fromMaybe S.empty res'))
 
-getAllStates :: Query -> FixDemandR x s e AbValue
+getAllStates :: Query -> PostFixR x s e AbValue
 getAllStates q = do
   res <- cacheLookup (QueryInput q)
   let res' = fmap (\v -> 
@@ -267,12 +269,10 @@ getUnique = do
   setState st{unique = u + 1}
   return u
 
-
-setResult :: x -> FixDemand x s e
-setResult x = do
-  updateState (\st -> st{finalResult = Just x})
+addResult :: Ord x => x -> FixDemand x s e
+addResult x = do
+  updateState (\st -> st{finalResults = S.insert x (finalResults st)})
   return N
-
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
 newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
@@ -308,6 +308,19 @@ getModule name = do
   case x of
     Just mod -> return mod
     _ -> error $ "getModule: " ++ show name
+
+getModuleR :: Name -> PostFixR x s e Module
+getModuleR name = do
+  deps <- buildcModules . buildc <$> getStateR
+  let x = find (\m -> modName m == name) deps
+  case x of
+    Just mod -> return mod
+    _ -> error $ "getModule: " ++ show name
+
+getResults :: PostFixR x s e (Set x)
+getResults = do
+  st <- getStateR
+  return $ finalResults st
 
 addChildrenContexts :: ExprContextId -> [ExprContext] -> FixDemandR x s e ()
 addChildrenContexts parentCtx contexts = do

@@ -104,17 +104,17 @@ hoverHandler
                               buildContext term flags (rng, rngInfo) 
                               (fromJust mod) BasicEnvs 3
                  case res of
-                    Just (!xs, !newBuildContext) -> do
+                    (!x:xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext
                       tend <- liftIO getCurrentTime
                       markdown <- prettyMarkdown doc
                       let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <>
-                                                          T.intercalate "\n\n" (map toAbValueText xs) <>
+                                                          T.intercalate "\n\n" (map toAbValueText (x:xs)) <>
                                                           "\n\n" <> T.pack (show $ diffUTCTime tend tstart))))
                                                           (Just (toLspRange rng))
                       -- trace ("hover markdown:\n" ++ show markdown) $
                       responder $ Right $ J.InL rsp
-                    Nothing -> do
+                    _ -> do
                       markdown <- prettyMarkdown doc
                       let rsp = J.Hover (J.InL (J.mkMarkdown markdown)) (Just (toLspRange rng))
                       -- trace ("hover markdown:\n" ++ show markdown) $

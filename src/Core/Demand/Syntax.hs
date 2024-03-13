@@ -31,7 +31,7 @@ import Type.Type
 import Debug.Trace (trace)
 import Compile.BuildContext (BuildContext)
 import Compile.Options (Terminal, Flags)
-import Core.Demand.DemandAnalysis (createPrimitives, fixedEval, analyzeEachChild)
+import Core.Demand.DemandAnalysis (createPrimitives, query, analyzeEachChild, getAbValueResults)
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
 findContext r ri = do
@@ -56,32 +56,37 @@ findContext r ri = do
 
 runEvalQueryFromRangeSource :: BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
-  -> IO (Maybe ([(EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))], BuildContext))
+  -> IO ([(EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))], BuildContext)
 runEvalQueryFromRangeSource bc term flags rng mod kind m = do
-  (lattice, x) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
+  (lattice, r, bc) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
     createPrimitives
-    ress <- fixedEval ctx (indeterminateStaticCtx ctx)
-    res' <- mapM getAbResult ress
-    buildc' <- buildc <$> getState
-    setResult (res', buildc')
-  return x
+    let q = EvalQ (ctx, (indeterminateStaticCtx ctx))
+    query q
+    addResult q
+  return (r, bc)
 
 runQueryAtRange :: BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int
-  -> (ExprContext -> FixDemand x () ())
-  -> IO (M.Map FixInput (FixOutput AFixChange), Maybe x)
-runQueryAtRange buildc term flags (r, ri) mod kind m query = do
+  -> (ExprContext -> FixDemand Query () ())
+  -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))], BuildContext)
+runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)
-  result <- runFix (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ()) (State buildc M.empty 0 M.empty 0 Nothing M.empty ()) $
-            do 
-              ctx <- analyzeEachChild (const $ findContext r ri) modCtx
-              query ctx
-  return $ case result of
-    (b, s) -> (b, finalResult s)
+  (l, s, (r, bc)) <- 
+    runFixFinish (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ()) 
+                 (State bc M.empty 0 M.empty 0 S.empty M.empty ()) $ do
+                    runFixCont $ do
+                            ctx <- analyzeEachChild (const $ findContext r ri) modCtx
+                            doQuery ctx
+                    queries <- getResults
+                    buildc' <- buildc <$> getStateR
+                    ress <- mapM getAbValueResults (S.toList queries)
+                    ress' <- mapM getAbResult (concat ress)
+                    return (ress', buildc')
+  return (l, r, bc)
 
-getAbResult :: (EnvCtx, AbValue) -> FixDemandR x s e (EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))
+getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))
 getAbResult (envctx, res) = do
   let vals = [res]
       lams = map fst $ concatMap (S.toList . aclos) vals
@@ -100,19 +105,19 @@ getAbResult (envctx, res) = do
      "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n") 
     (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes))
 
-toSynConstr :: ExprContext -> FixDemandR x s e (Maybe String)
+toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
 toSynConstr ctx = do
   app <- findSourceExpr ctx
   return (Just $ show app)
 
-sourceEnv :: EnvCtx -> FixDemandR x s e String
+sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv (EnvCtx env tail) = do
   envs <- sourceEnvCtx env
   envt <- sourceEnv tail
   return $ envs ++ ":::" ++ envt
 sourceEnv (EnvTail env) = sourceEnvCtx env
 
-sourceEnvCtx :: Ctx -> FixDemandR x s e String
+sourceEnvCtx :: Ctx -> PostFixR x s e String
 sourceEnvCtx ctx =
   case ctx of
     IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
@@ -125,7 +130,7 @@ sourceEnvCtx ctx =
         (_, Just de) -> showSyntaxDef 0 de ++ " " ++ e
         _ -> show c ++ " " ++ e
 
-findSourceExpr :: ExprContext -> FixDemandR x s e (Maybe Syn.UserExpr, Maybe (Syn.Def Syn.UserType))
+findSourceExpr :: ExprContext -> PostFixR x s e (Maybe Syn.UserExpr, Maybe (Syn.Def Syn.UserType))
 findSourceExpr ctx =
   case maybeExprOfCtx ctx of
     Just (Lam (n:_) _ _) -> findForName n
@@ -141,7 +146,7 @@ findSourceExpr ctx =
   where
     findDef d = do
       -- return $! Just $! Syn.Var (defName d) False (defNameRange d)
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, C.defNameRange d) of
         (Just prog, rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
           return (Nothing, findDefFromRange prog rng)
@@ -150,13 +155,13 @@ findSourceExpr ctx =
       --   (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in module " ++ show (moduleName $ contextId ctx)) $ return $! findLocation prog rng
       --   _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
     findForName n = do
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, originalRange n) of
         (Just prog, Just rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
           return (findLambdaFromRange prog rng, Nothing)
         _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
     findForApp n = do
-      program <- modProgram <$> getModule (moduleName $ contextId ctx)
+      program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, originalRange n) of
         (Just prog, Just rng) -> -- trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ 
           return (findApplicationFromRange prog rng, Nothing)

@@ -201,7 +201,7 @@ rangesOverlap :: Range -> Range -> Bool
 rangesOverlap r1 r2 = rangeContains r1 (rangeStart r2) || rangeContains r2 (rangeStart r1)
 
 rmNL :: (Show a) => a -> String
-rmNL a = rmNl $ Prelude.take 500 $ show a
+rmNL a = Prelude.take 500 $ show a
 
 class SimpleShow a where
   showSimple :: a -> String

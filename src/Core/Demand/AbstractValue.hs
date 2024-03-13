@@ -43,7 +43,7 @@ import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
 import Core.Demand.StaticContext
-import Core.Demand.FixpointMonad (SimpleLattice(..), Lattice (..), BasicLattice(..), Contains(..), SimpleChange (..), SLattice)
+import Core.Demand.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice)
 import qualified Core.Demand.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)

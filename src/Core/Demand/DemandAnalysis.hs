@@ -15,10 +15,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Core.Demand.DemandAnalysis(
-  fixedEval,fixedExpr,fixedCall,query,refine,qcall,qexpr,qeval,
+  query,refine,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,
-  getQueryString,getState,updateState,setResult,getUnique,
+  getQueryString,getState,updateState,getUnique,getAbValueResults,
   childrenContexts,analyzeEachChild,visitChildrenCtxs,
   createPrimitives,
 ) where
@@ -105,19 +105,19 @@ query q = do
 
 refine :: EnvCtx -> FixDemandR x s e EnvCtx
 refine env = do
-  e <- memo (EnvInput env) $ return (FE env)
+  e <- memo (EnvInput env) $ doBottom
   return $ toEnv e
 
 getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
 getRefine env =
-  if isFullyDetermined env then return env else
+  if isFullyDetermined env then doBottom else
   case env of
     EnvCtx cc tail -> 
         each [
           refine env,
           do
             tailRefine <- getRefine tail
-            return (EnvCtx cc tailRefine)]  
+            return (EnvCtx cc tailRefine)]
     EnvTail cc -> refine env
 
 bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))
@@ -509,35 +509,14 @@ instantiate query c1 c0 = if c1 == c0 then return () else do
 
 --------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
 
-getResults :: Query -> FixDemandR x s e [(EnvCtx, AbValue)]
-getResults q = do
+getAbValueResults :: Query -> PostFixR x s e [(EnvCtx, AbValue)]
+getAbValueResults q = do
   refines <- getAllRefines (queryEnv q)
   mapM (\env ->
     do
       st <- getAllStates (refineQuery q env)
       return (env, st)
     ) (S.toList refines)
-
-fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
-fixedEval e env = do
-  let q = EvalQ (e, env)
-  query q
-  trace "Finished eval" $ return ()
-  getResults q
-
-fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
-fixedExpr e env = do
-  let q = ExprQ (e, env)
-  query q
-  trace "Finished expr" $ return ()
-  getResults q
-
-fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
-fixedCall e env = do
-  let q = CallQ (e, env)
-  query q
-  trace "Finished call" $ return ()
-  getResults q
 
 analyzeEachChild :: Show a => (ExprContext -> FixDemandR x s e a) -> ExprContext -> FixDemandR x s e a
 analyzeEachChild analyze ctx = do
@@ -547,3 +526,12 @@ analyzeEachChild analyze ctx = do
           childCtx <- currentContext <$> getEnv
           analyzeEachChild analyze childCtx
   each [self, children]
+
+instance Label (FixOutput m) where
+  label (A a) = ""
+  label (E e) = ""
+  label N = "nothing"
+
+instance Label FixInput where
+  label (QueryInput q) = show q
+  label (EnvInput e) = "Env Refinements: " ++ show e
