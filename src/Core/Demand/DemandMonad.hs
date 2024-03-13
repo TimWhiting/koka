@@ -138,13 +138,21 @@ data FixOutput d =
 getAllRefines :: EnvCtx -> FixDemandR x s e (Set EnvCtx)
 getAllRefines env = do
   res <- cacheLookup (EnvInput env)
-  let res' = fmap (\(E e) -> e) res
+  let res' = fmap (\v -> 
+                case v of
+                  E e -> e
+                  N -> S.empty
+                  ) res
   return (S.insert env (fromMaybe S.empty res'))
 
 getAllStates :: Query -> FixDemandR x s e AbValue
 getAllStates q = do
   res <- cacheLookup (QueryInput q)
-  let res' = fmap (\(A a) -> a) res
+  let res' = fmap (\v -> 
+                case v of
+                  A a -> a
+                  N -> emptyAbValue
+                  ) res
   return $ fromMaybe emptyAbValue res'
 
 instance Lattice FixOutput AFixChange where

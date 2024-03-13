@@ -202,16 +202,17 @@ memo key f = do
       (xss, tid, cont1:conts) -> do
         -- Requesting the result of the memoized function from a different dependant
         put (M.insert key (xss, tid, cont:cont1:conts) cache, state, newId)
-        -- trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
-        mapM_ (contV cont) (elems xss)
+        trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        mapM_ c (elems xss)
       (xss, tid, []) -> do
         -- First time requesting the memoed function with this key
-        -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
-        put (M.insert key (bottom, newId, [cont]) cache, state, newId + 1)
-        runContT (localCtxT (Just key) newId f) (\x ->
+        trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        put (M.insert key (xss, tid, [cont]) cache, state, if tid == newId then newId + 1 else newId)
+        mapM_ c (elems xss)
+        runContT (localCtxT (Just key) tid f) (\x -> do
             -- For all results push them into the cache
+            trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
             push key x
-            -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
           )
       )
 
@@ -224,25 +225,25 @@ each xs =
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
-  -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
-  (cache, state, idV) <- get
+  trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
+  (cache, state, newId) <- get
   let cur = M.lookup key cache
-  let (values, keyId, conts) = fromMaybe (bottom, idV, []) cur
+  let (values, keyId, conts) = fromMaybe (bottom, newId, []) cur
   if lte value values then
     -- If the value already exists in the cache
-    -- trace ("New result " ++ show value ++ " is already contained in " ++ show xs) $ 
+    trace ("New result " ++ show value ++ " is already contained in " ++ show values) $ 
     return ()
   else do
     -- Otherwise, insert the value into the cache and call all continuations in the cache
     -- that depend on changes to this key
     let added = value `insert` values
-    if null conts then
-      put (M.insert key (added, keyId, conts) cache, state, idV + 1)
+    if keyId == newId then
+      put (M.insert key (added, keyId, conts) cache, state, newId + 1)
     else
-      put (M.insert key (added, keyId, conts) cache, state, idV)
-    -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
+      put (M.insert key (added, keyId, conts) cache, state, newId)
+    trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi) -> do
-      -- trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
+      trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
       c value
       ) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()

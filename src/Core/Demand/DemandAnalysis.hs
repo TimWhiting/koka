@@ -87,18 +87,20 @@ qeval c = query (EvalQ c)
 -- The main fixpoint loop
 query :: Query -> FixDemandR x s e AChange
 query q = do
-  refine <- getRefine (queryEnv q)
-  let nq = refineQuery q refine
-  -- Memoize at this point the refined query, otherwise we don't get separate refinements in the cache
-  res <- memo (QueryInput nq) $ 
-    newQuery nq (\queryStr -> do
-        trace (queryStr ++ show nq) $ return ()
-        x <- case nq of
-                CallQ _ -> doCall nq queryStr
-                ExprQ _ -> doExpr nq queryStr
-                EvalQ _ -> doEval nq queryStr  
-        trace (queryStr ++ "==> " ++ show x) $ return x
-      )
+  res <- memo (QueryInput q) $ do
+    let cq = newQuery q (\queryStr -> do
+                trace (queryStr ++ show q) $ return ()
+                x <- case q of
+                        CallQ _ -> doCall q queryStr
+                        ExprQ _ -> doExpr q queryStr
+                        EvalQ _ -> doEval q queryStr  
+                trace (queryStr ++ "==> " ++ show x) $ return x
+                )
+    let refined = do
+          refine <- getRefine (queryEnv q)
+          res <- query (refineQuery q refine)
+          return $ FA res
+    each [cq, refined]
   return $ toAChange res
 
 refine :: EnvCtx -> FixDemandR x s e EnvCtx
