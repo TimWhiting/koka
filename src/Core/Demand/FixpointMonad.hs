@@ -192,7 +192,7 @@ localCtxT :: Maybe i -> Integer -> FixT e s i l d a -> FixT e s i l d a
 localCtxT i id = local (\(e,_,_) -> (e,i,id))
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
-memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> (i -> FixTR e s i l d d) -> FixTR e s i l d d
+memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixTR e s i l d d -> FixTR e s i l d d
 memo key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
@@ -202,13 +202,13 @@ memo key f = do
       (xss, tid, cont1:conts) -> do
         -- Requesting the result of the memoized function from a different dependant
         put (M.insert key (xss, tid, cont:cont1:conts) cache, state, newId)
-        trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        -- trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         mapM_ (contV cont) (elems xss)
       (xss, tid, []) -> do
         -- First time requesting the memoed function with this key
-        trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         put (M.insert key (bottom, newId, [cont]) cache, state, newId + 1)
-        runContT (localCtxT (Just key) newId $ f key) (\x ->
+        runContT (localCtxT (Just key) newId f) (\x ->
             -- For all results push them into the cache
             push key x
             -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
@@ -242,7 +242,7 @@ push key value = do
       put (M.insert key (added, keyId, conts) cache, state, idV)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi) -> do
-      trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
+      -- trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
       c value
       ) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
@@ -290,7 +290,7 @@ fib :: Int -> FixTR () State (String, Int) (SimpleLattice Int) (SimpleChange Int
 fib n =
   -- memo using the key ("fib", n) 
   -- (note: "fib" is not actually required, but for mutual recursion you need some way of dispatching based on the function name)
-  memo ("fib", n) $ \(_, n) ->
+  memo ("fib", n) $ do
     if n == 0 || n == 1 then return (LChangeSingle 1) else do
       incrementUnique
       x <- fib (n - 1)
@@ -301,7 +301,7 @@ fib n =
 swap :: [Int] -> FixTR () () [Int] (SimpleLattice [Int]) (SimpleChange [Int]) (SimpleChange [Int])
 swap l = do
   trace ("Swapping " ++ show l) $ return ()
-  memo l $ \l ->
+  memo l $
     trace ("Memoizing " ++ show l) $
     case l of
       [x, y, z] -> do

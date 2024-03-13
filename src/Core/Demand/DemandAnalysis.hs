@@ -15,7 +15,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Core.Demand.DemandAnalysis(
-  fixedEval,fixedExpr,fixedCall,loop,qcall,qexpr,qeval,
+  fixedEval,fixedExpr,fixedCall,query,refine,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,
   getQueryString,getState,updateState,setResult,getUnique,
@@ -71,17 +71,6 @@ succAEnv newctx p' = do
   case kind of
     BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
 
-getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
-getRefine env =
-  case env of
-    EnvCtx cc tail -> do
-      each [
-        loop (EnvInput env) <&> toEnv, 
-        do
-          tailRefine <- getRefine tail
-          return (EnvCtx cc tailRefine)]      
-    EnvTail cc -> loop (EnvInput env) <&> toEnv
-
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
 doMaybe :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
 doMaybe l doA = do
@@ -89,39 +78,45 @@ doMaybe l doA = do
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qcall c = do
-  res <- loop $ QueryInput (CallQ c)
-  return $ toAChange res
+qcall c = query (CallQ c)
 qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qexpr c = do
-  res <- loop $ QueryInput (ExprQ c)
-  return $ toAChange res
+qexpr c = query (ExprQ c)
 qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qeval c = do
-  res <- loop $ QueryInput (EvalQ c)
-  return $ toAChange res
+qeval c = query (EvalQ c)
 
 -- The main fixpoint loop
-loop :: FixInput -> FixDemandR x s e AFixChange
-loop fixinput = do
-  memo fixinput $ \i ->
-    case i of
-      QueryInput q -> do
-        refine <- getRefine (queryEnv q)
-        let nq = refineQuery q refine
-        newQuery nq (\queryStr -> do
-            trace (queryStr ++ show nq) $ return ()
-            x <- doQuery nq queryStr
-            trace (queryStr ++ "==> " ++ show x) $ return x
-          )
-      EnvInput env -> return (FE env)
+query :: Query -> FixDemandR x s e AChange
+query q = do
+  refine <- getRefine (queryEnv q)
+  let nq = refineQuery q refine
+  -- Memoize at this point the refined query, otherwise we don't get separate refinements in the cache
+  res <- memo (QueryInput nq) $ 
+    newQuery nq (\queryStr -> do
+        trace (queryStr ++ show nq) $ return ()
+        x <- case nq of
+                CallQ _ -> doCall nq queryStr
+                ExprQ _ -> doExpr nq queryStr
+                EvalQ _ -> doEval nq queryStr  
+        trace (queryStr ++ "==> " ++ show x) $ return x
+      )
+  return $ toAChange res
 
-doQuery :: Query -> String -> FixDemandR x s e AChange
-doQuery q query = do
-  case q of
-    CallQ c -> doCall q query
-    ExprQ c -> doExpr q query
-    EvalQ c -> doEval q query
+refine :: EnvCtx -> FixDemandR x s e EnvCtx
+refine env = do
+  e <- memo (EnvInput env) $ return (FE env)
+  return $ toEnv e
+
+getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
+getRefine env =
+  if isFullyDetermined env then return env else
+  case env of
+    EnvCtx cc tail -> 
+        each [
+          refine env,
+          do
+            tailRefine <- getRefine tail
+            return (EnvCtx cc tailRefine)]  
+    EnvTail cc -> refine env
 
 bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))
 bindExternal var@(Var tn@(TName name tp _) vInfo) = do
@@ -524,21 +519,21 @@ getResults q = do
 fixedEval :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedEval e env = do
   let q = EvalQ (e, env)
-  loop (QueryInput q)
+  query q
   trace "Finished eval" $ return ()
   getResults q
 
 fixedExpr :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedExpr e env = do
   let q = ExprQ (e, env)
-  loop (QueryInput q)
+  query q
   trace "Finished expr" $ return ()
   getResults q
 
 fixedCall :: ExprContext -> EnvCtx -> FixDemandR x s e [(EnvCtx, AbValue)]
 fixedCall e env = do
   let q = CallQ (e, env)
-  loop (QueryInput q)
+  query q
   trace "Finished call" $ return ()
   getResults q
 

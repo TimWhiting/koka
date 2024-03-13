@@ -25,7 +25,7 @@ module Core.Demand.AbstractValue(
                           indeterminateStaticCtx,maybeModOfEnv,maybeModOfCtx,
                           refineCtx,
                           limitm,limitmenv,
-                          ccDeterminedEnv, ccDetermined,
+                          isFullyDetermined, ccDetermined,
                           envtail,envhead
                         ) where
 import Data.Map.Strict as M hiding (map)
@@ -376,10 +376,10 @@ refineCtx (c1, c0) c =
       EnvCtx ctx tail -> EnvCtx ctx (refineCtx (c1, c0) tail)
       EnvTail ctx -> EnvTail ctx
 
-ccDeterminedEnv :: EnvCtx -> Bool
-ccDeterminedEnv env =
+isFullyDetermined :: EnvCtx -> Bool
+isFullyDetermined env =
   case env of
-    EnvCtx cc tail -> ccDetermined cc && ccDeterminedEnv tail
+    EnvCtx cc tail -> ccDetermined cc && isFullyDetermined tail
     EnvTail cc -> ccDetermined cc
 
 ccDetermined :: Ctx -> Bool
