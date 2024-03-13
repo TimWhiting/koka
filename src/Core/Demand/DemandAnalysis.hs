@@ -530,7 +530,7 @@ analyzeEachChild analyze ctx = do
 instance Label (FixOutput m) where
   label (A a) = ""
   label (E e) = ""
-  label N = "nothing"
+  label N = "⊥"
 
 instance Label FixInput where
   label (QueryInput q) = show q
