@@ -325,7 +325,7 @@ branchVars (C.Branch pat guards) = Data.Set.toList $ bv pat
 
 findApplicationFromRange :: UserProgram -> Range -> Maybe UserExpr
 findApplicationFromRange prog rng =
-  findInDefGs (programDefs prog)
+  trace ("Looking for app at " ++ show rng) $ findInDefGs (programDefs prog)
   where
     findInDefGs :: S.DefGroups UserType -> Maybe UserExpr
     findInDefGs defgs = case mapMaybe findInDefG defgs of
@@ -334,12 +334,13 @@ findApplicationFromRange prog rng =
     findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
       case def of
         S.DefNonRec df -> findInDef df
-        S.DefRec dfs -> case mapMaybe findInDef dfs of [l] -> Just l; _ -> Nothing
+        S.DefRec dfs -> case mapMaybe findInDef dfs of l:_ -> Just l; _ -> Nothing
     findInDef :: UserDef -> Maybe UserExpr
     findInDef def =
       case def of
-        S.Def vb rng0 _ _ _ _ -> -- trace ("Looking in def " ++ show def) $ 
-          if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else Nothing
+        S.Def vb rng0 _ _ _ _ -> 
+          -- trace ("Looking in def " ++ show def) $ 
+          if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else findInBinder vb
     findInBinder :: ValueBinder () UserExpr -> Maybe UserExpr
     findInBinder vb =
       case vb of
@@ -347,23 +348,26 @@ findApplicationFromRange prog rng =
           findInExpr e
     findInExpr :: UserExpr -> Maybe UserExpr
     findInExpr e =
-      trace ("Looking in expr " ++ show e) $ 
+      -- trace ("Looking in expr " ++ show e) $ 
+      let rng0 = getRange e in
+      if not (rng `rangesOverlap` rng0) then Nothing else
+      if rng == rng0 then Just e else
       case e of
         S.Lam _ body rng0 -> findInExpr body
-        S.App f args rng0 -> if rng `rangesOverlap` rng0 then case mapMaybe findInExpr (map snd args ++ [f]) of x:_ -> Just x; _ -> Just e else Nothing
-        S.Let dg body _ ->
+        S.App f args rng0 -> case mapMaybe findInExpr (map snd args ++ [f]) of x:_ -> Just x; _ -> Just e
+        S.Let dg body rng0 ->
           case findInExpr body of
             Just x -> Just x
             _ -> findInDefG dg
         S.Bind d e _ ->
-          case findInExpr e of
+          case findInDef d of
             Just x -> Just x
-            _ -> findInDef d
+            _ -> findInExpr e
         S.Case e bs _ ->
           case findInExpr e of
             Just x -> Just x
             _ -> case mapMaybe findInBranch bs of
-              [x] -> Just x
+              x:_ -> Just x
               _ -> Nothing
         S.Parens e _ _ _ -> findInExpr e
         S.Inject _ e _ _ -> findInExpr e
@@ -374,9 +378,9 @@ findApplicationFromRange prog rng =
           let exprs = catMaybes [init, ret, fin]
               exprs' = mapMaybe findInExpr exprs
           in case exprs' of
-            [x] -> Just x
+            x:_ -> Just x
             _ -> case mapMaybe findInHandlerBranch bs of
-              [x] -> Just x
+              x:_ -> Just x
               _ -> Nothing
     findInHandlerBranch :: S.HandlerBranch UserType -> Maybe UserExpr
     findInHandlerBranch (S.HandlerBranch _ _ body _ _ _) = findInExpr body
