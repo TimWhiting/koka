@@ -127,7 +127,7 @@ showContextPath ctx =
     ExprCTerm _ _ -> "Query Error"
 
 lamVar :: Int -> ExprContext -> C.Expr
-lamVar index ctx = 
+lamVar index ctx =
   case maybeExprOfCtx ctx of
     Just x -> lamVarExpr index x
     Nothing -> trace ("DemandAnalysis.lamVar: not a lambda " ++ show ctx) error "Not a lambda"
@@ -139,7 +139,7 @@ lamVarExpr index e =
     TypeLam _ c -> lamVarExpr index c
     TypeApp c _ -> lamVarExpr index c
     _ -> error ("DemandAnalysis.lamVarExpr: not a lambda " ++ show e)
-    
+
 lamVarDef :: C.Def -> C.Expr
 lamVarDef def = C.Var (TName (C.defName def) (C.defType def) Nothing) InfoNone
 
@@ -184,7 +184,7 @@ showSimpleContext ctx =
     ModuleC{} -> "Module " ++ r
     DefCRec _ _ _ i d -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     DefCNonRec _ _ _ d -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    LamCBody _ _ tn _-> "LamBody(" ++ showSimple tn ++ ")" 
+    LamCBody _ _ tn _-> "LamBody(" ++ showSimple tn ++ ")"
     AppCLambda{} -> "AppLambda(" ++ showSimple (exprOfCtx ctx) ++ ")"
     AppCParam{} -> "AppParam(" ++ showSimple (exprOfCtx ctx) ++ ")"
     LetCDef _ _ _ i d -> "LetDef(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
@@ -232,7 +232,7 @@ instance Show ExprContext where
       ExprCTerm _ s -> "Query: " ++ s
 
 defOfCtx :: ExprContext -> C.Def
-defOfCtx ctx = 
+defOfCtx ctx =
   case ctx of
     DefCNonRec _ _ _ dg -> head $ defsOf dg
     DefCRec _ _ _ i dg -> defsOf dg !! i
@@ -314,7 +314,7 @@ modCtx ctx =
   case ctx of
     ModuleC{} -> Just ctx
     ExprCTerm{} -> Nothing
-    _ -> contextOf ctx >>= modCtx 
+    _ -> contextOf ctx >>= modCtx
 
 branchContainsBinding :: C.Branch -> TName -> Bool
 branchContainsBinding (C.Branch pat guards) name =
@@ -347,18 +347,18 @@ findApplicationFromRange prog rng =
           findInExpr e
     findInExpr :: UserExpr -> Maybe UserExpr
     findInExpr e =
-      -- trace ("Looking in expr " ++ show e) $ 
+      trace ("Looking in expr " ++ show e) $ 
       case e of
         S.Lam _ body rng0 -> findInExpr body
-        S.App f args rng0 -> if rng `rangesOverlap` rng0 then case mapMaybe findInExpr (f:map snd args) of [x] -> Just x; _ -> Nothing else Nothing
+        S.App f args rng0 -> if rng `rangesOverlap` rng0 then case mapMaybe findInExpr (map snd args ++ [f]) of x:_ -> Just x; _ -> Just e else Nothing
         S.Let dg body _ ->
-          case findInDefG dg of
+          case findInExpr body of
             Just x -> Just x
-            _ -> findInExpr body
+            _ -> findInDefG dg
         S.Bind d e _ ->
-          case findInDef d of
+          case findInExpr e of
             Just x -> Just x
-            _ -> findInExpr e
+            _ -> findInDef d
         S.Case e bs _ ->
           case findInExpr e of
             Just x -> Just x
@@ -556,21 +556,21 @@ lookupDef def tname = C.defName def == C.getName tname && tnameType tname == C.d
 
 showSyntaxDef :: Int -> S.Def UserType -> String
 showSyntaxDef indent (S.Def binder range vis sort inline doc)
-  = concat (replicate indent " ") ++ "val " ++ show (nameStem $ binderName binder) ++ " = " ++ showSyntax indent (binderExpr binder)
+  = concat (replicate indent " ") ++ "val " ++ nameStem (binderName binder) ++ " = " ++ showSyntax indent (binderExpr binder)
 
 showValBinder :: ValueBinder (Maybe UserType) (Maybe (S.Expr UserType)) -> String
 showValBinder (ValueBinder name (Just tp) (Just expr) nameRange range)
-  = show (nameStem name) ++ " = " ++ show expr
+  = nameStem name ++ " = " ++ showSyntax 0 expr
 showValBinder (ValueBinder name Nothing (Just expr) nameRange range)
-  = show (nameStem name) ++ " = " ++ show expr
+  = nameStem name ++ " = " ++ showSyntax 0 expr
 showValBinder (ValueBinder name (Just tp) Nothing nameRange range)
-  = show (nameStem name)
+  = nameStem name
 showValBinder (ValueBinder name Nothing Nothing nameRange range)
-  = show (nameStem name)
+  = nameStem name
 
 showArg :: (Maybe (Name,Range),S.Expr UserType) -> String
 showArg (Nothing,expr) = showSyntax 0 expr
-showArg (Just (name,_),expr) = show (nameStem name) ++ "= " ++ showSyntax 0 expr
+showArg (Just (name,_),expr) = nameStem name ++ "= " ++ showSyntax 0 expr
 
 allDefs :: S.DefGroup UserType -> [S.Def UserType]
 allDefs defs =
@@ -586,7 +586,7 @@ showSyntax indent (S.Let defs expr range) =
   intercalate ("\n" ++ concat (replicate indent " ")) (map (showSyntaxDef indent) (allDefs defs)) ++
   "\n" ++ concat (replicate indent " ") ++ showSyntax (indent + 2) expr
 showSyntax indent (Bind def expr range) =
-  showSyntaxDef indent def ++ "\n" ++ concat (replicate indent " ") ++ showSyntax (indent + 2) expr
+  showSyntaxDef indent def ++ "\n" ++ concat (replicate indent " ") ++ showSyntax indent expr
 showSyntax indent (S.App (S.Var name _ _) args range) | name == nameOpExpr =
   unwords (map showArg args)
 showSyntax indent (S.App fun args range)  =

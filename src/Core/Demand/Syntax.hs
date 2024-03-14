@@ -107,8 +107,12 @@ getAbResult (envctx, res) = do
 
 toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
 toSynConstr ctx = do
-  app <- findSourceExpr ctx
-  return (Just $ show app)
+  (x, y) <- findSourceExpr ctx
+  return $ case x of
+    Just x -> Just $ showSyntax 0 x
+    _ -> case y of
+      Just y -> Just $ showSyntaxDef 0 y
+      _ -> Nothing
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv (EnvCtx env tail) = do
@@ -165,7 +169,7 @@ findSourceExpr ctx =
     findForApp rng = do
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, rng) of
-        (Just prog, Just rng) -> -- trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ 
+        (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ 
           return (findApplicationFromRange prog rng, Nothing)
         _ -> trace ("No program or rng" ++ show rng ++ " " ++ show program) $ return (Nothing, Nothing)
 
