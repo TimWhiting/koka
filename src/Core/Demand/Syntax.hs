@@ -37,8 +37,8 @@ findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
 findContext r ri = do
   ctx <- currentContext <$> getEnv
   case ctx of
-    ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng -> 
-      trace ("found overlapping range " ++ showFullRange "" rng ++ " " ++ show ctx) $ 
+    ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng ->
+      trace ("found overlapping range " ++ showFullRange "" rng ++ " " ++ show ctx) $
         return ctx
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
       doBottom
@@ -60,7 +60,7 @@ runEvalQueryFromRangeSource :: BuildContext
 runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   (lattice, r, bc) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
     createPrimitives
-    let q = EvalQ (ctx, (indeterminateStaticCtx ctx))
+    let q = EvalQ (ctx, indeterminateStaticCtx ctx)
     query q
     addResult q
   return (r, bc)
@@ -73,9 +73,9 @@ runQueryAtRange :: BuildContext
 runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)
-  (l, s, (r, bc)) <- 
-    runFixFinish (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ()) 
-                 (State bc M.empty 0 M.empty 0 S.empty M.empty ()) $ do
+  (l, s, (r, bc)) <-
+    runFixFinish (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ())
+                 (State bc M.empty 0 M.empty 0 S.empty M.empty M.empty ()) $ do
                     runFixCont $ do
                             ctx <- analyzeEachChild (const $ findContext r ri) modCtx
                             doQuery ctx
@@ -100,9 +100,9 @@ getAbResult (envctx, res) = do
   consts <- mapM toSynConstr cs
   sourceLams <- mapM findSourceExpr lams
   let (sourceLambdas, sourceDefs) = unzip sourceLams
-  return $ trace 
+  return $ trace
     ("eval " ++ showSimpleEnv envctx ++
-     "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n") 
+     "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
     (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes))
 
 toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
@@ -216,7 +216,7 @@ topTypesOf :: AbValue -> Set Type
 topTypesOf ab =
   S.fromList $ catMaybes (
     map maybeTopI (M.elems (intV ab)) ++
-    map maybeTopD (M.elems (floatV ab)) ++ 
-    map maybeTopC (M.elems (charV ab)) ++ 
+    map maybeTopD (M.elems (floatV ab)) ++
+    map maybeTopC (M.elems (charV ab)) ++
     map maybeTopS (M.elems (stringV ab))
   )

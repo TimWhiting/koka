@@ -42,20 +42,23 @@ import Control.Monad (zipWithM)
 import Debug.Trace (trace)
 import Data.List (find)
 
-type FixDemandR x s e a = FixT (DEnv e) (State x s) FixInput FixOutput AFixChange a
-type FixDemand x s e = FixDemandR x s e (FixOutput AFixChange)
-type PostFixR x s e a = FixIn (DEnv e) (State x s) FixInput FixOutput AFixChange a
-type PostFix x s e = PostFixR x s e (FixOutput AFixChange)
+type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
+type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
+type PostFixR r s e a = FixIn (DEnv e) (State r e s) FixInput FixOutput AFixChange a
+type PostFix r s e = PostFixR r s e (FixOutput AFixChange)
 
-data State a x = State{
+data State r e s = State{
   buildc :: BuildContext,
   states :: M.Map ExprContextId ExprContext,
   maxContextId :: Int,
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
   unique :: Int,
-  finalResults :: Set a,
-  primitives :: M.Map Name ExprContext,
-  additionalState :: x
+  finalResults :: Set r,
+  -- Evaluators given an application site / environment of a primitive (what does the application evaluate to)
+  primitives :: M.Map Name ((ExprContext,EnvCtx) -> FixDemandR r s e AChange),
+  -- Expression relation for an application site / environment of a primitive (where does the i'th parameter flow to)
+  eprimitives :: M.Map Name (Int -> (ExprContext,EnvCtx) -> FixDemandR r s e AChange),
+  additionalState :: s
 }
 
 
@@ -226,32 +229,33 @@ instance Monoid (FixOutput d) where
   mempty = N
 
 ------------------------ Navigating the syntax tree ----------------------------------
-focusParam :: Maybe Int -> ExprContext -> FixDemandR x s e ExprContext
+focusParam :: Int -> ExprContext -> FixDemandR x s e ExprContext
 focusParam index e = do
   children <- childrenContexts e
   query <- getQueryString
-  return $ case index of
-    Just x | x + 1 < length children -> children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
-    _ -> error (query ++ "Children looking for param " ++ show children ++ " in " ++ show e ++ " index " ++ show index) Nothing
+  case index of
+    x | x + 1 < length children -> return $ children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
+    _ -> error (query ++ "Children looking for param " ++ show children ++ " in " ++ show e ++ " index " ++ show index)
 
 focusBody :: ExprContext -> FixDemandR x s e ExprContext
 focusBody e = do
   children <- childrenContexts e
   query <- getQueryString
-  return $ case find (\x -> case x of
+  case find (\x -> case x of
               LamCBody{} -> True
               _ -> False) children of
-    Just x -> x
-    Nothing -> error (query ++ "Children looking for body " ++ show children) Nothing
+    Just x -> return x
+    Nothing -> error (query ++ "Children looking for body " ++ show children)
 
 focusChild :: ExprContext -> Int -> FixDemandR x s e ExprContext
 focusChild e index = do
   children <- childrenContexts e
+  trace ("Focused child " ++ show children) $ return ()
   query <- getQueryString
-  return $ if index < length children then
-    -- trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
-      children !! index
-    else error (query ++ "Children looking for child at " ++ show index ++ " " ++ show children) Nothing
+  if index < length children then
+    trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
+      return $ children !! index
+    else error (query ++ "Children looking for child at " ++ show index ++ " " ++ show children)
 
 
 ------------------ State and Environment Helpers -----------------------------------
@@ -410,10 +414,10 @@ childrenContexts ctx = do
                 ExprCBasic{} -> return []
                 ExprCTerm{} -> return []
           addChildrenContexts parentCtxId newCtxs
-          -- trace ("Got children for " ++ show ctx ++ " " ++ show newCtxs) $ return newCtxs
+          -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs) $ return newCtxs
           return newCtxs
       Just childIds -> do
-        -- trace ("Got children for " ++ show ctx ++ " " ++ show childIds) $ return ()
+        -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show childIds) $ return ()
         states <- states <$> getState
         return $! map (states M.!) (S.toList childIds)
 

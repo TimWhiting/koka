@@ -55,6 +55,7 @@ import Type.Type
 import Compile.Build (runBuild)
 import Kind.Kind
 import Data.Functor ((<&>))
+import Common.Failure (assertion)
 
 -- Refines a query given a more specific environment
 refineQuery :: Query -> EnvCtx -> Query
@@ -87,6 +88,7 @@ qeval c = query (EvalQ c)
 -- The main fixpoint loop
 query :: Query -> FixDemandR x s e AChange
 query q = do
+  trace (show q) $ return ()
   res <- memo (QueryInput q) $ do
     let cq = newQuery q (\queryStr -> do
                 trace (queryStr ++ show q) $ return ()
@@ -105,7 +107,7 @@ query q = do
 
 refine :: EnvCtx -> FixDemandR x s e EnvCtx
 refine env = do
-  e <- memo (EnvInput env) $ doBottom
+  e <- memo (EnvInput env) doBottom
   return $ toEnv e
 
 getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
@@ -208,25 +210,49 @@ createPrimitives = do
   let modName = newName "primitives"
       modCtx = ModuleC newModId (moduleNull modName) modName
   do
-    let tvar = TypeVar 0 (kindFun kindStar kindStar) Bound
-        x = TName (newName "x") (TVar tvar) Nothing
-        lamExpr = Lam [x] effectEmpty (Var x InfoNone)
-        def = makeDef nameEffectOpen (TypeLam [tvar] lamExpr)
-        newCtx newId = DefCNonRec newId modCtx [defTName def] (C.DefNonRec def)
-    ctx <- addContextId (\id -> newCtx id)
-    addPrimitive nameEffectOpen ctx
+    addPrimitive nameEffectOpen (\(ctx, env) -> do
+            -- Open applied to some function results in that function
+            trace ("OPEN Primitive: " ++ show ctx) $ return ()
+            ctx' <- focusParam 0 ctx
+            qeval (ctx', env)
+          )
+    addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
+        assertion ("EffectOpen: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) (i == 0) $ return ()
+        trace ("OPEN Primitive: " ++ show ctx) $ return ()
+        -- Open's first parameter is a function and flows anywhere that the application flows to
+        qexpr (fromJust $ contextOf ctx, env)
+      )
   return ()
 
-addPrimitive :: Name -> ExprContext -> FixDemandR x s e ()
-addPrimitive name ctx = do
-  updateState (\state -> state{primitives = M.insert name ctx (primitives state)})
+addPrimitive :: Name -> ((ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
+addPrimitive name m = do
+  updateState (\state -> state{primitives = M.insert name m (primitives state)})
 
-getPrimitive :: TName -> FixDemandR x s e AChange
-getPrimitive name = do
+addPrimitiveExpr :: Name -> (Int -> (ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
+addPrimitiveExpr name m = do
+  updateState (\state -> state{eprimitives = M.insert name m (eprimitives state)})
+
+isPrimitive :: ExprContext -> FixDemandR x s e Bool
+isPrimitive ctx = do
   prims <- primitives <$> getState
-  case M.lookup (getName name) prims of
-    Just ctx -> qeval (ctx, EnvTail TopCtx)
-    Nothing -> error ("getPrimitive: " ++ show name)
+  case maybeExprOfCtx ctx of
+    Just (Var tn _)  ->
+      return $ M.member (getName tn) prims
+    _ -> return False
+
+evalPrimitive :: ExprContext -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
+evalPrimitive (ExprCBasic _ _ (Var tn _)) ctx env = do
+  prims <- primitives <$> getState
+  case M.lookup (getName tn) prims of
+    Just m -> m (ctx, env)
+    Nothing -> error ("evalPrimitive: Primitive not found! " ++ show tn)
+
+exprPrimitive :: ExprContext -> Int -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
+exprPrimitive (ExprCBasic _ _ (Var tn _)) index ctx env = do
+  prims <- eprimitives <$> getState
+  case M.lookup (getName tn) prims of
+    Just m -> m index (ctx, env)
+    Nothing -> error ("exprPrimitive: Primitive not found! " ++ show tn)
 
 doEval :: Query -> String -> FixDemandR x s e AChange
 doEval cq@(EvalQ (ctx, env)) query = do
@@ -237,52 +263,55 @@ doEval cq@(EvalQ (ctx, env)) query = do
         Lam{} -> -- LAM CLAUSE
           -- trace (query ++ "LAM: " ++ show ctx) $
           return $! AChangeClos ctx env
-        v@(Var n _) | getName n == nameEffectOpen -> do
-          getPrimitive n
         v@(Var tn _) -> do -- REF CLAUSE
-        -- TODO: Consider static overloading
-          -- trace (query ++ "REF: " ++ show ctx) $ return []
-  -- REF: 
-  --  - When the binding is focused on a lambda body, we need to find the callers of the lambda, and proceed as original formulation. 
-  --  - When the binding is in the context of a Let Body we can directly evaluate the let binding as the value of the variable being bound (indexed to match the binding).
-  --  - When the binding is in the context of a Let binding, it evaluates to that binding or the indexed binding in a mutually recursive group 
-  --  - When the binding is a top level definition - it evaluates to that definition 
-  --  - When the binding is focused on a match body then we need to issue a sub-query for the evaluation of the match expression that contributes to the binding, 
-  --         and then consider the abstract value and find all abstract values that match the pattern of the branch in question 
-  --         and only consider the binding we care about. 
-  --         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the sub-query to disregard traces that don’t contribute
-          -- trace (query ++ "REF: " ++ show ctx) $ return []
-          let binded = bind ctx v env
-          -- trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
-          case binded of
-            BoundLam lamctx lamenv index -> do
-              AChangeClos appctx appenv <- qcall (lamctx, lamenv)
-              trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
-              param <- focusParam (Just index) appctx
-              qeval (param, appenv)
-            BoundDef parentCtx ctx boundEnv index -> do
-              param <- focusChild parentCtx index
-              qeval (ctx, boundEnv)
-            BoundDefRec parentCtx ctx boundEnv index -> do
-              param <- focusChild parentCtx index
-              qeval (ctx, boundEnv)
-            BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
-              mscrutinee <- focusChild parentCtx 0
-              -- trace (query ++ "REF: scrutinee of case " ++ show scrutinee) $ return []
-              evalPatternRef mscrutinee caseEnv patBinding
-            BoundModule modulectx modenv -> do
-              lamctx <- getTopDefCtx modulectx (getName tn)
-              -- Evaluates just to the lambda
-              qeval (lamctx, EnvTail TopCtx)
-            BoundError e -> error "Binding Error"
-            BoundGlobal _ _ -> do
-              ext <- bindExternal v
-              case ext of
-                Just (modulectx@ModuleC{}, index) -> do
-                  lamctx <- getTopDefCtx modulectx (getName tn)
-                  -- Evaluates just to the lambda
-                  qeval (lamctx, EnvTail TopCtx)
-                _ -> error $ "REF: can't find what the following refers to " ++ show ctx
+          prim <- isPrimitive ctx
+          if prim then do
+            trace (query ++ "REF: Primitive " ++ show tn) $ return ()
+            return (AChangeClos ctx env)
+          else do
+          -- TODO: Consider static overloading
+            -- trace (query ++ "REF: " ++ show ctx) $ return []
+    -- REF: 
+    --  - When the binding is focused on a lambda body, we need to find the callers of the lambda, and proceed as original formulation. 
+    --  - When the binding is in the context of a Let Body we can directly evaluate the let binding as the value of the variable being bound (indexed to match the binding).
+    --  - When the binding is in the context of a Let binding, it evaluates to that binding or the indexed binding in a mutually recursive group 
+    --  - When the binding is a top level definition - it evaluates to that definition 
+    --  - When the binding is focused on a match body then we need to issue a sub-query for the evaluation of the match expression that contributes to the binding, 
+    --         and then consider the abstract value and find all abstract values that match the pattern of the branch in question 
+    --         and only consider the binding we care about. 
+    --         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the sub-query to disregard traces that don’t contribute
+            -- trace (query ++ "REF: " ++ show ctx) $ return []
+            let binded = bind ctx v env
+            -- trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
+            case binded of
+              BoundLam lamctx lamenv index -> do
+                AChangeClos appctx appenv <- qcall (lamctx, lamenv)
+                trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
+                param <- focusParam index appctx
+                qeval (param, appenv)
+              BoundDef parentCtx ctx boundEnv index -> do
+                param <- focusChild parentCtx index
+                qeval (ctx, boundEnv)
+              BoundDefRec parentCtx ctx boundEnv index -> do
+                param <- focusChild parentCtx index
+                qeval (ctx, boundEnv)
+              BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
+                mscrutinee <- focusChild parentCtx 0
+                -- trace (query ++ "REF: scrutinee of case " ++ show scrutinee) $ return []
+                evalPatternRef mscrutinee caseEnv patBinding
+              BoundModule modulectx modenv -> do
+                lamctx <- getTopDefCtx modulectx (getName tn)
+                -- Evaluates just to the lambda
+                qeval (lamctx, EnvTail TopCtx)
+              BoundError e -> error "Binding Error"
+              BoundGlobal _ _ -> do
+                ext <- bindExternal v
+                case ext of
+                  Just (modulectx@ModuleC{}, index) -> do
+                    lamctx <- getTopDefCtx modulectx (getName tn)
+                    -- Evaluates just to the lambda
+                    qeval (lamctx, EnvTail TopCtx)
+                  _ -> error $ "REF: can't find what the following refers to " ++ show ctx
         App (TypeApp (Con nm repr) _) args -> do
           trace (query ++ "APPCon: " ++ show ctx) $ return []
           children <- childrenContexts ctx
@@ -296,15 +325,20 @@ doEval cq@(EvalQ (ctx, env)) query = do
           fun <- focusChild ctx 0
           -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
           AChangeClos lam lamenv <- qeval (fun, env)
-          -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
-          bd <- focusBody lam
-          -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-          childs <- childrenContexts ctx
-          -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
-          succ <- succAEnv ctx env
-          let newEnv = EnvCtx succ lamenv
-          result <- qeval (bd, newEnv)
-          qeval (bd, newEnv)
+          prim <- isPrimitive lam
+          if prim then do
+            trace (query ++ "APP: Primitive " ++ show lam) $ return ()
+            evalPrimitive lam ctx env
+          else do
+            -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
+            bd <- focusBody lam
+            -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
+            childs <- childrenContexts ctx
+            -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
+            succ <- succAEnv ctx env
+            let newEnv = EnvCtx succ lamenv
+            result <- qeval (bd, newEnv)
+            qeval (bd, newEnv)
         TypeApp{} ->
           trace (query ++ "TYPEAPP: " ++ show ctx) $
           case ctx of
@@ -312,7 +346,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
             DefCRec{} -> return $! AChangeClos ctx env
             _ -> do
               ctx' <- focusChild ctx 0
-              qeval (ctx,env)
+              qeval (ctx',env)
         TypeLam{} ->
           trace (query ++ "TYPE LAM: " ++ show ctx) $
           case ctx of
@@ -320,7 +354,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
             DefCRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
             _ -> do
               ctx' <- focusChild ctx 0
-              qeval (ctx,env)
+              qeval (ctx',env)
         Lit l -> return $! injLit l env
         Let defs e -> do
           trace (query ++ "LET: " ++ show ctx) $ return []
@@ -424,15 +458,20 @@ doExpr cq@(ExprQ (ctx,env)) query = do
       fn <- focusChild c 0
       -- trace (query ++ "OPERAND: Evaluating To Closure " ++ showCtxExpr fn) $ return []
       AChangeClos lam lamenv <- qeval (fn, env)
-      -- trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
-      bd <- focusBody lam
-      -- trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
-      -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
-      succ <- succAEnv c env
-      m <- contextLength <$> getEnv
-      call <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
-      -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
-      qexpr call
+      prim <- isPrimitive lam
+      if prim then do
+        trace (query ++ "OPERAND: Primitive " ++ show lam) $ return ()
+        exprPrimitive lam index ctx env
+      else do
+        trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
+        bd <- focusBody lam
+        -- trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
+        -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
+        succ <- succAEnv c env
+        m <- contextLength <$> getEnv
+        call <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
+        -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
+        qexpr call
     LamCBody _ _ _ e -> do -- BODY Clause
       -- trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
       AChangeClos lamctx lamenv <- qcall (ctx, env)
