@@ -109,7 +109,7 @@ unrollBody def tpars pars eff body
                          sub  = [(dname, Var rname info)]
                          rdef = def{ defName = getName rname, defExpr = (sub |~> defExpr def), defVis = Private }
 
-                         rcall = App (makeTypeApp (Var rname info) [TVar tv | tv <- tpars]) [Var v InfoNone | v <- pars]
+                         rcall = App (makeTypeApp (Var rname info) [TVar tv | tv <- tpars]) [Var v InfoNone | v <- pars] Nothing
                          wild = Branch (map (\_ -> PatWild) pats) [Guard exprTrue rcall]
                          mkFun b = (if null tpars then id else TypeLam tpars) (Lam pars eff b)
                          ddef = def{ defExpr = mkFun (Case exprs (nonrecbs ++ [wild])), defInline = InlineAlways,

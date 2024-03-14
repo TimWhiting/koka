@@ -448,7 +448,7 @@ parseApp env
   where
     parseApplies expr
       = do args <- parensCommas (parseExpr env)
-           parseApplies (App expr args)
+           parseApplies (App expr args Nothing)
         <|>
         do tps  <- angles (ptype env `sepBy` comma)
            parseApplies (makeTypeApp expr tps)

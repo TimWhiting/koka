@@ -166,10 +166,10 @@ liftExpr :: Bool
          -> Lift Expr
 liftExpr topLevel expr
   = case expr of
-    App f args
+    App f args rng
       -> do f' <- liftExpr False f
             args' <- mapM (liftExpr False) args
-            return (App f' args')
+            return (App f' args' rng)
 
     Lam args eff body  -- don't lift anonymous functions
       -> do body' <- liftExpr False body
@@ -252,7 +252,7 @@ makeDef fvs tvs (pinfos, (origName, (expr, doc)))
       = case (tvs,fvs) of
          ([],[]) -> funExpr name
          _ -> addTypeLambdas tpars $ Lam pars eff $
-               App (addTypeApps (alltpars) (funExpr name)) (allargs)
+               App (addTypeApps (alltpars) (funExpr name)) (allargs) Nothing
 
 liftBranch :: Branch -> Lift Branch
 liftBranch (Branch pat guards)
@@ -280,10 +280,10 @@ uniqueNameCurrentDef =
 isSimpleFunc :: Expr -> Bool
 isSimpleFunc expr =
   case expr of
-    Lam pars _ (App _ args) -> all isSimpleArg args
-    TypeLam tpars (Lam pars _ (App (TypeApp _ targs) args))
+    Lam pars _ (App _ args rng) -> all isSimpleArg args
+    TypeLam tpars (Lam pars _ (App (TypeApp _ targs) args rng))
       -> all isSimpleTArg targs && all isSimpleArg args
-    TypeLam tpars (Lam pars _ (App _ args)) -> all isSimpleArg args
+    TypeLam tpars (Lam pars _ (App _ args rng)) -> all isSimpleArg args
     _ -> False
  where -- The definition of simple arguments can be extended.
        isSimpleTArg TCon{}        = True
@@ -294,7 +294,7 @@ isSimpleFunc expr =
        isSimpleArg Con{}      = True
        isSimpleArg Lit{}      = True
        isSimpleArg (Var x _)  = True
-       isSimpleArg (App e es) = all isSimpleArg (e:es)
+       isSimpleArg (App e es rng) = all isSimpleArg (e:es)
        isSimpleArg _          = False
 
 {--------------------------------------------------------------------------

@@ -112,7 +112,7 @@ instance HasExpVar Expr where
   -- extract free variables from an expression
   fv (Lam tnames eff expr)= foldr S.delete (fv expr) tnames
   fv (Var tname info)     = S.singleton tname
-  fv (App e1 e2)          = fv e1 `S.union` fv e2
+  fv (App e1 e2 _)          = fv e1 `S.union` fv e2
   fv (TypeLam tyvar expr) = fv expr
   fv (TypeApp expr ty)    = fv expr
   fv (Con tname repr)     = S.empty
@@ -176,7 +176,7 @@ instance HasExprVar Expr where
                               let sub' = [(name,e) | (name,e) <- sub, all (name /=) tnames]
                               in Lam tnames eff (sub' |~> expr)
       Var tname info       -> fromMaybe expr (lookup tname sub)
-      App e1 e2            -> App (sub |~> e1) (sub |~> e2)
+      App e1 e2 rng            -> App (sub |~> e1) (sub |~> e2) rng
       TypeLam typeVars exp -> {- assertion ("CoreVar.HasExprVar.Expr.|~>.TypeLam: typevars: " ++ show typeVars ++ ",\n sub: " ++ show sub ++ "\n expr:" ++ show expr)
                                         (all (\tv -> not (tvsMember tv (ftv (map snd sub)))) typeVars
                                           || all (\name -> not (S.member name (fv exp) )) (map fst sub)) $ -}

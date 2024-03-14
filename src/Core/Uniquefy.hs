@@ -167,9 +167,9 @@ uniquefyExprX expr
                               case M.lookup (getName tname) renaming of
                                 Just name -> return $ Var (TName name (typeOf tname) (originalRange tname)) info
                                 Nothing   -> return expr
-      App f args        -> do f1 <- uniquefyExprX f
-                              args1 <- mapM uniquefyExprX args
-                              return (App f1 args1)
+      App f args rng       -> do  f1 <- uniquefyExprX f
+                                  args1 <- mapM uniquefyExprX args
+                                  return (App f1 args1 rng)
       TypeLam tvs expr  -> do expr1 <- uniquefyExprX expr
                               return (TypeLam tvs expr1)
       TypeApp expr tps  -> do expr1 <- uniquefyExprX expr

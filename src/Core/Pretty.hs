@@ -347,7 +347,7 @@ prettyExpr env (Var tname varInfo)
           InfoExternal f -> empty -- braces (text"@")
           _ -> empty
 
-prettyExpr env (App a args)
+prettyExpr env (App a args _)
   = pparens (prec env) precApp $
     prettyExpr (decPrec env') a <.> tupled [prettyExpr env' a | a <- args]
   where
@@ -652,7 +652,7 @@ instance HasTypeVar Expr where
     = case expr of
         Lam tnames eff expr -> Lam (sub `substitute` tnames) (sub `substitute` eff) (sub `substitute` expr)
         Var tname info    -> Var (sub `substitute` tname) info
-        App f args        -> App (sub `substitute` f) (sub `substitute` args)
+        App f args rng       -> App (sub `substitute` f) (sub `substitute` args) rng
         TypeLam tvs expr  -> let sub' = subRemove tvs sub
                               in TypeLam tvs (sub' |-> expr)
         TypeApp expr tps   -> TypeApp (sub `substitute` expr) (sub `substitute` tps)
@@ -665,7 +665,7 @@ instance HasTypeVar Expr where
     = let tvs = case expr of
                   Lam tname eff expr -> tvsUnions [ftv tname, ftv eff, ftv expr]
                   Var tname info     -> ftv tname
-                  App a b            -> ftv a `tvsUnion` ftv b
+                  App a b _           -> ftv a `tvsUnion` ftv b
                   TypeLam tvs expr   -> tvsRemove tvs (ftv expr)
                   TypeApp expr tp    -> ftv expr `tvsUnion` ftv tp
                   Con tname repr     -> ftv tname
@@ -679,7 +679,7 @@ instance HasTypeVar Expr where
     = case expr of
         Lam tname eff expr -> tvsUnions [btv tname, btv eff, btv expr]
         Var tname info     -> btv tname
-        App a b            -> btv a `tvsUnion` btv b
+        App a b _            -> btv a `tvsUnion` btv b
         TypeLam tvs expr   -> tvsInsertAll tvs (btv expr)
         TypeApp expr tp    -> btv expr `tvsUnion` btv tp
         Con tname repr     -> btv tname
@@ -691,7 +691,7 @@ instance HasTypeVar Expr where
     = let tcs = case expr of
                   Lam tname eff expr -> tcsUnions [ftc tname, ftc eff, ftc expr]
                   Var tname info     -> ftc tname
-                  App a b            -> ftc a `tcsUnion` ftc b
+                  App a b _            -> ftc a `tcsUnion` ftc b
                   TypeLam tvs expr   -> ftc expr
                   TypeApp expr tp    -> ftc expr `tcsUnion` ftc tp
                   Con tname repr     -> ftc tname

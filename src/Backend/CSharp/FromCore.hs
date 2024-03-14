@@ -466,7 +466,7 @@ etaExpand fun args n
        let types = map snd (fst (splitFun (typeOf fun)))
            tnames = zipWith (\x y -> TName x y Nothing) names types
            args'  = map (\n -> Var n InfoNone) tnames
-       return (Lam tnames typeTotal (App fun (args ++ args')))
+       return (Lam tnames typeTotal (App fun (args ++ args') Nothing))
 
 tetaExpand :: Expr -> [Type] -> Int -> Asm Expr
 tetaExpand fun [] 0 = return fun
@@ -517,52 +517,52 @@ genExpr expr
           -- note: values with a generic parameter become functions in the C# translation (i.e. nil)
 
           -- ignore .open function applications
-          App (App (TypeApp var@(Var tname (InfoExternal _)) [from,to]) [arg]) args  | getName tname == nameEffectOpen
-            -> genExpr (App arg args)
+          App (App (TypeApp var@(Var tname (InfoExternal _)) [from,to]) [arg] rng0) args rng  | getName tname == nameEffectOpen
+            -> genExpr (App arg args rng)
 
           -- int32 constants
-          App (Var tname _) [Lit (LitInt i)]  | getName tname `elem` [nameInt32,nameInternalInt32] && isSmallInt i
+          App (Var tname _) [Lit (LitInt i)] rng | getName tname `elem` [nameInt32,nameInternalInt32] && isSmallInt i
             -> result (pretty i)
 
           -- ssize_t constants
-          App (Var tname _) [Lit (LitInt i)]  | getName tname `elem` [nameSSizeT,nameInternalSSizeT] && isSmallInt i
+          App (Var tname _) [Lit (LitInt i)] rng | getName tname `elem` [nameSSizeT,nameInternalSSizeT] && isSmallInt i
             -> result (pretty i)
 
           -- function calls
           TypeApp (Var tname (InfoArity m n )) targs
             -> genStatic tname m n targs Nothing
 
-          App var@(Var tname (InfoArity m n )) args
+          App var@(Var tname (InfoArity m n )) args rng
             -> genStatic tname m n [] (Just args)
 
-          App (TypeApp (Var tname (InfoArity m n )) targs) args
+          App (TypeApp (Var tname (InfoArity m n )) targs) args rng
             -> genStatic tname m n targs (Just args)
 
           -- possible dynamic tail calls
-          App (TypeApp (Var tname InfoNone) targs) args | def == getName tname
+          App (TypeApp (Var tname InfoNone) targs) args rng | def == getName tname
             -> genTailCall expr tname targs args
 
-          App (Var tname InfoNone) args  | def == getName tname
+          App (Var tname InfoNone) args rng  | def == getName tname
             -> genTailCall expr tname [] args
 
           -- constructors
           TypeApp (Con tname repr) targs
             -> genCon tname repr targs []
 
-          App con@(Con tname repr) args
+          App con@(Con tname repr) args rng
             -> genCon tname repr [] args
 
-          App tapp@(TypeApp (Con tname repr) targs) args
+          App tapp@(TypeApp (Con tname repr) targs) args rng
             -> genCon tname repr targs args
 
           -- externals
           TypeApp (Var tname (InfoExternal formats)) targs
             -> genExternal tname formats targs []
 
-          App var@(Var tname (InfoExternal formats)) args
+          App var@(Var tname (InfoExternal formats)) args rng
             -> genExternal tname formats [] args
 
-          App (TypeApp (Var tname (InfoExternal formats)) targs) args
+          App (TypeApp (Var tname (InfoExternal formats)) targs) args rng
             -> genExternal tname formats targs args
 
 
@@ -668,7 +668,7 @@ genStatic tname m n targs mbArgs
                        assertion ("CSharp.FromCore.genStatic: tail arguments /= arguments") (length args == length parNames) $
                        do assignArguments parNames argDocs args
                           putLn (text "goto recurse;")
-                  _ -> result (kindCast ctx targs (typeOf (App (TypeApp (Var tname (InfoArity m n )) targs) args))
+                  _ -> result (kindCast ctx targs (typeOf (App (TypeApp (Var tname (InfoArity m n )) targs) args Nothing))
                                (hang 2 $ ppQName ctx (getName tname) <.>
                                  (if (null targs) then empty else angled (map (ppType ctx) targs)) <//>
                                  ({- if (null args && null targs) then empty else -} septupled argDocs)))
@@ -841,7 +841,7 @@ genExprBasic expr
                          result (ppQName ctx (getName tname))
           Con tname repr
             -> genCon tname repr [] []
-          App e es
+          App e es rng
             -> genDynamic e es
           TypeApp e ts
             -> do d <- genInline e
@@ -1001,8 +1001,8 @@ ppLocalVar ctx tp name
 isStatement :: Expr -> Bool
 isStatement expr
   = case expr of
-      App (Var _ info) _     -> not (infoIsLocal info)
-      App _ _     -> True
+      App (Var _ info) _ rng     -> not (infoIsLocal info)
+      App _ _ rng     -> True
       Let _ body  -> isStatement body
       _           -> False
 

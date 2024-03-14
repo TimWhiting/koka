@@ -75,12 +75,12 @@ ruTopLevelDef def
 ruExpr :: Expr -> Reuse Expr
 ruExpr expr
   = case expr of
-      App con@(Con cname repr) args
+      App con@(Con cname repr) args rng
         -> do args' <- mapM ruExpr args
-              ruTryReuseCon cname repr (App con args')
-      App ta@(TypeApp (Con cname repr) _) args
+              ruTryReuseCon cname repr (App con args' rng)
+      App ta@(TypeApp (Con cname repr) _) args rng
         -> do args' <- mapM ruExpr args
-              ruTryReuseCon cname repr (App ta args')
+              ruTryReuseCon cname repr (App ta args' rng)
 
       TypeLam tpars body
         -> TypeLam tpars <$> ruExpr body
@@ -88,8 +88,8 @@ ruExpr expr
         -> (`TypeApp` targs) <$> ruExpr body
       Lam pars eff body
         -> ruLam pars eff body
-      App fn args
-        -> liftM2 App (ruExpr fn) (mapM ruExpr args)
+      App fn args rng
+        -> liftM2 (\f xs -> App f xs rng) (ruExpr fn) (mapM ruExpr args)
 
       Let [] body
         -> ruExpr body
@@ -148,7 +148,7 @@ ruLet' :: Def -> Reuse (Reused -> ([TName], Expr -> Expr))
 ruLet' def
   = withCurrentDef def $
       case defExpr def of
-          App var@(Var name _) (Var tname _ : _maybe_scanfields) | getName name == nameDrop
+          App var@(Var name _) (Var tname _ : _maybe_scanfields) rng | getName name == nameDrop
             -> do ru <- ruMakeAvailable tname
                   scan <- ruGetScan tname
                   return (\reused ->
@@ -161,7 +161,7 @@ ruLet' def
                       _ -> ([], makeDefsLet [def]))
           -- See makeDropSpecial:
           -- We assume that makeDropSpecial always occurs in a definition.
-          App (Var name _) [Var y _, xUnique, rShared, xDecRef] | getName name == nameDropSpecial
+          App (Var name _) [Var y _, xUnique, rShared, xDecRef] rng | getName name == nameDropSpecial
             -> do fUnique <- ruLetExpr xUnique
                   ru <- ruMakeAvailable y
                   return (\reused ->
@@ -292,7 +292,7 @@ ruTryReuseCon cname repr conApp
 genDropReuse :: TName -> Expr {- : int32 -} -> Expr
 genDropReuse tname scan
   = App (Var (TName nameDropReuse funTp Nothing) (InfoExternal [(C CDefault, "drop_reuse(#1,#2,kk_context())")]))
-        [Var tname InfoNone, scan]
+        [Var tname InfoNone, scan] Nothing
   where
     tp    = typeOf tname
     funTp = TFun [(nameNil,tp),(nameNil,typeInt32)] typeTotal typeReuse
@@ -302,7 +302,7 @@ genDropReuse tname scan
 -- conApp should have form  App (Con _ _) conArgs    : length conArgs >= 1
 genAllocAt :: ReuseInfo -> Expr -> Expr
 genAllocAt (ReuseInfo reuseName pat) conApp
-  = App (Var (TName nameAllocAt typeAllocAt Nothing) (InfoArity 0 2)) [Var reuseName info, conApp]
+  = App (Var (TName nameAllocAt typeAllocAt Nothing) (InfoArity 0 2)) [Var reuseName info, conApp] Nothing
   where
     info = maybe InfoNone InfoReuse pat
     conTp = typeOf conApp
@@ -311,34 +311,34 @@ genAllocAt (ReuseInfo reuseName pat) conApp
 -- Generate a test if a (locally bound) name is unique
 genIsUnique :: TName -> Expr
 genIsUnique tname
-  = App (Var (TName nameIsUnique funTp Nothing) (InfoExternal [(C CDefault, "is_unique(#1)")]))
-        [Var tname InfoNone]
+  = App (Var (TName nameIsUnique funTp Nothing) (InfoExternal [(C CDefault, "is_unique(#1)")])) 
+        [Var tname InfoNone] Nothing
   where funTp = TFun [(nameNil, typeOf tname)] typeTotal typeBool
 
 -- Generate a free of a constructor
 genFree :: TName -> Expr
 genFree tname
   = App (Var (TName nameFree funTp Nothing) (InfoExternal [(C CDefault, "kk_constructor_free(#1,kk_context())")]))
-        [Var tname InfoNone]
+        [Var tname InfoNone] Nothing
   where funTp = TFun [(nameNil, typeOf tname)] typeTotal typeUnit
 
 -- Generate a drop of a reuse
 genReuseDrop :: TName -> Expr
 genReuseDrop tname
   = App (Var (TName nameReuseDrop funTp Nothing) (InfoExternal [(C CDefault, "kk_reuse_drop(#1,kk_context())")]))
-        [Var tname InfoNone]
+        [Var tname InfoNone] Nothing
   where funTp = TFun [(nameNil, typeOf tname)] typeTotal typeReuse
 
 -- Get a null token for reuse inlining
 genReuseNull :: Expr
 genReuseNull
-  = App (Var (TName nameReuseNull funTp Nothing) (InfoExternal [(C CDefault, "kk_reuse_null")])) []
+  = App (Var (TName nameReuseNull funTp Nothing) (InfoExternal [(C CDefault, "kk_reuse_null")])) [] Nothing
   where funTp = TFun [] typeTotal typeReuse
 
 -- Generate a reuse a block
 genReuseAddress :: TName -> Expr
 genReuseAddress tname
-  = App (Var (TName nameReuse funTp Nothing) (InfoExternal [(C CDefault, "reuse_datatype(#1,kk_context())")])) [Var tname InfoNone]
+  = App (Var (TName nameReuse funTp Nothing) (InfoExternal [(C CDefault, "reuse_datatype(#1,kk_context())")])) [Var tname InfoNone] Nothing
   where
     tp    = typeOf tname
     funTp = TFun [(nameNil,tp)] typeTotal typeReuse
@@ -346,7 +346,7 @@ genReuseAddress tname
 genReuseAssignWith :: TName -> Expr -> Expr
 genReuseAssignWith reuseName arg
   = let assign = TName nameAssignReuse (TFun [(nameNil,typeReuse),(nameNil,typeReuse)] typeTotal typeUnit) Nothing
-    in App (Var assign (InfoExternal [(C CDefault, "#1 = #2")])) [Var reuseName InfoNone, arg]
+    in App (Var assign (InfoExternal [(C CDefault, "#1 = #2")])) [Var reuseName InfoNone, arg] Nothing
 
 --------------------------------------------------------------------------
 -- Utilities for readability

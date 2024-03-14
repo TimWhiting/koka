@@ -159,14 +159,14 @@ topDown (Let dgs body)
 
 
 -- Remove assertions if optimized
-topDown (App assert@(Var name _) [msg,cond])  | getName name == nameAssert
+topDown (App assert@(Var name _) [msg,cond] rng)  | getName name == nameAssert
   =  do ndebug <- getNDebug
         if (ndebug)
           then return exprUnit
-          else return (App assert [msg,cond])
+          else return (App assert [msg,cond] rng)
 
 -- Remove identity open applications; need to be done before open resolve to enable tail call optimization
-topDown expr@(App app@(TypeApp (Var openName _) [effFrom,effTo,tpFrom,tpTo]) [arg])
+topDown expr@(App app@(TypeApp (Var openName _) [effFrom,effTo,tpFrom,tpTo]) [arg] rng)
   | getName openName == nameEffectOpen &&
     (hasNoEffectExpr arg ||                -- arg uses no effects, or, the open is an identity
       (matchType tlFrom tlTo && length lsFrom == length lsTo && and [matchType t1 t2 | (t1,t2) <- zip lsFrom lsTo]))
@@ -184,22 +184,22 @@ topDown expr@(App app@(TypeApp (Var openName _) [effFrom,effTo,tpFrom,tpTo]) [ar
 
 -- Remove effect open applications; only if 'unsafe' is enabled since
 -- the effect types won't match up
-topDown expr@(App app@(TypeApp (Var openName _) _) [arg])  | getName openName == nameEffectOpen
+topDown expr@(App app@(TypeApp (Var openName _) _) [arg] rng)  | getName openName == nameEffectOpen
   = do unsafe <- getUnsafe
        if (unsafe)
         then return arg
-        else do return (App app [arg])
+        else do return (App app [arg] rng)
 
 -- Remove identity externals of the form "#1"; only if 'unsafe' is enabled since
 -- usually the effect types won't match up
-topDown expr@(App app@(TypeApp (Var _ (InfoExternal [(Default,"#1")])) _) [arg])
+topDown expr@(App app@(TypeApp (Var _ (InfoExternal [(Default,"#1")])) _) [arg] rng)
   = do unsafe <- getUnsafe
        if (unsafe)
         then return arg
-        else do return (App app [arg])
+        else do return (App app [arg] rng)
 
 -- Direct function applications
-topDown expr@(App (Lam pars eff body) args) | length pars == length args
+topDown expr@(App (Lam pars eff body) args rng) | length pars == length args
   = do newNames <- mapM uniqueTName pars
        let sub = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]
            expr' = makeLet (zipWith makeDef newNames args) (sub |~> body)
@@ -210,7 +210,7 @@ topDown expr@(App (Lam pars eff body) args) | length pars == length args
 
 
 -- Direct function applications
-topDown expr@(App (TypeApp (TypeLam tpars (Lam pars eff body)) targs) args)
+topDown expr@(App (TypeApp (TypeLam tpars (Lam pars eff body)) targs) args rng)
   | length pars == length args && length tpars == length targs
   = do let tsub    = subNew (zip tpars targs)
        newNames <- -- trace ("topDown function app: " ++ show (zip tpars targs) ++ "\n expr:" ++ show expr) $
@@ -265,13 +265,13 @@ topDown (Case [Case scruts0 branches0] branches1) | doesNotDuplicate
                  _      -> False
 
 -- App of case to case of app's
-topDown expr@(App (Case scruts branches) args)
+topDown expr@(App (Case scruts branches) args rng)
   = do (sbinders,bscruts) <- bindExprs scruts
        (binders,bargs)    <- bindExprs args
        return $ sbinders (binders (Case bscruts (map (makeBranchApp bargs) branches)))
   where
     makeBranchApp bargs (Branch pats guards)  = Branch pats (map (makeGuardApp bargs) guards)
-    makeGuardApp bargs (Guard test body)      = Guard test (App body bargs)
+    makeGuardApp bargs (Guard test body)      = Guard test (App body bargs rng)
 
 
 -- TypeApp of let
@@ -279,13 +279,13 @@ topDown (TypeApp (Let binds expr) targs)
   = return (Let binds (TypeApp expr targs))
 
 -- Float let out of applications (important for TRMC)
-topDown (App f args)
+topDown (App f args rng)
   = return (floatLetApp f args)
   where
     floatLetApp f args
       = let (fbinds,fexpr)   = floatLet f
             (abindss,aexprs) = unzip (map floatLet args)
-        in makeLet (concat (fbinds:abindss)) (App fexpr aexprs)  -- note: assume unique bindings!
+        in makeLet (concat (fbinds:abindss)) (App fexpr aexprs rng)  -- note: assume unique bindings!
 
     floatLet (Let binds body)     = let (binds',body') = floatLet body in (binds ++ binds', body')
     floatLet expr                 = ([],expr)
@@ -340,7 +340,7 @@ bottomUp expr@(TypeLam tvs (TypeApp body tps))
 
 
 -- Direct function applications with arguments that have different free variables than the parameters
-bottomUp (App (Lam pars eff body) args) | length pars == length args  && all free pars
+bottomUp (App (Lam pars eff body) args rng) | length pars == length args  && all free pars
   = Let (zipWith makeDef pars args) body
   where
     makeDef (TName npar nparTp rng) arg
@@ -356,14 +356,14 @@ bottomUp (App (Lam pars eff body) args) | length pars == length args  && all fre
 
 
 -- composition extension: c[ctx hole] -> c
-bottomUp (App (TypeApp (Var cextend _) _) [ctx1, App (TypeApp (Var cempty _) _) []]) | getName cextend == nameCCtxComposeExtend && getName cempty == nameCCtxEmpty
+bottomUp (App (TypeApp (Var cextend _) _) [ctx1, App (TypeApp (Var cempty _) _) [] rng0] rng) | getName cextend == nameCCtxComposeExtend && getName cempty == nameCCtxEmpty
   = ctx1
 
 -- context composition: c ++ ctx _  == c  == ctx _ ++ c
-bottomUp (App (TypeApp (Var ctxcomp _) _) [ctx1, App (TypeApp (Var cempty _) _) []]) | getName ctxcomp == nameCCtxCompose && getName cempty == nameCCtxEmpty
+bottomUp (App (TypeApp (Var ctxcomp _) _) [ctx1, App (TypeApp (Var cempty _) _) [] rng0] rng) | getName ctxcomp == nameCCtxCompose && getName cempty == nameCCtxEmpty
   = ctx1
 
-bottomUp (App (TypeApp (Var ctxcomp _) _) [App (TypeApp (Var cempty _) _) [],ctx2]) | getName ctxcomp == nameCCtxCompose && getName cempty == nameCCtxEmpty
+bottomUp (App (TypeApp (Var ctxcomp _) _) [App (TypeApp (Var cempty _) _) [] rng0,ctx2] rng) | getName ctxcomp == nameCCtxCompose && getName cempty == nameCCtxEmpty
   = ctx2
 
 
@@ -379,11 +379,11 @@ bottomUp expr@(App (TypeApp (Var isValidK _) _) [arg])  | getName isValidK == na
 
 -- case on a single constructor, including tuples.
 -- extracts the arguments to do a direct multi-pattern match
-bottomUp expr@(Case [App (TypeApp (Con name ConSingle{}) targs) args] branches)
+bottomUp expr@(Case [App (TypeApp (Con name ConSingle{}) targs) args rng] branches)
   | length (branchPatterns (head branches)) == 1 && all (isMatchOnCon name (length args)) branches
   = Case args (map (extractMatchOnCon (length args)) branches)
 
-bottomUp expr@(Case [App (Con name ConSingle{}) args] branches)
+bottomUp expr@(Case [App (Con name ConSingle{}) args rng] branches)
   | length (branchPatterns (head branches)) == 1 && all (isMatchOnCon name (length args)) branches
   = Case args (map (extractMatchOnCon (length args)) branches)
 
@@ -398,7 +398,7 @@ bottomUp expr@(Case scruts bs)  | commonContinue
   = -- trace "case bottomUp 3 " $
     case mbCont of
       Nothing           -> expr -- cannot happen
-      Just (common,cbs) -> App common [bottomUp (Case scruts cbs)]  -- add bottomUp for potential case of known
+      Just (common,cbs) -> App common [bottomUp (Case scruts cbs)] Nothing -- add bottomUp for potential case of known
   where
     commonContinue = case mbCont of
                        Nothing -> False
@@ -408,7 +408,7 @@ bottomUp expr@(Case scruts bs)  | commonContinue
 
     findCommonCont bs
       = case bs of
-          (Branch pat (Guard _ (App v@(Var name _) [_]) : _) : _)  | not (S.member name (bv pat))
+          (Branch pat (Guard _ (App v@(Var name _) [_] rng) : _) : _)  | not (S.member name (bv pat))
             -> extractCommonCont v name bs
           _ -> Nothing
 
@@ -424,7 +424,7 @@ bottomUp expr@(Case scruts bs)  | commonContinue
 
         extractG guard
           = case guard of
-              (Guard guards (App (Var name _) [arg]))  | name == contName  -> Just (Guard guards arg)
+              (Guard guards (App (Var name _) [arg] rng))  | name == contName  -> Just (Guard guards arg)
               _ -> Nothing
 
     flattenJust acc (Nothing:xs)  = Nothing
@@ -441,21 +441,21 @@ bottomUp expr@(Case scruts branches)
 
 
 -- simplify evv-index(l) to i if l has a known offset
-bottomUp (App (TypeApp (Var evvIndex _) [effTp,hndTp]) [htag]) | getName evvIndex == nameEvvIndex && isEffectFixed effTp
+bottomUp (App (TypeApp (Var evvIndex _) [effTp,hndTp]) [htag] rng) | getName evvIndex == nameEvvIndex && isEffectFixed effTp
   = makeEvIndex (effectOffset (effectLabelFromHandler hndTp) effTp)
 
 
 -- simplify clause-tailN to clause-tail-noopN if it does not invoke operations itself
-bottomUp (App (TypeApp (Var clauseTail info) (effTp:tps)) [op]) | Just n <- isClauseTailName (getName clauseTail), isEffectFixed effTp, ([],_) <- extractHandledEffect effTp
-  = (App (TypeApp (Var (TName (nameClauseTailNoOp n) (typeOf clauseTail) Nothing) info) (effTp:tps)) [op])
+bottomUp (App (TypeApp (Var clauseTail info) (effTp:tps)) [op] rng) | Just n <- isClauseTailName (getName clauseTail), isEffectFixed effTp, ([],_) <- extractHandledEffect effTp
+  = (App (TypeApp (Var (TName (nameClauseTailNoOp n) (typeOf clauseTail) Nothing) info) (effTp:tps)) [op] rng)
 
 -- box(unbox(e)) ~> e   unbox(box(e)) ~> e
-bottomUp (App (Var v _) [App (Var w _) [arg]])  | (getName v == nameUnbox && getName w == nameBox) || (getName w == nameUnbox && getName v == nameBox)
+bottomUp (App (Var v _) [App (Var w _) [arg] rng0] rng)  | (getName v == nameUnbox && getName w == nameBox) || (getName w == nameUnbox && getName v == nameBox)
   = arg
 
 
 -- direct application of arguments to a lambda: fun(x1...xn) { f(x1,...,xn) }  -> f
-bottomUp (Lam pars eff (App f@(Var _ info) args))   | notExternal && length pars == length args && argsMatchPars
+bottomUp (Lam pars eff (App f@(Var _ info) args rng))   | notExternal && length pars == length args && argsMatchPars
   = f
   where
     argsMatchPars = and (zipWith argMatchPar pars args)
@@ -468,7 +468,7 @@ bottomUp (Lam pars eff (App f@(Var _ info) args))   | notExternal && length pars
 
 
 -- return immediately from a lambda
-bottomUp (Lam pars eff (App (Var ret _) [arg]))  | getName ret == nameReturn
+bottomUp (Lam pars eff (App (Var ret _) [arg] rng))  | getName ret == nameReturn
   = Lam pars eff arg
 
 -- No optimization applies
@@ -568,19 +568,19 @@ kmatchPattern scrut@(Con name _repr) (PatCon pname [] _prepr _ _ _ _info _)
       --trace ("kmatchPat PatCon empty pats match " ++ show name) $
       Match ([], scrut)
 
-kmatchPattern scrut@(App con@(Con name conRepr) args) (PatCon pname pats _ _ _ _ _ _)
+kmatchPattern scrut@(App con@(Con name conRepr) args rng) (PatCon pname pats _ _ _ _ _ _)
   = --trace "kmatchPat PatCon non empty pats " $
     if name /= pname then NoMatch else
       do ds <- matchAll (zipWith kmatchPattern args pats)
          let (defs,scruts) = unzip ds
-         Match (concat defs, App con scruts)
+         Match (concat defs, App con scruts rng)
 
-kmatchPattern scrut@(App con@(TypeApp (Con name conRepr) targs) args) (PatCon pname pats _ _ _ _ _ _)
+kmatchPattern scrut@(App con@(TypeApp (Con name conRepr) targs) args rng) (PatCon pname pats _ _ _ _ _ _)
   = --trace "kmatchPat PatCon non empty pats " $
     if name /= pname then NoMatch else
       do ds <- matchAll (zipWith kmatchPattern args pats)
          let (defs,scruts) = unzip ds
-         Match (concat defs, App con scruts)
+         Match (concat defs, App con scruts rng)
 
 kmatchPattern (Let letDefns letBody) pat
   = --trace ("kmatchPat Let scrut " ++ show letDefns ++ " ____pat____ " ++ show letBody) $
@@ -678,10 +678,10 @@ instance Simplify Expr where
                         return (Lam pars eff x)
                 Var tname info
                   -> return td
-                App f args
+                App f args rng
                   -> do f'    <- simplify f
                         args' <- simplify args
-                        return $ App f' args'
+                        return $ App f' args' rng
                 TypeLam tpars expr
                   -> do x <- simplify expr
                         return (TypeLam tpars x)
@@ -729,7 +729,7 @@ sizeOfExpr expr
       Con tname repr     -> 0
       Lit lit            -> 0
       Lam tname eff body -> 1 + sizeOfExprX body
-      App e args         -> 1 + sizeOfFun e + sum (map sizeOfExpr args)
+      App e args rng        -> 1 + sizeOfFun e + sum (map sizeOfExpr args)
       TypeLam tvs e      -> sizeOfExpr e
       TypeApp e tps      -> sizeOfExpr e
       Let defGroups body -> sum (map sizeOfDefGroup defGroups) + (sizeOfExpr body)
@@ -758,7 +758,7 @@ sizeOfFun expr
       Var _ _    -> 1
       Lit _      -> 0  -- cannot happen?
       Lam tname eff body -> 1 + sizeOfExpr body
-      App e args         -> 1 + sizeOfFun e + sum (map sizeOfExpr args)
+      App e args rng        -> 1 + sizeOfFun e + sum (map sizeOfExpr args)
       TypeLam tvs e      -> sizeOfFun e
       TypeApp e tps      -> sizeOfFun e
       _          -> maxSize  -- give up
@@ -771,7 +771,7 @@ sizeOfExprX expr
       Con tname repr     -> 0
       Lit lit            -> 0
       Lam tname eff body -> 1 + sizeOfExprX body
-      App e args         -> 1 + sizeOfExprX e + sum (map sizeOfExprX args)
+      App e args rng        -> 1 + sizeOfExprX e + sum (map sizeOfExprX args)
       TypeLam tvs e      -> sizeOfExprX e
       TypeApp e tps      -> sizeOfExprX e
       Let defGroups body -> sum (map sizeOfDefGroup defGroups) + (sizeOfExprX body)
@@ -860,15 +860,15 @@ add oc1 oc2
 occurrences :: Expr -> M.NameMap Occur
 occurrences expr
   = case expr of
-      App (TypeApp (Var v _) targs) args
+      App (TypeApp (Var v _) targs) args rng
         -> ounions (M.singleton (getName v) (Occur 1 (length targs) (length args) 0) : map occurrences args)
-      App (Var v _) args
+      App (Var v _) args rng
         -> ounions (M.singleton (getName v) (Occur 1 0 (length args) 0) : map occurrences args)
       Var v _ -> M.singleton (getName v) (Occur 0 0 0 1)
 
       Con{} -> M.empty
       Lit{} -> M.empty
-      App f args        -> ounions (occurrences f : map occurrences args)
+      App f args rng       -> ounions (occurrences f : map occurrences args)
       Lam pars eff body -> foldr M.delete (occurrences body) (map getName pars)
       TypeLam _ body    -> occurrences body
       TypeApp body _    -> occurrences body

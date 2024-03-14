@@ -357,7 +357,7 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
                                Just (_,_,argTps,_,resTp)
                                  -> do names <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
                                        let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip names argTps]
-                                           app    = App expr [Var tname InfoNone | tname <- tnames]
+                                           app    = App expr [Var tname InfoNone | tname <- tnames] Nothing
                                        genFunDef tnames app
                         -- special case string literals
                         Lit (LitString s)
@@ -1370,7 +1370,7 @@ tryTailCall :: Result -> Expr -> Asm (Maybe Doc)
 tryTailCall result expr
   = case expr of
      -- Tailcall case 1
-     App (Var n info) args  | ( case result of
+     App (Var n info) args rng  | ( case result of
                                   ResultReturn (Just m) _ -> m == n && infoArity info == (length args)
                                   _                       -> False
                               )
@@ -1379,7 +1379,7 @@ tryTailCall result expr
              return $ Just $ tailblock $ stmts <-> tailcall
 
      -- Tailcall case 2
-     App (TypeApp (Var n info) _) args | ( case result of
+     App (TypeApp (Var n info) _) args rng | ( case result of
                                             ResultReturn (Just m) _ -> m == n && infoArity info == (length args)
                                             _                       -> False
                                           )
@@ -1708,7 +1708,7 @@ genExprPrim expr
      TypeApp e _ -> genExpr e
      TypeLam _ e -> genExpr e
 
-     App f args
+     App f args rng
        -> genApp f args
 
      Let groups body
@@ -1734,7 +1734,7 @@ genExprPrim expr
             Just(_,_,tpars,teff,tres)
               -> do names <- newVarNames (length tpars)
                     let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip names tpars]
-                    genExpr $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames])
+                    genExpr $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames] Nothing)
             _ -> failure ("Backend.C.FromCore.genExpr: invalid partially applied external:\n" ++ show expr)
      _ -> failure ("Backend.C.FromCore.genExpr: invalid expression:\n" ++ show expr)
 
@@ -1744,7 +1744,7 @@ genConEtaExpand cexpr
       Just (_,_,tpars,teff,tres)
         -> do names <- newVarNames (length tpars)
               let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip names tpars]
-              genExpr $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames]) 
+              genExpr $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames] Nothing) 
       _ ->failure ("Backend.C.FromCore.genExpr: invalid partially applied constructor:\n" ++ show cexpr)
 
 genExprs :: [Expr] -> Asm ([Doc],[Doc])
@@ -1802,7 +1802,7 @@ genPure expr
             Just (_,_,argTps,eff,resTp) | isQualified (getName name) && isInfoArity info -- wrap bare top-level functions
               -> do argNames <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
                     let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip argNames argTps]
-                        body   = (App expr [Var name InfoNone | name <- tnames])
+                        body   = (App expr [Var name InfoNone | name <- tnames] Nothing)
                     genLambda tnames eff body
             _ -> case info of
                    InfoExternal formats -> genInlineExternal name formats []
@@ -1869,16 +1869,16 @@ genApp f args
 
 genAppNormal :: Expr -> [Expr] -> Asm ([Doc],Doc)
 -- special: allocat
-genAppNormal (Var allocAt _) [Var at _, App (Con tname repr) args]  | getName allocAt == nameAllocAt
+genAppNormal (Var allocAt _) [Var at _, App (Con tname repr) args rng]  | getName allocAt == nameAllocAt
   = do (decls,argDocs) <- genInlineableExprs args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
-genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr) targs) args]  | getName allocAt == nameAllocAt
+genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr) targs) args rng]  | getName allocAt == nameAllocAt
   = do (decls,argDocs) <- genInlineableExprs args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
 genAppNormal v@(Var allocAt _) [at, Let dgs expr]  | getName allocAt == nameAllocAt  -- can happen due to box operations
-  = genExpr (Let dgs (App v [at,expr]))
+  = genExpr (Let dgs (App v [at,expr] Nothing))
 
 -- special: conAssignFields
 genAppNormal (Var (TName conTagFieldsAssign typeAssign _) _) (Var reuseName (InfoConField conName conRepr nameNil):(Var tag _):fieldValues) | conTagFieldsAssign == nameConTagFieldsAssign
@@ -1899,15 +1899,15 @@ genAppNormal (Var (TName conFieldsAssign typeAssign _) _) (Var reuseName (InfoCo
        return (decls ++ [tmpDecl] ++ assigns, result)
 
 -- special: cfield-hole
-genAppNormal (Var unbox _) [App (Var cfieldHole _) []] | getName cfieldHole == nameCCtxHoleCreate && getName unbox == nameUnbox
+genAppNormal (Var unbox _) [App (Var cfieldHole _) [] rng] | getName cfieldHole == nameCCtxHoleCreate && getName unbox == nameUnbox
   = return ([], genHoleCall (resultType (typeOf unbox))) -- ppType (resultType (typeOf unbox)) <.> text "_hole()")
 
 -- special: cfield-of
-genAppNormal (Var cfieldOf _) [App (Var box _) [App (Var dup _) [Var con _]], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf && getName dup == nameDup
+genAppNormal (Var cfieldOf _) [App (Var box _) [App (Var dup _) [Var con _] rng0] rng, Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf && getName dup == nameDup
   = do let doc = genFieldAddress con (readQualified conName) (readQualified fieldName)
        return ([],doc)
 
-genAppNormal (Var cfieldOf _) [App (Var box _) [Var con _], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf
+genAppNormal (Var cfieldOf _) [App (Var box _) [Var con _] rng, Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf
  = do let drop = map (<.> semi) (genDupDropCall False (typeOf con) (ppName (getName con)))
           doc = genFieldAddress con (readQualified conName) (readQualified fieldName)
       return (drop,doc)
@@ -2218,9 +2218,9 @@ genCommentTName (TName n t _)
 extractExternal  :: Expr -> Maybe (TName, String, [Expr])
 extractExternal expr
   = case expr of
-      App (TypeApp (Var tname (InfoExternal formats)) targs) args
+      App (TypeApp (Var tname (InfoExternal formats)) targs) args rng
         -> Just (tname, format tname formats, args)
-      App var@(Var tname (InfoExternal formats)) args
+      App var@(Var tname (InfoExternal formats)) args rng
         -> Just (tname, format tname formats, args)
       _ -> Nothing
   where
@@ -2240,7 +2240,7 @@ isFunExpr expr
 isReuseNull :: Expr -> Bool
 isReuseNull expr
   = case expr of
-      App (Var v (InfoExternal _)) [] | getName v  == nameReuseNull -> True
+      App (Var v (InfoExternal _)) [] rng | getName v  == nameReuseNull -> True
       _ -> False
 
 isInlineableExpr :: Expr -> Bool
@@ -2251,8 +2251,8 @@ isInlineableExpr expr
       Lit (LitString _)-> False
 
       -- C has no guarantee on argument evaluation so we only allow a select few operations to be inlined
-      App (Var v (InfoExternal _)) [] -> getName v `elem` [nameYielding,nameReuseNull,nameCCtxHoleCreate]
-      App (Var v _) [arg] | getName v `elem` [nameBox,nameInt32,nameInternalInt32,nameSSizeT,
+      App (Var v (InfoExternal _)) [] rng -> getName v `elem` [nameYielding,nameReuseNull,nameCCtxHoleCreate]
+      App (Var v _) [arg] rng | getName v `elem` [nameBox,nameInt32,nameInternalInt32,nameSSizeT,
                                               nameInternalSSizeT,nameReuse,nameReuseIsValid,nameIsUnique]
                           -> isInlineableExpr arg
 
@@ -2294,13 +2294,13 @@ isTailCalling expr n
       Var _ _           -> False                      -- a variable is not a call
       Con _ _           -> False                      -- a constructor is not a call
       Lit _             -> False                      -- a literal is not a call
-      App (Var tn info) args   | getName tn == n            -- direct application can be a tail call
+      App (Var tn info) args rng   | getName tn == n            -- direct application can be a tail call
                         -> infoArity info == length args
-      App (TypeApp (Var tn info) _) args | getName tn == n  -- tailcalled function might be polymorphic and is applied to types before
+      App (TypeApp (Var tn info) _) args rng | getName tn == n  -- tailcalled function might be polymorphic and is applied to types before
                         -> infoArity info == length args
-      App (Var tn _) [e] | getName tn == nameReturn   -- a return statement is transparent in terms of tail calling
+      App (Var tn _) [e] rng | getName tn == nameReturn   -- a return statement is transparent in terms of tail calling
                         -> e `isTailCalling` n
-      App _ _           -> False                      -- other applications don't apply
+      App _ _ rng          -> False                      -- other applications don't apply
       Let _ e           -> e `isTailCalling` n        -- tail calls can only happen in the actual body
       Case _ bs         -> any f1 bs                  -- match statement get analyzed in depth
   where

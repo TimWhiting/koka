@@ -77,11 +77,11 @@ boxExpr expectTp expr
       TypeApp e tps        -> boxExpr expectTp e
 
       -- Regular
-      App e args           -> do let argTps = map boxTypeOf args
+      App e args rng       -> do let argTps = map boxTypeOf args
                                      eTp    = TFun [(nameNil,tp) | tp <- argTps] typeTotal expectTp
                                  bargs <- mapM (\(arg) -> boxExpr (boxTypeOf arg) arg) args
                                  bexpr <- boxExpr eTp e
-                                 return (App bexpr bargs)
+                                 return (App bexpr bargs rng)
       Lam tparams eff body -> do let funTp = boxTypeOf expr
                                  bbody <- boxExpr (boxTypeOf body) body
                                  bcoerce funTp (expectTp) (Lam tparams eff bbody)
@@ -188,21 +188,21 @@ bcoerceX :: Type -> Type -> Expr -> Unique (Maybe Expr)
 bcoerceX fromTp toTp expr
   = case (cType fromTp, cType toTp) of
       (CBox, CBox)             -> return Nothing
-      (CBox, CData)            -> return $ Just $ App (unboxVar) [expr]
-      (CData, CBox)            -> return $ Just $ App (boxVar) [expr]
+      (CBox, CData)            -> return $ Just $ App (unboxVar) [expr] Nothing
+      (CData, CBox)            -> return $ Just $ App (boxVar) [expr] Nothing
       -- boxed functions need to wrapped to take all arguments and results as boxed as well :-(
       -- see test/cgen/box3 and test/cgen/box3a
       (CBox, CFun cpars cres)
         -> --trace ("box to fun: " ++ show expr) $
             do boxedToTp <- boxedFunType toTp
-               let unboxed = App (unboxVarAtTp (TFun [(nameNil,fromTp)] typeTotal boxedToTp)) [expr]
+               let unboxed = App (unboxVarAtTp (TFun [(nameNil,fromTp)] typeTotal boxedToTp)) [expr] Nothing
                Just <$> bcoerce boxedToTp toTp unboxed -- unwrap function; we must return Just even if no further wrapping was needed
 
       (CFun cpars cres, CBox)
          -> --trace ("fun to box: " ++ show expr) $
             do boxedFromTp <- boxedFunType fromTp
                expr'  <- bcoerce fromTp boxedFromTp expr  -- wrap function
-               return $ Just $ App (boxVarAtTp (TFun [(nameNil,boxedFromTp)] typeTotal toTp)) [expr']         -- and box it itselfob
+               return $ Just $ App (boxVarAtTp (TFun [(nameNil,boxedFromTp)] typeTotal toTp)) [expr'] Nothing        -- and box it itselfob
 
       -- coerce between function arguments/results
       (CFun fromPars fromRes, CFun toPars toRes)
@@ -240,7 +240,7 @@ boxCoerceFun toParTps toEffTp toResTp fromParTps fromEffTp fromResTp expr
            args  = [Var par InfoNone | par <- pars]
        bargs <- -- mapM (\(arg,argTp) -> boxExpr argTp arg) (zip args (map snd fromParTps))
                 mapM (\(arg,parToTp,parFromTp) -> bcoerce parToTp parFromTp arg) (zip3 args (map snd toParTps) (map snd fromParTps))
-       bapp  <- bcoerce fromResTp toResTp (App expr bargs)
+       bapp  <- bcoerce fromResTp toResTp (App expr bargs Nothing)
        return (Lam pars toEffTp bapp)
 
 boxBindExprAsValue :: Type -> Type -> Expr -> (Expr -> Unique Expr) -> Unique Expr

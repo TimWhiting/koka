@@ -361,7 +361,7 @@ childrenOfExpr :: ExprContext -> Expr -> FixDemandR x s e [ExprContext]
 childrenOfExpr ctx expr =
   case expr of
     Lam names eff e -> addContextId (\newId -> LamCBody newId ctx names e) >>= single
-    App f vs -> do
+    App f vs rng -> do
       x <- addContextId (\newId -> AppCLambda newId ctx f )
       rest <- zipWithM (\i x -> addContextId (\newId -> AppCParam newId ctx i x)) [0..] vs
       return $! x : rest

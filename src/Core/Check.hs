@@ -185,7 +185,7 @@ check expr
         -> checkType $ typeOf tname
       Con tname info
         -> return $ typeOf tname
-      App fun args
+      App fun args rng
         -> do tpFun <- check fun
               tpArgs <- mapM check args
               case splitFunType tpFun of

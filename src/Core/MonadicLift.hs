@@ -92,14 +92,14 @@ liftDef topLevel def
 liftExprInl :: Bool -> Expr -> Lift (Expr,Expr)
 liftExprInl topLevel expr =
   case expr of
-    App tpApp@(TypeApp bind@(Var (TName nameB tpB rng) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
+    App tpApp@(TypeApp bind@(Var (TName nameB tpB rng) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] rng0 | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
       -> -- bexpr >>= (\arg -> body)
          do (body',ibody')  <- liftExprInl False body
             bexpr'          <- liftExpr False bexpr
             f <- liftLocalFun (Lam [arg] eff body') typeTotal
-            let bind = App tpApp [bexpr',f]
+            let bind = App tpApp [bexpr',f] rng0
                 ibind = App (TypeApp (Var (TName nameBind2 typeBind2 rng) (InfoArity 3 3)) [tpArg,tpRes,tpEff])
-                            [bexpr',f,(Lam [arg] eff ibody')]
+                            [bexpr',f,(Lam [arg] eff ibody')] rng0
                 typeBind2 = TForall [a,b,e] [] (typeFun [(nameNil,TVar a),
                                                          (nameNil,typeFun [(nameNil,TVar a)] (TVar e) (TVar b)),
                                                          (nameNil,typeFun [(nameNil,TVar a)] (TVar e) (TVar b))] (TVar e) (TVar b))
@@ -152,16 +152,16 @@ liftGuardInl (Guard guard body)
 liftExpr :: Bool -> Expr -> Lift Expr
 liftExpr topLevel expr =
   case expr of
-    App tpApp@(TypeApp bind@(Var (TName nameB tpB _) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
+    App tpApp@(TypeApp bind@(Var (TName nameB tpB _) infoB) [tpArg,tpRes,tpEff]) [bexpr,cont@(Lam [arg] eff body)] rng0 | nameB == nameBind -- nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
       -> -- bexpr >>= (\arg -> body)
          do body'  <- liftExpr False body
             bexpr' <- liftExpr False bexpr
             f <- liftLocalFun (Lam [arg] eff body') typeTotal
-            return (App tpApp [bexpr',f])
-    App f args
+            return (App tpApp [bexpr',f] rng0)
+    App f args rng
       -> do f' <- liftExpr False f
             args' <- mapM (liftExpr False) args
-            return (App f' args')
+            return (App f' args' rng)
 
     Lam args eff body
       -> do body' <- liftExpr False body
@@ -230,7 +230,7 @@ makeDef fvs tvs expr
       = case (tvs,fvs) of
          ([],[]) -> funExpr name
          _ -> addTypeLambdas tpars $ Lam pars eff $
-               App (addTypeApps (alltpars) (funExpr name)) (allargs)
+               App (addTypeApps (alltpars) (funExpr name)) (allargs) Nothing
 
 
 {--------------------------------------------------------------------------

@@ -169,7 +169,7 @@ makeIfExpr pexpr texpr eexpr
 
 makeVector :: Type -> [Expr] -> Expr
 makeVector tp exprs
-  = App (TypeApp vectorFromList [tp]) [makeList tp exprs]
+  = App (TypeApp vectorFromList [tp]) [makeList tp exprs] Nothing
   where
     vectorFromList
       = Var (TName nameVector (TForall [a] [] (typeFun [(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeVector [TVar a]))) Nothing)
@@ -178,7 +178,7 @@ makeVector tp exprs
 
 wrapOptional :: Type -> Expr -> Maybe Range -> Expr
 wrapOptional tp expr rng
-  = App (TypeApp (Con (TName nameOptional tpOptional rng) conInfo) [tp]) [expr]
+  = App (TypeApp (Con (TName nameOptional tpOptional rng) conInfo) [tp]) [expr] Nothing
   where
     conInfo    = ConAsJust nameTpOptional DataAsMaybe (valueReprScan 1) nameOptionalNone {-the Nothing-} 0
     tpOptional = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
@@ -201,7 +201,7 @@ makeList tp exprs
     nil      = TypeApp nilCon [tp]
     consTp   = TForall [a] [] (typeFun [(nameNil,TVar a),(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeList [TVar a]))
     consCon  = Con (TName nameCons consTp Nothing) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2)  -- NOTE: depends on Cons being second in the definition in std/core :-(
-    cons expr xs = App (TypeApp consCon [tp]) [expr,xs]
+    cons expr xs = App (TypeApp consCon [tp]) [expr,xs] Nothing
     a = TypeVar (0) kindStar Bound
 
 makeDef :: Name -> Expr -> Def
@@ -247,7 +247,7 @@ unzipM m = fmap unzip m
 -- If this remains in the source after Reuse Analyis an error will be thrown!
 makeDropSpecial :: TName -> Expr -> Expr -> Expr -> Expr
 makeDropSpecial y xUnique xShared xDecRef
-  = App (Var (TName nameDropSpecial tp Nothing) (InfoExternal [])) [Var y InfoNone, xUnique, xShared, xDecRef]
+  = App (Var (TName nameDropSpecial tp Nothing) (InfoExternal [])) [Var y InfoNone, xUnique, xShared, xDecRef] Nothing
   where
     tp = typeFun [(nameNil,t) | t <- [typeOf y, typeOf xUnique, typeOf xShared, typeOf xDecRef]] typeTotal typeUnit
 
@@ -703,7 +703,7 @@ data Expr =
   -- Core lambda calculus
     Lam ![TName] !Effect !Expr
   | Var{ varName :: !TName, varInfo :: !VarInfo }  -- ^ typed name and possible typeArity/parameter arity tuple for top-level functions
-  | App !Expr ![Expr]                              -- ^ always fully applied!
+  | App !Expr ![Expr] !(Maybe Range)                             -- ^ always fully applied!
   | TypeLam ![TypeVar] !Expr                       -- ^ Type (universal) abstraction/application
   | TypeApp !Expr ![Type]
   -- Literals, constants and labels
@@ -824,7 +824,7 @@ isTotal expr
      Lit _      -> True
      Let dgs e  -> all isTotalDef (flattenDefGroups dgs) && isTotal e
      Case exps branches -> all isTotal exps && all isTotalBranch branches
-     App f args -> isTotalFun f && all isTotal args
+     App f args _ -> isTotalFun f && all isTotal args
      -- _          -> False
   where
     isTotalBranch (Branch pat guards) = all isTotalGuard guards
@@ -843,7 +843,7 @@ isTotalFun expr
       Case exps branches -> all isTotal exps && all isTotalBranchFun branches
       -- App (TypeApp (Var open _) _) args  | getName open == nameEffectOpen
       --              -> all isTotal args
-      App f args    -> hasTotalEffect (typeOf expr) && isTotalFun f && all isTotal args
+      App f args _    -> hasTotalEffect (typeOf expr) && isTotalFun f && all isTotal args
       Var v _       | getName v == nameKeep -> False
                     | getName v `elem` [nameBox,nameUnbox]  -> True
                     | otherwise -> False -- TODO: not (isPrimitiveName (getName v)) && hasTotalEffect (typeOf v)
@@ -914,7 +914,7 @@ costExpr expr
                             costInf
       Lam tname eff body -> 0 + costExpr body
       Var tname info     -> 0
-      App e args         -> 1 + costExpr e + sum (map costExpr args)
+      App e args _         -> 1 + costExpr e + sum (map costExpr args)
       TypeLam tvs e      -> costExpr e
       TypeApp e tps      -> costExpr e
       Con tname repr     -> 0
@@ -951,7 +951,7 @@ foldMapExpr :: Monoid a => (Expr -> a) -> Expr -> a
 foldMapExpr acc e = case e of
   Lam _ _ body -> acc e <> foldMapExpr acc body
   Var _ _ -> acc e
-  App f xs -> acc e <> foldMapExpr acc f <> mconcat (foldMapExpr acc <$> xs)
+  App f xs _ -> acc e <> foldMapExpr acc f <> mconcat (foldMapExpr acc <$> xs)
   TypeLam _ body -> acc e <> foldMapExpr acc body
   TypeApp expr _ -> acc e <> foldMapExpr acc expr
   Con _ _ -> acc e
@@ -973,7 +973,7 @@ rewriteBottomUpM :: (Monad m) => (Expr -> m Expr) -> Expr -> m Expr
 rewriteBottomUpM f e = f =<< case e of
   Lam params eff body -> Lam params eff <$> rec body
   Var _ _ -> pure e
-  App fun xs -> liftA2 App (rec fun) (mapM rec xs)
+  App fun xs rng -> liftA2 (\f xs -> App f xs rng) (rec fun) (mapM rec xs)
   TypeLam types body -> TypeLam types <$> rec body
   TypeApp expr types -> (\fexpr -> TypeApp fexpr types) <$> rec expr
   Con _ _ -> pure e
@@ -1005,7 +1005,7 @@ rewriteTopDownM :: (Monad m) => (Expr -> m Expr) -> Expr -> m Expr
 rewriteTopDownM f e = f e >>= \e -> case e of
   Lam params eff body -> Lam params eff <$> rec body
   Var _ _ -> pure e
-  App fun xs -> liftA2 App (rec fun) (mapM rec xs)
+  App fun xs rng -> liftA2 (\f xs -> App f xs rng) (rec fun) (mapM rec xs)
   TypeLam types body -> TypeLam types <$> rec body
   TypeApp expr types -> (\fexpr -> TypeApp fexpr types) <$> rec expr
   Con _ _ -> pure e
@@ -1108,8 +1108,8 @@ makeTypeApp expr targs  = TypeApp expr targs
 -- | Add a value application
 addApps :: [Expr] -> (Expr -> Expr)
 addApps [] e             = e
-addApps es (App e args)  = App e (args ++ es)
-addApps es e             = App e es
+addApps es (App e args _)  = App e (args ++ es) Nothing
+addApps es e             = App e es Nothing
 
 -- | Add kind and type application
 addTypeApps :: [TypeVar] -> (Expr -> Expr)
@@ -1166,7 +1166,7 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
   = if (hasNoEffectExpr expr)
      then expr
      else --trace ("open effect: " ++ show (map pretty [effFrom,effTo,tpFrom,tpTo])) $
-          App (TypeApp varOpen [effFrom,effTo,tpFrom,tpTo]) [expr]
+          App (TypeApp varOpen [effFrom,effTo,tpFrom,tpTo]) [expr] Nothing
   where
     varOpen = Var (TName nameEffectOpen tpOpen Nothing) (InfoExternal [(Default,"#1")])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
     tpOpen  = TForall [e1,e2,a,b] [] (TFun [(newName "x", tpFrom)] typeTotal tpTo)
@@ -1186,19 +1186,19 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
 makeInt32 :: Integer -> Expr
 makeInt32 i
   = let int32 = Var (TName nameInternalInt32 (typeFun [(nameNil,typeInt)] typeTotal typeInt32) Nothing) (InfoArity 1 0 )
-    in App int32 [Lit (LitInt i)]
+    in App int32 [Lit (LitInt i)] Nothing
 
 makeEvIndex :: Integer -> Expr
 makeEvIndex i | i < 0 = failure $ ("Core.Core.makeEvIndex: index < 0: " ++ show i)
 makeEvIndex i
   = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeEvIndex) Nothing) (InfoArity 1 0 )
-    in App sizet [Lit (LitInt i)]
+    in App sizet [Lit (LitInt i)] Nothing
 
 makeSizeT :: Integer -> Expr
 makeSizeT i | i < 0 = failure $ ("Core.Core.makeSizeT: size_t < 0: " ++ show i)
 makeSizeT i
   = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeSSizeT) Nothing) (InfoArity 1 0 )
-    in App sizet [Lit (LitInt i)]
+    in App sizet [Lit (LitInt i)] Nothing
 
 ---------------------------------------------------------------------------
 -- type of a core term
@@ -1226,12 +1226,12 @@ instance HasType Expr where
     = typeOf tname
 
   -- Application
-  typeOf expr@(App fun args)
+  typeOf expr@(App fun args rng)
     = -- snd (splitFun (typeOf fun))
       case splitFunScheme (typeOf fun) of
         Just (_,_,targs,eff,tres)          -- ignore forall as we can call this after box/unbox
            | length args == length targs || length targs == 0 -> tres
-           | length args > length targs  -> typeOf (App (Var (TName (newName "tmp") tres Nothing) InfoNone) (drop (length targs) args))
+           | length args > length targs  -> typeOf (App (Var (TName (newName "tmp") tres Nothing) InfoNone) (drop (length targs) args) rng)
            | otherwise -> TFun (drop (length args) targs) eff tres
         _ -> error ("Core.Core.typeOf.App: Expected function: " ++ show (pretty (typeOf fun)) ++ show (map (pretty . typeOf) args))  -- ++ " in the application " ++ show expr
 
@@ -1374,7 +1374,7 @@ depExpr expr
   = case expr of
       Var tname info     -> depTName tname
       Lam tname eff body -> S.union (depType eff) (depExpr body)
-      App e args         -> depsUnions (map depExpr (e:args))
+      App e args _         -> depsUnions (map depExpr (e:args))
       TypeLam tvs e      -> depExpr e
       TypeApp e tps      -> depsUnions (depExpr e : map depType tps)
       Con tname repr     -> depTName tname

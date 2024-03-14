@@ -135,12 +135,14 @@ findSourceExpr ctx =
   case maybeExprOfCtx ctx of
     Just (Lam (n:_) _ _) -> findForName n
     Just (TypeLam _ (Lam (n:_) _ _)) -> findForName n
-    Just (App (Var tn _) _) -> findForApp tn
+    Just (App _ _ rng) -> findForApp rng
     _ ->
       case ctx of
         DefCNonRec{} -> findDef (defOfCtx ctx)
         DefCRec{} -> findDef (defOfCtx ctx)
         LetCDef{} -> findDef (defOfCtx ctx)
+        AppCParam _ c _ _ -> findSourceExpr c
+        AppCLambda _ c _ -> findSourceExpr c
         _ ->
           trace ("Unknown lambda type " ++ show ctx ++ ": " ++ show (maybeExprOfCtx ctx)) $ return (Nothing, Nothing)
   where
@@ -160,12 +162,12 @@ findSourceExpr ctx =
         (Just prog, Just rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
           return (findLambdaFromRange prog rng, Nothing)
         _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
-    findForApp n = do
+    findForApp rng = do
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
-      case (program, originalRange n) of
+      case (program, rng) of
         (Just prog, Just rng) -> -- trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ 
           return (findApplicationFromRange prog rng, Nothing)
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return (Nothing, Nothing)
+        _ -> trace ("No program or rng" ++ show rng ++ " " ++ show program) $ return (Nothing, Nothing)
 
 -- Converting to user visible expressions
 toSynLit :: SLattice Integer -> Maybe S.Lit

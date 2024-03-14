@@ -312,15 +312,15 @@ doEval cq@(EvalQ (ctx, env)) query = do
                     -- Evaluates just to the lambda
                     qeval (lamctx, EnvTail TopCtx)
                   _ -> error $ "REF: can't find what the following refers to " ++ show ctx
-        App (TypeApp (Con nm repr) _) args -> do
+        App (TypeApp (Con nm repr) _) args rng -> do
           trace (query ++ "APPCon: " ++ show ctx) $ return []
           children <- childrenContexts ctx
           return $ AChangeConstr ctx env
-        App (Con nm repr) args -> do
+        App (Con nm repr) args rng -> do
           trace (query ++ "APPCon: " ++ show ctx) $ return []
           children <- childrenContexts ctx
           return $ AChangeConstr ctx env
-        App f tms -> do
+        App f tms rng -> do
           trace (query ++ "APP: " ++ show ctx) $ return []
           fun <- focusChild ctx 0
           -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
@@ -375,7 +375,7 @@ evalPatternRef expr env pat = do
     BoundPatIndex 0 b -> evalPatternRef expr env b -- Only support singleton patterns for now
     BoundConIndex con i b -> do
       AChangeConstr conApp cenv <- qeval (expr, env)
-      let App (Con nm _) tms = exprOfCtx expr -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
+      let App (Con nm _) tms rng = exprOfCtx expr -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
       if con /= nm then
         doBottom
       else do
@@ -405,7 +405,7 @@ matchesPatternConstr conApp env pat = do
   case pat of
     PatCon{patConName} ->
       case exprOfCtx conApp of
-        App (Con nm _) _ | nm == patConName ->
+        App (Con nm _) _ rng | nm == patConName ->
           do
             childs <- childrenContexts conApp
             matchesPatternsCtx

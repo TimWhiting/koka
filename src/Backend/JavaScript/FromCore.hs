@@ -343,7 +343,7 @@ tryTailCall :: Result -> Expr -> Asm (Maybe Doc)
 tryTailCall result expr
   = case expr of
      -- Tailcall case 1
-     App (Var n info) args  | ( case result of
+     App (Var n info) args rng  | ( case result of
                                   ResultReturn (Just m) _ -> m == getName n && infoArity info == (length args)
                                   _                       -> False
                               )
@@ -352,7 +352,7 @@ tryTailCall result expr
              return $ Just $ block $ stmts <-> tailcall
 
      -- Tailcall case 2
-     App (TypeApp (Var n info) _) args | ( case result of
+     App (TypeApp (Var n info) _) args rng | ( case result of
                                             ResultReturn (Just m) _ -> m == getName n && infoArity info == (length args)
                                             _                       -> False
                                           )
@@ -390,7 +390,7 @@ tryTailCall result expr
                  do ns <- mapM (newVarName . show) captured
                     let cnames = [TName cn tp Nothing | (cn,TName _ tp _) <- zip ns captured]
                         sub    = [(n,Var cn InfoNone) | (n,cn) <- zip captured cnames]
-                    return $ App (Lam cnames typeTotal (sub |~> expr)) [Var arg InfoNone | arg <- captured]
+                    return $ App (Lam cnames typeTotal (sub |~> expr)) [Var arg InfoNone | arg <- captured] Nothing
 
     capturedVar :: Expr -> TNames
     capturedVar expr
@@ -398,7 +398,7 @@ tryTailCall result expr
           Lam _ _  _  -> fv expr  -- we only care about captures inside a lambda
           Let bgs body -> S.unions (capturedVar body : map capturedDefGroup bgs)
           Case es bs   -> S.unions (map capturedVar es ++ map capturedBranch bs)
-          App f args   -> S.unions (capturedVar f : map capturedVar args)
+          App f args rng   -> S.unions (capturedVar f : map capturedVar args)
           TypeLam _ e  -> capturedVar e
           TypeApp e _  -> capturedVar e
           _            -> S.empty
@@ -472,12 +472,12 @@ genMatch result scrutinees branches
         [b] -> fmap snd $ genBranch True result scrutinees b
 
        -- Special handling of return related cases - would be nice to get rid of it
-        [ Branch [p1] [Guard t1 (App (Var tn _) [r1])], Branch [p2] [Guard t2 e2] ]
+        [ Branch [p1] [Guard t1 (App (Var tn _) [r1] rng)], Branch [p2] [Guard t2 e2] ]
             | getName tn == nameReturn &&
               isPat True p1 && isPat False p2 &&
               isExprTrue t1 && isExprTrue t2
            -> case e2 of
-                 App (Var tn _) [r2]
+                 App (Var tn _) [r2] rng
                     | getName tn == nameReturn
                    -> do (stmts1, expr1) <- genExpr r1
                          (stmts2, expr2) <- genExpr r2
@@ -683,23 +683,23 @@ genExpr expr
      TypeLam _ e -> genExpr e
 
      -- handle not inlineable cases
-     App (TypeApp (Con name repr) _) [arg]  | getName name == nameOptional || isConIso repr
+     App (TypeApp (Con name repr) _) [arg] rng  | getName name == nameOptional || isConIso repr
        -> genExpr arg
-     App (Con _ repr) [arg]  | isConIso repr
+     App (Con _ repr) [arg] rng  | isConIso repr
        -> genExpr arg
-     App (Var tname _) [Lit (LitInt i)] | getName tname == nameByte && (i >= 0 && i < 256)
+     App (Var tname _) [Lit (LitInt i)] rng | getName tname == nameByte && (i >= 0 && i < 256)
        -> return (empty, pretty i)
-     App (Var tname _) [Lit (LitInt i)] | getName tname `elem` [nameInt32,nameSSizeT,nameInternalInt32,nameInternalSSizeT] && isSmallInt i
+     App (Var tname _) [Lit (LitInt i)] rng | getName tname `elem` [nameInt32,nameSSizeT,nameInternalInt32,nameInternalSSizeT] && isSmallInt i
        -> return (empty, pretty i)
-     App (Var tname _) [Lit (LitInt i)] | getName tname `elem` [nameInt64,nameIntPtrT] && isSmallInt i
+     App (Var tname _) [Lit (LitInt i)] rng | getName tname `elem` [nameInt64,nameIntPtrT] && isSmallInt i
        -> return (empty, pretty i <.> text "n")
 
      -- special: .cctx-field-addr-of: create a tuple with the object and the field name as a string
-     App (TypeApp (Var cfieldOf _) [_]) [Var con _, Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf
+     App (TypeApp (Var cfieldOf _) [_]) [Var con _, Lit (LitString conName), Lit (LitString fieldName)] rng  | getName cfieldOf == nameFieldAddrOf
        -> do conDoc <- genTName con
              return (empty,text "{obj:" <+> conDoc <.> text ", field_name: \"" <.> ppName (unqualify (readQualified fieldName)) <.> text "\"}")
 
-     App f args
+     App f args rng
        -> {- case splitFunScheme (typeOf f) of
             Just (_,_,tpars,eff,tres)
               | length tpars > length args
@@ -756,7 +756,7 @@ extractList e
   where
     extract acc expr
       = case expr of
-          App (TypeApp (Con name info) _) [hd,tl]  | getName name == nameCons
+          App (TypeApp (Con name info) _) [hd,tl] rng  | getName name == nameCons
             -> extract (hd:acc) tl
           _ -> (reverse acc, expr)
 
@@ -835,11 +835,11 @@ genInline expr
       _  | isPureExpr expr -> genPure expr
       TypeLam _ e -> genInline e
       TypeApp e _ -> genInline e
-      App (TypeApp (Con name repr) _) [arg]  | getName name == nameOptional || isConIso repr
+      App (TypeApp (Con name repr) _) [arg] rng  | getName name == nameOptional || isConIso repr
         -> genInline arg
-      App (Con _ repr) [arg]  | isConIso repr
+      App (Con _ repr) [arg] rng  | isConIso repr
         -> genInline arg
-      App f args
+      App f args rng
         -> do argDocs <- mapM genInline (trimOptionalArgs args)
               case extractExtern f of
                 Just (tname,formats)
@@ -997,9 +997,9 @@ trimOptionalArgs args
 extractExternal  :: Expr -> Maybe (TName, String, [Expr])
 extractExternal expr
   = case expr of
-      App (TypeApp (Var tname (InfoExternal formats)) targs) args
+      App (TypeApp (Var tname (InfoExternal formats)) targs) args rng
         -> Just (tname, format tname formats, args)
-      App var@(Var tname (InfoExternal formats)) args
+      App var@(Var tname (InfoExternal formats)) args rng
         -> Just (tname, format tname formats, args)
       _ -> Nothing
   where
@@ -1021,7 +1021,7 @@ isInlineableExpr expr
   = case expr of
       TypeApp expr _   -> isInlineableExpr expr
       TypeLam _ expr   -> isInlineableExpr expr
-      App (Var _ (InfoExternal _)) args -> all isPureExpr args
+      App (Var _ (InfoExternal _)) args rng -> all isPureExpr args
       {-
       -- TODO: comment out for now as it may prevent a tailcall if inlined
       App f args       -> -- trace ("isInlineable f: " ++ show f) $
@@ -1055,13 +1055,13 @@ isTailCalling expr n
       Var _ _           -> False                      -- a variable is not a call
       Con _ _           -> False                      -- a constructor is not a call
       Lit _             -> False                      -- a literal is not a call
-      App (Var tn info) args   | getName tn == n            -- direct application can be a tail call
+      App (Var tn info) args rng   | getName tn == n            -- direct application can be a tail call
                         -> infoArity info == length args
-      App (TypeApp (Var tn info) _) args | getName tn == n  -- tailcalled function might be polymorphic and is applied to types before
+      App (TypeApp (Var tn info) _) args rng | getName tn == n  -- tailcalled function might be polymorphic and is applied to types before
                         -> infoArity info == length args
-      App (Var tn _) [e] | getName tn == nameReturn   -- a return statement is transparent in terms of tail calling
+      App (Var tn _) [e] rng | getName tn == nameReturn   -- a return statement is transparent in terms of tail calling
                         -> e `isTailCalling` n
-      App _ _           -> False                      -- other applications don't apply
+      App _ _ _          -> False                      -- other applications don't apply
       Let _ e           -> e `isTailCalling` n        -- tail calls can only happen in the actual body
       Case _ bs         -> any f1 bs                  -- match statement get analyzed in depth
   where
