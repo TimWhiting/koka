@@ -32,6 +32,7 @@ import Debug.Trace (trace)
 import Compile.BuildContext (BuildContext)
 import Compile.Options (Terminal, Flags)
 import Core.Demand.DemandAnalysis (createPrimitives, query, analyzeEachChild, getAbValueResults)
+import Lib.PPrint
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
 findContext r ri = do
@@ -109,9 +110,9 @@ toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
 toSynConstr ctx = do
   (x, y) <- findSourceExpr ctx
   return $ case x of
-    Just x -> Just $ showSyntax 0 x
+    Just x -> Just $ show $ showSyntax x
     _ -> case y of
-      Just y -> Just $ showSyntaxDef 0 y
+      Just y -> Just $ show $ showSyntaxDef y
       _ -> Nothing
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
@@ -130,8 +131,8 @@ sourceEnvCtx ctx =
       se <- findSourceExpr c
       e <- sourceEnvCtx cc
       return $ case se of
-        (Just se, _) -> showSyntax 0 se ++ " " ++ e
-        (_, Just de) -> showSyntaxDef 0 de ++ " " ++ e
+        (Just se, _) -> show (showSyntax se <+> text e)
+        (_, Just de) -> show (showSyntaxDef de <+> text e)
         _ -> show c ++ " " ++ e
 
 findSourceExpr :: ExprContext -> PostFixR x s e (Maybe Syn.UserExpr, Maybe (Syn.Def Syn.UserType))

@@ -37,9 +37,10 @@ import Data.Maybe (mapMaybe, catMaybes, fromMaybe)
 import Core.CoreVar (bv)
 import Core.Pretty
 import Debug.Trace (trace)
-import Data.List (intercalate)
+import Data.List (intercalate, intersperse)
 import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 import qualified Data.Text as T
+import Lib.PPrint
 
 -- Uniquely identifies expressions despite naming
 data ExprContext =
@@ -338,7 +339,7 @@ findApplicationFromRange prog rng =
     findInDef :: UserDef -> Maybe UserExpr
     findInDef def =
       case def of
-        S.Def vb rng0 _ _ _ _ -> 
+        S.Def vb rng0 _ _ _ _ ->
           -- trace ("Looking in def " ++ show def) $ 
           if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else findInBinder vb
     findInBinder :: ValueBinder () UserExpr -> Maybe UserExpr
@@ -558,23 +559,23 @@ lookupDef :: C.Def -> TName -> Bool
 lookupDef def tname = C.defName def == C.getName tname && tnameType tname == C.defType def
 
 
-showSyntaxDef :: Int -> S.Def UserType -> String
-showSyntaxDef indent (S.Def binder range vis sort inline doc)
-  = concat (replicate indent " ") ++ "val " ++ nameStem (binderName binder) ++ " = " ++ showSyntax indent (binderExpr binder)
+showSyntaxDef :: S.Def UserType -> Doc
+showSyntaxDef (S.Def binder range vis sort inline doc)
+  = text "val" <+> text (nameStem (binderName binder)) <+> text "=" <+> showSyntax (binderExpr binder)
 
-showValBinder :: ValueBinder (Maybe UserType) (Maybe (S.Expr UserType)) -> String
+showValBinder :: ValueBinder (Maybe UserType) (Maybe (S.Expr UserType)) -> Doc
 showValBinder (ValueBinder name (Just tp) (Just expr) nameRange range)
-  = nameStem name ++ " = " ++ showSyntax 0 expr
+  = text (nameStem name) <+> text "=" <+> showSyntax expr
 showValBinder (ValueBinder name Nothing (Just expr) nameRange range)
-  = nameStem name ++ " = " ++ showSyntax 0 expr
+  = text (nameStem name) <+> text "=" <+> showSyntax expr
 showValBinder (ValueBinder name (Just tp) Nothing nameRange range)
-  = nameStem name
+  = text (nameStem name)
 showValBinder (ValueBinder name Nothing Nothing nameRange range)
-  = nameStem name
+  = text (nameStem name)
 
-showArg :: (Maybe (Name,Range),S.Expr UserType) -> String
-showArg (Nothing,expr) = showSyntax 0 expr
-showArg (Just (name,_),expr) = nameStem name ++ "= " ++ showSyntax 0 expr
+showArg :: (Maybe (Name,Range),S.Expr UserType) -> Doc
+showArg (Nothing,expr) = showSyntax expr
+showArg (Just (name,_),expr) = text (nameStem name) <+> text "=" <+> showSyntax expr
 
 allDefs :: S.DefGroup UserType -> [S.Def UserType]
 allDefs defs =
@@ -582,64 +583,61 @@ allDefs defs =
     S.DefNonRec d -> [d]
     S.DefRec ds   -> ds
 
-showSyntax :: Int -> S.Expr UserType -> String
-showSyntax indent (S.Lam pars expr range) =
-  "fn(" ++ intercalate "," (map showValBinder pars) ++ ")\n" ++ concat (replicate (indent + 2) " ") ++
-    showSyntax (indent + 2) expr
-showSyntax indent (S.Let defs expr range) =
-  intercalate ("\n" ++ concat (replicate indent " ")) (map (showSyntaxDef indent) (allDefs defs)) ++
-  "\n" ++ concat (replicate indent " ") ++ showSyntax (indent + 2) expr
-showSyntax indent (Bind def expr range) =
-  showSyntaxDef indent def ++ "\n" ++ concat (replicate indent " ") ++ showSyntax indent expr
-showSyntax indent (S.App (S.Var name _ _) args range) | name == nameOpExpr =
-  unwords (map showArg args)
-showSyntax indent (S.App fun args range)  =
-  showSyntax indent fun ++ "(" ++ intercalate "," (map showArg args) ++ ")"
-showSyntax indent (S.Var name isop range) = nameStem name
-showSyntax indent (S.Lit lit)             = showLit lit
-showSyntax indent (Ann expr tp range)   = showSyntax indent expr
-showSyntax indent (S.Case expr branches range) =
-  "match " ++ showSyntax 0 expr ++ "\n" ++ concat (replicate (indent + 2) " ") ++
-    intercalate ("\n" ++ concat (replicate (indent + 2) " ")) (map (showSyntaxBranch (indent + 2)) branches)
-showSyntax indent (Parens expr name _ range) =
-  "(" ++ showSyntax indent expr ++ ")"
-showSyntax indent (Inject tp expr behind range) =
-  "mask<" ++ show tp ++ ">{" ++ showSyntax 0 expr ++ "}"
-showSyntax indent (Handler sort scope override allowmask eff pars reinit ret final branches drange range) =
-  "handler " ++ show reinit ++ " " ++ show ret ++ " " ++ show final ++ " " ++ show branches
+showSyntax :: S.Expr UserType -> Doc
+showSyntax (S.Lam pars expr range) =
+  text "fn" <.> tupled (map showValBinder pars) <--> indent 2 (showSyntax expr)
+showSyntax (S.Let defs expr range) =
+  vcat (map showSyntaxDef (allDefs defs) ++ [showSyntax expr])
+showSyntax (Bind def expr range) =
+  vcat [showSyntaxDef def, showSyntax expr]
+showSyntax (S.App (S.Var name _ _) args range) | name == nameOpExpr =
+  hcat (intersperse (text " ") (map showArg args))
+showSyntax (S.App fun args range)  =
+  showSyntax fun <.> tupled (map showArg args)
+showSyntax (S.Var name isop range) = text $ nameStem name
+showSyntax (S.Lit lit)             = text $ showLit lit
+showSyntax (Ann expr tp range)   = showSyntax expr
+showSyntax (S.Case expr branches range) =
+  text "match" <+> showSyntax expr <--> indent 2 (vcat (map showSyntaxBranch branches))
+showSyntax (Parens expr name _ range) =
+  showSyntax expr
+showSyntax (Inject tp expr behind range) =
+  text "mask<" <.> text (show tp) <.> text ">{" <--> indent 2 (showSyntax expr) <--> text "}"
+showSyntax (Handler sort scope override allowmask eff pars reinit ret final branches drange range) =
+  text "handler" <--> text (show reinit) <--> text (show ret) <--> text (show final) <--> text (show branches)
   -- TODO: Better show handlers
 
-showSyntaxBranch :: Int -> S.Branch UserType -> String
-showSyntaxBranch indent (S.Branch pat [S.Guard (S.Var n _ _) body]) | nameTrue == n
-  = showSyntaxPattern pat ++ " ->\n" ++  concat (replicate (indent + 2) " ") ++ showSyntax indent body
-showSyntaxBranch indent (S.Branch pat [guard])
-  = showSyntaxPattern pat ++ " | " ++ showSyntaxGuard indent guard
-showSyntaxBranch indent b = show b
+showSyntaxBranch :: S.Branch UserType -> Doc
+showSyntaxBranch (S.Branch pat [S.Guard (S.Var n _ _) body]) | nameTrue == n
+  = showSyntaxPattern pat <+> text "->" <--> indent 2 (showSyntax body)
+showSyntaxBranch (S.Branch pat [guard])
+  = showSyntaxPattern pat <+> text "|" <+> showSyntaxGuard guard
+showSyntaxBranch b = text $ show b
 
-showPatBinder :: ValueBinder (Maybe UserType) (S.Pattern UserType) -> String
+showPatBinder :: ValueBinder (Maybe UserType) (S.Pattern UserType) -> Doc
 showPatBinder (ValueBinder name _ (S.PatWild rng) nameRange range)
-  = nameStem name
+  = text $ nameStem name
 showPatBinder (ValueBinder name _ pat nameRange range)
-  = nameStem name ++ " as " ++ showSyntaxPattern pat
+  = text (nameStem name) <+> text "as" <+> showSyntaxPattern pat
 
-showSyntaxPattern :: S.Pattern UserType -> String
-showSyntaxPattern (S.PatWild range) = "_"
+showSyntaxPattern :: S.Pattern UserType -> Doc
+showSyntaxPattern (S.PatWild range) = text "_"
 showSyntaxPattern (S.PatVar binder) = showPatBinder binder
 showSyntaxPattern (PatAnn pat tp range) = showSyntaxPattern pat
 showSyntaxPattern (S.PatCon name args nameRng range) =
-  if isNameTuple name then "(" ++ intercalate ","  (map showPatternArg args) ++ ")"
-  else nameStem name ++ "(" ++ intercalate "," (map showPatternArg args) ++ ")"
-showSyntaxPattern (PatParens pat range) = "(" ++ showSyntaxPattern pat ++ ")"
-showSyntaxPattern (S.PatLit lit) = showLit lit
+  if isNameTuple name then tupled (map showPatternArg args)
+  else text (nameStem name) <.> tupled (map showPatternArg args)
+showSyntaxPattern (PatParens pat range) = tupled [showSyntaxPattern pat]
+showSyntaxPattern (S.PatLit lit) = text $ showLit lit
 
-showPatternArg :: (Maybe (Name,Range), S.Pattern UserType) -> String
+showPatternArg :: (Maybe (Name,Range), S.Pattern UserType) -> Doc
 showPatternArg (Nothing,pat) = showSyntaxPattern pat
-showPatternArg (Just (name,_),S.PatWild rng) = nameStem name
-showPatternArg (Just (name,_),pat) = nameStem name ++ "= " ++ showSyntaxPattern pat
+showPatternArg (Just (name,_),S.PatWild rng) = text $ nameStem name
+showPatternArg (Just (name,_),pat) = text (nameStem name) <+> text "=" <+> showSyntaxPattern pat
 
-showSyntaxGuard :: Int -> S.Guard UserType -> String
-showSyntaxGuard indent (S.Guard guard body)
-  = showSyntax indent guard ++ " -> " ++ "\n" ++ concat (replicate (indent + 2) " ") ++ showSyntax (indent + 2) body
+showSyntaxGuard :: S.Guard UserType -> Doc
+showSyntaxGuard (S.Guard guard body)
+  = showSyntax guard <+> text "->" <--> indent 2 (showSyntax body)
 
 showLit :: S.Lit -> String
 showLit (S.LitInt i range) = show i
