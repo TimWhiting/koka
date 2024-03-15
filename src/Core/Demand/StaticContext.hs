@@ -33,11 +33,11 @@ import Data.Set hiding (map)
 import Type.Pretty
 import Syntax.Syntax as S
 import Common.Range
-import Data.Maybe (mapMaybe, catMaybes, fromMaybe)
+import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
 import Core.CoreVar (bv)
 import Core.Pretty
 import Debug.Trace (trace)
-import Data.List (intercalate, intersperse)
+import Data.List (intercalate, intersperse, minimumBy)
 import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 import qualified Data.Text as T
 import Lib.PPrint
@@ -326,218 +326,62 @@ branchVars (C.Branch pat guards) = Data.Set.toList $ bv pat
 
 findApplicationFromRange :: UserProgram -> Range -> Maybe UserExpr
 findApplicationFromRange prog rng =
-  trace ("Looking for app at " ++ show rng) $ findInDefGs (programDefs prog)
-  where
-    findInDefGs :: S.DefGroups UserType -> Maybe UserExpr
-    findInDefGs defgs = case mapMaybe findInDefG defgs of
-      [l] -> Just l
-      _ -> Nothing
-    findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
-      case def of
-        S.DefNonRec df -> findInDef df
-        S.DefRec dfs -> case mapMaybe findInDef dfs of l:_ -> Just l; _ -> Nothing
-    findInDef :: UserDef -> Maybe UserExpr
-    findInDef def =
-      case def of
-        S.Def vb rng0 _ _ _ _ ->
-          -- trace ("Looking in def " ++ show def) $ 
-          if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else findInBinder vb
-    findInBinder :: ValueBinder () UserExpr -> Maybe UserExpr
-    findInBinder vb =
-      case vb of
-        S.ValueBinder _ _ e _ _ -> -- trace ("Looking in binder " ++ show vb) $ 
-          findInExpr e
-    findInExpr :: UserExpr -> Maybe UserExpr
-    findInExpr e =
-      -- trace ("Looking in expr " ++ show e) $ 
-      let rng0 = getRange e in
-      if not (rng `rangesOverlap` rng0) then Nothing else
-      if rng == rng0 then Just e else
-      case e of
-        S.Lam _ body rng0 -> findInExpr body
-        S.App f args rng0 -> case mapMaybe findInExpr (map snd args ++ [f]) of x:_ -> Just x; _ -> Just e
-        S.Let dg body rng0 ->
-          case findInExpr body of
-            Just x -> Just x
-            _ -> findInDefG dg
-        S.Bind d e _ ->
-          case findInDef d of
-            Just x -> Just x
-            _ -> findInExpr e
-        S.Case e bs _ ->
-          case findInExpr e of
-            Just x -> Just x
-            _ -> case mapMaybe findInBranch bs of
-              x:_ -> Just x
-              _ -> Nothing
-        S.Parens e _ _ _ -> findInExpr e
-        S.Inject _ e _ _ -> findInExpr e
-        S.Var{} -> Nothing
-        S.Lit _ -> Nothing
-        S.Ann e _ _ -> findInExpr e
-        S.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
-          let exprs = catMaybes [init, ret, fin]
-              exprs' = mapMaybe findInExpr exprs
-          in case exprs' of
-            x:_ -> Just x
-            _ -> case mapMaybe findInHandlerBranch bs of
-              x:_ -> Just x
-              _ -> Nothing
-    findInHandlerBranch :: S.HandlerBranch UserType -> Maybe UserExpr
-    findInHandlerBranch (S.HandlerBranch _ _ body _ _ _) = findInExpr body
-    findInBranch :: S.Branch UserType -> Maybe UserExpr
-    findInBranch (S.Branch pat guards) =
-      case mapMaybe findInGuard guards of
-          [x] -> Just x
-          _ -> Nothing
-    findInGuard :: S.Guard UserType -> Maybe UserExpr
-    findInGuard (S.Guard e body) =
-      case findInExpr e of
-        Just x -> Just x
-        _ -> findInExpr body
-
+  findFromRange prog rng (const Nothing) $ \e -> case e of
+    S.App f args rng0 -> if rng `rangesOverlap` rng0 then Just f else Nothing
+    _ -> Nothing
 
 findDefFromRange :: UserProgram -> Range -> Maybe UserDef
 findDefFromRange prog rng =
-  findInDefGs (programDefs prog)
-  where
-    findInDefGs :: S.DefGroups UserType -> Maybe UserDef
-    findInDefGs defgs = case mapMaybe findInDefG defgs of
-      [l] -> Just l
-      _ -> Nothing
-    findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
-      case def of
-        S.DefNonRec df -> findInDef df
-        S.DefRec dfs -> case mapMaybe findInDef dfs of [l] -> Just l; _ -> Nothing
-    findInDef :: UserDef -> Maybe UserDef
-    findInDef def =
-      case def of
-        S.Def vb rng0 _ _ _ _ -> -- trace ("Looking in def " ++ show def) $ 
-          if rng `rangesOverlap` rng0 then Just $ fromMaybe def (findInBinder vb) else Nothing
-    findInBinder :: ValueBinder () UserExpr -> Maybe UserDef
-    findInBinder vb =
-      case vb of
-        S.ValueBinder _ _ e _ _ -> -- trace ("Looking in binder " ++ show vb) $ 
-          findInExpr e
-    findInExpr :: UserExpr -> Maybe UserDef
-    findInExpr e =
-      -- trace ("Looking in expr " ++ show e) $ 
-      case e of
-        S.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then findInExpr body else Nothing
-        S.App f args _ ->
-          case mapMaybe findInExpr (f:map snd args) of
-            [x] -> Just x
-            _ -> Nothing
-        S.Let dg body _ ->
-          case findInDefG dg of
-            Just x -> Just x
-            _ -> findInExpr body
-        S.Bind d e rng0 ->
-          case findInDef d of
-            Just x -> Just x
-            _ -> findInExpr e
-        S.Case e bs _ ->
-          case findInExpr e of
-            Just x -> Just x
-            _ -> case mapMaybe findInBranch bs of
-              [x] -> Just x
-              _ -> Nothing
-        S.Parens e _ _ _ -> findInExpr e
-        S.Inject _ e _ _ -> findInExpr e
-        S.Var{} -> Nothing
-        S.Lit _ -> Nothing
-        S.Ann e _ _ -> findInExpr e
-        S.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
-          let exprs = catMaybes [init, ret, fin]
-              exprs' = mapMaybe findInExpr exprs
-          in case exprs' of
-            [x] -> Just x
-            _ -> case mapMaybe findInHandlerBranch bs of
-              [x] -> Just x
-              _ -> Nothing
-    findInHandlerBranch :: S.HandlerBranch UserType -> Maybe UserDef
-    findInHandlerBranch (S.HandlerBranch _ _ body _ _ _) = findInExpr body
-    findInBranch :: S.Branch UserType -> Maybe UserDef
-    findInBranch (S.Branch pat guards) =
-      case mapMaybe findInGuard guards of
-          [x] -> Just x
-          _ -> Nothing
-    findInGuard :: S.Guard UserType -> Maybe UserDef
-    findInGuard (S.Guard e body) =
-      case findInExpr e of
-        Just x -> Just x
-        _ -> findInExpr body
+  findFromRange prog rng (\d -> 
+      case d of 
+        S.Def vb rng0 _ _ _ _ -> if rng `rangesOverlap` rng0 then Just d else Nothing
+    ) (const Nothing)
 
 findLambdaFromRange :: UserProgram -> Range -> Maybe UserExpr
 findLambdaFromRange prog rng =
+  findFromRange prog rng (const Nothing) $ \e -> case e of
+    S.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then Just body else Nothing
+    _ -> Nothing
+
+findFromRange :: Ranged a => UserProgram -> Range -> (UserDef -> Maybe a) -> (UserExpr -> Maybe a) -> Maybe a
+findFromRange prog rng extractDef extractExpr =
   findInDefGs (programDefs prog)
   where
-    findInDefGs :: S.DefGroups UserType -> Maybe UserExpr
-    findInDefGs defgs = case mapMaybe findInDefG defgs of
-      [l] -> Just l
-      _ -> Nothing
-    findInDefG def = -- trace ("Looking in defGroup " ++ show def) $
+    getBest ls =
+      case ls of
+        [] -> Nothing
+        xs -> Just $ minimumBy (\l1 l2 -> compare (rangeLength (getRange l1)) (rangeLength (getRange l2))) xs
+    findInDefGs defgs = getBest $ mapMaybe findInDefG defgs
+    findInDefG def =
       case def of
         S.DefNonRec df -> findInDef df
-        S.DefRec dfs -> case mapMaybe findInDef dfs of [l] -> Just l; _ -> Nothing
-    findInDef :: UserDef -> Maybe UserExpr
+        S.DefRec dfs -> getBest $ mapMaybe findInDef dfs
     findInDef def =
       case def of
-        S.Def vb rng0 _ _ _ _ -> -- trace ("Looking in def " ++ show def) $ 
-          if rng `rangesOverlap` rng0 then Just $ fromMaybe (binderExpr vb) (findInBinder vb) else Nothing
-    findInBinder :: ValueBinder () UserExpr -> Maybe UserExpr
+        S.Def vb rng0 _ _ _ _ -> getBest (catMaybes [if rng `rangesOverlap` rng0 then extractDef def else Nothing, findInBinder vb])
     findInBinder vb =
       case vb of
-        S.ValueBinder _ _ e _ _ -> -- trace ("Looking in binder " ++ show vb) $ 
-          findInExpr e
-    findInExpr :: UserExpr -> Maybe UserExpr
+        S.ValueBinder _ _ e _ _ -> findInExpr e
     findInExpr e =
       -- trace ("Looking in expr " ++ show e) $ 
-      case e of
-        S.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then Just $ fromMaybe e (findInExpr body) else Nothing
-        S.App f args _ ->
-          case mapMaybe findInExpr (f:map snd args) of
-            [x] -> Just x
-            _ -> Nothing
-        S.Let dg body _ ->
-          case findInDefG dg of
-            Just x -> Just x
-            _ -> findInExpr body
-        S.Bind d e _ ->
-          case findInDef d of
-            Just x -> Just x
-            _ -> findInExpr e
-        S.Case e bs _ ->
-          case findInExpr e of
-            Just x -> Just x
-            _ -> case mapMaybe findInBranch bs of
-              [x] -> Just x
-              _ -> Nothing
-        S.Parens e _ _ _ -> findInExpr e
-        S.Inject _ e _ _ -> findInExpr e
-        S.Var{} -> Nothing
-        S.Lit _ -> Nothing
-        S.Ann e _ _ -> findInExpr e
-        S.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
-          let exprs = catMaybes [init, ret, fin]
-              exprs' = mapMaybe findInExpr exprs
-          in case exprs' of
-            [x] -> Just x
-            _ -> case mapMaybe findInHandlerBranch bs of
-              [x] -> Just x
-              _ -> Nothing
-    findInHandlerBranch :: S.HandlerBranch UserType -> Maybe UserExpr
+      let bestChild =
+            case e of
+              S.Lam _ body rng0 -> findInExpr body
+              S.App f args _ -> getBest $ catMaybes (findInExpr f : map (findInExpr . snd) args)
+              S.Let dg body _ -> getBest $ catMaybes [findInDefG dg, findInExpr body]
+              S.Bind d e _ -> getBest $ catMaybes [findInDef d, findInExpr e]
+              S.Case e bs _ -> getBest $ catMaybes (findInExpr e: map findInBranch bs)
+              S.Parens e _ _ _ -> findInExpr e
+              S.Inject _ e _ _ -> findInExpr e
+              S.Var{} -> Nothing
+              S.Lit _ -> Nothing
+              S.Ann e _ _ -> findInExpr e
+              S.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
+                getBest (mapMaybe findInExpr (catMaybes [init, ret, fin]) ++ mapMaybe findInHandlerBranch bs)
+        in if rng `rangesOverlap` getRange e then getBest (catMaybes [bestChild, extractExpr e]) else bestChild
     findInHandlerBranch (S.HandlerBranch _ _ body _ _ _) = findInExpr body
-    findInBranch :: S.Branch UserType -> Maybe UserExpr
-    findInBranch (S.Branch pat guards) =
-      case mapMaybe findInGuard guards of
-          [x] -> Just x
-          _ -> Nothing
-    findInGuard :: S.Guard UserType -> Maybe UserExpr
-    findInGuard (S.Guard e body) =
-      case findInExpr e of
-        Just x -> Just x
-        _ -> findInExpr body
+    findInBranch (S.Branch pat guards) = getBest $ mapMaybe findInGuard guards
+    findInGuard (S.Guard e body) = getBest $ catMaybes [findInExpr e, findInExpr body]
 
 basicExprOf :: ExprContext -> Maybe C.Expr
 basicExprOf ctx =
