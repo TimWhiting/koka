@@ -50,18 +50,18 @@ import Syntax.RangeMap
       RangeInfo(..),
       rangeMapFindAt )
 import Syntax.Colorize ( removeComment, removeComment )
+import Syntax.Pretty (ppSyntaxExpr, ppSyntaxDef, ppLit)
 import Core.Demand.Syntax (runEvalQueryFromRangeSource)
 import Core.Demand.DemandAnalysis (AnalysisKind (..))
-import Core.Demand.StaticContext (showSyntax, showLit, showSyntaxDef)
 import LanguageServer.Conversions (fromLspPos, toLspRange)
 import LanguageServer.Monad
 import LanguageServer.Handler.Pretty (ppComment, asKokaCode)
 import Debug.Trace (trace)
 
 toAbValueText (env, (fns, defs, lits, constrs, topTypes)) =
-  let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (showSyntax d) ++ "\n```") fns)
-      litsText = if null lits then "" else intercalate "\n" (map showLit lits)
-      defsText = if null defs then "" else "\n\nDefinitions:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (showSyntaxDef d) ++ "\n```") defs)
+  let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
+      litsText = if null lits then "" else intercalate "\n" (map ppLit lits)
+      defsText = if null defs then "" else "\n\nDefinitions:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxDef d) ++ "\n```") defs)
       constrsText = if null constrs then "" else "\n\nConstructors:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ d ++ "\n```") constrs)
       topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
       resText = closureText <> litsText <> defsText <> constrsText <> topTypesText

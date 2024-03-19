@@ -14,14 +14,13 @@ module Core.Demand.StaticContext(
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamNames,
-                          showExpr,showDg,showDef,showCtxExpr,
+                          showDg,showDef,showCtxExpr,
                           enclosingLambda,
                           branchContainsBinding,
                           branchVars,
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,
                           basicExprOf,defsOf,defOfCtx,
                           lookupDefGroup,lookupDefGroups,lookupDef,
-                          showSyntaxDef,showSyntax,showLit,
                           showSimpleContext,
                           isMain
                         ) where
@@ -402,89 +401,3 @@ lookupDefGroups defGs tname = any (`lookupDefGroup` tname) defGs
 lookupDef :: C.Def -> TName -> Bool
 lookupDef def tname = C.defName def == C.getName tname && tnameType tname == C.defType def
 
-
-showSyntaxDef :: S.Def UserType -> Doc
-showSyntaxDef (S.Def binder range vis sort inline doc)
-  = text "val" <+> text (nameStem (binderName binder)) <+> text "=" <+> showSyntax (binderExpr binder)
-
-showValBinder :: ValueBinder (Maybe UserType) (Maybe (S.Expr UserType)) -> Doc
-showValBinder (ValueBinder name (Just tp) (Just expr) nameRange range)
-  = text (nameStem name) <+> text "=" <+> showSyntax expr
-showValBinder (ValueBinder name Nothing (Just expr) nameRange range)
-  = text (nameStem name) <+> text "=" <+> showSyntax expr
-showValBinder (ValueBinder name (Just tp) Nothing nameRange range)
-  = text (nameStem name)
-showValBinder (ValueBinder name Nothing Nothing nameRange range)
-  = text (nameStem name)
-
-showArg :: (Maybe (Name,Range),S.Expr UserType) -> Doc
-showArg (Nothing,expr) = showSyntax expr
-showArg (Just (name,_),expr) = text (nameStem name) <+> text "=" <+> showSyntax expr
-
-allDefs :: S.DefGroup UserType -> [S.Def UserType]
-allDefs defs =
-  case defs of
-    S.DefNonRec d -> [d]
-    S.DefRec ds   -> ds
-
-showSyntax :: S.Expr UserType -> Doc
-showSyntax (S.Lam pars expr range) =
-  text "fn" <.> tupled (map showValBinder pars) <--> indent 2 (showSyntax expr)
-showSyntax (S.Let defs expr range) =
-  vcat (map showSyntaxDef (allDefs defs) ++ [showSyntax expr])
-showSyntax (Bind def expr range) =
-  vcat [showSyntaxDef def, showSyntax expr]
-showSyntax (S.App (S.Var name _ _) args range) | name == nameOpExpr =
-  hcat (intersperse (text " ") (map showArg args))
-showSyntax (S.App fun args range)  =
-  showSyntax fun <.> tupled (map showArg args)
-showSyntax (S.Var name isop range) = text $ nameStem name
-showSyntax (S.Lit lit)             = text $ showLit lit
-showSyntax (Ann expr tp range)   = showSyntax expr
-showSyntax (S.Case expr branches range) =
-  text "match" <+> showSyntax expr <--> indent 2 (vcat (map showSyntaxBranch branches))
-showSyntax (Parens expr name _ range) =
-  showSyntax expr
-showSyntax (Inject tp expr behind range) =
-  text "mask<" <.> text (show tp) <.> text ">{" <--> indent 2 (showSyntax expr) <--> text "}"
-showSyntax (Handler sort scope override allowmask eff pars reinit ret final branches drange range) =
-  text "handler" <--> text (show reinit) <--> text (show ret) <--> text (show final) <--> text (show branches)
-  -- TODO: Better show handlers
-
-showSyntaxBranch :: S.Branch UserType -> Doc
-showSyntaxBranch (S.Branch pat [S.Guard (S.Var n _ _) body]) | nameTrue == n
-  = showSyntaxPattern pat <+> text "->" <--> indent 2 (showSyntax body)
-showSyntaxBranch (S.Branch pat [guard])
-  = showSyntaxPattern pat <+> text "|" <+> showSyntaxGuard guard
-showSyntaxBranch b = text $ show b
-
-showPatBinder :: ValueBinder (Maybe UserType) (S.Pattern UserType) -> Doc
-showPatBinder (ValueBinder name _ (S.PatWild rng) nameRange range)
-  = text $ nameStem name
-showPatBinder (ValueBinder name _ pat nameRange range)
-  = text (nameStem name) <+> text "as" <+> showSyntaxPattern pat
-
-showSyntaxPattern :: S.Pattern UserType -> Doc
-showSyntaxPattern (S.PatWild range) = text "_"
-showSyntaxPattern (S.PatVar binder) = showPatBinder binder
-showSyntaxPattern (PatAnn pat tp range) = showSyntaxPattern pat
-showSyntaxPattern (S.PatCon name args nameRng range) =
-  if isNameTuple name then tupled (map showPatternArg args)
-  else text (nameStem name) <.> tupled (map showPatternArg args)
-showSyntaxPattern (PatParens pat range) = tupled [showSyntaxPattern pat]
-showSyntaxPattern (S.PatLit lit) = text $ showLit lit
-
-showPatternArg :: (Maybe (Name,Range), S.Pattern UserType) -> Doc
-showPatternArg (Nothing,pat) = showSyntaxPattern pat
-showPatternArg (Just (name,_),S.PatWild rng) = text $ nameStem name
-showPatternArg (Just (name,_),pat) = text (nameStem name) <+> text "=" <+> showSyntaxPattern pat
-
-showSyntaxGuard :: S.Guard UserType -> Doc
-showSyntaxGuard (S.Guard guard body)
-  = showSyntax guard <+> text "->" <--> indent 2 (showSyntax body)
-
-showLit :: S.Lit -> String
-showLit (S.LitInt i range) = show i
-showLit (S.LitFloat f range) = show f
-showLit (S.LitChar c range) = show c
-showLit (S.LitString s range) = show s

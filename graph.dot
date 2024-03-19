@@ -1,0 +1,21 @@
+digraph G {
+0 -> 1
+1 -> 2
+1 -> 4
+2 -> 3
+2 -> 4
+4 [label="Env Refinements: <<?([x,y]):::Top>>
+
+nothing"]
+1 [label="EVAL: <<[x,y]:::Top>> ExprBasic(x)
+
+nothing"]
+3 [label="EXPR: <<Top>> DefNonRec(order2)
+
+nothing"]
+2 [label="CALL: <<[x,y]:::Top>> LamBody([x,y])
+
+nothing"]
+ 0 [label="Start"]
+
+}

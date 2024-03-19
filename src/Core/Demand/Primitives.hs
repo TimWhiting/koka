@@ -14,7 +14,17 @@ import Core.Demand.StaticContext
 import Core.Demand.DemandAnalysis
 import Core.Demand.DemandMonad
 
-nameIntMult = coreIntName "*"
+nameIntMul = coreIntName "*"
+nameIntDiv = coreIntName "/"
+nameIntMod = coreIntName "%"
+
+intOp :: (Integer -> Integer -> Integer) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+intOp f (ctx, env) = do
+  p1 <- evalParam 0 ctx env
+  p2 <- evalParam 1 ctx env
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2))) env
+    _ -> doBottom
 
 createPrimitives :: FixDemandR x s e ()
 createPrimitives = do
@@ -30,25 +40,9 @@ createPrimitives = do
       qexpr (fromJust $ contextOf ctx, env)
       )
     -- Integer functions
-    addPrimitive nameIntAdd (\(ctx, env) -> do
-      p1 <- evalParam 0 ctx env
-      p2 <- evalParam 1 ctx env
-      case (p1, p2) of
-        (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (i1 + i2))) env
-        _ -> doBottom
-      )
-    addPrimitive nameIntSub (\(ctx, env) -> do
-      p1 <- evalParam 0 ctx env
-      p2 <- evalParam 1 ctx env
-      case (p1, p2) of
-        (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (i1 - i2))) env
-        _ -> doBottom
-      )
-    addPrimitive nameIntMult (\(ctx, env) -> do
-      p1 <- evalParam 0 ctx env
-      p2 <- evalParam 1 ctx env
-      case (p1, p2) of
-        (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (i1 * i2))) env
-        _ -> doBottom
-      )
+    addPrimitive nameIntAdd (intOp (+))
+    addPrimitive nameIntSub (intOp (-))
+    addPrimitive nameIntMul (intOp (*))
+    addPrimitive nameIntDiv (intOp div)
+    addPrimitive nameIntMod (intOp mod)
   return ()

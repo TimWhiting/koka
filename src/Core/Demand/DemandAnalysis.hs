@@ -210,8 +210,6 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
           findUsage first expr childCtx env
       _ -> childrenUsages
 
-
-
 addPrimitive :: Name -> ((ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
 addPrimitive name m = do
   updateState (\state -> state{primitives = M.insert name m (primitives state)})
@@ -427,7 +425,6 @@ matchesPatternLit litc env pat =
     PatVar _ p -> matchesPatternLit litc env p
     PatWild -> True
     _ -> False
-
 
 patSubsumed :: Pattern -> LiteralChange -> Bool
 patSubsumed (PatLit (LitInt i)) (LiteralChangeInt (LChangeSingle x)) = i == x

@@ -15,25 +15,26 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Maybe (catMaybes, mapMaybe)
 import Data.Set(Set)
+import Compile.Module (Module(..))
+import qualified Syntax.Syntax as Syn
+import qualified Syntax.Syntax as S
+import Syntax.Pretty
+import Syntax.RangeMap
+import qualified Core.Core as C
+import Common.Range
+import Common.Name (Name(..))
+import Core.Core
+import Type.Type
+import Lib.PPrint
+import Compile.BuildContext (BuildContext)
+import Compile.Options (Terminal, Flags)
 import Core.Demand.StaticContext
 import Core.Demand.FixpointMonad
 import Core.Demand.DemandMonad
 import Core.Demand.AbstractValue
 import Core.Demand.Primitives
-import Compile.Module (Module(..))
-import qualified Syntax.Syntax as Syn
-import qualified Syntax.Syntax as S
-import qualified Core.Core as C
-import Common.Range
-import Syntax.RangeMap
-import Common.Name (Name(..))
-import Core.Core
-import Type.Type
-import Debug.Trace (trace)
-import Compile.BuildContext (BuildContext)
-import Compile.Options (Terminal, Flags)
 import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
-import Lib.PPrint
+import Debug.Trace (trace)
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
 findContext r ri = do
@@ -111,9 +112,9 @@ toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
 toSynConstr ctx = do
   (x, y) <- findSourceExpr ctx
   return $ case x of
-    Just x -> Just $ show $ showSyntax x
+    Just x -> Just $ show $ ppSyntaxExpr x
     _ -> case y of
-      Just y -> Just $ show $ showSyntaxDef y
+      Just y -> Just $ show $ ppSyntaxDef y
       _ -> Nothing
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
@@ -132,8 +133,8 @@ sourceEnvCtx ctx =
       se <- findSourceExpr c
       e <- sourceEnvCtx cc
       return $ case se of
-        (Just se, _) -> show (showSyntax se <+> text e)
-        (_, Just de) -> show (showSyntaxDef de <+> text e)
+        (Just se, _) -> show (ppSyntaxExpr se <+> text e)
+        (_, Just de) -> show (ppSyntaxDef de <+> text e)
         _ -> show c ++ " " ++ e
 
 findSourceExpr :: ExprContext -> PostFixR x s e (Maybe Syn.UserExpr, Maybe (Syn.Def Syn.UserType))
