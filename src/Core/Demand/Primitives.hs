@@ -43,6 +43,6 @@ createPrimitives = do
     addPrimitive nameIntAdd (intOp (+))
     addPrimitive nameIntSub (intOp (-))
     addPrimitive nameIntMul (intOp (*))
-    addPrimitive nameIntDiv (intOp div)
-    addPrimitive nameIntMod (intOp mod)
+    addPrimitive nameIntDiv (intOp div) -- TODO: Handle division by zero
+    addPrimitive nameIntMod (intOp mod) -- TODO: Handle division by zero
   return ()

@@ -40,7 +40,8 @@ import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd)
 import Compile.Module (Module(..), ModStatus (..), moduleNull)
 import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
 import Syntax.RangeMap
-import Lib.PPrint (Pretty(..))
+import Lib.PPrint (Pretty(..)) 
+import qualified Lib.PPrint as P
 import Debug.Trace
 import Core.Demand.StaticContext
 import Core.Demand.AbstractValue
@@ -195,11 +196,11 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
           visitEachChild ctx $ do
             childCtx <- currentContext <$> getEnv
             m <- contextLength <$> getEnv
-            findUsage False expr childCtx (limitmenv (EnvCtx (IndetCtx tn ctx) env) m)
+            findUsage False expr childCtx (limitmenv (EnvCtx (IndetCtx tn) env) m)
       ExprCBasic _ c (Var{varName=TName{getName=name2}}) ->
         if nameEq name2 then do
           query <- getQueryString
-          return $! trace (query ++ "Found usage in " ++ showContextPath ctx) (c, env)
+          return $! trace (query ++ "Found usage in " ++ show (ppContextPath ctx)) (c, env)
         else
           -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
           doBottom
@@ -274,7 +275,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
     --         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the sub-query to disregard traces that don’t contribute
             -- trace (query ++ "REF: " ++ show ctx) $ return []
             let binded = bind ctx v env
-            -- trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
+            trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
             case binded of
               BoundLam lamctx lamenv index -> do
                 AChangeClos appctx appenv <- qcall (lamctx, lamenv)
@@ -282,10 +283,10 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 param <- focusParam index appctx
                 qeval (param, appenv)
               BoundDef parentCtx ctx boundEnv index -> do
-                param <- focusChild parentCtx index
+                trace (query ++ "REF-def: " ++ show parentCtx ++ " " ++ show index) $ return []
                 qeval (ctx, boundEnv)
               BoundDefRec parentCtx ctx boundEnv index -> do
-                param <- focusChild parentCtx index
+                trace (query ++ "REF-defrec: " ++ show parentCtx ++ " " ++ show index) $ return []
                 qeval (ctx, boundEnv)
               BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
                 mscrutinee <- focusChild parentCtx 0
@@ -365,14 +366,18 @@ evalPatternRef expr env pat = do
   case pat of
     BoundPatVar _ -> qeval (expr, env)
     BoundPatIndex 0 b -> evalPatternRef expr env b -- Only support singleton patterns for now
-    BoundConIndex con i b -> do
+    BoundConIndex con i subBinding -> do
       AChangeConstr conApp cenv <- qeval (expr, env)
-      let App (Con nm _) tms rng = exprOfCtx expr -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
-      if con /= nm then
-        doBottom
-      else do
-        x <- focusChild conApp i
-        evalPatternRef expr cenv pat
+      let App c tms rng = exprOfCtx conApp -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
+      f <- focusChild conApp 0
+      AChangeConstr cexpr _ <- qeval (f, cenv)
+      case exprOfCtx cexpr of
+        Con nm _ ->
+          if con /= nm then
+            doBottom
+          else do
+            x <- focusChild conApp i
+            evalPatternRef x cenv subBinding
 
 evalBranches :: AChange -> ExprContext -> EnvCtx -> [(Branch, Int)] -> FixDemandR x s e AChange
 evalBranches ch ctx env branches =

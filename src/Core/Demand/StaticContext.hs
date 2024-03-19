@@ -10,7 +10,7 @@ module Core.Demand.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,
-                          contextId,contextOf,exprOfCtx,modCtx,showContextPath,modCtxOf,
+                          contextId,contextOf,exprOfCtx,modCtx,ppContextPath,modCtxOf,
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamNames,
@@ -110,21 +110,21 @@ enclosingLambda ctx =
     ExprCTerm{} -> Nothing
     ModuleC{} -> Nothing
 
-showContextPath :: ExprContext -> String
-showContextPath ctx =
+ppContextPath :: ExprContext -> Doc
+ppContextPath ctx =
   case ctx of
-    ModuleC _ _ n -> "Module " ++ show n
-    DefCRec _ c _ _ _ -> showContextPath c ++ " -> DefRec " ++ show (defTName $ defOfCtx ctx)
-    DefCNonRec _ c _ _ -> showContextPath c ++ " -> DefNonRec " ++ show (defTName $ defOfCtx ctx)
-    LamCBody _ c tn _ -> showContextPath c ++ " -> LamBody(" ++ show tn ++ ")"
-    AppCLambda _ c _ -> showContextPath c ++ " -> AppLambda"
-    AppCParam _ c _ _ -> showContextPath c ++ " -> AppParam"
-    LetCDef _ c _ _ _ -> showContextPath c ++ " -> LetDef " ++ show (defTName $ defOfCtx ctx)
-    LetCBody _ c _ _ -> showContextPath c ++ " -> LetBody"
-    CaseCMatch _ c _ -> showContextPath c ++ " -> CaseMatch"
-    CaseCBranch _ c _ _ _ -> showContextPath c ++ " -> CaseBranch"
-    ExprCBasic _ c _ -> showContextPath c ++ " -> " ++ show ctx
-    ExprCTerm _ _ -> "Query Error"
+    ModuleC _ _ n -> text "Module " <+> text (show n)
+    DefCRec _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("DefRec " ++ show (defTName $ defOfCtx ctx))
+    DefCNonRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("DefNonRec " ++ show (defTName $ defOfCtx ctx))
+    LamCBody _ c tn _ -> ppContextPath c <+> text "->" <+> text ("LamBody(" ++ show tn ++ ")")
+    AppCLambda _ c _ -> ppContextPath c <+> text "->" <+> text "AppLambda"
+    AppCParam _ c _ _ -> ppContextPath c <+> text "->" <+> text "AppParam"
+    LetCDef _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("LetDef " ++ show (defTName $ defOfCtx ctx))
+    LetCBody _ c _ _ -> ppContextPath c <+> text "->" <+> text "LetBody"
+    CaseCMatch _ c _ -> ppContextPath c <+> text "->" <+> text "CaseMatch"
+    CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseBranch"
+    ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
+    ExprCTerm _ _ -> text "Query Error"
 
 lamVar :: Int -> ExprContext -> C.Expr
 lamVar index ctx =
@@ -331,8 +331,8 @@ findApplicationFromRange prog rng =
 
 findDefFromRange :: UserProgram -> Range -> Maybe UserDef
 findDefFromRange prog rng =
-  findFromRange prog rng (\d -> 
-      case d of 
+  findFromRange prog rng (\d ->
+      case d of
         S.Def vb rng0 _ _ _ _ -> if rng `rangesOverlap` rng0 then Just d else Nothing
     ) (const Nothing)
 

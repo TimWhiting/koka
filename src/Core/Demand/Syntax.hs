@@ -85,7 +85,8 @@ runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
                     queries <- getResults
                     buildc' <- buildc <$> getStateR
                     ress <- mapM getAbValueResults (S.toList queries)
-                    ress' <- mapM getAbResult (concat ress)
+                    let resM = M.fromListWith joinAbValue (concat ress)
+                    ress' <- mapM getAbResult (M.toList resM)
                     return (ress', buildc')
   return (l, r, bc)
 
@@ -127,7 +128,7 @@ sourceEnv (EnvTail env) = sourceEnvCtx env
 sourceEnvCtx :: Ctx -> PostFixR x s e String
 sourceEnvCtx ctx =
   case ctx of
-    IndetCtx tn c -> return $ "?" ++ intercalate "," (map show tn)
+    IndetCtx tn -> return $ "?" ++ intercalate "," (map show tn)
     TopCtx -> return "Top"
     BCallCtx c cc -> do
       se <- findSourceExpr c
@@ -150,6 +151,7 @@ findSourceExpr ctx =
         LetCDef{} -> findDef (defOfCtx ctx)
         AppCParam _ c _ _ -> findSourceExpr c
         AppCLambda _ c _ -> findSourceExpr c
+        ExprCBasic _ c _ -> findSourceExpr c
         _ ->
           trace ("Unknown lambda type " ++ show ctx ++ ": " ++ show (maybeExprOfCtx ctx)) $ return (Nothing, Nothing)
   where

@@ -66,7 +66,7 @@ toAbValueText (env, (fns, defs, lits, constrs, topTypes)) =
       topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
       resText = closureText <> litsText <> defsText <> constrsText <> topTypesText
       hc =
-        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if null resText then "(unknown error)" else resText))
+        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if null resText then "⊥" else resText))
   in T.pack hc
 
 -- Handles hover requests
@@ -102,7 +102,7 @@ hoverHandler
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 
                               buildContext term flags (rng, rngInfo) 
-                              (fromJust mod) BasicEnvs 3
+                              (fromJust mod) BasicEnvs 0
                  case res of
                     (!x:xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext

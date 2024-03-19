@@ -192,7 +192,7 @@ data PatBinding =
   BoundPatVar C.Pattern -- This is the PatVar variable it is bound to
   -- The variable is bound in the subpattern at the given index with the given constructor
   | BoundConIndex TName Int PatBinding
-  | BoundPatIndex Int PatBinding
+  | BoundPatIndex Int PatBinding deriving (Show)
 
 data BindInfo =
   BoundLam ExprContext EnvCtx Int
@@ -201,7 +201,7 @@ data BindInfo =
   | BoundCase ExprContext ExprContext EnvCtx Int {- which match branch -} PatBinding
   | BoundModule ExprContext EnvCtx
   | BoundGlobal TName VarInfo
-  | BoundError ExprContext
+  | BoundError ExprContext deriving (Show)
 
 -- BIND: The resulting context is not only a nested context focused on a lambda body It is also
 -- can be focused on a Let Body or Recursive Let binding It can also be focused on a Recursive Top
@@ -219,12 +219,12 @@ bind ctx var@(C.Var tname vInfo) env =
     ModuleC _ mod _ ->
       if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod) tname then BoundModule ctx env
       else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) (BoundGlobal tname vInfo) 
-    DefCRec _ ctx' names i d -> lookupName (BoundDefRec ctx') names ctx'
-    DefCNonRec _ ctx' names d -> lookupName (BoundDef ctx') names ctx'
+    DefCRec _ ctx' names i d -> lookupName (BoundDefRec ctx) names ctx'
+    DefCNonRec _ ctx' names d -> lookupName (BoundDef ctx) names ctx'
     LamCBody _ ctx' names _  -> lookupNameNewCtx BoundLam names ctx'
     AppCLambda _ ctx _ -> bind ctx var env
     AppCParam _ ctx _ _ -> bind ctx var env
-    LetCDef _ ctx' names i _ -> lookupNameI (BoundDef ctx') (i + 1) names ctx'
+    LetCDef _ ctx' names i _ -> lookupName (BoundDef ctx') names ctx'
     LetCBody _ ctx' names _ -> lookupName (BoundDef ctx') names ctx'
     CaseCMatch _ ctx _ -> bind ctx var env
     CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
@@ -253,11 +253,6 @@ bind ctx var@(C.Var tname vInfo) env =
       case elemIndex tname names
         of Just x -> mk ctx env x
            _ -> bind ctx' var env
-    lookupNameI mk i names ctx' =
-      case elemIndex tname names
-        of Just x -> mk ctx env i
-           _ -> bind ctx' var env
-
 
 data EnvCtx = EnvCtx Ctx EnvCtx
             | EnvTail Ctx
@@ -272,7 +267,7 @@ showEnvCtx (EnvTail ctx) = show ctx
 
 ---------------- Environment Based Ctx -------------------
 data Ctx =
-  IndetCtx [TName] ExprContext
+  IndetCtx [TName]
   | BCallCtx !ExprContext !Ctx
   | TopCtx
   | CtxEnd
@@ -281,7 +276,7 @@ data Ctx =
 instance Show Ctx where
   show ctx =
     case ctx of
-      IndetCtx tn c -> "?(" ++ show tn ++ ")"
+      IndetCtx tn -> "?(" ++ show tn ++ ")"
       BCallCtx ctx cc -> "call{" ++ showSimpleContext ctx ++ "," ++ show cc ++ "}"
       TopCtx -> "Top"
       CtxEnd -> "."
@@ -289,7 +284,7 @@ instance Show Ctx where
 showSimpleCtx :: Ctx -> String
 showSimpleCtx ctx =
   case ctx of
-    IndetCtx tn c -> show tn
+    IndetCtx tn -> show tn
     BCallCtx ctx cc -> "call{" ++ showSimpleContext ctx ++ ", " ++ showSimpleCtx cc ++ "}"
     TopCtx -> "Top"
     CtxEnd -> "."
@@ -302,7 +297,7 @@ indeterminateStaticCtx ctx =
     DefCNonRec _ ctx' _ _ -> indeterminateStaticCtx ctx'
     LamCBody _ ctx' tn _ ->
       let parent = indeterminateStaticCtx ctx'
-      in EnvCtx (IndetCtx tn ctx) parent
+      in EnvCtx (IndetCtx tn) parent
     AppCLambda _ ctx _ -> indeterminateStaticCtx ctx
     AppCParam _ ctx _ _ -> indeterminateStaticCtx ctx
     LetCDef _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
@@ -361,7 +356,7 @@ subsumesCtx c1 c2 =
   case (c1, c2) of
     (TopCtx, TopCtx) -> True
     (CtxEnd, CtxEnd) -> True
-    (IndetCtx tn1 c1, IndetCtx tn2 c2) -> tn1 == tn2 && c1 == c2
+    (IndetCtx tn1, IndetCtx tn2) -> tn1 == tn2
     (BCallCtx id1 env1, BCallCtx id2 env2) -> id1 == id2 && env1 `subsumesCtx` env2
     (IndetCtx{}, BCallCtx{}) -> True
     (IndetCtx{}, TopCtx{}) -> True

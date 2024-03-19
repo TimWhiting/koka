@@ -250,10 +250,10 @@ focusBody e = do
 focusChild :: ExprContext -> Int -> FixDemandR x s e ExprContext
 focusChild e index = do
   children <- childrenContexts e
-  trace ("Focused child " ++ show children) $ return ()
+  -- trace ("Focused child " ++ show children) $ return ()
   query <- getQueryString
   if index < length children then
-    trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
+    -- trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
       return $ children !! index
     else error (query ++ "Children looking for child at " ++ show index ++ " " ++ show children)
 
