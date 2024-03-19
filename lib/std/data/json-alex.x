@@ -18,6 +18,8 @@ type jslex
 
 alias action = sslice -> pure jslex
 alias alexInput = sslice
+alias alexUser = ()
+alias alexEff = total
 fun alexGetByte(s: alexInput): maybe<(char, alexInput)>
   s.next()
 
@@ -60,18 +62,18 @@ $hex          = [0-9a-fA-F]
 -----------------------------------------------------------
 program :-
 -- white space
-<0> @whitespace           { fn(s) JSWhite }
-<0> @number               { fn(s) JSNum(s) }
-<0> "true"                 { fn(s) JSTrue }
-<0> "false"                { fn(s) JSFalse }
-<0> "null"                 { fn(s) JSNull }
-<0> ","               { fn(s) JSValueSep }
-<0> "{"           { fn(s) JSObjOpen }
-<0> "}"          { fn(s) JSObjClose }
-<0> ":"            { fn(s) JSObjColon }
-<0> "["            { fn(s) JSArrayOpen }
-<0> "]"           { fn(s) JSArrayClose }
-<0> @string               { fn(s) JSStr(s) }
+<0> @whitespace           { fn(s:sslice) JSWhite }
+<0> @number               { fn(s:sslice) JSNum(s) }
+<0> "true"                 { fn(s:sslice) JSTrue }
+<0> "false"                { fn(s:sslice) JSFalse }
+<0> "null"                 { fn(s:sslice) JSNull }
+<0> ","               { fn(s:sslice) JSValueSep }
+<0> "{"           { fn(s:sslice) JSObjOpen }
+<0> "}"          { fn(s:sslice) JSObjClose }
+<0> ":"            { fn(s:sslice) JSObjColon }
+<0> "["            { fn(s:sslice) JSArrayOpen }
+<0> "]"           { fn(s:sslice) JSArrayClose }
+<0> @string               { fn(s:sslice) JSStr(s) }
 
 {
 }
