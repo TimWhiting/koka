@@ -262,48 +262,45 @@ doEval cq@(EvalQ (ctx, env)) query = do
             trace (query ++ "REF: Primitive " ++ show tn) $ return ()
             return (AChangeClos ctx env)
           else do
-          -- TODO: Consider static overloading
-            -- trace (query ++ "REF: " ++ show ctx) $ return []
-    -- REF: 
-    --  - When the binding is focused on a lambda body, we need to find the callers of the lambda, and proceed as original formulation. 
-    --  - When the binding is in the context of a Let Body we can directly evaluate the let binding as the value of the variable being bound (indexed to match the binding).
-    --  - When the binding is in the context of a Let binding, it evaluates to that binding or the indexed binding in a mutually recursive group 
-    --  - When the binding is a top level definition - it evaluates to that definition 
-    --  - When the binding is focused on a match body then we need to issue a sub-query for the evaluation of the match expression that contributes to the binding, 
-    --         and then consider the abstract value and find all abstract values that match the pattern of the branch in question 
-    --         and only consider the binding we care about. 
-    --         This demonstrates one point where a context sensitive shape analysis could propagate more interesting information along with the sub-query to disregard traces that don’t contribute
-            -- trace (query ++ "REF: " ++ show ctx) $ return []
             let binded = bind ctx v env
             trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
             case binded of
+              BoundError e -> error "Binding Error"
               BoundLam lamctx lamenv index -> do
+                -- For a lambda bound name, we find the callers, and then evaluate the corresponding parameter of the applications found
                 AChangeClos appctx appenv <- qcall (lamctx, lamenv)
                 trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
-                param <- focusParam index appctx
-                qeval (param, appenv)
+                evalParam index appctx appenv
               BoundDef parentCtx ctx boundEnv index -> do
                 trace (query ++ "REF-def: " ++ show parentCtx ++ " " ++ show index) $ return []
+                -- For a top level definition, it evaluates to itself
                 qeval (ctx, boundEnv)
               BoundDefRec parentCtx ctx boundEnv index -> do
                 trace (query ++ "REF-defrec: " ++ show parentCtx ++ " " ++ show index) $ return []
+                -- For a top level definition, it evaluates to itself
                 qeval (ctx, boundEnv)
+              BoundLetDef parentCtx ctx boundEnv index -> do
+                trace (query ++ "REF-let: " ++ show parentCtx ++ " " ++ show index) $ return []
+                -- For a top level definition, it evaluates to itself
+                ctx' <- focusChild parentCtx index
+                qeval (ctx', boundEnv)
               BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
+                -- For a case bound name, we focus the scruitinee and delegate to a special function to handle this recursively for nested patterns
                 mscrutinee <- focusChild parentCtx 0
                 -- trace (query ++ "REF: scrutinee of case " ++ show scrutinee) $ return []
                 evalPatternRef mscrutinee caseEnv patBinding
               BoundModule modulectx modenv -> do
+                -- For a name bound in the top level of the current module we evaluate to the lambda of the definition
                 lamctx <- getTopDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
                 qeval (lamctx, EnvTail TopCtx)
-              BoundError e -> error "Binding Error"
               BoundGlobal _ _ -> do
+                -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
                 ext <- bindExternal v
                 case ext of
                   Just (modulectx@ModuleC{}, index) -> do
                     lamctx <- getTopDefCtx modulectx (getName tn)
-                    -- Evaluates just to the lambda
-                    qeval (lamctx, EnvTail TopCtx)
+                    qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
                   _ -> error $ "REF: can't find what the following refers to " ++ show ctx
         App (TypeApp (Con nm repr) _) args rng -> do
           trace (query ++ "APPCon: " ++ show ctx) $ return []
@@ -367,17 +364,25 @@ evalPatternRef expr env pat = do
     BoundPatVar _ -> qeval (expr, env)
     BoundPatIndex 0 b -> evalPatternRef expr env b -- Only support singleton patterns for now
     BoundConIndex con i subBinding -> do
-      AChangeConstr conApp cenv <- qeval (expr, env)
-      let App c tms rng = exprOfCtx conApp -- TODO: We should eval the f of the App to get to the actual constructor (past the type applications)
-      f <- focusChild conApp 0
-      AChangeConstr cexpr _ <- qeval (f, cenv)
-      case exprOfCtx cexpr of
-        Con nm _ ->
-          if con /= nm then
-            doBottom
-          else do
-            x <- focusChild conApp i
-            evalPatternRef x cenv subBinding
+      -- trace ("EVALPatRef: " ++ show expr ++ " " ++ show pat) $ return ()
+      res <- qeval (expr, env)
+      case res of
+        AChangeConstr conApp cenv -> do          
+          -- trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
+          case exprOfCtx conApp of 
+            App c tms rng -> do 
+              f <- focusChild conApp 0 -- Evaluate the head of the application to get the constructor (could be polymorphic)
+              AChangeConstr cexpr _ <- qeval (f, cenv)
+              case exprOfCtx cexpr of
+                Con nm _ ->
+                  if con /= nm then
+                    doBottom
+                  else do
+                    x <- focusParam i conApp
+                    evalPatternRef x cenv subBinding
+            Con nm _ -> doBottom -- Could also be a singleton constructor, but there are no bound variables there
+        e -> error ("EVALPatRef: Not a constructor " ++ show e)
+      
 
 evalBranches :: AChange -> ExprContext -> EnvCtx -> [(Branch, Int)] -> FixDemandR x s e AChange
 evalBranches ch ctx env branches =

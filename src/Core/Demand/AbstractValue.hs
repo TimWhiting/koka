@@ -87,7 +87,7 @@ data AChange =
 instance Show AChange where
   show (AChangeClos expr env) =
     showNoEnvClosure (expr, env)
-  show (AChangeConstr expr env) = 
+  show (AChangeConstr expr env) =
     showNoEnvClosure (expr, env)
   show (AChangeLit lit env) =
     show lit
@@ -198,6 +198,7 @@ data BindInfo =
   BoundLam ExprContext EnvCtx Int
   | BoundDef ExprContext ExprContext EnvCtx Int
   | BoundDefRec ExprContext ExprContext EnvCtx Int
+  | BoundLetDef ExprContext ExprContext EnvCtx Int
   | BoundCase ExprContext ExprContext EnvCtx Int {- which match branch -} PatBinding
   | BoundModule ExprContext EnvCtx
   | BoundGlobal TName VarInfo
@@ -218,14 +219,14 @@ bind ctx var@(C.Var tname vInfo) env =
   case ctx of
     ModuleC _ mod _ ->
       if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod) tname then BoundModule ctx env
-      else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) (BoundGlobal tname vInfo) 
+      else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) (BoundGlobal tname vInfo)
     DefCRec _ ctx' names i d -> lookupName (BoundDefRec ctx) names ctx'
     DefCNonRec _ ctx' names d -> lookupName (BoundDef ctx) names ctx'
     LamCBody _ ctx' names _  -> lookupNameNewCtx BoundLam names ctx'
     AppCLambda _ ctx _ -> bind ctx var env
     AppCParam _ ctx _ _ -> bind ctx var env
-    LetCDef _ ctx' names i _ -> lookupName (BoundDef ctx') names ctx'
-    LetCBody _ ctx' names _ -> lookupName (BoundDef ctx') names ctx'
+    LetCDef _ ctx' names i _ -> lookupName (BoundLetDef ctx') names ctx'
+    LetCBody _ ctx' names _ -> lookupName (BoundLetDef ctx') names ctx'
     CaseCMatch _ ctx _ -> bind ctx var env
     CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
     ExprCBasic _ ctx _ -> bind ctx var env
@@ -236,10 +237,10 @@ bind ctx var@(C.Var tname vInfo) env =
         Just (pat, index) -> BoundCase ctx' ctx env i (BoundPatIndex index (findPatBinding pat))
         Nothing -> bind ctx' var env
     findPatBinding :: C.Pattern -> PatBinding
-    findPatBinding pat = 
+    findPatBinding pat =
       case pat of
         C.PatVar tn sub -> if tn == tname then BoundPatVar pat else findPatBinding sub
-        C.PatCon con fields _ _ _ _ _ _ -> 
+        C.PatCon con fields _ _ _ _ _ _ ->
           case find (\(p, i) -> tname `elem` bv p) (zip fields [0..]) of
             Just (subPat, i) -> BoundConIndex con i (findPatBinding subPat)
         C.PatLit _ -> error "PatLit should not occur"
@@ -289,22 +290,22 @@ showSimpleCtx ctx =
     TopCtx -> "Top"
     CtxEnd -> "."
 
-indeterminateStaticCtx :: ExprContext -> EnvCtx
-indeterminateStaticCtx ctx =
+indeterminateStaticCtx :: Int -> ExprContext -> EnvCtx
+indeterminateStaticCtx m ctx =
   case ctx of
     ModuleC _ mod _ -> EnvTail TopCtx
-    DefCRec _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
-    DefCNonRec _ ctx' _ _ -> indeterminateStaticCtx ctx'
+    DefCRec _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
+    DefCNonRec _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     LamCBody _ ctx' tn _ ->
-      let parent = indeterminateStaticCtx ctx'
-      in EnvCtx (IndetCtx tn) parent
-    AppCLambda _ ctx _ -> indeterminateStaticCtx ctx
-    AppCParam _ ctx _ _ -> indeterminateStaticCtx ctx
-    LetCDef _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
-    LetCBody _ ctx' _ _ -> indeterminateStaticCtx ctx'
-    CaseCMatch _ ctx _ -> indeterminateStaticCtx ctx
-    CaseCBranch _ ctx' _ _ _ -> indeterminateStaticCtx ctx'
-    ExprCBasic _ ctx _ -> indeterminateStaticCtx ctx
+      let parent = indeterminateStaticCtx m ctx'
+      in if m == 0 then EnvCtx CtxEnd parent else EnvCtx (IndetCtx tn) parent
+    AppCLambda _ ctx _ -> indeterminateStaticCtx m ctx
+    AppCParam _ ctx _ _ -> indeterminateStaticCtx m ctx
+    LetCDef _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
+    LetCBody _ ctx' _ _ -> indeterminateStaticCtx m ctx'
+    CaseCMatch _ ctx _ -> indeterminateStaticCtx m ctx
+    CaseCBranch _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
+    ExprCBasic _ ctx _ -> indeterminateStaticCtx m ctx
     ExprCTerm{} -> error "Never should occur"
 
 maybeModOfEnv :: EnvCtx -> Maybe ExprContext

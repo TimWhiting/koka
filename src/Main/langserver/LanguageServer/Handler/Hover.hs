@@ -102,7 +102,7 @@ hoverHandler
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 
                               buildContext term flags (rng, rngInfo) 
-                              (fromJust mod) BasicEnvs 0
+                              (fromJust mod) BasicEnvs 1
                  case res of
                     (!x:xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext

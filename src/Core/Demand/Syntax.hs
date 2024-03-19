@@ -35,6 +35,8 @@ import Core.Demand.AbstractValue
 import Core.Demand.Primitives
 import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
 import Debug.Trace (trace)
+import Core.Pretty (prettyExpr)
+import Type.Pretty (defaultEnv)
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
 findContext r ri = do
@@ -63,7 +65,7 @@ runEvalQueryFromRangeSource :: BuildContext
 runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   (lattice, r, bc) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
     createPrimitives
-    let q = EvalQ (ctx, indeterminateStaticCtx ctx)
+    let q = EvalQ (ctx, indeterminateStaticCtx m ctx)
     query q
     addResult q
   return (r, bc)
@@ -110,13 +112,8 @@ getAbResult (envctx, res) = do
     (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes))
 
 toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
-toSynConstr ctx = do
-  (x, y) <- findSourceExpr ctx
-  return $ case x of
-    Just x -> Just $ show $ ppSyntaxExpr x
-    _ -> case y of
-      Just y -> Just $ show $ ppSyntaxDef y
-      _ -> Nothing
+toSynConstr ctx =
+  return $ Just (show (prettyExpr defaultEnv $ exprOfCtx ctx))
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv (EnvCtx env tail) = do
