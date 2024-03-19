@@ -19,8 +19,7 @@ module Core.Demand.DemandAnalysis(
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,
   getQueryString,getState,updateState,getUnique,getAbValueResults,
-  childrenContexts,analyzeEachChild,visitChildrenCtxs,
-  createPrimitives,
+  childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,
 ) where
 import GHC.IO (unsafePerformIO)
 import Control.Monad hiding (join)
@@ -37,7 +36,7 @@ import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe, catMaybes
 import Data.List (find, findIndex, elemIndex, union, intercalate)
 import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
-import Common.NamePrim (nameOpen, nameEffectOpen)
+import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd)
 import Compile.Module (Module(..), ModStatus (..), moduleNull)
 import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
 import Syntax.RangeMap
@@ -85,6 +84,11 @@ qexpr c = query (ExprQ c)
 qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qeval c = query (EvalQ c)
 
+evalParam :: Int -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
+evalParam i ctx env = do
+  param <- focusParam i ctx
+  qeval (param, env)
+
 -- The main fixpoint loop
 query :: Query -> FixDemandR x s e AChange
 query q = do
@@ -127,12 +131,14 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
   bc <- buildc <$> getState
   env <- getEnv
   let deps = buildcModules bc
-  let x = find (\m -> modName m == newName (nameModule name)) deps
+  let modNameLookup = newModuleName (nameModule name)
+  let x = find (\m -> modName m == modNameLookup) deps
+  trace ("Loading module " ++ show (modName <$> x) ++ " for external variable binding " ++ show tn) $ return ()
   case x of
     Just mod -> do
       ctxId <- newModContextId mod
       mod' <- if modStatus mod == LoadedIface then do
-        -- TODO: set some level of effort / time required for loading externals, but potentially load all core modules on startup
+                -- TODO: set some level of effort / time required for loading externals, but potentially load all core modules on startup
                 buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [modName mod] bc))
                 case buildc' of
                   Left err -> do
@@ -204,25 +210,7 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
           findUsage first expr childCtx env
       _ -> childrenUsages
 
-createPrimitives :: FixDemandR x s e ()
-createPrimitives = do
-  newModId <- newContextId
-  let modName = newName "primitives"
-      modCtx = ModuleC newModId (moduleNull modName) modName
-  do
-    addPrimitive nameEffectOpen (\(ctx, env) -> do
-            -- Open applied to some function results in that function
-            trace ("OPEN Primitive: " ++ show ctx) $ return ()
-            ctx' <- focusParam 0 ctx
-            qeval (ctx', env)
-          )
-    addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
-        assertion ("EffectOpen: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) (i == 0) $ return ()
-        trace ("OPEN Primitive: " ++ show ctx) $ return ()
-        -- Open's first parameter is a function and flows anywhere that the application flows to
-        qexpr (fromJust $ contextOf ctx, env)
-      )
-  return ()
+
 
 addPrimitive :: Name -> ((ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
 addPrimitive name m = do
@@ -241,18 +229,24 @@ isPrimitive ctx = do
     _ -> return False
 
 evalPrimitive :: ExprContext -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-evalPrimitive (ExprCBasic _ _ (Var tn _)) ctx env = do
-  prims <- primitives <$> getState
-  case M.lookup (getName tn) prims of
-    Just m -> m (ctx, env)
-    Nothing -> error ("evalPrimitive: Primitive not found! " ++ show tn)
+evalPrimitive var ctx env = do
+  case maybeExprOfCtx var of
+    Just (Var tn _) -> do
+      prims <- primitives <$> getState
+      case M.lookup (getName tn) prims of
+        Just m -> m (ctx, env)
+        Nothing -> error ("evalPrimitive: Primitive not found! " ++ show tn)
+    _ -> error ("evalPrimitive: Not a primitive! " ++ show var)
 
 exprPrimitive :: ExprContext -> Int -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-exprPrimitive (ExprCBasic _ _ (Var tn _)) index ctx env = do
-  prims <- eprimitives <$> getState
-  case M.lookup (getName tn) prims of
-    Just m -> m index (ctx, env)
-    Nothing -> error ("exprPrimitive: Primitive not found! " ++ show tn)
+exprPrimitive var index ctx env = do
+  case maybeExprOfCtx var of
+    Just (Var tn _) -> do
+      prims <- eprimitives <$> getState
+      case M.lookup (getName tn) prims of
+        Just m -> m index (ctx, env)
+        Nothing -> error ("exprPrimitive: Primitive not found! " ++ show tn)
+    _ -> error ("exprPrimitive: Not a primitive! " ++ show var)
 
 doEval :: Query -> String -> FixDemandR x s e AChange
 doEval cq@(EvalQ (ctx, env)) query = do

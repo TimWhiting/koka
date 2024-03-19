@@ -70,6 +70,7 @@ library
       Core.Demand.DemandAnalysis
       Core.Demand.DemandMonad
       Core.Demand.FixpointMonad
+      Core.Demand.Primitives
       Core.Demand.StaticContext
       Core.Demand.Syntax
       Core.Divergent

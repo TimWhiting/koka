@@ -19,6 +19,7 @@ import Core.Demand.StaticContext
 import Core.Demand.FixpointMonad
 import Core.Demand.DemandMonad
 import Core.Demand.AbstractValue
+import Core.Demand.Primitives
 import Compile.Module (Module(..))
 import qualified Syntax.Syntax as Syn
 import qualified Syntax.Syntax as S
@@ -31,7 +32,7 @@ import Type.Type
 import Debug.Trace (trace)
 import Compile.BuildContext (BuildContext)
 import Compile.Options (Terminal, Flags)
-import Core.Demand.DemandAnalysis (createPrimitives, query, analyzeEachChild, getAbValueResults)
+import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
 import Lib.PPrint
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
