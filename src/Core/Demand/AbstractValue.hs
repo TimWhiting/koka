@@ -363,6 +363,7 @@ subsumesCtx c1 c2 =
     (IndetCtx{}, TopCtx{}) -> True
     (CtxEnd, TopCtx{}) -> True
     (CtxEnd, BCallCtx{}) -> True
+    (CtxEnd, IndetCtx{}) -> True
     _ -> False
 
 refineCtx :: (EnvCtx, EnvCtx) -> EnvCtx -> EnvCtx

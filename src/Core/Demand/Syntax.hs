@@ -107,7 +107,7 @@ getAbResult (envctx, res) = do
   sourceLams <- mapM findSourceExpr lams
   let (sourceLambdas, sourceDefs) = unzip sourceLams
   return $ trace
-    ("eval " ++ showSimpleEnv envctx ++
+    ("eval " ++ show envctx ++
      "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
     (envctx, (catMaybes sourceLambdas, catMaybes sourceDefs, vs, catMaybes consts, topTypes))
 

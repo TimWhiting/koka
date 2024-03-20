@@ -40,7 +40,7 @@ import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd)
 import Compile.Module (Module(..), ModStatus (..), moduleNull)
 import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
 import Syntax.RangeMap
-import Lib.PPrint (Pretty(..)) 
+import Lib.PPrint (Pretty(..))
 import qualified Lib.PPrint as P
 import Debug.Trace
 import Core.Demand.StaticContext
@@ -93,14 +93,13 @@ evalParam i ctx env = do
 -- The main fixpoint loop
 query :: Query -> FixDemandR x s e AChange
 query q = do
-  trace (show q) $ return ()
   res <- memo (QueryInput q) $ do
     let cq = newQuery q (\queryStr -> do
                 trace (queryStr ++ show q) $ return ()
                 x <- case q of
                         CallQ _ -> doCall q queryStr
                         ExprQ _ -> doExpr q queryStr
-                        EvalQ _ -> doEval q queryStr  
+                        EvalQ _ -> doEval q queryStr
                 trace (queryStr ++ "==> " ++ show x) $ return x
                 )
     let refined = do
@@ -119,7 +118,7 @@ getRefine :: EnvCtx -> FixDemandR x s e EnvCtx
 getRefine env =
   if isFullyDetermined env then doBottom else
   case env of
-    EnvCtx cc tail -> 
+    EnvCtx cc tail ->
         each [
           refine env,
           do
@@ -259,28 +258,28 @@ doEval cq@(EvalQ (ctx, env)) query = do
         v@(Var tn _) -> do -- REF CLAUSE
           prim <- isPrimitive ctx
           if prim then do
-            trace (query ++ "REF: Primitive " ++ show tn) $ return ()
+            -- trace (query ++ "REF: Primitive " ++ show tn) $ return ()
             return (AChangeClos ctx env)
           else do
             let binded = bind ctx v env
-            trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
+            -- trace (query ++ "REF: " ++ show tn ++ " bound to " ++ show binded) $ return []
             case binded of
               BoundError e -> error "Binding Error"
               BoundLam lamctx lamenv index -> do
                 -- For a lambda bound name, we find the callers, and then evaluate the corresponding parameter of the applications found
                 AChangeClos appctx appenv <- qcall (lamctx, lamenv)
-                trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
+                -- trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
                 evalParam index appctx appenv
               BoundDef parentCtx ctx boundEnv index -> do
-                trace (query ++ "REF-def: " ++ show parentCtx ++ " " ++ show index) $ return []
+                -- trace (query ++ "REF-def: " ++ show parentCtx ++ " " ++ show index) $ return []
                 -- For a top level definition, it evaluates to itself
                 qeval (ctx, boundEnv)
               BoundDefRec parentCtx ctx boundEnv index -> do
-                trace (query ++ "REF-defrec: " ++ show parentCtx ++ " " ++ show index) $ return []
+                -- trace (query ++ "REF-defrec: " ++ show parentCtx ++ " " ++ show index) $ return []
                 -- For a top level definition, it evaluates to itself
                 qeval (ctx, boundEnv)
               BoundLetDef parentCtx ctx boundEnv index -> do
-                trace (query ++ "REF-let: " ++ show parentCtx ++ " " ++ show index) $ return []
+                -- trace (query ++ "REF-let: " ++ show parentCtx ++ " " ++ show index) $ return []
                 -- For a top level definition, it evaluates to itself
                 ctx' <- focusChild parentCtx index
                 qeval (ctx', boundEnv)
@@ -303,21 +302,21 @@ doEval cq@(EvalQ (ctx, env)) query = do
                     qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
                   _ -> error $ "REF: can't find what the following refers to " ++ show ctx
         App (TypeApp (Con nm repr) _) args rng -> do
-          trace (query ++ "APPCon: " ++ show ctx) $ return []
+          -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           children <- childrenContexts ctx
           return $ AChangeConstr ctx env
         App (Con nm repr) args rng -> do
-          trace (query ++ "APPCon: " ++ show ctx) $ return []
+          -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           children <- childrenContexts ctx
           return $ AChangeConstr ctx env
         App f tms rng -> do
-          trace (query ++ "APP: " ++ show ctx) $ return []
+          -- trace (query ++ "APP: " ++ show ctx) $ return []
           fun <- focusChild ctx 0
           -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
           AChangeClos lam lamenv <- qeval (fun, env)
           prim <- isPrimitive lam
           if prim then do
-            trace (query ++ "APP: Primitive " ++ show lam) $ return ()
+            -- trace (query ++ "APP: Primitive " ++ show lam) $ return ()
             evalPrimitive lam ctx env
           else do
             -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
@@ -330,7 +329,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
             result <- qeval (bd, newEnv)
             qeval (bd, newEnv)
         TypeApp{} ->
-          trace (query ++ "TYPEAPP: " ++ show ctx) $
+          -- trace (query ++ "TYPEAPP: " ++ show ctx) $
           case ctx of
             DefCNonRec{} -> return $! AChangeClos ctx env
             DefCRec{} -> return $! AChangeClos ctx env
@@ -338,7 +337,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
               ctx' <- focusChild ctx 0
               qeval (ctx',env)
         TypeLam{} ->
-          trace (query ++ "TYPE LAM: " ++ show ctx) $
+          -- trace (query ++ "TYPE LAM: " ++ show ctx) $
           case ctx of
             DefCNonRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
             DefCRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
@@ -347,11 +346,11 @@ doEval cq@(EvalQ (ctx, env)) query = do
               qeval (ctx',env)
         Lit l -> return $! injLit l env
         Let defs e -> do
-          trace (query ++ "LET: " ++ show ctx) $ return []
+          -- trace (query ++ "LET: " ++ show ctx) $ return []
           ex <- focusChild ctx 0 -- Lets have their return expression as first child
           qeval (ex, env)
         Case expr branches -> do
-          trace (query ++ "CASE: " ++ show ctx) $ return []
+          -- trace (query ++ "CASE: " ++ show ctx) $ return []
           e <- focusChild ctx 0
           res <- qeval (e, env)
           evalBranches res ctx env (zip branches [0..])
@@ -367,10 +366,10 @@ evalPatternRef expr env pat = do
       -- trace ("EVALPatRef: " ++ show expr ++ " " ++ show pat) $ return ()
       res <- qeval (expr, env)
       case res of
-        AChangeConstr conApp cenv -> do          
+        AChangeConstr conApp cenv -> do
           -- trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
-          case exprOfCtx conApp of 
-            App c tms rng -> do 
+          case exprOfCtx conApp of
+            App c tms rng -> do
               f <- focusChild conApp 0 -- Evaluate the head of the application to get the constructor (could be polymorphic)
               AChangeConstr cexpr _ <- qeval (f, cenv)
               case exprOfCtx cexpr of
@@ -382,13 +381,14 @@ evalPatternRef expr env pat = do
                     evalPatternRef x cenv subBinding
             Con nm _ -> doBottom -- Could also be a singleton constructor, but there are no bound variables there
         e -> error ("EVALPatRef: Not a constructor " ++ show e)
-      
+
 
 evalBranches :: AChange -> ExprContext -> EnvCtx -> [(Branch, Int)] -> FixDemandR x s e AChange
 evalBranches ch ctx env branches =
   case branches of
     [] -> doBottom
-    (Branch [p] _, i):xs -> do
+    b@(Branch [p] _, i):xs -> do
+      -- trace ("Looking for matching branch " ++ show b ++ " " ++ show ch) $ return ()
       matches <- matchesPattern ch p
       if matches then do
         -- trace ("Found matching branch " ++ show p) $ return ()
@@ -405,15 +405,25 @@ matchesPattern ch pat =
 matchesPatternConstr :: ExprContext -> EnvCtx -> Pattern -> FixDemandR x s e Bool
 matchesPatternConstr conApp env pat = do
   case pat of
-    PatCon{patConName} ->
+    PatCon{patConName, patConInfo=ci} -> do
       case exprOfCtx conApp of
-        App (Con nm _) _ rng | nm == patConName ->
-          do
-            childs <- childrenContexts conApp
-            matchesPatternsCtx
-              (Prelude.drop 1 childs) -- Drop the constructor
-              (patConPatterns pat) env
-        _ -> return False
+        Con nm _ | nm == patConName -> return True 
+        Con nm _ | nm /= patConName -> return False 
+        _ -> do
+          -- trace ("Looking for matching constructor " ++ show patConName ++ " in " ++ show (exprOfCtx conApp)) $ return ()
+          conE <- focusChild conApp 0
+          con <- qeval (conE, env)
+          case con of
+            AChangeConstr c _ -> do
+              case exprOfCtx c of
+                Con nm _ | nm == patConName -> 
+                  if Prelude.null (patConPatterns pat) then return True
+                  else do
+                    childs <- childrenContexts conApp
+                    matchesPatternsCtx
+                      (Prelude.drop 1 childs) -- Drop the constructor
+                      (patConPatterns pat) env
+                _ -> return False
     PatVar _ p -> matchesPatternConstr conApp env p
     PatWild -> return True
     _ -> return False
@@ -461,10 +471,10 @@ doExpr cq@(ExprQ (ctx,env)) query = do
       AChangeClos lam lamenv <- qeval (fn, env)
       prim <- isPrimitive lam
       if prim then do
-        trace (query ++ "OPERAND: Primitive " ++ show lam) $ return ()
+        -- trace (query ++ "OPERAND: Primitive " ++ show lam) $ return ()
         exprPrimitive lam index ctx env
       else do
-        trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
+        -- trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
         bd <- focusBody lam
         -- trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
         -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
@@ -482,32 +492,32 @@ doExpr cq@(ExprQ (ctx,env)) query = do
       -- return [(ctx, env)]
       error $ "Exprs led to ExprCTerm" ++ show ctx
     DefCNonRec _ c index _ -> do
-      trace (query ++ "DEF NonRec: Env is " ++ show env) $ return []
+      -- trace (query ++ "DEF NonRec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
       call <- case c of
         ModuleC{} -> do
-          trace (query ++ "DEF NonRec: In module binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
+          -- trace (query ++ "DEF NonRec: In module binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) c env
         _ -> do
-          trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
+          -- trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
       -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
       if isMain ctx then return $ AChangeClos c (EnvTail TopCtx) else qexpr call
     DefCRec _ c _ _ _ -> do
-      trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
+      -- trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
       call <- case c of
         ModuleC{} -> do
-          trace (query ++ "DEF Rec: In module binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
+          -- trace (query ++ "DEF Rec: In module binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) c env
         _ -> do
-          trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
+          -- trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
       -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
       qexpr call
     ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)
     ModuleC{} -> do -- This is for calls to main
-      trace (query ++ "Module: " ++ show ctx) $ return []
+      -- trace (query ++ "Module: " ++ show ctx) $ return []
       return $ AChangeClos ctx env
     _ ->
       case contextOf ctx of
@@ -533,7 +543,7 @@ doCall cq@(CallQ(ctx, env)) query =
             if cc1 `subsumesCtx` cc0 then
               trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               return $! AChangeClos callctx callenv
-            else if cc0 `subsumesCtx` cc1 then do
+            else if cc0 `subsumesCtx` cc1 then do -- cc1 is more refined
               trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
               instantiate query (EnvCtx cc1 p) env
               doBottom
