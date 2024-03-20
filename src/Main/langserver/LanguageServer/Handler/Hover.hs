@@ -33,7 +33,7 @@ import Common.Range as R
 import Common.Range (showFullRange)
 import Common.Name (nameNil, ModuleName)
 import Common.ColorScheme (ColorScheme (colorNameQual, colorSource), Color (Gray))
-import Compile.Module (modRangeMap, modLexemes, Module (modSourcePath))
+import Compile.Module (modRangeMap, modLexemes, Module (modSourcePath, modCoreUnopt))
 import Compile.Options (Flags, colorSchemeFromFlags, prettyEnvFromFlags)
 import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
 import Kind.Pretty (prettyKind)
@@ -57,6 +57,8 @@ import LanguageServer.Conversions (fromLspPos, toLspRange)
 import LanguageServer.Monad
 import LanguageServer.Handler.Pretty (ppComment, asKokaCode)
 import Debug.Trace (trace)
+import Core.Pretty (prettyCore)
+import Common.Syntax (Target(..), CTarget (..))
 
 toAbValueText (env, (fns, defs, lits, constrs, topTypes)) =
   let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
@@ -99,6 +101,7 @@ hoverHandler
                  flags <- getFlags
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
+                 liftIO $ writeFile "debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 
                               buildContext term flags (rng, rngInfo) 

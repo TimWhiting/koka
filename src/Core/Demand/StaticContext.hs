@@ -10,7 +10,7 @@ module Core.Demand.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,
-                          contextId,contextOf,exprOfCtx,modCtx,ppContextPath,modCtxOf,
+                          contextId,contextOf,exprOfCtx,modCtx,ppContextPath,modCtxOf,parentDefOfCtx,
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamNames,
@@ -125,6 +125,16 @@ ppContextPath ctx =
     CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseBranch"
     ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
     ExprCTerm _ _ -> text "Query Error"
+
+parentDefOfCtx :: ExprContext -> C.Def
+parentDefOfCtx ctx =
+  case ctx of
+    DefCRec _ _ _ index dg -> defsOf dg !! index
+    DefCNonRec _ _ _ dg -> head $ defsOf dg
+    LetCDef _ c _ _ dg -> parentDefOfCtx c
+    _ -> case contextOf ctx
+      of Just c -> parentDefOfCtx c
+         Nothing -> error "No parent def"
 
 lamVar :: Int -> ExprContext -> C.Expr
 lamVar index ctx =

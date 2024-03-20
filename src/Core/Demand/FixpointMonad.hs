@@ -244,7 +244,7 @@ writeDependencyGraph cache = do
             ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes) 
             ++ "\n 0 [label=\"Start\"]\n"
             ++ "\n}"
-  writeFile "graph.dot" dot
+  writeFile "debug/graph.dot" dot
   return ()
 
 -- Runs a fixpoint computation with an environment and state
