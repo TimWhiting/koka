@@ -17,7 +17,7 @@
 module Core.Demand.DemandAnalysis(
   query,refine,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
-  refineQuery,getEnv,withEnv,
+  refineQuery,getEnv,withEnv,succAEnv,
   getQueryString,getState,updateState,getUnique,getAbValueResults,
   childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,
 ) where
@@ -303,11 +303,9 @@ doEval cq@(EvalQ (ctx, env)) query = do
                   _ -> error $ "REF: can't find what the following refers to " ++ show ctx
         App (TypeApp (Con nm repr) _) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
-          children <- childrenContexts ctx
           return $ AChangeConstr ctx env
         App (Con nm repr) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
-          children <- childrenContexts ctx
           return $ AChangeConstr ctx env
         App f tms rng -> do
           -- trace (query ++ "APP: " ++ show ctx) $ return []
@@ -322,11 +320,9 @@ doEval cq@(EvalQ (ctx, env)) query = do
             -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
             bd <- focusBody lam
             -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-            childs <- childrenContexts ctx
             -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
             succ <- succAEnv ctx env
             let newEnv = EnvCtx succ lamenv
-            result <- qeval (bd, newEnv)
             qeval (bd, newEnv)
         TypeApp{} ->
           -- trace (query ++ "TYPEAPP: " ++ show ctx) $

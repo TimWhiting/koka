@@ -35,7 +35,7 @@ createPrimitives = do
   newModId <- newContextId
   let modName = newName "primitives"
       modCtx = ModuleC newModId (moduleNull modName) modName
-  do            
+  do
     -- Open applied to some function results in that function
     addPrimitive nameEffectOpen (\(ctx, env) -> evalParam 0 ctx env)
     addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
@@ -44,33 +44,25 @@ createPrimitives = do
       qexpr (fromJust $ contextOf ctx, env)
       )
     addPrimitive (namePerform 1) (\(ctx, env) -> do
-      -- Perform's first parameter is the effiencient evidence index, but we will just find the handler dynamically
-      case parentDefOfCtx ctx of
-        C.Def _ sch _ _ _ _ _ _ -> do
-          case splitFunScheme sch of
-            Just (_, _, _, eff, _) -> do
-              let effName = case eff of
-                    TCon (TypeCon n _) -> n
-                    _ -> failure "perform: Expected effect type"
-              -- Find the handler for the effect
-              AChangeConstr handlerCon handleEnv <- findHandler effName ctx env
-              -- Perform's second parameter is the function to run with the handler as an argument
-              AChangeClos sel selEnv <- evalParam 1 ctx env
-              -- The third parameter is the argument to the operation
-              opArg <- evalParam 2 ctx env
-              -- Expression relation on the selector function needs to get the handler
-              -- We've got a match statement with a asingle case, so just use the first case
-              case exprOfCtx sel of
-                C.Case scrutinee [C.Branch [p] _] -> 
-                  case p of
-                    C.PatCon{patConPatterns} ->
-                      case findIndex (\p -> case p of {PatWild -> False; PatVar _ _-> True;}) patConPatterns of 
-                        Just i -> do
-                          AChangeConstr f fenv <- evalParam i handlerCon handleEnv
-                          doBottom
-                          -- Somehow we need to evaluate the f body with the argument being the opArg
-            _ -> doBottom
+      -- Perform's second parameter is the function to run with the handler as an argument
+      AChangeClos lam lamenv <- evalParam 1 ctx env
+      bod <- focusBody lam
+      succ <- succAEnv ctx env
+      let newEnv = EnvCtx succ lamenv
+      qeval (bod, newEnv)
       )
+    addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
+      trace ("Perform: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) $ return ()
+      let parentCtx = fromJust $ contextOf ctx
+      -- Perform's second parameter is the function to run with the handler as an argument
+      case exprOfCtx parentCtx of
+        C.App _ _ rng -> do
+          f <- focusParam 0 parentCtx
+          arg <- focusParam 1 parentCtx
+          -- TODO: Check to make sure this get's cached properly and not re-evaluated
+          appCtx <- addContextId (\id -> LamCBody id parentCtx [] (C.App (exprOfCtx f) [exprOfCtx arg] Nothing))
+          return $ AChangeClos appCtx env -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
+        )
 
     addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
     -- Integer functions
