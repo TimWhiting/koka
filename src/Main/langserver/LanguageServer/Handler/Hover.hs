@@ -86,7 +86,7 @@ hoverHandler
                                        maybe done next res
 
         pos <- liftIO $ fromLspPos uri pos0
-        -- trace ("hover: lookup: " ++ show uri) $
+        trace ("hover: lookup: " ++ show uri) $ return ()
         liftMaybe (lookupModuleName uri) $ \(fpath,modname) ->
           -- trace ("hover: found: " ++ show modname) $
            liftMaybe (lookupRangeMap modname) $ \(rmap,lexemes) ->

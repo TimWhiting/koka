@@ -7,6 +7,7 @@
 -----------------------------------------------------------------------------
 
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Core.Demand.DemandMonad(
   AFixChange(..), FixInput(..), FixOutput(..),
@@ -20,7 +21,8 @@ module Core.Demand.DemandMonad(
   -- Env stuff
   DEnv(..), getUnique, newQuery,
   -- Query stuff
-  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal
+  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
+  emptyEnv, emptyState
   ) where
 
 import Control.Monad.State (gets, MonadState (..))
@@ -40,7 +42,7 @@ import Compile.Module
 import qualified Core.Core as C
 import Control.Monad (zipWithM)
 import Debug.Trace (trace)
-import Data.List (find)
+import Data.List (find, intercalate)
 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
@@ -50,6 +52,7 @@ type PostFix r s e = PostFixR r s e (FixOutput AFixChange)
 data State r e s = State{
   buildc :: BuildContext,
   states :: M.Map ExprContextId ExprContext,
+  moduleContexts :: M.Map ModuleName ExprContext,
   maxContextId :: Int,
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
   unique :: Int,
@@ -61,6 +64,14 @@ data State r e s = State{
   additionalState :: s
 }
 
+emptyState :: BuildContext -> s -> State r e s
+emptyState bc s =
+  State bc M.empty M.empty 0 M.empty 0 S.empty M.empty M.empty s
+  
+emptyEnv :: Int -> AnalysisKind -> Terminal -> Flags -> ExprContext -> e -> DEnv e
+emptyEnv m kind term flags modCtx e =
+  DEnv m term flags kind modCtx modCtx "" "" e
+
 
 data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
 
@@ -71,7 +82,6 @@ data DEnv x = DEnv{
   analysisKind :: !AnalysisKind,
   currentContext :: !ExprContext,
   currentModContext :: !ExprContext,
-  currentEnv :: !EnvCtx,
   currentQuery :: !String,
   queryIndentation :: !String,
   additionalEnv :: x
@@ -282,7 +292,7 @@ addResult x = do
 newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
 newQuery q d = do
   unique <- getUnique
-  withEnv (\env -> env{currentContext = queryCtx q, currentEnv = queryEnv q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
+  withEnv (\env -> env{currentContext = queryCtx q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
     res <- d query
     return $ FA res
@@ -342,12 +352,12 @@ newContextId = do
   updateState (\s -> s{maxContextId = newCtxId})
   return $! ExprContextId newCtxId (moduleName (contextId id))
 
-newModContextId :: Module -> FixDemandR x s e ExprContextId
+newModContextId :: ModuleName -> FixDemandR x s e ExprContextId
 newModContextId mod = do
   state <- getState
   let newCtxId = maxContextId state + 1
   updateState (\s -> s{maxContextId = newCtxId})
-  return $! ExprContextId newCtxId (modName mod)
+  return $! ExprContextId newCtxId mod
 
 addContextId :: (ExprContextId -> ExprContext) -> FixDemandR x s e ExprContext
 addContextId f = do
@@ -398,6 +408,7 @@ childrenContexts ctx = do
           -- trace ("No children for " ++ show ctx) $ return ()
           newCtxs <- case ctx of
                 ModuleC _ mod _ -> do
+                  -- trace ("Getting children of module " ++ show (modName mod)) $ return ()
                   res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
                   return $! concat res
                 DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)

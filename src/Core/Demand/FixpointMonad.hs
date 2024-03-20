@@ -21,12 +21,12 @@ module Core.Demand.FixpointMonad(
   SimpleLattice(..), SLattice,
   Lattice(..),
   Contains(..),
-  Label(..),
+  Label(..), ContX(..),
   memo, push, each, doBottom,
   withEnv, getEnv,
   getCache, cacheLookup,
   getState, getStateR, setState, updateState,
-  runFix, runFixCont, runFixFinish,
+  runFix, runFixCont, runFixFinish, runFixFinishC,
   runExample
   ) where
 import Debug.Trace (trace)
@@ -264,6 +264,12 @@ runFixFinish e s f = do
   (x, (cache, state, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1)
   writeDependencyGraph cache
   return (fmap (\(f, s, t) -> f) cache, state, x)
+
+runFixFinishC :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d, Integer, [ContX e s i l d]), s, x)
+runFixFinishC e s f = do
+  (x, (cache, state, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1)
+  writeDependencyGraph cache
+  return (cache, state, x)
 
 ------------------------------ EXAMPLE USAGE ---------------------------------
 ---- An Example of how to use the fixpoint interface -- used for testing

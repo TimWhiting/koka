@@ -7,6 +7,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Core.Demand.Syntax where
 
@@ -33,18 +34,19 @@ import Core.Demand.FixpointMonad
 import Core.Demand.DemandMonad
 import Core.Demand.AbstractValue
 import Core.Demand.Primitives
-import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
+import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults, loadModule)
 import Debug.Trace (trace)
 import Core.Pretty (prettyExpr)
 import Type.Pretty (defaultEnv)
+import Data.Foldable (minimumBy)
 
-findContext :: Range -> RangeInfo -> FixDemandR x s e ExprContext
+findContext :: Range -> RangeInfo -> FixDemandR x s e (ExprContext, Range)
 findContext r ri = do
   ctx <- currentContext <$> getEnv
   case ctx of
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) | r `rangesOverlap` rng ->
       trace ("found overlapping range " ++ showFullRange "" rng ++ " " ++ show ctx) $
-        return ctx
+        return (ctx, rng)
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
       doBottom
     LetCDef{} -> fromNames ctx [defTName (defOfCtx ctx)]
@@ -53,11 +55,16 @@ findContext r ri = do
     CaseCBranch _ _ tnames _ _ -> fromNames ctx tnames
     _ -> doBottom
   where fromNames ctx tnames =
-          case mapMaybe (\tn -> (case fmap (rangesOverlap r) (originalRange tn) of {Just True -> Just tn; _ -> Nothing})) tnames of
-              [tn] -> do
+          case mapMaybe (\tn ->
+                  case fmap (rangesOverlap r) (originalRange tn) of
+                    Just True -> Just (tn, originalRange tn)
+                    _ -> Nothing
+                ) tnames of
+              [(tn, Just rng)] -> do
                 id <- newContextId
-                return $ ExprCBasic id ctx (Var tn InfoNone)
+                return (ExprCBasic id ctx (Var tn InfoNone), rng)
               _ -> doBottom
+
 
 runEvalQueryFromRangeSource :: BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
@@ -78,19 +85,25 @@ runQueryAtRange :: BuildContext
 runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)
-  (l, s, (r, bc)) <-
-    runFixFinish (DEnv m term flags kind modCtx modCtx (EnvTail TopCtx) "" "" ())
-                 (State bc M.empty 0 M.empty 0 S.empty M.empty M.empty ()) $ do
-                    runFixCont $ do
-                            ctx <- analyzeEachChild (const $ findContext r ri) modCtx
-                            doQuery ctx
+  (l, s, (r, bc)) <- do
+    (_, _, ctxs) <- runFixFinish (emptyEnv m kind term flags modCtx ()) (emptyState bc ()) $
+              do runFixCont $ do
+                    res <- analyzeEachChild (const $ findContext r ri) modCtx
+                    addResult res
+                 getResults
+    runFixFinishC (emptyEnv m kind term flags modCtx ()) (emptyState bc ()) $ do
+                    runFixCont $ do 
+                      (_,ctx) <- loadModule (modName mod)
+                      withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
+                        doQuery (fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) (S.toList ctxs)))
                     queries <- getResults
                     buildc' <- buildc <$> getStateR
                     ress <- mapM getAbValueResults (S.toList queries)
                     let resM = M.fromListWith joinAbValue (concat ress)
                     ress' <- mapM getAbResult (M.toList resM)
                     return (ress', buildc')
-  return (l, r, bc)
+  writeDependencyGraph l
+  return (M.map (\(x, _, _) -> x) l, r, bc)
 
 getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (EnvCtx, ([S.UserExpr], [S.UserDef], [Syn.Lit], [String], Set Type))
 getAbResult (envctx, res) = do
@@ -171,7 +184,7 @@ findSourceExpr ctx =
     findForApp rng = do
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, rng) of
-        (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $ 
+        (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $
           return (findApplicationFromRange prog rng, Nothing)
         _ -> trace ("No program or rng" ++ show rng ++ " " ++ show program) $ return (Nothing, Nothing)
 
@@ -228,3 +241,38 @@ topTypesOf ab =
     map maybeTopC (M.elems (charV ab)) ++
     map maybeTopS (M.elems (stringV ab))
   )
+
+writeDependencyGraph :: forall r e x . M.Map FixInput (FixOutput AFixChange, Integer, [ContX (DEnv e) (State r e x) FixInput FixOutput AFixChange]) -> IO ()
+writeDependencyGraph cache = do
+  let cache' = M.filterWithKey (\k v -> case k of {QueryInput _ -> True; _ -> False}) cache
+  let values = M.foldl (\acc (v, toId, conts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
+  let nodes = M.foldlWithKey (\acc k (v, toId, conts) -> (toId,k,v):acc) [] cache'
+  let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
+  let dot = "digraph G {\n"
+            ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
+            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes) 
+            ++ "\n 0 [label=\"Start\"]\n"
+            ++ "\n}"
+  writeFile "debug/graph.dot" dot
+  return ()
+
+instance Label (FixOutput m) where
+  label (A a) = ""
+  label (E e) = ""
+  label N = "⊥"
+
+instance Label FixInput where
+  label (QueryInput q) = label q
+  label (EnvInput e) = "Env Refinements: " ++ escape (showSimpleEnv e)
+
+instance Label Query where
+  label (CallQ (ctx, env)) = "Call: " ++ showEscape ctx ++ escape (showSimpleEnv env)
+  label (ExprQ (ctx, env)) = "Expr: " ++ showEscape ctx ++ escape (showSimpleEnv env)
+  label (EvalQ (ctx, env)) = "Eval: " ++ showEscape ctx ++ escape (showSimpleEnv env)
+
+showEscape :: Show a => a -> String
+showEscape = escape . show
+
+escape :: String -> String
+escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
+escape [] = []

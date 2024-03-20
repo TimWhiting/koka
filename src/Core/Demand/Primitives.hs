@@ -32,46 +32,41 @@ intOp f (ctx, env) = do
 
 createPrimitives :: FixDemandR x s e ()
 createPrimitives = do
-  newModId <- newContextId
-  let modName = newName "primitives"
-      modCtx = ModuleC newModId (moduleNull modName) modName
-  do
-    -- Open applied to some function results in that function
-    addPrimitive nameEffectOpen (\(ctx, env) -> evalParam 0 ctx env)
-    addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
-      assertion ("EffectOpen: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) (i == 0) $ return ()
-      -- Open's first parameter is a function and flows anywhere that the application flows to
-      qexpr (fromJust $ contextOf ctx, env)
+  -- Open applied to some function results in that function
+  addPrimitive nameEffectOpen (\(ctx, env) -> evalParam 0 ctx env)
+  addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
+    assertion ("EffectOpen: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) (i == 0) $ return ()
+    -- Open's first parameter is a function and flows anywhere that the application flows to
+    qexpr (fromJust $ contextOf ctx, env)
+    )
+  addPrimitive (namePerform 1) (\(ctx, env) -> do
+    -- Perform's second parameter is the function to run with the handler as an argument
+    AChangeClos lam lamenv <- evalParam 1 ctx env
+    bod <- focusBody lam
+    succ <- succAEnv ctx env
+    let newEnv = EnvCtx succ lamenv
+    qeval (bod, newEnv)
+    )
+  addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
+    trace ("Perform: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) $ return ()
+    let parentCtx = fromJust $ contextOf ctx
+    -- Perform's second parameter is the function to run with the handler as an argument
+    case exprOfCtx parentCtx of
+      C.App _ _ rng -> do
+        f <- focusParam 0 parentCtx
+        arg <- focusParam 1 parentCtx
+        -- TODO: Check to make sure this get's cached properly and not re-evaluated
+        appCtx <- addContextId (\id -> LamCBody id parentCtx [] (C.App (exprOfCtx f) [exprOfCtx arg] Nothing))
+        return $ AChangeClos appCtx env -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
       )
-    addPrimitive (namePerform 1) (\(ctx, env) -> do
-      -- Perform's second parameter is the function to run with the handler as an argument
-      AChangeClos lam lamenv <- evalParam 1 ctx env
-      bod <- focusBody lam
-      succ <- succAEnv ctx env
-      let newEnv = EnvCtx succ lamenv
-      qeval (bod, newEnv)
-      )
-    addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
-      trace ("Perform: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) $ return ()
-      let parentCtx = fromJust $ contextOf ctx
-      -- Perform's second parameter is the function to run with the handler as an argument
-      case exprOfCtx parentCtx of
-        C.App _ _ rng -> do
-          f <- focusParam 0 parentCtx
-          arg <- focusParam 1 parentCtx
-          -- TODO: Check to make sure this get's cached properly and not re-evaluated
-          appCtx <- addContextId (\id -> LamCBody id parentCtx [] (C.App (exprOfCtx f) [exprOfCtx arg] Nothing))
-          return $ AChangeClos appCtx env -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
-        )
 
-    addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
-    -- Integer functions
-    addPrimitive nameIntAdd (intOp (+))
-    addPrimitive nameIntSub (intOp (-))
-    addPrimitive nameIntMul (intOp (*))
-    addPrimitive nameIntDiv (intOp div) -- TODO: Handle division by zero
-    addPrimitive nameIntMod (intOp mod) -- TODO: Handle division by zero
-  return ()
+  addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
+  -- Integer functions
+  addPrimitive nameIntAdd (intOp (+))
+  addPrimitive nameIntSub (intOp (-))
+  addPrimitive nameIntMul (intOp (*))
+  addPrimitive nameIntDiv (intOp div) -- TODO: Handle division by zero
+  addPrimitive nameIntMod (intOp mod) -- TODO: Handle division by zero
 
 findHandler :: Name -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
 findHandler nm ctx env = doBottom

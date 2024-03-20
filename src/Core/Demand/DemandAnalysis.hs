@@ -19,7 +19,7 @@ module Core.Demand.DemandAnalysis(
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,succAEnv,
   getQueryString,getState,updateState,getUnique,getAbValueResults,
-  childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,
+  childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,loadModule,
 ) where
 import GHC.IO (unsafePerformIO)
 import Control.Monad hiding (join)
@@ -36,7 +36,7 @@ import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe, catMaybes
 import Data.List (find, findIndex, elemIndex, union, intercalate)
 import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
-import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd)
+import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd, nameCoreHnd)
 import Compile.Module (Module(..), ModStatus (..), moduleNull)
 import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
 import Syntax.RangeMap
@@ -126,31 +126,56 @@ getRefine env =
             return (EnvCtx cc tailRefine)]
     EnvTail cc -> refine env
 
-bindExternal :: Expr -> FixDemandR x s e (Maybe (ExprContext, Maybe Int))
+bindExternal :: Expr -> FixDemandR x s e (Maybe ExprContext)
 bindExternal var@(Var tn@(TName name tp _) vInfo) = do
-  bc <- buildc <$> getState
-  env <- getEnv
-  let deps = buildcModules bc
-  let modNameLookup = newModuleName (nameModule name)
-  let x = find (\m -> modName m == modNameLookup) deps
-  trace ("Loading module " ++ show (modName <$> x) ++ " for external variable binding " ++ show tn) $ return ()
-  case x of
-    Just mod -> do
-      ctxId <- newModContextId mod
-      mod' <- if modStatus mod == LoadedIface then do
-                -- TODO: set some level of effort / time required for loading externals, but potentially load all core modules on startup
-                buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [modName mod] bc))
-                case buildc' of
-                  Left err -> do
-                    trace ("Error loading module " ++ show (modName mod) ++ " " ++ show err) $ return ()
-                    return mod
-                  Right (bc', e) -> do
-                    let mod' = fromJust $ buildcLookupModule (modName mod) bc'
-                    updateState (\state -> state{buildc = bc'})
-                    return mod'
-              else return mod
-      return $ if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') tn then Just (ModuleC ctxId mod' (modName mod'), Nothing) else trace ("External variable binding " ++ show tn ++ ": " ++ show vInfo) Nothing
-    _ -> return Nothing
+  let modName = newModuleName (nameModule name)
+  (mod', ctx) <- loadModule modName
+  if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') tn then return (Just ctx)
+  else trace ("External variable binding not found " ++ show tn ++ ": " ++ show vInfo) (return Nothing)
+
+maybeLoadModule :: ModuleName -> FixDemandR x s e (Maybe Module)
+maybeLoadModule mn = do
+  state <- getState
+  case M.lookup mn (moduleContexts state) of
+    Just (ModuleC _ m _) -> return $ Just m
+    _ -> do
+      bc <- buildc <$> getState
+      env <- getEnv
+      let deps = buildcModules bc
+      let x = find (\m -> modName m == mn) deps
+      ctxId <- newModContextId mn
+      case x of
+        Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
+          trace ("Module already loaded " ++ show mn) $ return ()
+          updateState (\state ->
+            state{
+              moduleContexts = M.insert mn (ModuleC ctxId mod mn) (moduleContexts state)
+            })
+          return $ Just mod
+        _ -> do
+          buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
+          case buildc' of
+            Left err -> do
+              trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
+              return Nothing
+            Right (bc', e) -> do
+              trace ("Loaded module " ++ show mn) $ return ()
+              let Just mod' = buildcLookupModule mn bc'
+              updateState (\state ->
+                state{
+                  buildc = bc',
+                  moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
+                })
+              return $ Just mod'
+
+loadModule :: ModuleName -> FixDemandR x s e (Module, ExprContext)
+loadModule mn = do
+  res <- maybeLoadModule mn
+  case res of
+    Just m -> do
+      st <- getState
+      return (m, moduleContexts st M.! mn)
+    Nothing -> error ("Module " ++ show mn ++ " not found")
 
 
 findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
@@ -293,14 +318,17 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 lamctx <- getTopDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
                 qeval (lamctx, EnvTail TopCtx)
-              BoundGlobal _ _ -> do
-                -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
-                ext <- bindExternal v
-                case ext of
-                  Just (modulectx@ModuleC{}, index) -> do
-                    lamctx <- getTopDefCtx modulectx (getName tn)
-                    qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
-                  _ -> error $ "REF: can't find what the following refers to " ++ show ctx
+              BoundGlobal nm _ -> do
+                -- if newModuleName (nameModule (getName nm)) == nameCoreHnd then
+                --   error ("Hnd: missing primitive " ++ show ctx)
+                -- else do
+                  -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
+                  ext <- bindExternal v
+                  case ext of
+                    Just (modulectx@ModuleC{}) -> do
+                      lamctx <- getTopDefCtx modulectx (getName tn)
+                      qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
+                    _ -> error $ "REF: can't find what the following refers to " ++ show ctx
         App (TypeApp (Con nm repr) _) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           return $ AChangeConstr ctx env
@@ -403,8 +431,8 @@ matchesPatternConstr conApp env pat = do
   case pat of
     PatCon{patConName, patConInfo=ci} -> do
       case exprOfCtx conApp of
-        Con nm _ | nm == patConName -> return True 
-        Con nm _ | nm /= patConName -> return False 
+        Con nm _ | nm == patConName -> return True
+        Con nm _ | nm /= patConName -> return False
         _ -> do
           -- trace ("Looking for matching constructor " ++ show patConName ++ " in " ++ show (exprOfCtx conApp)) $ return ()
           conE <- focusChild conApp 0
@@ -412,7 +440,7 @@ matchesPatternConstr conApp env pat = do
           case con of
             AChangeConstr c _ -> do
               case exprOfCtx c of
-                Con nm _ | nm == patConName -> 
+                Con nm _ | nm == patConName ->
                   if Prelude.null (patConPatterns pat) then return True
                   else do
                     childs <- childrenContexts conApp
@@ -572,12 +600,3 @@ analyzeEachChild analyze ctx = do
           childCtx <- currentContext <$> getEnv
           analyzeEachChild analyze childCtx
   each [self, children]
-
-instance Label (FixOutput m) where
-  label (A a) = ""
-  label (E e) = ""
-  label N = "⊥"
-
-instance Label FixInput where
-  label (QueryInput q) = show q
-  label (EnvInput e) = "Env Refinements: " ++ show e
