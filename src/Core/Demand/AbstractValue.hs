@@ -199,6 +199,7 @@ data BindInfo =
   | BoundDef ExprContext ExprContext EnvCtx Int
   | BoundDefRec ExprContext ExprContext EnvCtx Int
   | BoundLetDef ExprContext ExprContext EnvCtx Int
+  | BoundLetBod ExprContext ExprContext EnvCtx Int
   | BoundCase ExprContext ExprContext EnvCtx Int {- which match branch -} PatBinding
   | BoundModule ExprContext EnvCtx
   | BoundGlobal TName VarInfo
@@ -226,7 +227,7 @@ bind ctx var@(C.Var tname vInfo) env =
     AppCLambda _ ctx _ -> bind ctx var env
     AppCParam _ ctx _ _ -> bind ctx var env
     LetCDef _ ctx' names i _ -> lookupName (BoundLetDef ctx') names ctx'
-    LetCBody _ ctx' names _ -> lookupName (BoundLetDef ctx') names ctx'
+    LetCBody _ ctx' names _ -> lookupName (BoundLetBod ctx') names ctx'
     CaseCMatch _ ctx _ -> bind ctx var env
     CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
     ExprCBasic _ ctx _ -> bind ctx var env

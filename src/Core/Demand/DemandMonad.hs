@@ -22,7 +22,7 @@ module Core.Demand.DemandMonad(
   DEnv(..), getUnique, newQuery,
   -- Query stuff
   Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
-  emptyEnv, emptyState
+  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule,
   ) where
 
 import Control.Monad.State (gets, MonadState (..))
@@ -67,7 +67,12 @@ data State r e s = State{
 emptyState :: BuildContext -> s -> State r e s
 emptyState bc s =
   State bc M.empty M.empty 0 M.empty 0 S.empty M.empty M.empty s
-  
+
+transformState :: (s -> x) -> State r e s -> State b e x
+transformState f (State bc s mc mid cid u fr p ep ad) =
+  State bc s mc mid cid u S.empty M.empty M.empty (f ad)
+
+
 emptyEnv :: Int -> AnalysisKind -> Terminal -> Flags -> ExprContext -> e -> DEnv e
 emptyEnv m kind term flags modCtx e =
   DEnv m term flags kind modCtx modCtx "" "" e
@@ -153,7 +158,7 @@ data FixOutput d =
 getAllRefines :: EnvCtx -> PostFixR x s e(Set EnvCtx)
 getAllRefines env = do
   res <- cacheLookup (EnvInput env)
-  let res' = fmap (\v -> 
+  let res' = fmap (\v ->
                 case v of
                   E e -> e
                   N -> S.empty
@@ -163,7 +168,7 @@ getAllRefines env = do
 getAllStates :: Query -> PostFixR x s e AbValue
 getAllStates q = do
   res <- cacheLookup (QueryInput q)
-  let res' = fmap (\v -> 
+  let res' = fmap (\v ->
                 case v of
                   A a -> a
                   N -> emptyAbValue
@@ -397,20 +402,31 @@ childrenOfDef ctx def =
     C.DefNonRec d -> addContextId (\newId -> DefCNonRec newId ctx [defTName d] def) >>= (\x -> return [x])
     C.DefRec ds -> zipWithM (\i d -> addContextId (\newId -> DefCRec newId ctx (map defTName ds) i def)) [0..] ds
 
+initialModuleContexts :: ExprContext -> FixDemandR x s e [ExprContext]
+initialModuleContexts modCtx = do
+  case modCtx of
+    ModuleC id mod _ -> do
+      -- trace ("Getting children of module " ++ show (contextId modCtx)) $ return ()
+      res <- mapM (childrenOfDef modCtx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
+      let newCtxs = concat res
+      addChildrenContexts id newCtxs
+      return newCtxs
+
 childrenContexts :: ExprContext -> FixDemandR x s e [ExprContext]
-childrenContexts ctx = do
+childrenContexts ctxx = do
+  ctx <- case ctxx of
+          ModuleC _ mod _ -> do
+            (_, modCtx) <- loadModule (modName mod)
+            return modCtx
+          _ -> return ctxx
   withEnv (\env -> env{currentContext = ctx, currentModContext = case ctx of {ModuleC{} -> ctx; _ -> currentModContext env}}) $ do
     let parentCtxId = contextId ctx
     children <- childrenIds <$> getState
     let childIds = M.lookup parentCtxId children
     case childIds of
       Nothing -> do
-          -- trace ("No children for " ++ show ctx) $ return ()
+          -- trace ("No children for " ++ show ctx ++ " " ++ show (contextId ctx)) $ return ()
           newCtxs <- case ctx of
-                ModuleC _ mod _ -> do
-                  -- trace ("Getting children of module " ++ show (modName mod)) $ return ()
-                  res <- mapM (childrenOfDef ctx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
-                  return $! concat res
                 DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 DefCNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 LamCBody _ _ names body -> childrenOfExpr ctx body
@@ -444,3 +460,53 @@ visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
+
+maybeLoadModule :: ModuleName -> FixDemandR x s e (Maybe Module)
+maybeLoadModule mn = do
+  state <- getState
+  case M.lookup mn (moduleContexts state) of
+    Just (ModuleC _ m _) -> return $ Just m
+    _ -> do
+      bc <- buildc <$> getState
+      env <- getEnv
+      let deps = buildcModules bc
+      let x = find (\m -> modName m == mn) deps
+      ctxId <- newModContextId mn
+      
+      case x of
+        Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
+          trace ("Module already loaded " ++ show mn) $ return ()
+          let modCtx = ModuleC ctxId mod mn
+          updateState (\state ->
+            state{
+              moduleContexts = M.insert mn modCtx (moduleContexts state)
+            })
+          initialModuleContexts modCtx
+          return $ Just mod
+        _ -> do
+          buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
+          case buildc' of
+            Left err -> do
+              trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
+              return Nothing
+            Right (bc', e) -> do
+              trace ("Loaded module " ++ show mn) $ return ()
+              let Just mod' = buildcLookupModule mn bc'
+              let modCtx = ModuleC ctxId mod' mn
+              updateState (\state ->
+                state{
+                  buildc = bc',
+                  moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
+                })
+              initialModuleContexts modCtx
+              return $ Just mod'
+
+loadModule :: ModuleName -> FixDemandR x s e (Module, ExprContext)
+loadModule mn = do
+  res <- maybeLoadModule mn
+  case res of
+    Just m -> do
+      st <- getState
+      return (m, moduleContexts st M.! mn)
+    Nothing -> error ("Module " ++ show mn ++ " not found")
+

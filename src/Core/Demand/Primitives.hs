@@ -15,7 +15,7 @@ import Core.Demand.StaticContext
 import Core.Demand.DemandAnalysis
 import Core.Demand.DemandMonad
 import Core.Core as C
-import Type.Type (splitFunScheme, Type (TCon), TypeCon (..))
+import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect)
 import Data.List (findIndex)
 
 nameIntMul = coreIntName "*"
@@ -44,9 +44,15 @@ createPrimitives = do
   addPrimitiveExpr (newQualified "std/core/hnd" "clause-control1") (\index (ctx, env) -> do
     -- ClauseControl1's first parameter is the operation function and flows to wherever the function is applied
     let hnd = enclosingHandle ctx
-    let nm = handlerName ctx
-    act <- focusParam 1 hnd -- The first parameter is the operation clause, second is the action
-    findEffectApps nm act env
+    let hndapp = fromJust $ contextOf hnd
+    let hndenv = envtail env
+    let (nm,tp) = fromJust $ maybeHandlerName ctx
+    act <- focusParam 2 hnd -- The first parameter is the operation clause, second is the return clause, third is the action lambda
+    AChangeClos act actenv <- evalParam 2 hnd env
+    bod <- focusBody act
+    succ <- succAEnv hndapp hndenv
+    let newEnv = EnvCtx succ actenv
+    findEffectApps nm tp bod newEnv
     )
   addPrimitive (namePerform 1) (\(ctx, env) -> do
     -- Perform's second parameter is the function to run with the handler as an argument
@@ -81,9 +87,24 @@ findHandler nm ctx env =
   trace ("FindHandler: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do
   doBottom
 
-findEffectApps :: Name -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-findEffectApps nm ctx env = 
-  trace ("FindEffectApps: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do
-  doBottom
+findEffectApps :: Name -> Effect -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
+findEffectApps nm eff ctx env = 
+  trace ("FindEffectApps: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do 
+  case exprOfCtx ctx of
+    C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
+      trace ("Perform: " ++ show ctx ++ " " ++ show env) $ doBottom
+    C.App{} -> do
+      res <- qeval (ctx, env)
+      case res of
+        AChangeClos lam lamenv -> do
+          case exprOfCtx lam of
+            C.Lam _ eff _ -> do
+              -- effectContains nm eff
+              -- TODO: Don't go inside applications where the function type doesn't admit the effect
+              findEffectApps nm eff lam lamenv
+        _ -> doBottom 
+    _ -> visitEachChild ctx $ do
+          childCtx <- currentContext <$> getEnv 
+          findEffectApps nm eff childCtx env
 
 

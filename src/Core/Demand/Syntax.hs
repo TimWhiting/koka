@@ -34,7 +34,7 @@ import Core.Demand.FixpointMonad
 import Core.Demand.DemandMonad
 import Core.Demand.AbstractValue
 import Core.Demand.Primitives
-import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults, loadModule)
+import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
 import Debug.Trace (trace)
 import Core.Pretty (prettyExpr)
 import Type.Pretty (defaultEnv)
@@ -86,14 +86,18 @@ runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
   let cid = ExprContextId (-1) (modName mod)
       modCtx = ModuleC cid mod (modName mod)
   (l, s, (r, bc)) <- do
-    (_, _, ctxs) <- runFixFinish (emptyEnv m kind term flags modCtx ()) (emptyState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyEnv m kind term flags modCtx ()) (emptyState bc ()) $
               do runFixCont $ do
-                    res <- analyzeEachChild (const $ findContext r ri) modCtx
-                    addResult res
+                    (_,ctx) <- loadModule (modName mod)
+                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
+                      trace ("Context: " ++ show (contextId ctx)) $ return ()
+                      res <- analyzeEachChild modCtx (const $ findContext r ri)
+                      addResult res
                  getResults
-    runFixFinishC (emptyEnv m kind term flags modCtx ()) (emptyState bc ()) $ do
+    runFixFinishC (emptyEnv m kind term flags modCtx ()) (transformState (const ()) s) $ do
                     runFixCont $ do 
                       (_,ctx) <- loadModule (modName mod)
+                      trace ("Context: " ++ show (contextId ctx)) $ return ()
                       withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
                         doQuery (fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) (S.toList ctxs)))
                     queries <- getResults

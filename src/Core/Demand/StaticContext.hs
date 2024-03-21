@@ -11,7 +11,7 @@ module Core.Demand.StaticContext(
                           ExprContextId(..),
                           ExpressionSet,
                           contextId,contextOf,exprOfCtx,modCtx,ppContextPath,
-                          enclosingDef,enclosingHandle,enclosingLambda,handlerName,
+                          enclosingDef,maybeHandleInLambda,enclosingHandle,enclosingLambda,maybeHandlerName,
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamNames,
@@ -75,7 +75,7 @@ data ExprContextId = ExprContextId{
 
 instance Show ExprContextId where
   show id =
-    nameStem (moduleName id) ++ ":" ++ show (exprId id)
+    showFullyExplicit (moduleName id) ++ ":" ++ show (exprId id)
 
 instance Eq ExprContext where
   ctx1 == ctx2 = contextId ctx1 == contextId ctx2
@@ -109,34 +109,44 @@ enclosingDef ctx =
 
 enclosingHandle :: ExprContext -> ExprContext
 enclosingHandle ctx =
-  case exprOfCtx ctx of
-    C.App (C.TypeApp (C.Var tn _) _) _ _ | isHandleName (C.getName tn) -> ctx
-    e -> 
-      case contextOf ctx of
-          Just c -> enclosingHandle c
-          Nothing -> error "No handle found"
+  case maybeHandleInLambda ctx of
+    Just h -> h
+    Nothing -> error "No enclosing handle"
 
-handlerName :: ExprContext -> Name
-handlerName ctx =
+maybeHandleInLambda :: ExprContext -> Maybe ExprContext
+maybeHandleInLambda ctx =
+  case maybeExprOfCtx ctx of
+    Just (C.App (C.TypeApp (C.Var tn _) _) _ _ ) | isHandleName (C.getName tn) -> Just ctx
+    _ -> case ctx of
+      LamCBody{} -> Nothing
+      _ -> maybeHandleInLambda =<< contextOf ctx
+
+-- Gets the name and the type of the effect
+maybeHandlerName :: ExprContext -> Maybe (Name,Type)
+maybeHandlerName ctx =
   case exprOfCtx ctx of
-    C.App (C.TypeApp (C.Con tn _) _) vars _ | isHandlerConName (C.getName tn) -> fromHandlerConName (C.getName tn)
-    e -> 
+    C.App (C.TypeApp (C.Con tn _) _) vars _ | isHandlerConName (C.getName tn) ->
+      case splitFunScheme (C.typeOf tn) of
+        Just (_, _, cfc:(cln, TApp _ (_:_:(TApp tc@(TCon{}) _):_)):_, _, _) ->
+          trace ("maybeHandlerName: " ++ show (C.getName tn) ++ " " ++ show tc) $
+          Just (fromHandlerConName (C.getName tn), tc)
+    e ->
       case contextOf ctx of
-        Just c -> operationName c
+        Just c -> maybeHandlerName c
 
 ppContextPath :: ExprContext -> Doc
 ppContextPath ctx =
   case ctx of
     ModuleC _ _ n -> text "Module " <+> text (show n)
-    DefCRec _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("DefRec " ++ show (defTName $ defOfCtx ctx))
-    DefCNonRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("DefNonRec " ++ show (defTName $ defOfCtx ctx))
-    LamCBody _ c tn _ -> ppContextPath c <+> text "->" <+> text ("LamBody(" ++ show tn ++ ")")
-    AppCLambda _ c _ -> ppContextPath c <+> text "->" <+> text "AppLambda"
-    AppCParam _ c _ _ -> ppContextPath c <+> text "->" <+> text "AppParam"
-    LetCDef _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("LetDef " ++ show (defTName $ defOfCtx ctx))
-    LetCBody _ c _ _ -> ppContextPath c <+> text "->" <+> text "LetBody"
-    CaseCMatch _ c _ -> ppContextPath c <+> text "->" <+> text "CaseMatch"
-    CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseBranch"
+    DefCRec _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("DRec " ++ show (defTName $ defOfCtx ctx))
+    DefCNonRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("DNonRec " ++ show (defTName $ defOfCtx ctx))
+    LamCBody _ c tn _ -> ppContextPath c <+> text "->" <+> text ("LamB(" ++ show tn ++ ")")
+    AppCLambda _ c _ -> ppContextPath c <+> text "->" <+> text "AppL"
+    AppCParam _ c i _ -> ppContextPath c <+> text "->" <+> text ("AppP" ++ show i)
+    LetCDef _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("LtD " ++ show (defTName $ defOfCtx ctx))
+    LetCBody _ c names _ -> ppContextPath c <+> text "->" <+> text ("LtB" ++ show names)
+    CaseCMatch _ c _ -> ppContextPath c <+> text "->" <+> text "CaseM"
+    CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseB"
     ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
     ExprCTerm _ _ -> text "Query Error"
 
@@ -194,7 +204,7 @@ closestRange ctx =
 
 showSimpleContext ctx =
   let r = show (closestRange ctx) in
-  case ctx of
+  show (contextId ctx) ++ case ctx of
     ModuleC{} -> "Module " ++ r
     DefCRec _ _ _ i d -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     DefCNonRec _ _ _ d -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"

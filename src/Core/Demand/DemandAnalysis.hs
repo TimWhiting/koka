@@ -19,7 +19,7 @@ module Core.Demand.DemandAnalysis(
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,succAEnv,
   getQueryString,getState,updateState,getUnique,getAbValueResults,
-  childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,loadModule,
+  childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,
 ) where
 import GHC.IO (unsafePerformIO)
 import Control.Monad hiding (join)
@@ -132,51 +132,6 @@ bindExternal var@(Var tn@(TName name tp _) vInfo) = do
   (mod', ctx) <- loadModule modName
   if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') tn then return (Just ctx)
   else trace ("External variable binding not found " ++ show tn ++ ": " ++ show vInfo) (return Nothing)
-
-maybeLoadModule :: ModuleName -> FixDemandR x s e (Maybe Module)
-maybeLoadModule mn = do
-  state <- getState
-  case M.lookup mn (moduleContexts state) of
-    Just (ModuleC _ m _) -> return $ Just m
-    _ -> do
-      bc <- buildc <$> getState
-      env <- getEnv
-      let deps = buildcModules bc
-      let x = find (\m -> modName m == mn) deps
-      ctxId <- newModContextId mn
-      case x of
-        Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
-          trace ("Module already loaded " ++ show mn) $ return ()
-          updateState (\state ->
-            state{
-              moduleContexts = M.insert mn (ModuleC ctxId mod mn) (moduleContexts state)
-            })
-          return $ Just mod
-        _ -> do
-          buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
-          case buildc' of
-            Left err -> do
-              trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
-              return Nothing
-            Right (bc', e) -> do
-              trace ("Loaded module " ++ show mn) $ return ()
-              let Just mod' = buildcLookupModule mn bc'
-              updateState (\state ->
-                state{
-                  buildc = bc',
-                  moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
-                })
-              return $ Just mod'
-
-loadModule :: ModuleName -> FixDemandR x s e (Module, ExprContext)
-loadModule mn = do
-  res <- maybeLoadModule mn
-  case res of
-    Just m -> do
-      st <- getState
-      return (m, moduleContexts st M.! mn)
-    Nothing -> error ("Module " ++ show mn ++ " not found")
-
 
 findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
@@ -316,7 +271,11 @@ doEval cq@(EvalQ (ctx, env)) query = do
               BoundLetDef parentCtx ctx boundEnv index -> do
                 -- trace (query ++ "REF-let: " ++ show parentCtx ++ " " ++ show index) $ return []
                 -- For a top level definition, it evaluates to itself
+                qeval (ctx, boundEnv)
+              BoundLetBod parentCtx ctx boundEnv index -> do
+                -- For a top level definition, it evaluates to itself
                 ctx' <- focusChild parentCtx index
+                -- trace (query ++ "REF-letbod: " ++ show ctx' ++ " " ++ show index) $ return []
                 qeval (ctx', boundEnv)
               BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
                 -- For a case bound name, we focus the scruitinee and delegate to a special function to handle this recursively for nested patterns
@@ -581,8 +540,9 @@ doCall cq@(CallQ(ctx, env)) query =
               trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
               instantiate query (EnvCtx cc1 p) env
               doBottom
-            else doBottom
-              -- trace (query ++ "CALL IS NOT SUBSUMED:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+            else do
+              -- trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+              doBottom
       _ -> error $ "CALL not implemented for " ++ show ctx
 
 instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
@@ -602,11 +562,11 @@ getAbValueResults q = do
       return (env, st)
     ) (S.toList refines)
 
-analyzeEachChild :: Show a => (ExprContext -> FixDemandR x s e a) -> ExprContext -> FixDemandR x s e a
-analyzeEachChild analyze ctx = do
+analyzeEachChild :: Show a => ExprContext -> (ExprContext -> FixDemandR x s e a) -> FixDemandR x s e a
+analyzeEachChild ctx analyze = do
   let self = analyze ctx
       children = do
         visitEachChild ctx $ do
           childCtx <- currentContext <$> getEnv
-          analyzeEachChild analyze childCtx
+          analyzeEachChild childCtx analyze
   each [self, children]
