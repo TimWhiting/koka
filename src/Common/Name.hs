@@ -39,7 +39,8 @@ module Common.Name
           , toEffectTagName
           , toHandleName, isHandleName
           , toOpsConName, toOpConName, toOpTypeName
-          , toConstructorName, isConstructorName, toVarName, toHandlerConName
+          , toConstructorName, isConstructorName, toVarName
+          , toHandlerConName, isHandlerConName, fromHandlerConName
           , toOpenTagName, isOpenTagName
           , toValueOperationName, isValueOperationName, fromValueOperationsName, toBasicOperationsName
           , splitModuleName, unsplitModuleName, mergeCommonPath, splitLocalQualName
@@ -548,10 +549,6 @@ toVarName name
           (c:cs) | isUpper c -> toLower c : toLowers cs
           _      -> s
 
-toHandlerConName :: Name -> Name
-toHandlerConName name
-  = makeHiddenName "Hnd" name
-
 nameStartsWith :: Name -> String -> Bool
 nameStartsWith name pre
   = nameStem name `startsWith` pre
@@ -688,6 +685,17 @@ fromHandlerName :: HasCallStack => Name -> Name
 fromHandlerName name
   = unmakeHidden "hnd" name
 
+toHandlerConName :: Name -> Name
+toHandlerConName name
+  = makeHiddenName "Hnd" name
+
+isHandlerConName :: Name -> Bool
+isHandlerConName name
+  = hiddenNameStartsWith name "Hnd"
+
+fromHandlerConName :: Name -> Name
+fromHandlerConName name
+  = unmakeHidden "Hnd" name
 
 -- | Create a handle function name from an effect type name.
 toHandleName :: Name -> Name

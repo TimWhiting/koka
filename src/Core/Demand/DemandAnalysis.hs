@@ -37,7 +37,7 @@ import Data.List (find, findIndex, elemIndex, union, intercalate)
 import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
 import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd, nameCoreHnd)
-import Compile.Module (Module(..), ModStatus (..), moduleNull)
+import Compile.Module (Module(..), ModStatus (..), moduleNull, modImportNames)
 import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
 import Syntax.RangeMap
 import Lib.PPrint (Pretty(..))
@@ -183,15 +183,25 @@ findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   case ctx of
     ModuleC{} -> do
       if nameStem name == "main" then return (ctx, env) else do
-        mods <- buildcModules . buildc <$> getState
-        let lds = mapMaybe (\m -> if modStatus m == LoadedSource then Just m else Nothing) mods
+        mods <- importedBy (newModuleName (nameModule name))
         each $ map (\m -> do
-            let mdctx = modCtxOf m
-            withEnv (\e -> e{currentModContext=mdctx, currentContext=mdctx}) $ findUsage first expr mdctx env
-          ) lds
+            withEnv (\e -> e{currentModContext=m, currentContext= m}) $ findUsage first expr m env
+          ) mods
     _ -> findUsage first expr ctx env
 
--- TODO: Fix map example, not working for recursive call? 
+-- Which modules import the given module
+importedBy :: ModuleName -> FixDemandR x s e [ExprContext]
+importedBy modN = do
+  mods <- buildcModules . buildc <$> getState
+  let mods' = filter (\m -> elem modN $ modImportNames m) mods
+  mdctxs <- moduleContexts <$> getState
+  let ctx = mdctxs M.! modN
+  ctxs <- mapM (\m -> do
+      (mod, ctx) <- loadModule (modName m)
+      return ctx
+    ) mods'
+  return (ctx:ctxs)
+
 -- finds usages of a variable expression within a (context,env) and returns the set of (context,env) pairs that reference it
 findUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
@@ -319,13 +329,13 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 -- Evaluates just to the lambda
                 qeval (lamctx, EnvTail TopCtx)
               BoundGlobal nm _ -> do
-                -- if newModuleName (nameModule (getName nm)) == nameCoreHnd then
-                --   error ("Hnd: missing primitive " ++ show ctx)
-                -- else do
+                if newModuleName (nameModule (getName nm)) == nameCoreHnd then
+                  error ("Hnd: missing primitive " ++ show ctx)
+                else do
                   -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
                   ext <- bindExternal v
                   case ext of
-                    Just (modulectx@ModuleC{}) -> do
+                    Just modulectx@ModuleC{} -> do
                       lamctx <- getTopDefCtx modulectx (getName tn)
                       qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
                     _ -> error $ "REF: can't find what the following refers to " ++ show ctx

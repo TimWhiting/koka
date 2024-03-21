@@ -255,6 +255,10 @@ writeDependencyGraph cache = do
             ++ "\n}"
   writeFile "debug/graph.dot" dot
   return ()
+  -- TODO: Cluster by definition and module:
+  -- 1. Module -> 2. Definition -> 3. Query Ctx -> Query
+  -- 1. Environment -> Refinements
+  -- TODO: Integrate results with vscode extension proving GOTO like resolution
 
 instance Label (FixOutput m) where
   label (A a) = ""

@@ -10,12 +10,12 @@ module Core.Demand.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,
-                          contextId,contextOf,exprOfCtx,modCtx,ppContextPath,modCtxOf,parentDefOfCtx,
+                          contextId,contextOf,exprOfCtx,modCtx,ppContextPath,
+                          enclosingDef,enclosingHandle,enclosingLambda,handlerName,
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamNames,
                           showDg,showDef,showCtxExpr,
-                          enclosingLambda,
                           branchContainsBinding,
                           branchVars,
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,
@@ -58,9 +58,6 @@ data ExprContext =
   | ExprCBasic !ExprContextId !ExprContext !C.Expr -- A basic expression context that has no sub expressions
   | ExprCTerm !ExprContextId !String -- Since analysis can fail or terminate early, keep track of the query that failed
 
-modCtxOf :: Module -> ExprContext
-modCtxOf mod = ModuleC (ExprContextId (-1) (modName mod)) mod (modName mod)
-
 isMain :: ExprContext -> Bool
 isMain ctx = nameStem (C.defName (defOfCtx ctx)) == "main"
 
@@ -98,17 +95,34 @@ enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
   case ctx of
     LamCBody{} -> Just ctx
-    AppCLambda _ c _ -> enclosingLambda c
-    AppCParam _ c _ _ -> enclosingLambda c
-    DefCRec _ c _ _ _ -> enclosingLambda c
-    DefCNonRec _ c _ _ -> enclosingLambda c
-    LetCDef _ c _ _ _ -> enclosingLambda c
-    LetCBody _ c _ _ -> enclosingLambda c
-    CaseCMatch _ c _ -> enclosingLambda c
-    CaseCBranch _ c _ _ _ -> enclosingLambda c
-    ExprCBasic _ c _ -> enclosingLambda c
-    ExprCTerm{} -> Nothing
-    ModuleC{} -> Nothing
+    _ -> enclosingLambda =<< contextOf ctx
+
+enclosingDef :: ExprContext -> C.Def
+enclosingDef ctx =
+  case ctx of
+    DefCRec _ _ _ index dg -> defsOf dg !! index
+    DefCNonRec _ _ _ dg -> head $ defsOf dg
+    LetCDef _ c _ _ dg -> enclosingDef c
+    _ -> case contextOf ctx
+      of Just c -> enclosingDef c
+         Nothing -> error "No parent def"
+
+enclosingHandle :: ExprContext -> ExprContext
+enclosingHandle ctx =
+  case exprOfCtx ctx of
+    C.App (C.TypeApp (C.Var tn _) _) _ _ | isHandleName (C.getName tn) -> ctx
+    e -> 
+      case contextOf ctx of
+          Just c -> enclosingHandle c
+          Nothing -> error "No handle found"
+
+handlerName :: ExprContext -> Name
+handlerName ctx =
+  case exprOfCtx ctx of
+    C.App (C.TypeApp (C.Con tn _) _) vars _ | isHandlerConName (C.getName tn) -> fromHandlerConName (C.getName tn)
+    e -> 
+      case contextOf ctx of
+        Just c -> operationName c
 
 ppContextPath :: ExprContext -> Doc
 ppContextPath ctx =
@@ -125,16 +139,6 @@ ppContextPath ctx =
     CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseBranch"
     ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
     ExprCTerm _ _ -> text "Query Error"
-
-parentDefOfCtx :: ExprContext -> C.Def
-parentDefOfCtx ctx =
-  case ctx of
-    DefCRec _ _ _ index dg -> defsOf dg !! index
-    DefCNonRec _ _ _ dg -> head $ defsOf dg
-    LetCDef _ c _ _ dg -> parentDefOfCtx c
-    _ -> case contextOf ctx
-      of Just c -> parentDefOfCtx c
-         Nothing -> error "No parent def"
 
 lamVar :: Int -> ExprContext -> C.Expr
 lamVar index ctx =
@@ -317,7 +321,7 @@ contextOf ctx =
     CaseCMatch _ c _ -> Just c
     CaseCBranch _ c _ _ _ -> Just c
     ExprCBasic _ c _ -> Just c
-    ExprCTerm{} -> error "Query should never be queried for context"
+    ExprCTerm{} -> Nothing
 
 modCtx :: ExprContext -> Maybe ExprContext
 modCtx ctx =

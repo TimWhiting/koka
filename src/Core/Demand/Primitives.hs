@@ -35,9 +35,18 @@ createPrimitives = do
   -- Open applied to some function results in that function
   addPrimitive nameEffectOpen (\(ctx, env) -> evalParam 0 ctx env)
   addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
-    assertion ("EffectOpen: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) (i == 0) $ return ()
     -- Open's first parameter is a function and flows anywhere that the application flows to
     qexpr (fromJust $ contextOf ctx, env)
+    )
+  addPrimitive (newQualified "std/core/hnd" "clause-control1") (\(ctx, env) -> do
+    evalParam 0 ctx env
+    )
+  addPrimitiveExpr (newQualified "std/core/hnd" "clause-control1") (\index (ctx, env) -> do
+    -- ClauseControl1's first parameter is the operation function and flows to wherever the function is applied
+    let hnd = enclosingHandle ctx
+    let nm = handlerName ctx
+    act <- focusParam 1 hnd -- The first parameter is the operation clause, second is the action
+    findEffectApps nm act env
     )
   addPrimitive (namePerform 1) (\(ctx, env) -> do
     -- Perform's second parameter is the function to run with the handler as an argument
@@ -48,14 +57,13 @@ createPrimitives = do
     qeval (bod, newEnv)
     )
   addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
-    trace ("Perform: " ++ show i ++ " " ++ show ctx ++ " " ++ show env) $ return ()
     let parentCtx = fromJust $ contextOf ctx
     -- Perform's second parameter is the function to run with the handler as an argument
     case exprOfCtx parentCtx of
       C.App _ _ rng -> do
         f <- focusParam 0 parentCtx
         arg <- focusParam 1 parentCtx
-        -- TODO: Check to make sure this get's cached properly and not re-evaluated
+        -- TODO: Check to make sure this gets cached properly and not re-evaluated
         appCtx <- addContextId (\id -> LamCBody id parentCtx [] (C.App (exprOfCtx f) [exprOfCtx arg] Nothing))
         return $ AChangeClos appCtx env -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
       )
@@ -69,4 +77,13 @@ createPrimitives = do
   addPrimitive nameIntMod (intOp mod) -- TODO: Handle division by zero
 
 findHandler :: Name -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-findHandler nm ctx env = doBottom
+findHandler nm ctx env = 
+  trace ("FindHandler: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do
+  doBottom
+
+findEffectApps :: Name -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
+findEffectApps nm ctx env = 
+  trace ("FindEffectApps: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do
+  doBottom
+
+
