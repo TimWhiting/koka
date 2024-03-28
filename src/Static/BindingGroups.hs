@@ -338,37 +338,55 @@ group defs deps
   = let -- get definition id's
         defVars  = S.fromList (M.keys deps)
         -- constrain to the current group of id's
-        defDeps0 = M.map (\fvs -> S.intersection defVars fvs) deps
+        defDeps  = M.map (\fvs -> S.intersection defVars fvs) deps
         -- determine strongly connected components
-        defDeps   = [(id,S.toList fvs) | (id,fvs) <- M.toList defDeps0]
-        defOrder0 = scc defDeps
-        defOrder  = let (xs,ys) = partition noDeps defOrder0  -- no dependencies first
-                        noDeps ids = case ids of
-                                       [id] -> isEarlyBindName id || S.null (M.find id defDeps0)
-                                       _    -> False
-                        isHidden ids = case ids of
-                                         [id] -> isHiddenName id
-                                         _ -> False
-                        partitionx f xs  = let (ys,zs) = partition f xs in (ys ++zs)
-                        {-
-                        (xxs,xys) = partition isHidden xs    -- and hidden names first inside those
-                                                             -- and "instances"  (`eq_int`) first inside those
-                        isprefix ids     = case ids of
-                                             [id] -> '_' `elem` (tail (nameId id))
-                                             _    -> False
-                        -}
-                    in (partitionx isHidden xs ++ ys)
+        defDepsList = [(id,S.toList fvs) | (id,fvs) <- M.toList defDeps]
+        defOrderScc = scc defDepsList
         -- create a map from definition id's to definitions.
-        defMap   = M.fromListWith (\xs ys -> ys ++ xs) [(defName def,[def]) | def <- defs]
+        defMap      = M.fromListWith (\xs ys -> ys ++ xs) [(defName def,[def]) | def <- defs]
+        -- try to maintain original source order as much as possible
+        -- reorder the `defOrderScc` according to the (earliest) source line (of a recursive group)
+        -- without violating explicit dependencies.
+        lineOf ids  = let getLine id = map (posLine . rangeStart . getRange) (M.find id defMap)
+                      in case concatMap getLine ids of
+                           []    -> 0
+                           lines -> minimum lines
+        defOrder    = reverse $ foldl insert [] defOrderScc
+                    where
+                      insert :: [[Name]] -> [Name] -> [[Name]]
+                      insert rdefs ids
+                        = let n       = lineOf ids
+                              iddeps  = S.unions (map (\id -> M.find id defDeps) ids)
+                              after x = (lineOf x > n) && not (any (\id -> S.member id iddeps) x)
+                          in case span after rdefs of
+                               (pre,post) -> pre ++ (ids : post)
+        {-
+        defOrderOld = let (xs,ys) = partition noDeps defOrder  -- no dependencies first
+                          noDeps ids = case ids of
+                                        [id] -> isEarlyBindName id || S.null (M.find id defDeps)
+                                        _    -> False
+                          isHidden ids = case ids of
+                                          [id] -> isHiddenName id
+                                          _ -> False
+                          partitionx f xs  = let (ys,zs) = partition f xs in (ys ++zs)
+                          {-
+                          (xxs,xys) = partition isHidden xs    -- and hidden names first inside those
+                                                              -- and "instances"  (`eq_int`) first inside those
+                          isprefix ids     = case ids of
+                                              [id] -> '_' `elem` (tail (nameId id))
+                                              _    -> False
+                          -}
+                      in (partitionx isHidden xs ++ ys)
+        -}
         -- create a definition group from a list of mutual recursive identifiers.
         makeGroup ids  = case ids of
-                           [id] -> if S.member id (M.find id defDeps0)
+                           [id] -> if S.member id (M.find id defDeps)
                                     then [DefRec (M.find id defMap)]
                                     else map DefNonRec (M.find id defMap)
                            _    -> [DefRec [def | id <- ids, def <- M.find id defMap]]
         finalGroup     = concatMap makeGroup defOrder
-    in --trace ("trace: bindings: " ++ show defVars ++ "\n\ndependencies: " ++ show (defDeps) ++
-       --             "\n\ninitial order: " ++ show defOrder0 ++ "\n\nfinal order: " ++ show defOrder) $
+    in -- trace ("trace: bindings: " ++ show defVars ++ "\n\ndependencies: " ++ show defDepsList ++
+       --             "\n\ninitial order: " ++ show defOrderScc ++ "\n\nfinal order: " ++ show defOrder) $
        finalGroup
 
 
