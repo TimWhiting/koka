@@ -22,11 +22,7 @@ fun knapsack(w : int, vs : list<int> ) : <nondet,div> list<int> {
 
 val solutions = handler {
   return(x)  -> [x]
-  ctl choice(xs) -> xs.concat(resume)
-}
-
-fun show( xss : list<list<int>> ) : string {
-  xss.showList(fn(xs) { xs.showList(core/show) } )
+  ctl choice(xs) -> xs.flatmap(resume)
 }
 
 fun test1() {
@@ -43,7 +39,7 @@ fun state(init,action)
   var s := init
   handle(action)
     fun get()  { s }
-    fun set(x) { s := x }
+    fun put(x) { s := x }
 
 
 fun incr(i = 1) : state<int> () {
@@ -58,6 +54,10 @@ fun global(s,action) {
   state(s){ solutions(action) }
 }
 
+
+
+
+
 val choices = handler {
   ctl choice(xs) {
     incr(xs.length)
@@ -66,9 +66,10 @@ val choices = handler {
   }
 }
 
-fun show(sxss : (int,list<list<int>>)) : string {
+fun intlist/show(sxss : (int,list<list<int>>)) : string {
   "(state=" + sxss.fst.show + ", " + sxss.snd.show + ")"
 }
+
 fun test2() {
   global(0){ choices{ knapsack(3,[3,2,1]) }}
 }
