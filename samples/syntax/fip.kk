@@ -138,7 +138,6 @@ fun example-order()
    ['a','b','c'].tree.height,
    [2,3,1].tree(?order2=fn(x,y) Eq2(x)).height].println
 
-
 // To map in-place over a tree in constant stack space we use a zipper.
 // In this case a zipper from `:tree<a>` to `:tree<b>`.
 // Each `Bin`, `BinR`, and `BinL` match in size so we can reuse
