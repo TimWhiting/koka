@@ -274,12 +274,12 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 qeval (ctx, boundEnv)
               BoundLetBod parentCtx ctx boundEnv index -> do
                 -- For a top level definition, it evaluates to itself
-                ctx' <- focusChild parentCtx index
+                ctx' <- focusChild index parentCtx
                 -- trace (query ++ "REF-letbod: " ++ show ctx' ++ " " ++ show index) $ return []
                 qeval (ctx', boundEnv)
               BoundCase parentCtx caseCtx caseEnv branchIndex patBinding -> do
                 -- For a case bound name, we focus the scruitinee and delegate to a special function to handle this recursively for nested patterns
-                mscrutinee <- focusChild parentCtx 0
+                mscrutinee <- focusChild 0 parentCtx
                 -- trace (query ++ "REF: scrutinee of case " ++ show scrutinee) $ return []
                 evalPatternRef mscrutinee caseEnv patBinding
               BoundModule modulectx modenv -> do
@@ -306,7 +306,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
           return $ AChangeConstr ctx env
         App f tms rng -> do
           -- trace (query ++ "APP: " ++ show ctx) $ return []
-          fun <- focusChild ctx 0
+          fun <- focusFun ctx
           -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
           AChangeClos lam lamenv <- qeval (fun, env)
           prim <- isPrimitive lam
@@ -327,7 +327,7 @@ doEval cq@(EvalQ (ctx, env)) query = do
             DefCNonRec{} -> return $! AChangeClos ctx env
             DefCRec{} -> return $! AChangeClos ctx env
             _ -> do
-              ctx' <- focusChild ctx 0
+              ctx' <- focusChild 0 ctx
               qeval (ctx',env)
         TypeLam{} ->
           -- trace (query ++ "TYPE LAM: " ++ show ctx) $
@@ -335,16 +335,16 @@ doEval cq@(EvalQ (ctx, env)) query = do
             DefCNonRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
             DefCRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
             _ -> do
-              ctx' <- focusChild ctx 0
+              ctx' <- focusChild 0 ctx
               qeval (ctx',env)
         Lit l -> return $! injLit l env
         Let defs e -> do
           -- trace (query ++ "LET: " ++ show ctx) $ return []
-          ex <- focusChild ctx 0 -- Lets have their return expression as first child
+          ex <- focusChild 0 ctx -- Lets have their return expression as first child
           qeval (ex, env)
         Case expr branches -> do
           -- trace (query ++ "CASE: " ++ show ctx) $ return []
-          e <- focusChild ctx 0
+          e <- focusChild 0 ctx
           res <- qeval (e, env)
           evalBranches res ctx env (zip branches [0..])
         Con nm repr -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
@@ -363,7 +363,7 @@ evalPatternRef expr env pat = do
           -- trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
           case exprOfCtx conApp of
             App c tms rng -> do
-              f <- focusChild conApp 0 -- Evaluate the head of the application to get the constructor (could be polymorphic)
+              f <- focusChild 0 conApp -- Evaluate the head of the application to get the constructor (could be polymorphic)
               AChangeConstr cexpr _ <- qeval (f, cenv)
               case exprOfCtx cexpr of
                 Con nm _ ->
@@ -385,7 +385,7 @@ evalBranches ch ctx env branches =
       matches <- matchesPattern ch p
       if matches then do
         -- trace ("Found matching branch " ++ show p) $ return ()
-        e <- focusChild ctx (i + 1) -- +1 to skip the scrutinee
+        e <- focusChild (i + 1) ctx -- +1 to skip the scrutinee
         qeval (e, env)
       else evalBranches ch ctx env xs
 
@@ -404,7 +404,7 @@ matchesPatternConstr conApp env pat = do
         Con nm _ | nm /= patConName -> return False
         _ -> do
           -- trace ("Looking for matching constructor " ++ show patConName ++ " in " ++ show (exprOfCtx conApp)) $ return ()
-          conE <- focusChild conApp 0
+          conE <- focusChild 0 conApp
           con <- qeval (conE, env)
           case con of
             AChangeConstr c _ -> do
@@ -459,7 +459,7 @@ doExpr cq@(ExprQ (ctx,env)) query = do
       return $ AChangeClos c env
     AppCParam _ c index e -> do -- RAND Clause 
       -- trace (query ++ "OPERAND: Expr is " ++ showCtxExpr ctx) $ return []
-      fn <- focusChild c 0
+      fn <- focusChild 0 c
       -- trace (query ++ "OPERAND: Evaluating To Closure " ++ showCtxExpr fn) $ return []
       AChangeClos lam lamenv <- qeval (fn, env)
       prim <- isPrimitive lam

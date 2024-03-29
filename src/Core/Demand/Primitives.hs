@@ -15,7 +15,7 @@ import Core.Demand.StaticContext
 import Core.Demand.DemandAnalysis
 import Core.Demand.DemandMonad
 import Core.Core as C
-import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect)
+import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
 import Data.List (findIndex)
 
 nameIntMul = coreIntName "*"
@@ -88,23 +88,37 @@ findHandler nm ctx env =
   doBottom
 
 findEffectApps :: Name -> Effect -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-findEffectApps nm eff ctx env = 
+findEffectApps nm eff' ctx env = 
   trace ("FindEffectApps: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do 
   case exprOfCtx ctx of
     C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
       trace ("Perform: " ++ show ctx ++ " " ++ show env) $ doBottom
     C.App{} -> do
-      res <- qeval (ctx, env)
+      f <- focusFun ctx
+      res <- qeval (f, env)
       case res of
         AChangeClos lam lamenv -> do
-          case exprOfCtx lam of
-            C.Lam _ eff _ -> do
-              -- effectContains nm eff
-              -- TODO: Don't go inside applications where the function type doesn't admit the effect
-              findEffectApps nm eff lam lamenv
+          let getLamEff e =
+                case e of
+                  C.Lam _ eff _ -> eff
+                  C.TypeLam _ e -> getLamEff e
+                  C.TypeApp e _ -> getLamEff e
+                  l -> trace ("Not a lambda: " ++ show l) effectEmpty
+          let eff = getLamEff (exprOfCtx lam)
+          if effContains eff' eff then
+              trace ("EffExtend: " ++ show eff ++ " contains " ++ show eff') $ 
+                findEffectApps nm eff lam lamenv
+          else doBottom    
         _ -> doBottom 
     _ -> visitEachChild ctx $ do
           childCtx <- currentContext <$> getEnv 
-          findEffectApps nm eff childCtx env
+          findEffectApps nm eff' childCtx env
 
 
+effContains :: Effect -> Effect -> Bool
+effContains eff' eff = 
+  let (eff1, effextend) = extractOrderedEffect eff in
+  if any (\e -> e == eff') eff1 then True
+  else if isEffectEmpty effextend then False
+  else True
+  

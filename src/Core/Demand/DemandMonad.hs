@@ -17,7 +17,8 @@ module Core.Demand.DemandMonad(
   State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult,
   -- Context stuff
   getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
-  childrenContexts, focusParam, focusBody, focusChild, visitChildrenCtxs, visitEachChild,
+  focusParam, focusBody, focusChild, focusFun,
+  childrenContexts, visitChildrenCtxs, visitEachChild,
   -- Env stuff
   DEnv(..), getUnique, newQuery,
   -- Query stuff
@@ -245,12 +246,7 @@ instance Monoid (FixOutput d) where
 
 ------------------------ Navigating the syntax tree ----------------------------------
 focusParam :: Int -> ExprContext -> FixDemandR x s e ExprContext
-focusParam index e = do
-  children <- childrenContexts e
-  query <- getQueryString
-  case index of
-    x | x + 1 < length children -> return $ children !! (x + 1) -- Parameters are the not the first child of an application (that is the function)
-    _ -> error (query ++ "Children looking for param " ++ show children ++ " in " ++ show e ++ " index " ++ show index)
+focusParam index = focusChild (index + 1)
 
 focusBody :: ExprContext -> FixDemandR x s e ExprContext
 focusBody e = do
@@ -262,8 +258,11 @@ focusBody e = do
     Just x -> return x
     Nothing -> error (query ++ "Children looking for body " ++ show children)
 
-focusChild :: ExprContext -> Int -> FixDemandR x s e ExprContext
-focusChild e index = do
+focusFun :: ExprContext -> FixDemandR x s e ExprContext
+focusFun = focusChild 0
+
+focusChild :: Int -> ExprContext -> FixDemandR x s e ExprContext
+focusChild index e = do
   children <- childrenContexts e
   -- trace ("Focused child " ++ show children) $ return ()
   query <- getQueryString
