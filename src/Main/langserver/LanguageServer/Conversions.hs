@@ -46,6 +46,8 @@ import Common.Range (Source (sourceName), sourceNull, rangeSource)
 import qualified Common.Range as R
 import Syntax.RangeMap (RangeInfo)
 
+import System.Directory( makeAbsolute )
+
 toLspPos :: R.Pos -> J.Position
 toLspPos p =
   J.Position (fromIntegral (max 0 (R.posLine p - 1))) (fromIntegral (max 0 (R.posColumn p - 1))) -- LSP positions are zero-based
@@ -161,7 +163,7 @@ fromLspUri uri =
                 else J.uriToFilePath (J.fromNormalizedUri uri)
   in case mbfpath of
       Just fpath  -> do p <- realPath fpath
-                        -- trace ("LanguageServer.Conversions.fromLspUri: uri: " ++ uriText ++ ", realpath: " ++ p)
+                        -- trace ("LanguageServer.Conversions.fromLspUri: uri: '" ++ uriText ++ "', realpath: '" ++ p ++ "'") $ return ()
                         return $ Just p
       Nothing     -> return Nothing
 

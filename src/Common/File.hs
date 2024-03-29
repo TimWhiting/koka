@@ -595,7 +595,9 @@ getEnvVar name
 
 realPath :: FilePath -> IO FilePath
 realPath fpath
-  = do fullpath <- canonicalizePath fpath
+  = do fullpath <- if onWindows && fpath `startsWith` "//"
+                     then return fpath              -- on windows leave network paths alone as Haskell's `normalise` removes double `//` :-(
+                     else canonicalizePath fpath
        return (normalize fullpath)
 
 
