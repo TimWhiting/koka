@@ -128,7 +128,7 @@ maybeHandlerName ctx =
     C.App (C.TypeApp (C.Con tn _) _) vars _ | isHandlerConName (C.getName tn) ->
       case splitFunScheme (C.typeOf tn) of
         Just (_, _, cfc:(cln, TApp _ (_:_:(TApp tc@(TCon{}) _):_)):_, _, _) ->
-          trace ("maybeHandlerName: " ++ show (C.getName tn) ++ " " ++ show tc) $
+          trace ("maybeHandlerName: " ++ show (C.getName tn) ++ " " ++ show (pretty tc)) $
           Just (fromHandlerConName (C.getName tn), tc)
     e ->
       case contextOf ctx of

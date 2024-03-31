@@ -17,6 +17,10 @@ import Core.Demand.DemandMonad
 import Core.Core as C
 import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
 import Data.List (findIndex)
+import Type.Pretty (ppType)
+import Lib.PPrint (pretty)
+import Data.Either (isLeft)
+import Type.Unify (runUnifyEx, unify)
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -49,18 +53,14 @@ createPrimitives = do
     let (nm,tp) = fromJust $ maybeHandlerName ctx
     act <- focusParam 2 hnd -- The first parameter is the operation clause, second is the return clause, third is the action lambda
     AChangeClos act actenv <- evalParam 2 hnd env
-    bod <- focusBody act
-    succ <- succAEnv hndapp hndenv
-    let newEnv = EnvCtx succ actenv
-    findEffectApps nm tp bod newEnv
+    (bd, bdenv) <- enterBod act actenv hndapp hndenv
+    findEffectApps nm tp bd bdenv
     )
   addPrimitive (namePerform 1) (\(ctx, env) -> do
     -- Perform's second parameter is the function to run with the handler as an argument
     AChangeClos lam lamenv <- evalParam 1 ctx env
-    bod <- focusBody lam
-    succ <- succAEnv ctx env
-    let newEnv = EnvCtx succ lamenv
-    qeval (bod, newEnv)
+    (bd, bdenv) <- enterBod lam lamenv ctx env
+    qeval (bd, bdenv)
     )
   addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
     let parentCtx = fromJust $ contextOf ctx
@@ -89,26 +89,29 @@ findHandler nm ctx env =
 
 findEffectApps :: Name -> Effect -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
 findEffectApps nm eff' ctx env = 
-  trace ("FindEffectApps: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do 
+  trace ("FindEffApp: " ++ show ctx ++ " " ++ showSimpleEnv env) $
   case exprOfCtx ctx of
     C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
-      trace ("Perform: " ++ show ctx ++ " " ++ show env) $ doBottom
+      trace ("Found Effect Application " ++ show nm ++ " : " ++ show ctx ++ " " ++ showSimpleEnv env) $ return ()
+      qexpr (ctx, env)
     C.App{} -> do
       f <- focusFun ctx
       res <- qeval (f, env)
       case res of
         AChangeClos lam lamenv -> do
+          trace ("FindEffAppLam: " ++ show lam ++ " " ++ showSimpleEnv lamenv) $ return ()
           let getLamEff e =
                 case e of
                   C.Lam _ eff _ -> eff
                   C.TypeLam _ e -> getLamEff e
                   C.TypeApp e _ -> getLamEff e
-                  l -> trace ("Not a lambda: " ++ show l) effectEmpty
+                  l -> error ("Not a lambda: " ++ show l)
           let eff = getLamEff (exprOfCtx lam)
-          if effContains eff' eff then
-              trace ("EffExtend: " ++ show eff ++ " contains " ++ show eff') $ 
-                findEffectApps nm eff lam lamenv
-          else doBottom    
+          -- Really need to do findEffectApps (enterBod lam lamenv)
+          if effContains eff' eff then do 
+            (bd, bdenv) <- enterBod lam lamenv ctx env
+            findEffectApps nm eff bd bdenv
+          else doBottom
         _ -> doBottom 
     _ -> visitEachChild ctx $ do
           childCtx <- currentContext <$> getEnv 
@@ -117,8 +120,7 @@ findEffectApps nm eff' ctx env =
 
 effContains :: Effect -> Effect -> Bool
 effContains eff' eff = 
-  let (eff1, effextend) = extractOrderedEffect eff in
-  if any (\e -> e == eff') eff1 then True
-  else if isEffectEmpty effextend then False
-  else True
+  let (res, _, _) = runUnifyEx 0 $ do
+                        unify eff' eff
+  in isLeft res
   

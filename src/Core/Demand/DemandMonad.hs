@@ -17,7 +17,7 @@ module Core.Demand.DemandMonad(
   State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult,
   -- Context stuff
   getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
-  focusParam, focusBody, focusChild, focusFun,
+  focusParam, focusBody, focusChild, focusFun, enterBod, succAEnv,
   childrenContexts, visitChildrenCtxs, visitEachChild,
   -- Env stuff
   DEnv(..), getUnique, newQuery,
@@ -258,6 +258,15 @@ focusBody e = do
     Just x -> return x
     Nothing -> error (query ++ "Children looking for body " ++ show children)
 
+enterBod :: ExprContext -> EnvCtx -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
+enterBod lam lamenv callctx callenv = do
+  bd <- focusBody lam
+  -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
+  -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
+  succ <- succAEnv callctx callenv
+  let newEnv = EnvCtx succ lamenv
+  return (bd, newEnv)
+
 focusFun :: ExprContext -> FixDemandR x s e ExprContext
 focusFun = focusChild 0
 
@@ -273,6 +282,13 @@ focusChild index e = do
 
 
 ------------------ State and Environment Helpers -----------------------------------
+
+succAEnv :: ExprContext -> EnvCtx -> FixDemandR x s e Ctx
+succAEnv newctx p' = do
+  length <- contextLength <$> getEnv
+  kind <- analysisKind <$> getEnv
+  case kind of
+    BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
 
 -- Gets a string representing the current query
 getQueryString :: FixDemandR x s e String

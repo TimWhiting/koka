@@ -63,14 +63,6 @@ refineQuery (CallQ (ctx, env0)) env = CallQ (ctx, env)
 refineQuery (ExprQ (ctx, env0)) env = ExprQ (ctx, env)
 refineQuery (EvalQ (ctx, env0)) env = EvalQ (ctx, env)
 
------------------------------- Environment FIXPOINT -----------------------------------
-
-succAEnv :: ExprContext -> EnvCtx -> FixDemandR x s e Ctx
-succAEnv newctx p' = do
-  length <- contextLength <$> getEnv
-  kind <- analysisKind <$> getEnv
-  case kind of
-    BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
 
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
 doMaybe :: Maybe a -> (a -> FixDemandR x s e AChange) -> FixDemandR x s e AChange
@@ -315,12 +307,8 @@ doEval cq@(EvalQ (ctx, env)) query = do
             evalPrimitive lam ctx env
           else do
             -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
-            bd <- focusBody lam
-            -- trace (query ++ "APP: Lambda body is " ++ show lamctx) $ return []
-            -- In the subevaluation if a binding for the parameter is requested, we should return the parameter in this context, 
-            succ <- succAEnv ctx env
-            let newEnv = EnvCtx succ lamenv
-            qeval (bd, newEnv)
+            (bd, bdenv) <- enterBod lam lamenv ctx env
+            qeval (bd, bdenv)
         TypeApp{} ->
           -- trace (query ++ "TYPEAPP: " ++ show ctx) $
           case ctx of
@@ -468,12 +456,9 @@ doExpr cq@(ExprQ (ctx,env)) query = do
         exprPrimitive lam index ctx env
       else do
         -- trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
-        bd <- focusBody lam
-        -- trace (query ++ "OPERAND: Closure's body is " ++ showCtxExpr bd) $ return ()
-        -- trace (query ++ "OPERAND: Looking for usages of operand bound to " ++ show (lamVar index lam)) $ return []
-        succ <- succAEnv c env
+        (bd, bdenv) <- enterBod lam lamenv c env
         m <- contextLength <$> getEnv
-        call <- findAllUsage True (lamVar index lam) bd (EnvCtx succ lamenv)
+        call <- findAllUsage True (lamVar index lam) bd bdenv
         -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
         qexpr call
     LamCBody _ _ _ e -> do -- BODY Clause
