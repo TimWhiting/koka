@@ -4,7 +4,7 @@
    - syntax/var
    - syntax/with
    - handlers/basic
-   - named-handlers/ask
+   - handlers/named/ask
 */
 module file
 import std/os/path
