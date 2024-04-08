@@ -7,7 +7,6 @@ found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 import * as path from "path"
 import * as fs from "fs"
-import * as vs from "vscode"
 import * as os from "os"
 import * as vscode from "vscode"
 import * as child_process from "child_process"
@@ -15,19 +14,19 @@ import * as semver from "semver"
 
 
 // Constants
-const home            = os.homedir();
-const kokaExeName     = (os.platform() === "win32" ? "koka.exe" : "koka")
-const defaultShell    = (os.platform() === "win32" ? "C:\\Windows\\System32\\cmd.exe" : null)
-const binaryPlatforms = ["win32-x64","darwin-arm64","darwin-x64","linux-x64"]
+const home = os.homedir();
+const kokaExeName = (os.platform() === "win32" ? "koka.exe" : "koka")
+const defaultShell = (os.platform() === "win32" ? "C:\\Windows\\System32\\cmd.exe" : null)
+const binaryPlatforms = ["win32-x64", "darwin-arm64", "darwin-x64", "linux-x64"]
 
 // Development: set kokaDevDir to a non-empty string to (un)install from a local bundle instead of github
-const kokaDevDir    = ""
-                      //"c:/users/daan/dev/koka"
-                      // "/Users/daan/dev/koka-dev"
+const kokaDevDir = ""
+//"c:/users/daan/dev/koka"
+// "/Users/daan/dev/koka-dev"
 
 // Configuration
 export class KokaConfig {
-  constructor(context : vscode.ExtensionContext, vsConfig : vscode.WorkspaceConfiguration) {
+  constructor(context: vscode.ExtensionContext, vsConfig: vscode.WorkspaceConfiguration) {
     this.compilerPaths = []
     this.compilerPath = ""
     this.compilerVersion = "1.0.0"
@@ -44,13 +43,14 @@ export class KokaConfig {
   languageServerArgs: string[]
   autoFocusTerminal: boolean        // focus on the terminal automatically on errors?
   target: string                    // backend target (c,c32,c64c,wasm,jsnode)
-  cwd: string                       // working directory for running the compiler
-  developmentPath : string          // root path to a development repository of the compiler
+  cwd: string                       // current working directory for compiler / running the output
+  includeDirs: string[]             // compiler include directories
+  developmentPath: string          // root path to a development repository of the compiler
   extensionVersion: string          // Version of the extension
   latestCompilerVersion: string     // Latest known version of the compiler (used at build time of the extension)
 
   compilerPath: string              // path in use for the compiler
-  compilerVersion : string          // version of that compiler
+  compilerVersion: string          // version of that compiler
   compilerArgs: string[]            // extra arguments to pass
   compilerPaths: string[]           // all found paths to koka compilers in the system
 
@@ -63,7 +63,20 @@ export class KokaConfig {
   refreshConfig(vsConfig: vscode.WorkspaceConfiguration): void {
     this.enableDebugExtension = vsConfig.get('dev.debugExtension') as boolean
     this.developmentPath = vsConfig.get('dev.developmentPath') as string ?? ""
-    this.cwd = vsConfig.get('languageServer.workingDirectory') as string || vscode.workspace.workspaceFolders[0]?.uri?.fsPath || home // TODO: use better default?
+    this.cwd = vsConfig.get('languageServer.workingDirectory') as string
+    if (!this.cwd) {
+      if (vscode.workspace.workspaceFolders)
+        this.cwd = vscode.workspace.workspaceFolders[0].uri.fsPath
+      else if (vscode.workspace.workspaceFile)
+        this.cwd = path.dirname(vscode.workspace.workspaceFile.fsPath)
+      else
+        this.cwd = home
+    }
+    if (vscode.workspace.workspaceFolders) {
+      this.includeDirs = vscode.workspace.workspaceFolders.map((f) => f.uri.fsPath) // Support multiple folder workspaces
+    } else {
+      this.includeDirs = [this.cwd] // Default to the folder surrounding the file or HOME when no file opened
+    }
     this.compilerArgs = vsConfig.get('languageServer.compilerArguments') as string[] || []
     this.autoFocusTerminal = vsConfig.get('languageServer.autoFocusTerminal') as boolean ?? false;
     this.showImplicitArguments = vsConfig.get('languageServer.inlayHints.showImplicitArguments') as boolean ?? false;
@@ -72,7 +85,7 @@ export class KokaConfig {
   }
 
   // Does the compiler path point to a valid compiler?
-  hasValidCompiler() : Boolean {
+  hasValidCompiler(): Boolean {
     if (this.compilerPath && fs.existsSync(this.compilerPath))
       return true
     else
@@ -81,10 +94,10 @@ export class KokaConfig {
 
   // Search for Koka compilers along user specified path, the PATH, and development paths.
   // and possibly prompt the use to install the koka compiler if it is not found or out of date
-  async updateCompilerPaths(context: vscode.ExtensionContext, vsConfig: vscode.WorkspaceConfiguration, allowInstall : Boolean) : Promise<Boolean> {
+  async updateCompilerPaths(context: vscode.ExtensionContext, vsConfig: vscode.WorkspaceConfiguration, allowInstall: Boolean): Promise<Boolean> {
     let paths = []
     if (allowInstall) paths = await findInstallCompilerPaths(context, vsConfig, this.latestCompilerVersion, this.developmentPath)
-                 else paths = findCompilerPaths(vsConfig, this.developmentPath)
+    else paths = findCompilerPaths(vsConfig, this.developmentPath)
 
     if (paths.length === 0) {
       console.log("Koka: cannot find a compiler")
@@ -95,7 +108,7 @@ export class KokaConfig {
   }
 
   // Set an explicit path to use for the Koka compiler
-  setCompilerPath(path: string) : Boolean {
+  setCompilerPath(path: string): Boolean {
     if (!path || !fs.existsSync(path)) {
       console.log(`Koka: compiler not found at: ${path}`)
       return false
@@ -108,7 +121,7 @@ export class KokaConfig {
     }
     this.compilerVersion = compilerVersion
     this.compilerPath = path
-    this.languageServerArgs = ["--language-server", "--buildtag=vscode", `-i${this.cwd}`, ...this.compilerArgs]
+    this.languageServerArgs = ["--language-server", "--buildtag=vscode", ...this.includeDirs.map((d) => `-i${d}`), ...this.compilerArgs]
     return true
   }
 
@@ -120,21 +133,21 @@ export class KokaConfig {
   }
 
   // install the latest Koka compiler
-  async installCompiler(context: vscode.ExtensionContext, vsConfig: vscode.WorkspaceConfiguration) : Promise<Boolean> {
+  async installCompiler(context: vscode.ExtensionContext, vsConfig: vscode.WorkspaceConfiguration): Promise<Boolean> {
     await installKoka(context, vsConfig, "", this.latestCompilerVersion, this.developmentPath, true /* force */)
     // todo: use instead `this.updateCompilerPath(pathToTheJustInstalledCompiler)`
-    return this.updateCompilerPaths(context,vsConfig,false)
+    return this.updateCompilerPaths(context, vsConfig, false)
   }
 
   // uninstall the latest Koka compiler
   async uninstallCompiler(context: vscode.ExtensionContext, vsConfig: vscode.WorkspaceConfiguration) {
     await uninstallKoka(context)
-    return this.updateCompilerPaths(context,vsConfig,false)
+    return this.updateCompilerPaths(context, vsConfig, false)
   }
 
   // open the samples directory in a separate window
-  async openSamples(context : vscode.ExtensionContext) {
-    openSamplesDir(context,this.compilerPath,this.compilerVersion)
+  async openSamples(context: vscode.ExtensionContext) {
+    openSamplesDir(context, this.compilerPath, this.compilerVersion)
   }
 
 }
@@ -144,9 +157,9 @@ export class KokaConfig {
 -------------------------------------------------*/
 
 async function findInstallCompilerPaths(context: vscode.ExtensionContext,
-                                               vsConfig: vscode.WorkspaceConfiguration,
-                                               latestCompilerVersion : string,
-                                               developmentPath : string): Promise<string[]> {
+  vsConfig: vscode.WorkspaceConfiguration,
+  latestCompilerVersion: string,
+  developmentPath: string): Promise<string[]> {
   const paths = findCompilerPaths(vsConfig, developmentPath)
   if (paths.length === 0) {
     console.log('Koka: unable to find an installed Koka compiler')
@@ -157,7 +170,7 @@ async function findInstallCompilerPaths(context: vscode.ExtensionContext,
 
   const defaultPath = paths[0]
   const compilerVersion = getCompilerVersion(defaultPath) ?? "1.0.0"
-  if (semver.lt(compilerVersion, latestCompilerVersion) ) {
+  if (semver.lt(compilerVersion, latestCompilerVersion)) {
     const reason = `The currently installed Koka compiler is version ${compilerVersion} while the latest is ${latestCompilerVersion}`
     await installKoka(context, vsConfig, reason, latestCompilerVersion, developmentPath, false)
     return findCompilerPaths(vsConfig, developmentPath)
@@ -167,7 +180,7 @@ async function findInstallCompilerPaths(context: vscode.ExtensionContext,
   return paths
 }
 
-function findCompilerPaths(vsConfig: vscode.WorkspaceConfiguration, developmentPath : string) : string[] {
+function findCompilerPaths(vsConfig: vscode.WorkspaceConfiguration, developmentPath: string): string[] {
   let compPaths = []
 
   // add user configured path?
@@ -196,7 +209,7 @@ function findCompilerPaths(vsConfig: vscode.WorkspaceConfiguration, developmentP
     }
 
     const result = child_process.execSync(cmdGetInstallRoot, { cwd: developmentPath, env: process.env })
-    const exePath = path.join( result.toString().trim(), 'bin', kokaExeName )
+    const exePath = path.join(result.toString().trim(), 'bin', kokaExeName)
     if (fs.existsSync(exePath)) {
       // vs.window.showInformationMessage(`Koka: found developer build at: ${devp}`)
       console.log("Koka: found development build of koka at " + exePath)
@@ -208,7 +221,7 @@ function findCompilerPaths(vsConfig: vscode.WorkspaceConfiguration, developmentP
   }
 
   // check PATH and local binary installation directories
-  const paths  = ((process.env.PATH as string) || "").split(path.delimiter)
+  const paths = ((process.env.PATH as string) || "").split(path.delimiter)
   if (process.env.XDG_BIN_DIR) paths.push(process.env.XDG_BIN_DIR)
   paths.push(path.join(home, '.local', 'bin'))
 
@@ -223,7 +236,7 @@ function findCompilerPaths(vsConfig: vscode.WorkspaceConfiguration, developmentP
 }
 
 
-function getCompilerVersion(compilerPath: string) : string {
+function getCompilerVersion(compilerPath: string): string {
   const options = { env: process.env }
   let version = ""
   try {
@@ -235,7 +248,7 @@ function getCompilerVersion(compilerPath: string) : string {
       console.log("Koka: found installed version " + version)
     }
   }
-  catch(err) { }
+  catch (err) { }
   return version
 }
 
@@ -245,9 +258,9 @@ function getCompilerVersion(compilerPath: string) : string {
 -------------------------------------------------*/
 
 async function installKoka(context: vscode.ExtensionContext, config: vscode.WorkspaceConfiguration,
-                           reason: string, latestCompilerVersion: string,
-                           developmentPath : string,
-                           force : boolean) {
+  reason: string, latestCompilerVersion: string,
+  developmentPath: string,
+  force: boolean) {
   // only prompt once for a download for each new extension version
   if (!force) {
     const latestInstalled = await context.globalState.get('koka-latest-installed-compiler') as string ?? "1.0.0"
@@ -267,7 +280,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
   // ask the user to install
   const decision = await vscode.window.showInformationMessage(
     `${(reason ? reason + ".  \n" : "")}${warning}Would you like to download and install the latest Koka compiler?`,
-    { }, // modal: true },
+    {}, // modal: true },
     'Yes',
     'No'
   )
@@ -285,7 +298,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
   const flags = "--vscode"  // TODO: add `--force` to force all default actions? (like installing clang on windows if needed)
   if (os.platform() === "win32") {
     if (kokaDevDir) {
-      const kokaBundle = getKokaBundleDir(kokaDevDir,latestCompilerVersion)
+      const kokaBundle = getKokaBundleDir(kokaDevDir, latestCompilerVersion)
       shellCmd = `${kokaDevDir}/util/install.bat ${flags} ${kokaBundle} && exit`
     }
     else {
@@ -295,7 +308,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
   }
   else {
     if (kokaDevDir) {
-      const kokaBundle = getKokaBundleDir(kokaDevDir,latestCompilerVersion)
+      const kokaBundle = getKokaBundleDir(kokaDevDir, latestCompilerVersion)
       shellCmd = `${kokaDevDir}/util/install.sh ${flags} ${kokaBundle} && exit`
     }
     else {
@@ -315,7 +328,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
       if (t === term) {
         const paths = findCompilerPaths(config, developmentPath); // rescan to find the just installed compiler
         let message = ""
-        if (paths.length>0) {
+        if (paths.length > 0) {
           // TODO: we cannot be sure the first path entry is the newly installed compiler.
           message = "Koka installed successfully"
           await context.globalState.update('koka-latest-installed-compiler', latestCompilerVersion)
@@ -324,7 +337,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
           message = "Koka installation finished but unable to find the installed compiler"
         }
         console.log(message)
-        resolve( paths )
+        resolve(paths)
         await vscode.window.showInformationMessage(message)
       }
     })
@@ -333,13 +346,13 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
   return result;
 }
 
-function getKokaBundleDir( kokaDir : string, version : string ) : string {
-  const kokaBundleBase= `${kokaDir}/bundle/v${version}/koka-v${version}`
-  const kokaBundle    = (os.platform() == "win32"
-                       ? `${kokaBundleBase}-windows-x64.tar.gz`
-                       : (os.platform() == "darwin"
-                           ? `${kokaBundleBase}-macos-arm64.tar.gz`
-                           : `${kokaBundleBase}-linux-x64.tar.gz`))
+function getKokaBundleDir(kokaDir: string, version: string): string {
+  const kokaBundleBase = `${kokaDir}/bundle/v${version}/koka-v${version}`
+  const kokaBundle = (os.platform() == "win32"
+    ? `${kokaBundleBase}-windows-x64.tar.gz`
+    : (os.platform() == "darwin"
+      ? `${kokaBundleBase}-macos-arm64.tar.gz`
+      : `${kokaBundleBase}-linux-x64.tar.gz`))
   return kokaBundle
 }
 
@@ -388,16 +401,14 @@ async function uninstallKoka(context: vscode.ExtensionContext) {
   open samples directory
 -------------------------------------------------*/
 
-async function openSamplesDir(context: vscode.ExtensionContext, compilerPath : string, compilerVersion : string)
-{
-  const samplesDir = await getSamplesDir(context,compilerPath,compilerVersion)
+async function openSamplesDir(context: vscode.ExtensionContext, compilerPath: string, compilerVersion: string) {
+  const samplesDir = await getSamplesDir(context, compilerPath, compilerVersion)
   if (samplesDir) {
-    vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(samplesDir), {forceNewWindow : true})
+    vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(samplesDir), { forceNewWindow: true })
   }
 }
 
-async function getSamplesDir(context: vscode.ExtensionContext, compilerPath : string, compilerVersion : string ) : Promise<string>
-{
+async function getSamplesDir(context: vscode.ExtensionContext, compilerPath: string, compilerVersion: string): Promise<string> {
   const samplesDir = path.join(context.globalStorageUri.fsPath, `v${compilerVersion}`, "samples")
   if (fs.existsSync(samplesDir)) return samplesDir
 
@@ -411,8 +422,8 @@ async function getSamplesDir(context: vscode.ExtensionContext, compilerPath : st
   console.log("Koka: getSamplesDir: examples path: " + examples)
   if (!examples || !fs.existsSync(examples)) return ""
 
-  fs.mkdirSync(samplesDir,{recursive:true})
-  fs.cp(examples, samplesDir, {recursive:true}, async (err) => {
+  fs.mkdirSync(samplesDir, { recursive: true })
+  fs.cp(examples, samplesDir, { recursive: true }, async (err) => {
     if (err) {
       vscode.window.showErrorMessage(`Unable to copy Koka samples. (to ${samplesDir} from ${examples})`)
       return "";
@@ -422,14 +433,14 @@ async function getSamplesDir(context: vscode.ExtensionContext, compilerPath : st
   })
 }
 
-function getCompilerSamplesDir(compilerPath: string, compilerVersion : string): string {
+function getCompilerSamplesDir(compilerPath: string, compilerVersion: string): string {
   if (compilerPath.includes(".stack-work")) {
     const root = compilerPath.substring(0, compilerPath.indexOf(".stack-work"))  // <root>/.stack-work/.../bin/koka
     return path.join(root, "samples")
   }
   else {
-    const root     = path.dirname(path.dirname(compilerPath))  // <root>/bin/koka
-    const ver      = getCompilerVersion(compilerPath) || compilerVersion;
+    const root = path.dirname(path.dirname(compilerPath))  // <root>/bin/koka
+    const ver = getCompilerVersion(compilerPath) || compilerVersion;
     const examples = path.join(root, "share", "koka", `v${ver}`, "lib", "samples")
     return examples;
   }

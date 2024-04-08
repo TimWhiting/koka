@@ -5,7 +5,6 @@ This is free software; you can redistribute it and/or modify it under the
 terms of the Apache License, Version 2.0. A copy of the License can be
 found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
-import path = require("path");
 import * as vscode from "vscode"
 import { KokaConfig } from "./workspace";
 
@@ -18,8 +17,8 @@ export class MainCodeLensProvider implements vscode.CodeLensProvider {
     const doc = document.getText()
     const hasModuleDecl = doc.match(/^module\b/);
     const re_canRun = (hasModuleDecl ?
-                       /(?:(?<=\n)|^)(?:pub\s+)fun\s+(main|test[\w-]*|example[\w-]*)\(\s*\)/g :  // all must be pub
-                       /(?:(?<=\n)|^)(?:pub\s+)?fun\s+(main|test[\w-]*|example[\w-]*)\(\s*\)/g); // pub is default
+      /(?:(?<=\n)|^)(?:pub\s+)fun\s+(main|test[\w-]*|example[\w-]*)\(\s*\)/g :  // all must be pub
+      /(?:(?<=\n)|^)(?:pub\s+)?fun\s+(main|test[\w-]*|example[\w-]*)\(\s*\)/g); // pub is default
     let lenses = [];
     let match = null;
     console.log("Koka: Scanning document for main and test function");
