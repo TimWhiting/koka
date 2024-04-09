@@ -46,6 +46,7 @@ library:
     - src/Platform/cpp
   c-sources:
     - src/Platform/cpp/Platform/cconsole.c
+    - src/Platform/cpp/Platform/cconsole.h
   include-dirs:
     - src/Platform/cpp/Platform
   build-tools:
