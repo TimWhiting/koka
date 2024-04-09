@@ -14,6 +14,8 @@ generating direct C code without needing a runtime system. To learn more:
 
 - Fix VSCode installation when opening VSCode with a single file
 
+- Various fixes and contributions from [Xia Li-yao](https://github.com/Lysxia), [Eduardo García Maleta](https://github.com/egmaleta), and [@samosica](https://github.com/samosica)
+
 ### v3.1.1, 2024-03-04
 
 - Fix crash in language server; fix build on older gcc versions.
