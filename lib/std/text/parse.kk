@@ -184,9 +184,13 @@ pub fun one-of( chars : string ) : parse char
 fun many-acc( p : parser<e,a>, acc : list<a> ) : <parse|e> list<a>
   (fn() val x = p() in many-acc(pretend-decreasing(p),Cons(x,acc))) || (fn() acc.reverse)
 
+// The `many` combinator parses `p` until it fails, returning a list of the results of `p`.
+// The `many` combinator is non-divergent only when `p` always consumes input or `fail`s.
 pub fun many( p : parser<e,a> ) : <parse|e> list<a>
   many-acc(p,[])
 
+// The `many1` combinator parses `p` at least once an then until it fails, returning a list of the results of `p`.
+// The `many1` combinator is non-divergent only when `p` always consumes input or `fail`s.
 pub fun many1( p : parser<e,a> ) : <parse|e> list<a>
   Cons(p(), many(p))
 

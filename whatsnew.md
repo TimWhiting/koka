@@ -12,6 +12,8 @@ generating direct C code without needing a runtime system. To learn more:
 
 ### v3.1.2
 
+- Fix VSCode installation when opening VSCode with a single file
+
 ### v3.1.1, 2024-03-04
 
 - Fix crash in language server; fix build on older gcc versions.

@@ -196,13 +196,13 @@ pub fun drop( xs : list<a>, n : int ) : list<a>
     Cons(_,xx) | n > 0 -> drop(xx, n - 1)
     _ -> xs
 
-// Apply a function `f`  to each element of the input list in sequence.
+// Apply a function `f` to each element of the input list in sequence.
 pub fun map(xs : list<a>, f : a -> e b) : e list<b>
   match xs
     Cons(x,xx) -> Cons(f(x), xx.map(f))
     Nil -> Nil
 
-// Apply a function `f`  to each element of the input list in sequence where takes
+// Apply a function `f` to each element of the input list in sequence where takes
 // both the index of the current element and the element itself as arguments.
 pub fun map-indexed(xs : list<a>, f : (idx : int, value : a) -> e b) : e list<b>
   fun map-idx(ys,i)
@@ -211,7 +211,7 @@ pub fun map-indexed(xs : list<a>, f : (idx : int, value : a) -> e b) : e list<b>
       Nil -> Nil
   map-idx(xs,0)
 
-// Apply a function `f`  to each element of the input list in sequence where `f` takes
+// Apply a function `f` to each element of the input list in sequence where `f` takes
 // both the current element and the tail list as arguments.
 pub fun map-peek(xs : list<a>, f : (value : a, rest : list<a>) -> e b) : e list<b>
   fun mappeek(ys)
@@ -220,7 +220,7 @@ pub fun map-peek(xs : list<a>, f : (value : a, rest : list<a>) -> e b) : e list<
       Nil -> Nil
   mappeek(xs)
 
-// Apply a function `f`  to each element of the input list in sequence where takes
+// Apply a function `f` to each element of the input list in sequence where takes
 // both the index of the current element, the element itself, and the tail list as arguments.
 pub fun map-indexed-peek(xs : list<a>, f : (idx : int, value : a, rest : list<a> ) -> e b) : e list<b>
   fun mapidx(ys,i)
