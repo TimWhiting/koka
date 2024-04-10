@@ -136,12 +136,13 @@ matchArguments matchSome range free tp fixed named mbExpResTp
          Just (pars,_,resTp)
           -> if (length fixed + length named > length pars)
               then unifyError NoMatch
-              else do -- trace (" matchArguments: " ++ show (map pretty pars, map pretty fixed, map pretty named)) $ return ()
+              else do trace (" matchArguments: " ++ show (map pretty pars, map pretty fixed, map pretty named)) $ return ()
                       -- subsume fixed parameters
-                      let (fpars,npars) = splitAt (length fixed) pars
+                      let parsNotNamedArg = filter (\(nm,tp) -> nm `notElem` map fst named) pars
+                      let (fpars,rest) = splitAt (length fixed) parsNotNamedArg
                       mapM_  (\(tpar,targ) -> subsumeSubst range free (unOptional tpar) targ) (zip (map snd fpars) fixed)
                       -- subsume named parameters
-                      mapM_ (\(name,targ) -> case lookup name npars of
+                      mapM_ (\(name,targ) -> case lookup name pars of
                                                Nothing   -> unifyError NoMatch
                                                Just tpar -> subsumeSubst range free (unOptional tpar) targ
                             ) named
@@ -151,7 +152,6 @@ matchArguments matchSome range free tp fixed named mbExpResTp
                         Just expTp -> do subsumeSubst range free expTp resTp
                                          return ()
                       -- check the rest is optional or implicit
-                      let rest = [(nm,tpar) | (nm,tpar) <- npars, not (nm `elem` map fst named)]
                       if (matchSome || all isOptionalOrImplicit rest)
                         then do subst rho1
                         else unifyError NoMatch
@@ -217,7 +217,11 @@ subsume range free tp1 tp2
            tp = quantifyType vars (qualifyType [(subx |-> evPred ev) | ev <- evs1] (subx |-> rho1)) -- TODO: do rho1 and we get skolem errors: see 'Prelude.choose'
        -- return
        return (tp, sub |-> rho2, subx |-> evsEnt,
-                (\expr -> Core.addTypeLambdas vars $     -- generalize
+                (\expr -> Core.addTypeLambdas vars $     -- generalize     -- generalize     -- generalize     -- generalize
+                               -- generalize
+                               -- generalize
+                               -- generalize     -- generalize
+                               -- generalize
                           subx |-> (coreEnt $                      -- apply evidence evs2 & abstract evidence evs1
                                     Core.addTypeApps tvs expr)))   -- instantiate
 
