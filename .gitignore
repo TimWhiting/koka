@@ -16,7 +16,6 @@ dist-newstyle/
 kklib/mimalloc-inline
 stack.yaml.lock
 package-lock.json
-test.kk
 *.pdb
 *.pdn
 *.vcxproj.user
