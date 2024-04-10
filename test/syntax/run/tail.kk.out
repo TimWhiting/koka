@@ -1,0 +1,6 @@
+/@virtual/syntax/run/tail/@main@kk(1,28): type error: identifier println cannot be resolved@
+ context : println
+ inferred type: _
+ candidates : println: (s : string) -> console ()
+ show/println : forall<a> (x : a, ?show : (a) -> string) -> console ()
+ hint : give a type annotation or qualify the name?
