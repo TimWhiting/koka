@@ -1460,9 +1460,9 @@ filterMatchNameContextEx range ctx candidates
     matchArgs :: Bool -> [Type] -> [(Name,Type)] -> Maybe Type -> (Name,NameInfo) -> Inf [(Name,NameInfo,Rho)]
     matchArgs matchSome fixed named mbResTp (name,info)
       = do free <- freeInGamma
-            --  traceDefDoc $ \penv -> text "  match fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
-            --                               <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
-            --                               <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
+          --  traceDefDoc $ \penv -> text "  match fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
+          --                                 <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
+          --                                 <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
            res <- runUnify (matchArguments matchSome range free (infoType info) fixed named mbResTp)
            case res of
              (Right rho,_) -> return [(name,info,rho)]

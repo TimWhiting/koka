@@ -136,7 +136,7 @@ matchArguments matchSome range free tp fixed named mbExpResTp
          Just (pars,_,resTp)
           -> if (length fixed + length named > length pars)
               then unifyError NoMatch
-              else do trace (" matchArguments: " ++ show (map pretty pars, map pretty fixed, map pretty named)) $ return ()
+              else do -- trace (" matchArguments: " ++ show (map pretty pars, map pretty fixed, map pretty named)) $ return ()
                       -- subsume fixed parameters
                       let parsNotNamedArg = filter (\(nm,tp) -> nm `notElem` map fst named) pars
                       let (fpars,rest) = splitAt (length fixed) parsNotNamedArg
@@ -217,11 +217,7 @@ subsume range free tp1 tp2
            tp = quantifyType vars (qualifyType [(subx |-> evPred ev) | ev <- evs1] (subx |-> rho1)) -- TODO: do rho1 and we get skolem errors: see 'Prelude.choose'
        -- return
        return (tp, sub |-> rho2, subx |-> evsEnt,
-                (\expr -> Core.addTypeLambdas vars $     -- generalize     -- generalize     -- generalize     -- generalize
-                               -- generalize
-                               -- generalize
-                               -- generalize     -- generalize
-                               -- generalize
+                (\expr -> Core.addTypeLambdas vars $     -- generalize
                           subx |-> (coreEnt $                      -- apply evidence evs2 & abstract evidence evs1
                                     Core.addTypeApps tvs expr)))   -- instantiate
 
