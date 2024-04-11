@@ -1295,6 +1295,10 @@ cTypeCon c
          then CPrim "kk_string_t"
         else if (name == nameTpBytes)
          then CPrim "kk_bytes_t"
+        else if (name == nameTpExternOwned)
+         then CPrim "kk_box_t"
+        else if (name == nameTpExternBorrowed)
+         then CPrim "kk_box_t"
         else if (name == nameTpVector)
          then CPrim "kk_vector_t"
         else if (name ==  nameTpEvv)

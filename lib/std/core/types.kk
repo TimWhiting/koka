@@ -104,6 +104,12 @@ pub type vector<a>
 // A raw wrapper around a uint8 character array.
 pub type bytes
 
+// The type of an external (i.e. C) value where the memory is owned and managed by koka's refcounting
+pub ref type extern-owned<t>
+
+// The type of an external (i.e. C) value where the memory is borrowed and managed by external code
+pub ref type extern-borrowed<t>
+
 // An any type. Used for external calls.
 pub type any
 
