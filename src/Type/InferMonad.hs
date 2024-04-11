@@ -990,7 +990,7 @@ lookupAppName allowDisambiguate name ctx contextRange range
                                  (not allowDisambiguate) {- allow unitFunVal: at first, when allowDisambiguate is False, we like to see all possible instantations -}
                                  roots
        case res of
-          Right iarg@(ImplicitArg qname _ rho iargs)
+          Right iarg@(ImplicitArg qname _ rho iargs _)
             -> do -- when (not (null iargs)) $ traceDefDoc $ \penv -> text "resolved app name with implicits:" <+> prettyImplicitArg penv iarg
                   penv <- getPrettyEnv
                   let implicits = [((pname,range),
@@ -1045,6 +1045,7 @@ data ImplicitArg   = ImplicitArg{ iaName :: Name
                                 , iaInfo :: NameInfo
                                 , iaType :: Rho          -- instantiated type
                                 , iaImplicitArgs :: [(Name, Partial)]
+                                , iaOptionalArgs :: Bool -- Whether this arg is resolved to a function with optional arguments (needs eta expanding)
                                 }
 
 -- Further implicit arguments are delayed (in an `Inf` computation) so we can breadth-first search
@@ -1082,7 +1083,7 @@ csum xs
 
 -- Is an implicit arg fully evaluated?
 isDone :: ImplicitArg -> Bool
-isDone (ImplicitArg _ _ _ iargs)
+isDone (ImplicitArg _ _ _ iargs _)
   = all (\(pname,partial) -> case partial of
                               Done iarg -> isDone iarg
                               Step _    -> False
@@ -1102,7 +1103,7 @@ partialCost (Done iarg)   = cadd (Exact 1) (implicitArgCost iarg)
 partialCost (Infty tp)    = Least 10000
 
 prettyImplicitArg :: Pretty.Env -> ImplicitArg -> Doc
-prettyImplicitArg penv (ImplicitArg name info rho iargs)
+prettyImplicitArg penv (ImplicitArg name info rho iargs optional)
   = let withColor clr doc = color (clr (Pretty.colors penv)) doc in
     withColor colorImplicitExpr (Pretty.ppNamePlain penv name) <.>
     -- Pretty.ppType penv rho <+>
@@ -1147,7 +1148,7 @@ resolveImplicitArg allowDisambiguate allowUnitFunVal roots
   where
     -- always prefer a creator definition over a plain constructor if it exists
     existConCreator :: [ImplicitArg] -> ImplicitArg -> Bool
-    existConCreator candidates (ImplicitArg name info _ _)
+    existConCreator candidates (ImplicitArg name info _ _ _)
       = isInfoCon info && any (\iarg -> iaName iarg == cname) candidates
       where
         cname = newCreatorName name
@@ -1306,12 +1307,12 @@ lookupImplicitArg allowUnitFunVal infoFilter previousCtxs name ctx range
   where
     toImplicitArg :: (Name,NameInfo,Rho) -> ImplicitArg
     toImplicitArg (iname,info,itp {- instantiated type -})
-      = let iargs = case splitFunType itp of
+      = let (iargs, hasOptional) = case splitFunType itp of
                       Just (ipars,ieff,iresTp)  | any Op.isOptionalOrImplicit ipars
                         -- recursively resolve further required implicit parameters
-                        -> map resolveImplicit (implicitsToResolve ipars)
-                      _ -> []
-        in (ImplicitArg iname info itp iargs)
+                        -> (map resolveImplicit (implicitsToResolve ipars), any Op.isOptionalParam ipars)
+                      _ -> ([], False)
+        in ImplicitArg iname info itp iargs hasOptional
 
     implicitsToResolve :: [(Name,Type)] -> [(Name,Type)]
     implicitsToResolve ipars
@@ -1346,10 +1347,10 @@ lookupImplicitArg allowUnitFunVal infoFilter previousCtxs name ctx range
 
 -- Convert an implicit argument to an expression (that is supplied as the argument)
 toImplicitArgExpr :: Range -> ImplicitArg -> Expr Type
-toImplicitArgExpr xrange (ImplicitArg iname info itp iargs)
+toImplicitArgExpr xrange (ImplicitArg iname info itp iargs optionalArgs)
       = let range = rangeHide xrange in  -- don't add things in the expression to the rangemap
         case iargs of
-          [] -> Var iname False range
+          [] | not optionalArgs -> Var iname False range
           _  -> case splitFunType itp of
                   Just (ipars,ieff,iresTp) | any Op.isOptionalOrImplicit ipars -- eta-expansion needed?
                     -- eta-expand and resolve further implicit parameters
@@ -1460,9 +1461,9 @@ filterMatchNameContextEx range ctx candidates
     matchArgs :: Bool -> [Type] -> [(Name,Type)] -> Maybe Type -> (Name,NameInfo) -> Inf [(Name,NameInfo,Rho)]
     matchArgs matchSome fixed named mbResTp (name,info)
       = do free <- freeInGamma
-            --  traceDefDoc $ \penv -> text "  match fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
-            --                               <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
-            --                               <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
+          --  traceDefDoc $ \penv -> text "  match fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
+          --                                 <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
+          --                                 <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
            res <- runUnify (matchArguments matchSome range free (infoType info) fixed named mbResTp)
            case res of
              (Right rho,_) -> return [(name,info,rho)]

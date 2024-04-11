@@ -71,7 +71,7 @@ pub fun string/print(s : string)
   prints(s)
 
 // Print a value that has a `show` function
-pub fun show/print( x : a, ?show : a -> string ) : console ()
+pub fun show/print( x : a, ?show : a -> <console|e> string ) : <console|e> ()
   prints(x.show)
 
 // Print a string to the console, including a final newline character.
@@ -79,5 +79,5 @@ pub fun string/println(s : string) : console ()
   printsln(s)
 
 // Print a value that has a `show` function, including a final newline character.
-pub fun show/println( x : a, ?show : a -> string ) : console ()
+pub fun show/println( x : a, ?show : a -> <console|e> string ) : <console|e> ()
   printsln(x.show)
