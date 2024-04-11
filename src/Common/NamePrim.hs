@@ -132,6 +132,7 @@ module Common.NamePrim
           , makeTpHandled
           , nameTpHandled, nameTpHandled1, nameTpNHandled, nameTpNHandled1
           , nameTpMarker
+          , nameTpExternOwned, nameTpExternBorrowed
           {-
           , nameTpOperation, nameYieldOp
           , nameTpCps, nameTpYld, nameTpCont
@@ -402,6 +403,9 @@ nameByref       = coreTypesName "@byref"
 
 namePredHeapDiv = coreTypesName "hdiv"
 namePredEffDiv  = coreTypesName "ediv"
+
+nameTpExternOwned    = coreTypesName "extern-owned"
+nameTpExternBorrowed = coreTypesName "extern-borrowed"
 
 nameTpRef       = coreTypesName "ref"
 nameTpLocalVar  = coreTypesName "local-var"
