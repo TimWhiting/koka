@@ -15,7 +15,7 @@ module Type.Operations( instantiate
                       , freshTVar
                       , Evidence(..)
                       , freshSub
-                      , isOptionalOrImplicit, splitOptionalImplicit
+                      , isOptionalOrImplicit, splitOptionalImplicit, requiresImplicits
                       ) where
 
 
@@ -28,6 +28,11 @@ import Type.TypeVar
 import Core.Core as Core
 import Type.Assumption
 
+requiresImplicits :: Type -> [(Name, Type)]
+requiresImplicits tp
+  = case splitFunScheme tp of
+      Just (_ ,_, pars,_,_) -> filter (isImplicitParamName . fst) pars
+      _               -> []
 
 isOptionalOrImplicit :: (Name,Type) -> Bool
 isOptionalOrImplicit (pname,ptype)

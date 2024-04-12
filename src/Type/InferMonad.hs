@@ -82,6 +82,7 @@ module Type.InferMonad( Inf, InfGamma
 
 import Data.List( partition, sortBy, nub, nubBy, intersperse, foldl')
 import Data.Ord(comparing)
+import qualified Data.Set as S
 import Control.Applicative
 import Control.Monad
 
@@ -398,7 +399,7 @@ normalizeX close free tp
                           _ -> do ls' <- mapM (normalizex Pos) ls
                                   tl' <- normalizex Pos tl
                                   return (effectExtends ls' tl')
-              args' <- mapM (\(name,arg) -> do{arg' <- normalizex Neg arg; return (name,arg')}) args
+              args' <- mapM (\(name,arg) -> do {arg' <- normalizex Neg arg; return (name,arg')}) args
               res'  <- normalizex Pos res
               niceEff <- nicefyEffect eff'
               return (TFun args' niceEff res')
@@ -421,7 +422,7 @@ normalizeX close free tp
                               _ -> do ls' <- mapM (normalizex var) ls
                                       tl' <- normalizex var tl
                                       return $ effectExtends ls' tl'
-                  args' <- mapM (\(name,arg) -> do{arg' <- normalizex (vflip var) arg; return (name,arg')}) args
+                  args' <- mapM (\(name,arg) -> do {arg' <- normalizex (vflip var) arg; return (name,arg')}) args
                   res'  <- normalizex var res
                   niceEff <- nicefyEffect eff'
                   return (TFun args' niceEff res')
@@ -912,7 +913,7 @@ resolveNameEx infoFilter mbInfoFilterAmb name ctx rangeContext range
                       -> infError range (text "identifier" <+> Pretty.ppName penv name <+> text "has no matching definition" <->
                                          table (ctxTerm rangeContext ++
                                                 [(text "inferred type", Pretty.niceType penv tp)
-                                                ,(text "candidates", ppCandidates env amb)]))
+                                                ,(text "candidates", ppCandidates env amb)] ++ ppImplicitsHint env amb))
                     (CtxFunArgs fixed named (Just resTp), (_:rest))
                       -> do let message = "with " ++ show (fixed + length named) ++ " argument(s) matches the result type"
                             infError range (text "no function" <+> Pretty.ppName penv name <+> text message <+>
@@ -933,7 +934,7 @@ resolveNameEx infoFilter mbInfoFilterAmb name ctx rangeContext range
                             infError range (text "no function" <+> Pretty.ppName penv name <+> text "is defined that matches the argument types" <->
                                          table (ctxTerm rangeContext ++
                                                 [(text "inferred type", argsDoc)
-                                                ,(text "candidates", ppCandidates env amb)]
+                                                ,(text "candidates", ppCandidates env amb)] ++ ppImplicitsHint env amb
                                                 ++
                                                 (if (name == newName "+")
                                                   then [(text "hint", text "did you mean to use append (++)? (instead  of addition (+) )")]
@@ -956,10 +957,10 @@ resolveNameEx infoFilter mbInfoFilterAmb name ctx rangeContext range
         _  -> do env <- getEnv
                  (term,termInfo) <- getTermDoc "context" rangeContext
                  infError range (text "identifier" <+> Pretty.ppName (prettyEnv env) name <+> text "cannot be resolved." <->
-                                 table  [(term, termInfo),
+                                 table ([(term, termInfo),
                                          (text "inferred type", ppNameContext (prettyEnv env) ctx),
                                          (text "candidates", ppCandidates env matches),
-                                         (text "hint", text "give a type annotation or qualify the name?")])
+                                         (text "hint", text "give a type annotation or qualify the name?")] ++ ppImplicitsHint env matches))
   where
     hintTypeSig = "give a type annotation to the function parameters or qualify the name?"
 
@@ -1548,7 +1549,7 @@ fixedContext propagated fresolved fixedCount named
 
     namedGuessed :: Inf [(Name,Type)]
     namedGuessed
-      = mapM (\name -> do{ tv <- Op.freshTVar kindStar Meta; return (name,tv) }) named
+      = mapM (\name -> do { tv <- Op.freshTVar kindStar Meta; return (name,tv) }) named
 
 implicitTypeContext :: Type -> NameContext
 implicitTypeContext tp
@@ -1623,21 +1624,33 @@ ppAmbiguous env hint infos
 
 ppCandidates :: Env -> [(Name,NameInfo)] -> Doc
 ppCandidates env nameInfos
-   = align $ table $
-     let penv = prettyEnv env
-         modName = context env
-         n = 10
-         sorted      = sortBy (\(name1,info1) (name2,info2) ->
-                                if (qualifier name1 == modName && qualifier name2 /= modName)
-                                 then LT
-                                else if (qualifier name1 /= modName && qualifier name2 == modName)
-                                 then GT
-                                else compare (not (isRho (infoType info1))) (not (isRho (infoType info2)))
-                              ) nameInfos
-         (defs,rest) = splitAt n sorted
-     in (if null rest
+   = align $ table $ (if null rest
           then map (ppNameInfo env) defs
           else map (ppNameInfo env) (init defs) ++ [(text "...", text "or" <+> pretty (length rest + 1) <+> text "other definitions")])
+  where
+    penv = prettyEnv env
+    modName = context env
+    n = 10
+    sorted      = sortBy (\(name1,info1) (name2,info2) ->
+                          if (qualifier name1 == modName && qualifier name2 /= modName)
+                            then LT
+                          else if (qualifier name1 /= modName && qualifier name2 == modName)
+                            then GT
+                          else compare (not (isRho (infoType info1))) (not (isRho (infoType info2)))
+                        ) nameInfos
+    (defs,rest) = splitAt n sorted
+
+ppImplicitsHint :: Env -> [(Name,NameInfo)] -> [(Doc, Doc)]
+ppImplicitsHint env nameInfos =
+  case allRequiredMissingImplicits of
+    [] -> []
+    _  -> [(text "missing implicits" , hsep (map (Pretty.ppName penv) allRequiredMissingImplicits)),
+            (text "hint", text "ensure implicit functions are defined prior to functions that require them")]
+  where
+    penv = prettyEnv env
+    candidateMissingImplicits = map (map fst . requiresImplicits . infoType . snd) nameInfos
+    allMissingImplicits = S.fromList (concat candidateMissingImplicits)
+    allRequiredMissingImplicits = filter (\imp -> all (imp `elem`) candidateMissingImplicits) (S.toList allMissingImplicits)
 
 ppNameInfo env (name,info)
   = (Pretty.ppName (prettyEnv env) (importsAlias name (imports env)), Pretty.ppType (prettyEnv env) (infoType info))
@@ -1758,7 +1771,7 @@ withNoRangeInfo inf
   = do st0 <- updateSt (\st -> st{ mbRangeMap = Nothing })
        let rm0 = mbRangeMap st0
        x   <- inf
-       updateSt( \st -> st{ mbRangeMap = rm0 })
+       updateSt ( \st -> st{ mbRangeMap = rm0 })
        return x
 
 {--------------------------------------------------------------------------
@@ -1817,18 +1830,18 @@ useHole
 
 disallowHole :: Inf a -> Inf a
 disallowHole action
-  = do st0 <- updateSt(\st -> st{ holeAllowed = False })
+  = do st0 <- updateSt (\st -> st{ holeAllowed = False })
        let prev = holeAllowed st0
        x <- action
-       updateSt(\st -> st{ holeAllowed = prev })
+       updateSt (\st -> st{ holeAllowed = prev })
        return x
 
 allowHole :: Inf a -> Inf (a,Bool {- was the hole used? -})
 allowHole action
-  = do st0 <- updateSt(\st -> st{ holeAllowed = True })
+  = do st0 <- updateSt (\st -> st{ holeAllowed = True })
        let prev = holeAllowed st0
        x <- action
-       st1 <- updateSt(\st -> st{ holeAllowed = prev })
+       st1 <- updateSt (\st -> st{ holeAllowed = prev })
        return (x,not (holeAllowed st1))
 
 
