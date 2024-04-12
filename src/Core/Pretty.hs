@@ -404,13 +404,9 @@ prettyExpr env (Case exprs branches)
 
 prettyVar env tname
   = if (coreIface env)
-      then prettyCoreName (colors env) (envQualify env (getName tname))
-      else prettyName (colors env) (envQualify env (getName tname))
+      then prettyCoreName (colors env) (getName tname)
+      else prettyName (colors env) (getName tname)
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
-
-envQualify env name
-  = if (fullNames env) then name
-    else newName (nameStem name)
 
 {--------------------------------------------------------------------------
   Case branches
