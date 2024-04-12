@@ -1,3 +1,0 @@
-test/syntax/wrong/braces2@kk(4,15): parse error: invalid syntax
- unexpected "->"
- expecting "," or ")"
