@@ -15,7 +15,7 @@ module Type.Operations( instantiate
                       , freshTVar
                       , Evidence(..)
                       , freshSub
-                      , isOptionalOrImplicit, splitOptionalImplicit, requiresImplicits
+                      , isOptionalOrImplicit, splitOptionalImplicit, isOptionalParam, requiresImplicits
                       ) where
 
 
@@ -37,6 +37,10 @@ requiresImplicits tp
 isOptionalOrImplicit :: (Name,Type) -> Bool
 isOptionalOrImplicit (pname,ptype)
   = isImplicitParamName pname || isOptional ptype
+
+isOptionalParam :: (Name,Type) -> Bool
+isOptionalParam (pname,ptype)
+  = isOptional ptype
 
 splitOptionalImplicit :: [(Name,Type)] -> ([(Name,Type)],[(Name,Type)],[(Name,Type)])
 splitOptionalImplicit pars
