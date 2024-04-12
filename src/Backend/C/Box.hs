@@ -77,11 +77,11 @@ boxExpr expectTp expr
       TypeApp e tps        -> boxExpr expectTp e
 
       -- Regular
-      App e args           -> do let argTps = map boxTypeOf args
+      App e args rng       -> do let argTps = map boxTypeOf args
                                      eTp    = TFun [(nameNil,tp) | tp <- argTps] typeTotal expectTp
                                  bargs <- mapM (\(arg) -> boxExpr (boxTypeOf arg) arg) args
                                  bexpr <- boxExpr eTp e
-                                 return (App bexpr bargs)
+                                 return (App bexpr bargs rng)
       Lam tparams eff body -> do let funTp = boxTypeOf expr
                                  bbody <- boxExpr (boxTypeOf body) body
                                  bcoerce funTp (expectTp) (Lam tparams eff bbody)
@@ -115,7 +115,7 @@ boxPattern fromTp PatWild
   = boxPatternX fromTp PatWild
 boxPattern fromTp pat | cType (fromTp) /= cType toTp
   = do mcoerce <- -- trace ("pattern coerce: " ++ show (pretty fromTp) ++ " ~> " ++ show (pretty toTp)) $
-                  bcoerceX fromTp toTp (Var (TName nameNil fromTp) InfoNone)
+                  bcoerceX fromTp toTp (Var (TName nameNil fromTp Nothing) InfoNone)
        case mcoerce of
          Just coerce0
            -> -- We just insert a specially named Box pattern bound to fresh variable -- the backend recognizes this
@@ -132,11 +132,11 @@ boxPattern fromTp pat | cType (fromTp) /= cType toTp
                          -> -- ok, no nested match
                             do i <- unique
                                let uname = newHiddenNameEx "fun-unbox"  (show i)
-                               coerce <- bcoerce fromTp toTp (Var (TName uname fromTp) InfoNone)  -- regenerate the coercion
-                               let def = makeTDef (TName (getName tname) toTp) coerce
+                               coerce <- bcoerce fromTp toTp (Var (TName uname fromTp Nothing) InfoNone)  -- regenerate the coercion
+                               let def = makeTDef (TName (getName tname) toTp Nothing) coerce
                                --trace ("unbox function: " ++ show uname ++ ": " ++ show (pretty fromTp) ++ " to " ++ show (pretty toTp)
                                --      ++ "\n: coerce tp: " ++ show (pretty (typeOf coerce))) $
-                               return (PatVar (TName uname fromTp) PatWild, [def])
+                               return (PatVar (TName uname fromTp Nothing) PatWild, [def])
                        _ -> failure "Backend/C/FromCore.boxPattern: nested match on a function?"
                 else -- regular box/unbox
                      do i <- unique
@@ -144,7 +144,7 @@ boxPattern fromTp pat | cType (fromTp) /= cType toTp
                         (bpat,defs) <- boxPatternX toTp pat
                         -- trace ("unbox pattern: " ++ show uname ++ ": " ++ show (pretty toTp)) $
                         -- return (PatVar (TName uname toTp) bpat, defs)  -- toTp for generating correct unbox call in the C backend
-                        return (PatVar (TName uname typeBoxStar) (patBox toTp typeBoxStar bpat), defs)
+                        return (PatVar (TName uname typeBoxStar Nothing) (patBox toTp typeBoxStar bpat), defs)
          _ -> -- trace ("pattern: no-coerce: " ++ show (pretty fromTp) ++ " to " ++ show (pretty toTp)) $
               boxPatternX fromTp pat
 
@@ -188,21 +188,21 @@ bcoerceX :: Type -> Type -> Expr -> Unique (Maybe Expr)
 bcoerceX fromTp toTp expr
   = case (cType fromTp, cType toTp) of
       (CBox, CBox)             -> return Nothing
-      (CBox, CData)            -> return $ Just $ App (unboxVar) [expr]
-      (CData, CBox)            -> return $ Just $ App (boxVar) [expr]
+      (CBox, CData)            -> return $ Just $ App (unboxVar) [expr] Nothing
+      (CData, CBox)            -> return $ Just $ App (boxVar) [expr] Nothing
       -- boxed functions need to wrapped to take all arguments and results as boxed as well :-(
       -- see test/cgen/box3 and test/cgen/box3a
       (CBox, CFun cpars cres)
         -> --trace ("box to fun: " ++ show expr) $
             do boxedToTp <- boxedFunType toTp
-               let unboxed = App (unboxVarAtTp (TFun [(nameNil,fromTp)] typeTotal boxedToTp)) [expr]
+               let unboxed = App (unboxVarAtTp (TFun [(nameNil,fromTp)] typeTotal boxedToTp)) [expr] Nothing
                Just <$> bcoerce boxedToTp toTp unboxed -- unwrap function; we must return Just even if no further wrapping was needed
 
       (CFun cpars cres, CBox)
          -> --trace ("fun to box: " ++ show expr) $
             do boxedFromTp <- boxedFunType fromTp
                expr'  <- bcoerce fromTp boxedFromTp expr  -- wrap function
-               return $ Just $ App (boxVarAtTp (TFun [(nameNil,boxedFromTp)] typeTotal toTp)) [expr']         -- and box it itselfob
+               return $ Just $ App (boxVarAtTp (TFun [(nameNil,boxedFromTp)] typeTotal toTp)) [expr'] Nothing        -- and box it itselfob
 
       -- coerce between function arguments/results
       (CFun fromPars fromRes, CFun toPars toRes)
@@ -227,20 +227,20 @@ bcoerceX fromTp toTp expr
       = TFun [(nameNil,fromTp)] typeTotal toTp
 
 boxVarAtTp tp
-  = Var (TName nameBox tp) (InfoExternal [(C CDefault, "box(#1)")])
+  = Var (TName nameBox tp Nothing) (InfoExternal [(C CDefault, "box(#1)")])
 unboxVarAtTp tp
-  = Var (TName nameUnbox tp) (InfoExternal [(C CDefault, "unbox(#1)")])
+  = Var (TName nameUnbox tp Nothing) (InfoExternal [(C CDefault, "unbox(#1)")])
 
 
 boxCoerceFun :: [(Name,Type)] -> Effect -> Type -> [(Name,Type)] -> Effect -> Type  -> Expr -> Unique Expr
 boxCoerceFun toParTps toEffTp toResTp fromParTps fromEffTp fromResTp expr
   = -- trace ("box coerce fun: " ++ show expr) $
     do names <- mapM (\_ -> uniqueName "b") toParTps
-       let pars  = zipWith TName names (map snd toParTps)
+       let pars  = zipWith (\n t -> TName n t Nothing) names (map snd toParTps)
            args  = [Var par InfoNone | par <- pars]
        bargs <- -- mapM (\(arg,argTp) -> boxExpr argTp arg) (zip args (map snd fromParTps))
                 mapM (\(arg,parToTp,parFromTp) -> bcoerce parToTp parFromTp arg) (zip3 args (map snd toParTps) (map snd fromParTps))
-       bapp  <- bcoerce fromResTp toResTp (App expr bargs)
+       bapp  <- bcoerce fromResTp toResTp (App expr bargs Nothing)
        return (Lam pars toEffTp bapp)
 
 boxBindExprAsValue :: Type -> Type -> Expr -> (Expr -> Unique Expr) -> Unique Expr
@@ -384,7 +384,7 @@ isBoxPat _                              = False
 
 patBox :: Type -> Type -> Pattern -> Pattern
 patBox tpPat tpRes pat
-  = PatCon (TName nameBoxCon (conInfoType boxConInfo)) [pat] boxConRepr [tpPat] [] tpRes boxConInfo True
+  = PatCon (TName nameBoxCon (conInfoType boxConInfo) Nothing) [pat] boxConRepr [tpPat] [] tpRes boxConInfo True
 
 boxConRepr :: ConRepr
 boxConRepr = ConSingle nameTpBox (DataSingle False) (valueReprScan 1) CtxNone 0
@@ -403,4 +403,4 @@ boxConInfo
 
 uniqueTName nm tp
   = do n <- uniqueName nm
-       return (TName n tp)
+       return (TName n tp Nothing) 

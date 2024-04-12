@@ -47,6 +47,7 @@ import Core.Core
 import Core.CoreVar
 import Core.Pretty
 import Core.Borrowed
+import Common.Range (rangeNull)
 
 --------------------------------------------------------------------------
 -- Reference count transformation
@@ -126,8 +127,8 @@ parcExpr expr
                   -- parcTrace $ "Wrapping: " ++ show tname
                   case splitFunScheme $ typeOf expr of
                     Just (ts, [], as, eff, _)
-                      -> do parcExpr $ addTypeLambdas ts $ addLambdas as eff
-                              $ addApps (map (flip Var InfoNone . uncurry TName) as) $ addTypeApps ts
+                      -> do parcExpr $ addTypeLambdas ts $ addLambdas (zipWith (\a b -> (rangeNull, b)) [1..] as) eff
+                              $ addApps (map (flip Var InfoNone . (\(n,t) -> TName n t Nothing)) as) $ addTypeApps ts
                               $ Var tname info
                     Just _
                       -> do parcTrace $ "Preds not empty: " ++ show (typeOf expr)
@@ -138,16 +139,16 @@ parcExpr expr
       -- If the function is refcounted, it may need to be dupped.
       -- On the other hand, we want to avoid an infinite recursion with
       -- the wrapping if it is not ref-counted.
-      App inner@(Var tname info) args
+      App inner@(Var tname info) args _
         -> do inner' <- if infoIsRefCounted info then parcExpr inner else return inner
               parcBorrowApp tname args inner'
-      App inner@(TypeApp (Var tname info) targs) args
+      App inner@(TypeApp (Var tname info) targs) args _
         -> do inner' <- if infoIsRefCounted info then parcExpr inner else return inner
               parcBorrowApp tname args inner'
-      App fn args
+      App fn args rng
         -> do args' <- reverseMapM parcExpr args
               fn'   <- parcExpr fn
-              return $ App fn' args'
+              return $ App fn' args' rng
       Lit _
         -> return expr
       Con ctor repr
@@ -190,14 +191,14 @@ parcBorrowApp :: TName -> [Expr] -> Expr -> Parc Expr
 parcBorrowApp tname args expr
   = do bs <- getParamInfos (getName tname)
        if Borrow `notElem` bs
-         then App expr <$> reverseMapM parcExpr args
+         then (\x -> App expr x Nothing) <$> reverseMapM parcExpr args
          else do  let argsBs = zip args (bs ++ repeat Own)
                   (lets, drops, args') <- unzip3 <$> reverseMapM (uncurry parcBorrowArg) argsBs
                   -- parcTrace $ "On function " ++ show (getName tname) ++ " with args " ++ show args ++ " we have: " ++ show (lets, drops, args')
                   expr' <- case catMaybes drops of
-                             [] -> return $ App expr args'
+                             [] -> return $ App expr args' Nothing
                              _  -> do appName <- uniqueName "brw"
-                                      let def = makeDef appName $ App expr args'
+                                      let def = makeDef appName $ App expr args' Nothing
                                       return $ makeLet [DefNonRec def] $ maybeStats drops $ Var (defTName def) InfoNone
                   return $ makeLet (concat lets) expr'
 
@@ -525,7 +526,7 @@ caseExpandExpr :: Expr -> Parc (Expr, Maybe DefGroup)
 caseExpandExpr x@Var{} = return (x, Nothing)
 caseExpandExpr x = do name <- uniqueName "match"
                       let def = DefNonRec (makeDef name x)
-                      let var = Var (TName name (typeOf x)) InfoNone
+                      let var = Var (TName name (typeOf x) Nothing) InfoNone
                       return (var, Just def)
 
 normalizeBranch :: [Expr] -> Branch -> Branch
@@ -622,8 +623,8 @@ genDecRef tname
        if not needs
          then return Nothing
          else return $ Just $
-                        App (Var (TName nameDecRef funTp) (InfoExternal [(C CDefault, "decref(#1,current_context())")]))
-                            [Var tname InfoNone]
+                        App (Var (TName nameDecRef funTp Nothing) (InfoExternal [(C CDefault, "decref(#1,current_context())")]))
+                            [Var tname InfoNone] Nothing
   where
     funTp = TFun [(nameNil, typeOf tname)] typeTotal typeUnit
 
@@ -708,12 +709,12 @@ genDrop name = do shape <- getShapeInfo name
 dupDropFun :: Bool -> Type -> Maybe (ConRepr,Name) -> Maybe Int -> Expr -> Expr
 dupDropFun False {-drop-} tp (Just (conRepr,_)) (Just scanFields) arg
    | not (conReprIsValue conRepr) && not (isConAsJust conRepr) && not (isBoxType tp) -- drop with known number of scan fields
-  = App (Var (TName name coerceTp) (InfoExternal [(C CDefault, "dropn(#1,#2)")])) [arg,makeInt32 (toInteger scanFields)]
+  = App (Var (TName name coerceTp Nothing) (InfoExternal [(C CDefault, "dropn(#1,#2)")])) [arg,makeInt32 (toInteger scanFields)] Nothing
   where
     name = nameDrop
     coerceTp = TFun [(nameNil,tp),(nameNil,typeInt32)] typeTotal typeUnit
 dupDropFun isDup tp mbConRepr mbScanCount arg
-  = App (Var (TName name coerceTp) (InfoExternal [(C CDefault, (if isDup then "dup" else "drop") ++ "(#1)")])) [arg]
+  = App (Var (TName name coerceTp Nothing) (InfoExternal [(C CDefault, (if isDup then "dup" else "drop") ++ "(#1)")])) [arg] Nothing
   where
     name = if isDup then nameDup else nameDrop
     coerceTp = TFun [(nameNil,tp)] typeTotal (if isDup then tp else typeUnit)

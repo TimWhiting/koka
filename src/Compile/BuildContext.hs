@@ -18,6 +18,7 @@ module Compile.BuildContext ( BuildContext
                             , buildcAddRootSources
                             , buildcAddRootModules
                             , buildcRoots
+                            , buildcModules
                             , buildcClearRoots, buildcRemoveRootModule, buildcRemoveRootSource
                             , buildcFocus
                             , buildcFlushErrors, buildcLiftErrors
@@ -28,6 +29,7 @@ module Compile.BuildContext ( BuildContext
                             , buildcGetLexemes
                             , buildcGetRangeMap
                             , buildcModulePaths
+                            , buildcLookupModule
                             , buildcPrettyEnvFor
 
                             , buildcLookupTypeOf

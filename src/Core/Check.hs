@@ -123,9 +123,9 @@ ppDefs env defs
     <-> prettyDef (head defs) env
 
 checkTName :: TName -> Check TName
-checkTName (TName name tp)
+checkTName (TName name tp rng)
   = do tp' <- checkType tp
-       return (TName name tp')
+       return (TName name tp' rng)
 
 
 checkType :: Type -> Check Type
@@ -180,12 +180,12 @@ check expr
       Lam pars eff body
         -> do tpRes <- extendGamma (map coreNameInfo pars) (check body)
               pars' <- mapM checkTName pars
-              return (typeFun [(name,tp) | TName name tp <- pars'] eff tpRes)
+              return (typeFun [(name,tp) | TName name tp _ <- pars'] eff tpRes)
       Var tname info
         -> checkType $ typeOf tname
       Con tname info
         -> return $ typeOf tname
-      App fun args
+      App fun args rng
         -> do tpFun <- check fun
               tpArgs <- mapM check args
               case splitFunType tpFun of
