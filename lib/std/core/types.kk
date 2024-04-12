@@ -107,6 +107,9 @@ pub ref type extern-owned<t>
 // The type of an external (i.e. C) value where the memory is borrowed and managed by external code
 pub ref type extern-borrowed<t>
 
+// A raw wrapper around a uint8 character array.
+pub type bytes
+
 // An any type. Used for external calls.
 pub type any
 
