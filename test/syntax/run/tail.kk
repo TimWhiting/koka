@@ -14,4 +14,4 @@ fun min-by-rec(l : list<a>, ordering : a -> float64, default : a, smallest : flo
         min-by-rec(tail, ordering, default, smallest, result)
 
 pub fun main()
-  min-by([1.0, 2.0], id, 0.0)
+  min-by([1.0, 2.0], id, 0.0).println
