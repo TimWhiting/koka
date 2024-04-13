@@ -25,6 +25,11 @@ import Type.Unify (runUnifyEx, unify)
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
 nameIntMod = coreIntName "%"
+nameIntEq  = coreIntName "=="
+nameIntLt  = coreIntName "<"
+nameIntLe  = coreIntName "<="
+nameIntGt  = coreIntName ">"
+nameIntGe  = coreIntName ">="
 
 intOp :: (Integer -> Integer -> Integer) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 intOp f (ctx, env) = do
@@ -32,6 +37,19 @@ intOp f (ctx, env) = do
   p2 <- evalParam 1 ctx env
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2))) env
+    _ -> doBottom
+
+trueCon = AChangeConstr $ ExprPrim C.exprTrue
+falseCon = AChangeConstr $ ExprPrim C.exprFalse
+toChange :: Bool -> EnvCtx -> AChange
+toChange b env = if b then trueCon env else falseCon env
+
+opCmpInt :: (Integer -> Integer -> Bool) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+opCmpInt f (ctx, env) = do
+  p1 <- evalParam 0 ctx env
+  p2 <- evalParam 1 ctx env
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) env
     _ -> doBottom
 
 createPrimitives :: FixDemandR x s e ()
@@ -76,6 +94,11 @@ createPrimitives = do
 
   addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
   -- Integer functions
+  addPrimitive nameIntEq  (opCmpInt (==))
+  addPrimitive nameIntLt  (opCmpInt (<))
+  addPrimitive nameIntLe  (opCmpInt (<=))
+  addPrimitive nameIntGt  (opCmpInt (>))
+  addPrimitive nameIntGe  (opCmpInt (>=))
   addPrimitive nameIntAdd (intOp (+))
   addPrimitive nameIntSub (intOp (-))
   addPrimitive nameIntMul (intOp (*))
@@ -83,12 +106,12 @@ createPrimitives = do
   addPrimitive nameIntMod (intOp mod) -- TODO: Handle division by zero
 
 findHandler :: Name -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-findHandler nm ctx env = 
+findHandler nm ctx env =
   trace ("FindHandler: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do
   doBottom
 
 findEffectApps :: Name -> Effect -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-findEffectApps nm eff' ctx env = 
+findEffectApps nm eff' ctx env =
   trace ("FindEffApp: " ++ show ctx ++ " " ++ showSimpleEnv env) $
   case exprOfCtx ctx of
     C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
@@ -108,19 +131,19 @@ findEffectApps nm eff' ctx env =
                   l -> error ("Not a lambda: " ++ show l)
           let eff = getLamEff (exprOfCtx lam)
           -- Really need to do findEffectApps (enterBod lam lamenv)
-          if effContains eff' eff then do 
+          if effContains eff' eff then do
             (bd, bdenv) <- enterBod lam lamenv ctx env
             findEffectApps nm eff bd bdenv
           else doBottom
-        _ -> doBottom 
+        _ -> doBottom
     _ -> visitEachChild ctx $ do
-          childCtx <- currentContext <$> getEnv 
+          childCtx <- currentContext <$> getEnv
           findEffectApps nm eff' childCtx env
 
 
 effContains :: Effect -> Effect -> Bool
-effContains eff' eff = 
+effContains eff' eff =
   let (res, _, _) = runUnifyEx 0 $ do
                         unify eff' eff
   in isLeft res
-  
+

@@ -281,15 +281,18 @@ doEval cq@(EvalQ (ctx, env)) query = do
                 qeval (lamctx, EnvTail TopCtx)
               BoundGlobal nm _ -> do
                 if newModuleName (nameModule (getName nm)) == nameCoreHnd then
-                  error ("Hnd: missing primitive " ++ show ctx)
+                  error ("Hnd: missing primitive " ++ showSimpleContext ctx)
                 else do
                   -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
                   ext <- bindExternal v
                   case ext of
                     Just modulectx@ModuleC{} -> do
-                      lamctx <- getTopDefCtx modulectx (getName tn)
-                      qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
-                    _ -> error $ "REF: can't find what the following refers to " ++ show ctx
+                      -- trace (query ++ "REF: External module " ++ showSimpleContext modulectx) $ return ()
+                      withModuleCtx modulectx $ do
+                        lamctx <- getTopDefCtx modulectx (getName tn)
+                        -- trace (query ++ "REF: External module " ++ showSimpleContext lamctx) $ return ()
+                        qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
+                    _ -> error $ "REF: can't find what the following refers to " ++ showSimpleContext ctx
         App (TypeApp (Con nm repr) _) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           return $ AChangeConstr ctx env
@@ -362,7 +365,6 @@ evalPatternRef expr env pat = do
                     evalPatternRef x cenv subBinding
             Con nm _ -> doBottom -- Could also be a singleton constructor, but there are no bound variables there
         e -> error ("EVALPatRef: Not a constructor " ++ show e)
-
 
 evalBranches :: AChange -> ExprContext -> EnvCtx -> [(Branch, Int)] -> FixDemandR x s e AChange
 evalBranches ch ctx env branches =
