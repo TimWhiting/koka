@@ -23,7 +23,7 @@ module Core.Demand.FixpointMonad(
   Contains(..),
   Label(..), ContX(..),
   memo, push, each, doBottom,
-  withEnv, getEnv,
+  withEnv, getEnv, getEnvR,
   getCache, cacheLookup,
   getState, getStateR, setState, updateState,
   runFix, runFixCont, runFixFinish, runFixFinishC,
@@ -149,6 +149,11 @@ getStateR = do
   (_, res, _) <- get
   return res
 
+getEnvR :: FixIn e s i l d e
+getEnvR = do
+  (f, _, _) <- ask
+  return f
+
 setState :: s -> FixT e s i l d  ()
 setState x = do
   (f, s, t) <- get
@@ -244,14 +249,14 @@ writeDependencyGraph cache = do
             ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes) 
             ++ "\n 0 [label=\"Start\"]\n"
             ++ "\n}"
-  writeFile "debug/graph.dot" dot
+  writeFile "scratch/debug/graph.dot" dot
   return ()
 
 -- Runs a fixpoint computation with an environment and state
 runFix :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixT e s i l d x -> IO (M.Map i (l d), s)
 runFix e s f = do
   (_, (cache, state, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 1)
-  writeDependencyGraph cache
+  -- writeDependencyGraph cache
   return (fmap (\(f, s, t) -> f) cache, state)
 
 -- Runs a fixpoint computation with an environment and state

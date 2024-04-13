@@ -40,6 +40,7 @@ import Data.List (intercalate, intersperse, minimumBy)
 import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 import qualified Data.Text as T
 import Lib.PPrint
+import Common.Failure (HasCallStack)
 
 -- Uniquely identifies expressions despite naming
 data ExprContext =
@@ -56,6 +57,7 @@ data ExprContext =
   | CaseCMatch !ExprContextId !ExprContext !C.Expr -- In a case match context working on the match expression (assumes only one)
   | CaseCBranch !ExprContextId !ExprContext ![TName] !Int !C.Branch -- Which branch currently inspecting, as well as the Case context
   | ExprCBasic !ExprContextId !ExprContext !C.Expr -- A basic expression context that has no sub expressions
+  | ExprPrim !C.Expr -- A primitive expression that is not part of the program (part of primitive evaluation)
   | ExprCTerm !ExprContextId !String -- Since analysis can fail or terminate early, keep track of the query that failed
 
 isMain :: ExprContext -> Bool
@@ -201,11 +203,13 @@ closestRange ctx =
         _ -> closestRange c
     ExprCBasic _ c _ -> closestRange c
     ExprCTerm _ _ -> rangeNull
+    ExprPrim e -> rangeNull
 
 showSimpleContext ctx =
   let r = show (closestRange ctx) in
-  show (contextId ctx) ++ case ctx of
-    ModuleC{} -> "Module " ++ r
+  -- show (contextId ctx) ++ " " ++ 
+  case ctx of
+    ModuleC _ _ n -> "Module " ++ show n
     DefCRec _ _ _ i d -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     DefCNonRec _ _ _ d -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     LamCBody _ _ tn _-> "LamBody(" ++ showSimple tn ++ ")"
@@ -217,6 +221,7 @@ showSimpleContext ctx =
     CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
     ExprCBasic{} -> "ExprBasic(" ++ showSimple (exprOfCtx ctx) ++ ")"
     ExprCTerm{} -> "Query Error"
+    ExprPrim e -> "Primitive(" ++ showSimple e ++ ")"
 
 rmNl :: String -> String
 rmNl s = T.unpack $ T.replace "\n" "  " (T.pack s)
@@ -278,6 +283,7 @@ exprOfCtx ctx =
     CaseCBranch _ _ _ _ b -> C.guardExpr (head (C.branchGuards b))
     ExprCBasic _ _ e -> e
     ExprCTerm{} -> error "Query should never be queried for expression"
+    ExprPrim e -> e
 
 maybeExprOfCtx :: ExprContext -> Maybe C.Expr
 maybeExprOfCtx ctx =
@@ -294,6 +300,7 @@ maybeExprOfCtx ctx =
     CaseCBranch _ _ _ _ b -> Just $ C.guardExpr (head (C.branchGuards b))
     ExprCBasic _ _ e -> Just e
     ExprCTerm{} -> error "Query should never be queried for expression"
+    ExprPrim e -> Just e
 
 showCtxExpr :: ExprContext -> String
 showCtxExpr ctx =
@@ -301,7 +308,7 @@ showCtxExpr ctx =
     Just e -> showExpr e
     Nothing -> show ctx
 
-contextId :: ExprContext -> ExprContextId
+contextId :: HasCallStack => ExprContext -> ExprContextId
 contextId ctx =
   case ctx of
     ModuleC c _ _ -> c
@@ -316,6 +323,7 @@ contextId ctx =
     CaseCBranch c _ _ _ _ -> c
     ExprCBasic c _ _ -> c
     ExprCTerm c _ -> c
+    ExprPrim _ -> ExprContextId (-10) (newName "primitive expression")
 
 contextOf :: ExprContext -> Maybe ExprContext
 contextOf ctx =
@@ -353,11 +361,11 @@ findApplicationFromRange prog rng =
     S.App f args rng0 -> if rng `rangesOverlap` rng0 then Just f else Nothing
     _ -> Nothing
 
-findDefFromRange :: UserProgram -> Range -> Maybe UserDef
-findDefFromRange prog rng =
+findDefFromRange :: UserProgram -> Range -> Name -> Maybe UserDef
+findDefFromRange prog rng name =
   findFromRange prog rng (\d ->
       case d of
-        S.Def vb rng0 _ _ _ _ -> if rng `rangesOverlap` rng0 then Just d else Nothing
+        S.Def vb rng0 _ _ _ _ -> if rng `rangesOverlap` rng0 || S.defName d == name then Just d else Nothing
     ) (const Nothing)
 
 findLambdaFromRange :: UserProgram -> Range -> Maybe UserExpr

@@ -14,6 +14,7 @@ module Syntax.Pretty(
   ppSyntaxExpr, 
   ppSyntaxBranch, 
   ppSyntaxPattern,
+  ppSyntaxExtern,
   ppLit
   ) where
 
@@ -24,6 +25,7 @@ import Common.Range
 import Lib.PPrint
 import qualified Common.NameSet as S
 import Syntax.Syntax as S
+import Type.Pretty (ppName, ppType, defaultEnv)
 
 allDefs :: S.DefGroup UserType -> [S.Def UserType]
 allDefs defs =
@@ -40,6 +42,9 @@ ppLit (S.LitString s range) = show s
 ppSyntaxDef :: S.Def UserType -> Doc
 ppSyntaxDef (S.Def binder range vis sort inline doc)
   = text "val" <+> text (nameStem (binderName binder)) <+> text "=" <+> ppSyntaxExpr (binderExpr binder)
+
+ppSyntaxExtern :: S.External -> Doc
+ppSyntaxExtern e = text "extern" <+> ppName defaultEnv (extName e)
 
 ppValBinder :: ValueBinder (Maybe UserType) (Maybe (S.Expr UserType)) -> Doc
 ppValBinder (ValueBinder name (Just tp) (Just expr) nameRange range)

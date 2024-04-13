@@ -18,12 +18,12 @@ module Core.Demand.DemandMonad(
   -- Context stuff
   getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
   focusParam, focusBody, focusChild, focusFun, enterBod, succAEnv,
-  childrenContexts, visitChildrenCtxs, visitEachChild,
+  childrenContexts, visitChildrenCtxs, visitEachChild, topBindExpr,
   -- Env stuff
   DEnv(..), getUnique, newQuery,
   -- Query stuff
   Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
-  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule,
+  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx
   ) where
 
 import Control.Monad.State (gets, MonadState (..))
@@ -41,9 +41,10 @@ import Common.Name
 import Core.Core
 import Compile.Module
 import qualified Core.Core as C
-import Control.Monad (zipWithM)
+import Control.Monad (zipWithM, when)
 import Debug.Trace (trace)
 import Data.List (find, intercalate)
+import Common.Failure (assertion)
 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
@@ -324,6 +325,7 @@ allModules = buildcModules
 
 getTopDefCtx :: ExprContext -> Name -> FixDemandR x s e ExprContext
 getTopDefCtx ctx name = do
+  -- trace ("Getting top def ctx " ++ show name ++ " " ++ show ctx) $ return ()
   children <- childrenContexts ctx
   case find (\dctx -> case dctx of
       DefCNonRec{} | defName (defOfCtx dctx) == name -> True
@@ -331,9 +333,30 @@ getTopDefCtx ctx name = do
       _ -> False
       ) children of
     Just dctx -> do
+      -- trace ("Found top def ctx " ++ showSimpleContext dctx) $ return ()
       -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
       return dctx
     Nothing -> error $ "getTopDefCtx: " ++ show ctx ++ " " ++ show name
+
+topBindExpr :: ExprContext -> C.Expr -> PostFixR x s e (Maybe C.Def, Maybe C.External)
+topBindExpr ctx var@(C.Var tname _) = do
+  mmod <- maybeLoadModuleR mName
+  let m = do -- Maybe monad
+        mod <- mmod
+        core <- modCoreUnopt mod
+        let defs = coreProgDefs core
+        case find (\d -> defTName d == tname) (flattenDefGroups defs) of
+          Just d -> return (Just d, Nothing)
+          Nothing -> do
+            let externs = coreProgExternals core
+            case find (\e -> case e of C.External{} -> externalName e == C.getName tname; _ -> False) externs of
+              Just e -> return (Nothing, Just e)
+              Nothing -> return (Nothing, Nothing)
+  return $ fromMaybe (Nothing, Nothing) m
+  where
+    mName = newModuleName (nameModule name)
+    name = C.getName tname
+topBindExpr ctx _ = return (Nothing, Nothing)
 
 getModule :: Name -> FixDemandR x s e Module
 getModule name = do
@@ -419,22 +442,28 @@ childrenOfDef ctx def =
 
 initialModuleContexts :: ExprContext -> FixDemandR x s e [ExprContext]
 initialModuleContexts modCtx = do
-  case modCtx of
-    ModuleC id mod _ -> do
-      -- trace ("Getting children of module " ++ show (contextId modCtx)) $ return ()
-      res <- mapM (childrenOfDef modCtx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
-      let newCtxs = concat res
-      addChildrenContexts id newCtxs
-      return newCtxs
+  withModuleCtx modCtx $
+    case modCtx of
+      ModuleC id@(ExprContextId _ n1) mod n2 -> do
+        -- trace ("Getting children of module " ++ show (contextId modCtx)) $ return ()
+        res <- mapM (childrenOfDef modCtx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
+        let newCtxs = concat res
+        return newCtxs
+
+withModuleCtx :: ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
+withModuleCtx ctx f = do
+  case ctx of
+    ModuleC (ExprContextId _ n1) _ n2 | n1 /= n2 ->
+      error ("Module Context Mismatch " ++ show n1 ++ " " ++ show n2)
+    ModuleC _ _ name -> do
+      loadModule name
+      return ()
+    _ -> return ()
+  withEnv (\env -> env{currentContext = ctx, currentModContext = case ctx of {ModuleC{} -> ctx; _ -> currentModContext env}}) f
 
 childrenContexts :: ExprContext -> FixDemandR x s e [ExprContext]
-childrenContexts ctxx = do
-  ctx <- case ctxx of
-          ModuleC _ mod _ -> do
-            (_, modCtx) <- loadModule (modName mod)
-            return modCtx
-          _ -> return ctxx
-  withEnv (\env -> env{currentContext = ctx, currentModContext = case ctx of {ModuleC{} -> ctx; _ -> currentModContext env}}) $ do
+childrenContexts ctx = do
+  withModuleCtx ctx $ do
     let parentCtxId = contextId ctx
     children <- childrenIds <$> getState
     let childIds = M.lookup parentCtxId children
@@ -455,6 +484,8 @@ childrenContexts ctxx = do
                   return $! concat x
                 ExprCBasic{} -> return []
                 ExprCTerm{} -> return []
+                ModuleC{} ->
+                  initialModuleContexts ctx
           addChildrenContexts parentCtxId newCtxs
           -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs) $ return newCtxs
           return newCtxs
@@ -476,6 +507,31 @@ visitEachChild ctx analyze = do
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
 
+
+maybeLoadModuleR :: ModuleName -> PostFixR x s e (Maybe Module)
+maybeLoadModuleR mn = do
+  state <- getStateR
+  case M.lookup mn (moduleContexts state) of
+    Just (ModuleC _ m _) -> return $ Just m
+    _ -> do
+      bc <- buildc <$> getStateR
+      env <- getEnvR
+      let deps = buildcModules bc
+      let x = find (\m -> modName m == mn) deps
+      case x of
+        Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
+          trace ("Module already loaded " ++ show mn) $ return ()
+          return $ Just mod
+        _ -> do
+          buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
+          case buildc' of
+            Left err -> do
+              trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
+              return Nothing
+            Right (bc', e) -> do
+              trace ("Loaded module " ++ show mn) $ return ()
+              return $ buildcLookupModule mn bc'
+
 maybeLoadModule :: ModuleName -> FixDemandR x s e (Maybe Module)
 maybeLoadModule mn = do
   state <- getState
@@ -487,7 +543,7 @@ maybeLoadModule mn = do
       let deps = buildcModules bc
       let x = find (\m -> modName m == mn) deps
       ctxId <- newModContextId mn
-      
+
       case x of
         Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
           trace ("Module already loaded " ++ show mn) $ return ()
@@ -496,7 +552,6 @@ maybeLoadModule mn = do
             state{
               moduleContexts = M.insert mn modCtx (moduleContexts state)
             })
-          initialModuleContexts modCtx
           return $ Just mod
         _ -> do
           buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
@@ -513,7 +568,6 @@ maybeLoadModule mn = do
                   buildc = bc',
                   moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
                 })
-              initialModuleContexts modCtx
               return $ Just mod'
 
 loadModule :: ModuleName -> FixDemandR x s e (Module, ExprContext)

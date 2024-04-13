@@ -50,7 +50,7 @@ import Syntax.RangeMap
       RangeInfo(..),
       rangeMapFindAt )
 import Syntax.Colorize ( removeComment, removeComment )
-import Syntax.Pretty (ppSyntaxExpr, ppSyntaxDef, ppLit)
+import Syntax.Pretty (ppSyntaxExpr, ppSyntaxDef, ppSyntaxExtern, ppLit)
 import Core.Demand.Syntax (runEvalQueryFromRangeSource)
 import Core.Demand.DemandAnalysis (AnalysisKind (..))
 import LanguageServer.Conversions (fromLspPos, toLspRange)
@@ -60,15 +60,16 @@ import Debug.Trace (trace)
 import Core.Pretty (prettyCore)
 import Common.Syntax (Target(..), CTarget (..))
 
-toAbValueText (env, (fns, defs, lits, constrs, topTypes)) =
+toAbValueText (env, (fns, defs, externs, lits, constrs, topTypes)) =
   let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
       litsText = if null lits then "" else intercalate "\n" (map ppLit lits)
       defsText = if null defs then "" else "\n\nDefinitions:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxDef d) ++ "\n```") defs)
+      externsText = if null externs then "" else "\n\nExterns:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxExtern d) ++ "\n```") externs)
       constrsText = if null constrs then "" else "\n\nConstructors:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ d ++ "\n```") constrs)
       topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
-      resText = closureText <> litsText <> defsText <> constrsText <> topTypesText
+      resText = closureText <> litsText <> defsText <> externsText <> constrsText <> topTypesText
       hc =
-        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if null resText then "⊥" else resText))
+        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if null resText then "?" else resText))
   in T.pack hc
 
 -- Handles hover requests
@@ -101,15 +102,15 @@ hoverHandler
                  flags <- getFlags
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
-                 liftIO $ writeFile "debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
+                 liftIO $ writeFile "scratch/debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 
                               buildContext term flags (rng, rngInfo) 
                               (fromJust mod) BasicEnvs 2
+                 tend <- liftIO getCurrentTime
                  case res of
                     (!x:xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext
-                      tend <- liftIO getCurrentTime
                       markdown <- prettyMarkdown doc
                       let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <>
                                                           T.intercalate "\n\n" (map toAbValueText (x:xs)) <>
