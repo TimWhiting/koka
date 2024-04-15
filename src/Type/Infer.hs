@@ -33,7 +33,7 @@ import Common.NamePrim( nameTpOptional, nameOptional, nameOptionalNone, nameCopy
                       , nameToAny, nameFalse, nameTrue
                       , nameCons, nameListNil, nameVector
                       , nameTpPartial
-                      , nameTpLocalVar, nameTpLocal, nameRunLocal, nameLocalGet, nameLocalSet, nameLocalNew, nameLocalVar
+                      , nameTpLocalVar, nameTpLocal, nameRunLocal, nameLocalGet, nameLocalSet, nameLocalNew, nameLocalVar, nameLocalModify
                       , nameClause, nameIdentity
                       , nameMaskAt, nameMaskBuiltin, nameEvvIndex, nameHTag, nameTpHTag, nameTpEv
                       , nameInternalInt32, nameOr, nameAnd, nameEffectOpen
@@ -705,14 +705,20 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
         -> do (_,gtp,_) <- resolveName target Nothing lrng
               (tp,_,_) <- instantiateEx lrng gtp
               -- traceDoc $ \penv -> text "setting:" <+> pretty target <+> text ":" <+> ppType penv tp
-              nameSet <- if (isTypeLocalVar tp)
-                           then return nameLocalSet
-                           else do r <- freshRefType
-                                   inferUnify (checkAssign rng) lrng r tp
-                                   return nameRefSet
-              inferExpr propagated expect
-                        (App (Var nameSet False arng) [(Nothing,App (Var nameByref False (before lrng)) [lhs] lrng), rhs] rng)
-
+              if (isTypeLocalVar tp)
+                 then 
+                    let varName2 = newHiddenName "local-var"
+                        actionBind = ValueBinder varName2 Nothing Nothing rng rng
+                    in inferExpr propagated expect
+                              (App (Var nameLocalModify False arng) 
+                                [(Nothing, App (Var nameByref False (before lrng)) [lhs] lrng), 
+                                 (Nothing, Lam [actionBind] (replaceVar target varName2 rexpr) rng)] rng)
+              else do r <- freshRefType
+                      inferUnify (checkAssign rng) lrng r tp
+                      inferExpr propagated expect
+                              (App (Var nameRefSet False arng)
+                                [(Nothing, App (Var nameByref False (before lrng)) [lhs] lrng), 
+                                 rhs] rng)
       _ -> errorAssignable
   where
     errorAssignable
@@ -726,6 +732,31 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
       = do hvar <- Op.freshTVar kindHeap Meta
            xvar <- Op.freshTVar kindStar Meta
            return (typeApp typeRef [hvar,xvar])
+    
+    replaceVar target varName expr
+      = case expr of
+          App fun args rng -> App (replace fun) (map (\(a, b) -> (a, replace b)) args) rng
+          Var name isOp rng | name == target -> App (Var nameDeref False rng) [(Nothing, Var varName False rng)] rng
+          Handler handlerSort scoped over mbAllowMask mbEff pars reinit ret final branches hrng rng
+            -> Handler handlerSort scoped over mbAllowMask mbEff pars (maybeReplace reinit) (maybeReplace ret) (maybeReplace final) (map replaceHandlerBranch branches) hrng rng
+          Case expr branches rng
+            -> Case (replace expr) (map replaceBranch branches) rng
+          Parens expr nm pre rng -> Parens (replace expr) nm pre rng
+          Lit lit -> Lit lit
+          Ann expr tp rng -> Ann (replace expr) tp rng
+          Inject con expr conTp rng -> Inject con (replace expr) conTp rng
+          Let defs expr rng -> Let (replaceDefGroup defs) (replace expr) rng
+          Bind def expr rng -> Bind (replaceDef def) (replace expr) rng
+        where 
+          maybeReplace (Just x) = Just (replace x)
+          maybeReplace Nothing = Nothing
+          replace = replaceVar target varName
+          replaceBranch (Branch pattern guards) = Branch pattern (map replaceGuard guards)
+          replaceGuard (Guard test expr) = Guard (replace test) (replace expr)
+          replaceHandlerBranch (HandlerBranch opName pars body opSort nameRng patRng) = HandlerBranch opName pars (replace body) opSort nameRng patRng
+          replaceDef (Def (ValueBinder name mbTp expr nameRng vrng) rng vis sort inl doc) = Def (ValueBinder name mbTp (replace expr) nameRng vrng) rng vis sort inl doc
+          replaceDefGroup (DefRec defs) = DefRec (map replaceDef defs)
+          replaceDefGroup (DefNonRec def) = DefNonRec (replaceDef def)
 
 
 {-

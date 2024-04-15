@@ -150,7 +150,7 @@ module Common.NamePrim
 
           , nameTpRef, nameRef
           , nameTpLocalVar, nameTpLocal
-          , nameLocalVar, nameRunLocal, nameLocalSet, nameLocalGet, nameLocalNew
+          , nameLocalVar, nameRunLocal, nameLocalSet, nameLocalGet, nameLocalNew, nameLocalModify
 
 
           , nameTpOptional
@@ -370,6 +370,7 @@ nameAssign      = newHiddenName "@assign"  -- used for :=
 nameRefSet      = coreTypesName "set"
 nameLocalSet    = coreTypesName "local-set"
 nameLocalGet    = coreTypesName "local-get"
+nameLocalModify    = coreTypesName "modify"
 nameDeref       = qualifyLocally (newModuleName "ref") (coreTypesName "!")
 nameByref       = coreTypesName "@byref"
 
