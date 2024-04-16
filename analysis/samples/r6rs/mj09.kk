@@ -6,6 +6,10 @@ fun h(b)
   val y = f(fn(x) x)
   g(y)
 
+fun analyze()
+  val x = h(True)
+  h(False)
+
 fun main()
   val x = h(True)
   val y = h(False)

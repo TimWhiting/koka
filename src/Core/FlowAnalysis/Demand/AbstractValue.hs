@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
-module Core.Demand.AbstractValue(
+module Core.FlowAnalysis.Demand.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
                           LiteralLattice(..),
@@ -43,41 +43,14 @@ import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
-import Core.Demand.StaticContext
-import Core.Demand.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice)
-import qualified Core.Demand.FixpointMonad as FM
+import Core.FlowAnalysis.Literals
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice)
+import qualified Core.FlowAnalysis.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
-
-data LiteralLattice =
-    LiteralLattice{
-      intVL :: SLattice Integer,
-      floatVL :: SLattice Double,
-      charVL :: SLattice Char,
-      stringVL :: SLattice String
-    } deriving (Eq, Ord)
-
-data LiteralChange =
-  LiteralChangeInt (SimpleChange Integer)
-  | LiteralChangeFloat (SimpleChange Double)
-  | LiteralChangeChar (SimpleChange Char)
-  | LiteralChangeString (SimpleChange String)
- deriving (Eq)
-
-instance Show LiteralChange where
-  show (LiteralChangeInt LChangeTop) = "int -> top"
-  show (LiteralChangeFloat LChangeTop) = "float -> top"
-  show (LiteralChangeChar LChangeTop) = "char -> top"
-  show (LiteralChangeString LChangeTop) = "string -> top"
-  show (LiteralChangeInt (LChangeSingle l)) = "int -> " ++ show l
-  show (LiteralChangeFloat (LChangeSingle l)) = "float -> " ++ show l
-  show (LiteralChangeChar (LChangeSingle l)) = "char -> " ++ show l
-  show (LiteralChangeString (LChangeSingle l)) = "string -> " ++ show l
-
-instance Show LiteralLattice where
-  show (LiteralLattice i f c s) = intercalate "," [show i, show f, show c, show s]
 
 data AChange =
   AChangeClos ExprContext EnvCtx
@@ -207,6 +180,8 @@ injLit x env =
     C.LitChar c -> (AChangeLit $ LiteralChangeChar $ LChangeSingle c) env
     C.LitString s -> (AChangeLit $ LiteralChangeString $ LChangeSingle s) env
 
+--- JOINING
+
 addChange :: AbValue -> AChange -> (AChange, AbValue)
 addChange ab@(AbValue cls cs lit) change =
   case change of
@@ -216,36 +191,10 @@ addChange ab@(AbValue cls cs lit) change =
       case M.lookup env lit of
         Just litLattice ->
           let (change, newLattice) = joinLit l litLattice
-          in (AChangeLit change env, AbValue cls cs (M.insert env newLattice lit) )
+          in (AChangeLit change env, AbValue cls cs (M.insert env newLattice lit))
         Nothing ->
           let newLit = M.insert env (litLattice l) lit
           in (change, AbValue cls cs newLit)
-
-litLattice :: LiteralChange -> LiteralLattice
-litLattice lit =
-  case lit of
-    LiteralChangeInt ch -> LiteralLattice (snd $ ch `FM.insert` LBottom) LBottom LBottom LBottom
-    LiteralChangeFloat ch -> LiteralLattice LBottom (snd $ ch `FM.insert` LBottom) LBottom LBottom
-    LiteralChangeChar ch -> LiteralLattice LBottom LBottom (snd $ ch `FM.insert` LBottom) LBottom
-    LiteralChangeString ch -> LiteralLattice LBottom LBottom LBottom (snd $ ch `FM.insert` LBottom)
-
-joinLit :: LiteralChange -> LiteralLattice -> (LiteralChange, LiteralLattice)
-joinLit (LiteralChangeInt ch) (LiteralLattice i2 f2 c2 s2) = 
-    let (change, i) = (ch `FM.insert` i2)
-    in (LiteralChangeInt change, LiteralLattice i f2 c2 s2)
-joinLit (LiteralChangeFloat ch) (LiteralLattice i2 f2 c2 s2) =
-    let (change, f) = (ch `FM.insert` f2)
-    in (LiteralChangeFloat change, LiteralLattice i2 f c2 s2)
-joinLit (LiteralChangeChar ch) (LiteralLattice i2 f2 c2 s2) =
-    let (change, c) = (ch `FM.insert` c2)
-    in (LiteralChangeChar change, LiteralLattice i2 f2 c s2)
-joinLit (LiteralChangeString ch) (LiteralLattice i2 f2 c2 s2) =
-    let (change, s) = (ch `FM.insert` s2)
-    in (LiteralChangeString change, LiteralLattice i2 f2 c2 s)
-
-joinLitLattice :: LiteralLattice -> LiteralLattice -> LiteralLattice
-joinLitLattice (LiteralLattice i0 f0 c0 s0) (LiteralLattice i1 f1 c1 s1) =
-  LiteralLattice (i0 `FM.joinSimple` i1) (f0 `FM.joinSimple` f1) (c0 `FM.joinSimple` c1) (s0 `FM.joinSimple` s1)
 
 
 joinAbValue :: AbValue -> AbValue -> AbValue

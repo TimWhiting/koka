@@ -40,7 +40,8 @@ module Common.Name
           , toEffectTagName
           , toHandleName, isHandleName
           , toOpsConName, toOpConName, toOpTypeName
-          , toConstructorName, isConstructorName, toVarName, toHandlerConName
+          , toConstructorName, isConstructorName, toVarName
+          , toHandlerConName, isHandlerConName, fromHandlerConName
           , toOpenTagName, isOpenTagName
           , toLazyIndirectConName, isLazyIndirectConName
           , toValueOperationName, isValueOperationName, fromValueOperationsName, toBasicOperationsName
@@ -770,6 +771,18 @@ isHandlerName name
 fromHandlerName :: HasCallStack => Name -> Name
 fromHandlerName name
   = typeQualifiedGetTypeName name
+
+toHandlerConName :: Name -> Name
+toHandlerConName name
+  = makeHiddenName "Hnd" name
+
+isHandlerConName :: Name -> Bool
+isHandlerConName name
+  = hiddenNameStartsWith name "Hnd"
+
+fromHandlerConName :: Name -> Name
+fromHandlerConName name
+  = unmakeHidden "Hnd" name
 
 -- | Create a handle function name from an effect type name.
 toHandleName :: Name -> Name

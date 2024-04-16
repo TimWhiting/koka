@@ -63,6 +63,8 @@ import Compile.CodeGen        ( codeGen, Link, LinkResult(..), noLink )
 import Compile.BuildMonad
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
+import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
+import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
 
 
 {---------------------------------------------------------------
@@ -357,6 +359,11 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
+                  let h = flagsHash flags
+                      bc = seqString h $ BuildContext [modName mod] (mod:imports) h
+                  liftIO $ evalMain bc (\bc mn -> 
+                      runBuild term flags $ buildcTypeCheck [mn] bc
+                    ) mod 0
                   -- let h = flagsHash flags
                   --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
