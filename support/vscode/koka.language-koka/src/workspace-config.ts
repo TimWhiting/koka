@@ -67,9 +67,9 @@ export class KokaConfig {
     this.showImplicitArguments = this.vsConfig.get('languageServer.inlayHints.showImplicitArguments') as boolean ?? false;
     this.showInferredTypes = this.vsConfig.get('languageServer.inlayHints.showInferredTypes') as boolean ?? false;
     this.showFullQualifiers = this.vsConfig.get('languageServer.inlayHints.showFullQualifiers') as boolean ?? false;
-    this.analysisCallSensitivity = vsConfig.get('analysis.callSensitivityDepth') as number ?? 1;
-    this.analysisGas = vsConfig.get('analysis.gas') as number ?? -1;
-    this.analysisDebug = vsConfig.get('analysis.debug') as boolean ?? true;
+    this.analysisCallSensitivity = this.vsConfig.get('analysis.callSensitivityDepth') as number ?? 1;
+    this.analysisGas = this.vsConfig.get('analysis.gas') as number ?? -1;
+    this.analysisDebug = this.vsConfig.get('analysis.debug') as boolean ?? true;
   }
 
   selectTarget(t: string) {

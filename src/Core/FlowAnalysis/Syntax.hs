@@ -11,7 +11,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Core.Demand.Syntax where
+module Core.FlowAnalysis.Syntax where
 
 import Data.List (intercalate, find)
 import qualified Data.Map.Strict as M
@@ -31,12 +31,9 @@ import Type.Type
 import Lib.PPrint
 import Compile.BuildMonad (BuildContext, Build)
 import Compile.Options (Terminal, Flags)
-import Core.Demand.StaticContext
-import Core.Demand.FixpointMonad
-import Core.Demand.DemandMonad
-import Core.Demand.AbstractValue
-import Core.Demand.Primitives
-import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.FixpointMonad
+import Core.FlowAnalysis.Monad
 import Debug.Trace (trace)
 import Core.Pretty (prettyExpr)
 import Type.Pretty (defaultEnv, Env (..))
@@ -45,7 +42,7 @@ import Common.Failure (HasCallStack)
 import Common.Error (Errors)
 import System.Directory (createDirectoryIfMissing)
 
-findContext :: Range -> RangeInfo -> FixDemandR x s e (ExprContext, Range)
+findContext :: Range -> RangeInfo -> FixAR x s e i o c (ExprContext, Range)
 findContext r ri = do
   ctx <- currentContext <$> getEnv
   case ctx of
@@ -71,77 +68,6 @@ findContext r ri = do
                 return (ExprCBasic id ctx (Var tn InfoNone), rng)
               _ -> doBottom
 
-
-runEvalQueryFromRangeSource :: BuildContext
-  -> TypeChecker -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> Bool -> Int
-  -> IO ([(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))], BuildContext)
-runEvalQueryFromRangeSource bc build rng mod kind m debug gas = do
-  (lattice, r, bc) <- runQueryAtRange bc build rng mod kind m debug gas $ \ctx -> do
-    createPrimitives
-    let q = EvalQ (ctx, indeterminateStaticCtx m ctx)
-    query q False
-    addResult q
-  return (r, bc)
-
-runQueryAtRange :: HasCallStack => BuildContext
-  -> TypeChecker -> (Range, RangeInfo)
-  -> Module -> AnalysisKind -> Int -> Bool -> Int
-  -> (ExprContext -> FixDemandR Query () () ())
-  -> IO (M.Map FixInput (FixOutput AFixChange), [(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))], BuildContext)
-runQueryAtRange bc build (r, ri) mod kind m debug gas doQuery = do
-  (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyEnv m kind build False ()) (emptyState bc (-1) ()) $
-              do runFixCont $ do
-                    (_,ctx) <- loadModule (modName mod)
-                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
-                      -- trace ("Context: " ++ show (contextId ctx)) $ return ()
-                      res <- analyzeEachChild ctx (const $ findContext r ri)
-                      addResult res
-                 getResults
-    let s' = transformState (const ()) (const S.empty) gas s
-    case S.toList ctxs of
-      [] -> return (M.empty, s', ([], bc))
-      ctxs ->
-        do
-          let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
-          runFixFinishC (emptyEnv m kind build debug ()) s' $ do
-                          runFixCont $ do
-                            (_,ctx) <- loadModule (modName mod)
-                            trace ("Start context: " ++ show (contextId ctx)) $ return ()
-                            withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery smallestCtx
-                          queries <- getResults
-                          buildc' <- buildc <$> getStateR
-                          ress <- mapM getAbValueResults (S.toList queries)
-                          let resM = M.fromListWith joinAbValue (concat ress)
-                          ress' <- mapM getAbResult (M.toList resM)
-                          return (ress', buildc')
-  writeDependencyGraph l
-  return (M.map (\(x, _, _) -> x) l, r, bc)
-
-getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))
-getAbResult (envctx, res) = do
-  let vals = res
-      lams = map fst $ (S.toList . aclos) vals
-      i = foldl (\res acc -> res `joinSimple` acc) LBottom (M.elems $ intV vals)
-      f = foldl (\res acc -> res `joinSimple` acc) LBottom (M.elems $ floatV vals)
-      c = foldl (\res acc -> res `joinSimple` acc) LBottom (M.elems $ charV vals)
-      s = foldl (\res acc -> res `joinSimple` acc) LBottom (M.elems $ stringV vals)
-      topTypes = S.fromList $ topTypesOf (i, f, c, s)
-      vs = syntaxLitsOf (i, f, c, s)
-      cs = map fst $ (S.toList . acons) vals
-  consts <- mapM toSynConstr cs
-  source <- mapM findSourceExpr lams
-  let sourceLambdas = map (\(SourceExpr e _) -> e) $ filter (\s -> case s of {SourceExpr{} -> True; _ -> False}) source
-      sourceDefs = map (\(SourceDef e _) -> e) $ filter (\s -> case s of {SourceDef{} -> True; _ -> False}) source
-      sourceExterns = map (\(SourceExtern e _) -> e) $ filter (\s -> case s of {SourceExtern{} -> True; _ -> False}) source
-  -- trace ("eval " ++ concat (map (maybe "nolambda" (\_ -> "lambda")) sourceLambdas)) $ return ()
-  -- trace ("eval " ++ concat (map (maybe "nodef" (\_ -> "def")) sourceDefs)) $ return ()
-  env <- sourceEnv envctx
-  return $ trace
-    ("eval " ++ show envctx ++
-     "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
-    (env, (sourceLambdas, sourceDefs, sourceExterns, vs, S.toList $ S.fromList consts, topTypes))
-
 appRng :: ExprContext -> Maybe Range
 appRng ctx = case exprOfCtx ctx of
   App _ _ rng -> rng
@@ -150,64 +76,20 @@ appRng ctx = case exprOfCtx ctx of
 
 simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
 
-toSynConstr :: ExprContext -> PostFixR x s e (String, Maybe Range)
+toSynConstr :: ExprContext -> PostFixAR x s e i o c (String, Maybe Range)
 toSynConstr ctx = do
   return (show (prettyExpr simpleEnv $ exprOfCtx ctx), appRng ctx)
-
-sourceEnv :: EnvCtx -> PostFixR x s e String
-sourceEnv env = do
-  envs <- sourceEnvX env
-  case envs of
-    Just envs -> return $ "<" ++ envs ++ ">"
-    Nothing -> return "<>"
-
-sourceEnvX :: EnvCtx -> PostFixR x s e (Maybe String)
-sourceEnvX (EnvCtx env tail) = do
-  envc <- sourceEnvCtx env
-  envt <- sourceEnvX tail
-  case envt of
-    Just envt -> return $ Just $ envc ++ ":::" ++ envt
-    Nothing -> return $ Just envc
-sourceEnvX (EnvTail env) = return Nothing
-
-sourceEnvCtx :: Ctx -> PostFixR x s e String
-sourceEnvCtx ctx = do
-  env <- sourceEnvCtxX ctx
-  case env of
-    Just e -> return $ "[" ++ e ++ "]"
-    Nothing -> return "[]"
 
 linkText :: Doc -> Range -> Doc
 linkText doc rng =
   text "[" <.> doc <.> text "](" <.> text (showFileUriRange rng) <.> text ")"
-
-sourceEnvCtxX :: Ctx -> PostFixR x s e (Maybe String)
-sourceEnvCtxX ctx =
-  case ctx of
-    IndetCtx tn -> return $ Just $ "?(" ++ intercalate "," (map show tn) ++ ")"
-    TopCtx -> return $ Just "(top)"
-    CtxEnd -> return Nothing
-    BCallCtx c cc -> do
-      se <- findForApp c (appRng c)
-      -- trace (show $ showCompactRange <$> appRng c) $ return ()
-      let head = case se of
-                SourceExpr se rng -> show (linkText (ppSyntaxExpr simpleEnv se) (getRange se))
-                SourceDef de rng -> show (linkText (ppSyntaxDef simpleEnv de) (getRange de))
-                SourceExtern ex rng -> show (linkText (ppSyntaxExtern simpleEnv ex) (S.extRange ex))
-                SourceNotFound -> "Not found"
-      tail <- sourceEnvCtxX cc
-      case tail of 
-        Just t -> return $ Just $ head <> "::" ++ t
-        Nothing -> return $ Just head
-
-
 data SourceKind =
   SourceExpr Syn.UserExpr Range
   | SourceDef Syn.UserDef Range
   | SourceExtern Syn.External Range
   | SourceNotFound
 
-findSourceExpr :: ExprContext -> PostFixR x s e SourceKind
+findSourceExpr :: ExprContext -> PostFixAR x s e i o c SourceKind
 findSourceExpr ctx =
   case ctx of
     DefCNonRec{} -> findDef (defOfCtx ctx)
@@ -258,7 +140,7 @@ findSourceExpr ctx =
           case findLambdaFromRange prog rng of Just e -> return (SourceExpr e rng); _ -> return SourceNotFound
         _ -> trace ("No program or rng" ++ show n ++ " " ++ show (isJust program)) $ return SourceNotFound
 
-findForApp :: ExprContext -> Maybe Range -> PostFixR x s e SourceKind
+findForApp :: ExprContext -> Maybe Range -> PostFixAR x s e i o c SourceKind
 findForApp ctx rng = do
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, rng) of
@@ -282,18 +164,6 @@ toSynLitC _ = Nothing
 toSynLitS :: SLattice String -> Maybe S.Lit
 toSynLitS (LSingle i) = Just $ S.LitString i rangeNull
 toSynLitS _ = Nothing
-
-intV :: AbValue -> M.Map EnvCtx (SLattice Integer)
-intV a = fmap intVL (alits a)
-
-floatV :: AbValue -> M.Map EnvCtx (SLattice Double)
-floatV a = fmap floatVL (alits a)
-
-charV :: AbValue -> M.Map EnvCtx (SLattice Char)
-charV a = fmap charVL (alits a)
-
-stringV :: AbValue -> M.Map EnvCtx (SLattice String)
-stringV a = fmap stringVL (alits a)
 
 class HasMaybeTopType a where
   maybeTop :: a -> Maybe Type
@@ -326,22 +196,3 @@ topTypesOf (i, f, c, s) = catMaybes [maybeTop i, maybeTop f, maybeTop c, maybeTo
 
 syntaxLitsOf :: (SLattice Integer, SLattice Double, SLattice Char, SLattice String) -> [S.Lit]
 syntaxLitsOf (i, f, c, s) = catMaybes [toSyntax i, toSyntax f, toSyntax c, toSyntax s]
-
-writeDependencyGraph :: forall r e x . M.Map FixInput (FixOutput AFixChange, Integer, [ContX (DEnv e) (State r e x) FixInput FixOutput AFixChange]) -> IO ()
-writeDependencyGraph cache = do
-  let cache' = M.filterWithKey (\k v -> case k of {QueryInput _ -> True; _ -> False}) cache
-  let values = M.foldl (\acc (v, toId, conts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
-  let nodes = M.foldlWithKey (\acc k (v, toId, conts) -> (toId,k,v):acc) [] cache'
-  let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
-  let dot = "digraph G {\n"
-            ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
-            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes)
-            ++ "\n 0 [label=\"Start\"]\n"
-            ++ "\n}"
-  createDirectoryIfMissing True "scratch/debug"
-  writeFile "scratch/debug/graph.dot" dot
-  return ()
-  -- TODO: Cluster by definition and module:
-  -- 1. Module -> 2. Definition -> 3. Query Ctx -> Query
-  -- 1. Environment -> Refinements
-  -- TODO: Integrate results with vscode extension proving GOTO like resolution

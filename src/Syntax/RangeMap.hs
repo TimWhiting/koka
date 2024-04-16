@@ -23,6 +23,7 @@ module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
                       , mangleConName
                       , mangleTypeName
                       , substNiceRangeMap
+                      , rmFindFirst, rmFindAll
                       ) where
 
 import Debug.Trace(trace)
@@ -46,6 +47,16 @@ import Kind.Synonym
 
 data RangeMap = RM ![(Range,RangeInfo)]
   deriving Show
+
+rmFindFirst :: (RangeInfo -> Bool) -> RangeMap -> Maybe (Range, RangeInfo)
+rmFindFirst p (RM rm)
+  = case filter (p . snd) rm of
+      [] -> Nothing
+      (x:_) -> Just x
+
+rmFindAll :: (RangeInfo -> Bool) -> RangeMap -> [(Range, RangeInfo)]
+rmFindAll p (RM rm)
+  = filter (p . snd) rm
 
 mangleConName :: Name -> Name
 mangleConName name

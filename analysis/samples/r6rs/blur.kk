@@ -10,3 +10,6 @@ fun lp(a: bool, n)
 fun main()
   val res = lp(False, 2)
   res.println
+
+fun analyze()
+  lp(False, 2)

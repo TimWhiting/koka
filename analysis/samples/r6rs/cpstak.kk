@@ -14,6 +14,9 @@ fun tak(x: int, y, z, k)
 fun cpstak(x1, y1, z1)  
   tak(x1, y1, z1, fn(a) a)
 
+fun analyze()
+  cpstak(32, 15, 8)
+
 fun main()
   val res = cpstak(32, 15, 8)
   res.show.println

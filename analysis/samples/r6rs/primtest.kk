@@ -64,6 +64,10 @@ fun generate-fermat-prime(byte-size, iterations)
 
 val iterations = 10
 val byte-size = 15
+
+fun analyze()
+  generate-fermat-prime(byte-size,iterations)
+
 fun main()
   val res = generate-fermat-prime(byte-size, iterations)
   res.println

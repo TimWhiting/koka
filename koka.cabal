@@ -67,14 +67,31 @@ library
       Core.Core
       Core.CoreVar
       Core.CTail
-      Core.Demand.AbstractValue
-      Core.Demand.DemandAnalysis
-      Core.Demand.DemandMonad
-      Core.Demand.FixpointMonad
-      Core.Demand.Primitives
-      Core.Demand.StaticContext
-      Core.Demand.Syntax
       Core.Divergent
+      Core.FlowAnalysis.Demand.AbstractValue
+      Core.FlowAnalysis.Demand.ConstantProp
+      Core.FlowAnalysis.Demand.DemandAnalysis
+      Core.FlowAnalysis.Demand.DemandMonad
+      Core.FlowAnalysis.Demand.Primitives
+      Core.FlowAnalysis.Demand.Syntax
+      Core.FlowAnalysis.FixpointMonad
+      Core.FlowAnalysis.Full.AAC.AAC
+      Core.FlowAnalysis.Full.AAC.Monad
+      Core.FlowAnalysis.Full.AAC.Syntax
+      Core.FlowAnalysis.Full.AAM.AAM
+      Core.FlowAnalysis.Full.AAM.Monad
+      Core.FlowAnalysis.Full.AAM.Syntax
+      Core.FlowAnalysis.Full.AbstractValue
+      Core.FlowAnalysis.Full.DMCFA.AbstractValue
+      Core.FlowAnalysis.Full.DMCFA.DMCFA
+      Core.FlowAnalysis.Full.DMCFA.Monad
+      Core.FlowAnalysis.Full.DMCFA.Primitives
+      Core.FlowAnalysis.Full.DMCFA.Syntax
+      Core.FlowAnalysis.Full.Primitives
+      Core.FlowAnalysis.Literals
+      Core.FlowAnalysis.Monad
+      Core.FlowAnalysis.StaticContext
+      Core.FlowAnalysis.Syntax
       Core.FunLift
       Core.Inline
       Core.Inlines

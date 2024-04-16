@@ -5,6 +5,9 @@ fun ack(m, n)
   elif n == 0 then ack(m - 1, 1)
   else ack(m - 1, ack(m, n - 1))
 
+fun analyze()
+  ack(3, 12)
+
 fun main()
   val res = ack(3, 12)
   res.println

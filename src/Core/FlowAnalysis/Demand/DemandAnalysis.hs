@@ -15,11 +15,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
-module Core.Demand.DemandAnalysis(
+module Core.FlowAnalysis.Demand.DemandAnalysis(
   query,refine,qcall,qexpr,qeval,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,succAEnv,
-  getQueryString,getState,updateState,getUnique,getAbValueResults,
+  getQueryString,getDemandState,updateState,getUnique,getAbValueResults,
   childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,
 ) where
 import GHC.IO (unsafePerformIO)
@@ -44,10 +44,11 @@ import Syntax.RangeMap
 import Lib.PPrint (Pretty(..))
 import qualified Lib.PPrint as P
 import Debug.Trace
-import Core.Demand.StaticContext
-import Core.Demand.AbstractValue
-import Core.Demand.DemandMonad
-import Core.Demand.FixpointMonad
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.Monad
+import Core.FlowAnalysis.FixpointMonad
+import Core.FlowAnalysis.Demand.AbstractValue
+import Core.FlowAnalysis.Demand.DemandMonad
 import Syntax.Syntax (UserExpr, UserDef)
 import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
@@ -89,12 +90,12 @@ query :: Query -> Bool -> FixDemandR x s e AChange
 query q isRefined = do
   res <- memo (QueryInput q) $ do
     let cq = newQuery isRefined q (\queryStr -> do
-                demandLog (queryStr ++ show q)
+                analysisLog (queryStr ++ show q)
                 x <- withGas $ case q of
                         CallQ e -> doCall e queryStr
                         ExprQ e -> doExpr e queryStr
                         EvalQ e -> doEval e queryStr
-                demandLog (queryStr ++ "==> " ++ show x)
+                analysisLog (queryStr ++ "==> " ++ show x)
                 return x
                 )
     let refined = do
@@ -122,12 +123,6 @@ getRefine env =
             return (EnvCtx cc tailRefine)]
     EnvTail cc -> refine env
 
-bindExternal :: Expr -> FixDemandR x s e (Maybe ExprContext)
-bindExternal var@(Var tn@(TName name tp _) vInfo) = do
-  let modName = newModuleName (nameModule name)
-  (mod', ctx) <- loadModule modName
-  if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') tn then return (Just ctx)
-  else trace ("External variable binding not found " ++ show tn ++ ": " ++ show vInfo) (return Nothing)
 
 findAllUsage :: TName -> ExprContext -> FixDemandR x s e (ExprContext, EnvCtx)
 findAllUsage tname@TName{getName = name} ctx = do
@@ -220,15 +215,15 @@ findUsage tname@TName{getName = name} ctx env = do
 
 addPrimitive :: Name -> ((ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
 addPrimitive name m = do
-  updateState (\state -> state{primitives = M.insert name m (primitives state)})
+  updateDemandState (\state -> state{primitives = M.insert name m (primitives state)})
 
 addPrimitiveExpr :: Name -> (Int -> (ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
 addPrimitiveExpr name m = do
-  updateState (\state -> state{eprimitives = M.insert name m (eprimitives state)})
+  updateDemandState (\state -> state{eprimitives = M.insert name m (eprimitives state)})
 
 isPrimitive :: ExprContext -> FixDemandR x s e Bool
 isPrimitive ctx = do
-  prims <- primitives <$> getState
+  prims <- primitives <$> getDemandState
   case maybeExprOfCtx ctx of
     Just (Var tn _)  ->
       return $ M.member (getName tn) prims
@@ -238,7 +233,7 @@ evalPrimitive :: ExprContext -> ExprContext -> EnvCtx -> FixDemandR x s e AChang
 evalPrimitive var ctx env = do
   case maybeExprOfCtx var of
     Just (Var tn _) -> do
-      prims <- primitives <$> getState
+      prims <- primitives <$> getDemandState
       case M.lookup (getName tn) prims of
         Just m -> m (ctx, env)
         Nothing -> error ("evalPrimitive: Primitive not found! " ++ show tn)
@@ -248,7 +243,7 @@ exprPrimitive :: ExprContext -> Int -> ExprContext -> EnvCtx -> FixDemandR x s e
 exprPrimitive var index ctx env = do
   case maybeExprOfCtx var of
     Just (Var tn _) -> do
-      prims <- eprimitives <$> getState
+      prims <- eprimitives <$> getDemandState
       case M.lookup (getName tn) prims of
         Just m -> m index (ctx, env)
         Nothing -> error ("exprPrimitive: Primitive not found! " ++ show tn)
@@ -316,7 +311,7 @@ doEval (ctx, env) query = do
                   error ("Hnd: missing primitive " ++ showSimpleContext ctx)
                 else do
                   -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
-                  ext <- bindExternal v
+                  ext <- bindExternal2 v
                   case ext of
                     Just modulectx@ModuleC{} -> do
                       -- trace (query ++ "REF: External module " ++ showSimpleContext modulectx) $ return ()
@@ -561,7 +556,7 @@ doCall :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
 doCall (ctx, env) query =
   case ctx of
       LamCBody _ c _ _-> do
-        kind <- analysisKind <$> getEnv
+        kind <- analysisKind <$> getDemandEnv
         case kind of
           BasicEnvs -> do
             let cc0 = envhead env
@@ -575,10 +570,10 @@ doCall (ctx, env) query =
             m <- contextLength <$> getEnv
             cc1 <- succAEnv callctx callenv
             if cc1 == cc0 then do
-              demandLog (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+              analysisLog (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               return $! AChangeClos evalctx callenv
             else if cc0 `subsumesCtx` cc1 then do -- cc1 is more refined
-              demandLog (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+              analysisLog (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               instantiate query (EnvCtx cc1 p) env
               doBottom
             else do
@@ -590,9 +585,9 @@ doCall (ctx, env) query =
 
 instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
 instantiate query c1 c0 = if c1 == c0 then return () else do
-  demandLog (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1)
+  analysisLog (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1)
   lift $ push (EnvInput c0) (FE c1)
-  demandLog (query ++ "Done INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1)
+  analysisLog (query ++ "Done INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1)
   return ()
 
 --------------------------- TOP LEVEL QUERIES: RUNNING THE FIXPOINT ------------------------------
@@ -605,15 +600,6 @@ getAbValueResults q = do
       st <- getAllStates (refineQuery q env)
       return (env, st)
     ) (S.toList refines)
-
-analyzeEachChild :: Show a => ExprContext -> (ExprContext -> FixDemandR x s e a) -> FixDemandR x s e a
-analyzeEachChild ctx analyze = do
-  let self = analyze ctx
-      children = do
-        visitEachChild ctx $ do
-          childCtx <- currentContext <$> getEnv
-          analyzeEachChild childCtx analyze
-  each [self, children]
 
 showEscape :: Show a => a -> String
 showEscape = escape . show
