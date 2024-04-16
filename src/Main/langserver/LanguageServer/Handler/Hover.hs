@@ -59,6 +59,7 @@ import LanguageServer.Handler.Pretty (ppComment, asKokaCode)
 import Debug.Trace (trace)
 import Core.Pretty (prettyCore)
 import Common.Syntax (Target(..), CTarget (..))
+import System.Directory (createDirectoryIfMissing)
 
 toAbValueText (env, (fns, defs, externs, lits, constrs, topTypes)) =
   let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
@@ -102,6 +103,7 @@ hoverHandler
                  flags <- getFlags
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
+                 liftIO $ createDirectoryIfMissing True "scratch/debug"
                  liftIO $ writeFile "scratch/debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 

@@ -384,6 +384,10 @@ matchesPattern ch pat =
   case ch of
     AChangeConstr conApp env -> matchesPatternConstr conApp env pat
     AChangeLit lit env -> return $ matchesPatternLit lit env pat
+    AChangeClos lam env -> case pat of
+      PatVar _ p -> matchesPattern ch p
+      PatWild -> return True
+      _ -> return False
 
 matchesPatternConstr :: ExprContext -> EnvCtx -> Pattern -> FixDemandR x s e Bool
 matchesPatternConstr conApp env pat = do
@@ -440,7 +444,6 @@ patSubsumed (PatLit (LitChar i)) (LiteralChangeChar LChangeTop) = True
 patSubsumed (PatLit (LitString i)) (LiteralChangeString LChangeTop) = True
 patSubsumed _ _ = False
 
--- TODO: This still sometimes returns emptyAbValue
 doExpr :: Query -> String -> FixDemandR x s e AChange
 doExpr cq@(ExprQ (ctx,env)) query = do
   case ctx of
@@ -528,7 +531,7 @@ doCall cq@(CallQ(ctx, env)) query =
               instantiate query (EnvCtx cc1 p) env
               doBottom
             else do
-              -- trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+              trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
               doBottom
       _ -> error $ "CALL not implemented for " ++ show ctx
 

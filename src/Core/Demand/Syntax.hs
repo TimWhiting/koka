@@ -39,6 +39,7 @@ import Debug.Trace (trace)
 import Core.Pretty (prettyExpr)
 import Type.Pretty (defaultEnv)
 import Data.Foldable (minimumBy)
+import Common.Failure (HasCallStack)
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e (ExprContext, Range)
 findContext r ri = do
@@ -77,35 +78,38 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
     addResult q
   return (r, bc)
 
-runQueryAtRange :: BuildContext
+runQueryAtRange :: HasCallStack => BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int
   -> (ExprContext -> FixDemand Query () ())
   -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
 runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
-  let cid = ExprContextId (-1) (modName mod)
-      modCtx = ModuleC cid mod (modName mod)
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyEnv m kind term flags modCtx ()) (emptyState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyEnv m kind term flags ()) (emptyState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
                       trace ("Context: " ++ show (contextId ctx)) $ return ()
-                      res <- analyzeEachChild modCtx (const $ findContext r ri)
+                      res <- analyzeEachChild ctx (const $ findContext r ri)
                       addResult res
                  getResults
-    runFixFinishC (emptyEnv m kind term flags modCtx ()) (transformState (const ()) s) $ do
-                    runFixCont $ do 
-                      (_,ctx) <- loadModule (modName mod)
-                      trace ("Context: " ++ show (contextId ctx)) $ return ()
-                      withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
-                        doQuery (fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) (S.toList ctxs)))
-                    queries <- getResults
-                    buildc' <- buildc <$> getStateR
-                    ress <- mapM getAbValueResults (S.toList queries)
-                    let resM = M.fromListWith joinAbValue (concat ress)
-                    ress' <- mapM getAbResult (M.toList resM)
-                    return (ress', buildc')
+    let s' = transformState (const ()) s
+    case S.toList ctxs of
+      [] -> return (M.empty, s', ([], bc))
+      ctxs ->
+        do
+          let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
+          runFixFinishC (emptyEnv m kind term flags ()) s' $ do
+                          runFixCont $ do
+                            (_,ctx) <- loadModule (modName mod)
+                            trace ("Context: " ++ show (contextId ctx)) $ return ()
+                            withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery smallestCtx
+                          queries <- getResults
+                          buildc' <- buildc <$> getStateR
+                          ress <- mapM getAbValueResults (S.toList queries)
+                          let resM = M.fromListWith joinAbValue (concat ress)
+                          ress' <- mapM getAbResult (M.toList resM)
+                          return (ress', buildc')
   writeDependencyGraph l
   return (M.map (\(x, _, _) -> x) l, r, bc)
 
@@ -157,7 +161,7 @@ sourceEnvCtx ctx =
         SourceExtern ex -> show (ppSyntaxExtern ex <+> text e)
         SourceNotFound -> "Not found" ++ e
 
-data SourceKind = 
+data SourceKind =
   SourceExpr Syn.UserExpr
   | SourceDef Syn.UserDef
   | SourceExtern Syn.External
@@ -188,7 +192,7 @@ findSourceExpr ctx =
     findExtern e = do
       program <- modProgram <$> getModuleR (newModuleName $ nameModule $ C.externalName e)
       case (program, C.externalName e) of
-        (Just prog, name) -> trace ("Finding location for " ++ show name ++ " " ++ show (S.programExternals prog)) $ 
+        (Just prog, name) -> trace ("Finding location for " ++ show name ++ " " ++ show (S.programExternals prog)) $
           case find (\e -> case e of S.External{} -> nameStem (S.extName e) == nameStem name; _ -> False) (S.programExternals prog) of
             Just e -> return (SourceExtern e)
             Nothing -> return SourceNotFound
@@ -278,7 +282,7 @@ writeDependencyGraph cache = do
   let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
   let dot = "digraph G {\n"
             ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
-            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes) 
+            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes)
             ++ "\n 0 [label=\"Start\"]\n"
             ++ "\n}"
   writeFile "scratch/debug/graph.dot" dot

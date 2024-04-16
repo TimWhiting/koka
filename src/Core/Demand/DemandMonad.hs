@@ -44,7 +44,7 @@ import qualified Core.Core as C
 import Control.Monad (zipWithM, when)
 import Debug.Trace (trace)
 import Data.List (find, intercalate)
-import Common.Failure (assertion)
+import Common.Failure (assertion, HasCallStack)
 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
@@ -75,9 +75,9 @@ transformState f (State bc s mc mid cid u fr p ep ad) =
   State bc s mc mid cid u S.empty M.empty M.empty (f ad)
 
 
-emptyEnv :: Int -> AnalysisKind -> Terminal -> Flags -> ExprContext -> e -> DEnv e
-emptyEnv m kind term flags modCtx e =
-  DEnv m term flags kind modCtx modCtx "" "" e
+emptyEnv :: HasCallStack => Int -> AnalysisKind -> Terminal -> Flags -> e -> DEnv e
+emptyEnv m kind term flags e =
+  DEnv m term flags kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" e
 
 
 data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
@@ -87,8 +87,8 @@ data DEnv x = DEnv{
   term :: !Terminal,
   flags :: !Flags,
   analysisKind :: !AnalysisKind,
-  currentContext :: !ExprContext,
-  currentModContext :: !ExprContext,
+  currentContext :: ExprContext,
+  currentModContext :: ExprContext,
   currentQuery :: !String,
   queryIndentation :: !String,
   additionalEnv :: x
@@ -295,7 +295,7 @@ succAEnv newctx p' = do
 getQueryString :: FixDemandR x s e String
 getQueryString = do
   env <- getEnv
-  return $ queryIndentation env ++ currentQuery env ++ show (contextId $ currentContext env) ++ " "
+  return $ queryIndentation env ++ show (contextId $ currentContext env) ++ " " ++ currentQuery env ++ " " 
 
 getUnique :: FixDemandR x s e Int
 getUnique = do
@@ -319,9 +319,6 @@ newQuery q d = do
     return $ FA res
 
 --------------------------------------- ExprContext Helpers -------------------------------------
-
-allModules :: BuildContext -> [Module]
-allModules = buildcModules
 
 getTopDefCtx :: ExprContext -> Name -> FixDemandR x s e ExprContext
 getTopDefCtx ctx name = do
@@ -485,6 +482,7 @@ childrenContexts ctx = do
                 ExprCBasic{} -> return []
                 ExprCTerm{} -> return []
                 ModuleC{} ->
+                  trace ("initial contexts for module " ++ show (contextId ctx)) $ do
                   initialModuleContexts ctx
           addChildrenContexts parentCtxId newCtxs
           -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs) $ return newCtxs
@@ -532,7 +530,7 @@ maybeLoadModuleR mn = do
               trace ("Loaded module " ++ show mn) $ return ()
               return $ buildcLookupModule mn bc'
 
-maybeLoadModule :: ModuleName -> FixDemandR x s e (Maybe Module)
+maybeLoadModule :: HasCallStack => ModuleName -> FixDemandR x s e (Maybe Module)
 maybeLoadModule mn = do
   state <- getState
   case M.lookup mn (moduleContexts state) of
@@ -543,7 +541,6 @@ maybeLoadModule mn = do
       let deps = buildcModules bc
       let x = find (\m -> modName m == mn) deps
       ctxId <- newModContextId mn
-
       case x of
         Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
           trace ("Module already loaded " ++ show mn) $ return ()
@@ -570,7 +567,7 @@ maybeLoadModule mn = do
                 })
               return $ Just mod'
 
-loadModule :: ModuleName -> FixDemandR x s e (Module, ExprContext)
+loadModule :: HasCallStack =>ModuleName -> FixDemandR x s e (Module, ExprContext)
 loadModule mn = do
   res <- maybeLoadModule mn
   case res of

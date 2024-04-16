@@ -6,13 +6,13 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 
-module Syntax.Pretty( 
+module Syntax.Pretty(
   ppValBinder,
   ppPatBinder,
   ppArg,
   ppSyntaxDef,
-  ppSyntaxExpr, 
-  ppSyntaxBranch, 
+  ppSyntaxExpr,
+  ppSyntaxBranch,
   ppSyntaxPattern,
   ppSyntaxExtern,
   ppLit
@@ -56,6 +56,10 @@ ppValBinder (ValueBinder name (Just tp) Nothing nameRange range)
 ppValBinder (ValueBinder name Nothing Nothing nameRange range)
   = text (nameStem name)
 
+ppValEmptyBinder :: ValueBinder (Maybe UserType) () -> Doc
+ppValEmptyBinder (ValueBinder name _ () nameRange range)
+  = text (nameStem name)
+
 ppPatBinder :: ValueBinder (Maybe UserType) (S.Pattern UserType) -> Doc
 ppPatBinder (ValueBinder name _ (S.PatWild rng) nameRange range)
   = text $ nameStem name
@@ -75,6 +79,8 @@ ppSyntaxExpr (Bind def expr range) =
   vcat [ppSyntaxDef def, ppSyntaxExpr expr]
 ppSyntaxExpr (S.App (S.Var name _ _) args range) | name == nameOpExpr =
   hcat (intersperse (text " ") (map ppArg args))
+ppSyntaxExpr (S.App hnd@Handler{} [(_, a)] range)  =
+  tupled [ppSyntaxExpr hnd] <.> tupled [ppSyntaxExpr a]
 ppSyntaxExpr (S.App fun args range)  =
   ppSyntaxExpr fun <.> tupled (map ppArg args)
 ppSyntaxExpr (S.Var name isop range) = text $ nameStem name
@@ -87,12 +93,15 @@ ppSyntaxExpr (Parens expr name _ range) =
 ppSyntaxExpr (Inject tp expr behind range) =
   text "mask<" <.> text (show tp) <.> text ">{" <--> indent 2 (ppSyntaxExpr expr) <--> text "}"
 ppSyntaxExpr (Handler sort scope override allowmask eff pars reinit ret final branches drange range) =
-  text "handler" <--> ppMaybeExpr "" reinit <--> ppMaybeExpr "" ret <--> ppMaybeExpr "" final <--> text (show branches)
-  -- TODO: Better show handlers
+  text "handler" <--> indent 2 (vcat (ppMaybeExpr ret: ppMaybeExpr reinit : ppMaybeExpr final : map ppHandlerBranch branches))
 
-ppMaybeExpr :: String -> Maybe (Expr UserType) -> Doc
-ppMaybeExpr name (Just expr) = text name <--> indent 2 (ppSyntaxExpr expr)
-ppMaybeExpr name Nothing = empty
+ppHandlerBranch :: S.HandlerBranch UserType -> Doc
+ppHandlerBranch (HandlerBranch nm pars expr sort nmRng patRng) =
+  pretty (show sort) <+> text (show nm) <.> tupled (map ppValEmptyBinder pars) <--> indent 2 (ppSyntaxExpr expr)
+
+ppMaybeExpr :: Maybe (Expr UserType) -> Doc
+ppMaybeExpr (Just expr) = ppSyntaxExpr expr
+ppMaybeExpr Nothing = empty
 
 ppSyntaxBranch :: S.Branch UserType -> Doc
 ppSyntaxBranch (S.Branch pat [S.Guard (S.Var n _ _) body]) | nameTrue == n

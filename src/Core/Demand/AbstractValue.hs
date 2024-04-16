@@ -350,7 +350,7 @@ subsumes :: EnvCtx -> EnvCtx -> Bool
 subsumes p1 p2 =
   case (p1, p2) of
     (EnvCtx ctx1 tail1, EnvCtx ctx2 tail2) -> ctx1 `subsumesCtx` ctx2 && tail1 `subsumes` tail2
-    (EnvTail ctx1, EnvTail ctx2) -> ctx1 == ctx2
+    (EnvTail ctx1, EnvTail ctx2) -> ctx1 `subsumesCtx` ctx2
     _ -> False
 
 subsumesCtx :: Ctx -> Ctx -> Bool
