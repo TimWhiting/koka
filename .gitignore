@@ -25,7 +25,6 @@ test/test*.kk
 *.
 *~
 *.exe
-*.vsix
 *.bc
 *.i
 *.s
@@ -40,3 +39,8 @@ precompiled/
 ghc-rts.wasm
 SETUP.md
 cabal.project.local
+**/.cache
+scratch/
+kklib/libuv/
+libuv
+alex/

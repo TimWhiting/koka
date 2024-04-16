@@ -32,7 +32,7 @@ type FreeVar = TNames
 regroup :: [Def] -> [DefGroup]
 regroup [def]
   = let fvdef = fv def in
-    if (S.member (TName (defName def) (defType def)) fvdef 
+    if (S.member (TName (defName def) (defType def) (Just $ defNameRange def)) fvdef 
         || defName def `elem` [name | name <- map getName (S.toList fvdef), not (isQualified name)] -- this is for recursive definitions where the type may still differ since we cannot improve too early for mutual recursive definitions (or we unify too eagerly, see "while")
        )
      then [DefRec [def]]
@@ -40,7 +40,7 @@ regroup [def]
           [DefNonRec def]
 
 regroup defs
-  = let defNames = map (\def -> TName (defName def) (defType def)) defs
+  = let defNames = map (\def -> TName (defName def) (defType def) (Just $ defNameRange def)) defs
         defMap   = M.fromList (zip defNames defs)
         deps     = M.fromList (zip defNames (map (S.intersection (S.fromList defNames) . fv) defs))
     

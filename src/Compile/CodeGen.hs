@@ -77,7 +77,7 @@ codeGen term flags sequential newtypes borrowed kgamma gamma entry imported mod
                           Left _     -> []
            ifaceDoc   = Core.Pretty.prettyCore penv{ coreIface = True } (targetPlatformFromFlags flags) inlineDefs core
                          <-> Lib.PPrint.empty
-           coreDoc    = Core.Pretty.prettyCore penv{ coreIface = False, coreShowDef = (showCore flags) } (targetPlatformFromFlags flags) inlineDefs core
+           coreDoc    = Core.Pretty.prettyCore penv{ coreIface = False, coreShowDef = (showCore flags) } (targetPlatformFromFlags flags) inlineDefs (fromMaybe core $ modCoreUnopt mod)
                          <-> Lib.PPrint.empty
 
        -- create output directory if it does not exist

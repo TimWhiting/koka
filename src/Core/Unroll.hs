@@ -39,7 +39,6 @@ import Common.NamePrim ( nameEffectOpen )
 import Common.Name
 import Common.Range
 import Common.Unique
-import Common.Error
 import Common.Syntax
 
 import Kind.Kind
@@ -109,7 +108,7 @@ unrollBody def tpars pars eff body
                          sub  = [(dname, Var rname info)]
                          rdef = def{ defName = getName rname, defExpr = (sub |~> defExpr def), defVis = Private }
 
-                         rcall = App (makeTypeApp (Var rname info) [TVar tv | tv <- tpars]) [Var v InfoNone | v <- pars]
+                         rcall = App (makeTypeApp (Var rname info) [TVar tv | tv <- tpars]) [Var v InfoNone | v <- pars] Nothing
                          wild = Branch (map (\_ -> PatWild) pats) [Guard exprTrue rcall]
                          mkFun b = (if null tpars then id else TypeLam tpars) (Lam pars eff b)
                          ddef = def{ defExpr = mkFun (Case exprs (nonrecbs ++ [wild])), defInline = InlineAlways,
@@ -252,7 +251,7 @@ uniqueTNameFrom :: TName -> Unroll TName
 uniqueTNameFrom tname
   = do i <- unique
        let name = toHiddenUniqueName i "unroll" (getName tname)
-       return (TName name (typeOf tname))
+       return (TName name (typeOf tname) (originalRange tname))
 
 verboseDoc :: (Pretty.Env -> Doc) -> Unroll ()
 verboseDoc f

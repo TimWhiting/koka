@@ -74,10 +74,10 @@ cctxExpr :: Expr -> CCtx Ctx
 cctxExpr expr
   = case expr of
       -- constructor
-      App con@(Con name repr) args       | conReprHasCtxPath repr && not (null args)
+      App con@(Con name repr _) args rng       | conReprHasCtxPath repr && not (null args)
         -> cctxCon name repr [] args
 
-      App (TypeApp (con@(Con name repr)) targs) args  | conReprHasCtxPath repr && not (null args)
+      App (TypeApp (con@(Con name repr _)) targs) args rng  | conReprHasCtxPath repr && not (null args)
         -> cctxCon name repr targs args
 
       -- App (App (TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f]) []) | getName open == nameEffectOpen
@@ -110,7 +110,7 @@ cctxConRecurse conName conRepr targs args
         (ds,vars) <- unzip <$> mapM makeUniqueDef pre
         fname <- getFieldName conName (length pre + 1)
         let ctxrepr = conRepr{ conCtxPath = CtxField fname }
-        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr) targs) (vars ++ [top ctx] ++ post))
+        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr Nothing) targs) (vars ++ [top ctx] ++ post) Nothing)
         -- (d2,var2) <- makeUniqueDef (makeCCtxSetContextPath var1 conName fname)
         return (ctx{ defs = ds ++ defs ctx ++ [d1], top = var1 })
 
@@ -122,7 +122,7 @@ cctxConFinal conName conRepr targs pre hole post
         let holetp = typeOf hole
             ctxrepr = conRepr{ conCtxPath = CtxField fname }
         ensureValidHoleType holetp
-        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr) targs) (pre ++ [hole] ++ post))
+        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr Nothing) targs) (pre ++ [hole] ++ post) Nothing)
         (d2,addr) <- makeUniqueDef (makeFieldAddrOf var1 conName (getName fname)   holetp)
         -- (d3,var3) <- makeUniqueDef (makeCCtxSetContextPath var1 conName fname) -- should be last as it consumes var1
         return (Ctx [d1,d2] var1 (Hole addr holetp))
@@ -151,18 +151,18 @@ illegal
 makeUniqueDef :: Expr -> CCtx (Def,Expr)
 makeUniqueDef expr
   = do name <- uniqueName "cctx"
-       return (makeDef name expr, Var (TName name (typeOf expr)) InfoNone)
+       return (makeDef name expr, Var (TName name (typeOf expr) Nothing) InfoNone)
 
 isHole :: Expr -> Bool
-isHole (App (TypeApp (Var (TName hname htp) _) [tp,_etp]) []) = (hname == nameCCtxHoleCreate)
-isHole (App (App (TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [TypeApp (Var hname _) _]) [])
+isHole (App (TypeApp (Var (TName hname htp Nothing) _) [tp,_etp]) [] rng) = (hname == nameCCtxHoleCreate)
+isHole (App (App (TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [TypeApp (Var hname _) _] rng0) [] rng)
   = (getName open == nameEffectOpen) && (getName hname == nameCCtxHoleCreate)
 isHole _ = False
 
 -- Initial empty context (ctx hole)
 makeCCtxEmpty :: TargetPlatform -> Type -> Expr
 makeCCtxEmpty tpl tp
-  = App (TypeApp (Var (TName nameCCtxEmpty funType) (InfoExternal external)) [tp]) []
+  = App (TypeApp (Var (TName nameCCtxEmpty funType Nothing) (InfoExternal external)) [tp]) [] Nothing
   where
     funType = TForall [a] (TFun [] typeTotal (typeCCtx (TVar a)))
     a = TypeVar 0 kindStar Bound
@@ -174,7 +174,7 @@ makeCCtxEmpty tpl tp
 -- Create a context (ctx Cons(e,Cons(2,hole)))
 makeCCtxCreate :: TargetPlatform -> Type -> Type -> Expr -> Expr -> Expr
 makeCCtxCreate tpl tp holetp top holeaddr
-  = App (TypeApp (Var (TName nameCCtxCreate funType) (InfoExternal external)) [tp,holetp]) [top,holeaddr]
+  = App (TypeApp (Var (TName nameCCtxCreate funType Nothing) (InfoExternal external)) [tp,holetp]) [top,holeaddr] Nothing
   where
     funType = TForall [a,b] (TFun [(nameNil,TVar a),
                                       (nameNil,TApp typeFieldAddr [TVar a])]
@@ -190,8 +190,8 @@ makeCCtxCreate tpl tp holetp top holeaddr
 -- The adress of a field in a constructor (for context holes)
 makeFieldAddrOf :: Expr -> TName -> Name -> Type -> Expr
 makeFieldAddrOf obj conName fieldName fieldTp
-  = App (TypeApp (Var (TName nameFieldAddrOf funType) (InfoExternal [])) [fieldTp])
-        [obj, Lit (LitString (showTupled (getName conName))), Lit (LitString (showTupled fieldName))]
+  = App (TypeApp (Var (TName nameFieldAddrOf funType Nothing) (InfoExternal [])) [fieldTp])
+        [obj, Lit (LitString (showTupled (getName conName))), Lit (LitString (showTupled fieldName))] Nothing
   where
     funType = TForall [a] (TFun [(nameNil,TVar a),(nameNil,typeString),(nameNil,typeString)]
                                    typeTotal (TApp typeFieldAddr [TVar a]))
@@ -200,8 +200,8 @@ makeFieldAddrOf obj conName fieldName fieldTp
 -- Set the index of the field in a constructor to follow the path to the hole at runtime.
 makeCCtxSetContextPath :: Expr -> TName -> Name -> Expr
 makeCCtxSetContextPath obj conName fieldName
-  = App (Var (TName nameCCtxSetCtxPath funType) (InfoExternal "@cctx-setcp(#1,#2,#3)"))
-        [obj, Lit (LitString (showTupled (getName conName))), Lit (LitString (showTupled fieldName))]
+  = App (Var (TName nameCCtxSetCtxPath funType Nothing) (InfoExternal "@cctx-setcp(#1,#2,#3)"))
+        [obj, Lit (LitString (showTupled (getName conName))), Lit (LitString (showTupled fieldName))] Nothing
   where
     tp = typeOf obj
     funType = (TFun [(nameNil,tp),(nameNil,typeString),(nameNil,typeString)] typeTotal tp)
@@ -322,7 +322,7 @@ lookupFieldName cname field
                 then return (Left ("contexts cannot go through a value type (" ++ show (getName cname) ++ ")"))
                 else do case filter (\con -> conInfoName con == getName cname) (dataInfoConstrs dataInfo) of
                           [con] -> case drop (field - 1) (conInfoParams con) of
-                                      ((fname,ftp):_) -> return $ Right (TName fname ftp) {- Con cname (getConRepr dataInfo con), fname) -}
+                                      ((fname,ftp):_) -> return $ Right (TName fname ftp Nothing) {- Con cname (getConRepr dataInfo con), fname) -}
                                       _ -> failure $ "Core.CTail.getFieldName: field index is off: " ++ show cname ++ ", field " ++ show  field ++ ", in " ++ show (conInfoParams con)
                           _ -> failure $ "Core.CTail.getFieldName: cannot find constructor: " ++ show cname ++ ", field " ++ show  field ++ ", in " ++ show (dataInfoConstrs dataInfo)
          _ -> failure $ "Core.CTail.getFieldName: no such constructor: " ++ show cname ++ ", field " ++ show  field

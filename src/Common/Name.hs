@@ -13,7 +13,7 @@
 module Common.Name
           ( Name, Names, ModuleName     -- instance Eq Ord Show
           -- , showName        -- show with quotes
-          , showPlain
+          , showPlain, showFullyExplicit
           , showTupled, readTupled -- show and read back reliably
           , readQualified, readQualifiedName
           , labelNameCompare

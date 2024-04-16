@@ -26,7 +26,6 @@ import Common.NamePrim ( nameEffectOpen )
 import Common.Name
 import Common.Range
 import Common.Unique
-import Common.Error
 import Common.Syntax
 
 import Kind.Kind
@@ -101,17 +100,17 @@ inlExpr :: Expr -> Inl Expr
 inlExpr expr
   = case expr of
     -- Applications
-    App (TypeApp f targs) args
+    App (TypeApp f targs) args rng
       -> do f0 <- inlExpr f
             args' <- mapM inlExpr args
             f' <- inlAppExpr f0 (length targs) (argLength args) (onlyZeroCost args)
-            return (App (TypeApp f' targs) args')
+            return (App (TypeApp f' targs) args' rng)
 
-    App f args
+    App f args rng
       -> do f0    <- inlExpr f
             args' <- mapM inlExpr args
             f' <- inlAppExpr f0 0 (argLength args) (onlyZeroCost args)
-            return (App f' args')
+            return (App f' args' rng)
 
     -- regular cases
     Lam args eff body
@@ -172,10 +171,10 @@ inlAppExpr expr m n onlyZeroCost
       TypeApp f targs | m == 0  -- can happen if it is inside an open as:  .open<..>(f<..>)  (test: cgen/inline4)
         -> do f' <- inlAppExpr f (length targs) n onlyZeroCost
               return (TypeApp f' targs)
-      App eopen@(TypeApp (Var open info) targs) [f] | getName open == nameEffectOpen
+      App eopen@(TypeApp (Var open info) targs) [f] rng | getName open == nameEffectOpen
         -> do -- traceDoc $ \penv -> text "go through open:" <+> text (show (m,n))
               f' <- inlAppExpr f m n onlyZeroCost
-              return (App eopen [f'])
+              return (App eopen [f'] rng)
 
       _ -> return (expr)  -- no inlining
 

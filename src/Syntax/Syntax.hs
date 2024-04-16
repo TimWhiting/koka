@@ -246,7 +246,7 @@ data Expr t
              hndlrDeclRange    :: !Range,
              hndlrRange        :: !Range
             }
-  deriving (Show)
+      deriving (Show)
 
 data HandlerOverride
   = HandlerNoOverride | HandlerOverride
