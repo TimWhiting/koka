@@ -417,8 +417,8 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                               -- msub  = subNew (zip tvars (map TVar mvars))
 
 
-                              resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX,
-                                                        Core.TypeApp (Core.Var (Core.TName ({- unqualify -} name) (resTp1)) info)
+                              resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX defRng,
+                                                        Core.TypeApp (Core.Var (Core.TName ({- unqualify -} name) (resTp1) Nothing) info)
                                                                       (map TVar mvars))] -- TODO: check: was `tvars` TODO: wrong for unannotated polymorphic recursion: see codegen/wrong/rec2
                                           (msub |-> coreX)
 
@@ -438,14 +438,14 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                        do assumedTpX <- normalize True assumedTp >>= subst -- resTp0
                           simResCore1 <- return resCore1 -- liftUnique $ uniqueSimplify penv False False 1 0 resCore1
                           coreX <- subst simResCore1
-                          let resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX, Core.Var (Core.TName ({- unqualify -} name) resTp1) info)] coreX
+                          let resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX defRng, Core.Var (Core.TName ({- unqualify -} name) resTp1 Nothing) info)] coreX
                           return (resTp1, resCoreX)
                   _  -- ensure we insert the right info  (test: static/div2-ack)
                     -> -- trace "  rec normal" $
                        do assumedTpX <- normalize True assumedTp >>= subst
                           simResCore1 <- return resCore1 -- liftUnique $ uniqueSimplify penv False False 1 0 resCore1
                           coreX <- subst simResCore1
-                          let resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX, Core.Var (Core.TName ({- unqualify -} name) resTp1) info)] coreX
+                          let resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX defRng, Core.Var (Core.TName ({- unqualify -} name) resTp1 Nothing) info)] coreX
                           return (resTp1, resCoreX)
                   --(Nothing,_)
                   --   ->    return (resTp1,resCore1) -- (CoreVar.|~>) [(unqualify name, Core.Var (Core.TName (unqualify name) resTp1) Core.InfoNone)] resCore1
@@ -455,8 +455,6 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
         -- resTp2      <- subst resTp1
         coreDef2    <- subst (Core.Def (Core.defName coreDef) resTp2 coreExpr (Core.defVis coreDef) csort (Core.defInline coreDef) (Core.defNameRange coreDef) (Core.defDoc coreDef))
         return (coreDef2)
-
-
 
 inferDef :: Bool -> Expect -> Def Type -> Inf Core.Def
 inferDef topLevel expect (Def (ValueBinder name mbTp expr nameRng vrng) rng vis sort inl doc)
@@ -517,8 +515,8 @@ inferBindDef def@(Def (ValueBinder name () expr nameRng vrng) rng vis sort inl d
                     else do hp <- Op.freshTVar kindHeap Meta
                             (qrefName,_,info) <- resolveName nameRef Nothing rng
                             let refTp  = typeApp typeRef [hp,stp]
-                                refVar = coreExprFromNameInfo qrefName info
-                                refExpr = Core.App (Core.TypeApp refVar [hp,stp]) [coreExpr] -- TODO: fragile: depends on order of quantifiers of the ref function!
+                                refVar = coreExprFromNameInfo qrefName info rng
+                                refExpr = Core.App (Core.TypeApp refVar [hp,stp]) [coreExpr] (Just rng) -- TODO: fragile: depends on order of quantifiers of the ref function!
                             -- traceDoc $ \penv -> text "reference" <+> pretty name <.> colon <+> ppType penv stp
                             return (Core.Def name refTp refExpr vis sort inl nameRng doc)
 
@@ -620,8 +618,8 @@ inferExpr propagated expect (App (Var name _ nameRng) [(_,expr)] rng)  | name ==
                           resTp <- Op.freshStar
                           let typeReturn = typeFun [(nameNil,tp)] typeTotal resTp
                           addRangeInfo nameRng (RM.Id (newName "return") (RM.NIValue "expr" tp "" False) [] False)
-                          return (resTp, eff, Core.App (Core.Var (Core.TName nameReturn typeReturn)
-                                                (Core.InfoExternal [(Default,"return #1")])) [core])
+                          return (resTp, eff, Core.App (Core.Var (Core.TName nameReturn typeReturn (Just nameRng))
+                                                (Core.InfoExternal [(Default,"return #1")])) [core] (Just rng))
 -- | Assign expression
 inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,rexpr)] rng) | name == nameAssign
   = case lval of
@@ -652,7 +650,7 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
   where
     errorAssignable
       = do contextError rng (getRange lval) (text "not an assignable expression") [(text "because",text "an assignable expression must be an application, index expression, or variable")]
-           return (typeUnit,typeTotal,Core.Con (Core.TName (nameTuple 0) typeUnit) (Core.ConEnum nameTpUnit Core.DataEnum valueReprZero 0))
+           return (typeUnit,typeTotal,Core.Con (Core.TName (nameTuple 0) typeUnit (Just $ getRange lval)) (Core.ConEnum nameTpUnit Core.DataEnum valueReprZero 0) Nothing)
 
     checkAssign
       = Check "an assignable identifier must have a reference type"
@@ -869,15 +867,15 @@ inferExpr propagated expect (Inject label expr behind rng)
                  Just coreHTag
                    -> do (maskQName,maskTp,maskInfo) <- resolveFunName nameMaskAt (CtxFunArgs False 3 [] Nothing) rng rng
                          (evvIndexQName,evvIndexTp,evvIndexInfo) <- resolveFunName nameEvvIndex (CtxFunArgs False 1 [] Nothing) rng rng
-                         let coreMask = coreExprFromNameInfo maskQName maskInfo
-                             coreIndex= Core.App (Core.TypeApp (coreExprFromNameInfo evvIndexQName evvIndexInfo) [effTo])
-                                                 [coreHTag]
-                             core     = Core.App (Core.TypeApp coreMask [resTp,eff,effTo]) [coreIndex,coreLevel,exprCore]
+                         let coreMask = coreExprFromNameInfo maskQName maskInfo rng
+                             coreIndex= Core.App (Core.TypeApp (coreExprFromNameInfo evvIndexQName evvIndexInfo rng) [effTo])
+                                                 [coreHTag] Nothing
+                             core     = Core.App (Core.TypeApp coreMask [resTp,eff,effTo]) [coreIndex,coreLevel,exprCore] (Just rng)
                          return core
                  Nothing
                    -> do (maskQName,maskTp,maskInfo) <- resolveFunName nameMaskBuiltin (CtxFunArgs False 1 [] Nothing) rng rng
-                         let coreMask = coreExprFromNameInfo maskQName maskInfo
-                             core     = Core.App (Core.TypeApp coreMask [resTp,eff,effTo]) [exprCore]
+                         let coreMask = coreExprFromNameInfo maskQName maskInfo rng
+                             core     = Core.App (Core.TypeApp coreMask [resTp,eff,effTo]) [exprCore] (Just rng)
                          return core
        return (resTp,effTo,core)
 
@@ -1195,7 +1193,7 @@ effectNameCore effect range
            typeConName tc == nameTpNHandled || typeConName tc == nameTpNHandled1)
         -> do let effName = effectNameFromLabel hx
               (effectNameVar,_,effectNameInfo) <- resolveName (toEffectTagName effName) Nothing range
-              let effectNameCore = coreExprFromNameInfo effectNameVar effectNameInfo
+              let effectNameCore = coreExprFromNameInfo effectNameVar effectNameInfo range
               return (Just effectNameCore,effName)
       -- builtin effect
       _ -> do let effName = effectNameFromLabel effect
@@ -1339,12 +1337,12 @@ inferApp propagated expect fun nargs rng
                                 let vargs = zip vars [(i,carg) | (carg,(i,_)) <- zip coreArgs iargs]
                                     eargs = sortBy (\(_,(i,_)) (_,(j,_)) -> compare i j) vargs
                                     defs  = [Core.DefNonRec (Core.Def var (Core.typeOf arg) arg Core.Private DefVal InlineAuto rangeNull "") | (var,(_,arg)) <- eargs]
-                                    cargs = [Core.Var (Core.TName var (Core.typeOf arg)) Core.InfoNone | (var,(_,arg)) <- vargs]
+                                    cargs = [Core.Var (Core.TName var (Core.typeOf arg) Nothing) Core.InfoNone | (var,(_,arg)) <- vargs]
                                 if (Core.isTotal fcore)
                                 then return (Core.makeLet defs (coreApp fcore cargs))
                                 else do fname <- uniqueName "fct"
                                         let fdef = Core.DefNonRec (Core.Def fname ftp fcore Core.Private (defFun [] {-all own, TODO: maintain borrow annotations?-}) InlineAuto rangeNull "")
-                                            fvar = Core.Var (Core.TName fname ftp) Core.InfoNone
+                                            fvar = Core.Var (Core.TName fname ftp Nothing) Core.InfoNone
                                         return (Core.Let (fdef:defs) (coreApp fvar cargs))
            -- take top effect
            -- todo: sub effecting should add core terms
@@ -1497,7 +1495,7 @@ inferLam topLevel propagated expect bindersL body0 rng
         -- traceDefDoc $ \env -> text " inferExpr.Lam: topeff: " <+> ppType env topEff
         parTypes2 <- subst (map binderType binders1)
         let optPars   = zip (map binderName binders1) parTypes2 -- (map binderName binders1) parTypes2
-            bodyCore1 = Core.addLambdas optPars topEff (Core.Lam [] topEff (coref core))
+            bodyCore1 = Core.addLambdas (zip (map binderNameRange binders1) optPars) topEff (Core.Lam [] topEff (coref core))
         bodyCore2 <- subst bodyCore1
         let pars = optPars
                   {- zipWith renameImplicitParams bindersL optPars
@@ -1576,7 +1574,7 @@ inferVar propagated expect name rng isRhs  | isConstructorName name
                                             -- trace "no creator found" $
                                             do return (qname1,tp1,info1)
                                else return (qname1,tp1,info1)
-       let coreVar = coreExprFromNameInfo qname info
+       let coreVar = coreExprFromNameInfo qname info rng
        addRangeInfo rng (RM.Id (infoCanonicalName qname1 info1) (RM.NICon tp (infoDocString info1)) [] False)
        (itp,coref) <- maybeInstantiate rng expect tp
        -- traceDoc $ \env -> text "Type.Infer.Con: " <+> ppName env qname <+> text ":" <+> ppType env itp
@@ -1621,7 +1619,7 @@ inferVarName propagated expect name rng isRhs (qname,tp,info)
                     -> do mod  <- getModuleName
                           return (tp,eff,fcore mod rng)
                   Nothing
-                    -> do let coreVar = coreExprFromNameInfo qname info
+                    -> do let coreVar = coreExprFromNameInfo qname info rng
                               fixedEffect = case splitFunScheme tp of
                                               Just (_, _, eff, _) -> isEffectFixed eff
                                               _ -> False
@@ -1743,14 +1741,14 @@ inferCase propagated expect expr branches isLazyMatch rng
                     then do -- traceDefDoc $ \penv -> text "match force:" <+> prettyDataInfo penv False False  dataInfo
                             let forceName = lazyName dataInfo "force"
                             (force,forceTp,forceInfo) <- resolveFunName forceName (CtxFunArgs False 1 [] Nothing) rng (getRange expr)
-                            let cforce   = coreExprFromNameInfo force forceInfo
+                            let cforce   = coreExprFromNameInfo force forceInfo rng
                             case ccore0 of
-                              Core.App (Core.Var fname _) [_] | force == Core.getName fname -> return ccore0 -- don't duplicate as force(force(expr)) -- this can happen in Kind/Infer where force is explicitly inserted sometimes
+                              Core.App (Core.Var fname _) [_] _ | force == Core.getName fname -> return ccore0 -- don't duplicate as force(force(expr)) -- this can happen in Kind/Infer where force is explicitly inserted sometimes
                               _ -> do (ftp,_,coref) <- instantiate rng forceTp
                                       case splitFunType ftp of
                                         Just (_,eff,rtp) -> do inferUnify (Infer rng) (getRange expr) ctp rtp
                                                                inferUnify (checkEffectSubsume rng) (getRange expr) eff resEff
-                                      return $ Core.App (coref cforce) [ccore0]
+                                      return $ Core.App (coref cforce) [ccore0] Nothing
                   else return ccore0
        -- return core
        core    <- subst (Core.Case [ccore1] cbranches)
@@ -1833,9 +1831,9 @@ inferBranch patkind propagated matchType matchRange matchedNames branch@(Branch 
     extractInfGamma :: Core.Pattern -> Inf [(Name,Type)]
     extractInfGamma pattern
       = case pattern of
-          Core.PatVar (Core.TName name tp) pat -> do stp <- subst tp
-                                                     xs  <- extractInfGamma pat
-                                                     return ((name,stp) : xs)
+          Core.PatVar (Core.TName name tp _) pat -> do stp <- subst tp
+                                                       xs  <- extractInfGamma pat
+                                                       return ((name,stp) : xs)
           Core.PatCon _ args _ _ _ _ _ _   -> do xss <- mapM extractInfGamma args
                                                  return (concat xss)
           Core.PatWild                     -> return []
@@ -1908,11 +1906,11 @@ inferPattern patkind matchType branchRange (PatCon name patterns0 nameRange rang
            -}
            (pcore,coreGuards) <-
                if (null xvars)
-                  then return (Core.PatCon (Core.TName qname conRho) cpatterns repr (map snd conParTps) [] conResTp coninfo False, coreGuards0)
+                  then return (Core.PatCon (Core.TName qname conRho Nothing) cpatterns repr (map snd conParTps) [] conResTp coninfo False, coreGuards0)
                   else do (bindExists,subExists) <- Op.freshSub Bound xvars
                           let -- bindExists = [(TypeVar id kind Bound) | (TypeVar id kind _) <- xvars]
                               -- subExists  = subNew [(TypeVar id kind Skolem, TVar (TypeVar id kind Bound)) | TypeVar id kind _ <- bindExists]
-                              pcore      = Core.PatCon (Core.TName qname conRho) (subExists |-> cpatterns) repr (subExists |-> (map snd conParTps)) bindExists conResTp coninfo False
+                              pcore      = Core.PatCon (Core.TName qname conRho Nothing) (subExists |-> cpatterns) repr (subExists |-> (map snd conParTps)) bindExists conResTp coninfo False
                               coreGuards = subExists |-> coreGuards0
                           -- trace ("skolemized: " ++ show xvars) $
                           return (pcore,coreGuards)
@@ -1947,7 +1945,7 @@ inferPattern patkind matchType branchRange (PatVar binder) withPattern inferPart
         sd <- getScopeDepth
         let infGamma = ([(binderName binder,(createNameInfoX Public (binderName binder) sd DefVal (binderNameRange binder) matchType ""))] ++ infGamma0)
         (btpeffs,x) <- inferPart infGamma
-        res <- withPattern (Core.PatVar (Core.TName (binderName binder) matchType) cpat) x
+        res <- withPattern (Core.PatVar (Core.TName (binderName binder) matchType (Just $ binderNameRange binder)) cpat) x
         return (btpeffs,res)
 
 inferPattern patkind matchType branchRange (PatWild range) withPattern inferPart
@@ -2095,12 +2093,12 @@ inferOptionals scopeDepth allowImplictMask eff infgamma (par:pars)
             dataInfo <- findDataInfo nameTpOptional
             (coreNameOpt,coreTpOpt,coreReprOpt,conInfoOpt) <- resolveConName nameOptional Nothing fullRange
             (coreNameOptNone,coreTpOptNone,coreReprOptNone,conInfoOptNone) <- resolveConName nameOptionalNone Nothing fullRange
-            let tempName = Core.TName temp tp
-            let parName  = Core.TName (binderName par) optTp
+            let tempName = Core.TName temp tp Nothing
+            let parName  = Core.TName (binderName par) optTp (Just $ binderNameRange par)
                 corePar = Core.Var parName Core.InfoNone
                 coreResTp = TApp (TCon (TypeCon (dataInfoName dataInfo) (dataInfoKind dataInfo))) [tp]
                 init = Core.Case [corePar]
-                       [  Core.Branch [ Core.PatCon (Core.TName coreNameOpt coreTpOpt)
+                       [  Core.Branch [ Core.PatCon (Core.TName coreNameOpt coreTpOpt Nothing)
                                                     [Core.PatVar tempName Core.PatWild]
                                                     (coreReprOpt)
                                                     [tp]
@@ -2110,7 +2108,7 @@ inferOptionals scopeDepth allowImplictMask eff infgamma (par:pars)
                                                     False
                                       ]
                                       [ Core.Guard   Core.exprTrue (Core.Var tempName Core.InfoNone) ]
-                       ,  Core.Branch [ Core.PatCon (Core.TName coreNameOptNone coreTpOptNone)
+                       ,  Core.Branch [ Core.PatCon (Core.TName coreNameOptNone coreTpOptNone Nothing)
                                                     []
                                                     (coreReprOptNone)
                                                     []
@@ -2122,7 +2120,7 @@ inferOptionals scopeDepth allowImplictMask eff infgamma (par:pars)
                                       [ Core.Guard   Core.exprTrue coreExpr ]
                        ]
                 def  = Core.Def local partp init Private DefVal InlineNever (binderNameRange par) ""
-                sub  = [(Core.TName (binderName par) tp, Core.Var (Core.TName local partp) Core.InfoNone)]
+                sub  = [(Core.TName (binderName par) tp (Just $ binderNameRange par), Core.Var (Core.TName local partp Nothing) Core.InfoNone)]
                 -- coref core
                 --   = Core.Let [Core.DefNonRec def] ((CoreVar.|~>) sub core)
 
@@ -2377,7 +2375,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
   = case tp of
        TFun pars eff res   -> do iargs <- matchParameters pars fresolved fixed named
                                  -- trace ("matched parameters: " ++ show (pars,map fst args)) $
-                                 return (iargs,pars,eff,res,Core.App)
+                                 return (iargs,pars,eff,res,(\f as -> Core.App f as (Just context)))
        TSyn _ _ t          -> matchFunTypeArgs context fun t fresolved fixed named
        TVar tv             -> do if (null named)  -- TODO: take fresolved into account
                                   then return ()
@@ -2387,7 +2385,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
                                  tres  <- Op.freshStar
                                  -- trace ("Type.matchFunType: " ++ show tv ++ ": " ++ show (targs,teff,tres)) $
                                  extendSub (subSingle tv (TFun targs teff tres))
-                                 return (zip [0..] (map (\x -> ArgExpr x False) (fixed ++ map snd named)), targs,teff,tres,Core.App)
+                                 return (zip [0..] (map (\x -> ArgExpr x False) (fixed ++ map snd named)), targs,teff,tres,(\f as -> Core.App f as (Just context)))
        _  -> do -- apply the copy constructor if we can find it
                 matches <- lookupNameCtx isInfoValFunExt nameCopy (CtxFunTypes True [tp] [] Nothing) range
                 case matches of
@@ -2395,8 +2393,8 @@ matchFunTypeArgs context fun tp fresolved fixed named
                     -> do (contp,_,coreInst) <- instantiateEx range (infoType info)
                           (iargs,pars,eff,res,_) <- matchFunTypeArgs context fun contp fresolved (fun:fixed) named
                           let coreAddCopy core coreArgs
-                                = let coreVar = coreExprFromNameInfo qname info
-                                  in (Core.App (coreInst coreVar) (seqqList coreArgs))
+                                = let coreVar = coreExprFromNameInfo qname info range
+                                  in (Core.App (coreInst coreVar) (seqqList coreArgs) (Just context))
                           return (iargs,pars,eff,res,coreAddCopy)
                   _ -> reportNonCallable
   where
@@ -2415,9 +2413,9 @@ matchFunTypeArgs context fun tp fresolved fixed named
       = return (pars,[])
     matchFixed ((name,tp):pars) ((i,arg):fixed) fresolved
       = case lookup i fresolved of
-          Just (crng,ctp,ceff,carg) ->
-            do (newtp,newarg) <- if (isOptional tp)
-                                   then return (makeOptionalType ctp, Core.wrapOptional ctp carg)
+          Just (crng,ctp,ceff,carg) -> 
+            do (newtp,newarg) <- if (isOptional tp) 
+                                   then return (makeOptionalType ctp, Core.wrapOptional ctp carg Nothing)
                                    else return (ctp,carg)
                (prest,rest) <- matchFixed pars fixed fresolved
                return (prest, (i,ArgCore (crng,newtp,ceff,newarg)):rest)
@@ -2516,7 +2514,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
       = do
          hints <- shadowHints
          typeError context range (text "only functions or types with a copy constructor can be applied") tp hints
-         return (zip [1..] (map (\x -> ArgExpr x True) (fixed ++ map snd named)), [], typeTotal, typeUnit, Core.App)
+         return (zip [1..] (map (\x -> ArgExpr x True) (fixed ++ map snd named)), [], typeTotal, typeUnit, (\f as -> Core.App f as (Just context)))
       where
         shadowHints
           = case fun of
@@ -2624,20 +2622,20 @@ find range rm
       Just x -> x
       Nothing -> failure ("Type.Infer.find: could not find: " ++ show range)
 
-coreVector:: Type -> [Core.Expr] -> Inf Core.Expr
-coreVector tp cs
+coreVector:: Maybe Range -> Type -> [Core.Expr] -> Inf Core.Expr
+coreVector rng tp cs
   = do (vecName,vecTp,vecInfo) <- resolveFunName nameVector (CtxFunArgs False 0 [newName "xs"] Nothing) rangeNull rangeNull -- todo: lookup vector less fragile?
-       xs <- coreList tp cs
-       return (Core.App (Core.TypeApp (coreExprFromNameInfo vecName vecInfo) [tp]) [xs])
+       xs <- coreList rng tp cs
+       return (Core.App (Core.TypeApp (coreExprFromNameInfo vecName vecInfo rangeNull) [tp]) [xs] rng) 
 
 
-coreList :: Type -> [Core.Expr] -> Inf Core.Expr
-coreList tp cs
+coreList :: Maybe Range -> Type -> [Core.Expr] -> Inf Core.Expr
+coreList rng tp cs
   = do (consName,consTp,consRepr,_) <- resolveConName nameCons Nothing rangeNull
        (nilName,nilTp,nilRepr,_) <- resolveConName nameListNil Nothing rangeNull
-       let consx = Core.TypeApp (Core.Con (Core.TName consName consTp) consRepr) [tp]
-           cons x xs = Core.App consx (seqqList [x,xs])
-           nil  = Core.TypeApp (Core.Con (Core.TName nilName nilTp) nilRepr) [tp]
+       let consx = Core.TypeApp (Core.Con (Core.TName consName consTp Nothing) consRepr rng) [tp]
+           cons x xs = Core.App consx (seqqList [x,xs]) rng
+           nil  = Core.TypeApp (Core.Con (Core.TName nilName nilTp Nothing) nilRepr rng) [tp]
        return (foldr cons nil cs)
 
 unzip4 xs = unzipx4 [] [] [] [] xs
@@ -2698,7 +2696,7 @@ shortCircuit fun [expr1,expr2]
 
     isAndOr expr
       = case expr of
-          Core.App (Core.TypeApp (Core.Var open _) _) [body]  | Core.getName open == nameEffectOpen
+          Core.App (Core.TypeApp (Core.Var open _) _) [body] Nothing | Core.getName open == nameEffectOpen
             -> isAndOr body
           Core.Var name _ | Core.getName name == nameAnd
             -> exprAnd

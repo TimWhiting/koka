@@ -1189,7 +1189,8 @@ ccFlagsBuildFromFlags cc flags
 gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
           words "-Wno-unknown-pragmas -Wno-missing-field-initializers" ++
           words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value" ++
-          words "-Wno-unused-but-set-variable"
+          words "-Wno-unused-but-set-variable" ++
+          words "-Wno-unused-function"
 
 ccGcc :: String -> FilePath -> Bool -> CC
 ccGcc name path hasOptG

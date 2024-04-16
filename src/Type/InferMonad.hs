@@ -102,8 +102,8 @@ import Lib.PPrint
 import Common.Range hiding (Pos)
 import Common.Unique
 import Common.Failure
-import Common.Error
-import Common.Syntax( Visibility(..), DefSort(..))
+import Common.Error(Error, ErrorKind(..), toWarning, ok, addWarnings, errorMessageKind, errorMsg)
+import Common.Syntax( Visibility(..))
 import Common.File(endsWith,normalizeWith, seqqList)
 import Common.Name
 import Common.NamePrim(nameTpVoid,nameTpPure,nameTpIO,nameTpST,nameTpAsyncX,
