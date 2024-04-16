@@ -59,7 +59,7 @@ module Type.Type (-- * Types
                   , isTau, isRho, isTVar, isTCon
                   , tconTotal, tconList
                   , isTypeTotal
-                  , isTypeBool, isTypeInt, isTypeString, isTypeChar
+                  , isTypeBool, isTypeInt, isTypeString, isTypeChar, isTypeInt32
                   , isTypeUnit
                   , isTypeLocalVar
                   , isValueOperation, makeValueOperation
@@ -523,6 +523,8 @@ isTypeInt _         = False
 typeInt32 :: Tau
 typeInt32
   = TCon (TypeCon nameTpInt32 kindStar)
+isTypeInt32 (TCon tc) = tc == (TypeCon nameTpInt32 kindStar)
+isTypeInt32 _         = False
 
 typeEvIndex :: Tau
 typeEvIndex

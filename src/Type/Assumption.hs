@@ -153,13 +153,13 @@ coreVarInfoFromNameInfo info
       InfoExternal _ _ _ format _ _ _ -> Core.InfoExternal format
       _                               -> matchFailure "Type.Infer.coreVarInfoFromNameInfo"
 
-coreExprFromNameInfo qname info
+coreExprFromNameInfo qname info rng
   = -- trace ("create name: " ++ show qname) $
     case info of
-      InfoVal vis cname tp _ _ _ _           -> Core.Var (Core.TName cname tp) (Core.InfoNone)
-      InfoFun vis cname tp ((m,n)) _ _ _     -> Core.Var (Core.TName cname tp) (Core.InfoArity m n)
-      InfoCon vis  tp repr _ _ _             -> Core.Con (Core.TName qname tp) repr
-      InfoExternal vis cname tp format _ _ _ -> Core.Var (Core.TName cname tp) (Core.InfoExternal format)
+      InfoVal vis cname tp _ _ _ _           -> Core.Var (Core.TName cname tp (Just rng)) (Core.InfoNone)
+      InfoFun vis cname tp ((m,n)) _ _ _     -> Core.Var (Core.TName cname tp (Just rng)) (Core.InfoArity m n)
+      InfoCon vis  tp repr _ _ _             -> Core.Con (Core.TName qname tp (Just rng)) repr
+      InfoExternal vis cname tp format _ _ _ -> Core.Var (Core.TName cname tp (Just rng)) (Core.InfoExternal format)
       InfoImport _ _ _ _ _                   -> matchFailure "Type.Infer.coreExprFromNameInfo"
 
 
