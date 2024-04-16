@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-module Core.Demand.StaticContext(
+module Core.FlowAnalysis.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,
@@ -21,19 +21,21 @@ module Core.Demand.StaticContext(
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,
                           basicExprOf,defOf,defsOf,defOfCtx,
                           lookupDefGroup,lookupDefGroups,lookupDef,
-                          showSimpleContext,
-                          isMain
+                          showSimpleContext,isLetDefBindingFinished,
+                          letDefBinding,letDefBindingIndex,letDefsOf,
+                          isMain,
+                          fvs, dfsTNames, dgsTNames, dgTNames, localFv
                         ) where
 import Core.Core as C
 import Common.Name
 import Compile.Module
 import Type.Type
-import Data.Set hiding (map)
 import Type.Pretty
 import Syntax.Syntax as S
+import qualified Data.Set as S
 import Common.Range
 import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
-import Core.CoreVar (bv)
+import Core.CoreVar (bv, fv)
 import Core.Pretty
 import Debug.Trace (trace)
 import Data.List (intercalate, intersperse, minimumBy)
@@ -112,7 +114,16 @@ instance Ord Type where
 instance Eq C.Def where
   def1 == def2 = C.defName def1 == C.defName def2 && C.defType def1 == C.defType def2
 
-type ExpressionSet = Set ExprContextId
+type ExpressionSet = S.Set ExprContextId
+
+localFv :: C.Expr -> S.Set TName
+localFv expr
+  = S.fromList $ filter (not . isQualified . C.getName) (tnamesList (fv expr)) -- trick: only local names are not qualified
+
+fvs :: HasCallStack => ExprContext -> S.Set TName
+fvs ctx =
+  case maybeExprOfCtx ctx of
+    Just expr -> localFv expr
 
 enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
@@ -137,6 +148,33 @@ enclosingDef ctx =
     _ -> case contextOf ctx
       of Just c -> enclosingDef c
          Nothing -> error "No parent def"
+
+enclosingHandle :: ExprContext -> ExprContext
+enclosingHandle ctx =
+  case maybeHandleInLambda ctx of
+    Just h -> h
+    Nothing -> error "No enclosing handle"
+
+maybeHandleInLambda :: ExprContext -> Maybe ExprContext
+maybeHandleInLambda ctx =
+  case maybeExprOfCtx ctx of
+    Just (C.App (C.TypeApp (C.Var tn _) _) _ _ ) | isHandleName (C.getName tn) -> Just ctx
+    _ -> case ctx of
+      LamCBody{} -> Nothing
+      _ -> maybeHandleInLambda =<< contextOf ctx
+
+-- Gets the name and the type of the effect
+maybeHandlerName :: ExprContext -> Maybe (Name,Type)
+maybeHandlerName ctx =
+  case exprOfCtx ctx of
+    C.App (C.TypeApp (C.Con tn _ _) _) vars _ | isHandlerConName (C.getName tn) ->
+      case splitFunScheme (C.typeOf tn) of
+        Just (_, cfc:(cln, TApp _ (_:_:(TApp tc@(TCon{}) _):_)):_, _, _) ->
+          trace ("maybeHandlerName: " ++ show (C.getName tn) ++ " " ++ show (pretty tc)) $
+          Just (fromHandlerConName (C.getName tn), tc)
+    e ->
+      case contextOf ctx of
+        Just c -> maybeHandlerName c
 
 ppContextPath :: ExprContext -> Doc
 ppContextPath ctx =
@@ -172,6 +210,48 @@ lamVarName index e =
     TypeLam _ c -> lamVarName index c
     TypeApp c _ -> lamVarName index c
     _ -> error ("DemandAnalysis.lamVarName: not a lambda " ++ show e)
+
+lamVarDef :: C.Def -> C.Expr
+lamVarDef def = C.Var (TName (C.defName def) (C.defType def) Nothing) InfoNone
+
+letDefsOf :: HasCallStack => ExprContext -> C.DefGroups
+letDefsOf ctx =
+  case exprOfCtx ctx of
+    C.Let defs _ -> defs
+    _ -> error "Not a let expression"
+
+isLetDefBindingFinished :: Int -> Int -> ExprContext -> Bool
+isLetDefBindingFinished defGroupIndex bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      length defs == defGroupIndex + 1 && 
+        let dfs = defs !! defGroupIndex
+        in length (defsOf dfs) == bindingIndex + 1
+
+letDefBinding :: Int -> Int -> ExprContext -> C.Def
+letDefBinding defGroupIndex bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      let dfs = defs !! defGroupIndex
+      in defsOf dfs !! bindingIndex
+
+letDefBindingIndex :: Int -> Int -> ExprContext -> Int
+letDefBindingIndex defGroupIndex bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      let dfs = sum $ map (length . defsOf) $ Prelude.take defGroupIndex defs
+      in dfs + bindingIndex      
+
+dgsTNames :: C.DefGroups -> [TName]
+dgsTNames = concatMap (\dg -> dfsTNames (defsOf dg))
+
+dfsTNames :: [C.Def] -> [TName]
+dfsTNames = map (\d -> TName (C.defName d) (C.defType d) Nothing)
+
+dgTNames :: C.DefGroup -> [TName]
+dgTNames (C.DefRec defs) = dfsTNames defs
+dgTNames (C.DefNonRec df) = [TName (C.defName df) (C.defType df) Nothing]
+
 simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
 
 showExpr :: C.Expr -> String
@@ -207,6 +287,53 @@ closestRange ctx =
         _ -> closestRange c
     ExprCBasic _ c _ -> closestRange c
     ExprPrim _ e -> rangeNull
+
+
+simplePrettyExprN :: Env -> Int -> C.Expr -> Doc
+simplePrettyExprN env n e =
+  if n <= 0 then text "."
+  else case e of
+    C.Var n _ -> prettyVar env n
+    C.App f args _ -> simplePrettyExprN env n f <.> argsdoc
+      where argsdoc =
+              if length args > 2 then
+                tupled (map (simplePrettyExprN env (n - 1)) args ++ [text "."])
+              else
+                tupled (map (simplePrettyExprN env (n - 1)) args)
+    C.Lam ns _ e -> text "(fn" <.> tupled (map (prettyVar env) ns) <+> indent 2 (simplePrettyExprN env (n - 1) e) <.> text ")"
+    C.Let dgs e -> vcat (map (simplePrettyDefGroup env n) dgs ++ [simplePrettyExprN env (n - 1) e])
+    C.Case e bs -> text "match" <+> simplePrettyExprN env (n - 1) (head e) <--> indent 2 (vcat (map (simplePrettyBranch env (n - 1)) bs))
+    C.TypeLam ns e -> text "(tfn()" <.> simplePrettyExprN env n e <.> text ")"
+    C.TypeApp e ts -> text "tapp(" <.> simplePrettyExprN env n e <.> text ")"
+    C.Con n _ _ -> prettyVar env n
+    C.Lit n -> case n of
+      C.LitChar c -> text (show c)
+      C.LitInt i -> text (show i)
+      C.LitFloat f -> text (show f)
+      C.LitString s -> text (show s)
+
+
+simplePrettyBranch :: Env -> Int -> C.Branch -> Doc
+simplePrettyBranch env n (C.Branch pat guards) =
+  let (env', patDoc) = prettyPattern env (head pat) in
+  patDoc <+> text "->" <--> indent 2 (simplePrettyExprN env' (n - 1) (C.guardExpr (head guards)))
+
+simplePrettyDefGroup :: Env -> Int -> C.DefGroup -> Doc
+simplePrettyDefGroup env n dg =
+  case dg of
+    C.DefNonRec d -> simplePrettyDef env n d
+    C.DefRec ds -> vcat (map (simplePrettyDef env n) ds)
+
+simplePrettyDef :: Env -> Int -> C.Def -> Doc
+simplePrettyDef env n d =
+  text "val" <+> pretty (C.defName d) <+> text "=" <--> indent 2 (simplePrettyExprN env n (C.defExpr d))
+
+simplePrettyExpr :: Env -> C.Expr -> Doc
+simplePrettyExpr env e = simplePrettyExprN env 4 e
+
+showSimpleExpr :: C.Expr -> String
+showSimpleExpr e = show $ simplePrettyExpr simpleEnv e
+
 
 showSimpleContext :: HasCallStack => ExprContext -> [Char]
 showSimpleContext ctx =
@@ -384,7 +511,7 @@ branchContainsBinding (C.Branch pat guards) name =
   name `elem` bv pat
 
 branchVars :: C.Branch -> [TName]
-branchVars (C.Branch pat guards) = Data.Set.toList $ bv pat
+branchVars (C.Branch pat guards) = S.toList $ bv pat
 
 findApplicationFromRange :: UserProgram -> Range -> Maybe UserExpr
 findApplicationFromRange prog rng =
