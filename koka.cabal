@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -50,6 +50,7 @@ library
       Common.Unique
       Compile.Build
       Compile.BuildContext
+      Compile.BuildMonad
       Compile.CodeGen
       Compile.Module
       Compile.Optimize
@@ -66,6 +67,13 @@ library
       Core.Core
       Core.CoreVar
       Core.CTail
+      Core.Demand.AbstractValue
+      Core.Demand.DemandAnalysis
+      Core.Demand.DemandMonad
+      Core.Demand.FixpointMonad
+      Core.Demand.Primitives
+      Core.Demand.StaticContext
+      Core.Demand.Syntax
       Core.Divergent
       Core.FunLift
       Core.Inline
@@ -143,11 +151,13 @@ library
     , containers
     , directory
     , hashable >=1.4
+    , isocline >=1.0.6
     , mtl
     , parsec
     , process
     , text
     , time
+    , transformers
   default-language: Haskell2010
   if os(windows)
     cpp-options: -DWINDOWS
@@ -219,6 +229,7 @@ executable koka
     , containers
     , directory
     , hashable >=1.4
+    , isocline >=1.0.6
     , koka
     , lens
     , lsp
@@ -231,6 +242,7 @@ executable koka
     , text
     , text-rope
     , time
+    , transformers
   default-language: Haskell2010
   if arch(wasm32)
     buildable: False
@@ -269,6 +281,7 @@ executable koka-lsp-wasm
     , containers
     , directory
     , hashable >=1.4
+    , isocline >=1.0.6
     , koka
     , lens
     , lsp
@@ -279,6 +292,7 @@ executable koka-lsp-wasm
     , text
     , text-rope
     , time
+    , transformers
   default-language: Haskell2010
   if !arch(wasm32)
     buildable: False
@@ -299,12 +313,14 @@ executable koka-plain
     , containers
     , directory
     , hashable >=1.4
+    , isocline >=1.0.6
     , koka
     , mtl
     , parsec
     , process
     , text
     , time
+    , transformers
   default-language: Haskell2010
   if arch(wasm32)
     buildable: False
@@ -325,12 +341,14 @@ executable koka-playground
     , containers
     , directory
     , hashable >=1.4
+    , isocline >=1.0.6
     , koka
     , mtl
     , parsec
     , process
     , text
     , time
+    , transformers
   default-language: Haskell2010
   if !arch(wasm32)
     buildable: False
@@ -359,6 +377,7 @@ test-suite koka-test
     , hashable >=1.4
     , hspec
     , hspec-core
+    , isocline >=1.0.6
     , json
     , koka
     , mtl
@@ -367,6 +386,7 @@ test-suite koka-test
     , regex-compat >=0.95.2.1
     , text
     , time
+    , transformers
   default-language: Haskell2010
   if arch(wasm32)
     buildable: False

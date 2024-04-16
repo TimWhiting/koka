@@ -16,6 +16,7 @@ module LanguageServer.Monad
     InlayHintOptions(..),
     SignatureContext(..), clearSignatureContext, updateSignatureContext, getSignatureContext,
     Colors(..), updateColorScheme, getColorScheme, toJSON, fromJSON,
+    DemandAnalysisOptions(..),
     defaultLSState,
     newLSStateVar,
     LSM,
@@ -25,13 +26,13 @@ module LanguageServer.Monad
     getInlayHintOptions,
     runLSM,
     getProgress, setProgress, maybeContents,
-
+    getBuildContext, updateBuildContext,
     liftBuild, liftBuildWith,
-    lookupModuleName, lookupRangeMap, lookupProgram, lookupLexemes,
+    lookupModuleName, lookupModule, lookupRangeMap, lookupProgram, lookupLexemes,
     lookupDefinitions, lookupVisibleDefinitions, Definitions(..),
     lookupModulePaths,
     getPrettyEnv, getPrettyEnvFor, prettyMarkdown,
-    emitInfo, emitNotification, getVirtualFileVersion
+    emitInfo, emitNotification, getVirtualFileVersion, getAnalysisOptions
 
   )
 where
@@ -75,6 +76,8 @@ import Kind.ImportMap (importsEmpty)
 import qualified Type.Pretty as TP
 import Compile.Options (Flags (..), flagsHash, prettyEnvFromFlags, verbose, Terminal(..))
 import Compile.BuildContext
+import Compile.BuildMonad(buildcLookupModule)
+import Compile.Module
 import LanguageServer.Conversions ({-toLspUri,-} fromLspUri)
 
 import Data.Map.Strict(Map)
@@ -186,6 +189,11 @@ defaultLSState flags = do
                          showInferredTypes=True,
                          showFullQualifiers=True
         }
+      },
+      analysisOpts=DemandAnalysisOptions{
+        callSensitivity=1,
+        debugAnalysis=False,
+        analysisGas=(-1)
       }
     }
   }
@@ -215,11 +223,12 @@ instance FromJSON KokaConfig where
   parseJSON _ = empty
 
 data Config = Config {
-  langServerOpts :: LanguageServerOptions
+  langServerOpts :: LanguageServerOptions,
+  analysisOpts :: DemandAnalysisOptions
 } deriving Show
 
 instance FromJSON Config where
-  parseJSON (A.Object v) = Config <$> v .: "languageServer"
+  parseJSON (A.Object v) = Config <$> v .: "languageServer" <*> v .: "analysis"
   parseJSON _ = empty
 
 data LanguageServerOptions = LanguageServerOptions {
@@ -248,6 +257,14 @@ instance FromJSON Colors where
   parseJSON (A.Object v) = Colors <$> v .: "mode"
   parseJSON _ = empty
 
+data DemandAnalysisOptions = DemandAnalysisOptions {
+  callSensitivity :: Int,
+  debugAnalysis :: Bool,
+  analysisGas :: Int
+} deriving Show
+
+instance FromJSON DemandAnalysisOptions where
+  parseJSON (A.Object v) = DemandAnalysisOptions <$> v .: "callSensitivity" <*> v .: "debug" <*> v .: "gas"
 
 setProgress :: Maybe (J.ProgressAmount -> LSM ()) -> LSM ()
 setProgress report = do
@@ -258,6 +275,7 @@ getProgress = progressReport <$> getLSState
 
 updateConfig :: A.Value -> LSM ()
 updateConfig cfg =
+  trace (show cfg) $
   case fromJSON cfg of
     A.Success cfg -> do
       -- trace ("Updating config to " ++ show cfg) $ return ()
@@ -287,6 +305,9 @@ getSignatureContext = signatureContext <$> getLSState
 
 getInlayHintOptions :: LSM InlayHintOptions
 getInlayHintOptions = inlayHintOpts . langServerOpts . config <$> getLSState
+
+getAnalysisOptions :: LSM DemandAnalysisOptions
+getAnalysisOptions = analysisOpts . config <$> getLSState
 
 getVirtualFileVersion :: J.NormalizedUri -> LSM (Maybe J.Int32)
 getVirtualFileVersion uri
@@ -359,6 +380,10 @@ getBuildContext
   = do ls <- getLSState
        return (buildContext ls)
 
+updateBuildContext :: BuildContext -> LSM ()
+updateBuildContext buildc
+  = modifyLSState (\s -> s{ buildContext = buildc })
+
 -- Module name from URI
 lookupModuleName :: J.NormalizedUri -> LSM (Maybe (FilePath,ModuleName))
 lookupModuleName uri
@@ -374,6 +399,11 @@ lookupLexemes :: ModuleName -> LSM (Maybe [Lexeme])
 lookupLexemes mname
   = do buildc <- getBuildContext
        return (buildcGetLexemes mname buildc)
+
+lookupModule :: ModuleName -> LSM (Maybe Module)
+lookupModule mname
+  = do buildc <- getBuildContext
+       return (buildcLookupModule mname buildc)
 
 -- RangeMap from module name
 lookupRangeMap :: ModuleName -> LSM (Maybe (RangeMap,[Lexeme]))

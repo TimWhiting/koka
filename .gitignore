@@ -25,7 +25,6 @@ test/test*.kk
 *.
 *~
 *.exe
-*.vsix
 *.bc
 *.i
 *.s
@@ -33,10 +32,14 @@ test/test*.kk
 bench
 test/bench
 .koka
-scratch
 .worktrees/
 .vite
 precompiled/
 ghc-rts.wasm
 SETUP.md
 cabal.project.local
+**/.cache
+scratch/
+kklib/libuv/
+libuv
+alex/

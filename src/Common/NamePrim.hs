@@ -45,7 +45,7 @@ module Common.NamePrim
           , nameConEv
           -}
 
-          , nameIntAdd, nameIntSub
+          , nameIntAdd, nameIntSub, coreIntName
 
           -- Effects
           , nameTpHTag, nameHTag

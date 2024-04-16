@@ -38,13 +38,16 @@ export class KokaConfig {
   showInferredTypes!: boolean
   showImplicitArguments!: boolean
   showFullQualifiers!: boolean
+  analysisCallSensitivity!: number
+  analysisGas!: number
+  analysisDebug!: boolean
 
   getLanguageServerArgs(): string[] {
     return ["--language-server", "--buildtag=vscode", ...this.includeDirs.map((d) => `-i${d}`), ...this.compilerArgs]
   }
 
   refreshConfig(): void {
-    this.enableDebugExtension = this.vsConfig.get('dev.debugExtension') as boolean
+    this.enableDebugExtension = this.vsConfig.get('dev.debugExtension') as boolean || this.vsConfig.get('analysis.debug') as boolean    
     this.cwd = expandHome(this.vsConfig.get('languageServer.workingDirectory')!) as string
     if (!this.cwd) {
       if (vscode.workspace.workspaceFolders)
@@ -64,6 +67,9 @@ export class KokaConfig {
     this.showImplicitArguments = this.vsConfig.get('languageServer.inlayHints.showImplicitArguments') as boolean ?? false;
     this.showInferredTypes = this.vsConfig.get('languageServer.inlayHints.showInferredTypes') as boolean ?? false;
     this.showFullQualifiers = this.vsConfig.get('languageServer.inlayHints.showFullQualifiers') as boolean ?? false;
+    this.analysisCallSensitivity = vsConfig.get('analysis.callSensitivityDepth') as number ?? 1;
+    this.analysisGas = vsConfig.get('analysis.gas') as number ?? -1;
+    this.analysisDebug = vsConfig.get('analysis.debug') as boolean ?? true;
   }
 
   selectTarget(t: string) {

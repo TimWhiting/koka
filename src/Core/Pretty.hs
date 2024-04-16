@@ -9,7 +9,7 @@
 -}
 -----------------------------------------------------------------------------
 
-module Core.Pretty( prettyCore, prettyExpr, prettyPattern, prettyDef, prettyDefs, prettyDefGroup, source ) where
+module Core.Pretty( prettyCore, prettyExpr, prettyVar, prettyPattern, prettyDef, prettyDefs, prettyDefGroup, source ) where
 
 import Lib.Trace
 import Data.Char( isAlphaNum )
@@ -28,6 +28,7 @@ import Kind.ImportMap
 import Type.Type
 import Type.TypeVar
 import Type.Pretty
+import Common.Range (showRange)
 
 {--------------------------------------------------------------------------
   Show pretty names (rather than numbers)
@@ -330,7 +331,7 @@ prettyExpr :: Env -> Expr -> Doc
 prettyExpr env lam@(Lam tnames eff expr)
   = pparens (prec env) precArrow $
     keyword env "fn" <.>
-      (if isTypeTotal eff then empty else color (colorType (colors env)) (text "<" <.> prettyType env' eff <.> text ">")) <.>
+      (if (coreShowTypes env) then (if isTypeTotal eff then empty else color (colorType (colors env)) (text "<" <.> prettyType env' eff <.> text ">")) else empty) <.>
       tupled [prettyTName env' tname | tname <- tnames] <.> text "{" <-->
       tab (prettyExpr env expr <.> semi) <-->
       text "}"
@@ -347,7 +348,7 @@ prettyExpr env (Var tname varInfo)
           InfoExternal f -> empty -- braces (text"@")
           _ -> empty
 
-prettyExpr env (App a args)
+prettyExpr env (App a args _)
   = pparens (prec env) precApp $
     prettyExpr (decPrec env') a <.> tupled [prettyExpr env' a | a <- args]
   where
@@ -371,7 +372,7 @@ prettyExpr env (TypeApp expr tps)
     env'' = env { prec = precTop }
 
 -- Literals and constants
-prettyExpr env (Con tname repr)
+prettyExpr env (Con tname repr _)
   = -- prettyTName env tname
     prettyVar env tname
 
@@ -404,10 +405,10 @@ prettyExpr env (Case exprs branches)
 
 prettyVar env tname
   = if (coreIface env)
-      then prettyCoreName (colors env) (getName tname)
-      else prettyName (colors env) (getName tname)
+      then prettyCoreName (colors env) name
+      else prettyName (colors env) name
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
-
+  where name = (if (noFullNames env) then (unqualify (getName tname)) else (getName tname)) 
 {--------------------------------------------------------------------------
   Case branches
 --------------------------------------------------------------------------}
@@ -469,7 +470,7 @@ prettyPattern env pat
     commaSep = hcat . punctuate comma
 
     prettyConName env tname
-      = pretty (getName tname)
+      = if (noFullNames env) then pretty (unqualify (getName tname)) else pretty (getName tname)
         --  if (coreShowTypes env) then prettyTName env tname else pretty (getName tname)
 
 {--------------------------------------------------------------------------
@@ -497,8 +498,8 @@ showXChar c
 --------------------------------------------------------------------------}
 
 prettyTName :: Env -> TName -> Doc
-prettyTName env (TName name tp)
-  = prettyCoreName (colors env) name <.> text ":" <+> ppType env tp
+prettyTName env (TName name tp _)
+  = prettyCoreName (colors env) name <.> (if coreShowTypes env then text ":" <+> ppType env tp else empty)
 
 
 prettyModuleName :: Env -> Name -> Doc
@@ -657,11 +658,11 @@ instance HasTypeVar Expr where
     = case expr of
         Lam tnames eff expr -> Lam (sub `substitute` tnames) (sub `substitute` eff) (sub `substitute` expr)
         Var tname info    -> Var (sub `substitute` tname) info
-        App f args        -> App (sub `substitute` f) (sub `substitute` args)
+        App f args rng       -> App (sub `substitute` f) (sub `substitute` args) rng
         TypeLam tvs expr  -> let sub' = subRemove tvs sub
                               in TypeLam tvs (sub' |-> expr)
         TypeApp expr tps   -> TypeApp (sub `substitute` expr) (sub `substitute` tps)
-        Con tname repr     -> Con (sub `substitute` tname) repr
+        Con tname repr rng -> Con (sub `substitute` tname) repr rng
         Lit lit            -> Lit lit
         Let defGroups expr -> Let (sub `substitute` defGroups) (sub `substitute` expr)
         Case exprs branches -> Case (sub `substitute` exprs) (sub `substitute` branches)
@@ -670,10 +671,10 @@ instance HasTypeVar Expr where
     = let tvs = case expr of
                   Lam tname eff expr -> tvsUnions [ftv tname, ftv eff, ftv expr]
                   Var tname info     -> ftv tname
-                  App a b            -> ftv a `tvsUnion` ftv b
+                  App a b _           -> ftv a `tvsUnion` ftv b
                   TypeLam tvs expr   -> tvsRemove tvs (ftv expr)
                   TypeApp expr tp    -> ftv expr `tvsUnion` ftv tp
-                  Con tname repr     -> ftv tname
+                  Con tname repr _   -> ftv tname
                   Lit lit            -> tvsEmpty
                   Let defGroups expr -> ftv defGroups `tvsUnion` ftv expr
                   Case exprs branches -> ftv exprs `tvsUnion` ftv branches
@@ -684,10 +685,10 @@ instance HasTypeVar Expr where
     = case expr of
         Lam tname eff expr -> tvsUnions [btv tname, btv eff, btv expr]
         Var tname info     -> btv tname
-        App a b            -> btv a `tvsUnion` btv b
+        App a b _            -> btv a `tvsUnion` btv b
         TypeLam tvs expr   -> tvsInsertAll tvs (btv expr)
         TypeApp expr tp    -> btv expr `tvsUnion` btv tp
-        Con tname repr     -> btv tname
+        Con tname repr _   -> btv tname
         Lit lit            -> tvsEmpty
         Let defGroups expr -> btv defGroups `tvsUnion` btv expr
         Case exprs branches -> btv exprs `tvsUnion` btv branches
@@ -696,10 +697,10 @@ instance HasTypeVar Expr where
     = let tcs = case expr of
                   Lam tname eff expr -> tcsUnions [ftc tname, ftc eff, ftc expr]
                   Var tname info     -> ftc tname
-                  App a b            -> ftc a `tcsUnion` ftc b
+                  App a b _            -> ftc a `tcsUnion` ftc b
                   TypeLam tvs expr   -> ftc expr
                   TypeApp expr tp    -> ftc expr `tcsUnion` ftc tp
-                  Con tname repr     -> ftc tname
+                  Con tname repr _   -> ftc tname
                   Lit lit            -> tcsEmpty
                   Let defGroups expr -> ftc defGroups `tcsUnion` ftc expr
                   Case exprs branches -> ftc exprs `tcsUnion` ftc branches
@@ -769,11 +770,11 @@ instance HasTypeVar Pattern where
          tcs
 
 instance HasTypeVar TName where
-  sub `substitute` (TName name tp)
-    = TName name (sub `substitute` tp)
-  ftv (TName name tp)
+  sub `substitute` (TName name tp rng)
+    = TName name (sub `substitute` tp) rng
+  ftv (TName name tp _)
     = ftv tp
-  btv (TName name tp)
+  btv (TName name tp _)
     = btv tp
-  ftc (TName name tp)
+  ftc (TName name tp _)
     = ftc tp
