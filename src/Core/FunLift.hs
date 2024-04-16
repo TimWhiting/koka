@@ -24,7 +24,6 @@ import Common.Failure
 import Common.Name
 import Common.Range
 import Common.Unique
-import Common.Error
 import Common.Syntax
 
 import Kind.Kind
@@ -166,10 +165,10 @@ liftExpr :: Bool
          -> Lift Expr
 liftExpr topLevel expr
   = case expr of
-    App f args
+    App f args rng
       -> do f' <- liftExpr False f
             args' <- mapM (liftExpr False) args
-            return (App f' args')
+            return (App f' args' rng)
 
     Lam args eff body  -- don't lift anonymous functions
       -> do body' <- liftExpr False body
@@ -231,8 +230,8 @@ makeDef fvs tvs (pinfos, (origName, (expr, doc)))
           (Lam pars eff lbody)                 -> ([], map unwild pars, eff, lbody)
           _ -> failure $ ("Core.FunLift.makeDef: lifting non-function? " ++ show expr)
 
-    unwild (TName name tp)
-      = TName (if isWildcard name then prepend "wild" name else name) tp
+    unwild (TName name tp rng)
+      = TName (if isWildcard name then prepend "wild" name else name) tp rng
 
     alltpars = tvs ++ tpars
     allpars  = fvs ++ pars
@@ -246,13 +245,13 @@ makeDef fvs tvs (pinfos, (origName, (expr, doc)))
               $ "// lifted local: " ++ concat (intersperse ", " (map (show . unqualify) (dnames ++ [getName origName]))) ++ "\n" ++ doc
 
     funExpr name
-      = Var (TName name liftedTp) (InfoArity (length alltpars) (length allargs))
+      = Var (TName name liftedTp (originalRange origName)) (InfoArity (length alltpars) (length allargs))
 
     etaExpr name
       = case (tvs,fvs) of
          ([],[]) -> funExpr name
          _ -> addTypeLambdas tpars $ Lam pars eff $
-               App (addTypeApps (alltpars) (funExpr name)) (allargs)
+               App (addTypeApps (alltpars) (funExpr name)) (allargs) Nothing
 
 liftBranch :: Branch -> Lift Branch
 liftBranch (Branch pat guards)
@@ -280,10 +279,10 @@ uniqueNameCurrentDef =
 isSimpleFunc :: Expr -> Bool
 isSimpleFunc expr =
   case expr of
-    Lam pars _ (App _ args) -> all isSimpleArg args
-    TypeLam tpars (Lam pars _ (App (TypeApp _ targs) args))
+    Lam pars _ (App _ args rng) -> all isSimpleArg args
+    TypeLam tpars (Lam pars _ (App (TypeApp _ targs) args rng))
       -> all isSimpleTArg targs && all isSimpleArg args
-    TypeLam tpars (Lam pars _ (App _ args)) -> all isSimpleArg args
+    TypeLam tpars (Lam pars _ (App _ args rng)) -> all isSimpleArg args
     _ -> False
  where -- The definition of simple arguments can be extended.
        isSimpleTArg TCon{}        = True
@@ -294,7 +293,7 @@ isSimpleFunc expr =
        isSimpleArg Con{}      = True
        isSimpleArg Lit{}      = True
        isSimpleArg (Var x _)  = True
-       isSimpleArg (App e es) = all isSimpleArg (e:es)
+       isSimpleArg (App e es rng) = all isSimpleArg (e:es)
        isSimpleArg _          = False
 
 {--------------------------------------------------------------------------

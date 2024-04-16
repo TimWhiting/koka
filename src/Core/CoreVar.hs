@@ -70,7 +70,7 @@ isTopLevel (Def name tp expr vis isVal inl nameRng doc)
 
 freeLocals :: HasExpVar a => a -> TNames
 freeLocals expr
-  = S.filter (\(TName nm _) -> not (isQualified nm)) (fv expr)
+  = S.filter (\(TName nm _ _) -> not (isQualified nm)) (fv expr)
 
 
 -- | Add kind and type application
@@ -115,7 +115,7 @@ instance HasExpVar DefGroup where
 
 instance HasExpVar Def where
   fv (Def name tp expr vis isVal inl nameRng doc) = fv expr
-  bv (Def name tp expr vis isVal inl nameRng doc) = S.singleton (TName name tp)
+  bv (Def name tp expr vis isVal inl nameRng doc) = S.singleton (TName name tp (Just nameRng))
 
 fvDefGroups defGroups expr
   = case defGroups of
@@ -126,10 +126,10 @@ instance HasExpVar Expr where
   -- extract free variables from an expression
   fv (Lam tnames eff expr)= foldr S.delete (fv expr) tnames
   fv (Var tname info)     = S.singleton tname
-  fv (App e1 e2)          = fv e1 `S.union` fv e2
+  fv (App e1 e2 _)          = fv e1 `S.union` fv e2
   fv (TypeLam tyvar expr) = fv expr
   fv (TypeApp expr ty)    = fv expr
-  fv (Con tname repr)     = S.empty
+  fv (Con tname repr _)   = S.empty
   fv (Lit i)              = S.empty
   fv (Let dfgrps expr)    = fvDefGroups dfgrps expr
   fv (Case exprs bs)      = fv exprs `S.union` fv bs
@@ -190,13 +190,13 @@ instance HasExprVar Expr where
                               let sub' = [(name,e) | (name,e) <- sub, all (name /=) tnames]
                               in Lam tnames eff (sub' |~> expr)
       Var tname info       -> fromMaybe expr (lookup tname sub)
-      App e1 e2            -> App (sub |~> e1) (sub |~> e2)
+      App e1 e2 rng            -> App (sub |~> e1) (sub |~> e2) rng
       TypeLam typeVars exp -> {- assertion ("CoreVar.HasExprVar.Expr.|~>.TypeLam: typevars: " ++ show typeVars ++ ",\n sub: " ++ show sub ++ "\n expr:" ++ show expr)
                                         (all (\tv -> not (tvsMember tv (ftv (map snd sub)))) typeVars
                                           || all (\name -> not (S.member name (fv exp) )) (map fst sub)) $ -}
                               TypeLam typeVars (sub |~> exp)
       TypeApp expr tp      -> TypeApp (sub |~> expr) tp
-      Con tname repr       -> expr
+      Con tname repr _     -> expr
       Lit lit              -> expr
       Let defGroups expr   -> let defnames = map defName (flattenDefGroups defGroups)
                                   sub' = [(name,e) | (name,e) <- sub, all (getName name /=) defnames]

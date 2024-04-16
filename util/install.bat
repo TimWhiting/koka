@@ -4,14 +4,14 @@ rem Installation script for Koka; use -h to see command line options.
 rem ------------------------------------------------------------------
 
 setlocal
-set KOKA_VERSION=v3.1.3
+set KOKA_VERSION=v3.1.100
 set KOKA_PREFIX=%LOCALAPPDATA%\koka
 set KOKA_UNINSTALL=N
 set KOKA_HELP=N
 set KOKA_FORCE=N
 set KOKA_DIST_SOURCE=
 set KOKA_DIST_URL=
-set KOKA_DIST_BASE_URL=https://github.com/koka-lang/koka/releases/download
+set KOKA_DIST_BASE_URL=https://github.com/TimWhiting/koka/releases/download
 set KOKA_IEXPRESS=N
 set KOKA_PREV_VERSION=
 set KOKA_PREV_PREFIX=

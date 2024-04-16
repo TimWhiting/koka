@@ -15,7 +15,6 @@ import Type.Pretty
 import Type.Type
 import Core.Pretty
 import Lib.PPrint
-import Syntax.Syntax
 import Common.Syntax
 import Common.ColorScheme
 import Common.NamePrim
@@ -23,7 +22,9 @@ import qualified Syntax.Syntax as S
 import Common.Range
 import Data.List
 import Data.Maybe (fromMaybe, isJust)
-
+import Common.Name hiding (qualify)
+import qualified Common.NameSet as S
+import Syntax.Syntax as S
 class PrettyEnv t where
   prettyEnv :: Env -> t -> Doc
 
@@ -48,6 +49,11 @@ instance PrettyEnv (KUserType k) where
       TpFun args e res _ -> tupled (map (\(n, tp) -> prettyEnv env tp) args) <+> text "->" <+> prettyEnv env e <+> prettyEnv env res
       TpParens tp _ -> tupled [prettyEnv env tp]
 
+
+contains :: Eq a => [a] -> [a] -> Bool
+contains search str = any (isPrefixOf search) (tails str)
+
+
 allDefs :: S.DefGroup t -> [S.Def t]
 allDefs defs =
   case defs of
@@ -69,7 +75,24 @@ ppVis env vis
 ppSyntaxDef :: PrettyEnv t => Env -> S.Def t -> Doc
 ppSyntaxDef env (S.Def binder range vis sort inline doc)
   = prettyComment env doc $
-    ppVis env vis <.> text (defSortShowFull sort) <+> ppValBinder env binder
+    ppVis env vis <+> ppDefBinder env sort binder
+
+ppDefBinder env DefVal binder =
+  text "val" <+> text (nameStem (binderName binder)) <+> text "=" <+> ppSyntaxExpr env (binderExpr binder)
+ppDefBinder env DefVar binder =
+  text "var" <+> text (nameStem (binderName binder)) <+> text ":=" <+> ppSyntaxExpr env (binderExpr binder)
+ppDefBinder env (DefFun _ _) binder =
+  text "fun" <+> text (nameStem (binderName binder)) <.> ppParams env binder
+
+ppValBinder :: PrettyEnv t => Env -> ValueBinder () (S.Expr t) -> Doc
+ppValBinder env (ValueBinder name _ expr nameRange range)
+  = ppName env name <+> text "=" <+> ppSyntaxExpr env expr
+
+ppParams :: PrettyEnv t => Env -> ValueBinder () (S.Expr t) -> Doc
+ppParams env (ValueBinder _ _ (S.Lam pars expr defTop range) _ _)
+  = tupled (map (ppMValBinder env) pars) <--> indent 2 (ppSyntaxExpr env expr)
+ppParams env (ValueBinder _ _ (S.Ann (S.Lam pars expr defTop range) _ _) _ _)
+  = tupled (map (ppMValBinder env) pars) <--> indent 2 (ppSyntaxExpr env expr)
 
 ppSyntaxDefUserType :: Env -> S.Def UserType -> Doc
 ppSyntaxDefUserType env (S.Def binder range vis sort inline doc)
@@ -97,10 +120,6 @@ ppFunDef env (ValueBinder name _ (Ann (Lam vbs body _ _) tp _) _ _)
           ppName env name <.> tupled (map (ppMValBinder env) vbs) <+> colon <+> prettyEnv env eff <+> prettyEnv env ret <-->
                                     indent 2 (ppSyntaxExpr env body)
       Nothing -> ppName env name <.> tupled (map (ppMValBinder env) vbs) <--> indent 2 (ppSyntaxExpr env body)
-
-ppValBinder :: PrettyEnv t => Env -> ValueBinder () (S.Expr t) -> Doc
-ppValBinder env (ValueBinder name _ expr nameRange range)
-  = ppName env name <+> text "=" <+> ppSyntaxExpr env expr
 
 ppMValBinder :: PrettyEnv t => Env -> ValueBinder (Maybe t) (Maybe (S.Expr t)) -> Doc
 ppMValBinder env (ValueBinder name (Just tp) (Just expr) nameRange range)
@@ -177,9 +196,6 @@ ppMaybeExpr ::  PrettyEnv t => Env -> Maybe (Expr t) -> Doc
 ppMaybeExpr env (Just expr) = ppSyntaxExpr env expr
 ppMaybeExpr env Nothing = empty
 
-contains :: Eq a => [a] -> [a] -> Bool
-contains search str = any (isPrefixOf search) (tails str)
-
 ppSyntaxBranch :: PrettyEnv t => Env -> S.Branch t -> Doc
 ppSyntaxBranch env (S.Branch pat [S.Guard (S.Var n _ _) body]) | nameTrue == n
   = let bod = ppSyntaxExpr env body
@@ -213,4 +229,5 @@ alwaysTrue _ = False
 
 ppSyntaxGuard :: PrettyEnv t => Env -> S.Guard t -> Doc
 ppSyntaxGuard env (S.Guard guard body)
-  = if alwaysTrue guard then text "->" <+> ppSyntaxExpr env body else ppSyntaxExpr env guard <+> text "->" <--> indent 2 (ppSyntaxExpr env body)
+  = if alwaysTrue guard then text "->" <+> ppSyntaxExpr env body 
+    else ppSyntaxExpr env guard <+> text "->" <--> indent 2 (ppSyntaxExpr env body)
