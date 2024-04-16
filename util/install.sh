@@ -4,7 +4,7 @@
 # Installation script for Koka; use -h to see command line options.
 #-----------------------------------------------------------------------------
 
-VERSION="v3.2.2"
+VERSION="v3.2.100"
 MODE="install"          # or uninstall
 PREFIX="/usr/local"
 QUIET=""
@@ -16,7 +16,7 @@ OSDISTRO=""
 VSCODE=""               # set if installing from the vscode extension
 DRYRUN="no"
 
-KOKA_DIST_BASE_URL="https://github.com/koka-lang/koka/releases/download"
+KOKA_DIST_BASE_URL="https://github.com/TimWhiting/koka/releases/download"
 KOKA_DIST_URL=""        # $KOKA_DIST_BASE_URL/$VERSION
 KOKA_DIST_SOURCE=""     # $KOKA_DIST_URL/koka-$VERSION-<os>-<arch>.tar.gz
 KOKA_TEMP_DIR=""        # empty creates one dynamically
@@ -350,7 +350,7 @@ download_failed() { # <program> <url>
   warn "Unable to download: $2"
   warn "  It may be that there is no binary installer available for this platform ($OSARCH)"
   warn "  Either specify another version using the '--version=<version>' flag,"
-  warn "  or build Koka from source: <https://github.com/koka-lang/koka/#build-from-source>"
+  warn "  or build Koka from source: <https://github.com/TimWhiting/koka/#build-from-source>"
   stop ""
 }
 

@@ -13,7 +13,10 @@ module Main where
 
 import LanguageServer.Run( runLanguageServer )
 import Main.Run( runWithLS )
+-- import Core.Demand.FixpointMonad(runExample)
 
 main :: IO ()
 main
-  = runWithLS (\p flags files -> runLanguageServer flags files)
+  = -- do 
+    -- runExample
+    runWithLS (\p flags files -> runLanguageServer flags files)

@@ -390,8 +390,8 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
                                Nothing -> failure ("Backend.C.FromCore.getTopDefDecl: function def has not a function type: " ++ show (name,tp))
                                Just (_,argTps,_,resTp)
                                  -> do names <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
-                                       let tnames = [TName name tp | (name,(_,tp)) <- zip names argTps]
-                                           app    = App expr [Var tname InfoNone | tname <- tnames]
+                                       let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip names argTps]
+                                           app    = App expr [Var tname InfoNone | tname <- tnames] Nothing
                                        genFunDef tnames app
                         -- special case string literals
                         Lit (LitString s)
@@ -400,7 +400,7 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
                         Lit lit@(LitFloat f)
                           -> do let flt  = ppLit lit
                                 emitToH (text "#define" <+> ppName name <+> parens (text "(double)" <.> parens flt))
-                        _ -> do doc <- genStat (ResultAssign (TName name tp) Nothing) (defBody)
+                        _ -> do doc <- genStat (ResultAssign (TName name tp Nothing) Nothing) (defBody)
                                 emitToInit (block doc)  -- must be scoped to avoid name clashes
                                 case genDupDropCall False {-drop-} tp (ppName name) of
                                   []   -> return ()
@@ -425,7 +425,7 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
       = do let args = map ( ppName . getName ) params
                isTailCall = body `isTailCalling` name
            bodyDoc <- -- (if isTailCall then withStatement else id)
-                      genStat (ResultReturn (Just (TName name resTp)) params) body
+                      genStat (ResultReturn (Just (TName name resTp Nothing)) params) body
            penv <- getPrettyEnv
            let tpDoc = typeComment (Pretty.ppType penv tp)
            let sig = genLamSig inlineC vis name params body
@@ -1224,8 +1224,9 @@ genLambda params eff body
        toH     <- getDefToHeader
        let newName   = prepend "new-" funName
            funTpName = postpend "_t" funName
-           structDoc = text "struct" <+> ppName funTpName
-           freeVars  = [(nm,tp) | (TName nm tp) <- tnamesList (freeLocals (Lam params eff body))]
+           fnTpDoc = ppName funTpName
+           structDoc = text "struct" <+> fnTpDoc
+           freeVars  = [(nm,tp) | (TName nm tp _) <- tnamesList (freeLocals (Lam params eff body))]
 
        platform <- getPlatform
        env <- getEnv
@@ -1246,7 +1247,7 @@ genLambda params eff body
 
            funSig  = text (if toH then "extern" else "static") <+> ppType (typeOf body)
                      <+> ppName funName <.> parameters ([text "kk_function_t _fself"] ++
-                                                        [ppType tp <+> ppName name | (TName name tp) <- params])
+                                                        [ppType tp <+> ppName name | (TName name tp _) <- params])
 
            newDef  = funSig <.> semi
                      <-> text (if toH then "static inline" else "static")
@@ -1267,7 +1268,7 @@ genLambda params eff body
 
        emitToCurrentDef (vcat [linebreak,text "// lift anonymous function", tpDecl, newDef] <.> linebreak)
 
-       bodyDoc <- genStat (ResultReturn (if eqType (typeOf body) typeUnit then Just (TName nameNil typeUnit) else Nothing) params) body
+       bodyDoc <- genStat (ResultReturn (if eqType (typeOf body) typeUnit then Just (TName nameNil typeUnit Nothing) else Nothing) params) body
        let funDef = funSig <+> block (
                       (if (null fields) then text "kk_function_static_drop(_fself,kk_context());"
                         else let dups = braces (hcat [genDupCall tp (ppName name) <.> semi | (name,tp) <- fields])
@@ -1397,13 +1398,13 @@ getResultX result (retDoc)
                                   Nothing -> empty
                                   Just l  -> text "goto" <+> ppName l <.> semi
 
-ppVarDecl (TName name tp) = ppType tp <+> ppName name
+ppVarDecl (TName name tp _) = ppType tp <+> ppName name
 
 tryTailCall :: Result -> Expr -> Asm (Maybe Doc)
 tryTailCall result expr
   = case expr of
      -- Tailcall case 1
-     App (Var n info) args  | ( case result of
+     App (Var n info) args rng  | ( case result of
                                   ResultReturn (Just m) _ -> m == n && infoArity info == (length args)
                                   _                       -> False
                               )
@@ -1412,7 +1413,7 @@ tryTailCall result expr
              return $ Just $ tailblock $ stmts <-> tailcall
 
      -- Tailcall case 2
-     App (TypeApp (Var n info) _) args | ( case result of
+     App (TypeApp (Var n info) _) args rng | ( case result of
                                             ResultReturn (Just m) _ -> m == n && infoArity info == (length args)
                                             _                       -> False
                                           )
@@ -1576,7 +1577,7 @@ genGuard result (docs, bindings) (Guard guard expr)
            guardLocals             = map snd bindsGuard
            exprLocals              = map snd (filter (\(name,_) -> tnamesMember name exprFree) bindsOther)
        case guard of
-         Con tname repr | getName tname == nameTrue
+         Con tname repr _ | getName tname == nameTrue
            -> do doc <- genStat result expr
                  return (docs ++ [vcat (guardLocals ++ exprLocals ++ [doc])], bindsOther)
          _ -> do (gddoc,gdoc) <- genExpr guard
@@ -1735,13 +1736,13 @@ genExpr expr
 genExprPrim expr
   = -- trace ("genExpr: " ++ show expr) $
     case expr of
-     Con _ _              -> genConEtaExpand expr
-     TypeApp (Con _ _) _  -> genConEtaExpand expr
+     Con _ _ _            -> genConEtaExpand expr
+     TypeApp (Con _ _ _) _  -> genConEtaExpand expr
 
      TypeApp e _ -> genExpr e
      TypeLam _ e -> genExpr e
 
-     App f args
+     App f args rng
        -> genApp f args
 
      Let groups body
@@ -1766,8 +1767,8 @@ genExprPrim expr
        -> case splitFunScheme (typeOf vname) of
             Just(_,tpars,teff,tres)
               -> do names <- newVarNames (length tpars)
-                    let tnames = [TName name tp | (name,(_,tp)) <- zip names tpars]
-                    genExpr $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames])
+                    let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip names tpars]
+                    genExpr $ Lam tnames teff (App expr [Var tname InfoNone | tname <- tnames] Nothing)
             _ -> failure ("Backend.C.FromCore.genExpr: invalid partially applied external:\n" ++ show expr)
      _ -> failure ("Backend.C.FromCore.genExpr: invalid expression:\n" ++ show expr)
 
@@ -1776,8 +1777,8 @@ genConEtaExpand cexpr
   = case splitFunScheme (typeOf cexpr) of
       Just (_,tpars,teff,tres)
         -> do names <- newVarNames (length tpars)
-              let tnames = [TName name tp | (name,(_,tp)) <- zip names tpars]
-              genExpr $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames])
+              let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip names tpars]
+              genExpr $ Lam tnames teff (App cexpr [Var tname InfoNone | tname <- tnames] Nothing) 
       _ ->failure ("Backend.C.FromCore.genExpr: invalid partially applied constructor:\n" ++ show cexpr)
 
 genExprs :: [Expr] -> Asm ([Doc],[Doc])
@@ -1812,7 +1813,7 @@ genVarBinding expr
 genVarBindingAlways expr
   =  do name <- newVarName "x"
         let tp = typeOf expr
-            tname = TName name tp
+            tname = TName name tp Nothing
         doc <- genStat (ResultAssign tname Nothing) expr
         if (dstartsWith doc (show (ppName name) ++ " ="))
           then return (ppType tp <+> doc, tname)
@@ -1834,13 +1835,13 @@ genPure expr
        -> case splitFunScheme (typeOf name) of
             Just (_,argTps,eff,resTp) | isQualified (getName name) && isInfoArity info -- wrap bare top-level functions
               -> do argNames <- mapM newVarName ["x" ++ show i | i <- [1..length argTps]]
-                    let tnames = [TName name tp | (name,(_,tp)) <- zip argNames argTps]
-                        body   = (App expr [Var name InfoNone | name <- tnames])
+                    let tnames = [TName name tp Nothing | (name,(_,tp)) <- zip argNames argTps]
+                        body   = (App expr [Var name InfoNone | name <- tnames] Nothing)
                     genLambda tnames eff body
             _ -> case info of
                    InfoExternal formats -> genInlineExternal name formats []
                    _ -> return (ppName (getName name))
-     Con name info
+     Con name info _
        | getName name == nameTrue -> return (text "true")
        | getName name == nameFalse -> return (text "false")
        | getName name == nameUnit  -> return (text "kk_Unit")
@@ -1916,9 +1917,9 @@ genAppNormal (Var tname _) [xs] | getName tname `elem` [nameVectorFromList,nameV
        return (decls ++ [vecDecl,bufDecl] ++ assigns,vec)
   where
     isConsList xs = isJust (extractConsList xs)
-    extractConsList (Con tname repr) | getName tname == nameListNil
+    extractConsList (Con tname repr _) | getName tname == nameListNil
       = Just []
-    extractConsList (App (Con tname repr) [hd,tl]) | getName tname == nameCons
+    extractConsList (App (Con tname repr _) [hd,tl] _) | getName tname == nameCons
       = case extractConsList tl of
           Just xs -> Just (hd:xs)
           _       -> Nothing
@@ -1926,19 +1927,19 @@ genAppNormal (Var tname _) [xs] | getName tname `elem` [nameVectorFromList,nameV
                         Nothing
 
 -- special: allocat
-genAppNormal (Var allocAt _) [Var at _, App (Con tname repr) args]  | getName allocAt == nameAllocAt
+genAppNormal (Var allocAt _) [Var at _, App (Con tname repr _) args rng]  | getName allocAt == nameAllocAt
   = do (decls,argDocs) <- genInlineableExprs args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
-genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr) targs) args]  | getName allocAt == nameAllocAt
+genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr _) targs) args rng]  | getName allocAt == nameAllocAt
   = do (decls,argDocs) <- genInlineableExprs args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
 genAppNormal v@(Var allocAt _) [at, Let dgs expr]  | getName allocAt == nameAllocAt  -- can happen due to box operations
-  = genExpr (Let dgs (App v [at,expr]))
+  = genExpr (Let dgs (App v [at,expr] Nothing))
 
 -- special: conAssignFields
-genAppNormal (Var (TName conTagScanFieldsAssign typeAssign) _) (Var reuseName (InfoConField conName conRepr nameNil):(Var tag _):(Var scan _):fieldValues) | conTagScanFieldsAssign == nameConTagScanFieldsAssign
+genAppNormal (Var (TName conTagScanFieldsAssign typeAssign _) _) (Var reuseName (InfoConField conName conRepr nameNil):(Var tag _):(Var scan _):fieldValues) | conTagScanFieldsAssign == nameConTagScanFieldsAssign
   = do tmp <- genVarName "con"
        let setTag  = tmp <.> text "->_base._block.header.tag = (kk_tag_t)" <.> parens (text (show tag)) <.> semi
            setScan = tmp <.> text "->_base._block.header.scan_fsize = (uint8_t)" <.> parens (text (show scan)) <.> semi
@@ -1948,7 +1949,7 @@ genAppNormal (Var (TName conTagScanFieldsAssign typeAssign) _) (Var reuseName (I
        (decls, tmpDecl, assigns, result) <- genAssignFields tmp conName conRepr reuseName fieldNames fieldValues
        return (decls ++ [tmpDecl, setScan, setTag] ++ assigns, result)
 
-genAppNormal (Var (TName conTagFieldsAssign typeAssign) _) (Var reuseName (InfoConField conName conRepr nameNil):(Var tag _):fieldValues) | conTagFieldsAssign == nameConTagFieldsAssign
+genAppNormal (Var (TName conTagFieldsAssign typeAssign _) _) (Var reuseName (InfoConField conName conRepr nameNil):(Var tag _):fieldValues) | conTagFieldsAssign == nameConTagFieldsAssign
   = do tmp <- genVarName "con"
        let setTag = tmp <.> text "->_base._block.header.tag = (kk_tag_t)" <.> parens (text (show tag)) <.> semi
            fieldNames = case splitFunScheme typeAssign of
@@ -1957,7 +1958,7 @@ genAppNormal (Var (TName conTagFieldsAssign typeAssign) _) (Var reuseName (InfoC
        (decls, tmpDecl, assigns, result) <- genAssignFields tmp conName conRepr reuseName fieldNames fieldValues
        return (decls ++ [tmpDecl, setTag] ++ assigns, result)
 
-genAppNormal (Var (TName conFieldsAssign typeAssign) _) (Var reuseName (InfoConField conName conRepr nameNil):fieldValues) | conFieldsAssign == nameConFieldsAssign
+genAppNormal (Var (TName conFieldsAssign typeAssign _) _) (Var reuseName (InfoConField conName conRepr nameNil):fieldValues) | conFieldsAssign == nameConFieldsAssign
   = do tmp <- genVarName "con"
        let fieldNames = case splitFunScheme typeAssign of
                           Just (_,args,_,_) -> tail (map fst args)
@@ -1966,15 +1967,15 @@ genAppNormal (Var (TName conFieldsAssign typeAssign) _) (Var reuseName (InfoConF
        return (decls ++ [tmpDecl] ++ assigns, result)
 
 -- special: cfield-hole
-genAppNormal (Var unbox _) [App (Var cfieldHole _) []] | getName cfieldHole == nameCCtxHoleCreate && getName unbox == nameUnbox
+genAppNormal (Var unbox _) [App (Var cfieldHole _) [] rng] | getName cfieldHole == nameCCtxHoleCreate && getName unbox == nameUnbox
   = return ([], genHoleCall (resultType (typeOf unbox))) -- ppType (resultType (typeOf unbox)) <.> text "_hole()")
 
 -- special: cfield-of
-genAppNormal (Var cfieldOf _) [App (Var box _) [App (Var dup _) [Var con _]], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf && getName dup == nameDup
+genAppNormal (Var cfieldOf _) [App (Var box _) [App (Var dup _) [Var con _] rng0] rng, Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf && getName dup == nameDup
   = do let doc = genFieldAddress con (readQualified conName) (readQualified fieldName)
        return ([],doc)
 
-genAppNormal (Var cfieldOf _) [App (Var box _) [Var con _], Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf
+genAppNormal (Var cfieldOf _) [App (Var box _) [Var con _] rng, Lit (LitString conName), Lit (LitString fieldName)]  | getName cfieldOf == nameFieldAddrOf
  = do let drop = map (<.> semi) (genDupDropCall False (typeOf con) (ppName (getName con)))
           doc = genFieldAddress con (readQualified conName) (readQualified fieldName)
       return (drop,doc)
@@ -2010,7 +2011,7 @@ genAppNormal f args
          Nothing
            -> case f of
                -- constructor
-               Con tname repr
+               Con tname repr _
                  -> let at = if (dataReprIsValue (conDataRepr repr) || isConAsJust repr) then [] else [text "kk_reuse_null"]
                     in return (decls,conCreateName (getName tname) <.> arguments (at ++ ppCtxPath repr tname (null argDocs) ++ argDocs))
                -- call to known function
@@ -2273,7 +2274,7 @@ genVarNames i = do ns <- newVarNames i
 
 -- | Generate a name with its type in comments
 genCommentTName :: TName -> Asm Doc
-genCommentTName (TName n t)
+genCommentTName (TName n t _)
   = do env <- getPrettyEnv
        return $ ppName n <+> comment (Pretty.ppType env t )
 
@@ -2285,9 +2286,9 @@ genCommentTName (TName n t)
 extractExternal  :: Expr -> Maybe (TName, String, [Expr])
 extractExternal expr
   = case expr of
-      App (TypeApp (Var tname (InfoExternal formats)) targs) args
+      App (TypeApp (Var tname (InfoExternal formats)) targs) args rng
         -> Just (tname, format tname formats, args)
-      App var@(Var tname (InfoExternal formats)) args
+      App var@(Var tname (InfoExternal formats)) args rng
         -> Just (tname, format tname formats, args)
       _ -> Nothing
   where
@@ -2307,7 +2308,7 @@ isFunExpr expr
 isReuseNull :: Expr -> Bool
 isReuseNull expr
   = case expr of
-      App (Var v (InfoExternal _)) [] | getName v  == nameReuseNull -> True
+      App (Var v (InfoExternal _)) [] rng | getName v  == nameReuseNull -> True
       _ -> False
 
 isInlineableExpr :: Expr -> Bool
@@ -2318,8 +2319,8 @@ isInlineableExpr expr
       Lit (LitString _)-> False
 
       -- C has no guarantee on argument evaluation so we only allow a select few operations to be inlined
-      App (Var v (InfoExternal _)) [] -> getName v `elem` [nameYielding,nameReuseNull,nameCCtxHoleCreate]
-      App (Var v _) [arg] | getName v `elem` [nameBox,nameInt32,nameInternalInt32,nameSSizeT,
+      App (Var v (InfoExternal _)) [] rng -> getName v `elem` [nameYielding,nameReuseNull,nameCCtxHoleCreate]
+      App (Var v _) [arg] rng | getName v `elem` [nameBox,nameInt32,nameInternalInt32,nameSSizeT,
                                               nameInternalSSizeT,nameReuse,nameReuseIsValid,nameIsUnique]
                           -> isInlineableExpr arg
 
@@ -2343,7 +2344,7 @@ isPureExpr expr
       TypeLam _ expr  -> isPureExpr expr
       Var _ (InfoExternal{}) -> False
       Var _ _ -> True
-      Con _ _ -> case splitFunScheme (typeOf expr) of
+      Con _ _ _ -> case splitFunScheme (typeOf expr) of
                    Just _ -> False  -- partially applied constructor gets eta-expanded
                    _      -> True
       Lit (LitString _) -> False  -- for our purposes, it's not pure (as it needs a declaration)
@@ -2359,15 +2360,15 @@ isTailCalling expr n
       TypeLam _ expr    -> expr `isTailCalling` n     -- trivial
       Lam _ _ _           -> False                      -- lambda body is a new context, can't tailcall
       Var _ _           -> False                      -- a variable is not a call
-      Con _ _           -> False                      -- a constructor is not a call
+      Con _ _ _         -> False                      -- a constructor is not a call
       Lit _             -> False                      -- a literal is not a call
-      App (Var tn info) args   | getName tn == n            -- direct application can be a tail call
+      App (Var tn info) args rng   | getName tn == n            -- direct application can be a tail call
                         -> infoArity info == length args
-      App (TypeApp (Var tn info) _) args | getName tn == n  -- tailcalled function might be polymorphic and is applied to types before
+      App (TypeApp (Var tn info) _) args rng | getName tn == n  -- tailcalled function might be polymorphic and is applied to types before
                         -> infoArity info == length args
-      App (Var tn _) [e] | getName tn == nameReturn   -- a return statement is transparent in terms of tail calling
+      App (Var tn _) [e] rng | getName tn == nameReturn   -- a return statement is transparent in terms of tail calling
                         -> e `isTailCalling` n
-      App _ _           -> False                      -- other applications don't apply
+      App _ _ rng          -> False                      -- other applications don't apply
       Let _ e           -> e `isTailCalling` n        -- tail calls can only happen in the actual body
       Case _ bs         -> any f1 bs                  -- match statement get analyzed in depth
   where
@@ -2809,7 +2810,7 @@ constdecl = text "const"
 
 tparameters :: [TName] -> Doc
 tparameters tnames
-  = ntparameters [(name,tp) | TName name tp <- tnames]
+  = ntparameters [(name,tp) | TName name tp _ <- tnames]
 
 resultType :: Type -> Type
 resultType tp

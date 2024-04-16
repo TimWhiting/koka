@@ -6,9 +6,6 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 module Compile.Build( Build
-                      , VFS(..), noVFS
-                      , runBuildIO, runBuildMaybe, runBuild
-
                       , modulesFullBuild
                       , modulesBuild
                       , modulesTypeCheck
@@ -16,18 +13,9 @@ module Compile.Build( Build
                       , modulesResolveDependencies
                       , modulesReValidate
                       , moduleFromSource, moduleFromModuleName
-
-                      , phase, phaseVerbose, phaseTimed
-                      , throwError, throwErrorKind
-                      , throwOnError, hasBuildError, throwNil
                       , modulesFlushErrors
-                      , liftIO
-
                       , virtualMount
-                      , getFlags, getPrettyEnv, getTerminal, getColorScheme
-                      , addErrorMessageKind
                       , searchSourceFile
-                      , withVFS
                       ) where
 
 import Debug.Trace
@@ -72,6 +60,7 @@ import Compile.Module
 import Compile.TypeCheck      ( typeCheck )
 import Compile.Optimize       ( coreOptimize )
 import Compile.CodeGen        ( codeGen, Link, LinkResult(..), noLink )
+import Compile.BuildMonad
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 
@@ -133,36 +122,6 @@ modulesReValidate rebuild forced cachedImports roots
     do -- rootsv    <- modulesValidate roots
        resolved  <- modulesResolveDependencies rebuild forced cachedImports roots
        return resolved -- modulesFlushErrors resolved
-
-
--- work units needed to complete a compilation
-workNeeded :: ModulePhase -> [Module] -> Int
-workNeeded maxPhase modules
-  = phaseTotalWork maxPhase * length modules
-
--- total work units to reach a target phase
-phaseTotalWork :: ModulePhase -> Int
-phaseTotalWork maxPhase
-  = case dropWhile (\(phase,_) -> maxPhase > phase) workAmounts of
-      ((phase,n):_) -> n
-      _             -> failure "Compile.Build.phaseWork: invalid max phase"
-  where
-    workAmounts
-      = accumulate 0 [PhaseParsed,PhaseTyped,PhaseOptimized,PhaseCodeGen,PhaseLinked]
-
-    accumulate n [] = []
-    accumulate n (phase:phases)
-      = let m = n + phaseWorkUnit phase
-        in (phase,m) : accumulate m phases
-
--- work for a single step to a target phase
-phaseWorkUnit :: ModulePhase -> Int
-phaseWorkUnit phase
-  = case phase of
-      PhaseTyped          -> 2
-      PhaseLinked         -> 3
-      _                   -> 1
-
 
 {---------------------------------------------------------------
   Module map
@@ -391,9 +350,15 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
             else -- core compile
               do  phaseVerbose 2 "optimize" $ \penv -> TP.ppName penv (modName mod) -- <.> text ": imported:" <+> list (map (pretty . modName) imports)
                   flags <- getFlags
+                  term <- getTerminal
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
+                  -- let h = flagsHash flags
+                  --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
+                  -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
+                  --     runBuild term flags $ buildcTypeCheck [m] bc
+                  --    ) bc core
                   let mod' = mod{ modPhase   = PhaseOptimized
                                 , modCore    = Just $! core
                                 , modDefinitions = if showHiddenTypeSigs flags
@@ -445,9 +410,10 @@ moduleTypeCheck parsedMap tcheckedMap
                       -> done mod{ modPhase  = PhaseTypedError
                                  , modErrors = mergeErrors errs (modErrors mod)
                                  }
-                    Right ((core,mbRangeMap),warns)
+                    Right ((simple,core,mbRangeMap),warns)
                       -> do let mod' = mod{ modPhase       = PhaseTyped
                                           , modCore        = Just $! core
+                                          , modCoreUnopt   = Just $! simple
                                           , modErrors      = mergeErrors warns (modErrors mod)
                                           , modRangeMap    = seqqMaybe mbRangeMap
                                           , modDefinitions = Just $! defsFromCore False core
@@ -530,6 +496,57 @@ moduleParse tparsedMap
                           , modProgram = Just $! prog{ programName = modName mod }  -- todo: test suffix!
                           }
 
+
+-- Add roots to a build context
+buildcAddRootSources :: [FilePath] -> BuildContext -> Build (BuildContext,[ModuleName])
+buildcAddRootSources fpaths buildc
+  = do mods <- mapM moduleFromSource fpaths
+       let rootNames = map modName mods
+           roots   = nub (map modName mods ++ buildcRoots buildc)
+           modules = mergeModulesLeftBias (buildcModules buildc) mods
+           buildc' = buildc{ buildcRoots = seqqList roots, buildcModules = seqqList modules }
+       seqList rootNames $ seq buildc' $
+        return (buildc', rootNames)
+
+-- Reset a build context from the roots (for example, when the flags have changed)
+buildcFreshFromRoots :: BuildContext -> Build BuildContext
+buildcFreshFromRoots buildc
+  = do let (roots,imports) = buildcSplitRoots buildc
+           rootSources = map modSourcePath roots
+       flags <- getFlags
+       (buildc1,_) <- buildcAddRootSources rootSources (buildc{ buildcRoots = [], buildcModules=[], buildcHash = flagsHash flags })
+       let (roots1,_) = buildcSplitRoots buildc1
+       mods  <- modulesReValidate False [] [] roots1
+       return $! buildc1{ buildcModules = seqqList mods }
+
+-- Validate a build context to the current state of the file system and flags,
+-- and resolve any required modules to build the root set. Also discards
+-- any cached modules that are no longer needed.
+-- Can pass a boolean to force everything to be rebuild (on a next build)
+-- or a list of specific modules to be recompiled.
+buildcValidate :: Bool -> [ModuleName] -> BuildContext -> Build BuildContext
+buildcValidate rebuild forced buildc
+  = do flags <- getFlags
+       let hash = flagsHash flags
+       if (hash /= buildcHash buildc)
+         then buildcFreshFromRoots buildc
+         else do let (roots,imports) = buildcSplitRoots buildc
+                 mods <- modulesReValidate rebuild forced imports roots
+                 return $! buildc{ buildcModules = seqqList mods }
+
+-- Return the root modules and their (currently cached) dependencies.
+buildcSplitRoots :: BuildContext -> ([Module],[Module])
+buildcSplitRoots buildc
+  = let (xs,ys) = partition (\m -> modName m `elem` buildcRoots buildc) (buildcModules buildc)
+    in seqList xs $ seqList ys $ (xs,ys)
+
+
+-- Type check the current build context (also validates and resolves)
+buildcTypeCheck :: [ModuleName] -> BuildContext -> Build BuildContext
+buildcTypeCheck force buildc0
+  = do buildc <- buildcValidate False force buildc0
+       mods   <- modulesTypeCheck (buildcModules buildc)
+       return $! buildc{ buildcModules = seqqList $ mods }
 
 {---------------------------------------------------------------
   Given a set of modules,
@@ -662,6 +679,7 @@ moduleLex mod
                          }
          Right (imports,warns)
             -> return mod{ modPhase   = PhaseLexed
+                         , modStatus = LoadedSource
                          , modErrors  = warns
                          , modSource  = source
                          , modLexemes = lexemes
@@ -695,6 +713,7 @@ modFromIface core parseInlines mod
         , modSource      = sourceNull
         , modDeps        = seqqList $ [LexImport (Core.importName imp) nameNil (Core.importVis imp) False {- @open -}
                                        | imp <- Core.coreProgImports core, not (Core.isCompilerImport imp) ]
+        , modStatus      = LoadedIface
         , modCore        = Just $! core
         , modDefinitions = Just $! defsFromCore False core
         , modInlines     = case parseInlines of
