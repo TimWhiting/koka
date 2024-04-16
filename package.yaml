@@ -33,6 +33,7 @@ dependencies:
   - text
   - time
   - async
+  - transformers
   - isocline >= 1.0.6
   - FloatingHex >= 0.5
   - hashable >= 1.4
@@ -54,7 +55,6 @@ library:
   ghc-options:
     - -j8
     - -O2
-
   cpp-options:
     - -DKOKA_MAIN="koka"
     - -DKOKA_VARIANT="release"
@@ -69,7 +69,8 @@ library:
 executables:
   koka:
     main: Main.hs
-    source-dirs: src/Main/langserver
+    source-dirs: 
+      - src/Main/langserver
     dependencies:
       - aeson
       - async

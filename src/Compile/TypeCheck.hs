@@ -53,7 +53,7 @@ import Compile.Module( Definitions(..), Module (modName) )
   Type check
 ---------------------------------------------------------------}
 
-typeCheck :: Flags -> Definitions -> [Core.Import] -> UserProgram -> Error () (Core.Core,Maybe RangeMap)
+typeCheck :: Flags -> Definitions -> [Core.Import] -> UserProgram -> Error () (Core.Core,Core.Core,Maybe RangeMap)
 typeCheck flags defs coreImports program0
   = Core.runCorePhase 0 {-unique-} $
      do -- import map
@@ -147,7 +147,7 @@ typeCheck flags defs coreImports program0
             typeImports      = [Core.Import name "" Core.ImportTypes Private "" | name <- typeDeps, not (S.member name currentImports) && not (name == progName)]
             coreFinal        = coreUnique{ Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports }
 
-        return (coreFinal,mbRangeMap)
+        return (coreFinal{Core.coreProgDefs = coreDefs},coreFinal,mbRangeMap)
 
 
 

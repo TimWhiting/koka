@@ -231,7 +231,7 @@ conDecl tname foralls sort env
        (env2,params)  <- parameters env1
        vrepr <- parseValueRepr
        tp     <- typeAnnot env2
-       let params2 = [(if nameIsNil name then newFieldName i else name, tp) | ((name,tp),i) <- zip params [1..]]
+       let params2 = [(if nameIsNil name then newFieldName i else name, tp) | ((name,tp,rng),i) <- zip params [1..]]
            orderedFields = []  -- no need to reconstruct as it is only used during codegen?
        let con = (ConInfo (qualify (modName env) name) tname foralls existss params2 tp sort range (map (const range) params2) (map (const Public) params2) False
                              orderedFields vrepr vis doc)
@@ -448,7 +448,7 @@ parseApp env
   where
     parseApplies expr
       = do args <- parensCommas (parseExpr env)
-           parseApplies (App expr args)
+           parseApplies (App expr args Nothing)
         <|>
         do tps  <- angles (ptype env `sepBy` comma)
            parseApplies (makeTypeApp expr tps)
@@ -489,7 +489,7 @@ parseFun env
        eff    <- angles (ptype env) <|> return typeTotal
        (env1,params) <- parameters env
        body   <- semiBraced (parseExpr env1)
-       return (Lam [TName name tp | (name,tp) <- params] eff body)
+       return (Lam [TName name tp (Just rng) | (name,tp,rng) <- params] eff body)
 
 parseMatch :: Env -> LexParser Expr
 parseMatch env
@@ -503,15 +503,15 @@ parseCon :: Env -> LexParser Expr
 parseCon env
   = do name <- qualifiedConId
        con  <- envLookupCon env name
-       return $ Con (TName name (infoType con)) (infoRepr con)
+       return $ Con (TName name (infoType con) Nothing) (infoRepr con)
 
 parseVar :: Env -> LexParser Expr
 parseVar env
-  = do (name,_) <- qvarid <|> qidop
+  = do (name,rng) <- qvarid <|> qidop
        if (isQualified name)
-        then envLookupVar env name
+        then envLookupVar env name rng
         else do tp <- envLookupLocal env name
-                return (Var (TName name tp) InfoNone)
+                return (Var (TName name tp (Just rng)) InfoNone)
 
 parseLit :: LexParser Lit
 parseLit
@@ -549,7 +549,7 @@ parseDefGroup env
        -- inl        <- parseInline
        tp         <- typeAnnot env
        expr       <- parseBody env
-       return (envExtendLocal env (name,tp), DefNonRec (Def name tp expr Private sort inl range doc))
+       return (envExtendLocal env (name,tp,range), DefNonRec (Def name tp expr Private sort inl range doc))
 
 prange :: Env -> LexParser Range
 prange env
@@ -619,7 +619,7 @@ parsePatCon env
   = do skip  <- do specialId "@skip"
                    return True
                 <|> return False
-       cname <- qualifiedConId
+       (cname, cnameRng) <- qualifiedConIdRng
        (env1,exists) <- typeParams env
        (env2,args)  <- do (lparen <|> lapp)
                           x <- parsePatternArgs0 env1
@@ -628,7 +628,7 @@ parsePatCon env
        let (patArgs,argTypes)  = unzip args
        resTp <- typeAnnot env2
        con <- envLookupCon env2 cname
-       return $ (env2,PatCon (TName cname (infoType con)) patArgs (infoRepr con) argTypes exists resTp (infoCon con) skip)
+       return $ (env2,PatCon (TName cname (infoType con) (Just cnameRng)) patArgs (infoRepr con) argTypes exists resTp (infoCon con) skip)
 
 
 parsePatternArgs0 :: Env -> LexParser (Env,[(Pattern,Type)])
@@ -652,10 +652,10 @@ parsePatternArg env
 
 parsePatVar  :: Env -> Pattern -> LexParser (Env,Pattern)
 parsePatVar env pat
-  = do (name,_) <- varid
+  = do (name,rng) <- varid
        tp <- typeAnnot env
-       let env1 = envExtendLocal env (name,tp)
-       return (env1,PatVar (TName name tp) pat)
+       let env1 = envExtendLocal env (name,tp,rng)
+       return (env1,PatVar (TName name tp Nothing) pat)
 
 parsePatLit env
   = do lit <- parseLit
@@ -677,6 +677,17 @@ qualifiedConId
      do (name,_) <- qconid
         return name
 
+qualifiedConIdRng
+   = do (n, rng) <-  try $ do (_, rngStart) <- modulepath
+                              specialOp "/"
+                              special "("
+                              cs <- many comma
+                              rngEnd <- special ")"
+                              return ((length cs), combineRanges([rngStart, rngEnd]))
+        return (nameTuple (n+1), rng) -- (("(" ++ concat (replicate (length cs) ",") ++ ")"))
+   <|>
+     do (name,rng) <- qconid
+        return (name, rng)
 
 qfunid :: LexParser (Name,Range)
 qfunid
@@ -688,41 +699,41 @@ qfunid
 --------------------------------------------------------------------------}
 
 
-parameters :: Env -> LexParser (Env, [(Name,Type)])
-parameters env
+parameters :: Env -> LexParser (Env, [(Name,Type,Range)])
+parameters env 
   = do iparams <- parensCommas (parameter env False)
                    <|> return []
        let (params,pinfos) = unzip iparams
            env' = foldl envExtendLocal env params
        return (env',params)
 
-parameter :: Env -> Bool -> LexParser ((Name,Type),ParamInfo)
+parameter :: Env -> Bool -> LexParser ((Name,Type,Range),ParamInfo)
 parameter env allowBorrow
-  = do (name,pinfo) <-  try (do pinfo <- if allowBorrow then paramInfo else return Own
-                                name <- parameterName
-                                keyword ":"
-                                return (name,pinfo))
-                        <|> return (nameNil,Own)
-       ({-
+  = do (name,rng,pinfo) <-  try (do pinfo <- if allowBorrow then paramInfo else return Own
+                                    (name,rng) <- parameterName
+                                    keyword ":"
+                                    return (name,rng,pinfo))
+                             <|> return (nameNil,rangeNull,Own)
+       {-
         do specialOp "?"
            tp <- ptype env
-           return ((name, makeOptionalType tp), pinfo)
+           return ((name, makeOptionalType tp, rng), pinfo)
         <|>
         -}
-        do tp <- ptype env
-           return ((name, tp), pinfo))
+       tp <- ptype env
+       return ((name, tp, rng), pinfo)
 
-parameterName :: LexParser Name
+parameterName :: LexParser (Name, Range)
 parameterName
   = parameterId
 
-parameterId :: LexParser Name
+parameterId :: LexParser (Name, Range)
 parameterId
-  = do (qname,_) <- qvarid <|> qidop  -- implicit/p
-       return (requalifyLocally qname)
+  = do (qname,rng) <- qvarid <|> qidop  -- implicit/p
+       return (requalifyLocally qname, rng)
     <|>
-    do (name,_) <- paramid
-       return name
+    do (name,rng) <- paramid
+       return (name, rng)
 
 typeAnnot :: Env -> LexParser Type
 typeAnnot env
@@ -821,7 +832,7 @@ tarrow env allowBorrow
        case etp of
          Left (params,pinfos)
           -> do keyword "->"
-                tp <- tresult env params
+                tp <- tresult env (map (\(n,t,r) -> (n,t)) params)
                 return (tp, pinfos)
              <|>
              do tp <- extract params "unexpected parameters not followed by an ->"
@@ -850,12 +861,12 @@ tatom env
 extract params msg
   = case params of
       [] -> return typeUnit
-      [(name,tp)] | name == nameNil -> return tp
-      _  -> if all (\(name,_) -> name == nameNil) params
-             then return (TApp (typeTuple (length params)) (map snd params))
+      [(name,tp,_)] | name == nameNil -> return tp
+      _  -> if all (\(name,_,_) -> name == nameNil) params
+             then return (TApp (typeTuple (length params)) (map (\(_,tp,_) -> tp) params))
              else fail msg
 
-tatomParams :: Env -> Bool -> LexParser (Either ([(Name,Type)], [ParamInfo]) Type)
+tatomParams :: Env -> Bool -> LexParser (Either ([(Name,Type,Range)], [ParamInfo]) Type)
 tatomParams env allowBorrow
   = tatomParamsEx True env allowBorrow
 
@@ -1051,8 +1062,8 @@ envTypeApp env tp tps
       _ -> typeApp tp tps
 
 
-envExtendLocal :: Env -> (Name,Type) -> Env
-envExtendLocal (Env env syns mname srcpath imports unique gamma locals) (name,tp)
+envExtendLocal :: Env -> (Name,Type,Range) -> Env
+envExtendLocal (Env env syns mname srcpath imports unique gamma locals) (name,tp,range)
   = Env env syns mname srcpath imports (unique+1) gamma (M.insert name tp locals)
 
 
@@ -1069,13 +1080,13 @@ envLookupCon env name
      [con@(InfoCon{})] -> return con
      res               -> fail $ "when parsing " ++ show (modName env) ++ " unknown constructor: " ++ show name ++ ": " ++ show res -- ++ ":\n" ++ show (gamma env)
 
-envLookupVar :: Env -> Name -> LexParser Expr
-envLookupVar env name
+envLookupVar :: Env -> Name -> Range -> LexParser Expr
+envLookupVar env name rng
  = let lqname = requalifyLocally name
    in case M.lookup lqname (locals env) of
-     Just tp -> return (Var (TName lqname tp) InfoNone)   -- implicit/par
+     Just tp -> return (Var (TName lqname tp (Just rng)) InfoNone)   -- implicit/par
      _ -> case gammaLookupCanonical name (gamma env) of
-            [fun@(InfoFun{})] -> return $ coreExprFromNameInfo name fun
-            [val@(InfoVal{})] -> return $ coreExprFromNameInfo name val
-            [extern@(Type.Assumption.InfoExternal{})] -> return $ coreExprFromNameInfo name extern
+            [fun@(InfoFun{})] -> return $ coreExprFromNameInfo name fun rng
+            [val@(InfoVal{})] -> return $ coreExprFromNameInfo name val rng
+            [extern@(Type.Assumption.InfoExternal{})] -> return $ coreExprFromNameInfo name extern rng
             res               -> fail $ "unknown identifier: " ++ show name ++ ": " ++ show res --  ++ ":\n" ++ show (gamma env)

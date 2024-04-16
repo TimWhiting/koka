@@ -66,20 +66,20 @@ ruDef def
 ruExpr :: Expr -> Reuse Expr
 ruExpr expr
   = case expr of
-      App alloc@(Var allocAt _) [reuse@(Var reuseName info), conApp]  | nameAllocAt == getName allocAt
+      App alloc@(Var allocAt _) [reuse@(Var reuseName info), conApp] rng | nameAllocAt == getName allocAt
         -> do conApp' <- ruExpr conApp
               mbExpr  <- ruSpecialize reuseName info conApp'
               case mbExpr of
                 Just newExpr -> return newExpr
-                Nothing      -> return (App alloc [reuse, conApp'])
+                Nothing      -> return (App alloc [reuse, conApp'] rng)
       TypeLam tpars body
         -> TypeLam tpars <$> ruExpr body
       TypeApp body targs
         -> (`TypeApp` targs) <$> ruExpr body
       Lam pars eff body
         -> Lam pars eff <$> ruExpr body
-      App fn args
-        -> liftM2 App (ruExpr fn) (mapM ruExpr args)
+      App fn args rng
+        -> liftM2 (\f xs -> App f xs rng) (ruExpr fn) (mapM ruExpr args)
 
       Let [] body
         -> ruExpr body
@@ -121,7 +121,7 @@ ruGuard (Guard test expr)
 ruSpecialize :: TName -> VarInfo -> Expr -> Reuse (Maybe Expr)
 ruSpecialize reuseName info conApp
   = case (conApp,info) of
-      (App con args, InfoReuse (PatCon{patConName, patConPatterns}))
+      (App con args rng, InfoReuse (PatCon{patConName, patConPatterns}))
         -> case extractCon con of
              Just (cname, repr)
                -> do mci <- getConInfo (typeOf con) (getName cname)
@@ -131,7 +131,7 @@ ruSpecialize reuseName info conApp
                          specialize = oldTagBenefit + length (filter isMatch matches) >= 1 + ((1 + length args) `div` 4)
                      case (mci, specialize) of
                        (Just ci, True)
-                         -> Just <$> ruSpecCon reuseName cname repr ci needsTag (conTag repr) (typeOf conApp) (App con) matches
+                         -> Just <$> ruSpecCon reuseName cname repr ci needsTag (conTag repr) (typeOf conApp) (\xs -> App con xs rng) matches
                        _ -> return Nothing
              Nothing -> return Nothing
       _ -> return Nothing
@@ -173,7 +173,7 @@ tryMatch expr pat
   = case (expr,pat) of
       (Var vname _, PatVar pname _)  -- direct match (x == x)
          | vname == pname -> Match [] expr
-      (App (Var dname _) [v@(Var vname _)], PatVar pname _)  -- match dup (x == dup(x))
+      (App (Var dname _) [v@(Var vname _)] rng, PatVar pname _)  -- match dup (x == dup(x))
          | getName dname == nameDup && vname == pname -> Match [expr] v
       (Con cname _, PatCon{patConName,patConPatterns = []})
          | cname == patConName -> Match [] expr
@@ -188,12 +188,12 @@ ruToAssign (NoMatch expr)
      then return ([],(expr,False))
      else do name <- uniqueName "ru"
              let def = DefNonRec (makeDef name expr)
-             let var = Var (TName name (typeOf expr)) InfoNone
+             let var = Var (TName name (typeOf expr) Nothing) InfoNone
              return ([def],(var,False))
 
 genReuseIsValid :: TName -> Expr
 genReuseIsValid reuseName
-  = App (Var (TName nameReuseIsValid typeReuseIsValid) (InfoExternal [(C CDefault,"kk_likely(#1!=NULL)")])) [Var reuseName InfoNone]
+  = App (Var (TName nameReuseIsValid typeReuseIsValid Nothing) (InfoExternal [(C CDefault,"kk_likely(#1!=NULL)")])) [Var reuseName InfoNone] Nothing
   where
     typeReuseIsValid = TFun [(nameNil,typeReuse)] typeTotal typeBool
 
@@ -201,8 +201,8 @@ genReuseIsValid reuseName
 -- generates:  c = (conName*)reuseName; c->field1 := expr1; ... ; c->fieldN := exprN; (tp*)(c)
 genConTagFieldsAssign :: Type -> TName -> ConRepr -> TName -> Int -> [(Name,Expr)] -> Expr
 genConTagFieldsAssign resultType conName conRepr reuseName tag fieldExprs
-  = App (Var (TName nameConTagFieldsAssign typeConFieldsAssign) (InfoArity 0 (length fieldExprs + 1)))
-        ([Var reuseName (InfoConField conName conRepr nameNil), Var (TName (newName (show tag)) typeUnit) InfoNone] ++ map snd fieldExprs)
+  = App (Var (TName nameConTagFieldsAssign typeConFieldsAssign Nothing) (InfoArity 0 (length fieldExprs + 1)))
+        ([Var reuseName (InfoConField conName conRepr nameNil), Var (TName (newName (show tag)) typeUnit Nothing) InfoNone] ++ map snd fieldExprs) Nothing
   where
     fieldTypes = [(name,typeOf expr) | (name,expr) <- fieldExprs]
     typeConFieldsAssign = TFun ([(nameNil,typeOf reuseName), (nameNil, typeUnit)] ++ fieldTypes) typeTotal resultType
@@ -211,8 +211,8 @@ genConTagFieldsAssign resultType conName conRepr reuseName tag fieldExprs
 -- generates:  c = (conName*)reuseName; c->field1 := expr1; ... ; c->fieldN := exprN; (tp*)(c)
 genConFieldsAssign :: Type -> TName -> ConRepr -> TName -> [(Name,Expr)] -> Expr
 genConFieldsAssign resultType conName conRepr reuseName fieldExprs
-  = App (Var (TName nameConFieldsAssign typeConFieldsAssign) (InfoArity 0 (length fieldExprs + 1)))
-        (Var reuseName (InfoConField conName conRepr nameNil) : map snd fieldExprs)
+  = App (Var (TName nameConFieldsAssign typeConFieldsAssign Nothing) (InfoArity 0 (length fieldExprs + 1)))
+        (Var reuseName (InfoConField conName conRepr nameNil) : map snd fieldExprs) Nothing
   where
     fieldTypes = [(name,typeOf expr) | (name,expr) <- fieldExprs]
     typeConFieldsAssign = TFun ((nameNil,typeOf reuseName) : fieldTypes) typeTotal resultType
@@ -239,7 +239,7 @@ getConInfo dataType conName
 
 -- create a unique name specific to this module
 uniqueTName :: Type -> Reuse TName
-uniqueTName tp = (`TName` tp) <$> uniqueName "ru"
+uniqueTName tp = (\n -> TName n tp Nothing) <$> uniqueName "ru"
 
 
 --------------------------------------------------------------------------

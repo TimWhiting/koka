@@ -36,7 +36,7 @@ analyzeResume defName opName raw expr
       Lam pars eff body -> if (not raw) then arTailExpr body else ResumeNormalRaw
       TypeLam _ body    -> analyzeResume defName opName raw body
       TypeApp body _    -> analyzeResume defName opName raw body
-      App _ [body]      -> analyzeResume defName opName raw body  -- for toAny (...)
+      App _ [body] _      -> analyzeResume defName opName raw body  -- for toAny (...)
       _                 -> failure "Core.AnalysisResume.analyzeResume: invalid branch expression"
 
 
@@ -50,9 +50,9 @@ arExpr' appResume expr
   = case expr of
       Lam tnames eff body
         -> if (isResumingElem (fv expr)) then ResumeNormal else ResumeNever
-      App (Var tname info) args  | isResuming tname
+      App (Var tname info) args _ | isResuming tname
         -> appResume `rand` arExprsAnd args `rand` (if (tname==resumeShallowName) then ResumeOnce else ResumeNever)
-      App f args
+      App f args _
         -> arExprsAnd (f:args)
       TypeLam tvs body
         -> arExpr body
@@ -138,6 +138,6 @@ isScoped ResumeNormal = False
 isScoped ResumeOnce   = False
 isScoped _            = True
 
-resumeName = TName (newName "resume") typeVoid
-resumeShallowName = TName (newName "resume-shallow") typeVoid
-finalizeName = TName (newName "finalize") typeVoid
+resumeName = TName (newName "resume") typeVoid Nothing
+resumeShallowName = TName (newName "resume-shallow") typeVoid Nothing
+finalizeName = TName (newName "finalize") typeVoid Nothing

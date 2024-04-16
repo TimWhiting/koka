@@ -50,6 +50,7 @@ library
       Common.Unique
       Compile.Build
       Compile.BuildContext
+      Compile.BuildMonad
       Compile.CodeGen
       Compile.Module
       Compile.Optimize
@@ -66,6 +67,14 @@ library
       Core.Core
       Core.CoreVar
       Core.CTail
+      Core.Demand.AbstractValue
+      Core.Demand.ConstantProp
+      Core.Demand.DemandAnalysis
+      Core.Demand.DemandMonad
+      Core.Demand.FixpointMonad
+      Core.Demand.Primitives
+      Core.Demand.StaticContext
+      Core.Demand.Syntax
       Core.Divergent
       Core.FunLift
       Core.Inline
@@ -109,6 +118,7 @@ library
       Syntax.Lexeme
       Syntax.Lexer
       Syntax.Parse
+      Syntax.Pretty
       Syntax.Promote
       Syntax.RangeMap
       Syntax.Syntax
@@ -161,6 +171,7 @@ library
     , process
     , text
     , time
+    , transformers
   default-language: Haskell2010
   if os(windows)
     cpp-options: -DWINDOWS
@@ -212,6 +223,7 @@ executable koka
     , text
     , text-rope
     , time
+    , transformers
   default-language: Haskell2010
 
 executable koka-plain
@@ -237,6 +249,7 @@ executable koka-plain
     , process
     , text
     , time
+    , transformers
   default-language: Haskell2010
 
 test-suite koka-test
@@ -268,4 +281,5 @@ test-suite koka-test
     , regex-compat >=0.95.2.1
     , text
     , time
+    , transformers
   default-language: Haskell2010

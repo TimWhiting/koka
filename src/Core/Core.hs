@@ -20,6 +20,7 @@ module Core.Core ( -- Data structures
                    , Branch(..), Guard(..), Pattern(..)
                    , TName(..), typeDefName
                    , showTName
+                   , isDefNonRec
                    , flattenTypeDefGroups
                    , flattenDefGroups
                    , flattenAllDefGroups
@@ -104,7 +105,7 @@ module Core.Core ( -- Data structures
                    , CorePhase
                    , getCoreDefs, setCoreDefs, withCoreDefs
                    , runCorePhase
-                   , liftCorePhase, liftCorePhaseUniq
+                   , liftCorePhase, liftCorePhaseUniq, liftCorePhaseRes
                    , liftError
                    ) where
 
@@ -122,7 +123,7 @@ import Common.Range
 import Common.Failure
 import Common.Unique
 import Common.Id
-import Common.Error
+import Common.Error(mergeErrors, Error)
 import Common.NamePrim( nameTrue, nameFalse, nameTuple, nameUnit, nameTpBool, nameEffectOpen, nameReturn, nameTrace, nameLog,
                         nameEvvIndex, nameOpenAt, nameOpenNone, nameInternalInt32, nameInternalSSizeT, nameBox, nameUnbox,
                         nameVector, nameCons, nameListNil, nameTpList, nameUnit, nameTpUnit, nameTpFieldAddr,
@@ -146,14 +147,14 @@ isExprFalse (Con tname _)  = (getName tname == nameFalse)
 isExprFalse _              = False
 
 exprUnit :: Expr
-exprUnit = Con (TName nameUnit typeUnit) (ConEnum nameTpUnit DataEnum valueReprZero 0)
+exprUnit = Con (TName nameUnit typeUnit Nothing) (ConEnum nameTpUnit DataEnum valueReprZero 0)
            -- (ConInfo nameUnit typeUnit [] [] [] (TFun [] typeTotal typeUnit) Inductive rangeNull [] [] False Public "")
 
 (patFalse,exprFalse) = patExprBool nameFalse 0
 (patTrue,exprTrue)   = patExprBool nameTrue 1
 
 patExprBool name tag
-  = let tname   = TName name typeBool
+  = let tname   = TName name typeBool Nothing
         conEnum = ConEnum nameTpBool DataEnum valueReprZero tag
         conInfo = ConInfo name nameTpBool [] [] [] (TFun [] typeTotal typeBool) Inductive rangeNull [] [] False
                             [] valueReprZero Public ""
@@ -168,24 +169,24 @@ makeIfExpr pexpr texpr eexpr
 
 makeVector :: Type -> [Expr] -> Expr
 makeVector tp exprs
-  = App (TypeApp vectorFromList [tp]) [makeList tp exprs]
+  = App (TypeApp vectorFromList [tp]) [makeList tp exprs] Nothing
   where
     vectorFromList
-      = Var (TName nameVector (TForall [a] [] (typeFun [(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeVector [TVar a]))))
+      = Var (TName nameVector (TForall [a] [] (typeFun [(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeVector [TVar a]))) Nothing)
             (InfoArity 1 1)
     a = TypeVar (0) kindStar Bound
 
-wrapOptional :: Type -> Expr -> Expr
-wrapOptional tp expr
-  = App (TypeApp (Con (TName nameOptional tpOptional) conInfo) [tp]) [expr]
+wrapOptional :: Type -> Expr -> Maybe Range -> Expr
+wrapOptional tp expr rng
+  = App (TypeApp (Con (TName nameOptional tpOptional rng) conInfo) [tp]) [expr] Nothing
   where
     conInfo    = ConAsJust nameTpOptional DataAsMaybe (valueReprScan 1) nameOptionalNone {-the Nothing-} 0
     tpOptional = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
     a = TypeVar (0) kindStar Bound
 
-makeOptionalNone :: Type -> Expr
-makeOptionalNone tp
-  = TypeApp (Con (TName nameOptionalNone tpOptionalNone) conInfo) [tp]
+makeOptionalNone :: Type -> Range -> Expr
+makeOptionalNone tp rng
+  = TypeApp (Con (TName nameOptionalNone tpOptionalNone (Just rng)) conInfo) [tp]
   where
     conInfo    = ConSingleton nameTpOptional DataAsMaybe valueReprZero 1
     tpOptionalNone = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
@@ -196,11 +197,11 @@ makeList tp exprs
   = foldr cons nil exprs
   where
     nilTp    = TForall [a] [] (TApp typeList [TVar a])
-    nilCon   = Con (TName nameListNil nilTp) (ConSingleton nameTpList DataAsList valueReprZero 0)
+    nilCon   = Con (TName nameListNil nilTp Nothing) (ConSingleton nameTpList DataAsList valueReprZero 0)
     nil      = TypeApp nilCon [tp]
     consTp   = TForall [a] [] (typeFun [(nameNil,TVar a),(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeList [TVar a]))
-    consCon  = Con (TName nameCons consTp) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2)  -- NOTE: depends on Cons being second in the definition in std/core :-(
-    cons expr xs = App (TypeApp consCon [tp]) [expr,xs]
+    consCon  = Con (TName nameCons consTp Nothing) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2)  -- NOTE: depends on Cons being second in the definition in std/core :-(
+    cons expr xs = App (TypeApp consCon [tp]) [expr,xs] Nothing
     a = TypeVar (0) kindStar Bound
 
 makeDef :: Name -> Expr -> Def
@@ -208,7 +209,7 @@ makeDef name expr
   = Def name (typeOf expr) expr Private DefVal InlineNever rangeNull ""
 
 makeTDef :: TName -> Expr -> Def
-makeTDef (TName name tp) expr
+makeTDef (TName name tp _) expr
   = Def name tp expr Private DefVal InlineNever rangeNull ""
 
 
@@ -246,7 +247,7 @@ unzipM m = fmap unzip m
 -- If this remains in the source after Reuse Analyis an error will be thrown!
 makeDropSpecial :: TName -> Expr -> Expr -> Expr -> Expr
 makeDropSpecial y xUnique xShared xDecRef
-  = App (Var (TName nameDropSpecial tp) (InfoExternal [])) [Var y InfoNone, xUnique, xShared, xDecRef]
+  = App (Var (TName nameDropSpecial tp Nothing) (InfoExternal [])) [Var y InfoNone, xUnique, xShared, xDecRef] Nothing
   where
     tp = typeFun [(nameNil,t) | t <- [typeOf y, typeOf xUnique, typeOf xShared, typeOf xDecRef]] typeTotal typeUnit
 
@@ -573,6 +574,10 @@ data DefGroup =
 
 type Defs = [Def]
 
+isDefNonRec :: DefGroup -> Bool
+isDefNonRec (DefNonRec _) = True
+isDefNonRec _             = False
+
 flattenDefGroups :: [DefGroup] -> [Def]
 flattenDefGroups defGroups
   = concatMap (\defg -> case defg of { DefRec defs -> defs; DefNonRec def -> [def]}) defGroups
@@ -634,10 +639,14 @@ newtype CorePhase b a = CP (Int -> DefGroups -> Error b (CPState a))
 
 data CPState a = CPState !a !Int !DefGroups
 
+
+instance Functor CPState where
+    fmap f (CPState x u d) = CPState (f x) u d
+
 instance Functor (CorePhase b) where
   fmap f (CP cp)
-    = CP (\uniq defs -> do (CPState x uniq' defs') <- cp uniq defs
-                           return (CPState (f x) uniq' defs'))
+    = CP (\uniq defs -> do cp <- cp uniq defs
+                           return $ fmap f cp)
 
 instance Applicative (CorePhase b) where
   pure x = CP (\uniq defs -> return (CPState x uniq defs))
@@ -648,7 +657,7 @@ instance Monad (CorePhase b) where
   (CP cp) >>= f = CP (\uniq defs -> do (CPState x uniq' defs') <- cp uniq defs
                                        case f x of
                                          CP cp' -> cp' uniq' defs')
-
+                                              
 instance HasUnique (CorePhase b) where
   updateUnique f = CP (\uniq defs -> return (CPState uniq (f uniq) defs))
   setUnique uniq = CP (\_ defs -> return (CPState () uniq defs))
@@ -678,6 +687,10 @@ liftCorePhase :: (DefGroups -> DefGroups) -> CorePhase b ()
 liftCorePhase f
   = liftCorePhaseUniq (\u defs -> (f defs, u))
 
+liftCorePhaseRes :: (Int -> DefGroups -> (a,Int)) -> CorePhase b a
+liftCorePhaseRes f
+  = CP (\uniq defs -> let (a,uniq') = f uniq defs in return (CPState a uniq' defs))
+
 liftError :: Error b a -> CorePhase b a
 liftError err
   = CP (\uniq defs -> do x <- err
@@ -694,7 +707,7 @@ data Expr =
   -- Core lambda calculus
     Lam ![TName] !Effect !Expr
   | Var{ varName :: !TName, varInfo :: !VarInfo }  -- ^ typed name and possible typeArity/parameter arity tuple for top-level functions
-  | App !Expr ![Expr]                              -- ^ always fully applied!
+  | App !Expr ![Expr] !(Maybe Range)                             -- ^ always fully applied!
   | TypeLam ![TypeVar] !Expr                       -- ^ Type (universal) abstraction/application
   | TypeApp !Expr ![Type]
   -- Literals, constants and labels
@@ -745,17 +758,18 @@ data VarInfo
   | InfoConField !TName !ConRepr !Name  -- constructor name, repr, field name (inserted by reuse specialization)
 
 data TName = TName
-  { getName :: !Name
-  , tnameType :: !Type
+  { getName :: Name
+  , tnameType :: Type
+  , originalRange :: Maybe Range
   }
 
-showTName (TName name tp)
+showTName (TName name tp rng)
     = show name -- ++ ": " ++ show tp -- ++ ": " ++ minCanonical tp
 
 
 defTName :: Def -> TName
 defTName def
-  = TName (defName def) (defType def)
+  = TName (defName def) (defType def) (Just $ defNameRange def)
 
 defsTNames :: [Def] -> TNames
 defsTNames defs = S.fromList (map defTName defs)
@@ -814,7 +828,7 @@ isTotal expr
      Lit _      -> True
      Let dgs e  -> all isTotalDef (flattenDefGroups dgs) && isTotal e
      Case exps branches -> all isTotal exps && all isTotalBranch branches
-     App f args -> isTotalFun f && all isTotal args
+     App f args _ -> isTotalFun f && all isTotal args
      -- _          -> False
   where
     isTotalBranch (Branch pat guards) = all isTotalGuard guards
@@ -833,7 +847,7 @@ isTotalFun expr
       Case exps branches -> all isTotal exps && all isTotalBranchFun branches
       -- App (TypeApp (Var open _) _) args  | getName open == nameEffectOpen
       --              -> all isTotal args
-      App f args    -> hasTotalEffect (typeOf expr) && isTotalFun f && all isTotal args
+      App f args _    -> hasTotalEffect (typeOf expr) && isTotalFun f && all isTotal args
       Var v _       | getName v == nameKeep -> False
                     | getName v `elem` [nameBox,nameUnbox]  -> True
                     | otherwise -> False -- TODO: not (isPrimitiveName (getName v)) && hasTotalEffect (typeOf v)
@@ -904,7 +918,7 @@ costExpr expr
                             costInf
       Lam tname eff body -> 0 + costExpr body
       Var tname info     -> 0
-      App e args         -> 1 + costExpr e + sum (map costExpr args)
+      App e args _         -> 1 + costExpr e + sum (map costExpr args)
       TypeLam tvs e      -> costExpr e
       TypeApp e tps      -> costExpr e
       Con tname repr     -> 0
@@ -941,7 +955,7 @@ foldMapExpr :: Monoid a => (Expr -> a) -> Expr -> a
 foldMapExpr acc e = case e of
   Lam _ _ body -> acc e <> foldMapExpr acc body
   Var _ _ -> acc e
-  App f xs -> acc e <> foldMapExpr acc f <> mconcat (foldMapExpr acc <$> xs)
+  App f xs _ -> acc e <> foldMapExpr acc f <> mconcat (foldMapExpr acc <$> xs)
   TypeLam _ body -> acc e <> foldMapExpr acc body
   TypeApp expr _ -> acc e <> foldMapExpr acc expr
   Con _ _ -> acc e
@@ -963,7 +977,7 @@ rewriteBottomUpM :: (Monad m) => (Expr -> m Expr) -> Expr -> m Expr
 rewriteBottomUpM f e = f =<< case e of
   Lam params eff body -> Lam params eff <$> rec body
   Var _ _ -> pure e
-  App fun xs -> liftA2 App (rec fun) (mapM rec xs)
+  App fun xs rng -> liftA2 (\f xs -> App f xs rng) (rec fun) (mapM rec xs)
   TypeLam types body -> TypeLam types <$> rec body
   TypeApp expr types -> (\fexpr -> TypeApp fexpr types) <$> rec expr
   Con _ _ -> pure e
@@ -995,7 +1009,7 @@ rewriteTopDownM :: (Monad m) => (Expr -> m Expr) -> Expr -> m Expr
 rewriteTopDownM f e = f e >>= \e -> case e of
   Lam params eff body -> Lam params eff <$> rec body
   Var _ _ -> pure e
-  App fun xs -> liftA2 App (rec fun) (mapM rec xs)
+  App fun xs rng -> liftA2 (\f xs -> App f xs rng) (rec fun) (mapM rec xs)
   TypeLam types body -> TypeLam types <$> rec body
   TypeApp expr types -> (\fexpr -> TypeApp fexpr types) <$> rec expr
   Con _ _ -> pure e
@@ -1065,10 +1079,10 @@ tnamesDisjoint :: TNames -> TNames -> Bool
 tnamesDisjoint n1 n2 = null (S.intersection n1 n2) -- S.disjoint n1 n2  -- build with ghc8.0.2
 
 instance Eq TName where
-  (TName name1 tp1) == (TName name2 tp2)  = (name1 == name2) --  && matchType tp1 tp2)
+  (TName name1 tp1 rng1) == (TName name2 tp2 rng2)  = (name1 == name2) --  && matchType tp1 tp2)
 
 instance Ord TName where
-  compare (TName name1 tp1) (TName name2 tp2)
+  compare (TName name1 tp1 rng1) (TName name2 tp2 rng2)
     = compare name1 name2
        {- EQ  -> compare (minCanonical tp1) (minCanonical tp2)
         lgt -> lgt -}
@@ -1098,8 +1112,8 @@ makeTypeApp expr targs  = TypeApp expr targs
 -- | Add a value application
 addApps :: [Expr] -> (Expr -> Expr)
 addApps [] e             = e
-addApps es (App e args)  = App e (args ++ es)
-addApps es e             = App e es
+addApps es (App e args _)  = App e (args ++ es) Nothing
+addApps es e             = App e es Nothing
 
 -- | Add kind and type application
 addTypeApps :: [TypeVar] -> (Expr -> Expr)
@@ -1114,10 +1128,10 @@ addTypeLambdas pars (TypeLam ps e) = TypeLam (pars ++ ps) e
 addTypeLambdas pars e              = TypeLam pars e
 
 -- | Add term lambdas
-addLambdas :: [(Name, Type)] -> (Type -> Expr -> Expr)
+addLambdas :: [(Range, (Name, Type))] -> (Type -> Expr -> Expr)
 addLambdas [] eff e              = e
-addLambdas pars eff (Lam ps _ e) = Lam ([TName x tp | (x,tp) <- pars] ++ ps) eff e
-addLambdas pars eff e            = Lam [TName x tp | (x,tp) <- pars] eff e
+addLambdas pars eff (Lam ps _ e) = Lam ([TName x tp (Just rng) | (rng, (x,tp)) <- pars] ++ ps) eff e
+addLambdas pars eff e            = Lam [TName x tp (Just rng) | (rng, (x,tp)) <- pars] eff e
 
 -- | Add term lambdas
 addLambdasTName :: [TName] -> (Type -> Expr -> Expr)
@@ -1156,9 +1170,9 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
   = if (hasNoEffectExpr expr)
      then expr
      else --trace ("open effect: " ++ show (map pretty [effFrom,effTo,tpFrom,tpTo])) $
-          App (TypeApp varOpen [effFrom,effTo,tpFrom,tpTo]) [expr]
+          App (TypeApp varOpen [effFrom,effTo,tpFrom,tpTo]) [expr] Nothing
   where
-    varOpen = Var (TName nameEffectOpen tpOpen) (InfoExternal [(Default,"#1")])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
+    varOpen = Var (TName nameEffectOpen tpOpen Nothing) (InfoExternal [(Default,"#1")])    -- NOTE: quite fragile as it relies on the exact definition in core.kk
     tpOpen  = TForall [e1,e2,a,b] [] (TFun [(newName "x", tpFrom)] typeTotal tpTo)
     a       = TypeVar (-1) kindStar Bound
     b       = TypeVar (-2) kindStar Bound
@@ -1175,20 +1189,20 @@ openEffectExpr effFrom effTo tpFrom tpTo expr
 
 makeInt32 :: Integer -> Expr
 makeInt32 i
-  = let int32 = Var (TName nameInternalInt32 (typeFun [(nameNil,typeInt)] typeTotal typeInt32)) (InfoArity 1 0 )
-    in App int32 [Lit (LitInt i)]
+  = let int32 = Var (TName nameInternalInt32 (typeFun [(nameNil,typeInt)] typeTotal typeInt32) Nothing) (InfoArity 1 0 )
+    in App int32 [Lit (LitInt i)] Nothing
 
 makeEvIndex :: Integer -> Expr
 makeEvIndex i | i < 0 = failure $ ("Core.Core.makeEvIndex: index < 0: " ++ show i)
 makeEvIndex i
-  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeEvIndex)) (InfoArity 1 0 )
-    in App sizet [Lit (LitInt i)]
+  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeEvIndex) Nothing) (InfoArity 1 0 )
+    in App sizet [Lit (LitInt i)] Nothing
 
 makeSizeT :: Integer -> Expr
 makeSizeT i | i < 0 = failure $ ("Core.Core.makeSizeT: size_t < 0: " ++ show i)
 makeSizeT i
-  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeSSizeT)) (InfoArity 1 0 )
-    in App sizet [Lit (LitInt i)]
+  = let sizet = Var (TName nameInternalSSizeT (typeFun [(nameNil,typeInt)] typeTotal typeSSizeT) Nothing) (InfoArity 1 0 )
+    in App sizet [Lit (LitInt i)] Nothing
 
 ---------------------------------------------------------------------------
 -- type of a core term
@@ -1200,12 +1214,12 @@ instance HasType Def where
   typeOf def  = defType def
 
 instance HasType TName where
-  typeOf (TName _ tp)   = tp
+  typeOf (TName _ tp _)   = tp
 
 instance HasType Expr where
   -- Lambda abstraction
   typeOf (Lam pars eff expr)
-    = typeFun [(name,tp) | TName name tp <- pars] eff (typeOf expr)
+    = typeFun [(name,tp) | TName name tp _ <- pars] eff (typeOf expr)
 
   -- Variables
   typeOf (Var tname info)
@@ -1216,12 +1230,12 @@ instance HasType Expr where
     = typeOf tname
 
   -- Application
-  typeOf expr@(App fun args)
+  typeOf expr@(App fun args rng)
     = -- snd (splitFun (typeOf fun))
       case splitFunScheme (typeOf fun) of
         Just (_,_,targs,eff,tres)          -- ignore forall as we can call this after box/unbox
            | length args == length targs || length targs == 0 -> tres
-           | length args > length targs  -> typeOf (App (Var (TName (newName "tmp") tres) InfoNone) (drop (length targs) args))
+           | length args > length targs  -> typeOf (App (Var (TName (newName "tmp") tres Nothing) InfoNone) (drop (length targs) args) rng)
            | otherwise -> TFun (drop (length args) targs) eff tres
         _ -> error ("Core.Core.typeOf.App: Expected function: " ++ show (pretty (typeOf fun)) ++ show (map (pretty . typeOf) args))  -- ++ " in the application " ++ show expr
 
@@ -1364,7 +1378,7 @@ depExpr expr
   = case expr of
       Var tname info     -> depTName tname
       Lam tname eff body -> S.union (depType eff) (depExpr body)
-      App e args         -> depsUnions (map depExpr (e:args))
+      App e args _         -> depsUnions (map depExpr (e:args))
       TypeLam tvs e      -> depExpr e
       TypeApp e tps      -> depsUnions (depExpr e : map depType tps)
       Con tname repr     -> depTName tname

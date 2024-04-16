@@ -176,14 +176,14 @@ divExpr expr
       Lam tnames eff expr   
         -> divExpr expr
       -- Ignore .open effect calls
-      App (App (TypeApp (Var openName _) _) [f]) args  | getName openName == nameEffectOpen        
-        -> divExpr (App f args)
-      App (TypeApp (App (TypeApp (Var openName _) _) [f]) targs) args  | getName openName == nameEffectOpen        
-        -> divExpr (App (TypeApp f targs) args)
+      App (App (TypeApp (Var openName _) _) [f] _) args rng  | getName openName == nameEffectOpen        
+        -> divExpr (App f args rng)
+      App (TypeApp (App (TypeApp (Var openName _) _) [f] _) targs) args rng  | getName openName == nameEffectOpen        
+        -> divExpr (App (TypeApp f targs) args rng)
       -- applications        
-      App (TypeApp var@(Var tname info) targs) args
-        -> divExpr (App var args)
-      App (Var tname info) args
+      App (TypeApp var@(Var tname info) targs) args rng
+        -> divExpr (App var args rng)
+      App (Var tname info) args rng
         -> do isRec <- isRecursiveCall (getName tname)
               if isRec 
                 then do call <- mapM (argumentSize (getName tname)) (zip [0..] args) -- todo: should we add 'Unknown's for partial applications?
@@ -195,7 +195,7 @@ divExpr expr
         -> do isRec <- isRecursiveCall (getName tname)
               if isRec then addCall (getName tname) [Unknown] else return ()
               
-      App f args        
+      App f args rng        
         -> do divExpr f
               mapM_ divExpr args
       TypeLam tvs expr  
@@ -223,7 +223,7 @@ divBranch exprs (Branch patterns guards)
     extractName expr
       = case expr of
           Var tname _ -> Just (getName tname)
-          App (TypeApp (Var sameSize _) _) [Var tname _] | getName sameSize `elem` namesSameSize 
+          App (TypeApp (Var sameSize _) _) [Var tname _] rng | getName sameSize `elem` namesSameSize 
               -> Just(getName tname) 
           _   -> Nothing
 
@@ -258,21 +258,21 @@ argumentSize name (pos,arg)
       Var tname info
         -> lookupSize name pos (getName tname)
       -- Ignore .open effect calls
-      App (App (TypeApp (Var openName _) _) [f]) args  | getName openName == nameEffectOpen        
-        -> argumentSize name (pos,App f args)
-      App (TypeApp (App (TypeApp (Var openName _) _) [f]) targs) args  | getName openName == nameEffectOpen        
-        -> argumentSize name (pos,App (TypeApp f targs) args)
+      App (App (TypeApp (Var openName _) _) [f] rng0) args rng  | getName openName == nameEffectOpen        
+        -> argumentSize name (pos,App f args rng)
+      App (TypeApp (App (TypeApp (Var openName _) _) [f] rng0) targs) args rng  | getName openName == nameEffectOpen        
+        -> argumentSize name (pos,App (TypeApp f targs) args rng)
       -- special 'unsafeDecreasing' call
-      App (TypeApp (Var name _) [targ]) [arg] | getName name == nameDecreasing
+      App (TypeApp (Var name _) [targ]) [arg] rng | getName name == nameDecreasing
         -> return Lt  
       -- special case substr1
-      App (Var substrName _) (Var sname _ : args) | getName substrName == nameSubStr1
+      App (Var substrName _) (Var sname _ : args) rng | getName substrName == nameSubStr1
         -> do sz <- lookupSize name pos (getName sname)
               return (reduceSize sz) 
       -- these two cases state that the call to a function f where f < name is itself < name.
-      App (Var tname info) args
+      App (Var tname info) args rng
         -> lookupSize name pos (getName tname)
-      App (TypeApp (Var tname info) targs) args
+      App (TypeApp (Var tname info) targs) args rng
         -> lookupSize name pos (getName tname)
       _ -> return Unknown
   where

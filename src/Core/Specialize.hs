@@ -115,9 +115,9 @@ specOneExpr :: Name -> Expr -> SpecM Expr
 specOneExpr thisDefName
   = rewriteTopDownM $ \e ->
     case e of
-      App (Var (TName name _) _) args
+      App (Var (TName name _ _) _) args rng
         -> go name e
-      App (TypeApp (Var (TName name _) _) typVars) args
+      App (TypeApp (Var (TName name _ _) _) typVars) args rng
         -> go name e
       e -> pure e
   where
@@ -145,11 +145,11 @@ partitionBools bools as = foldr f ([], []) $ zip bools as
 specOneCall :: InlineDef -> Expr -> SpecM Expr
 specOneCall inlineDef@(InlineDef{ inlineName=specName, inlineExpr=specExpr, inlineParamSpecialize=specArgs, inlineSort=sort }) e
   = case e of
-      App (Var (TName name _) _) args
+      App (Var (TName name _ _) _) args rng
        | gArgs <- goodArgs specArgs args
        , any isJust gArgs
         -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) Nothing
-      App (TypeApp (Var (TName name ty) _) typeArgs) args
+      App (TypeApp (Var (TName name ty _) _) typeArgs) args rng
        | gArgs <- goodArgs specArgs args
        , any isJust gArgs
         -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) $ Just typeArgs
@@ -182,7 +182,7 @@ goodArg expr = -- (\isgood -> trace ("expr: " ++ show expr ++ " is good? " ++ sh
                 Lam{}                  -> Just expr
                 TypeLam _ body         -> goodArg body >> Just expr
                 TypeApp body _         -> goodArg body >> Just expr
-                App fun _              -> goodArg fun  >> Just expr-- ??  for open(f) calls?
+                App fun _ rng              -> goodArg fun  >> Just expr-- ??  for open(f) calls?
                 -- Var name info | show (getName name) == ".spec.1052" -> Just expr
                 Var name info          -> case info of
                                             InfoNone -> Nothing
@@ -249,16 +249,16 @@ specInnerCalls from to isSpecParam specParamNames expr
     sicExpr expr
       = case expr of
           -- rewrite recursive calls
-          App (Var v info) args  | v == from && matchSpecParamNames (filterBools isSpecParam args)
-            -> sicAppTo args
-          App (TypeApp (Var v info) targs) args  | v == from && matchSpecParamNames (filterBools isSpecParam args)
-            -> sicAppTo args  -- always monomorph
+          App (Var v info) args rng  | v == from && matchSpecParamNames (filterBools isSpecParam args)
+            -> sicAppTo args rng
+          App (TypeApp (Var v info) targs) args rng  | v == from && matchSpecParamNames (filterBools isSpecParam args)
+            -> sicAppTo args rng  -- always monomorph
 
           -- visitor
           Lam params eff body
             | any (== from) params -> expr  -- avoid capture
             | otherwise            -> Lam params eff (sicExpr body)
-          App f args         -> App (sicExpr f) (map sicExpr args)
+          App f args rng         -> App (sicExpr f) (map sicExpr args) rng
           TypeLam tpars e    -> TypeLam tpars (sicExpr e)
           TypeApp e targs    -> TypeApp (sicExpr e) targs
           Let defGroups body -> sicLet defGroups body
@@ -320,20 +320,20 @@ replaceCall name expr0 sort bools args mybeTypeArgs
                 Just typeArgs -> subNew (zip (fnTypeParams expr) typeArgs) |-> body)
               $ Lam newParams (fnEffect expr)  -- fn <newparams>
               $ Let [DefNonRec $ Def param typ arg Private DefVal InlineAuto rangeNull ""  -- bind specialized parameters
-                      | (TName param typ, arg) <- zip speccedParams speccedArgs]
+                      | (TName param typ _, arg) <- zip speccedParams speccedArgs]
               $ fnBody expr
 
 
       -- substitute self-recursive calls to call our new specialized definition (without the specialized arguments!)
       specName <- uniqueName "spec"
       let specType  = typeOf specBody0
-          specTName = TName specName specType
+          specTName = TName specName specType Nothing
           specBody  = case specBody0 of
                         Lam args eff (Let specArgs body)
                           -> -- uniquefyExpr $
                              Lam args eff $
                                (Let specArgs $
-                                specInnerCalls (TName name (typeOf expr)) specTName bools speccedParams body)
+                                specInnerCalls (TName name (typeOf expr) Nothing) specTName bools speccedParams body)
                         _ -> failure "Specialize.replaceCall: Unexpected output from specialize pass"
 
       -- simplify so the new specialized arguments are potentially inlined unlocking potential further specialization
@@ -344,7 +344,7 @@ replaceCall name expr0 sort bools args mybeTypeArgs
                      $ "// specialized: " <> show name <> ", on parameters " <> concat (intersperse ", " (map show speccedParams)) <> ", using:\n" <>
                        comment (unlines [show param <> " = " <> show arg | (param,arg) <- zip speccedParams speccedArgs])
 
-      return $ Let [DefRec [specDef]] (App (Var (defTName specDef) InfoNone) newArgs)
+      return $ Let [DefRec [specDef]] (App (Var (defTName specDef) InfoNone) newArgs Nothing)
 
 fnTypeParams :: Expr -> [TypeVar]
 fnTypeParams (TypeLam typeParams _) = typeParams
@@ -427,7 +427,7 @@ usedInThisDef :: Def -> S.NameSet
 usedInThisDef def
   = foldMapExpr go $ defExpr def
   where
-    go (Var (TName name _) _) = S.singleton name
+    go (Var (TName name _ _) _) = S.singleton name
     go _ = mempty
 
 allEq :: (Eq a) => [a] -> Bool
@@ -451,9 +451,9 @@ recursiveCalls Def{ defName=thisDefName, defExpr=expr }
       -- assumption: all applications are TypeApps, or no applications are
       in (sequence types, args)
 
-    f (App (Var (TName name _) _) args)
+    f (App (Var (TName name _ _) _) args rng)
       | name == thisDefName = [(Nothing, args)]
-    f (App (TypeApp (Var (TName name _) _) types) args)
+    f (App (TypeApp (Var (TName name _ _) _) types) args rng)
       | name == thisDefName = [(Just types, args)]
     f _ = []
 
@@ -475,8 +475,8 @@ multiStepInlines loadedInlines inlines = snd . foldl' f (inlines `inlinesMerge` 
     -- look for calls to specializable functions where we don't know the RHS of an argument
     -- references that aren't calls aren't eligible for multi-step specialization; we don't have the specializable args anyway
     callsSpecializable inlines def = getAlt $ flip foldMapExpr (defExpr def) $ \e -> case e of
-      App (Var (TName name _) _) args -> goCommon name args
-      App (TypeApp (Var (TName name _) _) _) args -> goCommon name args
+      App (Var (TName name _ _) _) args rng -> goCommon name args
+      App (TypeApp (Var (TName name _ _) _) _) args rng -> goCommon name args
       e -> mempty
 
       where
