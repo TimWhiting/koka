@@ -10,6 +10,7 @@
 -- The LSP handlers that handle changes to the document
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 module LanguageServer.Handler.TextDocument
   ( didOpenHandler,
@@ -56,6 +57,18 @@ import qualified Language.LSP.Server as J
 import Compile.Build (searchSourceFile)
 import Platform.Config (sourceExtension)
 
+import Common.Range (rangeNull)
+import Common.NamePrim (nameInteractiveModule, nameExpr, nameSystemCore)
+import Common.Name (newName)
+import Common.File (getFileTime, FileTime, getFileTimeOrCurrent, getCurrentTime, isAbsolute, dirname)
+import Common.ColorScheme(ColorScheme(..))
+import Common.Error (Error, checkPartial)
+import Core.Core (Visibility(Private))
+import Compile.Options (Flags, colorSchemeFromFlags, includePath)
+import Compile.Module (Module(..), Modules)
+import LanguageServer.Conversions (toLspDiagnostics, makeDiagnostic, fromLspUri)
+
+import Syntax.Syntax ( programNull, programAddImports, Import(..) )
 
 -- Compile the file on opening
 didOpenHandler :: Handlers LSM

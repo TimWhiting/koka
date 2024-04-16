@@ -168,6 +168,24 @@
           "default": false,
           "description": "Log trace information from the language server subprocess.",
           "order": 11
+        },
+        "koka.analysis.callSensitivityDepth": {
+          "type": "number",
+          "default": 0,
+          "description": "The call sensitivity depth.",
+          "order": 12
+        },
+        "koka.analysis.gas": {
+          "type": "number",
+          "default": -1,
+          "description": "The gas to give the demand analysis.",
+          "order": 13
+        },
+        "koka.analysis.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug output for the demand analysis.",
+          "order": 14
         }
       }
     },

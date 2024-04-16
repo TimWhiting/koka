@@ -59,9 +59,12 @@ export class KokaConfig {
   showInferredTypes: boolean
   showImplicitArguments: boolean
   showFullQualifiers: boolean
+  analysisCallSensitivity: number
+  analysisGas: number
+  analysisDebug: boolean
 
   refreshConfig(vsConfig: vscode.WorkspaceConfiguration): void {
-    this.enableDebugExtension = vsConfig.get('dev.debugExtension') as boolean
+    this.enableDebugExtension = vsConfig.get('dev.debugExtension') as boolean || vsConfig.get('analysis.debug') as boolean
     this.developmentPath = expandHome(vsConfig.get('dev.developmentPath') as string ?? "")
     this.cwd = expandHome(vsConfig.get('languageServer.workingDirectory')) as string
     if (!this.cwd) {
@@ -82,6 +85,9 @@ export class KokaConfig {
     this.showImplicitArguments = vsConfig.get('languageServer.inlayHints.showImplicitArguments') as boolean ?? false;
     this.showInferredTypes = vsConfig.get('languageServer.inlayHints.showInferredTypes') as boolean ?? false;
     this.showFullQualifiers = vsConfig.get('languageServer.inlayHints.showFullQualifiers') as boolean ?? false;
+    this.analysisCallSensitivity = vsConfig.get('analysis.callSensitivityDepth') as number ?? 1;
+    this.analysisGas = vsConfig.get('analysis.gas') as number ?? -1;
+    this.analysisDebug = vsConfig.get('analysis.debug') as boolean ?? true;
   }
 
   // Does the compiler path point to a valid compiler?

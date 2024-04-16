@@ -10,6 +10,64 @@
 
 _Koka v3 is a research language that is currently under development and not quite ready for production use_. 
 
+-----------
+NOTE!
+_Context Sensitive Demand CFA (ESOP 2025)_
+Eventually I'll get around to compiling a version that can be installed locally without all the dependencies.
+For now, install Koka using the source install instructions below (make sure to check out this branch!)
+Then install the VSCode extension (language-koka-3.1.3.vsix) by right clicking it in the VSCode explorer, and selecting install (bottom of the dropdown).
+Then reload the window.
+The VSCode extension has two additional settings beyond the normal Koka settings.
+To use those settings with a local extension install you will need to edit your workspace settings (not the user settings).
+You will also need to reload the window for the setting changes to take effect (Cmd/Ctrl + Shift + P) and select `Developer: Reload Window`
+
+The `koka.analysis.callSensitivityDepth` setting changes the `m` parameter from the paper.
+The `koka.analysis.debug` setting prints out a debug log to the OUTPUT panel in VSCode (select Koka Language Server Stdout from the dropdown)
+Note that due to Koka algebraic effects you will see a bunch of inferred calls to `@open` which adjust evidence vectors prior to calling functions.
+
+NOTE: Algebraic effects are not supported, and the `throw` function is hard coded to return the bottom element. 
+This allows you to see results from all `pure` functions (i.e. divergent or partial functions) as long as they don't involve handlers for `throw`. 
+If a query hangs the language server select `Koka: Restart Language Server` from the VSCode command dropdown (Cmd/Ctrl + Shift + P)
+
+Common reasons for a query hanging include asking for what could flow to a result of a complex computation (i.e. the result of the `sat` examples - which exhibit exponential behavior). 
+This is expected. Demand m-CFA is intended to be used with a Gas parameter, which will cancel queries that are deemed too expensive, while providing you with
+useful information for a large number of queries. 
+The `koka.analysis.gas` parameter sets the amount of gas you want to give the analysis. `-1` indicates that you want to allow it to run forever - this is why you get hanging.
+However, queries for what flows to the intermediate parts / parameters of that computation resolve immediately.
+
+Samples from common R6RS benchmarks (translated to Koka) are in the `analysis` folder. 
+Feel free to contact me if you find something that doesn't work as expected: tim@whitings.org.
+
+The following changes were made to Koka:
+
+- Adding source Range information to TName (Type+Name) and Application nodes in the Core representation (scattered throughout the codebase).
+- A few language server settings
+- Additions to the Hover handler for the language server
+- Everything in src/Core/Demand
+  - Syntax (Conversions from Koka's Core representation to the user facing syntax - for display in the language server)
+  - FixpointMonad (A monad to handle a memoized fine-grained fixpoint)
+  - StaticContext (An cursor representation `ExprContext` of the Core syntax tree, allowing for direct upwards traversal, and down traversals within the monad)
+      This cursor is memoized in the Monad for uniqueIds -> fast comparison 
+  - AbstractValue (The abstract value & environment representations, along with the bind metafunction & various functions)
+  - DemandMonad (The FixpointMonad augmented with various bits of state and environment, including nice debugging of query flows)
+  - DemandAnalysis (The actual core code of the analysis)
+  - Primitives (The implementation of various primitives) - I've added a few since the paper was accepted
+
+The basic idea is that we find a Core expression that correlates with the source range information from the hover location.
+Then we incrementally analyze as demanded by the queries. 
+The paper's main contribution is not the demanded aspect, but the environment structure - which allows for call-sensitive query resolution.
+We use an environment structure that allows us to keep some environments as indeterminate (unknown), since we don't know the environment when 
+initiating a query in the middle of an expression.
+Finally we take the results, and map them back to the original syntax nodes for closures (best effort), 
+and basic representations of literals and constructors. 
+Top types are used when literals are joined imprecisely. (Flat Lattice for Int + Float + Char + String)
+Constructors and closures use a Set based abstraction.
+
+Enjoy!
+
+-----------
+
+
 _Latest release_: v3.1.3, 2025-01-22
 
  ([Install]).

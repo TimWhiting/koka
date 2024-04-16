@@ -116,12 +116,12 @@ chkExpr expr
               out <- extractOutput $ chkExpr body
               writeOutput =<< foldM (\out nm -> bindName nm Nothing out) out pars
 
-      App (TypeApp (Var tname _) _) _ | getName tname `elem` [nameCCtxSetCtxPath,nameLazyTarget,nameLazyEnter,nameLazyLeave]
+      App (TypeApp (Var tname _) _) _ _ | getName tname `elem` [nameCCtxSetCtxPath,nameLazyTarget,nameLazyEnter,nameLazyLeave]
         -> return ()
-      App (TypeApp (Var tname _) _) [_, conApp] | getName tname == nameLazyUpdate
+      App (TypeApp (Var tname _) _) [_, conApp] _ | getName tname == nameLazyUpdate
         -> chkExpr conApp
 
-      App fn args -> chkApp fn args
+      App fn args rng -> chkApp fn args
       Var tname info -> markSeen tname info
 
       Let [] body -> chkExpr body
@@ -182,7 +182,7 @@ chkGuard (Guard test expr)
 
 -- | We ignore default branches that create a pattern match error
 isPatternMatchError :: Branch -> Bool
-isPatternMatchError (Branch pats [Guard (Con gname _) (App (TypeApp (Var (TName fnname _) _) _) _)])
+isPatternMatchError (Branch pats [Guard (Con gname _) (App (TypeApp (Var (TName fnname _ _) _) _) _ rng)])
   | all isPatWild pats && getName gname == nameTrue && fnname == namePatternMatchError = True
   where isPatWild PatWild = True; isPatWild _ = False
 isPatternMatchError _ = False
@@ -206,7 +206,7 @@ bindPattern PatWild out = pure out
 chkApp :: Expr -> [Expr] -> Chk ()
 chkApp (TypeLam _ fn) args = chkApp fn args -- ignore type machinery
 chkApp (TypeApp fn _) args = chkApp fn args
-chkApp (App (TypeApp (Var openName _) _) [fn]) args | getName openName == nameEffectOpen
+chkApp (App (TypeApp (Var openName _) _) [fn] rng) args | getName openName == nameEffectOpen
   = chkApp fn args
 chkApp (Con cname repr) args -- try reuse
   = do chkModCons args
@@ -235,7 +235,7 @@ chkArg (Borrow, expr)
   = case expr of
       (TypeLam _ fn) -> chkArg (Borrow, fn)
       (TypeApp fn _) -> chkArg (Borrow, fn)
-      (App (TypeApp (Var openName _) _) [fn]) | getName openName == nameEffectOpen
+      (App (TypeApp (Var openName _) _) [fn] rng) | getName openName == nameEffectOpen
         -> chkArg (Borrow, fn) -- disregard .open calls
       (Var tname info) -> markBorrowed tname info
       (Lit _) -> pure ()
@@ -469,7 +469,7 @@ isModCons expr
      Con _ _     -> True
      Lit _       -> True
      Let dgs e   -> all isModConsDef (flattenDefGroups dgs) && isModCons e
-     App f args  -> isModConsFun f && all isModCons args
+     App f args rng  -> isModConsFun f && all isModCons args
      _           -> False
 
 -- | Functions with non-observable execution can be moved before the mod-cons call.
@@ -481,7 +481,7 @@ isModConsFun expr
       TypeApp e _   -> isModConsFun e
       Con _ _       -> True
       Let dgs e     -> all isModConsDef (flattenDefGroups dgs) && isModConsFun e
-      App f args    -> hasTotalEffect (typeOf expr) && isModConsFun f && all isModCons args
+      App f args rng    -> hasTotalEffect (typeOf expr) && isModConsFun f && all isModCons args
       _             -> False
 
 isModConsDef def = isModCons (defExpr def)
