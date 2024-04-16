@@ -182,6 +182,19 @@ export class KokaLanguageServer {
 
   onConfigChanged(config: KokaConfig) {
     let isDark = vscode.window.activeColorTheme.kind == vscode.ColorThemeKind.Dark
+    console.log(`Sending config ${{
+      colors: { mode: isDark ? "dark" : "light" },
+      inlayHints: {
+        showImplicitArguments: config.showImplicitArguments,
+        showInferredTypes: config.showInferredTypes,
+        showFullQualifiers: config.showFullQualifiers,
+      }, 
+      analysis: {
+        callSensitivity: config.analysisCallSensitivity,
+        debug: config.analysisDebug,
+        gas: config.analysisGas
+      }
+    }}`)
     this.languageClient.sendNotification(DidChangeConfigurationNotification.type, {
       settings:
       {
@@ -190,10 +203,15 @@ export class KokaLanguageServer {
           showImplicitArguments: config.showImplicitArguments,
           showInferredTypes: config.showInferredTypes,
           showFullQualifiers: config.showFullQualifiers,
+        }, 
+        analysis: {
+          callSensitivity: config.analysisCallSensitivity,
+          debug: config.analysisDebug,
+          gas: config.analysisGas
         }
-
       }
     })
+
   }
 
 

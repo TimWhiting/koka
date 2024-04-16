@@ -140,6 +140,7 @@ data Env     = Env{ showKinds      :: !Bool
                   , fullNames :: !Bool
                   , alwaysUnqualify :: !Bool
                   , indentation :: Int
+                  , noFullNames :: !Bool -- even omit full names when there to disambiguate (needs to be false for interface files)
 
                   -- should not really belong here. Contains link bases for documentation generation (see Syntax.Colorize)
                   , colorizing:: !Bool
@@ -169,6 +170,7 @@ defaultEnv
         False -- fullNames
         False
         0
+        False
         False
         []
         ("styles/" ++ programName ++ ".css") -- [("System.","file://c:/users/daan/dev/koka/out/lib/")]

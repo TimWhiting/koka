@@ -13,7 +13,7 @@
 
 module LanguageServer.Monad
   ( LSState (..),
-    InlayHintOptions(..),
+    InlayHintOptions(..),DemandAnalysisOptions(..),
     SignatureContext(..),clearSignatureContext,updateSignatureContext,getSignatureContext,
     defaultLSState,
     newLSStateVar,
@@ -24,13 +24,13 @@ module LanguageServer.Monad
     getInlayHintOptions,
     runLSM,
     getProgress,setProgress, maybeContents,
-
+    getBuildContext, updateBuildContext,
     liftBuild, liftBuildWith,
-    lookupModuleName, lookupRangeMap, lookupProgram, lookupLexemes,
+    lookupModuleName, lookupModule, lookupRangeMap, lookupProgram, lookupLexemes,
     lookupDefinitions, lookupVisibleDefinitions, Definitions(..),
     lookupModulePaths,
     getPrettyEnv, getPrettyEnvFor, prettyMarkdown,
-    emitInfo, emitNotification, getVirtualFileVersion
+    emitInfo, emitNotification, getVirtualFileVersion, getAnalysisOptions
 
   )
 where
@@ -74,6 +74,8 @@ import Kind.ImportMap (importsEmpty)
 import qualified Type.Pretty as TP
 import Compile.Options (Flags (..), prettyEnvFromFlags, verbose, Terminal(..))
 import Compile.BuildContext
+import Compile.BuildMonad(buildcLookupModule)
+import Compile.Module
 import LanguageServer.Conversions ({-toLspUri,-} fromLspUri)
 
 import Data.Map.Strict(Map)
@@ -184,6 +186,11 @@ defaultLSState flags = do
                          showImplicitArguments=True,
                          showInferredTypes=True,
                          showFullQualifiers=True
+        },
+        analysis=DemandAnalysisOptions{
+          callSensitivity=1,
+          debugAnalysis=False,
+          analysisGas=(-1)
         }
     }
   }
@@ -206,7 +213,8 @@ putErrorMessage p cwd endToo cscheme err
 
 data Config = Config {
   colors :: Colors,
-  inlayHintOpts :: InlayHintOptions
+  inlayHintOpts :: InlayHintOptions,
+  analysis :: DemandAnalysisOptions
 }
 data Colors = Colors {
   mode :: String
@@ -218,17 +226,26 @@ data InlayHintOptions  = InlayHintOptions {
   showFullQualifiers :: Bool
 }
 
+data DemandAnalysisOptions = DemandAnalysisOptions {
+  callSensitivity :: Int,
+  debugAnalysis :: Bool,
+  analysisGas :: Int
+}
+
 instance FromJSON Colors where
   parseJSON (A.Object v) = Colors <$> v .: "mode"
   parseJSON _ = empty
 
 instance FromJSON Config where
-  parseJSON (A.Object v) = Config <$> v .: "colors" <*> v .: "inlayHints"
+  parseJSON (A.Object v) = Config <$> v .: "colors" <*> v .: "inlayHints" <*> v .: "analysis"
   parseJSON _ = empty
 
 instance FromJSON InlayHintOptions where
   parseJSON (A.Object v) = InlayHintOptions <$> v .: "showImplicitArguments" <*> v .: "showInferredTypes" <*> v .: "showFullQualifiers"
   parseJSON _ = empty
+
+instance FromJSON DemandAnalysisOptions where
+  parseJSON (A.Object v) = DemandAnalysisOptions <$> v .: "callSensitivity" <*> v .: "debug" <*> v .: "gas"
 
 setProgress :: Maybe (J.ProgressAmount -> LSM ()) -> LSM ()
 setProgress report = do
@@ -239,6 +256,7 @@ getProgress = progressReport <$> getLSState
 
 updateConfig :: A.Value -> LSM ()
 updateConfig cfg =
+  trace (show cfg) $
   case fromJSON cfg of
     A.Success cfg -> do
       modifyLSState $ \s ->
@@ -247,7 +265,9 @@ updateConfig cfg =
           s'{flags=(flags s'){colorScheme=darkColorScheme}}
         else
           s'{flags=(flags s'){colorScheme=lightColorScheme}}
-    _ -> return ()
+    A.Error s -> 
+      -- trace s
+      return ()
 
 updateSignatureContext :: SignatureContext -> LSM ()
 updateSignatureContext context =
@@ -262,6 +282,9 @@ getSignatureContext = signatureContext <$> getLSState
 
 getInlayHintOptions :: LSM InlayHintOptions
 getInlayHintOptions = inlayHintOpts . config <$> getLSState
+
+getAnalysisOptions :: LSM DemandAnalysisOptions
+getAnalysisOptions = analysis . config <$> getLSState
 
 getVirtualFileVersion :: J.NormalizedUri -> LSM (Maybe J.Int32)
 getVirtualFileVersion uri
@@ -325,6 +348,10 @@ getBuildContext
   = do ls <- getLSState
        return (buildContext ls)
 
+updateBuildContext :: BuildContext -> LSM ()
+updateBuildContext buildc
+  = modifyLSState (\s -> s{ buildContext = buildc })
+
 -- Module name from URI
 lookupModuleName :: J.NormalizedUri -> LSM (Maybe (FilePath,ModuleName))
 lookupModuleName uri
@@ -340,6 +367,11 @@ lookupLexemes :: ModuleName -> LSM (Maybe [Lexeme])
 lookupLexemes mname
   = do buildc <- getBuildContext
        return (buildcGetLexemes mname buildc)
+
+lookupModule :: ModuleName -> LSM (Maybe Module)
+lookupModule mname
+  = do buildc <- getBuildContext
+       return (buildcLookupModule mname buildc)
 
 -- RangeMap from module name
 lookupRangeMap :: ModuleName -> LSM (Maybe (RangeMap,[Lexeme]))

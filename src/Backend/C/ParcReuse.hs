@@ -99,7 +99,7 @@ ruToAssign (NoMatch expr)
      then return ([],(expr,False))
      else do name <- uniqueName "ru-def"
              let def = DefNonRec (makeDef name expr)
-             let var = Var (TName name (typeOf expr)) InfoNone
+             let var = Var (TName name (typeOf expr) Nothing) InfoNone
              return ([def],(var,False))
 
 extractCon :: Expr -> Maybe (TName, ConRepr)
@@ -141,18 +141,18 @@ makeLets dgs expr = makeLet dgs expr
 ruExpr :: Expr -> Reuse Expr
 ruExpr expr
   = case expr of
-      App (Var name _) [Var tname _] | getName name == nameLazyTarget
+      App (Var name _) [Var tname _] _ | getName name == nameLazyTarget
         -> do registerLazyCon tname
               return exprUnit -- expr
-      App (Var name _) [Var tname _, conApp] | getName name == nameLazyUpdate
+      App (Var name _) [Var tname _, conApp] _ | getName name == nameLazyUpdate
         -> do ruLazyUpdate tname conApp
 
-      App con@(Con cname repr) args
+      App con@(Con cname repr) args rng
         -> do args' <- mapM ruExpr args
-              ruTryReuseCon cname repr (App con args')
-      App ta@(TypeApp (Con cname repr) _) args
+              ruTryReuseCon cname repr (App con args' rng)
+      App ta@(TypeApp (Con cname repr) _) args rng
         -> do args' <- mapM ruExpr args
-              ruTryReuseCon cname repr (App ta args')
+              ruTryReuseCon cname repr (App ta args' rng)
 
       TypeLam tpars body
         -> TypeLam tpars <$> ruExpr body
@@ -160,8 +160,8 @@ ruExpr expr
         -> (`TypeApp` targs) <$> ruExpr body
       Lam pars eff body
         -> ruLam pars eff body
-      App fn args
-        -> liftM2 App (ruExpr fn) (mapM ruExpr args)
+      App fn args rng
+        -> liftM2 (\f xs -> App f xs rng) (ruExpr fn) (mapM ruExpr args)
 
       Let [] body
         -> ruExpr body
@@ -220,7 +220,7 @@ ruLet' :: Def -> Reuse (Reused -> ([TName], Expr -> Expr))
 ruLet' def
   = withCurrentDef def $
       case defExpr def of
-          App var@(Var name _) (Var tname _ : _maybe_scanfields) | getName name == nameDrop
+          App var@(Var name _) (Var tname _ : _maybe_scanfields) rng | getName name == nameDrop
             -> do ru <- ruMakeAvailable tname
                   scan <- ruGetScan tname
                   return (\reused ->
@@ -233,7 +233,7 @@ ruLet' def
                       _ -> ([], makeDefsLet [def]))
           -- See makeDropSpecial:
           -- We assume that makeDropSpecial always occurs in a definition.
-          App (Var name _) [Var y _, xUnique, rShared, xDecRef] | getName name == nameDropSpecial
+          App (Var name _) [Var y _, xUnique, rShared, xDecRef] rng | getName name == nameDropSpecial
             -> do fUnique <- ruLetExpr xUnique
                   regLazyCon <- getRegisteredLazyCon
                   case regLazyCon of
@@ -396,8 +396,8 @@ ruLazyUpdate lazyTName arg
           Just lazyInfo
             -> case tailArg of
                     -- try to write the constructor in-place on the lazy one
-                    App con@(Con cname repr) args                 -> updateCon reuseName lazyInfo cname repr con args
-                    App con@(TypeApp (Con cname repr) targs) args -> updateCon reuseName lazyInfo cname repr con args
+                    App con@(Con cname repr) args _                 -> updateCon reuseName lazyInfo cname repr con args
+                    App con@(TypeApp (Con cname repr) targs) args _ -> updateCon reuseName lazyInfo cname repr con args
                     -- singleton uses an indirection
                     Con cname repr -> lazyIndirect reuseName lazyInfo True tailArg
                     -- otherwise use an indirection
@@ -424,10 +424,10 @@ ruLazyUpdate lazyTName arg
              then -- the target is too small! (todo: can we check this already during kind inference?)
                   do -- warning is issued in Kind.Infer
                      -- warning (\penv -> text "cannot update lazy value as it is not large enough -- using indirection")
-                     lazyIndirect reuseName lazyInfo False (App con args)
+                     lazyIndirect reuseName lazyInfo False (App con args Nothing)
              else if (size == 0)
                     then do -- singleton
-                            lazyIndirect reuseName lazyInfo True (App con args)
+                            lazyIndirect reuseName lazyInfo True (App con args Nothing)
                     else do -- generate alloc-at
                             args' <- mapM ruExpr args
                             mci <- getConInfo (typeOf cname) (getName cname)
@@ -449,7 +449,7 @@ ruLazyUpdate lazyTName arg
     -- fallback
     lazyReuse reuseName lazyInfo@(pat,size,scan) _ cname crepr con args'
       = -- lazyReuseConApp reuseName pat (App con args')
-        return (genAllocAt (ReuseInfo reuseName pat) (App con args') (typeOf lazyTName))
+        return (genAllocAt (ReuseInfo reuseName pat) (App con args' Nothing) (typeOf lazyTName))
 
     -- create an indirection
     lazyIndirect :: TName -> (Maybe Pattern,Int,Int) -> Bool -> Expr -> Reuse Expr
@@ -472,8 +472,8 @@ ruLazyUpdate lazyTName arg
            case mbInfo of
              Just (cinfo,crepr)
                -> let (_,_,rho) = splitPredType (conInfoType cinfo)
-                      cname = TName (conInfoName cinfo) rho
-                      con   = Con cname crepr
+                      cname = TName (conInfoName cinfo) rho Nothing
+                      con   = Con cname crepr 
                   in lazyReuse reuseName lazyInfo (Just cinfo) cname crepr con [arg']
              Nothing
                -> do failure ("Backend.C.ParcReuse.getLazyIndirectCon: cannot find indirection constructor for " ++ show lazyTName)
@@ -482,15 +482,15 @@ ruLazyUpdate lazyTName arg
 
 genDecRef :: TName -> Expr
 genDecRef tname
-  = App (Var (TName nameDecRef funTp) (InfoExternal [(C CDefault, "decref(#1,current_context())")]))
-        [Var tname InfoNone]
+  = App (Var (TName nameDecRef funTp Nothing) (InfoExternal [(C CDefault, "decref(#1,current_context())")]))
+        [Var tname InfoNone] Nothing
   where
     funTp = TFun [(nameNil, typeOf tname)] typeTotal typeUnit
 
 
 genDup :: TName -> Expr
 genDup name
-  = App (Var (TName nameDup coerceTp) (InfoExternal [(C CDefault, "dup(#1)")])) [Var name InfoNone]
+  = App (Var (TName nameDup coerceTp Nothing) (InfoExternal [(C CDefault, "dup(#1)")])) [Var name InfoNone] Nothing
   where
     tp = typeOf name
     coerceTp = TFun [(nameNil,tp)] typeTotal tp
@@ -501,8 +501,8 @@ genDup name
 -- Generate a reuse of a constructor
 genDropReuse :: TName -> Expr {- : int32 -} -> Expr
 genDropReuse tname scan
-  = App (Var (TName nameDropReuse funTp) (InfoExternal [(C CDefault, "drop_reuse(#1,#2,kk_context())")]))
-        [Var tname InfoNone, scan]
+  = App (Var (TName nameDropReuse funTp Nothing) (InfoExternal [(C CDefault, "drop_reuse(#1,#2,kk_context())")]))
+        [Var tname InfoNone, scan] Nothing
   where
     tp    = typeOf tname
     funTp = TFun [(nameNil,tp),(nameNil,typeInt32)] typeTotal typeReuse
@@ -512,7 +512,7 @@ genDropReuse tname scan
 -- conApp should have form  App (Con _ _) conArgs    : length conArgs >= 1
 genAllocAt :: ReuseInfo -> Expr -> Type -> Expr
 genAllocAt (ReuseInfo reuseName pat) conApp conTp
-  = App (Var (TName nameAllocAt typeAllocAt) (InfoArity 0 2)) [Var reuseName info, conApp]
+  = App (Var (TName nameAllocAt typeAllocAt Nothing) (InfoArity 0 2)) [Var reuseName info, conApp] Nothing
   where
     info = maybe InfoNone InfoReuse pat
     -- conTp = typeOf conApp
@@ -521,8 +521,8 @@ genAllocAt (ReuseInfo reuseName pat) conApp conTp
 -- Generate a test if a (locally bound) name is unique
 genIsUnique :: TName -> Expr
 genIsUnique tname
-  = App (Var (TName nameIsUnique funTp) (InfoExternal [(C CDefault, "is_unique(#1)")]))
-        [Var tname InfoNone]
+  = App (Var (TName nameIsUnique funTp Nothing) (InfoExternal [(C CDefault, "is_unique(#1)")])) 
+        [Var tname InfoNone] Nothing
   where funTp = TFun [(nameNil, typeOf tname)] typeTotal typeBool
 
 {-
@@ -544,35 +544,35 @@ genConsWhitehole tname
 -- Generate a free of a constructor
 genFree :: TName -> Expr
 genFree tname
-  = App (Var (TName nameFree funTp) (InfoExternal [(C CDefault, "kk_constructor_free(#1,kk_context())")]))
-        [Var tname InfoNone]
+  = App (Var (TName nameFree funTp Nothing) (InfoExternal [(C CDefault, "kk_constructor_free(#1,kk_context())")]))
+        [Var tname InfoNone] Nothing
   where funTp = TFun [(nameNil, typeOf tname)] typeTotal typeUnit
 
 -- Generate a drop of a reuse
 genReuseDrop :: TName -> Expr
 genReuseDrop tname
-  = App (Var (TName nameReuseDrop funTp) (InfoExternal [(C CDefault, "kk_reuse_drop(#1,kk_context())")]))
-        [Var tname InfoNone]
+  = App (Var (TName nameReuseDrop funTp Nothing) (InfoExternal [(C CDefault, "kk_reuse_drop(#1,kk_context())")]))
+        [Var tname InfoNone] Nothing
   where funTp = TFun [(nameNil, typeOf tname)] typeTotal typeReuse
 
 -- Get a null token for reuse inlining
 genReuseNull :: Expr
 genReuseNull
-  = App (Var (TName nameReuseNull funTp) (InfoExternal [(C CDefault, "kk_reuse_null")])) []
+  = App (Var (TName nameReuseNull funTp Nothing) (InfoExternal [(C CDefault, "kk_reuse_null")])) [] Nothing
   where funTp = TFun [] typeTotal typeReuse
 
 -- Generate a reuse a block
 genReuseAddress :: TName -> Expr
 genReuseAddress tname
-  = App (Var (TName nameReuse funTp) (InfoExternal [(C CDefault, "reuse_datatype(#1,kk_context())")])) [Var tname InfoNone]
+  = App (Var (TName nameReuse funTp Nothing) (InfoExternal [(C CDefault, "reuse_datatype(#1,kk_context())")])) [Var tname InfoNone] Nothing
   where
     tp    = typeOf tname
     funTp = TFun [(nameNil,tp)] typeTotal typeReuse
 
 genReuseAssignWith :: TName -> Expr -> Expr
 genReuseAssignWith reuseName arg
-  = let assign = TName nameAssignReuse (TFun [(nameNil,typeReuse),(nameNil,typeReuse)] typeTotal typeUnit)
-    in App (Var assign (InfoExternal [(C CDefault, "#1 = #2")])) [Var reuseName InfoNone, arg]
+  = let assign = TName nameAssignReuse (TFun [(nameNil,typeReuse),(nameNil,typeReuse)] typeTotal typeUnit) Nothing
+    in App (Var assign (InfoExternal [(C CDefault, "#1 = #2")])) [Var reuseName InfoNone, arg] Nothing
 
 --------------------------------------------------------------------------
 -- Utilities for readability
@@ -583,7 +583,7 @@ uniqueReuseName :: Type -> Reuse TName
 uniqueReuseName tp = uniqueTName "ru" tp
 
 uniqueTName :: String -> Type -> Reuse TName
-uniqueTName pre tp = (`TName` tp) <$> uniqueName pre
+uniqueTName pre tp = (\n -> TName n tp Nothing) <$> uniqueName pre
 
 -- for mapping over a set and collecting the results into a list.
 foldMapM :: (Monad m, Foldable t) => (a -> m b) -> t a -> m [b]

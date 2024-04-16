@@ -76,13 +76,13 @@ resExpr :: Env -> Expr -> Expr
 resExpr env expr
   = let recurse = resExpr env
     in case expr of
-      App eopen@(TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f] | getName open == nameEffectOpen
+      App eopen@(TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f] rng | getName open == nameEffectOpen
           -> resOpen env eopen effFrom effTo tpFrom tpTo (recurse f)
       -- regular cases
       Lam args eff body
         -> Lam args eff (recurse body)
-      App f args
-        -> App (recurse f) (map recurse args)
+      App f args rng
+        -> App (recurse f) (map recurse args) rng
       Let defgs body
         -> Let (resDefGroups env defgs) (recurse body)
       Case exprs bs
@@ -139,26 +139,26 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
              expr
         else -- not equal in handled effects, insert open
              let resolve name = case gammaLookupQ name gamma of  -- use lookupQ to look up exactly (including hidden names)
-                                  [info] -> coreExprFromNameInfo (infoCName info) info
+                                  [info] -> coreExprFromNameInfo (infoCName info) info rangeNull
                                   ress -> failure $ "Core.OpenResolve.resOpen: unknown name: " ++ show name ++ ": " ++ show ress -- ++ "\n" ++ showHidden gamma
                  -- actionPar = TName (newHiddenName "action") (TFun targs effFrom tres)
-                 params = [TName (newHiddenNameEx "x" (show i)) (snd targ) | (i,targ) <- zip [1..] targs]
-                 exprName = TName (newHiddenNameEx "x" "0") (tpFrom)
+                 params = [TName (newHiddenNameEx "x" (show i)) (snd targ) Nothing | (i,targ) <- zip [1..] targs]
+                 exprName = TName (newHiddenNameEx "x" "0") (tpFrom) Nothing
                  exprVar  = Var exprName InfoNone
-                 exprApp lam  = App (Lam [exprName] typeTotal lam) [expr]
+                 exprApp lam  = App (Lam [exprName] typeTotal lam) [expr] Nothing
 
                  wrapperThunk openExpr evExprs
                    = exprApp $
                        Lam params effTo $
                            App (makeTypeApp openExpr [tres,effFrom,effTo])
-                               (evExprs ++ [Lam [] effTo (App exprVar [Var p InfoNone | p <- params])])
+                               (evExprs ++ [Lam [] effTo (App exprVar [Var p InfoNone | p <- params] Nothing)]) Nothing
 
 
                  wrapper openExpr evExprs
                    = exprApp $
                        Lam params effTo $
                          App (makeTypeApp openExpr (map snd targs ++ [tres,effFrom,effTo]))
-                             (evExprs ++ [exprVar] ++ [Var p InfoNone | p <- params])
+                             (evExprs ++ [exprVar] ++ [Var p InfoNone | p <- params]) Nothing
 
 
                  evIndexOf l
@@ -167,12 +167,12 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
                                    hndCon = TCon (TypeCon name -- (toHandlerName name)
                                                           (kindFunN (map getKind tpArgs ++ [kindEffect,kindStar]) kindStar))
                                in (makeTypeApp (resolve (toEffectTagName name)) tpArgs, typeApp hndCon tpArgs)
-                     in App (makeTypeApp (resolve nameEvvIndex) [effTo,hndTp]) [htagTp]
+                     in App (makeTypeApp (resolve nameEvvIndex) [effTo,hndTp]) [htagTp] Nothing
 
                  -- get the index of an effect type but at mask-level (used for duplicate labels)
                  evIndexOfMask (l,0)     = evIndexOf l
                  evIndexOfMask (l,level) = App (makeTypeApp (resolve nameEvvIndexMask) [effTo])
-                                               [evIndexOf l, makeEvIndex level]
+                                               [evIndexOf l, makeEvIndex level] Nothing
 
              in case lsFrom of
                  []  -> -- no handled effect, use cast
@@ -231,7 +231,7 @@ isHandlerFree expr
       TypeLam tpars body -> isHandlerFree body
       TypeApp body targs -> isHandlerFree body
       Lam pars eff body  -> not (containsHandledEffect eff) && isHandlerFree body
-      App f args         -> all isHandlerFree (f:args)
+      App f args rng        -> all isHandlerFree (f:args)
       Var vname (Core.InfoExternal{})
                   -> case handlerFreeFunType (typeOf vname) of
                        Nothing  -> True
