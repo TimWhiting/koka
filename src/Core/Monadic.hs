@@ -97,21 +97,21 @@ monExpr' topLevel expr
       -- note: we cannot just check for `isMonEffect effFrom` as the effFrom
       -- might be total but inside we may still need a monadic translation if `f`
       -- contains handlers itself for example.
-      App (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f]) args
+      App (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f] rng0) args rng
           | getName open == nameEffectOpen && not (isMonExpr f) -- not (isMonEffect effFrom)
           -> do args' <- mapM monExpr args
-                return $ \k -> applies args' (\argss -> k (App (App eopen [f]) argss))
+                return $ \k -> applies args' (\argss -> k (App (App eopen [f] rng0) argss rng))
 
-      App (TypeApp (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f]) targs) args
+      App (TypeApp (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f] rng0) targs) args rng
           | getName open == nameEffectOpen && not (isMonExpr f) -- not (isMonEffect effFrom)
           -> do args' <- mapM monExpr args
-                return $ \k -> applies args' (\argss -> k (App (TypeApp (App eopen [f]) targs) argss))
+                return $ \k -> applies args' (\argss -> k (App (TypeApp (App eopen [f] rng0) targs) argss rng))
 
       --  lift _open_ applications
-      App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f]
+      App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f] rng
         | getName open == nameEffectOpen
         -> do f' <- monExpr f
-              return $ \k -> f' (\ff -> k (App eopen [ff]))
+              return $ \k -> f' (\ff -> k (App eopen [ff] rng))
 
       -- regular cases
       Lam args eff body
@@ -119,7 +119,7 @@ monExpr' topLevel expr
               body' <- monExpr body
               return $ \k -> k (Lam args eff (body' id))
 
-      App f args
+      App f args rng
         -> do f' <- monExpr f
               args' <- mapM monExpr args
               let -- ff  = f' id
@@ -133,25 +133,25 @@ monExpr' topLevel expr
                then do monTraceDoc $ \env -> text "app non-mon: eff:" <+> pretty feff <+> text ", expr:" <+> prettyExpr env expr
                        return $ \k -> f' (\ff ->
                                             applies args' (\argss ->
-                                              k (App ff argss)
+                                              k (App ff argss rng)
                                           ))
                else  do monTraceDoc $ \env -> text "app mon:" <+> prettyExpr env expr
                         nameY <- uniqueName "y"
                         return $ \k ->
                           let resTp = typeOf expr
-                              tnameY = TName nameY resTp
+                              tnameY = TName nameY resTp Nothing
                               contBody = k (Var tnameY InfoNone)
                               cont = case contBody of
                                         -- optimize (fun(y) { let x = y in .. })
                                        Let [DefNonRec def@(Def{ defExpr = Var v _ })] body
                                         | getName v == nameY
-                                        -> Lam [TName (defName def) (defType def)] feff body
+                                        -> Lam [TName (defName def) (defType def) (Just $ defNameRange def)] feff body
                                        -- TODO: optimize (fun (y) { lift(expr) } )?
                                        body -> Lam [tnameY] feff body
                           in
                           f' (\ff ->
                             applies args' (\argss ->
-                              appBind resTp feff (typeOf contBody) ff argss cont
+                              appBind resTp feff rng (typeOf contBody) ff argss cont
                           ))
       Let defgs body
         -> monLetGroups defgs body
@@ -163,16 +163,16 @@ monExpr' topLevel expr
                then return $ \k -> exprs' (\xxs -> k (Case xxs bs'))
                else do nameC <- uniqueName "c"
                        let resTp = typeOf expr
-                           tnameC = TName nameC resTp
+                           tnameC = TName nameC resTp Nothing
                        return $ \k ->
                          let effTp    = typeTotal
                              contBody = k (Var tnameC InfoNone)
                              cont = Lam [tnameC] effTp contBody
                          in  exprs' (\xss -> applyBind resTp effTp (typeOf contBody) (Case xss bs')  cont)
 
-      Var (TName name tp) info
+      Var (TName name tp rng) info
         -> do -- tp' <- monTypeX tp
-              return (\k -> k (Var (TName name tp) info))
+              return (\k -> k (Var (TName name tp rng) info))
 
       -- type application and abstraction
       TypeLam tvars body
@@ -250,9 +250,9 @@ applies (t:ts) f
   = t (\c -> applies ts (\cs -> f (c:cs)))
 
 
-appBind :: Type -> Effect ->  Type -> Expr -> [Expr] -> Expr -> Expr
-appBind tpArg tpEff tpRes fun args cont
-  = applyBind tpArg tpEff tpRes (App fun args) cont
+appBind :: Type -> Effect -> Maybe Range -> Type -> Expr -> [Expr] -> Expr -> Expr
+appBind tpArg tpEff rng tpRes fun args cont
+  = applyBind tpArg tpEff tpRes (App fun args rng) cont
 
 applyBind tpArg tpEff tpRes expr cont
   = case cont of
@@ -263,7 +263,7 @@ applyBind tpArg tpEff tpRes expr cont
 
 monMakeBind :: Type -> Effect -> Type -> Expr -> Expr -> Expr
 monMakeBind tpArg tpEff tpRes arg next
-  =  App (TypeApp (Var (TName nameBind typeBind) info) [tpArg, tpRes, tpEff]) [arg,next]
+  =  App (TypeApp (Var (TName nameBind typeBind Nothing) info) [tpArg, tpRes, tpEff]) [arg,next] Nothing
   where
     info = Core.InfoArity 2 3 -- Core.InfoExternal [(CS,"Eff.Op.Bind<##1,##2>(#1,#2)"),(JS,"$std_core._bind(#1,#2)")]
 
@@ -307,7 +307,7 @@ isAlwaysMon expr
 isNeverMon :: Expr -> Bool
 isNeverMon expr
   = case expr of
-      App eopen@(TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f] | getName open == nameEffectOpen
+      App eopen@(TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f] rng | getName open == nameEffectOpen
         -> isTypeTotal effFrom  -- TODO: more cases? generally handler free
       TypeApp e _ -> isNeverMon e
       Var v _     -> getName v == nameDeref -- canonicalName 1 nameDeref --TODO: remove special case?
@@ -322,9 +322,9 @@ isMonDef def
 isMonExpr :: Expr -> Bool
 isMonExpr expr
   = case expr of
-      App (TypeApp (Var open _) [_, effTo]) [f] | getName open == nameEffectOpen
+      App (TypeApp (Var open _) [_, effTo]) [f] rng | getName open == nameEffectOpen
         -> isMonEffect effTo || isMonExpr f
-      App f args
+      App f args rng
         -> any isMonExpr (f:args)
       Lam pars eff body
         -> or [isMonEffect eff, isMonExpr body]

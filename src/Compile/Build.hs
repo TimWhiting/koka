@@ -440,9 +440,10 @@ moduleTypeCheck parsedMap tcheckedMap
                       -> done mod{ modPhase  = PhaseTypedError
                                  , modErrors = mergeErrors errs (modErrors mod)
                                  }
-                    Right ((core,mbRangeMap),warns)
+                    Right ((simple,core,mbRangeMap),warns)
                       -> do let mod' = mod{ modPhase       = PhaseTyped
                                           , modCore        = Just $! core
+                                          , modCoreUnopt   = Just $! simple
                                           , modErrors      = mergeErrors warns (modErrors mod)
                                           , modRangeMap    = seqqMaybe mbRangeMap
                                           , modDefinitions = Just $! defsFromCore False core
@@ -652,6 +653,7 @@ moduleLex mod
                          }
          Right (imports,warns)
             -> return mod{ modPhase   = PhaseLexed
+                         , modStatus = LoadedSource
                          , modErrors  = warns
                          , modSource  = source
                          , modLexemes = lexemes
@@ -685,6 +687,7 @@ modFromIface core parseInlines mod
         , modSource      = sourceNull
         , modDeps        = seqqList $ [LexImport (Core.importName imp) nameNil (Core.importVis imp) False {- @open -}
                                        | imp <- Core.coreProgImports core, not (Core.isCompilerImport imp) ]
+        , modStatus      = LoadedIface
         , modCore        = Just $! core
         , modDefinitions = Just $! defsFromCore False core
         , modInlines     = case parseInlines of

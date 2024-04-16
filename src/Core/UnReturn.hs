@@ -119,15 +119,15 @@ urExpr expr
         -> urCase expr scruts branches
 
       -- return
-      App ret@(Var v _) [arg] | getName v == nameReturn
+      App ret@(Var v _) [arg] rng | getName v == nameReturn
         -> do arg' <- urPure arg
               return (R arg')
 
       -- pure expressions that do not contain return (as checked by the grammar)
-      App f args
+      App f args rng
         -> do f' <- urPure f
               args' <- mapM urPure args
-              return (I (App f' args'))
+              return (I (App f' args' rng))
       _ -> return (U expr)
 
 urPure :: Expr -> UR Expr
@@ -205,14 +205,14 @@ urCase org scruts branches
                 pname <- uniqueName "x"
                 eff   <- getCurrentEffect
                 let tp  = typeOf org
-                    parName = TName pname tp
+                    parName = TName pname tp Nothing
                     parVar  = Var (parName) InfoNone
 
                 let f c = let lam    = Lam [parName] eff (c parVar)
                               defTp  = typeOf lam
                               def    = Def name defTp lam Private (defFun [Own]) InlineAuto rangeNull ""
-                              defVar = Var (TName name defTp) InfoNone -- (InfoArity 0 1 NoMon) -- with arity C# code gets wrong
-                              app e  = App defVar [e]
+                              defVar = Var (TName name defTp Nothing) InfoNone -- (InfoArity 0 1 NoMon) -- with arity C# code gets wrong
+                              app e  = App defVar [e] Nothing
                           in makeLet [DefNonRec def] $
                              Case scruts $
                              zipWith (\kexprs mkBranch -> mkBranch $ map (applyK app) kexprs)
