@@ -90,7 +90,7 @@ import Lib.PPrint
 import Common.Range hiding (Pos)
 import Common.Unique
 import Common.Failure
-import Common.Error
+import Common.Error(Error, ErrorKind(..), toWarning, ok, addWarnings, errorMessageKind, errorMsg)
 import Common.Syntax( Visibility(..))
 import Common.File(endsWith,normalizeWith, seqqList)
 import Common.Name
@@ -272,7 +272,7 @@ getResolver :: Inf (Name -> Core.Expr)
 getResolver
   = do env <- getEnv
        return (\name -> case gammaLookup name (gamma env) of
-                          [(qname,info)] -> coreExprFromNameInfo qname info
+                          [(qname,info)] -> coreExprFromNameInfo qname info (infoRange info)
                           _              -> failure $ "Type.InferMonad:getResolver: called with unknown name: " ++ show name)
 
 
