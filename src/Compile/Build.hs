@@ -353,11 +353,11 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
-                  liftIO $ constantPropagation (\bc m -> do error "Should not require loading"
-                    --  res <- runBuild term flags $ modulesTypeCheck (buildcModules bc)
-                    --  case res of
-                    --     Left errs -> return $ Left errs
-                    --     Right (x, e) -> return $ Right (bc{ buildcModules = x}, e)
+                  liftIO $ constantPropagation (\bc m -> do -- error "Should not require loading"
+                     res <- runBuild term flags $ modulesTypeCheck (buildcModules bc)
+                     case res of
+                        Left errs -> return $ Left errs
+                        Right (x, e) -> return $ Right (bc{ buildcModules = x}, e)
                      ) bc core
                   let mod' = mod{ modPhase   = PhaseOptimized
                                 , modCore    = Just $! core
