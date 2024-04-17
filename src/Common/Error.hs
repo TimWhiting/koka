@@ -15,7 +15,7 @@ module Common.Error( -- error messages
                    , errorMessage, warningMessage, errorMessageKind, warningMessageKind, toWarning
                    , mergeErrors, errorsNil, errorsSingle, errorsAdd
                    -- monad: todo redesign
-                   , Error, ok
+                   , Error(..), ok
                    , warningMsg, errorMsg, warningMsgs, errorMsgs
                    , errorMsgPartial, errorMsgsPartial, addErrorMsg
                    , handleError, checkError, checkPartial, setPartial

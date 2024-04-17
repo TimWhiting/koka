@@ -67,6 +67,7 @@ library
       Core.CoreVar
       Core.CTail
       Core.Demand.AbstractValue
+      Core.Demand.ConstantProp
       Core.Demand.DemandAnalysis
       Core.Demand.DemandMonad
       Core.Demand.FixpointMonad
