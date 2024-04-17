@@ -1,6 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 module Core.Demand.ConstantProp where
 import Core.Core
+import Common.NamePrim
+import Type.Type
 import Core.Demand.FixpointMonad
 import Compile.Options (Terminal(..), Flags)
 import GHC.IO (unsafePerformIO)
@@ -20,7 +22,7 @@ findAllVars ctx =
   visitEachChild ctx $ do
       childCtx <- currentContext <$> getEnv
       case maybeExprOfCtx childCtx of
-        Just Var{} -> each [return childCtx]
+        Just (Var (TName n (TCon tc) _) _) | typeConName tc == nameTpInt -> each [return childCtx]
         _ -> findAllVars childCtx
 
 propConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AChange) -> Core -> IO (State ExprContext () (M.Map ExprContext AChange))
