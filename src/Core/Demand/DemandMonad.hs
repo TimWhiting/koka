@@ -11,7 +11,7 @@
 
 module Core.Demand.DemandMonad(
   AFixChange(..), FixInput(..), FixOutput(..),
-  FixDemandR, FixDemand, PostFixR, PostFix,
+  FixDemandR, FixDemand, PostFixR, PostFix, TypeChecker,
   AnalysisKind(..),
   -- Cache / State stuff
   State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult, setResults, updateAdditionalState,
@@ -37,7 +37,7 @@ import Core.Demand.AbstractValue
 import Core.Demand.StaticContext
 import Core.Demand.FixpointMonad
 import Compile.Options
-import Compile.BuildContext
+import Compile.BuildMonad hiding (liftIO)
 import Common.Name
 import Core.Core
 import Compile.Module
@@ -46,6 +46,7 @@ import Control.Monad (zipWithM, when)
 import Debug.Trace (trace)
 import Data.List (find, intercalate)
 import Common.Failure (assertion, HasCallStack)
+import Common.Error (Errors)
 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
@@ -104,9 +105,11 @@ transformState :: (s -> x) -> Int -> State r e s -> State b e x
 transformState f gas (State bc s mc mid cid u fr p ep _ _ ad) =
   State bc s mc mid cid u S.empty M.empty M.empty gas False (f ad)
 
-emptyEnv :: HasCallStack => Int -> AnalysisKind -> Terminal -> Flags -> e -> DEnv e
-emptyEnv m kind term flags e =
-  DEnv m term flags kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" e
+type TypeChecker = (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)))
+
+emptyEnv :: HasCallStack => Int -> AnalysisKind -> TypeChecker -> e -> DEnv e
+emptyEnv m kind build e =
+  DEnv m build kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" e
 
 updateAdditionalState :: (s -> s) -> FixDemandR r s e ()
 updateAdditionalState f = do
@@ -117,8 +120,7 @@ data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, 
 
 data DEnv x = DEnv{
   contextLength :: !Int,
-  term :: !Terminal,
-  flags :: !Flags,
+  builder :: (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors))),
   analysisKind :: !AnalysisKind,
   currentContext :: ExprContext,
   currentModContext :: ExprContext,
@@ -550,6 +552,7 @@ maybeLoadModuleR mn = do
     _ -> do
       bc <- buildc <$> getStateR
       env <- getEnvR
+      let build = builder env
       let deps = buildcModules bc
       let x = find (\m -> modName m == mn) deps
       case x of
@@ -557,7 +560,7 @@ maybeLoadModuleR mn = do
           trace ("Module already loaded " ++ show mn) $ return ()
           return $ Just mod
         _ -> do
-          buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
+          buildc' <- liftIO (build bc mn)
           case buildc' of
             Left err -> do
               trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
@@ -587,7 +590,8 @@ maybeLoadModule mn = do
             })
           return $ Just mod
         _ -> do
-          buildc' <- liftIO (runBuild (term env) (flags env) (buildcTypeCheck [mn] bc))
+          let build = builder env
+          buildc' <- liftIO $ build bc mn
           case buildc' of
             Left err -> do
               trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()

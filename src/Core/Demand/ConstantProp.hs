@@ -1,10 +1,11 @@
+{-# LANGUAGE RankNTypes #-}
 module Core.Demand.ConstantProp where
 import Core.Core
 import Core.Demand.FixpointMonad
 import Compile.Options (Terminal(..), Flags)
 import GHC.IO (unsafePerformIO)
 import Core.Demand.DemandMonad
-import Compile.BuildContext (BuildContext)
+import Compile.BuildMonad (BuildContext, Build)
 import Core.Demand.DemandAnalysis
 import Core.Demand.StaticContext
 import Core.Demand.AbstractValue
@@ -12,6 +13,7 @@ import Debug.Trace (trace)
 import qualified Data.Set as S
 import Data.List (intercalate)
 import qualified Data.Map.Strict as M
+import Common.Error (Errors)
 
 findAllVars :: ExprContext -> FixDemandR x s e ExprContext
 findAllVars ctx =
@@ -20,10 +22,10 @@ findAllVars ctx =
         Just Var{} -> each [return ctx]
         _ -> findAllVars ctx
 
-propConstants :: Terminal -> Flags -> State ExprContext () (M.Map ExprContext AChange) -> Core -> IO (State ExprContext () (M.Map ExprContext AChange))
-propConstants terminal flags state core = do
+propConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AChange) -> Core -> IO (State ExprContext () (M.Map ExprContext AChange))
+propConstants build state core = do
   (l, s) <-
-    runFix (emptyEnv 2 BasicEnvs terminal flags ()) state $ do
+    runFix (emptyEnv 2 BasicEnvs build ()) state $ do
         (_, ctx) <- loadModule (coreProgName core)
         st <- getState
         let varsLeft = S.toList $ finalResults st
@@ -37,14 +39,14 @@ propConstants terminal flags state core = do
             updateAdditionalState $ \s -> M.insert v res s
   return s
 
-constantPropagation :: Flags -> Terminal -> BuildContext -> Core -> IO ()
-constantPropagation flags terminal bc core = do
-  (lattice, state) <- runFix (emptyEnv 2 BasicEnvs terminal flags ()) (emptyState bc (-1) ()) $ do
+constantPropagation :: TypeChecker -> BuildContext -> Core -> IO ()
+constantPropagation build bc core = do
+  (lattice, state) <- runFix (emptyEnv 2 BasicEnvs build ()) (emptyState bc (-1) ()) $ do
     (_, ctx) <- loadModule (coreProgName core)
     var <- findAllVars ctx
     addResult var
   let vars = S.toList $ finalResults state
   -- TODO: Run an evaluation query on each var separately or in batches until some gas limit is hit
-  propConstants terminal flags (transformState (\s -> M.empty) 2 state) core
+  propConstants build (transformState (\s -> M.empty) 2 state) core
   trace (intercalate "\n" $ map showSimpleContext vars) $ return ()
   return ()

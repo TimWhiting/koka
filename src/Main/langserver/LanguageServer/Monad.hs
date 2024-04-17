@@ -74,6 +74,7 @@ import Kind.ImportMap (importsEmpty)
 import qualified Type.Pretty as TP
 import Compile.Options (Flags (..), prettyEnvFromFlags, verbose, Terminal(..))
 import Compile.BuildContext
+import Compile.BuildMonad(buildcLookupModule)
 import Compile.Module
 import LanguageServer.Conversions ({-toLspUri,-} fromLspUri)
 

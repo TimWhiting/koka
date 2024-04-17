@@ -35,6 +35,7 @@ import Common.Name (nameNil, ModuleName)
 import Common.ColorScheme (ColorScheme (colorNameQual, colorSource), Color (Gray))
 import Compile.Module (modRangeMap, modLexemes, Module (modSourcePath, modCoreUnopt))
 import Compile.Options (Flags, colorSchemeFromFlags, prettyEnvFromFlags)
+import Compile.BuildMonad(runBuild)
 import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
 import Kind.Pretty (prettyKind)
 import Kind.ImportMap (importsEmpty, ImportMap)
@@ -107,7 +108,7 @@ hoverHandler
                  liftIO $ writeFile "scratch/debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 
-                              buildContext term flags (rng, rngInfo) 
+                              buildContext (\bc mod -> (runBuild term flags (modcTypeCheck [mod] bc))) (rng, rngInfo) 
                               (fromJust mod) BasicEnvs 2
                  tend <- liftIO getCurrentTime
                  case res of

@@ -50,6 +50,7 @@ library
       Common.Unique
       Compile.Build
       Compile.BuildContext
+      Compile.BuildMonad
       Compile.CodeGen
       Compile.Module
       Compile.Optimize

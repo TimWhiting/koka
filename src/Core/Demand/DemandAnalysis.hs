@@ -38,7 +38,7 @@ import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
 import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd, nameCoreHnd)
 import Compile.Module (Module(..), ModStatus (..), moduleNull, modImportNames)
-import Compile.BuildContext (BuildContext(..), buildcLookupModule, buildcTypeCheck)
+import Compile.BuildMonad (BuildContext(..))
 import Syntax.RangeMap
 import Lib.PPrint (Pretty(..))
 import qualified Lib.PPrint as P
@@ -52,7 +52,6 @@ import qualified Syntax.Syntax as Syn
 import Compile.Options (Flags (..), Terminal(..))
 import Core.Core as C
 import Type.Type
-import Compile.Build (runBuild)
 import Kind.Kind
 import Data.Functor ((<&>))
 import Common.Failure (assertion)

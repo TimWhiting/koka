@@ -29,7 +29,6 @@ module Compile.BuildContext ( BuildContext
                             , buildcGetLexemes
                             , buildcGetRangeMap
                             , buildcModulePaths
-                            , buildcLookupModule
                             , buildcPrettyEnvFor
 
                             , buildcLookupTypeOf
@@ -75,28 +74,16 @@ import Type.Assumption
 import Compile.Options
 import Compile.Module
 import Compile.Build
+import Compile.BuildMonad
 import Data.Maybe (isJust)
 import qualified Core.Core as Core
 import Core.Core (isCompilerImport)
-
-
-
--- An abstract build context contains all information to build
--- from a set of root modules (open files in an IDE, compilation files on a command line)
--- It checks it validity against the flags it was created from.
-data BuildContext = BuildContext {
-                      buildcRoots   :: ![ModuleName],
-                      buildcModules :: ![Module],
-                      buildcHash    :: !String
-                    }
-
 
 -- An empty build context
 buildcEmpty :: Flags -> BuildContext
 buildcEmpty flags
   = let h = flagsHash flags
     in seqString h $ BuildContext [] [] h
-
 
 -- Add roots to a build context
 buildcAddRootSources :: [FilePath] -> BuildContext -> Build (BuildContext,[ModuleName])
@@ -502,10 +489,6 @@ buildcFindModule modname buildc
       Just mod -> mod
       _        -> failure ("Compile.BuildIde.btxFindModule: cannot find " ++ show modname ++ " in " ++ show (map modName (buildcModules buildc)))
 
--- Return a module by name
-buildcLookupModule :: HasCallStack => ModuleName -> BuildContext -> Maybe Module
-buildcLookupModule modname buildc
-  = seqqMaybe $ find (\mod -> modName mod == modname) (buildcModules buildc)
 
 -- Lookup `NameInfo` in a build context from a fully qualified name
 buildcLookupInfo :: Name -> BuildContext -> [NameInfo]

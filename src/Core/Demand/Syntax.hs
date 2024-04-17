@@ -27,7 +27,7 @@ import Common.Name (Name(..))
 import Core.Core
 import Type.Type
 import Lib.PPrint
-import Compile.BuildContext (BuildContext)
+import Compile.BuildMonad (BuildContext, Build)
 import Compile.Options (Terminal, Flags)
 import Core.Demand.StaticContext
 import Core.Demand.FixpointMonad
@@ -40,6 +40,7 @@ import Core.Pretty (prettyExpr)
 import Type.Pretty (defaultEnv)
 import Data.Foldable (minimumBy)
 import Common.Failure (HasCallStack)
+import Common.Error (Errors)
 
 findContext :: Range -> RangeInfo -> FixDemandR x s e (ExprContext, Range)
 findContext r ri = do
@@ -68,10 +69,10 @@ findContext r ri = do
 
 
 runEvalQueryFromRangeSource :: BuildContext
-  -> Terminal -> Flags -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
+  -> TypeChecker -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
   -> IO ([(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
-runEvalQueryFromRangeSource bc term flags rng mod kind m = do
-  (lattice, r, bc) <- runQueryAtRange bc term flags rng mod kind m $ \ctx -> do
+runEvalQueryFromRangeSource bc build rng mod kind m = do
+  (lattice, r, bc) <- runQueryAtRange bc build rng mod kind m $ \ctx -> do
     createPrimitives
     let q = EvalQ (ctx, indeterminateStaticCtx m ctx)
     query q
@@ -79,13 +80,13 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
   return (r, bc)
 
 runQueryAtRange :: HasCallStack => BuildContext
-  -> Terminal -> Flags -> (Range, RangeInfo)
+  -> TypeChecker -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int
   -> (ExprContext -> FixDemandR Query () () ())
   -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
-runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
+runQueryAtRange bc build (r, ri) mod kind m doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyEnv m kind term flags ()) (emptyState bc (-1) ()) $
+    (_, s, ctxs) <- runFixFinish (emptyEnv m kind build ()) (emptyState bc (-1) ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -99,7 +100,7 @@ runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
       ctxs ->
         do
           let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
-          runFixFinishC (emptyEnv m kind term flags ()) s' $ do
+          runFixFinishC (emptyEnv m kind build ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()
