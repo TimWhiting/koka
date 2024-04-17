@@ -86,7 +86,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
 runQueryAtRange bc build (r, ri) mod kind m doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyEnv m kind build ()) (emptyState bc (-1) ()) $
+    (_, s, ctxs) <- runFixFinish (emptyEnv m kind build False ()) (emptyState bc (-1) ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -94,13 +94,13 @@ runQueryAtRange bc build (r, ri) mod kind m doQuery = do
                       res <- analyzeEachChild ctx (const $ findContext r ri)
                       addResult res
                  getResults
-    let s' = transformState (const ()) (-1) s
+    let s' = transformState (const ()) (const S.empty) (-1) s
     case S.toList ctxs of
       [] -> return (M.empty, s', ([], bc))
       ctxs ->
         do
           let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
-          runFixFinishC (emptyEnv m kind build ()) s' $ do
+          runFixFinishC (emptyEnv m kind build False ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()

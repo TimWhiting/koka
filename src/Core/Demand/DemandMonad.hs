@@ -20,7 +20,7 @@ module Core.Demand.DemandMonad(
   focusParam, focusBody, focusChild, focusFun, enterBod, succAEnv,
   childrenContexts, visitChildrenCtxs, visitEachChild, topBindExpr,
   -- Env stuff
-  DEnv(..), getUnique, newQuery,
+  DEnv(..), getUnique, newQuery, demandLog,
   -- Query stuff
   Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
   emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx, 
@@ -70,6 +70,11 @@ data State r e s = State{
   additionalState :: s
 }
 
+demandLog :: String -> FixDemandR r s e ()
+demandLog s = do
+  env <- getEnv
+  when (loggingEnabled env) $ trace s $ return ()
+
 setGas :: Int -> FixDemandR r s e ()
 setGas g = do
   st <- getState
@@ -101,15 +106,15 @@ emptyState :: BuildContext -> Int -> s -> State r e s
 emptyState bc g s =
   State bc M.empty M.empty 0 M.empty 0 S.empty M.empty M.empty g False s
 
-transformState :: (s -> x) -> Int -> State r e s -> State b e x
-transformState f gas (State bc s mc mid cid u fr p ep _ _ ad) =
-  State bc s mc mid cid u S.empty M.empty M.empty gas False (f ad)
+transformState :: (s -> x) -> (Set r -> Set b) -> Int -> State r e s -> State b e x
+transformState f final gas (State bc s mc mid cid u fr p ep _ _ ad) =
+  State bc s mc mid cid u (final fr) M.empty M.empty gas False (f ad)
 
 type TypeChecker = (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)))
 
-emptyEnv :: HasCallStack => Int -> AnalysisKind -> TypeChecker -> e -> DEnv e
-emptyEnv m kind build e =
-  DEnv m build kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" e
+emptyEnv :: HasCallStack => Int -> AnalysisKind -> TypeChecker -> Bool -> e -> DEnv e
+emptyEnv m kind build log e =
+  DEnv m build kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" log e
 
 updateAdditionalState :: (s -> s) -> FixDemandR r s e ()
 updateAdditionalState f = do
@@ -126,6 +131,7 @@ data DEnv x = DEnv{
   currentModContext :: ExprContext,
   currentQuery :: !String,
   queryIndentation :: !String,
+  loggingEnabled :: Bool,
   additionalEnv :: x
 }
 -- A query type representing the mutually recursive queries we can make that result in an abstract value
@@ -519,8 +525,8 @@ childrenContexts ctx = do
                   return $! concat x
                 ExprCBasic{} -> return []
                 ExprCTerm{} -> return []
-                ModuleC{} ->
-                  trace ("initial contexts for module " ++ show (contextId ctx)) $ do
+                ModuleC{} -> do
+                  demandLog ("initial contexts for module " ++ show (contextId ctx))
                   initialModuleContexts ctx
           addChildrenContexts parentCtxId newCtxs
           -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs) $ return newCtxs
@@ -582,7 +588,7 @@ maybeLoadModule mn = do
       ctxId <- newModContextId mn
       case x of
         Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
-          trace ("Module already loaded " ++ show mn) $ return ()
+          -- trace ("Module already loaded " ++ show mn) $ return ()
           let modCtx = ModuleC ctxId mod mn
           updateState (\state ->
             state{
@@ -597,7 +603,7 @@ maybeLoadModule mn = do
               trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
               return Nothing
             Right (bc', e) -> do
-              trace ("Loaded module " ++ show mn) $ return ()
+              -- trace ("Loaded module " ++ show mn) $ return ()
               let Just mod' = buildcLookupModule mn bc'
               let modCtx = ModuleC ctxId mod' mn
               updateState (\state ->

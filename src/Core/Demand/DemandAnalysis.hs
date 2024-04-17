@@ -86,12 +86,13 @@ query :: Query -> FixDemandR x s e AChange
 query q = do
   res <- memo (QueryInput q) $ do
     let cq = newQuery q (\queryStr -> do
-                trace (queryStr ++ show q) $ return ()
+                demandLog (queryStr ++ show q)
                 x <- withGas $ case q of
                         CallQ _ -> doCall q queryStr
                         ExprQ _ -> doExpr q queryStr
                         EvalQ _ -> doEval q queryStr
-                trace (queryStr ++ "==> " ++ show x) $ return x
+                demandLog (queryStr ++ "==> " ++ show x)
+                return x
                 )
     let refined = do
           refine <- getRefine (queryEnv q)
@@ -180,7 +181,8 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
       ExprCBasic _ c (Var{varName=TName{getName=name2}}) ->
         if nameEq name2 then do
           query <- getQueryString
-          return $! trace (query ++ "Found usage in " ++ show (ppContextPath ctx)) (c, env)
+          demandLog (query ++ "Found usage in " ++ show (ppContextPath ctx)) 
+          return (c, env)
         else
           -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
           doBottom
@@ -522,11 +524,11 @@ doCall cq@(CallQ(ctx, env)) query =
             AChangeClos callctx callenv <- qexpr (c, p)
             m <- contextLength <$> getEnv
             cc1 <- succAEnv callctx callenv
-            if cc1 `subsumesCtx` cc0 then
-              trace (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+            if cc1 `subsumesCtx` cc0 then do
+              demandLog (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               return $! AChangeClos callctx callenv
             else if cc0 `subsumesCtx` cc1 then do -- cc1 is more refined
-              trace (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0) $ return ()
+              demandLog (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               instantiate query (EnvCtx cc1 p) env
               doBottom
             else do
@@ -536,7 +538,7 @@ doCall cq@(CallQ(ctx, env)) query =
 
 instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
 instantiate query c1 c0 = if c1 == c0 then return () else do
-  trace (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1) $ return ()
+  demandLog (query ++ "INST: " ++ showSimpleEnv c0 ++ " to " ++ showSimpleEnv c1)
   lift $ push (EnvInput c0) (FE c1)
   return ()
 

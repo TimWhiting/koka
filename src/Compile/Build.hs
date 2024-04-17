@@ -353,11 +353,8 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
-                  liftIO $ constantPropagation (\bc m -> do -- error "Should not require loading"
-                     res <- runBuild term flags $ modulesTypeCheck (buildcModules bc)
-                     case res of
-                        Left errs -> return $ Left errs
-                        Right (x, e) -> return $ Right (bc{ buildcModules = x}, e)
+                  liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
+                      runBuild term flags $ buildcTypeCheck [m] bc
                      ) bc core
                   let mod' = mod{ modPhase   = PhaseOptimized
                                 , modCore    = Just $! core
@@ -490,6 +487,57 @@ moduleParse tparsedMap
                           , modProgram = Just $! prog{ programName = modName mod }  -- todo: test suffix!
                           }
 
+
+-- Add roots to a build context
+buildcAddRootSources :: [FilePath] -> BuildContext -> Build (BuildContext,[ModuleName])
+buildcAddRootSources fpaths buildc
+  = do mods <- mapM moduleFromSource fpaths
+       let rootNames = map modName mods
+           roots   = nub (map modName mods ++ buildcRoots buildc)
+           modules = mergeModulesLeftBias (buildcModules buildc) mods
+           buildc' = buildc{ buildcRoots = seqqList roots, buildcModules = seqqList modules }
+       seqList rootNames $ seq buildc' $
+        return (buildc', rootNames)
+
+-- Reset a build context from the roots (for example, when the flags have changed)
+buildcFreshFromRoots :: BuildContext -> Build BuildContext
+buildcFreshFromRoots buildc
+  = do let (roots,imports) = buildcSplitRoots buildc
+           rootSources = map modSourcePath roots
+       flags <- getFlags
+       (buildc1,_) <- buildcAddRootSources rootSources (buildc{ buildcRoots = [], buildcModules=[], buildcHash = flagsHash flags })
+       let (roots1,_) = buildcSplitRoots buildc1
+       mods  <- modulesReValidate False [] [] roots1
+       return $! buildc1{ buildcModules = seqqList mods }
+
+-- Validate a build context to the current state of the file system and flags,
+-- and resolve any required modules to build the root set. Also discards
+-- any cached modules that are no longer needed.
+-- Can pass a boolean to force everything to be rebuild (on a next build)
+-- or a list of specific modules to be recompiled.
+buildcValidate :: Bool -> [ModuleName] -> BuildContext -> Build BuildContext
+buildcValidate rebuild forced buildc
+  = do flags <- getFlags
+       let hash = flagsHash flags
+       if (hash /= buildcHash buildc)
+         then buildcFreshFromRoots buildc
+         else do let (roots,imports) = buildcSplitRoots buildc
+                 mods <- modulesReValidate rebuild forced imports roots
+                 return $! buildc{ buildcModules = seqqList mods }
+
+-- Return the root modules and their (currently cached) dependencies.
+buildcSplitRoots :: BuildContext -> ([Module],[Module])
+buildcSplitRoots buildc
+  = let (xs,ys) = partition (\m -> modName m `elem` buildcRoots buildc) (buildcModules buildc)
+    in seqList xs $ seqList ys $ (xs,ys)
+
+
+-- Type check the current build context (also validates and resolves)
+buildcTypeCheck :: [ModuleName] -> BuildContext -> Build BuildContext
+buildcTypeCheck force buildc0
+  = do buildc <- buildcValidate False force buildc0
+       mods   <- modulesTypeCheck (buildcModules buildc)
+       return $! buildc{ buildcModules = seqqList $ mods }
 
 {---------------------------------------------------------------
   Given a set of modules,
