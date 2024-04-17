@@ -19,9 +19,6 @@ module Core.Core ( -- Data structures
                    , Expr(..), Lit(..)
                    , Branch(..), Guard(..), Pattern(..)
                    , TName(..), typeDefName
-                   , CorePhaseIO(..)
-                   , runCorePhaseIO
-                   , liftErrorIO
                    , showTName
                    , isDefNonRec
                    , flattenTypeDefGroups
@@ -127,7 +124,6 @@ import Common.Failure
 import Common.Unique
 import Common.Id
 import Common.Error(mergeErrors, Error)
-import qualified Common.Error as Fail
 import Common.NamePrim( nameTrue, nameFalse, nameTuple, nameUnit, nameTpBool, nameEffectOpen, nameReturn, nameTrace, nameLog,
                         nameEvvIndex, nameOpenAt, nameOpenNone, nameInternalInt32, nameInternalSSizeT, nameBox, nameUnbox,
                         nameVector, nameCons, nameListNil, nameTpList, nameUnit, nameTpUnit, nameTpFieldAddr,
@@ -640,7 +636,6 @@ instance Show InlineDef where
 
 
 newtype CorePhase b a = CP (Int -> DefGroups -> Error b (CPState a))
-newtype CorePhaseIO b a = CPIO (Int -> DefGroups -> IO (Error b (CPState a)))
 
 data CPState a = CPState !a !Int !DefGroups
 
@@ -653,16 +648,8 @@ instance Functor (CorePhase b) where
     = CP (\uniq defs -> do cp <- cp uniq defs
                            return $ fmap f cp)
 
-instance Functor (CorePhaseIO b) where
-  fmap f (CPIO cp)
-    = CPIO (\uniq defs -> do err <- cp uniq defs
-                             return $ fmap (\cp -> fmap f cp) err)
 instance Applicative (CorePhase b) where
   pure x = CP (\uniq defs -> return (CPState x uniq defs))
-  m<*>n  = do{ f<-m; x<-n; return (f x) }
-
-instance Applicative (CorePhaseIO b) where
-  pure x = CPIO (\uniq defs -> return (return (CPState x uniq defs)))
   m<*>n  = do{ f<-m; x<-n; return (f x) }
 
 instance Monad (CorePhase b) where
@@ -670,18 +657,6 @@ instance Monad (CorePhase b) where
   (CP cp) >>= f = CP (\uniq defs -> do (CPState x uniq' defs') <- cp uniq defs
                                        case f x of
                                          CP cp' -> cp' uniq' defs')
-
-instance Monad (CorePhaseIO b) where
-  -- return = pure
-  (CPIO cp) >>= f = CPIO (\uniq defs -> do err <- cp uniq defs
-                                           case err of
-                                             Fail.Error err m -> return (Fail.Error err m)
-                                             Fail.Ok (CPState x uniq' defs') w m2 -> 
-                                               case f x of
-                                                 CPIO cp' -> do res <- cp' uniq' defs'
-                                                                case res of
-                                                                  Fail.Error err m -> return (Fail.Error err m)
-                                                                  Fail.Ok y w2 m2 -> return (Fail.Ok y (mergeErrors w w2) m2))
                                               
 instance HasUnique (CorePhase b) where
   updateUnique f = CP (\uniq defs -> return (CPState uniq (f uniq) defs))
@@ -703,20 +678,6 @@ runCorePhase :: Int -> CorePhase b a -> Error b a
 runCorePhase uniq (CP cp)
   = do (CPState x _ _) <- cp uniq []
        return x
-
-liftCorePhaseIO :: (Int -> DefGroups -> (Error b (CPState a))) -> CorePhaseIO b a
-liftCorePhaseIO f
-  = CPIO (\uniq defs -> return $ f uniq defs)
-
-runCorePhaseIO :: Int -> CorePhaseIO b a -> IO (Error b a)
-runCorePhaseIO uniq (CPIO cp)
-  = do st <- cp uniq []
-       return (fmap (\(CPState x _ _) -> x) st)
-
-liftErrorIO :: Error b a -> CorePhaseIO b a
-liftErrorIO err
-  = CPIO (\uniq defs -> return $ do x <- err
-                                    return (CPState x uniq defs))
 
 liftCorePhaseUniq :: (Int -> DefGroups -> (DefGroups,Int)) -> CorePhase b ()
 liftCorePhaseUniq f
