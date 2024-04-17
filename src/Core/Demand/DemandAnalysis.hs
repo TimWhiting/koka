@@ -531,7 +531,7 @@ doCall cq@(CallQ(ctx, env)) query =
               instantiate query (EnvCtx cc1 p) env
               doBottom
             else do
-              trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+              -- trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
               doBottom
       _ -> error $ "CALL not implemented for " ++ show ctx
 

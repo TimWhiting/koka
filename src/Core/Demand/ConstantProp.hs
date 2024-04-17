@@ -17,14 +17,13 @@ findAllVars :: ExprContext -> FixDemandR x s e ExprContext
 findAllVars ctx =
   visitEachChild ctx $ do
       case maybeExprOfCtx ctx of
-        Just Var{} -> each [return ctx, findAllVars ctx]
+        Just Var{} -> each [return ctx]
         _ -> findAllVars ctx
 
 propConstants :: Terminal -> Flags -> State ExprContext () (M.Map ExprContext AChange) -> Core -> IO (State ExprContext () (M.Map ExprContext AChange))
 propConstants terminal flags state core = do
-  (l, s, _) <-
-    runFixFinishC (emptyEnv 2 BasicEnvs terminal flags ()) state $ do
-      runFixCont $ do
+  (l, s) <-
+    runFix (emptyEnv 2 BasicEnvs terminal flags ()) state $ do
         (_, ctx) <- loadModule (coreProgName core)
         st <- getState
         let varsLeft = S.toList $ finalResults st
@@ -42,8 +41,8 @@ constantPropagation :: Flags -> Terminal -> BuildContext -> Core -> IO ()
 constantPropagation flags terminal bc core = do
   (lattice, state) <- runFix (emptyEnv 2 BasicEnvs terminal flags ()) (emptyState bc (-1) ()) $ do
     (_, ctx) <- loadModule (coreProgName core)
-    vars <- findAllVars ctx
-    addResult vars
+    var <- findAllVars ctx
+    addResult var
   let vars = S.toList $ finalResults state
   -- TODO: Run an evaluation query on each var separately or in batches until some gas limit is hit
   propConstants terminal flags (transformState (\s -> M.empty) 2 state) core

@@ -37,6 +37,7 @@ intOp f (ctx, env) = do
   p2 <- evalParam 1 ctx env
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2))) env
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> return $ AChangeLit (LiteralChangeInt LChangeTop) env
     _ -> doBottom
 
 trueCon = AChangeConstr $ ExprPrim C.exprTrue
@@ -50,6 +51,7 @@ opCmpInt f (ctx, env) = do
   p2 <- evalParam 1 ctx env
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) env
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> each [return $ toChange False env, return $ toChange True env]
     _ -> doBottom
 
 createPrimitives :: FixDemandR x s e ()
