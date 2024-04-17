@@ -63,7 +63,7 @@ import Compile.CodeGen        ( codeGen, Link, LinkResult(..), noLink )
 import Compile.BuildMonad
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
--- import Core.Demand.ConstantProp (constantPropagation)
+import Core.Demand.ConstantProp (constantPropagation)
 
 
 {---------------------------------------------------------------
@@ -347,10 +347,18 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
             else -- core compile
               do  phaseVerbose 2 "optimize" $ \penv -> TP.ppName penv (modName mod) -- <.> text ": imported:" <+> list (map (pretty . modName) imports)
                   flags <- getFlags
+                  term <- getTerminal
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
-                  -- liftIO $ constantPropagation core
+                  let h = flagsHash flags
+                      bc = seqString h $ BuildContext [modName mod] (mod:imports) h
+                  liftIO $ constantPropagation (\bc m -> do error "Should not require loading"
+                    --  res <- runBuild term flags $ modulesTypeCheck (buildcModules bc)
+                    --  case res of
+                    --     Left errs -> return $ Left errs
+                    --     Right (x, e) -> return $ Right (bc{ buildcModules = x}, e)
+                     ) bc core
                   let mod' = mod{ modPhase   = PhaseOptimized
                                 , modCore    = Just $! core
                                 , modDefinitions = if showHiddenTypeSigs flags

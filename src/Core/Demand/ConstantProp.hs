@@ -18,9 +18,10 @@ import Common.Error (Errors)
 findAllVars :: ExprContext -> FixDemandR x s e ExprContext
 findAllVars ctx =
   visitEachChild ctx $ do
-      case maybeExprOfCtx ctx of
-        Just Var{} -> each [return ctx]
-        _ -> findAllVars ctx
+      childCtx <- currentContext <$> getEnv
+      case maybeExprOfCtx childCtx of
+        Just Var{} -> each [return childCtx]
+        _ -> findAllVars childCtx
 
 propConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AChange) -> Core -> IO (State ExprContext () (M.Map ExprContext AChange))
 propConstants build state core = do
