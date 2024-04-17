@@ -89,7 +89,7 @@ import Lib.PPrint
 import Common.Range hiding (Pos)
 import Common.Unique
 import Common.Failure
-import Common.Error
+import Common.Error(Error, ErrorKind(..), toWarning, ok, addWarnings, errorMessageKind, errorMsg)
 import Common.Syntax( Visibility(..))
 import Common.File(endsWith,normalizeWith)
 import Common.Name

@@ -14,7 +14,7 @@ module Core.Demand.DemandMonad(
   FixDemandR, FixDemand, PostFixR, PostFix,
   AnalysisKind(..),
   -- Cache / State stuff
-  State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult,
+  State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult, setResults, updateAdditionalState,
   -- Context stuff
   getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
   focusParam, focusBody, focusChild, focusFun, enterBod, succAEnv,
@@ -23,7 +23,8 @@ module Core.Demand.DemandMonad(
   DEnv(..), getUnique, newQuery,
   -- Query stuff
   Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
-  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx
+  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx, 
+  setGas, useGas, decGas, withGas
   ) where
 
 import Control.Monad.State (gets, MonadState (..))
@@ -63,22 +64,54 @@ data State r e s = State{
   primitives :: M.Map Name ((ExprContext,EnvCtx) -> FixDemandR r s e AChange),
   -- Expression relation for an application site / environment of a primitive (where does the i'th parameter flow to)
   eprimitives :: M.Map Name (Int -> (ExprContext,EnvCtx) -> FixDemandR r s e AChange),
+  gas :: Int,
+  outOfGas :: Bool,
   additionalState :: s
 }
 
-emptyState :: BuildContext -> s -> State r e s
-emptyState bc s =
-  State bc M.empty M.empty 0 M.empty 0 S.empty M.empty M.empty s
+setGas :: Int -> FixDemandR r s e ()
+setGas g = do
+  st <- getState
+  setState st{gas = g, outOfGas = False}
 
-transformState :: (s -> x) -> State r e s -> State b e x
-transformState f (State bc s mc mid cid u fr p ep ad) =
-  State bc s mc mid cid u S.empty M.empty M.empty (f ad)
+useGas :: Int -> FixDemandR r s e Bool
+useGas g = do
+  st <- getState
+  let newGas = gas st - g
+  if newGas < 0 && (gas st /= (-1)) then
+    do
+      trace (show $ gas st) $ return ()
+      setState st{gas = 0, outOfGas=True}
+      return True
+  else
+    do
+      setState st{gas = if gas st < 0 then gas st else newGas}
+      return False
 
+decGas :: FixDemandR r s e Bool
+decGas = useGas 1
+
+withGas :: FixDemandR r s e a -> FixDemandR r s e a
+withGas f = do
+  allout <- decGas
+  if allout then trace "All out of gas" doBottom else f
+
+emptyState :: BuildContext -> Int -> s -> State r e s
+emptyState bc g s =
+  State bc M.empty M.empty 0 M.empty 0 S.empty M.empty M.empty g False s
+
+transformState :: (s -> x) -> Int -> State r e s -> State b e x
+transformState f gas (State bc s mc mid cid u fr p ep _ _ ad) =
+  State bc s mc mid cid u S.empty M.empty M.empty gas False (f ad)
 
 emptyEnv :: HasCallStack => Int -> AnalysisKind -> Terminal -> Flags -> e -> DEnv e
 emptyEnv m kind term flags e =
   DEnv m term flags kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" e
 
+updateAdditionalState :: (s -> s) -> FixDemandR r s e ()
+updateAdditionalState f = do
+  st <- getState
+  setState st{additionalState = f (additionalState st)}
 
 data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
 
@@ -295,7 +328,7 @@ succAEnv newctx p' = do
 getQueryString :: FixDemandR x s e String
 getQueryString = do
   env <- getEnv
-  return $ queryIndentation env ++ show (contextId $ currentContext env) ++ " " ++ currentQuery env ++ " " 
+  return $ queryIndentation env ++ show (contextId $ currentContext env) ++ " " ++ currentQuery env ++ " "
 
 getUnique :: FixDemandR x s e Int
 getUnique = do
@@ -304,10 +337,13 @@ getUnique = do
   setState st{unique = u + 1}
   return u
 
-addResult :: Ord x => x -> FixDemand x s e
+addResult :: Ord x => x -> FixDemandR x s e ()
 addResult x = do
   updateState (\st -> st{finalResults = S.insert x (finalResults st)})
-  return N
+
+setResults :: Set r -> FixT e1 (State r e2 s) i l d ()
+setResults x = do
+  updateState (\st -> st{finalResults = x})
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
 newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
@@ -567,7 +603,7 @@ maybeLoadModule mn = do
                 })
               return $ Just mod'
 
-loadModule :: HasCallStack =>ModuleName -> FixDemandR x s e (Module, ExprContext)
+loadModule :: HasCallStack => ModuleName -> FixDemandR x s e (Module, ExprContext)
 loadModule mn = do
   res <- maybeLoadModule mn
   case res of
@@ -575,4 +611,3 @@ loadModule mn = do
       st <- getState
       return (m, moduleContexts st M.! mn)
     Nothing -> error ("Module " ++ show mn ++ " not found")
-

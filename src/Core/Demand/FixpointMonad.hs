@@ -129,7 +129,7 @@ instance Show (ContX e s i l d) where
   show _ = ""
 
 type FixT e s i l d = ContT () (FixIn e s i l d)
-type FixIn e s i l d = (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, Integer, [ContX e s i l d]), s, Integer) IO))
+type FixIn e s i l d = (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, Integer, [ContX e s i l d]), s, Integer, Bool) IO))
 
 withEnv :: (e -> e) -> FixT e s i l d a -> FixT e s i l d a
 withEnv f = local (\(e, i, id) -> (f e, i, id))
@@ -141,12 +141,12 @@ getEnv = do
 
 getState :: FixT e s i l d s
 getState = do
-  (_, res, _) <- get
+  (_, res, _, _) <- get
   return res
 
 getStateR :: FixIn e s i l d s
 getStateR = do
-  (_, res, _) <- get
+  (_, res, _, _) <- get
   return res
 
 getEnvR :: FixIn e s i l d e
@@ -156,12 +156,12 @@ getEnvR = do
 
 setState :: s -> FixT e s i l d  ()
 setState x = do
-  (f, s, t) <- get
-  put (f, x, t)
+  (f, s, t, invalid) <- get
+  put (f, x, t, invalid)
 
 getCache :: FixIn e s i l d (M.Map i (l d))
 getCache = do
-  (res, _, _) <- get
+  (res, _, _, _) <- get
   return $ M.map (\(f,s,t) -> f) res
 
 cacheLookup :: Ord i => i -> FixIn e s i l d (Maybe (l d))
@@ -176,6 +176,19 @@ updateState update = do
 doBottom :: FixT e s i l d b
 doBottom = ContT (\x -> return ())
 
+bottomInvalidate :: FixT e s i l d b
+bottomInvalidate = do
+  (cache, state, newId, _) <- get
+  put (cache, state, newId, True)
+  doBottom
+
+-- This is an unsafe function, only make sure you revalidate the cache if the cache is properly invalidated (currently it is not - see TODO in memo)
+-- Probably better to just run with a fresh cache, and just reuse some user state that is not invalid
+resetInvalidate :: FixT e s i l d ()
+resetInvalidate = do
+  (cache, state, newId, _) <- get
+  put (cache, state, newId, False)
+
 localCtx :: Maybe i -> Integer -> FixIn e s i l d a -> FixIn e s i l d a
 localCtx i id = local (\(e,_,_) -> (e,i,id))
 
@@ -187,18 +200,18 @@ memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d 
 memo key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
-    (cache, state, newId) <- get
+    (cache, state, newId, invalid) <- get -- TODO: Invalidate cache on all continuations
     let cont = ContX c from fromId
     case fromMaybe (bottom, newId, []) (M.lookup key cache) of
       (xss, tid, cont1:conts) -> do
         -- Requesting the result of the memoized function from a different dependant
-        put (M.insert key (xss, tid, cont:cont1:conts) cache, state, newId)
+        put (M.insert key (xss, tid, cont:cont1:conts) cache, state, newId, invalid)
         -- trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         mapM_ c (elems xss)
       (xss, tid, []) -> do
         -- First time requesting the memoed function with this key
         -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
-        put (M.insert key (xss, tid, [cont]) cache, state, if tid == newId then newId + 1 else newId)
+        put (M.insert key (xss, tid, [cont]) cache, state, if tid == newId then newId + 1 else newId, invalid)
         mapM_ c (elems xss)
         runContT (localCtxT (Just key) tid f) (\x -> do
             -- For all results push them into the cache
@@ -217,7 +230,7 @@ each xs =
 push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
-  (cache, state, newId) <- get
+  (cache, state, newId, invalid) <- get
   let cur = M.lookup key cache
   let (values, keyId, conts) = fromMaybe (bottom, newId, []) cur
   if lte value values then
@@ -229,9 +242,9 @@ push key value = do
     -- that depend on changes to this key
     let added = value `insert` values
     if keyId == newId then
-      put (M.insert key (added, keyId, conts) cache, state, newId + 1)
+      put (M.insert key (added, keyId, conts) cache, state, newId + 1, invalid)
     else
-      put (M.insert key (added, keyId, conts) cache, state, newId)
+      put (M.insert key (added, keyId, conts) cache, state, newId, invalid)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi) -> do
       -- trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
@@ -255,7 +268,7 @@ writeDependencyGraph cache = do
 -- Runs a fixpoint computation with an environment and state
 runFix :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixT e s i l d x -> IO (M.Map i (l d), s)
 runFix e s f = do
-  (_, (cache, state, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 1)
+  (_, (cache, state, _, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 1, False)
   -- writeDependencyGraph cache
   return (fmap (\(f, s, t) -> f) cache, state)
 
@@ -266,13 +279,13 @@ runFixCont f =
 
 runFixFinish :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d), s, x)
 runFixFinish e s f = do
-  (x, (cache, state, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1)
+  (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
   writeDependencyGraph cache
   return (fmap (\(f, s, t) -> f) cache, state, x)
 
 runFixFinishC :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d, Integer, [ContX e s i l d]), s, x)
 runFixFinishC e s f = do
-  (x, (cache, state, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1)
+  (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
   writeDependencyGraph cache
   return (cache, state, x)
 

@@ -21,7 +21,6 @@ import Common.Failure
 import Common.Name
 import Common.Range
 import Common.Unique
-import Common.Error
 import Common.Syntax
 import Common.NamePrim( nameBind, nameBind2 )
 import Kind.Kind

@@ -28,7 +28,6 @@ import Common.Name
 import Common.Range
 import Common.Unique
 import Common.NamePrim( nameReturn )
-import Common.Error
 import Common.Syntax
 
 import Kind.Kind

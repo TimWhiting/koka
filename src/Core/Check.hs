@@ -19,7 +19,7 @@ import Lib.PPrint
 import Common.Failure
 import Common.Name
 import Common.Unique
-import Common.Error
+import Common.Error(Error, warningMsg, warningMessageKind, ErrorKind(..))
 import Common.Range
 import Common.Syntax( DefSort(..) )
 import Common.Unique

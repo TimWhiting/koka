@@ -81,11 +81,11 @@ runEvalQueryFromRangeSource bc term flags rng mod kind m = do
 runQueryAtRange :: HasCallStack => BuildContext
   -> Terminal -> Flags -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int
-  -> (ExprContext -> FixDemand Query () ())
+  -> (ExprContext -> FixDemandR Query () () ())
   -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
 runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyEnv m kind term flags ()) (emptyState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyEnv m kind term flags ()) (emptyState bc (-1) ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -93,7 +93,7 @@ runQueryAtRange bc term flags (r, ri) mod kind m doQuery = do
                       res <- analyzeEachChild ctx (const $ findContext r ri)
                       addResult res
                  getResults
-    let s' = transformState (const ()) s
+    let s' = transformState (const ()) (-1) s
     case S.toList ctxs of
       [] -> return (M.empty, s', ([], bc))
       ctxs ->
@@ -291,24 +291,3 @@ writeDependencyGraph cache = do
   -- 1. Module -> 2. Definition -> 3. Query Ctx -> Query
   -- 1. Environment -> Refinements
   -- TODO: Integrate results with vscode extension proving GOTO like resolution
-
-instance Label (FixOutput m) where
-  label (A a) = ""
-  label (E e) = ""
-  label N = "⊥"
-
-instance Label FixInput where
-  label (QueryInput q) = label q
-  label (EnvInput e) = "Env Refinements: " ++ escape (showSimpleEnv e)
-
-instance Label Query where
-  label (CallQ (ctx, env)) = "Call: " ++ showEscape ctx ++ escape (showSimpleEnv env)
-  label (ExprQ (ctx, env)) = "Expr: " ++ showEscape ctx ++ escape (showSimpleEnv env)
-  label (EvalQ (ctx, env)) = "Eval: " ++ showEscape ctx ++ escape (showSimpleEnv env)
-
-showEscape :: Show a => a -> String
-showEscape = escape . show
-
-escape :: String -> String
-escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
-escape [] = []

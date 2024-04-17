@@ -88,7 +88,7 @@ query q = do
   res <- memo (QueryInput q) $ do
     let cq = newQuery q (\queryStr -> do
                 trace (queryStr ++ show q) $ return ()
-                x <- case q of
+                x <- withGas $ case q of
                         CallQ _ -> doCall q queryStr
                         ExprQ _ -> doExpr q queryStr
                         EvalQ _ -> doEval q queryStr
@@ -560,3 +560,24 @@ analyzeEachChild ctx analyze = do
           childCtx <- currentContext <$> getEnv
           analyzeEachChild childCtx analyze
   each [self, children]
+
+showEscape :: Show a => a -> String
+showEscape = escape . show
+
+escape :: String -> String
+escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
+escape [] = []
+
+instance Label (FixOutput m) where
+  label (A a) = ""
+  label (E e) = ""
+  label N = "⊥"
+
+instance Label FixInput where
+  label (QueryInput q) = label q
+  label (EnvInput e) = "Env Refinements: " ++ escape (showSimpleEnv e)
+
+instance Label Query where
+  label (CallQ (ctx, env)) = "Call: " ++ showEscape ctx ++ escape (showSimpleEnv env)
+  label (ExprQ (ctx, env)) = "Expr: " ++ showEscape ctx ++ escape (showSimpleEnv env)
+  label (EvalQ (ctx, env)) = "Eval: " ++ showEscape ctx ++ escape (showSimpleEnv env)

@@ -29,7 +29,6 @@ import Common.NamePrim( nameEffectOpen,
                         nameTrue, nameFalse, nameTpBool, nameUnsafeTotal,
                         nameBind
                       )
-import Common.Error
 import Common.Syntax
 
 import Kind.Kind( kindStar, isKindEffect, kindFun, kindEffect,   kindHandled )

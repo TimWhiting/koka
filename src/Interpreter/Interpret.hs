@@ -31,7 +31,7 @@ import Common.File
 import Common.Name            ( Name, ModuleName, unqualify, qualify, newName, newQualified, nameNil )
 import Common.NamePrim        ( nameExpr, nameType, nameInteractiveModule, nameSystemCore )
 import Common.Range
-import Common.Error
+import Common.Error(ErrorMessage, ppErrorMessage, ErrorKind(..), errorMessageKind)
 
 import Common.Syntax
 import Syntax.Syntax
