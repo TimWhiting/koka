@@ -15,4 +15,4 @@ fun main()
   
   val z = y - (y + xaslkdfj)
   
-  ()
+  z.println

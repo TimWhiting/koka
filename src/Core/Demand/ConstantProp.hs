@@ -24,7 +24,7 @@ findAllVars ctx =
   visitEachChild ctx $ do
       childCtx <- currentContext <$> getEnv
       case maybeExprOfCtx childCtx of
-        Just (Var (TName n (TCon tc) _) _) | typeConName tc == nameTpInt -> each [return childCtx]
+        Just (Var (TName n (TCon tc) _) _) | typeConName tc == nameTpInt -> each [return childCtx, findAllVars childCtx]
         _ -> findAllVars childCtx
 
 propConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AbValue) -> Name -> IO (State ExprContext () (M.Map ExprContext AbValue))
@@ -57,8 +57,8 @@ constantPropagation build bc core = do
     addResult var
   let vars = S.toList $ finalResults state
   -- TODO: Run an evaluation query on each var separately or in batches until some gas limit is hit
-  propAllConstants build (transformState (\s -> M.empty) (\s -> s) (-1) state) (coreProgName core)
-  -- trace (intercalate "\n" $ map showSimpleContext vars) $ return ()
+  results <- propAllConstants build (transformState (\s -> M.empty) (\s -> s) (-1) state) (coreProgName core)
+  trace (intercalate "\n" (map (\(exprCtx, abstractValue) -> showSimpleContext exprCtx ++ ": " ++ showNoEnvAbValue abstractValue) (M.toList results))) $ return ()
   return ()
 
 propAllConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AbValue) -> Name -> IO (M.Map ExprContext AbValue)

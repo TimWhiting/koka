@@ -549,7 +549,6 @@ visitEachChild ctx analyze = do
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
 
-
 maybeLoadModuleR :: ModuleName -> PostFixR x s e (Maybe Module)
 maybeLoadModuleR mn = do
   state <- getStateR
