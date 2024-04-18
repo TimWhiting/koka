@@ -23,7 +23,7 @@ module Core.Demand.DemandMonad(
   DEnv(..), getUnique, newQuery, demandLog,
   -- Query stuff
   Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
-  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx, 
+  emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx,
   setGas, useGas, decGas, withGas
   ) where
 
@@ -47,6 +47,7 @@ import Debug.Trace (trace)
 import Data.List (find, intercalate)
 import Common.Failure (assertion, HasCallStack)
 import Common.Error (Errors)
+import Type.Type (Type)
 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
@@ -125,7 +126,7 @@ data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, 
 
 data DEnv x = DEnv{
   contextLength :: !Int,
-  builder :: (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors))),
+  builder :: BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)),
   analysisKind :: !AnalysisKind,
   currentContext :: ExprContext,
   currentModContext :: ExprContext,
@@ -138,7 +139,10 @@ data DEnv x = DEnv{
 data Query =
   CallQ (ExprContext, EnvCtx) |
   ExprQ (ExprContext, EnvCtx) |
-  EvalQ (ExprContext, EnvCtx) deriving (Eq, Ord)
+  EvalQ (ExprContext, EnvCtx) |
+  EvalxQ (ExprContext, EnvCtx, Type) | -- Find Applications for the type
+  ExprxQ (ExprContext, EnvCtx, Type) -- Find Handler for the type
+  deriving (Eq, Ord)
 
 queryVal :: Query -> (ExprContext, EnvCtx)
 queryVal (CallQ x) = x
