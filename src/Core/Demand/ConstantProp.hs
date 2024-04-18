@@ -5,7 +5,6 @@ import Common.NamePrim
 import Type.Type
 import Core.Demand.FixpointMonad
 import Compile.Options (Terminal(..), Flags)
-import GHC.IO (unsafePerformIO)
 import Core.Demand.DemandMonad
 import Compile.BuildMonad (BuildContext, Build)
 import Core.Demand.DemandAnalysis
