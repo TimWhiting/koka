@@ -351,11 +351,11 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
-                  let h = flagsHash flags
-                      bc = seqString h $ BuildContext [modName mod] (mod:imports) h
-                  liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
-                      runBuild term flags $ buildcTypeCheck [m] bc
-                     ) bc core
+                  -- let h = flagsHash flags
+                  --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
+                  -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
+                  --     runBuild term flags $ buildcTypeCheck [m] bc
+                  --    ) bc core
                   let mod' = mod{ modPhase   = PhaseOptimized
                                 , modCore    = Just $! core
                                 , modDefinitions = if showHiddenTypeSigs flags

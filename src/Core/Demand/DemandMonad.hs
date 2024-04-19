@@ -22,7 +22,7 @@ module Core.Demand.DemandMonad(
   -- Env stuff
   DEnv(..), getUnique, newQuery, demandLog,
   -- Query stuff
-  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps, queryVal,
+  Query(..), queryCtx, queryEnv, queryKind, queryKindCaps,
   emptyEnv, emptyState, transformState, loadModule, maybeLoadModule, withModuleCtx,
   setGas, useGas, decGas, withGas
   ) where
@@ -140,40 +140,45 @@ data Query =
   CallQ (ExprContext, EnvCtx) |
   ExprQ (ExprContext, EnvCtx) |
   EvalQ (ExprContext, EnvCtx) |
-  EvalxQ (ExprContext, EnvCtx, Type) | -- Find Applications for the type
-  ExprxQ (ExprContext, EnvCtx, Type) -- Find Handler for the type
+  EvalxQ (ExprContext, EnvCtx, Name, Type) | -- Find Applications for the type
+  ExprxQ (ExprContext, EnvCtx, Type) -- Find Handler for the operation's effect type
   deriving (Eq, Ord)
-
-queryVal :: Query -> (ExprContext, EnvCtx)
-queryVal (CallQ x) = x
-queryVal (ExprQ x) = x
-queryVal (EvalQ x) = x
 
 -- Unwraps query pieces
 queryCtx :: Query -> ExprContext
 queryCtx (CallQ (ctx, _)) = ctx
 queryCtx (ExprQ (ctx, _)) = ctx
 queryCtx (EvalQ (ctx, _)) = ctx
+queryCtx (EvalxQ (ctx, _, _, _)) = ctx
+queryCtx (ExprxQ (ctx, _, _)) = ctx
 
 refineQuery :: Query -> EnvCtx -> Query
 refineQuery (CallQ (ctx, _)) env = CallQ (ctx, env)
 refineQuery (ExprQ (ctx, _)) env = ExprQ (ctx, env)
 refineQuery (EvalQ (ctx, _)) env = EvalQ (ctx, env)
+refineQuery (EvalxQ (ctx, _, n, t)) env = EvalxQ (ctx, env, n, t)
+refineQuery (ExprxQ (ctx, _, t)) env = ExprxQ (ctx, env, t)
 
 queryEnv :: Query -> EnvCtx
 queryEnv (CallQ (_, env)) = env
 queryEnv (ExprQ (_, env)) = env
 queryEnv (EvalQ (_, env)) = env
+queryEnv (EvalxQ (_, env, _, _)) = env
+queryEnv (ExprxQ (_, env, _)) = env
 
 queryKind :: Query -> String
 queryKind (CallQ _) = "call"
 queryKind (ExprQ _) = "expr"
 queryKind (EvalQ _) = "eval"
+queryKind (EvalxQ _) = "evalx"
+queryKind (ExprxQ _) = "exprx"
 
 queryKindCaps :: Query -> String
 queryKindCaps (CallQ _) = "CALL"
 queryKindCaps (ExprQ _) = "EXPR"
 queryKindCaps (EvalQ _) = "EVAL"
+queryKindCaps (EvalxQ _) = "EVALX"
+queryKindCaps (ExprxQ _) = "EXPRX"
 
 instance Show Query where
   show q = queryKindCaps q ++ ": " ++ showSimpleEnv (queryEnv q) ++ " " ++ showSimpleContext (queryCtx q)

@@ -15,7 +15,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Core.Demand.DemandAnalysis(
-  query,refine,qcall,qexpr,qeval,
+  query,refine,qcall,qexpr,qeval,qexprx,qevalx,
   FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
   refineQuery,getEnv,withEnv,succAEnv,
   getQueryString,getState,updateState,getUnique,getAbValueResults,
@@ -36,7 +36,7 @@ import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe, catMaybes
 import Data.List (find, findIndex, elemIndex, union, intercalate)
 import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
-import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd, nameCoreHnd)
+import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd, nameCoreHnd, nameHandle, namePerform)
 import Compile.Module (Module(..), ModStatus (..), moduleNull, modImportNames)
 import Compile.BuildMonad (BuildContext(..))
 import Syntax.RangeMap
@@ -55,12 +55,16 @@ import Type.Type
 import Kind.Kind
 import Data.Functor ((<&>))
 import Common.Failure (assertion)
+import Type.Unify (runUnifyEx, unify)
+import Data.Either (isLeft)
 
 -- Refines a query given a more specific environment
 refineQuery :: Query -> EnvCtx -> Query
 refineQuery (CallQ (ctx, env0)) env = CallQ (ctx, env)
 refineQuery (ExprQ (ctx, env0)) env = ExprQ (ctx, env)
 refineQuery (EvalQ (ctx, env0)) env = EvalQ (ctx, env)
+refineQuery (ExprxQ (ctx, env0, tp)) env = ExprxQ (ctx, env, tp)
+refineQuery (EvalxQ (ctx, env0, nm, tp)) env = EvalxQ (ctx, env, nm, tp)
 
 
 ----------------- Unwrap/iterate over values within an abstract value and join results of subqueries ----------------------
@@ -75,6 +79,10 @@ qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qexpr c = query (ExprQ c)
 qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 qeval c = query (EvalQ c)
+qevalx :: (ExprContext, EnvCtx, Name, Type) -> FixDemandR x s e AChange
+qevalx c = query (EvalxQ c)
+qexprx :: (ExprContext, EnvCtx, Type) -> FixDemandR x s e AChange
+qexprx c = query (ExprxQ c)
 
 evalParam :: Int -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
 evalParam i ctx env = do
@@ -88,9 +96,11 @@ query q = do
     let cq = newQuery q (\queryStr -> do
                 demandLog (queryStr ++ show q)
                 x <- withGas $ case q of
-                        CallQ _ -> doCall q queryStr
-                        ExprQ _ -> doExpr q queryStr
-                        EvalQ _ -> doEval q queryStr
+                        CallQ e -> doCall e queryStr
+                        ExprQ e -> doExpr e queryStr
+                        EvalQ e -> doEval e queryStr
+                        ExprxQ e -> doExprx e queryStr
+                        EvalxQ e -> doEvalx e queryStr
                 demandLog (queryStr ++ "==> " ++ show x)
                 return x
                 )
@@ -229,8 +239,67 @@ exprPrimitive var index ctx env = do
         Nothing -> error ("exprPrimitive: Primitive not found! " ++ show tn)
     _ -> error ("exprPrimitive: Not a primitive! " ++ show var)
 
-doEval :: Query -> String -> FixDemandR x s e AChange
-doEval cq@(EvalQ (ctx, env)) query = do
+-- Relates an operation in a specific context to the nearest handler of that operation
+-- TODO: Handle masking of handlers
+doExprx :: (ExprContext, EnvCtx, Type) -> String -> FixDemandR x s e AChange
+doExprx (ctx, env, effectTp) query = do
+    trace (query ++ (show $ exprOfCtx $ fromJust $ contextOf ctx)) $ return ()
+    case ctx of
+      AppCParam _ c 3 _ -> 
+        case exprOfCtx c of
+          (C.App (Var tn _) args rng) -> do
+            if getName tn == nameHandle then -- TODO: Only return if the handler is for the operation
+              return $ AChangeClos c env
+            else searchEnclosing
+      _ -> 
+        searchEnclosing
+    -- trace (query ++ "==> " ++ show res) $ return ()
+    -- return res
+  where 
+    searchEnclosing = do   
+      AChangeClos cctx cenv <- qcall (ctx, env)
+      trace (query ++ "expr==> " ++ showSimpleContext cctx) $ return ()
+      lctx <- liftMaybe $ enclosingLambda cctx
+      qexprx (lctx, cenv, effectTp)
+
+effContains :: Effect -> Effect -> Bool
+effContains eff' eff =
+  let (res, _, _) = runUnifyEx 0 $ do
+                        unify eff' eff
+  in isLeft res
+
+doEvalx :: (ExprContext, EnvCtx, Name, Type) -> String -> FixDemandR x s e AChange
+doEvalx (ctx, env, nm, eff) query = do
+  trace ("FindEffApp: " ++ show ctx ++ " " ++ showSimpleEnv env) $
+    case exprOfCtx ctx of
+      C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
+        trace ("Found Effect Application " ++ show nm ++ " : " ++ show ctx ++ " " ++ showSimpleEnv env) $ return ()
+        qexpr (ctx, env)
+      C.App{} -> do
+        f <- focusFun ctx
+        res <- qeval (f, env)
+        case res of
+          AChangeClos lam lamenv -> do
+            trace ("FindEffAppLam: " ++ show lam ++ " " ++ showSimpleEnv lamenv) $ return ()
+            let getLamEff e =
+                  case e of
+                    C.Lam _ eff _ -> eff
+                    C.TypeLam _ e -> getLamEff e
+                    C.TypeApp e _ -> getLamEff e
+                    l -> error ("Not a lambda: " ++ show l)
+            let eff' = getLamEff (exprOfCtx lam)
+            -- Really need to do findEffectApps (enterBod lam lamenv)
+            if effContains eff eff' then do
+              (bd, bdenv) <- enterBod lam lamenv ctx env
+              qevalx (bd, bdenv, nm, eff) 
+            else doBottom
+          _ -> doBottom
+      _ -> visitEachChild ctx $ do
+            childCtx <- currentContext <$> getEnv
+            qevalx (childCtx, env, nm, eff)
+
+doEval :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
+doEval (ctx, env) query = do
   case maybeExprOfCtx ctx of
     Nothing -> error "doEval: can't find expression"
     Just expr ->
@@ -445,8 +514,8 @@ patSubsumed (PatLit (LitChar i)) (LiteralChangeChar LChangeTop) = True
 patSubsumed (PatLit (LitString i)) (LiteralChangeString LChangeTop) = True
 patSubsumed _ _ = False
 
-doExpr :: Query -> String -> FixDemandR x s e AChange
-doExpr cq@(ExprQ (ctx,env)) query = do
+doExpr :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
+doExpr (ctx,env) query = do
   case ctx of
     AppCLambda _ c e -> -- RATOR Clause
       -- trace (query ++ "OPERATOR: Application is " ++ showCtxExpr c) $
@@ -511,8 +580,8 @@ doExpr cq@(ExprQ (ctx,env)) query = do
             _ -> error $ "Exprs has no enclosing lambda, so is always demanded (top level?) " ++ show ctx
         Nothing -> error $ "expressions where " ++ show ctx ++ " is demanded (should never happen)"
 
-doCall :: Query -> String -> FixDemandR x s e AChange
-doCall cq@(CallQ(ctx, env)) query =
+doCall :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
+doCall (ctx, env) query =
 -- TODO: Treat top level functions specially in call, not in expr
   case ctx of
       LamCBody _ c _ _-> do
@@ -582,3 +651,5 @@ instance Label Query where
   label (CallQ (ctx, env)) = "Call: " ++ showEscape ctx ++ escape (showSimpleEnv env)
   label (ExprQ (ctx, env)) = "Expr: " ++ showEscape ctx ++ escape (showSimpleEnv env)
   label (EvalQ (ctx, env)) = "Eval: " ++ showEscape ctx ++ escape (showSimpleEnv env)
+  label (ExprxQ (ctx, env, tp)) = "Exprx: " ++ showEscape ctx ++ escape (showSimpleEnv env) ++ " " ++ show tp
+  label (EvalxQ (ctx, env, nm, tp)) = "Evalx: " ++ showEscape ctx ++ escape (showSimpleEnv env) ++ " " ++ show nm ++ " " ++ show tp

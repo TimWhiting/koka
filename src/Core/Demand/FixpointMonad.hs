@@ -22,7 +22,7 @@ module Core.Demand.FixpointMonad(
   Lattice(..),
   Contains(..),
   Label(..), ContX(..),
-  memo, push, each, doBottom,
+  memo, push, each, doBottom, liftMaybe,
   withEnv, getEnv, getEnvR,
   getCache, cacheLookup,
   getState, getStateR, setState, updateState,
@@ -172,6 +172,10 @@ updateState :: (s -> s) -> FixT e s i l d  ()
 updateState update = do
   st <- getState
   setState $ update st
+
+liftMaybe :: Maybe a -> FixT e s i l d a
+liftMaybe (Just x) = return x
+liftMaybe Nothing = doBottom
 
 doBottom :: FixT e s i l d b
 doBottom = ContT (\x -> return ())

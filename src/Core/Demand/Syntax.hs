@@ -100,7 +100,7 @@ runQueryAtRange bc build (r, ri) mod kind m doQuery = do
       ctxs ->
         do
           let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
-          runFixFinishC (emptyEnv m kind build False ()) s' $ do
+          runFixFinishC (emptyEnv m kind build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()

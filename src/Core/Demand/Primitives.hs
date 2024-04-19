@@ -83,16 +83,41 @@ createPrimitives = do
     qeval (bd, bdenv)
     )
   addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
+    assertion "Expression for operator" (i == 1) $ return ()
     let parentCtx = fromJust $ contextOf ctx
-    -- Perform's second parameter is the function to run with the handler as an argument
+    trace ("Perform " ++ showSimpleContext parentCtx) $ return ()
     case exprOfCtx parentCtx of
-      C.App _ _ rng -> do
-        f <- focusParam 0 parentCtx
-        arg <- focusParam 1 parentCtx
+      C.App perform _ rng -> do
+        -- We need to search for the handler with the correct type
+        let tp = typeOf perform
+        AChangeClos hnd hndEnv <- qexprx (parentCtx, env, tp)
+        -- Perform's second parameter is the function to run with the handler as an argument
+        f <- focusParam 1 parentCtx
+        -- Perform's third paremeter is the argument to the operation
+        arg <- focusParam 2 parentCtx
+        trace ("Perform " ++ showSimpleContext hnd ++ " " ++ showSimpleContext f ++ " " ++ showSimpleContext arg) $ return ()
         -- TODO: Check to make sure this gets cached properly and not re-evaluated
-        appCtx <- addContextId (\id -> LamCBody id parentCtx [] (C.App (exprOfCtx f) [exprOfCtx arg] Nothing))
-        return $ AChangeClos appCtx env -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
+        ap0 <- addContextId (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx f) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
+        appCtx <- focusChild 0 ap0
+        -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
+        return $ AChangeClos appCtx env
       )
+  addPrimitive nameHandle (\(ctx, env) -> do
+      trace ("Handle " ++ showSimpleContext ctx) $ return ()
+      AChangeClos ret retenv <- evalParam 1 ctx env -- The return clause is the result of a handler (as well as any ctl clauses TODO)
+      (bd, bdenv) <- enterBod ret retenv ctx env
+      qeval (bd, bdenv)
+    )
+  addPrimitiveExpr nameHandle (\i (ctx, env) -> do
+      trace ("HandleExpr " ++ showSimpleContext ctx ++ " index " ++ show i) $ return ()
+      if i == 1 then
+        doBottom -- TODO: the return clause is "called" with the result of the action
+      else if i == 3 then do
+        return $ AChangeClos (fromJust $ contextOf ctx) env 
+        -- res <- qexpr (fromJust $ contextOf ctx, env)
+        -- trace ("HandleExpr " ++ showSimpleContext ctx ++ " result " ++ show res) $ return res
+      else doBottom
+    )
 
   addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
   -- Integer functions
@@ -107,45 +132,7 @@ createPrimitives = do
   addPrimitive nameIntDiv (intOp div) -- TODO: Handle division by zero
   addPrimitive nameIntMod (intOp mod) -- TODO: Handle division by zero
 
-findHandler :: Name -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
-findHandler nm ctx env =
-  trace ("FindHandler: " ++ show nm ++ " " ++ show ctx ++ " " ++ show env) $ do
-  doBottom
-
 findEffectApps :: Name -> Effect -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
 findEffectApps nm eff' ctx env =
-  trace ("FindEffApp: " ++ show ctx ++ " " ++ showSimpleEnv env) $
-  case exprOfCtx ctx of
-    C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
-      trace ("Found Effect Application " ++ show nm ++ " : " ++ show ctx ++ " " ++ showSimpleEnv env) $ return ()
-      qexpr (ctx, env)
-    C.App{} -> do
-      f <- focusFun ctx
-      res <- qeval (f, env)
-      case res of
-        AChangeClos lam lamenv -> do
-          trace ("FindEffAppLam: " ++ show lam ++ " " ++ showSimpleEnv lamenv) $ return ()
-          let getLamEff e =
-                case e of
-                  C.Lam _ eff _ -> eff
-                  C.TypeLam _ e -> getLamEff e
-                  C.TypeApp e _ -> getLamEff e
-                  l -> error ("Not a lambda: " ++ show l)
-          let eff = getLamEff (exprOfCtx lam)
-          -- Really need to do findEffectApps (enterBod lam lamenv)
-          if effContains eff' eff then do
-            (bd, bdenv) <- enterBod lam lamenv ctx env
-            findEffectApps nm eff bd bdenv
-          else doBottom
-        _ -> doBottom
-    _ -> visitEachChild ctx $ do
-          childCtx <- currentContext <$> getEnv
-          findEffectApps nm eff' childCtx env
-
-
-effContains :: Effect -> Effect -> Bool
-effContains eff' eff =
-  let (res, _, _) = runUnifyEx 0 $ do
-                        unify eff' eff
-  in isLeft res
+  qevalx (ctx, env, nm, eff')
 

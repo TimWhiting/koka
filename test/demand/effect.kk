@@ -5,7 +5,8 @@ fun iterate(xs : list<a>, show : a -> string) : yield<a> ()
     Cons(x, xx) ->
       val y = x
       y.show.trace      
-      yield(x)
+      val res = yield(x)
+       
       iterate(xx,show)
     Nil -> ()
 
