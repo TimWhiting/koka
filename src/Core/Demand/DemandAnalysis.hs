@@ -258,7 +258,6 @@ doExprx (ctx, env, effectTp) query = do
   where 
     searchEnclosing = do   
       AChangeClos cctx cenv <- qcall (ctx, env)
-      trace (query ++ "expr==> " ++ showSimpleContext cctx) $ return ()
       lctx <- liftMaybe $ enclosingLambda cctx
       qexprx (lctx, cenv, effectTp)
 
