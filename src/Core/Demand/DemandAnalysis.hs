@@ -243,23 +243,38 @@ exprPrimitive var index ctx env = do
 -- TODO: Handle masking of handlers
 doExprx :: (ExprContext, EnvCtx, Type) -> String -> FixDemandR x s e AChange
 doExprx (ctx, env, effectTp) query = do
-    trace (query ++ (show $ exprOfCtx $ fromJust $ contextOf ctx)) $ return ()
-    case ctx of
-      AppCParam _ c 3 _ -> 
-        case exprOfCtx c of
-          (C.App (Var tn _) args rng) -> do
-            if getName tn == nameHandle then -- TODO: Only return if the handler is for the operation
-              return $ AChangeClos c env
-            else searchEnclosing
-      _ -> 
-        searchEnclosing
-    -- trace (query ++ "==> " ++ show res) $ return ()
-    -- return res
+    appc <- getApp ctx env
+    case appc of
+      Nothing -> searchEnclosing
+      Just (appc, appenv) -> do
+        case exprOfCtx appc of
+          (C.App (C.Lam [tn] _ _) args rng) | getName tn == (newHiddenName "action")-> do
+            trace ("Is handler? " ++ showSimpleContext appc ++ " " ++ showSimpleEnv env) $ return ()
+            getHandler appc appenv tn
+          _ -> do
+            -- trace ("Not handler? " ++ (showSimpleContext appc) ++ " " ++ showSimpleEnv env) $ return ()
+            searchEnclosing
   where 
+    getHandler c env tn = do
+      handleLam <- focusFun c
+      handleApp <- focusChild 0 handleLam
+      let newEnv = EnvCtx (IndetCtx [tn]) env
+      hndlerStruct <- focusParam 0 handleApp
+      qeval (hndlerStruct, newEnv)
+    getApp c env = do
+      case exprOfCtx c of
+        (C.Lam args _ e) -> do
+          child <- focusChild 0 c
+          getApp child (EnvCtx (IndetCtx args) env)
+        (C.TypeLam _ _) -> do
+          child <- focusChild 0 c
+          getApp child env
+        (C.App v args rng) -> return (Just (c, env))
+        _ -> return Nothing
     searchEnclosing = do   
-      AChangeClos cctx cenv <- qcall (ctx, env)
-      lctx <- liftMaybe $ enclosingLambda cctx
-      qexprx (lctx, cenv, effectTp)
+      lctx <- liftMaybe $ enclosingLambda ctx
+      AChangeClos cctx cenv <- qcall (lctx, env)
+      qexprx (cctx, cenv, effectTp)
 
 effContains :: Effect -> Effect -> Bool
 effContains eff' eff =
@@ -554,7 +569,7 @@ doExpr (ctx,env) query = do
           -- trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
       -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-      if isMain ctx then return $ AChangeClos c (EnvTail TopCtx) else qexpr call
+      if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else qexpr call
     DefCRec _ c _ _ _ -> do
       -- trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
@@ -566,11 +581,8 @@ doExpr (ctx,env) query = do
           -- trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
       -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-      qexpr call
+      if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else qexpr call
     ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)
-    ModuleC{} -> do -- This is for calls to main
-      -- trace (query ++ "Module: " ++ show ctx) $ return []
-      return $ AChangeClos ctx env
     _ ->
       case contextOf ctx of
         Just c ->

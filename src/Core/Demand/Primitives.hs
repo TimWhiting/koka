@@ -84,23 +84,23 @@ createPrimitives = do
     )
   addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
     assertion "Expression for operator" (i == 1) $ return ()
+    -- Perform's second parameter is the function to run with the handler as an argument (ctx)
     let parentCtx = fromJust $ contextOf ctx
+    -- Perform's third paremeter is the argument to the operation
+    arg <- focusParam 2 parentCtx
     trace ("Perform " ++ showSimpleContext parentCtx) $ return ()
     case exprOfCtx parentCtx of
       C.App perform _ rng -> do
         -- We need to search for the handler with the correct type
         let tp = typeOf perform
-        AChangeClos hnd hndEnv <- qexprx (parentCtx, env, tp)
-        -- Perform's second parameter is the function to run with the handler as an argument
-        f <- focusParam 1 parentCtx
-        -- Perform's third paremeter is the argument to the operation
-        arg <- focusParam 2 parentCtx
-        trace ("Perform " ++ showSimpleContext hnd ++ " " ++ showSimpleContext f ++ " " ++ showSimpleContext arg) $ return ()
+        AChangeConstr hnd hndEnv <- qexprx (parentCtx, env, tp)
+        trace ("Perform Handler " ++ showSimpleContext hnd ++ "\n\n" ++ showSimpleContext ctx ++ "\n\n" ++ showSimpleContext arg ++ "\n\n") $ return ()
         -- TODO: Check to make sure this gets cached properly and not re-evaluated
-        ap0 <- addContextId (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx f) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
+        ap0 <- addContextId (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx ctx) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
         appCtx <- focusChild 0 ap0
+        -- trace ("Perform Application " ++ showSimpleContext appCtx) $ return ()
         -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
-        return $ AChangeClos appCtx env
+        return $ AChangeClos appCtx hndEnv
       )
   addPrimitive nameHandle (\(ctx, env) -> do
       trace ("Handle " ++ showSimpleContext ctx) $ return ()
@@ -112,10 +112,10 @@ createPrimitives = do
       trace ("HandleExpr " ++ showSimpleContext ctx ++ " index " ++ show i) $ return ()
       if i == 1 then
         doBottom -- TODO: the return clause is "called" with the result of the action
-      else if i == 3 then do
-        return $ AChangeClos (fromJust $ contextOf ctx) env 
-        -- res <- qexpr (fromJust $ contextOf ctx, env)
-        -- trace ("HandleExpr " ++ showSimpleContext ctx ++ " result " ++ show res) $ return res
+      else if i == 3 then do 
+        AChangeClos app appenv <- qexpr (fromJust $ contextOf ctx, env)
+        trace ("HandleExprRet " ++ showSimpleContext ctx ++ " result " ++ show app) $ return ()
+        return $ AChangeClos app appenv
       else doBottom
     )
 
