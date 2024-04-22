@@ -16,7 +16,7 @@ module Core.Demand.DemandMonad(
   -- Cache / State stuff
   State(..), toAChange, toEnv, getAllRefines, getAllStates, addResult, setResults, updateAdditionalState,
   -- Context stuff
-  getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, newContextId, newModContextId, addChildrenContexts,
+  getModule, getModuleR, getResults, getTopDefCtx, getQueryString, addContextId, addSpecialId, newContextId, newModContextId, addChildrenContexts,
   focusParam, focusBody, focusChild, focusFun, enterBod, succAEnv,
   childrenContexts, visitChildrenCtxs, visitEachChild, topBindExpr,
   -- Env stuff
@@ -60,6 +60,7 @@ data State r e s = State{
   moduleContexts :: M.Map ModuleName ExprContext,
   maxContextId :: Int,
   childrenIds :: M.Map ExprContextId (Set ExprContextId),
+  specialIds :: M.Map (ExprContextId, ExprContextId) ExprContextId,
   unique :: Int,
   finalResults :: Set r,
   -- Evaluators given an application site / environment of a primitive (what does the application evaluate to)
@@ -105,17 +106,17 @@ withGas f = do
 
 emptyState :: BuildContext -> Int -> s -> State r e s
 emptyState bc g s =
-  State bc M.empty M.empty 0 M.empty 0 S.empty M.empty M.empty g False s
+  State bc M.empty M.empty 0 M.empty M.empty 0 S.empty M.empty M.empty g False s
 
 transformState :: (s -> x) -> (Set r -> Set b) -> Int -> State r e s -> State b e x
-transformState f final gas (State bc s mc mid cid u fr p ep _ _ ad) =
-  State bc s mc mid cid u (final fr) M.empty M.empty gas False (f ad)
+transformState f final gas (State bc s mc mid cid sid u fr p ep _ _ ad) =
+  State bc s mc mid cid sid u (final fr) M.empty M.empty gas False (f ad)
 
 type TypeChecker = (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)))
 
 emptyEnv :: HasCallStack => Int -> AnalysisKind -> TypeChecker -> Bool -> e -> DEnv e
 emptyEnv m kind build log e =
-  DEnv m build kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" "" log e
+  DEnv m build kind (error "Context used prior to loading") (error "Mod context used prior to loading") "" (-1) "" log e
 
 updateAdditionalState :: (s -> s) -> FixDemandR r s e ()
 updateAdditionalState f = do
@@ -131,6 +132,7 @@ data DEnv x = DEnv{
   currentContext :: ExprContext,
   currentModContext :: ExprContext,
   currentQuery :: !String,
+  currentQueryId :: !Int,
   queryIndentation :: !String,
   loggingEnabled :: Bool,
   additionalEnv :: x
@@ -248,36 +250,6 @@ instance Lattice FixOutput AFixChange where
   isBottom _ = False
 
 
-changes :: AbValue -> [AChange]
-changes (AbValue clos constrs lits) =
-  closs ++ constrss ++ litss
-  where
-    closs = map (uncurry AChangeClos) $ S.toList clos
-    constrss = map (uncurry AChangeConstr) $ S.toList constrs
-    litss = concatMap (\(env,lat) -> changesLit lat env) $ M.toList lits
-
-changesLit :: LiteralLattice -> EnvCtx -> [AChange]
-changesLit (LiteralLattice ints floats chars strings) env =
-  intChanges ++ floatChanges ++ charChanges ++ stringChanges
-  where
-    intChanges = map (\x -> AChangeLit (LiteralChangeInt x) env) $ elems ints
-    floatChanges = map (\x -> AChangeLit (LiteralChangeFloat x) env) $ elems floats
-    charChanges = map (\x -> AChangeLit (LiteralChangeChar x) env) $ elems chars
-    stringChanges = map (\x -> AChangeLit (LiteralChangeString x) env) $ elems strings
-
-changeIn :: AChange -> AbValue -> Bool
-changeIn (AChangeClos ctx env) (AbValue clos _ _) = S.member (ctx,env) clos
-changeIn (AChangeConstr ctx env) (AbValue _ constr _) = S.member (ctx,env) constr
-changeIn (AChangeLit lit env) (AbValue _ _ lits) =
-  case M.lookup env lits of
-    Just (LiteralLattice ints floats chars strings) ->
-      case lit of
-        LiteralChangeInt i -> i `lte` ints
-        LiteralChangeFloat f -> f `lte` floats
-        LiteralChangeChar c -> c `lte` chars
-        LiteralChangeString s -> s `lte` strings
-    Nothing -> False
-
 -- Implement the needed operations for the output to be a lattice
 instance Semigroup (FixOutput d) where
   (<>) (A a) (A b) = A (a <> b)
@@ -363,10 +335,11 @@ setResults x = do
   updateState (\st -> st{finalResults = x})
 
 --- Wraps a computation with a new environment that represents the query indentation and dependencies for easier following and debugging
-newQuery :: Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
-newQuery q d = do
+
+newQuery :: Bool -> Query -> (String -> FixDemandR x s e AChange) -> FixDemandR x s e AFixChange
+newQuery isRefined q d = do
   unique <- getUnique
-  withEnv (\env -> env{currentContext = queryCtx q, currentQuery = "q" ++ show unique ++ "(" ++ queryKindCaps q ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
+  withEnv (\env -> env{currentContext = queryCtx q, currentQueryId = unique, currentQuery = (if isRefined then "qr" else "q") ++ queryKindCaps q ++ "(" ++ show unique ++ ")" ++ ": ", queryIndentation = queryIndentation env ++ " "}) $ do
     query <- getQueryString
     res <- d query
     return $ FA res
@@ -459,6 +432,17 @@ addContextId f = do
   let x = f newId
   setState state{states=M.insert newId x (states state)}
   return x
+
+addSpecialId :: (ExprContextId, ExprContextId) -> (ExprContextId -> ExprContext) -> FixDemandR x s e ExprContext
+addSpecialId ids f = do
+  state <- getState
+  case M.lookup ids $ specialIds state of
+    Just id -> return $! states state M.! id
+    Nothing -> do
+      newId <- newContextId
+      let x = f newId
+      setState state{states=M.insert newId x (states state), specialIds=M.insert ids newId (specialIds state)}
+      return x
 
 childrenOfExpr :: ExprContext -> Expr -> FixDemandR x s e [ExprContext]
 childrenOfExpr ctx expr =

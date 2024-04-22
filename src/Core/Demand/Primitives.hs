@@ -94,13 +94,13 @@ createPrimitives = do
         -- We need to search for the handler with the correct type
         let tp = typeOf perform
         AChangeConstr hnd hndEnv <- qexprx (parentCtx, env, tp)
-        trace ("Perform Handler " ++ showSimpleContext hnd ++ "\n\n" ++ showSimpleContext ctx ++ "\n\n" ++ showSimpleContext arg ++ "\n\n") $ return ()
+        -- trace ("Perform Handler " ++ showSimpleContext hnd ++ "\n\n" ++ showSimpleContext ctx ++ "\n\n" ++ showSimpleContext arg ++ "\n\n") $ return ()
         -- TODO: Check to make sure this gets cached properly and not re-evaluated
-        ap0 <- addContextId (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx ctx) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
+        ap0 <- addSpecialId (contextId hnd, contextId ctx) (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx ctx) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
         appCtx <- focusChild 0 ap0
-        -- trace ("Perform Application " ++ showSimpleContext appCtx) $ return ()
+        trace ("Function " ++ showSimpleContext ctx ++ " flows to application as an operator " ++ showSimpleContext appCtx) $ return ()
         -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
-        return $ AChangeClos appCtx hndEnv
+        return $ AChangeClosApp appCtx parentCtx env
       )
   addPrimitive nameHandle (\(ctx, env) -> do
       trace ("Handle " ++ showSimpleContext ctx) $ return ()

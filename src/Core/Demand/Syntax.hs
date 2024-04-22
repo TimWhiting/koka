@@ -14,7 +14,7 @@ module Core.Demand.Syntax where
 import Data.List (intercalate, find)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import Data.Maybe (catMaybes, mapMaybe)
+import Data.Maybe (catMaybes, mapMaybe, isJust)
 import Data.Set(Set)
 import Compile.Module (Module(..))
 import qualified Syntax.Syntax as Syn
@@ -75,7 +75,7 @@ runEvalQueryFromRangeSource bc build rng mod kind m = do
   (lattice, r, bc) <- runQueryAtRange bc build rng mod kind m $ \ctx -> do
     createPrimitives
     let q = EvalQ (ctx, indeterminateStaticCtx m ctx)
-    query q
+    query q False
     addResult q
   return (r, bc)
 
@@ -197,14 +197,14 @@ findSourceExpr ctx =
           case find (\e -> case e of S.External{} -> nameStem (S.extName e) == nameStem name; _ -> False) (S.programExternals prog) of
             Just e -> return (SourceExtern e)
             Nothing -> return SourceNotFound
-        _ -> trace ("No program or rng" ++ show e ++ " " ++ show program) $ return SourceNotFound
+        _ -> trace ("No program or rng" ++ show e ++ " " ++ show (isJust program)) $ return SourceNotFound
     findDef d = do
       -- return $! Just $! Syn.Var (defName d) False (defNameRange d)
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, C.defNameRange d) of
         (Just prog, rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in " ++ show (moduleName $ contextId ctx)) $ 
           case findDefFromRange prog rng (C.defName d) of Just e -> return (SourceDef e); _ -> return SourceNotFound
-        _ -> trace ("No program or rng" ++ show d ++ " " ++ show program) $ return SourceNotFound
+        _ -> trace ("No program or rng" ++ show d ++ " " ++ show (isJust program)) $ return SourceNotFound
       -- case (program, defNameRange d) of
       --   (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in module " ++ show (moduleName $ contextId ctx)) $ return $! findLocation prog rng
       --   _ -> trace ("No program or rng" ++ show (defName d) ++ " " ++ show program) $ return Nothing
@@ -213,13 +213,13 @@ findSourceExpr ctx =
       case (program, originalRange n) of
         (Just prog, Just rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
           case findLambdaFromRange prog rng of Just e -> return (SourceExpr e); _ -> return SourceNotFound
-        _ -> trace ("No program or rng" ++ show n ++ " " ++ show program) $ return SourceNotFound
+        _ -> trace ("No program or rng" ++ show n ++ " " ++ show (isJust program)) $ return SourceNotFound
     findForApp rng = do
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, rng) of
         (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $
           case findApplicationFromRange prog rng of Just e -> return (SourceExpr e); _ -> return SourceNotFound
-        _ -> trace ("No program or rng" ++ show rng ++ " " ++ show program) $ return SourceNotFound
+        _ -> trace ("No program or rng" ++ show rng ++ " " ++ show (isJust program)) $ return SourceNotFound
 
 -- Converting to user visible expressions
 toSynLit :: SLattice Integer -> Maybe S.Lit

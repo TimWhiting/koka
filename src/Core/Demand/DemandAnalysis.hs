@@ -57,6 +57,7 @@ import Data.Functor ((<&>))
 import Common.Failure (assertion)
 import Type.Unify (runUnifyEx, unify)
 import Data.Either (isLeft)
+import Control.Exception (assert)
 
 -- Refines a query given a more specific environment
 refineQuery :: Query -> EnvCtx -> Query
@@ -74,15 +75,15 @@ doMaybe l doA = do
 
 -- Convenience functions to set up the mutual recursion between the queries and unwrap the result
 qcall :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qcall c = query (CallQ c)
+qcall c = query (CallQ c) False
 qexpr :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qexpr c = query (ExprQ c)
+qexpr c = query (ExprQ c) False
 qeval :: (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-qeval c = query (EvalQ c)
+qeval c = query (EvalQ c) False
 qevalx :: (ExprContext, EnvCtx, Name, Type) -> FixDemandR x s e AChange
-qevalx c = query (EvalxQ c)
+qevalx c = query (EvalxQ c) False
 qexprx :: (ExprContext, EnvCtx, Type) -> FixDemandR x s e AChange
-qexprx c = query (ExprxQ c)
+qexprx c = query (ExprxQ c) False
 
 evalParam :: Int -> ExprContext -> EnvCtx -> FixDemandR x s e AChange
 evalParam i ctx env = do
@@ -90,10 +91,10 @@ evalParam i ctx env = do
   qeval (param, env)
 
 -- The main fixpoint loop
-query :: Query -> FixDemandR x s e AChange
-query q = do
+query :: Query -> Bool -> FixDemandR x s e AChange
+query q isRefined = do
   res <- memo (QueryInput q) $ do
-    let cq = newQuery q (\queryStr -> do
+    let cq = newQuery isRefined q (\queryStr -> do
                 demandLog (queryStr ++ show q)
                 x <- withGas $ case q of
                         CallQ e -> doCall e queryStr
@@ -106,7 +107,8 @@ query q = do
                 )
     let refined = do
           refine <- getRefine (queryEnv q)
-          res <- query (refineQuery q refine)
+          let qr = refineQuery q refine
+          res <- query qr True
           return $ FA res
     each [cq, refined]
   return $ toAChange res
@@ -191,7 +193,7 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
       ExprCBasic _ c (Var{varName=TName{getName=name2}}) ->
         if nameEq name2 then do
           query <- getQueryString
-          demandLog (query ++ "Found usage in " ++ show (ppContextPath ctx)) 
+          demandLog (query ++ "Found usage in " ++ show (ppContextPath ctx))
           return (c, env)
         else
           -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
@@ -254,7 +256,7 @@ doExprx (ctx, env, effectTp) query = do
           _ -> do
             -- trace ("Not handler? " ++ (showSimpleContext appc) ++ " " ++ showSimpleEnv env) $ return ()
             searchEnclosing
-  where 
+  where
     getHandler c env tn = do
       handleLam <- focusFun c
       handleApp <- focusChild 0 handleLam
@@ -271,7 +273,7 @@ doExprx (ctx, env, effectTp) query = do
           getApp child env
         (C.App v args rng) -> return (Just (c, env))
         _ -> return Nothing
-    searchEnclosing = do   
+    searchEnclosing = do
       lctx <- liftMaybe $ enclosingLambda ctx
       AChangeClos cctx cenv <- qcall (lctx, env)
       qexprx (cctx, cenv, effectTp)
@@ -305,7 +307,7 @@ doEvalx (ctx, env, nm, eff) query = do
             -- Really need to do findEffectApps (enterBod lam lamenv)
             if effContains eff eff' then do
               (bd, bdenv) <- enterBod lam lamenv ctx env
-              qevalx (bd, bdenv, nm, eff) 
+              qevalx (bd, bdenv, nm, eff)
             else doBottom
           _ -> doBottom
       _ -> visitEachChild ctx $ do
@@ -334,7 +336,9 @@ doEval (ctx, env) query = do
               BoundLam lamctx lamenv index -> do
                 -- For a lambda bound name, we find the callers, and then evaluate the corresponding parameter of the applications found
                 AChangeClos appctx appenv <- qcall (lamctx, lamenv)
-                -- trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return []
+                trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return ()
+                prm <- focusParam index appctx
+                trace (query ++ "REF: found param" ++ showSimpleContext prm) $ return ()
                 evalParam index appctx appenv
               BoundDef parentCtx ctx boundEnv index -> do
                 -- trace (query ++ "REF-def: " ++ show parentCtx ++ " " ++ show index) $ return []
@@ -435,7 +439,7 @@ evalPatternRef expr env pat = do
       res <- qeval (expr, env)
       case res of
         AChangeConstr conApp cenv -> do
-          -- trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
+          trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
           case exprOfCtx conApp of
             App c tms rng -> do
               f <- focusChild 0 conApp -- Evaluate the head of the application to get the constructor (could be polymorphic)
@@ -499,6 +503,13 @@ matchesPatternConstr conApp env pat = do
     PatWild -> return True
     _ -> return False
 
+matchesPatternClos :: ExprContext -> EnvCtx -> Pattern -> FixDemandR x s e Bool
+matchesPatternClos ctx env pat = do
+  case pat of
+    PatVar _ p -> matchesPatternClos ctx env p
+    PatWild -> return True
+    _ -> return False
+
 matchesPatternsCtx :: [ExprContext] -> [Pattern] -> EnvCtx -> FixDemandR x s e Bool
 matchesPatternsCtx childrenCC pats env = do
   childrenEval <- mapM (\cc -> qeval (cc, env)) childrenCC
@@ -506,6 +517,8 @@ matchesPatternsCtx childrenCC pats env = do
     case ch of
       AChangeLit l env -> return $ matchesPatternLit l env subPat
       AChangeConstr con env -> matchesPatternConstr con env subPat
+      AChangeClos ctx env -> matchesPatternClos ctx env subPat
+      _ -> error ("matchesPatternsCtx: Not a constructor or literal " ++ show ch ++ " " ++ show subPat)
     ) childrenEval pats
   return $ and res
 
@@ -558,7 +571,7 @@ doExpr (ctx,env) query = do
       -- trace (query ++ "ends in error " ++ show ctx)
       -- return [(ctx, env)]
       error $ "Exprs led to ExprCTerm" ++ show ctx
-    DefCNonRec _ c index _ -> do
+    DefCNonRec _ c index _ -> if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else do
       -- trace (query ++ "DEF NonRec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
       call <- case c of
@@ -568,9 +581,10 @@ doExpr (ctx,env) query = do
         _ -> do
           -- trace (query ++ "DEF NonRec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
-      -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-      if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else qexpr call
-    DefCRec _ c _ _ _ -> do
+      -- trace (query ++ "DEF: Usage is " ++ show call) $ return []
+      -- Find the actual call point, this could just be a val x = topLevelFunction with no application
+      qexpr call
+    DefCRec _ c _ _ _ -> if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else do
       -- trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
       call <- case c of
@@ -581,7 +595,8 @@ doExpr (ctx,env) query = do
           -- trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
       -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
-      if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else qexpr call
+      -- Find the actual call point, this could just be a val x = topLevelFunction with no application
+      qexpr call
     ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)
     _ ->
       case contextOf ctx of
@@ -601,20 +616,28 @@ doCall (ctx, env) query =
           BasicEnvs -> do
             let cc0 = envhead env
                 p = envtail env
-            AChangeClos callctx callenv <- qexpr (c, p)
+            res <- qexpr (c, p)
+            let callctx = callOfClos res
+                evalctx = ctxOfClos res
+                callenv = envOfClos res
+            assert (case exprOfCtx callctx of {C.App{} -> True; _ -> False}) $ return ()
+            assert (case cc0 of {BCallCtx ctx _ -> case exprOfCtx ctx of {C.App{} -> True; _ -> False}; _ -> True}) $ return ()
             m <- contextLength <$> getEnv
             cc1 <- succAEnv callctx callenv
             if cc1 `subsumesCtx` cc0 then do
               demandLog (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
-              return $! AChangeClos callctx callenv
+              return $! AChangeClos evalctx callenv
             else if cc0 `subsumesCtx` cc1 then do -- cc1 is more refined
               demandLog (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
               instantiate query (EnvCtx cc1 p) env
               doBottom
             else do
-              -- trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+              trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
+              -- NEXT UP: Need to figure out how to reconcile the fabricated application context for adjusting effect calls
               doBottom
       _ -> error $ "CALL not implemented for " ++ show ctx
+
+
 
 instantiate :: String -> EnvCtx -> EnvCtx -> FixDemandR x s e ()
 instantiate query c1 c0 = if c1 == c0 then return () else do
