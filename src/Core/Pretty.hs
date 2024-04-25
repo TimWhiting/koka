@@ -404,10 +404,10 @@ prettyExpr env (Case exprs branches)
 
 prettyVar env tname
   = if (coreIface env)
-      then prettyCoreName (colors env) (getName tname)
-      else prettyName (colors env) (getName tname)
+      then prettyCoreName (colors env) name
+      else prettyName (colors env) name
     -- <.> braces (ppType env{ prec = precTop } (typeOf tname))
-
+  where name = (if (noFullNames env) then (unqualify (getName tname)) else (getName tname)) 
 {--------------------------------------------------------------------------
   Case branches
 --------------------------------------------------------------------------}
@@ -469,7 +469,7 @@ prettyPattern env pat
     commaSep = hcat . punctuate comma
 
     prettyConName env tname
-      = pretty (getName tname)
+      = if (noFullNames env) then pretty (unqualify (getName tname)) else pretty (getName tname)
         --  if (coreShowTypes env) then prettyTName env tname else pretty (getName tname)
 
 {--------------------------------------------------------------------------

@@ -14,9 +14,7 @@ fun main()
   with handler
     ctl yield(a)
       if a == 2 then
-        print(" Found a 2! ")
-        resume(())
+        resume(print(" Found a 2! "))
       else
-        println(a)
-        resume(())
+        resume(println(a))
   [0, 1, 2, 3].iterate(show)

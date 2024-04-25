@@ -296,7 +296,7 @@ focusFun = focusChild 0
 focusChild :: Int -> ExprContext -> FixDemandR x s e ExprContext
 focusChild index e = do
   children <- childrenContexts e
-  -- trace ("Focused child " ++ show children) $ return ()
+  -- trace ("Focused child of " ++ showSimpleContext e ++ " " ++ show (contextId e) ++ " =>\n  " ++ show children) $ return ()
   query <- getQueryString
   if index < length children then
     -- trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
@@ -428,6 +428,7 @@ newModContextId mod = do
 addContextId :: (ExprContextId -> ExprContext) -> FixDemandR x s e ExprContext
 addContextId f = do
   newId <- newContextId
+  -- trace ("Adding context id " ++ show newId) $ return ()
   state <- getState
   let x = f newId
   setState state{states=M.insert newId x (states state)}
@@ -437,10 +438,14 @@ addSpecialId :: (ExprContextId, ExprContextId) -> (ExprContextId -> ExprContext)
 addSpecialId ids f = do
   state <- getState
   case M.lookup ids $ specialIds state of
-    Just id -> return $! states state M.! id
+    Just id -> 
+      -- trace ("Special Id already exists " ++ show ids ++ " " ++ show id) $ do
+      return $! states state M.! id
     Nothing -> do
       newId <- newContextId
+      -- trace ("Adding special id " ++ show ids ++ " " ++ show newId) $ return ()
       let x = f newId
+      state <- getState -- Refetch state because newContextId mutates it
       setState state{states=M.insert newId x (states state), specialIds=M.insert ids newId (specialIds state)}
       return x
 
@@ -522,7 +527,7 @@ childrenContexts ctx = do
                   demandLog ("initial contexts for module " ++ show (contextId ctx))
                   initialModuleContexts ctx
           addChildrenContexts parentCtxId newCtxs
-          -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs) $ return newCtxs
+          -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs ++ " " ++ show (map contextId newCtxs)) $ return newCtxs
           return newCtxs
       Just childIds -> do
         -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show childIds) $ return ()

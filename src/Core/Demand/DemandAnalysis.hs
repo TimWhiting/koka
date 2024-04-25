@@ -95,14 +95,15 @@ query :: Query -> Bool -> FixDemandR x s e AChange
 query q isRefined = do
   res <- memo (QueryInput q) $ do
     let cq = newQuery isRefined q (\queryStr -> do
-                demandLog (queryStr ++ show q)
+                let log q = case q of {ExprxQ{} -> False; _ -> True}
+                if log q then demandLog (queryStr ++ show q) else return ()
                 x <- withGas $ case q of
                         CallQ e -> doCall e queryStr
                         ExprQ e -> doExpr e queryStr
                         EvalQ e -> doEval e queryStr
                         ExprxQ e -> doExprx e queryStr
                         EvalxQ e -> doEvalx e queryStr
-                demandLog (queryStr ++ "==> " ++ show x)
+                if log q then demandLog (queryStr ++ "==> " ++ show x) else return ()
                 return x
                 )
     let refined = do
@@ -388,7 +389,7 @@ doEval (ctx, env) query = do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           return $ AChangeConstr ctx env
         App f tms rng -> do
-          -- trace (query ++ "APP: " ++ show ctx) $ return []
+          trace (query ++ "APP: " ++ show ctx) $ return ()
           fun <- focusFun ctx
           -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
           AChangeClos lam lamenv <- qeval (fun, env)
@@ -397,7 +398,7 @@ doEval (ctx, env) query = do
             -- trace (query ++ "APP: Primitive " ++ show lam) $ return ()
             evalPrimitive lam ctx env
           else do
-            -- trace (query ++ "APP: Lambda is " ++ show lamctx) $ return []
+            trace (query ++ "APP: Lambda is " ++ show lam) $ return ()
             (bd, bdenv) <- enterBod lam lamenv ctx env
             qeval (bd, bdenv)
         TypeApp{} ->
@@ -439,7 +440,7 @@ evalPatternRef expr env pat = do
       res <- qeval (expr, env)
       case res of
         AChangeConstr conApp cenv -> do
-          trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
+          -- trace ("EVALPatRef2: " ++ show conApp ++ " " ++ show cenv) $ return ()
           case exprOfCtx conApp of
             App c tms rng -> do
               f <- focusChild 0 conApp -- Evaluate the head of the application to get the constructor (could be polymorphic)
@@ -608,7 +609,7 @@ doExpr (ctx,env) query = do
 
 doCall :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
 doCall (ctx, env) query =
--- TODO: Treat top level functions specially in call, not in expr
+-- TODO: Treat top level functions specially in call, not in expr?
   case ctx of
       LamCBody _ c _ _-> do
         kind <- analysisKind <$> getEnv
@@ -633,7 +634,6 @@ doCall (ctx, env) query =
               doBottom
             else do
               trace (query ++ "CALL ERROR:\n\nFIRST:" ++ show cc1 ++ "\n\nSECOND:" ++ show cc0) $ return ()
-              -- NEXT UP: Need to figure out how to reconcile the fabricated application context for adjusting effect calls
               doBottom
       _ -> error $ "CALL not implemented for " ++ show ctx
 

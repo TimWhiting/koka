@@ -31,6 +31,14 @@ nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
 nameIntGe  = coreIntName ">="
 
+nameClauseControl1 = newQualified "std/core/hnd" "clause-control1"
+nameClauseControl2 = newQualified "std/core/hnd" "clause-control2"
+nameClauseControl3 = newQualified "std/core/hnd" "clause-control3"
+nameClauseTail1 = newQualified "std/core/hnd" "clause-tail1"
+nameClauseTail2 = newQualified "std/core/hnd" "clause-tail2"
+nameClauseTail3 = newQualified "std/core/hnd" "clause-tail3"
+
+
 intOp :: (Integer -> Integer -> Integer) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 intOp f (ctx, env) = do
   p1 <- evalParam 0 ctx env
@@ -60,12 +68,14 @@ createPrimitives = do
   addPrimitive nameEffectOpen (\(ctx, env) -> evalParam 0 ctx env)
   addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
     -- Open's first parameter is a function and flows anywhere that the application flows to
-    qexpr (fromJust $ contextOf ctx, env)
-    )
-  addPrimitive (newQualified "std/core/hnd" "clause-control1") (\(ctx, env) -> do
-    evalParam 0 ctx env
-    )
-  addPrimitiveExpr (newQualified "std/core/hnd" "clause-control1") (\index (ctx, env) -> do
+    qexpr (fromJust $ contextOf ctx, env))
+  addPrimitive nameClauseControl1 (\(ctx, env) -> do
+    evalParam 0 ctx env)
+  addPrimitive nameClauseTail1 (\(ctx, env) -> do
+    evalParam 0 ctx env)
+  addPrimitiveExpr nameClauseTail1 (\i (ctx, env) -> do
+    qexpr (fromJust $ contextOf ctx, env))
+  addPrimitiveExpr nameClauseControl1 (\index (ctx, env) -> do
     -- ClauseControl1's first parameter is the operation function and flows to wherever the function is applied
     let hnd = enclosingHandle ctx
     let hndapp = fromJust $ contextOf hnd
@@ -80,7 +90,10 @@ createPrimitives = do
     -- Perform's second parameter is the function to run with the handler as an argument
     AChangeClos lam lamenv <- evalParam 1 ctx env
     (bd, bdenv) <- enterBod lam lamenv ctx env
-    qeval (bd, bdenv)
+    AChangeClos op openv <- qeval (bd, bdenv)
+    -- trace ("Perform Result " ++ show res) $ return ()
+    (res, resenv) <- enterBod op openv bd bdenv
+    qeval (res, resenv)
     )
   addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
     assertion "Expression for operator" (i == 1) $ return ()
@@ -98,6 +111,7 @@ createPrimitives = do
         -- TODO: Check to make sure this gets cached properly and not re-evaluated
         ap0 <- addSpecialId (contextId hnd, contextId ctx) (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx ctx) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
         appCtx <- focusChild 0 ap0
+        -- ap1 <- focusChild 0 appCtx
         trace ("Function " ++ showSimpleContext ctx ++ " flows to application as an operator " ++ showSimpleContext appCtx) $ return ()
         -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
         return $ AChangeClosApp appCtx parentCtx env
@@ -106,6 +120,7 @@ createPrimitives = do
       trace ("Handle " ++ showSimpleContext ctx) $ return ()
       AChangeClos ret retenv <- evalParam 1 ctx env -- The return clause is the result of a handler (as well as any ctl clauses TODO)
       (bd, bdenv) <- enterBod ret retenv ctx env
+      trace ("Handle " ++ showSimpleContext ctx ++ " result body " ++ show bd) $ return ()
       qeval (bd, bdenv)
     )
   addPrimitiveExpr nameHandle (\i (ctx, env) -> do

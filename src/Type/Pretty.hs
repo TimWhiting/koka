@@ -138,6 +138,7 @@ data Env     = Env{ showKinds      :: !Bool
                   , context :: !Name  -- ^ module in which we pretty print
                   , importsMap :: !ImportMap -- ^ import aliases
                   , fullNames :: !Bool
+                  , noFullNames :: !Bool -- even omit full names when there to disambiguate (needs to be false for interface files)
 
                   -- should not really belong here. Contains link bases for documentation generation (see Syntax.Colorize)
                   , colorizing:: !Bool
@@ -165,6 +166,7 @@ defaultEnv
         False
         defaultColorScheme niceEmpty (precTop-1) M.empty (newName "Main") (importsEmpty)
         False -- fullNames
+        False
         False
         []
         ("styles/" ++ programName ++ ".css") -- [("System.","file://c:/users/daan/dev/koka/out/lib/")]

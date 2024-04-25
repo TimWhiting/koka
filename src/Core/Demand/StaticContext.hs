@@ -169,7 +169,7 @@ lamVarExpr index e =
 lamVarDef :: C.Def -> C.Expr
 lamVarDef def = C.Var (TName (C.defName def) (C.defType def) Nothing) InfoNone
 
-simpleEnv = defaultEnv{showKinds=False,fullNames=False,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
+simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
 
 showExpr :: C.Expr -> String
 showExpr e = show $ prettyExpr simpleEnv e
