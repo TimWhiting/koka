@@ -133,7 +133,7 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
               then -- all handled effect match, just use expr
                    trace "masking? " $ expr
               else -} failure $ ("Core.openResolve.resOpen: todo: masking handled effect: " ++ show (ppType penv effFrom))
-       else if (matchType tlFrom tlTo && length lsFrom == length lsTo && and [matchType t1 t2 | (t1,t2) <- zip lsFrom lsTo])
+       else if (matchType tlFrom tlTo && length lsFrom == length lsTo && and [matchType t1 t2 | (t1,t2) <- zip (map snd lsFrom) (map snd lsTo)])
         then -- same handled effects, just use expr
              trace "  same handled effects, leave as is" $
              expr
@@ -160,14 +160,13 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
                          App (makeTypeApp openExpr (map snd targs ++ [tres,effFrom,effTo]))
                              (evExprs ++ [exprVar] ++ [Var p InfoNone | p <- params])
 
-
-                 evIndexOf l
+                 evIndexOf (i, l)
                    = let (htagTp,hndTp)
                              = let (name,_,tpArgs) = labelNameEx l
                                    hndCon = TCon (TypeCon name -- (toHandlerName name)
                                                           (kindFunN (map getKind tpArgs ++ [kindEffect,kindStar]) kindStar))
                                in (makeTypeApp (resolve (toEffectTagName name)) tpArgs, typeApp hndCon tpArgs)
-                     in App (makeTypeApp (resolve nameEvvIndex) [effTo,hndTp]) [htagTp]
+                     in App (makeTypeApp (resolve nameEvvIndex) [effTo,hndTp]) [makeInt32 (fromIntegral i), htagTp]
              in case lsFrom of
                  []  -> -- no handled effect, use cast
                         case lsTo of
@@ -183,7 +182,7 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
                                  else wrapperThunk (resolve (nameOpenNone 0)) []
 
                  [l] -> -- just one: used open-atN for efficiency
-                        trace ("  one handled effect; use at: " ++ show (ppType penv l)) $
+                        trace ("  one handled effect; use at: " ++ show (ppType penv (snd l))) $
                         if (n <= 4)
                          then wrapper (resolve (nameOpenAt n)) [evIndexOf l]
                          else wrapperThunk (resolve (nameOpenAt 0)) [evIndexOf l]

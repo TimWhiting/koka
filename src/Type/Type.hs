@@ -559,19 +559,25 @@ makeValueOperation eff tp
 orderEffect :: Tau -> Tau
 orderEffect tp
   = let (ls,tl) = extractOrderedEffect tp
-    in foldr effectExtend tl ls
+    in foldr effectExtend tl (map snd ls)
 
-
-
-
-extractOrderedEffect :: Tau -> ([Tau],Tau)
+-- Extracts the effects ordered alphabetically by name with the index of duplicate effect labels, and the type of the extended row
+extractOrderedEffect :: Tau -> ([(Int, Tau)],Tau)
 extractOrderedEffect tp
   = let (labs,tl) = extractEffectExtend tp
         labss     = concatMap expand labs
         slabs     = (sortBy (\l1 l2 -> labelNameCompare (labelName l1) (labelName l2)) labss)
-    in -- trace ("sorted: " ++ show (map labelName labss) ++ " to " ++ show (map labelName slabs)) $
-       (slabs,tl)
+    in -- trace ("sorted: " ++ show (map labelName labss) ++ " to " ++ show (map labelName slabs) ++ " and numbered " ++ (show (map (\(i, l) -> show i ++ " " ++ show (labelName l)) (numbered [] slabs)))) $
+       (numbered [] slabs,tl)
   where
+    numbered :: [(Int,Tau)] -> [Tau] -> [(Int,Tau)]
+    numbered [] (l: ls) = numbered [(0,l)] ls
+    numbered ((i, l1):acc) (l2: labs) = 
+        if labelName l1 == labelName l2 
+        then numbered ((i+1,l2):(i, l1):acc) labs
+        else numbered ((0,l2):(i, l1):acc) labs
+    numbered acc [] = reverse acc
+
     expand l
       = let (ls,tl) = extractEffectExtend l
         in if (isEffectEmpty tl && not (null ls))

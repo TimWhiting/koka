@@ -431,7 +431,7 @@ completeMain addShow exprName tp buildc
       Just (_,_,_,eff,resTp)
         -> let (ls,_) = extractHandledEffect eff  -- only effect that are in the evidence vector
            in do print    <- printExpr resTp
-                 (mainBody,extraImports) <- addDefaultHandlers rangeNull eff ls [] callExpr
+                 (mainBody,extraImports) <- addDefaultHandlers rangeNull eff (map snd ls) [] callExpr
                  return (resTp,print,mainBody,extraImports)
       _ -> return (tp, id, callExpr, []) -- todo: given an error?
   where

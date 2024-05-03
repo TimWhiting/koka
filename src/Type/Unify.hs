@@ -451,7 +451,8 @@ unifyEffect tp1 tp2
 extractNormalizeEffect :: Type -> Unify ([Type],Type)
 extractNormalizeEffect tp
   = do tp' <- subst tp
-       return $ extractOrderedEffect tp'
+       let (tps, ex) = extractOrderedEffect tp'
+       return (map snd tps, ex)
 
 
 unifyEffectVar tv1 tp2
@@ -461,7 +462,7 @@ unifyEffectVar tv1 tp2
            -> -- trace ("unifyEffectVar: " ++ show tv1 ++ ":=" ++ show tp2 ++ " is infinite") $
                  unifyError Infinite
          _ -> do -- tv <- freshTVar kindEffect Meta
-                 unifyTVar tv1 (effectExtends ls2 tl2)
+                 unifyTVar tv1 (effectExtends (map snd ls2) tl2)
 
 
 -- | Unify lists of ordered labels; return the differences.

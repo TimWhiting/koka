@@ -169,7 +169,7 @@ topDown (App assert@(Var name _) [msg,cond])  | getName name == nameAssert
 topDown expr@(App app@(TypeApp (Var openName _) [effFrom,effTo,tpFrom,tpTo]) [arg])
   | getName openName == nameEffectOpen &&
     (hasNoEffectExpr arg ||                -- arg uses no effects, or, the open is an identity
-      (matchType tlFrom tlTo && length lsFrom == length lsTo && and [matchType t1 t2 | (t1,t2) <- zip lsFrom lsTo]))
+      (matchType tlFrom tlTo && length lsFrom == length lsTo && and [matchType t1 t2 | (t1,t2) <- zip (map snd lsFrom) (map snd lsTo)]))
   = return arg
   where
     (lsFrom,tlFrom) = extractHandledEffect effFrom
@@ -441,8 +441,8 @@ bottomUp expr@(Case scruts branches)
 
 
 -- simplify evv-index(l) to i if l has a known offset
-bottomUp (App (TypeApp (Var evvIndex _) [effTp,hndTp]) [htag]) | getName evvIndex == nameEvvIndex && isEffectFixed effTp
-  = makeEvIndex (effectOffset (effectLabelFromHandler hndTp) effTp)
+bottomUp (App (TypeApp (Var evvIndex _) [effTp,hndTp]) [App _ [Lit (LitInt i)], htag]) | getName evvIndex == nameEvvIndex && isEffectFixed effTp
+  = makeEvIndex (effectOffset ((fromIntegral i), (effectLabelFromHandler hndTp)) effTp)
 
 
 -- simplify clause-tailN to clause-tail-noopN if it does not invoke operations itself
@@ -626,17 +626,16 @@ effectLabelFromHandler tp
   = -- fromHandlerName
     (labelName tp)
 
-effectOffset :: Name -> Type -> Integer
+effectOffset :: (Int, Name) -> Type -> Integer
 effectOffset l effTp
   = let (ls,_) = extractHandledEffect effTp
         ofs = findMatch 0 l ls
     in -- trace ("found offset " ++ show ofs ++ " for " ++ show l ++ " in " ++ show (map (show . labelName) ls)) $
        ofs
 
-findMatch :: Integer -> Name -> [Type] -> Integer
-findMatch i lname (l:ls)  = if (labelName l == lname) then i else findMatch (i+1) lname ls
+findMatch :: Integer -> (Int, Name) -> [(Int, Type)] -> Integer
+findMatch i (off, lname) ((ol,l):ls)  = if (labelName l == lname) && off == ol then i else findMatch (i+1) (off, lname) ls
 findMatch i lname []      = failure $ "Core.Simplify.findMatch: label " ++ show lname ++ " is not in the labels"
-
 
 
 {--------------------------------------------------------------------------
