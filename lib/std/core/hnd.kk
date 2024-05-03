@@ -199,7 +199,7 @@ pub inline extern @evv-at<e,h> ( i : ev-index ) : ev<h>  // pretend total; don't
 
 // (dynamically) find evidence insertion/deletion index in the evidence vector
 // The compiler optimizes `@evv-index` to a static index when apparent from the effect type.
-pub extern @evv-index<e::E,h>( htag : htag<h> ) : e ev-index
+pub extern @evv-index<e::E,h>( i: ev-index, htag : htag<h> ) : e ev-index
   c  "kk_evv_index"
   js "__evv_index"
 

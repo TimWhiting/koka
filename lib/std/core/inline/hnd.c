@@ -73,14 +73,18 @@ static kk_std_core_hnd__ev* kk_evv_as_vec(kk_evv_t evv, kk_ssize_t* len, kk_std_
 // }
 
 
-kk_ssize_t kk_evv_index( struct kk_std_core_hnd_Htag htag, kk_context_t* ctx ) {
+kk_ssize_t kk_evv_index(int32_t index, struct kk_std_core_hnd_Htag htag, kk_context_t* ctx ) {
   // todo: drop htag?
   kk_ssize_t len;
+  kk_ssize_t off = index;
   kk_std_core_hnd__ev single;
   kk_std_core_hnd__ev* vec = kk_evv_as_vec(ctx->evv,&len,&single,ctx);
   for(kk_ssize_t i = 0; i < len; i++) {
     struct kk_std_core_hnd_Ev* ev = kk_std_core_hnd__as_Ev(vec[i],ctx);
-    if (kk_string_cmp_borrow(htag.tagname,ev->htag.tagname,ctx) <= 0) return i; // break on insertion point
+    if (kk_string_cmp_borrow(htag.tagname,ev->htag.tagname,ctx) <= 0) {
+      if (off == 0) return i; // break on insertion point
+      off--; // adjust for duplicate label
+    }
   }
   //string_t evvs = kk_evv_show(dup_datatype_as(kk_evv_t,ctx->evv),ctx);
   //fatal_error(EFAULT,"cannot find tag '%s' in: %s", string_cbuf_borrow(htag.htag), string_cbuf_borrow(evvs));

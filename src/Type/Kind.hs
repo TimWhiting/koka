@@ -23,7 +23,7 @@ import Type.Type
 effectIsAffine :: Effect -> Bool
 effectIsAffine eff
   = let (labs,tl) = extractOrderedEffect eff
-    in (isEffectEmpty tl && all labelIsAffine labs)
+    in (isEffectEmpty tl && all (\l -> labelIsAffine (snd l)) labs)
 
 
 labelIsLinear :: Effect -> Bool
@@ -66,10 +66,10 @@ containsHandledEffect eff
     not $ null $ fst $ extractHandledEffect eff
 
 -- Get the effects that are reflected in the evidence vector
-extractHandledEffect :: Type -> ([Type], Tau)
+extractHandledEffect :: Type -> ([(Int, Type)], Tau)
 extractHandledEffect eff
   = let (ls,tl) = extractOrderedEffect eff
-    in (filter isHandledEffect ls, tl)
+    in (filter (\l -> isHandledEffect (snd l)) ls, tl)
 
 -- Is an effect reflected in the evidence vector?
 isHandledEffect :: Type -> Bool

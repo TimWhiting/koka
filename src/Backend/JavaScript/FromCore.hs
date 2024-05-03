@@ -891,7 +891,7 @@ genExprExternal tname formats argDocs0
          Nothing -> return (decls,doc)
          Just (pars,eff,res)
            -> let (ls,tl) = extractOrderedEffect eff
-              in case filter (\l -> labelName l == nameTpPartial) ls of
+              in case filter (\l -> labelName l == nameTpPartial) (map snd ls) of
                    [] -> return (decls,doc)
                    _  -> -- has an exception type, wrap it in a try handler
                          let try = parens $

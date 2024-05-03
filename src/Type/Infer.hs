@@ -75,6 +75,7 @@ import Core.BindingGroups( regroup )
 
 import qualified Syntax.RangeMap as RM
 import Common.File (seqqList)
+import Core.Core (makeInt32)
 
 
 {--------------------------------------------------------------------------
@@ -542,7 +543,7 @@ inferIsolated contextRange range body inf
          Nothing   -> return res
          Just vrng -> do seff <- subst ieff
                          let (ls,tl) = extractOrderedEffect seff
-                         case filter (\l -> labelName l == nameTpLocal) ls of
+                         case filter (\l -> labelName l == nameTpLocal) (map snd ls) of
                            (_:_) -> typeError contextRange vrng
                                       (text "reference to a local variable escapes its lexical scope") seff []
                            _ -> return ()
@@ -1011,10 +1012,10 @@ inferExpr propagated expect (Inject label expr behind rng)
                  -- general handled effects use "@inject-effect"
                  Just coreHTag
                    -> do (maskQName,maskTp,maskInfo) <- resolveFunName nameMaskAt (CtxFunArgs 3 [] Nothing) rng rng
-                         (evvIndexQName,evvIndexTp,evvIndexInfo) <- resolveFunName nameEvvIndex (CtxFunArgs 1 [] Nothing) rng rng
+                         (evvIndexQName,evvIndexTp,evvIndexInfo) <- resolveFunName nameEvvIndex (CtxFunArgs 2 [] Nothing) rng rng
                          let coreMask = coreExprFromNameInfo maskQName maskInfo
                              coreIndex= Core.App (Core.TypeApp (coreExprFromNameInfo evvIndexQName evvIndexInfo) [effTo])
-                                                 [coreHTag]
+                                                 [(makeInt32 0), coreHTag]
                              core     = Core.App (Core.TypeApp coreMask [resTp,eff,effTo]) [coreIndex,coreLevel,exprCore]
                          return core
                  Nothing
@@ -1202,13 +1203,13 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
 
 containsLocalEffect eff
   = let (ls,tl) = extractOrderedEffect eff
-    in not (null (filter (\l -> labelName l == nameTpLocal) ls))
+    in not (null (filter (\l -> labelName l == nameTpLocal) (map snd ls)))
 
 removeLocalEffect penv funTp
   = case splitFunScheme  funTp of
       Just (foralls,[],argTps,eff,resTp)
         -> let (ls,tl) = extractOrderedEffect eff
-           in quantifyType foralls (TFun argTps (foldr effectExtend tl (filter (\l -> labelName l /= nameTpLocal) ls)) resTp)
+           in quantifyType foralls (TFun argTps (foldr effectExtend tl (filter (\l -> labelName l /= nameTpLocal) (map snd ls))) resTp)
       _ -> failure $ "Type.Infer.removeLocaEffect: unexpected type:" ++ show (ppType penv funTp)
 
 checkLinearity effectName heffect branches hrng rng

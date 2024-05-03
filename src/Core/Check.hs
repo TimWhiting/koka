@@ -299,7 +299,7 @@ matchSubEff when fdoc eff1 eff2
         (ls2,tl2) = extractHandledEffect eff2
     in if (length ls1 /= length ls2)
         then showCheck "handled effects do not match" when eff1 eff2 fdoc
-        else do sequence_ [match when fdoc targ1 targ2 | (targ1,targ2) <- zip ls1 ls2]
+        else do sequence_ [match when fdoc targ1 targ2 | (targ1,targ2) <- zip (map snd ls1) (map snd ls2)]
                 return ()
 
 

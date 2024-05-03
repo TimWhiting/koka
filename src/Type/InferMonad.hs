@@ -308,7 +308,7 @@ isolate rng free ps eff  | src `endsWith` "std/core/hnd.kk"
 isolate rng free ps eff
   = -- trace ("isolate: " ++ show eff ++ " with free " ++ show (tvsList free)) $
     let (ls,tl) = extractOrderedEffect eff
-    in case filter (\l -> labelName l `elem` [nameTpLocal,nameTpRead,nameTpWrite]) ls of
+    in case filter (\l -> labelName l `elem` [nameTpLocal,nameTpRead,nameTpWrite]) (map snd ls) of
           (lab@(TApp labcon [TVar h]) : _)
             -> -- has heap variable 'h' in its effect
                do -- trace ("isolate:" ++ show (sourceName (rangeSource rng)) ++ ": " ++ show (pretty eff)) $ return ()
@@ -441,7 +441,7 @@ normalizeX close free tp
 nicefyEffect :: Effect -> Inf Effect
 nicefyEffect eff
   = do let (ls,tl) = extractOrderedEffect eff
-       ls' <- matchAliases [nameTpIO, nameTpST, nameTpPure, nameTpAsyncX] ls
+       ls' <- matchAliases [nameTpIO, nameTpST, nameTpPure, nameTpAsyncX] (map snd ls)
        return (foldr (\l t -> TApp (TCon tconEffectExtend) [l,t]) tl ls') -- cannot use effectExtends since we want to keep synonyms
   where
     matchAliases :: [Name] -> [Tau] -> Inf [Tau]
@@ -465,7 +465,7 @@ nicefyEffect eff
                  in if (null ls2 || not (isEffectEmpty tl2))
                      then return ([],ls)
                      else let params      = synInfoParams syn
-                              (sls,insts) = findInsts params ls2 ls
+                              (sls,insts) = findInsts params (map snd ls2) ls
                           in -- Lib.Trace.trace ("* try alias: " ++ show (synInfoName syn, ls, sls)) $
                              case (isSubset [] sls ls) of
                                 Just rest
