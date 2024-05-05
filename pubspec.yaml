@@ -1,0 +1,83 @@
+name: libuv
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  ffi: ^2.0.1
+  path: ^1.8.0
+
+dev_dependencies:
+  ffigen:
+    path: '../koka-community/native/pkgs/ffigen'
+  lints: ^2.0.1
+
+ffigen:
+  name: libuv
+  ffi-native:
+    assetId: "c { syslib=\"uv\" }"
+  description: Bindings to `libuv.h`.
+  output: 'lib/std/os/uv/generated.kk'
+  compiler-opts:
+    - '-I./third-party/'
+    - '-I/usr/local/opt/llvm/lib/clang/18/include'
+  headers:
+    entry-points:
+      - 'third-party/uv.h'
+      - 'third-party/uv/version.h'
+      - 'third-party/uv/errno.h'
+    include-directives:
+      - 'third-party/uv.h'
+      - 'third-party/uv/*'
+  compiler-opts-automatic:
+    macos:
+      include-c-standard-library: false
+  preamble: |
+    // Copyright (c) 2024, the Koka authors. All rights reserved. 
+    // Use of this source code is governed by a
+    // MIT-style license that can be found in the LICENSE file.
+  functions:
+    exclude:
+      - (-)+.*
+    rename:
+      '-(.*)': '$1'
+  structs:
+    exclude:
+      - (-)+.*
+    rename:
+      'uv--(.*)' : 'uv-$1'
+      '-*(.*)': '$1'
+    member-rename:
+      '.*':
+        '-*(.*)': '$1'
+    dependency-only: opaque
+  enums:
+    exclude:
+      - (-)+.*
+    rename:
+      'uv--(.*)' : 'uv-$1'
+      '-*(.*)': '$1'
+  unions:
+    exclude:
+      - (-)+.*
+    rename:
+      'uv--(.*)' : 'uv-$1'
+      '-*(.*)': '$1'
+  globals:
+    exclude:
+      - (-)+.*
+    rename:
+      'uv--(.*)' : 'uv-$1'
+      '-*(.*)': '$1'
+  macros:
+    exclude:
+      - (-)+.*
+    rename:
+      'uv--(.*)' : 'uv-$1'
+      '-*(.*)': '$1'
+  typedefs:
+    exclude:
+      - (-)+.*
+    rename:
+      'uv--(.*)' : 'uv-$1'
+      '-*(.*)': '$1'
