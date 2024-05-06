@@ -30,6 +30,18 @@ pub alias c-null<t> = c-pointer<t>
 pub inline fun cnull(): c-null<t>
   C-pointer(0.intptr_t)
 
+pub extern carray/cptr<t>(c: c-array<t>): intptr_t
+  c inline "#1"
+
+pub fun carray/ptr<t>(c: c-array<t>): c-pointer<t>
+  C-pointer(c.cptr)
+
+pub extern cptr/carray<t>(c: intptr_t): c-array<t>
+  c inline "#1"
+
+pub fun ptr/carray<t>(c: c-pointer<t>): c-array<t>
+  carray(c.ptr)
+
 // Allocate `n*size-of` bytes of memory using kk_malloc and return a pointer to the allocated memory
 extern int/malloc<t>(n: int32, size-of: int32): intptr_t
   c inline "(kk_addr_t)kk_malloc(#1*#2, kk_context())"
