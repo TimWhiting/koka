@@ -15,20 +15,21 @@ dev_dependencies:
 ffigen:
   name: libuv
   ffi-native:
-    assetId: "c { syslib=\"uv\" }"
+    assetId: "c { syslib=\"uv\" }\n\nextern import\n  c header-file \"third-party/uv.h\""
   description: Bindings to `libuv.h`.
   output: 'lib/std/os/uv/generated.kk'
+  generate-compound-member-accessors: false
   compiler-opts:
-    - '-I./third-party/'
+    - '-I./lib/std/os/uv/third-party/'
     - '-I/usr/local/opt/llvm/lib/clang/18/include'
   headers:
     entry-points:
-      - 'third-party/uv.h'
-      - 'third-party/uv/version.h'
-      - 'third-party/uv/errno.h'
+      - 'lib/std/os/uv/third-party/uv.h'
+      - 'lib/std/os/uv/third-party/uv/version.h'
+      - 'lib/std/os/uv/third-party/uv/errno.h'
     include-directives:
-      - 'third-party/uv.h'
-      - 'third-party/uv/*'
+      - 'lib/std/os/uv/third-party/uv.h'
+      - 'lib/std/os/uv/third-party/uv/*'
   compiler-opts-automatic:
     macos:
       include-c-standard-library: false

@@ -14,1856 +14,1868 @@ import std/num/float64
 extern import
   c { syslib="uv" }
 
+extern import
+  c header-file "third-party/uv.h"
+
 pub extern external/uv-version(): int32
   c inline "(unsigned int)uv_version()"
 
-pub fun ffi/uv-version(): int
+pub fun ffi/uv-version(): <> int
   external/uv-version().int
 
 pub extern external/uv-version-string(): intptr_t
   c inline "(intptr_t)uv_version_string()"
 
-pub fun ffi/uv-version-string(): c-pointer<int>
+pub fun ffi/uv-version-string(): <> c-pointer<int>
   C-pointer(external/uv-version-string())
 
 pub extern external/uv-library-shutdown(): ()
   c inline "(void)uv_library_shutdown()"
 
 pub extern external/uv-replace-allocator(^malloc-func: intptr_t, ^realloc-func: intptr_t, ^calloc-func: intptr_t, ^free-func: intptr_t): int32
-  c inline "(int)uv_replace_allocator((void* (*)(ssize_t))#1, (void* (*)(void*, ssize_t))#2, (void* (*)(ssize_t, ssize_t))#3, (void (*)(void*))#4)"
+  c inline "(int)uv_replace_allocator((uv_malloc_func)#1, (uv_realloc_func)#2, (uv_calloc_func)#3, (uv_free_func)#4)"
 
-pub fun ffi/uv-replace-allocator(^malloc-func: c-pointer<intptr_t>, ^realloc-func: c-pointer<intptr_t>, ^calloc-func: c-pointer<intptr_t>, ^free-func: c-pointer<intptr_t>): int
+pub fun ffi/uv-replace-allocator(^malloc-func: c-pointer<intptr_t>, ^realloc-func: c-pointer<intptr_t>, ^calloc-func: c-pointer<intptr_t>, ^free-func: c-pointer<intptr_t>): <> int
   external/uv-replace-allocator(malloc-func.cextern/c-pointer/ptr, realloc-func.cextern/c-pointer/ptr, calloc-func.cextern/c-pointer/ptr, free-func.cextern/c-pointer/ptr).int
 
 pub extern external/uv-default-loop(): intptr_t
   c inline "(intptr_t)uv_default_loop()"
 
-pub fun ffi/uv-default-loop(): c-pointer<uv-loop-s-c>
+pub fun ffi/uv-default-loop(): <> c-pointer<uv-loop-s-c>
   C-pointer(external/uv-default-loop())
 
 pub extern external/uv-loop-init(^loop: intptr_t): int32
-  c inline "(int)uv_loop_init((struct uv_loop_s*)#1)"
+  c inline "(int)uv_loop_init((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-init(^loop: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-loop-init(^loop: c-pointer<uv-loop-s-c>): <> int
   external/uv-loop-init(loop.cextern/c-pointer/ptr).int
 
 pub extern external/uv-loop-close(^loop: intptr_t): int32
-  c inline "(int)uv_loop_close((struct uv_loop_s*)#1)"
+  c inline "(int)uv_loop_close((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-close(^loop: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-loop-close(^loop: c-pointer<uv-loop-s-c>): <> int
   external/uv-loop-close(loop.cextern/c-pointer/ptr).int
 
 pub extern external/uv-loop-new(): intptr_t
   c inline "(intptr_t)uv_loop_new()"
 
-pub fun ffi/uv-loop-new(): c-pointer<uv-loop-s-c>
+pub fun ffi/uv-loop-new(): <> c-pointer<uv-loop-s-c>
   C-pointer(external/uv-loop-new())
 
 pub extern external/uv-loop-delete(^arg0: intptr_t): ()
-  c inline "(void)uv_loop_delete((struct uv_loop_s*)#1)"
+  c inline "(void)uv_loop_delete((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-delete(^arg0: c-pointer<uv-loop-s-c>): ()
+pub fun ffi/uv-loop-delete(^arg0: c-pointer<uv-loop-s-c>): <> ()
   external/uv-loop-delete(arg0.cextern/c-pointer/ptr)
 
 pub extern external/uv-loop-size(): ssize_t
-  c inline "(ssize_t)uv_loop_size()"
+  c inline "(size_t)uv_loop_size()"
+
+pub fun ffi/uv-loop-size(): <> int
+  external/uv-loop-size().int
 
 pub extern external/uv-loop-alive(^loop: intptr_t): int32
-  c inline "(int)uv_loop_alive((struct uv_loop_s*)#1)"
+  c inline "(int)uv_loop_alive((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-alive(^loop: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-loop-alive(^loop: c-pointer<uv-loop-s-c>): <> int
   external/uv-loop-alive(loop.cextern/c-pointer/ptr).int
 
 pub extern external/uv-loop-configure(^loop: intptr_t, ^option: int32): int32
-  c inline "(int)uv_loop_configure((struct uv_loop_s*)#1, (int32_t)#2)"
+  c inline "(int)uv_loop_configure((uv_loop_t*)#1, (int32_t)#2)"
 
-pub fun ffi/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: int): int
-  external/uv-loop-configure(loop.cextern/c-pointer/ptr, option.int32).int
+pub fun ffi/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: uv-loop-option): <exn> int
+  external/uv-loop-configure(loop.cextern/c-pointer/ptr, option.uv-loop-option/int).int
 
 pub extern external/uv-loop-fork(^loop: intptr_t): int32
-  c inline "(int)uv_loop_fork((struct uv_loop_s*)#1)"
+  c inline "(int)uv_loop_fork((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): <> int
   external/uv-loop-fork(loop.cextern/c-pointer/ptr).int
 
 pub extern external/uv-run(^arg0: intptr_t, ^mode: int32): int32
-  c inline "(int)uv_run((struct uv_loop_s*)#1, (int32_t)#2)"
+  c inline "(int)uv_run((uv_loop_t*)#1, (int32_t)#2)"
 
-pub fun ffi/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: int): int
-  external/uv-run(arg0.cextern/c-pointer/ptr, mode.int32).int
+pub fun ffi/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: uv-run-mode): <exn> int
+  external/uv-run(arg0.cextern/c-pointer/ptr, mode.uv-run-mode/int).int
 
 pub extern external/uv-stop(^arg0: intptr_t): ()
-  c inline "(void)uv_stop((struct uv_loop_s*)#1)"
+  c inline "(void)uv_stop((uv_loop_t*)#1)"
 
-pub fun ffi/uv-stop(^arg0: c-pointer<uv-loop-s-c>): ()
+pub fun ffi/uv-stop(^arg0: c-pointer<uv-loop-s-c>): <> ()
   external/uv-stop(arg0.cextern/c-pointer/ptr)
 
 pub extern external/uv-ref(^arg0: intptr_t): ()
-  c inline "(void)uv_ref((struct uv_handle_s*)#1)"
+  c inline "(void)uv_ref((uv_handle_t*)#1)"
 
-pub fun ffi/uv-ref(^arg0: c-pointer<uv-handle-s-c>): ()
+pub fun ffi/uv-ref(^arg0: c-pointer<uv-handle-s-c>): <> ()
   external/uv-ref(arg0.cextern/c-pointer/ptr)
 
 pub extern external/uv-unref(^arg0: intptr_t): ()
-  c inline "(void)uv_unref((struct uv_handle_s*)#1)"
+  c inline "(void)uv_unref((uv_handle_t*)#1)"
 
-pub fun ffi/uv-unref(^arg0: c-pointer<uv-handle-s-c>): ()
+pub fun ffi/uv-unref(^arg0: c-pointer<uv-handle-s-c>): <> ()
   external/uv-unref(arg0.cextern/c-pointer/ptr)
 
 pub extern external/uv-has-ref(^arg0: intptr_t): int32
-  c inline "(int)uv_has_ref((struct uv_handle_s*)#1)"
+  c inline "(int)uv_has_ref((uv_handle_t*)#1)"
 
-pub fun ffi/uv-has-ref(^arg0: c-pointer<uv-handle-s-c>): int
+pub fun ffi/uv-has-ref(^arg0: c-pointer<uv-handle-s-c>): <> int
   external/uv-has-ref(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-update-time(^arg0: intptr_t): ()
-  c inline "(void)uv_update_time((struct uv_loop_s*)#1)"
+  c inline "(void)uv_update_time((uv_loop_t*)#1)"
 
-pub fun ffi/uv-update-time(^arg0: c-pointer<uv-loop-s-c>): ()
+pub fun ffi/uv-update-time(^arg0: c-pointer<uv-loop-s-c>): <> ()
   external/uv-update-time(arg0.cextern/c-pointer/ptr)
 
 pub extern external/uv-now(^arg0: intptr_t): int64
-  c inline "(int64_t)uv_now((struct uv_loop_s*)#1)"
+  c inline "(int64_t)uv_now((uv_loop_t*)#1)"
 
-pub fun ffi/uv-now(^arg0: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-now(^arg0: c-pointer<uv-loop-s-c>): <> int
   external/uv-now(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-backend-fd(^arg0: intptr_t): int32
-  c inline "(int)uv_backend_fd((struct uv_loop_s*)#1)"
+  c inline "(int)uv_backend_fd((uv_loop_t*)#1)"
 
-pub fun ffi/uv-backend-fd(^arg0: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-backend-fd(^arg0: c-pointer<uv-loop-s-c>): <> int
   external/uv-backend-fd(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-backend-timeout(^arg0: intptr_t): int32
-  c inline "(int)uv_backend_timeout((struct uv_loop_s*)#1)"
+  c inline "(int)uv_backend_timeout((uv_loop_t*)#1)"
 
-pub fun ffi/uv-backend-timeout(^arg0: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-backend-timeout(^arg0: c-pointer<uv-loop-s-c>): <> int
   external/uv-backend-timeout(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-translate-sys-error(^sys-errno: int32): int32
   c inline "(int)uv_translate_sys_error((int)#1)"
 
-pub fun ffi/uv-translate-sys-error(^sys-errno: int): int
+pub fun ffi/uv-translate-sys-error(^sys-errno: int): <> int
   external/uv-translate-sys-error(sys-errno.int32).int
 
 pub extern external/uv-strerror(^err: int32): intptr_t
   c inline "(intptr_t)uv_strerror((int)#1)"
 
-pub fun ffi/uv-strerror(^err: int): c-pointer<int>
+pub fun ffi/uv-strerror(^err: int): <> c-pointer<int>
   C-pointer(external/uv-strerror(err.int32))
 
 pub extern external/uv-strerror-r(^err: int32, ^buf: intptr_t, ^buflen: ssize_t): intptr_t
-  c inline "(intptr_t)uv_strerror_r((int)#1, (char*)#2, (ssize_t)#3)"
+  c inline "(intptr_t)uv_strerror_r((int)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-strerror-r(^err: int, ^buf: c-pointer<int>, ^buflen: ssize_t): c-pointer<int>
-  C-pointer(external/uv-strerror-r(err.int32, buf.cextern/c-pointer/ptr, buflen))
+pub fun ffi/uv-strerror-r(^err: int, ^buf: c-pointer<int>, ^buflen: int): <> c-pointer<int>
+  C-pointer(external/uv-strerror-r(err.int32, buf.cextern/c-pointer/ptr, buflen.ssize_t))
 
 pub extern external/uv-err-name(^err: int32): intptr_t
   c inline "(intptr_t)uv_err_name((int)#1)"
 
-pub fun ffi/uv-err-name(^err: int): c-pointer<int>
+pub fun ffi/uv-err-name(^err: int): <> c-pointer<int>
   C-pointer(external/uv-err-name(err.int32))
 
 pub extern external/uv-err-name-r(^err: int32, ^buf: intptr_t, ^buflen: ssize_t): intptr_t
-  c inline "(intptr_t)uv_err_name_r((int)#1, (char*)#2, (ssize_t)#3)"
+  c inline "(intptr_t)uv_err_name_r((int)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-err-name-r(^err: int, ^buf: c-pointer<int>, ^buflen: ssize_t): c-pointer<int>
-  C-pointer(external/uv-err-name-r(err.int32, buf.cextern/c-pointer/ptr, buflen))
+pub fun ffi/uv-err-name-r(^err: int, ^buf: c-pointer<int>, ^buflen: int): <> c-pointer<int>
+  C-pointer(external/uv-err-name-r(err.int32, buf.cextern/c-pointer/ptr, buflen.ssize_t))
 
 pub extern external/uv-shutdown(^req: intptr_t, ^handle1: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_shutdown((struct uv_shutdown_s*)#1, (struct uv_stream_s*)#2, (void (*)(struct uv_shutdown_s*, int))#3)"
+  c inline "(int)uv_shutdown((uv_shutdown_t*)#1, (uv_stream_t*)#2, (uv_shutdown_cb)#3)"
 
-pub fun ffi/uv-shutdown(^req: c-pointer<uv-shutdown-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-shutdown(^req: c-pointer<uv-shutdown-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-shutdown(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-handle-size(^type1: int32): ssize_t
-  c inline "(ssize_t)uv_handle_size((int32_t)#1)"
+  c inline "(size_t)uv_handle_size((int32_t)#1)"
 
-pub fun ffi/uv-handle-size(^type1: int): ssize_t
-  external/uv-handle-size(type1.int32)
+pub fun ffi/uv-handle-size(^type1: uv-handle-type): <exn> int
+  external/uv-handle-size(type1.uv-handle-type/int).int
 
 pub extern external/uv-handle-get-type(^handle1: intptr_t): int32
-  c inline "(int32_t)uv_handle_get_type((struct uv_handle_s*)#1)"
+  c inline "(int32_t)uv_handle_get_type((uv_handle_t*)#1)"
 
-pub fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): int
-  external/uv-handle-get-type(handle1.cextern/c-pointer/ptr).int
+pub fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): <exn> uv-handle-type
+  external/uv-handle-get-type(handle1.cextern/c-pointer/ptr).int/uv-handle-type
 
 pub extern external/uv-handle-type-name(^type1: int32): intptr_t
   c inline "(intptr_t)uv_handle_type_name((int32_t)#1)"
 
-pub fun ffi/uv-handle-type-name(^type1: int): c-pointer<int>
-  C-pointer(external/uv-handle-type-name(type1.int32))
+pub fun ffi/uv-handle-type-name(^type1: uv-handle-type): <exn> c-pointer<int>
+  C-pointer(external/uv-handle-type-name(type1.uv-handle-type/int))
 
 pub extern external/uv-handle-get-data(^handle1: intptr_t): intptr_t
-  c inline "(intptr_t)uv_handle_get_data((struct uv_handle_s*)#1)"
+  c inline "(intptr_t)uv_handle_get_data((uv_handle_t*)#1)"
 
-pub fun ffi/uv-handle-get-data(^handle1: c-pointer<uv-handle-s-c>): c-pointer<()>
+pub fun ffi/uv-handle-get-data(^handle1: c-pointer<uv-handle-s-c>): <> c-pointer<()>
   C-pointer(external/uv-handle-get-data(handle1.cextern/c-pointer/ptr))
 
 pub extern external/uv-handle-get-loop(^handle1: intptr_t): intptr_t
-  c inline "(intptr_t)uv_handle_get_loop((struct uv_handle_s*)#1)"
+  c inline "(intptr_t)uv_handle_get_loop((uv_handle_t*)#1)"
 
-pub fun ffi/uv-handle-get-loop(^handle1: c-pointer<uv-handle-s-c>): c-pointer<uv-loop-s-c>
+pub fun ffi/uv-handle-get-loop(^handle1: c-pointer<uv-handle-s-c>): <> c-pointer<uv-loop-s-c>
   C-pointer(external/uv-handle-get-loop(handle1.cextern/c-pointer/ptr))
 
 pub extern external/uv-handle-set-data(^handle1: intptr_t, ^data: intptr_t): ()
-  c inline "(void)uv_handle_set_data((struct uv_handle_s*)#1, (void*)#2)"
+  c inline "(void)uv_handle_set_data((uv_handle_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-handle-set-data(^handle1: c-pointer<uv-handle-s-c>, ^data: c-pointer<()>): ()
+pub fun ffi/uv-handle-set-data(^handle1: c-pointer<uv-handle-s-c>, ^data: c-pointer<()>): <> ()
   external/uv-handle-set-data(handle1.cextern/c-pointer/ptr, data.cextern/c-pointer/ptr)
 
 pub extern external/uv-req-size(^type1: int32): ssize_t
-  c inline "(ssize_t)uv_req_size((int32_t)#1)"
+  c inline "(size_t)uv_req_size((int32_t)#1)"
 
-pub fun ffi/uv-req-size(^type1: int): ssize_t
-  external/uv-req-size(type1.int32)
+pub fun ffi/uv-req-size(^type1: uv-req-type): <exn> int
+  external/uv-req-size(type1.uv-req-type/int).int
 
 pub extern external/uv-req-get-data(^req: intptr_t): intptr_t
-  c inline "(intptr_t)uv_req_get_data((struct uv_req_s*)#1)"
+  c inline "(intptr_t)uv_req_get_data((uv_req_t*)#1)"
 
-pub fun ffi/uv-req-get-data(^req: c-pointer<uv-req-s-c>): c-pointer<()>
+pub fun ffi/uv-req-get-data(^req: c-pointer<uv-req-s-c>): <> c-pointer<()>
   C-pointer(external/uv-req-get-data(req.cextern/c-pointer/ptr))
 
 pub extern external/uv-req-set-data(^req: intptr_t, ^data: intptr_t): ()
-  c inline "(void)uv_req_set_data((struct uv_req_s*)#1, (void*)#2)"
+  c inline "(void)uv_req_set_data((uv_req_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-req-set-data(^req: c-pointer<uv-req-s-c>, ^data: c-pointer<()>): ()
+pub fun ffi/uv-req-set-data(^req: c-pointer<uv-req-s-c>, ^data: c-pointer<()>): <> ()
   external/uv-req-set-data(req.cextern/c-pointer/ptr, data.cextern/c-pointer/ptr)
 
 pub extern external/uv-req-get-type(^req: intptr_t): int32
-  c inline "(int32_t)uv_req_get_type((struct uv_req_s*)#1)"
+  c inline "(int32_t)uv_req_get_type((uv_req_t*)#1)"
 
-pub fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): int
-  external/uv-req-get-type(req.cextern/c-pointer/ptr).int
+pub fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): <exn> uv-req-type
+  external/uv-req-get-type(req.cextern/c-pointer/ptr).int/uv-req-type
 
 pub extern external/uv-req-type-name(^type1: int32): intptr_t
   c inline "(intptr_t)uv_req_type_name((int32_t)#1)"
 
-pub fun ffi/uv-req-type-name(^type1: int): c-pointer<int>
-  C-pointer(external/uv-req-type-name(type1.int32))
+pub fun ffi/uv-req-type-name(^type1: uv-req-type): <exn> c-pointer<int>
+  C-pointer(external/uv-req-type-name(type1.uv-req-type/int))
 
 pub extern external/uv-is-active(^handle1: intptr_t): int32
-  c inline "(int)uv_is_active((struct uv_handle_s*)#1)"
+  c inline "(int)uv_is_active((uv_handle_t*)#1)"
 
-pub fun ffi/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): int
+pub fun ffi/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): <> int
   external/uv-is-active(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-walk(^loop: intptr_t, ^walk-cb: intptr_t, ^arg: intptr_t): ()
-  c inline "(void)uv_walk((struct uv_loop_s*)#1, (void (*)(struct uv_handle_s*, void*))#2, (void*)#3)"
+  c inline "(void)uv_walk((uv_loop_t*)#1, (uv_walk_cb)#2, (void*)#3)"
 
-pub fun ffi/uv-walk(^loop: c-pointer<uv-loop-s-c>, ^walk-cb: c-pointer<intptr_t>, ^arg: c-pointer<()>): ()
+pub fun ffi/uv-walk(^loop: c-pointer<uv-loop-s-c>, ^walk-cb: c-pointer<intptr_t>, ^arg: c-pointer<()>): <> ()
   external/uv-walk(loop.cextern/c-pointer/ptr, walk-cb.cextern/c-pointer/ptr, arg.cextern/c-pointer/ptr)
 
 pub extern external/uv-print-all-handles(^loop: intptr_t, ^stream: intptr_t): ()
-  c inline "(void)uv_print_all_handles((struct uv_loop_s*)#1, (struct _IO_FILE*)#2)"
+  c inline "(void)uv_print_all_handles((uv_loop_t*)#1, (FILE*)#2)"
 
-pub fun ffi/uv-print-all-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<io-file-c>): ()
+pub fun ffi/uv-print-all-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): <> ()
   external/uv-print-all-handles(loop.cextern/c-pointer/ptr, stream.cextern/c-pointer/ptr)
 
 pub extern external/uv-print-active-handles(^loop: intptr_t, ^stream: intptr_t): ()
-  c inline "(void)uv_print_active_handles((struct uv_loop_s*)#1, (struct _IO_FILE*)#2)"
+  c inline "(void)uv_print_active_handles((uv_loop_t*)#1, (FILE*)#2)"
 
-pub fun ffi/uv-print-active-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<io-file-c>): ()
+pub fun ffi/uv-print-active-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): <> ()
   external/uv-print-active-handles(loop.cextern/c-pointer/ptr, stream.cextern/c-pointer/ptr)
 
 pub extern external/uv-close(^handle1: intptr_t, ^close-cb: intptr_t): ()
-  c inline "(void)uv_close((struct uv_handle_s*)#1, (void (*)(struct uv_handle_s*))#2)"
+  c inline "(void)uv_close((uv_handle_t*)#1, (uv_close_cb)#2)"
 
-pub fun ffi/uv-close(^handle1: c-pointer<uv-handle-s-c>, ^close-cb: c-pointer<intptr_t>): ()
+pub fun ffi/uv-close(^handle1: c-pointer<uv-handle-s-c>, ^close-cb: c-pointer<intptr_t>): <> ()
   external/uv-close(handle1.cextern/c-pointer/ptr, close-cb.cextern/c-pointer/ptr)
 
 pub extern external/uv-send-buffer-size(^handle1: intptr_t, ^value: intptr_t): int32
-  c inline "(int)uv_send_buffer_size((struct uv_handle_s*)#1, (int*)#2)"
+  c inline "(int)uv_send_buffer_size((uv_handle_t*)#1, (int*)#2)"
 
-pub fun ffi/uv-send-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): int
+pub fun ffi/uv-send-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): <> int
   external/uv-send-buffer-size(handle1.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr).int
 
 pub extern external/uv-recv-buffer-size(^handle1: intptr_t, ^value: intptr_t): int32
-  c inline "(int)uv_recv_buffer_size((struct uv_handle_s*)#1, (int*)#2)"
+  c inline "(int)uv_recv_buffer_size((uv_handle_t*)#1, (int*)#2)"
 
-pub fun ffi/uv-recv-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): int
+pub fun ffi/uv-recv-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): <> int
   external/uv-recv-buffer-size(handle1.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fileno(^handle1: intptr_t, ^fd: intptr_t): int32
-  c inline "(int)uv_fileno((struct uv_handle_s*)#1, (int*)#2)"
+  c inline "(int)uv_fileno((uv_handle_t*)#1, (uv_os_fd_t*)#2)"
 
-pub fun ffi/uv-fileno(^handle1: c-pointer<uv-handle-s-c>, ^fd: c-pointer<int>): int
+pub fun ffi/uv-fileno(^handle1: c-pointer<uv-handle-s-c>, ^fd: c-pointer<int>): <> int
   external/uv-fileno(handle1.cextern/c-pointer/ptr, fd.cextern/c-pointer/ptr).int
 
-pub extern external/uv-pipe(^fds: intptr_t, ^read-flags: int32, ^write-flags: int32): int32
-  c inline "(int)uv_pipe((int*)#1, (int)#2, (int)#3)"
+pub extern external/uv-buf-init(^base: intptr_t, ^len: int32): intptr_t
+  c inline "struct uv_buf_t* _s = kk_malloc(sizeof(struct uv_buf_t), kk_context());\n*_s = uv_buf_init((char*)#1, (unsigned int)#2);\n(intptr_t)_s"
 
-pub fun ffi/uv-pipe(^fds: c-array<int>, ^read-flags: int, ^write-flags: int): int
+pub fun ffi/uv-buf-init(^base: c-pointer<int>, ^len: int): <> c-pointer<uv-buf-t-c>
+  C-pointer(external/uv-buf-init(base.cextern/c-pointer/ptr, len.int32))
+
+pub extern external/uv-pipe(^fds: intptr_t, ^read-flags: int32, ^write-flags: int32): int32
+  c inline "(int)uv_pipe((uv_file*)#1, (int)#2, (int)#3)"
+
+pub fun ffi/uv-pipe(^fds: c-array<int>, ^read-flags: int, ^write-flags: int): <> int
   external/uv-pipe(fds.cextern/carray/cptr, read-flags.int32, write-flags.int32).int
 
 pub extern external/uv-socketpair(^type1: int32, ^protocol: int32, ^socket-vector: intptr_t, ^flags0: int32, ^flags1: int32): int32
-  c inline "(int)uv_socketpair((int)#1, (int)#2, (int*)#3, (int)#4, (int)#5)"
+  c inline "(int)uv_socketpair((int)#1, (int)#2, (uv_os_sock_t*)#3, (int)#4, (int)#5)"
 
-pub fun ffi/uv-socketpair(^type1: int, ^protocol: int, ^socket-vector: c-array<int>, ^flags0: int, ^flags1: int): int
+pub fun ffi/uv-socketpair(^type1: int, ^protocol: int, ^socket-vector: c-array<int>, ^flags0: int, ^flags1: int): <> int
   external/uv-socketpair(type1.int32, protocol.int32, socket-vector.cextern/carray/cptr, flags0.int32, flags1.int32).int
 
 pub extern external/uv-stream-get-write-queue-size(^stream: intptr_t): ssize_t
-  c inline "(ssize_t)uv_stream_get_write_queue_size((struct uv_stream_s*)#1)"
+  c inline "(size_t)uv_stream_get_write_queue_size((uv_stream_t*)#1)"
 
-pub fun ffi/uv-stream-get-write-queue-size(^stream: c-pointer<uv-stream-s-c>): ssize_t
-  external/uv-stream-get-write-queue-size(stream.cextern/c-pointer/ptr)
+pub fun ffi/uv-stream-get-write-queue-size(^stream: c-pointer<uv-stream-s-c>): <> int
+  external/uv-stream-get-write-queue-size(stream.cextern/c-pointer/ptr).int
 
 pub extern external/uv-listen(^stream: intptr_t, ^backlog: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_listen((struct uv_stream_s*)#1, (int)#2, (void (*)(struct uv_stream_s*, int))#3)"
+  c inline "(int)uv_listen((uv_stream_t*)#1, (int)#2, (uv_connection_cb)#3)"
 
-pub fun ffi/uv-listen(^stream: c-pointer<uv-stream-s-c>, ^backlog: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-listen(^stream: c-pointer<uv-stream-s-c>, ^backlog: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-listen(stream.cextern/c-pointer/ptr, backlog.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-accept(^server: intptr_t, ^client: intptr_t): int32
-  c inline "(int)uv_accept((struct uv_stream_s*)#1, (struct uv_stream_s*)#2)"
+  c inline "(int)uv_accept((uv_stream_t*)#1, (uv_stream_t*)#2)"
 
-pub fun ffi/uv-accept(^server: c-pointer<uv-stream-s-c>, ^client: c-pointer<uv-stream-s-c>): int
+pub fun ffi/uv-accept(^server: c-pointer<uv-stream-s-c>, ^client: c-pointer<uv-stream-s-c>): <> int
   external/uv-accept(server.cextern/c-pointer/ptr, client.cextern/c-pointer/ptr).int
 
 pub extern external/uv-read-start(^arg0: intptr_t, ^alloc-cb: intptr_t, ^read-cb: intptr_t): int32
-  c inline "(int)uv_read_start((struct uv_stream_s*)#1, (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2, (void (*)(struct uv_stream_s*, long, struct uv_buf_t*))#3)"
+  c inline "(int)uv_read_start((uv_stream_t*)#1, (uv_alloc_cb)#2, (uv_read_cb)#3)"
 
-pub fun ffi/uv-read-start(^arg0: c-pointer<uv-stream-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^read-cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-read-start(^arg0: c-pointer<uv-stream-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^read-cb: c-pointer<intptr_t>): <> int
   external/uv-read-start(arg0.cextern/c-pointer/ptr, alloc-cb.cextern/c-pointer/ptr, read-cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-read-stop(^arg0: intptr_t): int32
-  c inline "(int)uv_read_stop((struct uv_stream_s*)#1)"
+  c inline "(int)uv_read_stop((uv_stream_t*)#1)"
 
-pub fun ffi/uv-read-stop(^arg0: c-pointer<uv-stream-s-c>): int
+pub fun ffi/uv-read-stop(^arg0: c-pointer<uv-stream-s-c>): <> int
   external/uv-read-stop(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-write(^req: intptr_t, ^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_write((struct uv_write_s*)#1, (struct uv_stream_s*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (void (*)(struct uv_write_s*, int))#5)"
+  c inline "(int)uv_write((uv_write_t*)#1, (uv_stream_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (uv_write_cb)#5)"
 
-pub fun ffi/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-write(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-write2(^req: intptr_t, ^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^send-handle: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_write2((struct uv_write_s*)#1, (struct uv_stream_s*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (struct uv_stream_s*)#5, (void (*)(struct uv_write_s*, int))#6)"
+  c inline "(int)uv_write2((uv_write_t*)#1, (uv_stream_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (uv_stream_t*)#5, (uv_write_cb)#6)"
 
-pub fun ffi/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-write2(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, send-handle.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-try-write(^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32): int32
-  c inline "(int)uv_try_write((struct uv_stream_s*)#1, (struct uv_buf_t*)#2, (unsigned int)#3)"
+  c inline "(int)uv_try_write((uv_stream_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int): int
+pub fun ffi/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int): <> int
   external/uv-try-write(handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32).int
 
 pub extern external/uv-try-write2(^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^send-handle: intptr_t): int32
-  c inline "(int)uv_try_write2((struct uv_stream_s*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (struct uv_stream_s*)#4)"
+  c inline "(int)uv_try_write2((uv_stream_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (uv_stream_t*)#4)"
 
-pub fun ffi/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>): int
+pub fun ffi/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>): <> int
   external/uv-try-write2(handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, send-handle.cextern/c-pointer/ptr).int
 
 pub extern external/uv-is-readable(^handle1: intptr_t): int32
-  c inline "(int)uv_is_readable((struct uv_stream_s*)#1)"
+  c inline "(int)uv_is_readable((uv_stream_t*)#1)"
 
-pub fun ffi/uv-is-readable(^handle1: c-pointer<uv-stream-s-c>): int
+pub fun ffi/uv-is-readable(^handle1: c-pointer<uv-stream-s-c>): <> int
   external/uv-is-readable(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-is-writable(^handle1: intptr_t): int32
-  c inline "(int)uv_is_writable((struct uv_stream_s*)#1)"
+  c inline "(int)uv_is_writable((uv_stream_t*)#1)"
 
-pub fun ffi/uv-is-writable(^handle1: c-pointer<uv-stream-s-c>): int
+pub fun ffi/uv-is-writable(^handle1: c-pointer<uv-stream-s-c>): <> int
   external/uv-is-writable(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-stream-set-blocking(^handle1: intptr_t, ^blocking: int32): int32
-  c inline "(int)uv_stream_set_blocking((struct uv_stream_s*)#1, (int)#2)"
+  c inline "(int)uv_stream_set_blocking((uv_stream_t*)#1, (int)#2)"
 
-pub fun ffi/uv-stream-set-blocking(^handle1: c-pointer<uv-stream-s-c>, ^blocking: int): int
+pub fun ffi/uv-stream-set-blocking(^handle1: c-pointer<uv-stream-s-c>, ^blocking: int): <> int
   external/uv-stream-set-blocking(handle1.cextern/c-pointer/ptr, blocking.int32).int
 
 pub extern external/uv-is-closing(^handle1: intptr_t): int32
-  c inline "(int)uv_is_closing((struct uv_handle_s*)#1)"
+  c inline "(int)uv_is_closing((uv_handle_t*)#1)"
 
-pub fun ffi/uv-is-closing(^handle1: c-pointer<uv-handle-s-c>): int
+pub fun ffi/uv-is-closing(^handle1: c-pointer<uv-handle-s-c>): <> int
   external/uv-is-closing(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tcp-init(^arg0: intptr_t, ^handle1: intptr_t): int32
-  c inline "(int)uv_tcp_init((struct uv_loop_s*)#1, (struct uv_tcp_s*)#2)"
+  c inline "(int)uv_tcp_init((uv_loop_t*)#1, (uv_tcp_t*)#2)"
 
-pub fun ffi/uv-tcp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>): int
+pub fun ffi/uv-tcp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>): <> int
   external/uv-tcp-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tcp-init-ex(^arg0: intptr_t, ^handle1: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_tcp_init_ex((struct uv_loop_s*)#1, (struct uv_tcp_s*)#2, (unsigned int)#3)"
+  c inline "(int)uv_tcp_init_ex((uv_loop_t*)#1, (uv_tcp_t*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-tcp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^flags: int): int
+pub fun ffi/uv-tcp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^flags: int): <> int
   external/uv-tcp-init-ex(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-tcp-open(^handle1: intptr_t, ^sock: int32): int32
-  c inline "(int)uv_tcp_open((struct uv_tcp_s*)#1, (int)#2)"
+  c inline "(int)uv_tcp_open((uv_tcp_t*)#1, (uv_os_sock_t)#2)"
 
-pub fun ffi/uv-tcp-open(^handle1: c-pointer<uv-tcp-s-c>, ^sock: int): int
+pub fun ffi/uv-tcp-open(^handle1: c-pointer<uv-tcp-s-c>, ^sock: int): <> int
   external/uv-tcp-open(handle1.cextern/c-pointer/ptr, sock.int32).int
 
 pub extern external/uv-tcp-nodelay(^handle1: intptr_t, ^enable: int32): int32
-  c inline "(int)uv_tcp_nodelay((struct uv_tcp_s*)#1, (int)#2)"
+  c inline "(int)uv_tcp_nodelay((uv_tcp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-tcp-nodelay(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): int
+pub fun ffi/uv-tcp-nodelay(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): <> int
   external/uv-tcp-nodelay(handle1.cextern/c-pointer/ptr, enable.int32).int
 
 pub extern external/uv-tcp-keepalive(^handle1: intptr_t, ^enable: int32, ^delay: int32): int32
-  c inline "(int)uv_tcp_keepalive((struct uv_tcp_s*)#1, (int)#2, (unsigned int)#3)"
+  c inline "(int)uv_tcp_keepalive((uv_tcp_t*)#1, (int)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-tcp-keepalive(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int, ^delay: int): int
+pub fun ffi/uv-tcp-keepalive(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int, ^delay: int): <> int
   external/uv-tcp-keepalive(handle1.cextern/c-pointer/ptr, enable.int32, delay.int32).int
 
 pub extern external/uv-tcp-simultaneous-accepts(^handle1: intptr_t, ^enable: int32): int32
-  c inline "(int)uv_tcp_simultaneous_accepts((struct uv_tcp_s*)#1, (int)#2)"
+  c inline "(int)uv_tcp_simultaneous_accepts((uv_tcp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-tcp-simultaneous-accepts(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): int
+pub fun ffi/uv-tcp-simultaneous-accepts(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): <> int
   external/uv-tcp-simultaneous-accepts(handle1.cextern/c-pointer/ptr, enable.int32).int
 
 pub extern external/uv-tcp-bind(^handle1: intptr_t, ^addr: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_tcp_bind((struct uv_tcp_s*)#1, (struct sockaddr*)#2, (unsigned int)#3)"
+  c inline "(int)uv_tcp_bind((uv_tcp_t*)#1, (struct sockaddr*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-tcp-bind(^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): int
+pub fun ffi/uv-tcp-bind(^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
   external/uv-tcp-bind(handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-tcp-getsockname(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
-  c inline "(int)uv_tcp_getsockname((struct uv_tcp_s*)#1, (struct sockaddr*)#2, (int*)#3)"
+  c inline "(int)uv_tcp_getsockname((uv_tcp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-tcp-getsockname(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int
+pub fun ffi/uv-tcp-getsockname(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
   external/uv-tcp-getsockname(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tcp-getpeername(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
-  c inline "(int)uv_tcp_getpeername((struct uv_tcp_s*)#1, (struct sockaddr*)#2, (int*)#3)"
+  c inline "(int)uv_tcp_getpeername((uv_tcp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-tcp-getpeername(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int
+pub fun ffi/uv-tcp-getpeername(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
   external/uv-tcp-getpeername(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tcp-close-reset(^handle1: intptr_t, ^close-cb: intptr_t): int32
-  c inline "(int)uv_tcp_close_reset((struct uv_tcp_s*)#1, (void (*)(struct uv_handle_s*))#2)"
+  c inline "(int)uv_tcp_close_reset((uv_tcp_t*)#1, (uv_close_cb)#2)"
 
-pub fun ffi/uv-tcp-close-reset(^handle1: c-pointer<uv-tcp-s-c>, ^close-cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-tcp-close-reset(^handle1: c-pointer<uv-tcp-s-c>, ^close-cb: c-pointer<intptr_t>): <> int
   external/uv-tcp-close-reset(handle1.cextern/c-pointer/ptr, close-cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tcp-connect(^req: intptr_t, ^handle1: intptr_t, ^addr: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_tcp_connect((struct uv_connect_s*)#1, (struct uv_tcp_s*)#2, (struct sockaddr*)#3, (void (*)(struct uv_connect_s*, int))#4)"
+  c inline "(int)uv_tcp_connect((uv_connect_t*)#1, (uv_tcp_t*)#2, (struct sockaddr*)#3, (uv_connect_cb)#4)"
 
-pub fun ffi/uv-tcp-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-tcp-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-tcp-connect(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-init(^arg0: intptr_t, ^handle1: intptr_t): int32
-  c inline "(int)uv_udp_init((struct uv_loop_s*)#1, (struct uv_udp_s*)#2)"
+  c inline "(int)uv_udp_init((uv_loop_t*)#1, (uv_udp_t*)#2)"
 
-pub fun ffi/uv-udp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>): int
+pub fun ffi/uv-udp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>): <> int
   external/uv-udp-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-init-ex(^arg0: intptr_t, ^handle1: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_udp_init_ex((struct uv_loop_s*)#1, (struct uv_udp_s*)#2, (unsigned int)#3)"
+  c inline "(int)uv_udp_init_ex((uv_loop_t*)#1, (uv_udp_t*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-udp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^flags: int): int
+pub fun ffi/uv-udp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^flags: int): <> int
   external/uv-udp-init-ex(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-udp-open(^handle1: intptr_t, ^sock: int32): int32
-  c inline "(int)uv_udp_open((struct uv_udp_s*)#1, (int)#2)"
+  c inline "(int)uv_udp_open((uv_udp_t*)#1, (uv_os_sock_t)#2)"
 
-pub fun ffi/uv-udp-open(^handle1: c-pointer<uv-udp-s-c>, ^sock: int): int
+pub fun ffi/uv-udp-open(^handle1: c-pointer<uv-udp-s-c>, ^sock: int): <> int
   external/uv-udp-open(handle1.cextern/c-pointer/ptr, sock.int32).int
 
 pub extern external/uv-udp-bind(^handle1: intptr_t, ^addr: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_udp_bind((struct uv_udp_s*)#1, (struct sockaddr*)#2, (unsigned int)#3)"
+  c inline "(int)uv_udp_bind((uv_udp_t*)#1, (struct sockaddr*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-udp-bind(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): int
+pub fun ffi/uv-udp-bind(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
   external/uv-udp-bind(handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-udp-connect(^handle1: intptr_t, ^addr: intptr_t): int32
-  c inline "(int)uv_udp_connect((struct uv_udp_s*)#1, (struct sockaddr*)#2)"
+  c inline "(int)uv_udp_connect((uv_udp_t*)#1, (struct sockaddr*)#2)"
 
-pub fun ffi/uv-udp-connect(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>): int
+pub fun ffi/uv-udp-connect(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>): <> int
   external/uv-udp-connect(handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-getpeername(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
-  c inline "(int)uv_udp_getpeername((struct uv_udp_s*)#1, (struct sockaddr*)#2, (int*)#3)"
+  c inline "(int)uv_udp_getpeername((uv_udp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-udp-getpeername(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int
+pub fun ffi/uv-udp-getpeername(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
   external/uv-udp-getpeername(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-getsockname(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
-  c inline "(int)uv_udp_getsockname((struct uv_udp_s*)#1, (struct sockaddr*)#2, (int*)#3)"
+  c inline "(int)uv_udp_getsockname((uv_udp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-udp-getsockname(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int
+pub fun ffi/uv-udp-getsockname(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
   external/uv-udp-getsockname(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-set-membership(^handle1: intptr_t, ^multicast-addr: intptr_t, ^interface-addr: intptr_t, ^membership: int32): int32
-  c inline "(int)uv_udp_set_membership((struct uv_udp_s*)#1, (char*)#2, (char*)#3, (int32_t)#4)"
+  c inline "(int)uv_udp_set_membership((uv_udp_t*)#1, (char*)#2, (char*)#3, (int32_t)#4)"
 
-pub fun ffi/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: int): int
-  external/uv-udp-set-membership(handle1.cextern/c-pointer/ptr, multicast-addr.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr, membership.int32).int
+pub fun ffi/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
+  external/uv-udp-set-membership(handle1.cextern/c-pointer/ptr, multicast-addr.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr, membership.uv-membership/int).int
 
 pub extern external/uv-udp-set-source-membership(^handle1: intptr_t, ^multicast-addr: intptr_t, ^interface-addr: intptr_t, ^source-addr: intptr_t, ^membership: int32): int32
-  c inline "(int)uv_udp_set_source_membership((struct uv_udp_s*)#1, (char*)#2, (char*)#3, (char*)#4, (int32_t)#5)"
+  c inline "(int)uv_udp_set_source_membership((uv_udp_t*)#1, (char*)#2, (char*)#3, (char*)#4, (int32_t)#5)"
 
-pub fun ffi/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: int): int
-  external/uv-udp-set-source-membership(handle1.cextern/c-pointer/ptr, multicast-addr.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr, source-addr.cextern/c-pointer/ptr, membership.int32).int
+pub fun ffi/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
+  external/uv-udp-set-source-membership(handle1.cextern/c-pointer/ptr, multicast-addr.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr, source-addr.cextern/c-pointer/ptr, membership.uv-membership/int).int
 
 pub extern external/uv-udp-set-multicast-loop(^handle1: intptr_t, ^on1: int32): int32
-  c inline "(int)uv_udp_set_multicast_loop((struct uv_udp_s*)#1, (int)#2)"
+  c inline "(int)uv_udp_set_multicast_loop((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-multicast-loop(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): int
+pub fun ffi/uv-udp-set-multicast-loop(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): <> int
   external/uv-udp-set-multicast-loop(handle1.cextern/c-pointer/ptr, on1.int32).int
 
 pub extern external/uv-udp-set-multicast-ttl(^handle1: intptr_t, ^ttl: int32): int32
-  c inline "(int)uv_udp_set_multicast_ttl((struct uv_udp_s*)#1, (int)#2)"
+  c inline "(int)uv_udp_set_multicast_ttl((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-multicast-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): int
+pub fun ffi/uv-udp-set-multicast-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): <> int
   external/uv-udp-set-multicast-ttl(handle1.cextern/c-pointer/ptr, ttl.int32).int
 
 pub extern external/uv-udp-set-multicast-interface(^handle1: intptr_t, ^interface-addr: intptr_t): int32
-  c inline "(int)uv_udp_set_multicast_interface((struct uv_udp_s*)#1, (char*)#2)"
+  c inline "(int)uv_udp_set_multicast_interface((uv_udp_t*)#1, (char*)#2)"
 
-pub fun ffi/uv-udp-set-multicast-interface(^handle1: c-pointer<uv-udp-s-c>, ^interface-addr: c-pointer<int>): int
+pub fun ffi/uv-udp-set-multicast-interface(^handle1: c-pointer<uv-udp-s-c>, ^interface-addr: c-pointer<int>): <> int
   external/uv-udp-set-multicast-interface(handle1.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-set-broadcast(^handle1: intptr_t, ^on1: int32): int32
-  c inline "(int)uv_udp_set_broadcast((struct uv_udp_s*)#1, (int)#2)"
+  c inline "(int)uv_udp_set_broadcast((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-broadcast(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): int
+pub fun ffi/uv-udp-set-broadcast(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): <> int
   external/uv-udp-set-broadcast(handle1.cextern/c-pointer/ptr, on1.int32).int
 
 pub extern external/uv-udp-set-ttl(^handle1: intptr_t, ^ttl: int32): int32
-  c inline "(int)uv_udp_set_ttl((struct uv_udp_s*)#1, (int)#2)"
+  c inline "(int)uv_udp_set_ttl((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): int
+pub fun ffi/uv-udp-set-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): <> int
   external/uv-udp-set-ttl(handle1.cextern/c-pointer/ptr, ttl.int32).int
 
 pub extern external/uv-udp-send(^req: intptr_t, ^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^addr: intptr_t, ^send-cb: intptr_t): int32
-  c inline "(int)uv_udp_send((struct uv_udp_send_s*)#1, (struct uv_udp_s*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (struct sockaddr*)#5, (void (*)(struct uv_udp_send_s*, int))#6)"
+  c inline "(int)uv_udp_send((uv_udp_send_t*)#1, (uv_udp_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (struct sockaddr*)#5, (uv_udp_send_cb)#6)"
 
-pub fun ffi/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>, ^send-cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>, ^send-cb: c-pointer<intptr_t>): <> int
   external/uv-udp-send(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, addr.cextern/c-pointer/ptr, send-cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-try-send(^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^addr: intptr_t): int32
-  c inline "(int)uv_udp_try_send((struct uv_udp_s*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (struct sockaddr*)#4)"
+  c inline "(int)uv_udp_try_send((uv_udp_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (struct sockaddr*)#4)"
 
-pub fun ffi/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>): int
+pub fun ffi/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>): <> int
   external/uv-udp-try-send(handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, addr.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-recv-start(^handle1: intptr_t, ^alloc-cb: intptr_t, ^recv-cb: intptr_t): int32
-  c inline "(int)uv_udp_recv_start((struct uv_udp_s*)#1, (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2, (void (*)(struct uv_udp_s*, long, struct uv_buf_t*, struct sockaddr*, unsigned int))#3)"
+  c inline "(int)uv_udp_recv_start((uv_udp_t*)#1, (uv_alloc_cb)#2, (uv_udp_recv_cb)#3)"
 
-pub fun ffi/uv-udp-recv-start(^handle1: c-pointer<uv-udp-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^recv-cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-udp-recv-start(^handle1: c-pointer<uv-udp-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^recv-cb: c-pointer<intptr_t>): <> int
   external/uv-udp-recv-start(handle1.cextern/c-pointer/ptr, alloc-cb.cextern/c-pointer/ptr, recv-cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-using-recvmmsg(^handle1: intptr_t): int32
-  c inline "(int)uv_udp_using_recvmmsg((struct uv_udp_s*)#1)"
+  c inline "(int)uv_udp_using_recvmmsg((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-using-recvmmsg(^handle1: c-pointer<uv-udp-s-c>): int
+pub fun ffi/uv-udp-using-recvmmsg(^handle1: c-pointer<uv-udp-s-c>): <> int
   external/uv-udp-using-recvmmsg(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-recv-stop(^handle1: intptr_t): int32
-  c inline "(int)uv_udp_recv_stop((struct uv_udp_s*)#1)"
+  c inline "(int)uv_udp_recv_stop((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-recv-stop(^handle1: c-pointer<uv-udp-s-c>): int
+pub fun ffi/uv-udp-recv-stop(^handle1: c-pointer<uv-udp-s-c>): <> int
   external/uv-udp-recv-stop(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-get-send-queue-size(^handle1: intptr_t): ssize_t
-  c inline "(ssize_t)uv_udp_get_send_queue_size((struct uv_udp_s*)#1)"
+  c inline "(size_t)uv_udp_get_send_queue_size((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-get-send-queue-size(^handle1: c-pointer<uv-udp-s-c>): ssize_t
-  external/uv-udp-get-send-queue-size(handle1.cextern/c-pointer/ptr)
+pub fun ffi/uv-udp-get-send-queue-size(^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-get-send-queue-size(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-udp-get-send-queue-count(^handle1: intptr_t): ssize_t
-  c inline "(ssize_t)uv_udp_get_send_queue_count((struct uv_udp_s*)#1)"
+  c inline "(size_t)uv_udp_get_send_queue_count((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-get-send-queue-count(^handle1: c-pointer<uv-udp-s-c>): ssize_t
-  external/uv-udp-get-send-queue-count(handle1.cextern/c-pointer/ptr)
+pub fun ffi/uv-udp-get-send-queue-count(^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-get-send-queue-count(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tty-init(^arg0: intptr_t, ^arg1: intptr_t, ^fd: int32, ^readable: int32): int32
-  c inline "(int)uv_tty_init((struct uv_loop_s*)#1, (struct uv_tty_s*)#2, (int)#3, (int)#4)"
+  c inline "(int)uv_tty_init((uv_loop_t*)#1, (uv_tty_t*)#2, (uv_file)#3, (int)#4)"
 
-pub fun ffi/uv-tty-init(^arg0: c-pointer<uv-loop-s-c>, ^arg1: c-pointer<uv-tty-s-c>, ^fd: int, ^readable: int): int
+pub fun ffi/uv-tty-init(^arg0: c-pointer<uv-loop-s-c>, ^arg1: c-pointer<uv-tty-s-c>, ^fd: int, ^readable: int): <> int
   external/uv-tty-init(arg0.cextern/c-pointer/ptr, arg1.cextern/c-pointer/ptr, fd.int32, readable.int32).int
 
 pub extern external/uv-tty-set-mode(^arg0: intptr_t, ^mode: int32): int32
-  c inline "(int)uv_tty_set_mode((struct uv_tty_s*)#1, (int32_t)#2)"
+  c inline "(int)uv_tty_set_mode((uv_tty_t*)#1, (int32_t)#2)"
 
-pub fun ffi/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: int): int
-  external/uv-tty-set-mode(arg0.cextern/c-pointer/ptr, mode.int32).int
+pub fun ffi/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: uv-tty-mode-t): <exn> int
+  external/uv-tty-set-mode(arg0.cextern/c-pointer/ptr, mode.uv-tty-mode-t/int).int
 
 pub extern external/uv-tty-reset-mode(): int32
   c inline "(int)uv_tty_reset_mode()"
 
-pub fun ffi/uv-tty-reset-mode(): int
+pub fun ffi/uv-tty-reset-mode(): <> int
   external/uv-tty-reset-mode().int
 
 pub extern external/uv-tty-get-winsize(^arg0: intptr_t, ^width: intptr_t, ^height: intptr_t): int32
-  c inline "(int)uv_tty_get_winsize((struct uv_tty_s*)#1, (int*)#2, (int*)#3)"
+  c inline "(int)uv_tty_get_winsize((uv_tty_t*)#1, (int*)#2, (int*)#3)"
 
-pub fun ffi/uv-tty-get-winsize(^arg0: c-pointer<uv-tty-s-c>, ^width: c-pointer<int>, ^height: c-pointer<int>): int
+pub fun ffi/uv-tty-get-winsize(^arg0: c-pointer<uv-tty-s-c>, ^width: c-pointer<int>, ^height: c-pointer<int>): <> int
   external/uv-tty-get-winsize(arg0.cextern/c-pointer/ptr, width.cextern/c-pointer/ptr, height.cextern/c-pointer/ptr).int
 
 pub extern external/uv-tty-set-vterm-state(^state: int32): ()
   c inline "(void)uv_tty_set_vterm_state((int32_t)#1)"
 
-pub fun ffi/uv-tty-set-vterm-state(^state: int): ()
-  external/uv-tty-set-vterm-state(state.int32)
+pub fun ffi/uv-tty-set-vterm-state(^state: uv-tty-vtermstate-t): <exn> ()
+  external/uv-tty-set-vterm-state(state.uv-tty-vtermstate-t/int)
 
 pub extern external/uv-tty-get-vterm-state(^state: intptr_t): int32
   c inline "(int)uv_tty_get_vterm_state((int32_t*)#1)"
 
-pub fun ffi/uv-tty-get-vterm-state(^state: c-pointer<int>): int
+pub fun ffi/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t>): <> int
   external/uv-tty-get-vterm-state(state.cextern/c-pointer/ptr).int
 
 pub extern external/uv-guess-handle(^file: int32): int32
-  c inline "(int32_t)uv_guess_handle((int)#1)"
+  c inline "(int32_t)uv_guess_handle((uv_file)#1)"
 
-pub fun ffi/uv-guess-handle(^file: int): int
-  external/uv-guess-handle(file.int32).int
+pub fun ffi/uv-guess-handle(^file: int): <exn> uv-handle-type
+  external/uv-guess-handle(file.int32).int/uv-handle-type
 
 pub extern external/uv-pipe-init(^arg0: intptr_t, ^handle1: intptr_t, ^ipc: int32): int32
-  c inline "(int)uv_pipe_init((struct uv_loop_s*)#1, (struct uv_pipe_s*)#2, (int)#3)"
+  c inline "(int)uv_pipe_init((uv_loop_t*)#1, (uv_pipe_t*)#2, (int)#3)"
 
-pub fun ffi/uv-pipe-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^ipc: int): int
+pub fun ffi/uv-pipe-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^ipc: int): <> int
   external/uv-pipe-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, ipc.int32).int
 
 pub extern external/uv-pipe-open(^arg0: intptr_t, ^file: int32): int32
-  c inline "(int)uv_pipe_open((struct uv_pipe_s*)#1, (int)#2)"
+  c inline "(int)uv_pipe_open((uv_pipe_t*)#1, (uv_file)#2)"
 
-pub fun ffi/uv-pipe-open(^arg0: c-pointer<uv-pipe-s-c>, ^file: int): int
+pub fun ffi/uv-pipe-open(^arg0: c-pointer<uv-pipe-s-c>, ^file: int): <> int
   external/uv-pipe-open(arg0.cextern/c-pointer/ptr, file.int32).int
 
 pub extern external/uv-pipe-bind(^handle1: intptr_t, ^name: intptr_t): int32
-  c inline "(int)uv_pipe_bind((struct uv_pipe_s*)#1, (char*)#2)"
+  c inline "(int)uv_pipe_bind((uv_pipe_t*)#1, (char*)#2)"
 
-pub fun ffi/uv-pipe-bind(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>): int
+pub fun ffi/uv-pipe-bind(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>): <> int
   external/uv-pipe-bind(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr).int
 
 pub extern external/uv-pipe-bind2(^handle1: intptr_t, ^name: intptr_t, ^namelen: ssize_t, ^flags: int32): int32
-  c inline "(int)uv_pipe_bind2((struct uv_pipe_s*)#1, (char*)#2, (ssize_t)#3, (unsigned int)#4)"
+  c inline "(int)uv_pipe_bind2((uv_pipe_t*)#1, (char*)#2, (size_t)#3, (unsigned int)#4)"
 
-pub fun ffi/uv-pipe-bind2(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: ssize_t, ^flags: int): int
-  external/uv-pipe-bind2(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen, flags.int32).int
+pub fun ffi/uv-pipe-bind2(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: int, ^flags: int): <> int
+  external/uv-pipe-bind2(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.ssize_t, flags.int32).int
 
 pub extern external/uv-pipe-connect(^req: intptr_t, ^handle1: intptr_t, ^name: intptr_t, ^cb: intptr_t): ()
-  c inline "(void)uv_pipe_connect((struct uv_connect_s*)#1, (struct uv_pipe_s*)#2, (char*)#3, (void (*)(struct uv_connect_s*, int))#4)"
+  c inline "(void)uv_pipe_connect((uv_connect_t*)#1, (uv_pipe_t*)#2, (char*)#3, (uv_connect_cb)#4)"
 
-pub fun ffi/uv-pipe-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^cb: c-pointer<intptr_t>): ()
+pub fun ffi/uv-pipe-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> ()
   external/uv-pipe-connect(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr)
 
 pub extern external/uv-pipe-connect2(^req: intptr_t, ^handle1: intptr_t, ^name: intptr_t, ^namelen: ssize_t, ^flags: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_pipe_connect2((struct uv_connect_s*)#1, (struct uv_pipe_s*)#2, (char*)#3, (ssize_t)#4, (unsigned int)#5, (void (*)(struct uv_connect_s*, int))#6)"
+  c inline "(int)uv_pipe_connect2((uv_connect_t*)#1, (uv_pipe_t*)#2, (char*)#3, (size_t)#4, (unsigned int)#5, (uv_connect_cb)#6)"
 
-pub fun ffi/uv-pipe-connect2(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: ssize_t, ^flags: int, ^cb: c-pointer<intptr_t>): int
-  external/uv-pipe-connect2(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen, flags.int32, cb.cextern/c-pointer/ptr).int
+pub fun ffi/uv-pipe-connect2(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: int, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
+  external/uv-pipe-connect2(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.ssize_t, flags.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-pipe-getsockname(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_pipe_getsockname((struct uv_pipe_s*)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_pipe_getsockname((uv_pipe_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-pipe-getsockname(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-pipe-getsockname(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-pipe-getsockname(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-pipe-getpeername(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_pipe_getpeername((struct uv_pipe_s*)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_pipe_getpeername((uv_pipe_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-pipe-getpeername(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-pipe-getpeername(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-pipe-getpeername(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-pipe-pending-instances(^handle1: intptr_t, ^count: int32): ()
-  c inline "(void)uv_pipe_pending_instances((struct uv_pipe_s*)#1, (int)#2)"
+  c inline "(void)uv_pipe_pending_instances((uv_pipe_t*)#1, (int)#2)"
 
-pub fun ffi/uv-pipe-pending-instances(^handle1: c-pointer<uv-pipe-s-c>, ^count: int): ()
+pub fun ffi/uv-pipe-pending-instances(^handle1: c-pointer<uv-pipe-s-c>, ^count: int): <> ()
   external/uv-pipe-pending-instances(handle1.cextern/c-pointer/ptr, count.int32)
 
 pub extern external/uv-pipe-pending-count(^handle1: intptr_t): int32
-  c inline "(int)uv_pipe_pending_count((struct uv_pipe_s*)#1)"
+  c inline "(int)uv_pipe_pending_count((uv_pipe_t*)#1)"
 
-pub fun ffi/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): int
+pub fun ffi/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): <> int
   external/uv-pipe-pending-count(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-pipe-pending-type(^handle1: intptr_t): int32
-  c inline "(int32_t)uv_pipe_pending_type((struct uv_pipe_s*)#1)"
+  c inline "(int32_t)uv_pipe_pending_type((uv_pipe_t*)#1)"
 
-pub fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): int
-  external/uv-pipe-pending-type(handle1.cextern/c-pointer/ptr).int
+pub fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): <exn> uv-handle-type
+  external/uv-pipe-pending-type(handle1.cextern/c-pointer/ptr).int/uv-handle-type
 
 pub extern external/uv-pipe-chmod(^handle1: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_pipe_chmod((struct uv_pipe_s*)#1, (int)#2)"
+  c inline "(int)uv_pipe_chmod((uv_pipe_t*)#1, (int)#2)"
 
-pub fun ffi/uv-pipe-chmod(^handle1: c-pointer<uv-pipe-s-c>, ^flags: int): int
+pub fun ffi/uv-pipe-chmod(^handle1: c-pointer<uv-pipe-s-c>, ^flags: int): <> int
   external/uv-pipe-chmod(handle1.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-poll-init(^loop: intptr_t, ^handle1: intptr_t, ^fd: int32): int32
-  c inline "(int)uv_poll_init((struct uv_loop_s*)#1, (struct uv_poll_s*)#2, (int)#3)"
+  c inline "(int)uv_poll_init((uv_loop_t*)#1, (uv_poll_t*)#2, (int)#3)"
 
-pub fun ffi/uv-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^fd: int): int
+pub fun ffi/uv-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^fd: int): <> int
   external/uv-poll-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, fd.int32).int
 
 pub extern external/uv-poll-init-socket(^loop: intptr_t, ^handle1: intptr_t, ^socket: int32): int32
-  c inline "(int)uv_poll_init_socket((struct uv_loop_s*)#1, (struct uv_poll_s*)#2, (int)#3)"
+  c inline "(int)uv_poll_init_socket((uv_loop_t*)#1, (uv_poll_t*)#2, (uv_os_sock_t)#3)"
 
-pub fun ffi/uv-poll-init-socket(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^socket: int): int
+pub fun ffi/uv-poll-init-socket(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^socket: int): <> int
   external/uv-poll-init-socket(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, socket.int32).int
 
 pub extern external/uv-poll-start(^handle1: intptr_t, ^events: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_poll_start((struct uv_poll_s*)#1, (int)#2, (void (*)(struct uv_poll_s*, int, int))#3)"
+  c inline "(int)uv_poll_start((uv_poll_t*)#1, (int)#2, (uv_poll_cb)#3)"
 
-pub fun ffi/uv-poll-start(^handle1: c-pointer<uv-poll-s-c>, ^events: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-poll-start(^handle1: c-pointer<uv-poll-s-c>, ^events: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-poll-start(handle1.cextern/c-pointer/ptr, events.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-poll-stop(^handle1: intptr_t): int32
-  c inline "(int)uv_poll_stop((struct uv_poll_s*)#1)"
+  c inline "(int)uv_poll_stop((uv_poll_t*)#1)"
 
-pub fun ffi/uv-poll-stop(^handle1: c-pointer<uv-poll-s-c>): int
+pub fun ffi/uv-poll-stop(^handle1: c-pointer<uv-poll-s-c>): <> int
   external/uv-poll-stop(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-prepare-init(^arg0: intptr_t, ^prepare: intptr_t): int32
-  c inline "(int)uv_prepare_init((struct uv_loop_s*)#1, (struct uv_prepare_s*)#2)"
+  c inline "(int)uv_prepare_init((uv_loop_t*)#1, (uv_prepare_t*)#2)"
 
-pub fun ffi/uv-prepare-init(^arg0: c-pointer<uv-loop-s-c>, ^prepare: c-pointer<uv-prepare-s-c>): int
+pub fun ffi/uv-prepare-init(^arg0: c-pointer<uv-loop-s-c>, ^prepare: c-pointer<uv-prepare-s-c>): <> int
   external/uv-prepare-init(arg0.cextern/c-pointer/ptr, prepare.cextern/c-pointer/ptr).int
 
 pub extern external/uv-prepare-start(^prepare: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_prepare_start((struct uv_prepare_s*)#1, (void (*)(struct uv_prepare_s*))#2)"
+  c inline "(int)uv_prepare_start((uv_prepare_t*)#1, (uv_prepare_cb)#2)"
 
-pub fun ffi/uv-prepare-start(^prepare: c-pointer<uv-prepare-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-prepare-start(^prepare: c-pointer<uv-prepare-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-prepare-start(prepare.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-prepare-stop(^prepare: intptr_t): int32
-  c inline "(int)uv_prepare_stop((struct uv_prepare_s*)#1)"
+  c inline "(int)uv_prepare_stop((uv_prepare_t*)#1)"
 
-pub fun ffi/uv-prepare-stop(^prepare: c-pointer<uv-prepare-s-c>): int
+pub fun ffi/uv-prepare-stop(^prepare: c-pointer<uv-prepare-s-c>): <> int
   external/uv-prepare-stop(prepare.cextern/c-pointer/ptr).int
 
 pub extern external/uv-check-init(^arg0: intptr_t, ^check: intptr_t): int32
-  c inline "(int)uv_check_init((struct uv_loop_s*)#1, (struct uv_check_s*)#2)"
+  c inline "(int)uv_check_init((uv_loop_t*)#1, (uv_check_t*)#2)"
 
-pub fun ffi/uv-check-init(^arg0: c-pointer<uv-loop-s-c>, ^check: c-pointer<uv-check-s-c>): int
+pub fun ffi/uv-check-init(^arg0: c-pointer<uv-loop-s-c>, ^check: c-pointer<uv-check-s-c>): <> int
   external/uv-check-init(arg0.cextern/c-pointer/ptr, check.cextern/c-pointer/ptr).int
 
 pub extern external/uv-check-start(^check: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_check_start((struct uv_check_s*)#1, (void (*)(struct uv_check_s*))#2)"
+  c inline "(int)uv_check_start((uv_check_t*)#1, (uv_check_cb)#2)"
 
-pub fun ffi/uv-check-start(^check: c-pointer<uv-check-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-check-start(^check: c-pointer<uv-check-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-check-start(check.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-check-stop(^check: intptr_t): int32
-  c inline "(int)uv_check_stop((struct uv_check_s*)#1)"
+  c inline "(int)uv_check_stop((uv_check_t*)#1)"
 
-pub fun ffi/uv-check-stop(^check: c-pointer<uv-check-s-c>): int
+pub fun ffi/uv-check-stop(^check: c-pointer<uv-check-s-c>): <> int
   external/uv-check-stop(check.cextern/c-pointer/ptr).int
 
 pub extern external/uv-idle-init(^arg0: intptr_t, ^idle: intptr_t): int32
-  c inline "(int)uv_idle_init((struct uv_loop_s*)#1, (struct uv_idle_s*)#2)"
+  c inline "(int)uv_idle_init((uv_loop_t*)#1, (uv_idle_t*)#2)"
 
-pub fun ffi/uv-idle-init(^arg0: c-pointer<uv-loop-s-c>, ^idle: c-pointer<uv-idle-s-c>): int
+pub fun ffi/uv-idle-init(^arg0: c-pointer<uv-loop-s-c>, ^idle: c-pointer<uv-idle-s-c>): <> int
   external/uv-idle-init(arg0.cextern/c-pointer/ptr, idle.cextern/c-pointer/ptr).int
 
 pub extern external/uv-idle-start(^idle: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_idle_start((struct uv_idle_s*)#1, (void (*)(struct uv_idle_s*))#2)"
+  c inline "(int)uv_idle_start((uv_idle_t*)#1, (uv_idle_cb)#2)"
 
-pub fun ffi/uv-idle-start(^idle: c-pointer<uv-idle-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-idle-start(^idle: c-pointer<uv-idle-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-idle-start(idle.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-idle-stop(^idle: intptr_t): int32
-  c inline "(int)uv_idle_stop((struct uv_idle_s*)#1)"
+  c inline "(int)uv_idle_stop((uv_idle_t*)#1)"
 
-pub fun ffi/uv-idle-stop(^idle: c-pointer<uv-idle-s-c>): int
+pub fun ffi/uv-idle-stop(^idle: c-pointer<uv-idle-s-c>): <> int
   external/uv-idle-stop(idle.cextern/c-pointer/ptr).int
 
 pub extern external/uv-async-init(^arg0: intptr_t, ^async1: intptr_t, ^async-cb: intptr_t): int32
-  c inline "(int)uv_async_init((struct uv_loop_s*)#1, (struct uv_async_s*)#2, (void (*)(struct uv_async_s*))#3)"
+  c inline "(int)uv_async_init((uv_loop_t*)#1, (uv_async_t*)#2, (uv_async_cb)#3)"
 
-pub fun ffi/uv-async-init(^arg0: c-pointer<uv-loop-s-c>, ^async1: c-pointer<uv-async-s-c>, ^async-cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-async-init(^arg0: c-pointer<uv-loop-s-c>, ^async1: c-pointer<uv-async-s-c>, ^async-cb: c-pointer<intptr_t>): <> int
   external/uv-async-init(arg0.cextern/c-pointer/ptr, async1.cextern/c-pointer/ptr, async-cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-async-send(^async1: intptr_t): int32
-  c inline "(int)uv_async_send((struct uv_async_s*)#1)"
+  c inline "(int)uv_async_send((uv_async_t*)#1)"
 
-pub fun ffi/uv-async-send(^async1: c-pointer<uv-async-s-c>): int
+pub fun ffi/uv-async-send(^async1: c-pointer<uv-async-s-c>): <> int
   external/uv-async-send(async1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-timer-init(^arg0: intptr_t, ^handle1: intptr_t): int32
-  c inline "(int)uv_timer_init((struct uv_loop_s*)#1, (struct uv_timer_s*)#2)"
+  c inline "(int)uv_timer_init((uv_loop_t*)#1, (uv_timer_t*)#2)"
 
-pub fun ffi/uv-timer-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-timer-s-c>): int
+pub fun ffi/uv-timer-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-timer-s-c>): <> int
   external/uv-timer-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-timer-start(^handle1: intptr_t, ^cb: intptr_t, ^timeout: int64, ^repeat: int64): int32
-  c inline "(int)uv_timer_start((struct uv_timer_s*)#1, (void (*)(struct uv_timer_s*))#2, (int64_t)#3, (int64_t)#4)"
+  c inline "(int)uv_timer_start((uv_timer_t*)#1, (uv_timer_cb)#2, (int64_t)#3, (int64_t)#4)"
 
-pub fun ffi/uv-timer-start(^handle1: c-pointer<uv-timer-s-c>, ^cb: c-pointer<intptr_t>, ^timeout: int, ^repeat: int): int
+pub fun ffi/uv-timer-start(^handle1: c-pointer<uv-timer-s-c>, ^cb: c-pointer<intptr_t>, ^timeout: int, ^repeat: int): <> int
   external/uv-timer-start(handle1.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr, timeout.int64, repeat.int64).int
 
 pub extern external/uv-timer-stop(^handle1: intptr_t): int32
-  c inline "(int)uv_timer_stop((struct uv_timer_s*)#1)"
+  c inline "(int)uv_timer_stop((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-stop(^handle1: c-pointer<uv-timer-s-c>): int
+pub fun ffi/uv-timer-stop(^handle1: c-pointer<uv-timer-s-c>): <> int
   external/uv-timer-stop(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-timer-again(^handle1: intptr_t): int32
-  c inline "(int)uv_timer_again((struct uv_timer_s*)#1)"
+  c inline "(int)uv_timer_again((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-again(^handle1: c-pointer<uv-timer-s-c>): int
+pub fun ffi/uv-timer-again(^handle1: c-pointer<uv-timer-s-c>): <> int
   external/uv-timer-again(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-timer-set-repeat(^handle1: intptr_t, ^repeat: int64): ()
-  c inline "(void)uv_timer_set_repeat((struct uv_timer_s*)#1, (int64_t)#2)"
+  c inline "(void)uv_timer_set_repeat((uv_timer_t*)#1, (int64_t)#2)"
 
-pub fun ffi/uv-timer-set-repeat(^handle1: c-pointer<uv-timer-s-c>, ^repeat: int): ()
+pub fun ffi/uv-timer-set-repeat(^handle1: c-pointer<uv-timer-s-c>, ^repeat: int): <> ()
   external/uv-timer-set-repeat(handle1.cextern/c-pointer/ptr, repeat.int64)
 
 pub extern external/uv-timer-get-repeat(^handle1: intptr_t): int64
-  c inline "(int64_t)uv_timer_get_repeat((struct uv_timer_s*)#1)"
+  c inline "(int64_t)uv_timer_get_repeat((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-get-repeat(^handle1: c-pointer<uv-timer-s-c>): int
+pub fun ffi/uv-timer-get-repeat(^handle1: c-pointer<uv-timer-s-c>): <> int
   external/uv-timer-get-repeat(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-timer-get-due-in(^handle1: intptr_t): int64
-  c inline "(int64_t)uv_timer_get_due_in((struct uv_timer_s*)#1)"
+  c inline "(int64_t)uv_timer_get_due_in((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-get-due-in(^handle1: c-pointer<uv-timer-s-c>): int
+pub fun ffi/uv-timer-get-due-in(^handle1: c-pointer<uv-timer-s-c>): <> int
   external/uv-timer-get-due-in(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-getaddrinfo(^loop: intptr_t, ^req: intptr_t, ^getaddrinfo-cb: intptr_t, ^node: intptr_t, ^service: intptr_t, ^hints: intptr_t): int32
-  c inline "(int)uv_getaddrinfo((struct uv_loop_s*)#1, (struct uv_getaddrinfo_s*)#2, (void (*)(struct uv_getaddrinfo_s*, int, struct addrinfo*))#3, (char*)#4, (char*)#5, (struct addrinfo*)#6)"
+  c inline "(int)uv_getaddrinfo((uv_loop_t*)#1, (uv_getaddrinfo_t*)#2, (uv_getaddrinfo_cb)#3, (char*)#4, (char*)#5, (struct addrinfo*)#6)"
 
-pub fun ffi/uv-getaddrinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getaddrinfo-s-c>, ^getaddrinfo-cb: c-pointer<intptr_t>, ^node: c-pointer<int>, ^service: c-pointer<int>, ^hints: c-pointer<addrinfo-c>): int
+pub fun ffi/uv-getaddrinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getaddrinfo-s-c>, ^getaddrinfo-cb: c-pointer<intptr_t>, ^node: c-pointer<int>, ^service: c-pointer<int>, ^hints: c-pointer<addrinfo-c>): <> int
   external/uv-getaddrinfo(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, getaddrinfo-cb.cextern/c-pointer/ptr, node.cextern/c-pointer/ptr, service.cextern/c-pointer/ptr, hints.cextern/c-pointer/ptr).int
 
 pub extern external/uv-freeaddrinfo(^ai: intptr_t): ()
   c inline "(void)uv_freeaddrinfo((struct addrinfo*)#1)"
 
-pub fun ffi/uv-freeaddrinfo(^ai: c-pointer<addrinfo-c>): ()
+pub fun ffi/uv-freeaddrinfo(^ai: c-pointer<addrinfo-c>): <> ()
   external/uv-freeaddrinfo(ai.cextern/c-pointer/ptr)
 
 pub extern external/uv-getnameinfo(^loop: intptr_t, ^req: intptr_t, ^getnameinfo-cb: intptr_t, ^addr: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_getnameinfo((struct uv_loop_s*)#1, (struct uv_getnameinfo_s*)#2, (void (*)(struct uv_getnameinfo_s*, int, char*, char*))#3, (struct sockaddr*)#4, (int)#5)"
+  c inline "(int)uv_getnameinfo((uv_loop_t*)#1, (uv_getnameinfo_t*)#2, (uv_getnameinfo_cb)#3, (struct sockaddr*)#4, (int)#5)"
 
-pub fun ffi/uv-getnameinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getnameinfo-s-c>, ^getnameinfo-cb: c-pointer<intptr_t>, ^addr: c-pointer<sockaddr-c>, ^flags: int): int
+pub fun ffi/uv-getnameinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getnameinfo-s-c>, ^getnameinfo-cb: c-pointer<intptr_t>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
   external/uv-getnameinfo(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, getnameinfo-cb.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-spawn(^loop: intptr_t, ^handle1: intptr_t, ^options: intptr_t): int32
-  c inline "(int)uv_spawn((struct uv_loop_s*)#1, (struct uv_process_s*)#2, (struct uv_process_options_s*)#3)"
+  c inline "(int)uv_spawn((uv_loop_t*)#1, (uv_process_t*)#2, (uv_process_options_t*)#3)"
 
-pub fun ffi/uv-spawn(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-process-s-c>, ^options: c-pointer<uv-process-options-s-c>): int
+pub fun ffi/uv-spawn(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-process-s-c>, ^options: c-pointer<uv-process-options-s-c>): <> int
   external/uv-spawn(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, options.cextern/c-pointer/ptr).int
 
 pub extern external/uv-process-kill(^arg0: intptr_t, ^signum: int32): int32
-  c inline "(int)uv_process_kill((struct uv_process_s*)#1, (int)#2)"
+  c inline "(int)uv_process_kill((uv_process_t*)#1, (int)#2)"
 
-pub fun ffi/uv-process-kill(^arg0: c-pointer<uv-process-s-c>, ^signum: int): int
+pub fun ffi/uv-process-kill(^arg0: c-pointer<uv-process-s-c>, ^signum: int): <> int
   external/uv-process-kill(arg0.cextern/c-pointer/ptr, signum.int32).int
 
 pub extern external/uv-kill(^pid: int32, ^signum: int32): int32
   c inline "(int)uv_kill((int)#1, (int)#2)"
 
-pub fun ffi/uv-kill(^pid: int, ^signum: int): int
+pub fun ffi/uv-kill(^pid: int, ^signum: int): <> int
   external/uv-kill(pid.int32, signum.int32).int
 
 pub extern external/uv-process-get-pid(^arg0: intptr_t): int32
-  c inline "(int)uv_process_get_pid((struct uv_process_s*)#1)"
+  c inline "(uv_pid_t)uv_process_get_pid((uv_process_t*)#1)"
 
-pub fun ffi/uv-process-get-pid(^arg0: c-pointer<uv-process-s-c>): int
+pub fun ffi/uv-process-get-pid(^arg0: c-pointer<uv-process-s-c>): <> int
   external/uv-process-get-pid(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-queue-work(^loop: intptr_t, ^req: intptr_t, ^work-cb: intptr_t, ^after-work-cb: intptr_t): int32
-  c inline "(int)uv_queue_work((struct uv_loop_s*)#1, (struct uv_work_s*)#2, (void (*)(struct uv_work_s*))#3, (void (*)(struct uv_work_s*, int))#4)"
+  c inline "(int)uv_queue_work((uv_loop_t*)#1, (uv_work_t*)#2, (uv_work_cb)#3, (uv_after_work_cb)#4)"
 
-pub fun ffi/uv-queue-work(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-work-s-c>, ^work-cb: c-pointer<intptr_t>, ^after-work-cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-queue-work(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-work-s-c>, ^work-cb: c-pointer<intptr_t>, ^after-work-cb: c-pointer<intptr_t>): <> int
   external/uv-queue-work(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, work-cb.cextern/c-pointer/ptr, after-work-cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-cancel(^req: intptr_t): int32
-  c inline "(int)uv_cancel((struct uv_req_s*)#1)"
+  c inline "(int)uv_cancel((uv_req_t*)#1)"
 
-pub fun ffi/uv-cancel(^req: c-pointer<uv-req-s-c>): int
+pub fun ffi/uv-cancel(^req: c-pointer<uv-req-s-c>): <> int
   external/uv-cancel(req.cextern/c-pointer/ptr).int
 
 pub extern external/uv-setup-args(^argc: int32, ^argv: intptr_t): intptr_t
   c inline "(intptr_t)uv_setup_args((int)#1, (char**)#2)"
 
-pub fun ffi/uv-setup-args(^argc: int, ^argv: c-pointer<c-pointer<int>>): c-pointer<c-pointer<int>>
+pub fun ffi/uv-setup-args(^argc: int, ^argv: c-pointer<c-pointer<int>>): <> c-pointer<c-pointer<int>>
   C-pointer(external/uv-setup-args(argc.int32, argv.cextern/c-pointer/ptr))
 
 pub extern external/uv-get-process-title(^buffer: intptr_t, ^size: ssize_t): int32
-  c inline "(int)uv_get_process_title((char*)#1, (ssize_t)#2)"
+  c inline "(int)uv_get_process_title((char*)#1, (size_t)#2)"
 
-pub fun ffi/uv-get-process-title(^buffer: c-pointer<int>, ^size: ssize_t): int
-  external/uv-get-process-title(buffer.cextern/c-pointer/ptr, size).int
+pub fun ffi/uv-get-process-title(^buffer: c-pointer<int>, ^size: int): <> int
+  external/uv-get-process-title(buffer.cextern/c-pointer/ptr, size.ssize_t).int
 
 pub extern external/uv-set-process-title(^title: intptr_t): int32
   c inline "(int)uv_set_process_title((char*)#1)"
 
-pub fun ffi/uv-set-process-title(^title: c-pointer<int>): int
+pub fun ffi/uv-set-process-title(^title: c-pointer<int>): <> int
   external/uv-set-process-title(title.cextern/c-pointer/ptr).int
 
 pub extern external/uv-resident-set-memory(^rss: intptr_t): int32
-  c inline "(int)uv_resident_set_memory((ssize_t*)#1)"
+  c inline "(int)uv_resident_set_memory((size_t*)#1)"
 
-pub fun ffi/uv-resident-set-memory(^rss: c-pointer<ssize_t>): int
+pub fun ffi/uv-resident-set-memory(^rss: c-pointer<int>): <> int
   external/uv-resident-set-memory(rss.cextern/c-pointer/ptr).int
 
 pub extern external/uv-uptime(^uptime: intptr_t): int32
   c inline "(int)uv_uptime((double*)#1)"
 
-pub fun ffi/uv-uptime(^uptime: c-pointer<float64>): int
+pub fun ffi/uv-uptime(^uptime: c-pointer<float64>): <> int
   external/uv-uptime(uptime.cextern/c-pointer/ptr).int
 
 pub extern external/uv-get-osfhandle(^fd: int32): int32
-  c inline "(int)uv_get_osfhandle((int)#1)"
+  c inline "(uv_os_fd_t)uv_get_osfhandle((int)#1)"
 
-pub fun ffi/uv-get-osfhandle(^fd: int): int
+pub fun ffi/uv-get-osfhandle(^fd: int): <> int
   external/uv-get-osfhandle(fd.int32).int
 
 pub extern external/uv-open-osfhandle(^os-fd: int32): int32
-  c inline "(int)uv_open_osfhandle((int)#1)"
+  c inline "(int)uv_open_osfhandle((uv_os_fd_t)#1)"
 
-pub fun ffi/uv-open-osfhandle(^os-fd: int): int
+pub fun ffi/uv-open-osfhandle(^os-fd: int): <> int
   external/uv-open-osfhandle(os-fd.int32).int
 
 pub extern external/uv-getrusage(^rusage: intptr_t): int32
-  c inline "(int)uv_getrusage((struct uv_rusage_t*)#1)"
+  c inline "(int)uv_getrusage((uv_rusage_t*)#1)"
 
-pub fun ffi/uv-getrusage(^rusage: c-pointer<uv-rusage-t-c>): int
+pub fun ffi/uv-getrusage(^rusage: c-pointer<uv-rusage-t-c>): <> int
   external/uv-getrusage(rusage.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-homedir(^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_os_homedir((char*)#1, (ssize_t*)#2)"
+  c inline "(int)uv_os_homedir((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-os-homedir(^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-os-homedir(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-os-homedir(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-tmpdir(^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_os_tmpdir((char*)#1, (ssize_t*)#2)"
+  c inline "(int)uv_os_tmpdir((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-os-tmpdir(^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-os-tmpdir(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-os-tmpdir(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-get-passwd(^pwd: intptr_t): int32
-  c inline "(int)uv_os_get_passwd((struct uv_passwd_s*)#1)"
+  c inline "(int)uv_os_get_passwd((uv_passwd_t*)#1)"
 
-pub fun ffi/uv-os-get-passwd(^pwd: c-pointer<uv-passwd-s-c>): int
+pub fun ffi/uv-os-get-passwd(^pwd: c-pointer<uv-passwd-s-c>): <> int
   external/uv-os-get-passwd(pwd.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-free-passwd(^pwd: intptr_t): ()
-  c inline "(void)uv_os_free_passwd((struct uv_passwd_s*)#1)"
+  c inline "(void)uv_os_free_passwd((uv_passwd_t*)#1)"
 
-pub fun ffi/uv-os-free-passwd(^pwd: c-pointer<uv-passwd-s-c>): ()
+pub fun ffi/uv-os-free-passwd(^pwd: c-pointer<uv-passwd-s-c>): <> ()
   external/uv-os-free-passwd(pwd.cextern/c-pointer/ptr)
 
 pub extern external/uv-os-get-passwd2(^pwd: intptr_t, ^uid: int32): int32
-  c inline "(int)uv_os_get_passwd2((struct uv_passwd_s*)#1, (unsigned int)#2)"
+  c inline "(int)uv_os_get_passwd2((uv_passwd_t*)#1, (uv_uid_t)#2)"
 
-pub fun ffi/uv-os-get-passwd2(^pwd: c-pointer<uv-passwd-s-c>, ^uid: int): int
+pub fun ffi/uv-os-get-passwd2(^pwd: c-pointer<uv-passwd-s-c>, ^uid: int): <> int
   external/uv-os-get-passwd2(pwd.cextern/c-pointer/ptr, uid.int32).int
 
 pub extern external/uv-os-get-group(^grp: intptr_t, ^gid: int32): int32
-  c inline "(int)uv_os_get_group((struct uv_group_s*)#1, (unsigned int)#2)"
+  c inline "(int)uv_os_get_group((uv_group_t*)#1, (uv_uid_t)#2)"
 
-pub fun ffi/uv-os-get-group(^grp: c-pointer<uv-group-s-c>, ^gid: int): int
+pub fun ffi/uv-os-get-group(^grp: c-pointer<uv-group-s-c>, ^gid: int): <> int
   external/uv-os-get-group(grp.cextern/c-pointer/ptr, gid.int32).int
 
 pub extern external/uv-os-free-group(^grp: intptr_t): ()
-  c inline "(void)uv_os_free_group((struct uv_group_s*)#1)"
+  c inline "(void)uv_os_free_group((uv_group_t*)#1)"
 
-pub fun ffi/uv-os-free-group(^grp: c-pointer<uv-group-s-c>): ()
+pub fun ffi/uv-os-free-group(^grp: c-pointer<uv-group-s-c>): <> ()
   external/uv-os-free-group(grp.cextern/c-pointer/ptr)
 
 pub extern external/uv-os-getpid(): int32
-  c inline "(int)uv_os_getpid()"
+  c inline "(uv_pid_t)uv_os_getpid()"
 
-pub fun ffi/uv-os-getpid(): int
+pub fun ffi/uv-os-getpid(): <> int
   external/uv-os-getpid().int
 
 pub extern external/uv-os-getppid(): int32
-  c inline "(int)uv_os_getppid()"
+  c inline "(uv_pid_t)uv_os_getppid()"
 
-pub fun ffi/uv-os-getppid(): int
+pub fun ffi/uv-os-getppid(): <> int
   external/uv-os-getppid().int
 
 pub extern external/uv-os-getpriority(^pid: int32, ^priority: intptr_t): int32
-  c inline "(int)uv_os_getpriority((int)#1, (int*)#2)"
+  c inline "(int)uv_os_getpriority((uv_pid_t)#1, (int*)#2)"
 
-pub fun ffi/uv-os-getpriority(^pid: int, ^priority: c-pointer<int>): int
+pub fun ffi/uv-os-getpriority(^pid: int, ^priority: c-pointer<int>): <> int
   external/uv-os-getpriority(pid.int32, priority.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-setpriority(^pid: int32, ^priority: int32): int32
-  c inline "(int)uv_os_setpriority((int)#1, (int)#2)"
+  c inline "(int)uv_os_setpriority((uv_pid_t)#1, (int)#2)"
 
-pub fun ffi/uv-os-setpriority(^pid: int, ^priority: int): int
+pub fun ffi/uv-os-setpriority(^pid: int, ^priority: int): <> int
   external/uv-os-setpriority(pid.int32, priority.int32).int
 
-pub extern external/uv-thread-getpriority(^tid: int64, ^priority: intptr_t): int32
-  c inline "(int)uv_thread_getpriority((unsigned long)#1, (int*)#2)"
+pub extern external/uv-thread-getpriority(^tid: intptr_t, ^priority: intptr_t): int32
+  c inline "(int)uv_thread_getpriority((uv_thread_t)#1, (int*)#2)"
 
-pub fun ffi/uv-thread-getpriority(^tid: int, ^priority: c-pointer<int>): int
-  external/uv-thread-getpriority(tid.int64, priority.cextern/c-pointer/ptr).int
+pub fun ffi/uv-thread-getpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: c-pointer<int>): <> int
+  external/uv-thread-getpriority(tid.cextern/c-pointer/ptr, priority.cextern/c-pointer/ptr).int
 
-pub extern external/uv-thread-setpriority(^tid: int64, ^priority: int32): int32
-  c inline "(int)uv_thread_setpriority((unsigned long)#1, (int)#2)"
+pub extern external/uv-thread-setpriority(^tid: intptr_t, ^priority: int32): int32
+  c inline "(int)uv_thread_setpriority((uv_thread_t)#1, (int)#2)"
 
-pub fun ffi/uv-thread-setpriority(^tid: int, ^priority: int): int
-  external/uv-thread-setpriority(tid.int64, priority.int32).int
+pub fun ffi/uv-thread-setpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: int): <> int
+  external/uv-thread-setpriority(tid.cextern/c-pointer/ptr, priority.int32).int
 
 pub extern external/uv-available-parallelism(): int32
   c inline "(unsigned int)uv_available_parallelism()"
 
-pub fun ffi/uv-available-parallelism(): int
+pub fun ffi/uv-available-parallelism(): <> int
   external/uv-available-parallelism().int
 
 pub extern external/uv-cpu-info(^cpu-infos: intptr_t, ^count: intptr_t): int32
-  c inline "(int)uv_cpu_info((struct uv_cpu_info_s**)#1, (int*)#2)"
+  c inline "(int)uv_cpu_info((uv_cpu_info_t**)#1, (int*)#2)"
 
-pub fun ffi/uv-cpu-info(^cpu-infos: c-pointer<c-pointer<uv-cpu-info-s-c>>, ^count: c-pointer<int>): int
+pub fun ffi/uv-cpu-info(^cpu-infos: c-pointer<c-pointer<uv-cpu-info-s-c>>, ^count: c-pointer<int>): <> int
   external/uv-cpu-info(cpu-infos.cextern/c-pointer/ptr, count.cextern/c-pointer/ptr).int
 
 pub extern external/uv-free-cpu-info(^cpu-infos: intptr_t, ^count: int32): ()
-  c inline "(void)uv_free_cpu_info((struct uv_cpu_info_s*)#1, (int)#2)"
+  c inline "(void)uv_free_cpu_info((uv_cpu_info_t*)#1, (int)#2)"
 
-pub fun ffi/uv-free-cpu-info(^cpu-infos: c-pointer<uv-cpu-info-s-c>, ^count: int): ()
+pub fun ffi/uv-free-cpu-info(^cpu-infos: c-pointer<uv-cpu-info-s-c>, ^count: int): <> ()
   external/uv-free-cpu-info(cpu-infos.cextern/c-pointer/ptr, count.int32)
 
 pub extern external/uv-cpumask-size(): int32
   c inline "(int)uv_cpumask_size()"
 
-pub fun ffi/uv-cpumask-size(): int
+pub fun ffi/uv-cpumask-size(): <> int
   external/uv-cpumask-size().int
 
 pub extern external/uv-interface-addresses(^addresses: intptr_t, ^count: intptr_t): int32
-  c inline "(int)uv_interface_addresses((struct uv_interface_address_s**)#1, (int*)#2)"
+  c inline "(int)uv_interface_addresses((uv_interface_address_t**)#1, (int*)#2)"
 
-pub fun ffi/uv-interface-addresses(^addresses: c-pointer<c-pointer<uv-interface-address-s-c>>, ^count: c-pointer<int>): int
+pub fun ffi/uv-interface-addresses(^addresses: c-pointer<c-pointer<uv-interface-address-s-c>>, ^count: c-pointer<int>): <> int
   external/uv-interface-addresses(addresses.cextern/c-pointer/ptr, count.cextern/c-pointer/ptr).int
 
 pub extern external/uv-free-interface-addresses(^addresses: intptr_t, ^count: int32): ()
-  c inline "(void)uv_free_interface_addresses((struct uv_interface_address_s*)#1, (int)#2)"
+  c inline "(void)uv_free_interface_addresses((uv_interface_address_t*)#1, (int)#2)"
 
-pub fun ffi/uv-free-interface-addresses(^addresses: c-pointer<uv-interface-address-s-c>, ^count: int): ()
+pub fun ffi/uv-free-interface-addresses(^addresses: c-pointer<uv-interface-address-s-c>, ^count: int): <> ()
   external/uv-free-interface-addresses(addresses.cextern/c-pointer/ptr, count.int32)
 
 pub extern external/uv-os-environ(^envitems: intptr_t, ^count: intptr_t): int32
-  c inline "(int)uv_os_environ((struct uv_env_item_s**)#1, (int*)#2)"
+  c inline "(int)uv_os_environ((uv_env_item_t**)#1, (int*)#2)"
 
-pub fun ffi/uv-os-environ(^envitems: c-pointer<c-pointer<uv-env-item-s-c>>, ^count: c-pointer<int>): int
+pub fun ffi/uv-os-environ(^envitems: c-pointer<c-pointer<uv-env-item-s-c>>, ^count: c-pointer<int>): <> int
   external/uv-os-environ(envitems.cextern/c-pointer/ptr, count.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-free-environ(^envitems: intptr_t, ^count: int32): ()
-  c inline "(void)uv_os_free_environ((struct uv_env_item_s*)#1, (int)#2)"
+  c inline "(void)uv_os_free_environ((uv_env_item_t*)#1, (int)#2)"
 
-pub fun ffi/uv-os-free-environ(^envitems: c-pointer<uv-env-item-s-c>, ^count: int): ()
+pub fun ffi/uv-os-free-environ(^envitems: c-pointer<uv-env-item-s-c>, ^count: int): <> ()
   external/uv-os-free-environ(envitems.cextern/c-pointer/ptr, count.int32)
 
 pub extern external/uv-os-getenv(^name: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_os_getenv((char*)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_os_getenv((char*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-os-getenv(^name: c-pointer<int>, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-os-getenv(^name: c-pointer<int>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-os-getenv(name.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-setenv(^name: intptr_t, ^value: intptr_t): int32
   c inline "(int)uv_os_setenv((char*)#1, (char*)#2)"
 
-pub fun ffi/uv-os-setenv(^name: c-pointer<int>, ^value: c-pointer<int>): int
+pub fun ffi/uv-os-setenv(^name: c-pointer<int>, ^value: c-pointer<int>): <> int
   external/uv-os-setenv(name.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-unsetenv(^name: intptr_t): int32
   c inline "(int)uv_os_unsetenv((char*)#1)"
 
-pub fun ffi/uv-os-unsetenv(^name: c-pointer<int>): int
+pub fun ffi/uv-os-unsetenv(^name: c-pointer<int>): <> int
   external/uv-os-unsetenv(name.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-gethostname(^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_os_gethostname((char*)#1, (ssize_t*)#2)"
+  c inline "(int)uv_os_gethostname((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-os-gethostname(^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-os-gethostname(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-os-gethostname(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-os-uname(^buffer: intptr_t): int32
-  c inline "(int)uv_os_uname((struct uv_utsname_s*)#1)"
+  c inline "(int)uv_os_uname((uv_utsname_t*)#1)"
 
-pub fun ffi/uv-os-uname(^buffer: c-pointer<uv-utsname-s-c>): int
+pub fun ffi/uv-os-uname(^buffer: c-pointer<uv-utsname-s-c>): <> int
   external/uv-os-uname(buffer.cextern/c-pointer/ptr).int
 
 pub extern external/uv-metrics-info(^loop: intptr_t, ^metrics: intptr_t): int32
-  c inline "(int)uv_metrics_info((struct uv_loop_s*)#1, (struct uv_metrics_s*)#2)"
+  c inline "(int)uv_metrics_info((uv_loop_t*)#1, (uv_metrics_t*)#2)"
 
-pub fun ffi/uv-metrics-info(^loop: c-pointer<uv-loop-s-c>, ^metrics: c-pointer<uv-metrics-s-c>): int
+pub fun ffi/uv-metrics-info(^loop: c-pointer<uv-loop-s-c>, ^metrics: c-pointer<uv-metrics-s-c>): <> int
   external/uv-metrics-info(loop.cextern/c-pointer/ptr, metrics.cextern/c-pointer/ptr).int
 
 pub extern external/uv-metrics-idle-time(^loop: intptr_t): int64
-  c inline "(int64_t)uv_metrics_idle_time((struct uv_loop_s*)#1)"
+  c inline "(int64_t)uv_metrics_idle_time((uv_loop_t*)#1)"
 
-pub fun ffi/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): int
+pub fun ffi/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): <> int
   external/uv-metrics-idle-time(loop.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-get-type(^arg0: intptr_t): int32
-  c inline "(int32_t)uv_fs_get_type((struct uv_fs_s*)#1)"
+  c inline "(int32_t)uv_fs_get_type((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): int
-  external/uv-fs-get-type(arg0.cextern/c-pointer/ptr).int
+pub fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): <exn> uv-fs-type
+  external/uv-fs-get-type(arg0.cextern/c-pointer/ptr).int/uv-fs-type
 
-pub extern external/uv-fs-get-result(^arg0: intptr_t): int64
-  c inline "(long)uv_fs_get_result((struct uv_fs_s*)#1)"
+pub extern external/uv-fs-get-result(^arg0: intptr_t): ssize_t
+  c inline "(ssize_t)uv_fs_get_result((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-result(^arg0: c-pointer<uv-fs-s-c>): int
+pub fun ffi/uv-fs-get-result(^arg0: c-pointer<uv-fs-s-c>): <> int
   external/uv-fs-get-result(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-get-system-error(^arg0: intptr_t): int32
-  c inline "(int)uv_fs_get_system_error((struct uv_fs_s*)#1)"
+  c inline "(int)uv_fs_get_system_error((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-system-error(^arg0: c-pointer<uv-fs-s-c>): int
+pub fun ffi/uv-fs-get-system-error(^arg0: c-pointer<uv-fs-s-c>): <> int
   external/uv-fs-get-system-error(arg0.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-get-ptr(^arg0: intptr_t): intptr_t
-  c inline "(intptr_t)uv_fs_get_ptr((struct uv_fs_s*)#1)"
+  c inline "(intptr_t)uv_fs_get_ptr((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-ptr(^arg0: c-pointer<uv-fs-s-c>): c-pointer<()>
+pub fun ffi/uv-fs-get-ptr(^arg0: c-pointer<uv-fs-s-c>): <> c-pointer<()>
   C-pointer(external/uv-fs-get-ptr(arg0.cextern/c-pointer/ptr))
 
 pub extern external/uv-fs-get-path(^arg0: intptr_t): intptr_t
-  c inline "(intptr_t)uv_fs_get_path((struct uv_fs_s*)#1)"
+  c inline "(intptr_t)uv_fs_get_path((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-path(^arg0: c-pointer<uv-fs-s-c>): c-pointer<int>
+pub fun ffi/uv-fs-get-path(^arg0: c-pointer<uv-fs-s-c>): <> c-pointer<int>
   C-pointer(external/uv-fs-get-path(arg0.cextern/c-pointer/ptr))
 
 pub extern external/uv-fs-get-statbuf(^arg0: intptr_t): intptr_t
-  c inline "(intptr_t)uv_fs_get_statbuf((struct uv_fs_s*)#1)"
+  c inline "(intptr_t)uv_fs_get_statbuf((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-statbuf(^arg0: c-pointer<uv-fs-s-c>): c-pointer<uv-stat-t-c>
+pub fun ffi/uv-fs-get-statbuf(^arg0: c-pointer<uv-fs-s-c>): <> c-pointer<uv-stat-t-c>
   C-pointer(external/uv-fs-get-statbuf(arg0.cextern/c-pointer/ptr))
 
 pub extern external/uv-fs-req-cleanup(^req: intptr_t): ()
-  c inline "(void)uv_fs_req_cleanup((struct uv_fs_s*)#1)"
+  c inline "(void)uv_fs_req_cleanup((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-req-cleanup(^req: c-pointer<uv-fs-s-c>): ()
+pub fun ffi/uv-fs-req-cleanup(^req: c-pointer<uv-fs-s-c>): <> ()
   external/uv-fs-req-cleanup(req.cextern/c-pointer/ptr)
 
 pub extern external/uv-fs-close(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_close((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_close((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-close(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-close(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-close(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-open(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^flags: int32, ^mode: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_open((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (int)#4, (int)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_open((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (int)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-open(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^mode: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-open(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-open(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, flags.int32, mode.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-read(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^bufs: intptr_t, ^nbufs: int32, ^offset: int64, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_read((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (void (*)(struct uv_fs_s*))#7)"
+  c inline "(int)uv_fs_read((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (uv_fs_cb)#7)"
 
-pub fun ffi/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-read(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-unlink(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_unlink((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_unlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-unlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-unlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-unlink(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-write(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^bufs: intptr_t, ^nbufs: int32, ^offset: int64, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_write((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (void (*)(struct uv_fs_s*))#7)"
+  c inline "(int)uv_fs_write((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (uv_fs_cb)#7)"
 
-pub fun ffi/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-write(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-copyfile(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^flags: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_copyfile((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (char*)#4, (int)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_copyfile((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (int)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-copyfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-copyfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-copyfile(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, flags.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-mkdir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^mode: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_mkdir((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (int)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_mkdir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-mkdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-mkdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-mkdir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, mode.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-mkdtemp(^loop: intptr_t, ^req: intptr_t, ^tpl: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_mkdtemp((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_mkdtemp((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-mkdtemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-mkdtemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-mkdtemp(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, tpl.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-mkstemp(^loop: intptr_t, ^req: intptr_t, ^tpl: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_mkstemp((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_mkstemp((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-mkstemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-mkstemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-mkstemp(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, tpl.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-rmdir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_rmdir((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_rmdir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-rmdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-rmdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-rmdir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-scandir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^flags: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_scandir((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (int)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_scandir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-scandir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-scandir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-scandir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, flags.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-scandir-next(^req: intptr_t, ^ent: intptr_t): int32
-  c inline "(int)uv_fs_scandir_next((struct uv_fs_s*)#1, (struct uv_dirent_s*)#2)"
+  c inline "(int)uv_fs_scandir_next((uv_fs_t*)#1, (uv_dirent_t*)#2)"
 
-pub fun ffi/uv-fs-scandir-next(^req: c-pointer<uv-fs-s-c>, ^ent: c-pointer<uv-dirent-s-c>): int
+pub fun ffi/uv-fs-scandir-next(^req: c-pointer<uv-fs-s-c>, ^ent: c-pointer<uv-dirent-s-c>): <> int
   external/uv-fs-scandir-next(req.cextern/c-pointer/ptr, ent.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-opendir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_opendir((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_opendir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-opendir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-opendir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-opendir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-readdir(^loop: intptr_t, ^req: intptr_t, ^dir: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_readdir((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (struct uv_dir_s*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_readdir((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_dir_t*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-readdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-readdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-readdir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, dir.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-closedir(^loop: intptr_t, ^req: intptr_t, ^dir: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_closedir((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (struct uv_dir_s*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_closedir((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_dir_t*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-closedir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-closedir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-closedir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, dir.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-stat(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_stat((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_stat((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-stat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-stat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-stat(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-fstat(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_fstat((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_fstat((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-fstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-fstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-fstat(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-rename(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_rename((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (char*)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_rename((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-rename(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-rename(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-rename(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-fsync(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_fsync((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_fsync((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-fsync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-fsync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-fsync(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-fdatasync(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_fdatasync((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_fdatasync((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-fdatasync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-fdatasync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-fdatasync(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-ftruncate(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^offset: int64, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_ftruncate((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (int64_t)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_ftruncate((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (int64_t)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-ftruncate(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^offset: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-ftruncate(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^offset: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-ftruncate(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, offset.int64, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-sendfile(^loop: intptr_t, ^req: intptr_t, ^out-fd: int32, ^in-fd: int32, ^in-offset: int64, ^length: ssize_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_sendfile((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (int)#4, (int64_t)#5, (ssize_t)#6, (void (*)(struct uv_fs_s*))#7)"
+  c inline "(int)uv_fs_sendfile((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_file)#4, (int64_t)#5, (size_t)#6, (uv_fs_cb)#7)"
 
-pub fun ffi/uv-fs-sendfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^out-fd: int, ^in-fd: int, ^in-offset: int, ^length: ssize_t, ^cb: c-pointer<intptr_t>): int
-  external/uv-fs-sendfile(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, out-fd.int32, in-fd.int32, in-offset.int64, length, cb.cextern/c-pointer/ptr).int
+pub fun ffi/uv-fs-sendfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^out-fd: int, ^in-fd: int, ^in-offset: int, ^length: int, ^cb: c-pointer<intptr_t>): <> int
+  external/uv-fs-sendfile(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, out-fd.int32, in-fd.int32, in-offset.int64, length.ssize_t, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-access(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^mode: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_access((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (int)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_access((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-access(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-access(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-access(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, mode.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-chmod(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^mode: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_chmod((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (int)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_chmod((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-chmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-chmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-chmod(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, mode.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-utime(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^atime: float64, ^mtime: float64, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_utime((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (double)#4, (double)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_utime((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (double)#4, (double)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-utime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-utime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-utime(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, atime, mtime, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-futime(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^atime: float64, ^mtime: float64, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_futime((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (double)#4, (double)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_futime((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (double)#4, (double)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-futime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-futime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-futime(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, atime, mtime, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-lutime(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^atime: float64, ^mtime: float64, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_lutime((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (double)#4, (double)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_lutime((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (double)#4, (double)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-lutime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-lutime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-lutime(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, atime, mtime, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-lstat(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_lstat((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_lstat((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-lstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-lstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-lstat(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-link(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_link((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (char*)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_link((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-link(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-link(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-link(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-symlink(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^flags: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_symlink((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (char*)#4, (int)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_symlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (int)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-symlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-symlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-symlink(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, flags.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-readlink(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_readlink((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_readlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-readlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-readlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-readlink(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-realpath(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_realpath((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_realpath((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-realpath(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-realpath(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-realpath(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-fchmod(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^mode: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_fchmod((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (int)#4, (void (*)(struct uv_fs_s*))#5)"
+  c inline "(int)uv_fs_fchmod((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-fchmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^mode: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-fchmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-fchmod(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, mode.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-chown(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^uid: int32, ^gid: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_chown((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (unsigned int)#4, (unsigned int)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_chown((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_uid_t)#4, (uv_gid_t)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-chown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-chown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-chown(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, uid.int32, gid.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-fchown(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^uid: int32, ^gid: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_fchown((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (int)#3, (unsigned int)#4, (unsigned int)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_fchown((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_uid_t)#4, (uv_gid_t)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-fchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-fchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-fchown(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, uid.int32, gid.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-lchown(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^uid: int32, ^gid: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_lchown((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (unsigned int)#4, (unsigned int)#5, (void (*)(struct uv_fs_s*))#6)"
+  c inline "(int)uv_fs_lchown((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_uid_t)#4, (uv_gid_t)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-lchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-lchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-lchown(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, uid.int32, gid.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-statfs(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
-  c inline "(int)uv_fs_statfs((struct uv_loop_s*)#1, (struct uv_fs_s*)#2, (char*)#3, (void (*)(struct uv_fs_s*))#4)"
+  c inline "(int)uv_fs_statfs((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-statfs(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int
+pub fun ffi/uv-fs-statfs(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
   external/uv-fs-statfs(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-poll-init(^loop: intptr_t, ^handle1: intptr_t): int32
-  c inline "(int)uv_fs_poll_init((struct uv_loop_s*)#1, (struct uv_fs_poll_s*)#2)"
+  c inline "(int)uv_fs_poll_init((uv_loop_t*)#1, (uv_fs_poll_t*)#2)"
 
-pub fun ffi/uv-fs-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-poll-s-c>): int
+pub fun ffi/uv-fs-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-poll-s-c>): <> int
   external/uv-fs-poll-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-poll-start(^handle1: intptr_t, ^poll-cb: intptr_t, ^path: intptr_t, ^interval: int32): int32
-  c inline "(int)uv_fs_poll_start((struct uv_fs_poll_s*)#1, (void (*)(struct uv_fs_poll_s*, int, struct uv_stat_t*, struct uv_stat_t*))#2, (char*)#3, (unsigned int)#4)"
+  c inline "(int)uv_fs_poll_start((uv_fs_poll_t*)#1, (uv_fs_poll_cb)#2, (char*)#3, (unsigned int)#4)"
 
-pub fun ffi/uv-fs-poll-start(^handle1: c-pointer<uv-fs-poll-s-c>, ^poll-cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^interval: int): int
+pub fun ffi/uv-fs-poll-start(^handle1: c-pointer<uv-fs-poll-s-c>, ^poll-cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^interval: int): <> int
   external/uv-fs-poll-start(handle1.cextern/c-pointer/ptr, poll-cb.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, interval.int32).int
 
 pub extern external/uv-fs-poll-stop(^handle1: intptr_t): int32
-  c inline "(int)uv_fs_poll_stop((struct uv_fs_poll_s*)#1)"
+  c inline "(int)uv_fs_poll_stop((uv_fs_poll_t*)#1)"
 
-pub fun ffi/uv-fs-poll-stop(^handle1: c-pointer<uv-fs-poll-s-c>): int
+pub fun ffi/uv-fs-poll-stop(^handle1: c-pointer<uv-fs-poll-s-c>): <> int
   external/uv-fs-poll-stop(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-poll-getpath(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_fs_poll_getpath((struct uv_fs_poll_s*)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_fs_poll_getpath((uv_fs_poll_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-fs-poll-getpath(^handle1: c-pointer<uv-fs-poll-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-fs-poll-getpath(^handle1: c-pointer<uv-fs-poll-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-fs-poll-getpath(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-signal-init(^loop: intptr_t, ^handle1: intptr_t): int32
-  c inline "(int)uv_signal_init((struct uv_loop_s*)#1, (struct uv_signal_s*)#2)"
+  c inline "(int)uv_signal_init((uv_loop_t*)#1, (uv_signal_t*)#2)"
 
-pub fun ffi/uv-signal-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-signal-s-c>): int
+pub fun ffi/uv-signal-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-signal-s-c>): <> int
   external/uv-signal-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-signal-start(^handle1: intptr_t, ^signal-cb: intptr_t, ^signum: int32): int32
-  c inline "(int)uv_signal_start((struct uv_signal_s*)#1, (void (*)(struct uv_signal_s*, int))#2, (int)#3)"
+  c inline "(int)uv_signal_start((uv_signal_t*)#1, (uv_signal_cb)#2, (int)#3)"
 
-pub fun ffi/uv-signal-start(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int): int
+pub fun ffi/uv-signal-start(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int): <> int
   external/uv-signal-start(handle1.cextern/c-pointer/ptr, signal-cb.cextern/c-pointer/ptr, signum.int32).int
 
 pub extern external/uv-signal-start-oneshot(^handle1: intptr_t, ^signal-cb: intptr_t, ^signum: int32): int32
-  c inline "(int)uv_signal_start_oneshot((struct uv_signal_s*)#1, (void (*)(struct uv_signal_s*, int))#2, (int)#3)"
+  c inline "(int)uv_signal_start_oneshot((uv_signal_t*)#1, (uv_signal_cb)#2, (int)#3)"
 
-pub fun ffi/uv-signal-start-oneshot(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int): int
+pub fun ffi/uv-signal-start-oneshot(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int): <> int
   external/uv-signal-start-oneshot(handle1.cextern/c-pointer/ptr, signal-cb.cextern/c-pointer/ptr, signum.int32).int
 
 pub extern external/uv-signal-stop(^handle1: intptr_t): int32
-  c inline "(int)uv_signal_stop((struct uv_signal_s*)#1)"
+  c inline "(int)uv_signal_stop((uv_signal_t*)#1)"
 
-pub fun ffi/uv-signal-stop(^handle1: c-pointer<uv-signal-s-c>): int
+pub fun ffi/uv-signal-stop(^handle1: c-pointer<uv-signal-s-c>): <> int
   external/uv-signal-stop(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-loadavg(^avg: intptr_t): ()
   c inline "(void)uv_loadavg((double*)#1)"
 
-pub fun ffi/uv-loadavg(^avg: c-array<float64>): ()
+pub fun ffi/uv-loadavg(^avg: c-array<float64>): <> ()
   external/uv-loadavg(avg.cextern/carray/cptr)
 
 pub extern external/uv-fs-event-init(^loop: intptr_t, ^handle1: intptr_t): int32
-  c inline "(int)uv_fs_event_init((struct uv_loop_s*)#1, (struct uv_fs_event_s*)#2)"
+  c inline "(int)uv_fs_event_init((uv_loop_t*)#1, (uv_fs_event_t*)#2)"
 
-pub fun ffi/uv-fs-event-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-event-s-c>): int
+pub fun ffi/uv-fs-event-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-event-s-c>): <> int
   external/uv-fs-event-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-event-start(^handle1: intptr_t, ^cb: intptr_t, ^path: intptr_t, ^flags: int32): int32
-  c inline "(int)uv_fs_event_start((struct uv_fs_event_s*)#1, (void (*)(struct uv_fs_event_s*, char*, int, int))#2, (char*)#3, (unsigned int)#4)"
+  c inline "(int)uv_fs_event_start((uv_fs_event_t*)#1, (uv_fs_event_cb)#2, (char*)#3, (unsigned int)#4)"
 
-pub fun ffi/uv-fs-event-start(^handle1: c-pointer<uv-fs-event-s-c>, ^cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^flags: int): int
+pub fun ffi/uv-fs-event-start(^handle1: c-pointer<uv-fs-event-s-c>, ^cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^flags: int): <> int
   external/uv-fs-event-start(handle1.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, flags.int32).int
 
 pub extern external/uv-fs-event-stop(^handle1: intptr_t): int32
-  c inline "(int)uv_fs_event_stop((struct uv_fs_event_s*)#1)"
+  c inline "(int)uv_fs_event_stop((uv_fs_event_t*)#1)"
 
-pub fun ffi/uv-fs-event-stop(^handle1: c-pointer<uv-fs-event-s-c>): int
+pub fun ffi/uv-fs-event-stop(^handle1: c-pointer<uv-fs-event-s-c>): <> int
   external/uv-fs-event-stop(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-fs-event-getpath(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_fs_event_getpath((struct uv_fs_event_s*)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_fs_event_getpath((uv_fs_event_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-fs-event-getpath(^handle1: c-pointer<uv-fs-event-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-fs-event-getpath(^handle1: c-pointer<uv-fs-event-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-fs-event-getpath(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-ip4-addr(^ip: intptr_t, ^port: int32, ^addr: intptr_t): int32
   c inline "(int)uv_ip4_addr((char*)#1, (int)#2, (struct sockaddr_in*)#3)"
 
-pub fun ffi/uv-ip4-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in-c>): int
+pub fun ffi/uv-ip4-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in-c>): <> int
   external/uv-ip4-addr(ip.cextern/c-pointer/ptr, port.int32, addr.cextern/c-pointer/ptr).int
 
 pub extern external/uv-ip6-addr(^ip: intptr_t, ^port: int32, ^addr: intptr_t): int32
   c inline "(int)uv_ip6_addr((char*)#1, (int)#2, (struct sockaddr_in6*)#3)"
 
-pub fun ffi/uv-ip6-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in6-c>): int
+pub fun ffi/uv-ip6-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in6-c>): <> int
   external/uv-ip6-addr(ip.cextern/c-pointer/ptr, port.int32, addr.cextern/c-pointer/ptr).int
 
 pub extern external/uv-ip4-name(^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
-  c inline "(int)uv_ip4_name((struct sockaddr_in*)#1, (char*)#2, (ssize_t)#3)"
+  c inline "(int)uv_ip4_name((struct sockaddr_in*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-ip4-name(^src: c-pointer<sockaddr-in-c>, ^dst: c-pointer<int>, ^size: ssize_t): int
-  external/uv-ip4-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size).int
+pub fun ffi/uv-ip4-name(^src: c-pointer<sockaddr-in-c>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-ip4-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
 
 pub extern external/uv-ip6-name(^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
-  c inline "(int)uv_ip6_name((struct sockaddr_in6*)#1, (char*)#2, (ssize_t)#3)"
+  c inline "(int)uv_ip6_name((struct sockaddr_in6*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-ip6-name(^src: c-pointer<sockaddr-in6-c>, ^dst: c-pointer<int>, ^size: ssize_t): int
-  external/uv-ip6-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size).int
+pub fun ffi/uv-ip6-name(^src: c-pointer<sockaddr-in6-c>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-ip6-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
 
 pub extern external/uv-ip-name(^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
-  c inline "(int)uv_ip_name((struct sockaddr*)#1, (char*)#2, (ssize_t)#3)"
+  c inline "(int)uv_ip_name((struct sockaddr*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-ip-name(^src: c-pointer<sockaddr-c>, ^dst: c-pointer<int>, ^size: ssize_t): int
-  external/uv-ip-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size).int
+pub fun ffi/uv-ip-name(^src: c-pointer<sockaddr-c>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-ip-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
 
 pub extern external/uv-inet-ntop(^af: int32, ^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
-  c inline "(int)uv_inet_ntop((int)#1, (void*)#2, (char*)#3, (ssize_t)#4)"
+  c inline "(int)uv_inet_ntop((int)#1, (void*)#2, (char*)#3, (size_t)#4)"
 
-pub fun ffi/uv-inet-ntop(^af: int, ^src: c-pointer<()>, ^dst: c-pointer<int>, ^size: ssize_t): int
-  external/uv-inet-ntop(af.int32, src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size).int
+pub fun ffi/uv-inet-ntop(^af: int, ^src: c-pointer<()>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-inet-ntop(af.int32, src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
 
 pub extern external/uv-inet-pton(^af: int32, ^src: intptr_t, ^dst: intptr_t): int32
   c inline "(int)uv_inet_pton((int)#1, (char*)#2, (void*)#3)"
 
-pub fun ffi/uv-inet-pton(^af: int, ^src: c-pointer<int>, ^dst: c-pointer<()>): int
+pub fun ffi/uv-inet-pton(^af: int, ^src: c-pointer<int>, ^dst: c-pointer<()>): <> int
   external/uv-inet-pton(af.int32, src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr).int
 
 pub extern external/uv-random(^loop: intptr_t, ^req: intptr_t, ^buf: intptr_t, ^buflen: ssize_t, ^flags: int32, ^cb: intptr_t): int32
-  c inline "(int)uv_random((struct uv_loop_s*)#1, (struct uv_random_s*)#2, (void*)#3, (ssize_t)#4, (unsigned int)#5, (void (*)(struct uv_random_s*, int, void*, ssize_t))#6)"
+  c inline "(int)uv_random((uv_loop_t*)#1, (uv_random_t*)#2, (void*)#3, (size_t)#4, (unsigned int)#5, (uv_random_cb)#6)"
 
-pub fun ffi/uv-random(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-random-s-c>, ^buf: c-pointer<()>, ^buflen: ssize_t, ^flags: int, ^cb: c-pointer<intptr_t>): int
-  external/uv-random(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, buf.cextern/c-pointer/ptr, buflen, flags.int32, cb.cextern/c-pointer/ptr).int
+pub fun ffi/uv-random(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-random-s-c>, ^buf: c-pointer<()>, ^buflen: int, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
+  external/uv-random(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, buf.cextern/c-pointer/ptr, buflen.ssize_t, flags.int32, cb.cextern/c-pointer/ptr).int
 
 pub extern external/uv-if-indextoname(^ifindex: int32, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_if_indextoname((unsigned int)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_if_indextoname((unsigned int)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-if-indextoname(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-if-indextoname(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-if-indextoname(ifindex.int32, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-if-indextoiid(^ifindex: int32, ^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_if_indextoiid((unsigned int)#1, (char*)#2, (ssize_t*)#3)"
+  c inline "(int)uv_if_indextoiid((unsigned int)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-if-indextoiid(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-if-indextoiid(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-if-indextoiid(ifindex.int32, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-exepath(^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_exepath((char*)#1, (ssize_t*)#2)"
+  c inline "(int)uv_exepath((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-exepath(^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-exepath(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-exepath(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-cwd(^buffer: intptr_t, ^size: intptr_t): int32
-  c inline "(int)uv_cwd((char*)#1, (ssize_t*)#2)"
+  c inline "(int)uv_cwd((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-cwd(^buffer: c-pointer<int>, ^size: c-pointer<ssize_t>): int
+pub fun ffi/uv-cwd(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
   external/uv-cwd(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
 
 pub extern external/uv-chdir(^dir: intptr_t): int32
   c inline "(int)uv_chdir((char*)#1)"
 
-pub fun ffi/uv-chdir(^dir: c-pointer<int>): int
+pub fun ffi/uv-chdir(^dir: c-pointer<int>): <> int
   external/uv-chdir(dir.cextern/c-pointer/ptr).int
 
 pub extern external/uv-get-free-memory(): int64
   c inline "(int64_t)uv_get_free_memory()"
 
-pub fun ffi/uv-get-free-memory(): int
+pub fun ffi/uv-get-free-memory(): <> int
   external/uv-get-free-memory().int
 
 pub extern external/uv-get-total-memory(): int64
   c inline "(int64_t)uv_get_total_memory()"
 
-pub fun ffi/uv-get-total-memory(): int
+pub fun ffi/uv-get-total-memory(): <> int
   external/uv-get-total-memory().int
 
 pub extern external/uv-get-constrained-memory(): int64
   c inline "(int64_t)uv_get_constrained_memory()"
 
-pub fun ffi/uv-get-constrained-memory(): int
+pub fun ffi/uv-get-constrained-memory(): <> int
   external/uv-get-constrained-memory().int
 
 pub extern external/uv-get-available-memory(): int64
   c inline "(int64_t)uv_get_available_memory()"
 
-pub fun ffi/uv-get-available-memory(): int
+pub fun ffi/uv-get-available-memory(): <> int
   external/uv-get-available-memory().int
 
 pub extern external/uv-clock-gettime(^clock-id: int32, ^ts: intptr_t): int32
-  c inline "(int)uv_clock_gettime((int32_t)#1, (struct uv_timespec64_t*)#2)"
+  c inline "(int)uv_clock_gettime((int32_t)#1, (uv_timespec64_t*)#2)"
 
-pub fun ffi/uv-clock-gettime(^clock-id: int, ^ts: c-pointer<uv-timespec64-t-c>): int
-  external/uv-clock-gettime(clock-id.int32, ts.cextern/c-pointer/ptr).int
+pub fun ffi/uv-clock-gettime(^clock-id: uv-clock-id, ^ts: c-pointer<uv-timespec64-t-c>): <exn> int
+  external/uv-clock-gettime(clock-id.uv-clock-id/int, ts.cextern/c-pointer/ptr).int
 
 pub extern external/uv-hrtime(): int64
   c inline "(int64_t)uv_hrtime()"
 
-pub fun ffi/uv-hrtime(): int
+pub fun ffi/uv-hrtime(): <> int
   external/uv-hrtime().int
 
 pub extern external/uv-sleep(^msec: int32): ()
   c inline "(void)uv_sleep((unsigned int)#1)"
 
-pub fun ffi/uv-sleep(^msec: int): ()
+pub fun ffi/uv-sleep(^msec: int): <> ()
   external/uv-sleep(msec.int32)
 
 pub extern external/uv-disable-stdio-inheritance(): ()
   c inline "(void)uv_disable_stdio_inheritance()"
 
 pub extern external/uv-dlopen(^filename: intptr_t, ^lib: intptr_t): int32
-  c inline "(int)uv_dlopen((char*)#1, (struct uv_lib_t*)#2)"
+  c inline "(int)uv_dlopen((char*)#1, (uv_lib_t*)#2)"
 
-pub fun ffi/uv-dlopen(^filename: c-pointer<int>, ^lib: c-pointer<uv-lib-t-c>): int
+pub fun ffi/uv-dlopen(^filename: c-pointer<int>, ^lib: c-pointer<uv-lib-t-c>): <> int
   external/uv-dlopen(filename.cextern/c-pointer/ptr, lib.cextern/c-pointer/ptr).int
 
 pub extern external/uv-dlclose(^lib: intptr_t): ()
-  c inline "(void)uv_dlclose((struct uv_lib_t*)#1)"
+  c inline "(void)uv_dlclose((uv_lib_t*)#1)"
 
-pub fun ffi/uv-dlclose(^lib: c-pointer<uv-lib-t-c>): ()
+pub fun ffi/uv-dlclose(^lib: c-pointer<uv-lib-t-c>): <> ()
   external/uv-dlclose(lib.cextern/c-pointer/ptr)
 
 pub extern external/uv-dlsym(^lib: intptr_t, ^name: intptr_t, ^ptr: intptr_t): int32
-  c inline "(int)uv_dlsym((struct uv_lib_t*)#1, (char*)#2, (void**)#3)"
+  c inline "(int)uv_dlsym((uv_lib_t*)#1, (char*)#2, (void**)#3)"
 
-pub fun ffi/uv-dlsym(^lib: c-pointer<uv-lib-t-c>, ^name: c-pointer<int>, ^ptr: c-pointer<c-pointer<()>>): int
+pub fun ffi/uv-dlsym(^lib: c-pointer<uv-lib-t-c>, ^name: c-pointer<int>, ^ptr: c-pointer<c-pointer<()>>): <> int
   external/uv-dlsym(lib.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, ptr.cextern/c-pointer/ptr).int
 
 pub extern external/uv-dlerror(^lib: intptr_t): intptr_t
-  c inline "(intptr_t)uv_dlerror((struct uv_lib_t*)#1)"
+  c inline "(intptr_t)uv_dlerror((uv_lib_t*)#1)"
 
-pub fun ffi/uv-dlerror(^lib: c-pointer<uv-lib-t-c>): c-pointer<int>
+pub fun ffi/uv-dlerror(^lib: c-pointer<uv-lib-t-c>): <> c-pointer<int>
   C-pointer(external/uv-dlerror(lib.cextern/c-pointer/ptr))
 
 pub extern external/uv-mutex-init(^handle1: intptr_t): int32
-  c inline "(int)uv_mutex_init((union pthread_mutex_t*)#1)"
+  c inline "(int)uv_mutex_init((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-init(^handle1: c-pointer<pthread-mutex-t-c>): int
+pub fun ffi/uv-mutex-init(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
   external/uv-mutex-init(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-mutex-init-recursive(^handle1: intptr_t): int32
-  c inline "(int)uv_mutex_init_recursive((union pthread_mutex_t*)#1)"
+  c inline "(int)uv_mutex_init_recursive((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-init-recursive(^handle1: c-pointer<pthread-mutex-t-c>): int
+pub fun ffi/uv-mutex-init-recursive(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
   external/uv-mutex-init-recursive(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-mutex-destroy(^handle1: intptr_t): ()
-  c inline "(void)uv_mutex_destroy((union pthread_mutex_t*)#1)"
+  c inline "(void)uv_mutex_destroy((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-destroy(^handle1: c-pointer<pthread-mutex-t-c>): ()
+pub fun ffi/uv-mutex-destroy(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> ()
   external/uv-mutex-destroy(handle1.cextern/c-pointer/ptr)
 
 pub extern external/uv-mutex-lock(^handle1: intptr_t): ()
-  c inline "(void)uv_mutex_lock((union pthread_mutex_t*)#1)"
+  c inline "(void)uv_mutex_lock((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-lock(^handle1: c-pointer<pthread-mutex-t-c>): ()
+pub fun ffi/uv-mutex-lock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> ()
   external/uv-mutex-lock(handle1.cextern/c-pointer/ptr)
 
 pub extern external/uv-mutex-trylock(^handle1: intptr_t): int32
-  c inline "(int)uv_mutex_trylock((union pthread_mutex_t*)#1)"
+  c inline "(int)uv_mutex_trylock((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-trylock(^handle1: c-pointer<pthread-mutex-t-c>): int
+pub fun ffi/uv-mutex-trylock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
   external/uv-mutex-trylock(handle1.cextern/c-pointer/ptr).int
 
 pub extern external/uv-mutex-unlock(^handle1: intptr_t): ()
-  c inline "(void)uv_mutex_unlock((union pthread_mutex_t*)#1)"
+  c inline "(void)uv_mutex_unlock((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-unlock(^handle1: c-pointer<pthread-mutex-t-c>): ()
+pub fun ffi/uv-mutex-unlock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> ()
   external/uv-mutex-unlock(handle1.cextern/c-pointer/ptr)
 
 pub extern external/uv-rwlock-init(^rwlock: intptr_t): int32
-  c inline "(int)uv_rwlock_init((union pthread_rwlock_t*)#1)"
+  c inline "(int)uv_rwlock_init((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-init(^rwlock: c-pointer<pthread-rwlock-t-c>): int
+pub fun ffi/uv-rwlock-init(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
   external/uv-rwlock-init(rwlock.cextern/c-pointer/ptr).int
 
 pub extern external/uv-rwlock-destroy(^rwlock: intptr_t): ()
-  c inline "(void)uv_rwlock_destroy((union pthread_rwlock_t*)#1)"
+  c inline "(void)uv_rwlock_destroy((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-destroy(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
+pub fun ffi/uv-rwlock-destroy(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
   external/uv-rwlock-destroy(rwlock.cextern/c-pointer/ptr)
 
 pub extern external/uv-rwlock-rdlock(^rwlock: intptr_t): ()
-  c inline "(void)uv_rwlock_rdlock((union pthread_rwlock_t*)#1)"
+  c inline "(void)uv_rwlock_rdlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-rdlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
+pub fun ffi/uv-rwlock-rdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
   external/uv-rwlock-rdlock(rwlock.cextern/c-pointer/ptr)
 
 pub extern external/uv-rwlock-tryrdlock(^rwlock: intptr_t): int32
-  c inline "(int)uv_rwlock_tryrdlock((union pthread_rwlock_t*)#1)"
+  c inline "(int)uv_rwlock_tryrdlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-tryrdlock(^rwlock: c-pointer<pthread-rwlock-t-c>): int
+pub fun ffi/uv-rwlock-tryrdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
   external/uv-rwlock-tryrdlock(rwlock.cextern/c-pointer/ptr).int
 
 pub extern external/uv-rwlock-rdunlock(^rwlock: intptr_t): ()
-  c inline "(void)uv_rwlock_rdunlock((union pthread_rwlock_t*)#1)"
+  c inline "(void)uv_rwlock_rdunlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-rdunlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
+pub fun ffi/uv-rwlock-rdunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
   external/uv-rwlock-rdunlock(rwlock.cextern/c-pointer/ptr)
 
 pub extern external/uv-rwlock-wrlock(^rwlock: intptr_t): ()
-  c inline "(void)uv_rwlock_wrlock((union pthread_rwlock_t*)#1)"
+  c inline "(void)uv_rwlock_wrlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-wrlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
+pub fun ffi/uv-rwlock-wrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
   external/uv-rwlock-wrlock(rwlock.cextern/c-pointer/ptr)
 
 pub extern external/uv-rwlock-trywrlock(^rwlock: intptr_t): int32
-  c inline "(int)uv_rwlock_trywrlock((union pthread_rwlock_t*)#1)"
+  c inline "(int)uv_rwlock_trywrlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-trywrlock(^rwlock: c-pointer<pthread-rwlock-t-c>): int
+pub fun ffi/uv-rwlock-trywrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
   external/uv-rwlock-trywrlock(rwlock.cextern/c-pointer/ptr).int
 
 pub extern external/uv-rwlock-wrunlock(^rwlock: intptr_t): ()
-  c inline "(void)uv_rwlock_wrunlock((union pthread_rwlock_t*)#1)"
+  c inline "(void)uv_rwlock_wrunlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-wrunlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
+pub fun ffi/uv-rwlock-wrunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
   external/uv-rwlock-wrunlock(rwlock.cextern/c-pointer/ptr)
 
 pub extern external/uv-sem-init(^sem: intptr_t, ^value: int32): int32
-  c inline "(int)uv_sem_init((union sem_t*)#1, (unsigned int)#2)"
+  c inline "(int)uv_sem_init((uv_sem_t*)#1, (unsigned int)#2)"
 
-pub fun ffi/uv-sem-init(^sem: c-pointer<sem-t-c>, ^value: int): int
+pub fun ffi/uv-sem-init(^sem: c-pointer<int>, ^value: int): <> int
   external/uv-sem-init(sem.cextern/c-pointer/ptr, value.int32).int
 
 pub extern external/uv-sem-destroy(^sem: intptr_t): ()
-  c inline "(void)uv_sem_destroy((union sem_t*)#1)"
+  c inline "(void)uv_sem_destroy((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-destroy(^sem: c-pointer<sem-t-c>): ()
+pub fun ffi/uv-sem-destroy(^sem: c-pointer<int>): <> ()
   external/uv-sem-destroy(sem.cextern/c-pointer/ptr)
 
 pub extern external/uv-sem-post(^sem: intptr_t): ()
-  c inline "(void)uv_sem_post((union sem_t*)#1)"
+  c inline "(void)uv_sem_post((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-post(^sem: c-pointer<sem-t-c>): ()
+pub fun ffi/uv-sem-post(^sem: c-pointer<int>): <> ()
   external/uv-sem-post(sem.cextern/c-pointer/ptr)
 
 pub extern external/uv-sem-wait(^sem: intptr_t): ()
-  c inline "(void)uv_sem_wait((union sem_t*)#1)"
+  c inline "(void)uv_sem_wait((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-wait(^sem: c-pointer<sem-t-c>): ()
+pub fun ffi/uv-sem-wait(^sem: c-pointer<int>): <> ()
   external/uv-sem-wait(sem.cextern/c-pointer/ptr)
 
 pub extern external/uv-sem-trywait(^sem: intptr_t): int32
-  c inline "(int)uv_sem_trywait((union sem_t*)#1)"
+  c inline "(int)uv_sem_trywait((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-trywait(^sem: c-pointer<sem-t-c>): int
+pub fun ffi/uv-sem-trywait(^sem: c-pointer<int>): <> int
   external/uv-sem-trywait(sem.cextern/c-pointer/ptr).int
 
 pub extern external/uv-cond-init(^cond: intptr_t): int32
-  c inline "(int)uv_cond_init((union pthread_cond_t*)#1)"
+  c inline "(int)uv_cond_init((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-init(^cond: c-pointer<pthread-cond-t-c>): int
+pub fun ffi/uv-cond-init(^cond: c-pointer<opaque-pthread-cond-t-c>): <> int
   external/uv-cond-init(cond.cextern/c-pointer/ptr).int
 
 pub extern external/uv-cond-destroy(^cond: intptr_t): ()
-  c inline "(void)uv_cond_destroy((union pthread_cond_t*)#1)"
+  c inline "(void)uv_cond_destroy((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-destroy(^cond: c-pointer<pthread-cond-t-c>): ()
+pub fun ffi/uv-cond-destroy(^cond: c-pointer<opaque-pthread-cond-t-c>): <> ()
   external/uv-cond-destroy(cond.cextern/c-pointer/ptr)
 
 pub extern external/uv-cond-signal(^cond: intptr_t): ()
-  c inline "(void)uv_cond_signal((union pthread_cond_t*)#1)"
+  c inline "(void)uv_cond_signal((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-signal(^cond: c-pointer<pthread-cond-t-c>): ()
+pub fun ffi/uv-cond-signal(^cond: c-pointer<opaque-pthread-cond-t-c>): <> ()
   external/uv-cond-signal(cond.cextern/c-pointer/ptr)
 
 pub extern external/uv-cond-broadcast(^cond: intptr_t): ()
-  c inline "(void)uv_cond_broadcast((union pthread_cond_t*)#1)"
+  c inline "(void)uv_cond_broadcast((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-broadcast(^cond: c-pointer<pthread-cond-t-c>): ()
+pub fun ffi/uv-cond-broadcast(^cond: c-pointer<opaque-pthread-cond-t-c>): <> ()
   external/uv-cond-broadcast(cond.cextern/c-pointer/ptr)
 
 pub extern external/uv-barrier-init(^barrier: intptr_t, ^count: int32): int32
-  c inline "(int)uv_barrier_init((union pthread_barrier_t*)#1, (unsigned int)#2)"
+  c inline "(int)uv_barrier_init((uv_barrier_t*)#1, (unsigned int)#2)"
 
-pub fun ffi/uv-barrier-init(^barrier: c-pointer<pthread-barrier-t-c>, ^count: int): int
+pub fun ffi/uv-barrier-init(^barrier: c-pointer<uv-barrier-t-c>, ^count: int): <> int
   external/uv-barrier-init(barrier.cextern/c-pointer/ptr, count.int32).int
 
 pub extern external/uv-barrier-destroy(^barrier: intptr_t): ()
-  c inline "(void)uv_barrier_destroy((union pthread_barrier_t*)#1)"
+  c inline "(void)uv_barrier_destroy((uv_barrier_t*)#1)"
 
-pub fun ffi/uv-barrier-destroy(^barrier: c-pointer<pthread-barrier-t-c>): ()
+pub fun ffi/uv-barrier-destroy(^barrier: c-pointer<uv-barrier-t-c>): <> ()
   external/uv-barrier-destroy(barrier.cextern/c-pointer/ptr)
 
 pub extern external/uv-barrier-wait(^barrier: intptr_t): int32
-  c inline "(int)uv_barrier_wait((union pthread_barrier_t*)#1)"
+  c inline "(int)uv_barrier_wait((uv_barrier_t*)#1)"
 
-pub fun ffi/uv-barrier-wait(^barrier: c-pointer<pthread-barrier-t-c>): int
+pub fun ffi/uv-barrier-wait(^barrier: c-pointer<uv-barrier-t-c>): <> int
   external/uv-barrier-wait(barrier.cextern/c-pointer/ptr).int
 
 pub extern external/uv-cond-wait(^cond: intptr_t, ^mutex: intptr_t): ()
-  c inline "(void)uv_cond_wait((union pthread_cond_t*)#1, (union pthread_mutex_t*)#2)"
+  c inline "(void)uv_cond_wait((uv_cond_t*)#1, (uv_mutex_t*)#2)"
 
-pub fun ffi/uv-cond-wait(^cond: c-pointer<pthread-cond-t-c>, ^mutex: c-pointer<pthread-mutex-t-c>): ()
+pub fun ffi/uv-cond-wait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>): <> ()
   external/uv-cond-wait(cond.cextern/c-pointer/ptr, mutex.cextern/c-pointer/ptr)
 
 pub extern external/uv-cond-timedwait(^cond: intptr_t, ^mutex: intptr_t, ^timeout: int64): int32
-  c inline "(int)uv_cond_timedwait((union pthread_cond_t*)#1, (union pthread_mutex_t*)#2, (int64_t)#3)"
+  c inline "(int)uv_cond_timedwait((uv_cond_t*)#1, (uv_mutex_t*)#2, (int64_t)#3)"
 
-pub fun ffi/uv-cond-timedwait(^cond: c-pointer<pthread-cond-t-c>, ^mutex: c-pointer<pthread-mutex-t-c>, ^timeout: int): int
+pub fun ffi/uv-cond-timedwait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>, ^timeout: int): <> int
   external/uv-cond-timedwait(cond.cextern/c-pointer/ptr, mutex.cextern/c-pointer/ptr, timeout.int64).int
 
 pub extern external/uv-once(^guard: intptr_t, ^callback: intptr_t): ()
-  c inline "(void)uv_once((int*)#1, (void (*)())#2)"
+  c inline "(void)uv_once((uv_once_t*)#1, (void (*)())#2)"
 
-pub fun ffi/uv-once(^guard: c-pointer<int>, ^callback: c-pointer<intptr_t>): ()
+pub fun ffi/uv-once(^guard: c-pointer<opaque-pthread-once-t-c>, ^callback: c-pointer<intptr_t>): <> ()
   external/uv-once(guard.cextern/c-pointer/ptr, callback.cextern/c-pointer/ptr)
 
 pub extern external/uv-key-create(^key: intptr_t): int32
-  c inline "(int)uv_key_create((unsigned int*)#1)"
+  c inline "(int)uv_key_create((uv_key_t*)#1)"
 
-pub fun ffi/uv-key-create(^key: c-pointer<int>): int
+pub fun ffi/uv-key-create(^key: c-pointer<int>): <> int
   external/uv-key-create(key.cextern/c-pointer/ptr).int
 
 pub extern external/uv-key-delete(^key: intptr_t): ()
-  c inline "(void)uv_key_delete((unsigned int*)#1)"
+  c inline "(void)uv_key_delete((uv_key_t*)#1)"
 
-pub fun ffi/uv-key-delete(^key: c-pointer<int>): ()
+pub fun ffi/uv-key-delete(^key: c-pointer<int>): <> ()
   external/uv-key-delete(key.cextern/c-pointer/ptr)
 
 pub extern external/uv-key-get(^key: intptr_t): intptr_t
-  c inline "(intptr_t)uv_key_get((unsigned int*)#1)"
+  c inline "(intptr_t)uv_key_get((uv_key_t*)#1)"
 
-pub fun ffi/uv-key-get(^key: c-pointer<int>): c-pointer<()>
+pub fun ffi/uv-key-get(^key: c-pointer<int>): <> c-pointer<()>
   C-pointer(external/uv-key-get(key.cextern/c-pointer/ptr))
 
 pub extern external/uv-key-set(^key: intptr_t, ^value: intptr_t): ()
-  c inline "(void)uv_key_set((unsigned int*)#1, (void*)#2)"
+  c inline "(void)uv_key_set((uv_key_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-key-set(^key: c-pointer<int>, ^value: c-pointer<()>): ()
+pub fun ffi/uv-key-set(^key: c-pointer<int>, ^value: c-pointer<()>): <> ()
   external/uv-key-set(key.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr)
 
 pub extern external/uv-gettimeofday(^tv: intptr_t): int32
-  c inline "(int)uv_gettimeofday((struct uv_timeval64_t*)#1)"
+  c inline "(int)uv_gettimeofday((uv_timeval64_t*)#1)"
 
-pub fun ffi/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): int
+pub fun ffi/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): <> int
   external/uv-gettimeofday(tv.cextern/c-pointer/ptr).int
 
 pub extern external/uv-thread-create(^tid: intptr_t, ^entry: intptr_t, ^arg: intptr_t): int32
-  c inline "(int)uv_thread_create((unsigned long*)#1, (void (*)(void*))#2, (void*)#3)"
+  c inline "(int)uv_thread_create((uv_thread_t*)#1, (uv_thread_cb)#2, (void*)#3)"
 
-pub fun ffi/uv-thread-create(^tid: c-pointer<int>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int
+pub fun ffi/uv-thread-create(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): <> int
   external/uv-thread-create(tid.cextern/c-pointer/ptr, entry.cextern/c-pointer/ptr, arg.cextern/c-pointer/ptr).int
 
 pub extern external/uv-thread-create-ex(^tid: intptr_t, ^params: intptr_t, ^entry: intptr_t, ^arg: intptr_t): int32
-  c inline "(int)uv_thread_create_ex((unsigned long*)#1, (struct uv_thread_options_s*)#2, (void (*)(void*))#3, (void*)#4)"
+  c inline "(int)uv_thread_create_ex((uv_thread_t*)#1, (uv_thread_options_t*)#2, (uv_thread_cb)#3, (void*)#4)"
 
-pub fun ffi/uv-thread-create-ex(^tid: c-pointer<int>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int
+pub fun ffi/uv-thread-create-ex(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): <> int
   external/uv-thread-create-ex(tid.cextern/c-pointer/ptr, params.cextern/c-pointer/ptr, entry.cextern/c-pointer/ptr, arg.cextern/c-pointer/ptr).int
 
 pub extern external/uv-thread-setaffinity(^tid: intptr_t, ^cpumask: intptr_t, ^oldmask: intptr_t, ^mask-size: ssize_t): int32
-  c inline "(int)uv_thread_setaffinity((unsigned long*)#1, (char*)#2, (char*)#3, (ssize_t)#4)"
+  c inline "(int)uv_thread_setaffinity((uv_thread_t*)#1, (char*)#2, (char*)#3, (size_t)#4)"
 
-pub fun ffi/uv-thread-setaffinity(^tid: c-pointer<int>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: ssize_t): int
-  external/uv-thread-setaffinity(tid.cextern/c-pointer/ptr, cpumask.cextern/c-pointer/ptr, oldmask.cextern/c-pointer/ptr, mask-size).int
+pub fun ffi/uv-thread-setaffinity(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: int): <> int
+  external/uv-thread-setaffinity(tid.cextern/c-pointer/ptr, cpumask.cextern/c-pointer/ptr, oldmask.cextern/c-pointer/ptr, mask-size.ssize_t).int
 
 pub extern external/uv-thread-getaffinity(^tid: intptr_t, ^cpumask: intptr_t, ^mask-size: ssize_t): int32
-  c inline "(int)uv_thread_getaffinity((unsigned long*)#1, (char*)#2, (ssize_t)#3)"
+  c inline "(int)uv_thread_getaffinity((uv_thread_t*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-thread-getaffinity(^tid: c-pointer<int>, ^cpumask: c-pointer<int>, ^mask-size: ssize_t): int
-  external/uv-thread-getaffinity(tid.cextern/c-pointer/ptr, cpumask.cextern/c-pointer/ptr, mask-size).int
+pub fun ffi/uv-thread-getaffinity(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^cpumask: c-pointer<int>, ^mask-size: int): <> int
+  external/uv-thread-getaffinity(tid.cextern/c-pointer/ptr, cpumask.cextern/c-pointer/ptr, mask-size.ssize_t).int
 
 pub extern external/uv-thread-getcpu(): int32
   c inline "(int)uv_thread_getcpu()"
 
-pub fun ffi/uv-thread-getcpu(): int
+pub fun ffi/uv-thread-getcpu(): <> int
   external/uv-thread-getcpu().int
 
-pub extern external/uv-thread-self(): int64
-  c inline "(unsigned long)uv_thread_self()"
+pub extern external/uv-thread-self(): intptr_t
+  c inline "(intptr_t)uv_thread_self()"
 
-pub fun ffi/uv-thread-self(): int
-  external/uv-thread-self().int
+pub fun ffi/uv-thread-self(): <> c-pointer<opaque-pthread-t-c>
+  C-pointer(external/uv-thread-self())
 
 pub extern external/uv-thread-join(^tid: intptr_t): int32
-  c inline "(int)uv_thread_join((unsigned long*)#1)"
+  c inline "(int)uv_thread_join((uv_thread_t*)#1)"
 
-pub fun ffi/uv-thread-join(^tid: c-pointer<int>): int
+pub fun ffi/uv-thread-join(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>): <> int
   external/uv-thread-join(tid.cextern/c-pointer/ptr).int
 
 pub extern external/uv-thread-equal(^t1: intptr_t, ^t2: intptr_t): int32
-  c inline "(int)uv_thread_equal((unsigned long*)#1, (unsigned long*)#2)"
+  c inline "(int)uv_thread_equal((uv_thread_t*)#1, (uv_thread_t*)#2)"
 
-pub fun ffi/uv-thread-equal(^t1: c-pointer<int>, ^t2: c-pointer<int>): int
+pub fun ffi/uv-thread-equal(^t1: c-pointer<c-pointer<opaque-pthread-t-c>>, ^t2: c-pointer<c-pointer<opaque-pthread-t-c>>): <> int
   external/uv-thread-equal(t1.cextern/c-pointer/ptr, t2.cextern/c-pointer/ptr).int
 
 pub extern external/uv-loop-get-data(^arg0: intptr_t): intptr_t
-  c inline "(intptr_t)uv_loop_get_data((struct uv_loop_s*)#1)"
+  c inline "(intptr_t)uv_loop_get_data((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-get-data(^arg0: c-pointer<uv-loop-s-c>): c-pointer<()>
+pub fun ffi/uv-loop-get-data(^arg0: c-pointer<uv-loop-s-c>): <> c-pointer<()>
   C-pointer(external/uv-loop-get-data(arg0.cextern/c-pointer/ptr))
 
 pub extern external/uv-loop-set-data(^arg0: intptr_t, ^data: intptr_t): ()
-  c inline "(void)uv_loop_set_data((struct uv_loop_s*)#1, (void*)#2)"
+  c inline "(void)uv_loop_set_data((uv_loop_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-loop-set-data(^arg0: c-pointer<uv-loop-s-c>, ^data: c-pointer<()>): ()
+pub fun ffi/uv-loop-set-data(^arg0: c-pointer<uv-loop-s-c>, ^data: c-pointer<()>): <> ()
   external/uv-loop-set-data(arg0.cextern/c-pointer/ptr, data.cextern/c-pointer/ptr)
 
-pub extern external/uv-utf16-length-as-wtf8(^utf16: intptr_t, ^utf16-len: int64): ssize_t
-  c inline "(ssize_t)uv_utf16_length_as_wtf8((int16_t*)#1, (long)#2)"
+pub extern external/uv-utf16-length-as-wtf8(^utf16: intptr_t, ^utf16-len: ssize_t): ssize_t
+  c inline "(size_t)uv_utf16_length_as_wtf8((int16_t*)#1, (ssize_t)#2)"
 
-pub fun ffi/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: int): ssize_t
-  external/uv-utf16-length-as-wtf8(utf16.cextern/c-pointer/ptr, utf16-len.int64)
+pub fun ffi/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: int): <> int
+  external/uv-utf16-length-as-wtf8(utf16.cextern/c-pointer/ptr, utf16-len.ssize_t).int
 
-pub extern external/uv-utf16-to-wtf8(^utf16: intptr_t, ^utf16-len: int64, ^wtf8-ptr: intptr_t, ^wtf8-len-ptr: intptr_t): int32
-  c inline "(int)uv_utf16_to_wtf8((int16_t*)#1, (long)#2, (char**)#3, (ssize_t*)#4)"
+pub extern external/uv-utf16-to-wtf8(^utf16: intptr_t, ^utf16-len: ssize_t, ^wtf8-ptr: intptr_t, ^wtf8-len-ptr: intptr_t): int32
+  c inline "(int)uv_utf16_to_wtf8((int16_t*)#1, (ssize_t)#2, (char**)#3, (size_t*)#4)"
 
-pub fun ffi/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: int, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<ssize_t>): int
-  external/uv-utf16-to-wtf8(utf16.cextern/c-pointer/ptr, utf16-len.int64, wtf8-ptr.cextern/c-pointer/ptr, wtf8-len-ptr.cextern/c-pointer/ptr).int
+pub fun ffi/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: int, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<int>): <> int
+  external/uv-utf16-to-wtf8(utf16.cextern/c-pointer/ptr, utf16-len.ssize_t, wtf8-ptr.cextern/c-pointer/ptr, wtf8-len-ptr.cextern/c-pointer/ptr).int
 
-pub extern external/uv-wtf8-length-as-utf16(^wtf8: intptr_t): int64
-  c inline "(long)uv_wtf8_length_as_utf16((char*)#1)"
+pub extern external/uv-wtf8-length-as-utf16(^wtf8: intptr_t): ssize_t
+  c inline "(ssize_t)uv_wtf8_length_as_utf16((char*)#1)"
 
-pub fun ffi/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): int
+pub fun ffi/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): <> int
   external/uv-wtf8-length-as-utf16(wtf8.cextern/c-pointer/ptr).int
 
 pub extern external/uv-wtf8-to-utf16(^wtf8: intptr_t, ^utf16: intptr_t, ^utf16-len: ssize_t): ()
-  c inline "(void)uv_wtf8_to_utf16((char*)#1, (int16_t*)#2, (ssize_t)#3)"
+  c inline "(void)uv_wtf8_to_utf16((char*)#1, (int16_t*)#2, (size_t)#3)"
 
-pub fun ffi/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: ssize_t): ()
-  external/uv-wtf8-to-utf16(wtf8.cextern/c-pointer/ptr, utf16.cextern/c-pointer/ptr, utf16-len)
+pub fun ffi/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: int): <> ()
+  external/uv-wtf8-to-utf16(wtf8.cextern/c-pointer/ptr, utf16.cextern/c-pointer/ptr, utf16-len.ssize_t)
 
 pub value struct uv-queue
   next: uv-queue-c
@@ -1889,54 +1901,6 @@ pub fun uv-queuec-array(n: int): uv-queueca
 
 pub fun uv-queuec-array-calloc(n: int): uv-queueca
   malloc-c(n.int32, ?size-of=uv-queue/size-of)
-
-pub inline extern uv-queue-ptrraw/next(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv__queue*)#1)->next)"
-
-pub inline fun uv-queuep/next(s: uv-queuep): c-pointer<uv-queue-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-queue-ptrraw/next)
-
-pub inline fun uv-queuec/next(^s: uv-queuec): c-pointer<uv-queue-c>
-  s.with-ptr(uv-queuep/next)
-
-pub inline fun uv-queuecb/next(^s: uv-queuecb<s::S>): c-pointer<uv-queue-c>
-  s.with-ptr(uv-queuep/next)
-
-pub inline extern uv-queue-ptrraw/set-next(s: intptr_t, next: intptr_t): ()
-  c inline "((struct uv__queue*)#1)->next = (struct uv__queue*)#2"
-
-pub inline fun uv-queuep/set-next(s: uv-queuep, next: c-pointer<uv-queue-c>): ()
-  s.cextern/c-pointer/ptr.uv-queue-ptrraw/set-next(next.cextern/c-pointer/ptr)
-
-pub inline fun uv-queuec/set-next(^s: uv-queuec, next: c-pointer<uv-queue-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-queuep/set-next(next))
-
-pub inline fun uv-queuecb/set-next(^s: uv-queuecb<s::S>, next: c-pointer<uv-queue-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-queuep/set-next(next))
-
-pub inline extern uv-queue-ptrraw/prev(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv__queue*)#1)->prev)"
-
-pub inline fun uv-queuep/prev(s: uv-queuep): c-pointer<uv-queue-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-queue-ptrraw/prev)
-
-pub inline fun uv-queuec/prev(^s: uv-queuec): c-pointer<uv-queue-c>
-  s.with-ptr(uv-queuep/prev)
-
-pub inline fun uv-queuecb/prev(^s: uv-queuecb<s::S>): c-pointer<uv-queue-c>
-  s.with-ptr(uv-queuep/prev)
-
-pub inline extern uv-queue-ptrraw/set-prev(s: intptr_t, prev: intptr_t): ()
-  c inline "((struct uv__queue*)#1)->prev = (struct uv__queue*)#2"
-
-pub inline fun uv-queuep/set-prev(s: uv-queuep, prev: c-pointer<uv-queue-c>): ()
-  s.cextern/c-pointer/ptr.uv-queue-ptrraw/set-prev(prev.cextern/c-pointer/ptr)
-
-pub inline fun uv-queuec/set-prev(^s: uv-queuec, prev: c-pointer<uv-queue-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-queuep/set-prev(prev))
-
-pub inline fun uv-queuecb/set-prev(^s: uv-queuecb<s::S>, prev: c-pointer<uv-queue-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-queuep/set-prev(prev))
 
 pub struct uv-work
   work: c-pointer<intptr_t>
@@ -1965,83 +1929,11 @@ pub fun uv-workc-array(n: int): uv-workca
 pub fun uv-workc-array-calloc(n: int): uv-workca
   malloc-c(n.int32, ?size-of=uv-work/size-of)
 
-pub inline extern uv-work-ptrraw/work(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv__work*)#1)->work)"
-
-pub inline fun uv-workp/work(s: uv-workp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-ptrraw/work)
-
-pub inline fun uv-workc/work(^s: uv-workc): c-pointer<intptr_t>
-  s.with-ptr(uv-workp/work)
-
-pub inline fun uv-workcb/work(^s: uv-workcb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-workp/work)
-
-pub inline extern uv-work-ptrraw/set-work(s: intptr_t, work: intptr_t): ()
-  c inline "((struct uv__work*)#1)->work = (void (*)(struct uv__work*))#2"
-
-pub inline fun uv-workp/set-work(s: uv-workp, work: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-work-ptrraw/set-work(work.cextern/c-pointer/ptr)
-
-pub inline fun uv-workc/set-work(^s: uv-workc, work: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-workp/set-work(work))
-
-pub inline fun uv-workcb/set-work(^s: uv-workcb<s::S>, work: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-workp/set-work(work))
-
-pub inline extern uv-work-ptrraw/done(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv__work*)#1)->done)"
-
-pub inline fun uv-workp/done(s: uv-workp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-ptrraw/done)
-
-pub inline fun uv-workc/done(^s: uv-workc): c-pointer<intptr_t>
-  s.with-ptr(uv-workp/done)
-
-pub inline fun uv-workcb/done(^s: uv-workcb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-workp/done)
-
-pub inline extern uv-work-ptrraw/set-done(s: intptr_t, done: intptr_t): ()
-  c inline "((struct uv__work*)#1)->done = (void (*)(struct uv__work*, int))#2"
-
-pub inline fun uv-workp/set-done(s: uv-workp, done: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-work-ptrraw/set-done(done.cextern/c-pointer/ptr)
-
-pub inline fun uv-workc/set-done(^s: uv-workc, done: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-workp/set-done(done))
-
-pub inline fun uv-workcb/set-done(^s: uv-workcb<s::S>, done: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-workp/set-done(done))
-
-pub inline extern uv-work-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv__work*)#1)->loop)"
-
-pub inline fun uv-workp/loop(s: uv-workp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-ptrraw/loop)
-
-pub inline fun uv-workc/loop(^s: uv-workc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-workp/loop)
-
-pub inline fun uv-workcb/loop(^s: uv-workcb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-workp/loop)
-
-pub inline extern uv-work-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv__work*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-workp/set-loop(s: uv-workp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-work-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-workc/set-loop(^s: uv-workc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-workp/set-loop(loop))
-
-pub inline fun uv-workcb/set-loop(^s: uv-workcb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-workp/set-loop(loop))
-
 pub struct uv-loop-s
   data: c-pointer<()>
   active-handles: int
   handle-queue: uv-queue-c
-  active-reqs: unnamed-Union1-c
+  active-reqs: unnamed-union1-c
   internal-fields: c-pointer<()>
   stop-flag: int
   flags: int
@@ -2052,9 +1944,9 @@ pub struct uv-loop-s
   nwatchers: int
   nfds: int
   wq: uv-queue-c
-  wq-mutex: pthread-mutex-t
+  wq-mutex: opaque-pthread-mutex-t
   wq-async: koka-uv-async-t
-  cloexec-lock: pthread-rwlock-t
+  cloexec-lock: opaque-pthread-rwlock-t
   closing-handles: c-pointer<uv-handle-s-c>
   process-handles: uv-queue-c
   prepare-handles: uv-queue-c
@@ -2064,16 +1956,19 @@ pub struct uv-loop-s
   async-unused: c-pointer<intptr_t>
   async-io-watcher: koka-uv-io-t
   async-wfd: int
-  timer-heap: unnamed-Struct1-c
+  timer-heap: unnamed-struct1-c
   timer-counter: int
   time: int
   signal-pipefd: c-array<int>
   signal-io-watcher: koka-uv-io-t
   child-watcher: koka-uv-signal-t
   emfile-fd: int
-  inotify-read-watcher: koka-uv-io-t
-  inotify-watchers: c-pointer<()>
-  inotify-fd: int
+  cf-thread: c-pointer<opaque-pthread-t-c>
+  cf-reserved: c-pointer<()>
+  cf-state: c-pointer<()>
+  cf-mutex: opaque-pthread-mutex-t
+  cf-sem: int
+  cf-signals: uv-queue-c
 
 pub type uv-loop-s-c
 pub alias uv-loop-sp = c-pointer<uv-loop-s-c>
@@ -2096,507 +1991,12 @@ pub fun uv-loop-sc-array(n: int): uv-loop-sca
 pub fun uv-loop-sc-array-calloc(n: int): uv-loop-sca
   malloc-c(n.int32, ?size-of=uv-loop-s/size-of)
 
-pub inline extern uv-loop-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->data)"
-
-pub inline fun uv-loop-sp/data(s: uv-loop-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/data)
-
-pub inline fun uv-loop-sc/data(^s: uv-loop-sc): c-pointer<()>
-  s.with-ptr(uv-loop-sp/data)
-
-pub inline fun uv-loop-scb/data(^s: uv-loop-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-loop-sp/data)
-
-pub inline extern uv-loop-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-loop-sp/set-data(s: uv-loop-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-loop-sc/set-data(^s: uv-loop-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-data(data))
-
-pub inline fun uv-loop-scb/set-data(^s: uv-loop-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-data(data))
-
-pub inline extern uv-loop-s-ptrraw/active-handles(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_loop_s*)#1)->active_handles)"
-
-pub inline fun uv-loop-sp/active-handles(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/active-handles.int
-
-pub inline fun uv-loop-sc/active-handles(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/active-handles)
-
-pub inline fun uv-loop-scb/active-handles(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/active-handles)
-
-pub inline extern uv-loop-s-ptrraw/set-active-handles(s: intptr_t, active-handles: int32): ()
-  c inline "((struct uv_loop_s*)#1)->active_handles = (unsigned int)#2"
-
-pub inline fun uv-loop-sp/set-active-handles(s: uv-loop-sp, active-handles: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-active-handles(active-handles.int32)
-
-pub inline fun uv-loop-sc/set-active-handles(^s: uv-loop-sc, active-handles: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-active-handles(active-handles))
-
-pub inline fun uv-loop-scb/set-active-handles(^s: uv-loop-scb<s::S>, active-handles: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-active-handles(active-handles))
-
-pub inline extern uv-loop-s-ptrraw/internal-fields(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->internal_fields)"
-
-pub inline fun uv-loop-sp/internal-fields(s: uv-loop-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/internal-fields)
-
-pub inline fun uv-loop-sc/internal-fields(^s: uv-loop-sc): c-pointer<()>
-  s.with-ptr(uv-loop-sp/internal-fields)
-
-pub inline fun uv-loop-scb/internal-fields(^s: uv-loop-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-loop-sp/internal-fields)
-
-pub inline extern uv-loop-s-ptrraw/set-internal-fields(s: intptr_t, internal-fields: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->internal_fields = (void*)#2"
-
-pub inline fun uv-loop-sp/set-internal-fields(s: uv-loop-sp, internal-fields: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-internal-fields(internal-fields.cextern/c-pointer/ptr)
-
-pub inline fun uv-loop-sc/set-internal-fields(^s: uv-loop-sc, internal-fields: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-internal-fields(internal-fields))
-
-pub inline fun uv-loop-scb/set-internal-fields(^s: uv-loop-scb<s::S>, internal-fields: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-internal-fields(internal-fields))
-
-pub inline extern uv-loop-s-ptrraw/stop-flag(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_loop_s*)#1)->stop_flag)"
-
-pub inline fun uv-loop-sp/stop-flag(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/stop-flag.int
-
-pub inline fun uv-loop-sc/stop-flag(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/stop-flag)
-
-pub inline fun uv-loop-scb/stop-flag(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/stop-flag)
-
-pub inline extern uv-loop-s-ptrraw/set-stop-flag(s: intptr_t, stop-flag: int32): ()
-  c inline "((struct uv_loop_s*)#1)->stop_flag = (unsigned int)#2"
-
-pub inline fun uv-loop-sp/set-stop-flag(s: uv-loop-sp, stop-flag: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-stop-flag(stop-flag.int32)
-
-pub inline fun uv-loop-sc/set-stop-flag(^s: uv-loop-sc, stop-flag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-stop-flag(stop-flag))
-
-pub inline fun uv-loop-scb/set-stop-flag(^s: uv-loop-scb<s::S>, stop-flag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-stop-flag(stop-flag))
-
-pub inline extern uv-loop-s-ptrraw/flags(s: intptr_t): int64
-  c inline "(unsigned long)(((struct uv_loop_s*)#1)->flags)"
-
-pub inline fun uv-loop-sp/flags(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/flags.int
-
-pub inline fun uv-loop-sc/flags(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/flags)
-
-pub inline fun uv-loop-scb/flags(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/flags)
-
-pub inline extern uv-loop-s-ptrraw/set-flags(s: intptr_t, flags: int64): ()
-  c inline "((struct uv_loop_s*)#1)->flags = (unsigned long)#2"
-
-pub inline fun uv-loop-sp/set-flags(s: uv-loop-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-flags(flags.int64)
-
-pub inline fun uv-loop-sc/set-flags(^s: uv-loop-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-flags(flags))
-
-pub inline fun uv-loop-scb/set-flags(^s: uv-loop-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-flags(flags))
-
-pub inline extern uv-loop-s-ptrraw/backend-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_loop_s*)#1)->backend_fd)"
-
-pub inline fun uv-loop-sp/backend-fd(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/backend-fd.int
-
-pub inline fun uv-loop-sc/backend-fd(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/backend-fd)
-
-pub inline fun uv-loop-scb/backend-fd(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/backend-fd)
-
-pub inline extern uv-loop-s-ptrraw/set-backend-fd(s: intptr_t, backend-fd: int32): ()
-  c inline "((struct uv_loop_s*)#1)->backend_fd = (int)#2"
-
-pub inline fun uv-loop-sp/set-backend-fd(s: uv-loop-sp, backend-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-backend-fd(backend-fd.int32)
-
-pub inline fun uv-loop-sc/set-backend-fd(^s: uv-loop-sc, backend-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-backend-fd(backend-fd))
-
-pub inline fun uv-loop-scb/set-backend-fd(^s: uv-loop-scb<s::S>, backend-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-backend-fd(backend-fd))
-
-pub inline extern uv-loop-s-ptrraw/watchers(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->watchers)"
-
-pub inline fun uv-loop-sp/watchers(s: uv-loop-sp): c-pointer<c-pointer<uv-io-s-c>>
-  C-pointer(s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/watchers)
-
-pub inline fun uv-loop-sc/watchers(^s: uv-loop-sc): c-pointer<c-pointer<uv-io-s-c>>
-  s.with-ptr(uv-loop-sp/watchers)
-
-pub inline fun uv-loop-scb/watchers(^s: uv-loop-scb<s::S>): c-pointer<c-pointer<uv-io-s-c>>
-  s.with-ptr(uv-loop-sp/watchers)
-
-pub inline extern uv-loop-s-ptrraw/set-watchers(s: intptr_t, watchers: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->watchers = (struct uv__io_s**)#2"
-
-pub inline fun uv-loop-sp/set-watchers(s: uv-loop-sp, watchers: c-pointer<c-pointer<uv-io-s-c>>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-watchers(watchers.cextern/c-pointer/ptr)
-
-pub inline fun uv-loop-sc/set-watchers(^s: uv-loop-sc, watchers: c-pointer<c-pointer<uv-io-s-c>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-watchers(watchers))
-
-pub inline fun uv-loop-scb/set-watchers(^s: uv-loop-scb<s::S>, watchers: c-pointer<c-pointer<uv-io-s-c>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-watchers(watchers))
-
-pub inline extern uv-loop-s-ptrraw/nwatchers(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_loop_s*)#1)->nwatchers)"
-
-pub inline fun uv-loop-sp/nwatchers(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/nwatchers.int
-
-pub inline fun uv-loop-sc/nwatchers(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/nwatchers)
-
-pub inline fun uv-loop-scb/nwatchers(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/nwatchers)
-
-pub inline extern uv-loop-s-ptrraw/set-nwatchers(s: intptr_t, nwatchers: int32): ()
-  c inline "((struct uv_loop_s*)#1)->nwatchers = (unsigned int)#2"
-
-pub inline fun uv-loop-sp/set-nwatchers(s: uv-loop-sp, nwatchers: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-nwatchers(nwatchers.int32)
-
-pub inline fun uv-loop-sc/set-nwatchers(^s: uv-loop-sc, nwatchers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-nwatchers(nwatchers))
-
-pub inline fun uv-loop-scb/set-nwatchers(^s: uv-loop-scb<s::S>, nwatchers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-nwatchers(nwatchers))
-
-pub inline extern uv-loop-s-ptrraw/nfds(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_loop_s*)#1)->nfds)"
-
-pub inline fun uv-loop-sp/nfds(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/nfds.int
-
-pub inline fun uv-loop-sc/nfds(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/nfds)
-
-pub inline fun uv-loop-scb/nfds(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/nfds)
-
-pub inline extern uv-loop-s-ptrraw/set-nfds(s: intptr_t, nfds: int32): ()
-  c inline "((struct uv_loop_s*)#1)->nfds = (unsigned int)#2"
-
-pub inline fun uv-loop-sp/set-nfds(s: uv-loop-sp, nfds: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-nfds(nfds.int32)
-
-pub inline fun uv-loop-sc/set-nfds(^s: uv-loop-sc, nfds: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-nfds(nfds))
-
-pub inline fun uv-loop-scb/set-nfds(^s: uv-loop-scb<s::S>, nfds: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-nfds(nfds))
-
-pub inline extern uv-loop-s-ptrraw/closing-handles(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->closing_handles)"
-
-pub inline fun uv-loop-sp/closing-handles(s: uv-loop-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/closing-handles)
-
-pub inline fun uv-loop-sc/closing-handles(^s: uv-loop-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-loop-sp/closing-handles)
-
-pub inline fun uv-loop-scb/closing-handles(^s: uv-loop-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-loop-sp/closing-handles)
-
-pub inline extern uv-loop-s-ptrraw/set-closing-handles(s: intptr_t, closing-handles: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->closing_handles = (struct uv_handle_s*)#2"
-
-pub inline fun uv-loop-sp/set-closing-handles(s: uv-loop-sp, closing-handles: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-closing-handles(closing-handles.cextern/c-pointer/ptr)
-
-pub inline fun uv-loop-sc/set-closing-handles(^s: uv-loop-sc, closing-handles: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-closing-handles(closing-handles))
-
-pub inline fun uv-loop-scb/set-closing-handles(^s: uv-loop-scb<s::S>, closing-handles: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-closing-handles(closing-handles))
-
-pub inline extern uv-loop-s-ptrraw/async-unused(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->async_unused)"
-
-pub inline fun uv-loop-sp/async-unused(s: uv-loop-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/async-unused)
-
-pub inline fun uv-loop-sc/async-unused(^s: uv-loop-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-loop-sp/async-unused)
-
-pub inline fun uv-loop-scb/async-unused(^s: uv-loop-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-loop-sp/async-unused)
-
-pub inline extern uv-loop-s-ptrraw/set-async-unused(s: intptr_t, async-unused: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->async_unused = (void (*)())#2"
-
-pub inline fun uv-loop-sp/set-async-unused(s: uv-loop-sp, async-unused: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-async-unused(async-unused.cextern/c-pointer/ptr)
-
-pub inline fun uv-loop-sc/set-async-unused(^s: uv-loop-sc, async-unused: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-async-unused(async-unused))
-
-pub inline fun uv-loop-scb/set-async-unused(^s: uv-loop-scb<s::S>, async-unused: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-async-unused(async-unused))
-
-pub inline extern uv-loop-s-ptrraw/async-wfd(s: intptr_t): int32
-  c inline "(int)(((struct uv_loop_s*)#1)->async_wfd)"
-
-pub inline fun uv-loop-sp/async-wfd(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/async-wfd.int
-
-pub inline fun uv-loop-sc/async-wfd(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/async-wfd)
-
-pub inline fun uv-loop-scb/async-wfd(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/async-wfd)
-
-pub inline extern uv-loop-s-ptrraw/set-async-wfd(s: intptr_t, async-wfd: int32): ()
-  c inline "((struct uv_loop_s*)#1)->async_wfd = (int)#2"
-
-pub inline fun uv-loop-sp/set-async-wfd(s: uv-loop-sp, async-wfd: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-async-wfd(async-wfd.int32)
-
-pub inline fun uv-loop-sc/set-async-wfd(^s: uv-loop-sc, async-wfd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-async-wfd(async-wfd))
-
-pub inline fun uv-loop-scb/set-async-wfd(^s: uv-loop-scb<s::S>, async-wfd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-async-wfd(async-wfd))
-
-pub inline extern uv-loop-s-ptrraw/timer-counter(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_loop_s*)#1)->timer_counter)"
-
-pub inline fun uv-loop-sp/timer-counter(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/timer-counter.int
-
-pub inline fun uv-loop-sc/timer-counter(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/timer-counter)
-
-pub inline fun uv-loop-scb/timer-counter(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/timer-counter)
-
-pub inline extern uv-loop-s-ptrraw/set-timer-counter(s: intptr_t, timer-counter: int64): ()
-  c inline "((struct uv_loop_s*)#1)->timer_counter = (int64_t)#2"
-
-pub inline fun uv-loop-sp/set-timer-counter(s: uv-loop-sp, timer-counter: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-timer-counter(timer-counter.int64)
-
-pub inline fun uv-loop-sc/set-timer-counter(^s: uv-loop-sc, timer-counter: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-timer-counter(timer-counter))
-
-pub inline fun uv-loop-scb/set-timer-counter(^s: uv-loop-scb<s::S>, timer-counter: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-timer-counter(timer-counter))
-
-pub inline extern uv-loop-s-ptrraw/time(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_loop_s*)#1)->time)"
-
-pub inline fun uv-loop-sp/time(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/time.int
-
-pub inline fun uv-loop-sc/time(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/time)
-
-pub inline fun uv-loop-scb/time(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/time)
-
-pub inline extern uv-loop-s-ptrraw/set-time(s: intptr_t, time: int64): ()
-  c inline "((struct uv_loop_s*)#1)->time = (int64_t)#2"
-
-pub inline fun uv-loop-sp/set-time(s: uv-loop-sp, time: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-time(time.int64)
-
-pub inline fun uv-loop-sc/set-time(^s: uv-loop-sc, time: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-time(time))
-
-pub inline fun uv-loop-scb/set-time(^s: uv-loop-scb<s::S>, time: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-time(time))
-
-pub inline extern uv-loop-s-ptrraw/signal-pipefd(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->signal_pipefd)"
-
-pub inline fun uv-loop-sp/signal-pipefd(s: uv-loop-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/signal-pipefd.cextern/cptr/carray
-
-pub inline fun uv-loop-sc/signal-pipefd(^s: uv-loop-sc): c-array<int>
-  s.with-ptr(uv-loop-sp/signal-pipefd)
-
-pub inline fun uv-loop-scb/signal-pipefd(^s: uv-loop-scb<s::S>): c-array<int>
-  s.with-ptr(uv-loop-sp/signal-pipefd)
-
-pub inline extern uv-loop-s-ptrraw/set-signal-pipefd(s: intptr_t, signal-pipefd: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->signal_pipefd = (int*)#2"
-
-pub inline fun uv-loop-sp/set-signal-pipefd(s: uv-loop-sp, signal-pipefd: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-signal-pipefd(signal-pipefd.cextern/carray/cptr)
-
-pub inline fun uv-loop-sc/set-signal-pipefd(^s: uv-loop-sc, signal-pipefd: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-signal-pipefd(signal-pipefd))
-
-pub inline fun uv-loop-scb/set-signal-pipefd(^s: uv-loop-scb<s::S>, signal-pipefd: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-signal-pipefd(signal-pipefd))
-
-pub inline extern uv-loop-s-ptrraw/emfile-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_loop_s*)#1)->emfile_fd)"
-
-pub inline fun uv-loop-sp/emfile-fd(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/emfile-fd.int
-
-pub inline fun uv-loop-sc/emfile-fd(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/emfile-fd)
-
-pub inline fun uv-loop-scb/emfile-fd(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/emfile-fd)
-
-pub inline extern uv-loop-s-ptrraw/set-emfile-fd(s: intptr_t, emfile-fd: int32): ()
-  c inline "((struct uv_loop_s*)#1)->emfile_fd = (int)#2"
-
-pub inline fun uv-loop-sp/set-emfile-fd(s: uv-loop-sp, emfile-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-emfile-fd(emfile-fd.int32)
-
-pub inline fun uv-loop-sc/set-emfile-fd(^s: uv-loop-sc, emfile-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-emfile-fd(emfile-fd))
-
-pub inline fun uv-loop-scb/set-emfile-fd(^s: uv-loop-scb<s::S>, emfile-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-emfile-fd(emfile-fd))
-
-pub inline extern uv-loop-s-ptrraw/inotify-watchers(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_loop_s*)#1)->inotify_watchers)"
-
-pub inline fun uv-loop-sp/inotify-watchers(s: uv-loop-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/inotify-watchers)
-
-pub inline fun uv-loop-sc/inotify-watchers(^s: uv-loop-sc): c-pointer<()>
-  s.with-ptr(uv-loop-sp/inotify-watchers)
-
-pub inline fun uv-loop-scb/inotify-watchers(^s: uv-loop-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-loop-sp/inotify-watchers)
-
-pub inline extern uv-loop-s-ptrraw/set-inotify-watchers(s: intptr_t, inotify-watchers: intptr_t): ()
-  c inline "((struct uv_loop_s*)#1)->inotify_watchers = (void*)#2"
-
-pub inline fun uv-loop-sp/set-inotify-watchers(s: uv-loop-sp, inotify-watchers: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-inotify-watchers(inotify-watchers.cextern/c-pointer/ptr)
-
-pub inline fun uv-loop-sc/set-inotify-watchers(^s: uv-loop-sc, inotify-watchers: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-inotify-watchers(inotify-watchers))
-
-pub inline fun uv-loop-scb/set-inotify-watchers(^s: uv-loop-scb<s::S>, inotify-watchers: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-inotify-watchers(inotify-watchers))
-
-pub inline extern uv-loop-s-ptrraw/inotify-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_loop_s*)#1)->inotify_fd)"
-
-pub inline fun uv-loop-sp/inotify-fd(s: uv-loop-sp): int
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/inotify-fd.int
-
-pub inline fun uv-loop-sc/inotify-fd(^s: uv-loop-sc): int
-  s.with-ptr(uv-loop-sp/inotify-fd)
-
-pub inline fun uv-loop-scb/inotify-fd(^s: uv-loop-scb<s::S>): int
-  s.with-ptr(uv-loop-sp/inotify-fd)
-
-pub inline extern uv-loop-s-ptrraw/set-inotify-fd(s: intptr_t, inotify-fd: int32): ()
-  c inline "((struct uv_loop_s*)#1)->inotify_fd = (int)#2"
-
-pub inline fun uv-loop-sp/set-inotify-fd(s: uv-loop-sp, inotify-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-loop-s-ptrraw/set-inotify-fd(inotify-fd.int32)
-
-pub inline fun uv-loop-sc/set-inotify-fd(^s: uv-loop-sc, inotify-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-inotify-fd(inotify-fd))
-
-pub inline fun uv-loop-scb/set-inotify-fd(^s: uv-loop-scb<s::S>, inotify-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-loop-sp/set-inotify-fd(inotify-fd))
-
-pub struct unnamed-Union1
-pub type unnamed-Union1-c
-pub alias unnamed-Union1p = c-pointer<unnamed-Union1-c>
-pub alias unnamed-Union1c = owned-c<unnamed-Union1-c>
-pub alias unnamed-Union1cb<s::S> = borrowed-c<s,unnamed-Union1-c>
-pub alias unnamed-Union1ca = owned-c<c-array<unnamed-Union1-c>>
-
-pub extern unnamed-Union1/size-of(c: c-null<unnamed-Union1-c>): int32
-  c inline "sizeof(union unnamed-Union1)"
-
-pub fun unnamed-Union1c(): unnamed-Union1c
-  malloc(?size-of=unnamed-Union1/size-of)
-
-pub fun unnamed-Union1c-calloc(): unnamed-Union1c
-  malloc-c(?size-of=unnamed-Union1/size-of)
-
-pub fun unnamed-Union1c-array(n: int): unnamed-Union1ca
-  malloc(n.int32, ?size-of=unnamed-Union1/size-of)
-
-pub fun unnamed-Union1c-array-calloc(n: int): unnamed-Union1ca
-  malloc-c(n.int32, ?size-of=unnamed-Union1/size-of)
-
-pub inline extern unnamed-Union1-ptrraw/unused(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union1*)#1)->unused)"
-
-pub inline fun unnamed-Union1p/unused(s: unnamed-Union1p): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.unnamed-Union1-ptrraw/unused)
-
-pub inline fun unnamed-Union1c/unused(^s: unnamed-Union1c): c-pointer<()>
-  s.with-ptr(unnamed-Union1p/unused)
-
-pub inline fun unnamed-Union1cb/unused(^s: unnamed-Union1cb<s::S>): c-pointer<()>
-  s.with-ptr(unnamed-Union1p/unused)
-
-pub inline extern unnamed-Union1-ptrraw/set-unused(s: intptr_t, unused: intptr_t): ()
-  c inline "((union unnamed-Union1*)#1)->unused = (void*)#2"
-
-pub inline fun unnamed-Union1p/set-unused(s: unnamed-Union1p, unused: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union1-ptrraw/set-unused(unused.cextern/c-pointer/ptr)
-
-pub inline fun unnamed-Union1c/set-unused(^s: unnamed-Union1c, unused: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union1p/set-unused(unused))
-
-pub inline fun unnamed-Union1cb/set-unused(^s: unnamed-Union1cb<s::S>, unused: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union1p/set-unused(unused))
-
-pub inline extern unnamed-Union1-ptrraw/count(s: intptr_t): int32
-  c inline "(unsigned int)(((union unnamed-Union1*)#1)->count)"
-
-pub inline fun unnamed-Union1p/count(s: unnamed-Union1p): int
-  s.cextern/c-pointer/ptr.unnamed-Union1-ptrraw/count.int
-
-pub inline fun unnamed-Union1c/count(^s: unnamed-Union1c): int
-  s.with-ptr(unnamed-Union1p/count)
-
-pub inline fun unnamed-Union1cb/count(^s: unnamed-Union1cb<s::S>): int
-  s.with-ptr(unnamed-Union1p/count)
-
-pub inline extern unnamed-Union1-ptrraw/set-count(s: intptr_t, count: int32): ()
-  c inline "((union unnamed-Union1*)#1)->count = (unsigned int)#2"
-
-pub inline fun unnamed-Union1p/set-count(s: unnamed-Union1p, count: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union1-ptrraw/set-count(count.int32)
-
-pub inline fun unnamed-Union1c/set-count(^s: unnamed-Union1c, count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union1p/set-count(count))
-
-pub inline fun unnamed-Union1cb/set-count(^s: unnamed-Union1cb<s::S>, count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union1p/set-count(count))
+pub struct unnamed-union1
+pub type unnamed-union1-c
+pub alias unnamed-union1p = c-pointer<unnamed-union1-c>
+pub alias unnamed-union1c = owned-c<unnamed-union1-c>
+pub alias unnamed-union1cb<s::S> = borrowed-c<s,unnamed-union1-c>
+pub alias unnamed-union1ca = owned-c<c-array<unnamed-union1-c>>
 
 alias uv-io-t = uv-io-s-c
 alias koka-uv-io-t = uv-io-s
@@ -2607,6 +2007,8 @@ pub struct uv-io-s
   pevents: int
   events: int
   fd: int
+  rcount: int
+  wcount: int
 
 pub type uv-io-s-c
 pub alias uv-io-sp = c-pointer<uv-io-s-c>
@@ -2629,448 +2031,32 @@ pub fun uv-io-sc-array(n: int): uv-io-sca
 pub fun uv-io-sc-array-calloc(n: int): uv-io-sca
   malloc-c(n.int32, ?size-of=uv-io-s/size-of)
 
-pub inline extern uv-io-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv__io_s*)#1)->cb)"
-
-pub inline fun uv-io-sp/cb(s: uv-io-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-io-s-ptrraw/cb)
-
-pub inline fun uv-io-sc/cb(^s: uv-io-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-io-sp/cb)
-
-pub inline fun uv-io-scb/cb(^s: uv-io-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-io-sp/cb)
-
-pub inline extern uv-io-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv__io_s*)#1)->cb = (void (*)(struct uv_loop_s*, struct uv__io_s*, unsigned int))#2"
-
-pub inline fun uv-io-sp/set-cb(s: uv-io-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-io-sc/set-cb(^s: uv-io-sc, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-cb(cb))
-
-pub inline fun uv-io-scb/set-cb(^s: uv-io-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-cb(cb))
-
-pub inline extern uv-io-s-ptrraw/pevents(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv__io_s*)#1)->pevents)"
-
-pub inline fun uv-io-sp/pevents(s: uv-io-sp): int
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/pevents.int
-
-pub inline fun uv-io-sc/pevents(^s: uv-io-sc): int
-  s.with-ptr(uv-io-sp/pevents)
-
-pub inline fun uv-io-scb/pevents(^s: uv-io-scb<s::S>): int
-  s.with-ptr(uv-io-sp/pevents)
-
-pub inline extern uv-io-s-ptrraw/set-pevents(s: intptr_t, pevents: int32): ()
-  c inline "((struct uv__io_s*)#1)->pevents = (unsigned int)#2"
-
-pub inline fun uv-io-sp/set-pevents(s: uv-io-sp, pevents: int): ()
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/set-pevents(pevents.int32)
-
-pub inline fun uv-io-sc/set-pevents(^s: uv-io-sc, pevents: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-pevents(pevents))
-
-pub inline fun uv-io-scb/set-pevents(^s: uv-io-scb<s::S>, pevents: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-pevents(pevents))
-
-pub inline extern uv-io-s-ptrraw/events(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv__io_s*)#1)->events)"
-
-pub inline fun uv-io-sp/events(s: uv-io-sp): int
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/events.int
-
-pub inline fun uv-io-sc/events(^s: uv-io-sc): int
-  s.with-ptr(uv-io-sp/events)
-
-pub inline fun uv-io-scb/events(^s: uv-io-scb<s::S>): int
-  s.with-ptr(uv-io-sp/events)
-
-pub inline extern uv-io-s-ptrraw/set-events(s: intptr_t, events: int32): ()
-  c inline "((struct uv__io_s*)#1)->events = (unsigned int)#2"
-
-pub inline fun uv-io-sp/set-events(s: uv-io-sp, events: int): ()
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/set-events(events.int32)
-
-pub inline fun uv-io-sc/set-events(^s: uv-io-sc, events: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-events(events))
-
-pub inline fun uv-io-scb/set-events(^s: uv-io-scb<s::S>, events: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-events(events))
-
-pub inline extern uv-io-s-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((struct uv__io_s*)#1)->fd)"
-
-pub inline fun uv-io-sp/fd(s: uv-io-sp): int
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/fd.int
-
-pub inline fun uv-io-sc/fd(^s: uv-io-sc): int
-  s.with-ptr(uv-io-sp/fd)
-
-pub inline fun uv-io-scb/fd(^s: uv-io-scb<s::S>): int
-  s.with-ptr(uv-io-sp/fd)
-
-pub inline extern uv-io-s-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((struct uv__io_s*)#1)->fd = (int)#2"
-
-pub inline fun uv-io-sp/set-fd(s: uv-io-sp, fd: int): ()
-  s.cextern/c-pointer/ptr.uv-io-s-ptrraw/set-fd(fd.int32)
-
-pub inline fun uv-io-sc/set-fd(^s: uv-io-sc, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-fd(fd))
-
-pub inline fun uv-io-scb/set-fd(^s: uv-io-scb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-io-sp/set-fd(fd))
-
 alias uv-io-cb = c-pointer<intptr_t>
 alias uv-io-cbfn = ((loop : c-pointer<uv-loop-s-c>, w : c-pointer<uv-io-s-c>, events : int) -> ())
-alias uv-mutex-t = pthread-mutex-t-c
-pub struct pthread-mutex-t
-pub type pthread-mutex-t-c
-pub alias pthread-mutex-tp = c-pointer<pthread-mutex-t-c>
-pub alias pthread-mutex-tc<s::S> = owned-c<pthread-mutex-t-c>
-pub alias pthread-mutex-tcb<s::S> = borrowed-c<s,pthread-mutex-t-c>
-pub alias pthread-mutex-tca<s::S> = owned-c<c-array<pthread-mutex-t-c>>
-
-pub extern pthread-mutex-t/size-of(c: c-null<pthread-mutex-t-c>): int32
-  c inline "sizeof(union pthread_mutex_t)"
-
-pub fun pthread-mutex-tc(): pthread-mutex-tc<s::S>
-  malloc(?size-of=pthread-mutex-t/size-of)
-
-pub fun pthread-mutex-tc-calloc(): pthread-mutex-tc<s::S>
-  malloc-c(?size-of=pthread-mutex-t/size-of)
-
-pub fun pthread-mutex-tc-array(n: int): pthread-mutex-tca<s::S>
-  malloc(n.int32, ?size-of=pthread-mutex-t/size-of)
-
-pub fun pthread-mutex-tc-array-calloc(n: int): pthread-mutex-tca<s::S>
-  malloc-c(n.int32, ?size-of=pthread-mutex-t/size-of)
-
-pub inline extern pthread-mutex-t-ptrraw/size(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union pthread_mutex_t*)#1)->__size)"
-
-pub inline fun pthread-mutex-tp/size(s: pthread-mutex-tp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-mutex-t-ptrraw/size.cextern/cptr/carray
-
-pub inline fun pthread-mutex-tc/size(^s: pthread-mutex-tc<s::S>): c-array<int>
-  s.with-ptr(pthread-mutex-tp/size)
-
-pub inline fun pthread-mutex-tcb/size(^s: pthread-mutex-tcb<s::S>): c-array<int>
-  s.with-ptr(pthread-mutex-tp/size)
-
-pub inline extern pthread-mutex-t-ptrraw/set-size(s: intptr_t, size: intptr_t): ()
-  c inline "((union pthread_mutex_t*)#1)->__size = (char*)#2"
-
-pub inline fun pthread-mutex-tp/set-size(s: pthread-mutex-tp, size: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-t-ptrraw/set-size(size.cextern/carray/cptr)
-
-pub inline fun pthread-mutex-tc/set-size(^s: pthread-mutex-tc<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-tp/set-size(size))
-
-pub inline fun pthread-mutex-tcb/set-size(^s: pthread-mutex-tcb<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-tp/set-size(size))
-
-pub inline extern pthread-mutex-t-ptrraw/align(s: intptr_t): int64
-  c inline "(long)(((union pthread_mutex_t*)#1)->__align)"
-
-pub inline fun pthread-mutex-tp/align(s: pthread-mutex-tp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-t-ptrraw/align.int
-
-pub inline fun pthread-mutex-tc/align(^s: pthread-mutex-tc<s::S>): int
-  s.with-ptr(pthread-mutex-tp/align)
-
-pub inline fun pthread-mutex-tcb/align(^s: pthread-mutex-tcb<s::S>): int
-  s.with-ptr(pthread-mutex-tp/align)
-
-pub inline extern pthread-mutex-t-ptrraw/set-align(s: intptr_t, align: int64): ()
-  c inline "((union pthread_mutex_t*)#1)->__align = (long)#2"
-
-pub inline fun pthread-mutex-tp/set-align(s: pthread-mutex-tp, align: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-t-ptrraw/set-align(align.int64)
-
-pub inline fun pthread-mutex-tc/set-align(^s: pthread-mutex-tc<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-tp/set-align(align))
-
-pub inline fun pthread-mutex-tcb/set-align(^s: pthread-mutex-tcb<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-tp/set-align(align))
-
-pub struct pthread-mutex-s
-  lock: int
-  count: int
-  owner: int
-  nusers: int
-  kind: int
-  spins: int
-  elision: int
-  list: koka-pthread-list-t
-
-pub type pthread-mutex-s-c
-pub alias pthread-mutex-sp = c-pointer<pthread-mutex-s-c>
-pub alias pthread-mutex-sc = owned-c<pthread-mutex-s-c>
-pub alias pthread-mutex-scb<s::S> = borrowed-c<s,pthread-mutex-s-c>
-pub alias pthread-mutex-sca = owned-c<c-array<pthread-mutex-s-c>>
-
-pub extern pthread-mutex-s/size-of(c: c-null<pthread-mutex-s-c>): int32
-  c inline "sizeof(struct __pthread_mutex_s)"
-
-pub fun pthread-mutex-sc(): pthread-mutex-sc
-  malloc(?size-of=pthread-mutex-s/size-of)
-
-pub fun pthread-mutex-sc-calloc(): pthread-mutex-sc
-  malloc-c(?size-of=pthread-mutex-s/size-of)
-
-pub fun pthread-mutex-sc-array(n: int): pthread-mutex-sca
-  malloc(n.int32, ?size-of=pthread-mutex-s/size-of)
-
-pub fun pthread-mutex-sc-array-calloc(n: int): pthread-mutex-sca
-  malloc-c(n.int32, ?size-of=pthread-mutex-s/size-of)
-
-pub inline extern pthread-mutex-s-ptrraw/lock(s: intptr_t): int32
-  c inline "(int)(((struct __pthread_mutex_s*)#1)->__lock)"
-
-pub inline fun pthread-mutex-sp/lock(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/lock.int
-
-pub inline fun pthread-mutex-sc/lock(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/lock)
-
-pub inline fun pthread-mutex-scb/lock(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/lock)
-
-pub inline extern pthread-mutex-s-ptrraw/set-lock(s: intptr_t, lock: int32): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__lock = (int)#2"
-
-pub inline fun pthread-mutex-sp/set-lock(s: pthread-mutex-sp, lock: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-lock(lock.int32)
-
-pub inline fun pthread-mutex-sc/set-lock(^s: pthread-mutex-sc, lock: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-lock(lock))
-
-pub inline fun pthread-mutex-scb/set-lock(^s: pthread-mutex-scb<s::S>, lock: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-lock(lock))
-
-pub inline extern pthread-mutex-s-ptrraw/count(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_mutex_s*)#1)->__count)"
-
-pub inline fun pthread-mutex-sp/count(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/count.int
-
-pub inline fun pthread-mutex-sc/count(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/count)
-
-pub inline fun pthread-mutex-scb/count(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/count)
-
-pub inline extern pthread-mutex-s-ptrraw/set-count(s: intptr_t, count: int32): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__count = (unsigned int)#2"
-
-pub inline fun pthread-mutex-sp/set-count(s: pthread-mutex-sp, count: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-count(count.int32)
-
-pub inline fun pthread-mutex-sc/set-count(^s: pthread-mutex-sc, count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-count(count))
-
-pub inline fun pthread-mutex-scb/set-count(^s: pthread-mutex-scb<s::S>, count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-count(count))
-
-pub inline extern pthread-mutex-s-ptrraw/owner(s: intptr_t): int32
-  c inline "(int)(((struct __pthread_mutex_s*)#1)->__owner)"
-
-pub inline fun pthread-mutex-sp/owner(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/owner.int
-
-pub inline fun pthread-mutex-sc/owner(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/owner)
-
-pub inline fun pthread-mutex-scb/owner(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/owner)
-
-pub inline extern pthread-mutex-s-ptrraw/set-owner(s: intptr_t, owner: int32): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__owner = (int)#2"
-
-pub inline fun pthread-mutex-sp/set-owner(s: pthread-mutex-sp, owner: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-owner(owner.int32)
-
-pub inline fun pthread-mutex-sc/set-owner(^s: pthread-mutex-sc, owner: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-owner(owner))
-
-pub inline fun pthread-mutex-scb/set-owner(^s: pthread-mutex-scb<s::S>, owner: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-owner(owner))
-
-pub inline extern pthread-mutex-s-ptrraw/nusers(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_mutex_s*)#1)->__nusers)"
-
-pub inline fun pthread-mutex-sp/nusers(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/nusers.int
-
-pub inline fun pthread-mutex-sc/nusers(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/nusers)
-
-pub inline fun pthread-mutex-scb/nusers(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/nusers)
-
-pub inline extern pthread-mutex-s-ptrraw/set-nusers(s: intptr_t, nusers: int32): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__nusers = (unsigned int)#2"
-
-pub inline fun pthread-mutex-sp/set-nusers(s: pthread-mutex-sp, nusers: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-nusers(nusers.int32)
-
-pub inline fun pthread-mutex-sc/set-nusers(^s: pthread-mutex-sc, nusers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-nusers(nusers))
-
-pub inline fun pthread-mutex-scb/set-nusers(^s: pthread-mutex-scb<s::S>, nusers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-nusers(nusers))
-
-pub inline extern pthread-mutex-s-ptrraw/kind(s: intptr_t): int32
-  c inline "(int)(((struct __pthread_mutex_s*)#1)->__kind)"
-
-pub inline fun pthread-mutex-sp/kind(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/kind.int
-
-pub inline fun pthread-mutex-sc/kind(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/kind)
-
-pub inline fun pthread-mutex-scb/kind(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/kind)
-
-pub inline extern pthread-mutex-s-ptrraw/set-kind(s: intptr_t, kind: int32): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__kind = (int)#2"
-
-pub inline fun pthread-mutex-sp/set-kind(s: pthread-mutex-sp, kind: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-kind(kind.int32)
-
-pub inline fun pthread-mutex-sc/set-kind(^s: pthread-mutex-sc, kind: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-kind(kind))
-
-pub inline fun pthread-mutex-scb/set-kind(^s: pthread-mutex-scb<s::S>, kind: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-kind(kind))
-
-pub inline extern pthread-mutex-s-ptrraw/spins(s: intptr_t): int16
-  c inline "(short)(((struct __pthread_mutex_s*)#1)->__spins)"
-
-pub inline fun pthread-mutex-sp/spins(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/spins.int
-
-pub inline fun pthread-mutex-sc/spins(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/spins)
-
-pub inline fun pthread-mutex-scb/spins(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/spins)
-
-pub inline extern pthread-mutex-s-ptrraw/set-spins(s: intptr_t, spins: int16): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__spins = (short)#2"
-
-pub inline fun pthread-mutex-sp/set-spins(s: pthread-mutex-sp, spins: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-spins(spins.int16)
-
-pub inline fun pthread-mutex-sc/set-spins(^s: pthread-mutex-sc, spins: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-spins(spins))
-
-pub inline fun pthread-mutex-scb/set-spins(^s: pthread-mutex-scb<s::S>, spins: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-spins(spins))
-
-pub inline extern pthread-mutex-s-ptrraw/elision(s: intptr_t): int16
-  c inline "(short)(((struct __pthread_mutex_s*)#1)->__elision)"
-
-pub inline fun pthread-mutex-sp/elision(s: pthread-mutex-sp): int
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/elision.int
-
-pub inline fun pthread-mutex-sc/elision(^s: pthread-mutex-sc): int
-  s.with-ptr(pthread-mutex-sp/elision)
-
-pub inline fun pthread-mutex-scb/elision(^s: pthread-mutex-scb<s::S>): int
-  s.with-ptr(pthread-mutex-sp/elision)
-
-pub inline extern pthread-mutex-s-ptrraw/set-elision(s: intptr_t, elision: int16): ()
-  c inline "((struct __pthread_mutex_s*)#1)->__elision = (short)#2"
-
-pub inline fun pthread-mutex-sp/set-elision(s: pthread-mutex-sp, elision: int): ()
-  s.cextern/c-pointer/ptr.pthread-mutex-s-ptrraw/set-elision(elision.int16)
-
-pub inline fun pthread-mutex-sc/set-elision(^s: pthread-mutex-sc, elision: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-elision(elision))
-
-pub inline fun pthread-mutex-scb/set-elision(^s: pthread-mutex-scb<s::S>, elision: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-mutex-sp/set-elision(elision))
-
-alias pthread-list-t = pthread-internal-list-c
-alias koka-pthread-list-t = pthread-internal-list
-pub value struct pthread-internal-list
-  prev: pthread-internal-list-c
-  next: pthread-internal-list-c
-
-pub type pthread-internal-list-c
-pub alias pthread-internal-listp = c-pointer<pthread-internal-list-c>
-pub alias pthread-internal-listc = owned-c<pthread-internal-list-c>
-pub alias pthread-internal-listcb<s::S> = borrowed-c<s,pthread-internal-list-c>
-pub alias pthread-internal-listca = owned-c<c-array<pthread-internal-list-c>>
-
-pub extern pthread-internal-list/size-of(c: c-null<pthread-internal-list-c>): int32
-  c inline "sizeof(struct __pthread_internal_list)"
-
-pub fun pthread-internal-listc(): pthread-internal-listc
-  malloc(?size-of=pthread-internal-list/size-of)
-
-pub fun pthread-internal-listc-calloc(): pthread-internal-listc
-  malloc-c(?size-of=pthread-internal-list/size-of)
-
-pub fun pthread-internal-listc-array(n: int): pthread-internal-listca
-  malloc(n.int32, ?size-of=pthread-internal-list/size-of)
-
-pub fun pthread-internal-listc-array-calloc(n: int): pthread-internal-listca
-  malloc-c(n.int32, ?size-of=pthread-internal-list/size-of)
-
-pub inline extern pthread-internal-list-ptrraw/prev(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct __pthread_internal_list*)#1)->__prev)"
-
-pub inline fun pthread-internal-listp/prev(s: pthread-internal-listp): c-pointer<pthread-internal-list-c>
-  C-pointer(s.cextern/c-pointer/ptr.pthread-internal-list-ptrraw/prev)
-
-pub inline fun pthread-internal-listc/prev(^s: pthread-internal-listc): c-pointer<pthread-internal-list-c>
-  s.with-ptr(pthread-internal-listp/prev)
-
-pub inline fun pthread-internal-listcb/prev(^s: pthread-internal-listcb<s::S>): c-pointer<pthread-internal-list-c>
-  s.with-ptr(pthread-internal-listp/prev)
-
-pub inline extern pthread-internal-list-ptrraw/set-prev(s: intptr_t, prev: intptr_t): ()
-  c inline "((struct __pthread_internal_list*)#1)->__prev = (struct __pthread_internal_list*)#2"
-
-pub inline fun pthread-internal-listp/set-prev(s: pthread-internal-listp, prev: c-pointer<pthread-internal-list-c>): ()
-  s.cextern/c-pointer/ptr.pthread-internal-list-ptrraw/set-prev(prev.cextern/c-pointer/ptr)
-
-pub inline fun pthread-internal-listc/set-prev(^s: pthread-internal-listc, prev: c-pointer<pthread-internal-list-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-internal-listp/set-prev(prev))
-
-pub inline fun pthread-internal-listcb/set-prev(^s: pthread-internal-listcb<s::S>, prev: c-pointer<pthread-internal-list-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-internal-listp/set-prev(prev))
-
-pub inline extern pthread-internal-list-ptrraw/next(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct __pthread_internal_list*)#1)->__next)"
-
-pub inline fun pthread-internal-listp/next(s: pthread-internal-listp): c-pointer<pthread-internal-list-c>
-  C-pointer(s.cextern/c-pointer/ptr.pthread-internal-list-ptrraw/next)
-
-pub inline fun pthread-internal-listc/next(^s: pthread-internal-listc): c-pointer<pthread-internal-list-c>
-  s.with-ptr(pthread-internal-listp/next)
-
-pub inline fun pthread-internal-listcb/next(^s: pthread-internal-listcb<s::S>): c-pointer<pthread-internal-list-c>
-  s.with-ptr(pthread-internal-listp/next)
-
-pub inline extern pthread-internal-list-ptrraw/set-next(s: intptr_t, next: intptr_t): ()
-  c inline "((struct __pthread_internal_list*)#1)->__next = (struct __pthread_internal_list*)#2"
-
-pub inline fun pthread-internal-listp/set-next(s: pthread-internal-listp, next: c-pointer<pthread-internal-list-c>): ()
-  s.cextern/c-pointer/ptr.pthread-internal-list-ptrraw/set-next(next.cextern/c-pointer/ptr)
-
-pub inline fun pthread-internal-listc/set-next(^s: pthread-internal-listc, next: c-pointer<pthread-internal-list-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-internal-listp/set-next(next))
-
-pub inline fun pthread-internal-listcb/set-next(^s: pthread-internal-listcb<s::S>, next: c-pointer<pthread-internal-list-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-internal-listp/set-next(next))
+alias uv-mutex-t = opaque-pthread-mutex-t-c
+alias pthread-mutex-t = opaque-pthread-mutex-t-c
+alias darwin-pthread-mutex-t = opaque-pthread-mutex-t-c
+pub struct opaque-pthread-mutex-t
+pub type opaque-pthread-mutex-t-c
+pub alias opaque-pthread-mutex-tp = c-pointer<opaque-pthread-mutex-t-c>
+pub alias opaque-pthread-mutex-tc<s::S> = owned-c<opaque-pthread-mutex-t-c>
+pub alias opaque-pthread-mutex-tcb<s::S> = borrowed-c<s,opaque-pthread-mutex-t-c>
+pub alias opaque-pthread-mutex-tca<s::S> = owned-c<c-array<opaque-pthread-mutex-t-c>>
+
+pub extern opaque-pthread-mutex-t/size-of(c: c-null<opaque-pthread-mutex-t-c>): int32
+  c inline "sizeof(struct _opaque_pthread_mutex_t)"
+
+pub fun opaque-pthread-mutex-tc(): opaque-pthread-mutex-tc<s::S>
+  malloc(?size-of=opaque-pthread-mutex-t/size-of)
+
+pub fun opaque-pthread-mutex-tc-calloc(): opaque-pthread-mutex-tc<s::S>
+  malloc-c(?size-of=opaque-pthread-mutex-t/size-of)
+
+pub fun opaque-pthread-mutex-tc-array(n: int): opaque-pthread-mutex-tca<s::S>
+  malloc(n.int32, ?size-of=opaque-pthread-mutex-t/size-of)
+
+pub fun opaque-pthread-mutex-tc-array-calloc(n: int): opaque-pthread-mutex-tca<s::S>
+  malloc-c(n.int32, ?size-of=opaque-pthread-mutex-t/size-of)
 
 alias uv-async-t = uv-async-s-c
 alias koka-uv-async-t = uv-async-s
@@ -3080,7 +2066,7 @@ pub struct uv-async-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union2-c
+  u: unnamed-union2-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   async-cb: c-pointer<intptr_t>
@@ -3108,198 +2094,6 @@ pub fun uv-async-sc-array(n: int): uv-async-sca
 pub fun uv-async-sc-array-calloc(n: int): uv-async-sca
   malloc-c(n.int32, ?size-of=uv-async-s/size-of)
 
-pub inline extern uv-async-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_async_s*)#1)->data)"
-
-pub inline fun uv-async-sp/data(s: uv-async-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-async-s-ptrraw/data)
-
-pub inline fun uv-async-sc/data(^s: uv-async-sc): c-pointer<()>
-  s.with-ptr(uv-async-sp/data)
-
-pub inline fun uv-async-scb/data(^s: uv-async-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-async-sp/data)
-
-pub inline extern uv-async-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_async_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-async-sp/set-data(s: uv-async-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-async-sc/set-data(^s: uv-async-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-data(data))
-
-pub inline fun uv-async-scb/set-data(^s: uv-async-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-data(data))
-
-pub inline extern uv-async-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_async_s*)#1)->loop)"
-
-pub inline fun uv-async-sp/loop(s: uv-async-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-async-s-ptrraw/loop)
-
-pub inline fun uv-async-sc/loop(^s: uv-async-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-async-sp/loop)
-
-pub inline fun uv-async-scb/loop(^s: uv-async-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-async-sp/loop)
-
-pub inline extern uv-async-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_async_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-async-sp/set-loop(s: uv-async-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-async-sc/set-loop(^s: uv-async-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-loop(loop))
-
-pub inline fun uv-async-scb/set-loop(^s: uv-async-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-loop(loop))
-
-pub inline extern uv-async-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_async_s*)#1)->type)"
-
-pub inline fun uv-async-sp/type1(s: uv-async-sp): int
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/type1.int
-
-pub inline fun uv-async-sc/type1(^s: uv-async-sc): int
-  s.with-ptr(uv-async-sp/type1)
-
-pub inline fun uv-async-scb/type1(^s: uv-async-scb<s::S>): int
-  s.with-ptr(uv-async-sp/type1)
-
-pub inline extern uv-async-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_async_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-async-sp/set-type1(s: uv-async-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-async-sc/set-type1(^s: uv-async-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-type1(type1))
-
-pub inline fun uv-async-scb/set-type1(^s: uv-async-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-type1(type1))
-
-pub inline extern uv-async-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_async_s*)#1)->close_cb)"
-
-pub inline fun uv-async-sp/close-cb(s: uv-async-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-async-s-ptrraw/close-cb)
-
-pub inline fun uv-async-sc/close-cb(^s: uv-async-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-async-sp/close-cb)
-
-pub inline fun uv-async-scb/close-cb(^s: uv-async-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-async-sp/close-cb)
-
-pub inline extern uv-async-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_async_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-async-sp/set-close-cb(s: uv-async-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-async-sc/set-close-cb(^s: uv-async-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-close-cb(close-cb))
-
-pub inline fun uv-async-scb/set-close-cb(^s: uv-async-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-close-cb(close-cb))
-
-pub inline extern uv-async-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_async_s*)#1)->next_closing)"
-
-pub inline fun uv-async-sp/next-closing(s: uv-async-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-async-s-ptrraw/next-closing)
-
-pub inline fun uv-async-sc/next-closing(^s: uv-async-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-async-sp/next-closing)
-
-pub inline fun uv-async-scb/next-closing(^s: uv-async-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-async-sp/next-closing)
-
-pub inline extern uv-async-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_async_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-async-sp/set-next-closing(s: uv-async-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-async-sc/set-next-closing(^s: uv-async-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-next-closing(next-closing))
-
-pub inline fun uv-async-scb/set-next-closing(^s: uv-async-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-next-closing(next-closing))
-
-pub inline extern uv-async-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_async_s*)#1)->flags)"
-
-pub inline fun uv-async-sp/flags(s: uv-async-sp): int
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/flags.int
-
-pub inline fun uv-async-sc/flags(^s: uv-async-sc): int
-  s.with-ptr(uv-async-sp/flags)
-
-pub inline fun uv-async-scb/flags(^s: uv-async-scb<s::S>): int
-  s.with-ptr(uv-async-sp/flags)
-
-pub inline extern uv-async-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_async_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-async-sp/set-flags(s: uv-async-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-async-sc/set-flags(^s: uv-async-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-flags(flags))
-
-pub inline fun uv-async-scb/set-flags(^s: uv-async-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-flags(flags))
-
-pub inline extern uv-async-s-ptrraw/async-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_async_s*)#1)->async_cb)"
-
-pub inline fun uv-async-sp/async-cb(s: uv-async-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-async-s-ptrraw/async-cb)
-
-pub inline fun uv-async-sc/async-cb(^s: uv-async-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-async-sp/async-cb)
-
-pub inline fun uv-async-scb/async-cb(^s: uv-async-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-async-sp/async-cb)
-
-pub inline extern uv-async-s-ptrraw/set-async-cb(s: intptr_t, async-cb: intptr_t): ()
-  c inline "((struct uv_async_s*)#1)->async_cb = (void (*)(struct uv_async_s*))#2"
-
-pub inline fun uv-async-sp/set-async-cb(s: uv-async-sp, async-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-async-cb(async-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-async-sc/set-async-cb(^s: uv-async-sc, async-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-async-cb(async-cb))
-
-pub inline fun uv-async-scb/set-async-cb(^s: uv-async-scb<s::S>, async-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-async-cb(async-cb))
-
-pub inline extern uv-async-s-ptrraw/pending(s: intptr_t): int32
-  c inline "(int)(((struct uv_async_s*)#1)->pending)"
-
-pub inline fun uv-async-sp/pending(s: uv-async-sp): int
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/pending.int
-
-pub inline fun uv-async-sc/pending(^s: uv-async-sc): int
-  s.with-ptr(uv-async-sp/pending)
-
-pub inline fun uv-async-scb/pending(^s: uv-async-scb<s::S>): int
-  s.with-ptr(uv-async-sp/pending)
-
-pub inline extern uv-async-s-ptrraw/set-pending(s: intptr_t, pending: int32): ()
-  c inline "((struct uv_async_s*)#1)->pending = (int)#2"
-
-pub inline fun uv-async-sp/set-pending(s: uv-async-sp, pending: int): ()
-  s.cextern/c-pointer/ptr.uv-async-s-ptrraw/set-pending(pending.int32)
-
-pub inline fun uv-async-sc/set-pending(^s: uv-async-sc, pending: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-pending(pending))
-
-pub inline fun uv-async-scb/set-pending(^s: uv-async-scb<s::S>, pending: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-async-sp/set-pending(pending))
-
 alias uv-loop-t = uv-loop-s-c
 alias koka-uv-loop-t = uv-loop-s
 type uv-handle-type
@@ -3323,30 +2117,30 @@ type uv-handle-type
   UV_FILE
   UV_HANDLE_TYPE_MAX
 
-pub fun uv-handle-type/int(i: uv-handle-type): int
+pub fun uv-handle-type/int(i: uv-handle-type): int32
   match i
-    UV_UNKNOWN_HANDLE -> 0
-    UV_ASYNC -> 1
-    UV_CHECK -> 2
-    UV_FS_EVENT -> 3
-    UV_FS_POLL -> 4
-    UV_HANDLE -> 5
-    UV_IDLE -> 6
-    UV_NAMED_PIPE -> 7
-    UV_POLL -> 8
-    UV_PREPARE -> 9
-    UV_PROCESS -> 10
-    UV_STREAM -> 11
-    UV_TCP -> 12
-    UV_TIMER -> 13
-    UV_TTY -> 14
-    UV_UDP -> 15
-    UV_SIGNAL -> 16
-    UV_FILE -> 17
-    UV_HANDLE_TYPE_MAX -> 18
+    UV_UNKNOWN_HANDLE -> 0.int32
+    UV_ASYNC -> 1.int32
+    UV_CHECK -> 2.int32
+    UV_FS_EVENT -> 3.int32
+    UV_FS_POLL -> 4.int32
+    UV_HANDLE -> 5.int32
+    UV_IDLE -> 6.int32
+    UV_NAMED_PIPE -> 7.int32
+    UV_POLL -> 8.int32
+    UV_PREPARE -> 9.int32
+    UV_PROCESS -> 10.int32
+    UV_STREAM -> 11.int32
+    UV_TCP -> 12.int32
+    UV_TIMER -> 13.int32
+    UV_TTY -> 14.int32
+    UV_UDP -> 15.int32
+    UV_SIGNAL -> 16.int32
+    UV_FILE -> 17.int32
+    UV_HANDLE_TYPE_MAX -> 18.int32
 
-pub fun int/uv-handle-type(i: int): exn uv-handle-type
-  match i
+pub fun int/uv-handle-type(i: int32): exn uv-handle-type
+  match i.int
     0 -> UV_UNKNOWN_HANDLE
     1 -> UV_ASYNC
     2 -> UV_CHECK
@@ -3376,7 +2170,7 @@ pub struct uv-handle-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union4-c
+  u: unnamed-union4-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
 
@@ -3401,747 +2195,58 @@ pub fun uv-handle-sc-array(n: int): uv-handle-sca
 pub fun uv-handle-sc-array-calloc(n: int): uv-handle-sca
   malloc-c(n.int32, ?size-of=uv-handle-s/size-of)
 
-pub inline extern uv-handle-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_handle_s*)#1)->data)"
-
-pub inline fun uv-handle-sp/data(s: uv-handle-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/data)
-
-pub inline fun uv-handle-sc/data(^s: uv-handle-sc): c-pointer<()>
-  s.with-ptr(uv-handle-sp/data)
-
-pub inline fun uv-handle-scb/data(^s: uv-handle-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-handle-sp/data)
-
-pub inline extern uv-handle-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_handle_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-handle-sp/set-data(s: uv-handle-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-handle-sc/set-data(^s: uv-handle-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-data(data))
-
-pub inline fun uv-handle-scb/set-data(^s: uv-handle-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-data(data))
-
-pub inline extern uv-handle-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_handle_s*)#1)->loop)"
-
-pub inline fun uv-handle-sp/loop(s: uv-handle-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/loop)
-
-pub inline fun uv-handle-sc/loop(^s: uv-handle-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-handle-sp/loop)
-
-pub inline fun uv-handle-scb/loop(^s: uv-handle-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-handle-sp/loop)
-
-pub inline extern uv-handle-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_handle_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-handle-sp/set-loop(s: uv-handle-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-handle-sc/set-loop(^s: uv-handle-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-loop(loop))
-
-pub inline fun uv-handle-scb/set-loop(^s: uv-handle-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-loop(loop))
-
-pub inline extern uv-handle-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_handle_s*)#1)->type)"
-
-pub inline fun uv-handle-sp/type1(s: uv-handle-sp): int
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/type1.int
-
-pub inline fun uv-handle-sc/type1(^s: uv-handle-sc): int
-  s.with-ptr(uv-handle-sp/type1)
-
-pub inline fun uv-handle-scb/type1(^s: uv-handle-scb<s::S>): int
-  s.with-ptr(uv-handle-sp/type1)
-
-pub inline extern uv-handle-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_handle_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-handle-sp/set-type1(s: uv-handle-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-handle-sc/set-type1(^s: uv-handle-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-type1(type1))
-
-pub inline fun uv-handle-scb/set-type1(^s: uv-handle-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-type1(type1))
-
-pub inline extern uv-handle-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_handle_s*)#1)->close_cb)"
-
-pub inline fun uv-handle-sp/close-cb(s: uv-handle-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/close-cb)
-
-pub inline fun uv-handle-sc/close-cb(^s: uv-handle-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-handle-sp/close-cb)
-
-pub inline fun uv-handle-scb/close-cb(^s: uv-handle-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-handle-sp/close-cb)
-
-pub inline extern uv-handle-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_handle_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-handle-sp/set-close-cb(s: uv-handle-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-handle-sc/set-close-cb(^s: uv-handle-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-close-cb(close-cb))
-
-pub inline fun uv-handle-scb/set-close-cb(^s: uv-handle-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-close-cb(close-cb))
-
-pub inline extern uv-handle-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_handle_s*)#1)->next_closing)"
-
-pub inline fun uv-handle-sp/next-closing(s: uv-handle-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/next-closing)
-
-pub inline fun uv-handle-sc/next-closing(^s: uv-handle-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-handle-sp/next-closing)
-
-pub inline fun uv-handle-scb/next-closing(^s: uv-handle-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-handle-sp/next-closing)
-
-pub inline extern uv-handle-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_handle_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-handle-sp/set-next-closing(s: uv-handle-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-handle-sc/set-next-closing(^s: uv-handle-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-next-closing(next-closing))
-
-pub inline fun uv-handle-scb/set-next-closing(^s: uv-handle-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-next-closing(next-closing))
-
-pub inline extern uv-handle-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_handle_s*)#1)->flags)"
-
-pub inline fun uv-handle-sp/flags(s: uv-handle-sp): int
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/flags.int
-
-pub inline fun uv-handle-sc/flags(^s: uv-handle-sc): int
-  s.with-ptr(uv-handle-sp/flags)
-
-pub inline fun uv-handle-scb/flags(^s: uv-handle-scb<s::S>): int
-  s.with-ptr(uv-handle-sp/flags)
-
-pub inline extern uv-handle-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_handle_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-handle-sp/set-flags(s: uv-handle-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-handle-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-handle-sc/set-flags(^s: uv-handle-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-flags(flags))
-
-pub inline fun uv-handle-scb/set-flags(^s: uv-handle-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-handle-sp/set-flags(flags))
-
-pub struct unnamed-Union4
-pub type unnamed-Union4-c
-pub alias unnamed-Union4p = c-pointer<unnamed-Union4-c>
-pub alias unnamed-Union4c<s::S> = owned-c<unnamed-Union4-c>
-pub alias unnamed-Union4cb<s::S> = borrowed-c<s,unnamed-Union4-c>
-pub alias unnamed-Union4ca<s::S> = owned-c<c-array<unnamed-Union4-c>>
-
-pub extern unnamed-Union4/size-of(c: c-null<unnamed-Union4-c>): int32
-  c inline "sizeof(union unnamed-Union4)"
-
-pub fun unnamed-Union4c(): unnamed-Union4c<s::S>
-  malloc(?size-of=unnamed-Union4/size-of)
-
-pub fun unnamed-Union4c-calloc(): unnamed-Union4c<s::S>
-  malloc-c(?size-of=unnamed-Union4/size-of)
-
-pub fun unnamed-Union4c-array(n: int): unnamed-Union4ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union4/size-of)
-
-pub fun unnamed-Union4c-array-calloc(n: int): unnamed-Union4ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union4/size-of)
-
-pub inline extern unnamed-Union4-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union4*)#1)->fd)"
-
-pub inline fun unnamed-Union4p/fd(s: unnamed-Union4p): int
-  s.cextern/c-pointer/ptr.unnamed-Union4-ptrraw/fd.int
-
-pub inline fun unnamed-Union4c/fd(^s: unnamed-Union4c<s::S>): int
-  s.with-ptr(unnamed-Union4p/fd)
-
-pub inline fun unnamed-Union4cb/fd(^s: unnamed-Union4cb<s::S>): int
-  s.with-ptr(unnamed-Union4p/fd)
-
-pub inline extern unnamed-Union4-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union4*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union4p/set-fd(s: unnamed-Union4p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union4-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union4c/set-fd(^s: unnamed-Union4c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union4p/set-fd(fd))
-
-pub inline fun unnamed-Union4cb/set-fd(^s: unnamed-Union4cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union4p/set-fd(fd))
-
-pub inline extern unnamed-Union4-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union4*)#1)->reserved)"
-
-pub inline fun unnamed-Union4p/reserved(s: unnamed-Union4p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union4-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union4c/reserved(^s: unnamed-Union4c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union4p/reserved)
-
-pub inline fun unnamed-Union4cb/reserved(^s: unnamed-Union4cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union4p/reserved)
-
-pub inline extern unnamed-Union4-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union4*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union4p/set-reserved(s: unnamed-Union4p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union4-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union4c/set-reserved(^s: unnamed-Union4c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union4p/set-reserved(reserved))
-
-pub inline fun unnamed-Union4cb/set-reserved(^s: unnamed-Union4cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union4p/set-reserved(reserved))
-
-pub struct unnamed-Union2
-pub type unnamed-Union2-c
-pub alias unnamed-Union2p = c-pointer<unnamed-Union2-c>
-pub alias unnamed-Union2c<s::S> = owned-c<unnamed-Union2-c>
-pub alias unnamed-Union2cb<s::S> = borrowed-c<s,unnamed-Union2-c>
-pub alias unnamed-Union2ca<s::S> = owned-c<c-array<unnamed-Union2-c>>
-
-pub extern unnamed-Union2/size-of(c: c-null<unnamed-Union2-c>): int32
-  c inline "sizeof(union unnamed-Union2)"
-
-pub fun unnamed-Union2c(): unnamed-Union2c<s::S>
-  malloc(?size-of=unnamed-Union2/size-of)
-
-pub fun unnamed-Union2c-calloc(): unnamed-Union2c<s::S>
-  malloc-c(?size-of=unnamed-Union2/size-of)
-
-pub fun unnamed-Union2c-array(n: int): unnamed-Union2ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union2/size-of)
-
-pub fun unnamed-Union2c-array-calloc(n: int): unnamed-Union2ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union2/size-of)
-
-pub inline extern unnamed-Union2-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union2*)#1)->fd)"
-
-pub inline fun unnamed-Union2p/fd(s: unnamed-Union2p): int
-  s.cextern/c-pointer/ptr.unnamed-Union2-ptrraw/fd.int
-
-pub inline fun unnamed-Union2c/fd(^s: unnamed-Union2c<s::S>): int
-  s.with-ptr(unnamed-Union2p/fd)
-
-pub inline fun unnamed-Union2cb/fd(^s: unnamed-Union2cb<s::S>): int
-  s.with-ptr(unnamed-Union2p/fd)
-
-pub inline extern unnamed-Union2-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union2*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union2p/set-fd(s: unnamed-Union2p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union2-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union2c/set-fd(^s: unnamed-Union2c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union2p/set-fd(fd))
-
-pub inline fun unnamed-Union2cb/set-fd(^s: unnamed-Union2cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union2p/set-fd(fd))
-
-pub inline extern unnamed-Union2-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union2*)#1)->reserved)"
-
-pub inline fun unnamed-Union2p/reserved(s: unnamed-Union2p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union2-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union2c/reserved(^s: unnamed-Union2c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union2p/reserved)
-
-pub inline fun unnamed-Union2cb/reserved(^s: unnamed-Union2cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union2p/reserved)
-
-pub inline extern unnamed-Union2-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union2*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union2p/set-reserved(s: unnamed-Union2p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union2-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union2c/set-reserved(^s: unnamed-Union2c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union2p/set-reserved(reserved))
-
-pub inline fun unnamed-Union2cb/set-reserved(^s: unnamed-Union2cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union2p/set-reserved(reserved))
+pub struct unnamed-union4
+pub type unnamed-union4-c
+pub alias unnamed-union4p = c-pointer<unnamed-union4-c>
+pub alias unnamed-union4c<s::S> = owned-c<unnamed-union4-c>
+pub alias unnamed-union4cb<s::S> = borrowed-c<s,unnamed-union4-c>
+pub alias unnamed-union4ca<s::S> = owned-c<c-array<unnamed-union4-c>>
+
+pub struct unnamed-union2
+pub type unnamed-union2-c
+pub alias unnamed-union2p = c-pointer<unnamed-union2-c>
+pub alias unnamed-union2c<s::S> = owned-c<unnamed-union2-c>
+pub alias unnamed-union2cb<s::S> = borrowed-c<s,unnamed-union2-c>
+pub alias unnamed-union2ca<s::S> = owned-c<c-array<unnamed-union2-c>>
 
 alias uv-async-cb = c-pointer<intptr_t>
 alias uv-async-cbfn = ((handle1 : c-pointer<uv-async-s-c>) -> ())
 alias uv-async-t1 = uv-async-s-c
 alias koka-uv-async-t1 = uv-async-s
-alias uv-rwlock-t = pthread-rwlock-t-c
-pub struct pthread-rwlock-t
-pub type pthread-rwlock-t-c
-pub alias pthread-rwlock-tp = c-pointer<pthread-rwlock-t-c>
-pub alias pthread-rwlock-tc<s::S> = owned-c<pthread-rwlock-t-c>
-pub alias pthread-rwlock-tcb<s::S> = borrowed-c<s,pthread-rwlock-t-c>
-pub alias pthread-rwlock-tca<s::S> = owned-c<c-array<pthread-rwlock-t-c>>
-
-pub extern pthread-rwlock-t/size-of(c: c-null<pthread-rwlock-t-c>): int32
-  c inline "sizeof(union pthread_rwlock_t)"
-
-pub fun pthread-rwlock-tc(): pthread-rwlock-tc<s::S>
-  malloc(?size-of=pthread-rwlock-t/size-of)
-
-pub fun pthread-rwlock-tc-calloc(): pthread-rwlock-tc<s::S>
-  malloc-c(?size-of=pthread-rwlock-t/size-of)
-
-pub fun pthread-rwlock-tc-array(n: int): pthread-rwlock-tca<s::S>
-  malloc(n.int32, ?size-of=pthread-rwlock-t/size-of)
-
-pub fun pthread-rwlock-tc-array-calloc(n: int): pthread-rwlock-tca<s::S>
-  malloc-c(n.int32, ?size-of=pthread-rwlock-t/size-of)
-
-pub inline extern pthread-rwlock-t-ptrraw/size(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union pthread_rwlock_t*)#1)->__size)"
-
-pub inline fun pthread-rwlock-tp/size(s: pthread-rwlock-tp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-rwlock-t-ptrraw/size.cextern/cptr/carray
-
-pub inline fun pthread-rwlock-tc/size(^s: pthread-rwlock-tc<s::S>): c-array<int>
-  s.with-ptr(pthread-rwlock-tp/size)
-
-pub inline fun pthread-rwlock-tcb/size(^s: pthread-rwlock-tcb<s::S>): c-array<int>
-  s.with-ptr(pthread-rwlock-tp/size)
-
-pub inline extern pthread-rwlock-t-ptrraw/set-size(s: intptr_t, size: intptr_t): ()
-  c inline "((union pthread_rwlock_t*)#1)->__size = (char*)#2"
-
-pub inline fun pthread-rwlock-tp/set-size(s: pthread-rwlock-tp, size: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-t-ptrraw/set-size(size.cextern/carray/cptr)
-
-pub inline fun pthread-rwlock-tc/set-size(^s: pthread-rwlock-tc<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-tp/set-size(size))
-
-pub inline fun pthread-rwlock-tcb/set-size(^s: pthread-rwlock-tcb<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-tp/set-size(size))
-
-pub inline extern pthread-rwlock-t-ptrraw/align(s: intptr_t): int64
-  c inline "(long)(((union pthread_rwlock_t*)#1)->__align)"
-
-pub inline fun pthread-rwlock-tp/align(s: pthread-rwlock-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-t-ptrraw/align.int
-
-pub inline fun pthread-rwlock-tc/align(^s: pthread-rwlock-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-tp/align)
-
-pub inline fun pthread-rwlock-tcb/align(^s: pthread-rwlock-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-tp/align)
-
-pub inline extern pthread-rwlock-t-ptrraw/set-align(s: intptr_t, align: int64): ()
-  c inline "((union pthread_rwlock_t*)#1)->__align = (long)#2"
-
-pub inline fun pthread-rwlock-tp/set-align(s: pthread-rwlock-tp, align: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-t-ptrraw/set-align(align.int64)
-
-pub inline fun pthread-rwlock-tc/set-align(^s: pthread-rwlock-tc<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-tp/set-align(align))
-
-pub inline fun pthread-rwlock-tcb/set-align(^s: pthread-rwlock-tcb<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-tp/set-align(align))
-
-pub struct pthread-rwlock-arch-t
-pub type pthread-rwlock-arch-t-c
-pub alias pthread-rwlock-arch-tp = c-pointer<pthread-rwlock-arch-t-c>
-pub alias pthread-rwlock-arch-tc<s::S> = owned-c<pthread-rwlock-arch-t-c>
-pub alias pthread-rwlock-arch-tcb<s::S> = borrowed-c<s,pthread-rwlock-arch-t-c>
-pub alias pthread-rwlock-arch-tca<s::S> = owned-c<c-array<pthread-rwlock-arch-t-c>>
-
-pub extern pthread-rwlock-arch-t/size-of(c: c-null<pthread-rwlock-arch-t-c>): int32
-  c inline "sizeof(struct __pthread_rwlock_arch_t)"
-
-pub fun pthread-rwlock-arch-tc(): pthread-rwlock-arch-tc<s::S>
-  malloc(?size-of=pthread-rwlock-arch-t/size-of)
-
-pub fun pthread-rwlock-arch-tc-calloc(): pthread-rwlock-arch-tc<s::S>
-  malloc-c(?size-of=pthread-rwlock-arch-t/size-of)
-
-pub fun pthread-rwlock-arch-tc-array(n: int): pthread-rwlock-arch-tca<s::S>
-  malloc(n.int32, ?size-of=pthread-rwlock-arch-t/size-of)
-
-pub fun pthread-rwlock-arch-tc-array-calloc(n: int): pthread-rwlock-arch-tca<s::S>
-  malloc-c(n.int32, ?size-of=pthread-rwlock-arch-t/size-of)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/readers(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__readers)"
-
-pub inline fun pthread-rwlock-arch-tp/readers(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/readers.int
-
-pub inline fun pthread-rwlock-arch-tc/readers(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/readers)
-
-pub inline fun pthread-rwlock-arch-tcb/readers(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/readers)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-readers(s: intptr_t, readers: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__readers = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-readers(s: pthread-rwlock-arch-tp, readers: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-readers(readers.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-readers(^s: pthread-rwlock-arch-tc<s::S>, readers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-readers(readers))
-
-pub inline fun pthread-rwlock-arch-tcb/set-readers(^s: pthread-rwlock-arch-tcb<s::S>, readers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-readers(readers))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/writers(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__writers)"
-
-pub inline fun pthread-rwlock-arch-tp/writers(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/writers.int
-
-pub inline fun pthread-rwlock-arch-tc/writers(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/writers)
-
-pub inline fun pthread-rwlock-arch-tcb/writers(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/writers)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-writers(s: intptr_t, writers: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__writers = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-writers(s: pthread-rwlock-arch-tp, writers: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-writers(writers.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-writers(^s: pthread-rwlock-arch-tc<s::S>, writers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-writers(writers))
-
-pub inline fun pthread-rwlock-arch-tcb/set-writers(^s: pthread-rwlock-arch-tcb<s::S>, writers: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-writers(writers))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/wrphase-futex(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__wrphase_futex)"
-
-pub inline fun pthread-rwlock-arch-tp/wrphase-futex(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/wrphase-futex.int
-
-pub inline fun pthread-rwlock-arch-tc/wrphase-futex(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/wrphase-futex)
-
-pub inline fun pthread-rwlock-arch-tcb/wrphase-futex(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/wrphase-futex)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-wrphase-futex(s: intptr_t, wrphase-futex: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__wrphase_futex = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-wrphase-futex(s: pthread-rwlock-arch-tp, wrphase-futex: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-wrphase-futex(wrphase-futex.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-wrphase-futex(^s: pthread-rwlock-arch-tc<s::S>, wrphase-futex: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-wrphase-futex(wrphase-futex))
-
-pub inline fun pthread-rwlock-arch-tcb/set-wrphase-futex(^s: pthread-rwlock-arch-tcb<s::S>, wrphase-futex: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-wrphase-futex(wrphase-futex))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/writers-futex(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__writers_futex)"
-
-pub inline fun pthread-rwlock-arch-tp/writers-futex(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/writers-futex.int
-
-pub inline fun pthread-rwlock-arch-tc/writers-futex(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/writers-futex)
-
-pub inline fun pthread-rwlock-arch-tcb/writers-futex(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/writers-futex)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-writers-futex(s: intptr_t, writers-futex: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__writers_futex = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-writers-futex(s: pthread-rwlock-arch-tp, writers-futex: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-writers-futex(writers-futex.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-writers-futex(^s: pthread-rwlock-arch-tc<s::S>, writers-futex: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-writers-futex(writers-futex))
-
-pub inline fun pthread-rwlock-arch-tcb/set-writers-futex(^s: pthread-rwlock-arch-tcb<s::S>, writers-futex: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-writers-futex(writers-futex))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/pad3(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__pad3)"
-
-pub inline fun pthread-rwlock-arch-tp/pad3(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/pad3.int
-
-pub inline fun pthread-rwlock-arch-tc/pad3(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/pad3)
-
-pub inline fun pthread-rwlock-arch-tcb/pad3(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/pad3)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-pad3(s: intptr_t, pad3: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__pad3 = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-pad3(s: pthread-rwlock-arch-tp, pad3: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-pad3(pad3.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-pad3(^s: pthread-rwlock-arch-tc<s::S>, pad3: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad3(pad3))
-
-pub inline fun pthread-rwlock-arch-tcb/set-pad3(^s: pthread-rwlock-arch-tcb<s::S>, pad3: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad3(pad3))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/pad4(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__pad4)"
-
-pub inline fun pthread-rwlock-arch-tp/pad4(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/pad4.int
-
-pub inline fun pthread-rwlock-arch-tc/pad4(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/pad4)
-
-pub inline fun pthread-rwlock-arch-tcb/pad4(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/pad4)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-pad4(s: intptr_t, pad4: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__pad4 = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-pad4(s: pthread-rwlock-arch-tp, pad4: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-pad4(pad4.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-pad4(^s: pthread-rwlock-arch-tc<s::S>, pad4: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad4(pad4))
-
-pub inline fun pthread-rwlock-arch-tcb/set-pad4(^s: pthread-rwlock-arch-tcb<s::S>, pad4: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad4(pad4))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/cur-writer(s: intptr_t): int32
-  c inline "(int)(((struct __pthread_rwlock_arch_t*)#1)->__cur_writer)"
-
-pub inline fun pthread-rwlock-arch-tp/cur-writer(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/cur-writer.int
-
-pub inline fun pthread-rwlock-arch-tc/cur-writer(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/cur-writer)
-
-pub inline fun pthread-rwlock-arch-tcb/cur-writer(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/cur-writer)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-cur-writer(s: intptr_t, cur-writer: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__cur_writer = (int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-cur-writer(s: pthread-rwlock-arch-tp, cur-writer: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-cur-writer(cur-writer.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-cur-writer(^s: pthread-rwlock-arch-tc<s::S>, cur-writer: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-cur-writer(cur-writer))
-
-pub inline fun pthread-rwlock-arch-tcb/set-cur-writer(^s: pthread-rwlock-arch-tcb<s::S>, cur-writer: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-cur-writer(cur-writer))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/shared(s: intptr_t): int32
-  c inline "(int)(((struct __pthread_rwlock_arch_t*)#1)->__shared)"
-
-pub inline fun pthread-rwlock-arch-tp/shared(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/shared.int
-
-pub inline fun pthread-rwlock-arch-tc/shared(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/shared)
-
-pub inline fun pthread-rwlock-arch-tcb/shared(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/shared)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-shared(s: intptr_t, shared: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__shared = (int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-shared(s: pthread-rwlock-arch-tp, shared: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-shared(shared.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-shared(^s: pthread-rwlock-arch-tc<s::S>, shared: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-shared(shared))
-
-pub inline fun pthread-rwlock-arch-tcb/set-shared(^s: pthread-rwlock-arch-tcb<s::S>, shared: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-shared(shared))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/rwelision(s: intptr_t): int8
-  c inline "(char)(((struct __pthread_rwlock_arch_t*)#1)->__rwelision)"
-
-pub inline fun pthread-rwlock-arch-tp/rwelision(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/rwelision.int
-
-pub inline fun pthread-rwlock-arch-tc/rwelision(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/rwelision)
-
-pub inline fun pthread-rwlock-arch-tcb/rwelision(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/rwelision)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-rwelision(s: intptr_t, rwelision: int8): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__rwelision = (char)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-rwelision(s: pthread-rwlock-arch-tp, rwelision: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-rwelision(rwelision.int8)
-
-pub inline fun pthread-rwlock-arch-tc/set-rwelision(^s: pthread-rwlock-arch-tc<s::S>, rwelision: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-rwelision(rwelision))
-
-pub inline fun pthread-rwlock-arch-tcb/set-rwelision(^s: pthread-rwlock-arch-tcb<s::S>, rwelision: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-rwelision(rwelision))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/pad1(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct __pthread_rwlock_arch_t*)#1)->__pad1)"
-
-pub inline fun pthread-rwlock-arch-tp/pad1(s: pthread-rwlock-arch-tp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/pad1.cextern/cptr/carray
-
-pub inline fun pthread-rwlock-arch-tc/pad1(^s: pthread-rwlock-arch-tc<s::S>): c-array<int>
-  s.with-ptr(pthread-rwlock-arch-tp/pad1)
-
-pub inline fun pthread-rwlock-arch-tcb/pad1(^s: pthread-rwlock-arch-tcb<s::S>): c-array<int>
-  s.with-ptr(pthread-rwlock-arch-tp/pad1)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-pad1(s: intptr_t, pad1: intptr_t): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__pad1 = (unsigned char*)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-pad1(s: pthread-rwlock-arch-tp, pad1: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-pad1(pad1.cextern/carray/cptr)
-
-pub inline fun pthread-rwlock-arch-tc/set-pad1(^s: pthread-rwlock-arch-tc<s::S>, pad1: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad1(pad1))
-
-pub inline fun pthread-rwlock-arch-tcb/set-pad1(^s: pthread-rwlock-arch-tcb<s::S>, pad1: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad1(pad1))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/pad2(s: intptr_t): int64
-  c inline "(unsigned long)(((struct __pthread_rwlock_arch_t*)#1)->__pad2)"
-
-pub inline fun pthread-rwlock-arch-tp/pad2(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/pad2.int
-
-pub inline fun pthread-rwlock-arch-tc/pad2(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/pad2)
-
-pub inline fun pthread-rwlock-arch-tcb/pad2(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/pad2)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-pad2(s: intptr_t, pad2: int64): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__pad2 = (unsigned long)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-pad2(s: pthread-rwlock-arch-tp, pad2: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-pad2(pad2.int64)
-
-pub inline fun pthread-rwlock-arch-tc/set-pad2(^s: pthread-rwlock-arch-tc<s::S>, pad2: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad2(pad2))
-
-pub inline fun pthread-rwlock-arch-tcb/set-pad2(^s: pthread-rwlock-arch-tcb<s::S>, pad2: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-pad2(pad2))
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_rwlock_arch_t*)#1)->__flags)"
-
-pub inline fun pthread-rwlock-arch-tp/flags(s: pthread-rwlock-arch-tp): int
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/flags.int
-
-pub inline fun pthread-rwlock-arch-tc/flags(^s: pthread-rwlock-arch-tc<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/flags)
-
-pub inline fun pthread-rwlock-arch-tcb/flags(^s: pthread-rwlock-arch-tcb<s::S>): int
-  s.with-ptr(pthread-rwlock-arch-tp/flags)
-
-pub inline extern pthread-rwlock-arch-t-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct __pthread_rwlock_arch_t*)#1)->__flags = (unsigned int)#2"
-
-pub inline fun pthread-rwlock-arch-tp/set-flags(s: pthread-rwlock-arch-tp, flags: int): ()
-  s.cextern/c-pointer/ptr.pthread-rwlock-arch-t-ptrraw/set-flags(flags.int32)
-
-pub inline fun pthread-rwlock-arch-tc/set-flags(^s: pthread-rwlock-arch-tc<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-flags(flags))
-
-pub inline fun pthread-rwlock-arch-tcb/set-flags(^s: pthread-rwlock-arch-tcb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-rwlock-arch-tp/set-flags(flags))
-
-pub value struct unnamed-Struct1
+alias uv-rwlock-t = opaque-pthread-rwlock-t-c
+alias pthread-rwlock-t = opaque-pthread-rwlock-t-c
+alias darwin-pthread-rwlock-t = opaque-pthread-rwlock-t-c
+pub struct opaque-pthread-rwlock-t
+pub type opaque-pthread-rwlock-t-c
+pub alias opaque-pthread-rwlock-tp = c-pointer<opaque-pthread-rwlock-t-c>
+pub alias opaque-pthread-rwlock-tc<s::S> = owned-c<opaque-pthread-rwlock-t-c>
+pub alias opaque-pthread-rwlock-tcb<s::S> = borrowed-c<s,opaque-pthread-rwlock-t-c>
+pub alias opaque-pthread-rwlock-tca<s::S> = owned-c<c-array<opaque-pthread-rwlock-t-c>>
+
+pub extern opaque-pthread-rwlock-t/size-of(c: c-null<opaque-pthread-rwlock-t-c>): int32
+  c inline "sizeof(struct _opaque_pthread_rwlock_t)"
+
+pub fun opaque-pthread-rwlock-tc(): opaque-pthread-rwlock-tc<s::S>
+  malloc(?size-of=opaque-pthread-rwlock-t/size-of)
+
+pub fun opaque-pthread-rwlock-tc-calloc(): opaque-pthread-rwlock-tc<s::S>
+  malloc-c(?size-of=opaque-pthread-rwlock-t/size-of)
+
+pub fun opaque-pthread-rwlock-tc-array(n: int): opaque-pthread-rwlock-tca<s::S>
+  malloc(n.int32, ?size-of=opaque-pthread-rwlock-t/size-of)
+
+pub fun opaque-pthread-rwlock-tc-array-calloc(n: int): opaque-pthread-rwlock-tca<s::S>
+  malloc-c(n.int32, ?size-of=opaque-pthread-rwlock-t/size-of)
+
+pub value struct unnamed-struct1
   min: c-pointer<()>
   nelts: int
 
-pub type unnamed-Struct1-c
-pub alias unnamed-Struct1p = c-pointer<unnamed-Struct1-c>
-pub alias unnamed-Struct1c = owned-c<unnamed-Struct1-c>
-pub alias unnamed-Struct1cb<s::S> = borrowed-c<s,unnamed-Struct1-c>
-pub alias unnamed-Struct1ca = owned-c<c-array<unnamed-Struct1-c>>
-
-pub extern unnamed-Struct1/size-of(c: c-null<unnamed-Struct1-c>): int32
-  c inline "sizeof(struct unnamed-Struct1)"
-
-pub fun unnamed-Struct1c(): unnamed-Struct1c
-  malloc(?size-of=unnamed-Struct1/size-of)
-
-pub fun unnamed-Struct1c-calloc(): unnamed-Struct1c
-  malloc-c(?size-of=unnamed-Struct1/size-of)
-
-pub fun unnamed-Struct1c-array(n: int): unnamed-Struct1ca
-  malloc(n.int32, ?size-of=unnamed-Struct1/size-of)
-
-pub fun unnamed-Struct1c-array-calloc(n: int): unnamed-Struct1ca
-  malloc-c(n.int32, ?size-of=unnamed-Struct1/size-of)
-
-pub inline extern unnamed-Struct1-ptrraw/min(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct unnamed-Struct1*)#1)->min)"
-
-pub inline fun unnamed-Struct1p/min(s: unnamed-Struct1p): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.unnamed-Struct1-ptrraw/min)
-
-pub inline fun unnamed-Struct1c/min(^s: unnamed-Struct1c): c-pointer<()>
-  s.with-ptr(unnamed-Struct1p/min)
-
-pub inline fun unnamed-Struct1cb/min(^s: unnamed-Struct1cb<s::S>): c-pointer<()>
-  s.with-ptr(unnamed-Struct1p/min)
-
-pub inline extern unnamed-Struct1-ptrraw/set-min(s: intptr_t, min: intptr_t): ()
-  c inline "((struct unnamed-Struct1*)#1)->min = (void*)#2"
-
-pub inline fun unnamed-Struct1p/set-min(s: unnamed-Struct1p, min: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct1-ptrraw/set-min(min.cextern/c-pointer/ptr)
-
-pub inline fun unnamed-Struct1c/set-min(^s: unnamed-Struct1c, min: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct1p/set-min(min))
-
-pub inline fun unnamed-Struct1cb/set-min(^s: unnamed-Struct1cb<s::S>, min: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct1p/set-min(min))
-
-pub inline extern unnamed-Struct1-ptrraw/nelts(s: intptr_t): int32
-  c inline "(unsigned int)(((struct unnamed-Struct1*)#1)->nelts)"
-
-pub inline fun unnamed-Struct1p/nelts(s: unnamed-Struct1p): int
-  s.cextern/c-pointer/ptr.unnamed-Struct1-ptrraw/nelts.int
-
-pub inline fun unnamed-Struct1c/nelts(^s: unnamed-Struct1c): int
-  s.with-ptr(unnamed-Struct1p/nelts)
-
-pub inline fun unnamed-Struct1cb/nelts(^s: unnamed-Struct1cb<s::S>): int
-  s.with-ptr(unnamed-Struct1p/nelts)
-
-pub inline extern unnamed-Struct1-ptrraw/set-nelts(s: intptr_t, nelts: int32): ()
-  c inline "((struct unnamed-Struct1*)#1)->nelts = (unsigned int)#2"
-
-pub inline fun unnamed-Struct1p/set-nelts(s: unnamed-Struct1p, nelts: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct1-ptrraw/set-nelts(nelts.int32)
-
-pub inline fun unnamed-Struct1c/set-nelts(^s: unnamed-Struct1c, nelts: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct1p/set-nelts(nelts))
-
-pub inline fun unnamed-Struct1cb/set-nelts(^s: unnamed-Struct1cb<s::S>, nelts: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct1p/set-nelts(nelts))
+pub type unnamed-struct1-c
+pub alias unnamed-struct1p = c-pointer<unnamed-struct1-c>
+pub alias unnamed-struct1c = owned-c<unnamed-struct1-c>
+pub alias unnamed-struct1cb<s::S> = borrowed-c<s,unnamed-struct1-c>
+pub alias unnamed-struct1ca = owned-c<c-array<unnamed-struct1-c>>
 
 alias uv-signal-t = uv-signal-s-c
 alias koka-uv-signal-t = uv-signal-s
@@ -4151,12 +2256,12 @@ pub struct uv-signal-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union3-c
+  u: unnamed-union3-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   signal-cb: c-pointer<intptr_t>
   signum: int
-  tree-entry: unnamed-Struct2-c
+  tree-entry: unnamed-struct2-c
   caught-signals: int
   dispatched-signals: int
 
@@ -4181,446 +2286,48 @@ pub fun uv-signal-sc-array(n: int): uv-signal-sca
 pub fun uv-signal-sc-array-calloc(n: int): uv-signal-sca
   malloc-c(n.int32, ?size-of=uv-signal-s/size-of)
 
-pub inline extern uv-signal-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_signal_s*)#1)->data)"
-
-pub inline fun uv-signal-sp/data(s: uv-signal-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/data)
-
-pub inline fun uv-signal-sc/data(^s: uv-signal-sc): c-pointer<()>
-  s.with-ptr(uv-signal-sp/data)
-
-pub inline fun uv-signal-scb/data(^s: uv-signal-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-signal-sp/data)
-
-pub inline extern uv-signal-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_signal_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-signal-sp/set-data(s: uv-signal-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-signal-sc/set-data(^s: uv-signal-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-data(data))
-
-pub inline fun uv-signal-scb/set-data(^s: uv-signal-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-data(data))
-
-pub inline extern uv-signal-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_signal_s*)#1)->loop)"
-
-pub inline fun uv-signal-sp/loop(s: uv-signal-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/loop)
-
-pub inline fun uv-signal-sc/loop(^s: uv-signal-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-signal-sp/loop)
-
-pub inline fun uv-signal-scb/loop(^s: uv-signal-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-signal-sp/loop)
-
-pub inline extern uv-signal-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_signal_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-signal-sp/set-loop(s: uv-signal-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-signal-sc/set-loop(^s: uv-signal-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-loop(loop))
-
-pub inline fun uv-signal-scb/set-loop(^s: uv-signal-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-loop(loop))
-
-pub inline extern uv-signal-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_signal_s*)#1)->type)"
-
-pub inline fun uv-signal-sp/type1(s: uv-signal-sp): int
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/type1.int
-
-pub inline fun uv-signal-sc/type1(^s: uv-signal-sc): int
-  s.with-ptr(uv-signal-sp/type1)
-
-pub inline fun uv-signal-scb/type1(^s: uv-signal-scb<s::S>): int
-  s.with-ptr(uv-signal-sp/type1)
-
-pub inline extern uv-signal-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_signal_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-signal-sp/set-type1(s: uv-signal-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-signal-sc/set-type1(^s: uv-signal-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-type1(type1))
-
-pub inline fun uv-signal-scb/set-type1(^s: uv-signal-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-type1(type1))
-
-pub inline extern uv-signal-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_signal_s*)#1)->close_cb)"
-
-pub inline fun uv-signal-sp/close-cb(s: uv-signal-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/close-cb)
-
-pub inline fun uv-signal-sc/close-cb(^s: uv-signal-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-signal-sp/close-cb)
-
-pub inline fun uv-signal-scb/close-cb(^s: uv-signal-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-signal-sp/close-cb)
-
-pub inline extern uv-signal-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_signal_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-signal-sp/set-close-cb(s: uv-signal-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-signal-sc/set-close-cb(^s: uv-signal-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-close-cb(close-cb))
-
-pub inline fun uv-signal-scb/set-close-cb(^s: uv-signal-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-close-cb(close-cb))
-
-pub inline extern uv-signal-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_signal_s*)#1)->next_closing)"
-
-pub inline fun uv-signal-sp/next-closing(s: uv-signal-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/next-closing)
-
-pub inline fun uv-signal-sc/next-closing(^s: uv-signal-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-signal-sp/next-closing)
-
-pub inline fun uv-signal-scb/next-closing(^s: uv-signal-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-signal-sp/next-closing)
-
-pub inline extern uv-signal-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_signal_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-signal-sp/set-next-closing(s: uv-signal-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-signal-sc/set-next-closing(^s: uv-signal-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-next-closing(next-closing))
-
-pub inline fun uv-signal-scb/set-next-closing(^s: uv-signal-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-next-closing(next-closing))
-
-pub inline extern uv-signal-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_signal_s*)#1)->flags)"
-
-pub inline fun uv-signal-sp/flags(s: uv-signal-sp): int
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/flags.int
-
-pub inline fun uv-signal-sc/flags(^s: uv-signal-sc): int
-  s.with-ptr(uv-signal-sp/flags)
-
-pub inline fun uv-signal-scb/flags(^s: uv-signal-scb<s::S>): int
-  s.with-ptr(uv-signal-sp/flags)
-
-pub inline extern uv-signal-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_signal_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-signal-sp/set-flags(s: uv-signal-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-signal-sc/set-flags(^s: uv-signal-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-flags(flags))
-
-pub inline fun uv-signal-scb/set-flags(^s: uv-signal-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-flags(flags))
-
-pub inline extern uv-signal-s-ptrraw/signal-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_signal_s*)#1)->signal_cb)"
-
-pub inline fun uv-signal-sp/signal-cb(s: uv-signal-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/signal-cb)
-
-pub inline fun uv-signal-sc/signal-cb(^s: uv-signal-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-signal-sp/signal-cb)
-
-pub inline fun uv-signal-scb/signal-cb(^s: uv-signal-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-signal-sp/signal-cb)
-
-pub inline extern uv-signal-s-ptrraw/set-signal-cb(s: intptr_t, signal-cb: intptr_t): ()
-  c inline "((struct uv_signal_s*)#1)->signal_cb = (void (*)(struct uv_signal_s*, int))#2"
-
-pub inline fun uv-signal-sp/set-signal-cb(s: uv-signal-sp, signal-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-signal-cb(signal-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-signal-sc/set-signal-cb(^s: uv-signal-sc, signal-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-signal-cb(signal-cb))
-
-pub inline fun uv-signal-scb/set-signal-cb(^s: uv-signal-scb<s::S>, signal-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-signal-cb(signal-cb))
-
-pub inline extern uv-signal-s-ptrraw/signum(s: intptr_t): int32
-  c inline "(int)(((struct uv_signal_s*)#1)->signum)"
-
-pub inline fun uv-signal-sp/signum(s: uv-signal-sp): int
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/signum.int
-
-pub inline fun uv-signal-sc/signum(^s: uv-signal-sc): int
-  s.with-ptr(uv-signal-sp/signum)
-
-pub inline fun uv-signal-scb/signum(^s: uv-signal-scb<s::S>): int
-  s.with-ptr(uv-signal-sp/signum)
-
-pub inline extern uv-signal-s-ptrraw/set-signum(s: intptr_t, signum: int32): ()
-  c inline "((struct uv_signal_s*)#1)->signum = (int)#2"
-
-pub inline fun uv-signal-sp/set-signum(s: uv-signal-sp, signum: int): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-signum(signum.int32)
-
-pub inline fun uv-signal-sc/set-signum(^s: uv-signal-sc, signum: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-signum(signum))
-
-pub inline fun uv-signal-scb/set-signum(^s: uv-signal-scb<s::S>, signum: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-signum(signum))
-
-pub inline extern uv-signal-s-ptrraw/caught-signals(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_signal_s*)#1)->caught_signals)"
-
-pub inline fun uv-signal-sp/caught-signals(s: uv-signal-sp): int
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/caught-signals.int
-
-pub inline fun uv-signal-sc/caught-signals(^s: uv-signal-sc): int
-  s.with-ptr(uv-signal-sp/caught-signals)
-
-pub inline fun uv-signal-scb/caught-signals(^s: uv-signal-scb<s::S>): int
-  s.with-ptr(uv-signal-sp/caught-signals)
-
-pub inline extern uv-signal-s-ptrraw/set-caught-signals(s: intptr_t, caught-signals: int32): ()
-  c inline "((struct uv_signal_s*)#1)->caught_signals = (unsigned int)#2"
-
-pub inline fun uv-signal-sp/set-caught-signals(s: uv-signal-sp, caught-signals: int): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-caught-signals(caught-signals.int32)
-
-pub inline fun uv-signal-sc/set-caught-signals(^s: uv-signal-sc, caught-signals: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-caught-signals(caught-signals))
-
-pub inline fun uv-signal-scb/set-caught-signals(^s: uv-signal-scb<s::S>, caught-signals: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-caught-signals(caught-signals))
-
-pub inline extern uv-signal-s-ptrraw/dispatched-signals(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_signal_s*)#1)->dispatched_signals)"
-
-pub inline fun uv-signal-sp/dispatched-signals(s: uv-signal-sp): int
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/dispatched-signals.int
-
-pub inline fun uv-signal-sc/dispatched-signals(^s: uv-signal-sc): int
-  s.with-ptr(uv-signal-sp/dispatched-signals)
-
-pub inline fun uv-signal-scb/dispatched-signals(^s: uv-signal-scb<s::S>): int
-  s.with-ptr(uv-signal-sp/dispatched-signals)
-
-pub inline extern uv-signal-s-ptrraw/set-dispatched-signals(s: intptr_t, dispatched-signals: int32): ()
-  c inline "((struct uv_signal_s*)#1)->dispatched_signals = (unsigned int)#2"
-
-pub inline fun uv-signal-sp/set-dispatched-signals(s: uv-signal-sp, dispatched-signals: int): ()
-  s.cextern/c-pointer/ptr.uv-signal-s-ptrraw/set-dispatched-signals(dispatched-signals.int32)
-
-pub inline fun uv-signal-sc/set-dispatched-signals(^s: uv-signal-sc, dispatched-signals: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-dispatched-signals(dispatched-signals))
-
-pub inline fun uv-signal-scb/set-dispatched-signals(^s: uv-signal-scb<s::S>, dispatched-signals: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-signal-sp/set-dispatched-signals(dispatched-signals))
-
-pub struct unnamed-Union3
-pub type unnamed-Union3-c
-pub alias unnamed-Union3p = c-pointer<unnamed-Union3-c>
-pub alias unnamed-Union3c<s::S> = owned-c<unnamed-Union3-c>
-pub alias unnamed-Union3cb<s::S> = borrowed-c<s,unnamed-Union3-c>
-pub alias unnamed-Union3ca<s::S> = owned-c<c-array<unnamed-Union3-c>>
-
-pub extern unnamed-Union3/size-of(c: c-null<unnamed-Union3-c>): int32
-  c inline "sizeof(union unnamed-Union3)"
-
-pub fun unnamed-Union3c(): unnamed-Union3c<s::S>
-  malloc(?size-of=unnamed-Union3/size-of)
-
-pub fun unnamed-Union3c-calloc(): unnamed-Union3c<s::S>
-  malloc-c(?size-of=unnamed-Union3/size-of)
-
-pub fun unnamed-Union3c-array(n: int): unnamed-Union3ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union3/size-of)
-
-pub fun unnamed-Union3c-array-calloc(n: int): unnamed-Union3ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union3/size-of)
-
-pub inline extern unnamed-Union3-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union3*)#1)->fd)"
-
-pub inline fun unnamed-Union3p/fd(s: unnamed-Union3p): int
-  s.cextern/c-pointer/ptr.unnamed-Union3-ptrraw/fd.int
-
-pub inline fun unnamed-Union3c/fd(^s: unnamed-Union3c<s::S>): int
-  s.with-ptr(unnamed-Union3p/fd)
-
-pub inline fun unnamed-Union3cb/fd(^s: unnamed-Union3cb<s::S>): int
-  s.with-ptr(unnamed-Union3p/fd)
-
-pub inline extern unnamed-Union3-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union3*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union3p/set-fd(s: unnamed-Union3p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union3-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union3c/set-fd(^s: unnamed-Union3c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union3p/set-fd(fd))
-
-pub inline fun unnamed-Union3cb/set-fd(^s: unnamed-Union3cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union3p/set-fd(fd))
-
-pub inline extern unnamed-Union3-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union3*)#1)->reserved)"
-
-pub inline fun unnamed-Union3p/reserved(s: unnamed-Union3p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union3-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union3c/reserved(^s: unnamed-Union3c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union3p/reserved)
-
-pub inline fun unnamed-Union3cb/reserved(^s: unnamed-Union3cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union3p/reserved)
-
-pub inline extern unnamed-Union3-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union3*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union3p/set-reserved(s: unnamed-Union3p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union3-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union3c/set-reserved(^s: unnamed-Union3c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union3p/set-reserved(reserved))
-
-pub inline fun unnamed-Union3cb/set-reserved(^s: unnamed-Union3cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union3p/set-reserved(reserved))
+pub struct unnamed-union3
+pub type unnamed-union3-c
+pub alias unnamed-union3p = c-pointer<unnamed-union3-c>
+pub alias unnamed-union3c<s::S> = owned-c<unnamed-union3-c>
+pub alias unnamed-union3cb<s::S> = borrowed-c<s,unnamed-union3-c>
+pub alias unnamed-union3ca<s::S> = owned-c<c-array<unnamed-union3-c>>
 
 alias uv-signal-cb = c-pointer<intptr_t>
 alias uv-signal-cbfn = ((handle1 : c-pointer<uv-signal-s-c>, signum : int) -> ())
 alias uv-signal-t1 = uv-signal-s-c
 alias koka-uv-signal-t1 = uv-signal-s
-pub struct unnamed-Struct2
+pub struct unnamed-struct2
   rbe-left: uv-signal-s-c
   rbe-right: uv-signal-s-c
   rbe-parent: uv-signal-s-c
   rbe-color: int
 
-pub type unnamed-Struct2-c
-pub alias unnamed-Struct2p = c-pointer<unnamed-Struct2-c>
-pub alias unnamed-Struct2c = owned-c<unnamed-Struct2-c>
-pub alias unnamed-Struct2cb<s::S> = borrowed-c<s,unnamed-Struct2-c>
-pub alias unnamed-Struct2ca = owned-c<c-array<unnamed-Struct2-c>>
+pub type unnamed-struct2-c
+pub alias unnamed-struct2p = c-pointer<unnamed-struct2-c>
+pub alias unnamed-struct2c = owned-c<unnamed-struct2-c>
+pub alias unnamed-struct2cb<s::S> = borrowed-c<s,unnamed-struct2-c>
+pub alias unnamed-struct2ca = owned-c<c-array<unnamed-struct2-c>>
 
-pub extern unnamed-Struct2/size-of(c: c-null<unnamed-Struct2-c>): int32
-  c inline "sizeof(struct unnamed-Struct2)"
+alias uv-thread-t = c-pointer<opaque-pthread-t-c>
+alias pthread-t = c-pointer<opaque-pthread-t-c>
+alias darwin-pthread-t = c-pointer<opaque-pthread-t-c>
+pub struct opaque-pthread-t
+pub type opaque-pthread-t-c
+pub alias opaque-pthread-tp = c-pointer<opaque-pthread-t-c>
+pub alias opaque-pthread-tc = owned-c<opaque-pthread-t-c>
+pub alias opaque-pthread-tcb<s::S> = borrowed-c<s,opaque-pthread-t-c>
+pub alias opaque-pthread-tca = owned-c<c-array<opaque-pthread-t-c>>
 
-pub fun unnamed-Struct2c(): unnamed-Struct2c
-  malloc(?size-of=unnamed-Struct2/size-of)
-
-pub fun unnamed-Struct2c-calloc(): unnamed-Struct2c
-  malloc-c(?size-of=unnamed-Struct2/size-of)
-
-pub fun unnamed-Struct2c-array(n: int): unnamed-Struct2ca
-  malloc(n.int32, ?size-of=unnamed-Struct2/size-of)
-
-pub fun unnamed-Struct2c-array-calloc(n: int): unnamed-Struct2ca
-  malloc-c(n.int32, ?size-of=unnamed-Struct2/size-of)
-
-pub inline extern unnamed-Struct2-ptrraw/rbe-left(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct unnamed-Struct2*)#1)->rbe_left)"
-
-pub inline fun unnamed-Struct2p/rbe-left(s: unnamed-Struct2p): c-pointer<uv-signal-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/rbe-left)
-
-pub inline fun unnamed-Struct2c/rbe-left(^s: unnamed-Struct2c): c-pointer<uv-signal-s-c>
-  s.with-ptr(unnamed-Struct2p/rbe-left)
-
-pub inline fun unnamed-Struct2cb/rbe-left(^s: unnamed-Struct2cb<s::S>): c-pointer<uv-signal-s-c>
-  s.with-ptr(unnamed-Struct2p/rbe-left)
-
-pub inline extern unnamed-Struct2-ptrraw/set-rbe-left(s: intptr_t, rbe-left: intptr_t): ()
-  c inline "((struct unnamed-Struct2*)#1)->rbe_left = (struct uv_signal_s*)#2"
-
-pub inline fun unnamed-Struct2p/set-rbe-left(s: unnamed-Struct2p, rbe-left: c-pointer<uv-signal-s-c>): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/set-rbe-left(rbe-left.cextern/c-pointer/ptr)
-
-pub inline fun unnamed-Struct2c/set-rbe-left(^s: unnamed-Struct2c, rbe-left: c-pointer<uv-signal-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-left(rbe-left))
-
-pub inline fun unnamed-Struct2cb/set-rbe-left(^s: unnamed-Struct2cb<s::S>, rbe-left: c-pointer<uv-signal-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-left(rbe-left))
-
-pub inline extern unnamed-Struct2-ptrraw/rbe-right(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct unnamed-Struct2*)#1)->rbe_right)"
-
-pub inline fun unnamed-Struct2p/rbe-right(s: unnamed-Struct2p): c-pointer<uv-signal-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/rbe-right)
-
-pub inline fun unnamed-Struct2c/rbe-right(^s: unnamed-Struct2c): c-pointer<uv-signal-s-c>
-  s.with-ptr(unnamed-Struct2p/rbe-right)
-
-pub inline fun unnamed-Struct2cb/rbe-right(^s: unnamed-Struct2cb<s::S>): c-pointer<uv-signal-s-c>
-  s.with-ptr(unnamed-Struct2p/rbe-right)
-
-pub inline extern unnamed-Struct2-ptrraw/set-rbe-right(s: intptr_t, rbe-right: intptr_t): ()
-  c inline "((struct unnamed-Struct2*)#1)->rbe_right = (struct uv_signal_s*)#2"
-
-pub inline fun unnamed-Struct2p/set-rbe-right(s: unnamed-Struct2p, rbe-right: c-pointer<uv-signal-s-c>): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/set-rbe-right(rbe-right.cextern/c-pointer/ptr)
-
-pub inline fun unnamed-Struct2c/set-rbe-right(^s: unnamed-Struct2c, rbe-right: c-pointer<uv-signal-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-right(rbe-right))
-
-pub inline fun unnamed-Struct2cb/set-rbe-right(^s: unnamed-Struct2cb<s::S>, rbe-right: c-pointer<uv-signal-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-right(rbe-right))
-
-pub inline extern unnamed-Struct2-ptrraw/rbe-parent(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct unnamed-Struct2*)#1)->rbe_parent)"
-
-pub inline fun unnamed-Struct2p/rbe-parent(s: unnamed-Struct2p): c-pointer<uv-signal-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/rbe-parent)
-
-pub inline fun unnamed-Struct2c/rbe-parent(^s: unnamed-Struct2c): c-pointer<uv-signal-s-c>
-  s.with-ptr(unnamed-Struct2p/rbe-parent)
-
-pub inline fun unnamed-Struct2cb/rbe-parent(^s: unnamed-Struct2cb<s::S>): c-pointer<uv-signal-s-c>
-  s.with-ptr(unnamed-Struct2p/rbe-parent)
-
-pub inline extern unnamed-Struct2-ptrraw/set-rbe-parent(s: intptr_t, rbe-parent: intptr_t): ()
-  c inline "((struct unnamed-Struct2*)#1)->rbe_parent = (struct uv_signal_s*)#2"
-
-pub inline fun unnamed-Struct2p/set-rbe-parent(s: unnamed-Struct2p, rbe-parent: c-pointer<uv-signal-s-c>): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/set-rbe-parent(rbe-parent.cextern/c-pointer/ptr)
-
-pub inline fun unnamed-Struct2c/set-rbe-parent(^s: unnamed-Struct2c, rbe-parent: c-pointer<uv-signal-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-parent(rbe-parent))
-
-pub inline fun unnamed-Struct2cb/set-rbe-parent(^s: unnamed-Struct2cb<s::S>, rbe-parent: c-pointer<uv-signal-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-parent(rbe-parent))
-
-pub inline extern unnamed-Struct2-ptrraw/rbe-color(s: intptr_t): int32
-  c inline "(int)(((struct unnamed-Struct2*)#1)->rbe_color)"
-
-pub inline fun unnamed-Struct2p/rbe-color(s: unnamed-Struct2p): int
-  s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/rbe-color.int
-
-pub inline fun unnamed-Struct2c/rbe-color(^s: unnamed-Struct2c): int
-  s.with-ptr(unnamed-Struct2p/rbe-color)
-
-pub inline fun unnamed-Struct2cb/rbe-color(^s: unnamed-Struct2cb<s::S>): int
-  s.with-ptr(unnamed-Struct2p/rbe-color)
-
-pub inline extern unnamed-Struct2-ptrraw/set-rbe-color(s: intptr_t, rbe-color: int32): ()
-  c inline "((struct unnamed-Struct2*)#1)->rbe_color = (int)#2"
-
-pub inline fun unnamed-Struct2p/set-rbe-color(s: unnamed-Struct2p, rbe-color: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct2-ptrraw/set-rbe-color(rbe-color.int32)
-
-pub inline fun unnamed-Struct2c/set-rbe-color(^s: unnamed-Struct2c, rbe-color: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-color(rbe-color))
-
-pub inline fun unnamed-Struct2cb/set-rbe-color(^s: unnamed-Struct2cb<s::S>, rbe-color: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct2p/set-rbe-color(rbe-color))
-
+alias uv-sem-t = int
+alias semaphore-t = int
+alias mach-port-t = int
+alias darwin-mach-port-t = int
+alias darwin-mach-port-name-t = int
+alias darwin-natural-t = int
 pub value struct uv-buf-t
   base: c-pointer<int>
-  len: ssize_t
+  len: int
 
 pub type uv-buf-t-c
 pub alias uv-buf-tp = c-pointer<uv-buf-t-c>
@@ -4643,53 +2350,82 @@ pub fun uv-buf-tc-array(n: int): uv-buf-tca
 pub fun uv-buf-tc-array-calloc(n: int): uv-buf-tca
   malloc-c(n.int32, ?size-of=uv-buf-t/size-of)
 
-pub inline extern uv-buf-t-ptrraw/base(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_buf_t*)#1)->base)"
+pub struct uv-barrier
+  mutex: opaque-pthread-mutex-t
+  cond: opaque-pthread-cond-t
+  threshold: int
+  in1: int
+  out: int
 
-pub inline fun uv-buf-tp/base(s: uv-buf-tp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-buf-t-ptrraw/base)
+pub type uv-barrier-c
+pub alias uv-barrierp = c-pointer<uv-barrier-c>
+pub alias uv-barrierc = owned-c<uv-barrier-c>
+pub alias uv-barriercb<s::S> = borrowed-c<s,uv-barrier-c>
+pub alias uv-barrierca = owned-c<c-array<uv-barrier-c>>
 
-pub inline fun uv-buf-tc/base(^s: uv-buf-tc): c-pointer<int>
-  s.with-ptr(uv-buf-tp/base)
+pub extern uv-barrier/size-of(c: c-null<uv-barrier-c>): int32
+  c inline "sizeof(struct _uv_barrier)"
 
-pub inline fun uv-buf-tcb/base(^s: uv-buf-tcb<s::S>): c-pointer<int>
-  s.with-ptr(uv-buf-tp/base)
+pub fun uv-barrierc(): uv-barrierc
+  malloc(?size-of=uv-barrier/size-of)
 
-pub inline extern uv-buf-t-ptrraw/set-base(s: intptr_t, base: intptr_t): ()
-  c inline "((struct uv_buf_t*)#1)->base = (char*)#2"
+pub fun uv-barrierc-calloc(): uv-barrierc
+  malloc-c(?size-of=uv-barrier/size-of)
 
-pub inline fun uv-buf-tp/set-base(s: uv-buf-tp, base: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-buf-t-ptrraw/set-base(base.cextern/c-pointer/ptr)
+pub fun uv-barrierc-array(n: int): uv-barrierca
+  malloc(n.int32, ?size-of=uv-barrier/size-of)
 
-pub inline fun uv-buf-tc/set-base(^s: uv-buf-tc, base: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-buf-tp/set-base(base))
+pub fun uv-barrierc-array-calloc(n: int): uv-barrierca
+  malloc-c(n.int32, ?size-of=uv-barrier/size-of)
 
-pub inline fun uv-buf-tcb/set-base(^s: uv-buf-tcb<s::S>, base: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-buf-tp/set-base(base))
+alias uv-cond-t = opaque-pthread-cond-t-c
+alias pthread-cond-t = opaque-pthread-cond-t-c
+alias darwin-pthread-cond-t = opaque-pthread-cond-t-c
+pub struct opaque-pthread-cond-t
+pub type opaque-pthread-cond-t-c
+pub alias opaque-pthread-cond-tp = c-pointer<opaque-pthread-cond-t-c>
+pub alias opaque-pthread-cond-tc<s::S> = owned-c<opaque-pthread-cond-t-c>
+pub alias opaque-pthread-cond-tcb<s::S> = borrowed-c<s,opaque-pthread-cond-t-c>
+pub alias opaque-pthread-cond-tca<s::S> = owned-c<c-array<opaque-pthread-cond-t-c>>
 
-pub inline extern uv-buf-t-ptrraw/len(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_buf_t*)#1)->len)"
+pub extern opaque-pthread-cond-t/size-of(c: c-null<opaque-pthread-cond-t-c>): int32
+  c inline "sizeof(struct _opaque_pthread_cond_t)"
 
-pub inline fun uv-buf-tp/len(s: uv-buf-tp): ssize_t
-  s.cextern/c-pointer/ptr.uv-buf-t-ptrraw/len
+pub fun opaque-pthread-cond-tc(): opaque-pthread-cond-tc<s::S>
+  malloc(?size-of=opaque-pthread-cond-t/size-of)
 
-pub inline fun uv-buf-tc/len(^s: uv-buf-tc): ssize_t
-  s.with-ptr(uv-buf-tp/len)
+pub fun opaque-pthread-cond-tc-calloc(): opaque-pthread-cond-tc<s::S>
+  malloc-c(?size-of=opaque-pthread-cond-t/size-of)
 
-pub inline fun uv-buf-tcb/len(^s: uv-buf-tcb<s::S>): ssize_t
-  s.with-ptr(uv-buf-tp/len)
+pub fun opaque-pthread-cond-tc-array(n: int): opaque-pthread-cond-tca<s::S>
+  malloc(n.int32, ?size-of=opaque-pthread-cond-t/size-of)
 
-pub inline extern uv-buf-t-ptrraw/set-len(s: intptr_t, len: ssize_t): ()
-  c inline "((struct uv_buf_t*)#1)->len = (ssize_t)#2"
+pub fun opaque-pthread-cond-tc-array-calloc(n: int): opaque-pthread-cond-tca<s::S>
+  malloc-c(n.int32, ?size-of=opaque-pthread-cond-t/size-of)
 
-pub inline fun uv-buf-tp/set-len(s: uv-buf-tp, len: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-buf-t-ptrraw/set-len(len)
+pub value struct uv-barrier-t
+  b: uv-barrier-c
 
-pub inline fun uv-buf-tc/set-len(^s: uv-buf-tc, len: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-buf-tp/set-len(len))
+pub type uv-barrier-t-c
+pub alias uv-barrier-tp = c-pointer<uv-barrier-t-c>
+pub alias uv-barrier-tc = owned-c<uv-barrier-t-c>
+pub alias uv-barrier-tcb<s::S> = borrowed-c<s,uv-barrier-t-c>
+pub alias uv-barrier-tca = owned-c<c-array<uv-barrier-t-c>>
 
-pub inline fun uv-buf-tcb/set-len(^s: uv-buf-tcb<s::S>, len: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-buf-tp/set-len(len))
+pub extern uv-barrier-t/size-of(c: c-null<uv-barrier-t-c>): int32
+  c inline "sizeof(uv_barrier_t)"
+
+pub fun uv-barrier-tc(): uv-barrier-tc
+  malloc(?size-of=uv-barrier-t/size-of)
+
+pub fun uv-barrier-tc-calloc(): uv-barrier-tc
+  malloc-c(?size-of=uv-barrier-t/size-of)
+
+pub fun uv-barrier-tc-array(n: int): uv-barrier-tca
+  malloc(n.int32, ?size-of=uv-barrier-t/size-of)
+
+pub fun uv-barrier-tc-array-calloc(n: int): uv-barrier-tca
+  malloc-c(n.int32, ?size-of=uv-barrier-t/size-of)
 
 pub value struct uv-lib-t
   handle1: c-pointer<()>
@@ -4702,7 +2438,7 @@ pub alias uv-lib-tcb<s::S> = borrowed-c<s,uv-lib-t-c>
 pub alias uv-lib-tca = owned-c<c-array<uv-lib-t-c>>
 
 pub extern uv-lib-t/size-of(c: c-null<uv-lib-t-c>): int32
-  c inline "sizeof(struct uv_lib_t)"
+  c inline "sizeof(uv_lib_t)"
 
 pub fun uv-lib-tc(): uv-lib-tc
   malloc(?size-of=uv-lib-t/size-of)
@@ -4715,54 +2451,6 @@ pub fun uv-lib-tc-array(n: int): uv-lib-tca
 
 pub fun uv-lib-tc-array-calloc(n: int): uv-lib-tca
   malloc-c(n.int32, ?size-of=uv-lib-t/size-of)
-
-pub inline extern uv-lib-t-ptrraw/handle1(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_lib_t*)#1)->handle)"
-
-pub inline fun uv-lib-tp/handle1(s: uv-lib-tp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-lib-t-ptrraw/handle1)
-
-pub inline fun uv-lib-tc/handle1(^s: uv-lib-tc): c-pointer<()>
-  s.with-ptr(uv-lib-tp/handle1)
-
-pub inline fun uv-lib-tcb/handle1(^s: uv-lib-tcb<s::S>): c-pointer<()>
-  s.with-ptr(uv-lib-tp/handle1)
-
-pub inline extern uv-lib-t-ptrraw/set-handle1(s: intptr_t, handle1: intptr_t): ()
-  c inline "((struct uv_lib_t*)#1)->handle = (void*)#2"
-
-pub inline fun uv-lib-tp/set-handle1(s: uv-lib-tp, handle1: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-lib-t-ptrraw/set-handle1(handle1.cextern/c-pointer/ptr)
-
-pub inline fun uv-lib-tc/set-handle1(^s: uv-lib-tc, handle1: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-lib-tp/set-handle1(handle1))
-
-pub inline fun uv-lib-tcb/set-handle1(^s: uv-lib-tcb<s::S>, handle1: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-lib-tp/set-handle1(handle1))
-
-pub inline extern uv-lib-t-ptrraw/errmsg(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_lib_t*)#1)->errmsg)"
-
-pub inline fun uv-lib-tp/errmsg(s: uv-lib-tp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-lib-t-ptrraw/errmsg)
-
-pub inline fun uv-lib-tc/errmsg(^s: uv-lib-tc): c-pointer<int>
-  s.with-ptr(uv-lib-tp/errmsg)
-
-pub inline fun uv-lib-tcb/errmsg(^s: uv-lib-tcb<s::S>): c-pointer<int>
-  s.with-ptr(uv-lib-tp/errmsg)
-
-pub inline extern uv-lib-t-ptrraw/set-errmsg(s: intptr_t, errmsg: intptr_t): ()
-  c inline "((struct uv_lib_t*)#1)->errmsg = (char*)#2"
-
-pub inline fun uv-lib-tp/set-errmsg(s: uv-lib-tp, errmsg: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-lib-t-ptrraw/set-errmsg(errmsg.cextern/c-pointer/ptr)
-
-pub inline fun uv-lib-tc/set-errmsg(^s: uv-lib-tc, errmsg: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-lib-tp/set-errmsg(errmsg))
-
-pub inline fun uv-lib-tcb/set-errmsg(^s: uv-lib-tcb<s::S>, errmsg: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-lib-tp/set-errmsg(errmsg))
 
 type uv-errno-t
   UV_E2BIG
@@ -4851,102 +2539,102 @@ type uv-errno-t
   UV_EUNATCH
   UV_ERRNO_MAX
 
-pub fun uv-errno-t/int(i: uv-errno-t): int
+pub fun uv-errno-t/int(i: uv-errno-t): int32
   match i
-    UV_E2BIG -> -7
-    UV_EACCES -> -13
-    UV_EADDRINUSE -> -98
-    UV_EADDRNOTAVAIL -> -99
-    UV_EAFNOSUPPORT -> -97
-    UV_EAGAIN -> -11
-    UV_EAI_ADDRFAMILY -> -3000
-    UV_EAI_AGAIN -> -3001
-    UV_EAI_BADFLAGS -> -3002
-    UV_EAI_BADHINTS -> -3013
-    UV_EAI_CANCELED -> -3003
-    UV_EAI_FAIL -> -3004
-    UV_EAI_FAMILY -> -3005
-    UV_EAI_MEMORY -> -3006
-    UV_EAI_NODATA -> -3007
-    UV_EAI_NONAME -> -3008
-    UV_EAI_OVERFLOW -> -3009
-    UV_EAI_PROTOCOL -> -3014
-    UV_EAI_SERVICE -> -3010
-    UV_EAI_SOCKTYPE -> -3011
-    UV_EALREADY -> -114
-    UV_EBADF -> -9
-    UV_EBUSY -> -16
-    UV_ECANCELED -> -125
-    UV_ECHARSET -> -4080
-    UV_ECONNABORTED -> -103
-    UV_ECONNREFUSED -> -111
-    UV_ECONNRESET -> -104
-    UV_EDESTADDRREQ -> -89
-    UV_EEXIST -> -17
-    UV_EFAULT -> -14
-    UV_EFBIG -> -27
-    UV_EHOSTUNREACH -> -113
-    UV_EINTR -> -4
-    UV_EINVAL -> -22
-    UV_EIO -> -5
-    UV_EISCONN -> -106
-    UV_EISDIR -> -21
-    UV_ELOOP -> -40
-    UV_EMFILE -> -24
-    UV_EMSGSIZE -> -90
-    UV_ENAMETOOLONG -> -36
-    UV_ENETDOWN -> -100
-    UV_ENETUNREACH -> -101
-    UV_ENFILE -> -23
-    UV_ENOBUFS -> -105
-    UV_ENODEV -> -19
-    UV_ENOENT -> -2
-    UV_ENOMEM -> -12
-    UV_ENONET -> -64
-    UV_ENOPROTOOPT -> -92
-    UV_ENOSPC -> -28
-    UV_ENOSYS -> -38
-    UV_ENOTCONN -> -107
-    UV_ENOTDIR -> -20
-    UV_ENOTEMPTY -> -39
-    UV_ENOTSOCK -> -88
-    UV_ENOTSUP -> -95
-    UV_EOVERFLOW -> -75
-    UV_EPERM -> -1
-    UV_EPIPE -> -32
-    UV_EPROTO -> -71
-    UV_EPROTONOSUPPORT -> -93
-    UV_EPROTOTYPE -> -91
-    UV_ERANGE -> -34
-    UV_EROFS -> -30
-    UV_ESHUTDOWN -> -108
-    UV_ESPIPE -> -29
-    UV_ESRCH -> -3
-    UV_ETIMEDOUT -> -110
-    UV_ETXTBSY -> -26
-    UV_EXDEV -> -18
-    UV_UNKNOWN -> -4094
-    UV_EOF -> -4095
-    UV_ENXIO -> -6
-    UV_EMLINK -> -31
-    UV_EHOSTDOWN -> -112
-    UV_EREMOTEIO -> -121
-    UV_ENOTTY -> -25
-    UV_EFTYPE -> -4028
-    UV_EILSEQ -> -84
-    UV_ESOCKTNOSUPPORT -> -94
-    UV_ENODATA -> -61
-    UV_EUNATCH -> -49
-    UV_ERRNO_MAX -> -4096
+    UV_E2BIG -> -7.int32
+    UV_EACCES -> -13.int32
+    UV_EADDRINUSE -> -48.int32
+    UV_EADDRNOTAVAIL -> -49.int32
+    UV_EAFNOSUPPORT -> -47.int32
+    UV_EAGAIN -> -35.int32
+    UV_EAI_ADDRFAMILY -> -3000.int32
+    UV_EAI_AGAIN -> -3001.int32
+    UV_EAI_BADFLAGS -> -3002.int32
+    UV_EAI_BADHINTS -> -3013.int32
+    UV_EAI_CANCELED -> -3003.int32
+    UV_EAI_FAIL -> -3004.int32
+    UV_EAI_FAMILY -> -3005.int32
+    UV_EAI_MEMORY -> -3006.int32
+    UV_EAI_NODATA -> -3007.int32
+    UV_EAI_NONAME -> -3008.int32
+    UV_EAI_OVERFLOW -> -3009.int32
+    UV_EAI_PROTOCOL -> -3014.int32
+    UV_EAI_SERVICE -> -3010.int32
+    UV_EAI_SOCKTYPE -> -3011.int32
+    UV_EALREADY -> -37.int32
+    UV_EBADF -> -9.int32
+    UV_EBUSY -> -16.int32
+    UV_ECANCELED -> -89.int32
+    UV_ECHARSET -> -4080.int32
+    UV_ECONNABORTED -> -53.int32
+    UV_ECONNREFUSED -> -61.int32
+    UV_ECONNRESET -> -54.int32
+    UV_EDESTADDRREQ -> -39.int32
+    UV_EEXIST -> -17.int32
+    UV_EFAULT -> -14.int32
+    UV_EFBIG -> -27.int32
+    UV_EHOSTUNREACH -> -65.int32
+    UV_EINTR -> -4.int32
+    UV_EINVAL -> -22.int32
+    UV_EIO -> -5.int32
+    UV_EISCONN -> -56.int32
+    UV_EISDIR -> -21.int32
+    UV_ELOOP -> -62.int32
+    UV_EMFILE -> -24.int32
+    UV_EMSGSIZE -> -40.int32
+    UV_ENAMETOOLONG -> -63.int32
+    UV_ENETDOWN -> -50.int32
+    UV_ENETUNREACH -> -51.int32
+    UV_ENFILE -> -23.int32
+    UV_ENOBUFS -> -55.int32
+    UV_ENODEV -> -19.int32
+    UV_ENOENT -> -2.int32
+    UV_ENOMEM -> -12.int32
+    UV_ENONET -> -4056.int32
+    UV_ENOPROTOOPT -> -42.int32
+    UV_ENOSPC -> -28.int32
+    UV_ENOSYS -> -78.int32
+    UV_ENOTCONN -> -57.int32
+    UV_ENOTDIR -> -20.int32
+    UV_ENOTEMPTY -> -66.int32
+    UV_ENOTSOCK -> -38.int32
+    UV_ENOTSUP -> -45.int32
+    UV_EOVERFLOW -> -84.int32
+    UV_EPERM -> -1.int32
+    UV_EPIPE -> -32.int32
+    UV_EPROTO -> -100.int32
+    UV_EPROTONOSUPPORT -> -43.int32
+    UV_EPROTOTYPE -> -41.int32
+    UV_ERANGE -> -34.int32
+    UV_EROFS -> -30.int32
+    UV_ESHUTDOWN -> -58.int32
+    UV_ESPIPE -> -29.int32
+    UV_ESRCH -> -3.int32
+    UV_ETIMEDOUT -> -60.int32
+    UV_ETXTBSY -> -26.int32
+    UV_EXDEV -> -18.int32
+    UV_UNKNOWN -> -4094.int32
+    UV_EOF -> -4095.int32
+    UV_ENXIO -> -6.int32
+    UV_EMLINK -> -31.int32
+    UV_EHOSTDOWN -> -64.int32
+    UV_EREMOTEIO -> -4030.int32
+    UV_ENOTTY -> -25.int32
+    UV_EFTYPE -> -79.int32
+    UV_EILSEQ -> -92.int32
+    UV_ESOCKTNOSUPPORT -> -44.int32
+    UV_ENODATA -> -96.int32
+    UV_EUNATCH -> -4023.int32
+    UV_ERRNO_MAX -> -4096.int32
 
-pub fun int/uv-errno-t(i: int): exn uv-errno-t
-  match i
+pub fun int/uv-errno-t(i: int32): exn uv-errno-t
+  match i.int
     -7 -> UV_E2BIG
     -13 -> UV_EACCES
-    -98 -> UV_EADDRINUSE
-    -99 -> UV_EADDRNOTAVAIL
-    -97 -> UV_EAFNOSUPPORT
-    -11 -> UV_EAGAIN
+    -48 -> UV_EADDRINUSE
+    -49 -> UV_EADDRNOTAVAIL
+    -47 -> UV_EAFNOSUPPORT
+    -35 -> UV_EAGAIN
     -3000 -> UV_EAI_ADDRFAMILY
     -3001 -> UV_EAI_AGAIN
     -3002 -> UV_EAI_BADFLAGS
@@ -4961,70 +2649,70 @@ pub fun int/uv-errno-t(i: int): exn uv-errno-t
     -3014 -> UV_EAI_PROTOCOL
     -3010 -> UV_EAI_SERVICE
     -3011 -> UV_EAI_SOCKTYPE
-    -114 -> UV_EALREADY
+    -37 -> UV_EALREADY
     -9 -> UV_EBADF
     -16 -> UV_EBUSY
-    -125 -> UV_ECANCELED
+    -89 -> UV_ECANCELED
     -4080 -> UV_ECHARSET
-    -103 -> UV_ECONNABORTED
-    -111 -> UV_ECONNREFUSED
-    -104 -> UV_ECONNRESET
-    -89 -> UV_EDESTADDRREQ
+    -53 -> UV_ECONNABORTED
+    -61 -> UV_ECONNREFUSED
+    -54 -> UV_ECONNRESET
+    -39 -> UV_EDESTADDRREQ
     -17 -> UV_EEXIST
     -14 -> UV_EFAULT
     -27 -> UV_EFBIG
-    -113 -> UV_EHOSTUNREACH
+    -65 -> UV_EHOSTUNREACH
     -4 -> UV_EINTR
     -22 -> UV_EINVAL
     -5 -> UV_EIO
-    -106 -> UV_EISCONN
+    -56 -> UV_EISCONN
     -21 -> UV_EISDIR
-    -40 -> UV_ELOOP
+    -62 -> UV_ELOOP
     -24 -> UV_EMFILE
-    -90 -> UV_EMSGSIZE
-    -36 -> UV_ENAMETOOLONG
-    -100 -> UV_ENETDOWN
-    -101 -> UV_ENETUNREACH
+    -40 -> UV_EMSGSIZE
+    -63 -> UV_ENAMETOOLONG
+    -50 -> UV_ENETDOWN
+    -51 -> UV_ENETUNREACH
     -23 -> UV_ENFILE
-    -105 -> UV_ENOBUFS
+    -55 -> UV_ENOBUFS
     -19 -> UV_ENODEV
     -2 -> UV_ENOENT
     -12 -> UV_ENOMEM
-    -64 -> UV_ENONET
-    -92 -> UV_ENOPROTOOPT
+    -4056 -> UV_ENONET
+    -42 -> UV_ENOPROTOOPT
     -28 -> UV_ENOSPC
-    -38 -> UV_ENOSYS
-    -107 -> UV_ENOTCONN
+    -78 -> UV_ENOSYS
+    -57 -> UV_ENOTCONN
     -20 -> UV_ENOTDIR
-    -39 -> UV_ENOTEMPTY
-    -88 -> UV_ENOTSOCK
-    -95 -> UV_ENOTSUP
-    -75 -> UV_EOVERFLOW
+    -66 -> UV_ENOTEMPTY
+    -38 -> UV_ENOTSOCK
+    -45 -> UV_ENOTSUP
+    -84 -> UV_EOVERFLOW
     -1 -> UV_EPERM
     -32 -> UV_EPIPE
-    -71 -> UV_EPROTO
-    -93 -> UV_EPROTONOSUPPORT
-    -91 -> UV_EPROTOTYPE
+    -100 -> UV_EPROTO
+    -43 -> UV_EPROTONOSUPPORT
+    -41 -> UV_EPROTOTYPE
     -34 -> UV_ERANGE
     -30 -> UV_EROFS
-    -108 -> UV_ESHUTDOWN
+    -58 -> UV_ESHUTDOWN
     -29 -> UV_ESPIPE
     -3 -> UV_ESRCH
-    -110 -> UV_ETIMEDOUT
+    -60 -> UV_ETIMEDOUT
     -26 -> UV_ETXTBSY
     -18 -> UV_EXDEV
     -4094 -> UV_UNKNOWN
     -4095 -> UV_EOF
     -6 -> UV_ENXIO
     -31 -> UV_EMLINK
-    -112 -> UV_EHOSTDOWN
-    -121 -> UV_EREMOTEIO
+    -64 -> UV_EHOSTDOWN
+    -4030 -> UV_EREMOTEIO
     -25 -> UV_ENOTTY
-    -4028 -> UV_EFTYPE
-    -84 -> UV_EILSEQ
-    -94 -> UV_ESOCKTNOSUPPORT
-    -61 -> UV_ENODATA
-    -49 -> UV_EUNATCH
+    -79 -> UV_EFTYPE
+    -92 -> UV_EILSEQ
+    -44 -> UV_ESOCKTNOSUPPORT
+    -96 -> UV_ENODATA
+    -4023 -> UV_EUNATCH
     -4096 -> UV_ERRNO_MAX
 
 type uv-req-type
@@ -5041,23 +2729,23 @@ type uv-req-type
   UV_RANDOM
   UV_REQ_TYPE_MAX
 
-pub fun uv-req-type/int(i: uv-req-type): int
+pub fun uv-req-type/int(i: uv-req-type): int32
   match i
-    UV_UNKNOWN_REQ -> 0
-    UV_REQ -> 1
-    UV_CONNECT -> 2
-    UV_WRITE -> 3
-    UV_SHUTDOWN -> 4
-    UV_UDP_SEND -> 5
-    UV_FS -> 6
-    UV_WORK -> 7
-    UV_GETADDRINFO -> 8
-    UV_GETNAMEINFO -> 9
-    UV_RANDOM -> 10
-    UV_REQ_TYPE_MAX -> 11
+    UV_UNKNOWN_REQ -> 0.int32
+    UV_REQ -> 1.int32
+    UV_CONNECT -> 2.int32
+    UV_WRITE -> 3.int32
+    UV_SHUTDOWN -> 4.int32
+    UV_UDP_SEND -> 5.int32
+    UV_FS -> 6.int32
+    UV_WORK -> 7.int32
+    UV_GETADDRINFO -> 8.int32
+    UV_GETNAMEINFO -> 9.int32
+    UV_RANDOM -> 10.int32
+    UV_REQ_TYPE_MAX -> 11.int32
 
-pub fun int/uv-req-type(i: int): exn uv-req-type
-  match i
+pub fun int/uv-req-type(i: int32): exn uv-req-type
+  match i.int
     0 -> UV_UNKNOWN_REQ
     1 -> UV_REQ
     2 -> UV_CONNECT
@@ -5093,102 +2781,6 @@ pub fun uv-dir-sc-array(n: int): uv-dir-sca<s::S>
 pub fun uv-dir-sc-array-calloc(n: int): uv-dir-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-dir-s/size-of)
 
-pub inline extern uv-dir-s-ptrraw/dirents(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_dir_s*)#1)->dirents)"
-
-pub inline fun uv-dir-sp/dirents(s: uv-dir-sp): c-pointer<uv-dirent-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/dirents)
-
-pub inline fun uv-dir-sc/dirents(^s: uv-dir-sc<s::S>): c-pointer<uv-dirent-s-c>
-  s.with-ptr(uv-dir-sp/dirents)
-
-pub inline fun uv-dir-scb/dirents(^s: uv-dir-scb<s::S>): c-pointer<uv-dirent-s-c>
-  s.with-ptr(uv-dir-sp/dirents)
-
-pub inline extern uv-dir-s-ptrraw/set-dirents(s: intptr_t, dirents: intptr_t): ()
-  c inline "((struct uv_dir_s*)#1)->dirents = (struct uv_dirent_s*)#2"
-
-pub inline fun uv-dir-sp/set-dirents(s: uv-dir-sp, dirents: c-pointer<uv-dirent-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/set-dirents(dirents.cextern/c-pointer/ptr)
-
-pub inline fun uv-dir-sc/set-dirents(^s: uv-dir-sc<s::S>, dirents: c-pointer<uv-dirent-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-dirents(dirents))
-
-pub inline fun uv-dir-scb/set-dirents(^s: uv-dir-scb<s::S>, dirents: c-pointer<uv-dirent-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-dirents(dirents))
-
-pub inline extern uv-dir-s-ptrraw/nentries(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_dir_s*)#1)->nentries)"
-
-pub inline fun uv-dir-sp/nentries(s: uv-dir-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/nentries
-
-pub inline fun uv-dir-sc/nentries(^s: uv-dir-sc<s::S>): ssize_t
-  s.with-ptr(uv-dir-sp/nentries)
-
-pub inline fun uv-dir-scb/nentries(^s: uv-dir-scb<s::S>): ssize_t
-  s.with-ptr(uv-dir-sp/nentries)
-
-pub inline extern uv-dir-s-ptrraw/set-nentries(s: intptr_t, nentries: ssize_t): ()
-  c inline "((struct uv_dir_s*)#1)->nentries = (ssize_t)#2"
-
-pub inline fun uv-dir-sp/set-nentries(s: uv-dir-sp, nentries: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/set-nentries(nentries)
-
-pub inline fun uv-dir-sc/set-nentries(^s: uv-dir-sc<s::S>, nentries: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-nentries(nentries))
-
-pub inline fun uv-dir-scb/set-nentries(^s: uv-dir-scb<s::S>, nentries: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-nentries(nentries))
-
-pub inline extern uv-dir-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_dir_s*)#1)->reserved)"
-
-pub inline fun uv-dir-sp/reserved(s: uv-dir-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-dir-sc/reserved(^s: uv-dir-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-dir-sp/reserved)
-
-pub inline fun uv-dir-scb/reserved(^s: uv-dir-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-dir-sp/reserved)
-
-pub inline extern uv-dir-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_dir_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-dir-sp/set-reserved(s: uv-dir-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-dir-sc/set-reserved(^s: uv-dir-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-reserved(reserved))
-
-pub inline fun uv-dir-scb/set-reserved(^s: uv-dir-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-reserved(reserved))
-
-pub inline extern uv-dir-s-ptrraw/dir(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_dir_s*)#1)->dir)"
-
-pub inline fun uv-dir-sp/dir(s: uv-dir-sp): c-pointer<dirstream-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/dir)
-
-pub inline fun uv-dir-sc/dir(^s: uv-dir-sc<s::S>): c-pointer<dirstream-c>
-  s.with-ptr(uv-dir-sp/dir)
-
-pub inline fun uv-dir-scb/dir(^s: uv-dir-scb<s::S>): c-pointer<dirstream-c>
-  s.with-ptr(uv-dir-sp/dir)
-
-pub inline extern uv-dir-s-ptrraw/set-dir(s: intptr_t, dir: intptr_t): ()
-  c inline "((struct uv_dir_s*)#1)->dir = (struct __dirstream*)#2"
-
-pub inline fun uv-dir-sp/set-dir(s: uv-dir-sp, dir: c-pointer<dirstream-c>): ()
-  s.cextern/c-pointer/ptr.uv-dir-s-ptrraw/set-dir(dir.cextern/c-pointer/ptr)
-
-pub inline fun uv-dir-sc/set-dir(^s: uv-dir-sc<s::S>, dir: c-pointer<dirstream-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-dir(dir))
-
-pub inline fun uv-dir-scb/set-dir(^s: uv-dir-scb<s::S>, dir: c-pointer<dirstream-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dir-sp/set-dir(dir))
-
 alias uv-dirent-t = uv-dirent-s-c
 pub value struct uv-dirent-s
   name: c-pointer<int>
@@ -5215,54 +2807,6 @@ pub fun uv-dirent-sc-array(n: int): uv-dirent-sca
 pub fun uv-dirent-sc-array-calloc(n: int): uv-dirent-sca
   malloc-c(n.int32, ?size-of=uv-dirent-s/size-of)
 
-pub inline extern uv-dirent-s-ptrraw/name(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_dirent_s*)#1)->name)"
-
-pub inline fun uv-dirent-sp/name(s: uv-dirent-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-dirent-s-ptrraw/name)
-
-pub inline fun uv-dirent-sc/name(^s: uv-dirent-sc): c-pointer<int>
-  s.with-ptr(uv-dirent-sp/name)
-
-pub inline fun uv-dirent-scb/name(^s: uv-dirent-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-dirent-sp/name)
-
-pub inline extern uv-dirent-s-ptrraw/set-name(s: intptr_t, name: intptr_t): ()
-  c inline "((struct uv_dirent_s*)#1)->name = (char*)#2"
-
-pub inline fun uv-dirent-sp/set-name(s: uv-dirent-sp, name: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-dirent-s-ptrraw/set-name(name.cextern/c-pointer/ptr)
-
-pub inline fun uv-dirent-sc/set-name(^s: uv-dirent-sc, name: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dirent-sp/set-name(name))
-
-pub inline fun uv-dirent-scb/set-name(^s: uv-dirent-scb<s::S>, name: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dirent-sp/set-name(name))
-
-pub inline extern uv-dirent-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_dirent_s*)#1)->type)"
-
-pub inline fun uv-dirent-sp/type1(s: uv-dirent-sp): int
-  s.cextern/c-pointer/ptr.uv-dirent-s-ptrraw/type1.int
-
-pub inline fun uv-dirent-sc/type1(^s: uv-dirent-sc): int
-  s.with-ptr(uv-dirent-sp/type1)
-
-pub inline fun uv-dirent-scb/type1(^s: uv-dirent-scb<s::S>): int
-  s.with-ptr(uv-dirent-sp/type1)
-
-pub inline extern uv-dirent-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_dirent_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-dirent-sp/set-type1(s: uv-dirent-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-dirent-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-dirent-sc/set-type1(^s: uv-dirent-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dirent-sp/set-type1(type1))
-
-pub inline fun uv-dirent-scb/set-type1(^s: uv-dirent-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-dirent-sp/set-type1(type1))
-
 type uv-dirent-type-t
   UV_DIRENT_UNKNOWN
   UV_DIRENT_FILE
@@ -5273,19 +2817,19 @@ type uv-dirent-type-t
   UV_DIRENT_CHAR
   UV_DIRENT_BLOCK
 
-pub fun uv-dirent-type-t/int(i: uv-dirent-type-t): int
+pub fun uv-dirent-type-t/int(i: uv-dirent-type-t): int32
   match i
-    UV_DIRENT_UNKNOWN -> 0
-    UV_DIRENT_FILE -> 1
-    UV_DIRENT_DIR -> 2
-    UV_DIRENT_LINK -> 3
-    UV_DIRENT_FIFO -> 4
-    UV_DIRENT_SOCKET -> 5
-    UV_DIRENT_CHAR -> 6
-    UV_DIRENT_BLOCK -> 7
+    UV_DIRENT_UNKNOWN -> 0.int32
+    UV_DIRENT_FILE -> 1.int32
+    UV_DIRENT_DIR -> 2.int32
+    UV_DIRENT_LINK -> 3.int32
+    UV_DIRENT_FIFO -> 4.int32
+    UV_DIRENT_SOCKET -> 5.int32
+    UV_DIRENT_CHAR -> 6.int32
+    UV_DIRENT_BLOCK -> 7.int32
 
-pub fun int/uv-dirent-type-t(i: int): exn uv-dirent-type-t
-  match i
+pub fun int/uv-dirent-type-t(i: int32): exn uv-dirent-type-t
+  match i.int
     0 -> UV_DIRENT_UNKNOWN
     1 -> UV_DIRENT_FILE
     2 -> UV_DIRENT_DIR
@@ -5295,13 +2839,12 @@ pub fun int/uv-dirent-type-t(i: int): exn uv-dirent-type-t
     6 -> UV_DIRENT_CHAR
     7 -> UV_DIRENT_BLOCK
 
-alias dir = dirstream-c
-pub struct dirstream
-pub type dirstream-c
-pub alias dirstreamp = c-pointer<dirstream-c>
-pub alias dirstreamc = owned-c<dirstream-c>
-pub alias dirstreamcb<s::S> = borrowed-c<s,dirstream-c>
-pub alias dirstreamca = owned-c<c-array<dirstream-c>>
+pub struct dir
+pub type dir-c
+pub alias dirp = c-pointer<dir-c>
+pub alias dirc = owned-c<dir-c>
+pub alias dircb<s::S> = borrowed-c<s,dir-c>
+pub alias dirca = owned-c<c-array<dir-c>>
 
 pub struct uv-stream-s
   data: c-pointer<()>
@@ -5309,10 +2852,10 @@ pub struct uv-stream-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union5-c
+  u: unnamed-union5-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  write-queue-size: ssize_t
+  write-queue-size: int
   alloc-cb: c-pointer<intptr_t>
   read-cb: c-pointer<intptr_t>
   connect-req: c-pointer<uv-connect-s-c>
@@ -5324,6 +2867,7 @@ pub struct uv-stream-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
+  select: c-pointer<()>
 
 pub type uv-stream-s-c
 pub alias uv-stream-sp = c-pointer<uv-stream-s-c>
@@ -5346,444 +2890,19 @@ pub fun uv-stream-sc-array(n: int): uv-stream-sca
 pub fun uv-stream-sc-array-calloc(n: int): uv-stream-sca
   malloc-c(n.int32, ?size-of=uv-stream-s/size-of)
 
-pub inline extern uv-stream-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->data)"
-
-pub inline fun uv-stream-sp/data(s: uv-stream-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/data)
-
-pub inline fun uv-stream-sc/data(^s: uv-stream-sc): c-pointer<()>
-  s.with-ptr(uv-stream-sp/data)
-
-pub inline fun uv-stream-scb/data(^s: uv-stream-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-stream-sp/data)
-
-pub inline extern uv-stream-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-stream-sp/set-data(s: uv-stream-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-data(^s: uv-stream-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-data(data))
-
-pub inline fun uv-stream-scb/set-data(^s: uv-stream-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-data(data))
-
-pub inline extern uv-stream-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->loop)"
-
-pub inline fun uv-stream-sp/loop(s: uv-stream-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/loop)
-
-pub inline fun uv-stream-sc/loop(^s: uv-stream-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-stream-sp/loop)
-
-pub inline fun uv-stream-scb/loop(^s: uv-stream-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-stream-sp/loop)
-
-pub inline extern uv-stream-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-stream-sp/set-loop(s: uv-stream-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-loop(^s: uv-stream-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-loop(loop))
-
-pub inline fun uv-stream-scb/set-loop(^s: uv-stream-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-loop(loop))
-
-pub inline extern uv-stream-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_stream_s*)#1)->type)"
-
-pub inline fun uv-stream-sp/type1(s: uv-stream-sp): int
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/type1.int
-
-pub inline fun uv-stream-sc/type1(^s: uv-stream-sc): int
-  s.with-ptr(uv-stream-sp/type1)
-
-pub inline fun uv-stream-scb/type1(^s: uv-stream-scb<s::S>): int
-  s.with-ptr(uv-stream-sp/type1)
-
-pub inline extern uv-stream-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_stream_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-stream-sp/set-type1(s: uv-stream-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-stream-sc/set-type1(^s: uv-stream-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-type1(type1))
-
-pub inline fun uv-stream-scb/set-type1(^s: uv-stream-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-type1(type1))
-
-pub inline extern uv-stream-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->close_cb)"
-
-pub inline fun uv-stream-sp/close-cb(s: uv-stream-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/close-cb)
-
-pub inline fun uv-stream-sc/close-cb(^s: uv-stream-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/close-cb)
-
-pub inline fun uv-stream-scb/close-cb(^s: uv-stream-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/close-cb)
-
-pub inline extern uv-stream-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-stream-sp/set-close-cb(s: uv-stream-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-close-cb(^s: uv-stream-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-close-cb(close-cb))
-
-pub inline fun uv-stream-scb/set-close-cb(^s: uv-stream-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-close-cb(close-cb))
-
-pub inline extern uv-stream-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->next_closing)"
-
-pub inline fun uv-stream-sp/next-closing(s: uv-stream-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/next-closing)
-
-pub inline fun uv-stream-sc/next-closing(^s: uv-stream-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-stream-sp/next-closing)
-
-pub inline fun uv-stream-scb/next-closing(^s: uv-stream-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-stream-sp/next-closing)
-
-pub inline extern uv-stream-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-stream-sp/set-next-closing(s: uv-stream-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-next-closing(^s: uv-stream-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-next-closing(next-closing))
-
-pub inline fun uv-stream-scb/set-next-closing(^s: uv-stream-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-next-closing(next-closing))
-
-pub inline extern uv-stream-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_stream_s*)#1)->flags)"
-
-pub inline fun uv-stream-sp/flags(s: uv-stream-sp): int
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/flags.int
-
-pub inline fun uv-stream-sc/flags(^s: uv-stream-sc): int
-  s.with-ptr(uv-stream-sp/flags)
-
-pub inline fun uv-stream-scb/flags(^s: uv-stream-scb<s::S>): int
-  s.with-ptr(uv-stream-sp/flags)
-
-pub inline extern uv-stream-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_stream_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-stream-sp/set-flags(s: uv-stream-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-stream-sc/set-flags(^s: uv-stream-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-flags(flags))
-
-pub inline fun uv-stream-scb/set-flags(^s: uv-stream-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-flags(flags))
-
-pub inline extern uv-stream-s-ptrraw/write-queue-size(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_stream_s*)#1)->write_queue_size)"
-
-pub inline fun uv-stream-sp/write-queue-size(s: uv-stream-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/write-queue-size
-
-pub inline fun uv-stream-sc/write-queue-size(^s: uv-stream-sc): ssize_t
-  s.with-ptr(uv-stream-sp/write-queue-size)
-
-pub inline fun uv-stream-scb/write-queue-size(^s: uv-stream-scb<s::S>): ssize_t
-  s.with-ptr(uv-stream-sp/write-queue-size)
-
-pub inline extern uv-stream-s-ptrraw/set-write-queue-size(s: intptr_t, write-queue-size: ssize_t): ()
-  c inline "((struct uv_stream_s*)#1)->write_queue_size = (ssize_t)#2"
-
-pub inline fun uv-stream-sp/set-write-queue-size(s: uv-stream-sp, write-queue-size: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-write-queue-size(write-queue-size)
-
-pub inline fun uv-stream-sc/set-write-queue-size(^s: uv-stream-sc, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-write-queue-size(write-queue-size))
-
-pub inline fun uv-stream-scb/set-write-queue-size(^s: uv-stream-scb<s::S>, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-write-queue-size(write-queue-size))
-
-pub inline extern uv-stream-s-ptrraw/alloc-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->alloc_cb)"
-
-pub inline fun uv-stream-sp/alloc-cb(s: uv-stream-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/alloc-cb)
-
-pub inline fun uv-stream-sc/alloc-cb(^s: uv-stream-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/alloc-cb)
-
-pub inline fun uv-stream-scb/alloc-cb(^s: uv-stream-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/alloc-cb)
-
-pub inline extern uv-stream-s-ptrraw/set-alloc-cb(s: intptr_t, alloc-cb: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->alloc_cb = (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2"
-
-pub inline fun uv-stream-sp/set-alloc-cb(s: uv-stream-sp, alloc-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-alloc-cb(alloc-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-alloc-cb(^s: uv-stream-sc, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-alloc-cb(alloc-cb))
-
-pub inline fun uv-stream-scb/set-alloc-cb(^s: uv-stream-scb<s::S>, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-alloc-cb(alloc-cb))
-
-pub inline extern uv-stream-s-ptrraw/read-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->read_cb)"
-
-pub inline fun uv-stream-sp/read-cb(s: uv-stream-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/read-cb)
-
-pub inline fun uv-stream-sc/read-cb(^s: uv-stream-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/read-cb)
-
-pub inline fun uv-stream-scb/read-cb(^s: uv-stream-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/read-cb)
-
-pub inline extern uv-stream-s-ptrraw/set-read-cb(s: intptr_t, read-cb: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->read_cb = (void (*)(struct uv_stream_s*, long, struct uv_buf_t*))#2"
-
-pub inline fun uv-stream-sp/set-read-cb(s: uv-stream-sp, read-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-read-cb(read-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-read-cb(^s: uv-stream-sc, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-read-cb(read-cb))
-
-pub inline fun uv-stream-scb/set-read-cb(^s: uv-stream-scb<s::S>, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-read-cb(read-cb))
-
-pub inline extern uv-stream-s-ptrraw/connect-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->connect_req)"
-
-pub inline fun uv-stream-sp/connect-req(s: uv-stream-sp): c-pointer<uv-connect-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/connect-req)
-
-pub inline fun uv-stream-sc/connect-req(^s: uv-stream-sc): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-stream-sp/connect-req)
-
-pub inline fun uv-stream-scb/connect-req(^s: uv-stream-scb<s::S>): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-stream-sp/connect-req)
-
-pub inline extern uv-stream-s-ptrraw/set-connect-req(s: intptr_t, connect-req: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->connect_req = (struct uv_connect_s*)#2"
-
-pub inline fun uv-stream-sp/set-connect-req(s: uv-stream-sp, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-connect-req(connect-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-connect-req(^s: uv-stream-sc, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-connect-req(connect-req))
-
-pub inline fun uv-stream-scb/set-connect-req(^s: uv-stream-scb<s::S>, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-connect-req(connect-req))
-
-pub inline extern uv-stream-s-ptrraw/shutdown-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->shutdown_req)"
-
-pub inline fun uv-stream-sp/shutdown-req(s: uv-stream-sp): c-pointer<uv-shutdown-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/shutdown-req)
-
-pub inline fun uv-stream-sc/shutdown-req(^s: uv-stream-sc): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-stream-sp/shutdown-req)
-
-pub inline fun uv-stream-scb/shutdown-req(^s: uv-stream-scb<s::S>): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-stream-sp/shutdown-req)
-
-pub inline extern uv-stream-s-ptrraw/set-shutdown-req(s: intptr_t, shutdown-req: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->shutdown_req = (struct uv_shutdown_s*)#2"
-
-pub inline fun uv-stream-sp/set-shutdown-req(s: uv-stream-sp, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-shutdown-req(shutdown-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-shutdown-req(^s: uv-stream-sc, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-shutdown-req(shutdown-req))
-
-pub inline fun uv-stream-scb/set-shutdown-req(^s: uv-stream-scb<s::S>, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-shutdown-req(shutdown-req))
-
-pub inline extern uv-stream-s-ptrraw/connection-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->connection_cb)"
-
-pub inline fun uv-stream-sp/connection-cb(s: uv-stream-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/connection-cb)
-
-pub inline fun uv-stream-sc/connection-cb(^s: uv-stream-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/connection-cb)
-
-pub inline fun uv-stream-scb/connection-cb(^s: uv-stream-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-stream-sp/connection-cb)
-
-pub inline extern uv-stream-s-ptrraw/set-connection-cb(s: intptr_t, connection-cb: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->connection_cb = (void (*)(struct uv_stream_s*, int))#2"
-
-pub inline fun uv-stream-sp/set-connection-cb(s: uv-stream-sp, connection-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-connection-cb(connection-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-connection-cb(^s: uv-stream-sc, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-connection-cb(connection-cb))
-
-pub inline fun uv-stream-scb/set-connection-cb(^s: uv-stream-scb<s::S>, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-connection-cb(connection-cb))
-
-pub inline extern uv-stream-s-ptrraw/delayed-error(s: intptr_t): int32
-  c inline "(int)(((struct uv_stream_s*)#1)->delayed_error)"
-
-pub inline fun uv-stream-sp/delayed-error(s: uv-stream-sp): int
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/delayed-error.int
-
-pub inline fun uv-stream-sc/delayed-error(^s: uv-stream-sc): int
-  s.with-ptr(uv-stream-sp/delayed-error)
-
-pub inline fun uv-stream-scb/delayed-error(^s: uv-stream-scb<s::S>): int
-  s.with-ptr(uv-stream-sp/delayed-error)
-
-pub inline extern uv-stream-s-ptrraw/set-delayed-error(s: intptr_t, delayed-error: int32): ()
-  c inline "((struct uv_stream_s*)#1)->delayed_error = (int)#2"
-
-pub inline fun uv-stream-sp/set-delayed-error(s: uv-stream-sp, delayed-error: int): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-delayed-error(delayed-error.int32)
-
-pub inline fun uv-stream-sc/set-delayed-error(^s: uv-stream-sc, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-delayed-error(delayed-error))
-
-pub inline fun uv-stream-scb/set-delayed-error(^s: uv-stream-scb<s::S>, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-delayed-error(delayed-error))
-
-pub inline extern uv-stream-s-ptrraw/accepted-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_stream_s*)#1)->accepted_fd)"
-
-pub inline fun uv-stream-sp/accepted-fd(s: uv-stream-sp): int
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/accepted-fd.int
-
-pub inline fun uv-stream-sc/accepted-fd(^s: uv-stream-sc): int
-  s.with-ptr(uv-stream-sp/accepted-fd)
-
-pub inline fun uv-stream-scb/accepted-fd(^s: uv-stream-scb<s::S>): int
-  s.with-ptr(uv-stream-sp/accepted-fd)
-
-pub inline extern uv-stream-s-ptrraw/set-accepted-fd(s: intptr_t, accepted-fd: int32): ()
-  c inline "((struct uv_stream_s*)#1)->accepted_fd = (int)#2"
-
-pub inline fun uv-stream-sp/set-accepted-fd(s: uv-stream-sp, accepted-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-accepted-fd(accepted-fd.int32)
-
-pub inline fun uv-stream-sc/set-accepted-fd(^s: uv-stream-sc, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-accepted-fd(accepted-fd))
-
-pub inline fun uv-stream-scb/set-accepted-fd(^s: uv-stream-scb<s::S>, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-accepted-fd(accepted-fd))
-
-pub inline extern uv-stream-s-ptrraw/queued-fds(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_stream_s*)#1)->queued_fds)"
-
-pub inline fun uv-stream-sp/queued-fds(s: uv-stream-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/queued-fds)
-
-pub inline fun uv-stream-sc/queued-fds(^s: uv-stream-sc): c-pointer<()>
-  s.with-ptr(uv-stream-sp/queued-fds)
-
-pub inline fun uv-stream-scb/queued-fds(^s: uv-stream-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-stream-sp/queued-fds)
-
-pub inline extern uv-stream-s-ptrraw/set-queued-fds(s: intptr_t, queued-fds: intptr_t): ()
-  c inline "((struct uv_stream_s*)#1)->queued_fds = (void*)#2"
-
-pub inline fun uv-stream-sp/set-queued-fds(s: uv-stream-sp, queued-fds: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-stream-s-ptrraw/set-queued-fds(queued-fds.cextern/c-pointer/ptr)
-
-pub inline fun uv-stream-sc/set-queued-fds(^s: uv-stream-sc, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-queued-fds(queued-fds))
-
-pub inline fun uv-stream-scb/set-queued-fds(^s: uv-stream-scb<s::S>, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stream-sp/set-queued-fds(queued-fds))
-
-pub struct unnamed-Union5
-pub type unnamed-Union5-c
-pub alias unnamed-Union5p = c-pointer<unnamed-Union5-c>
-pub alias unnamed-Union5c<s::S> = owned-c<unnamed-Union5-c>
-pub alias unnamed-Union5cb<s::S> = borrowed-c<s,unnamed-Union5-c>
-pub alias unnamed-Union5ca<s::S> = owned-c<c-array<unnamed-Union5-c>>
-
-pub extern unnamed-Union5/size-of(c: c-null<unnamed-Union5-c>): int32
-  c inline "sizeof(union unnamed-Union5)"
-
-pub fun unnamed-Union5c(): unnamed-Union5c<s::S>
-  malloc(?size-of=unnamed-Union5/size-of)
-
-pub fun unnamed-Union5c-calloc(): unnamed-Union5c<s::S>
-  malloc-c(?size-of=unnamed-Union5/size-of)
-
-pub fun unnamed-Union5c-array(n: int): unnamed-Union5ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union5/size-of)
-
-pub fun unnamed-Union5c-array-calloc(n: int): unnamed-Union5ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union5/size-of)
-
-pub inline extern unnamed-Union5-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union5*)#1)->fd)"
-
-pub inline fun unnamed-Union5p/fd(s: unnamed-Union5p): int
-  s.cextern/c-pointer/ptr.unnamed-Union5-ptrraw/fd.int
-
-pub inline fun unnamed-Union5c/fd(^s: unnamed-Union5c<s::S>): int
-  s.with-ptr(unnamed-Union5p/fd)
-
-pub inline fun unnamed-Union5cb/fd(^s: unnamed-Union5cb<s::S>): int
-  s.with-ptr(unnamed-Union5p/fd)
-
-pub inline extern unnamed-Union5-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union5*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union5p/set-fd(s: unnamed-Union5p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union5-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union5c/set-fd(^s: unnamed-Union5c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union5p/set-fd(fd))
-
-pub inline fun unnamed-Union5cb/set-fd(^s: unnamed-Union5cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union5p/set-fd(fd))
-
-pub inline extern unnamed-Union5-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union5*)#1)->reserved)"
-
-pub inline fun unnamed-Union5p/reserved(s: unnamed-Union5p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union5-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union5c/reserved(^s: unnamed-Union5c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union5p/reserved)
-
-pub inline fun unnamed-Union5cb/reserved(^s: unnamed-Union5cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union5p/reserved)
-
-pub inline extern unnamed-Union5-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union5*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union5p/set-reserved(s: unnamed-Union5p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union5-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union5c/set-reserved(^s: unnamed-Union5c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union5p/set-reserved(reserved))
-
-pub inline fun unnamed-Union5cb/set-reserved(^s: unnamed-Union5cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union5p/set-reserved(reserved))
+pub struct unnamed-union5
+pub type unnamed-union5-c
+pub alias unnamed-union5p = c-pointer<unnamed-union5-c>
+pub alias unnamed-union5c<s::S> = owned-c<unnamed-union5-c>
+pub alias unnamed-union5cb<s::S> = borrowed-c<s,unnamed-union5-c>
+pub alias unnamed-union5ca<s::S> = owned-c<c-array<unnamed-union5-c>>
 
 alias uv-alloc-cb = c-pointer<intptr_t>
-alias uv-alloc-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, suggested_size : ssize_t, buf : c-pointer<uv-buf-t-c>) -> ())
+alias uv-alloc-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, suggested_size : int, buf : c-pointer<uv-buf-t-c>) -> ())
 alias uv-read-cb = c-pointer<intptr_t>
 alias uv-read-cbfn = ((stream : c-pointer<uv-stream-s-c>, nread : int, buf : c-pointer<uv-buf-t-c>) -> ())
 alias uv-stream-t = uv-stream-s-c
 alias koka-uv-stream-t = uv-stream-s
-alias ssize-t = int
-alias ssize-t1 = int
 alias uv-connect-t = uv-connect-s-c
 pub struct uv-connect-s
 pub type uv-connect-s-c
@@ -5806,126 +2925,6 @@ pub fun uv-connect-sc-array(n: int): uv-connect-sca<s::S>
 
 pub fun uv-connect-sc-array-calloc(n: int): uv-connect-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-connect-s/size-of)
-
-pub inline extern uv-connect-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_connect_s*)#1)->data)"
-
-pub inline fun uv-connect-sp/data(s: uv-connect-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/data)
-
-pub inline fun uv-connect-sc/data(^s: uv-connect-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-connect-sp/data)
-
-pub inline fun uv-connect-scb/data(^s: uv-connect-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-connect-sp/data)
-
-pub inline extern uv-connect-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_connect_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-connect-sp/set-data(s: uv-connect-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-connect-sc/set-data(^s: uv-connect-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-data(data))
-
-pub inline fun uv-connect-scb/set-data(^s: uv-connect-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-data(data))
-
-pub inline extern uv-connect-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_connect_s*)#1)->type)"
-
-pub inline fun uv-connect-sp/type1(s: uv-connect-sp): int
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/type1.int
-
-pub inline fun uv-connect-sc/type1(^s: uv-connect-sc<s::S>): int
-  s.with-ptr(uv-connect-sp/type1)
-
-pub inline fun uv-connect-scb/type1(^s: uv-connect-scb<s::S>): int
-  s.with-ptr(uv-connect-sp/type1)
-
-pub inline extern uv-connect-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_connect_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-connect-sp/set-type1(s: uv-connect-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-connect-sc/set-type1(^s: uv-connect-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-type1(type1))
-
-pub inline fun uv-connect-scb/set-type1(^s: uv-connect-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-type1(type1))
-
-pub inline extern uv-connect-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_connect_s*)#1)->reserved)"
-
-pub inline fun uv-connect-sp/reserved(s: uv-connect-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-connect-sc/reserved(^s: uv-connect-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-connect-sp/reserved)
-
-pub inline fun uv-connect-scb/reserved(^s: uv-connect-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-connect-sp/reserved)
-
-pub inline extern uv-connect-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_connect_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-connect-sp/set-reserved(s: uv-connect-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-connect-sc/set-reserved(^s: uv-connect-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-reserved(reserved))
-
-pub inline fun uv-connect-scb/set-reserved(^s: uv-connect-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-reserved(reserved))
-
-pub inline extern uv-connect-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_connect_s*)#1)->cb)"
-
-pub inline fun uv-connect-sp/cb(s: uv-connect-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/cb)
-
-pub inline fun uv-connect-sc/cb(^s: uv-connect-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-connect-sp/cb)
-
-pub inline fun uv-connect-scb/cb(^s: uv-connect-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-connect-sp/cb)
-
-pub inline extern uv-connect-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_connect_s*)#1)->cb = (void (*)(struct uv_connect_s*, int))#2"
-
-pub inline fun uv-connect-sp/set-cb(s: uv-connect-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-connect-sc/set-cb(^s: uv-connect-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-cb(cb))
-
-pub inline fun uv-connect-scb/set-cb(^s: uv-connect-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-cb(cb))
-
-pub inline extern uv-connect-s-ptrraw/handle1(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_connect_s*)#1)->handle)"
-
-pub inline fun uv-connect-sp/handle1(s: uv-connect-sp): c-pointer<uv-stream-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/handle1)
-
-pub inline fun uv-connect-sc/handle1(^s: uv-connect-sc<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-connect-sp/handle1)
-
-pub inline fun uv-connect-scb/handle1(^s: uv-connect-scb<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-connect-sp/handle1)
-
-pub inline extern uv-connect-s-ptrraw/set-handle1(s: intptr_t, handle1: intptr_t): ()
-  c inline "((struct uv_connect_s*)#1)->handle = (struct uv_stream_s*)#2"
-
-pub inline fun uv-connect-sp/set-handle1(s: uv-connect-sp, handle1: c-pointer<uv-stream-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-connect-s-ptrraw/set-handle1(handle1.cextern/c-pointer/ptr)
-
-pub inline fun uv-connect-sc/set-handle1(^s: uv-connect-sc<s::S>, handle1: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-handle1(handle1))
-
-pub inline fun uv-connect-scb/set-handle1(^s: uv-connect-scb<s::S>, handle1: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-connect-sp/set-handle1(handle1))
 
 alias uv-connect-cb = c-pointer<intptr_t>
 alias uv-connect-cbfn = ((req : c-pointer<uv-connect-s-c>, status : int) -> ())
@@ -5952,126 +2951,6 @@ pub fun uv-shutdown-sc-array(n: int): uv-shutdown-sca<s::S>
 pub fun uv-shutdown-sc-array-calloc(n: int): uv-shutdown-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-shutdown-s/size-of)
 
-pub inline extern uv-shutdown-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_shutdown_s*)#1)->data)"
-
-pub inline fun uv-shutdown-sp/data(s: uv-shutdown-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/data)
-
-pub inline fun uv-shutdown-sc/data(^s: uv-shutdown-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-shutdown-sp/data)
-
-pub inline fun uv-shutdown-scb/data(^s: uv-shutdown-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-shutdown-sp/data)
-
-pub inline extern uv-shutdown-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_shutdown_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-shutdown-sp/set-data(s: uv-shutdown-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-shutdown-sc/set-data(^s: uv-shutdown-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-data(data))
-
-pub inline fun uv-shutdown-scb/set-data(^s: uv-shutdown-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-data(data))
-
-pub inline extern uv-shutdown-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_shutdown_s*)#1)->type)"
-
-pub inline fun uv-shutdown-sp/type1(s: uv-shutdown-sp): int
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/type1.int
-
-pub inline fun uv-shutdown-sc/type1(^s: uv-shutdown-sc<s::S>): int
-  s.with-ptr(uv-shutdown-sp/type1)
-
-pub inline fun uv-shutdown-scb/type1(^s: uv-shutdown-scb<s::S>): int
-  s.with-ptr(uv-shutdown-sp/type1)
-
-pub inline extern uv-shutdown-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_shutdown_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-shutdown-sp/set-type1(s: uv-shutdown-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-shutdown-sc/set-type1(^s: uv-shutdown-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-type1(type1))
-
-pub inline fun uv-shutdown-scb/set-type1(^s: uv-shutdown-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-type1(type1))
-
-pub inline extern uv-shutdown-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_shutdown_s*)#1)->reserved)"
-
-pub inline fun uv-shutdown-sp/reserved(s: uv-shutdown-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-shutdown-sc/reserved(^s: uv-shutdown-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-shutdown-sp/reserved)
-
-pub inline fun uv-shutdown-scb/reserved(^s: uv-shutdown-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-shutdown-sp/reserved)
-
-pub inline extern uv-shutdown-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_shutdown_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-shutdown-sp/set-reserved(s: uv-shutdown-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-shutdown-sc/set-reserved(^s: uv-shutdown-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-reserved(reserved))
-
-pub inline fun uv-shutdown-scb/set-reserved(^s: uv-shutdown-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-reserved(reserved))
-
-pub inline extern uv-shutdown-s-ptrraw/handle1(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_shutdown_s*)#1)->handle)"
-
-pub inline fun uv-shutdown-sp/handle1(s: uv-shutdown-sp): c-pointer<uv-stream-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/handle1)
-
-pub inline fun uv-shutdown-sc/handle1(^s: uv-shutdown-sc<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-shutdown-sp/handle1)
-
-pub inline fun uv-shutdown-scb/handle1(^s: uv-shutdown-scb<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-shutdown-sp/handle1)
-
-pub inline extern uv-shutdown-s-ptrraw/set-handle1(s: intptr_t, handle1: intptr_t): ()
-  c inline "((struct uv_shutdown_s*)#1)->handle = (struct uv_stream_s*)#2"
-
-pub inline fun uv-shutdown-sp/set-handle1(s: uv-shutdown-sp, handle1: c-pointer<uv-stream-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/set-handle1(handle1.cextern/c-pointer/ptr)
-
-pub inline fun uv-shutdown-sc/set-handle1(^s: uv-shutdown-sc<s::S>, handle1: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-handle1(handle1))
-
-pub inline fun uv-shutdown-scb/set-handle1(^s: uv-shutdown-scb<s::S>, handle1: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-handle1(handle1))
-
-pub inline extern uv-shutdown-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_shutdown_s*)#1)->cb)"
-
-pub inline fun uv-shutdown-sp/cb(s: uv-shutdown-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/cb)
-
-pub inline fun uv-shutdown-sc/cb(^s: uv-shutdown-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-shutdown-sp/cb)
-
-pub inline fun uv-shutdown-scb/cb(^s: uv-shutdown-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-shutdown-sp/cb)
-
-pub inline extern uv-shutdown-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_shutdown_s*)#1)->cb = (void (*)(struct uv_shutdown_s*, int))#2"
-
-pub inline fun uv-shutdown-sp/set-cb(s: uv-shutdown-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-shutdown-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-shutdown-sc/set-cb(^s: uv-shutdown-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-cb(cb))
-
-pub inline fun uv-shutdown-scb/set-cb(^s: uv-shutdown-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-shutdown-sp/set-cb(cb))
-
 alias uv-shutdown-cb = c-pointer<intptr_t>
 alias uv-shutdown-cbfn = ((req : c-pointer<uv-shutdown-s-c>, status : int) -> ())
 alias uv-connection-cb = c-pointer<intptr_t>
@@ -6082,10 +2961,10 @@ pub struct uv-tcp-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union6-c
+  u: unnamed-union6-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  write-queue-size: ssize_t
+  write-queue-size: int
   alloc-cb: c-pointer<intptr_t>
   read-cb: c-pointer<intptr_t>
   connect-req: c-pointer<uv-connect-s-c>
@@ -6097,6 +2976,7 @@ pub struct uv-tcp-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
+  select: c-pointer<()>
 
 pub type uv-tcp-s-c
 pub alias uv-tcp-sp = c-pointer<uv-tcp-s-c>
@@ -6119,435 +2999,12 @@ pub fun uv-tcp-sc-array(n: int): uv-tcp-sca
 pub fun uv-tcp-sc-array-calloc(n: int): uv-tcp-sca
   malloc-c(n.int32, ?size-of=uv-tcp-s/size-of)
 
-pub inline extern uv-tcp-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->data)"
-
-pub inline fun uv-tcp-sp/data(s: uv-tcp-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/data)
-
-pub inline fun uv-tcp-sc/data(^s: uv-tcp-sc): c-pointer<()>
-  s.with-ptr(uv-tcp-sp/data)
-
-pub inline fun uv-tcp-scb/data(^s: uv-tcp-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-tcp-sp/data)
-
-pub inline extern uv-tcp-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-tcp-sp/set-data(s: uv-tcp-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-data(^s: uv-tcp-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-data(data))
-
-pub inline fun uv-tcp-scb/set-data(^s: uv-tcp-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-data(data))
-
-pub inline extern uv-tcp-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->loop)"
-
-pub inline fun uv-tcp-sp/loop(s: uv-tcp-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/loop)
-
-pub inline fun uv-tcp-sc/loop(^s: uv-tcp-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-tcp-sp/loop)
-
-pub inline fun uv-tcp-scb/loop(^s: uv-tcp-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-tcp-sp/loop)
-
-pub inline extern uv-tcp-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-tcp-sp/set-loop(s: uv-tcp-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-loop(^s: uv-tcp-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-loop(loop))
-
-pub inline fun uv-tcp-scb/set-loop(^s: uv-tcp-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-loop(loop))
-
-pub inline extern uv-tcp-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_tcp_s*)#1)->type)"
-
-pub inline fun uv-tcp-sp/type1(s: uv-tcp-sp): int
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/type1.int
-
-pub inline fun uv-tcp-sc/type1(^s: uv-tcp-sc): int
-  s.with-ptr(uv-tcp-sp/type1)
-
-pub inline fun uv-tcp-scb/type1(^s: uv-tcp-scb<s::S>): int
-  s.with-ptr(uv-tcp-sp/type1)
-
-pub inline extern uv-tcp-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_tcp_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-tcp-sp/set-type1(s: uv-tcp-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-tcp-sc/set-type1(^s: uv-tcp-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-type1(type1))
-
-pub inline fun uv-tcp-scb/set-type1(^s: uv-tcp-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-type1(type1))
-
-pub inline extern uv-tcp-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->close_cb)"
-
-pub inline fun uv-tcp-sp/close-cb(s: uv-tcp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/close-cb)
-
-pub inline fun uv-tcp-sc/close-cb(^s: uv-tcp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/close-cb)
-
-pub inline fun uv-tcp-scb/close-cb(^s: uv-tcp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/close-cb)
-
-pub inline extern uv-tcp-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-tcp-sp/set-close-cb(s: uv-tcp-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-close-cb(^s: uv-tcp-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-close-cb(close-cb))
-
-pub inline fun uv-tcp-scb/set-close-cb(^s: uv-tcp-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-close-cb(close-cb))
-
-pub inline extern uv-tcp-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->next_closing)"
-
-pub inline fun uv-tcp-sp/next-closing(s: uv-tcp-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/next-closing)
-
-pub inline fun uv-tcp-sc/next-closing(^s: uv-tcp-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-tcp-sp/next-closing)
-
-pub inline fun uv-tcp-scb/next-closing(^s: uv-tcp-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-tcp-sp/next-closing)
-
-pub inline extern uv-tcp-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-tcp-sp/set-next-closing(s: uv-tcp-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-next-closing(^s: uv-tcp-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-next-closing(next-closing))
-
-pub inline fun uv-tcp-scb/set-next-closing(^s: uv-tcp-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-next-closing(next-closing))
-
-pub inline extern uv-tcp-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_tcp_s*)#1)->flags)"
-
-pub inline fun uv-tcp-sp/flags(s: uv-tcp-sp): int
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/flags.int
-
-pub inline fun uv-tcp-sc/flags(^s: uv-tcp-sc): int
-  s.with-ptr(uv-tcp-sp/flags)
-
-pub inline fun uv-tcp-scb/flags(^s: uv-tcp-scb<s::S>): int
-  s.with-ptr(uv-tcp-sp/flags)
-
-pub inline extern uv-tcp-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_tcp_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-tcp-sp/set-flags(s: uv-tcp-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-tcp-sc/set-flags(^s: uv-tcp-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-flags(flags))
-
-pub inline fun uv-tcp-scb/set-flags(^s: uv-tcp-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-flags(flags))
-
-pub inline extern uv-tcp-s-ptrraw/write-queue-size(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_tcp_s*)#1)->write_queue_size)"
-
-pub inline fun uv-tcp-sp/write-queue-size(s: uv-tcp-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/write-queue-size
-
-pub inline fun uv-tcp-sc/write-queue-size(^s: uv-tcp-sc): ssize_t
-  s.with-ptr(uv-tcp-sp/write-queue-size)
-
-pub inline fun uv-tcp-scb/write-queue-size(^s: uv-tcp-scb<s::S>): ssize_t
-  s.with-ptr(uv-tcp-sp/write-queue-size)
-
-pub inline extern uv-tcp-s-ptrraw/set-write-queue-size(s: intptr_t, write-queue-size: ssize_t): ()
-  c inline "((struct uv_tcp_s*)#1)->write_queue_size = (ssize_t)#2"
-
-pub inline fun uv-tcp-sp/set-write-queue-size(s: uv-tcp-sp, write-queue-size: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-write-queue-size(write-queue-size)
-
-pub inline fun uv-tcp-sc/set-write-queue-size(^s: uv-tcp-sc, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-write-queue-size(write-queue-size))
-
-pub inline fun uv-tcp-scb/set-write-queue-size(^s: uv-tcp-scb<s::S>, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-write-queue-size(write-queue-size))
-
-pub inline extern uv-tcp-s-ptrraw/alloc-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->alloc_cb)"
-
-pub inline fun uv-tcp-sp/alloc-cb(s: uv-tcp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/alloc-cb)
-
-pub inline fun uv-tcp-sc/alloc-cb(^s: uv-tcp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/alloc-cb)
-
-pub inline fun uv-tcp-scb/alloc-cb(^s: uv-tcp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/alloc-cb)
-
-pub inline extern uv-tcp-s-ptrraw/set-alloc-cb(s: intptr_t, alloc-cb: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->alloc_cb = (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2"
-
-pub inline fun uv-tcp-sp/set-alloc-cb(s: uv-tcp-sp, alloc-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-alloc-cb(alloc-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-alloc-cb(^s: uv-tcp-sc, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-alloc-cb(alloc-cb))
-
-pub inline fun uv-tcp-scb/set-alloc-cb(^s: uv-tcp-scb<s::S>, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-alloc-cb(alloc-cb))
-
-pub inline extern uv-tcp-s-ptrraw/read-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->read_cb)"
-
-pub inline fun uv-tcp-sp/read-cb(s: uv-tcp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/read-cb)
-
-pub inline fun uv-tcp-sc/read-cb(^s: uv-tcp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/read-cb)
-
-pub inline fun uv-tcp-scb/read-cb(^s: uv-tcp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/read-cb)
-
-pub inline extern uv-tcp-s-ptrraw/set-read-cb(s: intptr_t, read-cb: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->read_cb = (void (*)(struct uv_stream_s*, long, struct uv_buf_t*))#2"
-
-pub inline fun uv-tcp-sp/set-read-cb(s: uv-tcp-sp, read-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-read-cb(read-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-read-cb(^s: uv-tcp-sc, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-read-cb(read-cb))
-
-pub inline fun uv-tcp-scb/set-read-cb(^s: uv-tcp-scb<s::S>, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-read-cb(read-cb))
-
-pub inline extern uv-tcp-s-ptrraw/connect-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->connect_req)"
-
-pub inline fun uv-tcp-sp/connect-req(s: uv-tcp-sp): c-pointer<uv-connect-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/connect-req)
-
-pub inline fun uv-tcp-sc/connect-req(^s: uv-tcp-sc): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-tcp-sp/connect-req)
-
-pub inline fun uv-tcp-scb/connect-req(^s: uv-tcp-scb<s::S>): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-tcp-sp/connect-req)
-
-pub inline extern uv-tcp-s-ptrraw/set-connect-req(s: intptr_t, connect-req: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->connect_req = (struct uv_connect_s*)#2"
-
-pub inline fun uv-tcp-sp/set-connect-req(s: uv-tcp-sp, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-connect-req(connect-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-connect-req(^s: uv-tcp-sc, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-connect-req(connect-req))
-
-pub inline fun uv-tcp-scb/set-connect-req(^s: uv-tcp-scb<s::S>, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-connect-req(connect-req))
-
-pub inline extern uv-tcp-s-ptrraw/shutdown-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->shutdown_req)"
-
-pub inline fun uv-tcp-sp/shutdown-req(s: uv-tcp-sp): c-pointer<uv-shutdown-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/shutdown-req)
-
-pub inline fun uv-tcp-sc/shutdown-req(^s: uv-tcp-sc): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-tcp-sp/shutdown-req)
-
-pub inline fun uv-tcp-scb/shutdown-req(^s: uv-tcp-scb<s::S>): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-tcp-sp/shutdown-req)
-
-pub inline extern uv-tcp-s-ptrraw/set-shutdown-req(s: intptr_t, shutdown-req: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->shutdown_req = (struct uv_shutdown_s*)#2"
-
-pub inline fun uv-tcp-sp/set-shutdown-req(s: uv-tcp-sp, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-shutdown-req(shutdown-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-shutdown-req(^s: uv-tcp-sc, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-shutdown-req(shutdown-req))
-
-pub inline fun uv-tcp-scb/set-shutdown-req(^s: uv-tcp-scb<s::S>, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-shutdown-req(shutdown-req))
-
-pub inline extern uv-tcp-s-ptrraw/connection-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->connection_cb)"
-
-pub inline fun uv-tcp-sp/connection-cb(s: uv-tcp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/connection-cb)
-
-pub inline fun uv-tcp-sc/connection-cb(^s: uv-tcp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/connection-cb)
-
-pub inline fun uv-tcp-scb/connection-cb(^s: uv-tcp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tcp-sp/connection-cb)
-
-pub inline extern uv-tcp-s-ptrraw/set-connection-cb(s: intptr_t, connection-cb: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->connection_cb = (void (*)(struct uv_stream_s*, int))#2"
-
-pub inline fun uv-tcp-sp/set-connection-cb(s: uv-tcp-sp, connection-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-connection-cb(connection-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-connection-cb(^s: uv-tcp-sc, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-connection-cb(connection-cb))
-
-pub inline fun uv-tcp-scb/set-connection-cb(^s: uv-tcp-scb<s::S>, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-connection-cb(connection-cb))
-
-pub inline extern uv-tcp-s-ptrraw/delayed-error(s: intptr_t): int32
-  c inline "(int)(((struct uv_tcp_s*)#1)->delayed_error)"
-
-pub inline fun uv-tcp-sp/delayed-error(s: uv-tcp-sp): int
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/delayed-error.int
-
-pub inline fun uv-tcp-sc/delayed-error(^s: uv-tcp-sc): int
-  s.with-ptr(uv-tcp-sp/delayed-error)
-
-pub inline fun uv-tcp-scb/delayed-error(^s: uv-tcp-scb<s::S>): int
-  s.with-ptr(uv-tcp-sp/delayed-error)
-
-pub inline extern uv-tcp-s-ptrraw/set-delayed-error(s: intptr_t, delayed-error: int32): ()
-  c inline "((struct uv_tcp_s*)#1)->delayed_error = (int)#2"
-
-pub inline fun uv-tcp-sp/set-delayed-error(s: uv-tcp-sp, delayed-error: int): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-delayed-error(delayed-error.int32)
-
-pub inline fun uv-tcp-sc/set-delayed-error(^s: uv-tcp-sc, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-delayed-error(delayed-error))
-
-pub inline fun uv-tcp-scb/set-delayed-error(^s: uv-tcp-scb<s::S>, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-delayed-error(delayed-error))
-
-pub inline extern uv-tcp-s-ptrraw/accepted-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_tcp_s*)#1)->accepted_fd)"
-
-pub inline fun uv-tcp-sp/accepted-fd(s: uv-tcp-sp): int
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/accepted-fd.int
-
-pub inline fun uv-tcp-sc/accepted-fd(^s: uv-tcp-sc): int
-  s.with-ptr(uv-tcp-sp/accepted-fd)
-
-pub inline fun uv-tcp-scb/accepted-fd(^s: uv-tcp-scb<s::S>): int
-  s.with-ptr(uv-tcp-sp/accepted-fd)
-
-pub inline extern uv-tcp-s-ptrraw/set-accepted-fd(s: intptr_t, accepted-fd: int32): ()
-  c inline "((struct uv_tcp_s*)#1)->accepted_fd = (int)#2"
-
-pub inline fun uv-tcp-sp/set-accepted-fd(s: uv-tcp-sp, accepted-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-accepted-fd(accepted-fd.int32)
-
-pub inline fun uv-tcp-sc/set-accepted-fd(^s: uv-tcp-sc, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-accepted-fd(accepted-fd))
-
-pub inline fun uv-tcp-scb/set-accepted-fd(^s: uv-tcp-scb<s::S>, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-accepted-fd(accepted-fd))
-
-pub inline extern uv-tcp-s-ptrraw/queued-fds(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tcp_s*)#1)->queued_fds)"
-
-pub inline fun uv-tcp-sp/queued-fds(s: uv-tcp-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/queued-fds)
-
-pub inline fun uv-tcp-sc/queued-fds(^s: uv-tcp-sc): c-pointer<()>
-  s.with-ptr(uv-tcp-sp/queued-fds)
-
-pub inline fun uv-tcp-scb/queued-fds(^s: uv-tcp-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-tcp-sp/queued-fds)
-
-pub inline extern uv-tcp-s-ptrraw/set-queued-fds(s: intptr_t, queued-fds: intptr_t): ()
-  c inline "((struct uv_tcp_s*)#1)->queued_fds = (void*)#2"
-
-pub inline fun uv-tcp-sp/set-queued-fds(s: uv-tcp-sp, queued-fds: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-tcp-s-ptrraw/set-queued-fds(queued-fds.cextern/c-pointer/ptr)
-
-pub inline fun uv-tcp-sc/set-queued-fds(^s: uv-tcp-sc, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-queued-fds(queued-fds))
-
-pub inline fun uv-tcp-scb/set-queued-fds(^s: uv-tcp-scb<s::S>, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tcp-sp/set-queued-fds(queued-fds))
-
-pub struct unnamed-Union6
-pub type unnamed-Union6-c
-pub alias unnamed-Union6p = c-pointer<unnamed-Union6-c>
-pub alias unnamed-Union6c<s::S> = owned-c<unnamed-Union6-c>
-pub alias unnamed-Union6cb<s::S> = borrowed-c<s,unnamed-Union6-c>
-pub alias unnamed-Union6ca<s::S> = owned-c<c-array<unnamed-Union6-c>>
-
-pub extern unnamed-Union6/size-of(c: c-null<unnamed-Union6-c>): int32
-  c inline "sizeof(union unnamed-Union6)"
-
-pub fun unnamed-Union6c(): unnamed-Union6c<s::S>
-  malloc(?size-of=unnamed-Union6/size-of)
-
-pub fun unnamed-Union6c-calloc(): unnamed-Union6c<s::S>
-  malloc-c(?size-of=unnamed-Union6/size-of)
-
-pub fun unnamed-Union6c-array(n: int): unnamed-Union6ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union6/size-of)
-
-pub fun unnamed-Union6c-array-calloc(n: int): unnamed-Union6ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union6/size-of)
-
-pub inline extern unnamed-Union6-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union6*)#1)->fd)"
-
-pub inline fun unnamed-Union6p/fd(s: unnamed-Union6p): int
-  s.cextern/c-pointer/ptr.unnamed-Union6-ptrraw/fd.int
-
-pub inline fun unnamed-Union6c/fd(^s: unnamed-Union6c<s::S>): int
-  s.with-ptr(unnamed-Union6p/fd)
-
-pub inline fun unnamed-Union6cb/fd(^s: unnamed-Union6cb<s::S>): int
-  s.with-ptr(unnamed-Union6p/fd)
-
-pub inline extern unnamed-Union6-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union6*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union6p/set-fd(s: unnamed-Union6p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union6-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union6c/set-fd(^s: unnamed-Union6c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union6p/set-fd(fd))
-
-pub inline fun unnamed-Union6cb/set-fd(^s: unnamed-Union6cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union6p/set-fd(fd))
-
-pub inline extern unnamed-Union6-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union6*)#1)->reserved)"
-
-pub inline fun unnamed-Union6p/reserved(s: unnamed-Union6p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union6-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union6c/reserved(^s: unnamed-Union6c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union6p/reserved)
-
-pub inline fun unnamed-Union6cb/reserved(^s: unnamed-Union6cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union6p/reserved)
-
-pub inline extern unnamed-Union6-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union6*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union6p/set-reserved(s: unnamed-Union6p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union6-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union6c/set-reserved(^s: unnamed-Union6c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union6p/set-reserved(reserved))
-
-pub inline fun unnamed-Union6cb/set-reserved(^s: unnamed-Union6cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union6p/set-reserved(reserved))
+pub struct unnamed-union6
+pub type unnamed-union6-c
+pub alias unnamed-union6p = c-pointer<unnamed-union6-c>
+pub alias unnamed-union6c<s::S> = owned-c<unnamed-union6-c>
+pub alias unnamed-union6cb<s::S> = borrowed-c<s,unnamed-union6-c>
+pub alias unnamed-union6ca<s::S> = owned-c<c-array<unnamed-union6-c>>
 
 pub struct uv-udp-s
   data: c-pointer<()>
@@ -6555,11 +3012,11 @@ pub struct uv-udp-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union7-c
+  u: unnamed-union7-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  send-queue-size: ssize_t
-  send-queue-count: ssize_t
+  send-queue-size: int
+  send-queue-count: int
   alloc-cb: c-pointer<intptr_t>
   recv-cb: c-pointer<intptr_t>
   io-watcher: koka-uv-io-t
@@ -6587,315 +3044,12 @@ pub fun uv-udp-sc-array(n: int): uv-udp-sca
 pub fun uv-udp-sc-array-calloc(n: int): uv-udp-sca
   malloc-c(n.int32, ?size-of=uv-udp-s/size-of)
 
-pub inline extern uv-udp-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_s*)#1)->data)"
-
-pub inline fun uv-udp-sp/data(s: uv-udp-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/data)
-
-pub inline fun uv-udp-sc/data(^s: uv-udp-sc): c-pointer<()>
-  s.with-ptr(uv-udp-sp/data)
-
-pub inline fun uv-udp-scb/data(^s: uv-udp-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-udp-sp/data)
-
-pub inline extern uv-udp-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_udp_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-udp-sp/set-data(s: uv-udp-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-sc/set-data(^s: uv-udp-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-data(data))
-
-pub inline fun uv-udp-scb/set-data(^s: uv-udp-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-data(data))
-
-pub inline extern uv-udp-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_s*)#1)->loop)"
-
-pub inline fun uv-udp-sp/loop(s: uv-udp-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/loop)
-
-pub inline fun uv-udp-sc/loop(^s: uv-udp-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-udp-sp/loop)
-
-pub inline fun uv-udp-scb/loop(^s: uv-udp-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-udp-sp/loop)
-
-pub inline extern uv-udp-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_udp_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-udp-sp/set-loop(s: uv-udp-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-sc/set-loop(^s: uv-udp-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-loop(loop))
-
-pub inline fun uv-udp-scb/set-loop(^s: uv-udp-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-loop(loop))
-
-pub inline extern uv-udp-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_udp_s*)#1)->type)"
-
-pub inline fun uv-udp-sp/type1(s: uv-udp-sp): int
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/type1.int
-
-pub inline fun uv-udp-sc/type1(^s: uv-udp-sc): int
-  s.with-ptr(uv-udp-sp/type1)
-
-pub inline fun uv-udp-scb/type1(^s: uv-udp-scb<s::S>): int
-  s.with-ptr(uv-udp-sp/type1)
-
-pub inline extern uv-udp-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_udp_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-udp-sp/set-type1(s: uv-udp-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-udp-sc/set-type1(^s: uv-udp-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-type1(type1))
-
-pub inline fun uv-udp-scb/set-type1(^s: uv-udp-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-type1(type1))
-
-pub inline extern uv-udp-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_s*)#1)->close_cb)"
-
-pub inline fun uv-udp-sp/close-cb(s: uv-udp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/close-cb)
-
-pub inline fun uv-udp-sc/close-cb(^s: uv-udp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-sp/close-cb)
-
-pub inline fun uv-udp-scb/close-cb(^s: uv-udp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-sp/close-cb)
-
-pub inline extern uv-udp-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_udp_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-udp-sp/set-close-cb(s: uv-udp-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-sc/set-close-cb(^s: uv-udp-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-close-cb(close-cb))
-
-pub inline fun uv-udp-scb/set-close-cb(^s: uv-udp-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-close-cb(close-cb))
-
-pub inline extern uv-udp-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_s*)#1)->next_closing)"
-
-pub inline fun uv-udp-sp/next-closing(s: uv-udp-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/next-closing)
-
-pub inline fun uv-udp-sc/next-closing(^s: uv-udp-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-udp-sp/next-closing)
-
-pub inline fun uv-udp-scb/next-closing(^s: uv-udp-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-udp-sp/next-closing)
-
-pub inline extern uv-udp-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_udp_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-udp-sp/set-next-closing(s: uv-udp-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-sc/set-next-closing(^s: uv-udp-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-next-closing(next-closing))
-
-pub inline fun uv-udp-scb/set-next-closing(^s: uv-udp-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-next-closing(next-closing))
-
-pub inline extern uv-udp-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_udp_s*)#1)->flags)"
-
-pub inline fun uv-udp-sp/flags(s: uv-udp-sp): int
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/flags.int
-
-pub inline fun uv-udp-sc/flags(^s: uv-udp-sc): int
-  s.with-ptr(uv-udp-sp/flags)
-
-pub inline fun uv-udp-scb/flags(^s: uv-udp-scb<s::S>): int
-  s.with-ptr(uv-udp-sp/flags)
-
-pub inline extern uv-udp-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_udp_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-udp-sp/set-flags(s: uv-udp-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-udp-sc/set-flags(^s: uv-udp-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-flags(flags))
-
-pub inline fun uv-udp-scb/set-flags(^s: uv-udp-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-flags(flags))
-
-pub inline extern uv-udp-s-ptrraw/send-queue-size(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_udp_s*)#1)->send_queue_size)"
-
-pub inline fun uv-udp-sp/send-queue-size(s: uv-udp-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/send-queue-size
-
-pub inline fun uv-udp-sc/send-queue-size(^s: uv-udp-sc): ssize_t
-  s.with-ptr(uv-udp-sp/send-queue-size)
-
-pub inline fun uv-udp-scb/send-queue-size(^s: uv-udp-scb<s::S>): ssize_t
-  s.with-ptr(uv-udp-sp/send-queue-size)
-
-pub inline extern uv-udp-s-ptrraw/set-send-queue-size(s: intptr_t, send-queue-size: ssize_t): ()
-  c inline "((struct uv_udp_s*)#1)->send_queue_size = (ssize_t)#2"
-
-pub inline fun uv-udp-sp/set-send-queue-size(s: uv-udp-sp, send-queue-size: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-send-queue-size(send-queue-size)
-
-pub inline fun uv-udp-sc/set-send-queue-size(^s: uv-udp-sc, send-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-send-queue-size(send-queue-size))
-
-pub inline fun uv-udp-scb/set-send-queue-size(^s: uv-udp-scb<s::S>, send-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-send-queue-size(send-queue-size))
-
-pub inline extern uv-udp-s-ptrraw/send-queue-count(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_udp_s*)#1)->send_queue_count)"
-
-pub inline fun uv-udp-sp/send-queue-count(s: uv-udp-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/send-queue-count
-
-pub inline fun uv-udp-sc/send-queue-count(^s: uv-udp-sc): ssize_t
-  s.with-ptr(uv-udp-sp/send-queue-count)
-
-pub inline fun uv-udp-scb/send-queue-count(^s: uv-udp-scb<s::S>): ssize_t
-  s.with-ptr(uv-udp-sp/send-queue-count)
-
-pub inline extern uv-udp-s-ptrraw/set-send-queue-count(s: intptr_t, send-queue-count: ssize_t): ()
-  c inline "((struct uv_udp_s*)#1)->send_queue_count = (ssize_t)#2"
-
-pub inline fun uv-udp-sp/set-send-queue-count(s: uv-udp-sp, send-queue-count: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-send-queue-count(send-queue-count)
-
-pub inline fun uv-udp-sc/set-send-queue-count(^s: uv-udp-sc, send-queue-count: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-send-queue-count(send-queue-count))
-
-pub inline fun uv-udp-scb/set-send-queue-count(^s: uv-udp-scb<s::S>, send-queue-count: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-send-queue-count(send-queue-count))
-
-pub inline extern uv-udp-s-ptrraw/alloc-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_s*)#1)->alloc_cb)"
-
-pub inline fun uv-udp-sp/alloc-cb(s: uv-udp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/alloc-cb)
-
-pub inline fun uv-udp-sc/alloc-cb(^s: uv-udp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-sp/alloc-cb)
-
-pub inline fun uv-udp-scb/alloc-cb(^s: uv-udp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-sp/alloc-cb)
-
-pub inline extern uv-udp-s-ptrraw/set-alloc-cb(s: intptr_t, alloc-cb: intptr_t): ()
-  c inline "((struct uv_udp_s*)#1)->alloc_cb = (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2"
-
-pub inline fun uv-udp-sp/set-alloc-cb(s: uv-udp-sp, alloc-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-alloc-cb(alloc-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-sc/set-alloc-cb(^s: uv-udp-sc, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-alloc-cb(alloc-cb))
-
-pub inline fun uv-udp-scb/set-alloc-cb(^s: uv-udp-scb<s::S>, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-alloc-cb(alloc-cb))
-
-pub inline extern uv-udp-s-ptrraw/recv-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_s*)#1)->recv_cb)"
-
-pub inline fun uv-udp-sp/recv-cb(s: uv-udp-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/recv-cb)
-
-pub inline fun uv-udp-sc/recv-cb(^s: uv-udp-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-sp/recv-cb)
-
-pub inline fun uv-udp-scb/recv-cb(^s: uv-udp-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-sp/recv-cb)
-
-pub inline extern uv-udp-s-ptrraw/set-recv-cb(s: intptr_t, recv-cb: intptr_t): ()
-  c inline "((struct uv_udp_s*)#1)->recv_cb = (void (*)(struct uv_udp_s*, long, struct uv_buf_t*, struct sockaddr*, unsigned int))#2"
-
-pub inline fun uv-udp-sp/set-recv-cb(s: uv-udp-sp, recv-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-udp-s-ptrraw/set-recv-cb(recv-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-sc/set-recv-cb(^s: uv-udp-sc, recv-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-recv-cb(recv-cb))
-
-pub inline fun uv-udp-scb/set-recv-cb(^s: uv-udp-scb<s::S>, recv-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-sp/set-recv-cb(recv-cb))
-
-pub struct unnamed-Union7
-pub type unnamed-Union7-c
-pub alias unnamed-Union7p = c-pointer<unnamed-Union7-c>
-pub alias unnamed-Union7c<s::S> = owned-c<unnamed-Union7-c>
-pub alias unnamed-Union7cb<s::S> = borrowed-c<s,unnamed-Union7-c>
-pub alias unnamed-Union7ca<s::S> = owned-c<c-array<unnamed-Union7-c>>
-
-pub extern unnamed-Union7/size-of(c: c-null<unnamed-Union7-c>): int32
-  c inline "sizeof(union unnamed-Union7)"
-
-pub fun unnamed-Union7c(): unnamed-Union7c<s::S>
-  malloc(?size-of=unnamed-Union7/size-of)
-
-pub fun unnamed-Union7c-calloc(): unnamed-Union7c<s::S>
-  malloc-c(?size-of=unnamed-Union7/size-of)
-
-pub fun unnamed-Union7c-array(n: int): unnamed-Union7ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union7/size-of)
-
-pub fun unnamed-Union7c-array-calloc(n: int): unnamed-Union7ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union7/size-of)
-
-pub inline extern unnamed-Union7-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union7*)#1)->fd)"
-
-pub inline fun unnamed-Union7p/fd(s: unnamed-Union7p): int
-  s.cextern/c-pointer/ptr.unnamed-Union7-ptrraw/fd.int
-
-pub inline fun unnamed-Union7c/fd(^s: unnamed-Union7c<s::S>): int
-  s.with-ptr(unnamed-Union7p/fd)
-
-pub inline fun unnamed-Union7cb/fd(^s: unnamed-Union7cb<s::S>): int
-  s.with-ptr(unnamed-Union7p/fd)
-
-pub inline extern unnamed-Union7-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union7*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union7p/set-fd(s: unnamed-Union7p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union7-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union7c/set-fd(^s: unnamed-Union7c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union7p/set-fd(fd))
-
-pub inline fun unnamed-Union7cb/set-fd(^s: unnamed-Union7cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union7p/set-fd(fd))
-
-pub inline extern unnamed-Union7-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union7*)#1)->reserved)"
-
-pub inline fun unnamed-Union7p/reserved(s: unnamed-Union7p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union7-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union7c/reserved(^s: unnamed-Union7c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union7p/reserved)
-
-pub inline fun unnamed-Union7cb/reserved(^s: unnamed-Union7cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union7p/reserved)
-
-pub inline extern unnamed-Union7-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union7*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union7p/set-reserved(s: unnamed-Union7p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union7-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union7c/set-reserved(^s: unnamed-Union7c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union7p/set-reserved(reserved))
-
-pub inline fun unnamed-Union7cb/set-reserved(^s: unnamed-Union7cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union7p/set-reserved(reserved))
+pub struct unnamed-union7
+pub type unnamed-union7-c
+pub alias unnamed-union7p = c-pointer<unnamed-union7-c>
+pub alias unnamed-union7c<s::S> = owned-c<unnamed-union7-c>
+pub alias unnamed-union7cb<s::S> = borrowed-c<s,unnamed-union7-c>
+pub alias unnamed-union7ca<s::S> = owned-c<c-array<unnamed-union7-c>>
 
 alias uv-udp-recv-cb = c-pointer<intptr_t>
 alias uv-udp-recv-cbfn = ((handle1 : c-pointer<uv-udp-s-c>, nread : int, buf : c-pointer<uv-buf-t-c>, addr : c-pointer<sockaddr-c>, flags : int) -> ())
@@ -6914,10 +3068,10 @@ pub struct uv-pipe-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union8-c
+  u: unnamed-union8-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  write-queue-size: ssize_t
+  write-queue-size: int
   alloc-cb: c-pointer<intptr_t>
   read-cb: c-pointer<intptr_t>
   connect-req: c-pointer<uv-connect-s-c>
@@ -6929,6 +3083,7 @@ pub struct uv-pipe-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
+  select: c-pointer<()>
   ipc: int
   pipe-fname: c-pointer<int>
 
@@ -6953,483 +3108,12 @@ pub fun uv-pipe-sc-array(n: int): uv-pipe-sca
 pub fun uv-pipe-sc-array-calloc(n: int): uv-pipe-sca
   malloc-c(n.int32, ?size-of=uv-pipe-s/size-of)
 
-pub inline extern uv-pipe-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->data)"
-
-pub inline fun uv-pipe-sp/data(s: uv-pipe-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/data)
-
-pub inline fun uv-pipe-sc/data(^s: uv-pipe-sc): c-pointer<()>
-  s.with-ptr(uv-pipe-sp/data)
-
-pub inline fun uv-pipe-scb/data(^s: uv-pipe-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-pipe-sp/data)
-
-pub inline extern uv-pipe-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-pipe-sp/set-data(s: uv-pipe-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-data(^s: uv-pipe-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-data(data))
-
-pub inline fun uv-pipe-scb/set-data(^s: uv-pipe-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-data(data))
-
-pub inline extern uv-pipe-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->loop)"
-
-pub inline fun uv-pipe-sp/loop(s: uv-pipe-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/loop)
-
-pub inline fun uv-pipe-sc/loop(^s: uv-pipe-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-pipe-sp/loop)
-
-pub inline fun uv-pipe-scb/loop(^s: uv-pipe-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-pipe-sp/loop)
-
-pub inline extern uv-pipe-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-pipe-sp/set-loop(s: uv-pipe-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-loop(^s: uv-pipe-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-loop(loop))
-
-pub inline fun uv-pipe-scb/set-loop(^s: uv-pipe-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-loop(loop))
-
-pub inline extern uv-pipe-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_pipe_s*)#1)->type)"
-
-pub inline fun uv-pipe-sp/type1(s: uv-pipe-sp): int
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/type1.int
-
-pub inline fun uv-pipe-sc/type1(^s: uv-pipe-sc): int
-  s.with-ptr(uv-pipe-sp/type1)
-
-pub inline fun uv-pipe-scb/type1(^s: uv-pipe-scb<s::S>): int
-  s.with-ptr(uv-pipe-sp/type1)
-
-pub inline extern uv-pipe-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_pipe_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-pipe-sp/set-type1(s: uv-pipe-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-pipe-sc/set-type1(^s: uv-pipe-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-type1(type1))
-
-pub inline fun uv-pipe-scb/set-type1(^s: uv-pipe-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-type1(type1))
-
-pub inline extern uv-pipe-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->close_cb)"
-
-pub inline fun uv-pipe-sp/close-cb(s: uv-pipe-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/close-cb)
-
-pub inline fun uv-pipe-sc/close-cb(^s: uv-pipe-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/close-cb)
-
-pub inline fun uv-pipe-scb/close-cb(^s: uv-pipe-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/close-cb)
-
-pub inline extern uv-pipe-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-pipe-sp/set-close-cb(s: uv-pipe-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-close-cb(^s: uv-pipe-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-close-cb(close-cb))
-
-pub inline fun uv-pipe-scb/set-close-cb(^s: uv-pipe-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-close-cb(close-cb))
-
-pub inline extern uv-pipe-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->next_closing)"
-
-pub inline fun uv-pipe-sp/next-closing(s: uv-pipe-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/next-closing)
-
-pub inline fun uv-pipe-sc/next-closing(^s: uv-pipe-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-pipe-sp/next-closing)
-
-pub inline fun uv-pipe-scb/next-closing(^s: uv-pipe-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-pipe-sp/next-closing)
-
-pub inline extern uv-pipe-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-pipe-sp/set-next-closing(s: uv-pipe-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-next-closing(^s: uv-pipe-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-next-closing(next-closing))
-
-pub inline fun uv-pipe-scb/set-next-closing(^s: uv-pipe-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-next-closing(next-closing))
-
-pub inline extern uv-pipe-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_pipe_s*)#1)->flags)"
-
-pub inline fun uv-pipe-sp/flags(s: uv-pipe-sp): int
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/flags.int
-
-pub inline fun uv-pipe-sc/flags(^s: uv-pipe-sc): int
-  s.with-ptr(uv-pipe-sp/flags)
-
-pub inline fun uv-pipe-scb/flags(^s: uv-pipe-scb<s::S>): int
-  s.with-ptr(uv-pipe-sp/flags)
-
-pub inline extern uv-pipe-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_pipe_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-pipe-sp/set-flags(s: uv-pipe-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-pipe-sc/set-flags(^s: uv-pipe-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-flags(flags))
-
-pub inline fun uv-pipe-scb/set-flags(^s: uv-pipe-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-flags(flags))
-
-pub inline extern uv-pipe-s-ptrraw/write-queue-size(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_pipe_s*)#1)->write_queue_size)"
-
-pub inline fun uv-pipe-sp/write-queue-size(s: uv-pipe-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/write-queue-size
-
-pub inline fun uv-pipe-sc/write-queue-size(^s: uv-pipe-sc): ssize_t
-  s.with-ptr(uv-pipe-sp/write-queue-size)
-
-pub inline fun uv-pipe-scb/write-queue-size(^s: uv-pipe-scb<s::S>): ssize_t
-  s.with-ptr(uv-pipe-sp/write-queue-size)
-
-pub inline extern uv-pipe-s-ptrraw/set-write-queue-size(s: intptr_t, write-queue-size: ssize_t): ()
-  c inline "((struct uv_pipe_s*)#1)->write_queue_size = (ssize_t)#2"
-
-pub inline fun uv-pipe-sp/set-write-queue-size(s: uv-pipe-sp, write-queue-size: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-write-queue-size(write-queue-size)
-
-pub inline fun uv-pipe-sc/set-write-queue-size(^s: uv-pipe-sc, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-write-queue-size(write-queue-size))
-
-pub inline fun uv-pipe-scb/set-write-queue-size(^s: uv-pipe-scb<s::S>, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-write-queue-size(write-queue-size))
-
-pub inline extern uv-pipe-s-ptrraw/alloc-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->alloc_cb)"
-
-pub inline fun uv-pipe-sp/alloc-cb(s: uv-pipe-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/alloc-cb)
-
-pub inline fun uv-pipe-sc/alloc-cb(^s: uv-pipe-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/alloc-cb)
-
-pub inline fun uv-pipe-scb/alloc-cb(^s: uv-pipe-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/alloc-cb)
-
-pub inline extern uv-pipe-s-ptrraw/set-alloc-cb(s: intptr_t, alloc-cb: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->alloc_cb = (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2"
-
-pub inline fun uv-pipe-sp/set-alloc-cb(s: uv-pipe-sp, alloc-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-alloc-cb(alloc-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-alloc-cb(^s: uv-pipe-sc, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-alloc-cb(alloc-cb))
-
-pub inline fun uv-pipe-scb/set-alloc-cb(^s: uv-pipe-scb<s::S>, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-alloc-cb(alloc-cb))
-
-pub inline extern uv-pipe-s-ptrraw/read-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->read_cb)"
-
-pub inline fun uv-pipe-sp/read-cb(s: uv-pipe-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/read-cb)
-
-pub inline fun uv-pipe-sc/read-cb(^s: uv-pipe-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/read-cb)
-
-pub inline fun uv-pipe-scb/read-cb(^s: uv-pipe-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/read-cb)
-
-pub inline extern uv-pipe-s-ptrraw/set-read-cb(s: intptr_t, read-cb: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->read_cb = (void (*)(struct uv_stream_s*, long, struct uv_buf_t*))#2"
-
-pub inline fun uv-pipe-sp/set-read-cb(s: uv-pipe-sp, read-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-read-cb(read-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-read-cb(^s: uv-pipe-sc, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-read-cb(read-cb))
-
-pub inline fun uv-pipe-scb/set-read-cb(^s: uv-pipe-scb<s::S>, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-read-cb(read-cb))
-
-pub inline extern uv-pipe-s-ptrraw/connect-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->connect_req)"
-
-pub inline fun uv-pipe-sp/connect-req(s: uv-pipe-sp): c-pointer<uv-connect-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/connect-req)
-
-pub inline fun uv-pipe-sc/connect-req(^s: uv-pipe-sc): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-pipe-sp/connect-req)
-
-pub inline fun uv-pipe-scb/connect-req(^s: uv-pipe-scb<s::S>): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-pipe-sp/connect-req)
-
-pub inline extern uv-pipe-s-ptrraw/set-connect-req(s: intptr_t, connect-req: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->connect_req = (struct uv_connect_s*)#2"
-
-pub inline fun uv-pipe-sp/set-connect-req(s: uv-pipe-sp, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-connect-req(connect-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-connect-req(^s: uv-pipe-sc, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-connect-req(connect-req))
-
-pub inline fun uv-pipe-scb/set-connect-req(^s: uv-pipe-scb<s::S>, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-connect-req(connect-req))
-
-pub inline extern uv-pipe-s-ptrraw/shutdown-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->shutdown_req)"
-
-pub inline fun uv-pipe-sp/shutdown-req(s: uv-pipe-sp): c-pointer<uv-shutdown-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/shutdown-req)
-
-pub inline fun uv-pipe-sc/shutdown-req(^s: uv-pipe-sc): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-pipe-sp/shutdown-req)
-
-pub inline fun uv-pipe-scb/shutdown-req(^s: uv-pipe-scb<s::S>): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-pipe-sp/shutdown-req)
-
-pub inline extern uv-pipe-s-ptrraw/set-shutdown-req(s: intptr_t, shutdown-req: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->shutdown_req = (struct uv_shutdown_s*)#2"
-
-pub inline fun uv-pipe-sp/set-shutdown-req(s: uv-pipe-sp, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-shutdown-req(shutdown-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-shutdown-req(^s: uv-pipe-sc, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-shutdown-req(shutdown-req))
-
-pub inline fun uv-pipe-scb/set-shutdown-req(^s: uv-pipe-scb<s::S>, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-shutdown-req(shutdown-req))
-
-pub inline extern uv-pipe-s-ptrraw/connection-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->connection_cb)"
-
-pub inline fun uv-pipe-sp/connection-cb(s: uv-pipe-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/connection-cb)
-
-pub inline fun uv-pipe-sc/connection-cb(^s: uv-pipe-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/connection-cb)
-
-pub inline fun uv-pipe-scb/connection-cb(^s: uv-pipe-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-pipe-sp/connection-cb)
-
-pub inline extern uv-pipe-s-ptrraw/set-connection-cb(s: intptr_t, connection-cb: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->connection_cb = (void (*)(struct uv_stream_s*, int))#2"
-
-pub inline fun uv-pipe-sp/set-connection-cb(s: uv-pipe-sp, connection-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-connection-cb(connection-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-connection-cb(^s: uv-pipe-sc, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-connection-cb(connection-cb))
-
-pub inline fun uv-pipe-scb/set-connection-cb(^s: uv-pipe-scb<s::S>, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-connection-cb(connection-cb))
-
-pub inline extern uv-pipe-s-ptrraw/delayed-error(s: intptr_t): int32
-  c inline "(int)(((struct uv_pipe_s*)#1)->delayed_error)"
-
-pub inline fun uv-pipe-sp/delayed-error(s: uv-pipe-sp): int
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/delayed-error.int
-
-pub inline fun uv-pipe-sc/delayed-error(^s: uv-pipe-sc): int
-  s.with-ptr(uv-pipe-sp/delayed-error)
-
-pub inline fun uv-pipe-scb/delayed-error(^s: uv-pipe-scb<s::S>): int
-  s.with-ptr(uv-pipe-sp/delayed-error)
-
-pub inline extern uv-pipe-s-ptrraw/set-delayed-error(s: intptr_t, delayed-error: int32): ()
-  c inline "((struct uv_pipe_s*)#1)->delayed_error = (int)#2"
-
-pub inline fun uv-pipe-sp/set-delayed-error(s: uv-pipe-sp, delayed-error: int): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-delayed-error(delayed-error.int32)
-
-pub inline fun uv-pipe-sc/set-delayed-error(^s: uv-pipe-sc, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-delayed-error(delayed-error))
-
-pub inline fun uv-pipe-scb/set-delayed-error(^s: uv-pipe-scb<s::S>, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-delayed-error(delayed-error))
-
-pub inline extern uv-pipe-s-ptrraw/accepted-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_pipe_s*)#1)->accepted_fd)"
-
-pub inline fun uv-pipe-sp/accepted-fd(s: uv-pipe-sp): int
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/accepted-fd.int
-
-pub inline fun uv-pipe-sc/accepted-fd(^s: uv-pipe-sc): int
-  s.with-ptr(uv-pipe-sp/accepted-fd)
-
-pub inline fun uv-pipe-scb/accepted-fd(^s: uv-pipe-scb<s::S>): int
-  s.with-ptr(uv-pipe-sp/accepted-fd)
-
-pub inline extern uv-pipe-s-ptrraw/set-accepted-fd(s: intptr_t, accepted-fd: int32): ()
-  c inline "((struct uv_pipe_s*)#1)->accepted_fd = (int)#2"
-
-pub inline fun uv-pipe-sp/set-accepted-fd(s: uv-pipe-sp, accepted-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-accepted-fd(accepted-fd.int32)
-
-pub inline fun uv-pipe-sc/set-accepted-fd(^s: uv-pipe-sc, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-accepted-fd(accepted-fd))
-
-pub inline fun uv-pipe-scb/set-accepted-fd(^s: uv-pipe-scb<s::S>, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-accepted-fd(accepted-fd))
-
-pub inline extern uv-pipe-s-ptrraw/queued-fds(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->queued_fds)"
-
-pub inline fun uv-pipe-sp/queued-fds(s: uv-pipe-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/queued-fds)
-
-pub inline fun uv-pipe-sc/queued-fds(^s: uv-pipe-sc): c-pointer<()>
-  s.with-ptr(uv-pipe-sp/queued-fds)
-
-pub inline fun uv-pipe-scb/queued-fds(^s: uv-pipe-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-pipe-sp/queued-fds)
-
-pub inline extern uv-pipe-s-ptrraw/set-queued-fds(s: intptr_t, queued-fds: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->queued_fds = (void*)#2"
-
-pub inline fun uv-pipe-sp/set-queued-fds(s: uv-pipe-sp, queued-fds: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-queued-fds(queued-fds.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-queued-fds(^s: uv-pipe-sc, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-queued-fds(queued-fds))
-
-pub inline fun uv-pipe-scb/set-queued-fds(^s: uv-pipe-scb<s::S>, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-queued-fds(queued-fds))
-
-pub inline extern uv-pipe-s-ptrraw/ipc(s: intptr_t): int32
-  c inline "(int)(((struct uv_pipe_s*)#1)->ipc)"
-
-pub inline fun uv-pipe-sp/ipc(s: uv-pipe-sp): int
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/ipc.int
-
-pub inline fun uv-pipe-sc/ipc(^s: uv-pipe-sc): int
-  s.with-ptr(uv-pipe-sp/ipc)
-
-pub inline fun uv-pipe-scb/ipc(^s: uv-pipe-scb<s::S>): int
-  s.with-ptr(uv-pipe-sp/ipc)
-
-pub inline extern uv-pipe-s-ptrraw/set-ipc(s: intptr_t, ipc: int32): ()
-  c inline "((struct uv_pipe_s*)#1)->ipc = (int)#2"
-
-pub inline fun uv-pipe-sp/set-ipc(s: uv-pipe-sp, ipc: int): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-ipc(ipc.int32)
-
-pub inline fun uv-pipe-sc/set-ipc(^s: uv-pipe-sc, ipc: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-ipc(ipc))
-
-pub inline fun uv-pipe-scb/set-ipc(^s: uv-pipe-scb<s::S>, ipc: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-ipc(ipc))
-
-pub inline extern uv-pipe-s-ptrraw/pipe-fname(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_pipe_s*)#1)->pipe_fname)"
-
-pub inline fun uv-pipe-sp/pipe-fname(s: uv-pipe-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/pipe-fname)
-
-pub inline fun uv-pipe-sc/pipe-fname(^s: uv-pipe-sc): c-pointer<int>
-  s.with-ptr(uv-pipe-sp/pipe-fname)
-
-pub inline fun uv-pipe-scb/pipe-fname(^s: uv-pipe-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-pipe-sp/pipe-fname)
-
-pub inline extern uv-pipe-s-ptrraw/set-pipe-fname(s: intptr_t, pipe-fname: intptr_t): ()
-  c inline "((struct uv_pipe_s*)#1)->pipe_fname = (char*)#2"
-
-pub inline fun uv-pipe-sp/set-pipe-fname(s: uv-pipe-sp, pipe-fname: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-pipe-s-ptrraw/set-pipe-fname(pipe-fname.cextern/c-pointer/ptr)
-
-pub inline fun uv-pipe-sc/set-pipe-fname(^s: uv-pipe-sc, pipe-fname: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-pipe-fname(pipe-fname))
-
-pub inline fun uv-pipe-scb/set-pipe-fname(^s: uv-pipe-scb<s::S>, pipe-fname: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-pipe-sp/set-pipe-fname(pipe-fname))
-
-pub struct unnamed-Union8
-pub type unnamed-Union8-c
-pub alias unnamed-Union8p = c-pointer<unnamed-Union8-c>
-pub alias unnamed-Union8c<s::S> = owned-c<unnamed-Union8-c>
-pub alias unnamed-Union8cb<s::S> = borrowed-c<s,unnamed-Union8-c>
-pub alias unnamed-Union8ca<s::S> = owned-c<c-array<unnamed-Union8-c>>
-
-pub extern unnamed-Union8/size-of(c: c-null<unnamed-Union8-c>): int32
-  c inline "sizeof(union unnamed-Union8)"
-
-pub fun unnamed-Union8c(): unnamed-Union8c<s::S>
-  malloc(?size-of=unnamed-Union8/size-of)
-
-pub fun unnamed-Union8c-calloc(): unnamed-Union8c<s::S>
-  malloc-c(?size-of=unnamed-Union8/size-of)
-
-pub fun unnamed-Union8c-array(n: int): unnamed-Union8ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union8/size-of)
-
-pub fun unnamed-Union8c-array-calloc(n: int): unnamed-Union8ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union8/size-of)
-
-pub inline extern unnamed-Union8-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union8*)#1)->fd)"
-
-pub inline fun unnamed-Union8p/fd(s: unnamed-Union8p): int
-  s.cextern/c-pointer/ptr.unnamed-Union8-ptrraw/fd.int
-
-pub inline fun unnamed-Union8c/fd(^s: unnamed-Union8c<s::S>): int
-  s.with-ptr(unnamed-Union8p/fd)
-
-pub inline fun unnamed-Union8cb/fd(^s: unnamed-Union8cb<s::S>): int
-  s.with-ptr(unnamed-Union8p/fd)
-
-pub inline extern unnamed-Union8-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union8*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union8p/set-fd(s: unnamed-Union8p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union8-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union8c/set-fd(^s: unnamed-Union8c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union8p/set-fd(fd))
-
-pub inline fun unnamed-Union8cb/set-fd(^s: unnamed-Union8cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union8p/set-fd(fd))
-
-pub inline extern unnamed-Union8-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union8*)#1)->reserved)"
-
-pub inline fun unnamed-Union8p/reserved(s: unnamed-Union8p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union8-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union8c/reserved(^s: unnamed-Union8c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union8p/reserved)
-
-pub inline fun unnamed-Union8cb/reserved(^s: unnamed-Union8cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union8p/reserved)
-
-pub inline extern unnamed-Union8-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union8*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union8p/set-reserved(s: unnamed-Union8p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union8-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union8c/set-reserved(^s: unnamed-Union8c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union8p/set-reserved(reserved))
-
-pub inline fun unnamed-Union8cb/set-reserved(^s: unnamed-Union8cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union8p/set-reserved(reserved))
+pub struct unnamed-union8
+pub type unnamed-union8-c
+pub alias unnamed-union8p = c-pointer<unnamed-union8-c>
+pub alias unnamed-union8c<s::S> = owned-c<unnamed-union8-c>
+pub alias unnamed-union8cb<s::S> = borrowed-c<s,unnamed-union8-c>
+pub alias unnamed-union8ca<s::S> = owned-c<c-array<unnamed-union8-c>>
 
 pub struct uv-tty-s
   data: c-pointer<()>
@@ -7437,10 +3121,10 @@ pub struct uv-tty-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union9-c
+  u: unnamed-union9-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  write-queue-size: ssize_t
+  write-queue-size: int
   alloc-cb: c-pointer<intptr_t>
   read-cb: c-pointer<intptr_t>
   connect-req: c-pointer<uv-connect-s-c>
@@ -7452,6 +3136,7 @@ pub struct uv-tty-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
+  select: c-pointer<()>
   orig-termios: termios-c
   mode: int
 
@@ -7476,459 +3161,12 @@ pub fun uv-tty-sc-array(n: int): uv-tty-sca
 pub fun uv-tty-sc-array-calloc(n: int): uv-tty-sca
   malloc-c(n.int32, ?size-of=uv-tty-s/size-of)
 
-pub inline extern uv-tty-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->data)"
-
-pub inline fun uv-tty-sp/data(s: uv-tty-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/data)
-
-pub inline fun uv-tty-sc/data(^s: uv-tty-sc): c-pointer<()>
-  s.with-ptr(uv-tty-sp/data)
-
-pub inline fun uv-tty-scb/data(^s: uv-tty-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-tty-sp/data)
-
-pub inline extern uv-tty-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-tty-sp/set-data(s: uv-tty-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-data(^s: uv-tty-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-data(data))
-
-pub inline fun uv-tty-scb/set-data(^s: uv-tty-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-data(data))
-
-pub inline extern uv-tty-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->loop)"
-
-pub inline fun uv-tty-sp/loop(s: uv-tty-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/loop)
-
-pub inline fun uv-tty-sc/loop(^s: uv-tty-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-tty-sp/loop)
-
-pub inline fun uv-tty-scb/loop(^s: uv-tty-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-tty-sp/loop)
-
-pub inline extern uv-tty-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-tty-sp/set-loop(s: uv-tty-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-loop(^s: uv-tty-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-loop(loop))
-
-pub inline fun uv-tty-scb/set-loop(^s: uv-tty-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-loop(loop))
-
-pub inline extern uv-tty-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_tty_s*)#1)->type)"
-
-pub inline fun uv-tty-sp/type1(s: uv-tty-sp): int
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/type1.int
-
-pub inline fun uv-tty-sc/type1(^s: uv-tty-sc): int
-  s.with-ptr(uv-tty-sp/type1)
-
-pub inline fun uv-tty-scb/type1(^s: uv-tty-scb<s::S>): int
-  s.with-ptr(uv-tty-sp/type1)
-
-pub inline extern uv-tty-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_tty_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-tty-sp/set-type1(s: uv-tty-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-tty-sc/set-type1(^s: uv-tty-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-type1(type1))
-
-pub inline fun uv-tty-scb/set-type1(^s: uv-tty-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-type1(type1))
-
-pub inline extern uv-tty-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->close_cb)"
-
-pub inline fun uv-tty-sp/close-cb(s: uv-tty-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/close-cb)
-
-pub inline fun uv-tty-sc/close-cb(^s: uv-tty-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/close-cb)
-
-pub inline fun uv-tty-scb/close-cb(^s: uv-tty-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/close-cb)
-
-pub inline extern uv-tty-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-tty-sp/set-close-cb(s: uv-tty-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-close-cb(^s: uv-tty-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-close-cb(close-cb))
-
-pub inline fun uv-tty-scb/set-close-cb(^s: uv-tty-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-close-cb(close-cb))
-
-pub inline extern uv-tty-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->next_closing)"
-
-pub inline fun uv-tty-sp/next-closing(s: uv-tty-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/next-closing)
-
-pub inline fun uv-tty-sc/next-closing(^s: uv-tty-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-tty-sp/next-closing)
-
-pub inline fun uv-tty-scb/next-closing(^s: uv-tty-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-tty-sp/next-closing)
-
-pub inline extern uv-tty-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-tty-sp/set-next-closing(s: uv-tty-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-next-closing(^s: uv-tty-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-next-closing(next-closing))
-
-pub inline fun uv-tty-scb/set-next-closing(^s: uv-tty-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-next-closing(next-closing))
-
-pub inline extern uv-tty-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_tty_s*)#1)->flags)"
-
-pub inline fun uv-tty-sp/flags(s: uv-tty-sp): int
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/flags.int
-
-pub inline fun uv-tty-sc/flags(^s: uv-tty-sc): int
-  s.with-ptr(uv-tty-sp/flags)
-
-pub inline fun uv-tty-scb/flags(^s: uv-tty-scb<s::S>): int
-  s.with-ptr(uv-tty-sp/flags)
-
-pub inline extern uv-tty-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_tty_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-tty-sp/set-flags(s: uv-tty-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-tty-sc/set-flags(^s: uv-tty-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-flags(flags))
-
-pub inline fun uv-tty-scb/set-flags(^s: uv-tty-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-flags(flags))
-
-pub inline extern uv-tty-s-ptrraw/write-queue-size(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_tty_s*)#1)->write_queue_size)"
-
-pub inline fun uv-tty-sp/write-queue-size(s: uv-tty-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/write-queue-size
-
-pub inline fun uv-tty-sc/write-queue-size(^s: uv-tty-sc): ssize_t
-  s.with-ptr(uv-tty-sp/write-queue-size)
-
-pub inline fun uv-tty-scb/write-queue-size(^s: uv-tty-scb<s::S>): ssize_t
-  s.with-ptr(uv-tty-sp/write-queue-size)
-
-pub inline extern uv-tty-s-ptrraw/set-write-queue-size(s: intptr_t, write-queue-size: ssize_t): ()
-  c inline "((struct uv_tty_s*)#1)->write_queue_size = (ssize_t)#2"
-
-pub inline fun uv-tty-sp/set-write-queue-size(s: uv-tty-sp, write-queue-size: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-write-queue-size(write-queue-size)
-
-pub inline fun uv-tty-sc/set-write-queue-size(^s: uv-tty-sc, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-write-queue-size(write-queue-size))
-
-pub inline fun uv-tty-scb/set-write-queue-size(^s: uv-tty-scb<s::S>, write-queue-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-write-queue-size(write-queue-size))
-
-pub inline extern uv-tty-s-ptrraw/alloc-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->alloc_cb)"
-
-pub inline fun uv-tty-sp/alloc-cb(s: uv-tty-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/alloc-cb)
-
-pub inline fun uv-tty-sc/alloc-cb(^s: uv-tty-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/alloc-cb)
-
-pub inline fun uv-tty-scb/alloc-cb(^s: uv-tty-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/alloc-cb)
-
-pub inline extern uv-tty-s-ptrraw/set-alloc-cb(s: intptr_t, alloc-cb: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->alloc_cb = (void (*)(struct uv_handle_s*, ssize_t, struct uv_buf_t*))#2"
-
-pub inline fun uv-tty-sp/set-alloc-cb(s: uv-tty-sp, alloc-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-alloc-cb(alloc-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-alloc-cb(^s: uv-tty-sc, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-alloc-cb(alloc-cb))
-
-pub inline fun uv-tty-scb/set-alloc-cb(^s: uv-tty-scb<s::S>, alloc-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-alloc-cb(alloc-cb))
-
-pub inline extern uv-tty-s-ptrraw/read-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->read_cb)"
-
-pub inline fun uv-tty-sp/read-cb(s: uv-tty-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/read-cb)
-
-pub inline fun uv-tty-sc/read-cb(^s: uv-tty-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/read-cb)
-
-pub inline fun uv-tty-scb/read-cb(^s: uv-tty-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/read-cb)
-
-pub inline extern uv-tty-s-ptrraw/set-read-cb(s: intptr_t, read-cb: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->read_cb = (void (*)(struct uv_stream_s*, long, struct uv_buf_t*))#2"
-
-pub inline fun uv-tty-sp/set-read-cb(s: uv-tty-sp, read-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-read-cb(read-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-read-cb(^s: uv-tty-sc, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-read-cb(read-cb))
-
-pub inline fun uv-tty-scb/set-read-cb(^s: uv-tty-scb<s::S>, read-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-read-cb(read-cb))
-
-pub inline extern uv-tty-s-ptrraw/connect-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->connect_req)"
-
-pub inline fun uv-tty-sp/connect-req(s: uv-tty-sp): c-pointer<uv-connect-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/connect-req)
-
-pub inline fun uv-tty-sc/connect-req(^s: uv-tty-sc): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-tty-sp/connect-req)
-
-pub inline fun uv-tty-scb/connect-req(^s: uv-tty-scb<s::S>): c-pointer<uv-connect-s-c>
-  s.with-ptr(uv-tty-sp/connect-req)
-
-pub inline extern uv-tty-s-ptrraw/set-connect-req(s: intptr_t, connect-req: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->connect_req = (struct uv_connect_s*)#2"
-
-pub inline fun uv-tty-sp/set-connect-req(s: uv-tty-sp, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-connect-req(connect-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-connect-req(^s: uv-tty-sc, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-connect-req(connect-req))
-
-pub inline fun uv-tty-scb/set-connect-req(^s: uv-tty-scb<s::S>, connect-req: c-pointer<uv-connect-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-connect-req(connect-req))
-
-pub inline extern uv-tty-s-ptrraw/shutdown-req(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->shutdown_req)"
-
-pub inline fun uv-tty-sp/shutdown-req(s: uv-tty-sp): c-pointer<uv-shutdown-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/shutdown-req)
-
-pub inline fun uv-tty-sc/shutdown-req(^s: uv-tty-sc): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-tty-sp/shutdown-req)
-
-pub inline fun uv-tty-scb/shutdown-req(^s: uv-tty-scb<s::S>): c-pointer<uv-shutdown-s-c>
-  s.with-ptr(uv-tty-sp/shutdown-req)
-
-pub inline extern uv-tty-s-ptrraw/set-shutdown-req(s: intptr_t, shutdown-req: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->shutdown_req = (struct uv_shutdown_s*)#2"
-
-pub inline fun uv-tty-sp/set-shutdown-req(s: uv-tty-sp, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-shutdown-req(shutdown-req.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-shutdown-req(^s: uv-tty-sc, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-shutdown-req(shutdown-req))
-
-pub inline fun uv-tty-scb/set-shutdown-req(^s: uv-tty-scb<s::S>, shutdown-req: c-pointer<uv-shutdown-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-shutdown-req(shutdown-req))
-
-pub inline extern uv-tty-s-ptrraw/connection-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->connection_cb)"
-
-pub inline fun uv-tty-sp/connection-cb(s: uv-tty-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/connection-cb)
-
-pub inline fun uv-tty-sc/connection-cb(^s: uv-tty-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/connection-cb)
-
-pub inline fun uv-tty-scb/connection-cb(^s: uv-tty-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-tty-sp/connection-cb)
-
-pub inline extern uv-tty-s-ptrraw/set-connection-cb(s: intptr_t, connection-cb: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->connection_cb = (void (*)(struct uv_stream_s*, int))#2"
-
-pub inline fun uv-tty-sp/set-connection-cb(s: uv-tty-sp, connection-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-connection-cb(connection-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-connection-cb(^s: uv-tty-sc, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-connection-cb(connection-cb))
-
-pub inline fun uv-tty-scb/set-connection-cb(^s: uv-tty-scb<s::S>, connection-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-connection-cb(connection-cb))
-
-pub inline extern uv-tty-s-ptrraw/delayed-error(s: intptr_t): int32
-  c inline "(int)(((struct uv_tty_s*)#1)->delayed_error)"
-
-pub inline fun uv-tty-sp/delayed-error(s: uv-tty-sp): int
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/delayed-error.int
-
-pub inline fun uv-tty-sc/delayed-error(^s: uv-tty-sc): int
-  s.with-ptr(uv-tty-sp/delayed-error)
-
-pub inline fun uv-tty-scb/delayed-error(^s: uv-tty-scb<s::S>): int
-  s.with-ptr(uv-tty-sp/delayed-error)
-
-pub inline extern uv-tty-s-ptrraw/set-delayed-error(s: intptr_t, delayed-error: int32): ()
-  c inline "((struct uv_tty_s*)#1)->delayed_error = (int)#2"
-
-pub inline fun uv-tty-sp/set-delayed-error(s: uv-tty-sp, delayed-error: int): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-delayed-error(delayed-error.int32)
-
-pub inline fun uv-tty-sc/set-delayed-error(^s: uv-tty-sc, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-delayed-error(delayed-error))
-
-pub inline fun uv-tty-scb/set-delayed-error(^s: uv-tty-scb<s::S>, delayed-error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-delayed-error(delayed-error))
-
-pub inline extern uv-tty-s-ptrraw/accepted-fd(s: intptr_t): int32
-  c inline "(int)(((struct uv_tty_s*)#1)->accepted_fd)"
-
-pub inline fun uv-tty-sp/accepted-fd(s: uv-tty-sp): int
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/accepted-fd.int
-
-pub inline fun uv-tty-sc/accepted-fd(^s: uv-tty-sc): int
-  s.with-ptr(uv-tty-sp/accepted-fd)
-
-pub inline fun uv-tty-scb/accepted-fd(^s: uv-tty-scb<s::S>): int
-  s.with-ptr(uv-tty-sp/accepted-fd)
-
-pub inline extern uv-tty-s-ptrraw/set-accepted-fd(s: intptr_t, accepted-fd: int32): ()
-  c inline "((struct uv_tty_s*)#1)->accepted_fd = (int)#2"
-
-pub inline fun uv-tty-sp/set-accepted-fd(s: uv-tty-sp, accepted-fd: int): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-accepted-fd(accepted-fd.int32)
-
-pub inline fun uv-tty-sc/set-accepted-fd(^s: uv-tty-sc, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-accepted-fd(accepted-fd))
-
-pub inline fun uv-tty-scb/set-accepted-fd(^s: uv-tty-scb<s::S>, accepted-fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-accepted-fd(accepted-fd))
-
-pub inline extern uv-tty-s-ptrraw/queued-fds(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_tty_s*)#1)->queued_fds)"
-
-pub inline fun uv-tty-sp/queued-fds(s: uv-tty-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/queued-fds)
-
-pub inline fun uv-tty-sc/queued-fds(^s: uv-tty-sc): c-pointer<()>
-  s.with-ptr(uv-tty-sp/queued-fds)
-
-pub inline fun uv-tty-scb/queued-fds(^s: uv-tty-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-tty-sp/queued-fds)
-
-pub inline extern uv-tty-s-ptrraw/set-queued-fds(s: intptr_t, queued-fds: intptr_t): ()
-  c inline "((struct uv_tty_s*)#1)->queued_fds = (void*)#2"
-
-pub inline fun uv-tty-sp/set-queued-fds(s: uv-tty-sp, queued-fds: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-queued-fds(queued-fds.cextern/c-pointer/ptr)
-
-pub inline fun uv-tty-sc/set-queued-fds(^s: uv-tty-sc, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-queued-fds(queued-fds))
-
-pub inline fun uv-tty-scb/set-queued-fds(^s: uv-tty-scb<s::S>, queued-fds: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-queued-fds(queued-fds))
-
-pub inline extern uv-tty-s-ptrraw/mode(s: intptr_t): int32
-  c inline "(int)(((struct uv_tty_s*)#1)->mode)"
-
-pub inline fun uv-tty-sp/mode(s: uv-tty-sp): int
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/mode.int
-
-pub inline fun uv-tty-sc/mode(^s: uv-tty-sc): int
-  s.with-ptr(uv-tty-sp/mode)
-
-pub inline fun uv-tty-scb/mode(^s: uv-tty-scb<s::S>): int
-  s.with-ptr(uv-tty-sp/mode)
-
-pub inline extern uv-tty-s-ptrraw/set-mode(s: intptr_t, mode: int32): ()
-  c inline "((struct uv_tty_s*)#1)->mode = (int)#2"
-
-pub inline fun uv-tty-sp/set-mode(s: uv-tty-sp, mode: int): ()
-  s.cextern/c-pointer/ptr.uv-tty-s-ptrraw/set-mode(mode.int32)
-
-pub inline fun uv-tty-sc/set-mode(^s: uv-tty-sc, mode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-mode(mode))
-
-pub inline fun uv-tty-scb/set-mode(^s: uv-tty-scb<s::S>, mode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-tty-sp/set-mode(mode))
-
-pub struct unnamed-Union9
-pub type unnamed-Union9-c
-pub alias unnamed-Union9p = c-pointer<unnamed-Union9-c>
-pub alias unnamed-Union9c<s::S> = owned-c<unnamed-Union9-c>
-pub alias unnamed-Union9cb<s::S> = borrowed-c<s,unnamed-Union9-c>
-pub alias unnamed-Union9ca<s::S> = owned-c<c-array<unnamed-Union9-c>>
-
-pub extern unnamed-Union9/size-of(c: c-null<unnamed-Union9-c>): int32
-  c inline "sizeof(union unnamed-Union9)"
-
-pub fun unnamed-Union9c(): unnamed-Union9c<s::S>
-  malloc(?size-of=unnamed-Union9/size-of)
-
-pub fun unnamed-Union9c-calloc(): unnamed-Union9c<s::S>
-  malloc-c(?size-of=unnamed-Union9/size-of)
-
-pub fun unnamed-Union9c-array(n: int): unnamed-Union9ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union9/size-of)
-
-pub fun unnamed-Union9c-array-calloc(n: int): unnamed-Union9ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union9/size-of)
-
-pub inline extern unnamed-Union9-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union9*)#1)->fd)"
-
-pub inline fun unnamed-Union9p/fd(s: unnamed-Union9p): int
-  s.cextern/c-pointer/ptr.unnamed-Union9-ptrraw/fd.int
-
-pub inline fun unnamed-Union9c/fd(^s: unnamed-Union9c<s::S>): int
-  s.with-ptr(unnamed-Union9p/fd)
-
-pub inline fun unnamed-Union9cb/fd(^s: unnamed-Union9cb<s::S>): int
-  s.with-ptr(unnamed-Union9p/fd)
-
-pub inline extern unnamed-Union9-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union9*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union9p/set-fd(s: unnamed-Union9p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union9-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union9c/set-fd(^s: unnamed-Union9c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union9p/set-fd(fd))
-
-pub inline fun unnamed-Union9cb/set-fd(^s: unnamed-Union9cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union9p/set-fd(fd))
-
-pub inline extern unnamed-Union9-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union9*)#1)->reserved)"
-
-pub inline fun unnamed-Union9p/reserved(s: unnamed-Union9p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union9-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union9c/reserved(^s: unnamed-Union9c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union9p/reserved)
-
-pub inline fun unnamed-Union9cb/reserved(^s: unnamed-Union9cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union9p/reserved)
-
-pub inline extern unnamed-Union9-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union9*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union9p/set-reserved(s: unnamed-Union9p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union9-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union9c/set-reserved(^s: unnamed-Union9c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union9p/set-reserved(reserved))
-
-pub inline fun unnamed-Union9cb/set-reserved(^s: unnamed-Union9cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union9p/set-reserved(reserved))
+pub struct unnamed-union9
+pub type unnamed-union9-c
+pub alias unnamed-union9p = c-pointer<unnamed-union9-c>
+pub alias unnamed-union9c<s::S> = owned-c<unnamed-union9-c>
+pub alias unnamed-union9cb<s::S> = borrowed-c<s,unnamed-union9-c>
+pub alias unnamed-union9ca<s::S> = owned-c<c-array<unnamed-union9-c>>
 
 pub struct termios
 pub type termios-c
@@ -7952,198 +3190,6 @@ pub fun termiosc-array(n: int): termiosca<s::S>
 pub fun termiosc-array-calloc(n: int): termiosca<s::S>
   malloc-c(n.int32, ?size-of=termios/size-of)
 
-pub inline extern termios-ptrraw/c-iflag(s: intptr_t): int32
-  c inline "(unsigned int)(((struct termios*)#1)->c_iflag)"
-
-pub inline fun termiosp/c-iflag(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-iflag.int
-
-pub inline fun termiosc/c-iflag(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-iflag)
-
-pub inline fun termioscb/c-iflag(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-iflag)
-
-pub inline extern termios-ptrraw/set-c-iflag(s: intptr_t, c-iflag: int32): ()
-  c inline "((struct termios*)#1)->c_iflag = (unsigned int)#2"
-
-pub inline fun termiosp/set-c-iflag(s: termiosp, c-iflag: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-iflag(c-iflag.int32)
-
-pub inline fun termiosc/set-c-iflag(^s: termiosc<s::S>, c-iflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-iflag(c-iflag))
-
-pub inline fun termioscb/set-c-iflag(^s: termioscb<s::S>, c-iflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-iflag(c-iflag))
-
-pub inline extern termios-ptrraw/c-oflag(s: intptr_t): int32
-  c inline "(unsigned int)(((struct termios*)#1)->c_oflag)"
-
-pub inline fun termiosp/c-oflag(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-oflag.int
-
-pub inline fun termiosc/c-oflag(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-oflag)
-
-pub inline fun termioscb/c-oflag(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-oflag)
-
-pub inline extern termios-ptrraw/set-c-oflag(s: intptr_t, c-oflag: int32): ()
-  c inline "((struct termios*)#1)->c_oflag = (unsigned int)#2"
-
-pub inline fun termiosp/set-c-oflag(s: termiosp, c-oflag: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-oflag(c-oflag.int32)
-
-pub inline fun termiosc/set-c-oflag(^s: termiosc<s::S>, c-oflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-oflag(c-oflag))
-
-pub inline fun termioscb/set-c-oflag(^s: termioscb<s::S>, c-oflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-oflag(c-oflag))
-
-pub inline extern termios-ptrraw/c-cflag(s: intptr_t): int32
-  c inline "(unsigned int)(((struct termios*)#1)->c_cflag)"
-
-pub inline fun termiosp/c-cflag(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-cflag.int
-
-pub inline fun termiosc/c-cflag(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-cflag)
-
-pub inline fun termioscb/c-cflag(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-cflag)
-
-pub inline extern termios-ptrraw/set-c-cflag(s: intptr_t, c-cflag: int32): ()
-  c inline "((struct termios*)#1)->c_cflag = (unsigned int)#2"
-
-pub inline fun termiosp/set-c-cflag(s: termiosp, c-cflag: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-cflag(c-cflag.int32)
-
-pub inline fun termiosc/set-c-cflag(^s: termiosc<s::S>, c-cflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-cflag(c-cflag))
-
-pub inline fun termioscb/set-c-cflag(^s: termioscb<s::S>, c-cflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-cflag(c-cflag))
-
-pub inline extern termios-ptrraw/c-lflag(s: intptr_t): int32
-  c inline "(unsigned int)(((struct termios*)#1)->c_lflag)"
-
-pub inline fun termiosp/c-lflag(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-lflag.int
-
-pub inline fun termiosc/c-lflag(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-lflag)
-
-pub inline fun termioscb/c-lflag(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-lflag)
-
-pub inline extern termios-ptrraw/set-c-lflag(s: intptr_t, c-lflag: int32): ()
-  c inline "((struct termios*)#1)->c_lflag = (unsigned int)#2"
-
-pub inline fun termiosp/set-c-lflag(s: termiosp, c-lflag: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-lflag(c-lflag.int32)
-
-pub inline fun termiosc/set-c-lflag(^s: termiosc<s::S>, c-lflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-lflag(c-lflag))
-
-pub inline fun termioscb/set-c-lflag(^s: termioscb<s::S>, c-lflag: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-lflag(c-lflag))
-
-pub inline extern termios-ptrraw/c-line(s: intptr_t): int8
-  c inline "(unsigned char)(((struct termios*)#1)->c_line)"
-
-pub inline fun termiosp/c-line(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-line.int
-
-pub inline fun termiosc/c-line(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-line)
-
-pub inline fun termioscb/c-line(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-line)
-
-pub inline extern termios-ptrraw/set-c-line(s: intptr_t, c-line: int8): ()
-  c inline "((struct termios*)#1)->c_line = (unsigned char)#2"
-
-pub inline fun termiosp/set-c-line(s: termiosp, c-line: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-line(c-line.int8)
-
-pub inline fun termiosc/set-c-line(^s: termiosc<s::S>, c-line: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-line(c-line))
-
-pub inline fun termioscb/set-c-line(^s: termioscb<s::S>, c-line: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-line(c-line))
-
-pub inline extern termios-ptrraw/c-cc(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct termios*)#1)->c_cc)"
-
-pub inline fun termiosp/c-cc(s: termiosp): c-array<int>
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-cc.cextern/cptr/carray
-
-pub inline fun termiosc/c-cc(^s: termiosc<s::S>): c-array<int>
-  s.with-ptr(termiosp/c-cc)
-
-pub inline fun termioscb/c-cc(^s: termioscb<s::S>): c-array<int>
-  s.with-ptr(termiosp/c-cc)
-
-pub inline extern termios-ptrraw/set-c-cc(s: intptr_t, c-cc: intptr_t): ()
-  c inline "((struct termios*)#1)->c_cc = (unsigned char*)#2"
-
-pub inline fun termiosp/set-c-cc(s: termiosp, c-cc: c-array<int>): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-cc(c-cc.cextern/carray/cptr)
-
-pub inline fun termiosc/set-c-cc(^s: termiosc<s::S>, c-cc: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-cc(c-cc))
-
-pub inline fun termioscb/set-c-cc(^s: termioscb<s::S>, c-cc: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-cc(c-cc))
-
-pub inline extern termios-ptrraw/c-ispeed(s: intptr_t): int32
-  c inline "(unsigned int)(((struct termios*)#1)->c_ispeed)"
-
-pub inline fun termiosp/c-ispeed(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-ispeed.int
-
-pub inline fun termiosc/c-ispeed(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-ispeed)
-
-pub inline fun termioscb/c-ispeed(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-ispeed)
-
-pub inline extern termios-ptrraw/set-c-ispeed(s: intptr_t, c-ispeed: int32): ()
-  c inline "((struct termios*)#1)->c_ispeed = (unsigned int)#2"
-
-pub inline fun termiosp/set-c-ispeed(s: termiosp, c-ispeed: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-ispeed(c-ispeed.int32)
-
-pub inline fun termiosc/set-c-ispeed(^s: termiosc<s::S>, c-ispeed: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-ispeed(c-ispeed))
-
-pub inline fun termioscb/set-c-ispeed(^s: termioscb<s::S>, c-ispeed: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-ispeed(c-ispeed))
-
-pub inline extern termios-ptrraw/c-ospeed(s: intptr_t): int32
-  c inline "(unsigned int)(((struct termios*)#1)->c_ospeed)"
-
-pub inline fun termiosp/c-ospeed(s: termiosp): int
-  s.cextern/c-pointer/ptr.termios-ptrraw/c-ospeed.int
-
-pub inline fun termiosc/c-ospeed(^s: termiosc<s::S>): int
-  s.with-ptr(termiosp/c-ospeed)
-
-pub inline fun termioscb/c-ospeed(^s: termioscb<s::S>): int
-  s.with-ptr(termiosp/c-ospeed)
-
-pub inline extern termios-ptrraw/set-c-ospeed(s: intptr_t, c-ospeed: int32): ()
-  c inline "((struct termios*)#1)->c_ospeed = (unsigned int)#2"
-
-pub inline fun termiosp/set-c-ospeed(s: termiosp, c-ospeed: int): ()
-  s.cextern/c-pointer/ptr.termios-ptrraw/set-c-ospeed(c-ospeed.int32)
-
-pub inline fun termiosc/set-c-ospeed(^s: termiosc<s::S>, c-ospeed: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-ospeed(c-ospeed))
-
-pub inline fun termioscb/set-c-ospeed(^s: termioscb<s::S>, c-ospeed: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.termiosp/set-c-ospeed(c-ospeed))
-
 alias tcflag-t = int
 alias cc-t = int
 alias speed-t = int
@@ -8153,7 +3199,7 @@ pub struct uv-poll-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union10-c
+  u: unnamed-union10-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   poll-cb: c-pointer<intptr_t>
@@ -8180,243 +3226,12 @@ pub fun uv-poll-sc-array(n: int): uv-poll-sca
 pub fun uv-poll-sc-array-calloc(n: int): uv-poll-sca
   malloc-c(n.int32, ?size-of=uv-poll-s/size-of)
 
-pub inline extern uv-poll-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_poll_s*)#1)->data)"
-
-pub inline fun uv-poll-sp/data(s: uv-poll-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/data)
-
-pub inline fun uv-poll-sc/data(^s: uv-poll-sc): c-pointer<()>
-  s.with-ptr(uv-poll-sp/data)
-
-pub inline fun uv-poll-scb/data(^s: uv-poll-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-poll-sp/data)
-
-pub inline extern uv-poll-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_poll_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-poll-sp/set-data(s: uv-poll-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-poll-sc/set-data(^s: uv-poll-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-data(data))
-
-pub inline fun uv-poll-scb/set-data(^s: uv-poll-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-data(data))
-
-pub inline extern uv-poll-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_poll_s*)#1)->loop)"
-
-pub inline fun uv-poll-sp/loop(s: uv-poll-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/loop)
-
-pub inline fun uv-poll-sc/loop(^s: uv-poll-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-poll-sp/loop)
-
-pub inline fun uv-poll-scb/loop(^s: uv-poll-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-poll-sp/loop)
-
-pub inline extern uv-poll-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_poll_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-poll-sp/set-loop(s: uv-poll-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-poll-sc/set-loop(^s: uv-poll-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-loop(loop))
-
-pub inline fun uv-poll-scb/set-loop(^s: uv-poll-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-loop(loop))
-
-pub inline extern uv-poll-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_poll_s*)#1)->type)"
-
-pub inline fun uv-poll-sp/type1(s: uv-poll-sp): int
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/type1.int
-
-pub inline fun uv-poll-sc/type1(^s: uv-poll-sc): int
-  s.with-ptr(uv-poll-sp/type1)
-
-pub inline fun uv-poll-scb/type1(^s: uv-poll-scb<s::S>): int
-  s.with-ptr(uv-poll-sp/type1)
-
-pub inline extern uv-poll-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_poll_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-poll-sp/set-type1(s: uv-poll-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-poll-sc/set-type1(^s: uv-poll-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-type1(type1))
-
-pub inline fun uv-poll-scb/set-type1(^s: uv-poll-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-type1(type1))
-
-pub inline extern uv-poll-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_poll_s*)#1)->close_cb)"
-
-pub inline fun uv-poll-sp/close-cb(s: uv-poll-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/close-cb)
-
-pub inline fun uv-poll-sc/close-cb(^s: uv-poll-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-poll-sp/close-cb)
-
-pub inline fun uv-poll-scb/close-cb(^s: uv-poll-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-poll-sp/close-cb)
-
-pub inline extern uv-poll-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_poll_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-poll-sp/set-close-cb(s: uv-poll-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-poll-sc/set-close-cb(^s: uv-poll-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-close-cb(close-cb))
-
-pub inline fun uv-poll-scb/set-close-cb(^s: uv-poll-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-close-cb(close-cb))
-
-pub inline extern uv-poll-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_poll_s*)#1)->next_closing)"
-
-pub inline fun uv-poll-sp/next-closing(s: uv-poll-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/next-closing)
-
-pub inline fun uv-poll-sc/next-closing(^s: uv-poll-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-poll-sp/next-closing)
-
-pub inline fun uv-poll-scb/next-closing(^s: uv-poll-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-poll-sp/next-closing)
-
-pub inline extern uv-poll-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_poll_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-poll-sp/set-next-closing(s: uv-poll-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-poll-sc/set-next-closing(^s: uv-poll-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-next-closing(next-closing))
-
-pub inline fun uv-poll-scb/set-next-closing(^s: uv-poll-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-next-closing(next-closing))
-
-pub inline extern uv-poll-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_poll_s*)#1)->flags)"
-
-pub inline fun uv-poll-sp/flags(s: uv-poll-sp): int
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/flags.int
-
-pub inline fun uv-poll-sc/flags(^s: uv-poll-sc): int
-  s.with-ptr(uv-poll-sp/flags)
-
-pub inline fun uv-poll-scb/flags(^s: uv-poll-scb<s::S>): int
-  s.with-ptr(uv-poll-sp/flags)
-
-pub inline extern uv-poll-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_poll_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-poll-sp/set-flags(s: uv-poll-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-poll-sc/set-flags(^s: uv-poll-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-flags(flags))
-
-pub inline fun uv-poll-scb/set-flags(^s: uv-poll-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-flags(flags))
-
-pub inline extern uv-poll-s-ptrraw/poll-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_poll_s*)#1)->poll_cb)"
-
-pub inline fun uv-poll-sp/poll-cb(s: uv-poll-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/poll-cb)
-
-pub inline fun uv-poll-sc/poll-cb(^s: uv-poll-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-poll-sp/poll-cb)
-
-pub inline fun uv-poll-scb/poll-cb(^s: uv-poll-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-poll-sp/poll-cb)
-
-pub inline extern uv-poll-s-ptrraw/set-poll-cb(s: intptr_t, poll-cb: intptr_t): ()
-  c inline "((struct uv_poll_s*)#1)->poll_cb = (void (*)(struct uv_poll_s*, int, int))#2"
-
-pub inline fun uv-poll-sp/set-poll-cb(s: uv-poll-sp, poll-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-poll-s-ptrraw/set-poll-cb(poll-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-poll-sc/set-poll-cb(^s: uv-poll-sc, poll-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-poll-cb(poll-cb))
-
-pub inline fun uv-poll-scb/set-poll-cb(^s: uv-poll-scb<s::S>, poll-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-poll-sp/set-poll-cb(poll-cb))
-
-pub struct unnamed-Union10
-pub type unnamed-Union10-c
-pub alias unnamed-Union10p = c-pointer<unnamed-Union10-c>
-pub alias unnamed-Union10c<s::S> = owned-c<unnamed-Union10-c>
-pub alias unnamed-Union10cb<s::S> = borrowed-c<s,unnamed-Union10-c>
-pub alias unnamed-Union10ca<s::S> = owned-c<c-array<unnamed-Union10-c>>
-
-pub extern unnamed-Union10/size-of(c: c-null<unnamed-Union10-c>): int32
-  c inline "sizeof(union unnamed-Union10)"
-
-pub fun unnamed-Union10c(): unnamed-Union10c<s::S>
-  malloc(?size-of=unnamed-Union10/size-of)
-
-pub fun unnamed-Union10c-calloc(): unnamed-Union10c<s::S>
-  malloc-c(?size-of=unnamed-Union10/size-of)
-
-pub fun unnamed-Union10c-array(n: int): unnamed-Union10ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union10/size-of)
-
-pub fun unnamed-Union10c-array-calloc(n: int): unnamed-Union10ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union10/size-of)
-
-pub inline extern unnamed-Union10-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union10*)#1)->fd)"
-
-pub inline fun unnamed-Union10p/fd(s: unnamed-Union10p): int
-  s.cextern/c-pointer/ptr.unnamed-Union10-ptrraw/fd.int
-
-pub inline fun unnamed-Union10c/fd(^s: unnamed-Union10c<s::S>): int
-  s.with-ptr(unnamed-Union10p/fd)
-
-pub inline fun unnamed-Union10cb/fd(^s: unnamed-Union10cb<s::S>): int
-  s.with-ptr(unnamed-Union10p/fd)
-
-pub inline extern unnamed-Union10-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union10*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union10p/set-fd(s: unnamed-Union10p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union10-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union10c/set-fd(^s: unnamed-Union10c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union10p/set-fd(fd))
-
-pub inline fun unnamed-Union10cb/set-fd(^s: unnamed-Union10cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union10p/set-fd(fd))
-
-pub inline extern unnamed-Union10-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union10*)#1)->reserved)"
-
-pub inline fun unnamed-Union10p/reserved(s: unnamed-Union10p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union10-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union10c/reserved(^s: unnamed-Union10c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union10p/reserved)
-
-pub inline fun unnamed-Union10cb/reserved(^s: unnamed-Union10cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union10p/reserved)
-
-pub inline extern unnamed-Union10-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union10*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union10p/set-reserved(s: unnamed-Union10p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union10-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union10c/set-reserved(^s: unnamed-Union10c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union10p/set-reserved(reserved))
-
-pub inline fun unnamed-Union10cb/set-reserved(^s: unnamed-Union10cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union10p/set-reserved(reserved))
+pub struct unnamed-union10
+pub type unnamed-union10-c
+pub alias unnamed-union10p = c-pointer<unnamed-union10-c>
+pub alias unnamed-union10c<s::S> = owned-c<unnamed-union10-c>
+pub alias unnamed-union10cb<s::S> = borrowed-c<s,unnamed-union10-c>
+pub alias unnamed-union10ca<s::S> = owned-c<c-array<unnamed-union10-c>>
 
 alias uv-poll-cb = c-pointer<intptr_t>
 alias uv-poll-cbfn = ((handle1 : c-pointer<uv-poll-s-c>, status : int, events : int) -> ())
@@ -8428,11 +3243,11 @@ pub struct uv-timer-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union11-c
+  u: unnamed-union11-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   timer-cb: c-pointer<intptr_t>
-  node: unnamed-Union12-c
+  node: unnamed-union12-c
   timeout: int
   repeat: int
   start-id: int
@@ -8458,365 +3273,23 @@ pub fun uv-timer-sc-array(n: int): uv-timer-sca
 pub fun uv-timer-sc-array-calloc(n: int): uv-timer-sca
   malloc-c(n.int32, ?size-of=uv-timer-s/size-of)
 
-pub inline extern uv-timer-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_timer_s*)#1)->data)"
-
-pub inline fun uv-timer-sp/data(s: uv-timer-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/data)
-
-pub inline fun uv-timer-sc/data(^s: uv-timer-sc): c-pointer<()>
-  s.with-ptr(uv-timer-sp/data)
-
-pub inline fun uv-timer-scb/data(^s: uv-timer-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-timer-sp/data)
-
-pub inline extern uv-timer-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_timer_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-timer-sp/set-data(s: uv-timer-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-timer-sc/set-data(^s: uv-timer-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-data(data))
-
-pub inline fun uv-timer-scb/set-data(^s: uv-timer-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-data(data))
-
-pub inline extern uv-timer-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_timer_s*)#1)->loop)"
-
-pub inline fun uv-timer-sp/loop(s: uv-timer-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/loop)
-
-pub inline fun uv-timer-sc/loop(^s: uv-timer-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-timer-sp/loop)
-
-pub inline fun uv-timer-scb/loop(^s: uv-timer-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-timer-sp/loop)
-
-pub inline extern uv-timer-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_timer_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-timer-sp/set-loop(s: uv-timer-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-timer-sc/set-loop(^s: uv-timer-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-loop(loop))
-
-pub inline fun uv-timer-scb/set-loop(^s: uv-timer-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-loop(loop))
-
-pub inline extern uv-timer-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_timer_s*)#1)->type)"
-
-pub inline fun uv-timer-sp/type1(s: uv-timer-sp): int
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/type1.int
-
-pub inline fun uv-timer-sc/type1(^s: uv-timer-sc): int
-  s.with-ptr(uv-timer-sp/type1)
-
-pub inline fun uv-timer-scb/type1(^s: uv-timer-scb<s::S>): int
-  s.with-ptr(uv-timer-sp/type1)
-
-pub inline extern uv-timer-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_timer_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-timer-sp/set-type1(s: uv-timer-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-timer-sc/set-type1(^s: uv-timer-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-type1(type1))
-
-pub inline fun uv-timer-scb/set-type1(^s: uv-timer-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-type1(type1))
-
-pub inline extern uv-timer-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_timer_s*)#1)->close_cb)"
-
-pub inline fun uv-timer-sp/close-cb(s: uv-timer-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/close-cb)
-
-pub inline fun uv-timer-sc/close-cb(^s: uv-timer-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-timer-sp/close-cb)
-
-pub inline fun uv-timer-scb/close-cb(^s: uv-timer-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-timer-sp/close-cb)
-
-pub inline extern uv-timer-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_timer_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-timer-sp/set-close-cb(s: uv-timer-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-timer-sc/set-close-cb(^s: uv-timer-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-close-cb(close-cb))
-
-pub inline fun uv-timer-scb/set-close-cb(^s: uv-timer-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-close-cb(close-cb))
-
-pub inline extern uv-timer-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_timer_s*)#1)->next_closing)"
-
-pub inline fun uv-timer-sp/next-closing(s: uv-timer-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/next-closing)
-
-pub inline fun uv-timer-sc/next-closing(^s: uv-timer-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-timer-sp/next-closing)
-
-pub inline fun uv-timer-scb/next-closing(^s: uv-timer-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-timer-sp/next-closing)
-
-pub inline extern uv-timer-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_timer_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-timer-sp/set-next-closing(s: uv-timer-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-timer-sc/set-next-closing(^s: uv-timer-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-next-closing(next-closing))
-
-pub inline fun uv-timer-scb/set-next-closing(^s: uv-timer-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-next-closing(next-closing))
-
-pub inline extern uv-timer-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_timer_s*)#1)->flags)"
-
-pub inline fun uv-timer-sp/flags(s: uv-timer-sp): int
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/flags.int
-
-pub inline fun uv-timer-sc/flags(^s: uv-timer-sc): int
-  s.with-ptr(uv-timer-sp/flags)
-
-pub inline fun uv-timer-scb/flags(^s: uv-timer-scb<s::S>): int
-  s.with-ptr(uv-timer-sp/flags)
-
-pub inline extern uv-timer-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_timer_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-timer-sp/set-flags(s: uv-timer-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-timer-sc/set-flags(^s: uv-timer-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-flags(flags))
-
-pub inline fun uv-timer-scb/set-flags(^s: uv-timer-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-flags(flags))
-
-pub inline extern uv-timer-s-ptrraw/timer-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_timer_s*)#1)->timer_cb)"
-
-pub inline fun uv-timer-sp/timer-cb(s: uv-timer-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/timer-cb)
-
-pub inline fun uv-timer-sc/timer-cb(^s: uv-timer-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-timer-sp/timer-cb)
-
-pub inline fun uv-timer-scb/timer-cb(^s: uv-timer-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-timer-sp/timer-cb)
-
-pub inline extern uv-timer-s-ptrraw/set-timer-cb(s: intptr_t, timer-cb: intptr_t): ()
-  c inline "((struct uv_timer_s*)#1)->timer_cb = (void (*)(struct uv_timer_s*))#2"
-
-pub inline fun uv-timer-sp/set-timer-cb(s: uv-timer-sp, timer-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-timer-cb(timer-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-timer-sc/set-timer-cb(^s: uv-timer-sc, timer-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-timer-cb(timer-cb))
-
-pub inline fun uv-timer-scb/set-timer-cb(^s: uv-timer-scb<s::S>, timer-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-timer-cb(timer-cb))
-
-pub inline extern uv-timer-s-ptrraw/timeout(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_timer_s*)#1)->timeout)"
-
-pub inline fun uv-timer-sp/timeout(s: uv-timer-sp): int
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/timeout.int
-
-pub inline fun uv-timer-sc/timeout(^s: uv-timer-sc): int
-  s.with-ptr(uv-timer-sp/timeout)
-
-pub inline fun uv-timer-scb/timeout(^s: uv-timer-scb<s::S>): int
-  s.with-ptr(uv-timer-sp/timeout)
-
-pub inline extern uv-timer-s-ptrraw/set-timeout(s: intptr_t, timeout: int64): ()
-  c inline "((struct uv_timer_s*)#1)->timeout = (int64_t)#2"
-
-pub inline fun uv-timer-sp/set-timeout(s: uv-timer-sp, timeout: int): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-timeout(timeout.int64)
-
-pub inline fun uv-timer-sc/set-timeout(^s: uv-timer-sc, timeout: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-timeout(timeout))
-
-pub inline fun uv-timer-scb/set-timeout(^s: uv-timer-scb<s::S>, timeout: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-timeout(timeout))
-
-pub inline extern uv-timer-s-ptrraw/repeat(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_timer_s*)#1)->repeat)"
-
-pub inline fun uv-timer-sp/repeat(s: uv-timer-sp): int
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/repeat.int
-
-pub inline fun uv-timer-sc/repeat(^s: uv-timer-sc): int
-  s.with-ptr(uv-timer-sp/repeat)
-
-pub inline fun uv-timer-scb/repeat(^s: uv-timer-scb<s::S>): int
-  s.with-ptr(uv-timer-sp/repeat)
-
-pub inline extern uv-timer-s-ptrraw/set-repeat(s: intptr_t, repeat: int64): ()
-  c inline "((struct uv_timer_s*)#1)->repeat = (int64_t)#2"
-
-pub inline fun uv-timer-sp/set-repeat(s: uv-timer-sp, repeat: int): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-repeat(repeat.int64)
-
-pub inline fun uv-timer-sc/set-repeat(^s: uv-timer-sc, repeat: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-repeat(repeat))
-
-pub inline fun uv-timer-scb/set-repeat(^s: uv-timer-scb<s::S>, repeat: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-repeat(repeat))
-
-pub inline extern uv-timer-s-ptrraw/start-id(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_timer_s*)#1)->start_id)"
-
-pub inline fun uv-timer-sp/start-id(s: uv-timer-sp): int
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/start-id.int
-
-pub inline fun uv-timer-sc/start-id(^s: uv-timer-sc): int
-  s.with-ptr(uv-timer-sp/start-id)
-
-pub inline fun uv-timer-scb/start-id(^s: uv-timer-scb<s::S>): int
-  s.with-ptr(uv-timer-sp/start-id)
-
-pub inline extern uv-timer-s-ptrraw/set-start-id(s: intptr_t, start-id: int64): ()
-  c inline "((struct uv_timer_s*)#1)->start_id = (int64_t)#2"
-
-pub inline fun uv-timer-sp/set-start-id(s: uv-timer-sp, start-id: int): ()
-  s.cextern/c-pointer/ptr.uv-timer-s-ptrraw/set-start-id(start-id.int64)
-
-pub inline fun uv-timer-sc/set-start-id(^s: uv-timer-sc, start-id: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-start-id(start-id))
-
-pub inline fun uv-timer-scb/set-start-id(^s: uv-timer-scb<s::S>, start-id: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timer-sp/set-start-id(start-id))
-
-pub struct unnamed-Union11
-pub type unnamed-Union11-c
-pub alias unnamed-Union11p = c-pointer<unnamed-Union11-c>
-pub alias unnamed-Union11c<s::S> = owned-c<unnamed-Union11-c>
-pub alias unnamed-Union11cb<s::S> = borrowed-c<s,unnamed-Union11-c>
-pub alias unnamed-Union11ca<s::S> = owned-c<c-array<unnamed-Union11-c>>
-
-pub extern unnamed-Union11/size-of(c: c-null<unnamed-Union11-c>): int32
-  c inline "sizeof(union unnamed-Union11)"
-
-pub fun unnamed-Union11c(): unnamed-Union11c<s::S>
-  malloc(?size-of=unnamed-Union11/size-of)
-
-pub fun unnamed-Union11c-calloc(): unnamed-Union11c<s::S>
-  malloc-c(?size-of=unnamed-Union11/size-of)
-
-pub fun unnamed-Union11c-array(n: int): unnamed-Union11ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union11/size-of)
-
-pub fun unnamed-Union11c-array-calloc(n: int): unnamed-Union11ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union11/size-of)
-
-pub inline extern unnamed-Union11-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union11*)#1)->fd)"
-
-pub inline fun unnamed-Union11p/fd(s: unnamed-Union11p): int
-  s.cextern/c-pointer/ptr.unnamed-Union11-ptrraw/fd.int
-
-pub inline fun unnamed-Union11c/fd(^s: unnamed-Union11c<s::S>): int
-  s.with-ptr(unnamed-Union11p/fd)
-
-pub inline fun unnamed-Union11cb/fd(^s: unnamed-Union11cb<s::S>): int
-  s.with-ptr(unnamed-Union11p/fd)
-
-pub inline extern unnamed-Union11-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union11*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union11p/set-fd(s: unnamed-Union11p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union11-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union11c/set-fd(^s: unnamed-Union11c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union11p/set-fd(fd))
-
-pub inline fun unnamed-Union11cb/set-fd(^s: unnamed-Union11cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union11p/set-fd(fd))
-
-pub inline extern unnamed-Union11-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union11*)#1)->reserved)"
-
-pub inline fun unnamed-Union11p/reserved(s: unnamed-Union11p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union11-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union11c/reserved(^s: unnamed-Union11c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union11p/reserved)
-
-pub inline fun unnamed-Union11cb/reserved(^s: unnamed-Union11cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union11p/reserved)
-
-pub inline extern unnamed-Union11-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union11*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union11p/set-reserved(s: unnamed-Union11p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union11-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union11c/set-reserved(^s: unnamed-Union11c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union11p/set-reserved(reserved))
-
-pub inline fun unnamed-Union11cb/set-reserved(^s: unnamed-Union11cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union11p/set-reserved(reserved))
+pub struct unnamed-union11
+pub type unnamed-union11-c
+pub alias unnamed-union11p = c-pointer<unnamed-union11-c>
+pub alias unnamed-union11c<s::S> = owned-c<unnamed-union11-c>
+pub alias unnamed-union11cb<s::S> = borrowed-c<s,unnamed-union11-c>
+pub alias unnamed-union11ca<s::S> = owned-c<c-array<unnamed-union11-c>>
 
 alias uv-timer-cb = c-pointer<intptr_t>
 alias uv-timer-cbfn = ((handle1 : c-pointer<uv-timer-s-c>) -> ())
 alias uv-timer-t = uv-timer-s-c
 alias koka-uv-timer-t = uv-timer-s
-pub struct unnamed-Union12
-pub type unnamed-Union12-c
-pub alias unnamed-Union12p = c-pointer<unnamed-Union12-c>
-pub alias unnamed-Union12c<s::S> = owned-c<unnamed-Union12-c>
-pub alias unnamed-Union12cb<s::S> = borrowed-c<s,unnamed-Union12-c>
-pub alias unnamed-Union12ca<s::S> = owned-c<c-array<unnamed-Union12-c>>
-
-pub extern unnamed-Union12/size-of(c: c-null<unnamed-Union12-c>): int32
-  c inline "sizeof(union unnamed-Union12)"
-
-pub fun unnamed-Union12c(): unnamed-Union12c<s::S>
-  malloc(?size-of=unnamed-Union12/size-of)
-
-pub fun unnamed-Union12c-calloc(): unnamed-Union12c<s::S>
-  malloc-c(?size-of=unnamed-Union12/size-of)
-
-pub fun unnamed-Union12c-array(n: int): unnamed-Union12ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union12/size-of)
-
-pub fun unnamed-Union12c-array-calloc(n: int): unnamed-Union12ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union12/size-of)
-
-pub inline extern unnamed-Union12-ptrraw/heap(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union12*)#1)->heap)"
-
-pub inline fun unnamed-Union12p/heap(s: unnamed-Union12p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union12-ptrraw/heap.cextern/cptr/carray
-
-pub inline fun unnamed-Union12c/heap(^s: unnamed-Union12c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union12p/heap)
-
-pub inline fun unnamed-Union12cb/heap(^s: unnamed-Union12cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union12p/heap)
-
-pub inline extern unnamed-Union12-ptrraw/set-heap(s: intptr_t, heap: intptr_t): ()
-  c inline "((union unnamed-Union12*)#1)->heap = (void**)#2"
-
-pub inline fun unnamed-Union12p/set-heap(s: unnamed-Union12p, heap: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union12-ptrraw/set-heap(heap.cextern/carray/cptr)
-
-pub inline fun unnamed-Union12c/set-heap(^s: unnamed-Union12c<s::S>, heap: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union12p/set-heap(heap))
-
-pub inline fun unnamed-Union12cb/set-heap(^s: unnamed-Union12cb<s::S>, heap: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union12p/set-heap(heap))
+pub struct unnamed-union12
+pub type unnamed-union12-c
+pub alias unnamed-union12p = c-pointer<unnamed-union12-c>
+pub alias unnamed-union12c<s::S> = owned-c<unnamed-union12-c>
+pub alias unnamed-union12cb<s::S> = borrowed-c<s,unnamed-union12-c>
+pub alias unnamed-union12ca<s::S> = owned-c<c-array<unnamed-union12-c>>
 
 pub struct uv-prepare-s
   data: c-pointer<()>
@@ -8824,7 +3297,7 @@ pub struct uv-prepare-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union13-c
+  u: unnamed-union13-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   prepare-cb: c-pointer<intptr_t>
@@ -8851,243 +3324,12 @@ pub fun uv-prepare-sc-array(n: int): uv-prepare-sca
 pub fun uv-prepare-sc-array-calloc(n: int): uv-prepare-sca
   malloc-c(n.int32, ?size-of=uv-prepare-s/size-of)
 
-pub inline extern uv-prepare-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_prepare_s*)#1)->data)"
-
-pub inline fun uv-prepare-sp/data(s: uv-prepare-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/data)
-
-pub inline fun uv-prepare-sc/data(^s: uv-prepare-sc): c-pointer<()>
-  s.with-ptr(uv-prepare-sp/data)
-
-pub inline fun uv-prepare-scb/data(^s: uv-prepare-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-prepare-sp/data)
-
-pub inline extern uv-prepare-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_prepare_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-prepare-sp/set-data(s: uv-prepare-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-prepare-sc/set-data(^s: uv-prepare-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-data(data))
-
-pub inline fun uv-prepare-scb/set-data(^s: uv-prepare-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-data(data))
-
-pub inline extern uv-prepare-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_prepare_s*)#1)->loop)"
-
-pub inline fun uv-prepare-sp/loop(s: uv-prepare-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/loop)
-
-pub inline fun uv-prepare-sc/loop(^s: uv-prepare-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-prepare-sp/loop)
-
-pub inline fun uv-prepare-scb/loop(^s: uv-prepare-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-prepare-sp/loop)
-
-pub inline extern uv-prepare-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_prepare_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-prepare-sp/set-loop(s: uv-prepare-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-prepare-sc/set-loop(^s: uv-prepare-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-loop(loop))
-
-pub inline fun uv-prepare-scb/set-loop(^s: uv-prepare-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-loop(loop))
-
-pub inline extern uv-prepare-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_prepare_s*)#1)->type)"
-
-pub inline fun uv-prepare-sp/type1(s: uv-prepare-sp): int
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/type1.int
-
-pub inline fun uv-prepare-sc/type1(^s: uv-prepare-sc): int
-  s.with-ptr(uv-prepare-sp/type1)
-
-pub inline fun uv-prepare-scb/type1(^s: uv-prepare-scb<s::S>): int
-  s.with-ptr(uv-prepare-sp/type1)
-
-pub inline extern uv-prepare-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_prepare_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-prepare-sp/set-type1(s: uv-prepare-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-prepare-sc/set-type1(^s: uv-prepare-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-type1(type1))
-
-pub inline fun uv-prepare-scb/set-type1(^s: uv-prepare-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-type1(type1))
-
-pub inline extern uv-prepare-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_prepare_s*)#1)->close_cb)"
-
-pub inline fun uv-prepare-sp/close-cb(s: uv-prepare-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/close-cb)
-
-pub inline fun uv-prepare-sc/close-cb(^s: uv-prepare-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-prepare-sp/close-cb)
-
-pub inline fun uv-prepare-scb/close-cb(^s: uv-prepare-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-prepare-sp/close-cb)
-
-pub inline extern uv-prepare-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_prepare_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-prepare-sp/set-close-cb(s: uv-prepare-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-prepare-sc/set-close-cb(^s: uv-prepare-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-close-cb(close-cb))
-
-pub inline fun uv-prepare-scb/set-close-cb(^s: uv-prepare-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-close-cb(close-cb))
-
-pub inline extern uv-prepare-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_prepare_s*)#1)->next_closing)"
-
-pub inline fun uv-prepare-sp/next-closing(s: uv-prepare-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/next-closing)
-
-pub inline fun uv-prepare-sc/next-closing(^s: uv-prepare-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-prepare-sp/next-closing)
-
-pub inline fun uv-prepare-scb/next-closing(^s: uv-prepare-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-prepare-sp/next-closing)
-
-pub inline extern uv-prepare-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_prepare_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-prepare-sp/set-next-closing(s: uv-prepare-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-prepare-sc/set-next-closing(^s: uv-prepare-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-next-closing(next-closing))
-
-pub inline fun uv-prepare-scb/set-next-closing(^s: uv-prepare-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-next-closing(next-closing))
-
-pub inline extern uv-prepare-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_prepare_s*)#1)->flags)"
-
-pub inline fun uv-prepare-sp/flags(s: uv-prepare-sp): int
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/flags.int
-
-pub inline fun uv-prepare-sc/flags(^s: uv-prepare-sc): int
-  s.with-ptr(uv-prepare-sp/flags)
-
-pub inline fun uv-prepare-scb/flags(^s: uv-prepare-scb<s::S>): int
-  s.with-ptr(uv-prepare-sp/flags)
-
-pub inline extern uv-prepare-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_prepare_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-prepare-sp/set-flags(s: uv-prepare-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-prepare-sc/set-flags(^s: uv-prepare-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-flags(flags))
-
-pub inline fun uv-prepare-scb/set-flags(^s: uv-prepare-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-flags(flags))
-
-pub inline extern uv-prepare-s-ptrraw/prepare-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_prepare_s*)#1)->prepare_cb)"
-
-pub inline fun uv-prepare-sp/prepare-cb(s: uv-prepare-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/prepare-cb)
-
-pub inline fun uv-prepare-sc/prepare-cb(^s: uv-prepare-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-prepare-sp/prepare-cb)
-
-pub inline fun uv-prepare-scb/prepare-cb(^s: uv-prepare-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-prepare-sp/prepare-cb)
-
-pub inline extern uv-prepare-s-ptrraw/set-prepare-cb(s: intptr_t, prepare-cb: intptr_t): ()
-  c inline "((struct uv_prepare_s*)#1)->prepare_cb = (void (*)(struct uv_prepare_s*))#2"
-
-pub inline fun uv-prepare-sp/set-prepare-cb(s: uv-prepare-sp, prepare-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-prepare-s-ptrraw/set-prepare-cb(prepare-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-prepare-sc/set-prepare-cb(^s: uv-prepare-sc, prepare-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-prepare-cb(prepare-cb))
-
-pub inline fun uv-prepare-scb/set-prepare-cb(^s: uv-prepare-scb<s::S>, prepare-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-prepare-sp/set-prepare-cb(prepare-cb))
-
-pub struct unnamed-Union13
-pub type unnamed-Union13-c
-pub alias unnamed-Union13p = c-pointer<unnamed-Union13-c>
-pub alias unnamed-Union13c<s::S> = owned-c<unnamed-Union13-c>
-pub alias unnamed-Union13cb<s::S> = borrowed-c<s,unnamed-Union13-c>
-pub alias unnamed-Union13ca<s::S> = owned-c<c-array<unnamed-Union13-c>>
-
-pub extern unnamed-Union13/size-of(c: c-null<unnamed-Union13-c>): int32
-  c inline "sizeof(union unnamed-Union13)"
-
-pub fun unnamed-Union13c(): unnamed-Union13c<s::S>
-  malloc(?size-of=unnamed-Union13/size-of)
-
-pub fun unnamed-Union13c-calloc(): unnamed-Union13c<s::S>
-  malloc-c(?size-of=unnamed-Union13/size-of)
-
-pub fun unnamed-Union13c-array(n: int): unnamed-Union13ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union13/size-of)
-
-pub fun unnamed-Union13c-array-calloc(n: int): unnamed-Union13ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union13/size-of)
-
-pub inline extern unnamed-Union13-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union13*)#1)->fd)"
-
-pub inline fun unnamed-Union13p/fd(s: unnamed-Union13p): int
-  s.cextern/c-pointer/ptr.unnamed-Union13-ptrraw/fd.int
-
-pub inline fun unnamed-Union13c/fd(^s: unnamed-Union13c<s::S>): int
-  s.with-ptr(unnamed-Union13p/fd)
-
-pub inline fun unnamed-Union13cb/fd(^s: unnamed-Union13cb<s::S>): int
-  s.with-ptr(unnamed-Union13p/fd)
-
-pub inline extern unnamed-Union13-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union13*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union13p/set-fd(s: unnamed-Union13p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union13-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union13c/set-fd(^s: unnamed-Union13c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union13p/set-fd(fd))
-
-pub inline fun unnamed-Union13cb/set-fd(^s: unnamed-Union13cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union13p/set-fd(fd))
-
-pub inline extern unnamed-Union13-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union13*)#1)->reserved)"
-
-pub inline fun unnamed-Union13p/reserved(s: unnamed-Union13p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union13-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union13c/reserved(^s: unnamed-Union13c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union13p/reserved)
-
-pub inline fun unnamed-Union13cb/reserved(^s: unnamed-Union13cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union13p/reserved)
-
-pub inline extern unnamed-Union13-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union13*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union13p/set-reserved(s: unnamed-Union13p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union13-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union13c/set-reserved(^s: unnamed-Union13c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union13p/set-reserved(reserved))
-
-pub inline fun unnamed-Union13cb/set-reserved(^s: unnamed-Union13cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union13p/set-reserved(reserved))
+pub struct unnamed-union13
+pub type unnamed-union13-c
+pub alias unnamed-union13p = c-pointer<unnamed-union13-c>
+pub alias unnamed-union13c<s::S> = owned-c<unnamed-union13-c>
+pub alias unnamed-union13cb<s::S> = borrowed-c<s,unnamed-union13-c>
+pub alias unnamed-union13ca<s::S> = owned-c<c-array<unnamed-union13-c>>
 
 alias uv-prepare-cb = c-pointer<intptr_t>
 alias uv-prepare-cbfn = ((handle1 : c-pointer<uv-prepare-s-c>) -> ())
@@ -9099,7 +3341,7 @@ pub struct uv-check-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union14-c
+  u: unnamed-union14-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   check-cb: c-pointer<intptr_t>
@@ -9126,243 +3368,12 @@ pub fun uv-check-sc-array(n: int): uv-check-sca
 pub fun uv-check-sc-array-calloc(n: int): uv-check-sca
   malloc-c(n.int32, ?size-of=uv-check-s/size-of)
 
-pub inline extern uv-check-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_check_s*)#1)->data)"
-
-pub inline fun uv-check-sp/data(s: uv-check-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-check-s-ptrraw/data)
-
-pub inline fun uv-check-sc/data(^s: uv-check-sc): c-pointer<()>
-  s.with-ptr(uv-check-sp/data)
-
-pub inline fun uv-check-scb/data(^s: uv-check-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-check-sp/data)
-
-pub inline extern uv-check-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_check_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-check-sp/set-data(s: uv-check-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-check-sc/set-data(^s: uv-check-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-data(data))
-
-pub inline fun uv-check-scb/set-data(^s: uv-check-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-data(data))
-
-pub inline extern uv-check-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_check_s*)#1)->loop)"
-
-pub inline fun uv-check-sp/loop(s: uv-check-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-check-s-ptrraw/loop)
-
-pub inline fun uv-check-sc/loop(^s: uv-check-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-check-sp/loop)
-
-pub inline fun uv-check-scb/loop(^s: uv-check-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-check-sp/loop)
-
-pub inline extern uv-check-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_check_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-check-sp/set-loop(s: uv-check-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-check-sc/set-loop(^s: uv-check-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-loop(loop))
-
-pub inline fun uv-check-scb/set-loop(^s: uv-check-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-loop(loop))
-
-pub inline extern uv-check-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_check_s*)#1)->type)"
-
-pub inline fun uv-check-sp/type1(s: uv-check-sp): int
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/type1.int
-
-pub inline fun uv-check-sc/type1(^s: uv-check-sc): int
-  s.with-ptr(uv-check-sp/type1)
-
-pub inline fun uv-check-scb/type1(^s: uv-check-scb<s::S>): int
-  s.with-ptr(uv-check-sp/type1)
-
-pub inline extern uv-check-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_check_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-check-sp/set-type1(s: uv-check-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-check-sc/set-type1(^s: uv-check-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-type1(type1))
-
-pub inline fun uv-check-scb/set-type1(^s: uv-check-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-type1(type1))
-
-pub inline extern uv-check-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_check_s*)#1)->close_cb)"
-
-pub inline fun uv-check-sp/close-cb(s: uv-check-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-check-s-ptrraw/close-cb)
-
-pub inline fun uv-check-sc/close-cb(^s: uv-check-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-check-sp/close-cb)
-
-pub inline fun uv-check-scb/close-cb(^s: uv-check-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-check-sp/close-cb)
-
-pub inline extern uv-check-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_check_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-check-sp/set-close-cb(s: uv-check-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-check-sc/set-close-cb(^s: uv-check-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-close-cb(close-cb))
-
-pub inline fun uv-check-scb/set-close-cb(^s: uv-check-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-close-cb(close-cb))
-
-pub inline extern uv-check-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_check_s*)#1)->next_closing)"
-
-pub inline fun uv-check-sp/next-closing(s: uv-check-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-check-s-ptrraw/next-closing)
-
-pub inline fun uv-check-sc/next-closing(^s: uv-check-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-check-sp/next-closing)
-
-pub inline fun uv-check-scb/next-closing(^s: uv-check-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-check-sp/next-closing)
-
-pub inline extern uv-check-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_check_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-check-sp/set-next-closing(s: uv-check-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-check-sc/set-next-closing(^s: uv-check-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-next-closing(next-closing))
-
-pub inline fun uv-check-scb/set-next-closing(^s: uv-check-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-next-closing(next-closing))
-
-pub inline extern uv-check-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_check_s*)#1)->flags)"
-
-pub inline fun uv-check-sp/flags(s: uv-check-sp): int
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/flags.int
-
-pub inline fun uv-check-sc/flags(^s: uv-check-sc): int
-  s.with-ptr(uv-check-sp/flags)
-
-pub inline fun uv-check-scb/flags(^s: uv-check-scb<s::S>): int
-  s.with-ptr(uv-check-sp/flags)
-
-pub inline extern uv-check-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_check_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-check-sp/set-flags(s: uv-check-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-check-sc/set-flags(^s: uv-check-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-flags(flags))
-
-pub inline fun uv-check-scb/set-flags(^s: uv-check-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-flags(flags))
-
-pub inline extern uv-check-s-ptrraw/check-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_check_s*)#1)->check_cb)"
-
-pub inline fun uv-check-sp/check-cb(s: uv-check-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-check-s-ptrraw/check-cb)
-
-pub inline fun uv-check-sc/check-cb(^s: uv-check-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-check-sp/check-cb)
-
-pub inline fun uv-check-scb/check-cb(^s: uv-check-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-check-sp/check-cb)
-
-pub inline extern uv-check-s-ptrraw/set-check-cb(s: intptr_t, check-cb: intptr_t): ()
-  c inline "((struct uv_check_s*)#1)->check_cb = (void (*)(struct uv_check_s*))#2"
-
-pub inline fun uv-check-sp/set-check-cb(s: uv-check-sp, check-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-check-s-ptrraw/set-check-cb(check-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-check-sc/set-check-cb(^s: uv-check-sc, check-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-check-cb(check-cb))
-
-pub inline fun uv-check-scb/set-check-cb(^s: uv-check-scb<s::S>, check-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-check-sp/set-check-cb(check-cb))
-
-pub struct unnamed-Union14
-pub type unnamed-Union14-c
-pub alias unnamed-Union14p = c-pointer<unnamed-Union14-c>
-pub alias unnamed-Union14c<s::S> = owned-c<unnamed-Union14-c>
-pub alias unnamed-Union14cb<s::S> = borrowed-c<s,unnamed-Union14-c>
-pub alias unnamed-Union14ca<s::S> = owned-c<c-array<unnamed-Union14-c>>
-
-pub extern unnamed-Union14/size-of(c: c-null<unnamed-Union14-c>): int32
-  c inline "sizeof(union unnamed-Union14)"
-
-pub fun unnamed-Union14c(): unnamed-Union14c<s::S>
-  malloc(?size-of=unnamed-Union14/size-of)
-
-pub fun unnamed-Union14c-calloc(): unnamed-Union14c<s::S>
-  malloc-c(?size-of=unnamed-Union14/size-of)
-
-pub fun unnamed-Union14c-array(n: int): unnamed-Union14ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union14/size-of)
-
-pub fun unnamed-Union14c-array-calloc(n: int): unnamed-Union14ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union14/size-of)
-
-pub inline extern unnamed-Union14-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union14*)#1)->fd)"
-
-pub inline fun unnamed-Union14p/fd(s: unnamed-Union14p): int
-  s.cextern/c-pointer/ptr.unnamed-Union14-ptrraw/fd.int
-
-pub inline fun unnamed-Union14c/fd(^s: unnamed-Union14c<s::S>): int
-  s.with-ptr(unnamed-Union14p/fd)
-
-pub inline fun unnamed-Union14cb/fd(^s: unnamed-Union14cb<s::S>): int
-  s.with-ptr(unnamed-Union14p/fd)
-
-pub inline extern unnamed-Union14-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union14*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union14p/set-fd(s: unnamed-Union14p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union14-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union14c/set-fd(^s: unnamed-Union14c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union14p/set-fd(fd))
-
-pub inline fun unnamed-Union14cb/set-fd(^s: unnamed-Union14cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union14p/set-fd(fd))
-
-pub inline extern unnamed-Union14-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union14*)#1)->reserved)"
-
-pub inline fun unnamed-Union14p/reserved(s: unnamed-Union14p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union14-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union14c/reserved(^s: unnamed-Union14c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union14p/reserved)
-
-pub inline fun unnamed-Union14cb/reserved(^s: unnamed-Union14cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union14p/reserved)
-
-pub inline extern unnamed-Union14-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union14*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union14p/set-reserved(s: unnamed-Union14p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union14-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union14c/set-reserved(^s: unnamed-Union14c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union14p/set-reserved(reserved))
-
-pub inline fun unnamed-Union14cb/set-reserved(^s: unnamed-Union14cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union14p/set-reserved(reserved))
+pub struct unnamed-union14
+pub type unnamed-union14-c
+pub alias unnamed-union14p = c-pointer<unnamed-union14-c>
+pub alias unnamed-union14c<s::S> = owned-c<unnamed-union14-c>
+pub alias unnamed-union14cb<s::S> = borrowed-c<s,unnamed-union14-c>
+pub alias unnamed-union14ca<s::S> = owned-c<c-array<unnamed-union14-c>>
 
 alias uv-check-cb = c-pointer<intptr_t>
 alias uv-check-cbfn = ((handle1 : c-pointer<uv-check-s-c>) -> ())
@@ -9374,7 +3385,7 @@ pub struct uv-idle-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union15-c
+  u: unnamed-union15-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   idle-cb: c-pointer<intptr_t>
@@ -9401,243 +3412,12 @@ pub fun uv-idle-sc-array(n: int): uv-idle-sca
 pub fun uv-idle-sc-array-calloc(n: int): uv-idle-sca
   malloc-c(n.int32, ?size-of=uv-idle-s/size-of)
 
-pub inline extern uv-idle-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_idle_s*)#1)->data)"
-
-pub inline fun uv-idle-sp/data(s: uv-idle-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/data)
-
-pub inline fun uv-idle-sc/data(^s: uv-idle-sc): c-pointer<()>
-  s.with-ptr(uv-idle-sp/data)
-
-pub inline fun uv-idle-scb/data(^s: uv-idle-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-idle-sp/data)
-
-pub inline extern uv-idle-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_idle_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-idle-sp/set-data(s: uv-idle-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-idle-sc/set-data(^s: uv-idle-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-data(data))
-
-pub inline fun uv-idle-scb/set-data(^s: uv-idle-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-data(data))
-
-pub inline extern uv-idle-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_idle_s*)#1)->loop)"
-
-pub inline fun uv-idle-sp/loop(s: uv-idle-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/loop)
-
-pub inline fun uv-idle-sc/loop(^s: uv-idle-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-idle-sp/loop)
-
-pub inline fun uv-idle-scb/loop(^s: uv-idle-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-idle-sp/loop)
-
-pub inline extern uv-idle-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_idle_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-idle-sp/set-loop(s: uv-idle-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-idle-sc/set-loop(^s: uv-idle-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-loop(loop))
-
-pub inline fun uv-idle-scb/set-loop(^s: uv-idle-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-loop(loop))
-
-pub inline extern uv-idle-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_idle_s*)#1)->type)"
-
-pub inline fun uv-idle-sp/type1(s: uv-idle-sp): int
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/type1.int
-
-pub inline fun uv-idle-sc/type1(^s: uv-idle-sc): int
-  s.with-ptr(uv-idle-sp/type1)
-
-pub inline fun uv-idle-scb/type1(^s: uv-idle-scb<s::S>): int
-  s.with-ptr(uv-idle-sp/type1)
-
-pub inline extern uv-idle-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_idle_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-idle-sp/set-type1(s: uv-idle-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-idle-sc/set-type1(^s: uv-idle-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-type1(type1))
-
-pub inline fun uv-idle-scb/set-type1(^s: uv-idle-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-type1(type1))
-
-pub inline extern uv-idle-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_idle_s*)#1)->close_cb)"
-
-pub inline fun uv-idle-sp/close-cb(s: uv-idle-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/close-cb)
-
-pub inline fun uv-idle-sc/close-cb(^s: uv-idle-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-idle-sp/close-cb)
-
-pub inline fun uv-idle-scb/close-cb(^s: uv-idle-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-idle-sp/close-cb)
-
-pub inline extern uv-idle-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_idle_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-idle-sp/set-close-cb(s: uv-idle-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-idle-sc/set-close-cb(^s: uv-idle-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-close-cb(close-cb))
-
-pub inline fun uv-idle-scb/set-close-cb(^s: uv-idle-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-close-cb(close-cb))
-
-pub inline extern uv-idle-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_idle_s*)#1)->next_closing)"
-
-pub inline fun uv-idle-sp/next-closing(s: uv-idle-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/next-closing)
-
-pub inline fun uv-idle-sc/next-closing(^s: uv-idle-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-idle-sp/next-closing)
-
-pub inline fun uv-idle-scb/next-closing(^s: uv-idle-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-idle-sp/next-closing)
-
-pub inline extern uv-idle-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_idle_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-idle-sp/set-next-closing(s: uv-idle-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-idle-sc/set-next-closing(^s: uv-idle-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-next-closing(next-closing))
-
-pub inline fun uv-idle-scb/set-next-closing(^s: uv-idle-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-next-closing(next-closing))
-
-pub inline extern uv-idle-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_idle_s*)#1)->flags)"
-
-pub inline fun uv-idle-sp/flags(s: uv-idle-sp): int
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/flags.int
-
-pub inline fun uv-idle-sc/flags(^s: uv-idle-sc): int
-  s.with-ptr(uv-idle-sp/flags)
-
-pub inline fun uv-idle-scb/flags(^s: uv-idle-scb<s::S>): int
-  s.with-ptr(uv-idle-sp/flags)
-
-pub inline extern uv-idle-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_idle_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-idle-sp/set-flags(s: uv-idle-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-idle-sc/set-flags(^s: uv-idle-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-flags(flags))
-
-pub inline fun uv-idle-scb/set-flags(^s: uv-idle-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-flags(flags))
-
-pub inline extern uv-idle-s-ptrraw/idle-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_idle_s*)#1)->idle_cb)"
-
-pub inline fun uv-idle-sp/idle-cb(s: uv-idle-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/idle-cb)
-
-pub inline fun uv-idle-sc/idle-cb(^s: uv-idle-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-idle-sp/idle-cb)
-
-pub inline fun uv-idle-scb/idle-cb(^s: uv-idle-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-idle-sp/idle-cb)
-
-pub inline extern uv-idle-s-ptrraw/set-idle-cb(s: intptr_t, idle-cb: intptr_t): ()
-  c inline "((struct uv_idle_s*)#1)->idle_cb = (void (*)(struct uv_idle_s*))#2"
-
-pub inline fun uv-idle-sp/set-idle-cb(s: uv-idle-sp, idle-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-idle-s-ptrraw/set-idle-cb(idle-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-idle-sc/set-idle-cb(^s: uv-idle-sc, idle-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-idle-cb(idle-cb))
-
-pub inline fun uv-idle-scb/set-idle-cb(^s: uv-idle-scb<s::S>, idle-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-idle-sp/set-idle-cb(idle-cb))
-
-pub struct unnamed-Union15
-pub type unnamed-Union15-c
-pub alias unnamed-Union15p = c-pointer<unnamed-Union15-c>
-pub alias unnamed-Union15c<s::S> = owned-c<unnamed-Union15-c>
-pub alias unnamed-Union15cb<s::S> = borrowed-c<s,unnamed-Union15-c>
-pub alias unnamed-Union15ca<s::S> = owned-c<c-array<unnamed-Union15-c>>
-
-pub extern unnamed-Union15/size-of(c: c-null<unnamed-Union15-c>): int32
-  c inline "sizeof(union unnamed-Union15)"
-
-pub fun unnamed-Union15c(): unnamed-Union15c<s::S>
-  malloc(?size-of=unnamed-Union15/size-of)
-
-pub fun unnamed-Union15c-calloc(): unnamed-Union15c<s::S>
-  malloc-c(?size-of=unnamed-Union15/size-of)
-
-pub fun unnamed-Union15c-array(n: int): unnamed-Union15ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union15/size-of)
-
-pub fun unnamed-Union15c-array-calloc(n: int): unnamed-Union15ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union15/size-of)
-
-pub inline extern unnamed-Union15-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union15*)#1)->fd)"
-
-pub inline fun unnamed-Union15p/fd(s: unnamed-Union15p): int
-  s.cextern/c-pointer/ptr.unnamed-Union15-ptrraw/fd.int
-
-pub inline fun unnamed-Union15c/fd(^s: unnamed-Union15c<s::S>): int
-  s.with-ptr(unnamed-Union15p/fd)
-
-pub inline fun unnamed-Union15cb/fd(^s: unnamed-Union15cb<s::S>): int
-  s.with-ptr(unnamed-Union15p/fd)
-
-pub inline extern unnamed-Union15-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union15*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union15p/set-fd(s: unnamed-Union15p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union15-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union15c/set-fd(^s: unnamed-Union15c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union15p/set-fd(fd))
-
-pub inline fun unnamed-Union15cb/set-fd(^s: unnamed-Union15cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union15p/set-fd(fd))
-
-pub inline extern unnamed-Union15-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union15*)#1)->reserved)"
-
-pub inline fun unnamed-Union15p/reserved(s: unnamed-Union15p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union15-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union15c/reserved(^s: unnamed-Union15c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union15p/reserved)
-
-pub inline fun unnamed-Union15cb/reserved(^s: unnamed-Union15cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union15p/reserved)
-
-pub inline extern unnamed-Union15-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union15*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union15p/set-reserved(s: unnamed-Union15p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union15-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union15c/set-reserved(^s: unnamed-Union15c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union15p/set-reserved(reserved))
-
-pub inline fun unnamed-Union15cb/set-reserved(^s: unnamed-Union15cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union15p/set-reserved(reserved))
+pub struct unnamed-union15
+pub type unnamed-union15-c
+pub alias unnamed-union15p = c-pointer<unnamed-union15-c>
+pub alias unnamed-union15c<s::S> = owned-c<unnamed-union15-c>
+pub alias unnamed-union15cb<s::S> = borrowed-c<s,unnamed-union15-c>
+pub alias unnamed-union15ca<s::S> = owned-c<c-array<unnamed-union15-c>>
 
 alias uv-idle-cb = c-pointer<intptr_t>
 alias uv-idle-cbfn = ((handle1 : c-pointer<uv-idle-s-c>) -> ())
@@ -9649,7 +3429,7 @@ pub struct uv-process-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union16-c
+  u: unnamed-union16-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   exit-cb: c-pointer<intptr_t>
@@ -9678,291 +3458,12 @@ pub fun uv-process-sc-array(n: int): uv-process-sca
 pub fun uv-process-sc-array-calloc(n: int): uv-process-sca
   malloc-c(n.int32, ?size-of=uv-process-s/size-of)
 
-pub inline extern uv-process-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_s*)#1)->data)"
-
-pub inline fun uv-process-sp/data(s: uv-process-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-s-ptrraw/data)
-
-pub inline fun uv-process-sc/data(^s: uv-process-sc): c-pointer<()>
-  s.with-ptr(uv-process-sp/data)
-
-pub inline fun uv-process-scb/data(^s: uv-process-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-process-sp/data)
-
-pub inline extern uv-process-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_process_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-process-sp/set-data(s: uv-process-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-sc/set-data(^s: uv-process-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-data(data))
-
-pub inline fun uv-process-scb/set-data(^s: uv-process-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-data(data))
-
-pub inline extern uv-process-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_s*)#1)->loop)"
-
-pub inline fun uv-process-sp/loop(s: uv-process-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-s-ptrraw/loop)
-
-pub inline fun uv-process-sc/loop(^s: uv-process-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-process-sp/loop)
-
-pub inline fun uv-process-scb/loop(^s: uv-process-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-process-sp/loop)
-
-pub inline extern uv-process-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_process_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-process-sp/set-loop(s: uv-process-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-sc/set-loop(^s: uv-process-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-loop(loop))
-
-pub inline fun uv-process-scb/set-loop(^s: uv-process-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-loop(loop))
-
-pub inline extern uv-process-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_process_s*)#1)->type)"
-
-pub inline fun uv-process-sp/type1(s: uv-process-sp): int
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/type1.int
-
-pub inline fun uv-process-sc/type1(^s: uv-process-sc): int
-  s.with-ptr(uv-process-sp/type1)
-
-pub inline fun uv-process-scb/type1(^s: uv-process-scb<s::S>): int
-  s.with-ptr(uv-process-sp/type1)
-
-pub inline extern uv-process-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_process_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-process-sp/set-type1(s: uv-process-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-process-sc/set-type1(^s: uv-process-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-type1(type1))
-
-pub inline fun uv-process-scb/set-type1(^s: uv-process-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-type1(type1))
-
-pub inline extern uv-process-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_s*)#1)->close_cb)"
-
-pub inline fun uv-process-sp/close-cb(s: uv-process-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-s-ptrraw/close-cb)
-
-pub inline fun uv-process-sc/close-cb(^s: uv-process-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-process-sp/close-cb)
-
-pub inline fun uv-process-scb/close-cb(^s: uv-process-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-process-sp/close-cb)
-
-pub inline extern uv-process-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_process_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-process-sp/set-close-cb(s: uv-process-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-sc/set-close-cb(^s: uv-process-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-close-cb(close-cb))
-
-pub inline fun uv-process-scb/set-close-cb(^s: uv-process-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-close-cb(close-cb))
-
-pub inline extern uv-process-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_s*)#1)->next_closing)"
-
-pub inline fun uv-process-sp/next-closing(s: uv-process-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-s-ptrraw/next-closing)
-
-pub inline fun uv-process-sc/next-closing(^s: uv-process-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-process-sp/next-closing)
-
-pub inline fun uv-process-scb/next-closing(^s: uv-process-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-process-sp/next-closing)
-
-pub inline extern uv-process-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_process_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-process-sp/set-next-closing(s: uv-process-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-sc/set-next-closing(^s: uv-process-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-next-closing(next-closing))
-
-pub inline fun uv-process-scb/set-next-closing(^s: uv-process-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-next-closing(next-closing))
-
-pub inline extern uv-process-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_process_s*)#1)->flags)"
-
-pub inline fun uv-process-sp/flags(s: uv-process-sp): int
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/flags.int
-
-pub inline fun uv-process-sc/flags(^s: uv-process-sc): int
-  s.with-ptr(uv-process-sp/flags)
-
-pub inline fun uv-process-scb/flags(^s: uv-process-scb<s::S>): int
-  s.with-ptr(uv-process-sp/flags)
-
-pub inline extern uv-process-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_process_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-process-sp/set-flags(s: uv-process-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-process-sc/set-flags(^s: uv-process-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-flags(flags))
-
-pub inline fun uv-process-scb/set-flags(^s: uv-process-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-flags(flags))
-
-pub inline extern uv-process-s-ptrraw/exit-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_s*)#1)->exit_cb)"
-
-pub inline fun uv-process-sp/exit-cb(s: uv-process-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-s-ptrraw/exit-cb)
-
-pub inline fun uv-process-sc/exit-cb(^s: uv-process-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-process-sp/exit-cb)
-
-pub inline fun uv-process-scb/exit-cb(^s: uv-process-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-process-sp/exit-cb)
-
-pub inline extern uv-process-s-ptrraw/set-exit-cb(s: intptr_t, exit-cb: intptr_t): ()
-  c inline "((struct uv_process_s*)#1)->exit_cb = (void (*)(struct uv_process_s*, int64_t, int))#2"
-
-pub inline fun uv-process-sp/set-exit-cb(s: uv-process-sp, exit-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-exit-cb(exit-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-sc/set-exit-cb(^s: uv-process-sc, exit-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-exit-cb(exit-cb))
-
-pub inline fun uv-process-scb/set-exit-cb(^s: uv-process-scb<s::S>, exit-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-exit-cb(exit-cb))
-
-pub inline extern uv-process-s-ptrraw/pid(s: intptr_t): int32
-  c inline "(int)(((struct uv_process_s*)#1)->pid)"
-
-pub inline fun uv-process-sp/pid(s: uv-process-sp): int
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/pid.int
-
-pub inline fun uv-process-sc/pid(^s: uv-process-sc): int
-  s.with-ptr(uv-process-sp/pid)
-
-pub inline fun uv-process-scb/pid(^s: uv-process-scb<s::S>): int
-  s.with-ptr(uv-process-sp/pid)
-
-pub inline extern uv-process-s-ptrraw/set-pid(s: intptr_t, pid: int32): ()
-  c inline "((struct uv_process_s*)#1)->pid = (int)#2"
-
-pub inline fun uv-process-sp/set-pid(s: uv-process-sp, pid: int): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-pid(pid.int32)
-
-pub inline fun uv-process-sc/set-pid(^s: uv-process-sc, pid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-pid(pid))
-
-pub inline fun uv-process-scb/set-pid(^s: uv-process-scb<s::S>, pid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-pid(pid))
-
-pub inline extern uv-process-s-ptrraw/status(s: intptr_t): int32
-  c inline "(int)(((struct uv_process_s*)#1)->status)"
-
-pub inline fun uv-process-sp/status(s: uv-process-sp): int
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/status.int
-
-pub inline fun uv-process-sc/status(^s: uv-process-sc): int
-  s.with-ptr(uv-process-sp/status)
-
-pub inline fun uv-process-scb/status(^s: uv-process-scb<s::S>): int
-  s.with-ptr(uv-process-sp/status)
-
-pub inline extern uv-process-s-ptrraw/set-status(s: intptr_t, status: int32): ()
-  c inline "((struct uv_process_s*)#1)->status = (int)#2"
-
-pub inline fun uv-process-sp/set-status(s: uv-process-sp, status: int): ()
-  s.cextern/c-pointer/ptr.uv-process-s-ptrraw/set-status(status.int32)
-
-pub inline fun uv-process-sc/set-status(^s: uv-process-sc, status: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-status(status))
-
-pub inline fun uv-process-scb/set-status(^s: uv-process-scb<s::S>, status: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-sp/set-status(status))
-
-pub struct unnamed-Union16
-pub type unnamed-Union16-c
-pub alias unnamed-Union16p = c-pointer<unnamed-Union16-c>
-pub alias unnamed-Union16c<s::S> = owned-c<unnamed-Union16-c>
-pub alias unnamed-Union16cb<s::S> = borrowed-c<s,unnamed-Union16-c>
-pub alias unnamed-Union16ca<s::S> = owned-c<c-array<unnamed-Union16-c>>
-
-pub extern unnamed-Union16/size-of(c: c-null<unnamed-Union16-c>): int32
-  c inline "sizeof(union unnamed-Union16)"
-
-pub fun unnamed-Union16c(): unnamed-Union16c<s::S>
-  malloc(?size-of=unnamed-Union16/size-of)
-
-pub fun unnamed-Union16c-calloc(): unnamed-Union16c<s::S>
-  malloc-c(?size-of=unnamed-Union16/size-of)
-
-pub fun unnamed-Union16c-array(n: int): unnamed-Union16ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union16/size-of)
-
-pub fun unnamed-Union16c-array-calloc(n: int): unnamed-Union16ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union16/size-of)
-
-pub inline extern unnamed-Union16-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union16*)#1)->fd)"
-
-pub inline fun unnamed-Union16p/fd(s: unnamed-Union16p): int
-  s.cextern/c-pointer/ptr.unnamed-Union16-ptrraw/fd.int
-
-pub inline fun unnamed-Union16c/fd(^s: unnamed-Union16c<s::S>): int
-  s.with-ptr(unnamed-Union16p/fd)
-
-pub inline fun unnamed-Union16cb/fd(^s: unnamed-Union16cb<s::S>): int
-  s.with-ptr(unnamed-Union16p/fd)
-
-pub inline extern unnamed-Union16-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union16*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union16p/set-fd(s: unnamed-Union16p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union16-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union16c/set-fd(^s: unnamed-Union16c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union16p/set-fd(fd))
-
-pub inline fun unnamed-Union16cb/set-fd(^s: unnamed-Union16cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union16p/set-fd(fd))
-
-pub inline extern unnamed-Union16-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union16*)#1)->reserved)"
-
-pub inline fun unnamed-Union16p/reserved(s: unnamed-Union16p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union16-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union16c/reserved(^s: unnamed-Union16c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union16p/reserved)
-
-pub inline fun unnamed-Union16cb/reserved(^s: unnamed-Union16cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union16p/reserved)
-
-pub inline extern unnamed-Union16-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union16*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union16p/set-reserved(s: unnamed-Union16p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union16-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union16c/set-reserved(^s: unnamed-Union16c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union16p/set-reserved(reserved))
-
-pub inline fun unnamed-Union16cb/set-reserved(^s: unnamed-Union16cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union16p/set-reserved(reserved))
+pub struct unnamed-union16
+pub type unnamed-union16-c
+pub alias unnamed-union16p = c-pointer<unnamed-union16-c>
+pub alias unnamed-union16c<s::S> = owned-c<unnamed-union16-c>
+pub alias unnamed-union16cb<s::S> = borrowed-c<s,unnamed-union16-c>
+pub alias unnamed-union16ca<s::S> = owned-c<c-array<unnamed-union16-c>>
 
 alias uv-exit-cb = c-pointer<intptr_t>
 alias uv-exit-cbfn = ((c-pointer<uv-process-s-c>, int, int) -> ())
@@ -9974,13 +3475,20 @@ pub struct uv-fs-event-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union17-c
+  u: unnamed-union17-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   path: c-pointer<int>
   cb: c-pointer<intptr_t>
-  watchers: uv-queue-c
-  wd: int
+  event-watcher: koka-uv-io-t
+  realpath: c-pointer<int>
+  realpath-len: int
+  cf-flags: int
+  cf-cb: c-pointer<uv-async-s-c>
+  cf-events: uv-queue-c
+  cf-member: uv-queue-c
+  cf-error: int
+  cf-mutex: opaque-pthread-mutex-t
 
 pub type uv-fs-event-s-c
 pub alias uv-fs-event-sp = c-pointer<uv-fs-event-s-c>
@@ -10003,291 +3511,12 @@ pub fun uv-fs-event-sc-array(n: int): uv-fs-event-sca
 pub fun uv-fs-event-sc-array-calloc(n: int): uv-fs-event-sca
   malloc-c(n.int32, ?size-of=uv-fs-event-s/size-of)
 
-pub inline extern uv-fs-event-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_event_s*)#1)->data)"
-
-pub inline fun uv-fs-event-sp/data(s: uv-fs-event-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/data)
-
-pub inline fun uv-fs-event-sc/data(^s: uv-fs-event-sc): c-pointer<()>
-  s.with-ptr(uv-fs-event-sp/data)
-
-pub inline fun uv-fs-event-scb/data(^s: uv-fs-event-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-event-sp/data)
-
-pub inline extern uv-fs-event-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_fs_event_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-fs-event-sp/set-data(s: uv-fs-event-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-event-sc/set-data(^s: uv-fs-event-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-data(data))
-
-pub inline fun uv-fs-event-scb/set-data(^s: uv-fs-event-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-data(data))
-
-pub inline extern uv-fs-event-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_event_s*)#1)->loop)"
-
-pub inline fun uv-fs-event-sp/loop(s: uv-fs-event-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/loop)
-
-pub inline fun uv-fs-event-sc/loop(^s: uv-fs-event-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-fs-event-sp/loop)
-
-pub inline fun uv-fs-event-scb/loop(^s: uv-fs-event-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-fs-event-sp/loop)
-
-pub inline extern uv-fs-event-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_fs_event_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-fs-event-sp/set-loop(s: uv-fs-event-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-event-sc/set-loop(^s: uv-fs-event-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-loop(loop))
-
-pub inline fun uv-fs-event-scb/set-loop(^s: uv-fs-event-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-loop(loop))
-
-pub inline extern uv-fs-event-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_fs_event_s*)#1)->type)"
-
-pub inline fun uv-fs-event-sp/type1(s: uv-fs-event-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/type1.int
-
-pub inline fun uv-fs-event-sc/type1(^s: uv-fs-event-sc): int
-  s.with-ptr(uv-fs-event-sp/type1)
-
-pub inline fun uv-fs-event-scb/type1(^s: uv-fs-event-scb<s::S>): int
-  s.with-ptr(uv-fs-event-sp/type1)
-
-pub inline extern uv-fs-event-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_fs_event_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-fs-event-sp/set-type1(s: uv-fs-event-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-fs-event-sc/set-type1(^s: uv-fs-event-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-type1(type1))
-
-pub inline fun uv-fs-event-scb/set-type1(^s: uv-fs-event-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-type1(type1))
-
-pub inline extern uv-fs-event-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_event_s*)#1)->close_cb)"
-
-pub inline fun uv-fs-event-sp/close-cb(s: uv-fs-event-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/close-cb)
-
-pub inline fun uv-fs-event-sc/close-cb(^s: uv-fs-event-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-event-sp/close-cb)
-
-pub inline fun uv-fs-event-scb/close-cb(^s: uv-fs-event-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-event-sp/close-cb)
-
-pub inline extern uv-fs-event-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_fs_event_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-fs-event-sp/set-close-cb(s: uv-fs-event-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-event-sc/set-close-cb(^s: uv-fs-event-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-close-cb(close-cb))
-
-pub inline fun uv-fs-event-scb/set-close-cb(^s: uv-fs-event-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-close-cb(close-cb))
-
-pub inline extern uv-fs-event-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_event_s*)#1)->next_closing)"
-
-pub inline fun uv-fs-event-sp/next-closing(s: uv-fs-event-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/next-closing)
-
-pub inline fun uv-fs-event-sc/next-closing(^s: uv-fs-event-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-fs-event-sp/next-closing)
-
-pub inline fun uv-fs-event-scb/next-closing(^s: uv-fs-event-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-fs-event-sp/next-closing)
-
-pub inline extern uv-fs-event-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_fs_event_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-fs-event-sp/set-next-closing(s: uv-fs-event-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-event-sc/set-next-closing(^s: uv-fs-event-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-next-closing(next-closing))
-
-pub inline fun uv-fs-event-scb/set-next-closing(^s: uv-fs-event-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-next-closing(next-closing))
-
-pub inline extern uv-fs-event-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_fs_event_s*)#1)->flags)"
-
-pub inline fun uv-fs-event-sp/flags(s: uv-fs-event-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/flags.int
-
-pub inline fun uv-fs-event-sc/flags(^s: uv-fs-event-sc): int
-  s.with-ptr(uv-fs-event-sp/flags)
-
-pub inline fun uv-fs-event-scb/flags(^s: uv-fs-event-scb<s::S>): int
-  s.with-ptr(uv-fs-event-sp/flags)
-
-pub inline extern uv-fs-event-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_fs_event_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-fs-event-sp/set-flags(s: uv-fs-event-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-fs-event-sc/set-flags(^s: uv-fs-event-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-flags(flags))
-
-pub inline fun uv-fs-event-scb/set-flags(^s: uv-fs-event-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-flags(flags))
-
-pub inline extern uv-fs-event-s-ptrraw/path(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_event_s*)#1)->path)"
-
-pub inline fun uv-fs-event-sp/path(s: uv-fs-event-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/path)
-
-pub inline fun uv-fs-event-sc/path(^s: uv-fs-event-sc): c-pointer<int>
-  s.with-ptr(uv-fs-event-sp/path)
-
-pub inline fun uv-fs-event-scb/path(^s: uv-fs-event-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-fs-event-sp/path)
-
-pub inline extern uv-fs-event-s-ptrraw/set-path(s: intptr_t, path: intptr_t): ()
-  c inline "((struct uv_fs_event_s*)#1)->path = (char*)#2"
-
-pub inline fun uv-fs-event-sp/set-path(s: uv-fs-event-sp, path: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-path(path.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-event-sc/set-path(^s: uv-fs-event-sc, path: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-path(path))
-
-pub inline fun uv-fs-event-scb/set-path(^s: uv-fs-event-scb<s::S>, path: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-path(path))
-
-pub inline extern uv-fs-event-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_event_s*)#1)->cb)"
-
-pub inline fun uv-fs-event-sp/cb(s: uv-fs-event-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/cb)
-
-pub inline fun uv-fs-event-sc/cb(^s: uv-fs-event-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-event-sp/cb)
-
-pub inline fun uv-fs-event-scb/cb(^s: uv-fs-event-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-event-sp/cb)
-
-pub inline extern uv-fs-event-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_fs_event_s*)#1)->cb = (void (*)(struct uv_fs_event_s*, char*, int, int))#2"
-
-pub inline fun uv-fs-event-sp/set-cb(s: uv-fs-event-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-event-sc/set-cb(^s: uv-fs-event-sc, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-cb(cb))
-
-pub inline fun uv-fs-event-scb/set-cb(^s: uv-fs-event-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-cb(cb))
-
-pub inline extern uv-fs-event-s-ptrraw/wd(s: intptr_t): int32
-  c inline "(int)(((struct uv_fs_event_s*)#1)->wd)"
-
-pub inline fun uv-fs-event-sp/wd(s: uv-fs-event-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/wd.int
-
-pub inline fun uv-fs-event-sc/wd(^s: uv-fs-event-sc): int
-  s.with-ptr(uv-fs-event-sp/wd)
-
-pub inline fun uv-fs-event-scb/wd(^s: uv-fs-event-scb<s::S>): int
-  s.with-ptr(uv-fs-event-sp/wd)
-
-pub inline extern uv-fs-event-s-ptrraw/set-wd(s: intptr_t, wd: int32): ()
-  c inline "((struct uv_fs_event_s*)#1)->wd = (int)#2"
-
-pub inline fun uv-fs-event-sp/set-wd(s: uv-fs-event-sp, wd: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-event-s-ptrraw/set-wd(wd.int32)
-
-pub inline fun uv-fs-event-sc/set-wd(^s: uv-fs-event-sc, wd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-wd(wd))
-
-pub inline fun uv-fs-event-scb/set-wd(^s: uv-fs-event-scb<s::S>, wd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-event-sp/set-wd(wd))
-
-pub struct unnamed-Union17
-pub type unnamed-Union17-c
-pub alias unnamed-Union17p = c-pointer<unnamed-Union17-c>
-pub alias unnamed-Union17c<s::S> = owned-c<unnamed-Union17-c>
-pub alias unnamed-Union17cb<s::S> = borrowed-c<s,unnamed-Union17-c>
-pub alias unnamed-Union17ca<s::S> = owned-c<c-array<unnamed-Union17-c>>
-
-pub extern unnamed-Union17/size-of(c: c-null<unnamed-Union17-c>): int32
-  c inline "sizeof(union unnamed-Union17)"
-
-pub fun unnamed-Union17c(): unnamed-Union17c<s::S>
-  malloc(?size-of=unnamed-Union17/size-of)
-
-pub fun unnamed-Union17c-calloc(): unnamed-Union17c<s::S>
-  malloc-c(?size-of=unnamed-Union17/size-of)
-
-pub fun unnamed-Union17c-array(n: int): unnamed-Union17ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union17/size-of)
-
-pub fun unnamed-Union17c-array-calloc(n: int): unnamed-Union17ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union17/size-of)
-
-pub inline extern unnamed-Union17-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union17*)#1)->fd)"
-
-pub inline fun unnamed-Union17p/fd(s: unnamed-Union17p): int
-  s.cextern/c-pointer/ptr.unnamed-Union17-ptrraw/fd.int
-
-pub inline fun unnamed-Union17c/fd(^s: unnamed-Union17c<s::S>): int
-  s.with-ptr(unnamed-Union17p/fd)
-
-pub inline fun unnamed-Union17cb/fd(^s: unnamed-Union17cb<s::S>): int
-  s.with-ptr(unnamed-Union17p/fd)
-
-pub inline extern unnamed-Union17-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union17*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union17p/set-fd(s: unnamed-Union17p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union17-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union17c/set-fd(^s: unnamed-Union17c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union17p/set-fd(fd))
-
-pub inline fun unnamed-Union17cb/set-fd(^s: unnamed-Union17cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union17p/set-fd(fd))
-
-pub inline extern unnamed-Union17-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union17*)#1)->reserved)"
-
-pub inline fun unnamed-Union17p/reserved(s: unnamed-Union17p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union17-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union17c/reserved(^s: unnamed-Union17c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union17p/reserved)
-
-pub inline fun unnamed-Union17cb/reserved(^s: unnamed-Union17cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union17p/reserved)
-
-pub inline extern unnamed-Union17-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union17*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union17p/set-reserved(s: unnamed-Union17p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union17-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union17c/set-reserved(^s: unnamed-Union17c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union17p/set-reserved(reserved))
-
-pub inline fun unnamed-Union17cb/set-reserved(^s: unnamed-Union17cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union17p/set-reserved(reserved))
+pub struct unnamed-union17
+pub type unnamed-union17-c
+pub alias unnamed-union17p = c-pointer<unnamed-union17-c>
+pub alias unnamed-union17c<s::S> = owned-c<unnamed-union17-c>
+pub alias unnamed-union17cb<s::S> = borrowed-c<s,unnamed-union17-c>
+pub alias unnamed-union17ca<s::S> = owned-c<c-array<unnamed-union17-c>>
 
 alias uv-fs-event-cb = c-pointer<intptr_t>
 alias uv-fs-event-cbfn = ((handle1 : c-pointer<uv-fs-event-s-c>, filename : c-pointer<int>, events : int, status : int) -> ())
@@ -10299,7 +3528,7 @@ pub struct uv-fs-poll-s
   type1: int
   close-cb: c-pointer<intptr_t>
   handle-queue: uv-queue-c
-  u: unnamed-Union18-c
+  u: unnamed-union18-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   poll-ctx: c-pointer<()>
@@ -10325,243 +3554,12 @@ pub fun uv-fs-poll-sc-array(n: int): uv-fs-poll-sca
 pub fun uv-fs-poll-sc-array-calloc(n: int): uv-fs-poll-sca
   malloc-c(n.int32, ?size-of=uv-fs-poll-s/size-of)
 
-pub inline extern uv-fs-poll-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_poll_s*)#1)->data)"
-
-pub inline fun uv-fs-poll-sp/data(s: uv-fs-poll-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/data)
-
-pub inline fun uv-fs-poll-sc/data(^s: uv-fs-poll-sc): c-pointer<()>
-  s.with-ptr(uv-fs-poll-sp/data)
-
-pub inline fun uv-fs-poll-scb/data(^s: uv-fs-poll-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-poll-sp/data)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_fs_poll_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-fs-poll-sp/set-data(s: uv-fs-poll-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-poll-sc/set-data(^s: uv-fs-poll-sc, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-data(data))
-
-pub inline fun uv-fs-poll-scb/set-data(^s: uv-fs-poll-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-data(data))
-
-pub inline extern uv-fs-poll-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_poll_s*)#1)->loop)"
-
-pub inline fun uv-fs-poll-sp/loop(s: uv-fs-poll-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/loop)
-
-pub inline fun uv-fs-poll-sc/loop(^s: uv-fs-poll-sc): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-fs-poll-sp/loop)
-
-pub inline fun uv-fs-poll-scb/loop(^s: uv-fs-poll-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-fs-poll-sp/loop)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_fs_poll_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-fs-poll-sp/set-loop(s: uv-fs-poll-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-poll-sc/set-loop(^s: uv-fs-poll-sc, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-loop(loop))
-
-pub inline fun uv-fs-poll-scb/set-loop(^s: uv-fs-poll-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-loop(loop))
-
-pub inline extern uv-fs-poll-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_fs_poll_s*)#1)->type)"
-
-pub inline fun uv-fs-poll-sp/type1(s: uv-fs-poll-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/type1.int
-
-pub inline fun uv-fs-poll-sc/type1(^s: uv-fs-poll-sc): int
-  s.with-ptr(uv-fs-poll-sp/type1)
-
-pub inline fun uv-fs-poll-scb/type1(^s: uv-fs-poll-scb<s::S>): int
-  s.with-ptr(uv-fs-poll-sp/type1)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_fs_poll_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-fs-poll-sp/set-type1(s: uv-fs-poll-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-fs-poll-sc/set-type1(^s: uv-fs-poll-sc, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-type1(type1))
-
-pub inline fun uv-fs-poll-scb/set-type1(^s: uv-fs-poll-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-type1(type1))
-
-pub inline extern uv-fs-poll-s-ptrraw/close-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_poll_s*)#1)->close_cb)"
-
-pub inline fun uv-fs-poll-sp/close-cb(s: uv-fs-poll-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/close-cb)
-
-pub inline fun uv-fs-poll-sc/close-cb(^s: uv-fs-poll-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-poll-sp/close-cb)
-
-pub inline fun uv-fs-poll-scb/close-cb(^s: uv-fs-poll-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-poll-sp/close-cb)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-close-cb(s: intptr_t, close-cb: intptr_t): ()
-  c inline "((struct uv_fs_poll_s*)#1)->close_cb = (void (*)(struct uv_handle_s*))#2"
-
-pub inline fun uv-fs-poll-sp/set-close-cb(s: uv-fs-poll-sp, close-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-close-cb(close-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-poll-sc/set-close-cb(^s: uv-fs-poll-sc, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-close-cb(close-cb))
-
-pub inline fun uv-fs-poll-scb/set-close-cb(^s: uv-fs-poll-scb<s::S>, close-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-close-cb(close-cb))
-
-pub inline extern uv-fs-poll-s-ptrraw/next-closing(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_poll_s*)#1)->next_closing)"
-
-pub inline fun uv-fs-poll-sp/next-closing(s: uv-fs-poll-sp): c-pointer<uv-handle-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/next-closing)
-
-pub inline fun uv-fs-poll-sc/next-closing(^s: uv-fs-poll-sc): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-fs-poll-sp/next-closing)
-
-pub inline fun uv-fs-poll-scb/next-closing(^s: uv-fs-poll-scb<s::S>): c-pointer<uv-handle-s-c>
-  s.with-ptr(uv-fs-poll-sp/next-closing)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-next-closing(s: intptr_t, next-closing: intptr_t): ()
-  c inline "((struct uv_fs_poll_s*)#1)->next_closing = (struct uv_handle_s*)#2"
-
-pub inline fun uv-fs-poll-sp/set-next-closing(s: uv-fs-poll-sp, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-next-closing(next-closing.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-poll-sc/set-next-closing(^s: uv-fs-poll-sc, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-next-closing(next-closing))
-
-pub inline fun uv-fs-poll-scb/set-next-closing(^s: uv-fs-poll-scb<s::S>, next-closing: c-pointer<uv-handle-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-next-closing(next-closing))
-
-pub inline extern uv-fs-poll-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_fs_poll_s*)#1)->flags)"
-
-pub inline fun uv-fs-poll-sp/flags(s: uv-fs-poll-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/flags.int
-
-pub inline fun uv-fs-poll-sc/flags(^s: uv-fs-poll-sc): int
-  s.with-ptr(uv-fs-poll-sp/flags)
-
-pub inline fun uv-fs-poll-scb/flags(^s: uv-fs-poll-scb<s::S>): int
-  s.with-ptr(uv-fs-poll-sp/flags)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_fs_poll_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-fs-poll-sp/set-flags(s: uv-fs-poll-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-fs-poll-sc/set-flags(^s: uv-fs-poll-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-flags(flags))
-
-pub inline fun uv-fs-poll-scb/set-flags(^s: uv-fs-poll-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-flags(flags))
-
-pub inline extern uv-fs-poll-s-ptrraw/poll-ctx(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_poll_s*)#1)->poll_ctx)"
-
-pub inline fun uv-fs-poll-sp/poll-ctx(s: uv-fs-poll-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/poll-ctx)
-
-pub inline fun uv-fs-poll-sc/poll-ctx(^s: uv-fs-poll-sc): c-pointer<()>
-  s.with-ptr(uv-fs-poll-sp/poll-ctx)
-
-pub inline fun uv-fs-poll-scb/poll-ctx(^s: uv-fs-poll-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-poll-sp/poll-ctx)
-
-pub inline extern uv-fs-poll-s-ptrraw/set-poll-ctx(s: intptr_t, poll-ctx: intptr_t): ()
-  c inline "((struct uv_fs_poll_s*)#1)->poll_ctx = (void*)#2"
-
-pub inline fun uv-fs-poll-sp/set-poll-ctx(s: uv-fs-poll-sp, poll-ctx: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-fs-poll-s-ptrraw/set-poll-ctx(poll-ctx.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-poll-sc/set-poll-ctx(^s: uv-fs-poll-sc, poll-ctx: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-poll-ctx(poll-ctx))
-
-pub inline fun uv-fs-poll-scb/set-poll-ctx(^s: uv-fs-poll-scb<s::S>, poll-ctx: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-poll-sp/set-poll-ctx(poll-ctx))
-
-pub struct unnamed-Union18
-pub type unnamed-Union18-c
-pub alias unnamed-Union18p = c-pointer<unnamed-Union18-c>
-pub alias unnamed-Union18c<s::S> = owned-c<unnamed-Union18-c>
-pub alias unnamed-Union18cb<s::S> = borrowed-c<s,unnamed-Union18-c>
-pub alias unnamed-Union18ca<s::S> = owned-c<c-array<unnamed-Union18-c>>
-
-pub extern unnamed-Union18/size-of(c: c-null<unnamed-Union18-c>): int32
-  c inline "sizeof(union unnamed-Union18)"
-
-pub fun unnamed-Union18c(): unnamed-Union18c<s::S>
-  malloc(?size-of=unnamed-Union18/size-of)
-
-pub fun unnamed-Union18c-calloc(): unnamed-Union18c<s::S>
-  malloc-c(?size-of=unnamed-Union18/size-of)
-
-pub fun unnamed-Union18c-array(n: int): unnamed-Union18ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union18/size-of)
-
-pub fun unnamed-Union18c-array-calloc(n: int): unnamed-Union18ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union18/size-of)
-
-pub inline extern unnamed-Union18-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union18*)#1)->fd)"
-
-pub inline fun unnamed-Union18p/fd(s: unnamed-Union18p): int
-  s.cextern/c-pointer/ptr.unnamed-Union18-ptrraw/fd.int
-
-pub inline fun unnamed-Union18c/fd(^s: unnamed-Union18c<s::S>): int
-  s.with-ptr(unnamed-Union18p/fd)
-
-pub inline fun unnamed-Union18cb/fd(^s: unnamed-Union18cb<s::S>): int
-  s.with-ptr(unnamed-Union18p/fd)
-
-pub inline extern unnamed-Union18-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union18*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union18p/set-fd(s: unnamed-Union18p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union18-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union18c/set-fd(^s: unnamed-Union18c<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union18p/set-fd(fd))
-
-pub inline fun unnamed-Union18cb/set-fd(^s: unnamed-Union18cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union18p/set-fd(fd))
-
-pub inline extern unnamed-Union18-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union18*)#1)->reserved)"
-
-pub inline fun unnamed-Union18p/reserved(s: unnamed-Union18p): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.unnamed-Union18-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun unnamed-Union18c/reserved(^s: unnamed-Union18c<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union18p/reserved)
-
-pub inline fun unnamed-Union18cb/reserved(^s: unnamed-Union18cb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(unnamed-Union18p/reserved)
-
-pub inline extern unnamed-Union18-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((union unnamed-Union18*)#1)->reserved = (void**)#2"
-
-pub inline fun unnamed-Union18p/set-reserved(s: unnamed-Union18p, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union18-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun unnamed-Union18c/set-reserved(^s: unnamed-Union18c<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union18p/set-reserved(reserved))
-
-pub inline fun unnamed-Union18cb/set-reserved(^s: unnamed-Union18cb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union18p/set-reserved(reserved))
+pub struct unnamed-union18
+pub type unnamed-union18-c
+pub alias unnamed-union18p = c-pointer<unnamed-union18-c>
+pub alias unnamed-union18c<s::S> = owned-c<unnamed-union18-c>
+pub alias unnamed-union18cb<s::S> = borrowed-c<s,unnamed-union18-c>
+pub alias unnamed-union18ca<s::S> = owned-c<c-array<unnamed-union18-c>>
 
 pub struct uv-req-s
 pub type uv-req-s-c
@@ -10585,78 +3583,6 @@ pub fun uv-req-sc-array(n: int): uv-req-sca<s::S>
 pub fun uv-req-sc-array-calloc(n: int): uv-req-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-req-s/size-of)
 
-pub inline extern uv-req-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_req_s*)#1)->data)"
-
-pub inline fun uv-req-sp/data(s: uv-req-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-req-s-ptrraw/data)
-
-pub inline fun uv-req-sc/data(^s: uv-req-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-req-sp/data)
-
-pub inline fun uv-req-scb/data(^s: uv-req-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-req-sp/data)
-
-pub inline extern uv-req-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_req_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-req-sp/set-data(s: uv-req-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-req-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-req-sc/set-data(^s: uv-req-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-req-sp/set-data(data))
-
-pub inline fun uv-req-scb/set-data(^s: uv-req-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-req-sp/set-data(data))
-
-pub inline extern uv-req-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_req_s*)#1)->type)"
-
-pub inline fun uv-req-sp/type1(s: uv-req-sp): int
-  s.cextern/c-pointer/ptr.uv-req-s-ptrraw/type1.int
-
-pub inline fun uv-req-sc/type1(^s: uv-req-sc<s::S>): int
-  s.with-ptr(uv-req-sp/type1)
-
-pub inline fun uv-req-scb/type1(^s: uv-req-scb<s::S>): int
-  s.with-ptr(uv-req-sp/type1)
-
-pub inline extern uv-req-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_req_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-req-sp/set-type1(s: uv-req-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-req-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-req-sc/set-type1(^s: uv-req-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-req-sp/set-type1(type1))
-
-pub inline fun uv-req-scb/set-type1(^s: uv-req-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-req-sp/set-type1(type1))
-
-pub inline extern uv-req-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_req_s*)#1)->reserved)"
-
-pub inline fun uv-req-sp/reserved(s: uv-req-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-req-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-req-sc/reserved(^s: uv-req-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-req-sp/reserved)
-
-pub inline fun uv-req-scb/reserved(^s: uv-req-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-req-sp/reserved)
-
-pub inline extern uv-req-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_req_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-req-sp/set-reserved(s: uv-req-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-req-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-req-sc/set-reserved(^s: uv-req-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-req-sp/set-reserved(reserved))
-
-pub inline fun uv-req-scb/set-reserved(^s: uv-req-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-req-sp/set-reserved(reserved))
-
 pub struct uv-getaddrinfo-s
 pub type uv-getaddrinfo-s-c
 pub alias uv-getaddrinfo-sp = c-pointer<uv-getaddrinfo-s-c>
@@ -10678,246 +3604,6 @@ pub fun uv-getaddrinfo-sc-array(n: int): uv-getaddrinfo-sca<s::S>
 
 pub fun uv-getaddrinfo-sc-array-calloc(n: int): uv-getaddrinfo-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-getaddrinfo-s/size-of)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->data)"
-
-pub inline fun uv-getaddrinfo-sp/data(s: uv-getaddrinfo-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/data)
-
-pub inline fun uv-getaddrinfo-sc/data(^s: uv-getaddrinfo-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-getaddrinfo-sp/data)
-
-pub inline fun uv-getaddrinfo-scb/data(^s: uv-getaddrinfo-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-getaddrinfo-sp/data)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-data(s: uv-getaddrinfo-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-data(^s: uv-getaddrinfo-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-data(data))
-
-pub inline fun uv-getaddrinfo-scb/set-data(^s: uv-getaddrinfo-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-data(data))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_getaddrinfo_s*)#1)->type)"
-
-pub inline fun uv-getaddrinfo-sp/type1(s: uv-getaddrinfo-sp): int
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/type1.int
-
-pub inline fun uv-getaddrinfo-sc/type1(^s: uv-getaddrinfo-sc<s::S>): int
-  s.with-ptr(uv-getaddrinfo-sp/type1)
-
-pub inline fun uv-getaddrinfo-scb/type1(^s: uv-getaddrinfo-scb<s::S>): int
-  s.with-ptr(uv-getaddrinfo-sp/type1)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-type1(s: uv-getaddrinfo-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-getaddrinfo-sc/set-type1(^s: uv-getaddrinfo-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-type1(type1))
-
-pub inline fun uv-getaddrinfo-scb/set-type1(^s: uv-getaddrinfo-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-type1(type1))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->reserved)"
-
-pub inline fun uv-getaddrinfo-sp/reserved(s: uv-getaddrinfo-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-getaddrinfo-sc/reserved(^s: uv-getaddrinfo-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-getaddrinfo-sp/reserved)
-
-pub inline fun uv-getaddrinfo-scb/reserved(^s: uv-getaddrinfo-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-getaddrinfo-sp/reserved)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-reserved(s: uv-getaddrinfo-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-getaddrinfo-sc/set-reserved(^s: uv-getaddrinfo-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-reserved(reserved))
-
-pub inline fun uv-getaddrinfo-scb/set-reserved(^s: uv-getaddrinfo-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-reserved(reserved))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->loop)"
-
-pub inline fun uv-getaddrinfo-sp/loop(s: uv-getaddrinfo-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/loop)
-
-pub inline fun uv-getaddrinfo-sc/loop(^s: uv-getaddrinfo-sc<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-getaddrinfo-sp/loop)
-
-pub inline fun uv-getaddrinfo-scb/loop(^s: uv-getaddrinfo-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-getaddrinfo-sp/loop)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-loop(s: uv-getaddrinfo-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-loop(^s: uv-getaddrinfo-sc<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-loop(loop))
-
-pub inline fun uv-getaddrinfo-scb/set-loop(^s: uv-getaddrinfo-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-loop(loop))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->cb)"
-
-pub inline fun uv-getaddrinfo-sp/cb(s: uv-getaddrinfo-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/cb)
-
-pub inline fun uv-getaddrinfo-sc/cb(^s: uv-getaddrinfo-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-getaddrinfo-sp/cb)
-
-pub inline fun uv-getaddrinfo-scb/cb(^s: uv-getaddrinfo-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-getaddrinfo-sp/cb)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->cb = (void (*)(struct uv_getaddrinfo_s*, int, struct addrinfo*))#2"
-
-pub inline fun uv-getaddrinfo-sp/set-cb(s: uv-getaddrinfo-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-cb(^s: uv-getaddrinfo-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-cb(cb))
-
-pub inline fun uv-getaddrinfo-scb/set-cb(^s: uv-getaddrinfo-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-cb(cb))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/hints(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->hints)"
-
-pub inline fun uv-getaddrinfo-sp/hints(s: uv-getaddrinfo-sp): c-pointer<addrinfo-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/hints)
-
-pub inline fun uv-getaddrinfo-sc/hints(^s: uv-getaddrinfo-sc<s::S>): c-pointer<addrinfo-c>
-  s.with-ptr(uv-getaddrinfo-sp/hints)
-
-pub inline fun uv-getaddrinfo-scb/hints(^s: uv-getaddrinfo-scb<s::S>): c-pointer<addrinfo-c>
-  s.with-ptr(uv-getaddrinfo-sp/hints)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-hints(s: intptr_t, hints: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->hints = (struct addrinfo*)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-hints(s: uv-getaddrinfo-sp, hints: c-pointer<addrinfo-c>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-hints(hints.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-hints(^s: uv-getaddrinfo-sc<s::S>, hints: c-pointer<addrinfo-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-hints(hints))
-
-pub inline fun uv-getaddrinfo-scb/set-hints(^s: uv-getaddrinfo-scb<s::S>, hints: c-pointer<addrinfo-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-hints(hints))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/hostname(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->hostname)"
-
-pub inline fun uv-getaddrinfo-sp/hostname(s: uv-getaddrinfo-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/hostname)
-
-pub inline fun uv-getaddrinfo-sc/hostname(^s: uv-getaddrinfo-sc<s::S>): c-pointer<int>
-  s.with-ptr(uv-getaddrinfo-sp/hostname)
-
-pub inline fun uv-getaddrinfo-scb/hostname(^s: uv-getaddrinfo-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-getaddrinfo-sp/hostname)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-hostname(s: intptr_t, hostname: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->hostname = (char*)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-hostname(s: uv-getaddrinfo-sp, hostname: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-hostname(hostname.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-hostname(^s: uv-getaddrinfo-sc<s::S>, hostname: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-hostname(hostname))
-
-pub inline fun uv-getaddrinfo-scb/set-hostname(^s: uv-getaddrinfo-scb<s::S>, hostname: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-hostname(hostname))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/service(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->service)"
-
-pub inline fun uv-getaddrinfo-sp/service(s: uv-getaddrinfo-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/service)
-
-pub inline fun uv-getaddrinfo-sc/service(^s: uv-getaddrinfo-sc<s::S>): c-pointer<int>
-  s.with-ptr(uv-getaddrinfo-sp/service)
-
-pub inline fun uv-getaddrinfo-scb/service(^s: uv-getaddrinfo-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-getaddrinfo-sp/service)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-service(s: intptr_t, service: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->service = (char*)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-service(s: uv-getaddrinfo-sp, service: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-service(service.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-service(^s: uv-getaddrinfo-sc<s::S>, service: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-service(service))
-
-pub inline fun uv-getaddrinfo-scb/set-service(^s: uv-getaddrinfo-scb<s::S>, service: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-service(service))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/addrinfo(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getaddrinfo_s*)#1)->addrinfo)"
-
-pub inline fun uv-getaddrinfo-sp/addrinfo(s: uv-getaddrinfo-sp): c-pointer<addrinfo-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/addrinfo)
-
-pub inline fun uv-getaddrinfo-sc/addrinfo(^s: uv-getaddrinfo-sc<s::S>): c-pointer<addrinfo-c>
-  s.with-ptr(uv-getaddrinfo-sp/addrinfo)
-
-pub inline fun uv-getaddrinfo-scb/addrinfo(^s: uv-getaddrinfo-scb<s::S>): c-pointer<addrinfo-c>
-  s.with-ptr(uv-getaddrinfo-sp/addrinfo)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-addrinfo(s: intptr_t, addrinfo: intptr_t): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->addrinfo = (struct addrinfo*)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-addrinfo(s: uv-getaddrinfo-sp, addrinfo: c-pointer<addrinfo-c>): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-addrinfo(addrinfo.cextern/c-pointer/ptr)
-
-pub inline fun uv-getaddrinfo-sc/set-addrinfo(^s: uv-getaddrinfo-sc<s::S>, addrinfo: c-pointer<addrinfo-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-addrinfo(addrinfo))
-
-pub inline fun uv-getaddrinfo-scb/set-addrinfo(^s: uv-getaddrinfo-scb<s::S>, addrinfo: c-pointer<addrinfo-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-addrinfo(addrinfo))
-
-pub inline extern uv-getaddrinfo-s-ptrraw/retcode(s: intptr_t): int32
-  c inline "(int)(((struct uv_getaddrinfo_s*)#1)->retcode)"
-
-pub inline fun uv-getaddrinfo-sp/retcode(s: uv-getaddrinfo-sp): int
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/retcode.int
-
-pub inline fun uv-getaddrinfo-sc/retcode(^s: uv-getaddrinfo-sc<s::S>): int
-  s.with-ptr(uv-getaddrinfo-sp/retcode)
-
-pub inline fun uv-getaddrinfo-scb/retcode(^s: uv-getaddrinfo-scb<s::S>): int
-  s.with-ptr(uv-getaddrinfo-sp/retcode)
-
-pub inline extern uv-getaddrinfo-s-ptrraw/set-retcode(s: intptr_t, retcode: int32): ()
-  c inline "((struct uv_getaddrinfo_s*)#1)->retcode = (int)#2"
-
-pub inline fun uv-getaddrinfo-sp/set-retcode(s: uv-getaddrinfo-sp, retcode: int): ()
-  s.cextern/c-pointer/ptr.uv-getaddrinfo-s-ptrraw/set-retcode(retcode.int32)
-
-pub inline fun uv-getaddrinfo-sc/set-retcode(^s: uv-getaddrinfo-sc<s::S>, retcode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-retcode(retcode))
-
-pub inline fun uv-getaddrinfo-scb/set-retcode(^s: uv-getaddrinfo-scb<s::S>, retcode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getaddrinfo-sp/set-retcode(retcode))
 
 alias uv-getaddrinfo-cb = c-pointer<intptr_t>
 alias uv-getaddrinfo-cbfn = ((req : c-pointer<uv-getaddrinfo-s-c>, status : int, res : c-pointer<addrinfo-c>) -> ())
@@ -10951,222 +3637,6 @@ pub fun uv-getnameinfo-sc-array(n: int): uv-getnameinfo-sca<s::S>
 pub fun uv-getnameinfo-sc-array-calloc(n: int): uv-getnameinfo-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-getnameinfo-s/size-of)
 
-pub inline extern uv-getnameinfo-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getnameinfo_s*)#1)->data)"
-
-pub inline fun uv-getnameinfo-sp/data(s: uv-getnameinfo-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/data)
-
-pub inline fun uv-getnameinfo-sc/data(^s: uv-getnameinfo-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-getnameinfo-sp/data)
-
-pub inline fun uv-getnameinfo-scb/data(^s: uv-getnameinfo-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-getnameinfo-sp/data)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-getnameinfo-sp/set-data(s: uv-getnameinfo-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-getnameinfo-sc/set-data(^s: uv-getnameinfo-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-data(data))
-
-pub inline fun uv-getnameinfo-scb/set-data(^s: uv-getnameinfo-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-data(data))
-
-pub inline extern uv-getnameinfo-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_getnameinfo_s*)#1)->type)"
-
-pub inline fun uv-getnameinfo-sp/type1(s: uv-getnameinfo-sp): int
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/type1.int
-
-pub inline fun uv-getnameinfo-sc/type1(^s: uv-getnameinfo-sc<s::S>): int
-  s.with-ptr(uv-getnameinfo-sp/type1)
-
-pub inline fun uv-getnameinfo-scb/type1(^s: uv-getnameinfo-scb<s::S>): int
-  s.with-ptr(uv-getnameinfo-sp/type1)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-getnameinfo-sp/set-type1(s: uv-getnameinfo-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-getnameinfo-sc/set-type1(^s: uv-getnameinfo-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-type1(type1))
-
-pub inline fun uv-getnameinfo-scb/set-type1(^s: uv-getnameinfo-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-type1(type1))
-
-pub inline extern uv-getnameinfo-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getnameinfo_s*)#1)->reserved)"
-
-pub inline fun uv-getnameinfo-sp/reserved(s: uv-getnameinfo-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-getnameinfo-sc/reserved(^s: uv-getnameinfo-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-getnameinfo-sp/reserved)
-
-pub inline fun uv-getnameinfo-scb/reserved(^s: uv-getnameinfo-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-getnameinfo-sp/reserved)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-getnameinfo-sp/set-reserved(s: uv-getnameinfo-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-getnameinfo-sc/set-reserved(^s: uv-getnameinfo-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-reserved(reserved))
-
-pub inline fun uv-getnameinfo-scb/set-reserved(^s: uv-getnameinfo-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-reserved(reserved))
-
-pub inline extern uv-getnameinfo-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getnameinfo_s*)#1)->loop)"
-
-pub inline fun uv-getnameinfo-sp/loop(s: uv-getnameinfo-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/loop)
-
-pub inline fun uv-getnameinfo-sc/loop(^s: uv-getnameinfo-sc<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-getnameinfo-sp/loop)
-
-pub inline fun uv-getnameinfo-scb/loop(^s: uv-getnameinfo-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-getnameinfo-sp/loop)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-getnameinfo-sp/set-loop(s: uv-getnameinfo-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-getnameinfo-sc/set-loop(^s: uv-getnameinfo-sc<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-loop(loop))
-
-pub inline fun uv-getnameinfo-scb/set-loop(^s: uv-getnameinfo-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-loop(loop))
-
-pub inline extern uv-getnameinfo-s-ptrraw/getnameinfo-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getnameinfo_s*)#1)->getnameinfo_cb)"
-
-pub inline fun uv-getnameinfo-sp/getnameinfo-cb(s: uv-getnameinfo-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/getnameinfo-cb)
-
-pub inline fun uv-getnameinfo-sc/getnameinfo-cb(^s: uv-getnameinfo-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-getnameinfo-sp/getnameinfo-cb)
-
-pub inline fun uv-getnameinfo-scb/getnameinfo-cb(^s: uv-getnameinfo-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-getnameinfo-sp/getnameinfo-cb)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-getnameinfo-cb(s: intptr_t, getnameinfo-cb: intptr_t): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->getnameinfo_cb = (void (*)(struct uv_getnameinfo_s*, int, char*, char*))#2"
-
-pub inline fun uv-getnameinfo-sp/set-getnameinfo-cb(s: uv-getnameinfo-sp, getnameinfo-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-getnameinfo-cb(getnameinfo-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-getnameinfo-sc/set-getnameinfo-cb(^s: uv-getnameinfo-sc<s::S>, getnameinfo-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-getnameinfo-cb(getnameinfo-cb))
-
-pub inline fun uv-getnameinfo-scb/set-getnameinfo-cb(^s: uv-getnameinfo-scb<s::S>, getnameinfo-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-getnameinfo-cb(getnameinfo-cb))
-
-pub inline extern uv-getnameinfo-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(int)(((struct uv_getnameinfo_s*)#1)->flags)"
-
-pub inline fun uv-getnameinfo-sp/flags(s: uv-getnameinfo-sp): int
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/flags.int
-
-pub inline fun uv-getnameinfo-sc/flags(^s: uv-getnameinfo-sc<s::S>): int
-  s.with-ptr(uv-getnameinfo-sp/flags)
-
-pub inline fun uv-getnameinfo-scb/flags(^s: uv-getnameinfo-scb<s::S>): int
-  s.with-ptr(uv-getnameinfo-sp/flags)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->flags = (int)#2"
-
-pub inline fun uv-getnameinfo-sp/set-flags(s: uv-getnameinfo-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-getnameinfo-sc/set-flags(^s: uv-getnameinfo-sc<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-flags(flags))
-
-pub inline fun uv-getnameinfo-scb/set-flags(^s: uv-getnameinfo-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-flags(flags))
-
-pub inline extern uv-getnameinfo-s-ptrraw/host(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getnameinfo_s*)#1)->host)"
-
-pub inline fun uv-getnameinfo-sp/host(s: uv-getnameinfo-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/host.cextern/cptr/carray
-
-pub inline fun uv-getnameinfo-sc/host(^s: uv-getnameinfo-sc<s::S>): c-array<int>
-  s.with-ptr(uv-getnameinfo-sp/host)
-
-pub inline fun uv-getnameinfo-scb/host(^s: uv-getnameinfo-scb<s::S>): c-array<int>
-  s.with-ptr(uv-getnameinfo-sp/host)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-host(s: intptr_t, host: intptr_t): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->host = (char*)#2"
-
-pub inline fun uv-getnameinfo-sp/set-host(s: uv-getnameinfo-sp, host: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-host(host.cextern/carray/cptr)
-
-pub inline fun uv-getnameinfo-sc/set-host(^s: uv-getnameinfo-sc<s::S>, host: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-host(host))
-
-pub inline fun uv-getnameinfo-scb/set-host(^s: uv-getnameinfo-scb<s::S>, host: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-host(host))
-
-pub inline extern uv-getnameinfo-s-ptrraw/service(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_getnameinfo_s*)#1)->service)"
-
-pub inline fun uv-getnameinfo-sp/service(s: uv-getnameinfo-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/service.cextern/cptr/carray
-
-pub inline fun uv-getnameinfo-sc/service(^s: uv-getnameinfo-sc<s::S>): c-array<int>
-  s.with-ptr(uv-getnameinfo-sp/service)
-
-pub inline fun uv-getnameinfo-scb/service(^s: uv-getnameinfo-scb<s::S>): c-array<int>
-  s.with-ptr(uv-getnameinfo-sp/service)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-service(s: intptr_t, service: intptr_t): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->service = (char*)#2"
-
-pub inline fun uv-getnameinfo-sp/set-service(s: uv-getnameinfo-sp, service: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-service(service.cextern/carray/cptr)
-
-pub inline fun uv-getnameinfo-sc/set-service(^s: uv-getnameinfo-sc<s::S>, service: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-service(service))
-
-pub inline fun uv-getnameinfo-scb/set-service(^s: uv-getnameinfo-scb<s::S>, service: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-service(service))
-
-pub inline extern uv-getnameinfo-s-ptrraw/retcode(s: intptr_t): int32
-  c inline "(int)(((struct uv_getnameinfo_s*)#1)->retcode)"
-
-pub inline fun uv-getnameinfo-sp/retcode(s: uv-getnameinfo-sp): int
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/retcode.int
-
-pub inline fun uv-getnameinfo-sc/retcode(^s: uv-getnameinfo-sc<s::S>): int
-  s.with-ptr(uv-getnameinfo-sp/retcode)
-
-pub inline fun uv-getnameinfo-scb/retcode(^s: uv-getnameinfo-scb<s::S>): int
-  s.with-ptr(uv-getnameinfo-sp/retcode)
-
-pub inline extern uv-getnameinfo-s-ptrraw/set-retcode(s: intptr_t, retcode: int32): ()
-  c inline "((struct uv_getnameinfo_s*)#1)->retcode = (int)#2"
-
-pub inline fun uv-getnameinfo-sp/set-retcode(s: uv-getnameinfo-sp, retcode: int): ()
-  s.cextern/c-pointer/ptr.uv-getnameinfo-s-ptrraw/set-retcode(retcode.int32)
-
-pub inline fun uv-getnameinfo-sc/set-retcode(^s: uv-getnameinfo-sc<s::S>, retcode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-retcode(retcode))
-
-pub inline fun uv-getnameinfo-scb/set-retcode(^s: uv-getnameinfo-scb<s::S>, retcode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-getnameinfo-sp/set-retcode(retcode))
-
 alias uv-getnameinfo-cb = c-pointer<intptr_t>
 alias uv-getnameinfo-cbfn = ((req : c-pointer<uv-getnameinfo-s-c>, status : int, hostname : c-pointer<int>, service : c-pointer<int>) -> ())
 alias uv-getnameinfo-t = uv-getnameinfo-s-c
@@ -11192,79 +3662,9 @@ pub fun sockaddr-storagec-array(n: int): sockaddr-storageca<s::S>
 pub fun sockaddr-storagec-array-calloc(n: int): sockaddr-storageca<s::S>
   malloc-c(n.int32, ?size-of=sockaddr-storage/size-of)
 
-pub inline extern sockaddr-storage-ptrraw/ss-family(s: intptr_t): int16
-  c inline "(unsigned short)(((struct sockaddr_storage*)#1)->ss_family)"
-
-pub inline fun sockaddr-storagep/ss-family(s: sockaddr-storagep): int
-  s.cextern/c-pointer/ptr.sockaddr-storage-ptrraw/ss-family.int
-
-pub inline fun sockaddr-storagec/ss-family(^s: sockaddr-storagec<s::S>): int
-  s.with-ptr(sockaddr-storagep/ss-family)
-
-pub inline fun sockaddr-storagecb/ss-family(^s: sockaddr-storagecb<s::S>): int
-  s.with-ptr(sockaddr-storagep/ss-family)
-
-pub inline extern sockaddr-storage-ptrraw/set-ss-family(s: intptr_t, ss-family: int16): ()
-  c inline "((struct sockaddr_storage*)#1)->ss_family = (unsigned short)#2"
-
-pub inline fun sockaddr-storagep/set-ss-family(s: sockaddr-storagep, ss-family: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-storage-ptrraw/set-ss-family(ss-family.int16)
-
-pub inline fun sockaddr-storagec/set-ss-family(^s: sockaddr-storagec<s::S>, ss-family: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-storagep/set-ss-family(ss-family))
-
-pub inline fun sockaddr-storagecb/set-ss-family(^s: sockaddr-storagecb<s::S>, ss-family: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-storagep/set-ss-family(ss-family))
-
-pub inline extern sockaddr-storage-ptrraw/ss-padding(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct sockaddr_storage*)#1)->__ss_padding)"
-
-pub inline fun sockaddr-storagep/ss-padding(s: sockaddr-storagep): c-array<int>
-  s.cextern/c-pointer/ptr.sockaddr-storage-ptrraw/ss-padding.cextern/cptr/carray
-
-pub inline fun sockaddr-storagec/ss-padding(^s: sockaddr-storagec<s::S>): c-array<int>
-  s.with-ptr(sockaddr-storagep/ss-padding)
-
-pub inline fun sockaddr-storagecb/ss-padding(^s: sockaddr-storagecb<s::S>): c-array<int>
-  s.with-ptr(sockaddr-storagep/ss-padding)
-
-pub inline extern sockaddr-storage-ptrraw/set-ss-padding(s: intptr_t, ss-padding: intptr_t): ()
-  c inline "((struct sockaddr_storage*)#1)->__ss_padding = (char*)#2"
-
-pub inline fun sockaddr-storagep/set-ss-padding(s: sockaddr-storagep, ss-padding: c-array<int>): ()
-  s.cextern/c-pointer/ptr.sockaddr-storage-ptrraw/set-ss-padding(ss-padding.cextern/carray/cptr)
-
-pub inline fun sockaddr-storagec/set-ss-padding(^s: sockaddr-storagec<s::S>, ss-padding: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-storagep/set-ss-padding(ss-padding))
-
-pub inline fun sockaddr-storagecb/set-ss-padding(^s: sockaddr-storagecb<s::S>, ss-padding: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-storagep/set-ss-padding(ss-padding))
-
-pub inline extern sockaddr-storage-ptrraw/ss-align(s: intptr_t): int64
-  c inline "(unsigned long)(((struct sockaddr_storage*)#1)->__ss_align)"
-
-pub inline fun sockaddr-storagep/ss-align(s: sockaddr-storagep): int
-  s.cextern/c-pointer/ptr.sockaddr-storage-ptrraw/ss-align.int
-
-pub inline fun sockaddr-storagec/ss-align(^s: sockaddr-storagec<s::S>): int
-  s.with-ptr(sockaddr-storagep/ss-align)
-
-pub inline fun sockaddr-storagecb/ss-align(^s: sockaddr-storagecb<s::S>): int
-  s.with-ptr(sockaddr-storagep/ss-align)
-
-pub inline extern sockaddr-storage-ptrraw/set-ss-align(s: intptr_t, ss-align: int64): ()
-  c inline "((struct sockaddr_storage*)#1)->__ss_align = (unsigned long)#2"
-
-pub inline fun sockaddr-storagep/set-ss-align(s: sockaddr-storagep, ss-align: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-storage-ptrraw/set-ss-align(ss-align.int64)
-
-pub inline fun sockaddr-storagec/set-ss-align(^s: sockaddr-storagec<s::S>, ss-align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-storagep/set-ss-align(ss-align))
-
-pub inline fun sockaddr-storagecb/set-ss-align(^s: sockaddr-storagecb<s::S>, ss-align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-storagep/set-ss-align(ss-align))
-
+alias uint8-t = int
 alias sa-family-t = int
+alias int64-t = int
 pub struct uv-write-s
 pub type uv-write-s-c
 pub alias uv-write-sp = c-pointer<uv-write-s-c>
@@ -11286,270 +3686,6 @@ pub fun uv-write-sc-array(n: int): uv-write-sca<s::S>
 
 pub fun uv-write-sc-array-calloc(n: int): uv-write-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-write-s/size-of)
-
-pub inline extern uv-write-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->data)"
-
-pub inline fun uv-write-sp/data(s: uv-write-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-write-s-ptrraw/data)
-
-pub inline fun uv-write-sc/data(^s: uv-write-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-write-sp/data)
-
-pub inline fun uv-write-scb/data(^s: uv-write-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-write-sp/data)
-
-pub inline extern uv-write-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-write-sp/set-data(s: uv-write-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-write-sc/set-data(^s: uv-write-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-data(data))
-
-pub inline fun uv-write-scb/set-data(^s: uv-write-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-data(data))
-
-pub inline extern uv-write-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_write_s*)#1)->type)"
-
-pub inline fun uv-write-sp/type1(s: uv-write-sp): int
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/type1.int
-
-pub inline fun uv-write-sc/type1(^s: uv-write-sc<s::S>): int
-  s.with-ptr(uv-write-sp/type1)
-
-pub inline fun uv-write-scb/type1(^s: uv-write-scb<s::S>): int
-  s.with-ptr(uv-write-sp/type1)
-
-pub inline extern uv-write-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_write_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-write-sp/set-type1(s: uv-write-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-write-sc/set-type1(^s: uv-write-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-type1(type1))
-
-pub inline fun uv-write-scb/set-type1(^s: uv-write-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-type1(type1))
-
-pub inline extern uv-write-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->reserved)"
-
-pub inline fun uv-write-sp/reserved(s: uv-write-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-write-sc/reserved(^s: uv-write-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-write-sp/reserved)
-
-pub inline fun uv-write-scb/reserved(^s: uv-write-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-write-sp/reserved)
-
-pub inline extern uv-write-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-write-sp/set-reserved(s: uv-write-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-write-sc/set-reserved(^s: uv-write-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-reserved(reserved))
-
-pub inline fun uv-write-scb/set-reserved(^s: uv-write-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-reserved(reserved))
-
-pub inline extern uv-write-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->cb)"
-
-pub inline fun uv-write-sp/cb(s: uv-write-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-write-s-ptrraw/cb)
-
-pub inline fun uv-write-sc/cb(^s: uv-write-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-write-sp/cb)
-
-pub inline fun uv-write-scb/cb(^s: uv-write-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-write-sp/cb)
-
-pub inline extern uv-write-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->cb = (void (*)(struct uv_write_s*, int))#2"
-
-pub inline fun uv-write-sp/set-cb(s: uv-write-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-write-sc/set-cb(^s: uv-write-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-cb(cb))
-
-pub inline fun uv-write-scb/set-cb(^s: uv-write-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-cb(cb))
-
-pub inline extern uv-write-s-ptrraw/send-handle(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->send_handle)"
-
-pub inline fun uv-write-sp/send-handle(s: uv-write-sp): c-pointer<uv-stream-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-write-s-ptrraw/send-handle)
-
-pub inline fun uv-write-sc/send-handle(^s: uv-write-sc<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-write-sp/send-handle)
-
-pub inline fun uv-write-scb/send-handle(^s: uv-write-scb<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-write-sp/send-handle)
-
-pub inline extern uv-write-s-ptrraw/set-send-handle(s: intptr_t, send-handle: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->send_handle = (struct uv_stream_s*)#2"
-
-pub inline fun uv-write-sp/set-send-handle(s: uv-write-sp, send-handle: c-pointer<uv-stream-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-send-handle(send-handle.cextern/c-pointer/ptr)
-
-pub inline fun uv-write-sc/set-send-handle(^s: uv-write-sc<s::S>, send-handle: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-send-handle(send-handle))
-
-pub inline fun uv-write-scb/set-send-handle(^s: uv-write-scb<s::S>, send-handle: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-send-handle(send-handle))
-
-pub inline extern uv-write-s-ptrraw/handle1(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->handle)"
-
-pub inline fun uv-write-sp/handle1(s: uv-write-sp): c-pointer<uv-stream-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-write-s-ptrraw/handle1)
-
-pub inline fun uv-write-sc/handle1(^s: uv-write-sc<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-write-sp/handle1)
-
-pub inline fun uv-write-scb/handle1(^s: uv-write-scb<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(uv-write-sp/handle1)
-
-pub inline extern uv-write-s-ptrraw/set-handle1(s: intptr_t, handle1: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->handle = (struct uv_stream_s*)#2"
-
-pub inline fun uv-write-sp/set-handle1(s: uv-write-sp, handle1: c-pointer<uv-stream-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-handle1(handle1.cextern/c-pointer/ptr)
-
-pub inline fun uv-write-sc/set-handle1(^s: uv-write-sc<s::S>, handle1: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-handle1(handle1))
-
-pub inline fun uv-write-scb/set-handle1(^s: uv-write-scb<s::S>, handle1: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-handle1(handle1))
-
-pub inline extern uv-write-s-ptrraw/write-index(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_write_s*)#1)->write_index)"
-
-pub inline fun uv-write-sp/write-index(s: uv-write-sp): int
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/write-index.int
-
-pub inline fun uv-write-sc/write-index(^s: uv-write-sc<s::S>): int
-  s.with-ptr(uv-write-sp/write-index)
-
-pub inline fun uv-write-scb/write-index(^s: uv-write-scb<s::S>): int
-  s.with-ptr(uv-write-sp/write-index)
-
-pub inline extern uv-write-s-ptrraw/set-write-index(s: intptr_t, write-index: int32): ()
-  c inline "((struct uv_write_s*)#1)->write_index = (unsigned int)#2"
-
-pub inline fun uv-write-sp/set-write-index(s: uv-write-sp, write-index: int): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-write-index(write-index.int32)
-
-pub inline fun uv-write-sc/set-write-index(^s: uv-write-sc<s::S>, write-index: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-write-index(write-index))
-
-pub inline fun uv-write-scb/set-write-index(^s: uv-write-scb<s::S>, write-index: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-write-index(write-index))
-
-pub inline extern uv-write-s-ptrraw/bufs(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->bufs)"
-
-pub inline fun uv-write-sp/bufs(s: uv-write-sp): c-pointer<uv-buf-t-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-write-s-ptrraw/bufs)
-
-pub inline fun uv-write-sc/bufs(^s: uv-write-sc<s::S>): c-pointer<uv-buf-t-c>
-  s.with-ptr(uv-write-sp/bufs)
-
-pub inline fun uv-write-scb/bufs(^s: uv-write-scb<s::S>): c-pointer<uv-buf-t-c>
-  s.with-ptr(uv-write-sp/bufs)
-
-pub inline extern uv-write-s-ptrraw/set-bufs(s: intptr_t, bufs: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->bufs = (struct uv_buf_t*)#2"
-
-pub inline fun uv-write-sp/set-bufs(s: uv-write-sp, bufs: c-pointer<uv-buf-t-c>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-bufs(bufs.cextern/c-pointer/ptr)
-
-pub inline fun uv-write-sc/set-bufs(^s: uv-write-sc<s::S>, bufs: c-pointer<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-bufs(bufs))
-
-pub inline fun uv-write-scb/set-bufs(^s: uv-write-scb<s::S>, bufs: c-pointer<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-bufs(bufs))
-
-pub inline extern uv-write-s-ptrraw/nbufs(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_write_s*)#1)->nbufs)"
-
-pub inline fun uv-write-sp/nbufs(s: uv-write-sp): int
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/nbufs.int
-
-pub inline fun uv-write-sc/nbufs(^s: uv-write-sc<s::S>): int
-  s.with-ptr(uv-write-sp/nbufs)
-
-pub inline fun uv-write-scb/nbufs(^s: uv-write-scb<s::S>): int
-  s.with-ptr(uv-write-sp/nbufs)
-
-pub inline extern uv-write-s-ptrraw/set-nbufs(s: intptr_t, nbufs: int32): ()
-  c inline "((struct uv_write_s*)#1)->nbufs = (unsigned int)#2"
-
-pub inline fun uv-write-sp/set-nbufs(s: uv-write-sp, nbufs: int): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-nbufs(nbufs.int32)
-
-pub inline fun uv-write-sc/set-nbufs(^s: uv-write-sc<s::S>, nbufs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-nbufs(nbufs))
-
-pub inline fun uv-write-scb/set-nbufs(^s: uv-write-scb<s::S>, nbufs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-nbufs(nbufs))
-
-pub inline extern uv-write-s-ptrraw/error(s: intptr_t): int32
-  c inline "(int)(((struct uv_write_s*)#1)->error)"
-
-pub inline fun uv-write-sp/error(s: uv-write-sp): int
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/error.int
-
-pub inline fun uv-write-sc/error(^s: uv-write-sc<s::S>): int
-  s.with-ptr(uv-write-sp/error)
-
-pub inline fun uv-write-scb/error(^s: uv-write-scb<s::S>): int
-  s.with-ptr(uv-write-sp/error)
-
-pub inline extern uv-write-s-ptrraw/set-error(s: intptr_t, error: int32): ()
-  c inline "((struct uv_write_s*)#1)->error = (int)#2"
-
-pub inline fun uv-write-sp/set-error(s: uv-write-sp, error: int): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-error(error.int32)
-
-pub inline fun uv-write-sc/set-error(^s: uv-write-sc<s::S>, error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-error(error))
-
-pub inline fun uv-write-scb/set-error(^s: uv-write-scb<s::S>, error: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-error(error))
-
-pub inline extern uv-write-s-ptrraw/bufsml(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_write_s*)#1)->bufsml)"
-
-pub inline fun uv-write-sp/bufsml(s: uv-write-sp): c-array<uv-buf-t-c>
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/bufsml.cextern/cptr/carray
-
-pub inline fun uv-write-sc/bufsml(^s: uv-write-sc<s::S>): c-array<uv-buf-t-c>
-  s.with-ptr(uv-write-sp/bufsml)
-
-pub inline fun uv-write-scb/bufsml(^s: uv-write-scb<s::S>): c-array<uv-buf-t-c>
-  s.with-ptr(uv-write-sp/bufsml)
-
-pub inline extern uv-write-s-ptrraw/set-bufsml(s: intptr_t, bufsml: intptr_t): ()
-  c inline "((struct uv_write_s*)#1)->bufsml = (struct uv_buf_t*)#2"
-
-pub inline fun uv-write-sp/set-bufsml(s: uv-write-sp, bufsml: c-array<uv-buf-t-c>): ()
-  s.cextern/c-pointer/ptr.uv-write-s-ptrraw/set-bufsml(bufsml.cextern/carray/cptr)
-
-pub inline fun uv-write-sc/set-bufsml(^s: uv-write-sc<s::S>, bufsml: c-array<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-bufsml(bufsml))
-
-pub inline fun uv-write-scb/set-bufsml(^s: uv-write-scb<s::S>, bufsml: c-array<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-write-sp/set-bufsml(bufsml))
 
 alias uv-write-cb = c-pointer<intptr_t>
 alias uv-write-cbfn = ((req : c-pointer<uv-write-s-c>, status : int) -> ())
@@ -11576,246 +3712,6 @@ pub fun uv-udp-send-sc-array(n: int): uv-udp-send-sca<s::S>
 pub fun uv-udp-send-sc-array-calloc(n: int): uv-udp-send-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-udp-send-s/size-of)
 
-pub inline extern uv-udp-send-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->data)"
-
-pub inline fun uv-udp-send-sp/data(s: uv-udp-send-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/data)
-
-pub inline fun uv-udp-send-sc/data(^s: uv-udp-send-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-udp-send-sp/data)
-
-pub inline fun uv-udp-send-scb/data(^s: uv-udp-send-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-udp-send-sp/data)
-
-pub inline extern uv-udp-send-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-udp-send-sp/set-data(s: uv-udp-send-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-send-sc/set-data(^s: uv-udp-send-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-data(data))
-
-pub inline fun uv-udp-send-scb/set-data(^s: uv-udp-send-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-data(data))
-
-pub inline extern uv-udp-send-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_udp_send_s*)#1)->type)"
-
-pub inline fun uv-udp-send-sp/type1(s: uv-udp-send-sp): int
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/type1.int
-
-pub inline fun uv-udp-send-sc/type1(^s: uv-udp-send-sc<s::S>): int
-  s.with-ptr(uv-udp-send-sp/type1)
-
-pub inline fun uv-udp-send-scb/type1(^s: uv-udp-send-scb<s::S>): int
-  s.with-ptr(uv-udp-send-sp/type1)
-
-pub inline extern uv-udp-send-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_udp_send_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-udp-send-sp/set-type1(s: uv-udp-send-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-udp-send-sc/set-type1(^s: uv-udp-send-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-type1(type1))
-
-pub inline fun uv-udp-send-scb/set-type1(^s: uv-udp-send-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-type1(type1))
-
-pub inline extern uv-udp-send-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->reserved)"
-
-pub inline fun uv-udp-send-sp/reserved(s: uv-udp-send-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-udp-send-sc/reserved(^s: uv-udp-send-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-udp-send-sp/reserved)
-
-pub inline fun uv-udp-send-scb/reserved(^s: uv-udp-send-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-udp-send-sp/reserved)
-
-pub inline extern uv-udp-send-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-udp-send-sp/set-reserved(s: uv-udp-send-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-udp-send-sc/set-reserved(^s: uv-udp-send-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-reserved(reserved))
-
-pub inline fun uv-udp-send-scb/set-reserved(^s: uv-udp-send-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-reserved(reserved))
-
-pub inline extern uv-udp-send-s-ptrraw/handle1(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->handle)"
-
-pub inline fun uv-udp-send-sp/handle1(s: uv-udp-send-sp): c-pointer<uv-udp-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/handle1)
-
-pub inline fun uv-udp-send-sc/handle1(^s: uv-udp-send-sc<s::S>): c-pointer<uv-udp-s-c>
-  s.with-ptr(uv-udp-send-sp/handle1)
-
-pub inline fun uv-udp-send-scb/handle1(^s: uv-udp-send-scb<s::S>): c-pointer<uv-udp-s-c>
-  s.with-ptr(uv-udp-send-sp/handle1)
-
-pub inline extern uv-udp-send-s-ptrraw/set-handle1(s: intptr_t, handle1: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->handle = (struct uv_udp_s*)#2"
-
-pub inline fun uv-udp-send-sp/set-handle1(s: uv-udp-send-sp, handle1: c-pointer<uv-udp-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-handle1(handle1.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-send-sc/set-handle1(^s: uv-udp-send-sc<s::S>, handle1: c-pointer<uv-udp-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-handle1(handle1))
-
-pub inline fun uv-udp-send-scb/set-handle1(^s: uv-udp-send-scb<s::S>, handle1: c-pointer<uv-udp-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-handle1(handle1))
-
-pub inline extern uv-udp-send-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->cb)"
-
-pub inline fun uv-udp-send-sp/cb(s: uv-udp-send-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/cb)
-
-pub inline fun uv-udp-send-sc/cb(^s: uv-udp-send-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-send-sp/cb)
-
-pub inline fun uv-udp-send-scb/cb(^s: uv-udp-send-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-send-sp/cb)
-
-pub inline extern uv-udp-send-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->cb = (void (*)(struct uv_udp_send_s*, int))#2"
-
-pub inline fun uv-udp-send-sp/set-cb(s: uv-udp-send-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-send-sc/set-cb(^s: uv-udp-send-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-cb(cb))
-
-pub inline fun uv-udp-send-scb/set-cb(^s: uv-udp-send-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-cb(cb))
-
-pub inline extern uv-udp-send-s-ptrraw/nbufs(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_udp_send_s*)#1)->nbufs)"
-
-pub inline fun uv-udp-send-sp/nbufs(s: uv-udp-send-sp): int
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/nbufs.int
-
-pub inline fun uv-udp-send-sc/nbufs(^s: uv-udp-send-sc<s::S>): int
-  s.with-ptr(uv-udp-send-sp/nbufs)
-
-pub inline fun uv-udp-send-scb/nbufs(^s: uv-udp-send-scb<s::S>): int
-  s.with-ptr(uv-udp-send-sp/nbufs)
-
-pub inline extern uv-udp-send-s-ptrraw/set-nbufs(s: intptr_t, nbufs: int32): ()
-  c inline "((struct uv_udp_send_s*)#1)->nbufs = (unsigned int)#2"
-
-pub inline fun uv-udp-send-sp/set-nbufs(s: uv-udp-send-sp, nbufs: int): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-nbufs(nbufs.int32)
-
-pub inline fun uv-udp-send-sc/set-nbufs(^s: uv-udp-send-sc<s::S>, nbufs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-nbufs(nbufs))
-
-pub inline fun uv-udp-send-scb/set-nbufs(^s: uv-udp-send-scb<s::S>, nbufs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-nbufs(nbufs))
-
-pub inline extern uv-udp-send-s-ptrraw/bufs(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->bufs)"
-
-pub inline fun uv-udp-send-sp/bufs(s: uv-udp-send-sp): c-pointer<uv-buf-t-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/bufs)
-
-pub inline fun uv-udp-send-sc/bufs(^s: uv-udp-send-sc<s::S>): c-pointer<uv-buf-t-c>
-  s.with-ptr(uv-udp-send-sp/bufs)
-
-pub inline fun uv-udp-send-scb/bufs(^s: uv-udp-send-scb<s::S>): c-pointer<uv-buf-t-c>
-  s.with-ptr(uv-udp-send-sp/bufs)
-
-pub inline extern uv-udp-send-s-ptrraw/set-bufs(s: intptr_t, bufs: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->bufs = (struct uv_buf_t*)#2"
-
-pub inline fun uv-udp-send-sp/set-bufs(s: uv-udp-send-sp, bufs: c-pointer<uv-buf-t-c>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-bufs(bufs.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-send-sc/set-bufs(^s: uv-udp-send-sc<s::S>, bufs: c-pointer<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-bufs(bufs))
-
-pub inline fun uv-udp-send-scb/set-bufs(^s: uv-udp-send-scb<s::S>, bufs: c-pointer<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-bufs(bufs))
-
-pub inline extern uv-udp-send-s-ptrraw/status(s: intptr_t): int64
-  c inline "(long)(((struct uv_udp_send_s*)#1)->status)"
-
-pub inline fun uv-udp-send-sp/status(s: uv-udp-send-sp): int
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/status.int
-
-pub inline fun uv-udp-send-sc/status(^s: uv-udp-send-sc<s::S>): int
-  s.with-ptr(uv-udp-send-sp/status)
-
-pub inline fun uv-udp-send-scb/status(^s: uv-udp-send-scb<s::S>): int
-  s.with-ptr(uv-udp-send-sp/status)
-
-pub inline extern uv-udp-send-s-ptrraw/set-status(s: intptr_t, status: int64): ()
-  c inline "((struct uv_udp_send_s*)#1)->status = (long)#2"
-
-pub inline fun uv-udp-send-sp/set-status(s: uv-udp-send-sp, status: int): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-status(status.int64)
-
-pub inline fun uv-udp-send-sc/set-status(^s: uv-udp-send-sc<s::S>, status: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-status(status))
-
-pub inline fun uv-udp-send-scb/set-status(^s: uv-udp-send-scb<s::S>, status: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-status(status))
-
-pub inline extern uv-udp-send-s-ptrraw/send-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->send_cb)"
-
-pub inline fun uv-udp-send-sp/send-cb(s: uv-udp-send-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/send-cb)
-
-pub inline fun uv-udp-send-sc/send-cb(^s: uv-udp-send-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-send-sp/send-cb)
-
-pub inline fun uv-udp-send-scb/send-cb(^s: uv-udp-send-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-udp-send-sp/send-cb)
-
-pub inline extern uv-udp-send-s-ptrraw/set-send-cb(s: intptr_t, send-cb: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->send_cb = (void (*)(struct uv_udp_send_s*, int))#2"
-
-pub inline fun uv-udp-send-sp/set-send-cb(s: uv-udp-send-sp, send-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-send-cb(send-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-udp-send-sc/set-send-cb(^s: uv-udp-send-sc<s::S>, send-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-send-cb(send-cb))
-
-pub inline fun uv-udp-send-scb/set-send-cb(^s: uv-udp-send-scb<s::S>, send-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-send-cb(send-cb))
-
-pub inline extern uv-udp-send-s-ptrraw/bufsml(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_udp_send_s*)#1)->bufsml)"
-
-pub inline fun uv-udp-send-sp/bufsml(s: uv-udp-send-sp): c-array<uv-buf-t-c>
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/bufsml.cextern/cptr/carray
-
-pub inline fun uv-udp-send-sc/bufsml(^s: uv-udp-send-sc<s::S>): c-array<uv-buf-t-c>
-  s.with-ptr(uv-udp-send-sp/bufsml)
-
-pub inline fun uv-udp-send-scb/bufsml(^s: uv-udp-send-scb<s::S>): c-array<uv-buf-t-c>
-  s.with-ptr(uv-udp-send-sp/bufsml)
-
-pub inline extern uv-udp-send-s-ptrraw/set-bufsml(s: intptr_t, bufsml: intptr_t): ()
-  c inline "((struct uv_udp_send_s*)#1)->bufsml = (struct uv_buf_t*)#2"
-
-pub inline fun uv-udp-send-sp/set-bufsml(s: uv-udp-send-sp, bufsml: c-array<uv-buf-t-c>): ()
-  s.cextern/c-pointer/ptr.uv-udp-send-s-ptrraw/set-bufsml(bufsml.cextern/carray/cptr)
-
-pub inline fun uv-udp-send-sc/set-bufsml(^s: uv-udp-send-sc<s::S>, bufsml: c-array<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-bufsml(bufsml))
-
-pub inline fun uv-udp-send-scb/set-bufsml(^s: uv-udp-send-scb<s::S>, bufsml: c-array<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-udp-send-sp/set-bufsml(bufsml))
-
 alias uv-udp-send-cb = c-pointer<intptr_t>
 alias uv-udp-send-cbfn = ((req : c-pointer<uv-udp-send-s-c>, status : int) -> ())
 alias uv-udp-send-t = uv-udp-send-s-c
@@ -11840,510 +3736,6 @@ pub fun uv-fs-sc-array(n: int): uv-fs-sca<s::S>
 
 pub fun uv-fs-sc-array-calloc(n: int): uv-fs-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-fs-s/size-of)
-
-pub inline extern uv-fs-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->data)"
-
-pub inline fun uv-fs-sp/data(s: uv-fs-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/data)
-
-pub inline fun uv-fs-sc/data(^s: uv-fs-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-sp/data)
-
-pub inline fun uv-fs-scb/data(^s: uv-fs-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-sp/data)
-
-pub inline extern uv-fs-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-fs-sp/set-data(s: uv-fs-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-data(^s: uv-fs-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-data(data))
-
-pub inline fun uv-fs-scb/set-data(^s: uv-fs-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-data(data))
-
-pub inline extern uv-fs-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_fs_s*)#1)->type)"
-
-pub inline fun uv-fs-sp/type1(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/type1.int
-
-pub inline fun uv-fs-sc/type1(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/type1)
-
-pub inline fun uv-fs-scb/type1(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/type1)
-
-pub inline extern uv-fs-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_fs_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-fs-sp/set-type1(s: uv-fs-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-fs-sc/set-type1(^s: uv-fs-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-type1(type1))
-
-pub inline fun uv-fs-scb/set-type1(^s: uv-fs-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-type1(type1))
-
-pub inline extern uv-fs-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->reserved)"
-
-pub inline fun uv-fs-sp/reserved(s: uv-fs-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-fs-sc/reserved(^s: uv-fs-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-fs-sp/reserved)
-
-pub inline fun uv-fs-scb/reserved(^s: uv-fs-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-fs-sp/reserved)
-
-pub inline extern uv-fs-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-fs-sp/set-reserved(s: uv-fs-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-fs-sc/set-reserved(^s: uv-fs-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-reserved(reserved))
-
-pub inline fun uv-fs-scb/set-reserved(^s: uv-fs-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-reserved(reserved))
-
-pub inline extern uv-fs-s-ptrraw/fs-type(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_fs_s*)#1)->fs_type)"
-
-pub inline fun uv-fs-sp/fs-type(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/fs-type.int
-
-pub inline fun uv-fs-sc/fs-type(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/fs-type)
-
-pub inline fun uv-fs-scb/fs-type(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/fs-type)
-
-pub inline extern uv-fs-s-ptrraw/set-fs-type(s: intptr_t, fs-type: int32): ()
-  c inline "((struct uv_fs_s*)#1)->fs_type = (int32_t)#2"
-
-pub inline fun uv-fs-sp/set-fs-type(s: uv-fs-sp, fs-type: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-fs-type(fs-type.int32)
-
-pub inline fun uv-fs-sc/set-fs-type(^s: uv-fs-sc<s::S>, fs-type: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-fs-type(fs-type))
-
-pub inline fun uv-fs-scb/set-fs-type(^s: uv-fs-scb<s::S>, fs-type: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-fs-type(fs-type))
-
-pub inline extern uv-fs-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->loop)"
-
-pub inline fun uv-fs-sp/loop(s: uv-fs-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/loop)
-
-pub inline fun uv-fs-sc/loop(^s: uv-fs-sc<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-fs-sp/loop)
-
-pub inline fun uv-fs-scb/loop(^s: uv-fs-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-fs-sp/loop)
-
-pub inline extern uv-fs-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-fs-sp/set-loop(s: uv-fs-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-loop(^s: uv-fs-sc<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-loop(loop))
-
-pub inline fun uv-fs-scb/set-loop(^s: uv-fs-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-loop(loop))
-
-pub inline extern uv-fs-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->cb)"
-
-pub inline fun uv-fs-sp/cb(s: uv-fs-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/cb)
-
-pub inline fun uv-fs-sc/cb(^s: uv-fs-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-sp/cb)
-
-pub inline fun uv-fs-scb/cb(^s: uv-fs-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-fs-sp/cb)
-
-pub inline extern uv-fs-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->cb = (void (*)(struct uv_fs_s*))#2"
-
-pub inline fun uv-fs-sp/set-cb(s: uv-fs-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-cb(^s: uv-fs-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-cb(cb))
-
-pub inline fun uv-fs-scb/set-cb(^s: uv-fs-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-cb(cb))
-
-pub inline extern uv-fs-s-ptrraw/result(s: intptr_t): int64
-  c inline "(long)(((struct uv_fs_s*)#1)->result)"
-
-pub inline fun uv-fs-sp/result(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/result.int
-
-pub inline fun uv-fs-sc/result(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/result)
-
-pub inline fun uv-fs-scb/result(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/result)
-
-pub inline extern uv-fs-s-ptrraw/set-result(s: intptr_t, result: int64): ()
-  c inline "((struct uv_fs_s*)#1)->result = (long)#2"
-
-pub inline fun uv-fs-sp/set-result(s: uv-fs-sp, result: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-result(result.int64)
-
-pub inline fun uv-fs-sc/set-result(^s: uv-fs-sc<s::S>, result: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-result(result))
-
-pub inline fun uv-fs-scb/set-result(^s: uv-fs-scb<s::S>, result: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-result(result))
-
-pub inline extern uv-fs-s-ptrraw/ptr(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->ptr)"
-
-pub inline fun uv-fs-sp/ptr(s: uv-fs-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/ptr)
-
-pub inline fun uv-fs-sc/ptr(^s: uv-fs-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-sp/ptr)
-
-pub inline fun uv-fs-scb/ptr(^s: uv-fs-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-fs-sp/ptr)
-
-pub inline extern uv-fs-s-ptrraw/set-ptr(s: intptr_t, ptr: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->ptr = (void*)#2"
-
-pub inline fun uv-fs-sp/set-ptr(s: uv-fs-sp, ptr: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-ptr(ptr.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-ptr(^s: uv-fs-sc<s::S>, ptr: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-ptr(ptr))
-
-pub inline fun uv-fs-scb/set-ptr(^s: uv-fs-scb<s::S>, ptr: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-ptr(ptr))
-
-pub inline extern uv-fs-s-ptrraw/path(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->path)"
-
-pub inline fun uv-fs-sp/path(s: uv-fs-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/path)
-
-pub inline fun uv-fs-sc/path(^s: uv-fs-sc<s::S>): c-pointer<int>
-  s.with-ptr(uv-fs-sp/path)
-
-pub inline fun uv-fs-scb/path(^s: uv-fs-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-fs-sp/path)
-
-pub inline extern uv-fs-s-ptrraw/set-path(s: intptr_t, path: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->path = (char*)#2"
-
-pub inline fun uv-fs-sp/set-path(s: uv-fs-sp, path: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-path(path.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-path(^s: uv-fs-sc<s::S>, path: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-path(path))
-
-pub inline fun uv-fs-scb/set-path(^s: uv-fs-scb<s::S>, path: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-path(path))
-
-pub inline extern uv-fs-s-ptrraw/new-path(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->new_path)"
-
-pub inline fun uv-fs-sp/new-path(s: uv-fs-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/new-path)
-
-pub inline fun uv-fs-sc/new-path(^s: uv-fs-sc<s::S>): c-pointer<int>
-  s.with-ptr(uv-fs-sp/new-path)
-
-pub inline fun uv-fs-scb/new-path(^s: uv-fs-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-fs-sp/new-path)
-
-pub inline extern uv-fs-s-ptrraw/set-new-path(s: intptr_t, new-path: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->new_path = (char*)#2"
-
-pub inline fun uv-fs-sp/set-new-path(s: uv-fs-sp, new-path: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-new-path(new-path.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-new-path(^s: uv-fs-sc<s::S>, new-path: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-new-path(new-path))
-
-pub inline fun uv-fs-scb/set-new-path(^s: uv-fs-scb<s::S>, new-path: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-new-path(new-path))
-
-pub inline extern uv-fs-s-ptrraw/file(s: intptr_t): int32
-  c inline "(int)(((struct uv_fs_s*)#1)->file)"
-
-pub inline fun uv-fs-sp/file(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/file.int
-
-pub inline fun uv-fs-sc/file(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/file)
-
-pub inline fun uv-fs-scb/file(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/file)
-
-pub inline extern uv-fs-s-ptrraw/set-file(s: intptr_t, file: int32): ()
-  c inline "((struct uv_fs_s*)#1)->file = (int)#2"
-
-pub inline fun uv-fs-sp/set-file(s: uv-fs-sp, file: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-file(file.int32)
-
-pub inline fun uv-fs-sc/set-file(^s: uv-fs-sc<s::S>, file: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-file(file))
-
-pub inline fun uv-fs-scb/set-file(^s: uv-fs-scb<s::S>, file: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-file(file))
-
-pub inline extern uv-fs-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(int)(((struct uv_fs_s*)#1)->flags)"
-
-pub inline fun uv-fs-sp/flags(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/flags.int
-
-pub inline fun uv-fs-sc/flags(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/flags)
-
-pub inline fun uv-fs-scb/flags(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/flags)
-
-pub inline extern uv-fs-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_fs_s*)#1)->flags = (int)#2"
-
-pub inline fun uv-fs-sp/set-flags(s: uv-fs-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-fs-sc/set-flags(^s: uv-fs-sc<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-flags(flags))
-
-pub inline fun uv-fs-scb/set-flags(^s: uv-fs-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-flags(flags))
-
-pub inline extern uv-fs-s-ptrraw/mode(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_fs_s*)#1)->mode)"
-
-pub inline fun uv-fs-sp/mode(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/mode.int
-
-pub inline fun uv-fs-sc/mode(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/mode)
-
-pub inline fun uv-fs-scb/mode(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/mode)
-
-pub inline extern uv-fs-s-ptrraw/set-mode(s: intptr_t, mode: int32): ()
-  c inline "((struct uv_fs_s*)#1)->mode = (unsigned int)#2"
-
-pub inline fun uv-fs-sp/set-mode(s: uv-fs-sp, mode: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-mode(mode.int32)
-
-pub inline fun uv-fs-sc/set-mode(^s: uv-fs-sc<s::S>, mode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-mode(mode))
-
-pub inline fun uv-fs-scb/set-mode(^s: uv-fs-scb<s::S>, mode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-mode(mode))
-
-pub inline extern uv-fs-s-ptrraw/nbufs(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_fs_s*)#1)->nbufs)"
-
-pub inline fun uv-fs-sp/nbufs(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/nbufs.int
-
-pub inline fun uv-fs-sc/nbufs(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/nbufs)
-
-pub inline fun uv-fs-scb/nbufs(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/nbufs)
-
-pub inline extern uv-fs-s-ptrraw/set-nbufs(s: intptr_t, nbufs: int32): ()
-  c inline "((struct uv_fs_s*)#1)->nbufs = (unsigned int)#2"
-
-pub inline fun uv-fs-sp/set-nbufs(s: uv-fs-sp, nbufs: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-nbufs(nbufs.int32)
-
-pub inline fun uv-fs-sc/set-nbufs(^s: uv-fs-sc<s::S>, nbufs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-nbufs(nbufs))
-
-pub inline fun uv-fs-scb/set-nbufs(^s: uv-fs-scb<s::S>, nbufs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-nbufs(nbufs))
-
-pub inline extern uv-fs-s-ptrraw/bufs(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->bufs)"
-
-pub inline fun uv-fs-sp/bufs(s: uv-fs-sp): c-pointer<uv-buf-t-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/bufs)
-
-pub inline fun uv-fs-sc/bufs(^s: uv-fs-sc<s::S>): c-pointer<uv-buf-t-c>
-  s.with-ptr(uv-fs-sp/bufs)
-
-pub inline fun uv-fs-scb/bufs(^s: uv-fs-scb<s::S>): c-pointer<uv-buf-t-c>
-  s.with-ptr(uv-fs-sp/bufs)
-
-pub inline extern uv-fs-s-ptrraw/set-bufs(s: intptr_t, bufs: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->bufs = (struct uv_buf_t*)#2"
-
-pub inline fun uv-fs-sp/set-bufs(s: uv-fs-sp, bufs: c-pointer<uv-buf-t-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-bufs(bufs.cextern/c-pointer/ptr)
-
-pub inline fun uv-fs-sc/set-bufs(^s: uv-fs-sc<s::S>, bufs: c-pointer<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-bufs(bufs))
-
-pub inline fun uv-fs-scb/set-bufs(^s: uv-fs-scb<s::S>, bufs: c-pointer<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-bufs(bufs))
-
-pub inline extern uv-fs-s-ptrraw/off(s: intptr_t): int64
-  c inline "(long)(((struct uv_fs_s*)#1)->off)"
-
-pub inline fun uv-fs-sp/off(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/off.int
-
-pub inline fun uv-fs-sc/off(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/off)
-
-pub inline fun uv-fs-scb/off(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/off)
-
-pub inline extern uv-fs-s-ptrraw/set-off(s: intptr_t, off: int64): ()
-  c inline "((struct uv_fs_s*)#1)->off = (long)#2"
-
-pub inline fun uv-fs-sp/set-off(s: uv-fs-sp, off: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-off(off.int64)
-
-pub inline fun uv-fs-sc/set-off(^s: uv-fs-sc<s::S>, off: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-off(off))
-
-pub inline fun uv-fs-scb/set-off(^s: uv-fs-scb<s::S>, off: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-off(off))
-
-pub inline extern uv-fs-s-ptrraw/uid(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_fs_s*)#1)->uid)"
-
-pub inline fun uv-fs-sp/uid(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/uid.int
-
-pub inline fun uv-fs-sc/uid(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/uid)
-
-pub inline fun uv-fs-scb/uid(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/uid)
-
-pub inline extern uv-fs-s-ptrraw/set-uid(s: intptr_t, uid: int32): ()
-  c inline "((struct uv_fs_s*)#1)->uid = (unsigned int)#2"
-
-pub inline fun uv-fs-sp/set-uid(s: uv-fs-sp, uid: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-uid(uid.int32)
-
-pub inline fun uv-fs-sc/set-uid(^s: uv-fs-sc<s::S>, uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-uid(uid))
-
-pub inline fun uv-fs-scb/set-uid(^s: uv-fs-scb<s::S>, uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-uid(uid))
-
-pub inline extern uv-fs-s-ptrraw/gid(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_fs_s*)#1)->gid)"
-
-pub inline fun uv-fs-sp/gid(s: uv-fs-sp): int
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/gid.int
-
-pub inline fun uv-fs-sc/gid(^s: uv-fs-sc<s::S>): int
-  s.with-ptr(uv-fs-sp/gid)
-
-pub inline fun uv-fs-scb/gid(^s: uv-fs-scb<s::S>): int
-  s.with-ptr(uv-fs-sp/gid)
-
-pub inline extern uv-fs-s-ptrraw/set-gid(s: intptr_t, gid: int32): ()
-  c inline "((struct uv_fs_s*)#1)->gid = (unsigned int)#2"
-
-pub inline fun uv-fs-sp/set-gid(s: uv-fs-sp, gid: int): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-gid(gid.int32)
-
-pub inline fun uv-fs-sc/set-gid(^s: uv-fs-sc<s::S>, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-gid(gid))
-
-pub inline fun uv-fs-scb/set-gid(^s: uv-fs-scb<s::S>, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-gid(gid))
-
-pub inline extern uv-fs-s-ptrraw/atime(s: intptr_t): float64
-  c inline "(double)(((struct uv_fs_s*)#1)->atime)"
-
-pub inline fun uv-fs-sp/atime(s: uv-fs-sp): float64
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/atime
-
-pub inline fun uv-fs-sc/atime(^s: uv-fs-sc<s::S>): float64
-  s.with-ptr(uv-fs-sp/atime)
-
-pub inline fun uv-fs-scb/atime(^s: uv-fs-scb<s::S>): float64
-  s.with-ptr(uv-fs-sp/atime)
-
-pub inline extern uv-fs-s-ptrraw/set-atime(s: intptr_t, atime: float64): ()
-  c inline "((struct uv_fs_s*)#1)->atime = (double)#2"
-
-pub inline fun uv-fs-sp/set-atime(s: uv-fs-sp, atime: float64): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-atime(atime)
-
-pub inline fun uv-fs-sc/set-atime(^s: uv-fs-sc<s::S>, atime: float64): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-atime(atime))
-
-pub inline fun uv-fs-scb/set-atime(^s: uv-fs-scb<s::S>, atime: float64): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-atime(atime))
-
-pub inline extern uv-fs-s-ptrraw/mtime(s: intptr_t): float64
-  c inline "(double)(((struct uv_fs_s*)#1)->mtime)"
-
-pub inline fun uv-fs-sp/mtime(s: uv-fs-sp): float64
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/mtime
-
-pub inline fun uv-fs-sc/mtime(^s: uv-fs-sc<s::S>): float64
-  s.with-ptr(uv-fs-sp/mtime)
-
-pub inline fun uv-fs-scb/mtime(^s: uv-fs-scb<s::S>): float64
-  s.with-ptr(uv-fs-sp/mtime)
-
-pub inline extern uv-fs-s-ptrraw/set-mtime(s: intptr_t, mtime: float64): ()
-  c inline "((struct uv_fs_s*)#1)->mtime = (double)#2"
-
-pub inline fun uv-fs-sp/set-mtime(s: uv-fs-sp, mtime: float64): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-mtime(mtime)
-
-pub inline fun uv-fs-sc/set-mtime(^s: uv-fs-sc<s::S>, mtime: float64): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-mtime(mtime))
-
-pub inline fun uv-fs-scb/set-mtime(^s: uv-fs-scb<s::S>, mtime: float64): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-mtime(mtime))
-
-pub inline extern uv-fs-s-ptrraw/bufsml(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_fs_s*)#1)->bufsml)"
-
-pub inline fun uv-fs-sp/bufsml(s: uv-fs-sp): c-array<uv-buf-t-c>
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/bufsml.cextern/cptr/carray
-
-pub inline fun uv-fs-sc/bufsml(^s: uv-fs-sc<s::S>): c-array<uv-buf-t-c>
-  s.with-ptr(uv-fs-sp/bufsml)
-
-pub inline fun uv-fs-scb/bufsml(^s: uv-fs-scb<s::S>): c-array<uv-buf-t-c>
-  s.with-ptr(uv-fs-sp/bufsml)
-
-pub inline extern uv-fs-s-ptrraw/set-bufsml(s: intptr_t, bufsml: intptr_t): ()
-  c inline "((struct uv_fs_s*)#1)->bufsml = (struct uv_buf_t*)#2"
-
-pub inline fun uv-fs-sp/set-bufsml(s: uv-fs-sp, bufsml: c-array<uv-buf-t-c>): ()
-  s.cextern/c-pointer/ptr.uv-fs-s-ptrraw/set-bufsml(bufsml.cextern/carray/cptr)
-
-pub inline fun uv-fs-sc/set-bufsml(^s: uv-fs-sc<s::S>, bufsml: c-array<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-bufsml(bufsml))
-
-pub inline fun uv-fs-scb/set-bufsml(^s: uv-fs-scb<s::S>, bufsml: c-array<uv-buf-t-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-fs-sp/set-bufsml(bufsml))
 
 type uv-fs-type
   UV_FS_UNKNOWN
@@ -12385,49 +3777,49 @@ type uv-fs-type
   UV_FS_MKSTEMP
   UV_FS_LUTIME
 
-pub fun uv-fs-type/int(i: uv-fs-type): int
+pub fun uv-fs-type/int(i: uv-fs-type): int32
   match i
-    UV_FS_UNKNOWN -> -1
-    UV_FS_CUSTOM -> 0
-    UV_FS_OPEN -> 1
-    UV_FS_CLOSE -> 2
-    UV_FS_READ -> 3
-    UV_FS_WRITE -> 4
-    UV_FS_SENDFILE -> 5
-    UV_FS_STAT -> 6
-    UV_FS_LSTAT -> 7
-    UV_FS_FSTAT -> 8
-    UV_FS_FTRUNCATE -> 9
-    UV_FS_UTIME -> 10
-    UV_FS_FUTIME -> 11
-    UV_FS_ACCESS -> 12
-    UV_FS_CHMOD -> 13
-    UV_FS_FCHMOD -> 14
-    UV_FS_FSYNC -> 15
-    UV_FS_FDATASYNC -> 16
-    UV_FS_UNLINK -> 17
-    UV_FS_RMDIR -> 18
-    UV_FS_MKDIR -> 19
-    UV_FS_MKDTEMP -> 20
-    UV_FS_RENAME -> 21
-    UV_FS_SCANDIR -> 22
-    UV_FS_LINK -> 23
-    UV_FS_SYMLINK -> 24
-    UV_FS_READLINK -> 25
-    UV_FS_CHOWN -> 26
-    UV_FS_FCHOWN -> 27
-    UV_FS_REALPATH -> 28
-    UV_FS_COPYFILE -> 29
-    UV_FS_LCHOWN -> 30
-    UV_FS_OPENDIR -> 31
-    UV_FS_READDIR -> 32
-    UV_FS_CLOSEDIR -> 33
-    UV_FS_STATFS -> 34
-    UV_FS_MKSTEMP -> 35
-    UV_FS_LUTIME -> 36
+    UV_FS_UNKNOWN -> -1.int32
+    UV_FS_CUSTOM -> 0.int32
+    UV_FS_OPEN -> 1.int32
+    UV_FS_CLOSE -> 2.int32
+    UV_FS_READ -> 3.int32
+    UV_FS_WRITE -> 4.int32
+    UV_FS_SENDFILE -> 5.int32
+    UV_FS_STAT -> 6.int32
+    UV_FS_LSTAT -> 7.int32
+    UV_FS_FSTAT -> 8.int32
+    UV_FS_FTRUNCATE -> 9.int32
+    UV_FS_UTIME -> 10.int32
+    UV_FS_FUTIME -> 11.int32
+    UV_FS_ACCESS -> 12.int32
+    UV_FS_CHMOD -> 13.int32
+    UV_FS_FCHMOD -> 14.int32
+    UV_FS_FSYNC -> 15.int32
+    UV_FS_FDATASYNC -> 16.int32
+    UV_FS_UNLINK -> 17.int32
+    UV_FS_RMDIR -> 18.int32
+    UV_FS_MKDIR -> 19.int32
+    UV_FS_MKDTEMP -> 20.int32
+    UV_FS_RENAME -> 21.int32
+    UV_FS_SCANDIR -> 22.int32
+    UV_FS_LINK -> 23.int32
+    UV_FS_SYMLINK -> 24.int32
+    UV_FS_READLINK -> 25.int32
+    UV_FS_CHOWN -> 26.int32
+    UV_FS_FCHOWN -> 27.int32
+    UV_FS_REALPATH -> 28.int32
+    UV_FS_COPYFILE -> 29.int32
+    UV_FS_LCHOWN -> 30.int32
+    UV_FS_OPENDIR -> 31.int32
+    UV_FS_READDIR -> 32.int32
+    UV_FS_CLOSEDIR -> 33.int32
+    UV_FS_STATFS -> 34.int32
+    UV_FS_MKSTEMP -> 35.int32
+    UV_FS_LUTIME -> 36.int32
 
-pub fun int/uv-fs-type(i: int): exn uv-fs-type
-  match i
+pub fun int/uv-fs-type(i: int32): exn uv-fs-type
+  match i.int
     -1 -> UV_FS_UNKNOWN
     0 -> UV_FS_CUSTOM
     1 -> UV_FS_OPEN
@@ -12495,7 +3887,7 @@ pub alias uv-stat-tcb<s::S> = borrowed-c<s,uv-stat-t-c>
 pub alias uv-stat-tca = owned-c<c-array<uv-stat-t-c>>
 
 pub extern uv-stat-t/size-of(c: c-null<uv-stat-t-c>): int32
-  c inline "sizeof(struct uv_stat_t)"
+  c inline "sizeof(uv_stat_t)"
 
 pub fun uv-stat-tc(): uv-stat-tc
   malloc(?size-of=uv-stat-t/size-of)
@@ -12509,294 +3901,6 @@ pub fun uv-stat-tc-array(n: int): uv-stat-tca
 pub fun uv-stat-tc-array-calloc(n: int): uv-stat-tca
   malloc-c(n.int32, ?size-of=uv-stat-t/size-of)
 
-pub inline extern uv-stat-t-ptrraw/st-dev(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_dev)"
-
-pub inline fun uv-stat-tp/st-dev(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-dev.int
-
-pub inline fun uv-stat-tc/st-dev(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-dev)
-
-pub inline fun uv-stat-tcb/st-dev(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-dev)
-
-pub inline extern uv-stat-t-ptrraw/set-st-dev(s: intptr_t, st-dev: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_dev = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-dev(s: uv-stat-tp, st-dev: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-dev(st-dev.int64)
-
-pub inline fun uv-stat-tc/set-st-dev(^s: uv-stat-tc, st-dev: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-dev(st-dev))
-
-pub inline fun uv-stat-tcb/set-st-dev(^s: uv-stat-tcb<s::S>, st-dev: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-dev(st-dev))
-
-pub inline extern uv-stat-t-ptrraw/st-mode(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_mode)"
-
-pub inline fun uv-stat-tp/st-mode(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-mode.int
-
-pub inline fun uv-stat-tc/st-mode(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-mode)
-
-pub inline fun uv-stat-tcb/st-mode(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-mode)
-
-pub inline extern uv-stat-t-ptrraw/set-st-mode(s: intptr_t, st-mode: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_mode = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-mode(s: uv-stat-tp, st-mode: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-mode(st-mode.int64)
-
-pub inline fun uv-stat-tc/set-st-mode(^s: uv-stat-tc, st-mode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-mode(st-mode))
-
-pub inline fun uv-stat-tcb/set-st-mode(^s: uv-stat-tcb<s::S>, st-mode: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-mode(st-mode))
-
-pub inline extern uv-stat-t-ptrraw/st-nlink(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_nlink)"
-
-pub inline fun uv-stat-tp/st-nlink(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-nlink.int
-
-pub inline fun uv-stat-tc/st-nlink(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-nlink)
-
-pub inline fun uv-stat-tcb/st-nlink(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-nlink)
-
-pub inline extern uv-stat-t-ptrraw/set-st-nlink(s: intptr_t, st-nlink: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_nlink = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-nlink(s: uv-stat-tp, st-nlink: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-nlink(st-nlink.int64)
-
-pub inline fun uv-stat-tc/set-st-nlink(^s: uv-stat-tc, st-nlink: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-nlink(st-nlink))
-
-pub inline fun uv-stat-tcb/set-st-nlink(^s: uv-stat-tcb<s::S>, st-nlink: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-nlink(st-nlink))
-
-pub inline extern uv-stat-t-ptrraw/st-uid(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_uid)"
-
-pub inline fun uv-stat-tp/st-uid(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-uid.int
-
-pub inline fun uv-stat-tc/st-uid(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-uid)
-
-pub inline fun uv-stat-tcb/st-uid(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-uid)
-
-pub inline extern uv-stat-t-ptrraw/set-st-uid(s: intptr_t, st-uid: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_uid = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-uid(s: uv-stat-tp, st-uid: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-uid(st-uid.int64)
-
-pub inline fun uv-stat-tc/set-st-uid(^s: uv-stat-tc, st-uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-uid(st-uid))
-
-pub inline fun uv-stat-tcb/set-st-uid(^s: uv-stat-tcb<s::S>, st-uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-uid(st-uid))
-
-pub inline extern uv-stat-t-ptrraw/st-gid(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_gid)"
-
-pub inline fun uv-stat-tp/st-gid(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-gid.int
-
-pub inline fun uv-stat-tc/st-gid(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-gid)
-
-pub inline fun uv-stat-tcb/st-gid(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-gid)
-
-pub inline extern uv-stat-t-ptrraw/set-st-gid(s: intptr_t, st-gid: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_gid = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-gid(s: uv-stat-tp, st-gid: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-gid(st-gid.int64)
-
-pub inline fun uv-stat-tc/set-st-gid(^s: uv-stat-tc, st-gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-gid(st-gid))
-
-pub inline fun uv-stat-tcb/set-st-gid(^s: uv-stat-tcb<s::S>, st-gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-gid(st-gid))
-
-pub inline extern uv-stat-t-ptrraw/st-rdev(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_rdev)"
-
-pub inline fun uv-stat-tp/st-rdev(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-rdev.int
-
-pub inline fun uv-stat-tc/st-rdev(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-rdev)
-
-pub inline fun uv-stat-tcb/st-rdev(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-rdev)
-
-pub inline extern uv-stat-t-ptrraw/set-st-rdev(s: intptr_t, st-rdev: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_rdev = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-rdev(s: uv-stat-tp, st-rdev: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-rdev(st-rdev.int64)
-
-pub inline fun uv-stat-tc/set-st-rdev(^s: uv-stat-tc, st-rdev: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-rdev(st-rdev))
-
-pub inline fun uv-stat-tcb/set-st-rdev(^s: uv-stat-tcb<s::S>, st-rdev: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-rdev(st-rdev))
-
-pub inline extern uv-stat-t-ptrraw/st-ino(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_ino)"
-
-pub inline fun uv-stat-tp/st-ino(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-ino.int
-
-pub inline fun uv-stat-tc/st-ino(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-ino)
-
-pub inline fun uv-stat-tcb/st-ino(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-ino)
-
-pub inline extern uv-stat-t-ptrraw/set-st-ino(s: intptr_t, st-ino: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_ino = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-ino(s: uv-stat-tp, st-ino: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-ino(st-ino.int64)
-
-pub inline fun uv-stat-tc/set-st-ino(^s: uv-stat-tc, st-ino: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-ino(st-ino))
-
-pub inline fun uv-stat-tcb/set-st-ino(^s: uv-stat-tcb<s::S>, st-ino: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-ino(st-ino))
-
-pub inline extern uv-stat-t-ptrraw/st-size(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_size)"
-
-pub inline fun uv-stat-tp/st-size(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-size.int
-
-pub inline fun uv-stat-tc/st-size(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-size)
-
-pub inline fun uv-stat-tcb/st-size(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-size)
-
-pub inline extern uv-stat-t-ptrraw/set-st-size(s: intptr_t, st-size: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_size = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-size(s: uv-stat-tp, st-size: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-size(st-size.int64)
-
-pub inline fun uv-stat-tc/set-st-size(^s: uv-stat-tc, st-size: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-size(st-size))
-
-pub inline fun uv-stat-tcb/set-st-size(^s: uv-stat-tcb<s::S>, st-size: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-size(st-size))
-
-pub inline extern uv-stat-t-ptrraw/st-blksize(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_blksize)"
-
-pub inline fun uv-stat-tp/st-blksize(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-blksize.int
-
-pub inline fun uv-stat-tc/st-blksize(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-blksize)
-
-pub inline fun uv-stat-tcb/st-blksize(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-blksize)
-
-pub inline extern uv-stat-t-ptrraw/set-st-blksize(s: intptr_t, st-blksize: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_blksize = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-blksize(s: uv-stat-tp, st-blksize: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-blksize(st-blksize.int64)
-
-pub inline fun uv-stat-tc/set-st-blksize(^s: uv-stat-tc, st-blksize: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-blksize(st-blksize))
-
-pub inline fun uv-stat-tcb/set-st-blksize(^s: uv-stat-tcb<s::S>, st-blksize: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-blksize(st-blksize))
-
-pub inline extern uv-stat-t-ptrraw/st-blocks(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_blocks)"
-
-pub inline fun uv-stat-tp/st-blocks(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-blocks.int
-
-pub inline fun uv-stat-tc/st-blocks(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-blocks)
-
-pub inline fun uv-stat-tcb/st-blocks(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-blocks)
-
-pub inline extern uv-stat-t-ptrraw/set-st-blocks(s: intptr_t, st-blocks: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_blocks = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-blocks(s: uv-stat-tp, st-blocks: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-blocks(st-blocks.int64)
-
-pub inline fun uv-stat-tc/set-st-blocks(^s: uv-stat-tc, st-blocks: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-blocks(st-blocks))
-
-pub inline fun uv-stat-tcb/set-st-blocks(^s: uv-stat-tcb<s::S>, st-blocks: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-blocks(st-blocks))
-
-pub inline extern uv-stat-t-ptrraw/st-flags(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_flags)"
-
-pub inline fun uv-stat-tp/st-flags(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-flags.int
-
-pub inline fun uv-stat-tc/st-flags(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-flags)
-
-pub inline fun uv-stat-tcb/st-flags(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-flags)
-
-pub inline extern uv-stat-t-ptrraw/set-st-flags(s: intptr_t, st-flags: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_flags = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-flags(s: uv-stat-tp, st-flags: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-flags(st-flags.int64)
-
-pub inline fun uv-stat-tc/set-st-flags(^s: uv-stat-tc, st-flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-flags(st-flags))
-
-pub inline fun uv-stat-tcb/set-st-flags(^s: uv-stat-tcb<s::S>, st-flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-flags(st-flags))
-
-pub inline extern uv-stat-t-ptrraw/st-gen(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_stat_t*)#1)->st_gen)"
-
-pub inline fun uv-stat-tp/st-gen(s: uv-stat-tp): int
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/st-gen.int
-
-pub inline fun uv-stat-tc/st-gen(^s: uv-stat-tc): int
-  s.with-ptr(uv-stat-tp/st-gen)
-
-pub inline fun uv-stat-tcb/st-gen(^s: uv-stat-tcb<s::S>): int
-  s.with-ptr(uv-stat-tp/st-gen)
-
-pub inline extern uv-stat-t-ptrraw/set-st-gen(s: intptr_t, st-gen: int64): ()
-  c inline "((struct uv_stat_t*)#1)->st_gen = (int64_t)#2"
-
-pub inline fun uv-stat-tp/set-st-gen(s: uv-stat-tp, st-gen: int): ()
-  s.cextern/c-pointer/ptr.uv-stat-t-ptrraw/set-st-gen(st-gen.int64)
-
-pub inline fun uv-stat-tc/set-st-gen(^s: uv-stat-tc, st-gen: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-gen(st-gen))
-
-pub inline fun uv-stat-tcb/set-st-gen(^s: uv-stat-tcb<s::S>, st-gen: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stat-tp/set-st-gen(st-gen))
-
 pub value struct uv-timespec-t
   tv-sec: int
   tv-nsec: int
@@ -12808,7 +3912,7 @@ pub alias uv-timespec-tcb<s::S> = borrowed-c<s,uv-timespec-t-c>
 pub alias uv-timespec-tca = owned-c<c-array<uv-timespec-t-c>>
 
 pub extern uv-timespec-t/size-of(c: c-null<uv-timespec-t-c>): int32
-  c inline "sizeof(struct uv_timespec_t)"
+  c inline "sizeof(uv_timespec_t)"
 
 pub fun uv-timespec-tc(): uv-timespec-tc
   malloc(?size-of=uv-timespec-t/size-of)
@@ -12822,65 +3926,19 @@ pub fun uv-timespec-tc-array(n: int): uv-timespec-tca
 pub fun uv-timespec-tc-array-calloc(n: int): uv-timespec-tca
   malloc-c(n.int32, ?size-of=uv-timespec-t/size-of)
 
-pub inline extern uv-timespec-t-ptrraw/tv-sec(s: intptr_t): int64
-  c inline "(long)(((struct uv_timespec_t*)#1)->tv_sec)"
-
-pub inline fun uv-timespec-tp/tv-sec(s: uv-timespec-tp): int
-  s.cextern/c-pointer/ptr.uv-timespec-t-ptrraw/tv-sec.int
-
-pub inline fun uv-timespec-tc/tv-sec(^s: uv-timespec-tc): int
-  s.with-ptr(uv-timespec-tp/tv-sec)
-
-pub inline fun uv-timespec-tcb/tv-sec(^s: uv-timespec-tcb<s::S>): int
-  s.with-ptr(uv-timespec-tp/tv-sec)
-
-pub inline extern uv-timespec-t-ptrraw/set-tv-sec(s: intptr_t, tv-sec: int64): ()
-  c inline "((struct uv_timespec_t*)#1)->tv_sec = (long)#2"
-
-pub inline fun uv-timespec-tp/set-tv-sec(s: uv-timespec-tp, tv-sec: int): ()
-  s.cextern/c-pointer/ptr.uv-timespec-t-ptrraw/set-tv-sec(tv-sec.int64)
-
-pub inline fun uv-timespec-tc/set-tv-sec(^s: uv-timespec-tc, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec-tp/set-tv-sec(tv-sec))
-
-pub inline fun uv-timespec-tcb/set-tv-sec(^s: uv-timespec-tcb<s::S>, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec-tp/set-tv-sec(tv-sec))
-
-pub inline extern uv-timespec-t-ptrraw/tv-nsec(s: intptr_t): int64
-  c inline "(long)(((struct uv_timespec_t*)#1)->tv_nsec)"
-
-pub inline fun uv-timespec-tp/tv-nsec(s: uv-timespec-tp): int
-  s.cextern/c-pointer/ptr.uv-timespec-t-ptrraw/tv-nsec.int
-
-pub inline fun uv-timespec-tc/tv-nsec(^s: uv-timespec-tc): int
-  s.with-ptr(uv-timespec-tp/tv-nsec)
-
-pub inline fun uv-timespec-tcb/tv-nsec(^s: uv-timespec-tcb<s::S>): int
-  s.with-ptr(uv-timespec-tp/tv-nsec)
-
-pub inline extern uv-timespec-t-ptrraw/set-tv-nsec(s: intptr_t, tv-nsec: int64): ()
-  c inline "((struct uv_timespec_t*)#1)->tv_nsec = (long)#2"
-
-pub inline fun uv-timespec-tp/set-tv-nsec(s: uv-timespec-tp, tv-nsec: int): ()
-  s.cextern/c-pointer/ptr.uv-timespec-t-ptrraw/set-tv-nsec(tv-nsec.int64)
-
-pub inline fun uv-timespec-tc/set-tv-nsec(^s: uv-timespec-tc, tv-nsec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec-tp/set-tv-nsec(tv-nsec))
-
-pub inline fun uv-timespec-tcb/set-tv-nsec(^s: uv-timespec-tcb<s::S>, tv-nsec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec-tp/set-tv-nsec(tv-nsec))
-
 alias uv-file = int
 alias mode-t = int
-alias mode-t1 = int
+alias darwin-mode-t = int
+alias uint16-t = int
 alias off-t = int
-alias off-t1 = int
+alias darwin-off-t = int
 alias uv-uid-t = int
 alias uid-t = int
-alias uid-t1 = int
+alias darwin-uid-t = int
+alias uint32-t = int
 alias uv-gid-t = int
 alias gid-t = int
-alias gid-t1 = int
+alias darwin-gid-t = int
 pub struct uv-work-s
 pub type uv-work-s-c
 pub alias uv-work-sp = c-pointer<uv-work-s-c>
@@ -12902,150 +3960,6 @@ pub fun uv-work-sc-array(n: int): uv-work-sca<s::S>
 
 pub fun uv-work-sc-array-calloc(n: int): uv-work-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-work-s/size-of)
-
-pub inline extern uv-work-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_work_s*)#1)->data)"
-
-pub inline fun uv-work-sp/data(s: uv-work-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-s-ptrraw/data)
-
-pub inline fun uv-work-sc/data(^s: uv-work-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-work-sp/data)
-
-pub inline fun uv-work-scb/data(^s: uv-work-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-work-sp/data)
-
-pub inline extern uv-work-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_work_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-work-sp/set-data(s: uv-work-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-work-sc/set-data(^s: uv-work-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-data(data))
-
-pub inline fun uv-work-scb/set-data(^s: uv-work-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-data(data))
-
-pub inline extern uv-work-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_work_s*)#1)->type)"
-
-pub inline fun uv-work-sp/type1(s: uv-work-sp): int
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/type1.int
-
-pub inline fun uv-work-sc/type1(^s: uv-work-sc<s::S>): int
-  s.with-ptr(uv-work-sp/type1)
-
-pub inline fun uv-work-scb/type1(^s: uv-work-scb<s::S>): int
-  s.with-ptr(uv-work-sp/type1)
-
-pub inline extern uv-work-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_work_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-work-sp/set-type1(s: uv-work-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-work-sc/set-type1(^s: uv-work-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-type1(type1))
-
-pub inline fun uv-work-scb/set-type1(^s: uv-work-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-type1(type1))
-
-pub inline extern uv-work-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_work_s*)#1)->reserved)"
-
-pub inline fun uv-work-sp/reserved(s: uv-work-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-work-sc/reserved(^s: uv-work-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-work-sp/reserved)
-
-pub inline fun uv-work-scb/reserved(^s: uv-work-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-work-sp/reserved)
-
-pub inline extern uv-work-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_work_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-work-sp/set-reserved(s: uv-work-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-work-sc/set-reserved(^s: uv-work-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-reserved(reserved))
-
-pub inline fun uv-work-scb/set-reserved(^s: uv-work-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-reserved(reserved))
-
-pub inline extern uv-work-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_work_s*)#1)->loop)"
-
-pub inline fun uv-work-sp/loop(s: uv-work-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-s-ptrraw/loop)
-
-pub inline fun uv-work-sc/loop(^s: uv-work-sc<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-work-sp/loop)
-
-pub inline fun uv-work-scb/loop(^s: uv-work-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-work-sp/loop)
-
-pub inline extern uv-work-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_work_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-work-sp/set-loop(s: uv-work-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-work-sc/set-loop(^s: uv-work-sc<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-loop(loop))
-
-pub inline fun uv-work-scb/set-loop(^s: uv-work-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-loop(loop))
-
-pub inline extern uv-work-s-ptrraw/work-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_work_s*)#1)->work_cb)"
-
-pub inline fun uv-work-sp/work-cb(s: uv-work-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-s-ptrraw/work-cb)
-
-pub inline fun uv-work-sc/work-cb(^s: uv-work-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-work-sp/work-cb)
-
-pub inline fun uv-work-scb/work-cb(^s: uv-work-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-work-sp/work-cb)
-
-pub inline extern uv-work-s-ptrraw/set-work-cb(s: intptr_t, work-cb: intptr_t): ()
-  c inline "((struct uv_work_s*)#1)->work_cb = (void (*)(struct uv_work_s*))#2"
-
-pub inline fun uv-work-sp/set-work-cb(s: uv-work-sp, work-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/set-work-cb(work-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-work-sc/set-work-cb(^s: uv-work-sc<s::S>, work-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-work-cb(work-cb))
-
-pub inline fun uv-work-scb/set-work-cb(^s: uv-work-scb<s::S>, work-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-work-cb(work-cb))
-
-pub inline extern uv-work-s-ptrraw/after-work-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_work_s*)#1)->after_work_cb)"
-
-pub inline fun uv-work-sp/after-work-cb(s: uv-work-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-work-s-ptrraw/after-work-cb)
-
-pub inline fun uv-work-sc/after-work-cb(^s: uv-work-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-work-sp/after-work-cb)
-
-pub inline fun uv-work-scb/after-work-cb(^s: uv-work-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-work-sp/after-work-cb)
-
-pub inline extern uv-work-s-ptrraw/set-after-work-cb(s: intptr_t, after-work-cb: intptr_t): ()
-  c inline "((struct uv_work_s*)#1)->after_work_cb = (void (*)(struct uv_work_s*, int))#2"
-
-pub inline fun uv-work-sp/set-after-work-cb(s: uv-work-sp, after-work-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-work-s-ptrraw/set-after-work-cb(after-work-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-work-sc/set-after-work-cb(^s: uv-work-sc<s::S>, after-work-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-after-work-cb(after-work-cb))
-
-pub inline fun uv-work-scb/set-after-work-cb(^s: uv-work-scb<s::S>, after-work-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-work-sp/set-after-work-cb(after-work-cb))
 
 alias uv-work-cb = c-pointer<intptr_t>
 alias uv-work-cbfn = ((req : c-pointer<uv-work-s-c>) -> ())
@@ -13074,200 +3988,8 @@ pub fun uv-random-sc-array(n: int): uv-random-sca<s::S>
 pub fun uv-random-sc-array-calloc(n: int): uv-random-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-random-s/size-of)
 
-pub inline extern uv-random-s-ptrraw/data(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_random_s*)#1)->data)"
-
-pub inline fun uv-random-sp/data(s: uv-random-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-random-s-ptrraw/data)
-
-pub inline fun uv-random-sc/data(^s: uv-random-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-random-sp/data)
-
-pub inline fun uv-random-scb/data(^s: uv-random-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-random-sp/data)
-
-pub inline extern uv-random-s-ptrraw/set-data(s: intptr_t, data: intptr_t): ()
-  c inline "((struct uv_random_s*)#1)->data = (void*)#2"
-
-pub inline fun uv-random-sp/set-data(s: uv-random-sp, data: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-data(data.cextern/c-pointer/ptr)
-
-pub inline fun uv-random-sc/set-data(^s: uv-random-sc<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-data(data))
-
-pub inline fun uv-random-scb/set-data(^s: uv-random-scb<s::S>, data: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-data(data))
-
-pub inline extern uv-random-s-ptrraw/type1(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_random_s*)#1)->type)"
-
-pub inline fun uv-random-sp/type1(s: uv-random-sp): int
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/type1.int
-
-pub inline fun uv-random-sc/type1(^s: uv-random-sc<s::S>): int
-  s.with-ptr(uv-random-sp/type1)
-
-pub inline fun uv-random-scb/type1(^s: uv-random-scb<s::S>): int
-  s.with-ptr(uv-random-sp/type1)
-
-pub inline extern uv-random-s-ptrraw/set-type1(s: intptr_t, type1: int32): ()
-  c inline "((struct uv_random_s*)#1)->type = (int32_t)#2"
-
-pub inline fun uv-random-sp/set-type1(s: uv-random-sp, type1: int): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-type1(type1.int32)
-
-pub inline fun uv-random-sc/set-type1(^s: uv-random-sc<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-type1(type1))
-
-pub inline fun uv-random-scb/set-type1(^s: uv-random-scb<s::S>, type1: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-type1(type1))
-
-pub inline extern uv-random-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_random_s*)#1)->reserved)"
-
-pub inline fun uv-random-sp/reserved(s: uv-random-sp): c-array<c-pointer<()>>
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-random-sc/reserved(^s: uv-random-sc<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-random-sp/reserved)
-
-pub inline fun uv-random-scb/reserved(^s: uv-random-scb<s::S>): c-array<c-pointer<()>>
-  s.with-ptr(uv-random-sp/reserved)
-
-pub inline extern uv-random-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_random_s*)#1)->reserved = (void**)#2"
-
-pub inline fun uv-random-sp/set-reserved(s: uv-random-sp, reserved: c-array<c-pointer<()>>): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-random-sc/set-reserved(^s: uv-random-sc<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-reserved(reserved))
-
-pub inline fun uv-random-scb/set-reserved(^s: uv-random-scb<s::S>, reserved: c-array<c-pointer<()>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-reserved(reserved))
-
-pub inline extern uv-random-s-ptrraw/loop(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_random_s*)#1)->loop)"
-
-pub inline fun uv-random-sp/loop(s: uv-random-sp): c-pointer<uv-loop-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-random-s-ptrraw/loop)
-
-pub inline fun uv-random-sc/loop(^s: uv-random-sc<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-random-sp/loop)
-
-pub inline fun uv-random-scb/loop(^s: uv-random-scb<s::S>): c-pointer<uv-loop-s-c>
-  s.with-ptr(uv-random-sp/loop)
-
-pub inline extern uv-random-s-ptrraw/set-loop(s: intptr_t, loop: intptr_t): ()
-  c inline "((struct uv_random_s*)#1)->loop = (struct uv_loop_s*)#2"
-
-pub inline fun uv-random-sp/set-loop(s: uv-random-sp, loop: c-pointer<uv-loop-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-loop(loop.cextern/c-pointer/ptr)
-
-pub inline fun uv-random-sc/set-loop(^s: uv-random-sc<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-loop(loop))
-
-pub inline fun uv-random-scb/set-loop(^s: uv-random-scb<s::S>, loop: c-pointer<uv-loop-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-loop(loop))
-
-pub inline extern uv-random-s-ptrraw/status(s: intptr_t): int32
-  c inline "(int)(((struct uv_random_s*)#1)->status)"
-
-pub inline fun uv-random-sp/status(s: uv-random-sp): int
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/status.int
-
-pub inline fun uv-random-sc/status(^s: uv-random-sc<s::S>): int
-  s.with-ptr(uv-random-sp/status)
-
-pub inline fun uv-random-scb/status(^s: uv-random-scb<s::S>): int
-  s.with-ptr(uv-random-sp/status)
-
-pub inline extern uv-random-s-ptrraw/set-status(s: intptr_t, status: int32): ()
-  c inline "((struct uv_random_s*)#1)->status = (int)#2"
-
-pub inline fun uv-random-sp/set-status(s: uv-random-sp, status: int): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-status(status.int32)
-
-pub inline fun uv-random-sc/set-status(^s: uv-random-sc<s::S>, status: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-status(status))
-
-pub inline fun uv-random-scb/set-status(^s: uv-random-scb<s::S>, status: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-status(status))
-
-pub inline extern uv-random-s-ptrraw/buf(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_random_s*)#1)->buf)"
-
-pub inline fun uv-random-sp/buf(s: uv-random-sp): c-pointer<()>
-  C-pointer(s.cextern/c-pointer/ptr.uv-random-s-ptrraw/buf)
-
-pub inline fun uv-random-sc/buf(^s: uv-random-sc<s::S>): c-pointer<()>
-  s.with-ptr(uv-random-sp/buf)
-
-pub inline fun uv-random-scb/buf(^s: uv-random-scb<s::S>): c-pointer<()>
-  s.with-ptr(uv-random-sp/buf)
-
-pub inline extern uv-random-s-ptrraw/set-buf(s: intptr_t, buf: intptr_t): ()
-  c inline "((struct uv_random_s*)#1)->buf = (void*)#2"
-
-pub inline fun uv-random-sp/set-buf(s: uv-random-sp, buf: c-pointer<()>): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-buf(buf.cextern/c-pointer/ptr)
-
-pub inline fun uv-random-sc/set-buf(^s: uv-random-sc<s::S>, buf: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-buf(buf))
-
-pub inline fun uv-random-scb/set-buf(^s: uv-random-scb<s::S>, buf: c-pointer<()>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-buf(buf))
-
-pub inline extern uv-random-s-ptrraw/buflen(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_random_s*)#1)->buflen)"
-
-pub inline fun uv-random-sp/buflen(s: uv-random-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/buflen
-
-pub inline fun uv-random-sc/buflen(^s: uv-random-sc<s::S>): ssize_t
-  s.with-ptr(uv-random-sp/buflen)
-
-pub inline fun uv-random-scb/buflen(^s: uv-random-scb<s::S>): ssize_t
-  s.with-ptr(uv-random-sp/buflen)
-
-pub inline extern uv-random-s-ptrraw/set-buflen(s: intptr_t, buflen: ssize_t): ()
-  c inline "((struct uv_random_s*)#1)->buflen = (ssize_t)#2"
-
-pub inline fun uv-random-sp/set-buflen(s: uv-random-sp, buflen: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-buflen(buflen)
-
-pub inline fun uv-random-sc/set-buflen(^s: uv-random-sc<s::S>, buflen: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-buflen(buflen))
-
-pub inline fun uv-random-scb/set-buflen(^s: uv-random-scb<s::S>, buflen: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-buflen(buflen))
-
-pub inline extern uv-random-s-ptrraw/cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_random_s*)#1)->cb)"
-
-pub inline fun uv-random-sp/cb(s: uv-random-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-random-s-ptrraw/cb)
-
-pub inline fun uv-random-sc/cb(^s: uv-random-sc<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-random-sp/cb)
-
-pub inline fun uv-random-scb/cb(^s: uv-random-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-random-sp/cb)
-
-pub inline extern uv-random-s-ptrraw/set-cb(s: intptr_t, cb: intptr_t): ()
-  c inline "((struct uv_random_s*)#1)->cb = (void (*)(struct uv_random_s*, int, void*, ssize_t))#2"
-
-pub inline fun uv-random-sp/set-cb(s: uv-random-sp, cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-random-s-ptrraw/set-cb(cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-random-sc/set-cb(^s: uv-random-sc<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-cb(cb))
-
-pub inline fun uv-random-scb/set-cb(^s: uv-random-scb<s::S>, cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-random-sp/set-cb(cb))
-
 alias uv-random-cb = c-pointer<intptr_t>
-alias uv-random-cbfn = ((req : c-pointer<uv-random-s-c>, status : int, buf : c-pointer<()>, buflen : ssize_t) -> ())
+alias uv-random-cbfn = ((req : c-pointer<uv-random-s-c>, status : int, buf : c-pointer<()>, buflen : int) -> ())
 alias uv-random-t = uv-random-s-c
 pub value struct uv-env-item-s
   name: c-pointer<int>
@@ -13294,54 +4016,6 @@ pub fun uv-env-item-sc-array(n: int): uv-env-item-sca
 pub fun uv-env-item-sc-array-calloc(n: int): uv-env-item-sca
   malloc-c(n.int32, ?size-of=uv-env-item-s/size-of)
 
-pub inline extern uv-env-item-s-ptrraw/name(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_env_item_s*)#1)->name)"
-
-pub inline fun uv-env-item-sp/name(s: uv-env-item-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-env-item-s-ptrraw/name)
-
-pub inline fun uv-env-item-sc/name(^s: uv-env-item-sc): c-pointer<int>
-  s.with-ptr(uv-env-item-sp/name)
-
-pub inline fun uv-env-item-scb/name(^s: uv-env-item-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-env-item-sp/name)
-
-pub inline extern uv-env-item-s-ptrraw/set-name(s: intptr_t, name: intptr_t): ()
-  c inline "((struct uv_env_item_s*)#1)->name = (char*)#2"
-
-pub inline fun uv-env-item-sp/set-name(s: uv-env-item-sp, name: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-env-item-s-ptrraw/set-name(name.cextern/c-pointer/ptr)
-
-pub inline fun uv-env-item-sc/set-name(^s: uv-env-item-sc, name: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-env-item-sp/set-name(name))
-
-pub inline fun uv-env-item-scb/set-name(^s: uv-env-item-scb<s::S>, name: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-env-item-sp/set-name(name))
-
-pub inline extern uv-env-item-s-ptrraw/value(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_env_item_s*)#1)->value)"
-
-pub inline fun uv-env-item-sp/value(s: uv-env-item-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-env-item-s-ptrraw/value)
-
-pub inline fun uv-env-item-sc/value(^s: uv-env-item-sc): c-pointer<int>
-  s.with-ptr(uv-env-item-sp/value)
-
-pub inline fun uv-env-item-scb/value(^s: uv-env-item-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-env-item-sp/value)
-
-pub inline extern uv-env-item-s-ptrraw/set-value(s: intptr_t, value: intptr_t): ()
-  c inline "((struct uv_env_item_s*)#1)->value = (char*)#2"
-
-pub inline fun uv-env-item-sp/set-value(s: uv-env-item-sp, value: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-env-item-s-ptrraw/set-value(value.cextern/c-pointer/ptr)
-
-pub inline fun uv-env-item-sc/set-value(^s: uv-env-item-sc, value: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-env-item-sp/set-value(value))
-
-pub inline fun uv-env-item-scb/set-value(^s: uv-env-item-scb<s::S>, value: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-env-item-sp/set-value(value))
-
 pub value struct uv-cpu-info-s
   model: c-pointer<int>
   speed: int
@@ -13367,54 +4041,6 @@ pub fun uv-cpu-info-sc-array(n: int): uv-cpu-info-sca
 
 pub fun uv-cpu-info-sc-array-calloc(n: int): uv-cpu-info-sca
   malloc-c(n.int32, ?size-of=uv-cpu-info-s/size-of)
-
-pub inline extern uv-cpu-info-s-ptrraw/model(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_cpu_info_s*)#1)->model)"
-
-pub inline fun uv-cpu-info-sp/model(s: uv-cpu-info-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-cpu-info-s-ptrraw/model)
-
-pub inline fun uv-cpu-info-sc/model(^s: uv-cpu-info-sc): c-pointer<int>
-  s.with-ptr(uv-cpu-info-sp/model)
-
-pub inline fun uv-cpu-info-scb/model(^s: uv-cpu-info-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-cpu-info-sp/model)
-
-pub inline extern uv-cpu-info-s-ptrraw/set-model(s: intptr_t, model: intptr_t): ()
-  c inline "((struct uv_cpu_info_s*)#1)->model = (char*)#2"
-
-pub inline fun uv-cpu-info-sp/set-model(s: uv-cpu-info-sp, model: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-cpu-info-s-ptrraw/set-model(model.cextern/c-pointer/ptr)
-
-pub inline fun uv-cpu-info-sc/set-model(^s: uv-cpu-info-sc, model: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-info-sp/set-model(model))
-
-pub inline fun uv-cpu-info-scb/set-model(^s: uv-cpu-info-scb<s::S>, model: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-info-sp/set-model(model))
-
-pub inline extern uv-cpu-info-s-ptrraw/speed(s: intptr_t): int32
-  c inline "(int)(((struct uv_cpu_info_s*)#1)->speed)"
-
-pub inline fun uv-cpu-info-sp/speed(s: uv-cpu-info-sp): int
-  s.cextern/c-pointer/ptr.uv-cpu-info-s-ptrraw/speed.int
-
-pub inline fun uv-cpu-info-sc/speed(^s: uv-cpu-info-sc): int
-  s.with-ptr(uv-cpu-info-sp/speed)
-
-pub inline fun uv-cpu-info-scb/speed(^s: uv-cpu-info-scb<s::S>): int
-  s.with-ptr(uv-cpu-info-sp/speed)
-
-pub inline extern uv-cpu-info-s-ptrraw/set-speed(s: intptr_t, speed: int32): ()
-  c inline "((struct uv_cpu_info_s*)#1)->speed = (int)#2"
-
-pub inline fun uv-cpu-info-sp/set-speed(s: uv-cpu-info-sp, speed: int): ()
-  s.cextern/c-pointer/ptr.uv-cpu-info-s-ptrraw/set-speed(speed.int32)
-
-pub inline fun uv-cpu-info-sc/set-speed(^s: uv-cpu-info-sc, speed: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-info-sp/set-speed(speed))
-
-pub inline fun uv-cpu-info-scb/set-speed(^s: uv-cpu-info-scb<s::S>, speed: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-info-sp/set-speed(speed))
 
 pub struct uv-cpu-times-s
   user: int
@@ -13444,126 +4070,6 @@ pub fun uv-cpu-times-sc-array(n: int): uv-cpu-times-sca
 pub fun uv-cpu-times-sc-array-calloc(n: int): uv-cpu-times-sca
   malloc-c(n.int32, ?size-of=uv-cpu-times-s/size-of)
 
-pub inline extern uv-cpu-times-s-ptrraw/user(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_cpu_times_s*)#1)->user)"
-
-pub inline fun uv-cpu-times-sp/user(s: uv-cpu-times-sp): int
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/user.int
-
-pub inline fun uv-cpu-times-sc/user(^s: uv-cpu-times-sc): int
-  s.with-ptr(uv-cpu-times-sp/user)
-
-pub inline fun uv-cpu-times-scb/user(^s: uv-cpu-times-scb<s::S>): int
-  s.with-ptr(uv-cpu-times-sp/user)
-
-pub inline extern uv-cpu-times-s-ptrraw/set-user(s: intptr_t, user: int64): ()
-  c inline "((struct uv_cpu_times_s*)#1)->user = (int64_t)#2"
-
-pub inline fun uv-cpu-times-sp/set-user(s: uv-cpu-times-sp, user: int): ()
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/set-user(user.int64)
-
-pub inline fun uv-cpu-times-sc/set-user(^s: uv-cpu-times-sc, user: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-user(user))
-
-pub inline fun uv-cpu-times-scb/set-user(^s: uv-cpu-times-scb<s::S>, user: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-user(user))
-
-pub inline extern uv-cpu-times-s-ptrraw/nice(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_cpu_times_s*)#1)->nice)"
-
-pub inline fun uv-cpu-times-sp/nice(s: uv-cpu-times-sp): int
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/nice.int
-
-pub inline fun uv-cpu-times-sc/nice(^s: uv-cpu-times-sc): int
-  s.with-ptr(uv-cpu-times-sp/nice)
-
-pub inline fun uv-cpu-times-scb/nice(^s: uv-cpu-times-scb<s::S>): int
-  s.with-ptr(uv-cpu-times-sp/nice)
-
-pub inline extern uv-cpu-times-s-ptrraw/set-nice(s: intptr_t, nice: int64): ()
-  c inline "((struct uv_cpu_times_s*)#1)->nice = (int64_t)#2"
-
-pub inline fun uv-cpu-times-sp/set-nice(s: uv-cpu-times-sp, nice: int): ()
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/set-nice(nice.int64)
-
-pub inline fun uv-cpu-times-sc/set-nice(^s: uv-cpu-times-sc, nice: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-nice(nice))
-
-pub inline fun uv-cpu-times-scb/set-nice(^s: uv-cpu-times-scb<s::S>, nice: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-nice(nice))
-
-pub inline extern uv-cpu-times-s-ptrraw/sys(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_cpu_times_s*)#1)->sys)"
-
-pub inline fun uv-cpu-times-sp/sys(s: uv-cpu-times-sp): int
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/sys.int
-
-pub inline fun uv-cpu-times-sc/sys(^s: uv-cpu-times-sc): int
-  s.with-ptr(uv-cpu-times-sp/sys)
-
-pub inline fun uv-cpu-times-scb/sys(^s: uv-cpu-times-scb<s::S>): int
-  s.with-ptr(uv-cpu-times-sp/sys)
-
-pub inline extern uv-cpu-times-s-ptrraw/set-sys(s: intptr_t, sys: int64): ()
-  c inline "((struct uv_cpu_times_s*)#1)->sys = (int64_t)#2"
-
-pub inline fun uv-cpu-times-sp/set-sys(s: uv-cpu-times-sp, sys: int): ()
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/set-sys(sys.int64)
-
-pub inline fun uv-cpu-times-sc/set-sys(^s: uv-cpu-times-sc, sys: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-sys(sys))
-
-pub inline fun uv-cpu-times-scb/set-sys(^s: uv-cpu-times-scb<s::S>, sys: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-sys(sys))
-
-pub inline extern uv-cpu-times-s-ptrraw/idle(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_cpu_times_s*)#1)->idle)"
-
-pub inline fun uv-cpu-times-sp/idle(s: uv-cpu-times-sp): int
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/idle.int
-
-pub inline fun uv-cpu-times-sc/idle(^s: uv-cpu-times-sc): int
-  s.with-ptr(uv-cpu-times-sp/idle)
-
-pub inline fun uv-cpu-times-scb/idle(^s: uv-cpu-times-scb<s::S>): int
-  s.with-ptr(uv-cpu-times-sp/idle)
-
-pub inline extern uv-cpu-times-s-ptrraw/set-idle(s: intptr_t, idle: int64): ()
-  c inline "((struct uv_cpu_times_s*)#1)->idle = (int64_t)#2"
-
-pub inline fun uv-cpu-times-sp/set-idle(s: uv-cpu-times-sp, idle: int): ()
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/set-idle(idle.int64)
-
-pub inline fun uv-cpu-times-sc/set-idle(^s: uv-cpu-times-sc, idle: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-idle(idle))
-
-pub inline fun uv-cpu-times-scb/set-idle(^s: uv-cpu-times-scb<s::S>, idle: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-idle(idle))
-
-pub inline extern uv-cpu-times-s-ptrraw/irq(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_cpu_times_s*)#1)->irq)"
-
-pub inline fun uv-cpu-times-sp/irq(s: uv-cpu-times-sp): int
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/irq.int
-
-pub inline fun uv-cpu-times-sc/irq(^s: uv-cpu-times-sc): int
-  s.with-ptr(uv-cpu-times-sp/irq)
-
-pub inline fun uv-cpu-times-scb/irq(^s: uv-cpu-times-scb<s::S>): int
-  s.with-ptr(uv-cpu-times-sp/irq)
-
-pub inline extern uv-cpu-times-s-ptrraw/set-irq(s: intptr_t, irq: int64): ()
-  c inline "((struct uv_cpu_times_s*)#1)->irq = (int64_t)#2"
-
-pub inline fun uv-cpu-times-sp/set-irq(s: uv-cpu-times-sp, irq: int): ()
-  s.cextern/c-pointer/ptr.uv-cpu-times-s-ptrraw/set-irq(irq.int64)
-
-pub inline fun uv-cpu-times-sc/set-irq(^s: uv-cpu-times-sc, irq: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-irq(irq))
-
-pub inline fun uv-cpu-times-scb/set-irq(^s: uv-cpu-times-scb<s::S>, irq: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-cpu-times-sp/set-irq(irq))
-
 pub struct uv-interface-address-s
 pub type uv-interface-address-s-c
 pub alias uv-interface-address-sp = c-pointer<uv-interface-address-s-c>
@@ -13586,99 +4092,12 @@ pub fun uv-interface-address-sc-array(n: int): uv-interface-address-sca<s::S>
 pub fun uv-interface-address-sc-array-calloc(n: int): uv-interface-address-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-interface-address-s/size-of)
 
-pub inline extern uv-interface-address-s-ptrraw/name(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_interface_address_s*)#1)->name)"
-
-pub inline fun uv-interface-address-sp/name(s: uv-interface-address-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-interface-address-s-ptrraw/name)
-
-pub inline fun uv-interface-address-sc/name(^s: uv-interface-address-sc<s::S>): c-pointer<int>
-  s.with-ptr(uv-interface-address-sp/name)
-
-pub inline fun uv-interface-address-scb/name(^s: uv-interface-address-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-interface-address-sp/name)
-
-pub inline extern uv-interface-address-s-ptrraw/set-name(s: intptr_t, name: intptr_t): ()
-  c inline "((struct uv_interface_address_s*)#1)->name = (char*)#2"
-
-pub inline fun uv-interface-address-sp/set-name(s: uv-interface-address-sp, name: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-interface-address-s-ptrraw/set-name(name.cextern/c-pointer/ptr)
-
-pub inline fun uv-interface-address-sc/set-name(^s: uv-interface-address-sc<s::S>, name: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-interface-address-sp/set-name(name))
-
-pub inline fun uv-interface-address-scb/set-name(^s: uv-interface-address-scb<s::S>, name: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-interface-address-sp/set-name(name))
-
-pub inline extern uv-interface-address-s-ptrraw/phys-addr(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_interface_address_s*)#1)->phys_addr)"
-
-pub inline fun uv-interface-address-sp/phys-addr(s: uv-interface-address-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-interface-address-s-ptrraw/phys-addr.cextern/cptr/carray
-
-pub inline fun uv-interface-address-sc/phys-addr(^s: uv-interface-address-sc<s::S>): c-array<int>
-  s.with-ptr(uv-interface-address-sp/phys-addr)
-
-pub inline fun uv-interface-address-scb/phys-addr(^s: uv-interface-address-scb<s::S>): c-array<int>
-  s.with-ptr(uv-interface-address-sp/phys-addr)
-
-pub inline extern uv-interface-address-s-ptrraw/set-phys-addr(s: intptr_t, phys-addr: intptr_t): ()
-  c inline "((struct uv_interface_address_s*)#1)->phys_addr = (char*)#2"
-
-pub inline fun uv-interface-address-sp/set-phys-addr(s: uv-interface-address-sp, phys-addr: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-interface-address-s-ptrraw/set-phys-addr(phys-addr.cextern/carray/cptr)
-
-pub inline fun uv-interface-address-sc/set-phys-addr(^s: uv-interface-address-sc<s::S>, phys-addr: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-interface-address-sp/set-phys-addr(phys-addr))
-
-pub inline fun uv-interface-address-scb/set-phys-addr(^s: uv-interface-address-scb<s::S>, phys-addr: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-interface-address-sp/set-phys-addr(phys-addr))
-
-pub inline extern uv-interface-address-s-ptrraw/is-internal(s: intptr_t): int32
-  c inline "(int)(((struct uv_interface_address_s*)#1)->is_internal)"
-
-pub inline fun uv-interface-address-sp/is-internal(s: uv-interface-address-sp): int
-  s.cextern/c-pointer/ptr.uv-interface-address-s-ptrraw/is-internal.int
-
-pub inline fun uv-interface-address-sc/is-internal(^s: uv-interface-address-sc<s::S>): int
-  s.with-ptr(uv-interface-address-sp/is-internal)
-
-pub inline fun uv-interface-address-scb/is-internal(^s: uv-interface-address-scb<s::S>): int
-  s.with-ptr(uv-interface-address-sp/is-internal)
-
-pub inline extern uv-interface-address-s-ptrraw/set-is-internal(s: intptr_t, is-internal: int32): ()
-  c inline "((struct uv_interface_address_s*)#1)->is_internal = (int)#2"
-
-pub inline fun uv-interface-address-sp/set-is-internal(s: uv-interface-address-sp, is-internal: int): ()
-  s.cextern/c-pointer/ptr.uv-interface-address-s-ptrraw/set-is-internal(is-internal.int32)
-
-pub inline fun uv-interface-address-sc/set-is-internal(^s: uv-interface-address-sc<s::S>, is-internal: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-interface-address-sp/set-is-internal(is-internal))
-
-pub inline fun uv-interface-address-scb/set-is-internal(^s: uv-interface-address-scb<s::S>, is-internal: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-interface-address-sp/set-is-internal(is-internal))
-
-pub struct unnamed-Union19
-pub type unnamed-Union19-c
-pub alias unnamed-Union19p = c-pointer<unnamed-Union19-c>
-pub alias unnamed-Union19c = owned-c<unnamed-Union19-c>
-pub alias unnamed-Union19cb<s::S> = borrowed-c<s,unnamed-Union19-c>
-pub alias unnamed-Union19ca = owned-c<c-array<unnamed-Union19-c>>
-
-pub extern unnamed-Union19/size-of(c: c-null<unnamed-Union19-c>): int32
-  c inline "sizeof(union unnamed-Union19)"
-
-pub fun unnamed-Union19c(): unnamed-Union19c
-  malloc(?size-of=unnamed-Union19/size-of)
-
-pub fun unnamed-Union19c-calloc(): unnamed-Union19c
-  malloc-c(?size-of=unnamed-Union19/size-of)
-
-pub fun unnamed-Union19c-array(n: int): unnamed-Union19ca
-  malloc(n.int32, ?size-of=unnamed-Union19/size-of)
-
-pub fun unnamed-Union19c-array-calloc(n: int): unnamed-Union19ca
-  malloc-c(n.int32, ?size-of=unnamed-Union19/size-of)
+pub struct unnamed-union19
+pub type unnamed-union19-c
+pub alias unnamed-union19p = c-pointer<unnamed-union19-c>
+pub alias unnamed-union19c = owned-c<unnamed-union19-c>
+pub alias unnamed-union19cb<s::S> = borrowed-c<s,unnamed-union19-c>
+pub alias unnamed-union19ca = owned-c<c-array<unnamed-union19-c>>
 
 pub struct sockaddr-in
 pub type sockaddr-in-c
@@ -13701,78 +4120,6 @@ pub fun sockaddr-inc-array(n: int): sockaddr-inca<s::S>
 
 pub fun sockaddr-inc-array-calloc(n: int): sockaddr-inca<s::S>
   malloc-c(n.int32, ?size-of=sockaddr-in/size-of)
-
-pub inline extern sockaddr-in-ptrraw/sin-family(s: intptr_t): int16
-  c inline "(unsigned short)(((struct sockaddr_in*)#1)->sin_family)"
-
-pub inline fun sockaddr-inp/sin-family(s: sockaddr-inp): int
-  s.cextern/c-pointer/ptr.sockaddr-in-ptrraw/sin-family.int
-
-pub inline fun sockaddr-inc/sin-family(^s: sockaddr-inc<s::S>): int
-  s.with-ptr(sockaddr-inp/sin-family)
-
-pub inline fun sockaddr-incb/sin-family(^s: sockaddr-incb<s::S>): int
-  s.with-ptr(sockaddr-inp/sin-family)
-
-pub inline extern sockaddr-in-ptrraw/set-sin-family(s: intptr_t, sin-family: int16): ()
-  c inline "((struct sockaddr_in*)#1)->sin_family = (unsigned short)#2"
-
-pub inline fun sockaddr-inp/set-sin-family(s: sockaddr-inp, sin-family: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-in-ptrraw/set-sin-family(sin-family.int16)
-
-pub inline fun sockaddr-inc/set-sin-family(^s: sockaddr-inc<s::S>, sin-family: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-inp/set-sin-family(sin-family))
-
-pub inline fun sockaddr-incb/set-sin-family(^s: sockaddr-incb<s::S>, sin-family: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-inp/set-sin-family(sin-family))
-
-pub inline extern sockaddr-in-ptrraw/sin-port(s: intptr_t): int16
-  c inline "(int16_t)(((struct sockaddr_in*)#1)->sin_port)"
-
-pub inline fun sockaddr-inp/sin-port(s: sockaddr-inp): int
-  s.cextern/c-pointer/ptr.sockaddr-in-ptrraw/sin-port.int
-
-pub inline fun sockaddr-inc/sin-port(^s: sockaddr-inc<s::S>): int
-  s.with-ptr(sockaddr-inp/sin-port)
-
-pub inline fun sockaddr-incb/sin-port(^s: sockaddr-incb<s::S>): int
-  s.with-ptr(sockaddr-inp/sin-port)
-
-pub inline extern sockaddr-in-ptrraw/set-sin-port(s: intptr_t, sin-port: int16): ()
-  c inline "((struct sockaddr_in*)#1)->sin_port = (int16_t)#2"
-
-pub inline fun sockaddr-inp/set-sin-port(s: sockaddr-inp, sin-port: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-in-ptrraw/set-sin-port(sin-port.int16)
-
-pub inline fun sockaddr-inc/set-sin-port(^s: sockaddr-inc<s::S>, sin-port: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-inp/set-sin-port(sin-port))
-
-pub inline fun sockaddr-incb/set-sin-port(^s: sockaddr-incb<s::S>, sin-port: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-inp/set-sin-port(sin-port))
-
-pub inline extern sockaddr-in-ptrraw/sin-zero(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct sockaddr_in*)#1)->sin_zero)"
-
-pub inline fun sockaddr-inp/sin-zero(s: sockaddr-inp): c-array<int>
-  s.cextern/c-pointer/ptr.sockaddr-in-ptrraw/sin-zero.cextern/cptr/carray
-
-pub inline fun sockaddr-inc/sin-zero(^s: sockaddr-inc<s::S>): c-array<int>
-  s.with-ptr(sockaddr-inp/sin-zero)
-
-pub inline fun sockaddr-incb/sin-zero(^s: sockaddr-incb<s::S>): c-array<int>
-  s.with-ptr(sockaddr-inp/sin-zero)
-
-pub inline extern sockaddr-in-ptrraw/set-sin-zero(s: intptr_t, sin-zero: intptr_t): ()
-  c inline "((struct sockaddr_in*)#1)->sin_zero = (unsigned char*)#2"
-
-pub inline fun sockaddr-inp/set-sin-zero(s: sockaddr-inp, sin-zero: c-array<int>): ()
-  s.cextern/c-pointer/ptr.sockaddr-in-ptrraw/set-sin-zero(sin-zero.cextern/carray/cptr)
-
-pub inline fun sockaddr-inc/set-sin-zero(^s: sockaddr-inc<s::S>, sin-zero: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-inp/set-sin-zero(sin-zero))
-
-pub inline fun sockaddr-incb/set-sin-zero(^s: sockaddr-incb<s::S>, sin-zero: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-inp/set-sin-zero(sin-zero))
 
 alias in-port-t = int
 pub value struct in-addr
@@ -13799,32 +4146,9 @@ pub fun in-addrc-array(n: int): in-addrca
 pub fun in-addrc-array-calloc(n: int): in-addrca
   malloc-c(n.int32, ?size-of=in-addr/size-of)
 
-pub inline extern in-addr-ptrraw/s-addr(s: intptr_t): int32
-  c inline "(int32_t)(((struct in_addr*)#1)->s_addr)"
-
-pub inline fun in-addrp/s-addr(s: in-addrp): int
-  s.cextern/c-pointer/ptr.in-addr-ptrraw/s-addr.int
-
-pub inline fun in-addrc/s-addr(^s: in-addrc): int
-  s.with-ptr(in-addrp/s-addr)
-
-pub inline fun in-addrcb/s-addr(^s: in-addrcb<s::S>): int
-  s.with-ptr(in-addrp/s-addr)
-
-pub inline extern in-addr-ptrraw/set-s-addr(s: intptr_t, s-addr: int32): ()
-  c inline "((struct in_addr*)#1)->s_addr = (int32_t)#2"
-
-pub inline fun in-addrp/set-s-addr(s: in-addrp, s-addr: int): ()
-  s.cextern/c-pointer/ptr.in-addr-ptrraw/set-s-addr(s-addr.int32)
-
-pub inline fun in-addrc/set-s-addr(^s: in-addrc, s-addr: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.in-addrp/set-s-addr(s-addr))
-
-pub inline fun in-addrcb/set-s-addr(^s: in-addrcb<s::S>, s-addr: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.in-addrp/set-s-addr(s-addr))
-
 alias in-addr-t = int
 pub struct sockaddr-in6
+  sin6-len: int
   sin6-family: int
   sin6-port: int
   sin6-flowinfo: int
@@ -13852,104 +4176,8 @@ pub fun sockaddr-in6c-array(n: int): sockaddr-in6ca
 pub fun sockaddr-in6c-array-calloc(n: int): sockaddr-in6ca
   malloc-c(n.int32, ?size-of=sockaddr-in6/size-of)
 
-pub inline extern sockaddr-in6-ptrraw/sin6-family(s: intptr_t): int16
-  c inline "(unsigned short)(((struct sockaddr_in6*)#1)->sin6_family)"
-
-pub inline fun sockaddr-in6p/sin6-family(s: sockaddr-in6p): int
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/sin6-family.int
-
-pub inline fun sockaddr-in6c/sin6-family(^s: sockaddr-in6c): int
-  s.with-ptr(sockaddr-in6p/sin6-family)
-
-pub inline fun sockaddr-in6cb/sin6-family(^s: sockaddr-in6cb<s::S>): int
-  s.with-ptr(sockaddr-in6p/sin6-family)
-
-pub inline extern sockaddr-in6-ptrraw/set-sin6-family(s: intptr_t, sin6-family: int16): ()
-  c inline "((struct sockaddr_in6*)#1)->sin6_family = (unsigned short)#2"
-
-pub inline fun sockaddr-in6p/set-sin6-family(s: sockaddr-in6p, sin6-family: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/set-sin6-family(sin6-family.int16)
-
-pub inline fun sockaddr-in6c/set-sin6-family(^s: sockaddr-in6c, sin6-family: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-family(sin6-family))
-
-pub inline fun sockaddr-in6cb/set-sin6-family(^s: sockaddr-in6cb<s::S>, sin6-family: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-family(sin6-family))
-
-pub inline extern sockaddr-in6-ptrraw/sin6-port(s: intptr_t): int16
-  c inline "(int16_t)(((struct sockaddr_in6*)#1)->sin6_port)"
-
-pub inline fun sockaddr-in6p/sin6-port(s: sockaddr-in6p): int
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/sin6-port.int
-
-pub inline fun sockaddr-in6c/sin6-port(^s: sockaddr-in6c): int
-  s.with-ptr(sockaddr-in6p/sin6-port)
-
-pub inline fun sockaddr-in6cb/sin6-port(^s: sockaddr-in6cb<s::S>): int
-  s.with-ptr(sockaddr-in6p/sin6-port)
-
-pub inline extern sockaddr-in6-ptrraw/set-sin6-port(s: intptr_t, sin6-port: int16): ()
-  c inline "((struct sockaddr_in6*)#1)->sin6_port = (int16_t)#2"
-
-pub inline fun sockaddr-in6p/set-sin6-port(s: sockaddr-in6p, sin6-port: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/set-sin6-port(sin6-port.int16)
-
-pub inline fun sockaddr-in6c/set-sin6-port(^s: sockaddr-in6c, sin6-port: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-port(sin6-port))
-
-pub inline fun sockaddr-in6cb/set-sin6-port(^s: sockaddr-in6cb<s::S>, sin6-port: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-port(sin6-port))
-
-pub inline extern sockaddr-in6-ptrraw/sin6-flowinfo(s: intptr_t): int32
-  c inline "(int32_t)(((struct sockaddr_in6*)#1)->sin6_flowinfo)"
-
-pub inline fun sockaddr-in6p/sin6-flowinfo(s: sockaddr-in6p): int
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/sin6-flowinfo.int
-
-pub inline fun sockaddr-in6c/sin6-flowinfo(^s: sockaddr-in6c): int
-  s.with-ptr(sockaddr-in6p/sin6-flowinfo)
-
-pub inline fun sockaddr-in6cb/sin6-flowinfo(^s: sockaddr-in6cb<s::S>): int
-  s.with-ptr(sockaddr-in6p/sin6-flowinfo)
-
-pub inline extern sockaddr-in6-ptrraw/set-sin6-flowinfo(s: intptr_t, sin6-flowinfo: int32): ()
-  c inline "((struct sockaddr_in6*)#1)->sin6_flowinfo = (int32_t)#2"
-
-pub inline fun sockaddr-in6p/set-sin6-flowinfo(s: sockaddr-in6p, sin6-flowinfo: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/set-sin6-flowinfo(sin6-flowinfo.int32)
-
-pub inline fun sockaddr-in6c/set-sin6-flowinfo(^s: sockaddr-in6c, sin6-flowinfo: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-flowinfo(sin6-flowinfo))
-
-pub inline fun sockaddr-in6cb/set-sin6-flowinfo(^s: sockaddr-in6cb<s::S>, sin6-flowinfo: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-flowinfo(sin6-flowinfo))
-
-pub inline extern sockaddr-in6-ptrraw/sin6-scope-id(s: intptr_t): int32
-  c inline "(int32_t)(((struct sockaddr_in6*)#1)->sin6_scope_id)"
-
-pub inline fun sockaddr-in6p/sin6-scope-id(s: sockaddr-in6p): int
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/sin6-scope-id.int
-
-pub inline fun sockaddr-in6c/sin6-scope-id(^s: sockaddr-in6c): int
-  s.with-ptr(sockaddr-in6p/sin6-scope-id)
-
-pub inline fun sockaddr-in6cb/sin6-scope-id(^s: sockaddr-in6cb<s::S>): int
-  s.with-ptr(sockaddr-in6p/sin6-scope-id)
-
-pub inline extern sockaddr-in6-ptrraw/set-sin6-scope-id(s: intptr_t, sin6-scope-id: int32): ()
-  c inline "((struct sockaddr_in6*)#1)->sin6_scope_id = (int32_t)#2"
-
-pub inline fun sockaddr-in6p/set-sin6-scope-id(s: sockaddr-in6p, sin6-scope-id: int): ()
-  s.cextern/c-pointer/ptr.sockaddr-in6-ptrraw/set-sin6-scope-id(sin6-scope-id.int32)
-
-pub inline fun sockaddr-in6c/set-sin6-scope-id(^s: sockaddr-in6c, sin6-scope-id: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-scope-id(sin6-scope-id))
-
-pub inline fun sockaddr-in6cb/set-sin6-scope-id(^s: sockaddr-in6cb<s::S>, sin6-scope-id: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sockaddr-in6p/set-sin6-scope-id(sin6-scope-id))
-
 pub value struct in6-addr
-  in6-u: unnamed-Union20-c
+  u6-addr: unnamed-union20-c
 
 pub type in6-addr-c
 pub alias in6-addrp = c-pointer<in6-addr-c>
@@ -13972,121 +4200,19 @@ pub fun in6-addrc-array(n: int): in6-addrca
 pub fun in6-addrc-array-calloc(n: int): in6-addrca
   malloc-c(n.int32, ?size-of=in6-addr/size-of)
 
-pub struct unnamed-Union20
-pub type unnamed-Union20-c
-pub alias unnamed-Union20p = c-pointer<unnamed-Union20-c>
-pub alias unnamed-Union20c<s::S> = owned-c<unnamed-Union20-c>
-pub alias unnamed-Union20cb<s::S> = borrowed-c<s,unnamed-Union20-c>
-pub alias unnamed-Union20ca<s::S> = owned-c<c-array<unnamed-Union20-c>>
+pub struct unnamed-union20
+pub type unnamed-union20-c
+pub alias unnamed-union20p = c-pointer<unnamed-union20-c>
+pub alias unnamed-union20c<s::S> = owned-c<unnamed-union20-c>
+pub alias unnamed-union20cb<s::S> = borrowed-c<s,unnamed-union20-c>
+pub alias unnamed-union20ca<s::S> = owned-c<c-array<unnamed-union20-c>>
 
-pub extern unnamed-Union20/size-of(c: c-null<unnamed-Union20-c>): int32
-  c inline "sizeof(union unnamed-Union20)"
-
-pub fun unnamed-Union20c(): unnamed-Union20c<s::S>
-  malloc(?size-of=unnamed-Union20/size-of)
-
-pub fun unnamed-Union20c-calloc(): unnamed-Union20c<s::S>
-  malloc-c(?size-of=unnamed-Union20/size-of)
-
-pub fun unnamed-Union20c-array(n: int): unnamed-Union20ca<s::S>
-  malloc(n.int32, ?size-of=unnamed-Union20/size-of)
-
-pub fun unnamed-Union20c-array-calloc(n: int): unnamed-Union20ca<s::S>
-  malloc-c(n.int32, ?size-of=unnamed-Union20/size-of)
-
-pub inline extern unnamed-Union20-ptrraw/u6-addr8(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union20*)#1)->__u6_addr8)"
-
-pub inline fun unnamed-Union20p/u6-addr8(s: unnamed-Union20p): c-array<int>
-  s.cextern/c-pointer/ptr.unnamed-Union20-ptrraw/u6-addr8.cextern/cptr/carray
-
-pub inline fun unnamed-Union20c/u6-addr8(^s: unnamed-Union20c<s::S>): c-array<int>
-  s.with-ptr(unnamed-Union20p/u6-addr8)
-
-pub inline fun unnamed-Union20cb/u6-addr8(^s: unnamed-Union20cb<s::S>): c-array<int>
-  s.with-ptr(unnamed-Union20p/u6-addr8)
-
-pub inline extern unnamed-Union20-ptrraw/set-u6-addr8(s: intptr_t, u6-addr8: intptr_t): ()
-  c inline "((union unnamed-Union20*)#1)->__u6_addr8 = (uint8_t*)#2"
-
-pub inline fun unnamed-Union20p/set-u6-addr8(s: unnamed-Union20p, u6-addr8: c-array<int>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union20-ptrraw/set-u6-addr8(u6-addr8.cextern/carray/cptr)
-
-pub inline fun unnamed-Union20c/set-u6-addr8(^s: unnamed-Union20c<s::S>, u6-addr8: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union20p/set-u6-addr8(u6-addr8))
-
-pub inline fun unnamed-Union20cb/set-u6-addr8(^s: unnamed-Union20cb<s::S>, u6-addr8: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union20p/set-u6-addr8(u6-addr8))
-
-pub inline extern unnamed-Union20-ptrraw/u6-addr16(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union20*)#1)->__u6_addr16)"
-
-pub inline fun unnamed-Union20p/u6-addr16(s: unnamed-Union20p): c-array<int>
-  s.cextern/c-pointer/ptr.unnamed-Union20-ptrraw/u6-addr16.cextern/cptr/carray
-
-pub inline fun unnamed-Union20c/u6-addr16(^s: unnamed-Union20c<s::S>): c-array<int>
-  s.with-ptr(unnamed-Union20p/u6-addr16)
-
-pub inline fun unnamed-Union20cb/u6-addr16(^s: unnamed-Union20cb<s::S>): c-array<int>
-  s.with-ptr(unnamed-Union20p/u6-addr16)
-
-pub inline extern unnamed-Union20-ptrraw/set-u6-addr16(s: intptr_t, u6-addr16: intptr_t): ()
-  c inline "((union unnamed-Union20*)#1)->__u6_addr16 = (int16_t*)#2"
-
-pub inline fun unnamed-Union20p/set-u6-addr16(s: unnamed-Union20p, u6-addr16: c-array<int>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union20-ptrraw/set-u6-addr16(u6-addr16.cextern/carray/cptr)
-
-pub inline fun unnamed-Union20c/set-u6-addr16(^s: unnamed-Union20c<s::S>, u6-addr16: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union20p/set-u6-addr16(u6-addr16))
-
-pub inline fun unnamed-Union20cb/set-u6-addr16(^s: unnamed-Union20cb<s::S>, u6-addr16: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union20p/set-u6-addr16(u6-addr16))
-
-pub inline extern unnamed-Union20-ptrraw/u6-addr32(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union20*)#1)->__u6_addr32)"
-
-pub inline fun unnamed-Union20p/u6-addr32(s: unnamed-Union20p): c-array<int>
-  s.cextern/c-pointer/ptr.unnamed-Union20-ptrraw/u6-addr32.cextern/cptr/carray
-
-pub inline fun unnamed-Union20c/u6-addr32(^s: unnamed-Union20c<s::S>): c-array<int>
-  s.with-ptr(unnamed-Union20p/u6-addr32)
-
-pub inline fun unnamed-Union20cb/u6-addr32(^s: unnamed-Union20cb<s::S>): c-array<int>
-  s.with-ptr(unnamed-Union20p/u6-addr32)
-
-pub inline extern unnamed-Union20-ptrraw/set-u6-addr32(s: intptr_t, u6-addr32: intptr_t): ()
-  c inline "((union unnamed-Union20*)#1)->__u6_addr32 = (int32_t*)#2"
-
-pub inline fun unnamed-Union20p/set-u6-addr32(s: unnamed-Union20p, u6-addr32: c-array<int>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union20-ptrraw/set-u6-addr32(u6-addr32.cextern/carray/cptr)
-
-pub inline fun unnamed-Union20c/set-u6-addr32(^s: unnamed-Union20c<s::S>, u6-addr32: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union20p/set-u6-addr32(u6-addr32))
-
-pub inline fun unnamed-Union20cb/set-u6-addr32(^s: unnamed-Union20cb<s::S>, u6-addr32: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union20p/set-u6-addr32(u6-addr32))
-
-pub struct unnamed-Union21
-pub type unnamed-Union21-c
-pub alias unnamed-Union21p = c-pointer<unnamed-Union21-c>
-pub alias unnamed-Union21c = owned-c<unnamed-Union21-c>
-pub alias unnamed-Union21cb<s::S> = borrowed-c<s,unnamed-Union21-c>
-pub alias unnamed-Union21ca = owned-c<c-array<unnamed-Union21-c>>
-
-pub extern unnamed-Union21/size-of(c: c-null<unnamed-Union21-c>): int32
-  c inline "sizeof(union unnamed-Union21)"
-
-pub fun unnamed-Union21c(): unnamed-Union21c
-  malloc(?size-of=unnamed-Union21/size-of)
-
-pub fun unnamed-Union21c-calloc(): unnamed-Union21c
-  malloc-c(?size-of=unnamed-Union21/size-of)
-
-pub fun unnamed-Union21c-array(n: int): unnamed-Union21ca
-  malloc(n.int32, ?size-of=unnamed-Union21/size-of)
-
-pub fun unnamed-Union21c-array-calloc(n: int): unnamed-Union21ca
-  malloc-c(n.int32, ?size-of=unnamed-Union21/size-of)
+pub struct unnamed-union21
+pub type unnamed-union21-c
+pub alias unnamed-union21p = c-pointer<unnamed-union21-c>
+pub alias unnamed-union21c = owned-c<unnamed-union21-c>
+pub alias unnamed-union21cb<s::S> = borrowed-c<s,unnamed-union21-c>
+pub alias unnamed-union21ca = owned-c<c-array<unnamed-union21-c>>
 
 pub struct uv-passwd-s
   username: c-pointer<int>
@@ -14116,126 +4242,6 @@ pub fun uv-passwd-sc-array(n: int): uv-passwd-sca
 pub fun uv-passwd-sc-array-calloc(n: int): uv-passwd-sca
   malloc-c(n.int32, ?size-of=uv-passwd-s/size-of)
 
-pub inline extern uv-passwd-s-ptrraw/username(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_passwd_s*)#1)->username)"
-
-pub inline fun uv-passwd-sp/username(s: uv-passwd-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/username)
-
-pub inline fun uv-passwd-sc/username(^s: uv-passwd-sc): c-pointer<int>
-  s.with-ptr(uv-passwd-sp/username)
-
-pub inline fun uv-passwd-scb/username(^s: uv-passwd-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-passwd-sp/username)
-
-pub inline extern uv-passwd-s-ptrraw/set-username(s: intptr_t, username: intptr_t): ()
-  c inline "((struct uv_passwd_s*)#1)->username = (char*)#2"
-
-pub inline fun uv-passwd-sp/set-username(s: uv-passwd-sp, username: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/set-username(username.cextern/c-pointer/ptr)
-
-pub inline fun uv-passwd-sc/set-username(^s: uv-passwd-sc, username: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-username(username))
-
-pub inline fun uv-passwd-scb/set-username(^s: uv-passwd-scb<s::S>, username: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-username(username))
-
-pub inline extern uv-passwd-s-ptrraw/uid(s: intptr_t): int64
-  c inline "(unsigned long)(((struct uv_passwd_s*)#1)->uid)"
-
-pub inline fun uv-passwd-sp/uid(s: uv-passwd-sp): int
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/uid.int
-
-pub inline fun uv-passwd-sc/uid(^s: uv-passwd-sc): int
-  s.with-ptr(uv-passwd-sp/uid)
-
-pub inline fun uv-passwd-scb/uid(^s: uv-passwd-scb<s::S>): int
-  s.with-ptr(uv-passwd-sp/uid)
-
-pub inline extern uv-passwd-s-ptrraw/set-uid(s: intptr_t, uid: int64): ()
-  c inline "((struct uv_passwd_s*)#1)->uid = (unsigned long)#2"
-
-pub inline fun uv-passwd-sp/set-uid(s: uv-passwd-sp, uid: int): ()
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/set-uid(uid.int64)
-
-pub inline fun uv-passwd-sc/set-uid(^s: uv-passwd-sc, uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-uid(uid))
-
-pub inline fun uv-passwd-scb/set-uid(^s: uv-passwd-scb<s::S>, uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-uid(uid))
-
-pub inline extern uv-passwd-s-ptrraw/gid(s: intptr_t): int64
-  c inline "(unsigned long)(((struct uv_passwd_s*)#1)->gid)"
-
-pub inline fun uv-passwd-sp/gid(s: uv-passwd-sp): int
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/gid.int
-
-pub inline fun uv-passwd-sc/gid(^s: uv-passwd-sc): int
-  s.with-ptr(uv-passwd-sp/gid)
-
-pub inline fun uv-passwd-scb/gid(^s: uv-passwd-scb<s::S>): int
-  s.with-ptr(uv-passwd-sp/gid)
-
-pub inline extern uv-passwd-s-ptrraw/set-gid(s: intptr_t, gid: int64): ()
-  c inline "((struct uv_passwd_s*)#1)->gid = (unsigned long)#2"
-
-pub inline fun uv-passwd-sp/set-gid(s: uv-passwd-sp, gid: int): ()
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/set-gid(gid.int64)
-
-pub inline fun uv-passwd-sc/set-gid(^s: uv-passwd-sc, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-gid(gid))
-
-pub inline fun uv-passwd-scb/set-gid(^s: uv-passwd-scb<s::S>, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-gid(gid))
-
-pub inline extern uv-passwd-s-ptrraw/shell(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_passwd_s*)#1)->shell)"
-
-pub inline fun uv-passwd-sp/shell(s: uv-passwd-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/shell)
-
-pub inline fun uv-passwd-sc/shell(^s: uv-passwd-sc): c-pointer<int>
-  s.with-ptr(uv-passwd-sp/shell)
-
-pub inline fun uv-passwd-scb/shell(^s: uv-passwd-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-passwd-sp/shell)
-
-pub inline extern uv-passwd-s-ptrraw/set-shell(s: intptr_t, shell: intptr_t): ()
-  c inline "((struct uv_passwd_s*)#1)->shell = (char*)#2"
-
-pub inline fun uv-passwd-sp/set-shell(s: uv-passwd-sp, shell: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/set-shell(shell.cextern/c-pointer/ptr)
-
-pub inline fun uv-passwd-sc/set-shell(^s: uv-passwd-sc, shell: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-shell(shell))
-
-pub inline fun uv-passwd-scb/set-shell(^s: uv-passwd-scb<s::S>, shell: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-shell(shell))
-
-pub inline extern uv-passwd-s-ptrraw/homedir(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_passwd_s*)#1)->homedir)"
-
-pub inline fun uv-passwd-sp/homedir(s: uv-passwd-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/homedir)
-
-pub inline fun uv-passwd-sc/homedir(^s: uv-passwd-sc): c-pointer<int>
-  s.with-ptr(uv-passwd-sp/homedir)
-
-pub inline fun uv-passwd-scb/homedir(^s: uv-passwd-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-passwd-sp/homedir)
-
-pub inline extern uv-passwd-s-ptrraw/set-homedir(s: intptr_t, homedir: intptr_t): ()
-  c inline "((struct uv_passwd_s*)#1)->homedir = (char*)#2"
-
-pub inline fun uv-passwd-sp/set-homedir(s: uv-passwd-sp, homedir: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-passwd-s-ptrraw/set-homedir(homedir.cextern/c-pointer/ptr)
-
-pub inline fun uv-passwd-sc/set-homedir(^s: uv-passwd-sc, homedir: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-homedir(homedir))
-
-pub inline fun uv-passwd-scb/set-homedir(^s: uv-passwd-scb<s::S>, homedir: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-passwd-sp/set-homedir(homedir))
-
 pub value struct uv-group-s
   groupname: c-pointer<int>
   gid: int
@@ -14262,78 +4268,6 @@ pub fun uv-group-sc-array(n: int): uv-group-sca
 pub fun uv-group-sc-array-calloc(n: int): uv-group-sca
   malloc-c(n.int32, ?size-of=uv-group-s/size-of)
 
-pub inline extern uv-group-s-ptrraw/groupname(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_group_s*)#1)->groupname)"
-
-pub inline fun uv-group-sp/groupname(s: uv-group-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-group-s-ptrraw/groupname)
-
-pub inline fun uv-group-sc/groupname(^s: uv-group-sc): c-pointer<int>
-  s.with-ptr(uv-group-sp/groupname)
-
-pub inline fun uv-group-scb/groupname(^s: uv-group-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-group-sp/groupname)
-
-pub inline extern uv-group-s-ptrraw/set-groupname(s: intptr_t, groupname: intptr_t): ()
-  c inline "((struct uv_group_s*)#1)->groupname = (char*)#2"
-
-pub inline fun uv-group-sp/set-groupname(s: uv-group-sp, groupname: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-group-s-ptrraw/set-groupname(groupname.cextern/c-pointer/ptr)
-
-pub inline fun uv-group-sc/set-groupname(^s: uv-group-sc, groupname: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-group-sp/set-groupname(groupname))
-
-pub inline fun uv-group-scb/set-groupname(^s: uv-group-scb<s::S>, groupname: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-group-sp/set-groupname(groupname))
-
-pub inline extern uv-group-s-ptrraw/gid(s: intptr_t): int64
-  c inline "(unsigned long)(((struct uv_group_s*)#1)->gid)"
-
-pub inline fun uv-group-sp/gid(s: uv-group-sp): int
-  s.cextern/c-pointer/ptr.uv-group-s-ptrraw/gid.int
-
-pub inline fun uv-group-sc/gid(^s: uv-group-sc): int
-  s.with-ptr(uv-group-sp/gid)
-
-pub inline fun uv-group-scb/gid(^s: uv-group-scb<s::S>): int
-  s.with-ptr(uv-group-sp/gid)
-
-pub inline extern uv-group-s-ptrraw/set-gid(s: intptr_t, gid: int64): ()
-  c inline "((struct uv_group_s*)#1)->gid = (unsigned long)#2"
-
-pub inline fun uv-group-sp/set-gid(s: uv-group-sp, gid: int): ()
-  s.cextern/c-pointer/ptr.uv-group-s-ptrraw/set-gid(gid.int64)
-
-pub inline fun uv-group-sc/set-gid(^s: uv-group-sc, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-group-sp/set-gid(gid))
-
-pub inline fun uv-group-scb/set-gid(^s: uv-group-scb<s::S>, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-group-sp/set-gid(gid))
-
-pub inline extern uv-group-s-ptrraw/members(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_group_s*)#1)->members)"
-
-pub inline fun uv-group-sp/members(s: uv-group-sp): c-pointer<c-pointer<int>>
-  C-pointer(s.cextern/c-pointer/ptr.uv-group-s-ptrraw/members)
-
-pub inline fun uv-group-sc/members(^s: uv-group-sc): c-pointer<c-pointer<int>>
-  s.with-ptr(uv-group-sp/members)
-
-pub inline fun uv-group-scb/members(^s: uv-group-scb<s::S>): c-pointer<c-pointer<int>>
-  s.with-ptr(uv-group-sp/members)
-
-pub inline extern uv-group-s-ptrraw/set-members(s: intptr_t, members: intptr_t): ()
-  c inline "((struct uv_group_s*)#1)->members = (char**)#2"
-
-pub inline fun uv-group-sp/set-members(s: uv-group-sp, members: c-pointer<c-pointer<int>>): ()
-  s.cextern/c-pointer/ptr.uv-group-s-ptrraw/set-members(members.cextern/c-pointer/ptr)
-
-pub inline fun uv-group-sc/set-members(^s: uv-group-sc, members: c-pointer<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-group-sp/set-members(members))
-
-pub inline fun uv-group-scb/set-members(^s: uv-group-scb<s::S>, members: c-pointer<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-group-sp/set-members(members))
-
 pub struct uv-utsname-s
 pub type uv-utsname-s-c
 pub alias uv-utsname-sp = c-pointer<uv-utsname-s-c>
@@ -14355,102 +4289,6 @@ pub fun uv-utsname-sc-array(n: int): uv-utsname-sca<s::S>
 
 pub fun uv-utsname-sc-array-calloc(n: int): uv-utsname-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-utsname-s/size-of)
-
-pub inline extern uv-utsname-s-ptrraw/sysname(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_utsname_s*)#1)->sysname)"
-
-pub inline fun uv-utsname-sp/sysname(s: uv-utsname-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/sysname.cextern/cptr/carray
-
-pub inline fun uv-utsname-sc/sysname(^s: uv-utsname-sc<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/sysname)
-
-pub inline fun uv-utsname-scb/sysname(^s: uv-utsname-scb<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/sysname)
-
-pub inline extern uv-utsname-s-ptrraw/set-sysname(s: intptr_t, sysname: intptr_t): ()
-  c inline "((struct uv_utsname_s*)#1)->sysname = (char*)#2"
-
-pub inline fun uv-utsname-sp/set-sysname(s: uv-utsname-sp, sysname: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/set-sysname(sysname.cextern/carray/cptr)
-
-pub inline fun uv-utsname-sc/set-sysname(^s: uv-utsname-sc<s::S>, sysname: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-sysname(sysname))
-
-pub inline fun uv-utsname-scb/set-sysname(^s: uv-utsname-scb<s::S>, sysname: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-sysname(sysname))
-
-pub inline extern uv-utsname-s-ptrraw/release(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_utsname_s*)#1)->release)"
-
-pub inline fun uv-utsname-sp/release(s: uv-utsname-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/release.cextern/cptr/carray
-
-pub inline fun uv-utsname-sc/release(^s: uv-utsname-sc<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/release)
-
-pub inline fun uv-utsname-scb/release(^s: uv-utsname-scb<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/release)
-
-pub inline extern uv-utsname-s-ptrraw/set-release(s: intptr_t, release: intptr_t): ()
-  c inline "((struct uv_utsname_s*)#1)->release = (char*)#2"
-
-pub inline fun uv-utsname-sp/set-release(s: uv-utsname-sp, release: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/set-release(release.cextern/carray/cptr)
-
-pub inline fun uv-utsname-sc/set-release(^s: uv-utsname-sc<s::S>, release: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-release(release))
-
-pub inline fun uv-utsname-scb/set-release(^s: uv-utsname-scb<s::S>, release: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-release(release))
-
-pub inline extern uv-utsname-s-ptrraw/version(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_utsname_s*)#1)->version)"
-
-pub inline fun uv-utsname-sp/version(s: uv-utsname-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/version.cextern/cptr/carray
-
-pub inline fun uv-utsname-sc/version(^s: uv-utsname-sc<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/version)
-
-pub inline fun uv-utsname-scb/version(^s: uv-utsname-scb<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/version)
-
-pub inline extern uv-utsname-s-ptrraw/set-version(s: intptr_t, version: intptr_t): ()
-  c inline "((struct uv_utsname_s*)#1)->version = (char*)#2"
-
-pub inline fun uv-utsname-sp/set-version(s: uv-utsname-sp, version: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/set-version(version.cextern/carray/cptr)
-
-pub inline fun uv-utsname-sc/set-version(^s: uv-utsname-sc<s::S>, version: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-version(version))
-
-pub inline fun uv-utsname-scb/set-version(^s: uv-utsname-scb<s::S>, version: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-version(version))
-
-pub inline extern uv-utsname-s-ptrraw/machine(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_utsname_s*)#1)->machine)"
-
-pub inline fun uv-utsname-sp/machine(s: uv-utsname-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/machine.cextern/cptr/carray
-
-pub inline fun uv-utsname-sc/machine(^s: uv-utsname-sc<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/machine)
-
-pub inline fun uv-utsname-scb/machine(^s: uv-utsname-scb<s::S>): c-array<int>
-  s.with-ptr(uv-utsname-sp/machine)
-
-pub inline extern uv-utsname-s-ptrraw/set-machine(s: intptr_t, machine: intptr_t): ()
-  c inline "((struct uv_utsname_s*)#1)->machine = (char*)#2"
-
-pub inline fun uv-utsname-sp/set-machine(s: uv-utsname-sp, machine: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-utsname-s-ptrraw/set-machine(machine.cextern/carray/cptr)
-
-pub inline fun uv-utsname-sc/set-machine(^s: uv-utsname-sc<s::S>, machine: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-machine(machine))
-
-pub inline fun uv-utsname-scb/set-machine(^s: uv-utsname-scb<s::S>, machine: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-utsname-sp/set-machine(machine))
 
 pub struct uv-statfs-s
 pub type uv-statfs-s-c
@@ -14474,198 +4312,6 @@ pub fun uv-statfs-sc-array(n: int): uv-statfs-sca<s::S>
 pub fun uv-statfs-sc-array-calloc(n: int): uv-statfs-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-statfs-s/size-of)
 
-pub inline extern uv-statfs-s-ptrraw/f-type(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_type)"
-
-pub inline fun uv-statfs-sp/f-type(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-type.int
-
-pub inline fun uv-statfs-sc/f-type(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-type)
-
-pub inline fun uv-statfs-scb/f-type(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-type)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-type(s: intptr_t, f-type: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_type = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-type(s: uv-statfs-sp, f-type: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-type(f-type.int64)
-
-pub inline fun uv-statfs-sc/set-f-type(^s: uv-statfs-sc<s::S>, f-type: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-type(f-type))
-
-pub inline fun uv-statfs-scb/set-f-type(^s: uv-statfs-scb<s::S>, f-type: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-type(f-type))
-
-pub inline extern uv-statfs-s-ptrraw/f-bsize(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_bsize)"
-
-pub inline fun uv-statfs-sp/f-bsize(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-bsize.int
-
-pub inline fun uv-statfs-sc/f-bsize(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-bsize)
-
-pub inline fun uv-statfs-scb/f-bsize(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-bsize)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-bsize(s: intptr_t, f-bsize: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_bsize = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-bsize(s: uv-statfs-sp, f-bsize: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-bsize(f-bsize.int64)
-
-pub inline fun uv-statfs-sc/set-f-bsize(^s: uv-statfs-sc<s::S>, f-bsize: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-bsize(f-bsize))
-
-pub inline fun uv-statfs-scb/set-f-bsize(^s: uv-statfs-scb<s::S>, f-bsize: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-bsize(f-bsize))
-
-pub inline extern uv-statfs-s-ptrraw/f-blocks(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_blocks)"
-
-pub inline fun uv-statfs-sp/f-blocks(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-blocks.int
-
-pub inline fun uv-statfs-sc/f-blocks(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-blocks)
-
-pub inline fun uv-statfs-scb/f-blocks(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-blocks)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-blocks(s: intptr_t, f-blocks: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_blocks = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-blocks(s: uv-statfs-sp, f-blocks: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-blocks(f-blocks.int64)
-
-pub inline fun uv-statfs-sc/set-f-blocks(^s: uv-statfs-sc<s::S>, f-blocks: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-blocks(f-blocks))
-
-pub inline fun uv-statfs-scb/set-f-blocks(^s: uv-statfs-scb<s::S>, f-blocks: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-blocks(f-blocks))
-
-pub inline extern uv-statfs-s-ptrraw/f-bfree(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_bfree)"
-
-pub inline fun uv-statfs-sp/f-bfree(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-bfree.int
-
-pub inline fun uv-statfs-sc/f-bfree(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-bfree)
-
-pub inline fun uv-statfs-scb/f-bfree(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-bfree)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-bfree(s: intptr_t, f-bfree: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_bfree = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-bfree(s: uv-statfs-sp, f-bfree: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-bfree(f-bfree.int64)
-
-pub inline fun uv-statfs-sc/set-f-bfree(^s: uv-statfs-sc<s::S>, f-bfree: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-bfree(f-bfree))
-
-pub inline fun uv-statfs-scb/set-f-bfree(^s: uv-statfs-scb<s::S>, f-bfree: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-bfree(f-bfree))
-
-pub inline extern uv-statfs-s-ptrraw/f-bavail(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_bavail)"
-
-pub inline fun uv-statfs-sp/f-bavail(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-bavail.int
-
-pub inline fun uv-statfs-sc/f-bavail(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-bavail)
-
-pub inline fun uv-statfs-scb/f-bavail(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-bavail)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-bavail(s: intptr_t, f-bavail: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_bavail = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-bavail(s: uv-statfs-sp, f-bavail: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-bavail(f-bavail.int64)
-
-pub inline fun uv-statfs-sc/set-f-bavail(^s: uv-statfs-sc<s::S>, f-bavail: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-bavail(f-bavail))
-
-pub inline fun uv-statfs-scb/set-f-bavail(^s: uv-statfs-scb<s::S>, f-bavail: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-bavail(f-bavail))
-
-pub inline extern uv-statfs-s-ptrraw/f-files(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_files)"
-
-pub inline fun uv-statfs-sp/f-files(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-files.int
-
-pub inline fun uv-statfs-sc/f-files(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-files)
-
-pub inline fun uv-statfs-scb/f-files(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-files)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-files(s: intptr_t, f-files: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_files = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-files(s: uv-statfs-sp, f-files: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-files(f-files.int64)
-
-pub inline fun uv-statfs-sc/set-f-files(^s: uv-statfs-sc<s::S>, f-files: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-files(f-files))
-
-pub inline fun uv-statfs-scb/set-f-files(^s: uv-statfs-scb<s::S>, f-files: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-files(f-files))
-
-pub inline extern uv-statfs-s-ptrraw/f-ffree(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_statfs_s*)#1)->f_ffree)"
-
-pub inline fun uv-statfs-sp/f-ffree(s: uv-statfs-sp): int
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-ffree.int
-
-pub inline fun uv-statfs-sc/f-ffree(^s: uv-statfs-sc<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-ffree)
-
-pub inline fun uv-statfs-scb/f-ffree(^s: uv-statfs-scb<s::S>): int
-  s.with-ptr(uv-statfs-sp/f-ffree)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-ffree(s: intptr_t, f-ffree: int64): ()
-  c inline "((struct uv_statfs_s*)#1)->f_ffree = (int64_t)#2"
-
-pub inline fun uv-statfs-sp/set-f-ffree(s: uv-statfs-sp, f-ffree: int): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-ffree(f-ffree.int64)
-
-pub inline fun uv-statfs-sc/set-f-ffree(^s: uv-statfs-sc<s::S>, f-ffree: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-ffree(f-ffree))
-
-pub inline fun uv-statfs-scb/set-f-ffree(^s: uv-statfs-scb<s::S>, f-ffree: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-ffree(f-ffree))
-
-pub inline extern uv-statfs-s-ptrraw/f-spare(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_statfs_s*)#1)->f_spare)"
-
-pub inline fun uv-statfs-sp/f-spare(s: uv-statfs-sp): c-array<int>
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/f-spare.cextern/cptr/carray
-
-pub inline fun uv-statfs-sc/f-spare(^s: uv-statfs-sc<s::S>): c-array<int>
-  s.with-ptr(uv-statfs-sp/f-spare)
-
-pub inline fun uv-statfs-scb/f-spare(^s: uv-statfs-scb<s::S>): c-array<int>
-  s.with-ptr(uv-statfs-sp/f-spare)
-
-pub inline extern uv-statfs-s-ptrraw/set-f-spare(s: intptr_t, f-spare: intptr_t): ()
-  c inline "((struct uv_statfs_s*)#1)->f_spare = (int64_t*)#2"
-
-pub inline fun uv-statfs-sp/set-f-spare(s: uv-statfs-sp, f-spare: c-array<int>): ()
-  s.cextern/c-pointer/ptr.uv-statfs-s-ptrraw/set-f-spare(f-spare.cextern/carray/cptr)
-
-pub inline fun uv-statfs-sc/set-f-spare(^s: uv-statfs-sc<s::S>, f-spare: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-spare(f-spare))
-
-pub inline fun uv-statfs-scb/set-f-spare(^s: uv-statfs-scb<s::S>, f-spare: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-statfs-sp/set-f-spare(f-spare))
-
 pub struct uv-metrics-s
 pub type uv-metrics-s-c
 pub alias uv-metrics-sp = c-pointer<uv-metrics-s-c>
@@ -14688,113 +4334,17 @@ pub fun uv-metrics-sc-array(n: int): uv-metrics-sca<s::S>
 pub fun uv-metrics-sc-array-calloc(n: int): uv-metrics-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-metrics-s/size-of)
 
-pub inline extern uv-metrics-s-ptrraw/loop-count(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_metrics_s*)#1)->loop_count)"
-
-pub inline fun uv-metrics-sp/loop-count(s: uv-metrics-sp): int
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/loop-count.int
-
-pub inline fun uv-metrics-sc/loop-count(^s: uv-metrics-sc<s::S>): int
-  s.with-ptr(uv-metrics-sp/loop-count)
-
-pub inline fun uv-metrics-scb/loop-count(^s: uv-metrics-scb<s::S>): int
-  s.with-ptr(uv-metrics-sp/loop-count)
-
-pub inline extern uv-metrics-s-ptrraw/set-loop-count(s: intptr_t, loop-count: int64): ()
-  c inline "((struct uv_metrics_s*)#1)->loop_count = (int64_t)#2"
-
-pub inline fun uv-metrics-sp/set-loop-count(s: uv-metrics-sp, loop-count: int): ()
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/set-loop-count(loop-count.int64)
-
-pub inline fun uv-metrics-sc/set-loop-count(^s: uv-metrics-sc<s::S>, loop-count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-loop-count(loop-count))
-
-pub inline fun uv-metrics-scb/set-loop-count(^s: uv-metrics-scb<s::S>, loop-count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-loop-count(loop-count))
-
-pub inline extern uv-metrics-s-ptrraw/events(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_metrics_s*)#1)->events)"
-
-pub inline fun uv-metrics-sp/events(s: uv-metrics-sp): int
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/events.int
-
-pub inline fun uv-metrics-sc/events(^s: uv-metrics-sc<s::S>): int
-  s.with-ptr(uv-metrics-sp/events)
-
-pub inline fun uv-metrics-scb/events(^s: uv-metrics-scb<s::S>): int
-  s.with-ptr(uv-metrics-sp/events)
-
-pub inline extern uv-metrics-s-ptrraw/set-events(s: intptr_t, events: int64): ()
-  c inline "((struct uv_metrics_s*)#1)->events = (int64_t)#2"
-
-pub inline fun uv-metrics-sp/set-events(s: uv-metrics-sp, events: int): ()
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/set-events(events.int64)
-
-pub inline fun uv-metrics-sc/set-events(^s: uv-metrics-sc<s::S>, events: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-events(events))
-
-pub inline fun uv-metrics-scb/set-events(^s: uv-metrics-scb<s::S>, events: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-events(events))
-
-pub inline extern uv-metrics-s-ptrraw/events-waiting(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_metrics_s*)#1)->events_waiting)"
-
-pub inline fun uv-metrics-sp/events-waiting(s: uv-metrics-sp): int
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/events-waiting.int
-
-pub inline fun uv-metrics-sc/events-waiting(^s: uv-metrics-sc<s::S>): int
-  s.with-ptr(uv-metrics-sp/events-waiting)
-
-pub inline fun uv-metrics-scb/events-waiting(^s: uv-metrics-scb<s::S>): int
-  s.with-ptr(uv-metrics-sp/events-waiting)
-
-pub inline extern uv-metrics-s-ptrraw/set-events-waiting(s: intptr_t, events-waiting: int64): ()
-  c inline "((struct uv_metrics_s*)#1)->events_waiting = (int64_t)#2"
-
-pub inline fun uv-metrics-sp/set-events-waiting(s: uv-metrics-sp, events-waiting: int): ()
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/set-events-waiting(events-waiting.int64)
-
-pub inline fun uv-metrics-sc/set-events-waiting(^s: uv-metrics-sc<s::S>, events-waiting: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-events-waiting(events-waiting))
-
-pub inline fun uv-metrics-scb/set-events-waiting(^s: uv-metrics-scb<s::S>, events-waiting: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-events-waiting(events-waiting))
-
-pub inline extern uv-metrics-s-ptrraw/reserved(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_metrics_s*)#1)->reserved)"
-
-pub inline fun uv-metrics-sp/reserved(s: uv-metrics-sp): c-array<c-pointer<int>>
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/reserved.cextern/cptr/carray
-
-pub inline fun uv-metrics-sc/reserved(^s: uv-metrics-sc<s::S>): c-array<c-pointer<int>>
-  s.with-ptr(uv-metrics-sp/reserved)
-
-pub inline fun uv-metrics-scb/reserved(^s: uv-metrics-scb<s::S>): c-array<c-pointer<int>>
-  s.with-ptr(uv-metrics-sp/reserved)
-
-pub inline extern uv-metrics-s-ptrraw/set-reserved(s: intptr_t, reserved: intptr_t): ()
-  c inline "((struct uv_metrics_s*)#1)->reserved = (int64_t**)#2"
-
-pub inline fun uv-metrics-sp/set-reserved(s: uv-metrics-sp, reserved: c-array<c-pointer<int>>): ()
-  s.cextern/c-pointer/ptr.uv-metrics-s-ptrraw/set-reserved(reserved.cextern/carray/cptr)
-
-pub inline fun uv-metrics-sc/set-reserved(^s: uv-metrics-sc<s::S>, reserved: c-array<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-reserved(reserved))
-
-pub inline fun uv-metrics-scb/set-reserved(^s: uv-metrics-scb<s::S>, reserved: c-array<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-metrics-sp/set-reserved(reserved))
-
 type uv-loop-option
   UV_LOOP_BLOCK_SIGNAL
   UV_METRICS_IDLE_TIME
 
-pub fun uv-loop-option/int(i: uv-loop-option): int
+pub fun uv-loop-option/int(i: uv-loop-option): int32
   match i
-    UV_LOOP_BLOCK_SIGNAL -> 0
-    UV_METRICS_IDLE_TIME -> 1
+    UV_LOOP_BLOCK_SIGNAL -> 0.int32
+    UV_METRICS_IDLE_TIME -> 1.int32
 
-pub fun int/uv-loop-option(i: int): exn uv-loop-option
-  match i
+pub fun int/uv-loop-option(i: int32): exn uv-loop-option
+  match i.int
     0 -> UV_LOOP_BLOCK_SIGNAL
     1 -> UV_METRICS_IDLE_TIME
 
@@ -14803,37 +4353,37 @@ type uv-run-mode
   UV_RUN_ONCE
   UV_RUN_NOWAIT
 
-pub fun uv-run-mode/int(i: uv-run-mode): int
+pub fun uv-run-mode/int(i: uv-run-mode): int32
   match i
-    UV_RUN_DEFAULT -> 0
-    UV_RUN_ONCE -> 1
-    UV_RUN_NOWAIT -> 2
+    UV_RUN_DEFAULT -> 0.int32
+    UV_RUN_ONCE -> 1.int32
+    UV_RUN_NOWAIT -> 2.int32
 
-pub fun int/uv-run-mode(i: int): exn uv-run-mode
-  match i
+pub fun int/uv-run-mode(i: int32): exn uv-run-mode
+  match i.int
     0 -> UV_RUN_DEFAULT
     1 -> UV_RUN_ONCE
     2 -> UV_RUN_NOWAIT
 
 alias uv-malloc-func = c-pointer<intptr_t>
-alias uv-malloc-funcfn = ((size : ssize_t) -> c-pointer<()>)
+alias uv-malloc-funcfn = ((size : int) -> c-pointer<()>)
 alias uv-realloc-func = c-pointer<intptr_t>
-alias uv-realloc-funcfn = ((ptr : c-pointer<()>, size : ssize_t) -> c-pointer<()>)
+alias uv-realloc-funcfn = ((ptr : c-pointer<()>, size : int) -> c-pointer<()>)
 alias uv-calloc-func = c-pointer<intptr_t>
-alias uv-calloc-funcfn = ((count : ssize_t, size : ssize_t) -> c-pointer<()>)
+alias uv-calloc-funcfn = ((count : int, size : int) -> c-pointer<()>)
 alias uv-free-func = c-pointer<intptr_t>
 alias uv-free-funcfn = ((ptr : c-pointer<()>) -> ())
 type uv-clock-id
   UV_CLOCK_MONOTONIC
   UV_CLOCK_REALTIME
 
-pub fun uv-clock-id/int(i: uv-clock-id): int
+pub fun uv-clock-id/int(i: uv-clock-id): int32
   match i
-    UV_CLOCK_MONOTONIC -> 0
-    UV_CLOCK_REALTIME -> 1
+    UV_CLOCK_MONOTONIC -> 0.int32
+    UV_CLOCK_REALTIME -> 1.int32
 
-pub fun int/uv-clock-id(i: int): exn uv-clock-id
-  match i
+pub fun int/uv-clock-id(i: int32): exn uv-clock-id
+  match i.int
     0 -> UV_CLOCK_MONOTONIC
     1 -> UV_CLOCK_REALTIME
 
@@ -14848,7 +4398,7 @@ pub alias uv-timespec64-tcb<s::S> = borrowed-c<s,uv-timespec64-t-c>
 pub alias uv-timespec64-tca = owned-c<c-array<uv-timespec64-t-c>>
 
 pub extern uv-timespec64-t/size-of(c: c-null<uv-timespec64-t-c>): int32
-  c inline "sizeof(struct uv_timespec64_t)"
+  c inline "sizeof(uv_timespec64_t)"
 
 pub fun uv-timespec64-tc(): uv-timespec64-tc
   malloc(?size-of=uv-timespec64-t/size-of)
@@ -14862,54 +4412,6 @@ pub fun uv-timespec64-tc-array(n: int): uv-timespec64-tca
 pub fun uv-timespec64-tc-array-calloc(n: int): uv-timespec64-tca
   malloc-c(n.int32, ?size-of=uv-timespec64-t/size-of)
 
-pub inline extern uv-timespec64-t-ptrraw/tv-sec(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_timespec64_t*)#1)->tv_sec)"
-
-pub inline fun uv-timespec64-tp/tv-sec(s: uv-timespec64-tp): int
-  s.cextern/c-pointer/ptr.uv-timespec64-t-ptrraw/tv-sec.int
-
-pub inline fun uv-timespec64-tc/tv-sec(^s: uv-timespec64-tc): int
-  s.with-ptr(uv-timespec64-tp/tv-sec)
-
-pub inline fun uv-timespec64-tcb/tv-sec(^s: uv-timespec64-tcb<s::S>): int
-  s.with-ptr(uv-timespec64-tp/tv-sec)
-
-pub inline extern uv-timespec64-t-ptrraw/set-tv-sec(s: intptr_t, tv-sec: int64): ()
-  c inline "((struct uv_timespec64_t*)#1)->tv_sec = (int64_t)#2"
-
-pub inline fun uv-timespec64-tp/set-tv-sec(s: uv-timespec64-tp, tv-sec: int): ()
-  s.cextern/c-pointer/ptr.uv-timespec64-t-ptrraw/set-tv-sec(tv-sec.int64)
-
-pub inline fun uv-timespec64-tc/set-tv-sec(^s: uv-timespec64-tc, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec64-tp/set-tv-sec(tv-sec))
-
-pub inline fun uv-timespec64-tcb/set-tv-sec(^s: uv-timespec64-tcb<s::S>, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec64-tp/set-tv-sec(tv-sec))
-
-pub inline extern uv-timespec64-t-ptrraw/tv-nsec(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_timespec64_t*)#1)->tv_nsec)"
-
-pub inline fun uv-timespec64-tp/tv-nsec(s: uv-timespec64-tp): int
-  s.cextern/c-pointer/ptr.uv-timespec64-t-ptrraw/tv-nsec.int
-
-pub inline fun uv-timespec64-tc/tv-nsec(^s: uv-timespec64-tc): int
-  s.with-ptr(uv-timespec64-tp/tv-nsec)
-
-pub inline fun uv-timespec64-tcb/tv-nsec(^s: uv-timespec64-tcb<s::S>): int
-  s.with-ptr(uv-timespec64-tp/tv-nsec)
-
-pub inline extern uv-timespec64-t-ptrraw/set-tv-nsec(s: intptr_t, tv-nsec: int32): ()
-  c inline "((struct uv_timespec64_t*)#1)->tv_nsec = (int32_t)#2"
-
-pub inline fun uv-timespec64-tp/set-tv-nsec(s: uv-timespec64-tp, tv-nsec: int): ()
-  s.cextern/c-pointer/ptr.uv-timespec64-t-ptrraw/set-tv-nsec(tv-nsec.int32)
-
-pub inline fun uv-timespec64-tc/set-tv-nsec(^s: uv-timespec64-tc, tv-nsec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec64-tp/set-tv-nsec(tv-nsec))
-
-pub inline fun uv-timespec64-tcb/set-tv-nsec(^s: uv-timespec64-tcb<s::S>, tv-nsec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timespec64-tp/set-tv-nsec(tv-nsec))
-
 pub value struct uv-timeval-t
   tv-sec: int
   tv-usec: int
@@ -14921,7 +4423,7 @@ pub alias uv-timeval-tcb<s::S> = borrowed-c<s,uv-timeval-t-c>
 pub alias uv-timeval-tca = owned-c<c-array<uv-timeval-t-c>>
 
 pub extern uv-timeval-t/size-of(c: c-null<uv-timeval-t-c>): int32
-  c inline "sizeof(struct uv_timeval_t)"
+  c inline "sizeof(uv_timeval_t)"
 
 pub fun uv-timeval-tc(): uv-timeval-tc
   malloc(?size-of=uv-timeval-t/size-of)
@@ -14935,54 +4437,6 @@ pub fun uv-timeval-tc-array(n: int): uv-timeval-tca
 pub fun uv-timeval-tc-array-calloc(n: int): uv-timeval-tca
   malloc-c(n.int32, ?size-of=uv-timeval-t/size-of)
 
-pub inline extern uv-timeval-t-ptrraw/tv-sec(s: intptr_t): int64
-  c inline "(long)(((struct uv_timeval_t*)#1)->tv_sec)"
-
-pub inline fun uv-timeval-tp/tv-sec(s: uv-timeval-tp): int
-  s.cextern/c-pointer/ptr.uv-timeval-t-ptrraw/tv-sec.int
-
-pub inline fun uv-timeval-tc/tv-sec(^s: uv-timeval-tc): int
-  s.with-ptr(uv-timeval-tp/tv-sec)
-
-pub inline fun uv-timeval-tcb/tv-sec(^s: uv-timeval-tcb<s::S>): int
-  s.with-ptr(uv-timeval-tp/tv-sec)
-
-pub inline extern uv-timeval-t-ptrraw/set-tv-sec(s: intptr_t, tv-sec: int64): ()
-  c inline "((struct uv_timeval_t*)#1)->tv_sec = (long)#2"
-
-pub inline fun uv-timeval-tp/set-tv-sec(s: uv-timeval-tp, tv-sec: int): ()
-  s.cextern/c-pointer/ptr.uv-timeval-t-ptrraw/set-tv-sec(tv-sec.int64)
-
-pub inline fun uv-timeval-tc/set-tv-sec(^s: uv-timeval-tc, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval-tp/set-tv-sec(tv-sec))
-
-pub inline fun uv-timeval-tcb/set-tv-sec(^s: uv-timeval-tcb<s::S>, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval-tp/set-tv-sec(tv-sec))
-
-pub inline extern uv-timeval-t-ptrraw/tv-usec(s: intptr_t): int64
-  c inline "(long)(((struct uv_timeval_t*)#1)->tv_usec)"
-
-pub inline fun uv-timeval-tp/tv-usec(s: uv-timeval-tp): int
-  s.cextern/c-pointer/ptr.uv-timeval-t-ptrraw/tv-usec.int
-
-pub inline fun uv-timeval-tc/tv-usec(^s: uv-timeval-tc): int
-  s.with-ptr(uv-timeval-tp/tv-usec)
-
-pub inline fun uv-timeval-tcb/tv-usec(^s: uv-timeval-tcb<s::S>): int
-  s.with-ptr(uv-timeval-tp/tv-usec)
-
-pub inline extern uv-timeval-t-ptrraw/set-tv-usec(s: intptr_t, tv-usec: int64): ()
-  c inline "((struct uv_timeval_t*)#1)->tv_usec = (long)#2"
-
-pub inline fun uv-timeval-tp/set-tv-usec(s: uv-timeval-tp, tv-usec: int): ()
-  s.cextern/c-pointer/ptr.uv-timeval-t-ptrraw/set-tv-usec(tv-usec.int64)
-
-pub inline fun uv-timeval-tc/set-tv-usec(^s: uv-timeval-tc, tv-usec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval-tp/set-tv-usec(tv-usec))
-
-pub inline fun uv-timeval-tcb/set-tv-usec(^s: uv-timeval-tcb<s::S>, tv-usec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval-tp/set-tv-usec(tv-usec))
-
 pub value struct uv-timeval64-t
   tv-sec: int
   tv-usec: int
@@ -14994,7 +4448,7 @@ pub alias uv-timeval64-tcb<s::S> = borrowed-c<s,uv-timeval64-t-c>
 pub alias uv-timeval64-tca = owned-c<c-array<uv-timeval64-t-c>>
 
 pub extern uv-timeval64-t/size-of(c: c-null<uv-timeval64-t-c>): int32
-  c inline "sizeof(struct uv_timeval64_t)"
+  c inline "sizeof(uv_timeval64_t)"
 
 pub fun uv-timeval64-tc(): uv-timeval64-tc
   malloc(?size-of=uv-timeval64-t/size-of)
@@ -15008,78 +4462,30 @@ pub fun uv-timeval64-tc-array(n: int): uv-timeval64-tca
 pub fun uv-timeval64-tc-array-calloc(n: int): uv-timeval64-tca
   malloc-c(n.int32, ?size-of=uv-timeval64-t/size-of)
 
-pub inline extern uv-timeval64-t-ptrraw/tv-sec(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_timeval64_t*)#1)->tv_sec)"
-
-pub inline fun uv-timeval64-tp/tv-sec(s: uv-timeval64-tp): int
-  s.cextern/c-pointer/ptr.uv-timeval64-t-ptrraw/tv-sec.int
-
-pub inline fun uv-timeval64-tc/tv-sec(^s: uv-timeval64-tc): int
-  s.with-ptr(uv-timeval64-tp/tv-sec)
-
-pub inline fun uv-timeval64-tcb/tv-sec(^s: uv-timeval64-tcb<s::S>): int
-  s.with-ptr(uv-timeval64-tp/tv-sec)
-
-pub inline extern uv-timeval64-t-ptrraw/set-tv-sec(s: intptr_t, tv-sec: int64): ()
-  c inline "((struct uv_timeval64_t*)#1)->tv_sec = (int64_t)#2"
-
-pub inline fun uv-timeval64-tp/set-tv-sec(s: uv-timeval64-tp, tv-sec: int): ()
-  s.cextern/c-pointer/ptr.uv-timeval64-t-ptrraw/set-tv-sec(tv-sec.int64)
-
-pub inline fun uv-timeval64-tc/set-tv-sec(^s: uv-timeval64-tc, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval64-tp/set-tv-sec(tv-sec))
-
-pub inline fun uv-timeval64-tcb/set-tv-sec(^s: uv-timeval64-tcb<s::S>, tv-sec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval64-tp/set-tv-sec(tv-sec))
-
-pub inline extern uv-timeval64-t-ptrraw/tv-usec(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_timeval64_t*)#1)->tv_usec)"
-
-pub inline fun uv-timeval64-tp/tv-usec(s: uv-timeval64-tp): int
-  s.cextern/c-pointer/ptr.uv-timeval64-t-ptrraw/tv-usec.int
-
-pub inline fun uv-timeval64-tc/tv-usec(^s: uv-timeval64-tc): int
-  s.with-ptr(uv-timeval64-tp/tv-usec)
-
-pub inline fun uv-timeval64-tcb/tv-usec(^s: uv-timeval64-tcb<s::S>): int
-  s.with-ptr(uv-timeval64-tp/tv-usec)
-
-pub inline extern uv-timeval64-t-ptrraw/set-tv-usec(s: intptr_t, tv-usec: int32): ()
-  c inline "((struct uv_timeval64_t*)#1)->tv_usec = (int32_t)#2"
-
-pub inline fun uv-timeval64-tp/set-tv-usec(s: uv-timeval64-tp, tv-usec: int): ()
-  s.cextern/c-pointer/ptr.uv-timeval64-t-ptrraw/set-tv-usec(tv-usec.int32)
-
-pub inline fun uv-timeval64-tc/set-tv-usec(^s: uv-timeval64-tc, tv-usec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval64-tp/set-tv-usec(tv-usec))
-
-pub inline fun uv-timeval64-tcb/set-tv-usec(^s: uv-timeval64-tcb<s::S>, tv-usec: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-timeval64-tp/set-tv-usec(tv-usec))
-
 type uv-membership
   UV_LEAVE_GROUP
   UV_JOIN_GROUP
 
-pub fun uv-membership/int(i: uv-membership): int
+pub fun uv-membership/int(i: uv-membership): int32
   match i
-    UV_LEAVE_GROUP -> 0
-    UV_JOIN_GROUP -> 1
+    UV_LEAVE_GROUP -> 0.int32
+    UV_JOIN_GROUP -> 1.int32
 
-pub fun int/uv-membership(i: int): exn uv-membership
-  match i
+pub fun int/uv-membership(i: int32): exn uv-membership
+  match i.int
     0 -> UV_LEAVE_GROUP
     1 -> UV_JOIN_GROUP
 
 alias uv-req-t = uv-req-s-c
 alias uv-walk-cb = c-pointer<intptr_t>
 alias uv-walk-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, arg : c-pointer<()>) -> ())
-alias file = io-file-c
-pub struct io-file
-pub type io-file-c
-pub alias io-filep = c-pointer<io-file-c>
-pub alias io-filec = owned-c<io-file-c>
-pub alias io-filecb<s::S> = borrowed-c<s,io-file-c>
-pub alias io-fileca = owned-c<c-array<io-file-c>>
+alias file = sfile-c
+pub struct sfile
+pub type sfile-c
+pub alias sfilep = c-pointer<sfile-c>
+pub alias sfilec = owned-c<sfile-c>
+pub alias sfilecb<s::S> = borrowed-c<s,sfile-c>
+pub alias sfileca = owned-c<c-array<sfile-c>>
 
 alias uv-os-fd-t = int
 alias uv-os-sock-t = int
@@ -15088,12 +4494,12 @@ alias koka-uv-tcp-t = uv-tcp-s
 type uv-tcp-flags
   UV_TCP_IPV6ONLY
 
-pub fun uv-tcp-flags/int(i: uv-tcp-flags): int
+pub fun uv-tcp-flags/int(i: uv-tcp-flags): int32
   match i
-    UV_TCP_IPV6ONLY -> 1
+    UV_TCP_IPV6ONLY -> 1.int32
 
-pub fun int/uv-tcp-flags(i: int): exn uv-tcp-flags
-  match i
+pub fun int/uv-tcp-flags(i: int32): exn uv-tcp-flags
+  match i.int
     1 -> UV_TCP_IPV6ONLY
 
 type uv-udp-flags
@@ -15105,18 +4511,18 @@ type uv-udp-flags
   UV_UDP_LINUX_RECVERR
   UV_UDP_RECVMMSG
 
-pub fun uv-udp-flags/int(i: uv-udp-flags): int
+pub fun uv-udp-flags/int(i: uv-udp-flags): int32
   match i
-    UV_UDP_IPV6ONLY -> 1
-    UV_UDP_PARTIAL -> 2
-    UV_UDP_REUSEADDR -> 4
-    UV_UDP_MMSG_CHUNK -> 8
-    UV_UDP_MMSG_FREE -> 16
-    UV_UDP_LINUX_RECVERR -> 32
-    UV_UDP_RECVMMSG -> 256
+    UV_UDP_IPV6ONLY -> 1.int32
+    UV_UDP_PARTIAL -> 2.int32
+    UV_UDP_REUSEADDR -> 4.int32
+    UV_UDP_MMSG_CHUNK -> 8.int32
+    UV_UDP_MMSG_FREE -> 16.int32
+    UV_UDP_LINUX_RECVERR -> 32.int32
+    UV_UDP_RECVMMSG -> 256.int32
 
-pub fun int/uv-udp-flags(i: int): exn uv-udp-flags
-  match i
+pub fun int/uv-udp-flags(i: int32): exn uv-udp-flags
+  match i.int
     1 -> UV_UDP_IPV6ONLY
     2 -> UV_UDP_PARTIAL
     4 -> UV_UDP_REUSEADDR
@@ -15130,14 +4536,14 @@ type uv-tty-mode-t
   UV_TTY_MODE_RAW
   UV_TTY_MODE_IO
 
-pub fun uv-tty-mode-t/int(i: uv-tty-mode-t): int
+pub fun uv-tty-mode-t/int(i: uv-tty-mode-t): int32
   match i
-    UV_TTY_MODE_NORMAL -> 0
-    UV_TTY_MODE_RAW -> 1
-    UV_TTY_MODE_IO -> 2
+    UV_TTY_MODE_NORMAL -> 0.int32
+    UV_TTY_MODE_RAW -> 1.int32
+    UV_TTY_MODE_IO -> 2.int32
 
-pub fun int/uv-tty-mode-t(i: int): exn uv-tty-mode-t
-  match i
+pub fun int/uv-tty-mode-t(i: int32): exn uv-tty-mode-t
+  match i.int
     0 -> UV_TTY_MODE_NORMAL
     1 -> UV_TTY_MODE_RAW
     2 -> UV_TTY_MODE_IO
@@ -15146,13 +4552,13 @@ type uv-tty-vtermstate-t
   UV_TTY_SUPPORTED
   UV_TTY_UNSUPPORTED
 
-pub fun uv-tty-vtermstate-t/int(i: uv-tty-vtermstate-t): int
+pub fun uv-tty-vtermstate-t/int(i: uv-tty-vtermstate-t): int32
   match i
-    UV_TTY_SUPPORTED -> 0
-    UV_TTY_UNSUPPORTED -> 1
+    UV_TTY_SUPPORTED -> 0.int32
+    UV_TTY_UNSUPPORTED -> 1.int32
 
-pub fun int/uv-tty-vtermstate-t(i: int): exn uv-tty-vtermstate-t
-  match i
+pub fun int/uv-tty-vtermstate-t(i: int32): exn uv-tty-vtermstate-t
+  match i.int
     0 -> UV_TTY_SUPPORTED
     1 -> UV_TTY_UNSUPPORTED
 
@@ -15166,15 +4572,15 @@ type uv-poll-event
   UV_DISCONNECT
   UV_PRIORITIZED
 
-pub fun uv-poll-event/int(i: uv-poll-event): int
+pub fun uv-poll-event/int(i: uv-poll-event): int32
   match i
-    UV_READABLE -> 1
-    UV_WRITABLE -> 2
-    UV_DISCONNECT -> 4
-    UV_PRIORITIZED -> 8
+    UV_READABLE -> 1.int32
+    UV_WRITABLE -> 2.int32
+    UV_DISCONNECT -> 4.int32
+    UV_PRIORITIZED -> 8.int32
 
-pub fun int/uv-poll-event(i: int): exn uv-poll-event
-  match i
+pub fun int/uv-poll-event(i: int32): exn uv-poll-event
+  match i.int
     1 -> UV_READABLE
     2 -> UV_WRITABLE
     4 -> UV_DISCONNECT
@@ -15190,19 +4596,19 @@ type uv-stdio-flags
   UV_NONBLOCK_PIPE
   UV_OVERLAPPED_PIPE
 
-pub fun uv-stdio-flags/int(i: uv-stdio-flags): int
+pub fun uv-stdio-flags/int(i: uv-stdio-flags): int32
   match i
-    UV_IGNORE -> 0
-    UV_CREATE_PIPE -> 1
-    UV_INHERIT_FD -> 2
-    UV_INHERIT_STREAM -> 4
-    UV_READABLE_PIPE -> 16
-    UV_WRITABLE_PIPE -> 32
-    UV_NONBLOCK_PIPE -> 64
-    UV_OVERLAPPED_PIPE -> 64
+    UV_IGNORE -> 0.int32
+    UV_CREATE_PIPE -> 1.int32
+    UV_INHERIT_FD -> 2.int32
+    UV_INHERIT_STREAM -> 4.int32
+    UV_READABLE_PIPE -> 16.int32
+    UV_WRITABLE_PIPE -> 32.int32
+    UV_NONBLOCK_PIPE -> 64.int32
+    UV_OVERLAPPED_PIPE -> 64.int32
 
-pub fun int/uv-stdio-flags(i: int): exn uv-stdio-flags
-  match i
+pub fun int/uv-stdio-flags(i: int32): exn uv-stdio-flags
+  match i.int
     0 -> UV_IGNORE
     1 -> UV_CREATE_PIPE
     2 -> UV_INHERIT_FD
@@ -15214,7 +4620,7 @@ pub fun int/uv-stdio-flags(i: int): exn uv-stdio-flags
 
 pub value struct uv-stdio-container-s
   flags: int
-  data: unnamed-Union22-c
+  data: unnamed-union22-c
 
 pub type uv-stdio-container-s-c
 pub alias uv-stdio-container-sp = c-pointer<uv-stdio-container-s-c>
@@ -15237,99 +4643,12 @@ pub fun uv-stdio-container-sc-array(n: int): uv-stdio-container-sca
 pub fun uv-stdio-container-sc-array-calloc(n: int): uv-stdio-container-sca
   malloc-c(n.int32, ?size-of=uv-stdio-container-s/size-of)
 
-pub inline extern uv-stdio-container-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(int32_t)(((struct uv_stdio_container_s*)#1)->flags)"
-
-pub inline fun uv-stdio-container-sp/flags(s: uv-stdio-container-sp): int
-  s.cextern/c-pointer/ptr.uv-stdio-container-s-ptrraw/flags.int
-
-pub inline fun uv-stdio-container-sc/flags(^s: uv-stdio-container-sc): int
-  s.with-ptr(uv-stdio-container-sp/flags)
-
-pub inline fun uv-stdio-container-scb/flags(^s: uv-stdio-container-scb<s::S>): int
-  s.with-ptr(uv-stdio-container-sp/flags)
-
-pub inline extern uv-stdio-container-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_stdio_container_s*)#1)->flags = (int32_t)#2"
-
-pub inline fun uv-stdio-container-sp/set-flags(s: uv-stdio-container-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-stdio-container-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-stdio-container-sc/set-flags(^s: uv-stdio-container-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stdio-container-sp/set-flags(flags))
-
-pub inline fun uv-stdio-container-scb/set-flags(^s: uv-stdio-container-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-stdio-container-sp/set-flags(flags))
-
-pub struct unnamed-Union22
-pub type unnamed-Union22-c
-pub alias unnamed-Union22p = c-pointer<unnamed-Union22-c>
-pub alias unnamed-Union22c = owned-c<unnamed-Union22-c>
-pub alias unnamed-Union22cb<s::S> = borrowed-c<s,unnamed-Union22-c>
-pub alias unnamed-Union22ca = owned-c<c-array<unnamed-Union22-c>>
-
-pub extern unnamed-Union22/size-of(c: c-null<unnamed-Union22-c>): int32
-  c inline "sizeof(union unnamed-Union22)"
-
-pub fun unnamed-Union22c(): unnamed-Union22c
-  malloc(?size-of=unnamed-Union22/size-of)
-
-pub fun unnamed-Union22c-calloc(): unnamed-Union22c
-  malloc-c(?size-of=unnamed-Union22/size-of)
-
-pub fun unnamed-Union22c-array(n: int): unnamed-Union22ca
-  malloc(n.int32, ?size-of=unnamed-Union22/size-of)
-
-pub fun unnamed-Union22c-array-calloc(n: int): unnamed-Union22ca
-  malloc-c(n.int32, ?size-of=unnamed-Union22/size-of)
-
-pub inline extern unnamed-Union22-ptrraw/stream(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union unnamed-Union22*)#1)->stream)"
-
-pub inline fun unnamed-Union22p/stream(s: unnamed-Union22p): c-pointer<uv-stream-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.unnamed-Union22-ptrraw/stream)
-
-pub inline fun unnamed-Union22c/stream(^s: unnamed-Union22c): c-pointer<uv-stream-s-c>
-  s.with-ptr(unnamed-Union22p/stream)
-
-pub inline fun unnamed-Union22cb/stream(^s: unnamed-Union22cb<s::S>): c-pointer<uv-stream-s-c>
-  s.with-ptr(unnamed-Union22p/stream)
-
-pub inline extern unnamed-Union22-ptrraw/set-stream(s: intptr_t, stream: intptr_t): ()
-  c inline "((union unnamed-Union22*)#1)->stream = (struct uv_stream_s*)#2"
-
-pub inline fun unnamed-Union22p/set-stream(s: unnamed-Union22p, stream: c-pointer<uv-stream-s-c>): ()
-  s.cextern/c-pointer/ptr.unnamed-Union22-ptrraw/set-stream(stream.cextern/c-pointer/ptr)
-
-pub inline fun unnamed-Union22c/set-stream(^s: unnamed-Union22c, stream: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union22p/set-stream(stream))
-
-pub inline fun unnamed-Union22cb/set-stream(^s: unnamed-Union22cb<s::S>, stream: c-pointer<uv-stream-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union22p/set-stream(stream))
-
-pub inline extern unnamed-Union22-ptrraw/fd(s: intptr_t): int32
-  c inline "(int)(((union unnamed-Union22*)#1)->fd)"
-
-pub inline fun unnamed-Union22p/fd(s: unnamed-Union22p): int
-  s.cextern/c-pointer/ptr.unnamed-Union22-ptrraw/fd.int
-
-pub inline fun unnamed-Union22c/fd(^s: unnamed-Union22c): int
-  s.with-ptr(unnamed-Union22p/fd)
-
-pub inline fun unnamed-Union22cb/fd(^s: unnamed-Union22cb<s::S>): int
-  s.with-ptr(unnamed-Union22p/fd)
-
-pub inline extern unnamed-Union22-ptrraw/set-fd(s: intptr_t, fd: int32): ()
-  c inline "((union unnamed-Union22*)#1)->fd = (int)#2"
-
-pub inline fun unnamed-Union22p/set-fd(s: unnamed-Union22p, fd: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Union22-ptrraw/set-fd(fd.int32)
-
-pub inline fun unnamed-Union22c/set-fd(^s: unnamed-Union22c, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union22p/set-fd(fd))
-
-pub inline fun unnamed-Union22cb/set-fd(^s: unnamed-Union22cb<s::S>, fd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Union22p/set-fd(fd))
+pub struct unnamed-union22
+pub type unnamed-union22-c
+pub alias unnamed-union22p = c-pointer<unnamed-union22-c>
+pub alias unnamed-union22c = owned-c<unnamed-union22-c>
+pub alias unnamed-union22cb<s::S> = borrowed-c<s,unnamed-union22-c>
+pub alias unnamed-union22ca = owned-c<c-array<unnamed-union22-c>>
 
 pub struct uv-process-options-s
   exit-cb: c-pointer<intptr_t>
@@ -15364,246 +4683,6 @@ pub fun uv-process-options-sc-array(n: int): uv-process-options-sca
 pub fun uv-process-options-sc-array-calloc(n: int): uv-process-options-sca
   malloc-c(n.int32, ?size-of=uv-process-options-s/size-of)
 
-pub inline extern uv-process-options-s-ptrraw/exit-cb(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_options_s*)#1)->exit_cb)"
-
-pub inline fun uv-process-options-sp/exit-cb(s: uv-process-options-sp): c-pointer<intptr_t>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/exit-cb)
-
-pub inline fun uv-process-options-sc/exit-cb(^s: uv-process-options-sc): c-pointer<intptr_t>
-  s.with-ptr(uv-process-options-sp/exit-cb)
-
-pub inline fun uv-process-options-scb/exit-cb(^s: uv-process-options-scb<s::S>): c-pointer<intptr_t>
-  s.with-ptr(uv-process-options-sp/exit-cb)
-
-pub inline extern uv-process-options-s-ptrraw/set-exit-cb(s: intptr_t, exit-cb: intptr_t): ()
-  c inline "((struct uv_process_options_s*)#1)->exit_cb = (void (*)(struct uv_process_s*, int64_t, int))#2"
-
-pub inline fun uv-process-options-sp/set-exit-cb(s: uv-process-options-sp, exit-cb: c-pointer<intptr_t>): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-exit-cb(exit-cb.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-options-sc/set-exit-cb(^s: uv-process-options-sc, exit-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-exit-cb(exit-cb))
-
-pub inline fun uv-process-options-scb/set-exit-cb(^s: uv-process-options-scb<s::S>, exit-cb: c-pointer<intptr_t>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-exit-cb(exit-cb))
-
-pub inline extern uv-process-options-s-ptrraw/file(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_options_s*)#1)->file)"
-
-pub inline fun uv-process-options-sp/file(s: uv-process-options-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/file)
-
-pub inline fun uv-process-options-sc/file(^s: uv-process-options-sc): c-pointer<int>
-  s.with-ptr(uv-process-options-sp/file)
-
-pub inline fun uv-process-options-scb/file(^s: uv-process-options-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-process-options-sp/file)
-
-pub inline extern uv-process-options-s-ptrraw/set-file(s: intptr_t, file: intptr_t): ()
-  c inline "((struct uv_process_options_s*)#1)->file = (char*)#2"
-
-pub inline fun uv-process-options-sp/set-file(s: uv-process-options-sp, file: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-file(file.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-options-sc/set-file(^s: uv-process-options-sc, file: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-file(file))
-
-pub inline fun uv-process-options-scb/set-file(^s: uv-process-options-scb<s::S>, file: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-file(file))
-
-pub inline extern uv-process-options-s-ptrraw/args(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_options_s*)#1)->args)"
-
-pub inline fun uv-process-options-sp/args(s: uv-process-options-sp): c-pointer<c-pointer<int>>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/args)
-
-pub inline fun uv-process-options-sc/args(^s: uv-process-options-sc): c-pointer<c-pointer<int>>
-  s.with-ptr(uv-process-options-sp/args)
-
-pub inline fun uv-process-options-scb/args(^s: uv-process-options-scb<s::S>): c-pointer<c-pointer<int>>
-  s.with-ptr(uv-process-options-sp/args)
-
-pub inline extern uv-process-options-s-ptrraw/set-args(s: intptr_t, args: intptr_t): ()
-  c inline "((struct uv_process_options_s*)#1)->args = (char**)#2"
-
-pub inline fun uv-process-options-sp/set-args(s: uv-process-options-sp, args: c-pointer<c-pointer<int>>): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-args(args.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-options-sc/set-args(^s: uv-process-options-sc, args: c-pointer<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-args(args))
-
-pub inline fun uv-process-options-scb/set-args(^s: uv-process-options-scb<s::S>, args: c-pointer<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-args(args))
-
-pub inline extern uv-process-options-s-ptrraw/env(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_options_s*)#1)->env)"
-
-pub inline fun uv-process-options-sp/env(s: uv-process-options-sp): c-pointer<c-pointer<int>>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/env)
-
-pub inline fun uv-process-options-sc/env(^s: uv-process-options-sc): c-pointer<c-pointer<int>>
-  s.with-ptr(uv-process-options-sp/env)
-
-pub inline fun uv-process-options-scb/env(^s: uv-process-options-scb<s::S>): c-pointer<c-pointer<int>>
-  s.with-ptr(uv-process-options-sp/env)
-
-pub inline extern uv-process-options-s-ptrraw/set-env(s: intptr_t, env: intptr_t): ()
-  c inline "((struct uv_process_options_s*)#1)->env = (char**)#2"
-
-pub inline fun uv-process-options-sp/set-env(s: uv-process-options-sp, env: c-pointer<c-pointer<int>>): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-env(env.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-options-sc/set-env(^s: uv-process-options-sc, env: c-pointer<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-env(env))
-
-pub inline fun uv-process-options-scb/set-env(^s: uv-process-options-scb<s::S>, env: c-pointer<c-pointer<int>>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-env(env))
-
-pub inline extern uv-process-options-s-ptrraw/cwd(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_options_s*)#1)->cwd)"
-
-pub inline fun uv-process-options-sp/cwd(s: uv-process-options-sp): c-pointer<int>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/cwd)
-
-pub inline fun uv-process-options-sc/cwd(^s: uv-process-options-sc): c-pointer<int>
-  s.with-ptr(uv-process-options-sp/cwd)
-
-pub inline fun uv-process-options-scb/cwd(^s: uv-process-options-scb<s::S>): c-pointer<int>
-  s.with-ptr(uv-process-options-sp/cwd)
-
-pub inline extern uv-process-options-s-ptrraw/set-cwd(s: intptr_t, cwd: intptr_t): ()
-  c inline "((struct uv_process_options_s*)#1)->cwd = (char*)#2"
-
-pub inline fun uv-process-options-sp/set-cwd(s: uv-process-options-sp, cwd: c-pointer<int>): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-cwd(cwd.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-options-sc/set-cwd(^s: uv-process-options-sc, cwd: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-cwd(cwd))
-
-pub inline fun uv-process-options-scb/set-cwd(^s: uv-process-options-scb<s::S>, cwd: c-pointer<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-cwd(cwd))
-
-pub inline extern uv-process-options-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_process_options_s*)#1)->flags)"
-
-pub inline fun uv-process-options-sp/flags(s: uv-process-options-sp): int
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/flags.int
-
-pub inline fun uv-process-options-sc/flags(^s: uv-process-options-sc): int
-  s.with-ptr(uv-process-options-sp/flags)
-
-pub inline fun uv-process-options-scb/flags(^s: uv-process-options-scb<s::S>): int
-  s.with-ptr(uv-process-options-sp/flags)
-
-pub inline extern uv-process-options-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_process_options_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-process-options-sp/set-flags(s: uv-process-options-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-process-options-sc/set-flags(^s: uv-process-options-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-flags(flags))
-
-pub inline fun uv-process-options-scb/set-flags(^s: uv-process-options-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-flags(flags))
-
-pub inline extern uv-process-options-s-ptrraw/stdio-count(s: intptr_t): int32
-  c inline "(int)(((struct uv_process_options_s*)#1)->stdio_count)"
-
-pub inline fun uv-process-options-sp/stdio-count(s: uv-process-options-sp): int
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/stdio-count.int
-
-pub inline fun uv-process-options-sc/stdio-count(^s: uv-process-options-sc): int
-  s.with-ptr(uv-process-options-sp/stdio-count)
-
-pub inline fun uv-process-options-scb/stdio-count(^s: uv-process-options-scb<s::S>): int
-  s.with-ptr(uv-process-options-sp/stdio-count)
-
-pub inline extern uv-process-options-s-ptrraw/set-stdio-count(s: intptr_t, stdio-count: int32): ()
-  c inline "((struct uv_process_options_s*)#1)->stdio_count = (int)#2"
-
-pub inline fun uv-process-options-sp/set-stdio-count(s: uv-process-options-sp, stdio-count: int): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-stdio-count(stdio-count.int32)
-
-pub inline fun uv-process-options-sc/set-stdio-count(^s: uv-process-options-sc, stdio-count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-stdio-count(stdio-count))
-
-pub inline fun uv-process-options-scb/set-stdio-count(^s: uv-process-options-scb<s::S>, stdio-count: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-stdio-count(stdio-count))
-
-pub inline extern uv-process-options-s-ptrraw/stdio(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct uv_process_options_s*)#1)->stdio)"
-
-pub inline fun uv-process-options-sp/stdio(s: uv-process-options-sp): c-pointer<uv-stdio-container-s-c>
-  C-pointer(s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/stdio)
-
-pub inline fun uv-process-options-sc/stdio(^s: uv-process-options-sc): c-pointer<uv-stdio-container-s-c>
-  s.with-ptr(uv-process-options-sp/stdio)
-
-pub inline fun uv-process-options-scb/stdio(^s: uv-process-options-scb<s::S>): c-pointer<uv-stdio-container-s-c>
-  s.with-ptr(uv-process-options-sp/stdio)
-
-pub inline extern uv-process-options-s-ptrraw/set-stdio(s: intptr_t, stdio: intptr_t): ()
-  c inline "((struct uv_process_options_s*)#1)->stdio = (struct uv_stdio_container_s*)#2"
-
-pub inline fun uv-process-options-sp/set-stdio(s: uv-process-options-sp, stdio: c-pointer<uv-stdio-container-s-c>): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-stdio(stdio.cextern/c-pointer/ptr)
-
-pub inline fun uv-process-options-sc/set-stdio(^s: uv-process-options-sc, stdio: c-pointer<uv-stdio-container-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-stdio(stdio))
-
-pub inline fun uv-process-options-scb/set-stdio(^s: uv-process-options-scb<s::S>, stdio: c-pointer<uv-stdio-container-s-c>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-stdio(stdio))
-
-pub inline extern uv-process-options-s-ptrraw/uid(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_process_options_s*)#1)->uid)"
-
-pub inline fun uv-process-options-sp/uid(s: uv-process-options-sp): int
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/uid.int
-
-pub inline fun uv-process-options-sc/uid(^s: uv-process-options-sc): int
-  s.with-ptr(uv-process-options-sp/uid)
-
-pub inline fun uv-process-options-scb/uid(^s: uv-process-options-scb<s::S>): int
-  s.with-ptr(uv-process-options-sp/uid)
-
-pub inline extern uv-process-options-s-ptrraw/set-uid(s: intptr_t, uid: int32): ()
-  c inline "((struct uv_process_options_s*)#1)->uid = (unsigned int)#2"
-
-pub inline fun uv-process-options-sp/set-uid(s: uv-process-options-sp, uid: int): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-uid(uid.int32)
-
-pub inline fun uv-process-options-sc/set-uid(^s: uv-process-options-sc, uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-uid(uid))
-
-pub inline fun uv-process-options-scb/set-uid(^s: uv-process-options-scb<s::S>, uid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-uid(uid))
-
-pub inline extern uv-process-options-s-ptrraw/gid(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_process_options_s*)#1)->gid)"
-
-pub inline fun uv-process-options-sp/gid(s: uv-process-options-sp): int
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/gid.int
-
-pub inline fun uv-process-options-sc/gid(^s: uv-process-options-sc): int
-  s.with-ptr(uv-process-options-sp/gid)
-
-pub inline fun uv-process-options-scb/gid(^s: uv-process-options-scb<s::S>): int
-  s.with-ptr(uv-process-options-sp/gid)
-
-pub inline extern uv-process-options-s-ptrraw/set-gid(s: intptr_t, gid: int32): ()
-  c inline "((struct uv_process_options_s*)#1)->gid = (unsigned int)#2"
-
-pub inline fun uv-process-options-sp/set-gid(s: uv-process-options-sp, gid: int): ()
-  s.cextern/c-pointer/ptr.uv-process-options-s-ptrraw/set-gid(gid.int32)
-
-pub inline fun uv-process-options-sc/set-gid(^s: uv-process-options-sc, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-gid(gid))
-
-pub inline fun uv-process-options-scb/set-gid(^s: uv-process-options-scb<s::S>, gid: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-process-options-sp/set-gid(gid))
-
 alias uv-stdio-container-t = uv-stdio-container-s-c
 alias koka-uv-stdio-container-t = uv-stdio-container-s
 type uv-process-flags
@@ -15616,19 +4695,19 @@ type uv-process-flags
   UV_PROCESS_WINDOWS_HIDE_GUI
   UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME
 
-pub fun uv-process-flags/int(i: uv-process-flags): int
+pub fun uv-process-flags/int(i: uv-process-flags): int32
   match i
-    UV_PROCESS_SETUID -> 1
-    UV_PROCESS_SETGID -> 2
-    UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS -> 4
-    UV_PROCESS_DETACHED -> 8
-    UV_PROCESS_WINDOWS_HIDE -> 16
-    UV_PROCESS_WINDOWS_HIDE_CONSOLE -> 32
-    UV_PROCESS_WINDOWS_HIDE_GUI -> 64
-    UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME -> 128
+    UV_PROCESS_SETUID -> 1.int32
+    UV_PROCESS_SETGID -> 2.int32
+    UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS -> 4.int32
+    UV_PROCESS_DETACHED -> 8.int32
+    UV_PROCESS_WINDOWS_HIDE -> 16.int32
+    UV_PROCESS_WINDOWS_HIDE_CONSOLE -> 32.int32
+    UV_PROCESS_WINDOWS_HIDE_GUI -> 64.int32
+    UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME -> 128.int32
 
-pub fun int/uv-process-flags(i: int): exn uv-process-flags
-  match i
+pub fun int/uv-process-flags(i: int32): exn uv-process-flags
+  match i.int
     1 -> UV_PROCESS_SETUID
     2 -> UV_PROCESS_SETGID
     4 -> UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS
@@ -15642,7 +4721,8 @@ alias uv-process-options-t = uv-process-options-s-c
 alias koka-uv-process-options-t = uv-process-options-s
 alias uv-pid-t = int
 alias pid-t = int
-alias pid-t1 = int
+alias darwin-pid-t = int
+alias int32-t = int
 pub struct uv-rusage-t
   ru-utime: uv-timeval-t-c
   ru-stime: uv-timeval-t-c
@@ -15668,7 +4748,7 @@ pub alias uv-rusage-tcb<s::S> = borrowed-c<s,uv-rusage-t-c>
 pub alias uv-rusage-tca = owned-c<c-array<uv-rusage-t-c>>
 
 pub extern uv-rusage-t/size-of(c: c-null<uv-rusage-t-c>): int32
-  c inline "sizeof(struct uv_rusage_t)"
+  c inline "sizeof(uv_rusage_t)"
 
 pub fun uv-rusage-tc(): uv-rusage-tc
   malloc(?size-of=uv-rusage-t/size-of)
@@ -15682,348 +4762,10 @@ pub fun uv-rusage-tc-array(n: int): uv-rusage-tca
 pub fun uv-rusage-tc-array-calloc(n: int): uv-rusage-tca
   malloc-c(n.int32, ?size-of=uv-rusage-t/size-of)
 
-pub inline extern uv-rusage-t-ptrraw/ru-maxrss(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_maxrss)"
-
-pub inline fun uv-rusage-tp/ru-maxrss(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-maxrss.int
-
-pub inline fun uv-rusage-tc/ru-maxrss(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-maxrss)
-
-pub inline fun uv-rusage-tcb/ru-maxrss(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-maxrss)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-maxrss(s: intptr_t, ru-maxrss: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_maxrss = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-maxrss(s: uv-rusage-tp, ru-maxrss: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-maxrss(ru-maxrss.int64)
-
-pub inline fun uv-rusage-tc/set-ru-maxrss(^s: uv-rusage-tc, ru-maxrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-maxrss(ru-maxrss))
-
-pub inline fun uv-rusage-tcb/set-ru-maxrss(^s: uv-rusage-tcb<s::S>, ru-maxrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-maxrss(ru-maxrss))
-
-pub inline extern uv-rusage-t-ptrraw/ru-ixrss(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_ixrss)"
-
-pub inline fun uv-rusage-tp/ru-ixrss(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-ixrss.int
-
-pub inline fun uv-rusage-tc/ru-ixrss(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-ixrss)
-
-pub inline fun uv-rusage-tcb/ru-ixrss(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-ixrss)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-ixrss(s: intptr_t, ru-ixrss: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_ixrss = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-ixrss(s: uv-rusage-tp, ru-ixrss: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-ixrss(ru-ixrss.int64)
-
-pub inline fun uv-rusage-tc/set-ru-ixrss(^s: uv-rusage-tc, ru-ixrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-ixrss(ru-ixrss))
-
-pub inline fun uv-rusage-tcb/set-ru-ixrss(^s: uv-rusage-tcb<s::S>, ru-ixrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-ixrss(ru-ixrss))
-
-pub inline extern uv-rusage-t-ptrraw/ru-idrss(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_idrss)"
-
-pub inline fun uv-rusage-tp/ru-idrss(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-idrss.int
-
-pub inline fun uv-rusage-tc/ru-idrss(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-idrss)
-
-pub inline fun uv-rusage-tcb/ru-idrss(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-idrss)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-idrss(s: intptr_t, ru-idrss: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_idrss = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-idrss(s: uv-rusage-tp, ru-idrss: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-idrss(ru-idrss.int64)
-
-pub inline fun uv-rusage-tc/set-ru-idrss(^s: uv-rusage-tc, ru-idrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-idrss(ru-idrss))
-
-pub inline fun uv-rusage-tcb/set-ru-idrss(^s: uv-rusage-tcb<s::S>, ru-idrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-idrss(ru-idrss))
-
-pub inline extern uv-rusage-t-ptrraw/ru-isrss(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_isrss)"
-
-pub inline fun uv-rusage-tp/ru-isrss(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-isrss.int
-
-pub inline fun uv-rusage-tc/ru-isrss(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-isrss)
-
-pub inline fun uv-rusage-tcb/ru-isrss(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-isrss)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-isrss(s: intptr_t, ru-isrss: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_isrss = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-isrss(s: uv-rusage-tp, ru-isrss: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-isrss(ru-isrss.int64)
-
-pub inline fun uv-rusage-tc/set-ru-isrss(^s: uv-rusage-tc, ru-isrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-isrss(ru-isrss))
-
-pub inline fun uv-rusage-tcb/set-ru-isrss(^s: uv-rusage-tcb<s::S>, ru-isrss: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-isrss(ru-isrss))
-
-pub inline extern uv-rusage-t-ptrraw/ru-minflt(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_minflt)"
-
-pub inline fun uv-rusage-tp/ru-minflt(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-minflt.int
-
-pub inline fun uv-rusage-tc/ru-minflt(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-minflt)
-
-pub inline fun uv-rusage-tcb/ru-minflt(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-minflt)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-minflt(s: intptr_t, ru-minflt: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_minflt = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-minflt(s: uv-rusage-tp, ru-minflt: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-minflt(ru-minflt.int64)
-
-pub inline fun uv-rusage-tc/set-ru-minflt(^s: uv-rusage-tc, ru-minflt: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-minflt(ru-minflt))
-
-pub inline fun uv-rusage-tcb/set-ru-minflt(^s: uv-rusage-tcb<s::S>, ru-minflt: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-minflt(ru-minflt))
-
-pub inline extern uv-rusage-t-ptrraw/ru-majflt(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_majflt)"
-
-pub inline fun uv-rusage-tp/ru-majflt(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-majflt.int
-
-pub inline fun uv-rusage-tc/ru-majflt(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-majflt)
-
-pub inline fun uv-rusage-tcb/ru-majflt(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-majflt)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-majflt(s: intptr_t, ru-majflt: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_majflt = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-majflt(s: uv-rusage-tp, ru-majflt: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-majflt(ru-majflt.int64)
-
-pub inline fun uv-rusage-tc/set-ru-majflt(^s: uv-rusage-tc, ru-majflt: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-majflt(ru-majflt))
-
-pub inline fun uv-rusage-tcb/set-ru-majflt(^s: uv-rusage-tcb<s::S>, ru-majflt: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-majflt(ru-majflt))
-
-pub inline extern uv-rusage-t-ptrraw/ru-nswap(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_nswap)"
-
-pub inline fun uv-rusage-tp/ru-nswap(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-nswap.int
-
-pub inline fun uv-rusage-tc/ru-nswap(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-nswap)
-
-pub inline fun uv-rusage-tcb/ru-nswap(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-nswap)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-nswap(s: intptr_t, ru-nswap: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_nswap = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-nswap(s: uv-rusage-tp, ru-nswap: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-nswap(ru-nswap.int64)
-
-pub inline fun uv-rusage-tc/set-ru-nswap(^s: uv-rusage-tc, ru-nswap: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nswap(ru-nswap))
-
-pub inline fun uv-rusage-tcb/set-ru-nswap(^s: uv-rusage-tcb<s::S>, ru-nswap: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nswap(ru-nswap))
-
-pub inline extern uv-rusage-t-ptrraw/ru-inblock(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_inblock)"
-
-pub inline fun uv-rusage-tp/ru-inblock(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-inblock.int
-
-pub inline fun uv-rusage-tc/ru-inblock(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-inblock)
-
-pub inline fun uv-rusage-tcb/ru-inblock(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-inblock)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-inblock(s: intptr_t, ru-inblock: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_inblock = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-inblock(s: uv-rusage-tp, ru-inblock: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-inblock(ru-inblock.int64)
-
-pub inline fun uv-rusage-tc/set-ru-inblock(^s: uv-rusage-tc, ru-inblock: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-inblock(ru-inblock))
-
-pub inline fun uv-rusage-tcb/set-ru-inblock(^s: uv-rusage-tcb<s::S>, ru-inblock: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-inblock(ru-inblock))
-
-pub inline extern uv-rusage-t-ptrraw/ru-oublock(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_oublock)"
-
-pub inline fun uv-rusage-tp/ru-oublock(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-oublock.int
-
-pub inline fun uv-rusage-tc/ru-oublock(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-oublock)
-
-pub inline fun uv-rusage-tcb/ru-oublock(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-oublock)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-oublock(s: intptr_t, ru-oublock: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_oublock = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-oublock(s: uv-rusage-tp, ru-oublock: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-oublock(ru-oublock.int64)
-
-pub inline fun uv-rusage-tc/set-ru-oublock(^s: uv-rusage-tc, ru-oublock: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-oublock(ru-oublock))
-
-pub inline fun uv-rusage-tcb/set-ru-oublock(^s: uv-rusage-tcb<s::S>, ru-oublock: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-oublock(ru-oublock))
-
-pub inline extern uv-rusage-t-ptrraw/ru-msgsnd(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_msgsnd)"
-
-pub inline fun uv-rusage-tp/ru-msgsnd(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-msgsnd.int
-
-pub inline fun uv-rusage-tc/ru-msgsnd(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-msgsnd)
-
-pub inline fun uv-rusage-tcb/ru-msgsnd(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-msgsnd)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-msgsnd(s: intptr_t, ru-msgsnd: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_msgsnd = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-msgsnd(s: uv-rusage-tp, ru-msgsnd: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-msgsnd(ru-msgsnd.int64)
-
-pub inline fun uv-rusage-tc/set-ru-msgsnd(^s: uv-rusage-tc, ru-msgsnd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-msgsnd(ru-msgsnd))
-
-pub inline fun uv-rusage-tcb/set-ru-msgsnd(^s: uv-rusage-tcb<s::S>, ru-msgsnd: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-msgsnd(ru-msgsnd))
-
-pub inline extern uv-rusage-t-ptrraw/ru-msgrcv(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_msgrcv)"
-
-pub inline fun uv-rusage-tp/ru-msgrcv(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-msgrcv.int
-
-pub inline fun uv-rusage-tc/ru-msgrcv(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-msgrcv)
-
-pub inline fun uv-rusage-tcb/ru-msgrcv(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-msgrcv)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-msgrcv(s: intptr_t, ru-msgrcv: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_msgrcv = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-msgrcv(s: uv-rusage-tp, ru-msgrcv: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-msgrcv(ru-msgrcv.int64)
-
-pub inline fun uv-rusage-tc/set-ru-msgrcv(^s: uv-rusage-tc, ru-msgrcv: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-msgrcv(ru-msgrcv))
-
-pub inline fun uv-rusage-tcb/set-ru-msgrcv(^s: uv-rusage-tcb<s::S>, ru-msgrcv: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-msgrcv(ru-msgrcv))
-
-pub inline extern uv-rusage-t-ptrraw/ru-nsignals(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_nsignals)"
-
-pub inline fun uv-rusage-tp/ru-nsignals(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-nsignals.int
-
-pub inline fun uv-rusage-tc/ru-nsignals(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-nsignals)
-
-pub inline fun uv-rusage-tcb/ru-nsignals(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-nsignals)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-nsignals(s: intptr_t, ru-nsignals: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_nsignals = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-nsignals(s: uv-rusage-tp, ru-nsignals: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-nsignals(ru-nsignals.int64)
-
-pub inline fun uv-rusage-tc/set-ru-nsignals(^s: uv-rusage-tc, ru-nsignals: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nsignals(ru-nsignals))
-
-pub inline fun uv-rusage-tcb/set-ru-nsignals(^s: uv-rusage-tcb<s::S>, ru-nsignals: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nsignals(ru-nsignals))
-
-pub inline extern uv-rusage-t-ptrraw/ru-nvcsw(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_nvcsw)"
-
-pub inline fun uv-rusage-tp/ru-nvcsw(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-nvcsw.int
-
-pub inline fun uv-rusage-tc/ru-nvcsw(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-nvcsw)
-
-pub inline fun uv-rusage-tcb/ru-nvcsw(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-nvcsw)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-nvcsw(s: intptr_t, ru-nvcsw: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_nvcsw = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-nvcsw(s: uv-rusage-tp, ru-nvcsw: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-nvcsw(ru-nvcsw.int64)
-
-pub inline fun uv-rusage-tc/set-ru-nvcsw(^s: uv-rusage-tc, ru-nvcsw: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nvcsw(ru-nvcsw))
-
-pub inline fun uv-rusage-tcb/set-ru-nvcsw(^s: uv-rusage-tcb<s::S>, ru-nvcsw: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nvcsw(ru-nvcsw))
-
-pub inline extern uv-rusage-t-ptrraw/ru-nivcsw(s: intptr_t): int64
-  c inline "(int64_t)(((struct uv_rusage_t*)#1)->ru_nivcsw)"
-
-pub inline fun uv-rusage-tp/ru-nivcsw(s: uv-rusage-tp): int
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/ru-nivcsw.int
-
-pub inline fun uv-rusage-tc/ru-nivcsw(^s: uv-rusage-tc): int
-  s.with-ptr(uv-rusage-tp/ru-nivcsw)
-
-pub inline fun uv-rusage-tcb/ru-nivcsw(^s: uv-rusage-tcb<s::S>): int
-  s.with-ptr(uv-rusage-tp/ru-nivcsw)
-
-pub inline extern uv-rusage-t-ptrraw/set-ru-nivcsw(s: intptr_t, ru-nivcsw: int64): ()
-  c inline "((struct uv_rusage_t*)#1)->ru_nivcsw = (int64_t)#2"
-
-pub inline fun uv-rusage-tp/set-ru-nivcsw(s: uv-rusage-tp, ru-nivcsw: int): ()
-  s.cextern/c-pointer/ptr.uv-rusage-t-ptrraw/set-ru-nivcsw(ru-nivcsw.int64)
-
-pub inline fun uv-rusage-tc/set-ru-nivcsw(^s: uv-rusage-tc, ru-nivcsw: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nivcsw(ru-nivcsw))
-
-pub inline fun uv-rusage-tcb/set-ru-nivcsw(^s: uv-rusage-tcb<s::S>, ru-nivcsw: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-rusage-tp/set-ru-nivcsw(ru-nivcsw))
-
 alias uv-passwd-t = uv-passwd-s-c
 alias koka-uv-passwd-t = uv-passwd-s
 alias uv-group-t = uv-group-s-c
 alias koka-uv-group-t = uv-group-s
-alias uv-thread-t = int
-alias pthread-t = int
 alias uv-cpu-info-t = uv-cpu-info-s-c
 alias koka-uv-cpu-info-t = uv-cpu-info-s
 alias uv-interface-address-t = uv-interface-address-s-c
@@ -16036,13 +4778,13 @@ type uv-fs-event
   UV_RENAME
   UV_CHANGE
 
-pub fun uv-fs-event/int(i: uv-fs-event): int
+pub fun uv-fs-event/int(i: uv-fs-event): int32
   match i
-    UV_RENAME -> 1
-    UV_CHANGE -> 2
+    UV_RENAME -> 1.int32
+    UV_CHANGE -> 2.int32
 
-pub fun int/uv-fs-event(i: int): exn uv-fs-event
-  match i
+pub fun int/uv-fs-event(i: int32): exn uv-fs-event
+  match i.int
     1 -> UV_RENAME
     2 -> UV_CHANGE
 
@@ -16055,515 +4797,50 @@ type uv-fs-event-flags
   UV_FS_EVENT_STAT
   UV_FS_EVENT_RECURSIVE
 
-pub fun uv-fs-event-flags/int(i: uv-fs-event-flags): int
+pub fun uv-fs-event-flags/int(i: uv-fs-event-flags): int32
   match i
-    UV_FS_EVENT_WATCH_ENTRY -> 1
-    UV_FS_EVENT_STAT -> 2
-    UV_FS_EVENT_RECURSIVE -> 4
+    UV_FS_EVENT_WATCH_ENTRY -> 1.int32
+    UV_FS_EVENT_STAT -> 2.int32
+    UV_FS_EVENT_RECURSIVE -> 4.int32
 
-pub fun int/uv-fs-event-flags(i: int): exn uv-fs-event-flags
-  match i
+pub fun int/uv-fs-event-flags(i: int32): exn uv-fs-event-flags
+  match i.int
     1 -> UV_FS_EVENT_WATCH_ENTRY
     2 -> UV_FS_EVENT_STAT
     4 -> UV_FS_EVENT_RECURSIVE
 
-alias uv-sem-t = sem-t-c
-pub struct sem-t
-pub type sem-t-c
-pub alias sem-tp = c-pointer<sem-t-c>
-pub alias sem-tc<s::S> = owned-c<sem-t-c>
-pub alias sem-tcb<s::S> = borrowed-c<s,sem-t-c>
-pub alias sem-tca<s::S> = owned-c<c-array<sem-t-c>>
+alias uv-once-t = opaque-pthread-once-t-c
+alias pthread-once-t = opaque-pthread-once-t-c
+alias darwin-pthread-once-t = opaque-pthread-once-t-c
+pub struct opaque-pthread-once-t
+pub type opaque-pthread-once-t-c
+pub alias opaque-pthread-once-tp = c-pointer<opaque-pthread-once-t-c>
+pub alias opaque-pthread-once-tc = owned-c<opaque-pthread-once-t-c>
+pub alias opaque-pthread-once-tcb<s::S> = borrowed-c<s,opaque-pthread-once-t-c>
+pub alias opaque-pthread-once-tca = owned-c<c-array<opaque-pthread-once-t-c>>
 
-pub extern sem-t/size-of(c: c-null<sem-t-c>): int32
-  c inline "sizeof(union sem_t)"
-
-pub fun sem-tc(): sem-tc<s::S>
-  malloc(?size-of=sem-t/size-of)
-
-pub fun sem-tc-calloc(): sem-tc<s::S>
-  malloc-c(?size-of=sem-t/size-of)
-
-pub fun sem-tc-array(n: int): sem-tca<s::S>
-  malloc(n.int32, ?size-of=sem-t/size-of)
-
-pub fun sem-tc-array-calloc(n: int): sem-tca<s::S>
-  malloc-c(n.int32, ?size-of=sem-t/size-of)
-
-pub inline extern sem-t-ptrraw/size(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union sem_t*)#1)->__size)"
-
-pub inline fun sem-tp/size(s: sem-tp): c-array<int>
-  s.cextern/c-pointer/ptr.sem-t-ptrraw/size.cextern/cptr/carray
-
-pub inline fun sem-tc/size(^s: sem-tc<s::S>): c-array<int>
-  s.with-ptr(sem-tp/size)
-
-pub inline fun sem-tcb/size(^s: sem-tcb<s::S>): c-array<int>
-  s.with-ptr(sem-tp/size)
-
-pub inline extern sem-t-ptrraw/set-size(s: intptr_t, size: intptr_t): ()
-  c inline "((union sem_t*)#1)->__size = (char*)#2"
-
-pub inline fun sem-tp/set-size(s: sem-tp, size: c-array<int>): ()
-  s.cextern/c-pointer/ptr.sem-t-ptrraw/set-size(size.cextern/carray/cptr)
-
-pub inline fun sem-tc/set-size(^s: sem-tc<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sem-tp/set-size(size))
-
-pub inline fun sem-tcb/set-size(^s: sem-tcb<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sem-tp/set-size(size))
-
-pub inline extern sem-t-ptrraw/align(s: intptr_t): int64
-  c inline "(long)(((union sem_t*)#1)->__align)"
-
-pub inline fun sem-tp/align(s: sem-tp): int
-  s.cextern/c-pointer/ptr.sem-t-ptrraw/align.int
-
-pub inline fun sem-tc/align(^s: sem-tc<s::S>): int
-  s.with-ptr(sem-tp/align)
-
-pub inline fun sem-tcb/align(^s: sem-tcb<s::S>): int
-  s.with-ptr(sem-tp/align)
-
-pub inline extern sem-t-ptrraw/set-align(s: intptr_t, align: int64): ()
-  c inline "((union sem_t*)#1)->__align = (long)#2"
-
-pub inline fun sem-tp/set-align(s: sem-tp, align: int): ()
-  s.cextern/c-pointer/ptr.sem-t-ptrraw/set-align(align.int64)
-
-pub inline fun sem-tc/set-align(^s: sem-tc<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sem-tp/set-align(align))
-
-pub inline fun sem-tcb/set-align(^s: sem-tcb<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.sem-tp/set-align(align))
-
-alias uv-cond-t = pthread-cond-t-c
-pub struct pthread-cond-t
-pub type pthread-cond-t-c
-pub alias pthread-cond-tp = c-pointer<pthread-cond-t-c>
-pub alias pthread-cond-tc<s::S> = owned-c<pthread-cond-t-c>
-pub alias pthread-cond-tcb<s::S> = borrowed-c<s,pthread-cond-t-c>
-pub alias pthread-cond-tca<s::S> = owned-c<c-array<pthread-cond-t-c>>
-
-pub extern pthread-cond-t/size-of(c: c-null<pthread-cond-t-c>): int32
-  c inline "sizeof(union pthread_cond_t)"
-
-pub fun pthread-cond-tc(): pthread-cond-tc<s::S>
-  malloc(?size-of=pthread-cond-t/size-of)
-
-pub fun pthread-cond-tc-calloc(): pthread-cond-tc<s::S>
-  malloc-c(?size-of=pthread-cond-t/size-of)
-
-pub fun pthread-cond-tc-array(n: int): pthread-cond-tca<s::S>
-  malloc(n.int32, ?size-of=pthread-cond-t/size-of)
-
-pub fun pthread-cond-tc-array-calloc(n: int): pthread-cond-tca<s::S>
-  malloc-c(n.int32, ?size-of=pthread-cond-t/size-of)
-
-pub inline extern pthread-cond-t-ptrraw/size(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union pthread_cond_t*)#1)->__size)"
-
-pub inline fun pthread-cond-tp/size(s: pthread-cond-tp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-cond-t-ptrraw/size.cextern/cptr/carray
-
-pub inline fun pthread-cond-tc/size(^s: pthread-cond-tc<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-tp/size)
-
-pub inline fun pthread-cond-tcb/size(^s: pthread-cond-tcb<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-tp/size)
-
-pub inline extern pthread-cond-t-ptrraw/set-size(s: intptr_t, size: intptr_t): ()
-  c inline "((union pthread_cond_t*)#1)->__size = (char*)#2"
-
-pub inline fun pthread-cond-tp/set-size(s: pthread-cond-tp, size: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-cond-t-ptrraw/set-size(size.cextern/carray/cptr)
-
-pub inline fun pthread-cond-tc/set-size(^s: pthread-cond-tc<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-tp/set-size(size))
-
-pub inline fun pthread-cond-tcb/set-size(^s: pthread-cond-tcb<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-tp/set-size(size))
-
-pub inline extern pthread-cond-t-ptrraw/align(s: intptr_t): int64
-  c inline "(long long)(((union pthread_cond_t*)#1)->__align)"
-
-pub inline fun pthread-cond-tp/align(s: pthread-cond-tp): int
-  s.cextern/c-pointer/ptr.pthread-cond-t-ptrraw/align.int
-
-pub inline fun pthread-cond-tc/align(^s: pthread-cond-tc<s::S>): int
-  s.with-ptr(pthread-cond-tp/align)
-
-pub inline fun pthread-cond-tcb/align(^s: pthread-cond-tcb<s::S>): int
-  s.with-ptr(pthread-cond-tp/align)
-
-pub inline extern pthread-cond-t-ptrraw/set-align(s: intptr_t, align: int64): ()
-  c inline "((union pthread_cond_t*)#1)->__align = (long long)#2"
-
-pub inline fun pthread-cond-tp/set-align(s: pthread-cond-tp, align: int): ()
-  s.cextern/c-pointer/ptr.pthread-cond-t-ptrraw/set-align(align.int64)
-
-pub inline fun pthread-cond-tc/set-align(^s: pthread-cond-tc<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-tp/set-align(align))
-
-pub inline fun pthread-cond-tcb/set-align(^s: pthread-cond-tcb<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-tp/set-align(align))
-
-pub struct pthread-cond-s
-pub type pthread-cond-s-c
-pub alias pthread-cond-sp = c-pointer<pthread-cond-s-c>
-pub alias pthread-cond-sc<s::S> = owned-c<pthread-cond-s-c>
-pub alias pthread-cond-scb<s::S> = borrowed-c<s,pthread-cond-s-c>
-pub alias pthread-cond-sca<s::S> = owned-c<c-array<pthread-cond-s-c>>
-
-pub extern pthread-cond-s/size-of(c: c-null<pthread-cond-s-c>): int32
-  c inline "sizeof(struct __pthread_cond_s)"
-
-pub fun pthread-cond-sc(): pthread-cond-sc<s::S>
-  malloc(?size-of=pthread-cond-s/size-of)
-
-pub fun pthread-cond-sc-calloc(): pthread-cond-sc<s::S>
-  malloc-c(?size-of=pthread-cond-s/size-of)
-
-pub fun pthread-cond-sc-array(n: int): pthread-cond-sca<s::S>
-  malloc(n.int32, ?size-of=pthread-cond-s/size-of)
-
-pub fun pthread-cond-sc-array-calloc(n: int): pthread-cond-sca<s::S>
-  malloc-c(n.int32, ?size-of=pthread-cond-s/size-of)
-
-pub inline extern pthread-cond-s-ptrraw/g-refs(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct __pthread_cond_s*)#1)->__g_refs)"
-
-pub inline fun pthread-cond-sp/g-refs(s: pthread-cond-sp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/g-refs.cextern/cptr/carray
-
-pub inline fun pthread-cond-sc/g-refs(^s: pthread-cond-sc<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-sp/g-refs)
-
-pub inline fun pthread-cond-scb/g-refs(^s: pthread-cond-scb<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-sp/g-refs)
-
-pub inline extern pthread-cond-s-ptrraw/set-g-refs(s: intptr_t, g-refs: intptr_t): ()
-  c inline "((struct __pthread_cond_s*)#1)->__g_refs = (unsigned int*)#2"
-
-pub inline fun pthread-cond-sp/set-g-refs(s: pthread-cond-sp, g-refs: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/set-g-refs(g-refs.cextern/carray/cptr)
-
-pub inline fun pthread-cond-sc/set-g-refs(^s: pthread-cond-sc<s::S>, g-refs: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g-refs(g-refs))
-
-pub inline fun pthread-cond-scb/set-g-refs(^s: pthread-cond-scb<s::S>, g-refs: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g-refs(g-refs))
-
-pub inline extern pthread-cond-s-ptrraw/g-size(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct __pthread_cond_s*)#1)->__g_size)"
-
-pub inline fun pthread-cond-sp/g-size(s: pthread-cond-sp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/g-size.cextern/cptr/carray
-
-pub inline fun pthread-cond-sc/g-size(^s: pthread-cond-sc<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-sp/g-size)
-
-pub inline fun pthread-cond-scb/g-size(^s: pthread-cond-scb<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-sp/g-size)
-
-pub inline extern pthread-cond-s-ptrraw/set-g-size(s: intptr_t, g-size: intptr_t): ()
-  c inline "((struct __pthread_cond_s*)#1)->__g_size = (unsigned int*)#2"
-
-pub inline fun pthread-cond-sp/set-g-size(s: pthread-cond-sp, g-size: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/set-g-size(g-size.cextern/carray/cptr)
-
-pub inline fun pthread-cond-sc/set-g-size(^s: pthread-cond-sc<s::S>, g-size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g-size(g-size))
-
-pub inline fun pthread-cond-scb/set-g-size(^s: pthread-cond-scb<s::S>, g-size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g-size(g-size))
-
-pub inline extern pthread-cond-s-ptrraw/g1-orig-size(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_cond_s*)#1)->__g1_orig_size)"
-
-pub inline fun pthread-cond-sp/g1-orig-size(s: pthread-cond-sp): int
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/g1-orig-size.int
-
-pub inline fun pthread-cond-sc/g1-orig-size(^s: pthread-cond-sc<s::S>): int
-  s.with-ptr(pthread-cond-sp/g1-orig-size)
-
-pub inline fun pthread-cond-scb/g1-orig-size(^s: pthread-cond-scb<s::S>): int
-  s.with-ptr(pthread-cond-sp/g1-orig-size)
-
-pub inline extern pthread-cond-s-ptrraw/set-g1-orig-size(s: intptr_t, g1-orig-size: int32): ()
-  c inline "((struct __pthread_cond_s*)#1)->__g1_orig_size = (unsigned int)#2"
-
-pub inline fun pthread-cond-sp/set-g1-orig-size(s: pthread-cond-sp, g1-orig-size: int): ()
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/set-g1-orig-size(g1-orig-size.int32)
-
-pub inline fun pthread-cond-sc/set-g1-orig-size(^s: pthread-cond-sc<s::S>, g1-orig-size: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g1-orig-size(g1-orig-size))
-
-pub inline fun pthread-cond-scb/set-g1-orig-size(^s: pthread-cond-scb<s::S>, g1-orig-size: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g1-orig-size(g1-orig-size))
-
-pub inline extern pthread-cond-s-ptrraw/wrefs(s: intptr_t): int32
-  c inline "(unsigned int)(((struct __pthread_cond_s*)#1)->__wrefs)"
-
-pub inline fun pthread-cond-sp/wrefs(s: pthread-cond-sp): int
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/wrefs.int
-
-pub inline fun pthread-cond-sc/wrefs(^s: pthread-cond-sc<s::S>): int
-  s.with-ptr(pthread-cond-sp/wrefs)
-
-pub inline fun pthread-cond-scb/wrefs(^s: pthread-cond-scb<s::S>): int
-  s.with-ptr(pthread-cond-sp/wrefs)
-
-pub inline extern pthread-cond-s-ptrraw/set-wrefs(s: intptr_t, wrefs: int32): ()
-  c inline "((struct __pthread_cond_s*)#1)->__wrefs = (unsigned int)#2"
-
-pub inline fun pthread-cond-sp/set-wrefs(s: pthread-cond-sp, wrefs: int): ()
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/set-wrefs(wrefs.int32)
-
-pub inline fun pthread-cond-sc/set-wrefs(^s: pthread-cond-sc<s::S>, wrefs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-wrefs(wrefs))
-
-pub inline fun pthread-cond-scb/set-wrefs(^s: pthread-cond-scb<s::S>, wrefs: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-wrefs(wrefs))
-
-pub inline extern pthread-cond-s-ptrraw/g-signals(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((struct __pthread_cond_s*)#1)->__g_signals)"
-
-pub inline fun pthread-cond-sp/g-signals(s: pthread-cond-sp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/g-signals.cextern/cptr/carray
-
-pub inline fun pthread-cond-sc/g-signals(^s: pthread-cond-sc<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-sp/g-signals)
-
-pub inline fun pthread-cond-scb/g-signals(^s: pthread-cond-scb<s::S>): c-array<int>
-  s.with-ptr(pthread-cond-sp/g-signals)
-
-pub inline extern pthread-cond-s-ptrraw/set-g-signals(s: intptr_t, g-signals: intptr_t): ()
-  c inline "((struct __pthread_cond_s*)#1)->__g_signals = (unsigned int*)#2"
-
-pub inline fun pthread-cond-sp/set-g-signals(s: pthread-cond-sp, g-signals: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-cond-s-ptrraw/set-g-signals(g-signals.cextern/carray/cptr)
-
-pub inline fun pthread-cond-sc/set-g-signals(^s: pthread-cond-sc<s::S>, g-signals: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g-signals(g-signals))
-
-pub inline fun pthread-cond-scb/set-g-signals(^s: pthread-cond-scb<s::S>, g-signals: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-cond-sp/set-g-signals(g-signals))
-
-pub struct atomic-wide-counter
-pub type atomic-wide-counter-c
-pub alias atomic-wide-counterp = c-pointer<atomic-wide-counter-c>
-pub alias atomic-wide-counterc = owned-c<atomic-wide-counter-c>
-pub alias atomic-wide-countercb<s::S> = borrowed-c<s,atomic-wide-counter-c>
-pub alias atomic-wide-counterca = owned-c<c-array<atomic-wide-counter-c>>
-
-pub extern atomic-wide-counter/size-of(c: c-null<atomic-wide-counter-c>): int32
-  c inline "sizeof(union __atomic_wide_counter)"
-
-pub fun atomic-wide-counterc(): atomic-wide-counterc
-  malloc(?size-of=atomic-wide-counter/size-of)
-
-pub fun atomic-wide-counterc-calloc(): atomic-wide-counterc
-  malloc-c(?size-of=atomic-wide-counter/size-of)
-
-pub fun atomic-wide-counterc-array(n: int): atomic-wide-counterca
-  malloc(n.int32, ?size-of=atomic-wide-counter/size-of)
-
-pub fun atomic-wide-counterc-array-calloc(n: int): atomic-wide-counterca
-  malloc-c(n.int32, ?size-of=atomic-wide-counter/size-of)
-
-pub inline extern atomic-wide-counter-ptrraw/value64(s: intptr_t): int64
-  c inline "(unsigned long long)(((union __atomic_wide_counter*)#1)->__value64)"
-
-pub inline fun atomic-wide-counterp/value64(s: atomic-wide-counterp): int
-  s.cextern/c-pointer/ptr.atomic-wide-counter-ptrraw/value64.int
-
-pub inline fun atomic-wide-counterc/value64(^s: atomic-wide-counterc): int
-  s.with-ptr(atomic-wide-counterp/value64)
-
-pub inline fun atomic-wide-countercb/value64(^s: atomic-wide-countercb<s::S>): int
-  s.with-ptr(atomic-wide-counterp/value64)
-
-pub inline extern atomic-wide-counter-ptrraw/set-value64(s: intptr_t, value64: int64): ()
-  c inline "((union __atomic_wide_counter*)#1)->__value64 = (unsigned long long)#2"
-
-pub inline fun atomic-wide-counterp/set-value64(s: atomic-wide-counterp, value64: int): ()
-  s.cextern/c-pointer/ptr.atomic-wide-counter-ptrraw/set-value64(value64.int64)
-
-pub inline fun atomic-wide-counterc/set-value64(^s: atomic-wide-counterc, value64: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.atomic-wide-counterp/set-value64(value64))
-
-pub inline fun atomic-wide-countercb/set-value64(^s: atomic-wide-countercb<s::S>, value64: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.atomic-wide-counterp/set-value64(value64))
-
-pub value struct unnamed-Struct3
-  low: int
-  high: int
-
-pub type unnamed-Struct3-c
-pub alias unnamed-Struct3p = c-pointer<unnamed-Struct3-c>
-pub alias unnamed-Struct3c = owned-c<unnamed-Struct3-c>
-pub alias unnamed-Struct3cb<s::S> = borrowed-c<s,unnamed-Struct3-c>
-pub alias unnamed-Struct3ca = owned-c<c-array<unnamed-Struct3-c>>
-
-pub extern unnamed-Struct3/size-of(c: c-null<unnamed-Struct3-c>): int32
-  c inline "sizeof(struct unnamed-Struct3)"
-
-pub fun unnamed-Struct3c(): unnamed-Struct3c
-  malloc(?size-of=unnamed-Struct3/size-of)
-
-pub fun unnamed-Struct3c-calloc(): unnamed-Struct3c
-  malloc-c(?size-of=unnamed-Struct3/size-of)
-
-pub fun unnamed-Struct3c-array(n: int): unnamed-Struct3ca
-  malloc(n.int32, ?size-of=unnamed-Struct3/size-of)
-
-pub fun unnamed-Struct3c-array-calloc(n: int): unnamed-Struct3ca
-  malloc-c(n.int32, ?size-of=unnamed-Struct3/size-of)
-
-pub inline extern unnamed-Struct3-ptrraw/low(s: intptr_t): int32
-  c inline "(unsigned int)(((struct unnamed-Struct3*)#1)->__low)"
-
-pub inline fun unnamed-Struct3p/low(s: unnamed-Struct3p): int
-  s.cextern/c-pointer/ptr.unnamed-Struct3-ptrraw/low.int
-
-pub inline fun unnamed-Struct3c/low(^s: unnamed-Struct3c): int
-  s.with-ptr(unnamed-Struct3p/low)
-
-pub inline fun unnamed-Struct3cb/low(^s: unnamed-Struct3cb<s::S>): int
-  s.with-ptr(unnamed-Struct3p/low)
-
-pub inline extern unnamed-Struct3-ptrraw/set-low(s: intptr_t, low: int32): ()
-  c inline "((struct unnamed-Struct3*)#1)->__low = (unsigned int)#2"
-
-pub inline fun unnamed-Struct3p/set-low(s: unnamed-Struct3p, low: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct3-ptrraw/set-low(low.int32)
-
-pub inline fun unnamed-Struct3c/set-low(^s: unnamed-Struct3c, low: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct3p/set-low(low))
-
-pub inline fun unnamed-Struct3cb/set-low(^s: unnamed-Struct3cb<s::S>, low: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct3p/set-low(low))
-
-pub inline extern unnamed-Struct3-ptrraw/high(s: intptr_t): int32
-  c inline "(unsigned int)(((struct unnamed-Struct3*)#1)->__high)"
-
-pub inline fun unnamed-Struct3p/high(s: unnamed-Struct3p): int
-  s.cextern/c-pointer/ptr.unnamed-Struct3-ptrraw/high.int
-
-pub inline fun unnamed-Struct3c/high(^s: unnamed-Struct3c): int
-  s.with-ptr(unnamed-Struct3p/high)
-
-pub inline fun unnamed-Struct3cb/high(^s: unnamed-Struct3cb<s::S>): int
-  s.with-ptr(unnamed-Struct3p/high)
-
-pub inline extern unnamed-Struct3-ptrraw/set-high(s: intptr_t, high: int32): ()
-  c inline "((struct unnamed-Struct3*)#1)->__high = (unsigned int)#2"
-
-pub inline fun unnamed-Struct3p/set-high(s: unnamed-Struct3p, high: int): ()
-  s.cextern/c-pointer/ptr.unnamed-Struct3-ptrraw/set-high(high.int32)
-
-pub inline fun unnamed-Struct3c/set-high(^s: unnamed-Struct3c, high: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct3p/set-high(high))
-
-pub inline fun unnamed-Struct3cb/set-high(^s: unnamed-Struct3cb<s::S>, high: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.unnamed-Struct3p/set-high(high))
-
-alias uv-barrier-t = pthread-barrier-t-c
-pub struct pthread-barrier-t
-pub type pthread-barrier-t-c
-pub alias pthread-barrier-tp = c-pointer<pthread-barrier-t-c>
-pub alias pthread-barrier-tc<s::S> = owned-c<pthread-barrier-t-c>
-pub alias pthread-barrier-tcb<s::S> = borrowed-c<s,pthread-barrier-t-c>
-pub alias pthread-barrier-tca<s::S> = owned-c<c-array<pthread-barrier-t-c>>
-
-pub extern pthread-barrier-t/size-of(c: c-null<pthread-barrier-t-c>): int32
-  c inline "sizeof(union pthread_barrier_t)"
-
-pub fun pthread-barrier-tc(): pthread-barrier-tc<s::S>
-  malloc(?size-of=pthread-barrier-t/size-of)
-
-pub fun pthread-barrier-tc-calloc(): pthread-barrier-tc<s::S>
-  malloc-c(?size-of=pthread-barrier-t/size-of)
-
-pub fun pthread-barrier-tc-array(n: int): pthread-barrier-tca<s::S>
-  malloc(n.int32, ?size-of=pthread-barrier-t/size-of)
-
-pub fun pthread-barrier-tc-array-calloc(n: int): pthread-barrier-tca<s::S>
-  malloc-c(n.int32, ?size-of=pthread-barrier-t/size-of)
-
-pub inline extern pthread-barrier-t-ptrraw/size(s: intptr_t): intptr_t
-  c inline "(intptr_t)(((union pthread_barrier_t*)#1)->__size)"
-
-pub inline fun pthread-barrier-tp/size(s: pthread-barrier-tp): c-array<int>
-  s.cextern/c-pointer/ptr.pthread-barrier-t-ptrraw/size.cextern/cptr/carray
-
-pub inline fun pthread-barrier-tc/size(^s: pthread-barrier-tc<s::S>): c-array<int>
-  s.with-ptr(pthread-barrier-tp/size)
-
-pub inline fun pthread-barrier-tcb/size(^s: pthread-barrier-tcb<s::S>): c-array<int>
-  s.with-ptr(pthread-barrier-tp/size)
-
-pub inline extern pthread-barrier-t-ptrraw/set-size(s: intptr_t, size: intptr_t): ()
-  c inline "((union pthread_barrier_t*)#1)->__size = (char*)#2"
-
-pub inline fun pthread-barrier-tp/set-size(s: pthread-barrier-tp, size: c-array<int>): ()
-  s.cextern/c-pointer/ptr.pthread-barrier-t-ptrraw/set-size(size.cextern/carray/cptr)
-
-pub inline fun pthread-barrier-tc/set-size(^s: pthread-barrier-tc<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-barrier-tp/set-size(size))
-
-pub inline fun pthread-barrier-tcb/set-size(^s: pthread-barrier-tcb<s::S>, size: c-array<int>): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-barrier-tp/set-size(size))
-
-pub inline extern pthread-barrier-t-ptrraw/align(s: intptr_t): int64
-  c inline "(long)(((union pthread_barrier_t*)#1)->__align)"
-
-pub inline fun pthread-barrier-tp/align(s: pthread-barrier-tp): int
-  s.cextern/c-pointer/ptr.pthread-barrier-t-ptrraw/align.int
-
-pub inline fun pthread-barrier-tc/align(^s: pthread-barrier-tc<s::S>): int
-  s.with-ptr(pthread-barrier-tp/align)
-
-pub inline fun pthread-barrier-tcb/align(^s: pthread-barrier-tcb<s::S>): int
-  s.with-ptr(pthread-barrier-tp/align)
-
-pub inline extern pthread-barrier-t-ptrraw/set-align(s: intptr_t, align: int64): ()
-  c inline "((union pthread_barrier_t*)#1)->__align = (long)#2"
-
-pub inline fun pthread-barrier-tp/set-align(s: pthread-barrier-tp, align: int): ()
-  s.cextern/c-pointer/ptr.pthread-barrier-t-ptrraw/set-align(align.int64)
-
-pub inline fun pthread-barrier-tc/set-align(^s: pthread-barrier-tc<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-barrier-tp/set-align(align))
-
-pub inline fun pthread-barrier-tcb/set-align(^s: pthread-barrier-tcb<s::S>, align: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.pthread-barrier-tp/set-align(align))
-
-alias uv-once-t = int
-alias pthread-once-t = int
 alias uv-key-t = int
 alias pthread-key-t = int
+alias darwin-pthread-key-t = int
 alias uv-thread-cb = c-pointer<intptr_t>
 alias uv-thread-cbfn = ((arg : c-pointer<()>) -> ())
 type uv-thread-create-flags
   UV_THREAD_NO_FLAGS
   UV_THREAD_HAS_STACK_SIZE
 
-pub fun uv-thread-create-flags/int(i: uv-thread-create-flags): int
+pub fun uv-thread-create-flags/int(i: uv-thread-create-flags): int32
   match i
-    UV_THREAD_NO_FLAGS -> 0
-    UV_THREAD_HAS_STACK_SIZE -> 1
+    UV_THREAD_NO_FLAGS -> 0.int32
+    UV_THREAD_HAS_STACK_SIZE -> 1.int32
 
-pub fun int/uv-thread-create-flags(i: int): exn uv-thread-create-flags
-  match i
+pub fun int/uv-thread-create-flags(i: int32): exn uv-thread-create-flags
+  match i.int
     0 -> UV_THREAD_NO_FLAGS
     1 -> UV_THREAD_HAS_STACK_SIZE
 
 pub value struct uv-thread-options-s
   flags: int
-  stack-size: ssize_t
+  stack-size: int
 
 pub type uv-thread-options-s-c
 pub alias uv-thread-options-sp = c-pointer<uv-thread-options-s-c>
@@ -16586,54 +4863,6 @@ pub fun uv-thread-options-sc-array(n: int): uv-thread-options-sca
 pub fun uv-thread-options-sc-array-calloc(n: int): uv-thread-options-sca
   malloc-c(n.int32, ?size-of=uv-thread-options-s/size-of)
 
-pub inline extern uv-thread-options-s-ptrraw/flags(s: intptr_t): int32
-  c inline "(unsigned int)(((struct uv_thread_options_s*)#1)->flags)"
-
-pub inline fun uv-thread-options-sp/flags(s: uv-thread-options-sp): int
-  s.cextern/c-pointer/ptr.uv-thread-options-s-ptrraw/flags.int
-
-pub inline fun uv-thread-options-sc/flags(^s: uv-thread-options-sc): int
-  s.with-ptr(uv-thread-options-sp/flags)
-
-pub inline fun uv-thread-options-scb/flags(^s: uv-thread-options-scb<s::S>): int
-  s.with-ptr(uv-thread-options-sp/flags)
-
-pub inline extern uv-thread-options-s-ptrraw/set-flags(s: intptr_t, flags: int32): ()
-  c inline "((struct uv_thread_options_s*)#1)->flags = (unsigned int)#2"
-
-pub inline fun uv-thread-options-sp/set-flags(s: uv-thread-options-sp, flags: int): ()
-  s.cextern/c-pointer/ptr.uv-thread-options-s-ptrraw/set-flags(flags.int32)
-
-pub inline fun uv-thread-options-sc/set-flags(^s: uv-thread-options-sc, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-thread-options-sp/set-flags(flags))
-
-pub inline fun uv-thread-options-scb/set-flags(^s: uv-thread-options-scb<s::S>, flags: int): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-thread-options-sp/set-flags(flags))
-
-pub inline extern uv-thread-options-s-ptrraw/stack-size(s: intptr_t): ssize_t
-  c inline "(ssize_t)(((struct uv_thread_options_s*)#1)->stack_size)"
-
-pub inline fun uv-thread-options-sp/stack-size(s: uv-thread-options-sp): ssize_t
-  s.cextern/c-pointer/ptr.uv-thread-options-s-ptrraw/stack-size
-
-pub inline fun uv-thread-options-sc/stack-size(^s: uv-thread-options-sc): ssize_t
-  s.with-ptr(uv-thread-options-sp/stack-size)
-
-pub inline fun uv-thread-options-scb/stack-size(^s: uv-thread-options-scb<s::S>): ssize_t
-  s.with-ptr(uv-thread-options-sp/stack-size)
-
-pub inline extern uv-thread-options-s-ptrraw/set-stack-size(s: intptr_t, stack-size: ssize_t): ()
-  c inline "((struct uv_thread_options_s*)#1)->stack_size = (ssize_t)#2"
-
-pub inline fun uv-thread-options-sp/set-stack-size(s: uv-thread-options-sp, stack-size: ssize_t): ()
-  s.cextern/c-pointer/ptr.uv-thread-options-s-ptrraw/set-stack-size(stack-size)
-
-pub inline fun uv-thread-options-sc/set-stack-size(^s: uv-thread-options-sc, stack-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-thread-options-sp/set-stack-size(stack-size))
-
-pub inline fun uv-thread-options-scb/set-stack-size(^s: uv-thread-options-scb<s::S>, stack-size: ssize_t): ()
-  s.with-ptr(fn(kk-internal-ptr) kk-internal-ptr.uv-thread-options-sp/set-stack-size(stack-size))
-
 alias uv-thread-options-t = uv-thread-options-s-c
 alias koka-uv-thread-options-t = uv-thread-options-s
 pub struct uv-any-handle
@@ -16643,42 +4872,12 @@ pub alias uv-any-handlec = owned-c<uv-any-handle-c>
 pub alias uv-any-handlecb<s::S> = borrowed-c<s,uv-any-handle-c>
 pub alias uv-any-handleca = owned-c<c-array<uv-any-handle-c>>
 
-pub extern uv-any-handle/size-of(c: c-null<uv-any-handle-c>): int32
-  c inline "sizeof(union uv_any_handle)"
-
-pub fun uv-any-handlec(): uv-any-handlec
-  malloc(?size-of=uv-any-handle/size-of)
-
-pub fun uv-any-handlec-calloc(): uv-any-handlec
-  malloc-c(?size-of=uv-any-handle/size-of)
-
-pub fun uv-any-handlec-array(n: int): uv-any-handleca
-  malloc(n.int32, ?size-of=uv-any-handle/size-of)
-
-pub fun uv-any-handlec-array-calloc(n: int): uv-any-handleca
-  malloc-c(n.int32, ?size-of=uv-any-handle/size-of)
-
 pub struct uv-any-req
 pub type uv-any-req-c
 pub alias uv-any-reqp = c-pointer<uv-any-req-c>
 pub alias uv-any-reqc = owned-c<uv-any-req-c>
 pub alias uv-any-reqcb<s::S> = borrowed-c<s,uv-any-req-c>
 pub alias uv-any-reqca = owned-c<c-array<uv-any-req-c>>
-
-pub extern uv-any-req/size-of(c: c-null<uv-any-req-c>): int32
-  c inline "sizeof(union uv_any_req)"
-
-pub fun uv-any-reqc(): uv-any-reqc
-  malloc(?size-of=uv-any-req/size-of)
-
-pub fun uv-any-reqc-calloc(): uv-any-reqc
-  malloc-c(?size-of=uv-any-req/size-of)
-
-pub fun uv-any-reqc-array(n: int): uv-any-reqca
-  malloc(n.int32, ?size-of=uv-any-req/size-of)
-
-pub fun uv-any-reqc-array-calloc(n: int): uv-any-reqca
-  malloc-c(n.int32, ?size-of=uv-any-req/size-of)
 
 pub val kuv-pipe-no-truncate: int = 1
 

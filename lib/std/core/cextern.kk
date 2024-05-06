@@ -42,6 +42,10 @@ pub extern cptr/carray<t>(c: intptr_t): c-array<t>
 pub fun ptr/carray<t>(c: c-pointer<t>): c-array<t>
   carray(c.ptr)
 
+// Allow casting between different types of pointers
+pub fun unsafe/cptr-cast<s>(c: c-pointer<t>): c-pointer<s>
+  C-pointer(c.ptr)
+
 // Allocate `n*size-of` bytes of memory using kk_malloc and return a pointer to the allocated memory
 extern int/malloc<t>(n: int32, size-of: int32): intptr_t
   c inline "(kk_addr_t)kk_malloc(#1*#2, kk_context())"
@@ -203,7 +207,7 @@ pub fun cptr/to-string(c: c-pointer<int8>): string
 // Copies the memory
 // Assume the array is non-null terminated and adds the terminating character
 extern strlen-ptr/to-string(ptr: intptr_t, len: int64): string
-  c inline "kk_string_alloc_raw_buff(#2, (const char *)#1, false, kk_context())"
+  c inline "kk_string_alloc_raw_buff(#2, (char *)#1, false, kk_context())"
 
 // Transform an unmanaged `c-pointer<int8>` into a Koka string of length len
 // Copies the memory
