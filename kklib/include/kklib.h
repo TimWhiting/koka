@@ -9,7 +9,7 @@
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 
-#define KKLIB_BUILD          142    // modify on changes to trigger recompilation..
+#define KKLIB_BUILD          143    // modify on changes to trigger recompilation..
 // #define KK_DEBUG_FULL       1    // set to enable full internal debug checks
 
 // Includes
@@ -422,6 +422,7 @@ typedef struct kk_context_s {
   kk_yield_t        yield;            // inlined yield structure (for efficiency)
   int32_t           marker_unique;    // unique marker generation
   kk_block_t*       delayed_free;     // list of blocks that still need to be freed
+  void*     loop;                     // a reference to an event loop (e.g. uv_loop_t* or NULL)
   kk_integer_t      unique;           // thread local unique number generation
   size_t            thread_id;        // unique thread id
   kk_box_any_t      kk_box_any;       // used when yielding as a value of any type
