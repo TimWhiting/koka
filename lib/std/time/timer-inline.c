@@ -123,7 +123,7 @@ kk_std_core_exn__error kk_timer_start(kk_std_time_timer__timer timer, int64_t ti
   int ret = uv_timer_start((uv_timer_t*)handle, kk_uv_timer_unit_callback, timeout, repeat);
   if (ret < 0) {
     kk_function_drop(callback, _ctx);
-    return kk_async_error_from_errno(ret, _ctx);
+    return kk_std_os_event_dash_loop_error_from_uverr(ret, _ctx);
   } else {
     return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), _ctx);
   }
@@ -132,7 +132,7 @@ kk_std_core_exn__error kk_timer_start(kk_std_time_timer__timer timer, int64_t ti
 kk_std_core_exn__error kk_timer_again(kk_std_time_timer__timer timer, kk_context_t* _ctx) {
   int ret = uv_timer_again((uv_timer_t*)timer.internal);
   if (ret < 0) {
-    return kk_async_error_from_errno(ret, _ctx);
+    return kk_std_os_event_dash_loop_error_from_uverr(ret, _ctx);
   } else {
     return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), _ctx);
   }

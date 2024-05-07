@@ -300,7 +300,7 @@ codeGenC sourceFile newtypes borrowed0 imported unique0 term flags sequential en
 
       -- copy libraries
       let importcores = map (fromJust . modCore) imported
-          cores = bcore:importcores
+          cores = [bcore]
           cc       = ccomp flags
           eimports = concatMap (externalImportsFromCore (target flags)) cores
           clibs    = concatMap (clibsFromCore flags) cores

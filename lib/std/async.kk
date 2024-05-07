@@ -38,7 +38,7 @@ pub import std/num/ddouble
 pub import std/num/float64
 
 extern import
-  c file "async/async-inline.h"
+  c header-file "async/async-inline.h"
   cs file "async/async-inline.cs"
   // js is just using primitives
 

@@ -413,7 +413,7 @@ unitSemi tp
 genTopLevelStringLiteral :: Name -> Visibility -> String -> Asm ()
 genTopLevelStringLiteral name vis s
   =  do let (cstr,clen) = cstring s
-            decl = if (isPublic vis) then empty else text "static"
+            decl = if (isPublic vis) then empty else text ""
         if (clen > 0)
           then do emitToC (text "kk_declare_string_literal" <.> tupled [decl,ppName name,pretty clen,cstr] {- <.> semi -})
                   emitToInit (text "kk_init_string_literal" <.> arguments [ppName name])

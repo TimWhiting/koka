@@ -8,17 +8,17 @@
 
 module std/os/event-loop
 
+import std/core/cextern
 import std/num/int32
+import std/os/uv/generated
+import std/os/uv/utils
 
 extern import
   c { conan="libuv[>=1.47.0]"; vcpkg="libuv"; library="uv" }
 // TODO: wasm {}
 
 extern import
-  c file "event-loop-inline"
-
-
-pub value struct uv-handle { internal: intptr_t }
+  c file "event-loop-inline.c"
 
 // Handles a uv loop
 pub fun default-event-loop(action)
@@ -38,7 +38,7 @@ fun handle-loop(action)
   res
 
 abstract extend type exception-info
-  pub con AsyncExn( status-code : uv-status-code )
+  pub con AsyncExn( status-code : uv-errno-t )
 
 extern run-loop(): io-event ()
   c "kk_uv_loop_run"
@@ -66,114 +66,33 @@ extern close-loop(): io-event ()
   cs inline ""
   js inline ""
 
-pub extern int/status-code(code: int32): uv-status-code
-  c "kk_uv_status_to_status_code"
-  wasm inline "kk_std_os_event_dash_loop_UV__OK"
-  cs inline ""
-  js inline ""
+pub inline fun hnd/close(hnd: c-pointer<uv-handle-s-c>, callback: () -> io-event ()): io-event ()
+  hnd.ptr.close(callback)
 
-pub extern close(hnd: uv-handle, callback: () -> io-event ()): io-event ()
+pub extern ptr/close(hnd: intptr_t, callback: () -> io-event ()): io-event ()
   c "kk_uv_close"
   wasm inline "kk_Unit"
   cs inline ""
   js inline ""
 
-pub inline fun result/untry(code: uv-status-code, a: a): exn a
-  if code.is-uv_OK then a 
-  else throw-exn(Exception(code.message, AsyncExn(code))) // TODO: Errno refactoring
+pub fun error-from-uverr<a>(code: int32): exn error<a>
+  val code' = code.int/uv-errno-t
+  Error(Exception(code'.message, AsyncExn(code')))
 
-pub inline fun unit/untry(code: uv-status-code): exn ()
-  if code.is-uv_OK then ()
-  else throw-exn(Exception(code.message, AsyncExn(code)))
+pub inline fun result/untry(code: int, a: () -> a): exn a
+  if code == 0 then a()
+  else 
+    val code' = code.int32.int/uv-errno-t
+    throw-exn(Exception(code'.message, AsyncExn(code'))) // TODO: Errno refactoring
 
+pub inline fun unit/untry(code: int): exn ()
+  if code == 0 then ()
+  else
+    val code' = code.int32.int/uv-errno-t 
+    throw-exn(Exception(code'.message, AsyncExn(code')))
 
-pub type uv-status-code
-  UV_OK
-  UV_E2BIG
-  UV_EACCES
-  UV_EADDRINUSE
-  UV_EADDRNOTAVAIL
-  UV_EAFNOSUPPORT
-  UV_EAGAIN
-  UV_EAI_ADDRFAMILY
-  UV_EAI_AGAIN
-  UV_EAI_BADFLAGS
-  UV_EAI_BADHINTS
-  UV_EAI_CANCELED
-  UV_EAI_FAIL
-  UV_EAI_FAMILY
-  UV_EAI_MEMORY
-  UV_EAI_NODATA
-  UV_EAI_NONAME
-  UV_EAI_OVERFLOW
-  UV_EAI_PROTOCOL
-  UV_EAI_SERVICE
-  UV_EAI_SOCKTYPE
-  UV_EALREADY
-  UV_EBADF
-  UV_EBUSY
-  UV_ECANCELED
-  UV_ECHARSET
-  UV_ECONNABORTED
-  UV_ECONNREFUSED
-  UV_ECONNRESET
-  UV_EDESTADDRREQ
-  UV_EEXIST
-  UV_EFAULT
-  UV_EFBIG
-  UV_EHOSTUNREACH
-  UV_EINTR
-  UV_EINVAL
-  UV_EIO
-  UV_EISCONN
-  UV_EISDIR
-  UV_ELOOP
-  UV_EMFILE
-  UV_EMSGSIZE
-  UV_ENAMETOOLONG
-  UV_ENETDOWN
-  UV_ENETUNREACH
-  UV_ENFILE
-  UV_ENOBUFS
-  UV_ENODEV
-  UV_ENOENT
-  UV_ENOMEM
-  UV_ENONET
-  UV_ENOPROTOOPT
-  UV_ENOSPC
-  UV_ENOSYS
-  UV_ENOTCONN
-  UV_ENOTDIR
-  UV_ENOTEMPTY
-  UV_ENOTSOCK
-  UV_ENOTSUP
-  UV_EOVERFLOW
-  UV_EPERM
-  UV_EPIPE
-  UV_EPROTO
-  UV_EPROTONOSUPPORT
-  UV_EPROTOTYPE
-  UV_ERANGE
-  UV_EROFS
-  UV_ESHUTDOWN
-  UV_ESPIPE
-  UV_ESRCH
-  UV_ETIMEDOUT
-  UV_ETXTBSY
-  UV_EXDEV
-  UV_UNKNOWN
-  UV_EOF
-  UV_ENXIO
-  UV_EMLINK
-  UV_ENOTTY
-  UV_EFTYPE
-  UV_EILSEQ
-  UV_ESOCKTNOSUPPORT
-  UV_EUNATCH
-
-pub fun message(code: uv-status-code): string
+pub fun message(code: uv-errno-t): string
   match code
-    UV_OK -> "no error"
     UV_E2BIG -> "argument list too long"
     UV_EACCES -> "permission denied"
     UV_EADDRINUSE -> "address already in use"
@@ -250,8 +169,12 @@ pub fun message(code: uv-status-code): string
     UV_EOF -> "end of file"
     UV_ENXIO -> "no such device or address"
     UV_EMLINK -> "too many links"
+    UV_EHOSTDOWN -> "host is down"
+    UV_EREMOTEIO -> "remote I/O error"
     UV_ENOTTY -> "inappropriate ioctl for device"
     UV_EFTYPE -> "inappropriate file type or format"
     UV_EILSEQ -> "illegal byte sequence"
     UV_ESOCKTNOSUPPORT -> "socket type not supported"
+    UV_ENODATA -> "no data available"
     UV_EUNATCH -> "protocol driver not attached"
+    UV_ERRNO_MAX -> "unknown error"
