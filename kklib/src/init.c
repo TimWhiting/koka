@@ -98,6 +98,7 @@ typedef enum kk_log_level_e {
 static void kk_log_message(kk_log_level_t level, const char* msg, kk_context_t* ctx) {
   kk_unused(ctx); kk_unused(level);
   fputs(msg,stderr); // TODO: use ctx->log
+  fflush(stderr);
 }
 
 static void kk_log_message_fmt(kk_context_t* ctx, kk_log_level_t level, const char* fmt, va_list args) {

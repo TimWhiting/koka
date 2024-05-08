@@ -1,5 +1,4 @@
 void kk_uv_unit_callback(uv_handle_t* hndl) {
-  kk_info_message("Unit callback");
   kk_context_t* _ctx = kk_get_context();
   kk_function_t cb = kk_function_from_ptr(hndl->data, _ctx);
   kk_function_call(void, (kk_function_t, kk_context_t*),cb, (cb, _ctx), _ctx);

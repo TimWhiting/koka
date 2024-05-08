@@ -5,12 +5,12 @@ fun main()
   println("Running main")
   signal-start-oneshot(sSIGINT) fn() 
     println("Got SIGINT!")
-    // signal-start(sSIGINT) fn(s)
-    //   if !n == 5 then
-    //     s.signal-stop()
-    //     ()
-    //   else
-    //     println("Got SIGINT! x " ++ (!n).show)
-    //     n := !n + 1
-    // ()
+    signal-start(sSIGINT) fn(s)
+      println("Got SIGINT! x " ++ (!n).show)
+      if !n == 5 then
+        s.signal-stop()
+        ()
+      else
+        n := !n + 1
+    ()
   ()
