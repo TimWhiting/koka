@@ -20,1862 +20,1709 @@ extern import
 pub extern external/uv-version(): int32
   c inline "(unsigned int)uv_version()"
 
-pub fun ffi/uv-version(): <> int
+pub inline fun ffi/uv-version(): <> int
   external/uv-version().int
 
-pub extern external/uv-version-string(): intptr_t
+pub extern external/uv-version-string(): c-pointer<int>
   c inline "(intptr_t)uv_version_string()"
-
-pub fun ffi/uv-version-string(): <> c-pointer<int>
-  C-pointer(external/uv-version-string())
 
 pub extern external/uv-library-shutdown(): ()
   c inline "(void)uv_library_shutdown()"
 
-pub extern external/uv-replace-allocator(^malloc-func: intptr_t, ^realloc-func: intptr_t, ^calloc-func: intptr_t, ^free-func: intptr_t): int32
+pub extern external/uv-replace-allocator(^malloc-func: c-pointer<intptr_t>, ^realloc-func: c-pointer<intptr_t>, ^calloc-func: c-pointer<intptr_t>, ^free-func: c-pointer<intptr_t>): int32
   c inline "(int)uv_replace_allocator((uv_malloc_func)#1, (uv_realloc_func)#2, (uv_calloc_func)#3, (uv_free_func)#4)"
 
-pub fun ffi/uv-replace-allocator(^malloc-func: c-pointer<intptr_t>, ^realloc-func: c-pointer<intptr_t>, ^calloc-func: c-pointer<intptr_t>, ^free-func: c-pointer<intptr_t>): <> int
-  external/uv-replace-allocator(malloc-func.cextern/c-pointer/ptr, realloc-func.cextern/c-pointer/ptr, calloc-func.cextern/c-pointer/ptr, free-func.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-replace-allocator(^malloc-func: uv-malloc-func, ^realloc-func: uv-realloc-func, ^calloc-func: uv-calloc-func, ^free-func: uv-free-func): <> int
+  external/uv-replace-allocator(malloc-func, realloc-func, calloc-func, free-func).int
 
-pub extern external/uv-default-loop(): intptr_t
+pub extern external/uv-default-loop(): c-pointer<uv-loop-s-c>
   c inline "(intptr_t)uv_default_loop()"
 
-pub fun ffi/uv-default-loop(): <> c-pointer<uv-loop-s-c>
-  C-pointer(external/uv-default-loop())
-
-pub extern external/uv-loop-init(^loop: intptr_t): int32
+pub extern external/uv-loop-init(^loop: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_loop_init((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-init(^loop: c-pointer<uv-loop-s-c>): <> int
-  external/uv-loop-init(loop.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-loop-init(^loop: c-pointer<uv-loop-s-c>): <> int
+  external/uv-loop-init(loop).int
 
-pub extern external/uv-loop-close(^loop: intptr_t): int32
+pub extern external/uv-loop-close(^loop: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_loop_close((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-close(^loop: c-pointer<uv-loop-s-c>): <> int
-  external/uv-loop-close(loop.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-loop-close(^loop: c-pointer<uv-loop-s-c>): <> int
+  external/uv-loop-close(loop).int
 
-pub extern external/uv-loop-new(): intptr_t
+pub extern external/uv-loop-new(): c-pointer<uv-loop-s-c>
   c inline "(intptr_t)uv_loop_new()"
 
-pub fun ffi/uv-loop-new(): <> c-pointer<uv-loop-s-c>
-  C-pointer(external/uv-loop-new())
-
-pub extern external/uv-loop-delete(^arg0: intptr_t): ()
+pub extern external/uv-loop-delete(^arg0: c-pointer<uv-loop-s-c>): ()
   c inline "(void)uv_loop_delete((uv_loop_t*)#1)"
-
-pub fun ffi/uv-loop-delete(^arg0: c-pointer<uv-loop-s-c>): <> ()
-  external/uv-loop-delete(arg0.cextern/c-pointer/ptr)
 
 pub extern external/uv-loop-size(): ssize_t
   c inline "(size_t)uv_loop_size()"
 
-pub fun ffi/uv-loop-size(): <> int
+pub inline fun ffi/uv-loop-size(): <> int
   external/uv-loop-size().int
 
-pub extern external/uv-loop-alive(^loop: intptr_t): int32
+pub extern external/uv-loop-alive(^loop: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_loop_alive((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-alive(^loop: c-pointer<uv-loop-s-c>): <> int
-  external/uv-loop-alive(loop.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-loop-alive(^loop: c-pointer<uv-loop-s-c>): <> int
+  external/uv-loop-alive(loop).int
 
-pub extern external/uv-loop-configure(^loop: intptr_t, ^option: int32): int32
+pub extern external/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: int32): int32
   c inline "(int)uv_loop_configure((uv_loop_t*)#1, (int32_t)#2)"
 
-pub fun ffi/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: uv-loop-option): <exn> int
-  external/uv-loop-configure(loop.cextern/c-pointer/ptr, option.uv-loop-option/int).int
+pub inline fun ffi/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: uv-loop-option): <exn> int
+  external/uv-loop-configure(loop, option.uv-loop-option/int).int
 
-pub extern external/uv-loop-fork(^loop: intptr_t): int32
+pub extern external/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_loop_fork((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): <> int
-  external/uv-loop-fork(loop.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): <> int
+  external/uv-loop-fork(loop).int
 
-pub extern external/uv-run(^arg0: intptr_t, ^mode: int32): int32
+pub extern external/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: int32): int32
   c inline "(int)uv_run((uv_loop_t*)#1, (int32_t)#2)"
 
-pub fun ffi/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: uv-run-mode): <exn> int
-  external/uv-run(arg0.cextern/c-pointer/ptr, mode.uv-run-mode/int).int
+pub inline fun ffi/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: uv-run-mode): <exn> int
+  external/uv-run(arg0, mode.uv-run-mode/int).int
 
-pub extern external/uv-stop(^arg0: intptr_t): ()
+pub extern external/uv-stop(^arg0: c-pointer<uv-loop-s-c>): ()
   c inline "(void)uv_stop((uv_loop_t*)#1)"
 
-pub fun ffi/uv-stop(^arg0: c-pointer<uv-loop-s-c>): <> ()
-  external/uv-stop(arg0.cextern/c-pointer/ptr)
-
-pub extern external/uv-ref(^arg0: intptr_t): ()
+pub extern external/uv-ref(^arg0: c-pointer<uv-handle-s-c>): ()
   c inline "(void)uv_ref((uv_handle_t*)#1)"
 
-pub fun ffi/uv-ref(^arg0: c-pointer<uv-handle-s-c>): <> ()
-  external/uv-ref(arg0.cextern/c-pointer/ptr)
-
-pub extern external/uv-unref(^arg0: intptr_t): ()
+pub extern external/uv-unref(^arg0: c-pointer<uv-handle-s-c>): ()
   c inline "(void)uv_unref((uv_handle_t*)#1)"
 
-pub fun ffi/uv-unref(^arg0: c-pointer<uv-handle-s-c>): <> ()
-  external/uv-unref(arg0.cextern/c-pointer/ptr)
-
-pub extern external/uv-has-ref(^arg0: intptr_t): int32
+pub extern external/uv-has-ref(^arg0: c-pointer<uv-handle-s-c>): int32
   c inline "(int)uv_has_ref((uv_handle_t*)#1)"
 
-pub fun ffi/uv-has-ref(^arg0: c-pointer<uv-handle-s-c>): <> int
-  external/uv-has-ref(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-has-ref(^arg0: c-pointer<uv-handle-s-c>): <> int
+  external/uv-has-ref(arg0).int
 
-pub extern external/uv-update-time(^arg0: intptr_t): ()
+pub extern external/uv-update-time(^arg0: c-pointer<uv-loop-s-c>): ()
   c inline "(void)uv_update_time((uv_loop_t*)#1)"
 
-pub fun ffi/uv-update-time(^arg0: c-pointer<uv-loop-s-c>): <> ()
-  external/uv-update-time(arg0.cextern/c-pointer/ptr)
-
-pub extern external/uv-now(^arg0: intptr_t): int64
+pub extern external/uv-now(^arg0: c-pointer<uv-loop-s-c>): int64
   c inline "(int64_t)uv_now((uv_loop_t*)#1)"
 
-pub fun ffi/uv-now(^arg0: c-pointer<uv-loop-s-c>): <> int
-  external/uv-now(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-now(^arg0: c-pointer<uv-loop-s-c>): <> int
+  external/uv-now(arg0).int
 
-pub extern external/uv-backend-fd(^arg0: intptr_t): int32
+pub extern external/uv-backend-fd(^arg0: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_backend_fd((uv_loop_t*)#1)"
 
-pub fun ffi/uv-backend-fd(^arg0: c-pointer<uv-loop-s-c>): <> int
-  external/uv-backend-fd(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-backend-fd(^arg0: c-pointer<uv-loop-s-c>): <> int
+  external/uv-backend-fd(arg0).int
 
-pub extern external/uv-backend-timeout(^arg0: intptr_t): int32
+pub extern external/uv-backend-timeout(^arg0: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_backend_timeout((uv_loop_t*)#1)"
 
-pub fun ffi/uv-backend-timeout(^arg0: c-pointer<uv-loop-s-c>): <> int
-  external/uv-backend-timeout(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-backend-timeout(^arg0: c-pointer<uv-loop-s-c>): <> int
+  external/uv-backend-timeout(arg0).int
 
 pub extern external/uv-translate-sys-error(^sys-errno: int32): int32
   c inline "(int)uv_translate_sys_error((int)#1)"
 
-pub fun ffi/uv-translate-sys-error(^sys-errno: int): <> int
+pub inline fun ffi/uv-translate-sys-error(^sys-errno: int): <> int
   external/uv-translate-sys-error(sys-errno.int32).int
 
-pub extern external/uv-strerror(^err: int32): intptr_t
+pub extern external/uv-strerror(^err: int32): c-pointer<int>
   c inline "(intptr_t)uv_strerror((int)#1)"
 
-pub fun ffi/uv-strerror(^err: int): <> c-pointer<int>
-  C-pointer(external/uv-strerror(err.int32))
+pub inline fun ffi/uv-strerror(^err: int): <> c-pointer<int>
+  external/uv-strerror(err.int32)
 
-pub extern external/uv-strerror-r(^err: int32, ^buf: intptr_t, ^buflen: ssize_t): intptr_t
+pub extern external/uv-strerror-r(^err: int32, ^buf: c-pointer<int>, ^buflen: ssize_t): c-pointer<int>
   c inline "(intptr_t)uv_strerror_r((int)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-strerror-r(^err: int, ^buf: c-pointer<int>, ^buflen: int): <> c-pointer<int>
-  C-pointer(external/uv-strerror-r(err.int32, buf.cextern/c-pointer/ptr, buflen.ssize_t))
+pub inline fun ffi/uv-strerror-r(^err: int, ^buf: c-pointer<int>, ^buflen: int): <> c-pointer<int>
+  external/uv-strerror-r(err.int32, buf, buflen.ssize_t)
 
-pub extern external/uv-err-name(^err: int32): intptr_t
+pub extern external/uv-err-name(^err: int32): c-pointer<int>
   c inline "(intptr_t)uv_err_name((int)#1)"
 
-pub fun ffi/uv-err-name(^err: int): <> c-pointer<int>
-  C-pointer(external/uv-err-name(err.int32))
+pub inline fun ffi/uv-err-name(^err: int): <> c-pointer<int>
+  external/uv-err-name(err.int32)
 
-pub extern external/uv-err-name-r(^err: int32, ^buf: intptr_t, ^buflen: ssize_t): intptr_t
+pub extern external/uv-err-name-r(^err: int32, ^buf: c-pointer<int>, ^buflen: ssize_t): c-pointer<int>
   c inline "(intptr_t)uv_err_name_r((int)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-err-name-r(^err: int, ^buf: c-pointer<int>, ^buflen: int): <> c-pointer<int>
-  C-pointer(external/uv-err-name-r(err.int32, buf.cextern/c-pointer/ptr, buflen.ssize_t))
+pub inline fun ffi/uv-err-name-r(^err: int, ^buf: c-pointer<int>, ^buflen: int): <> c-pointer<int>
+  external/uv-err-name-r(err.int32, buf, buflen.ssize_t)
 
-pub extern external/uv-shutdown(^req: intptr_t, ^handle1: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-shutdown(^req: c-pointer<uv-shutdown-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_shutdown((uv_shutdown_t*)#1, (uv_stream_t*)#2, (uv_shutdown_cb)#3)"
 
-pub fun ffi/uv-shutdown(^req: c-pointer<uv-shutdown-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-shutdown(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-shutdown(^req: c-pointer<uv-shutdown-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^cb: uv-shutdown-cb): <> int
+  external/uv-shutdown(req, handle1, cb).int
 
 pub extern external/uv-handle-size(^type1: int32): ssize_t
   c inline "(size_t)uv_handle_size((int32_t)#1)"
 
-pub fun ffi/uv-handle-size(^type1: uv-handle-type): <exn> int
+pub inline fun ffi/uv-handle-size(^type1: uv-handle-type): <exn> int
   external/uv-handle-size(type1.uv-handle-type/int).int
 
-pub extern external/uv-handle-get-type(^handle1: intptr_t): int32
+pub extern external/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): int32
   c inline "(int32_t)uv_handle_get_type((uv_handle_t*)#1)"
 
-pub fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): <exn> uv-handle-type
-  external/uv-handle-get-type(handle1.cextern/c-pointer/ptr).int/uv-handle-type
+pub inline fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): <exn> uv-handle-type
+  external/uv-handle-get-type(handle1).int/uv-handle-type
 
-pub extern external/uv-handle-type-name(^type1: int32): intptr_t
+pub extern external/uv-handle-type-name(^type1: int32): c-pointer<int>
   c inline "(intptr_t)uv_handle_type_name((int32_t)#1)"
 
-pub fun ffi/uv-handle-type-name(^type1: uv-handle-type): <exn> c-pointer<int>
-  C-pointer(external/uv-handle-type-name(type1.uv-handle-type/int))
+pub inline fun ffi/uv-handle-type-name(^type1: uv-handle-type): <exn> c-pointer<int>
+  external/uv-handle-type-name(type1.uv-handle-type/int)
 
-pub extern external/uv-handle-get-data(^handle1: intptr_t): intptr_t
+pub extern external/uv-handle-get-data(^handle1: c-pointer<uv-handle-s-c>): c-pointer<()>
   c inline "(intptr_t)uv_handle_get_data((uv_handle_t*)#1)"
 
-pub fun ffi/uv-handle-get-data(^handle1: c-pointer<uv-handle-s-c>): <> c-pointer<()>
-  C-pointer(external/uv-handle-get-data(handle1.cextern/c-pointer/ptr))
-
-pub extern external/uv-handle-get-loop(^handle1: intptr_t): intptr_t
+pub extern external/uv-handle-get-loop(^handle1: c-pointer<uv-handle-s-c>): c-pointer<uv-loop-s-c>
   c inline "(intptr_t)uv_handle_get_loop((uv_handle_t*)#1)"
 
-pub fun ffi/uv-handle-get-loop(^handle1: c-pointer<uv-handle-s-c>): <> c-pointer<uv-loop-s-c>
-  C-pointer(external/uv-handle-get-loop(handle1.cextern/c-pointer/ptr))
-
-pub extern external/uv-handle-set-data(^handle1: intptr_t, ^data: intptr_t): ()
+pub extern external/uv-handle-set-data(^handle1: c-pointer<uv-handle-s-c>, ^data: c-pointer<()>): ()
   c inline "(void)uv_handle_set_data((uv_handle_t*)#1, (void*)#2)"
-
-pub fun ffi/uv-handle-set-data(^handle1: c-pointer<uv-handle-s-c>, ^data: c-pointer<()>): <> ()
-  external/uv-handle-set-data(handle1.cextern/c-pointer/ptr, data.cextern/c-pointer/ptr)
 
 pub extern external/uv-req-size(^type1: int32): ssize_t
   c inline "(size_t)uv_req_size((int32_t)#1)"
 
-pub fun ffi/uv-req-size(^type1: uv-req-type): <exn> int
+pub inline fun ffi/uv-req-size(^type1: uv-req-type): <exn> int
   external/uv-req-size(type1.uv-req-type/int).int
 
-pub extern external/uv-req-get-data(^req: intptr_t): intptr_t
+pub extern external/uv-req-get-data(^req: c-pointer<uv-req-s-c>): c-pointer<()>
   c inline "(intptr_t)uv_req_get_data((uv_req_t*)#1)"
 
-pub fun ffi/uv-req-get-data(^req: c-pointer<uv-req-s-c>): <> c-pointer<()>
-  C-pointer(external/uv-req-get-data(req.cextern/c-pointer/ptr))
-
-pub extern external/uv-req-set-data(^req: intptr_t, ^data: intptr_t): ()
+pub extern external/uv-req-set-data(^req: c-pointer<uv-req-s-c>, ^data: c-pointer<()>): ()
   c inline "(void)uv_req_set_data((uv_req_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-req-set-data(^req: c-pointer<uv-req-s-c>, ^data: c-pointer<()>): <> ()
-  external/uv-req-set-data(req.cextern/c-pointer/ptr, data.cextern/c-pointer/ptr)
-
-pub extern external/uv-req-get-type(^req: intptr_t): int32
+pub extern external/uv-req-get-type(^req: c-pointer<uv-req-s-c>): int32
   c inline "(int32_t)uv_req_get_type((uv_req_t*)#1)"
 
-pub fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): <exn> uv-req-type
-  external/uv-req-get-type(req.cextern/c-pointer/ptr).int/uv-req-type
+pub inline fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): <exn> uv-req-type
+  external/uv-req-get-type(req).int/uv-req-type
 
-pub extern external/uv-req-type-name(^type1: int32): intptr_t
+pub extern external/uv-req-type-name(^type1: int32): c-pointer<int>
   c inline "(intptr_t)uv_req_type_name((int32_t)#1)"
 
-pub fun ffi/uv-req-type-name(^type1: uv-req-type): <exn> c-pointer<int>
-  C-pointer(external/uv-req-type-name(type1.uv-req-type/int))
+pub inline fun ffi/uv-req-type-name(^type1: uv-req-type): <exn> c-pointer<int>
+  external/uv-req-type-name(type1.uv-req-type/int)
 
-pub extern external/uv-is-active(^handle1: intptr_t): int32
+pub extern external/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): int32
   c inline "(int)uv_is_active((uv_handle_t*)#1)"
 
-pub fun ffi/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): <> int
-  external/uv-is-active(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): <> int
+  external/uv-is-active(handle1).int
 
-pub extern external/uv-walk(^loop: intptr_t, ^walk-cb: intptr_t, ^arg: intptr_t): ()
+pub extern external/uv-walk(^loop: c-pointer<uv-loop-s-c>, ^walk-cb: c-pointer<intptr_t>, ^arg: c-pointer<()>): ()
   c inline "(void)uv_walk((uv_loop_t*)#1, (uv_walk_cb)#2, (void*)#3)"
 
-pub fun ffi/uv-walk(^loop: c-pointer<uv-loop-s-c>, ^walk-cb: c-pointer<intptr_t>, ^arg: c-pointer<()>): <> ()
-  external/uv-walk(loop.cextern/c-pointer/ptr, walk-cb.cextern/c-pointer/ptr, arg.cextern/c-pointer/ptr)
-
-pub extern external/uv-print-all-handles(^loop: intptr_t, ^stream: intptr_t): ()
+pub extern external/uv-print-all-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): ()
   c inline "(void)uv_print_all_handles((uv_loop_t*)#1, (FILE*)#2)"
 
-pub fun ffi/uv-print-all-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): <> ()
-  external/uv-print-all-handles(loop.cextern/c-pointer/ptr, stream.cextern/c-pointer/ptr)
-
-pub extern external/uv-print-active-handles(^loop: intptr_t, ^stream: intptr_t): ()
+pub extern external/uv-print-active-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): ()
   c inline "(void)uv_print_active_handles((uv_loop_t*)#1, (FILE*)#2)"
 
-pub fun ffi/uv-print-active-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): <> ()
-  external/uv-print-active-handles(loop.cextern/c-pointer/ptr, stream.cextern/c-pointer/ptr)
-
-pub extern external/uv-close(^handle1: intptr_t, ^close-cb: intptr_t): ()
+pub extern external/uv-close(^handle1: c-pointer<uv-handle-s-c>, ^close-cb: c-pointer<intptr_t>): ()
   c inline "(void)uv_close((uv_handle_t*)#1, (uv_close_cb)#2)"
 
-pub fun ffi/uv-close(^handle1: c-pointer<uv-handle-s-c>, ^close-cb: c-pointer<intptr_t>): <> ()
-  external/uv-close(handle1.cextern/c-pointer/ptr, close-cb.cextern/c-pointer/ptr)
-
-pub extern external/uv-send-buffer-size(^handle1: intptr_t, ^value: intptr_t): int32
+pub extern external/uv-send-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): int32
   c inline "(int)uv_send_buffer_size((uv_handle_t*)#1, (int*)#2)"
 
-pub fun ffi/uv-send-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): <> int
-  external/uv-send-buffer-size(handle1.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-send-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): <> int
+  external/uv-send-buffer-size(handle1, value).int
 
-pub extern external/uv-recv-buffer-size(^handle1: intptr_t, ^value: intptr_t): int32
+pub extern external/uv-recv-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): int32
   c inline "(int)uv_recv_buffer_size((uv_handle_t*)#1, (int*)#2)"
 
-pub fun ffi/uv-recv-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): <> int
-  external/uv-recv-buffer-size(handle1.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-recv-buffer-size(^handle1: c-pointer<uv-handle-s-c>, ^value: c-pointer<int>): <> int
+  external/uv-recv-buffer-size(handle1, value).int
 
-pub extern external/uv-fileno(^handle1: intptr_t, ^fd: intptr_t): int32
+pub extern external/uv-fileno(^handle1: c-pointer<uv-handle-s-c>, ^fd: c-pointer<int>): int32
   c inline "(int)uv_fileno((uv_handle_t*)#1, (uv_os_fd_t*)#2)"
 
-pub fun ffi/uv-fileno(^handle1: c-pointer<uv-handle-s-c>, ^fd: c-pointer<int>): <> int
-  external/uv-fileno(handle1.cextern/c-pointer/ptr, fd.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fileno(^handle1: c-pointer<uv-handle-s-c>, ^fd: c-pointer<int>): <> int
+  external/uv-fileno(handle1, fd).int
 
-pub extern external/uv-buf-init(^base: intptr_t, ^len: int32): intptr_t
+pub extern external/uv-buf-init(^base: c-pointer<int>, ^len: int32): c-pointer<uv-buf-t-c>
   c inline "struct uv_buf_t* _s = kk_malloc(sizeof(struct uv_buf_t), kk_context());\n*_s = uv_buf_init((char*)#1, (unsigned int)#2);\n(intptr_t)_s"
 
-pub fun ffi/uv-buf-init(^base: c-pointer<int>, ^len: int): <> c-pointer<uv-buf-t-c>
-  C-pointer(external/uv-buf-init(base.cextern/c-pointer/ptr, len.int32))
+pub inline fun ffi/uv-buf-init(^base: c-pointer<int>, ^len: int): <> c-pointer<uv-buf-t-c>
+  external/uv-buf-init(base, len.int32)
 
-pub extern external/uv-pipe(^fds: intptr_t, ^read-flags: int32, ^write-flags: int32): int32
+pub extern external/uv-pipe(^fds: c-pointer<int>, ^read-flags: int32, ^write-flags: int32): int32
   c inline "(int)uv_pipe((uv_file*)#1, (int)#2, (int)#3)"
 
-pub fun ffi/uv-pipe(^fds: c-array<int>, ^read-flags: int, ^write-flags: int): <> int
+pub inline fun ffi/uv-pipe(^fds: c-array<int>, ^read-flags: int, ^write-flags: int): <> int
   external/uv-pipe(fds.cextern/carray/cptr, read-flags.int32, write-flags.int32).int
 
-pub extern external/uv-socketpair(^type1: int32, ^protocol: int32, ^socket-vector: intptr_t, ^flags0: int32, ^flags1: int32): int32
+pub extern external/uv-socketpair(^type1: int32, ^protocol: int32, ^socket-vector: c-pointer<int>, ^flags0: int32, ^flags1: int32): int32
   c inline "(int)uv_socketpair((int)#1, (int)#2, (uv_os_sock_t*)#3, (int)#4, (int)#5)"
 
-pub fun ffi/uv-socketpair(^type1: int, ^protocol: int, ^socket-vector: c-array<int>, ^flags0: int, ^flags1: int): <> int
+pub inline fun ffi/uv-socketpair(^type1: int, ^protocol: int, ^socket-vector: c-array<int>, ^flags0: int, ^flags1: int): <> int
   external/uv-socketpair(type1.int32, protocol.int32, socket-vector.cextern/carray/cptr, flags0.int32, flags1.int32).int
 
-pub extern external/uv-stream-get-write-queue-size(^stream: intptr_t): ssize_t
+pub extern external/uv-stream-get-write-queue-size(^stream: c-pointer<uv-stream-s-c>): ssize_t
   c inline "(size_t)uv_stream_get_write_queue_size((uv_stream_t*)#1)"
 
-pub fun ffi/uv-stream-get-write-queue-size(^stream: c-pointer<uv-stream-s-c>): <> int
-  external/uv-stream-get-write-queue-size(stream.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-stream-get-write-queue-size(^stream: c-pointer<uv-stream-s-c>): <> int
+  external/uv-stream-get-write-queue-size(stream).int
 
-pub extern external/uv-listen(^stream: intptr_t, ^backlog: int32, ^cb: intptr_t): int32
+pub extern external/uv-listen(^stream: c-pointer<uv-stream-s-c>, ^backlog: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_listen((uv_stream_t*)#1, (int)#2, (uv_connection_cb)#3)"
 
-pub fun ffi/uv-listen(^stream: c-pointer<uv-stream-s-c>, ^backlog: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-listen(stream.cextern/c-pointer/ptr, backlog.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-listen(^stream: c-pointer<uv-stream-s-c>, ^backlog: int, ^cb: uv-connection-cb): <> int
+  external/uv-listen(stream, backlog.int32, cb).int
 
-pub extern external/uv-accept(^server: intptr_t, ^client: intptr_t): int32
+pub extern external/uv-accept(^server: c-pointer<uv-stream-s-c>, ^client: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_accept((uv_stream_t*)#1, (uv_stream_t*)#2)"
 
-pub fun ffi/uv-accept(^server: c-pointer<uv-stream-s-c>, ^client: c-pointer<uv-stream-s-c>): <> int
-  external/uv-accept(server.cextern/c-pointer/ptr, client.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-accept(^server: c-pointer<uv-stream-s-c>, ^client: c-pointer<uv-stream-s-c>): <> int
+  external/uv-accept(server, client).int
 
-pub extern external/uv-read-start(^arg0: intptr_t, ^alloc-cb: intptr_t, ^read-cb: intptr_t): int32
+pub extern external/uv-read-start(^arg0: c-pointer<uv-stream-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^read-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_read_start((uv_stream_t*)#1, (uv_alloc_cb)#2, (uv_read_cb)#3)"
 
-pub fun ffi/uv-read-start(^arg0: c-pointer<uv-stream-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^read-cb: c-pointer<intptr_t>): <> int
-  external/uv-read-start(arg0.cextern/c-pointer/ptr, alloc-cb.cextern/c-pointer/ptr, read-cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-read-start(^arg0: c-pointer<uv-stream-s-c>, ^alloc-cb: uv-alloc-cb, ^read-cb: uv-read-cb): <> int
+  external/uv-read-start(arg0, alloc-cb, read-cb).int
 
-pub extern external/uv-read-stop(^arg0: intptr_t): int32
+pub extern external/uv-read-stop(^arg0: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_read_stop((uv_stream_t*)#1)"
 
-pub fun ffi/uv-read-stop(^arg0: c-pointer<uv-stream-s-c>): <> int
-  external/uv-read-stop(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-read-stop(^arg0: c-pointer<uv-stream-s-c>): <> int
+  external/uv-read-stop(arg0).int
 
-pub extern external/uv-write(^req: intptr_t, ^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^cb: intptr_t): int32
+pub extern external/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_write((uv_write_t*)#1, (uv_stream_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (uv_write_cb)#5)"
 
-pub fun ffi/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-write(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^cb: uv-write-cb): <> int
+  external/uv-write(req, handle1, bufs.cextern/carray/cptr, nbufs.int32, cb).int
 
-pub extern external/uv-write2(^req: intptr_t, ^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^send-handle: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_write2((uv_write_t*)#1, (uv_stream_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (uv_stream_t*)#5, (uv_write_cb)#6)"
 
-pub fun ffi/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-write2(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, send-handle.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: uv-write-cb): <> int
+  external/uv-write2(req, handle1, bufs.cextern/carray/cptr, nbufs.int32, send-handle, cb).int
 
-pub extern external/uv-try-write(^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32): int32
+pub extern external/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32): int32
   c inline "(int)uv_try_write((uv_stream_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int): <> int
-  external/uv-try-write(handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32).int
+pub inline fun ffi/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int): <> int
+  external/uv-try-write(handle1, bufs.cextern/carray/cptr, nbufs.int32).int
 
-pub extern external/uv-try-write2(^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^send-handle: intptr_t): int32
+pub extern external/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^send-handle: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_try_write2((uv_stream_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (uv_stream_t*)#4)"
 
-pub fun ffi/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>): <> int
-  external/uv-try-write2(handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, send-handle.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>): <> int
+  external/uv-try-write2(handle1, bufs.cextern/carray/cptr, nbufs.int32, send-handle).int
 
-pub extern external/uv-is-readable(^handle1: intptr_t): int32
+pub extern external/uv-is-readable(^handle1: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_is_readable((uv_stream_t*)#1)"
 
-pub fun ffi/uv-is-readable(^handle1: c-pointer<uv-stream-s-c>): <> int
-  external/uv-is-readable(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-is-readable(^handle1: c-pointer<uv-stream-s-c>): <> int
+  external/uv-is-readable(handle1).int
 
-pub extern external/uv-is-writable(^handle1: intptr_t): int32
+pub extern external/uv-is-writable(^handle1: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_is_writable((uv_stream_t*)#1)"
 
-pub fun ffi/uv-is-writable(^handle1: c-pointer<uv-stream-s-c>): <> int
-  external/uv-is-writable(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-is-writable(^handle1: c-pointer<uv-stream-s-c>): <> int
+  external/uv-is-writable(handle1).int
 
-pub extern external/uv-stream-set-blocking(^handle1: intptr_t, ^blocking: int32): int32
+pub extern external/uv-stream-set-blocking(^handle1: c-pointer<uv-stream-s-c>, ^blocking: int32): int32
   c inline "(int)uv_stream_set_blocking((uv_stream_t*)#1, (int)#2)"
 
-pub fun ffi/uv-stream-set-blocking(^handle1: c-pointer<uv-stream-s-c>, ^blocking: int): <> int
-  external/uv-stream-set-blocking(handle1.cextern/c-pointer/ptr, blocking.int32).int
+pub inline fun ffi/uv-stream-set-blocking(^handle1: c-pointer<uv-stream-s-c>, ^blocking: int): <> int
+  external/uv-stream-set-blocking(handle1, blocking.int32).int
 
-pub extern external/uv-is-closing(^handle1: intptr_t): int32
+pub extern external/uv-is-closing(^handle1: c-pointer<uv-handle-s-c>): int32
   c inline "(int)uv_is_closing((uv_handle_t*)#1)"
 
-pub fun ffi/uv-is-closing(^handle1: c-pointer<uv-handle-s-c>): <> int
-  external/uv-is-closing(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-is-closing(^handle1: c-pointer<uv-handle-s-c>): <> int
+  external/uv-is-closing(handle1).int
 
-pub extern external/uv-tcp-init(^arg0: intptr_t, ^handle1: intptr_t): int32
+pub extern external/uv-tcp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>): int32
   c inline "(int)uv_tcp_init((uv_loop_t*)#1, (uv_tcp_t*)#2)"
 
-pub fun ffi/uv-tcp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>): <> int
-  external/uv-tcp-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tcp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>): <> int
+  external/uv-tcp-init(arg0, handle1).int
 
-pub extern external/uv-tcp-init-ex(^arg0: intptr_t, ^handle1: intptr_t, ^flags: int32): int32
+pub extern external/uv-tcp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^flags: int32): int32
   c inline "(int)uv_tcp_init_ex((uv_loop_t*)#1, (uv_tcp_t*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-tcp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^flags: int): <> int
-  external/uv-tcp-init-ex(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-tcp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^flags: int): <> int
+  external/uv-tcp-init-ex(arg0, handle1, flags.int32).int
 
-pub extern external/uv-tcp-open(^handle1: intptr_t, ^sock: int32): int32
+pub extern external/uv-tcp-open(^handle1: c-pointer<uv-tcp-s-c>, ^sock: int32): int32
   c inline "(int)uv_tcp_open((uv_tcp_t*)#1, (uv_os_sock_t)#2)"
 
-pub fun ffi/uv-tcp-open(^handle1: c-pointer<uv-tcp-s-c>, ^sock: int): <> int
-  external/uv-tcp-open(handle1.cextern/c-pointer/ptr, sock.int32).int
+pub inline fun ffi/uv-tcp-open(^handle1: c-pointer<uv-tcp-s-c>, ^sock: int): <> int
+  external/uv-tcp-open(handle1, sock.int32).int
 
-pub extern external/uv-tcp-nodelay(^handle1: intptr_t, ^enable: int32): int32
+pub extern external/uv-tcp-nodelay(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int32): int32
   c inline "(int)uv_tcp_nodelay((uv_tcp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-tcp-nodelay(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): <> int
-  external/uv-tcp-nodelay(handle1.cextern/c-pointer/ptr, enable.int32).int
+pub inline fun ffi/uv-tcp-nodelay(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): <> int
+  external/uv-tcp-nodelay(handle1, enable.int32).int
 
-pub extern external/uv-tcp-keepalive(^handle1: intptr_t, ^enable: int32, ^delay: int32): int32
+pub extern external/uv-tcp-keepalive(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int32, ^delay: int32): int32
   c inline "(int)uv_tcp_keepalive((uv_tcp_t*)#1, (int)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-tcp-keepalive(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int, ^delay: int): <> int
-  external/uv-tcp-keepalive(handle1.cextern/c-pointer/ptr, enable.int32, delay.int32).int
+pub inline fun ffi/uv-tcp-keepalive(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int, ^delay: int): <> int
+  external/uv-tcp-keepalive(handle1, enable.int32, delay.int32).int
 
-pub extern external/uv-tcp-simultaneous-accepts(^handle1: intptr_t, ^enable: int32): int32
+pub extern external/uv-tcp-simultaneous-accepts(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int32): int32
   c inline "(int)uv_tcp_simultaneous_accepts((uv_tcp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-tcp-simultaneous-accepts(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): <> int
-  external/uv-tcp-simultaneous-accepts(handle1.cextern/c-pointer/ptr, enable.int32).int
+pub inline fun ffi/uv-tcp-simultaneous-accepts(^handle1: c-pointer<uv-tcp-s-c>, ^enable: int): <> int
+  external/uv-tcp-simultaneous-accepts(handle1, enable.int32).int
 
-pub extern external/uv-tcp-bind(^handle1: intptr_t, ^addr: intptr_t, ^flags: int32): int32
+pub extern external/uv-tcp-bind(^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int32): int32
   c inline "(int)uv_tcp_bind((uv_tcp_t*)#1, (struct sockaddr*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-tcp-bind(^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
-  external/uv-tcp-bind(handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-tcp-bind(^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
+  external/uv-tcp-bind(handle1, addr, flags.int32).int
 
-pub extern external/uv-tcp-getsockname(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
+pub extern external/uv-tcp-getsockname(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int32
   c inline "(int)uv_tcp_getsockname((uv_tcp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-tcp-getsockname(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
-  external/uv-tcp-getsockname(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tcp-getsockname(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
+  external/uv-tcp-getsockname(handle1, name, namelen).int
 
-pub extern external/uv-tcp-getpeername(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
+pub extern external/uv-tcp-getpeername(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int32
   c inline "(int)uv_tcp_getpeername((uv_tcp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-tcp-getpeername(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
-  external/uv-tcp-getpeername(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tcp-getpeername(^handle1: c-pointer<uv-tcp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
+  external/uv-tcp-getpeername(handle1, name, namelen).int
 
-pub extern external/uv-tcp-close-reset(^handle1: intptr_t, ^close-cb: intptr_t): int32
+pub extern external/uv-tcp-close-reset(^handle1: c-pointer<uv-tcp-s-c>, ^close-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_tcp_close_reset((uv_tcp_t*)#1, (uv_close_cb)#2)"
 
-pub fun ffi/uv-tcp-close-reset(^handle1: c-pointer<uv-tcp-s-c>, ^close-cb: c-pointer<intptr_t>): <> int
-  external/uv-tcp-close-reset(handle1.cextern/c-pointer/ptr, close-cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tcp-close-reset(^handle1: c-pointer<uv-tcp-s-c>, ^close-cb: uv-close-cb): <> int
+  external/uv-tcp-close-reset(handle1, close-cb).int
 
-pub extern external/uv-tcp-connect(^req: intptr_t, ^handle1: intptr_t, ^addr: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-tcp-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_tcp_connect((uv_connect_t*)#1, (uv_tcp_t*)#2, (struct sockaddr*)#3, (uv_connect_cb)#4)"
 
-pub fun ffi/uv-tcp-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-tcp-connect(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tcp-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-tcp-s-c>, ^addr: c-pointer<sockaddr-c>, ^cb: uv-connect-cb): <> int
+  external/uv-tcp-connect(req, handle1, addr, cb).int
 
-pub extern external/uv-udp-init(^arg0: intptr_t, ^handle1: intptr_t): int32
+pub extern external/uv-udp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>): int32
   c inline "(int)uv_udp_init((uv_loop_t*)#1, (uv_udp_t*)#2)"
 
-pub fun ffi/uv-udp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>): <> int
-  external/uv-udp-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-init(arg0, handle1).int
 
-pub extern external/uv-udp-init-ex(^arg0: intptr_t, ^handle1: intptr_t, ^flags: int32): int32
+pub extern external/uv-udp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^flags: int32): int32
   c inline "(int)uv_udp_init_ex((uv_loop_t*)#1, (uv_udp_t*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-udp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^flags: int): <> int
-  external/uv-udp-init-ex(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-udp-init-ex(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^flags: int): <> int
+  external/uv-udp-init-ex(arg0, handle1, flags.int32).int
 
-pub extern external/uv-udp-open(^handle1: intptr_t, ^sock: int32): int32
+pub extern external/uv-udp-open(^handle1: c-pointer<uv-udp-s-c>, ^sock: int32): int32
   c inline "(int)uv_udp_open((uv_udp_t*)#1, (uv_os_sock_t)#2)"
 
-pub fun ffi/uv-udp-open(^handle1: c-pointer<uv-udp-s-c>, ^sock: int): <> int
-  external/uv-udp-open(handle1.cextern/c-pointer/ptr, sock.int32).int
+pub inline fun ffi/uv-udp-open(^handle1: c-pointer<uv-udp-s-c>, ^sock: int): <> int
+  external/uv-udp-open(handle1, sock.int32).int
 
-pub extern external/uv-udp-bind(^handle1: intptr_t, ^addr: intptr_t, ^flags: int32): int32
+pub extern external/uv-udp-bind(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int32): int32
   c inline "(int)uv_udp_bind((uv_udp_t*)#1, (struct sockaddr*)#2, (unsigned int)#3)"
 
-pub fun ffi/uv-udp-bind(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
-  external/uv-udp-bind(handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-udp-bind(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
+  external/uv-udp-bind(handle1, addr, flags.int32).int
 
-pub extern external/uv-udp-connect(^handle1: intptr_t, ^addr: intptr_t): int32
+pub extern external/uv-udp-connect(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>): int32
   c inline "(int)uv_udp_connect((uv_udp_t*)#1, (struct sockaddr*)#2)"
 
-pub fun ffi/uv-udp-connect(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>): <> int
-  external/uv-udp-connect(handle1.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-connect(^handle1: c-pointer<uv-udp-s-c>, ^addr: c-pointer<sockaddr-c>): <> int
+  external/uv-udp-connect(handle1, addr).int
 
-pub extern external/uv-udp-getpeername(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
+pub extern external/uv-udp-getpeername(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int32
   c inline "(int)uv_udp_getpeername((uv_udp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-udp-getpeername(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
-  external/uv-udp-getpeername(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-getpeername(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
+  external/uv-udp-getpeername(handle1, name, namelen).int
 
-pub extern external/uv-udp-getsockname(^handle1: intptr_t, ^name: intptr_t, ^namelen: intptr_t): int32
+pub extern external/uv-udp-getsockname(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): int32
   c inline "(int)uv_udp_getsockname((uv_udp_t*)#1, (struct sockaddr*)#2, (int*)#3)"
 
-pub fun ffi/uv-udp-getsockname(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
-  external/uv-udp-getsockname(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-getsockname(^handle1: c-pointer<uv-udp-s-c>, ^name: c-pointer<sockaddr-c>, ^namelen: c-pointer<int>): <> int
+  external/uv-udp-getsockname(handle1, name, namelen).int
 
-pub extern external/uv-udp-set-membership(^handle1: intptr_t, ^multicast-addr: intptr_t, ^interface-addr: intptr_t, ^membership: int32): int32
+pub extern external/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: int32): int32
   c inline "(int)uv_udp_set_membership((uv_udp_t*)#1, (char*)#2, (char*)#3, (int32_t)#4)"
 
-pub fun ffi/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
-  external/uv-udp-set-membership(handle1.cextern/c-pointer/ptr, multicast-addr.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr, membership.uv-membership/int).int
+pub inline fun ffi/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
+  external/uv-udp-set-membership(handle1, multicast-addr, interface-addr, membership.uv-membership/int).int
 
-pub extern external/uv-udp-set-source-membership(^handle1: intptr_t, ^multicast-addr: intptr_t, ^interface-addr: intptr_t, ^source-addr: intptr_t, ^membership: int32): int32
+pub extern external/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: int32): int32
   c inline "(int)uv_udp_set_source_membership((uv_udp_t*)#1, (char*)#2, (char*)#3, (char*)#4, (int32_t)#5)"
 
-pub fun ffi/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
-  external/uv-udp-set-source-membership(handle1.cextern/c-pointer/ptr, multicast-addr.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr, source-addr.cextern/c-pointer/ptr, membership.uv-membership/int).int
+pub inline fun ffi/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
+  external/uv-udp-set-source-membership(handle1, multicast-addr, interface-addr, source-addr, membership.uv-membership/int).int
 
-pub extern external/uv-udp-set-multicast-loop(^handle1: intptr_t, ^on1: int32): int32
+pub extern external/uv-udp-set-multicast-loop(^handle1: c-pointer<uv-udp-s-c>, ^on1: int32): int32
   c inline "(int)uv_udp_set_multicast_loop((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-multicast-loop(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): <> int
-  external/uv-udp-set-multicast-loop(handle1.cextern/c-pointer/ptr, on1.int32).int
+pub inline fun ffi/uv-udp-set-multicast-loop(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): <> int
+  external/uv-udp-set-multicast-loop(handle1, on1.int32).int
 
-pub extern external/uv-udp-set-multicast-ttl(^handle1: intptr_t, ^ttl: int32): int32
+pub extern external/uv-udp-set-multicast-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int32): int32
   c inline "(int)uv_udp_set_multicast_ttl((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-multicast-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): <> int
-  external/uv-udp-set-multicast-ttl(handle1.cextern/c-pointer/ptr, ttl.int32).int
+pub inline fun ffi/uv-udp-set-multicast-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): <> int
+  external/uv-udp-set-multicast-ttl(handle1, ttl.int32).int
 
-pub extern external/uv-udp-set-multicast-interface(^handle1: intptr_t, ^interface-addr: intptr_t): int32
+pub extern external/uv-udp-set-multicast-interface(^handle1: c-pointer<uv-udp-s-c>, ^interface-addr: c-pointer<int>): int32
   c inline "(int)uv_udp_set_multicast_interface((uv_udp_t*)#1, (char*)#2)"
 
-pub fun ffi/uv-udp-set-multicast-interface(^handle1: c-pointer<uv-udp-s-c>, ^interface-addr: c-pointer<int>): <> int
-  external/uv-udp-set-multicast-interface(handle1.cextern/c-pointer/ptr, interface-addr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-set-multicast-interface(^handle1: c-pointer<uv-udp-s-c>, ^interface-addr: c-pointer<int>): <> int
+  external/uv-udp-set-multicast-interface(handle1, interface-addr).int
 
-pub extern external/uv-udp-set-broadcast(^handle1: intptr_t, ^on1: int32): int32
+pub extern external/uv-udp-set-broadcast(^handle1: c-pointer<uv-udp-s-c>, ^on1: int32): int32
   c inline "(int)uv_udp_set_broadcast((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-broadcast(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): <> int
-  external/uv-udp-set-broadcast(handle1.cextern/c-pointer/ptr, on1.int32).int
+pub inline fun ffi/uv-udp-set-broadcast(^handle1: c-pointer<uv-udp-s-c>, ^on1: int): <> int
+  external/uv-udp-set-broadcast(handle1, on1.int32).int
 
-pub extern external/uv-udp-set-ttl(^handle1: intptr_t, ^ttl: int32): int32
+pub extern external/uv-udp-set-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int32): int32
   c inline "(int)uv_udp_set_ttl((uv_udp_t*)#1, (int)#2)"
 
-pub fun ffi/uv-udp-set-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): <> int
-  external/uv-udp-set-ttl(handle1.cextern/c-pointer/ptr, ttl.int32).int
+pub inline fun ffi/uv-udp-set-ttl(^handle1: c-pointer<uv-udp-s-c>, ^ttl: int): <> int
+  external/uv-udp-set-ttl(handle1, ttl.int32).int
 
-pub extern external/uv-udp-send(^req: intptr_t, ^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^addr: intptr_t, ^send-cb: intptr_t): int32
+pub extern external/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^addr: c-pointer<sockaddr-c>, ^send-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_udp_send((uv_udp_send_t*)#1, (uv_udp_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (struct sockaddr*)#5, (uv_udp_send_cb)#6)"
 
-pub fun ffi/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>, ^send-cb: c-pointer<intptr_t>): <> int
-  external/uv-udp-send(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, addr.cextern/c-pointer/ptr, send-cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>, ^send-cb: uv-udp-send-cb): <> int
+  external/uv-udp-send(req, handle1, bufs.cextern/carray/cptr, nbufs.int32, addr, send-cb).int
 
-pub extern external/uv-udp-try-send(^handle1: intptr_t, ^bufs: intptr_t, ^nbufs: int32, ^addr: intptr_t): int32
+pub extern external/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^addr: c-pointer<sockaddr-c>): int32
   c inline "(int)uv_udp_try_send((uv_udp_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (struct sockaddr*)#4)"
 
-pub fun ffi/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>): <> int
-  external/uv-udp-try-send(handle1.cextern/c-pointer/ptr, bufs.cextern/carray/cptr, nbufs.int32, addr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>): <> int
+  external/uv-udp-try-send(handle1, bufs.cextern/carray/cptr, nbufs.int32, addr).int
 
-pub extern external/uv-udp-recv-start(^handle1: intptr_t, ^alloc-cb: intptr_t, ^recv-cb: intptr_t): int32
+pub extern external/uv-udp-recv-start(^handle1: c-pointer<uv-udp-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^recv-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_udp_recv_start((uv_udp_t*)#1, (uv_alloc_cb)#2, (uv_udp_recv_cb)#3)"
 
-pub fun ffi/uv-udp-recv-start(^handle1: c-pointer<uv-udp-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^recv-cb: c-pointer<intptr_t>): <> int
-  external/uv-udp-recv-start(handle1.cextern/c-pointer/ptr, alloc-cb.cextern/c-pointer/ptr, recv-cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-recv-start(^handle1: c-pointer<uv-udp-s-c>, ^alloc-cb: uv-alloc-cb, ^recv-cb: uv-udp-recv-cb): <> int
+  external/uv-udp-recv-start(handle1, alloc-cb, recv-cb).int
 
-pub extern external/uv-udp-using-recvmmsg(^handle1: intptr_t): int32
+pub extern external/uv-udp-using-recvmmsg(^handle1: c-pointer<uv-udp-s-c>): int32
   c inline "(int)uv_udp_using_recvmmsg((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-using-recvmmsg(^handle1: c-pointer<uv-udp-s-c>): <> int
-  external/uv-udp-using-recvmmsg(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-using-recvmmsg(^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-using-recvmmsg(handle1).int
 
-pub extern external/uv-udp-recv-stop(^handle1: intptr_t): int32
+pub extern external/uv-udp-recv-stop(^handle1: c-pointer<uv-udp-s-c>): int32
   c inline "(int)uv_udp_recv_stop((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-recv-stop(^handle1: c-pointer<uv-udp-s-c>): <> int
-  external/uv-udp-recv-stop(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-recv-stop(^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-recv-stop(handle1).int
 
-pub extern external/uv-udp-get-send-queue-size(^handle1: intptr_t): ssize_t
+pub extern external/uv-udp-get-send-queue-size(^handle1: c-pointer<uv-udp-s-c>): ssize_t
   c inline "(size_t)uv_udp_get_send_queue_size((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-get-send-queue-size(^handle1: c-pointer<uv-udp-s-c>): <> int
-  external/uv-udp-get-send-queue-size(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-get-send-queue-size(^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-get-send-queue-size(handle1).int
 
-pub extern external/uv-udp-get-send-queue-count(^handle1: intptr_t): ssize_t
+pub extern external/uv-udp-get-send-queue-count(^handle1: c-pointer<uv-udp-s-c>): ssize_t
   c inline "(size_t)uv_udp_get_send_queue_count((uv_udp_t*)#1)"
 
-pub fun ffi/uv-udp-get-send-queue-count(^handle1: c-pointer<uv-udp-s-c>): <> int
-  external/uv-udp-get-send-queue-count(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-udp-get-send-queue-count(^handle1: c-pointer<uv-udp-s-c>): <> int
+  external/uv-udp-get-send-queue-count(handle1).int
 
-pub extern external/uv-tty-init(^arg0: intptr_t, ^arg1: intptr_t, ^fd: int32, ^readable: int32): int32
+pub extern external/uv-tty-init(^arg0: c-pointer<uv-loop-s-c>, ^arg1: c-pointer<uv-tty-s-c>, ^fd: int32, ^readable: int32): int32
   c inline "(int)uv_tty_init((uv_loop_t*)#1, (uv_tty_t*)#2, (uv_file)#3, (int)#4)"
 
-pub fun ffi/uv-tty-init(^arg0: c-pointer<uv-loop-s-c>, ^arg1: c-pointer<uv-tty-s-c>, ^fd: int, ^readable: int): <> int
-  external/uv-tty-init(arg0.cextern/c-pointer/ptr, arg1.cextern/c-pointer/ptr, fd.int32, readable.int32).int
+pub inline fun ffi/uv-tty-init(^arg0: c-pointer<uv-loop-s-c>, ^arg1: c-pointer<uv-tty-s-c>, ^fd: int, ^readable: int): <> int
+  external/uv-tty-init(arg0, arg1, fd.int32, readable.int32).int
 
-pub extern external/uv-tty-set-mode(^arg0: intptr_t, ^mode: int32): int32
+pub extern external/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: int32): int32
   c inline "(int)uv_tty_set_mode((uv_tty_t*)#1, (int32_t)#2)"
 
-pub fun ffi/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: uv-tty-mode-t): <exn> int
-  external/uv-tty-set-mode(arg0.cextern/c-pointer/ptr, mode.uv-tty-mode-t/int).int
+pub inline fun ffi/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: uv-tty-mode-t): <exn> int
+  external/uv-tty-set-mode(arg0, mode.uv-tty-mode-t/int).int
 
 pub extern external/uv-tty-reset-mode(): int32
   c inline "(int)uv_tty_reset_mode()"
 
-pub fun ffi/uv-tty-reset-mode(): <> int
+pub inline fun ffi/uv-tty-reset-mode(): <> int
   external/uv-tty-reset-mode().int
 
-pub extern external/uv-tty-get-winsize(^arg0: intptr_t, ^width: intptr_t, ^height: intptr_t): int32
+pub extern external/uv-tty-get-winsize(^arg0: c-pointer<uv-tty-s-c>, ^width: c-pointer<int>, ^height: c-pointer<int>): int32
   c inline "(int)uv_tty_get_winsize((uv_tty_t*)#1, (int*)#2, (int*)#3)"
 
-pub fun ffi/uv-tty-get-winsize(^arg0: c-pointer<uv-tty-s-c>, ^width: c-pointer<int>, ^height: c-pointer<int>): <> int
-  external/uv-tty-get-winsize(arg0.cextern/c-pointer/ptr, width.cextern/c-pointer/ptr, height.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tty-get-winsize(^arg0: c-pointer<uv-tty-s-c>, ^width: c-pointer<int>, ^height: c-pointer<int>): <> int
+  external/uv-tty-get-winsize(arg0, width, height).int
 
 pub extern external/uv-tty-set-vterm-state(^state: int32): ()
   c inline "(void)uv_tty_set_vterm_state((int32_t)#1)"
 
-pub fun ffi/uv-tty-set-vterm-state(^state: uv-tty-vtermstate-t): <exn> ()
+pub inline fun ffi/uv-tty-set-vterm-state(^state: uv-tty-vtermstate-t): <exn> ()
   external/uv-tty-set-vterm-state(state.uv-tty-vtermstate-t/int)
 
-pub extern external/uv-tty-get-vterm-state(^state: intptr_t): int32
+pub extern external/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t>): int32
   c inline "(int)uv_tty_get_vterm_state((int32_t*)#1)"
 
-pub fun ffi/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t>): <> int
-  external/uv-tty-get-vterm-state(state.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t>): <> int
+  external/uv-tty-get-vterm-state(state).int
 
 pub extern external/uv-guess-handle(^file: int32): int32
   c inline "(int32_t)uv_guess_handle((uv_file)#1)"
 
-pub fun ffi/uv-guess-handle(^file: int): <exn> uv-handle-type
+pub inline fun ffi/uv-guess-handle(^file: int): <exn> uv-handle-type
   external/uv-guess-handle(file.int32).int/uv-handle-type
 
-pub extern external/uv-pipe-init(^arg0: intptr_t, ^handle1: intptr_t, ^ipc: int32): int32
+pub extern external/uv-pipe-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^ipc: int32): int32
   c inline "(int)uv_pipe_init((uv_loop_t*)#1, (uv_pipe_t*)#2, (int)#3)"
 
-pub fun ffi/uv-pipe-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^ipc: int): <> int
-  external/uv-pipe-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, ipc.int32).int
+pub inline fun ffi/uv-pipe-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^ipc: int): <> int
+  external/uv-pipe-init(arg0, handle1, ipc.int32).int
 
-pub extern external/uv-pipe-open(^arg0: intptr_t, ^file: int32): int32
+pub extern external/uv-pipe-open(^arg0: c-pointer<uv-pipe-s-c>, ^file: int32): int32
   c inline "(int)uv_pipe_open((uv_pipe_t*)#1, (uv_file)#2)"
 
-pub fun ffi/uv-pipe-open(^arg0: c-pointer<uv-pipe-s-c>, ^file: int): <> int
-  external/uv-pipe-open(arg0.cextern/c-pointer/ptr, file.int32).int
+pub inline fun ffi/uv-pipe-open(^arg0: c-pointer<uv-pipe-s-c>, ^file: int): <> int
+  external/uv-pipe-open(arg0, file.int32).int
 
-pub extern external/uv-pipe-bind(^handle1: intptr_t, ^name: intptr_t): int32
+pub extern external/uv-pipe-bind(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>): int32
   c inline "(int)uv_pipe_bind((uv_pipe_t*)#1, (char*)#2)"
 
-pub fun ffi/uv-pipe-bind(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>): <> int
-  external/uv-pipe-bind(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-pipe-bind(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>): <> int
+  external/uv-pipe-bind(handle1, name).int
 
-pub extern external/uv-pipe-bind2(^handle1: intptr_t, ^name: intptr_t, ^namelen: ssize_t, ^flags: int32): int32
+pub extern external/uv-pipe-bind2(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: ssize_t, ^flags: int32): int32
   c inline "(int)uv_pipe_bind2((uv_pipe_t*)#1, (char*)#2, (size_t)#3, (unsigned int)#4)"
 
-pub fun ffi/uv-pipe-bind2(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: int, ^flags: int): <> int
-  external/uv-pipe-bind2(handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.ssize_t, flags.int32).int
+pub inline fun ffi/uv-pipe-bind2(^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: int, ^flags: int): <> int
+  external/uv-pipe-bind2(handle1, name, namelen.ssize_t, flags.int32).int
 
-pub extern external/uv-pipe-connect(^req: intptr_t, ^handle1: intptr_t, ^name: intptr_t, ^cb: intptr_t): ()
+pub extern external/uv-pipe-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^cb: c-pointer<intptr_t>): ()
   c inline "(void)uv_pipe_connect((uv_connect_t*)#1, (uv_pipe_t*)#2, (char*)#3, (uv_connect_cb)#4)"
 
-pub fun ffi/uv-pipe-connect(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> ()
-  external/uv-pipe-connect(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr)
-
-pub extern external/uv-pipe-connect2(^req: intptr_t, ^handle1: intptr_t, ^name: intptr_t, ^namelen: ssize_t, ^flags: int32, ^cb: intptr_t): int32
+pub extern external/uv-pipe-connect2(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: ssize_t, ^flags: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_pipe_connect2((uv_connect_t*)#1, (uv_pipe_t*)#2, (char*)#3, (size_t)#4, (unsigned int)#5, (uv_connect_cb)#6)"
 
-pub fun ffi/uv-pipe-connect2(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: int, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-pipe-connect2(req.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, namelen.ssize_t, flags.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-pipe-connect2(^req: c-pointer<uv-connect-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^name: c-pointer<int>, ^namelen: int, ^flags: int, ^cb: uv-connect-cb): <> int
+  external/uv-pipe-connect2(req, handle1, name, namelen.ssize_t, flags.int32, cb).int
 
-pub extern external/uv-pipe-getsockname(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-pipe-getsockname(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_pipe_getsockname((uv_pipe_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-pipe-getsockname(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-pipe-getsockname(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-pipe-getsockname(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-pipe-getsockname(handle1, buffer, size).int
 
-pub extern external/uv-pipe-getpeername(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-pipe-getpeername(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_pipe_getpeername((uv_pipe_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-pipe-getpeername(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-pipe-getpeername(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-pipe-getpeername(^handle1: c-pointer<uv-pipe-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-pipe-getpeername(handle1, buffer, size).int
 
-pub extern external/uv-pipe-pending-instances(^handle1: intptr_t, ^count: int32): ()
+pub extern external/uv-pipe-pending-instances(^handle1: c-pointer<uv-pipe-s-c>, ^count: int32): ()
   c inline "(void)uv_pipe_pending_instances((uv_pipe_t*)#1, (int)#2)"
 
-pub fun ffi/uv-pipe-pending-instances(^handle1: c-pointer<uv-pipe-s-c>, ^count: int): <> ()
-  external/uv-pipe-pending-instances(handle1.cextern/c-pointer/ptr, count.int32)
+pub inline fun ffi/uv-pipe-pending-instances(^handle1: c-pointer<uv-pipe-s-c>, ^count: int): <> ()
+  external/uv-pipe-pending-instances(handle1, count.int32)
 
-pub extern external/uv-pipe-pending-count(^handle1: intptr_t): int32
+pub extern external/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): int32
   c inline "(int)uv_pipe_pending_count((uv_pipe_t*)#1)"
 
-pub fun ffi/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): <> int
-  external/uv-pipe-pending-count(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): <> int
+  external/uv-pipe-pending-count(handle1).int
 
-pub extern external/uv-pipe-pending-type(^handle1: intptr_t): int32
+pub extern external/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): int32
   c inline "(int32_t)uv_pipe_pending_type((uv_pipe_t*)#1)"
 
-pub fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): <exn> uv-handle-type
-  external/uv-pipe-pending-type(handle1.cextern/c-pointer/ptr).int/uv-handle-type
+pub inline fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): <exn> uv-handle-type
+  external/uv-pipe-pending-type(handle1).int/uv-handle-type
 
-pub extern external/uv-pipe-chmod(^handle1: intptr_t, ^flags: int32): int32
+pub extern external/uv-pipe-chmod(^handle1: c-pointer<uv-pipe-s-c>, ^flags: int32): int32
   c inline "(int)uv_pipe_chmod((uv_pipe_t*)#1, (int)#2)"
 
-pub fun ffi/uv-pipe-chmod(^handle1: c-pointer<uv-pipe-s-c>, ^flags: int): <> int
-  external/uv-pipe-chmod(handle1.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-pipe-chmod(^handle1: c-pointer<uv-pipe-s-c>, ^flags: int): <> int
+  external/uv-pipe-chmod(handle1, flags.int32).int
 
-pub extern external/uv-poll-init(^loop: intptr_t, ^handle1: intptr_t, ^fd: int32): int32
+pub extern external/uv-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^fd: int32): int32
   c inline "(int)uv_poll_init((uv_loop_t*)#1, (uv_poll_t*)#2, (int)#3)"
 
-pub fun ffi/uv-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^fd: int): <> int
-  external/uv-poll-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, fd.int32).int
+pub inline fun ffi/uv-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^fd: int): <> int
+  external/uv-poll-init(loop, handle1, fd.int32).int
 
-pub extern external/uv-poll-init-socket(^loop: intptr_t, ^handle1: intptr_t, ^socket: int32): int32
+pub extern external/uv-poll-init-socket(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^socket: int32): int32
   c inline "(int)uv_poll_init_socket((uv_loop_t*)#1, (uv_poll_t*)#2, (uv_os_sock_t)#3)"
 
-pub fun ffi/uv-poll-init-socket(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^socket: int): <> int
-  external/uv-poll-init-socket(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, socket.int32).int
+pub inline fun ffi/uv-poll-init-socket(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-poll-s-c>, ^socket: int): <> int
+  external/uv-poll-init-socket(loop, handle1, socket.int32).int
 
-pub extern external/uv-poll-start(^handle1: intptr_t, ^events: int32, ^cb: intptr_t): int32
+pub extern external/uv-poll-start(^handle1: c-pointer<uv-poll-s-c>, ^events: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_poll_start((uv_poll_t*)#1, (int)#2, (uv_poll_cb)#3)"
 
-pub fun ffi/uv-poll-start(^handle1: c-pointer<uv-poll-s-c>, ^events: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-poll-start(handle1.cextern/c-pointer/ptr, events.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-poll-start(^handle1: c-pointer<uv-poll-s-c>, ^events: int, ^cb: uv-poll-cb): <> int
+  external/uv-poll-start(handle1, events.int32, cb).int
 
-pub extern external/uv-poll-stop(^handle1: intptr_t): int32
+pub extern external/uv-poll-stop(^handle1: c-pointer<uv-poll-s-c>): int32
   c inline "(int)uv_poll_stop((uv_poll_t*)#1)"
 
-pub fun ffi/uv-poll-stop(^handle1: c-pointer<uv-poll-s-c>): <> int
-  external/uv-poll-stop(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-poll-stop(^handle1: c-pointer<uv-poll-s-c>): <> int
+  external/uv-poll-stop(handle1).int
 
-pub extern external/uv-prepare-init(^arg0: intptr_t, ^prepare: intptr_t): int32
+pub extern external/uv-prepare-init(^arg0: c-pointer<uv-loop-s-c>, ^prepare: c-pointer<uv-prepare-s-c>): int32
   c inline "(int)uv_prepare_init((uv_loop_t*)#1, (uv_prepare_t*)#2)"
 
-pub fun ffi/uv-prepare-init(^arg0: c-pointer<uv-loop-s-c>, ^prepare: c-pointer<uv-prepare-s-c>): <> int
-  external/uv-prepare-init(arg0.cextern/c-pointer/ptr, prepare.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-prepare-init(^arg0: c-pointer<uv-loop-s-c>, ^prepare: c-pointer<uv-prepare-s-c>): <> int
+  external/uv-prepare-init(arg0, prepare).int
 
-pub extern external/uv-prepare-start(^prepare: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-prepare-start(^prepare: c-pointer<uv-prepare-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_prepare_start((uv_prepare_t*)#1, (uv_prepare_cb)#2)"
 
-pub fun ffi/uv-prepare-start(^prepare: c-pointer<uv-prepare-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-prepare-start(prepare.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-prepare-start(^prepare: c-pointer<uv-prepare-s-c>, ^cb: uv-prepare-cb): <> int
+  external/uv-prepare-start(prepare, cb).int
 
-pub extern external/uv-prepare-stop(^prepare: intptr_t): int32
+pub extern external/uv-prepare-stop(^prepare: c-pointer<uv-prepare-s-c>): int32
   c inline "(int)uv_prepare_stop((uv_prepare_t*)#1)"
 
-pub fun ffi/uv-prepare-stop(^prepare: c-pointer<uv-prepare-s-c>): <> int
-  external/uv-prepare-stop(prepare.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-prepare-stop(^prepare: c-pointer<uv-prepare-s-c>): <> int
+  external/uv-prepare-stop(prepare).int
 
-pub extern external/uv-check-init(^arg0: intptr_t, ^check: intptr_t): int32
+pub extern external/uv-check-init(^arg0: c-pointer<uv-loop-s-c>, ^check: c-pointer<uv-check-s-c>): int32
   c inline "(int)uv_check_init((uv_loop_t*)#1, (uv_check_t*)#2)"
 
-pub fun ffi/uv-check-init(^arg0: c-pointer<uv-loop-s-c>, ^check: c-pointer<uv-check-s-c>): <> int
-  external/uv-check-init(arg0.cextern/c-pointer/ptr, check.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-check-init(^arg0: c-pointer<uv-loop-s-c>, ^check: c-pointer<uv-check-s-c>): <> int
+  external/uv-check-init(arg0, check).int
 
-pub extern external/uv-check-start(^check: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-check-start(^check: c-pointer<uv-check-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_check_start((uv_check_t*)#1, (uv_check_cb)#2)"
 
-pub fun ffi/uv-check-start(^check: c-pointer<uv-check-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-check-start(check.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-check-start(^check: c-pointer<uv-check-s-c>, ^cb: uv-check-cb): <> int
+  external/uv-check-start(check, cb).int
 
-pub extern external/uv-check-stop(^check: intptr_t): int32
+pub extern external/uv-check-stop(^check: c-pointer<uv-check-s-c>): int32
   c inline "(int)uv_check_stop((uv_check_t*)#1)"
 
-pub fun ffi/uv-check-stop(^check: c-pointer<uv-check-s-c>): <> int
-  external/uv-check-stop(check.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-check-stop(^check: c-pointer<uv-check-s-c>): <> int
+  external/uv-check-stop(check).int
 
-pub extern external/uv-idle-init(^arg0: intptr_t, ^idle: intptr_t): int32
+pub extern external/uv-idle-init(^arg0: c-pointer<uv-loop-s-c>, ^idle: c-pointer<uv-idle-s-c>): int32
   c inline "(int)uv_idle_init((uv_loop_t*)#1, (uv_idle_t*)#2)"
 
-pub fun ffi/uv-idle-init(^arg0: c-pointer<uv-loop-s-c>, ^idle: c-pointer<uv-idle-s-c>): <> int
-  external/uv-idle-init(arg0.cextern/c-pointer/ptr, idle.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-idle-init(^arg0: c-pointer<uv-loop-s-c>, ^idle: c-pointer<uv-idle-s-c>): <> int
+  external/uv-idle-init(arg0, idle).int
 
-pub extern external/uv-idle-start(^idle: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-idle-start(^idle: c-pointer<uv-idle-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_idle_start((uv_idle_t*)#1, (uv_idle_cb)#2)"
 
-pub fun ffi/uv-idle-start(^idle: c-pointer<uv-idle-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-idle-start(idle.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-idle-start(^idle: c-pointer<uv-idle-s-c>, ^cb: uv-idle-cb): <> int
+  external/uv-idle-start(idle, cb).int
 
-pub extern external/uv-idle-stop(^idle: intptr_t): int32
+pub extern external/uv-idle-stop(^idle: c-pointer<uv-idle-s-c>): int32
   c inline "(int)uv_idle_stop((uv_idle_t*)#1)"
 
-pub fun ffi/uv-idle-stop(^idle: c-pointer<uv-idle-s-c>): <> int
-  external/uv-idle-stop(idle.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-idle-stop(^idle: c-pointer<uv-idle-s-c>): <> int
+  external/uv-idle-stop(idle).int
 
-pub extern external/uv-async-init(^arg0: intptr_t, ^async1: intptr_t, ^async-cb: intptr_t): int32
+pub extern external/uv-async-init(^arg0: c-pointer<uv-loop-s-c>, ^async1: c-pointer<uv-async-s-c>, ^async-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_async_init((uv_loop_t*)#1, (uv_async_t*)#2, (uv_async_cb)#3)"
 
-pub fun ffi/uv-async-init(^arg0: c-pointer<uv-loop-s-c>, ^async1: c-pointer<uv-async-s-c>, ^async-cb: c-pointer<intptr_t>): <> int
-  external/uv-async-init(arg0.cextern/c-pointer/ptr, async1.cextern/c-pointer/ptr, async-cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-async-init(^arg0: c-pointer<uv-loop-s-c>, ^async1: c-pointer<uv-async-s-c>, ^async-cb: uv-async-cb): <> int
+  external/uv-async-init(arg0, async1, async-cb).int
 
-pub extern external/uv-async-send(^async1: intptr_t): int32
+pub extern external/uv-async-send(^async1: c-pointer<uv-async-s-c>): int32
   c inline "(int)uv_async_send((uv_async_t*)#1)"
 
-pub fun ffi/uv-async-send(^async1: c-pointer<uv-async-s-c>): <> int
-  external/uv-async-send(async1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-async-send(^async1: c-pointer<uv-async-s-c>): <> int
+  external/uv-async-send(async1).int
 
-pub extern external/uv-timer-init(^arg0: intptr_t, ^handle1: intptr_t): int32
+pub extern external/uv-timer-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-timer-s-c>): int32
   c inline "(int)uv_timer_init((uv_loop_t*)#1, (uv_timer_t*)#2)"
 
-pub fun ffi/uv-timer-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-timer-s-c>): <> int
-  external/uv-timer-init(arg0.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-timer-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-timer-s-c>): <> int
+  external/uv-timer-init(arg0, handle1).int
 
-pub extern external/uv-timer-start(^handle1: intptr_t, ^cb: intptr_t, ^timeout: int64, ^repeat: int64): int32
+pub extern external/uv-timer-start(^handle1: c-pointer<uv-timer-s-c>, ^cb: c-pointer<intptr_t>, ^timeout: int64, ^repeat: int64): int32
   c inline "(int)uv_timer_start((uv_timer_t*)#1, (uv_timer_cb)#2, (int64_t)#3, (int64_t)#4)"
 
-pub fun ffi/uv-timer-start(^handle1: c-pointer<uv-timer-s-c>, ^cb: c-pointer<intptr_t>, ^timeout: int, ^repeat: int): <> int
-  external/uv-timer-start(handle1.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr, timeout.int64, repeat.int64).int
+pub inline fun ffi/uv-timer-start(^handle1: c-pointer<uv-timer-s-c>, ^cb: uv-timer-cb, ^timeout: int, ^repeat: int): <> int
+  external/uv-timer-start(handle1, cb, timeout.int64, repeat.int64).int
 
-pub extern external/uv-timer-stop(^handle1: intptr_t): int32
+pub extern external/uv-timer-stop(^handle1: c-pointer<uv-timer-s-c>): int32
   c inline "(int)uv_timer_stop((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-stop(^handle1: c-pointer<uv-timer-s-c>): <> int
-  external/uv-timer-stop(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-timer-stop(^handle1: c-pointer<uv-timer-s-c>): <> int
+  external/uv-timer-stop(handle1).int
 
-pub extern external/uv-timer-again(^handle1: intptr_t): int32
+pub extern external/uv-timer-again(^handle1: c-pointer<uv-timer-s-c>): int32
   c inline "(int)uv_timer_again((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-again(^handle1: c-pointer<uv-timer-s-c>): <> int
-  external/uv-timer-again(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-timer-again(^handle1: c-pointer<uv-timer-s-c>): <> int
+  external/uv-timer-again(handle1).int
 
-pub extern external/uv-timer-set-repeat(^handle1: intptr_t, ^repeat: int64): ()
+pub extern external/uv-timer-set-repeat(^handle1: c-pointer<uv-timer-s-c>, ^repeat: int64): ()
   c inline "(void)uv_timer_set_repeat((uv_timer_t*)#1, (int64_t)#2)"
 
-pub fun ffi/uv-timer-set-repeat(^handle1: c-pointer<uv-timer-s-c>, ^repeat: int): <> ()
-  external/uv-timer-set-repeat(handle1.cextern/c-pointer/ptr, repeat.int64)
+pub inline fun ffi/uv-timer-set-repeat(^handle1: c-pointer<uv-timer-s-c>, ^repeat: int): <> ()
+  external/uv-timer-set-repeat(handle1, repeat.int64)
 
-pub extern external/uv-timer-get-repeat(^handle1: intptr_t): int64
+pub extern external/uv-timer-get-repeat(^handle1: c-pointer<uv-timer-s-c>): int64
   c inline "(int64_t)uv_timer_get_repeat((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-get-repeat(^handle1: c-pointer<uv-timer-s-c>): <> int
-  external/uv-timer-get-repeat(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-timer-get-repeat(^handle1: c-pointer<uv-timer-s-c>): <> int
+  external/uv-timer-get-repeat(handle1).int
 
-pub extern external/uv-timer-get-due-in(^handle1: intptr_t): int64
+pub extern external/uv-timer-get-due-in(^handle1: c-pointer<uv-timer-s-c>): int64
   c inline "(int64_t)uv_timer_get_due_in((uv_timer_t*)#1)"
 
-pub fun ffi/uv-timer-get-due-in(^handle1: c-pointer<uv-timer-s-c>): <> int
-  external/uv-timer-get-due-in(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-timer-get-due-in(^handle1: c-pointer<uv-timer-s-c>): <> int
+  external/uv-timer-get-due-in(handle1).int
 
-pub extern external/uv-getaddrinfo(^loop: intptr_t, ^req: intptr_t, ^getaddrinfo-cb: intptr_t, ^node: intptr_t, ^service: intptr_t, ^hints: intptr_t): int32
+pub extern external/uv-getaddrinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getaddrinfo-s-c>, ^getaddrinfo-cb: c-pointer<intptr_t>, ^node: c-pointer<int>, ^service: c-pointer<int>, ^hints: c-pointer<addrinfo-c>): int32
   c inline "(int)uv_getaddrinfo((uv_loop_t*)#1, (uv_getaddrinfo_t*)#2, (uv_getaddrinfo_cb)#3, (char*)#4, (char*)#5, (struct addrinfo*)#6)"
 
-pub fun ffi/uv-getaddrinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getaddrinfo-s-c>, ^getaddrinfo-cb: c-pointer<intptr_t>, ^node: c-pointer<int>, ^service: c-pointer<int>, ^hints: c-pointer<addrinfo-c>): <> int
-  external/uv-getaddrinfo(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, getaddrinfo-cb.cextern/c-pointer/ptr, node.cextern/c-pointer/ptr, service.cextern/c-pointer/ptr, hints.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-getaddrinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getaddrinfo-s-c>, ^getaddrinfo-cb: uv-getaddrinfo-cb, ^node: c-pointer<int>, ^service: c-pointer<int>, ^hints: c-pointer<addrinfo-c>): <> int
+  external/uv-getaddrinfo(loop, req, getaddrinfo-cb, node, service, hints).int
 
-pub extern external/uv-freeaddrinfo(^ai: intptr_t): ()
+pub extern external/uv-freeaddrinfo(^ai: c-pointer<addrinfo-c>): ()
   c inline "(void)uv_freeaddrinfo((struct addrinfo*)#1)"
 
-pub fun ffi/uv-freeaddrinfo(^ai: c-pointer<addrinfo-c>): <> ()
-  external/uv-freeaddrinfo(ai.cextern/c-pointer/ptr)
-
-pub extern external/uv-getnameinfo(^loop: intptr_t, ^req: intptr_t, ^getnameinfo-cb: intptr_t, ^addr: intptr_t, ^flags: int32): int32
+pub extern external/uv-getnameinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getnameinfo-s-c>, ^getnameinfo-cb: c-pointer<intptr_t>, ^addr: c-pointer<sockaddr-c>, ^flags: int32): int32
   c inline "(int)uv_getnameinfo((uv_loop_t*)#1, (uv_getnameinfo_t*)#2, (uv_getnameinfo_cb)#3, (struct sockaddr*)#4, (int)#5)"
 
-pub fun ffi/uv-getnameinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getnameinfo-s-c>, ^getnameinfo-cb: c-pointer<intptr_t>, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
-  external/uv-getnameinfo(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, getnameinfo-cb.cextern/c-pointer/ptr, addr.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-getnameinfo(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-getnameinfo-s-c>, ^getnameinfo-cb: uv-getnameinfo-cb, ^addr: c-pointer<sockaddr-c>, ^flags: int): <> int
+  external/uv-getnameinfo(loop, req, getnameinfo-cb, addr, flags.int32).int
 
-pub extern external/uv-spawn(^loop: intptr_t, ^handle1: intptr_t, ^options: intptr_t): int32
+pub extern external/uv-spawn(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-process-s-c>, ^options: c-pointer<uv-process-options-s-c>): int32
   c inline "(int)uv_spawn((uv_loop_t*)#1, (uv_process_t*)#2, (uv_process_options_t*)#3)"
 
-pub fun ffi/uv-spawn(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-process-s-c>, ^options: c-pointer<uv-process-options-s-c>): <> int
-  external/uv-spawn(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr, options.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-spawn(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-process-s-c>, ^options: c-pointer<uv-process-options-s-c>): <> int
+  external/uv-spawn(loop, handle1, options).int
 
-pub extern external/uv-process-kill(^arg0: intptr_t, ^signum: int32): int32
+pub extern external/uv-process-kill(^arg0: c-pointer<uv-process-s-c>, ^signum: int32): int32
   c inline "(int)uv_process_kill((uv_process_t*)#1, (int)#2)"
 
-pub fun ffi/uv-process-kill(^arg0: c-pointer<uv-process-s-c>, ^signum: int): <> int
-  external/uv-process-kill(arg0.cextern/c-pointer/ptr, signum.int32).int
+pub inline fun ffi/uv-process-kill(^arg0: c-pointer<uv-process-s-c>, ^signum: int): <> int
+  external/uv-process-kill(arg0, signum.int32).int
 
 pub extern external/uv-kill(^pid: int32, ^signum: int32): int32
   c inline "(int)uv_kill((int)#1, (int)#2)"
 
-pub fun ffi/uv-kill(^pid: int, ^signum: int): <> int
+pub inline fun ffi/uv-kill(^pid: int, ^signum: int): <> int
   external/uv-kill(pid.int32, signum.int32).int
 
-pub extern external/uv-process-get-pid(^arg0: intptr_t): int32
+pub extern external/uv-process-get-pid(^arg0: c-pointer<uv-process-s-c>): int32
   c inline "(uv_pid_t)uv_process_get_pid((uv_process_t*)#1)"
 
-pub fun ffi/uv-process-get-pid(^arg0: c-pointer<uv-process-s-c>): <> int
-  external/uv-process-get-pid(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-process-get-pid(^arg0: c-pointer<uv-process-s-c>): <> int
+  external/uv-process-get-pid(arg0).int
 
-pub extern external/uv-queue-work(^loop: intptr_t, ^req: intptr_t, ^work-cb: intptr_t, ^after-work-cb: intptr_t): int32
+pub extern external/uv-queue-work(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-work-s-c>, ^work-cb: c-pointer<intptr_t>, ^after-work-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_queue_work((uv_loop_t*)#1, (uv_work_t*)#2, (uv_work_cb)#3, (uv_after_work_cb)#4)"
 
-pub fun ffi/uv-queue-work(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-work-s-c>, ^work-cb: c-pointer<intptr_t>, ^after-work-cb: c-pointer<intptr_t>): <> int
-  external/uv-queue-work(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, work-cb.cextern/c-pointer/ptr, after-work-cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-queue-work(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-work-s-c>, ^work-cb: uv-work-cb, ^after-work-cb: uv-after-work-cb): <> int
+  external/uv-queue-work(loop, req, work-cb, after-work-cb).int
 
-pub extern external/uv-cancel(^req: intptr_t): int32
+pub extern external/uv-cancel(^req: c-pointer<uv-req-s-c>): int32
   c inline "(int)uv_cancel((uv_req_t*)#1)"
 
-pub fun ffi/uv-cancel(^req: c-pointer<uv-req-s-c>): <> int
-  external/uv-cancel(req.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-cancel(^req: c-pointer<uv-req-s-c>): <> int
+  external/uv-cancel(req).int
 
-pub extern external/uv-setup-args(^argc: int32, ^argv: intptr_t): intptr_t
+pub extern external/uv-setup-args(^argc: int32, ^argv: c-pointer<c-pointer<int>>): c-pointer<c-pointer<int>>
   c inline "(intptr_t)uv_setup_args((int)#1, (char**)#2)"
 
-pub fun ffi/uv-setup-args(^argc: int, ^argv: c-pointer<c-pointer<int>>): <> c-pointer<c-pointer<int>>
-  C-pointer(external/uv-setup-args(argc.int32, argv.cextern/c-pointer/ptr))
+pub inline fun ffi/uv-setup-args(^argc: int, ^argv: c-pointer<c-pointer<int>>): <> c-pointer<c-pointer<int>>
+  external/uv-setup-args(argc.int32, argv)
 
-pub extern external/uv-get-process-title(^buffer: intptr_t, ^size: ssize_t): int32
+pub extern external/uv-get-process-title(^buffer: c-pointer<int>, ^size: ssize_t): int32
   c inline "(int)uv_get_process_title((char*)#1, (size_t)#2)"
 
-pub fun ffi/uv-get-process-title(^buffer: c-pointer<int>, ^size: int): <> int
-  external/uv-get-process-title(buffer.cextern/c-pointer/ptr, size.ssize_t).int
+pub inline fun ffi/uv-get-process-title(^buffer: c-pointer<int>, ^size: int): <> int
+  external/uv-get-process-title(buffer, size.ssize_t).int
 
-pub extern external/uv-set-process-title(^title: intptr_t): int32
+pub extern external/uv-set-process-title(^title: c-pointer<int>): int32
   c inline "(int)uv_set_process_title((char*)#1)"
 
-pub fun ffi/uv-set-process-title(^title: c-pointer<int>): <> int
-  external/uv-set-process-title(title.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-set-process-title(^title: c-pointer<int>): <> int
+  external/uv-set-process-title(title).int
 
-pub extern external/uv-resident-set-memory(^rss: intptr_t): int32
+pub extern external/uv-resident-set-memory(^rss: c-pointer<int>): int32
   c inline "(int)uv_resident_set_memory((size_t*)#1)"
 
-pub fun ffi/uv-resident-set-memory(^rss: c-pointer<int>): <> int
-  external/uv-resident-set-memory(rss.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-resident-set-memory(^rss: c-pointer<int>): <> int
+  external/uv-resident-set-memory(rss).int
 
-pub extern external/uv-uptime(^uptime: intptr_t): int32
+pub extern external/uv-uptime(^uptime: c-pointer<float64>): int32
   c inline "(int)uv_uptime((double*)#1)"
 
-pub fun ffi/uv-uptime(^uptime: c-pointer<float64>): <> int
-  external/uv-uptime(uptime.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-uptime(^uptime: c-pointer<float64>): <> int
+  external/uv-uptime(uptime).int
 
 pub extern external/uv-get-osfhandle(^fd: int32): int32
   c inline "(uv_os_fd_t)uv_get_osfhandle((int)#1)"
 
-pub fun ffi/uv-get-osfhandle(^fd: int): <> int
+pub inline fun ffi/uv-get-osfhandle(^fd: int): <> int
   external/uv-get-osfhandle(fd.int32).int
 
 pub extern external/uv-open-osfhandle(^os-fd: int32): int32
   c inline "(int)uv_open_osfhandle((uv_os_fd_t)#1)"
 
-pub fun ffi/uv-open-osfhandle(^os-fd: int): <> int
+pub inline fun ffi/uv-open-osfhandle(^os-fd: int): <> int
   external/uv-open-osfhandle(os-fd.int32).int
 
-pub extern external/uv-getrusage(^rusage: intptr_t): int32
+pub extern external/uv-getrusage(^rusage: c-pointer<uv-rusage-t-c>): int32
   c inline "(int)uv_getrusage((uv_rusage_t*)#1)"
 
-pub fun ffi/uv-getrusage(^rusage: c-pointer<uv-rusage-t-c>): <> int
-  external/uv-getrusage(rusage.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-getrusage(^rusage: c-pointer<uv-rusage-t-c>): <> int
+  external/uv-getrusage(rusage).int
 
-pub extern external/uv-os-homedir(^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-os-homedir(^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_os_homedir((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-os-homedir(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-os-homedir(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-homedir(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-os-homedir(buffer, size).int
 
-pub extern external/uv-os-tmpdir(^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-os-tmpdir(^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_os_tmpdir((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-os-tmpdir(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-os-tmpdir(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-tmpdir(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-os-tmpdir(buffer, size).int
 
-pub extern external/uv-os-get-passwd(^pwd: intptr_t): int32
+pub extern external/uv-os-get-passwd(^pwd: c-pointer<uv-passwd-s-c>): int32
   c inline "(int)uv_os_get_passwd((uv_passwd_t*)#1)"
 
-pub fun ffi/uv-os-get-passwd(^pwd: c-pointer<uv-passwd-s-c>): <> int
-  external/uv-os-get-passwd(pwd.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-get-passwd(^pwd: c-pointer<uv-passwd-s-c>): <> int
+  external/uv-os-get-passwd(pwd).int
 
-pub extern external/uv-os-free-passwd(^pwd: intptr_t): ()
+pub extern external/uv-os-free-passwd(^pwd: c-pointer<uv-passwd-s-c>): ()
   c inline "(void)uv_os_free_passwd((uv_passwd_t*)#1)"
 
-pub fun ffi/uv-os-free-passwd(^pwd: c-pointer<uv-passwd-s-c>): <> ()
-  external/uv-os-free-passwd(pwd.cextern/c-pointer/ptr)
-
-pub extern external/uv-os-get-passwd2(^pwd: intptr_t, ^uid: int32): int32
+pub extern external/uv-os-get-passwd2(^pwd: c-pointer<uv-passwd-s-c>, ^uid: int32): int32
   c inline "(int)uv_os_get_passwd2((uv_passwd_t*)#1, (uv_uid_t)#2)"
 
-pub fun ffi/uv-os-get-passwd2(^pwd: c-pointer<uv-passwd-s-c>, ^uid: int): <> int
-  external/uv-os-get-passwd2(pwd.cextern/c-pointer/ptr, uid.int32).int
+pub inline fun ffi/uv-os-get-passwd2(^pwd: c-pointer<uv-passwd-s-c>, ^uid: int): <> int
+  external/uv-os-get-passwd2(pwd, uid.int32).int
 
-pub extern external/uv-os-get-group(^grp: intptr_t, ^gid: int32): int32
+pub extern external/uv-os-get-group(^grp: c-pointer<uv-group-s-c>, ^gid: int32): int32
   c inline "(int)uv_os_get_group((uv_group_t*)#1, (uv_uid_t)#2)"
 
-pub fun ffi/uv-os-get-group(^grp: c-pointer<uv-group-s-c>, ^gid: int): <> int
-  external/uv-os-get-group(grp.cextern/c-pointer/ptr, gid.int32).int
+pub inline fun ffi/uv-os-get-group(^grp: c-pointer<uv-group-s-c>, ^gid: int): <> int
+  external/uv-os-get-group(grp, gid.int32).int
 
-pub extern external/uv-os-free-group(^grp: intptr_t): ()
+pub extern external/uv-os-free-group(^grp: c-pointer<uv-group-s-c>): ()
   c inline "(void)uv_os_free_group((uv_group_t*)#1)"
-
-pub fun ffi/uv-os-free-group(^grp: c-pointer<uv-group-s-c>): <> ()
-  external/uv-os-free-group(grp.cextern/c-pointer/ptr)
 
 pub extern external/uv-os-getpid(): int32
   c inline "(uv_pid_t)uv_os_getpid()"
 
-pub fun ffi/uv-os-getpid(): <> int
+pub inline fun ffi/uv-os-getpid(): <> int
   external/uv-os-getpid().int
 
 pub extern external/uv-os-getppid(): int32
   c inline "(uv_pid_t)uv_os_getppid()"
 
-pub fun ffi/uv-os-getppid(): <> int
+pub inline fun ffi/uv-os-getppid(): <> int
   external/uv-os-getppid().int
 
-pub extern external/uv-os-getpriority(^pid: int32, ^priority: intptr_t): int32
+pub extern external/uv-os-getpriority(^pid: int32, ^priority: c-pointer<int>): int32
   c inline "(int)uv_os_getpriority((uv_pid_t)#1, (int*)#2)"
 
-pub fun ffi/uv-os-getpriority(^pid: int, ^priority: c-pointer<int>): <> int
-  external/uv-os-getpriority(pid.int32, priority.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-getpriority(^pid: int, ^priority: c-pointer<int>): <> int
+  external/uv-os-getpriority(pid.int32, priority).int
 
 pub extern external/uv-os-setpriority(^pid: int32, ^priority: int32): int32
   c inline "(int)uv_os_setpriority((uv_pid_t)#1, (int)#2)"
 
-pub fun ffi/uv-os-setpriority(^pid: int, ^priority: int): <> int
+pub inline fun ffi/uv-os-setpriority(^pid: int, ^priority: int): <> int
   external/uv-os-setpriority(pid.int32, priority.int32).int
 
-pub extern external/uv-thread-getpriority(^tid: intptr_t, ^priority: intptr_t): int32
+pub extern external/uv-thread-getpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: c-pointer<int>): int32
   c inline "(int)uv_thread_getpriority((uv_thread_t)#1, (int*)#2)"
 
-pub fun ffi/uv-thread-getpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: c-pointer<int>): <> int
-  external/uv-thread-getpriority(tid.cextern/c-pointer/ptr, priority.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-thread-getpriority(^tid: uv-thread-t, ^priority: c-pointer<int>): <> int
+  external/uv-thread-getpriority(tid, priority).int
 
-pub extern external/uv-thread-setpriority(^tid: intptr_t, ^priority: int32): int32
+pub extern external/uv-thread-setpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: int32): int32
   c inline "(int)uv_thread_setpriority((uv_thread_t)#1, (int)#2)"
 
-pub fun ffi/uv-thread-setpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: int): <> int
-  external/uv-thread-setpriority(tid.cextern/c-pointer/ptr, priority.int32).int
+pub inline fun ffi/uv-thread-setpriority(^tid: uv-thread-t, ^priority: int): <> int
+  external/uv-thread-setpriority(tid, priority.int32).int
 
 pub extern external/uv-available-parallelism(): int32
   c inline "(unsigned int)uv_available_parallelism()"
 
-pub fun ffi/uv-available-parallelism(): <> int
+pub inline fun ffi/uv-available-parallelism(): <> int
   external/uv-available-parallelism().int
 
-pub extern external/uv-cpu-info(^cpu-infos: intptr_t, ^count: intptr_t): int32
+pub extern external/uv-cpu-info(^cpu-infos: c-pointer<c-pointer<uv-cpu-info-s-c>>, ^count: c-pointer<int>): int32
   c inline "(int)uv_cpu_info((uv_cpu_info_t**)#1, (int*)#2)"
 
-pub fun ffi/uv-cpu-info(^cpu-infos: c-pointer<c-pointer<uv-cpu-info-s-c>>, ^count: c-pointer<int>): <> int
-  external/uv-cpu-info(cpu-infos.cextern/c-pointer/ptr, count.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-cpu-info(^cpu-infos: c-pointer<c-pointer<uv-cpu-info-s-c>>, ^count: c-pointer<int>): <> int
+  external/uv-cpu-info(cpu-infos, count).int
 
-pub extern external/uv-free-cpu-info(^cpu-infos: intptr_t, ^count: int32): ()
+pub extern external/uv-free-cpu-info(^cpu-infos: c-pointer<uv-cpu-info-s-c>, ^count: int32): ()
   c inline "(void)uv_free_cpu_info((uv_cpu_info_t*)#1, (int)#2)"
 
-pub fun ffi/uv-free-cpu-info(^cpu-infos: c-pointer<uv-cpu-info-s-c>, ^count: int): <> ()
-  external/uv-free-cpu-info(cpu-infos.cextern/c-pointer/ptr, count.int32)
+pub inline fun ffi/uv-free-cpu-info(^cpu-infos: c-pointer<uv-cpu-info-s-c>, ^count: int): <> ()
+  external/uv-free-cpu-info(cpu-infos, count.int32)
 
 pub extern external/uv-cpumask-size(): int32
   c inline "(int)uv_cpumask_size()"
 
-pub fun ffi/uv-cpumask-size(): <> int
+pub inline fun ffi/uv-cpumask-size(): <> int
   external/uv-cpumask-size().int
 
-pub extern external/uv-interface-addresses(^addresses: intptr_t, ^count: intptr_t): int32
+pub extern external/uv-interface-addresses(^addresses: c-pointer<c-pointer<uv-interface-address-s-c>>, ^count: c-pointer<int>): int32
   c inline "(int)uv_interface_addresses((uv_interface_address_t**)#1, (int*)#2)"
 
-pub fun ffi/uv-interface-addresses(^addresses: c-pointer<c-pointer<uv-interface-address-s-c>>, ^count: c-pointer<int>): <> int
-  external/uv-interface-addresses(addresses.cextern/c-pointer/ptr, count.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-interface-addresses(^addresses: c-pointer<c-pointer<uv-interface-address-s-c>>, ^count: c-pointer<int>): <> int
+  external/uv-interface-addresses(addresses, count).int
 
-pub extern external/uv-free-interface-addresses(^addresses: intptr_t, ^count: int32): ()
+pub extern external/uv-free-interface-addresses(^addresses: c-pointer<uv-interface-address-s-c>, ^count: int32): ()
   c inline "(void)uv_free_interface_addresses((uv_interface_address_t*)#1, (int)#2)"
 
-pub fun ffi/uv-free-interface-addresses(^addresses: c-pointer<uv-interface-address-s-c>, ^count: int): <> ()
-  external/uv-free-interface-addresses(addresses.cextern/c-pointer/ptr, count.int32)
+pub inline fun ffi/uv-free-interface-addresses(^addresses: c-pointer<uv-interface-address-s-c>, ^count: int): <> ()
+  external/uv-free-interface-addresses(addresses, count.int32)
 
-pub extern external/uv-os-environ(^envitems: intptr_t, ^count: intptr_t): int32
+pub extern external/uv-os-environ(^envitems: c-pointer<c-pointer<uv-env-item-s-c>>, ^count: c-pointer<int>): int32
   c inline "(int)uv_os_environ((uv_env_item_t**)#1, (int*)#2)"
 
-pub fun ffi/uv-os-environ(^envitems: c-pointer<c-pointer<uv-env-item-s-c>>, ^count: c-pointer<int>): <> int
-  external/uv-os-environ(envitems.cextern/c-pointer/ptr, count.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-environ(^envitems: c-pointer<c-pointer<uv-env-item-s-c>>, ^count: c-pointer<int>): <> int
+  external/uv-os-environ(envitems, count).int
 
-pub extern external/uv-os-free-environ(^envitems: intptr_t, ^count: int32): ()
+pub extern external/uv-os-free-environ(^envitems: c-pointer<uv-env-item-s-c>, ^count: int32): ()
   c inline "(void)uv_os_free_environ((uv_env_item_t*)#1, (int)#2)"
 
-pub fun ffi/uv-os-free-environ(^envitems: c-pointer<uv-env-item-s-c>, ^count: int): <> ()
-  external/uv-os-free-environ(envitems.cextern/c-pointer/ptr, count.int32)
+pub inline fun ffi/uv-os-free-environ(^envitems: c-pointer<uv-env-item-s-c>, ^count: int): <> ()
+  external/uv-os-free-environ(envitems, count.int32)
 
-pub extern external/uv-os-getenv(^name: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-os-getenv(^name: c-pointer<int>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_os_getenv((char*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-os-getenv(^name: c-pointer<int>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-os-getenv(name.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-getenv(^name: c-pointer<int>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-os-getenv(name, buffer, size).int
 
-pub extern external/uv-os-setenv(^name: intptr_t, ^value: intptr_t): int32
+pub extern external/uv-os-setenv(^name: c-pointer<int>, ^value: c-pointer<int>): int32
   c inline "(int)uv_os_setenv((char*)#1, (char*)#2)"
 
-pub fun ffi/uv-os-setenv(^name: c-pointer<int>, ^value: c-pointer<int>): <> int
-  external/uv-os-setenv(name.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-setenv(^name: c-pointer<int>, ^value: c-pointer<int>): <> int
+  external/uv-os-setenv(name, value).int
 
-pub extern external/uv-os-unsetenv(^name: intptr_t): int32
+pub extern external/uv-os-unsetenv(^name: c-pointer<int>): int32
   c inline "(int)uv_os_unsetenv((char*)#1)"
 
-pub fun ffi/uv-os-unsetenv(^name: c-pointer<int>): <> int
-  external/uv-os-unsetenv(name.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-unsetenv(^name: c-pointer<int>): <> int
+  external/uv-os-unsetenv(name).int
 
-pub extern external/uv-os-gethostname(^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-os-gethostname(^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_os_gethostname((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-os-gethostname(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-os-gethostname(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-gethostname(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-os-gethostname(buffer, size).int
 
-pub extern external/uv-os-uname(^buffer: intptr_t): int32
+pub extern external/uv-os-uname(^buffer: c-pointer<uv-utsname-s-c>): int32
   c inline "(int)uv_os_uname((uv_utsname_t*)#1)"
 
-pub fun ffi/uv-os-uname(^buffer: c-pointer<uv-utsname-s-c>): <> int
-  external/uv-os-uname(buffer.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-os-uname(^buffer: c-pointer<uv-utsname-s-c>): <> int
+  external/uv-os-uname(buffer).int
 
-pub extern external/uv-metrics-info(^loop: intptr_t, ^metrics: intptr_t): int32
+pub extern external/uv-metrics-info(^loop: c-pointer<uv-loop-s-c>, ^metrics: c-pointer<uv-metrics-s-c>): int32
   c inline "(int)uv_metrics_info((uv_loop_t*)#1, (uv_metrics_t*)#2)"
 
-pub fun ffi/uv-metrics-info(^loop: c-pointer<uv-loop-s-c>, ^metrics: c-pointer<uv-metrics-s-c>): <> int
-  external/uv-metrics-info(loop.cextern/c-pointer/ptr, metrics.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-metrics-info(^loop: c-pointer<uv-loop-s-c>, ^metrics: c-pointer<uv-metrics-s-c>): <> int
+  external/uv-metrics-info(loop, metrics).int
 
-pub extern external/uv-metrics-idle-time(^loop: intptr_t): int64
+pub extern external/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): int64
   c inline "(int64_t)uv_metrics_idle_time((uv_loop_t*)#1)"
 
-pub fun ffi/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): <> int
-  external/uv-metrics-idle-time(loop.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): <> int
+  external/uv-metrics-idle-time(loop).int
 
-pub extern external/uv-fs-get-type(^arg0: intptr_t): int32
+pub extern external/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): int32
   c inline "(int32_t)uv_fs_get_type((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): <exn> uv-fs-type
-  external/uv-fs-get-type(arg0.cextern/c-pointer/ptr).int/uv-fs-type
+pub inline fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): <exn> uv-fs-type
+  external/uv-fs-get-type(arg0).int/uv-fs-type
 
-pub extern external/uv-fs-get-result(^arg0: intptr_t): ssize_t
+pub extern external/uv-fs-get-result(^arg0: c-pointer<uv-fs-s-c>): ssize_t
   c inline "(ssize_t)uv_fs_get_result((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-result(^arg0: c-pointer<uv-fs-s-c>): <> int
-  external/uv-fs-get-result(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-get-result(^arg0: c-pointer<uv-fs-s-c>): <> int
+  external/uv-fs-get-result(arg0).int
 
-pub extern external/uv-fs-get-system-error(^arg0: intptr_t): int32
+pub extern external/uv-fs-get-system-error(^arg0: c-pointer<uv-fs-s-c>): int32
   c inline "(int)uv_fs_get_system_error((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-system-error(^arg0: c-pointer<uv-fs-s-c>): <> int
-  external/uv-fs-get-system-error(arg0.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-get-system-error(^arg0: c-pointer<uv-fs-s-c>): <> int
+  external/uv-fs-get-system-error(arg0).int
 
-pub extern external/uv-fs-get-ptr(^arg0: intptr_t): intptr_t
+pub extern external/uv-fs-get-ptr(^arg0: c-pointer<uv-fs-s-c>): c-pointer<()>
   c inline "(intptr_t)uv_fs_get_ptr((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-ptr(^arg0: c-pointer<uv-fs-s-c>): <> c-pointer<()>
-  C-pointer(external/uv-fs-get-ptr(arg0.cextern/c-pointer/ptr))
-
-pub extern external/uv-fs-get-path(^arg0: intptr_t): intptr_t
+pub extern external/uv-fs-get-path(^arg0: c-pointer<uv-fs-s-c>): c-pointer<int>
   c inline "(intptr_t)uv_fs_get_path((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-path(^arg0: c-pointer<uv-fs-s-c>): <> c-pointer<int>
-  C-pointer(external/uv-fs-get-path(arg0.cextern/c-pointer/ptr))
-
-pub extern external/uv-fs-get-statbuf(^arg0: intptr_t): intptr_t
+pub extern external/uv-fs-get-statbuf(^arg0: c-pointer<uv-fs-s-c>): c-pointer<uv-stat-t-c>
   c inline "(intptr_t)uv_fs_get_statbuf((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-get-statbuf(^arg0: c-pointer<uv-fs-s-c>): <> c-pointer<uv-stat-t-c>
-  C-pointer(external/uv-fs-get-statbuf(arg0.cextern/c-pointer/ptr))
-
-pub extern external/uv-fs-req-cleanup(^req: intptr_t): ()
+pub extern external/uv-fs-req-cleanup(^req: c-pointer<uv-fs-s-c>): ()
   c inline "(void)uv_fs_req_cleanup((uv_fs_t*)#1)"
 
-pub fun ffi/uv-fs-req-cleanup(^req: c-pointer<uv-fs-s-c>): <> ()
-  external/uv-fs-req-cleanup(req.cextern/c-pointer/ptr)
-
-pub extern external/uv-fs-close(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-close(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_close((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-close(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-close(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-close(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-close(loop, req, file.int32, cb).int
 
-pub extern external/uv-fs-open(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^flags: int32, ^mode: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-open(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int32, ^mode: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_open((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (int)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-open(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-open(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, flags.int32, mode.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-open(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^mode: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-open(loop, req, path, flags.int32, mode.int32, cb).int
 
-pub extern external/uv-fs-read(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^bufs: intptr_t, ^nbufs: int32, ^offset: int64, ^cb: intptr_t): int32
+pub extern external/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^offset: int64, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_read((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (uv_fs_cb)#7)"
 
-pub fun ffi/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-read(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-read(loop, req, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb).int
 
-pub extern external/uv-fs-unlink(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-unlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_unlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-unlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-unlink(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-unlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-unlink(loop, req, path, cb).int
 
-pub extern external/uv-fs-write(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^bufs: intptr_t, ^nbufs: int32, ^offset: int64, ^cb: intptr_t): int32
+pub extern external/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^offset: int64, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_write((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (uv_fs_cb)#7)"
 
-pub fun ffi/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-write(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-write(loop, req, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb).int
 
-pub extern external/uv-fs-copyfile(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^flags: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-copyfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_copyfile((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (int)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-copyfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-copyfile(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, flags.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-copyfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-copyfile(loop, req, path, new-path, flags.int32, cb).int
 
-pub extern external/uv-fs-mkdir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^mode: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-mkdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_mkdir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-mkdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-mkdir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, mode.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-mkdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-mkdir(loop, req, path, mode.int32, cb).int
 
-pub extern external/uv-fs-mkdtemp(^loop: intptr_t, ^req: intptr_t, ^tpl: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-mkdtemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_mkdtemp((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-mkdtemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-mkdtemp(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, tpl.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-mkdtemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-mkdtemp(loop, req, tpl, cb).int
 
-pub extern external/uv-fs-mkstemp(^loop: intptr_t, ^req: intptr_t, ^tpl: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-mkstemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_mkstemp((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-mkstemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-mkstemp(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, tpl.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-mkstemp(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^tpl: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-mkstemp(loop, req, tpl, cb).int
 
-pub extern external/uv-fs-rmdir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-rmdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_rmdir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-rmdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-rmdir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-rmdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-rmdir(loop, req, path, cb).int
 
-pub extern external/uv-fs-scandir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^flags: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-scandir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_scandir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-scandir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-scandir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, flags.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-scandir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^flags: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-scandir(loop, req, path, flags.int32, cb).int
 
-pub extern external/uv-fs-scandir-next(^req: intptr_t, ^ent: intptr_t): int32
+pub extern external/uv-fs-scandir-next(^req: c-pointer<uv-fs-s-c>, ^ent: c-pointer<uv-dirent-s-c>): int32
   c inline "(int)uv_fs_scandir_next((uv_fs_t*)#1, (uv_dirent_t*)#2)"
 
-pub fun ffi/uv-fs-scandir-next(^req: c-pointer<uv-fs-s-c>, ^ent: c-pointer<uv-dirent-s-c>): <> int
-  external/uv-fs-scandir-next(req.cextern/c-pointer/ptr, ent.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-scandir-next(^req: c-pointer<uv-fs-s-c>, ^ent: c-pointer<uv-dirent-s-c>): <> int
+  external/uv-fs-scandir-next(req, ent).int
 
-pub extern external/uv-fs-opendir(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-opendir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_opendir((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-opendir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-opendir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-opendir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-opendir(loop, req, path, cb).int
 
-pub extern external/uv-fs-readdir(^loop: intptr_t, ^req: intptr_t, ^dir: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-readdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_readdir((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_dir_t*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-readdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-readdir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, dir.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-readdir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-readdir(loop, req, dir, cb).int
 
-pub extern external/uv-fs-closedir(^loop: intptr_t, ^req: intptr_t, ^dir: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-closedir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_closedir((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_dir_t*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-closedir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-closedir(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, dir.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-closedir(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^dir: c-pointer<uv-dir-s-c>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-closedir(loop, req, dir, cb).int
 
-pub extern external/uv-fs-stat(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-stat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_stat((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-stat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-stat(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-stat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-stat(loop, req, path, cb).int
 
-pub extern external/uv-fs-fstat(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-fstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_fstat((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-fstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-fstat(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-fstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-fstat(loop, req, file.int32, cb).int
 
-pub extern external/uv-fs-rename(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-rename(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_rename((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-rename(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-rename(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-rename(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-rename(loop, req, path, new-path, cb).int
 
-pub extern external/uv-fs-fsync(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-fsync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_fsync((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-fsync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-fsync(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-fsync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-fsync(loop, req, file.int32, cb).int
 
-pub extern external/uv-fs-fdatasync(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-fdatasync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_fdatasync((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-fdatasync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-fdatasync(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-fdatasync(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-fdatasync(loop, req, file.int32, cb).int
 
-pub extern external/uv-fs-ftruncate(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^offset: int64, ^cb: intptr_t): int32
+pub extern external/uv-fs-ftruncate(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^offset: int64, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_ftruncate((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (int64_t)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-ftruncate(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^offset: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-ftruncate(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, offset.int64, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-ftruncate(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^offset: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-ftruncate(loop, req, file.int32, offset.int64, cb).int
 
-pub extern external/uv-fs-sendfile(^loop: intptr_t, ^req: intptr_t, ^out-fd: int32, ^in-fd: int32, ^in-offset: int64, ^length: ssize_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-sendfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^out-fd: int32, ^in-fd: int32, ^in-offset: int64, ^length: ssize_t, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_sendfile((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_file)#4, (int64_t)#5, (size_t)#6, (uv_fs_cb)#7)"
 
-pub fun ffi/uv-fs-sendfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^out-fd: int, ^in-fd: int, ^in-offset: int, ^length: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-sendfile(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, out-fd.int32, in-fd.int32, in-offset.int64, length.ssize_t, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-sendfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^out-fd: int, ^in-fd: int, ^in-offset: int, ^length: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-sendfile(loop, req, out-fd.int32, in-fd.int32, in-offset.int64, length.ssize_t, cb).int
 
-pub extern external/uv-fs-access(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^mode: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-access(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_access((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-access(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-access(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, mode.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-access(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-access(loop, req, path, mode.int32, cb).int
 
-pub extern external/uv-fs-chmod(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^mode: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-chmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_chmod((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-chmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-chmod(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, mode.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-chmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^mode: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-chmod(loop, req, path, mode.int32, cb).int
 
-pub extern external/uv-fs-utime(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^atime: float64, ^mtime: float64, ^cb: intptr_t): int32
+pub extern external/uv-fs-utime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_utime((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (double)#4, (double)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-utime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-utime(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, atime, mtime, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-utime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: uv-fs-cb): <> int
+  external/uv-fs-utime(loop, req, path, atime, mtime, cb).int
 
-pub extern external/uv-fs-futime(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^atime: float64, ^mtime: float64, ^cb: intptr_t): int32
+pub extern external/uv-fs-futime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_futime((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (double)#4, (double)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-futime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-futime(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, atime, mtime, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-futime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^atime: float64, ^mtime: float64, ^cb: uv-fs-cb): <> int
+  external/uv-fs-futime(loop, req, file.int32, atime, mtime, cb).int
 
-pub extern external/uv-fs-lutime(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^atime: float64, ^mtime: float64, ^cb: intptr_t): int32
+pub extern external/uv-fs-lutime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_lutime((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (double)#4, (double)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-lutime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-lutime(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, atime, mtime, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-lutime(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^atime: float64, ^mtime: float64, ^cb: uv-fs-cb): <> int
+  external/uv-fs-lutime(loop, req, path, atime, mtime, cb).int
 
-pub extern external/uv-fs-lstat(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-lstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_lstat((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-lstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-lstat(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-lstat(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-lstat(loop, req, path, cb).int
 
-pub extern external/uv-fs-link(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-link(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_link((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-link(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-link(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-link(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-link(loop, req, path, new-path, cb).int
 
-pub extern external/uv-fs-symlink(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^new-path: intptr_t, ^flags: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-symlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_symlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (int)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-symlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-symlink(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, new-path.cextern/c-pointer/ptr, flags.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-symlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-symlink(loop, req, path, new-path, flags.int32, cb).int
 
-pub extern external/uv-fs-readlink(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-readlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_readlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-readlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-readlink(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-readlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-readlink(loop, req, path, cb).int
 
-pub extern external/uv-fs-realpath(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-realpath(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_realpath((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-realpath(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-realpath(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-realpath(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-realpath(loop, req, path, cb).int
 
-pub extern external/uv-fs-fchmod(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^mode: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-fchmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^mode: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_fchmod((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (int)#4, (uv_fs_cb)#5)"
 
-pub fun ffi/uv-fs-fchmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^mode: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-fchmod(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, mode.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-fchmod(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^mode: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-fchmod(loop, req, file.int32, mode.int32, cb).int
 
-pub extern external/uv-fs-chown(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^uid: int32, ^gid: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-chown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int32, ^gid: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_chown((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_uid_t)#4, (uv_gid_t)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-chown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-chown(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, uid.int32, gid.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-chown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-chown(loop, req, path, uid.int32, gid.int32, cb).int
 
-pub extern external/uv-fs-fchown(^loop: intptr_t, ^req: intptr_t, ^file: int32, ^uid: int32, ^gid: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-fchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int32, ^uid: int32, ^gid: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_fchown((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (uv_uid_t)#4, (uv_gid_t)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-fchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-fchown(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, file.int32, uid.int32, gid.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-fchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^uid: int, ^gid: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-fchown(loop, req, file.int32, uid.int32, gid.int32, cb).int
 
-pub extern external/uv-fs-lchown(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^uid: int32, ^gid: int32, ^cb: intptr_t): int32
+pub extern external/uv-fs-lchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int32, ^gid: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_lchown((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_uid_t)#4, (uv_gid_t)#5, (uv_fs_cb)#6)"
 
-pub fun ffi/uv-fs-lchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-lchown(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, uid.int32, gid.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-lchown(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^uid: int, ^gid: int, ^cb: uv-fs-cb): <> int
+  external/uv-fs-lchown(loop, req, path, uid.int32, gid.int32, cb).int
 
-pub extern external/uv-fs-statfs(^loop: intptr_t, ^req: intptr_t, ^path: intptr_t, ^cb: intptr_t): int32
+pub extern external/uv-fs-statfs(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_statfs((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
 
-pub fun ffi/uv-fs-statfs(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-fs-statfs(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-statfs(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: uv-fs-cb): <> int
+  external/uv-fs-statfs(loop, req, path, cb).int
 
-pub extern external/uv-fs-poll-init(^loop: intptr_t, ^handle1: intptr_t): int32
+pub extern external/uv-fs-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-poll-s-c>): int32
   c inline "(int)uv_fs_poll_init((uv_loop_t*)#1, (uv_fs_poll_t*)#2)"
 
-pub fun ffi/uv-fs-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-poll-s-c>): <> int
-  external/uv-fs-poll-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-poll-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-poll-s-c>): <> int
+  external/uv-fs-poll-init(loop, handle1).int
 
-pub extern external/uv-fs-poll-start(^handle1: intptr_t, ^poll-cb: intptr_t, ^path: intptr_t, ^interval: int32): int32
+pub extern external/uv-fs-poll-start(^handle1: c-pointer<uv-fs-poll-s-c>, ^poll-cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^interval: int32): int32
   c inline "(int)uv_fs_poll_start((uv_fs_poll_t*)#1, (uv_fs_poll_cb)#2, (char*)#3, (unsigned int)#4)"
 
-pub fun ffi/uv-fs-poll-start(^handle1: c-pointer<uv-fs-poll-s-c>, ^poll-cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^interval: int): <> int
-  external/uv-fs-poll-start(handle1.cextern/c-pointer/ptr, poll-cb.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, interval.int32).int
+pub inline fun ffi/uv-fs-poll-start(^handle1: c-pointer<uv-fs-poll-s-c>, ^poll-cb: uv-fs-poll-cb, ^path: c-pointer<int>, ^interval: int): <> int
+  external/uv-fs-poll-start(handle1, poll-cb, path, interval.int32).int
 
-pub extern external/uv-fs-poll-stop(^handle1: intptr_t): int32
+pub extern external/uv-fs-poll-stop(^handle1: c-pointer<uv-fs-poll-s-c>): int32
   c inline "(int)uv_fs_poll_stop((uv_fs_poll_t*)#1)"
 
-pub fun ffi/uv-fs-poll-stop(^handle1: c-pointer<uv-fs-poll-s-c>): <> int
-  external/uv-fs-poll-stop(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-poll-stop(^handle1: c-pointer<uv-fs-poll-s-c>): <> int
+  external/uv-fs-poll-stop(handle1).int
 
-pub extern external/uv-fs-poll-getpath(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-fs-poll-getpath(^handle1: c-pointer<uv-fs-poll-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_fs_poll_getpath((uv_fs_poll_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-fs-poll-getpath(^handle1: c-pointer<uv-fs-poll-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-fs-poll-getpath(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-poll-getpath(^handle1: c-pointer<uv-fs-poll-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-fs-poll-getpath(handle1, buffer, size).int
 
-pub extern external/uv-signal-init(^loop: intptr_t, ^handle1: intptr_t): int32
+pub extern external/uv-signal-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-signal-s-c>): int32
   c inline "(int)uv_signal_init((uv_loop_t*)#1, (uv_signal_t*)#2)"
 
-pub fun ffi/uv-signal-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-signal-s-c>): <> int
-  external/uv-signal-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-signal-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-signal-s-c>): <> int
+  external/uv-signal-init(loop, handle1).int
 
-pub extern external/uv-signal-start(^handle1: intptr_t, ^signal-cb: intptr_t, ^signum: int32): int32
+pub extern external/uv-signal-start(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int32): int32
   c inline "(int)uv_signal_start((uv_signal_t*)#1, (uv_signal_cb)#2, (int)#3)"
 
-pub fun ffi/uv-signal-start(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int): <> int
-  external/uv-signal-start(handle1.cextern/c-pointer/ptr, signal-cb.cextern/c-pointer/ptr, signum.int32).int
+pub inline fun ffi/uv-signal-start(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: uv-signal-cb, ^signum: int): <> int
+  external/uv-signal-start(handle1, signal-cb, signum.int32).int
 
-pub extern external/uv-signal-start-oneshot(^handle1: intptr_t, ^signal-cb: intptr_t, ^signum: int32): int32
+pub extern external/uv-signal-start-oneshot(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int32): int32
   c inline "(int)uv_signal_start_oneshot((uv_signal_t*)#1, (uv_signal_cb)#2, (int)#3)"
 
-pub fun ffi/uv-signal-start-oneshot(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: c-pointer<intptr_t>, ^signum: int): <> int
-  external/uv-signal-start-oneshot(handle1.cextern/c-pointer/ptr, signal-cb.cextern/c-pointer/ptr, signum.int32).int
+pub inline fun ffi/uv-signal-start-oneshot(^handle1: c-pointer<uv-signal-s-c>, ^signal-cb: uv-signal-cb, ^signum: int): <> int
+  external/uv-signal-start-oneshot(handle1, signal-cb, signum.int32).int
 
-pub extern external/uv-signal-stop(^handle1: intptr_t): int32
+pub extern external/uv-signal-stop(^handle1: c-pointer<uv-signal-s-c>): int32
   c inline "(int)uv_signal_stop((uv_signal_t*)#1)"
 
-pub fun ffi/uv-signal-stop(^handle1: c-pointer<uv-signal-s-c>): <> int
-  external/uv-signal-stop(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-signal-stop(^handle1: c-pointer<uv-signal-s-c>): <> int
+  external/uv-signal-stop(handle1).int
 
-pub extern external/uv-loadavg(^avg: intptr_t): ()
+pub extern external/uv-loadavg(^avg: c-pointer<float64>): ()
   c inline "(void)uv_loadavg((double*)#1)"
 
-pub fun ffi/uv-loadavg(^avg: c-array<float64>): <> ()
-  external/uv-loadavg(avg.cextern/carray/cptr)
-
-pub extern external/uv-fs-event-init(^loop: intptr_t, ^handle1: intptr_t): int32
+pub extern external/uv-fs-event-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-event-s-c>): int32
   c inline "(int)uv_fs_event_init((uv_loop_t*)#1, (uv_fs_event_t*)#2)"
 
-pub fun ffi/uv-fs-event-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-event-s-c>): <> int
-  external/uv-fs-event-init(loop.cextern/c-pointer/ptr, handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-event-init(^loop: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-fs-event-s-c>): <> int
+  external/uv-fs-event-init(loop, handle1).int
 
-pub extern external/uv-fs-event-start(^handle1: intptr_t, ^cb: intptr_t, ^path: intptr_t, ^flags: int32): int32
+pub extern external/uv-fs-event-start(^handle1: c-pointer<uv-fs-event-s-c>, ^cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^flags: int32): int32
   c inline "(int)uv_fs_event_start((uv_fs_event_t*)#1, (uv_fs_event_cb)#2, (char*)#3, (unsigned int)#4)"
 
-pub fun ffi/uv-fs-event-start(^handle1: c-pointer<uv-fs-event-s-c>, ^cb: c-pointer<intptr_t>, ^path: c-pointer<int>, ^flags: int): <> int
-  external/uv-fs-event-start(handle1.cextern/c-pointer/ptr, cb.cextern/c-pointer/ptr, path.cextern/c-pointer/ptr, flags.int32).int
+pub inline fun ffi/uv-fs-event-start(^handle1: c-pointer<uv-fs-event-s-c>, ^cb: uv-fs-event-cb, ^path: c-pointer<int>, ^flags: int): <> int
+  external/uv-fs-event-start(handle1, cb, path, flags.int32).int
 
-pub extern external/uv-fs-event-stop(^handle1: intptr_t): int32
+pub extern external/uv-fs-event-stop(^handle1: c-pointer<uv-fs-event-s-c>): int32
   c inline "(int)uv_fs_event_stop((uv_fs_event_t*)#1)"
 
-pub fun ffi/uv-fs-event-stop(^handle1: c-pointer<uv-fs-event-s-c>): <> int
-  external/uv-fs-event-stop(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-event-stop(^handle1: c-pointer<uv-fs-event-s-c>): <> int
+  external/uv-fs-event-stop(handle1).int
 
-pub extern external/uv-fs-event-getpath(^handle1: intptr_t, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-fs-event-getpath(^handle1: c-pointer<uv-fs-event-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_fs_event_getpath((uv_fs_event_t*)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-fs-event-getpath(^handle1: c-pointer<uv-fs-event-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-fs-event-getpath(handle1.cextern/c-pointer/ptr, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-fs-event-getpath(^handle1: c-pointer<uv-fs-event-s-c>, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-fs-event-getpath(handle1, buffer, size).int
 
-pub extern external/uv-ip4-addr(^ip: intptr_t, ^port: int32, ^addr: intptr_t): int32
+pub extern external/uv-ip4-addr(^ip: c-pointer<int>, ^port: int32, ^addr: c-pointer<sockaddr-in-c>): int32
   c inline "(int)uv_ip4_addr((char*)#1, (int)#2, (struct sockaddr_in*)#3)"
 
-pub fun ffi/uv-ip4-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in-c>): <> int
-  external/uv-ip4-addr(ip.cextern/c-pointer/ptr, port.int32, addr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-ip4-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in-c>): <> int
+  external/uv-ip4-addr(ip, port.int32, addr).int
 
-pub extern external/uv-ip6-addr(^ip: intptr_t, ^port: int32, ^addr: intptr_t): int32
+pub extern external/uv-ip6-addr(^ip: c-pointer<int>, ^port: int32, ^addr: c-pointer<sockaddr-in6-c>): int32
   c inline "(int)uv_ip6_addr((char*)#1, (int)#2, (struct sockaddr_in6*)#3)"
 
-pub fun ffi/uv-ip6-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in6-c>): <> int
-  external/uv-ip6-addr(ip.cextern/c-pointer/ptr, port.int32, addr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-ip6-addr(^ip: c-pointer<int>, ^port: int, ^addr: c-pointer<sockaddr-in6-c>): <> int
+  external/uv-ip6-addr(ip, port.int32, addr).int
 
-pub extern external/uv-ip4-name(^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
+pub extern external/uv-ip4-name(^src: c-pointer<sockaddr-in-c>, ^dst: c-pointer<int>, ^size: ssize_t): int32
   c inline "(int)uv_ip4_name((struct sockaddr_in*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-ip4-name(^src: c-pointer<sockaddr-in-c>, ^dst: c-pointer<int>, ^size: int): <> int
-  external/uv-ip4-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
+pub inline fun ffi/uv-ip4-name(^src: c-pointer<sockaddr-in-c>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-ip4-name(src, dst, size.ssize_t).int
 
-pub extern external/uv-ip6-name(^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
+pub extern external/uv-ip6-name(^src: c-pointer<sockaddr-in6-c>, ^dst: c-pointer<int>, ^size: ssize_t): int32
   c inline "(int)uv_ip6_name((struct sockaddr_in6*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-ip6-name(^src: c-pointer<sockaddr-in6-c>, ^dst: c-pointer<int>, ^size: int): <> int
-  external/uv-ip6-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
+pub inline fun ffi/uv-ip6-name(^src: c-pointer<sockaddr-in6-c>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-ip6-name(src, dst, size.ssize_t).int
 
-pub extern external/uv-ip-name(^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
+pub extern external/uv-ip-name(^src: c-pointer<sockaddr-c>, ^dst: c-pointer<int>, ^size: ssize_t): int32
   c inline "(int)uv_ip_name((struct sockaddr*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-ip-name(^src: c-pointer<sockaddr-c>, ^dst: c-pointer<int>, ^size: int): <> int
-  external/uv-ip-name(src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
+pub inline fun ffi/uv-ip-name(^src: c-pointer<sockaddr-c>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-ip-name(src, dst, size.ssize_t).int
 
-pub extern external/uv-inet-ntop(^af: int32, ^src: intptr_t, ^dst: intptr_t, ^size: ssize_t): int32
+pub extern external/uv-inet-ntop(^af: int32, ^src: c-pointer<()>, ^dst: c-pointer<int>, ^size: ssize_t): int32
   c inline "(int)uv_inet_ntop((int)#1, (void*)#2, (char*)#3, (size_t)#4)"
 
-pub fun ffi/uv-inet-ntop(^af: int, ^src: c-pointer<()>, ^dst: c-pointer<int>, ^size: int): <> int
-  external/uv-inet-ntop(af.int32, src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr, size.ssize_t).int
+pub inline fun ffi/uv-inet-ntop(^af: int, ^src: c-pointer<()>, ^dst: c-pointer<int>, ^size: int): <> int
+  external/uv-inet-ntop(af.int32, src, dst, size.ssize_t).int
 
-pub extern external/uv-inet-pton(^af: int32, ^src: intptr_t, ^dst: intptr_t): int32
+pub extern external/uv-inet-pton(^af: int32, ^src: c-pointer<int>, ^dst: c-pointer<()>): int32
   c inline "(int)uv_inet_pton((int)#1, (char*)#2, (void*)#3)"
 
-pub fun ffi/uv-inet-pton(^af: int, ^src: c-pointer<int>, ^dst: c-pointer<()>): <> int
-  external/uv-inet-pton(af.int32, src.cextern/c-pointer/ptr, dst.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-inet-pton(^af: int, ^src: c-pointer<int>, ^dst: c-pointer<()>): <> int
+  external/uv-inet-pton(af.int32, src, dst).int
 
-pub extern external/uv-random(^loop: intptr_t, ^req: intptr_t, ^buf: intptr_t, ^buflen: ssize_t, ^flags: int32, ^cb: intptr_t): int32
+pub extern external/uv-random(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-random-s-c>, ^buf: c-pointer<()>, ^buflen: ssize_t, ^flags: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_random((uv_loop_t*)#1, (uv_random_t*)#2, (void*)#3, (size_t)#4, (unsigned int)#5, (uv_random_cb)#6)"
 
-pub fun ffi/uv-random(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-random-s-c>, ^buf: c-pointer<()>, ^buflen: int, ^flags: int, ^cb: c-pointer<intptr_t>): <> int
-  external/uv-random(loop.cextern/c-pointer/ptr, req.cextern/c-pointer/ptr, buf.cextern/c-pointer/ptr, buflen.ssize_t, flags.int32, cb.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-random(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-random-s-c>, ^buf: c-pointer<()>, ^buflen: int, ^flags: int, ^cb: uv-random-cb): <> int
+  external/uv-random(loop, req, buf, buflen.ssize_t, flags.int32, cb).int
 
-pub extern external/uv-if-indextoname(^ifindex: int32, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-if-indextoname(^ifindex: int32, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_if_indextoname((unsigned int)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-if-indextoname(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-if-indextoname(ifindex.int32, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-if-indextoname(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-if-indextoname(ifindex.int32, buffer, size).int
 
-pub extern external/uv-if-indextoiid(^ifindex: int32, ^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-if-indextoiid(^ifindex: int32, ^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_if_indextoiid((unsigned int)#1, (char*)#2, (size_t*)#3)"
 
-pub fun ffi/uv-if-indextoiid(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-if-indextoiid(ifindex.int32, buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-if-indextoiid(^ifindex: int, ^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-if-indextoiid(ifindex.int32, buffer, size).int
 
-pub extern external/uv-exepath(^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-exepath(^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_exepath((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-exepath(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-exepath(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-exepath(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-exepath(buffer, size).int
 
-pub extern external/uv-cwd(^buffer: intptr_t, ^size: intptr_t): int32
+pub extern external/uv-cwd(^buffer: c-pointer<int>, ^size: c-pointer<int>): int32
   c inline "(int)uv_cwd((char*)#1, (size_t*)#2)"
 
-pub fun ffi/uv-cwd(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
-  external/uv-cwd(buffer.cextern/c-pointer/ptr, size.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-cwd(^buffer: c-pointer<int>, ^size: c-pointer<int>): <> int
+  external/uv-cwd(buffer, size).int
 
-pub extern external/uv-chdir(^dir: intptr_t): int32
+pub extern external/uv-chdir(^dir: c-pointer<int>): int32
   c inline "(int)uv_chdir((char*)#1)"
 
-pub fun ffi/uv-chdir(^dir: c-pointer<int>): <> int
-  external/uv-chdir(dir.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-chdir(^dir: c-pointer<int>): <> int
+  external/uv-chdir(dir).int
 
 pub extern external/uv-get-free-memory(): int64
   c inline "(int64_t)uv_get_free_memory()"
 
-pub fun ffi/uv-get-free-memory(): <> int
+pub inline fun ffi/uv-get-free-memory(): <> int
   external/uv-get-free-memory().int
 
 pub extern external/uv-get-total-memory(): int64
   c inline "(int64_t)uv_get_total_memory()"
 
-pub fun ffi/uv-get-total-memory(): <> int
+pub inline fun ffi/uv-get-total-memory(): <> int
   external/uv-get-total-memory().int
 
 pub extern external/uv-get-constrained-memory(): int64
   c inline "(int64_t)uv_get_constrained_memory()"
 
-pub fun ffi/uv-get-constrained-memory(): <> int
+pub inline fun ffi/uv-get-constrained-memory(): <> int
   external/uv-get-constrained-memory().int
 
 pub extern external/uv-get-available-memory(): int64
   c inline "(int64_t)uv_get_available_memory()"
 
-pub fun ffi/uv-get-available-memory(): <> int
+pub inline fun ffi/uv-get-available-memory(): <> int
   external/uv-get-available-memory().int
 
-pub extern external/uv-clock-gettime(^clock-id: int32, ^ts: intptr_t): int32
+pub extern external/uv-clock-gettime(^clock-id: int32, ^ts: c-pointer<uv-timespec64-t-c>): int32
   c inline "(int)uv_clock_gettime((int32_t)#1, (uv_timespec64_t*)#2)"
 
-pub fun ffi/uv-clock-gettime(^clock-id: uv-clock-id, ^ts: c-pointer<uv-timespec64-t-c>): <exn> int
-  external/uv-clock-gettime(clock-id.uv-clock-id/int, ts.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-clock-gettime(^clock-id: uv-clock-id, ^ts: c-pointer<uv-timespec64-t-c>): <exn> int
+  external/uv-clock-gettime(clock-id.uv-clock-id/int, ts).int
 
 pub extern external/uv-hrtime(): int64
   c inline "(int64_t)uv_hrtime()"
 
-pub fun ffi/uv-hrtime(): <> int
+pub inline fun ffi/uv-hrtime(): <> int
   external/uv-hrtime().int
 
 pub extern external/uv-sleep(^msec: int32): ()
   c inline "(void)uv_sleep((unsigned int)#1)"
 
-pub fun ffi/uv-sleep(^msec: int): <> ()
+pub inline fun ffi/uv-sleep(^msec: int): <> ()
   external/uv-sleep(msec.int32)
 
 pub extern external/uv-disable-stdio-inheritance(): ()
   c inline "(void)uv_disable_stdio_inheritance()"
 
-pub extern external/uv-dlopen(^filename: intptr_t, ^lib: intptr_t): int32
+pub extern external/uv-dlopen(^filename: c-pointer<int>, ^lib: c-pointer<uv-lib-t-c>): int32
   c inline "(int)uv_dlopen((char*)#1, (uv_lib_t*)#2)"
 
-pub fun ffi/uv-dlopen(^filename: c-pointer<int>, ^lib: c-pointer<uv-lib-t-c>): <> int
-  external/uv-dlopen(filename.cextern/c-pointer/ptr, lib.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-dlopen(^filename: c-pointer<int>, ^lib: c-pointer<uv-lib-t-c>): <> int
+  external/uv-dlopen(filename, lib).int
 
-pub extern external/uv-dlclose(^lib: intptr_t): ()
+pub extern external/uv-dlclose(^lib: c-pointer<uv-lib-t-c>): ()
   c inline "(void)uv_dlclose((uv_lib_t*)#1)"
 
-pub fun ffi/uv-dlclose(^lib: c-pointer<uv-lib-t-c>): <> ()
-  external/uv-dlclose(lib.cextern/c-pointer/ptr)
-
-pub extern external/uv-dlsym(^lib: intptr_t, ^name: intptr_t, ^ptr: intptr_t): int32
+pub extern external/uv-dlsym(^lib: c-pointer<uv-lib-t-c>, ^name: c-pointer<int>, ^ptr: c-pointer<c-pointer<()>>): int32
   c inline "(int)uv_dlsym((uv_lib_t*)#1, (char*)#2, (void**)#3)"
 
-pub fun ffi/uv-dlsym(^lib: c-pointer<uv-lib-t-c>, ^name: c-pointer<int>, ^ptr: c-pointer<c-pointer<()>>): <> int
-  external/uv-dlsym(lib.cextern/c-pointer/ptr, name.cextern/c-pointer/ptr, ptr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-dlsym(^lib: c-pointer<uv-lib-t-c>, ^name: c-pointer<int>, ^ptr: c-pointer<c-pointer<()>>): <> int
+  external/uv-dlsym(lib, name, ptr).int
 
-pub extern external/uv-dlerror(^lib: intptr_t): intptr_t
+pub extern external/uv-dlerror(^lib: c-pointer<uv-lib-t-c>): c-pointer<int>
   c inline "(intptr_t)uv_dlerror((uv_lib_t*)#1)"
 
-pub fun ffi/uv-dlerror(^lib: c-pointer<uv-lib-t-c>): <> c-pointer<int>
-  C-pointer(external/uv-dlerror(lib.cextern/c-pointer/ptr))
-
-pub extern external/uv-mutex-init(^handle1: intptr_t): int32
+pub extern external/uv-mutex-init(^handle1: c-pointer<opaque-pthread-mutex-t-c>): int32
   c inline "(int)uv_mutex_init((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-init(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
-  external/uv-mutex-init(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-mutex-init(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
+  external/uv-mutex-init(handle1).int
 
-pub extern external/uv-mutex-init-recursive(^handle1: intptr_t): int32
+pub extern external/uv-mutex-init-recursive(^handle1: c-pointer<opaque-pthread-mutex-t-c>): int32
   c inline "(int)uv_mutex_init_recursive((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-init-recursive(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
-  external/uv-mutex-init-recursive(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-mutex-init-recursive(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
+  external/uv-mutex-init-recursive(handle1).int
 
-pub extern external/uv-mutex-destroy(^handle1: intptr_t): ()
+pub extern external/uv-mutex-destroy(^handle1: c-pointer<opaque-pthread-mutex-t-c>): ()
   c inline "(void)uv_mutex_destroy((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-destroy(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> ()
-  external/uv-mutex-destroy(handle1.cextern/c-pointer/ptr)
-
-pub extern external/uv-mutex-lock(^handle1: intptr_t): ()
+pub extern external/uv-mutex-lock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): ()
   c inline "(void)uv_mutex_lock((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-lock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> ()
-  external/uv-mutex-lock(handle1.cextern/c-pointer/ptr)
-
-pub extern external/uv-mutex-trylock(^handle1: intptr_t): int32
+pub extern external/uv-mutex-trylock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): int32
   c inline "(int)uv_mutex_trylock((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-trylock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
-  external/uv-mutex-trylock(handle1.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-mutex-trylock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
+  external/uv-mutex-trylock(handle1).int
 
-pub extern external/uv-mutex-unlock(^handle1: intptr_t): ()
+pub extern external/uv-mutex-unlock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): ()
   c inline "(void)uv_mutex_unlock((uv_mutex_t*)#1)"
 
-pub fun ffi/uv-mutex-unlock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> ()
-  external/uv-mutex-unlock(handle1.cextern/c-pointer/ptr)
-
-pub extern external/uv-rwlock-init(^rwlock: intptr_t): int32
+pub extern external/uv-rwlock-init(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): int32
   c inline "(int)uv_rwlock_init((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-init(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
-  external/uv-rwlock-init(rwlock.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-rwlock-init(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
+  external/uv-rwlock-init(rwlock).int
 
-pub extern external/uv-rwlock-destroy(^rwlock: intptr_t): ()
+pub extern external/uv-rwlock-destroy(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_destroy((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-destroy(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
-  external/uv-rwlock-destroy(rwlock.cextern/c-pointer/ptr)
-
-pub extern external/uv-rwlock-rdlock(^rwlock: intptr_t): ()
+pub extern external/uv-rwlock-rdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_rdlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-rdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
-  external/uv-rwlock-rdlock(rwlock.cextern/c-pointer/ptr)
-
-pub extern external/uv-rwlock-tryrdlock(^rwlock: intptr_t): int32
+pub extern external/uv-rwlock-tryrdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): int32
   c inline "(int)uv_rwlock_tryrdlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-tryrdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
-  external/uv-rwlock-tryrdlock(rwlock.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-rwlock-tryrdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
+  external/uv-rwlock-tryrdlock(rwlock).int
 
-pub extern external/uv-rwlock-rdunlock(^rwlock: intptr_t): ()
+pub extern external/uv-rwlock-rdunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_rdunlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-rdunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
-  external/uv-rwlock-rdunlock(rwlock.cextern/c-pointer/ptr)
-
-pub extern external/uv-rwlock-wrlock(^rwlock: intptr_t): ()
+pub extern external/uv-rwlock-wrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_wrlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-wrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
-  external/uv-rwlock-wrlock(rwlock.cextern/c-pointer/ptr)
-
-pub extern external/uv-rwlock-trywrlock(^rwlock: intptr_t): int32
+pub extern external/uv-rwlock-trywrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): int32
   c inline "(int)uv_rwlock_trywrlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-trywrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
-  external/uv-rwlock-trywrlock(rwlock.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-rwlock-trywrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
+  external/uv-rwlock-trywrlock(rwlock).int
 
-pub extern external/uv-rwlock-wrunlock(^rwlock: intptr_t): ()
+pub extern external/uv-rwlock-wrunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_wrunlock((uv_rwlock_t*)#1)"
 
-pub fun ffi/uv-rwlock-wrunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> ()
-  external/uv-rwlock-wrunlock(rwlock.cextern/c-pointer/ptr)
-
-pub extern external/uv-sem-init(^sem: intptr_t, ^value: int32): int32
+pub extern external/uv-sem-init(^sem: c-pointer<int>, ^value: int32): int32
   c inline "(int)uv_sem_init((uv_sem_t*)#1, (unsigned int)#2)"
 
-pub fun ffi/uv-sem-init(^sem: c-pointer<int>, ^value: int): <> int
-  external/uv-sem-init(sem.cextern/c-pointer/ptr, value.int32).int
+pub inline fun ffi/uv-sem-init(^sem: c-pointer<int>, ^value: int): <> int
+  external/uv-sem-init(sem, value.int32).int
 
-pub extern external/uv-sem-destroy(^sem: intptr_t): ()
+pub extern external/uv-sem-destroy(^sem: c-pointer<int>): ()
   c inline "(void)uv_sem_destroy((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-destroy(^sem: c-pointer<int>): <> ()
-  external/uv-sem-destroy(sem.cextern/c-pointer/ptr)
-
-pub extern external/uv-sem-post(^sem: intptr_t): ()
+pub extern external/uv-sem-post(^sem: c-pointer<int>): ()
   c inline "(void)uv_sem_post((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-post(^sem: c-pointer<int>): <> ()
-  external/uv-sem-post(sem.cextern/c-pointer/ptr)
-
-pub extern external/uv-sem-wait(^sem: intptr_t): ()
+pub extern external/uv-sem-wait(^sem: c-pointer<int>): ()
   c inline "(void)uv_sem_wait((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-wait(^sem: c-pointer<int>): <> ()
-  external/uv-sem-wait(sem.cextern/c-pointer/ptr)
-
-pub extern external/uv-sem-trywait(^sem: intptr_t): int32
+pub extern external/uv-sem-trywait(^sem: c-pointer<int>): int32
   c inline "(int)uv_sem_trywait((uv_sem_t*)#1)"
 
-pub fun ffi/uv-sem-trywait(^sem: c-pointer<int>): <> int
-  external/uv-sem-trywait(sem.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-sem-trywait(^sem: c-pointer<int>): <> int
+  external/uv-sem-trywait(sem).int
 
-pub extern external/uv-cond-init(^cond: intptr_t): int32
+pub extern external/uv-cond-init(^cond: c-pointer<opaque-pthread-cond-t-c>): int32
   c inline "(int)uv_cond_init((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-init(^cond: c-pointer<opaque-pthread-cond-t-c>): <> int
-  external/uv-cond-init(cond.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-cond-init(^cond: c-pointer<opaque-pthread-cond-t-c>): <> int
+  external/uv-cond-init(cond).int
 
-pub extern external/uv-cond-destroy(^cond: intptr_t): ()
+pub extern external/uv-cond-destroy(^cond: c-pointer<opaque-pthread-cond-t-c>): ()
   c inline "(void)uv_cond_destroy((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-destroy(^cond: c-pointer<opaque-pthread-cond-t-c>): <> ()
-  external/uv-cond-destroy(cond.cextern/c-pointer/ptr)
-
-pub extern external/uv-cond-signal(^cond: intptr_t): ()
+pub extern external/uv-cond-signal(^cond: c-pointer<opaque-pthread-cond-t-c>): ()
   c inline "(void)uv_cond_signal((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-signal(^cond: c-pointer<opaque-pthread-cond-t-c>): <> ()
-  external/uv-cond-signal(cond.cextern/c-pointer/ptr)
-
-pub extern external/uv-cond-broadcast(^cond: intptr_t): ()
+pub extern external/uv-cond-broadcast(^cond: c-pointer<opaque-pthread-cond-t-c>): ()
   c inline "(void)uv_cond_broadcast((uv_cond_t*)#1)"
 
-pub fun ffi/uv-cond-broadcast(^cond: c-pointer<opaque-pthread-cond-t-c>): <> ()
-  external/uv-cond-broadcast(cond.cextern/c-pointer/ptr)
-
-pub extern external/uv-barrier-init(^barrier: intptr_t, ^count: int32): int32
+pub extern external/uv-barrier-init(^barrier: c-pointer<uv-barrier-t-c>, ^count: int32): int32
   c inline "(int)uv_barrier_init((uv_barrier_t*)#1, (unsigned int)#2)"
 
-pub fun ffi/uv-barrier-init(^barrier: c-pointer<uv-barrier-t-c>, ^count: int): <> int
-  external/uv-barrier-init(barrier.cextern/c-pointer/ptr, count.int32).int
+pub inline fun ffi/uv-barrier-init(^barrier: c-pointer<uv-barrier-t-c>, ^count: int): <> int
+  external/uv-barrier-init(barrier, count.int32).int
 
-pub extern external/uv-barrier-destroy(^barrier: intptr_t): ()
+pub extern external/uv-barrier-destroy(^barrier: c-pointer<uv-barrier-t-c>): ()
   c inline "(void)uv_barrier_destroy((uv_barrier_t*)#1)"
 
-pub fun ffi/uv-barrier-destroy(^barrier: c-pointer<uv-barrier-t-c>): <> ()
-  external/uv-barrier-destroy(barrier.cextern/c-pointer/ptr)
-
-pub extern external/uv-barrier-wait(^barrier: intptr_t): int32
+pub extern external/uv-barrier-wait(^barrier: c-pointer<uv-barrier-t-c>): int32
   c inline "(int)uv_barrier_wait((uv_barrier_t*)#1)"
 
-pub fun ffi/uv-barrier-wait(^barrier: c-pointer<uv-barrier-t-c>): <> int
-  external/uv-barrier-wait(barrier.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-barrier-wait(^barrier: c-pointer<uv-barrier-t-c>): <> int
+  external/uv-barrier-wait(barrier).int
 
-pub extern external/uv-cond-wait(^cond: intptr_t, ^mutex: intptr_t): ()
+pub extern external/uv-cond-wait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>): ()
   c inline "(void)uv_cond_wait((uv_cond_t*)#1, (uv_mutex_t*)#2)"
 
-pub fun ffi/uv-cond-wait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>): <> ()
-  external/uv-cond-wait(cond.cextern/c-pointer/ptr, mutex.cextern/c-pointer/ptr)
-
-pub extern external/uv-cond-timedwait(^cond: intptr_t, ^mutex: intptr_t, ^timeout: int64): int32
+pub extern external/uv-cond-timedwait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>, ^timeout: int64): int32
   c inline "(int)uv_cond_timedwait((uv_cond_t*)#1, (uv_mutex_t*)#2, (int64_t)#3)"
 
-pub fun ffi/uv-cond-timedwait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>, ^timeout: int): <> int
-  external/uv-cond-timedwait(cond.cextern/c-pointer/ptr, mutex.cextern/c-pointer/ptr, timeout.int64).int
+pub inline fun ffi/uv-cond-timedwait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>, ^timeout: int): <> int
+  external/uv-cond-timedwait(cond, mutex, timeout.int64).int
 
-pub extern external/uv-once(^guard: intptr_t, ^callback: intptr_t): ()
+pub extern external/uv-once(^guard: c-pointer<opaque-pthread-once-t-c>, ^callback: c-pointer<intptr_t>): ()
   c inline "(void)uv_once((uv_once_t*)#1, (void (*)())#2)"
 
-pub fun ffi/uv-once(^guard: c-pointer<opaque-pthread-once-t-c>, ^callback: c-pointer<intptr_t>): <> ()
-  external/uv-once(guard.cextern/c-pointer/ptr, callback.cextern/c-pointer/ptr)
-
-pub extern external/uv-key-create(^key: intptr_t): int32
+pub extern external/uv-key-create(^key: c-pointer<int>): int32
   c inline "(int)uv_key_create((uv_key_t*)#1)"
 
-pub fun ffi/uv-key-create(^key: c-pointer<int>): <> int
-  external/uv-key-create(key.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-key-create(^key: c-pointer<int>): <> int
+  external/uv-key-create(key).int
 
-pub extern external/uv-key-delete(^key: intptr_t): ()
+pub extern external/uv-key-delete(^key: c-pointer<int>): ()
   c inline "(void)uv_key_delete((uv_key_t*)#1)"
 
-pub fun ffi/uv-key-delete(^key: c-pointer<int>): <> ()
-  external/uv-key-delete(key.cextern/c-pointer/ptr)
-
-pub extern external/uv-key-get(^key: intptr_t): intptr_t
+pub extern external/uv-key-get(^key: c-pointer<int>): c-pointer<()>
   c inline "(intptr_t)uv_key_get((uv_key_t*)#1)"
 
-pub fun ffi/uv-key-get(^key: c-pointer<int>): <> c-pointer<()>
-  C-pointer(external/uv-key-get(key.cextern/c-pointer/ptr))
-
-pub extern external/uv-key-set(^key: intptr_t, ^value: intptr_t): ()
+pub extern external/uv-key-set(^key: c-pointer<int>, ^value: c-pointer<()>): ()
   c inline "(void)uv_key_set((uv_key_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-key-set(^key: c-pointer<int>, ^value: c-pointer<()>): <> ()
-  external/uv-key-set(key.cextern/c-pointer/ptr, value.cextern/c-pointer/ptr)
-
-pub extern external/uv-gettimeofday(^tv: intptr_t): int32
+pub extern external/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): int32
   c inline "(int)uv_gettimeofday((uv_timeval64_t*)#1)"
 
-pub fun ffi/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): <> int
-  external/uv-gettimeofday(tv.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): <> int
+  external/uv-gettimeofday(tv).int
 
-pub extern external/uv-thread-create(^tid: intptr_t, ^entry: intptr_t, ^arg: intptr_t): int32
+pub extern external/uv-thread-create(^tid: c-pointer<uv-thread-t>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int32
   c inline "(int)uv_thread_create((uv_thread_t*)#1, (uv_thread_cb)#2, (void*)#3)"
 
-pub fun ffi/uv-thread-create(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): <> int
-  external/uv-thread-create(tid.cextern/c-pointer/ptr, entry.cextern/c-pointer/ptr, arg.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-thread-create(^tid: c-pointer<uv-thread-t>, ^entry: uv-thread-cb, ^arg: c-pointer<()>): <> int
+  external/uv-thread-create(tid, entry, arg).int
 
-pub extern external/uv-thread-create-ex(^tid: intptr_t, ^params: intptr_t, ^entry: intptr_t, ^arg: intptr_t): int32
+pub extern external/uv-thread-create-ex(^tid: c-pointer<uv-thread-t>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int32
   c inline "(int)uv_thread_create_ex((uv_thread_t*)#1, (uv_thread_options_t*)#2, (uv_thread_cb)#3, (void*)#4)"
 
-pub fun ffi/uv-thread-create-ex(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): <> int
-  external/uv-thread-create-ex(tid.cextern/c-pointer/ptr, params.cextern/c-pointer/ptr, entry.cextern/c-pointer/ptr, arg.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-thread-create-ex(^tid: c-pointer<uv-thread-t>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: uv-thread-cb, ^arg: c-pointer<()>): <> int
+  external/uv-thread-create-ex(tid, params, entry, arg).int
 
-pub extern external/uv-thread-setaffinity(^tid: intptr_t, ^cpumask: intptr_t, ^oldmask: intptr_t, ^mask-size: ssize_t): int32
+pub extern external/uv-thread-setaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: ssize_t): int32
   c inline "(int)uv_thread_setaffinity((uv_thread_t*)#1, (char*)#2, (char*)#3, (size_t)#4)"
 
-pub fun ffi/uv-thread-setaffinity(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: int): <> int
-  external/uv-thread-setaffinity(tid.cextern/c-pointer/ptr, cpumask.cextern/c-pointer/ptr, oldmask.cextern/c-pointer/ptr, mask-size.ssize_t).int
+pub inline fun ffi/uv-thread-setaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: int): <> int
+  external/uv-thread-setaffinity(tid, cpumask, oldmask, mask-size.ssize_t).int
 
-pub extern external/uv-thread-getaffinity(^tid: intptr_t, ^cpumask: intptr_t, ^mask-size: ssize_t): int32
+pub extern external/uv-thread-getaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^mask-size: ssize_t): int32
   c inline "(int)uv_thread_getaffinity((uv_thread_t*)#1, (char*)#2, (size_t)#3)"
 
-pub fun ffi/uv-thread-getaffinity(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>, ^cpumask: c-pointer<int>, ^mask-size: int): <> int
-  external/uv-thread-getaffinity(tid.cextern/c-pointer/ptr, cpumask.cextern/c-pointer/ptr, mask-size.ssize_t).int
+pub inline fun ffi/uv-thread-getaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^mask-size: int): <> int
+  external/uv-thread-getaffinity(tid, cpumask, mask-size.ssize_t).int
 
 pub extern external/uv-thread-getcpu(): int32
   c inline "(int)uv_thread_getcpu()"
 
-pub fun ffi/uv-thread-getcpu(): <> int
+pub inline fun ffi/uv-thread-getcpu(): <> int
   external/uv-thread-getcpu().int
 
-pub extern external/uv-thread-self(): intptr_t
+pub extern external/uv-thread-self(): c-pointer<opaque-pthread-t-c>
   c inline "(intptr_t)uv_thread_self()"
 
-pub fun ffi/uv-thread-self(): <> c-pointer<opaque-pthread-t-c>
-  C-pointer(external/uv-thread-self())
-
-pub extern external/uv-thread-join(^tid: intptr_t): int32
+pub extern external/uv-thread-join(^tid: c-pointer<uv-thread-t>): int32
   c inline "(int)uv_thread_join((uv_thread_t*)#1)"
 
-pub fun ffi/uv-thread-join(^tid: c-pointer<c-pointer<opaque-pthread-t-c>>): <> int
-  external/uv-thread-join(tid.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-thread-join(^tid: c-pointer<uv-thread-t>): <> int
+  external/uv-thread-join(tid).int
 
-pub extern external/uv-thread-equal(^t1: intptr_t, ^t2: intptr_t): int32
+pub extern external/uv-thread-equal(^t1: c-pointer<uv-thread-t>, ^t2: c-pointer<uv-thread-t>): int32
   c inline "(int)uv_thread_equal((uv_thread_t*)#1, (uv_thread_t*)#2)"
 
-pub fun ffi/uv-thread-equal(^t1: c-pointer<c-pointer<opaque-pthread-t-c>>, ^t2: c-pointer<c-pointer<opaque-pthread-t-c>>): <> int
-  external/uv-thread-equal(t1.cextern/c-pointer/ptr, t2.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-thread-equal(^t1: c-pointer<uv-thread-t>, ^t2: c-pointer<uv-thread-t>): <> int
+  external/uv-thread-equal(t1, t2).int
 
-pub extern external/uv-loop-get-data(^arg0: intptr_t): intptr_t
+pub extern external/uv-loop-get-data(^arg0: c-pointer<uv-loop-s-c>): c-pointer<()>
   c inline "(intptr_t)uv_loop_get_data((uv_loop_t*)#1)"
 
-pub fun ffi/uv-loop-get-data(^arg0: c-pointer<uv-loop-s-c>): <> c-pointer<()>
-  C-pointer(external/uv-loop-get-data(arg0.cextern/c-pointer/ptr))
-
-pub extern external/uv-loop-set-data(^arg0: intptr_t, ^data: intptr_t): ()
+pub extern external/uv-loop-set-data(^arg0: c-pointer<uv-loop-s-c>, ^data: c-pointer<()>): ()
   c inline "(void)uv_loop_set_data((uv_loop_t*)#1, (void*)#2)"
 
-pub fun ffi/uv-loop-set-data(^arg0: c-pointer<uv-loop-s-c>, ^data: c-pointer<()>): <> ()
-  external/uv-loop-set-data(arg0.cextern/c-pointer/ptr, data.cextern/c-pointer/ptr)
-
-pub extern external/uv-utf16-length-as-wtf8(^utf16: intptr_t, ^utf16-len: ssize_t): ssize_t
+pub extern external/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: ssize_t): ssize_t
   c inline "(size_t)uv_utf16_length_as_wtf8((int16_t*)#1, (ssize_t)#2)"
 
-pub fun ffi/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: int): <> int
-  external/uv-utf16-length-as-wtf8(utf16.cextern/c-pointer/ptr, utf16-len.ssize_t).int
+pub inline fun ffi/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: int): <> int
+  external/uv-utf16-length-as-wtf8(utf16, utf16-len.ssize_t).int
 
-pub extern external/uv-utf16-to-wtf8(^utf16: intptr_t, ^utf16-len: ssize_t, ^wtf8-ptr: intptr_t, ^wtf8-len-ptr: intptr_t): int32
+pub extern external/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: ssize_t, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<int>): int32
   c inline "(int)uv_utf16_to_wtf8((int16_t*)#1, (ssize_t)#2, (char**)#3, (size_t*)#4)"
 
-pub fun ffi/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: int, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<int>): <> int
-  external/uv-utf16-to-wtf8(utf16.cextern/c-pointer/ptr, utf16-len.ssize_t, wtf8-ptr.cextern/c-pointer/ptr, wtf8-len-ptr.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: int, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<int>): <> int
+  external/uv-utf16-to-wtf8(utf16, utf16-len.ssize_t, wtf8-ptr, wtf8-len-ptr).int
 
-pub extern external/uv-wtf8-length-as-utf16(^wtf8: intptr_t): ssize_t
+pub extern external/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): ssize_t
   c inline "(ssize_t)uv_wtf8_length_as_utf16((char*)#1)"
 
-pub fun ffi/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): <> int
-  external/uv-wtf8-length-as-utf16(wtf8.cextern/c-pointer/ptr).int
+pub inline fun ffi/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): <> int
+  external/uv-wtf8-length-as-utf16(wtf8).int
 
-pub extern external/uv-wtf8-to-utf16(^wtf8: intptr_t, ^utf16: intptr_t, ^utf16-len: ssize_t): ()
+pub extern external/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: ssize_t): ()
   c inline "(void)uv_wtf8_to_utf16((char*)#1, (int16_t*)#2, (size_t)#3)"
 
-pub fun ffi/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: int): <> ()
-  external/uv-wtf8-to-utf16(wtf8.cextern/c-pointer/ptr, utf16.cextern/c-pointer/ptr, utf16-len.ssize_t)
+pub inline fun ffi/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: int): <> ()
+  external/uv-wtf8-to-utf16(wtf8, utf16, utf16-len.ssize_t)
 
 pub value struct uv-queue
   next: uv-queue-c
@@ -1963,7 +1810,7 @@ pub struct uv-loop-s
   signal-io-watcher: koka-uv-io-t
   child-watcher: koka-uv-signal-t
   emfile-fd: int
-  cf-thread: c-pointer<opaque-pthread-t-c>
+  cf-thread: uv-thread-t
   cf-reserved: c-pointer<()>
   cf-state: c-pointer<()>
   cf-mutex: opaque-pthread-mutex-t
@@ -2001,7 +1848,7 @@ pub alias unnamed-union1ca = owned-c<c-array<unnamed-union1-c>>
 alias uv-io-t = uv-io-s-c
 alias koka-uv-io-t = uv-io-s
 pub struct uv-io-s
-  cb: c-pointer<intptr_t>
+  cb: uv-io-cb
   pending-queue: uv-queue-c
   watcher-queue: uv-queue-c
   pevents: int
@@ -2064,12 +1911,12 @@ pub struct uv-async-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union2-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  async-cb: c-pointer<intptr_t>
+  async-cb: uv-async-cb
   queue: uv-queue-c
   pending: int
 
@@ -2168,7 +2015,7 @@ pub struct uv-handle-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union4-c
   next-closing: c-pointer<uv-handle-s-c>
@@ -2254,12 +2101,12 @@ pub struct uv-signal-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union3-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  signal-cb: c-pointer<intptr_t>
+  signal-cb: uv-signal-cb
   signum: int
   tree-entry: unnamed-struct2-c
   caught-signals: int
@@ -2309,8 +2156,8 @@ pub alias unnamed-struct2c = owned-c<unnamed-struct2-c>
 pub alias unnamed-struct2cb<s::S> = borrowed-c<s,unnamed-struct2-c>
 pub alias unnamed-struct2ca = owned-c<c-array<unnamed-struct2-c>>
 
-alias uv-thread-t = c-pointer<opaque-pthread-t-c>
-alias pthread-t = c-pointer<opaque-pthread-t-c>
+alias uv-thread-t = pthread-t
+alias pthread-t = darwin-pthread-t
 alias darwin-pthread-t = c-pointer<opaque-pthread-t-c>
 pub struct opaque-pthread-t
 pub type opaque-pthread-t-c
@@ -2850,20 +2697,20 @@ pub struct uv-stream-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union5-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   write-queue-size: int
-  alloc-cb: c-pointer<intptr_t>
-  read-cb: c-pointer<intptr_t>
+  alloc-cb: uv-alloc-cb
+  read-cb: uv-read-cb
   connect-req: c-pointer<uv-connect-s-c>
   shutdown-req: c-pointer<uv-shutdown-s-c>
   io-watcher: koka-uv-io-t
   write-queue: uv-queue-c
   write-completed-queue: uv-queue-c
-  connection-cb: c-pointer<intptr_t>
+  connection-cb: uv-connection-cb
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
@@ -2959,20 +2806,20 @@ pub struct uv-tcp-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union6-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   write-queue-size: int
-  alloc-cb: c-pointer<intptr_t>
-  read-cb: c-pointer<intptr_t>
+  alloc-cb: uv-alloc-cb
+  read-cb: uv-read-cb
   connect-req: c-pointer<uv-connect-s-c>
   shutdown-req: c-pointer<uv-shutdown-s-c>
   io-watcher: koka-uv-io-t
   write-queue: uv-queue-c
   write-completed-queue: uv-queue-c
-  connection-cb: c-pointer<intptr_t>
+  connection-cb: uv-connection-cb
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
@@ -3010,15 +2857,15 @@ pub struct uv-udp-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union7-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   send-queue-size: int
   send-queue-count: int
-  alloc-cb: c-pointer<intptr_t>
-  recv-cb: c-pointer<intptr_t>
+  alloc-cb: uv-alloc-cb
+  recv-cb: uv-udp-recv-cb
   io-watcher: koka-uv-io-t
   write-queue: uv-queue-c
   write-completed-queue: uv-queue-c
@@ -3066,20 +2913,20 @@ pub struct uv-pipe-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union8-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   write-queue-size: int
-  alloc-cb: c-pointer<intptr_t>
-  read-cb: c-pointer<intptr_t>
+  alloc-cb: uv-alloc-cb
+  read-cb: uv-read-cb
   connect-req: c-pointer<uv-connect-s-c>
   shutdown-req: c-pointer<uv-shutdown-s-c>
   io-watcher: koka-uv-io-t
   write-queue: uv-queue-c
   write-completed-queue: uv-queue-c
-  connection-cb: c-pointer<intptr_t>
+  connection-cb: uv-connection-cb
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
@@ -3119,20 +2966,20 @@ pub struct uv-tty-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union9-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   write-queue-size: int
-  alloc-cb: c-pointer<intptr_t>
-  read-cb: c-pointer<intptr_t>
+  alloc-cb: uv-alloc-cb
+  read-cb: uv-read-cb
   connect-req: c-pointer<uv-connect-s-c>
   shutdown-req: c-pointer<uv-shutdown-s-c>
   io-watcher: koka-uv-io-t
   write-queue: uv-queue-c
   write-completed-queue: uv-queue-c
-  connection-cb: c-pointer<intptr_t>
+  connection-cb: uv-connection-cb
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
@@ -3197,12 +3044,12 @@ pub struct uv-poll-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union10-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  poll-cb: c-pointer<intptr_t>
+  poll-cb: uv-poll-cb
   io-watcher: koka-uv-io-t
 
 pub type uv-poll-s-c
@@ -3241,12 +3088,12 @@ pub struct uv-timer-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union11-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  timer-cb: c-pointer<intptr_t>
+  timer-cb: uv-timer-cb
   node: unnamed-union12-c
   timeout: int
   repeat: int
@@ -3295,12 +3142,12 @@ pub struct uv-prepare-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union13-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  prepare-cb: c-pointer<intptr_t>
+  prepare-cb: uv-prepare-cb
   queue: uv-queue-c
 
 pub type uv-prepare-s-c
@@ -3339,12 +3186,12 @@ pub struct uv-check-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union14-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  check-cb: c-pointer<intptr_t>
+  check-cb: uv-check-cb
   queue: uv-queue-c
 
 pub type uv-check-s-c
@@ -3383,12 +3230,12 @@ pub struct uv-idle-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union15-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  idle-cb: c-pointer<intptr_t>
+  idle-cb: uv-idle-cb
   queue: uv-queue-c
 
 pub type uv-idle-s-c
@@ -3427,12 +3274,12 @@ pub struct uv-process-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union16-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
-  exit-cb: c-pointer<intptr_t>
+  exit-cb: uv-exit-cb
   pid: int
   queue: uv-queue-c
   status: int
@@ -3473,13 +3320,13 @@ pub struct uv-fs-event-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union17-c
   next-closing: c-pointer<uv-handle-s-c>
   flags: int
   path: c-pointer<int>
-  cb: c-pointer<intptr_t>
+  cb: uv-fs-event-cb
   event-watcher: koka-uv-io-t
   realpath: c-pointer<int>
   realpath-len: int
@@ -3526,7 +3373,7 @@ pub struct uv-fs-poll-s
   data: c-pointer<()>
   loop: c-pointer<uv-loop-s-c>
   type1: int
-  close-cb: c-pointer<intptr_t>
+  close-cb: uv-close-cb
   handle-queue: uv-queue-c
   u: unnamed-union18-c
   next-closing: c-pointer<uv-handle-s-c>
@@ -4651,7 +4498,7 @@ pub alias unnamed-union22cb<s::S> = borrowed-c<s,unnamed-union22-c>
 pub alias unnamed-union22ca = owned-c<c-array<unnamed-union22-c>>
 
 pub struct uv-process-options-s
-  exit-cb: c-pointer<intptr_t>
+  exit-cb: uv-exit-cb
   file: c-pointer<int>
   args: c-pointer<c-pointer<int>>
   env: c-pointer<c-pointer<int>>

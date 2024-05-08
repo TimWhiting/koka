@@ -1307,6 +1307,8 @@ cTypeCon c
          then CPrim "kk_char_t"  -- 32-bit unicode point
         else if (name == nameTpSSizeT)
          then CPrim "kk_ssize_t"
+        else if (name == nameTpCPointer)
+         then CPrim "intptr_t"
         else if (name == nameTpIntPtrT)
          then CPrim "intptr_t"
         else if (name == nameTpCArray)
