@@ -14,7 +14,7 @@ pub fun signal-start-oneshot(signum: int, cb: uv-unit-cb): io-event int
   val signal = uv-signal-sc();
   signal.retain()
   signal.with-ptr fn(s: uv-signal-sp)
-    uv-loop().uv-signal-init(s.ptr)
+    uv-loop().external/uv-signal-init(s)
     s.set-cb
       s.close()
       signal.keepalive(); // Keep the signal memory allocated at least until after the callback is called
@@ -24,7 +24,7 @@ pub fun signal-start-oneshot(signum: int, cb: uv-unit-cb): io-event int
 pub fun signal-start(signum: int, cb: uv-cb1<uv-signal-sc>): io-event int
   val signal = uv-signal-sc();
   signal.with-ptr fn(s: uv-signal-sp)
-    uv-loop().uv-signal-init(s.ptr)
+    uv-loop().external/uv-signal-init(s)
     val c = fn()
           fndup() // Ensure the callback can be called multiple times
           cb.fndup()

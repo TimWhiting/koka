@@ -67,7 +67,7 @@ extern close-loop(): io-event ()
   js inline ""
 
 pub inline fun hnd/close(hnd: c-pointer<uv-handle-s-c>, callback: () -> io-event ()): io-event ()
-  hnd.ptr.close(callback)
+  hnd.close(callback)
 
 pub extern ptr/close(hnd: intptr_t, callback: () -> io-event ()): io-event ()
   c "kk_uv_close"

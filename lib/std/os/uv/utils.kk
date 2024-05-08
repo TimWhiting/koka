@@ -24,32 +24,35 @@ pub alias uv-cb1<a> = (a) -> io-event ()
 pub alias uv-unit-cb = () -> io-event ()
 
 pub inline fun a/set-cb(a: a, f: uv-unit-cb, ?uv-handle: (a) -> uv-handle-sp): <> ()
-  a.uv-handle.set-cb(f)
+  a.uv-handle.uv-handle/unit/set-cb(f)
 
-pub fun unit/set-cb(^s: c-pointer<uv-handle-s-c>, f: uv-unit-cb): <> ()
-  s.ptr.set-cb(f)
+pub inline fun uv-handle/unit/set-cb(^s: c-pointer<uv-handle-s-c>, f: uv-unit-cb): <> ()
+  s.ptr/unit/set-cb(f)
 
-inline extern ptr/unit/set-cb(^s: intptr_t, f: uv-unit-cb): <> ()
+inline extern ptr/unit/set-cb(^s: c-pointer<a>, f: uv-unit-cb): <> ()
   c inline "((uv_handle_t*)#1)->data = (void*)kk_function_as_ptr(#2, kk_context())"
 
 pub fun a/get-cb(a: a, ?uv-handle: (a) -> uv-handle-sp): io-event uv-unit-cb
-  a.uv-handle.get-cb()
+  a.uv-handle.uv-handle/unit/get-cb()
 
-pub fun unit/get-cb(^s: c-pointer<uv-handle-s-c>): io-event uv-unit-cb
-  s.ptr.get-cb()
+pub fun uv-handle/unit/get-cb(^s: c-pointer<uv-handle-s-c>): io-event uv-unit-cb
+  s.ptr/unit/get-cb()
 
-pub extern ptr/uv-loop(): io-event intptr_t
-  c inline "(intptr_t)uvloop()"
-
-extern ptr/unit/get-cb(^s: intptr_t): io-event uv-unit-cb
+extern ptr/unit/get-cb(^s: c-pointer<a>): io-event uv-unit-cb
   c inline "kk_function_t fn = kk_function_from_ptr(((uv_handle_t*)#1)->data, kk_context());\n fn"
 
-pub val unit-cb: c-pointer<intptr_t> = C-pointer(unit-cb-addr());
+pub val unit-cb: c-pointer<intptr_t> = unit-cb-addr();
 
-pub extern unit-cb-addr(): intptr_t
+pub extern unit-cb-addr(): c-pointer<intptr_t>
   c inline "(intptr_t)kk_uv_unit_callback"
 
-pub val null-cb = C-pointer(0.intptr_t)
+pub val null-cb = 0.intptr_t
+
+pub inline extern int/ptr(i: intptr_t): c-pointer<t>
+  c inline "(intptr_t)#1"
+
+pub inline extern ptr/uv-loop(): io-event c-pointer<uv-loop-s-c>
+  c inline "(intptr_t)uvloop()"
 
 pub inline extern fndup(): ()
   c inline "kk_function_dup(_fself, kk_context())"
@@ -79,7 +82,7 @@ pub inline extern double/fndrop(f: uv-cb2<a,b>): ()
   c inline "kk_function_drop(#1, kk_context())"
 
 pub inline fun close(^s: c-pointer<uv-handle-s-c>): io-event ()
-  s.ptr.external/uv-close(0.intptr_t)
+  s.uv-close(0.intptr_t.int/ptr)
 
 pub inline fun a/close(a: a, ?uv-handle: (a) -> uv-handle-sp): io-event ()
   a.uv-handle.close()

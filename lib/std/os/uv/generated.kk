@@ -255,13 +255,13 @@ pub extern external/uv-pipe(^fds: c-pointer<int>, ^read-flags: int32, ^write-fla
   c inline "(int)uv_pipe((uv_file*)#1, (int)#2, (int)#3)"
 
 pub inline fun ffi/uv-pipe(^fds: c-array<int>, ^read-flags: int, ^write-flags: int): <> int
-  external/uv-pipe(fds.cextern/carray/cptr, read-flags.int32, write-flags.int32).int
+  external/uv-pipe(fds.cextern/carray/ptr, read-flags.int32, write-flags.int32).int
 
 pub extern external/uv-socketpair(^type1: int32, ^protocol: int32, ^socket-vector: c-pointer<int>, ^flags0: int32, ^flags1: int32): int32
   c inline "(int)uv_socketpair((int)#1, (int)#2, (uv_os_sock_t*)#3, (int)#4, (int)#5)"
 
 pub inline fun ffi/uv-socketpair(^type1: int, ^protocol: int, ^socket-vector: c-array<int>, ^flags0: int, ^flags1: int): <> int
-  external/uv-socketpair(type1.int32, protocol.int32, socket-vector.cextern/carray/cptr, flags0.int32, flags1.int32).int
+  external/uv-socketpair(type1.int32, protocol.int32, socket-vector.cextern/carray/ptr, flags0.int32, flags1.int32).int
 
 pub extern external/uv-stream-get-write-queue-size(^stream: c-pointer<uv-stream-s-c>): ssize_t
   c inline "(size_t)uv_stream_get_write_queue_size((uv_stream_t*)#1)"
@@ -297,25 +297,25 @@ pub extern external/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<
   c inline "(int)uv_write((uv_write_t*)#1, (uv_stream_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (uv_write_cb)#5)"
 
 pub inline fun ffi/uv-write(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^cb: uv-write-cb): <> int
-  external/uv-write(req, handle1, bufs.cextern/carray/cptr, nbufs.int32, cb).int
+  external/uv-write(req, handle1, bufs.cextern/carray/ptr, nbufs.int32, cb).int
 
 pub extern external/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_write2((uv_write_t*)#1, (uv_stream_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (uv_stream_t*)#5, (uv_write_cb)#6)"
 
 pub inline fun ffi/uv-write2(^req: c-pointer<uv-write-s-c>, ^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>, ^cb: uv-write-cb): <> int
-  external/uv-write2(req, handle1, bufs.cextern/carray/cptr, nbufs.int32, send-handle, cb).int
+  external/uv-write2(req, handle1, bufs.cextern/carray/ptr, nbufs.int32, send-handle, cb).int
 
 pub extern external/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32): int32
   c inline "(int)uv_try_write((uv_stream_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3)"
 
 pub inline fun ffi/uv-try-write(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int): <> int
-  external/uv-try-write(handle1, bufs.cextern/carray/cptr, nbufs.int32).int
+  external/uv-try-write(handle1, bufs.cextern/carray/ptr, nbufs.int32).int
 
 pub extern external/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^send-handle: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_try_write2((uv_stream_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (uv_stream_t*)#4)"
 
 pub inline fun ffi/uv-try-write2(^handle1: c-pointer<uv-stream-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^send-handle: c-pointer<uv-stream-s-c>): <> int
-  external/uv-try-write2(handle1, bufs.cextern/carray/cptr, nbufs.int32, send-handle).int
+  external/uv-try-write2(handle1, bufs.cextern/carray/ptr, nbufs.int32, send-handle).int
 
 pub extern external/uv-is-readable(^handle1: c-pointer<uv-stream-s-c>): int32
   c inline "(int)uv_is_readable((uv_stream_t*)#1)"
@@ -495,13 +495,13 @@ pub extern external/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-po
   c inline "(int)uv_udp_send((uv_udp_send_t*)#1, (uv_udp_t*)#2, (struct uv_buf_t*)#3, (unsigned int)#4, (struct sockaddr*)#5, (uv_udp_send_cb)#6)"
 
 pub inline fun ffi/uv-udp-send(^req: c-pointer<uv-udp-send-s-c>, ^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>, ^send-cb: uv-udp-send-cb): <> int
-  external/uv-udp-send(req, handle1, bufs.cextern/carray/cptr, nbufs.int32, addr, send-cb).int
+  external/uv-udp-send(req, handle1, bufs.cextern/carray/ptr, nbufs.int32, addr, send-cb).int
 
 pub extern external/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-pointer<uv-buf-t-c>, ^nbufs: int32, ^addr: c-pointer<sockaddr-c>): int32
   c inline "(int)uv_udp_try_send((uv_udp_t*)#1, (struct uv_buf_t*)#2, (unsigned int)#3, (struct sockaddr*)#4)"
 
 pub inline fun ffi/uv-udp-try-send(^handle1: c-pointer<uv-udp-s-c>, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^addr: c-pointer<sockaddr-c>): <> int
-  external/uv-udp-try-send(handle1, bufs.cextern/carray/cptr, nbufs.int32, addr).int
+  external/uv-udp-try-send(handle1, bufs.cextern/carray/ptr, nbufs.int32, addr).int
 
 pub extern external/uv-udp-recv-start(^handle1: c-pointer<uv-udp-s-c>, ^alloc-cb: c-pointer<intptr_t>, ^recv-cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_udp_recv_start((uv_udp_t*)#1, (uv_alloc_cb)#2, (uv_udp_recv_cb)#3)"
@@ -1083,7 +1083,7 @@ pub extern external/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv
   c inline "(int)uv_fs_read((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (uv_fs_cb)#7)"
 
 pub inline fun ffi/uv-fs-read(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: uv-fs-cb): <> int
-  external/uv-fs-read(loop, req, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb).int
+  external/uv-fs-read(loop, req, file.int32, bufs.cextern/carray/ptr, nbufs.int32, offset.int64, cb).int
 
 pub extern external/uv-fs-unlink(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_unlink((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (uv_fs_cb)#4)"
@@ -1095,7 +1095,7 @@ pub extern external/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<u
   c inline "(int)uv_fs_write((uv_loop_t*)#1, (uv_fs_t*)#2, (uv_file)#3, (struct uv_buf_t*)#4, (unsigned int)#5, (int64_t)#6, (uv_fs_cb)#7)"
 
 pub inline fun ffi/uv-fs-write(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^file: int, ^bufs: c-array<uv-buf-t-c>, ^nbufs: int, ^offset: int, ^cb: uv-fs-cb): <> int
-  external/uv-fs-write(loop, req, file.int32, bufs.cextern/carray/cptr, nbufs.int32, offset.int64, cb).int
+  external/uv-fs-write(loop, req, file.int32, bufs.cextern/carray/ptr, nbufs.int32, offset.int64, cb).int
 
 pub extern external/uv-fs-copyfile(^loop: c-pointer<uv-loop-s-c>, ^req: c-pointer<uv-fs-s-c>, ^path: c-pointer<int>, ^new-path: c-pointer<int>, ^flags: int32, ^cb: c-pointer<intptr_t>): int32
   c inline "(int)uv_fs_copyfile((uv_loop_t*)#1, (uv_fs_t*)#2, (char*)#3, (char*)#4, (int)#5, (uv_fs_cb)#6)"

@@ -29,21 +29,21 @@ pub alias c-null<t> = c-pointer<t>
 pub inline extern cnull(): c-null<t>
   c inline "(intptr_t)0"
 
-pub extern carray/intptr<t>(c: c-array<t>): intptr_t
+pub inline extern carray/intptr<t>(c: c-array<t>): intptr_t
   c inline "#1"
 
-pub extern carray/ptr<t>(c: c-array<t>): c-pointer<t>
+pub inline extern carray/ptr<t>(c: c-array<t>): c-pointer<t>
   c inline "#1"
 
-pub extern intptr/carray<t>(c: intptr_t): c-array<t>
+pub inline extern intptr/carray<t>(c: intptr_t): c-array<t>
   c inline "#1"
 
-pub extern ptr/carray<t>(c: c-pointer<t>): c-array<t>
+pub inline extern ptr/carray<t>(c: c-pointer<t>): c-array<t>
   c inline "#1"
 
 // Allow casting between different types of pointers
 pub inline extern unsafe/cptr-cast<s>(c: c-pointer<t>): c-pointer<s>
-  "#1"
+  c inline "#1"
 
 // Allocate `n*size-of` bytes of memory using kk_malloc and return a pointer to the allocated memory
 inline extern int/malloc<t>(n: int32, size-of: int32): c-pointer<t>
