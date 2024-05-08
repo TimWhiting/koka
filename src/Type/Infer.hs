@@ -73,6 +73,7 @@ import Core.BindingGroups( regroup )
 -- import Core.Simplify( uniqueSimplify )
 
 import qualified Syntax.RangeMap as RM
+import Common.File (seqList)
 
 
 {--------------------------------------------------------------------------
@@ -120,7 +121,8 @@ inferDefGroupX topLevel defGroup cont
   = do (cgroups0,(g,cgroups1)) <- inferDefGroup topLevel defGroup cont
        -- resetUnique
        -- zapSubst
-       return (g,cgroups0 ++ cgroups1)
+       let groups = cgroups0 ++ cgroups1
+       return (g,seqList groups groups)
 
 inferDefGroup :: Bool -> DefGroup Type -> Inf a -> Inf ([Core.DefGroup], a)
 inferDefGroup topLevel (DefNonRec def) cont
@@ -179,7 +181,7 @@ inferDefGroup topLevel (DefRec defs) cont
            coreGroups3 = (CoreVar.|~>) sub coreGroups2
        -- extend gamma
        x <- (if topLevel then extendGammaCore True {- already canonical -} else extendInfGammaCore False {-toplevel -}) coreGroups3 cont
-       return (coreGroups3,x)
+       return (seqList coreGroups3 coreGroups3,x)
 
        {-
        coreDefsY <- if analyzeDivergence coreDefsX
@@ -271,7 +273,7 @@ mapMDefs :: Monad m => (Core.Def -> m Core.Def) -> Core.DefGroups -> m Core.DefG
 mapMDefs f cgroups
   = mapM (\cgroup -> case cgroup of
                        Core.DefRec cdefs   -> do cdefs' <- mapM f cdefs
-                                                 return (Core.DefRec cdefs')
+                                                 return (Core.DefRec (seqList cdefs' cdefs'))
                        Core.DefNonRec cdef -> do cdef' <- f cdef
                                                  return (Core.DefNonRec cdef')) cgroups
 
