@@ -12,7 +12,7 @@ import std/num/int64
 import std/num/float64
 
 extern import
-  c { syslib="uv" }
+  c { vcpkg="libuv" }
 
 extern import
   c header-file "third-party/uv.h"
@@ -71,8 +71,8 @@ pub inline fun ffi/uv-loop-alive(^loop: c-pointer<uv-loop-s-c>): <> int
 pub extern external/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: int32): int32
   c inline "(int)uv_loop_configure((uv_loop_t*)#1, (int32_t)#2)"
 
-pub inline fun ffi/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: uv-loop-option): <exn> int
-  external/uv-loop-configure(loop, option.uv-loop-option/int).int
+pub inline fun ffi/uv-loop-configure(^loop: c-pointer<uv-loop-s-c>, ^option: uv-loop-option-enum): <exn> int
+  external/uv-loop-configure(loop, option.uv-loop-option-enum/int).int
 
 pub extern external/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): int32
   c inline "(int)uv_loop_fork((uv_loop_t*)#1)"
@@ -83,8 +83,8 @@ pub inline fun ffi/uv-loop-fork(^loop: c-pointer<uv-loop-s-c>): <> int
 pub extern external/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: int32): int32
   c inline "(int)uv_run((uv_loop_t*)#1, (int32_t)#2)"
 
-pub inline fun ffi/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: uv-run-mode): <exn> int
-  external/uv-run(arg0, mode.uv-run-mode/int).int
+pub inline fun ffi/uv-run(^arg0: c-pointer<uv-loop-s-c>, ^mode: uv-run-mode-enum): <exn> int
+  external/uv-run(arg0, mode.uv-run-mode-enum/int).int
 
 pub extern external/uv-stop(^arg0: c-pointer<uv-loop-s-c>): ()
   c inline "(void)uv_stop((uv_loop_t*)#1)"
@@ -161,20 +161,20 @@ pub inline fun ffi/uv-shutdown(^req: c-pointer<uv-shutdown-s-c>, ^handle1: c-poi
 pub extern external/uv-handle-size(^type1: int32): ssize_t
   c inline "(size_t)uv_handle_size((int32_t)#1)"
 
-pub inline fun ffi/uv-handle-size(^type1: uv-handle-type): <exn> int
-  external/uv-handle-size(type1.uv-handle-type/int).int
+pub inline fun ffi/uv-handle-size(^type1: uv-handle-type-enum): <exn> int
+  external/uv-handle-size(type1.uv-handle-type-enum/int).int
 
 pub extern external/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): int32
   c inline "(int32_t)uv_handle_get_type((uv_handle_t*)#1)"
 
-pub inline fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): <exn> uv-handle-type
-  external/uv-handle-get-type(handle1).int/uv-handle-type
+pub inline fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): <exn> uv-handle-type-enum
+  external/uv-handle-get-type(handle1).int/uv-handle-type-enum
 
 pub extern external/uv-handle-type-name(^type1: int32): c-pointer<int>
   c inline "(intptr_t)uv_handle_type_name((int32_t)#1)"
 
-pub inline fun ffi/uv-handle-type-name(^type1: uv-handle-type): <exn> c-pointer<int>
-  external/uv-handle-type-name(type1.uv-handle-type/int)
+pub inline fun ffi/uv-handle-type-name(^type1: uv-handle-type-enum): <exn> c-pointer<int>
+  external/uv-handle-type-name(type1.uv-handle-type-enum/int)
 
 pub extern external/uv-handle-get-data(^handle1: c-pointer<uv-handle-s-c>): c-pointer<()>
   c inline "(intptr_t)uv_handle_get_data((uv_handle_t*)#1)"
@@ -188,8 +188,8 @@ pub extern external/uv-handle-set-data(^handle1: c-pointer<uv-handle-s-c>, ^data
 pub extern external/uv-req-size(^type1: int32): ssize_t
   c inline "(size_t)uv_req_size((int32_t)#1)"
 
-pub inline fun ffi/uv-req-size(^type1: uv-req-type): <exn> int
-  external/uv-req-size(type1.uv-req-type/int).int
+pub inline fun ffi/uv-req-size(^type1: uv-req-type-enum): <exn> int
+  external/uv-req-size(type1.uv-req-type-enum/int).int
 
 pub extern external/uv-req-get-data(^req: c-pointer<uv-req-s-c>): c-pointer<()>
   c inline "(intptr_t)uv_req_get_data((uv_req_t*)#1)"
@@ -200,14 +200,14 @@ pub extern external/uv-req-set-data(^req: c-pointer<uv-req-s-c>, ^data: c-pointe
 pub extern external/uv-req-get-type(^req: c-pointer<uv-req-s-c>): int32
   c inline "(int32_t)uv_req_get_type((uv_req_t*)#1)"
 
-pub inline fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): <exn> uv-req-type
-  external/uv-req-get-type(req).int/uv-req-type
+pub inline fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): <exn> uv-req-type-enum
+  external/uv-req-get-type(req).int/uv-req-type-enum
 
 pub extern external/uv-req-type-name(^type1: int32): c-pointer<int>
   c inline "(intptr_t)uv_req_type_name((int32_t)#1)"
 
-pub inline fun ffi/uv-req-type-name(^type1: uv-req-type): <exn> c-pointer<int>
-  external/uv-req-type-name(type1.uv-req-type/int)
+pub inline fun ffi/uv-req-type-name(^type1: uv-req-type-enum): <exn> c-pointer<int>
+  external/uv-req-type-name(type1.uv-req-type-enum/int)
 
 pub extern external/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): int32
   c inline "(int)uv_is_active((uv_handle_t*)#1)"
@@ -218,10 +218,10 @@ pub inline fun ffi/uv-is-active(^handle1: c-pointer<uv-handle-s-c>): <> int
 pub extern external/uv-walk(^loop: c-pointer<uv-loop-s-c>, ^walk-cb: c-pointer<intptr_t>, ^arg: c-pointer<()>): ()
   c inline "(void)uv_walk((uv_loop_t*)#1, (uv_walk_cb)#2, (void*)#3)"
 
-pub extern external/uv-print-all-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): ()
+pub extern external/uv-print-all-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<io-file-c>): ()
   c inline "(void)uv_print_all_handles((uv_loop_t*)#1, (FILE*)#2)"
 
-pub extern external/uv-print-active-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<sfile-c>): ()
+pub extern external/uv-print-active-handles(^loop: c-pointer<uv-loop-s-c>, ^stream: c-pointer<io-file-c>): ()
   c inline "(void)uv_print_active_handles((uv_loop_t*)#1, (FILE*)#2)"
 
 pub extern external/uv-close(^handle1: c-pointer<uv-handle-s-c>, ^close-cb: c-pointer<intptr_t>): ()
@@ -452,14 +452,14 @@ pub inline fun ffi/uv-udp-getsockname(^handle1: c-pointer<uv-udp-s-c>, ^name: c-
 pub extern external/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: int32): int32
   c inline "(int)uv_udp_set_membership((uv_udp_t*)#1, (char*)#2, (char*)#3, (int32_t)#4)"
 
-pub inline fun ffi/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
-  external/uv-udp-set-membership(handle1, multicast-addr, interface-addr, membership.uv-membership/int).int
+pub inline fun ffi/uv-udp-set-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^membership: uv-membership-enum): <exn> int
+  external/uv-udp-set-membership(handle1, multicast-addr, interface-addr, membership.uv-membership-enum/int).int
 
 pub extern external/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: int32): int32
   c inline "(int)uv_udp_set_source_membership((uv_udp_t*)#1, (char*)#2, (char*)#3, (char*)#4, (int32_t)#5)"
 
-pub inline fun ffi/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: uv-membership): <exn> int
-  external/uv-udp-set-source-membership(handle1, multicast-addr, interface-addr, source-addr, membership.uv-membership/int).int
+pub inline fun ffi/uv-udp-set-source-membership(^handle1: c-pointer<uv-udp-s-c>, ^multicast-addr: c-pointer<int>, ^interface-addr: c-pointer<int>, ^source-addr: c-pointer<int>, ^membership: uv-membership-enum): <exn> int
+  external/uv-udp-set-source-membership(handle1, multicast-addr, interface-addr, source-addr, membership.uv-membership-enum/int).int
 
 pub extern external/uv-udp-set-multicast-loop(^handle1: c-pointer<uv-udp-s-c>, ^on1: int32): int32
   c inline "(int)uv_udp_set_multicast_loop((uv_udp_t*)#1, (int)#2)"
@@ -542,8 +542,8 @@ pub inline fun ffi/uv-tty-init(^arg0: c-pointer<uv-loop-s-c>, ^arg1: c-pointer<u
 pub extern external/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: int32): int32
   c inline "(int)uv_tty_set_mode((uv_tty_t*)#1, (int32_t)#2)"
 
-pub inline fun ffi/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: uv-tty-mode-t): <exn> int
-  external/uv-tty-set-mode(arg0, mode.uv-tty-mode-t/int).int
+pub inline fun ffi/uv-tty-set-mode(^arg0: c-pointer<uv-tty-s-c>, ^mode: uv-tty-mode-t-enum): <exn> int
+  external/uv-tty-set-mode(arg0, mode.uv-tty-mode-t-enum/int).int
 
 pub extern external/uv-tty-reset-mode(): int32
   c inline "(int)uv_tty_reset_mode()"
@@ -560,20 +560,20 @@ pub inline fun ffi/uv-tty-get-winsize(^arg0: c-pointer<uv-tty-s-c>, ^width: c-po
 pub extern external/uv-tty-set-vterm-state(^state: int32): ()
   c inline "(void)uv_tty_set_vterm_state((int32_t)#1)"
 
-pub inline fun ffi/uv-tty-set-vterm-state(^state: uv-tty-vtermstate-t): <exn> ()
-  external/uv-tty-set-vterm-state(state.uv-tty-vtermstate-t/int)
+pub inline fun ffi/uv-tty-set-vterm-state(^state: uv-tty-vtermstate-t-enum): <exn> ()
+  external/uv-tty-set-vterm-state(state.uv-tty-vtermstate-t-enum/int)
 
-pub extern external/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t>): int32
+pub extern external/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t-enum>): int32
   c inline "(int)uv_tty_get_vterm_state((int32_t*)#1)"
 
-pub inline fun ffi/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t>): <> int
+pub inline fun ffi/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t-enum>): <> int
   external/uv-tty-get-vterm-state(state).int
 
 pub extern external/uv-guess-handle(^file: int32): int32
   c inline "(int32_t)uv_guess_handle((uv_file)#1)"
 
-pub inline fun ffi/uv-guess-handle(^file: int): <exn> uv-handle-type
-  external/uv-guess-handle(file.int32).int/uv-handle-type
+pub inline fun ffi/uv-guess-handle(^file: int): <exn> uv-handle-type-enum
+  external/uv-guess-handle(file.int32).int/uv-handle-type-enum
 
 pub extern external/uv-pipe-init(^arg0: c-pointer<uv-loop-s-c>, ^handle1: c-pointer<uv-pipe-s-c>, ^ipc: int32): int32
   c inline "(int)uv_pipe_init((uv_loop_t*)#1, (uv_pipe_t*)#2, (int)#3)"
@@ -635,8 +635,8 @@ pub inline fun ffi/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): <> i
 pub extern external/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): int32
   c inline "(int32_t)uv_pipe_pending_type((uv_pipe_t*)#1)"
 
-pub inline fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): <exn> uv-handle-type
-  external/uv-pipe-pending-type(handle1).int/uv-handle-type
+pub inline fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): <exn> uv-handle-type-enum
+  external/uv-pipe-pending-type(handle1).int/uv-handle-type-enum
 
 pub extern external/uv-pipe-chmod(^handle1: c-pointer<uv-pipe-s-c>, ^flags: int32): int32
   c inline "(int)uv_pipe_chmod((uv_pipe_t*)#1, (int)#2)"
@@ -935,18 +935,6 @@ pub extern external/uv-os-setpriority(^pid: int32, ^priority: int32): int32
 pub inline fun ffi/uv-os-setpriority(^pid: int, ^priority: int): <> int
   external/uv-os-setpriority(pid.int32, priority.int32).int
 
-pub extern external/uv-thread-getpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: c-pointer<int>): int32
-  c inline "(int)uv_thread_getpriority((uv_thread_t)#1, (int*)#2)"
-
-pub inline fun ffi/uv-thread-getpriority(^tid: uv-thread-t, ^priority: c-pointer<int>): <> int
-  external/uv-thread-getpriority(tid, priority).int
-
-pub extern external/uv-thread-setpriority(^tid: c-pointer<opaque-pthread-t-c>, ^priority: int32): int32
-  c inline "(int)uv_thread_setpriority((uv_thread_t)#1, (int)#2)"
-
-pub inline fun ffi/uv-thread-setpriority(^tid: uv-thread-t, ^priority: int): <> int
-  external/uv-thread-setpriority(tid, priority.int32).int
-
 pub extern external/uv-available-parallelism(): int32
   c inline "(unsigned int)uv_available_parallelism()"
 
@@ -1040,8 +1028,8 @@ pub inline fun ffi/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): <> int
 pub extern external/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): int32
   c inline "(int32_t)uv_fs_get_type((uv_fs_t*)#1)"
 
-pub inline fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): <exn> uv-fs-type
-  external/uv-fs-get-type(arg0).int/uv-fs-type
+pub inline fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): <exn> uv-fs-type-enum
+  external/uv-fs-get-type(arg0).int/uv-fs-type-enum
 
 pub extern external/uv-fs-get-result(^arg0: c-pointer<uv-fs-s-c>): ssize_t
   c inline "(ssize_t)uv_fs_get_result((uv_fs_t*)#1)"
@@ -1469,8 +1457,8 @@ pub inline fun ffi/uv-get-available-memory(): <> int
 pub extern external/uv-clock-gettime(^clock-id: int32, ^ts: c-pointer<uv-timespec64-t-c>): int32
   c inline "(int)uv_clock_gettime((int32_t)#1, (uv_timespec64_t*)#2)"
 
-pub inline fun ffi/uv-clock-gettime(^clock-id: uv-clock-id, ^ts: c-pointer<uv-timespec64-t-c>): <exn> int
-  external/uv-clock-gettime(clock-id.uv-clock-id/int, ts).int
+pub inline fun ffi/uv-clock-gettime(^clock-id: uv-clock-id-enum, ^ts: c-pointer<uv-timespec64-t-c>): <exn> int
+  external/uv-clock-gettime(clock-id.uv-clock-id-enum/int, ts).int
 
 pub extern external/uv-hrtime(): int64
   c inline "(int64_t)uv_hrtime()"
@@ -1505,127 +1493,127 @@ pub inline fun ffi/uv-dlsym(^lib: c-pointer<uv-lib-t-c>, ^name: c-pointer<int>, 
 pub extern external/uv-dlerror(^lib: c-pointer<uv-lib-t-c>): c-pointer<int>
   c inline "(intptr_t)uv_dlerror((uv_lib_t*)#1)"
 
-pub extern external/uv-mutex-init(^handle1: c-pointer<opaque-pthread-mutex-t-c>): int32
+pub extern external/uv-mutex-init(^handle1: c-pointer<pthread-mutex-t-c>): int32
   c inline "(int)uv_mutex_init((uv_mutex_t*)#1)"
 
-pub inline fun ffi/uv-mutex-init(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
+pub inline fun ffi/uv-mutex-init(^handle1: c-pointer<pthread-mutex-t-c>): <> int
   external/uv-mutex-init(handle1).int
 
-pub extern external/uv-mutex-init-recursive(^handle1: c-pointer<opaque-pthread-mutex-t-c>): int32
+pub extern external/uv-mutex-init-recursive(^handle1: c-pointer<pthread-mutex-t-c>): int32
   c inline "(int)uv_mutex_init_recursive((uv_mutex_t*)#1)"
 
-pub inline fun ffi/uv-mutex-init-recursive(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
+pub inline fun ffi/uv-mutex-init-recursive(^handle1: c-pointer<pthread-mutex-t-c>): <> int
   external/uv-mutex-init-recursive(handle1).int
 
-pub extern external/uv-mutex-destroy(^handle1: c-pointer<opaque-pthread-mutex-t-c>): ()
+pub extern external/uv-mutex-destroy(^handle1: c-pointer<pthread-mutex-t-c>): ()
   c inline "(void)uv_mutex_destroy((uv_mutex_t*)#1)"
 
-pub extern external/uv-mutex-lock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): ()
+pub extern external/uv-mutex-lock(^handle1: c-pointer<pthread-mutex-t-c>): ()
   c inline "(void)uv_mutex_lock((uv_mutex_t*)#1)"
 
-pub extern external/uv-mutex-trylock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): int32
+pub extern external/uv-mutex-trylock(^handle1: c-pointer<pthread-mutex-t-c>): int32
   c inline "(int)uv_mutex_trylock((uv_mutex_t*)#1)"
 
-pub inline fun ffi/uv-mutex-trylock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): <> int
+pub inline fun ffi/uv-mutex-trylock(^handle1: c-pointer<pthread-mutex-t-c>): <> int
   external/uv-mutex-trylock(handle1).int
 
-pub extern external/uv-mutex-unlock(^handle1: c-pointer<opaque-pthread-mutex-t-c>): ()
+pub extern external/uv-mutex-unlock(^handle1: c-pointer<pthread-mutex-t-c>): ()
   c inline "(void)uv_mutex_unlock((uv_mutex_t*)#1)"
 
-pub extern external/uv-rwlock-init(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): int32
+pub extern external/uv-rwlock-init(^rwlock: c-pointer<pthread-rwlock-t-c>): int32
   c inline "(int)uv_rwlock_init((uv_rwlock_t*)#1)"
 
-pub inline fun ffi/uv-rwlock-init(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
+pub inline fun ffi/uv-rwlock-init(^rwlock: c-pointer<pthread-rwlock-t-c>): <> int
   external/uv-rwlock-init(rwlock).int
 
-pub extern external/uv-rwlock-destroy(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
+pub extern external/uv-rwlock-destroy(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_destroy((uv_rwlock_t*)#1)"
 
-pub extern external/uv-rwlock-rdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
+pub extern external/uv-rwlock-rdlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_rdlock((uv_rwlock_t*)#1)"
 
-pub extern external/uv-rwlock-tryrdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): int32
+pub extern external/uv-rwlock-tryrdlock(^rwlock: c-pointer<pthread-rwlock-t-c>): int32
   c inline "(int)uv_rwlock_tryrdlock((uv_rwlock_t*)#1)"
 
-pub inline fun ffi/uv-rwlock-tryrdlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
+pub inline fun ffi/uv-rwlock-tryrdlock(^rwlock: c-pointer<pthread-rwlock-t-c>): <> int
   external/uv-rwlock-tryrdlock(rwlock).int
 
-pub extern external/uv-rwlock-rdunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
+pub extern external/uv-rwlock-rdunlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_rdunlock((uv_rwlock_t*)#1)"
 
-pub extern external/uv-rwlock-wrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
+pub extern external/uv-rwlock-wrlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_wrlock((uv_rwlock_t*)#1)"
 
-pub extern external/uv-rwlock-trywrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): int32
+pub extern external/uv-rwlock-trywrlock(^rwlock: c-pointer<pthread-rwlock-t-c>): int32
   c inline "(int)uv_rwlock_trywrlock((uv_rwlock_t*)#1)"
 
-pub inline fun ffi/uv-rwlock-trywrlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): <> int
+pub inline fun ffi/uv-rwlock-trywrlock(^rwlock: c-pointer<pthread-rwlock-t-c>): <> int
   external/uv-rwlock-trywrlock(rwlock).int
 
-pub extern external/uv-rwlock-wrunlock(^rwlock: c-pointer<opaque-pthread-rwlock-t-c>): ()
+pub extern external/uv-rwlock-wrunlock(^rwlock: c-pointer<pthread-rwlock-t-c>): ()
   c inline "(void)uv_rwlock_wrunlock((uv_rwlock_t*)#1)"
 
-pub extern external/uv-sem-init(^sem: c-pointer<int>, ^value: int32): int32
+pub extern external/uv-sem-init(^sem: c-pointer<sem-t-c>, ^value: int32): int32
   c inline "(int)uv_sem_init((uv_sem_t*)#1, (unsigned int)#2)"
 
-pub inline fun ffi/uv-sem-init(^sem: c-pointer<int>, ^value: int): <> int
+pub inline fun ffi/uv-sem-init(^sem: c-pointer<sem-t-c>, ^value: int): <> int
   external/uv-sem-init(sem, value.int32).int
 
-pub extern external/uv-sem-destroy(^sem: c-pointer<int>): ()
+pub extern external/uv-sem-destroy(^sem: c-pointer<sem-t-c>): ()
   c inline "(void)uv_sem_destroy((uv_sem_t*)#1)"
 
-pub extern external/uv-sem-post(^sem: c-pointer<int>): ()
+pub extern external/uv-sem-post(^sem: c-pointer<sem-t-c>): ()
   c inline "(void)uv_sem_post((uv_sem_t*)#1)"
 
-pub extern external/uv-sem-wait(^sem: c-pointer<int>): ()
+pub extern external/uv-sem-wait(^sem: c-pointer<sem-t-c>): ()
   c inline "(void)uv_sem_wait((uv_sem_t*)#1)"
 
-pub extern external/uv-sem-trywait(^sem: c-pointer<int>): int32
+pub extern external/uv-sem-trywait(^sem: c-pointer<sem-t-c>): int32
   c inline "(int)uv_sem_trywait((uv_sem_t*)#1)"
 
-pub inline fun ffi/uv-sem-trywait(^sem: c-pointer<int>): <> int
+pub inline fun ffi/uv-sem-trywait(^sem: c-pointer<sem-t-c>): <> int
   external/uv-sem-trywait(sem).int
 
-pub extern external/uv-cond-init(^cond: c-pointer<opaque-pthread-cond-t-c>): int32
+pub extern external/uv-cond-init(^cond: c-pointer<pthread-cond-t-c>): int32
   c inline "(int)uv_cond_init((uv_cond_t*)#1)"
 
-pub inline fun ffi/uv-cond-init(^cond: c-pointer<opaque-pthread-cond-t-c>): <> int
+pub inline fun ffi/uv-cond-init(^cond: c-pointer<pthread-cond-t-c>): <> int
   external/uv-cond-init(cond).int
 
-pub extern external/uv-cond-destroy(^cond: c-pointer<opaque-pthread-cond-t-c>): ()
+pub extern external/uv-cond-destroy(^cond: c-pointer<pthread-cond-t-c>): ()
   c inline "(void)uv_cond_destroy((uv_cond_t*)#1)"
 
-pub extern external/uv-cond-signal(^cond: c-pointer<opaque-pthread-cond-t-c>): ()
+pub extern external/uv-cond-signal(^cond: c-pointer<pthread-cond-t-c>): ()
   c inline "(void)uv_cond_signal((uv_cond_t*)#1)"
 
-pub extern external/uv-cond-broadcast(^cond: c-pointer<opaque-pthread-cond-t-c>): ()
+pub extern external/uv-cond-broadcast(^cond: c-pointer<pthread-cond-t-c>): ()
   c inline "(void)uv_cond_broadcast((uv_cond_t*)#1)"
 
-pub extern external/uv-barrier-init(^barrier: c-pointer<uv-barrier-t-c>, ^count: int32): int32
+pub extern external/uv-barrier-init(^barrier: c-pointer<pthread-barrier-t-c>, ^count: int32): int32
   c inline "(int)uv_barrier_init((uv_barrier_t*)#1, (unsigned int)#2)"
 
-pub inline fun ffi/uv-barrier-init(^barrier: c-pointer<uv-barrier-t-c>, ^count: int): <> int
+pub inline fun ffi/uv-barrier-init(^barrier: c-pointer<pthread-barrier-t-c>, ^count: int): <> int
   external/uv-barrier-init(barrier, count.int32).int
 
-pub extern external/uv-barrier-destroy(^barrier: c-pointer<uv-barrier-t-c>): ()
+pub extern external/uv-barrier-destroy(^barrier: c-pointer<pthread-barrier-t-c>): ()
   c inline "(void)uv_barrier_destroy((uv_barrier_t*)#1)"
 
-pub extern external/uv-barrier-wait(^barrier: c-pointer<uv-barrier-t-c>): int32
+pub extern external/uv-barrier-wait(^barrier: c-pointer<pthread-barrier-t-c>): int32
   c inline "(int)uv_barrier_wait((uv_barrier_t*)#1)"
 
-pub inline fun ffi/uv-barrier-wait(^barrier: c-pointer<uv-barrier-t-c>): <> int
+pub inline fun ffi/uv-barrier-wait(^barrier: c-pointer<pthread-barrier-t-c>): <> int
   external/uv-barrier-wait(barrier).int
 
-pub extern external/uv-cond-wait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>): ()
+pub extern external/uv-cond-wait(^cond: c-pointer<pthread-cond-t-c>, ^mutex: c-pointer<pthread-mutex-t-c>): ()
   c inline "(void)uv_cond_wait((uv_cond_t*)#1, (uv_mutex_t*)#2)"
 
-pub extern external/uv-cond-timedwait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>, ^timeout: int64): int32
+pub extern external/uv-cond-timedwait(^cond: c-pointer<pthread-cond-t-c>, ^mutex: c-pointer<pthread-mutex-t-c>, ^timeout: int64): int32
   c inline "(int)uv_cond_timedwait((uv_cond_t*)#1, (uv_mutex_t*)#2, (int64_t)#3)"
 
-pub inline fun ffi/uv-cond-timedwait(^cond: c-pointer<opaque-pthread-cond-t-c>, ^mutex: c-pointer<opaque-pthread-mutex-t-c>, ^timeout: int): <> int
+pub inline fun ffi/uv-cond-timedwait(^cond: c-pointer<pthread-cond-t-c>, ^mutex: c-pointer<pthread-mutex-t-c>, ^timeout: int): <> int
   external/uv-cond-timedwait(cond, mutex, timeout.int64).int
 
-pub extern external/uv-once(^guard: c-pointer<opaque-pthread-once-t-c>, ^callback: c-pointer<intptr_t>): ()
+pub extern external/uv-once(^guard: c-pointer<int>, ^callback: c-pointer<intptr_t>): ()
   c inline "(void)uv_once((uv_once_t*)#1, (void (*)())#2)"
 
 pub extern external/uv-key-create(^key: c-pointer<int>): int32
@@ -1649,28 +1637,28 @@ pub extern external/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): int32
 pub inline fun ffi/uv-gettimeofday(^tv: c-pointer<uv-timeval64-t-c>): <> int
   external/uv-gettimeofday(tv).int
 
-pub extern external/uv-thread-create(^tid: c-pointer<uv-thread-t>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int32
+pub extern external/uv-thread-create(^tid: c-pointer<int>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int32
   c inline "(int)uv_thread_create((uv_thread_t*)#1, (uv_thread_cb)#2, (void*)#3)"
 
-pub inline fun ffi/uv-thread-create(^tid: c-pointer<uv-thread-t>, ^entry: uv-thread-cb, ^arg: c-pointer<()>): <> int
+pub inline fun ffi/uv-thread-create(^tid: c-pointer<int>, ^entry: uv-thread-cb, ^arg: c-pointer<()>): <> int
   external/uv-thread-create(tid, entry, arg).int
 
-pub extern external/uv-thread-create-ex(^tid: c-pointer<uv-thread-t>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int32
+pub extern external/uv-thread-create-ex(^tid: c-pointer<int>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: c-pointer<intptr_t>, ^arg: c-pointer<()>): int32
   c inline "(int)uv_thread_create_ex((uv_thread_t*)#1, (uv_thread_options_t*)#2, (uv_thread_cb)#3, (void*)#4)"
 
-pub inline fun ffi/uv-thread-create-ex(^tid: c-pointer<uv-thread-t>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: uv-thread-cb, ^arg: c-pointer<()>): <> int
+pub inline fun ffi/uv-thread-create-ex(^tid: c-pointer<int>, ^params: c-pointer<uv-thread-options-s-c>, ^entry: uv-thread-cb, ^arg: c-pointer<()>): <> int
   external/uv-thread-create-ex(tid, params, entry, arg).int
 
-pub extern external/uv-thread-setaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: ssize_t): int32
+pub extern external/uv-thread-setaffinity(^tid: c-pointer<int>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: ssize_t): int32
   c inline "(int)uv_thread_setaffinity((uv_thread_t*)#1, (char*)#2, (char*)#3, (size_t)#4)"
 
-pub inline fun ffi/uv-thread-setaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: int): <> int
+pub inline fun ffi/uv-thread-setaffinity(^tid: c-pointer<int>, ^cpumask: c-pointer<int>, ^oldmask: c-pointer<int>, ^mask-size: int): <> int
   external/uv-thread-setaffinity(tid, cpumask, oldmask, mask-size.ssize_t).int
 
-pub extern external/uv-thread-getaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^mask-size: ssize_t): int32
+pub extern external/uv-thread-getaffinity(^tid: c-pointer<int>, ^cpumask: c-pointer<int>, ^mask-size: ssize_t): int32
   c inline "(int)uv_thread_getaffinity((uv_thread_t*)#1, (char*)#2, (size_t)#3)"
 
-pub inline fun ffi/uv-thread-getaffinity(^tid: c-pointer<uv-thread-t>, ^cpumask: c-pointer<int>, ^mask-size: int): <> int
+pub inline fun ffi/uv-thread-getaffinity(^tid: c-pointer<int>, ^cpumask: c-pointer<int>, ^mask-size: int): <> int
   external/uv-thread-getaffinity(tid, cpumask, mask-size.ssize_t).int
 
 pub extern external/uv-thread-getcpu(): int32
@@ -1679,19 +1667,22 @@ pub extern external/uv-thread-getcpu(): int32
 pub inline fun ffi/uv-thread-getcpu(): <> int
   external/uv-thread-getcpu().int
 
-pub extern external/uv-thread-self(): c-pointer<opaque-pthread-t-c>
-  c inline "(intptr_t)uv_thread_self()"
+pub extern external/uv-thread-self(): int64
+  c inline "(uv_thread_t)uv_thread_self()"
 
-pub extern external/uv-thread-join(^tid: c-pointer<uv-thread-t>): int32
+pub inline fun ffi/uv-thread-self(): <> int
+  external/uv-thread-self().int
+
+pub extern external/uv-thread-join(^tid: c-pointer<int>): int32
   c inline "(int)uv_thread_join((uv_thread_t*)#1)"
 
-pub inline fun ffi/uv-thread-join(^tid: c-pointer<uv-thread-t>): <> int
+pub inline fun ffi/uv-thread-join(^tid: c-pointer<int>): <> int
   external/uv-thread-join(tid).int
 
-pub extern external/uv-thread-equal(^t1: c-pointer<uv-thread-t>, ^t2: c-pointer<uv-thread-t>): int32
+pub extern external/uv-thread-equal(^t1: c-pointer<int>, ^t2: c-pointer<int>): int32
   c inline "(int)uv_thread_equal((uv_thread_t*)#1, (uv_thread_t*)#2)"
 
-pub inline fun ffi/uv-thread-equal(^t1: c-pointer<uv-thread-t>, ^t2: c-pointer<uv-thread-t>): <> int
+pub inline fun ffi/uv-thread-equal(^t1: c-pointer<int>, ^t2: c-pointer<int>): <> int
   external/uv-thread-equal(t1, t2).int
 
 pub extern external/uv-loop-get-data(^arg0: c-pointer<uv-loop-s-c>): c-pointer<()>
@@ -1699,30 +1690,6 @@ pub extern external/uv-loop-get-data(^arg0: c-pointer<uv-loop-s-c>): c-pointer<(
 
 pub extern external/uv-loop-set-data(^arg0: c-pointer<uv-loop-s-c>, ^data: c-pointer<()>): ()
   c inline "(void)uv_loop_set_data((uv_loop_t*)#1, (void*)#2)"
-
-pub extern external/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: ssize_t): ssize_t
-  c inline "(size_t)uv_utf16_length_as_wtf8((int16_t*)#1, (ssize_t)#2)"
-
-pub inline fun ffi/uv-utf16-length-as-wtf8(^utf16: c-pointer<int>, ^utf16-len: int): <> int
-  external/uv-utf16-length-as-wtf8(utf16, utf16-len.ssize_t).int
-
-pub extern external/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: ssize_t, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<int>): int32
-  c inline "(int)uv_utf16_to_wtf8((int16_t*)#1, (ssize_t)#2, (char**)#3, (size_t*)#4)"
-
-pub inline fun ffi/uv-utf16-to-wtf8(^utf16: c-pointer<int>, ^utf16-len: int, ^wtf8-ptr: c-pointer<c-pointer<int>>, ^wtf8-len-ptr: c-pointer<int>): <> int
-  external/uv-utf16-to-wtf8(utf16, utf16-len.ssize_t, wtf8-ptr, wtf8-len-ptr).int
-
-pub extern external/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): ssize_t
-  c inline "(ssize_t)uv_wtf8_length_as_utf16((char*)#1)"
-
-pub inline fun ffi/uv-wtf8-length-as-utf16(^wtf8: c-pointer<int>): <> int
-  external/uv-wtf8-length-as-utf16(wtf8).int
-
-pub extern external/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: ssize_t): ()
-  c inline "(void)uv_wtf8_to_utf16((char*)#1, (int16_t*)#2, (size_t)#3)"
-
-pub inline fun ffi/uv-wtf8-to-utf16(^wtf8: c-pointer<int>, ^utf16: c-pointer<int>, ^utf16-len: int): <> ()
-  external/uv-wtf8-to-utf16(wtf8, utf16, utf16-len.ssize_t)
 
 pub value struct uv-queue
   next: uv-queue-c
@@ -1791,9 +1758,9 @@ pub struct uv-loop-s
   nwatchers: int
   nfds: int
   wq: uv-queue-c
-  wq-mutex: opaque-pthread-mutex-t
+  wq-mutex: pthread-mutex-t
   wq-async: koka-uv-async-t
-  cloexec-lock: opaque-pthread-rwlock-t
+  cloexec-lock: pthread-rwlock-t
   closing-handles: c-pointer<uv-handle-s-c>
   process-handles: uv-queue-c
   prepare-handles: uv-queue-c
@@ -1810,12 +1777,9 @@ pub struct uv-loop-s
   signal-io-watcher: koka-uv-io-t
   child-watcher: koka-uv-signal-t
   emfile-fd: int
-  cf-thread: uv-thread-t
-  cf-reserved: c-pointer<()>
-  cf-state: c-pointer<()>
-  cf-mutex: opaque-pthread-mutex-t
-  cf-sem: int
-  cf-signals: uv-queue-c
+  inotify-read-watcher: koka-uv-io-t
+  inotify-watchers: c-pointer<()>
+  inotify-fd: int
 
 pub type uv-loop-s-c
 pub alias uv-loop-sp = c-pointer<uv-loop-s-c>
@@ -1854,8 +1818,6 @@ pub struct uv-io-s
   pevents: int
   events: int
   fd: int
-  rcount: int
-  wcount: int
 
 pub type uv-io-s-c
 pub alias uv-io-sp = c-pointer<uv-io-s-c>
@@ -1880,30 +1842,71 @@ pub fun uv-io-sc-array-calloc(n: int): uv-io-sca
 
 alias uv-io-cb = c-pointer<intptr_t>
 alias uv-io-cbfn = ((loop : c-pointer<uv-loop-s-c>, w : c-pointer<uv-io-s-c>, events : int) -> ())
-alias uv-mutex-t = opaque-pthread-mutex-t-c
-alias pthread-mutex-t = opaque-pthread-mutex-t-c
-alias darwin-pthread-mutex-t = opaque-pthread-mutex-t-c
-pub struct opaque-pthread-mutex-t
-pub type opaque-pthread-mutex-t-c
-pub alias opaque-pthread-mutex-tp = c-pointer<opaque-pthread-mutex-t-c>
-pub alias opaque-pthread-mutex-tc<s::S> = owned-c<opaque-pthread-mutex-t-c>
-pub alias opaque-pthread-mutex-tcb<s::S> = borrowed-c<s,opaque-pthread-mutex-t-c>
-pub alias opaque-pthread-mutex-tca<s::S> = owned-c<c-array<opaque-pthread-mutex-t-c>>
+alias uv-mutex-t = pthread-mutex-t-c
+pub struct pthread-mutex-t
+pub type pthread-mutex-t-c
+pub alias pthread-mutex-tp = c-pointer<pthread-mutex-t-c>
+pub alias pthread-mutex-tc<s::S> = owned-c<pthread-mutex-t-c>
+pub alias pthread-mutex-tcb<s::S> = borrowed-c<s,pthread-mutex-t-c>
+pub alias pthread-mutex-tca<s::S> = owned-c<c-array<pthread-mutex-t-c>>
 
-pub extern opaque-pthread-mutex-t/size-of(c: c-null<opaque-pthread-mutex-t-c>): int32
-  c inline "sizeof(struct _opaque_pthread_mutex_t)"
+pub struct pthread-mutex-s
+  lock: int
+  count: int
+  owner: int
+  nusers: int
+  kind: int
+  spins: int
+  elision: int
+  list: koka-pthread-list-t
 
-pub fun opaque-pthread-mutex-tc(): opaque-pthread-mutex-tc<s::S>
-  malloc(?size-of=opaque-pthread-mutex-t/size-of)
+pub type pthread-mutex-s-c
+pub alias pthread-mutex-sp = c-pointer<pthread-mutex-s-c>
+pub alias pthread-mutex-sc = owned-c<pthread-mutex-s-c>
+pub alias pthread-mutex-scb<s::S> = borrowed-c<s,pthread-mutex-s-c>
+pub alias pthread-mutex-sca = owned-c<c-array<pthread-mutex-s-c>>
 
-pub fun opaque-pthread-mutex-tc-calloc(): opaque-pthread-mutex-tc<s::S>
-  malloc-c(?size-of=opaque-pthread-mutex-t/size-of)
+pub extern pthread-mutex-s/size-of(c: c-null<pthread-mutex-s-c>): int32
+  c inline "sizeof(struct __pthread_mutex_s)"
 
-pub fun opaque-pthread-mutex-tc-array(n: int): opaque-pthread-mutex-tca<s::S>
-  malloc(n.int32, ?size-of=opaque-pthread-mutex-t/size-of)
+pub fun pthread-mutex-sc(): pthread-mutex-sc
+  malloc(?size-of=pthread-mutex-s/size-of)
 
-pub fun opaque-pthread-mutex-tc-array-calloc(n: int): opaque-pthread-mutex-tca<s::S>
-  malloc-c(n.int32, ?size-of=opaque-pthread-mutex-t/size-of)
+pub fun pthread-mutex-sc-calloc(): pthread-mutex-sc
+  malloc-c(?size-of=pthread-mutex-s/size-of)
+
+pub fun pthread-mutex-sc-array(n: int): pthread-mutex-sca
+  malloc(n.int32, ?size-of=pthread-mutex-s/size-of)
+
+pub fun pthread-mutex-sc-array-calloc(n: int): pthread-mutex-sca
+  malloc-c(n.int32, ?size-of=pthread-mutex-s/size-of)
+
+alias pthread-list-t = pthread-internal-list-c
+alias koka-pthread-list-t = pthread-internal-list
+pub value struct pthread-internal-list
+  prev: pthread-internal-list-c
+  next: pthread-internal-list-c
+
+pub type pthread-internal-list-c
+pub alias pthread-internal-listp = c-pointer<pthread-internal-list-c>
+pub alias pthread-internal-listc = owned-c<pthread-internal-list-c>
+pub alias pthread-internal-listcb<s::S> = borrowed-c<s,pthread-internal-list-c>
+pub alias pthread-internal-listca = owned-c<c-array<pthread-internal-list-c>>
+
+pub extern pthread-internal-list/size-of(c: c-null<pthread-internal-list-c>): int32
+  c inline "sizeof(struct __pthread_internal_list)"
+
+pub fun pthread-internal-listc(): pthread-internal-listc
+  malloc(?size-of=pthread-internal-list/size-of)
+
+pub fun pthread-internal-listc-calloc(): pthread-internal-listc
+  malloc-c(?size-of=pthread-internal-list/size-of)
+
+pub fun pthread-internal-listc-array(n: int): pthread-internal-listca
+  malloc(n.int32, ?size-of=pthread-internal-list/size-of)
+
+pub fun pthread-internal-listc-array-calloc(n: int): pthread-internal-listca
+  malloc-c(n.int32, ?size-of=pthread-internal-list/size-of)
 
 alias uv-async-t = uv-async-s-c
 alias koka-uv-async-t = uv-async-s
@@ -1943,7 +1946,7 @@ pub fun uv-async-sc-array-calloc(n: int): uv-async-sca
 
 alias uv-loop-t = uv-loop-s-c
 alias koka-uv-loop-t = uv-loop-s
-type uv-handle-type
+pub type uv-handle-type-enum
   UV_UNKNOWN_HANDLE
   UV_ASYNC
   UV_CHECK
@@ -1964,7 +1967,7 @@ type uv-handle-type
   UV_FILE
   UV_HANDLE_TYPE_MAX
 
-pub fun uv-handle-type/int(i: uv-handle-type): int32
+pub fun uv-handle-type-enum/int(i: uv-handle-type-enum): int32
   match i
     UV_UNKNOWN_HANDLE -> 0.int32
     UV_ASYNC -> 1.int32
@@ -1986,7 +1989,7 @@ pub fun uv-handle-type/int(i: uv-handle-type): int32
     UV_FILE -> 17.int32
     UV_HANDLE_TYPE_MAX -> 18.int32
 
-pub fun int/uv-handle-type(i: int32): exn uv-handle-type
+pub fun int/uv-handle-type-enum(i: int32): exn uv-handle-type-enum
   match i.int
     0 -> UV_UNKNOWN_HANDLE
     1 -> UV_ASYNC
@@ -2060,30 +2063,35 @@ alias uv-async-cb = c-pointer<intptr_t>
 alias uv-async-cbfn = ((handle1 : c-pointer<uv-async-s-c>) -> ())
 alias uv-async-t1 = uv-async-s-c
 alias koka-uv-async-t1 = uv-async-s
-alias uv-rwlock-t = opaque-pthread-rwlock-t-c
-alias pthread-rwlock-t = opaque-pthread-rwlock-t-c
-alias darwin-pthread-rwlock-t = opaque-pthread-rwlock-t-c
-pub struct opaque-pthread-rwlock-t
-pub type opaque-pthread-rwlock-t-c
-pub alias opaque-pthread-rwlock-tp = c-pointer<opaque-pthread-rwlock-t-c>
-pub alias opaque-pthread-rwlock-tc<s::S> = owned-c<opaque-pthread-rwlock-t-c>
-pub alias opaque-pthread-rwlock-tcb<s::S> = borrowed-c<s,opaque-pthread-rwlock-t-c>
-pub alias opaque-pthread-rwlock-tca<s::S> = owned-c<c-array<opaque-pthread-rwlock-t-c>>
+alias uv-rwlock-t = pthread-rwlock-t-c
+pub struct pthread-rwlock-t
+pub type pthread-rwlock-t-c
+pub alias pthread-rwlock-tp = c-pointer<pthread-rwlock-t-c>
+pub alias pthread-rwlock-tc<s::S> = owned-c<pthread-rwlock-t-c>
+pub alias pthread-rwlock-tcb<s::S> = borrowed-c<s,pthread-rwlock-t-c>
+pub alias pthread-rwlock-tca<s::S> = owned-c<c-array<pthread-rwlock-t-c>>
 
-pub extern opaque-pthread-rwlock-t/size-of(c: c-null<opaque-pthread-rwlock-t-c>): int32
-  c inline "sizeof(struct _opaque_pthread_rwlock_t)"
+pub struct pthread-rwlock-arch-t
+pub type pthread-rwlock-arch-t-c
+pub alias pthread-rwlock-arch-tp = c-pointer<pthread-rwlock-arch-t-c>
+pub alias pthread-rwlock-arch-tc<s::S> = owned-c<pthread-rwlock-arch-t-c>
+pub alias pthread-rwlock-arch-tcb<s::S> = borrowed-c<s,pthread-rwlock-arch-t-c>
+pub alias pthread-rwlock-arch-tca<s::S> = owned-c<c-array<pthread-rwlock-arch-t-c>>
 
-pub fun opaque-pthread-rwlock-tc(): opaque-pthread-rwlock-tc<s::S>
-  malloc(?size-of=opaque-pthread-rwlock-t/size-of)
+pub extern pthread-rwlock-arch-t/size-of(c: c-null<pthread-rwlock-arch-t-c>): int32
+  c inline "sizeof(struct __pthread_rwlock_arch_t)"
 
-pub fun opaque-pthread-rwlock-tc-calloc(): opaque-pthread-rwlock-tc<s::S>
-  malloc-c(?size-of=opaque-pthread-rwlock-t/size-of)
+pub fun pthread-rwlock-arch-tc(): pthread-rwlock-arch-tc<s::S>
+  malloc(?size-of=pthread-rwlock-arch-t/size-of)
 
-pub fun opaque-pthread-rwlock-tc-array(n: int): opaque-pthread-rwlock-tca<s::S>
-  malloc(n.int32, ?size-of=opaque-pthread-rwlock-t/size-of)
+pub fun pthread-rwlock-arch-tc-calloc(): pthread-rwlock-arch-tc<s::S>
+  malloc-c(?size-of=pthread-rwlock-arch-t/size-of)
 
-pub fun opaque-pthread-rwlock-tc-array-calloc(n: int): opaque-pthread-rwlock-tca<s::S>
-  malloc-c(n.int32, ?size-of=opaque-pthread-rwlock-t/size-of)
+pub fun pthread-rwlock-arch-tc-array(n: int): pthread-rwlock-arch-tca<s::S>
+  malloc(n.int32, ?size-of=pthread-rwlock-arch-t/size-of)
+
+pub fun pthread-rwlock-arch-tc-array-calloc(n: int): pthread-rwlock-arch-tca<s::S>
+  malloc-c(n.int32, ?size-of=pthread-rwlock-arch-t/size-of)
 
 pub value struct unnamed-struct1
   min: c-pointer<()>
@@ -2156,22 +2164,6 @@ pub alias unnamed-struct2c = owned-c<unnamed-struct2-c>
 pub alias unnamed-struct2cb<s::S> = borrowed-c<s,unnamed-struct2-c>
 pub alias unnamed-struct2ca = owned-c<c-array<unnamed-struct2-c>>
 
-alias uv-thread-t = pthread-t
-alias pthread-t = darwin-pthread-t
-alias darwin-pthread-t = c-pointer<opaque-pthread-t-c>
-pub struct opaque-pthread-t
-pub type opaque-pthread-t-c
-pub alias opaque-pthread-tp = c-pointer<opaque-pthread-t-c>
-pub alias opaque-pthread-tc = owned-c<opaque-pthread-t-c>
-pub alias opaque-pthread-tcb<s::S> = borrowed-c<s,opaque-pthread-t-c>
-pub alias opaque-pthread-tca = owned-c<c-array<opaque-pthread-t-c>>
-
-alias uv-sem-t = int
-alias semaphore-t = int
-alias mach-port-t = int
-alias darwin-mach-port-t = int
-alias darwin-mach-port-name-t = int
-alias darwin-natural-t = int
 pub value struct uv-buf-t
   base: c-pointer<int>
   len: int
@@ -2196,83 +2188,6 @@ pub fun uv-buf-tc-array(n: int): uv-buf-tca
 
 pub fun uv-buf-tc-array-calloc(n: int): uv-buf-tca
   malloc-c(n.int32, ?size-of=uv-buf-t/size-of)
-
-pub struct uv-barrier
-  mutex: opaque-pthread-mutex-t
-  cond: opaque-pthread-cond-t
-  threshold: int
-  in1: int
-  out: int
-
-pub type uv-barrier-c
-pub alias uv-barrierp = c-pointer<uv-barrier-c>
-pub alias uv-barrierc = owned-c<uv-barrier-c>
-pub alias uv-barriercb<s::S> = borrowed-c<s,uv-barrier-c>
-pub alias uv-barrierca = owned-c<c-array<uv-barrier-c>>
-
-pub extern uv-barrier/size-of(c: c-null<uv-barrier-c>): int32
-  c inline "sizeof(struct _uv_barrier)"
-
-pub fun uv-barrierc(): uv-barrierc
-  malloc(?size-of=uv-barrier/size-of)
-
-pub fun uv-barrierc-calloc(): uv-barrierc
-  malloc-c(?size-of=uv-barrier/size-of)
-
-pub fun uv-barrierc-array(n: int): uv-barrierca
-  malloc(n.int32, ?size-of=uv-barrier/size-of)
-
-pub fun uv-barrierc-array-calloc(n: int): uv-barrierca
-  malloc-c(n.int32, ?size-of=uv-barrier/size-of)
-
-alias uv-cond-t = opaque-pthread-cond-t-c
-alias pthread-cond-t = opaque-pthread-cond-t-c
-alias darwin-pthread-cond-t = opaque-pthread-cond-t-c
-pub struct opaque-pthread-cond-t
-pub type opaque-pthread-cond-t-c
-pub alias opaque-pthread-cond-tp = c-pointer<opaque-pthread-cond-t-c>
-pub alias opaque-pthread-cond-tc<s::S> = owned-c<opaque-pthread-cond-t-c>
-pub alias opaque-pthread-cond-tcb<s::S> = borrowed-c<s,opaque-pthread-cond-t-c>
-pub alias opaque-pthread-cond-tca<s::S> = owned-c<c-array<opaque-pthread-cond-t-c>>
-
-pub extern opaque-pthread-cond-t/size-of(c: c-null<opaque-pthread-cond-t-c>): int32
-  c inline "sizeof(struct _opaque_pthread_cond_t)"
-
-pub fun opaque-pthread-cond-tc(): opaque-pthread-cond-tc<s::S>
-  malloc(?size-of=opaque-pthread-cond-t/size-of)
-
-pub fun opaque-pthread-cond-tc-calloc(): opaque-pthread-cond-tc<s::S>
-  malloc-c(?size-of=opaque-pthread-cond-t/size-of)
-
-pub fun opaque-pthread-cond-tc-array(n: int): opaque-pthread-cond-tca<s::S>
-  malloc(n.int32, ?size-of=opaque-pthread-cond-t/size-of)
-
-pub fun opaque-pthread-cond-tc-array-calloc(n: int): opaque-pthread-cond-tca<s::S>
-  malloc-c(n.int32, ?size-of=opaque-pthread-cond-t/size-of)
-
-pub value struct uv-barrier-t
-  b: uv-barrier-c
-
-pub type uv-barrier-t-c
-pub alias uv-barrier-tp = c-pointer<uv-barrier-t-c>
-pub alias uv-barrier-tc = owned-c<uv-barrier-t-c>
-pub alias uv-barrier-tcb<s::S> = borrowed-c<s,uv-barrier-t-c>
-pub alias uv-barrier-tca = owned-c<c-array<uv-barrier-t-c>>
-
-pub extern uv-barrier-t/size-of(c: c-null<uv-barrier-t-c>): int32
-  c inline "sizeof(uv_barrier_t)"
-
-pub fun uv-barrier-tc(): uv-barrier-tc
-  malloc(?size-of=uv-barrier-t/size-of)
-
-pub fun uv-barrier-tc-calloc(): uv-barrier-tc
-  malloc-c(?size-of=uv-barrier-t/size-of)
-
-pub fun uv-barrier-tc-array(n: int): uv-barrier-tca
-  malloc(n.int32, ?size-of=uv-barrier-t/size-of)
-
-pub fun uv-barrier-tc-array-calloc(n: int): uv-barrier-tca
-  malloc-c(n.int32, ?size-of=uv-barrier-t/size-of)
 
 pub value struct uv-lib-t
   handle1: c-pointer<()>
@@ -2299,7 +2214,7 @@ pub fun uv-lib-tc-array(n: int): uv-lib-tca
 pub fun uv-lib-tc-array-calloc(n: int): uv-lib-tca
   malloc-c(n.int32, ?size-of=uv-lib-t/size-of)
 
-type uv-errno-t
+pub type uv-errno-t-enum
   UV_E2BIG
   UV_EACCES
   UV_EADDRINUSE
@@ -2386,14 +2301,14 @@ type uv-errno-t
   UV_EUNATCH
   UV_ERRNO_MAX
 
-pub fun uv-errno-t/int(i: uv-errno-t): int32
+pub fun uv-errno-t-enum/int(i: uv-errno-t-enum): int32
   match i
     UV_E2BIG -> -7.int32
     UV_EACCES -> -13.int32
-    UV_EADDRINUSE -> -48.int32
-    UV_EADDRNOTAVAIL -> -49.int32
-    UV_EAFNOSUPPORT -> -47.int32
-    UV_EAGAIN -> -35.int32
+    UV_EADDRINUSE -> -98.int32
+    UV_EADDRNOTAVAIL -> -99.int32
+    UV_EAFNOSUPPORT -> -97.int32
+    UV_EAGAIN -> -11.int32
     UV_EAI_ADDRFAMILY -> -3000.int32
     UV_EAI_AGAIN -> -3001.int32
     UV_EAI_BADFLAGS -> -3002.int32
@@ -2408,80 +2323,80 @@ pub fun uv-errno-t/int(i: uv-errno-t): int32
     UV_EAI_PROTOCOL -> -3014.int32
     UV_EAI_SERVICE -> -3010.int32
     UV_EAI_SOCKTYPE -> -3011.int32
-    UV_EALREADY -> -37.int32
+    UV_EALREADY -> -114.int32
     UV_EBADF -> -9.int32
     UV_EBUSY -> -16.int32
-    UV_ECANCELED -> -89.int32
+    UV_ECANCELED -> -125.int32
     UV_ECHARSET -> -4080.int32
-    UV_ECONNABORTED -> -53.int32
-    UV_ECONNREFUSED -> -61.int32
-    UV_ECONNRESET -> -54.int32
-    UV_EDESTADDRREQ -> -39.int32
+    UV_ECONNABORTED -> -103.int32
+    UV_ECONNREFUSED -> -111.int32
+    UV_ECONNRESET -> -104.int32
+    UV_EDESTADDRREQ -> -89.int32
     UV_EEXIST -> -17.int32
     UV_EFAULT -> -14.int32
     UV_EFBIG -> -27.int32
-    UV_EHOSTUNREACH -> -65.int32
+    UV_EHOSTUNREACH -> -113.int32
     UV_EINTR -> -4.int32
     UV_EINVAL -> -22.int32
     UV_EIO -> -5.int32
-    UV_EISCONN -> -56.int32
+    UV_EISCONN -> -106.int32
     UV_EISDIR -> -21.int32
-    UV_ELOOP -> -62.int32
+    UV_ELOOP -> -40.int32
     UV_EMFILE -> -24.int32
-    UV_EMSGSIZE -> -40.int32
-    UV_ENAMETOOLONG -> -63.int32
-    UV_ENETDOWN -> -50.int32
-    UV_ENETUNREACH -> -51.int32
+    UV_EMSGSIZE -> -90.int32
+    UV_ENAMETOOLONG -> -36.int32
+    UV_ENETDOWN -> -100.int32
+    UV_ENETUNREACH -> -101.int32
     UV_ENFILE -> -23.int32
-    UV_ENOBUFS -> -55.int32
+    UV_ENOBUFS -> -105.int32
     UV_ENODEV -> -19.int32
     UV_ENOENT -> -2.int32
     UV_ENOMEM -> -12.int32
-    UV_ENONET -> -4056.int32
-    UV_ENOPROTOOPT -> -42.int32
+    UV_ENONET -> -64.int32
+    UV_ENOPROTOOPT -> -92.int32
     UV_ENOSPC -> -28.int32
-    UV_ENOSYS -> -78.int32
-    UV_ENOTCONN -> -57.int32
+    UV_ENOSYS -> -38.int32
+    UV_ENOTCONN -> -107.int32
     UV_ENOTDIR -> -20.int32
-    UV_ENOTEMPTY -> -66.int32
-    UV_ENOTSOCK -> -38.int32
-    UV_ENOTSUP -> -45.int32
-    UV_EOVERFLOW -> -84.int32
+    UV_ENOTEMPTY -> -39.int32
+    UV_ENOTSOCK -> -88.int32
+    UV_ENOTSUP -> -95.int32
+    UV_EOVERFLOW -> -75.int32
     UV_EPERM -> -1.int32
     UV_EPIPE -> -32.int32
-    UV_EPROTO -> -100.int32
-    UV_EPROTONOSUPPORT -> -43.int32
-    UV_EPROTOTYPE -> -41.int32
+    UV_EPROTO -> -71.int32
+    UV_EPROTONOSUPPORT -> -93.int32
+    UV_EPROTOTYPE -> -91.int32
     UV_ERANGE -> -34.int32
     UV_EROFS -> -30.int32
-    UV_ESHUTDOWN -> -58.int32
+    UV_ESHUTDOWN -> -108.int32
     UV_ESPIPE -> -29.int32
     UV_ESRCH -> -3.int32
-    UV_ETIMEDOUT -> -60.int32
+    UV_ETIMEDOUT -> -110.int32
     UV_ETXTBSY -> -26.int32
     UV_EXDEV -> -18.int32
     UV_UNKNOWN -> -4094.int32
     UV_EOF -> -4095.int32
     UV_ENXIO -> -6.int32
     UV_EMLINK -> -31.int32
-    UV_EHOSTDOWN -> -64.int32
-    UV_EREMOTEIO -> -4030.int32
+    UV_EHOSTDOWN -> -112.int32
+    UV_EREMOTEIO -> -121.int32
     UV_ENOTTY -> -25.int32
-    UV_EFTYPE -> -79.int32
-    UV_EILSEQ -> -92.int32
-    UV_ESOCKTNOSUPPORT -> -44.int32
-    UV_ENODATA -> -96.int32
-    UV_EUNATCH -> -4023.int32
+    UV_EFTYPE -> -4028.int32
+    UV_EILSEQ -> -84.int32
+    UV_ESOCKTNOSUPPORT -> -94.int32
+    UV_ENODATA -> -61.int32
+    UV_EUNATCH -> -49.int32
     UV_ERRNO_MAX -> -4096.int32
 
-pub fun int/uv-errno-t(i: int32): exn uv-errno-t
+pub fun int/uv-errno-t-enum(i: int32): exn uv-errno-t-enum
   match i.int
     -7 -> UV_E2BIG
     -13 -> UV_EACCES
-    -48 -> UV_EADDRINUSE
-    -49 -> UV_EADDRNOTAVAIL
-    -47 -> UV_EAFNOSUPPORT
-    -35 -> UV_EAGAIN
+    -98 -> UV_EADDRINUSE
+    -99 -> UV_EADDRNOTAVAIL
+    -97 -> UV_EAFNOSUPPORT
+    -11 -> UV_EAGAIN
     -3000 -> UV_EAI_ADDRFAMILY
     -3001 -> UV_EAI_AGAIN
     -3002 -> UV_EAI_BADFLAGS
@@ -2496,73 +2411,73 @@ pub fun int/uv-errno-t(i: int32): exn uv-errno-t
     -3014 -> UV_EAI_PROTOCOL
     -3010 -> UV_EAI_SERVICE
     -3011 -> UV_EAI_SOCKTYPE
-    -37 -> UV_EALREADY
+    -114 -> UV_EALREADY
     -9 -> UV_EBADF
     -16 -> UV_EBUSY
-    -89 -> UV_ECANCELED
+    -125 -> UV_ECANCELED
     -4080 -> UV_ECHARSET
-    -53 -> UV_ECONNABORTED
-    -61 -> UV_ECONNREFUSED
-    -54 -> UV_ECONNRESET
-    -39 -> UV_EDESTADDRREQ
+    -103 -> UV_ECONNABORTED
+    -111 -> UV_ECONNREFUSED
+    -104 -> UV_ECONNRESET
+    -89 -> UV_EDESTADDRREQ
     -17 -> UV_EEXIST
     -14 -> UV_EFAULT
     -27 -> UV_EFBIG
-    -65 -> UV_EHOSTUNREACH
+    -113 -> UV_EHOSTUNREACH
     -4 -> UV_EINTR
     -22 -> UV_EINVAL
     -5 -> UV_EIO
-    -56 -> UV_EISCONN
+    -106 -> UV_EISCONN
     -21 -> UV_EISDIR
-    -62 -> UV_ELOOP
+    -40 -> UV_ELOOP
     -24 -> UV_EMFILE
-    -40 -> UV_EMSGSIZE
-    -63 -> UV_ENAMETOOLONG
-    -50 -> UV_ENETDOWN
-    -51 -> UV_ENETUNREACH
+    -90 -> UV_EMSGSIZE
+    -36 -> UV_ENAMETOOLONG
+    -100 -> UV_ENETDOWN
+    -101 -> UV_ENETUNREACH
     -23 -> UV_ENFILE
-    -55 -> UV_ENOBUFS
+    -105 -> UV_ENOBUFS
     -19 -> UV_ENODEV
     -2 -> UV_ENOENT
     -12 -> UV_ENOMEM
-    -4056 -> UV_ENONET
-    -42 -> UV_ENOPROTOOPT
+    -64 -> UV_ENONET
+    -92 -> UV_ENOPROTOOPT
     -28 -> UV_ENOSPC
-    -78 -> UV_ENOSYS
-    -57 -> UV_ENOTCONN
+    -38 -> UV_ENOSYS
+    -107 -> UV_ENOTCONN
     -20 -> UV_ENOTDIR
-    -66 -> UV_ENOTEMPTY
-    -38 -> UV_ENOTSOCK
-    -45 -> UV_ENOTSUP
-    -84 -> UV_EOVERFLOW
+    -39 -> UV_ENOTEMPTY
+    -88 -> UV_ENOTSOCK
+    -95 -> UV_ENOTSUP
+    -75 -> UV_EOVERFLOW
     -1 -> UV_EPERM
     -32 -> UV_EPIPE
-    -100 -> UV_EPROTO
-    -43 -> UV_EPROTONOSUPPORT
-    -41 -> UV_EPROTOTYPE
+    -71 -> UV_EPROTO
+    -93 -> UV_EPROTONOSUPPORT
+    -91 -> UV_EPROTOTYPE
     -34 -> UV_ERANGE
     -30 -> UV_EROFS
-    -58 -> UV_ESHUTDOWN
+    -108 -> UV_ESHUTDOWN
     -29 -> UV_ESPIPE
     -3 -> UV_ESRCH
-    -60 -> UV_ETIMEDOUT
+    -110 -> UV_ETIMEDOUT
     -26 -> UV_ETXTBSY
     -18 -> UV_EXDEV
     -4094 -> UV_UNKNOWN
     -4095 -> UV_EOF
     -6 -> UV_ENXIO
     -31 -> UV_EMLINK
-    -64 -> UV_EHOSTDOWN
-    -4030 -> UV_EREMOTEIO
+    -112 -> UV_EHOSTDOWN
+    -121 -> UV_EREMOTEIO
     -25 -> UV_ENOTTY
-    -79 -> UV_EFTYPE
-    -92 -> UV_EILSEQ
-    -44 -> UV_ESOCKTNOSUPPORT
-    -96 -> UV_ENODATA
-    -4023 -> UV_EUNATCH
+    -4028 -> UV_EFTYPE
+    -84 -> UV_EILSEQ
+    -94 -> UV_ESOCKTNOSUPPORT
+    -61 -> UV_ENODATA
+    -49 -> UV_EUNATCH
     -4096 -> UV_ERRNO_MAX
 
-type uv-req-type
+pub type uv-req-type-enum
   UV_UNKNOWN_REQ
   UV_REQ
   UV_CONNECT
@@ -2576,7 +2491,7 @@ type uv-req-type
   UV_RANDOM
   UV_REQ_TYPE_MAX
 
-pub fun uv-req-type/int(i: uv-req-type): int32
+pub fun uv-req-type-enum/int(i: uv-req-type-enum): int32
   match i
     UV_UNKNOWN_REQ -> 0.int32
     UV_REQ -> 1.int32
@@ -2591,7 +2506,7 @@ pub fun uv-req-type/int(i: uv-req-type): int32
     UV_RANDOM -> 10.int32
     UV_REQ_TYPE_MAX -> 11.int32
 
-pub fun int/uv-req-type(i: int32): exn uv-req-type
+pub fun int/uv-req-type-enum(i: int32): exn uv-req-type-enum
   match i.int
     0 -> UV_UNKNOWN_REQ
     1 -> UV_REQ
@@ -2654,7 +2569,7 @@ pub fun uv-dirent-sc-array(n: int): uv-dirent-sca
 pub fun uv-dirent-sc-array-calloc(n: int): uv-dirent-sca
   malloc-c(n.int32, ?size-of=uv-dirent-s/size-of)
 
-type uv-dirent-type-t
+pub type uv-dirent-type-t-enum
   UV_DIRENT_UNKNOWN
   UV_DIRENT_FILE
   UV_DIRENT_DIR
@@ -2664,7 +2579,7 @@ type uv-dirent-type-t
   UV_DIRENT_CHAR
   UV_DIRENT_BLOCK
 
-pub fun uv-dirent-type-t/int(i: uv-dirent-type-t): int32
+pub fun uv-dirent-type-t-enum/int(i: uv-dirent-type-t-enum): int32
   match i
     UV_DIRENT_UNKNOWN -> 0.int32
     UV_DIRENT_FILE -> 1.int32
@@ -2675,7 +2590,7 @@ pub fun uv-dirent-type-t/int(i: uv-dirent-type-t): int32
     UV_DIRENT_CHAR -> 6.int32
     UV_DIRENT_BLOCK -> 7.int32
 
-pub fun int/uv-dirent-type-t(i: int32): exn uv-dirent-type-t
+pub fun int/uv-dirent-type-t-enum(i: int32): exn uv-dirent-type-t-enum
   match i.int
     0 -> UV_DIRENT_UNKNOWN
     1 -> UV_DIRENT_FILE
@@ -2686,12 +2601,13 @@ pub fun int/uv-dirent-type-t(i: int32): exn uv-dirent-type-t
     6 -> UV_DIRENT_CHAR
     7 -> UV_DIRENT_BLOCK
 
-pub struct dir
-pub type dir-c
-pub alias dirp = c-pointer<dir-c>
-pub alias dirc = owned-c<dir-c>
-pub alias dircb<s::S> = borrowed-c<s,dir-c>
-pub alias dirca = owned-c<c-array<dir-c>>
+alias dir = dirstream-c
+pub struct dirstream
+pub type dirstream-c
+pub alias dirstreamp = c-pointer<dirstream-c>
+pub alias dirstreamc = owned-c<dirstream-c>
+pub alias dirstreamcb<s::S> = borrowed-c<s,dirstream-c>
+pub alias dirstreamca = owned-c<c-array<dirstream-c>>
 
 pub struct uv-stream-s
   data: c-pointer<()>
@@ -2714,7 +2630,6 @@ pub struct uv-stream-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
-  select: c-pointer<()>
 
 pub type uv-stream-s-c
 pub alias uv-stream-sp = c-pointer<uv-stream-s-c>
@@ -2823,7 +2738,6 @@ pub struct uv-tcp-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
-  select: c-pointer<()>
 
 pub type uv-tcp-s-c
 pub alias uv-tcp-sp = c-pointer<uv-tcp-s-c>
@@ -2930,7 +2844,6 @@ pub struct uv-pipe-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
-  select: c-pointer<()>
   ipc: int
   pipe-fname: c-pointer<int>
 
@@ -2983,7 +2896,6 @@ pub struct uv-tty-s
   delayed-error: int
   accepted-fd: int
   queued-fds: c-pointer<()>
-  select: c-pointer<()>
   orig-termios: termios-c
   mode: int
 
@@ -3327,15 +3239,8 @@ pub struct uv-fs-event-s
   flags: int
   path: c-pointer<int>
   cb: uv-fs-event-cb
-  event-watcher: koka-uv-io-t
-  realpath: c-pointer<int>
-  realpath-len: int
-  cf-flags: int
-  cf-cb: c-pointer<uv-async-s-c>
-  cf-events: uv-queue-c
-  cf-member: uv-queue-c
-  cf-error: int
-  cf-mutex: opaque-pthread-mutex-t
+  watchers: uv-queue-c
+  wd: int
 
 pub type uv-fs-event-s-c
 pub alias uv-fs-event-sp = c-pointer<uv-fs-event-s-c>
@@ -3509,9 +3414,7 @@ pub fun sockaddr-storagec-array(n: int): sockaddr-storageca<s::S>
 pub fun sockaddr-storagec-array-calloc(n: int): sockaddr-storageca<s::S>
   malloc-c(n.int32, ?size-of=sockaddr-storage/size-of)
 
-alias uint8-t = int
 alias sa-family-t = int
-alias int64-t = int
 pub struct uv-write-s
 pub type uv-write-s-c
 pub alias uv-write-sp = c-pointer<uv-write-s-c>
@@ -3584,7 +3487,7 @@ pub fun uv-fs-sc-array(n: int): uv-fs-sca<s::S>
 pub fun uv-fs-sc-array-calloc(n: int): uv-fs-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-fs-s/size-of)
 
-type uv-fs-type
+pub type uv-fs-type-enum
   UV_FS_UNKNOWN
   UV_FS_CUSTOM
   UV_FS_OPEN
@@ -3624,7 +3527,7 @@ type uv-fs-type
   UV_FS_MKSTEMP
   UV_FS_LUTIME
 
-pub fun uv-fs-type/int(i: uv-fs-type): int32
+pub fun uv-fs-type-enum/int(i: uv-fs-type-enum): int32
   match i
     UV_FS_UNKNOWN -> -1.int32
     UV_FS_CUSTOM -> 0.int32
@@ -3665,7 +3568,7 @@ pub fun uv-fs-type/int(i: uv-fs-type): int32
     UV_FS_MKSTEMP -> 35.int32
     UV_FS_LUTIME -> 36.int32
 
-pub fun int/uv-fs-type(i: int32): exn uv-fs-type
+pub fun int/uv-fs-type-enum(i: int32): exn uv-fs-type-enum
   match i.int
     -1 -> UV_FS_UNKNOWN
     0 -> UV_FS_CUSTOM
@@ -3775,17 +3678,15 @@ pub fun uv-timespec-tc-array-calloc(n: int): uv-timespec-tca
 
 alias uv-file = int
 alias mode-t = int
-alias darwin-mode-t = int
-alias uint16-t = int
+alias mode-t1 = int
 alias off-t = int
-alias darwin-off-t = int
+alias off-t1 = int
 alias uv-uid-t = int
 alias uid-t = int
-alias darwin-uid-t = int
-alias uint32-t = int
+alias uid-t1 = int
 alias uv-gid-t = int
 alias gid-t = int
-alias darwin-gid-t = int
+alias gid-t1 = int
 pub struct uv-work-s
 pub type uv-work-s-c
 pub alias uv-work-sp = c-pointer<uv-work-s-c>
@@ -3995,7 +3896,6 @@ pub fun in-addrc-array-calloc(n: int): in-addrca
 
 alias in-addr-t = int
 pub struct sockaddr-in6
-  sin6-len: int
   sin6-family: int
   sin6-port: int
   sin6-flowinfo: int
@@ -4024,7 +3924,7 @@ pub fun sockaddr-in6c-array-calloc(n: int): sockaddr-in6ca
   malloc-c(n.int32, ?size-of=sockaddr-in6/size-of)
 
 pub value struct in6-addr
-  u6-addr: unnamed-union20-c
+  in6-u: unnamed-union20-c
 
 pub type in6-addr-c
 pub alias in6-addrp = c-pointer<in6-addr-c>
@@ -4181,32 +4081,32 @@ pub fun uv-metrics-sc-array(n: int): uv-metrics-sca<s::S>
 pub fun uv-metrics-sc-array-calloc(n: int): uv-metrics-sca<s::S>
   malloc-c(n.int32, ?size-of=uv-metrics-s/size-of)
 
-type uv-loop-option
+pub type uv-loop-option-enum
   UV_LOOP_BLOCK_SIGNAL
   UV_METRICS_IDLE_TIME
 
-pub fun uv-loop-option/int(i: uv-loop-option): int32
+pub fun uv-loop-option-enum/int(i: uv-loop-option-enum): int32
   match i
     UV_LOOP_BLOCK_SIGNAL -> 0.int32
     UV_METRICS_IDLE_TIME -> 1.int32
 
-pub fun int/uv-loop-option(i: int32): exn uv-loop-option
+pub fun int/uv-loop-option-enum(i: int32): exn uv-loop-option-enum
   match i.int
     0 -> UV_LOOP_BLOCK_SIGNAL
     1 -> UV_METRICS_IDLE_TIME
 
-type uv-run-mode
+pub type uv-run-mode-enum
   UV_RUN_DEFAULT
   UV_RUN_ONCE
   UV_RUN_NOWAIT
 
-pub fun uv-run-mode/int(i: uv-run-mode): int32
+pub fun uv-run-mode-enum/int(i: uv-run-mode-enum): int32
   match i
     UV_RUN_DEFAULT -> 0.int32
     UV_RUN_ONCE -> 1.int32
     UV_RUN_NOWAIT -> 2.int32
 
-pub fun int/uv-run-mode(i: int32): exn uv-run-mode
+pub fun int/uv-run-mode-enum(i: int32): exn uv-run-mode-enum
   match i.int
     0 -> UV_RUN_DEFAULT
     1 -> UV_RUN_ONCE
@@ -4220,16 +4120,16 @@ alias uv-calloc-func = c-pointer<intptr_t>
 alias uv-calloc-funcfn = ((count : int, size : int) -> c-pointer<()>)
 alias uv-free-func = c-pointer<intptr_t>
 alias uv-free-funcfn = ((ptr : c-pointer<()>) -> ())
-type uv-clock-id
+pub type uv-clock-id-enum
   UV_CLOCK_MONOTONIC
   UV_CLOCK_REALTIME
 
-pub fun uv-clock-id/int(i: uv-clock-id): int32
+pub fun uv-clock-id-enum/int(i: uv-clock-id-enum): int32
   match i
     UV_CLOCK_MONOTONIC -> 0.int32
     UV_CLOCK_REALTIME -> 1.int32
 
-pub fun int/uv-clock-id(i: int32): exn uv-clock-id
+pub fun int/uv-clock-id-enum(i: int32): exn uv-clock-id-enum
   match i.int
     0 -> UV_CLOCK_MONOTONIC
     1 -> UV_CLOCK_REALTIME
@@ -4309,16 +4209,16 @@ pub fun uv-timeval64-tc-array(n: int): uv-timeval64-tca
 pub fun uv-timeval64-tc-array-calloc(n: int): uv-timeval64-tca
   malloc-c(n.int32, ?size-of=uv-timeval64-t/size-of)
 
-type uv-membership
+pub type uv-membership-enum
   UV_LEAVE_GROUP
   UV_JOIN_GROUP
 
-pub fun uv-membership/int(i: uv-membership): int32
+pub fun uv-membership-enum/int(i: uv-membership-enum): int32
   match i
     UV_LEAVE_GROUP -> 0.int32
     UV_JOIN_GROUP -> 1.int32
 
-pub fun int/uv-membership(i: int32): exn uv-membership
+pub fun int/uv-membership-enum(i: int32): exn uv-membership-enum
   match i.int
     0 -> UV_LEAVE_GROUP
     1 -> UV_JOIN_GROUP
@@ -4326,30 +4226,30 @@ pub fun int/uv-membership(i: int32): exn uv-membership
 alias uv-req-t = uv-req-s-c
 alias uv-walk-cb = c-pointer<intptr_t>
 alias uv-walk-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, arg : c-pointer<()>) -> ())
-alias file = sfile-c
-pub struct sfile
-pub type sfile-c
-pub alias sfilep = c-pointer<sfile-c>
-pub alias sfilec = owned-c<sfile-c>
-pub alias sfilecb<s::S> = borrowed-c<s,sfile-c>
-pub alias sfileca = owned-c<c-array<sfile-c>>
+alias file = io-file-c
+pub struct io-file
+pub type io-file-c
+pub alias io-filep = c-pointer<io-file-c>
+pub alias io-filec = owned-c<io-file-c>
+pub alias io-filecb<s::S> = borrowed-c<s,io-file-c>
+pub alias io-fileca = owned-c<c-array<io-file-c>>
 
 alias uv-os-fd-t = int
 alias uv-os-sock-t = int
 alias uv-tcp-t = uv-tcp-s-c
 alias koka-uv-tcp-t = uv-tcp-s
-type uv-tcp-flags
+pub type uv-tcp-flags-enum
   UV_TCP_IPV6ONLY
 
-pub fun uv-tcp-flags/int(i: uv-tcp-flags): int32
+pub fun uv-tcp-flags-enum/int(i: uv-tcp-flags-enum): int32
   match i
     UV_TCP_IPV6ONLY -> 1.int32
 
-pub fun int/uv-tcp-flags(i: int32): exn uv-tcp-flags
+pub fun int/uv-tcp-flags-enum(i: int32): exn uv-tcp-flags-enum
   match i.int
     1 -> UV_TCP_IPV6ONLY
 
-type uv-udp-flags
+pub type uv-udp-flags-enum
   UV_UDP_IPV6ONLY
   UV_UDP_PARTIAL
   UV_UDP_REUSEADDR
@@ -4358,7 +4258,7 @@ type uv-udp-flags
   UV_UDP_LINUX_RECVERR
   UV_UDP_RECVMMSG
 
-pub fun uv-udp-flags/int(i: uv-udp-flags): int32
+pub fun uv-udp-flags-enum/int(i: uv-udp-flags-enum): int32
   match i
     UV_UDP_IPV6ONLY -> 1.int32
     UV_UDP_PARTIAL -> 2.int32
@@ -4368,7 +4268,7 @@ pub fun uv-udp-flags/int(i: uv-udp-flags): int32
     UV_UDP_LINUX_RECVERR -> 32.int32
     UV_UDP_RECVMMSG -> 256.int32
 
-pub fun int/uv-udp-flags(i: int32): exn uv-udp-flags
+pub fun int/uv-udp-flags-enum(i: int32): exn uv-udp-flags-enum
   match i.int
     1 -> UV_UDP_IPV6ONLY
     2 -> UV_UDP_PARTIAL
@@ -4378,33 +4278,33 @@ pub fun int/uv-udp-flags(i: int32): exn uv-udp-flags
     32 -> UV_UDP_LINUX_RECVERR
     256 -> UV_UDP_RECVMMSG
 
-type uv-tty-mode-t
+pub type uv-tty-mode-t-enum
   UV_TTY_MODE_NORMAL
   UV_TTY_MODE_RAW
   UV_TTY_MODE_IO
 
-pub fun uv-tty-mode-t/int(i: uv-tty-mode-t): int32
+pub fun uv-tty-mode-t-enum/int(i: uv-tty-mode-t-enum): int32
   match i
     UV_TTY_MODE_NORMAL -> 0.int32
     UV_TTY_MODE_RAW -> 1.int32
     UV_TTY_MODE_IO -> 2.int32
 
-pub fun int/uv-tty-mode-t(i: int32): exn uv-tty-mode-t
+pub fun int/uv-tty-mode-t-enum(i: int32): exn uv-tty-mode-t-enum
   match i.int
     0 -> UV_TTY_MODE_NORMAL
     1 -> UV_TTY_MODE_RAW
     2 -> UV_TTY_MODE_IO
 
-type uv-tty-vtermstate-t
+pub type uv-tty-vtermstate-t-enum
   UV_TTY_SUPPORTED
   UV_TTY_UNSUPPORTED
 
-pub fun uv-tty-vtermstate-t/int(i: uv-tty-vtermstate-t): int32
+pub fun uv-tty-vtermstate-t-enum/int(i: uv-tty-vtermstate-t-enum): int32
   match i
     UV_TTY_SUPPORTED -> 0.int32
     UV_TTY_UNSUPPORTED -> 1.int32
 
-pub fun int/uv-tty-vtermstate-t(i: int32): exn uv-tty-vtermstate-t
+pub fun int/uv-tty-vtermstate-t-enum(i: int32): exn uv-tty-vtermstate-t-enum
   match i.int
     0 -> UV_TTY_SUPPORTED
     1 -> UV_TTY_UNSUPPORTED
@@ -4413,27 +4313,27 @@ alias uv-tty-t = uv-tty-s-c
 alias koka-uv-tty-t = uv-tty-s
 alias uv-pipe-t = uv-pipe-s-c
 alias koka-uv-pipe-t = uv-pipe-s
-type uv-poll-event
+pub type uv-poll-event-enum
   UV_READABLE
   UV_WRITABLE
   UV_DISCONNECT
   UV_PRIORITIZED
 
-pub fun uv-poll-event/int(i: uv-poll-event): int32
+pub fun uv-poll-event-enum/int(i: uv-poll-event-enum): int32
   match i
     UV_READABLE -> 1.int32
     UV_WRITABLE -> 2.int32
     UV_DISCONNECT -> 4.int32
     UV_PRIORITIZED -> 8.int32
 
-pub fun int/uv-poll-event(i: int32): exn uv-poll-event
+pub fun int/uv-poll-event-enum(i: int32): exn uv-poll-event-enum
   match i.int
     1 -> UV_READABLE
     2 -> UV_WRITABLE
     4 -> UV_DISCONNECT
     8 -> UV_PRIORITIZED
 
-type uv-stdio-flags
+pub type uv-stdio-flags-enum
   UV_IGNORE
   UV_CREATE_PIPE
   UV_INHERIT_FD
@@ -4443,7 +4343,7 @@ type uv-stdio-flags
   UV_NONBLOCK_PIPE
   UV_OVERLAPPED_PIPE
 
-pub fun uv-stdio-flags/int(i: uv-stdio-flags): int32
+pub fun uv-stdio-flags-enum/int(i: uv-stdio-flags-enum): int32
   match i
     UV_IGNORE -> 0.int32
     UV_CREATE_PIPE -> 1.int32
@@ -4454,7 +4354,7 @@ pub fun uv-stdio-flags/int(i: uv-stdio-flags): int32
     UV_NONBLOCK_PIPE -> 64.int32
     UV_OVERLAPPED_PIPE -> 64.int32
 
-pub fun int/uv-stdio-flags(i: int32): exn uv-stdio-flags
+pub fun int/uv-stdio-flags-enum(i: int32): exn uv-stdio-flags-enum
   match i.int
     0 -> UV_IGNORE
     1 -> UV_CREATE_PIPE
@@ -4532,7 +4432,7 @@ pub fun uv-process-options-sc-array-calloc(n: int): uv-process-options-sca
 
 alias uv-stdio-container-t = uv-stdio-container-s-c
 alias koka-uv-stdio-container-t = uv-stdio-container-s
-type uv-process-flags
+pub type uv-process-flags-enum
   UV_PROCESS_SETUID
   UV_PROCESS_SETGID
   UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS
@@ -4542,7 +4442,7 @@ type uv-process-flags
   UV_PROCESS_WINDOWS_HIDE_GUI
   UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME
 
-pub fun uv-process-flags/int(i: uv-process-flags): int32
+pub fun uv-process-flags-enum/int(i: uv-process-flags-enum): int32
   match i
     UV_PROCESS_SETUID -> 1.int32
     UV_PROCESS_SETGID -> 2.int32
@@ -4553,7 +4453,7 @@ pub fun uv-process-flags/int(i: uv-process-flags): int32
     UV_PROCESS_WINDOWS_HIDE_GUI -> 64.int32
     UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME -> 128.int32
 
-pub fun int/uv-process-flags(i: int32): exn uv-process-flags
+pub fun int/uv-process-flags-enum(i: int32): exn uv-process-flags-enum
   match i.int
     1 -> UV_PROCESS_SETUID
     2 -> UV_PROCESS_SETGID
@@ -4568,8 +4468,7 @@ alias uv-process-options-t = uv-process-options-s-c
 alias koka-uv-process-options-t = uv-process-options-s
 alias uv-pid-t = int
 alias pid-t = int
-alias darwin-pid-t = int
-alias int32-t = int
+alias pid-t1 = int
 pub struct uv-rusage-t
   ru-utime: uv-timeval-t-c
   ru-stime: uv-timeval-t-c
@@ -4621,16 +4520,16 @@ alias koka-uv-env-item-t = uv-env-item-s
 alias uv-utsname-t = uv-utsname-s-c
 alias uv-metrics-t = uv-metrics-s-c
 alias uv-dir-t = uv-dir-s-c
-type uv-fs-event
+pub type uv-fs-event-enum
   UV_RENAME
   UV_CHANGE
 
-pub fun uv-fs-event/int(i: uv-fs-event): int32
+pub fun uv-fs-event-enum/int(i: uv-fs-event-enum): int32
   match i
     UV_RENAME -> 1.int32
     UV_CHANGE -> 2.int32
 
-pub fun int/uv-fs-event(i: int32): exn uv-fs-event
+pub fun int/uv-fs-event-enum(i: int32): exn uv-fs-event-enum
   match i.int
     1 -> UV_RENAME
     2 -> UV_CHANGE
@@ -4639,48 +4538,104 @@ alias uv-fs-poll-t = uv-fs-poll-s-c
 alias koka-uv-fs-poll-t = uv-fs-poll-s
 alias uv-fs-poll-cb = c-pointer<intptr_t>
 alias uv-fs-poll-cbfn = ((handle1 : c-pointer<uv-fs-poll-s-c>, status : int, prev : c-pointer<uv-stat-t-c>, curr : c-pointer<uv-stat-t-c>) -> ())
-type uv-fs-event-flags
+pub type uv-fs-event-flags-enum
   UV_FS_EVENT_WATCH_ENTRY
   UV_FS_EVENT_STAT
   UV_FS_EVENT_RECURSIVE
 
-pub fun uv-fs-event-flags/int(i: uv-fs-event-flags): int32
+pub fun uv-fs-event-flags-enum/int(i: uv-fs-event-flags-enum): int32
   match i
     UV_FS_EVENT_WATCH_ENTRY -> 1.int32
     UV_FS_EVENT_STAT -> 2.int32
     UV_FS_EVENT_RECURSIVE -> 4.int32
 
-pub fun int/uv-fs-event-flags(i: int32): exn uv-fs-event-flags
+pub fun int/uv-fs-event-flags-enum(i: int32): exn uv-fs-event-flags-enum
   match i.int
     1 -> UV_FS_EVENT_WATCH_ENTRY
     2 -> UV_FS_EVENT_STAT
     4 -> UV_FS_EVENT_RECURSIVE
 
-alias uv-once-t = opaque-pthread-once-t-c
-alias pthread-once-t = opaque-pthread-once-t-c
-alias darwin-pthread-once-t = opaque-pthread-once-t-c
-pub struct opaque-pthread-once-t
-pub type opaque-pthread-once-t-c
-pub alias opaque-pthread-once-tp = c-pointer<opaque-pthread-once-t-c>
-pub alias opaque-pthread-once-tc = owned-c<opaque-pthread-once-t-c>
-pub alias opaque-pthread-once-tcb<s::S> = borrowed-c<s,opaque-pthread-once-t-c>
-pub alias opaque-pthread-once-tca = owned-c<c-array<opaque-pthread-once-t-c>>
+alias uv-sem-t = sem-t-c
+pub struct sem-t
+pub type sem-t-c
+pub alias sem-tp = c-pointer<sem-t-c>
+pub alias sem-tc<s::S> = owned-c<sem-t-c>
+pub alias sem-tcb<s::S> = borrowed-c<s,sem-t-c>
+pub alias sem-tca<s::S> = owned-c<c-array<sem-t-c>>
 
+alias uv-cond-t = pthread-cond-t-c
+pub struct pthread-cond-t
+pub type pthread-cond-t-c
+pub alias pthread-cond-tp = c-pointer<pthread-cond-t-c>
+pub alias pthread-cond-tc<s::S> = owned-c<pthread-cond-t-c>
+pub alias pthread-cond-tcb<s::S> = borrowed-c<s,pthread-cond-t-c>
+pub alias pthread-cond-tca<s::S> = owned-c<c-array<pthread-cond-t-c>>
+
+pub struct pthread-cond-s
+pub type pthread-cond-s-c
+pub alias pthread-cond-sp = c-pointer<pthread-cond-s-c>
+pub alias pthread-cond-sc<s::S> = owned-c<pthread-cond-s-c>
+pub alias pthread-cond-scb<s::S> = borrowed-c<s,pthread-cond-s-c>
+pub alias pthread-cond-sca<s::S> = owned-c<c-array<pthread-cond-s-c>>
+
+pub extern pthread-cond-s/size-of(c: c-null<pthread-cond-s-c>): int32
+  c inline "sizeof(struct __pthread_cond_s)"
+
+pub fun pthread-cond-sc(): pthread-cond-sc<s::S>
+  malloc(?size-of=pthread-cond-s/size-of)
+
+pub fun pthread-cond-sc-calloc(): pthread-cond-sc<s::S>
+  malloc-c(?size-of=pthread-cond-s/size-of)
+
+pub fun pthread-cond-sc-array(n: int): pthread-cond-sca<s::S>
+  malloc(n.int32, ?size-of=pthread-cond-s/size-of)
+
+pub fun pthread-cond-sc-array-calloc(n: int): pthread-cond-sca<s::S>
+  malloc-c(n.int32, ?size-of=pthread-cond-s/size-of)
+
+pub struct atomic-wide-counter
+pub type atomic-wide-counter-c
+pub alias atomic-wide-counterp = c-pointer<atomic-wide-counter-c>
+pub alias atomic-wide-counterc = owned-c<atomic-wide-counter-c>
+pub alias atomic-wide-countercb<s::S> = borrowed-c<s,atomic-wide-counter-c>
+pub alias atomic-wide-counterca = owned-c<c-array<atomic-wide-counter-c>>
+
+pub value struct unnamed-struct3
+  low: int
+  high: int
+
+pub type unnamed-struct3-c
+pub alias unnamed-struct3p = c-pointer<unnamed-struct3-c>
+pub alias unnamed-struct3c = owned-c<unnamed-struct3-c>
+pub alias unnamed-struct3cb<s::S> = borrowed-c<s,unnamed-struct3-c>
+pub alias unnamed-struct3ca = owned-c<c-array<unnamed-struct3-c>>
+
+alias uv-barrier-t = pthread-barrier-t-c
+pub struct pthread-barrier-t
+pub type pthread-barrier-t-c
+pub alias pthread-barrier-tp = c-pointer<pthread-barrier-t-c>
+pub alias pthread-barrier-tc<s::S> = owned-c<pthread-barrier-t-c>
+pub alias pthread-barrier-tcb<s::S> = borrowed-c<s,pthread-barrier-t-c>
+pub alias pthread-barrier-tca<s::S> = owned-c<c-array<pthread-barrier-t-c>>
+
+alias uv-once-t = int
+alias pthread-once-t = int
 alias uv-key-t = int
 alias pthread-key-t = int
-alias darwin-pthread-key-t = int
+alias uv-thread-t = int
+alias pthread-t = int
 alias uv-thread-cb = c-pointer<intptr_t>
 alias uv-thread-cbfn = ((arg : c-pointer<()>) -> ())
-type uv-thread-create-flags
+pub type uv-thread-create-flags-enum
   UV_THREAD_NO_FLAGS
   UV_THREAD_HAS_STACK_SIZE
 
-pub fun uv-thread-create-flags/int(i: uv-thread-create-flags): int32
+pub fun uv-thread-create-flags-enum/int(i: uv-thread-create-flags-enum): int32
   match i
     UV_THREAD_NO_FLAGS -> 0.int32
     UV_THREAD_HAS_STACK_SIZE -> 1.int32
 
-pub fun int/uv-thread-create-flags(i: int32): exn uv-thread-create-flags
+pub fun int/uv-thread-create-flags-enum(i: int32): exn uv-thread-create-flags-enum
   match i.int
     0 -> UV_THREAD_NO_FLAGS
     1 -> UV_THREAD_HAS_STACK_SIZE

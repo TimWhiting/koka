@@ -1,7 +1,7 @@
-pub import std/os/uv/generated
+pub import uv/generated
 import std/core/cextern
 import std/num/int32
-import std/os/uv/utils
+import uv/utils
 
 pub val sSIGINT = sigint().int
 extern sigint(): int32
@@ -30,7 +30,7 @@ pub fun signal-start(signum: int, cb: uv-cb1<uv-signal-sc>): io-event int
           cb.fndup()
           signal.retain()
           cb(signal)
-          signal.keepalive() // Retain the signal memory allocated at least until after the next callback is called
+          signal.keepalive() // Keep the signal memory allocated at least until the callback finishes
     c.fndup() // Ensure the callback isn't immediately freed on first callback
     s.set-cb(c)
     s.ffi/uv-signal-start(unit-cb, signum)

@@ -1,10 +1,11 @@
-module std/os/uv/utils
+module uv/utils
 
-import std/os/uv/generated
+import uv/generated
+import uv/error
 import std/core/cextern
 
 extern import
-  c file "utils-inline"
+  c file "inline/utils"
 
 // Needs to be extern otherwise, the compiler will optimize out the function and not keep the reference alive
 // Ensure that a reference is > 1 until after this point
@@ -86,3 +87,8 @@ pub inline fun close(^s: c-pointer<uv-handle-s-c>): io-event ()
 
 pub inline fun a/close(a: a, ?uv-handle: (a) -> uv-handle-sp): io-event ()
   a.uv-handle.close()
+
+pub inline fun hnd/close(hnd: c-pointer<uv-handle-s-c>, callback: () -> io-event ()): io-event ()
+  hnd.close(callback)
+
+

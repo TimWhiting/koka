@@ -15,21 +15,21 @@ dev_dependencies:
 ffigen:
   name: libuv
   ffi-native:
-    assetId: "c { syslib=\"uv\" }\n\nextern import\n  c header-file \"third-party/uv.h\""
+    assetId: "c { vcpkg=\"libuv\" }\n\nextern import\n  c header-file \"third-party/uv.h\""
   description: Bindings to `libuv.h`.
-  output: 'lib/std/os/uv/generated.kk'
+  output: 'lib/uv/generated.kk'
   generate-compound-member-accessors: false
   compiler-opts:
-    - '-I./lib/std/os/uv/third-party/'
+    - '-I./lib/uv/third-party/'
     - '-I/usr/local/opt/llvm/lib/clang/18/include'
   headers:
     entry-points:
-      - 'lib/std/os/uv/third-party/uv.h'
-      - 'lib/std/os/uv/third-party/uv/version.h'
-      - 'lib/std/os/uv/third-party/uv/errno.h'
+      - 'lib/uv/third-party/uv.h'
+      - 'lib/uv/third-party/uv/version.h'
+      - 'lib/uv/third-party/uv/errno.h'
     include-directives:
-      - 'lib/std/os/uv/third-party/uv.h'
-      - 'lib/std/os/uv/third-party/uv/*'
+      - 'lib/uv/third-party/uv.h'
+      - 'lib/uv/third-party/uv/*'
   compiler-opts-automatic:
     macos:
       include-c-standard-library: false
@@ -40,6 +40,12 @@ ffigen:
   functions:
     exclude:
       - (-)+.*
+      - uv_thread_getpriority
+      - uv_thread_setpriority
+      - uv_utf16_length_as_wtf8
+      - uv_utf16_to_wtf8
+      - uv_wtf8_length_as_utf16
+      - uv_wtf8_to_utf16
     rename:
       '-(.*)': '$1'
   structs:

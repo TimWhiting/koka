@@ -31,16 +31,8 @@ import std/num/ddouble    // for C# backend
 import std/time/duration
 import std/os/null
 import std/core/unsafe
-pub import std/os/event-loop
-// We utilize some timer functions from it's header file.
-pub import std/time/timer
 pub import std/num/ddouble
 pub import std/num/float64
-
-extern import
-  c header-file "async/async-inline.h"
-  cs file "async/async-inline.cs"
-  // js is just using primitives
 
 // A type alias for asynchronous operations that can raise exceptions non-deterministically.
 // This is common for almost all `:async` operations since `cancel` and `timeout` can
@@ -243,22 +235,13 @@ abstract struct timeout-id(
   timer : any
 )
 
-fun set-timeout( cb : () -> io-event (), ms : int32 ) : io-event timeout-id
-  Timeout-id(set-timeoutx(cb,max(ms,zero)))
+alias unitcb = () -> io-event ()
 
-extern set-timeoutx( cb : () -> io-event (), ms : int32 ) : io-event any
-  cs "_Async.SetTimeout"
-  js "setTimeout"
-  c "kk_set_timeout"
+fun set-timeout( cb : unitcb, ms : int32 , ?set-timeout: (unitcb, int32) -> io-event any) : io-event timeout-id
+  Timeout-id(?set-timeout(cb,max(ms,int32/zero)))
 
-fun clear-timeout( tid : timeout-id ) : io-event ()
-  clear-timeoutx(tid.timer)
-
-extern clear-timeoutx( tid : any) : io-event ()
-  cs "_Async.ClearTimeout"
-  js "clearTimeout"
-  c "kk_clear_timeout" 
-
+fun clear-timeout( tid : timeout-id, ?clear-timeout: any -> io-event ()) : io-event ()
+  ?clear-timeout(tid.timer)
 
 // ----------------------------------------------------------------------------
 // Interleaved strands of execution

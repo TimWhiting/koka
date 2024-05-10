@@ -6,92 +6,31 @@
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 
-module std/os/event-loop
+module uv/error
 
-import std/core/cextern
+import uv/generated
 import std/num/int32
-import std/os/uv/generated
-import std/os/uv/utils
-
-extern import
-  c { conan="libuv[>=1.47.0]"; vcpkg="libuv"; library="uv" }
-// TODO: wasm {}
-
-extern import
-  c file "event-loop-inline.c"
-
-// Handles a uv loop
-pub fun default-event-loop(action)
-  if host() == "libc" then
-    handle-loop(action)
-  else // TODO: Support event loop on other platforms
-    action()
-
-val @initialize = init-uv-alloc()
-
-// Runs a UV loop
-fun handle-loop(action)
-  init-loop()
-  val res = action() 
-  run-loop()
-  close-loop()
-  res
 
 abstract extend type exception-info
-  pub con AsyncExn( status-code : uv-errno-t )
-
-extern run-loop(): io-event ()
-  c "kk_uv_loop_run"
-  wasm "kk_emscripten_loop_run"
-  js inline ""
-  cs inline ""
-
-extern init-loop(): io-event ()
-  c "kk_uv_loop_init"
-  wasm inline "kk_Unit"
-  js inline ""
-  cs inline ""
-
-// initializes only the allocators (not an event loop)
-// needed for some file operations which alloc - kk_uv_fs_mkdtemp, kk_uv_fs_mkstemp
-pub extern init-uv-alloc(): ()
-  c "kk_uv_alloc_init"
-  wasm inline "kk_Unit"
-  cs inline ""
-  js inline ""
-
-extern close-loop(): io-event ()
-  c "kk_uv_loop_close"
-  wasm inline "kk_Unit"
-  cs inline ""
-  js inline ""
-
-pub inline fun hnd/close(hnd: c-pointer<uv-handle-s-c>, callback: () -> io-event ()): io-event ()
-  hnd.close(callback)
-
-pub extern ptr/close(hnd: intptr_t, callback: () -> io-event ()): io-event ()
-  c "kk_uv_close"
-  wasm inline "kk_Unit"
-  cs inline ""
-  js inline ""
+  pub con AsyncExn( status-code : uv-errno-t-enum )
 
 pub fun error-from-uverr<a>(code: int32): exn error<a>
-  val code' = code.int/uv-errno-t
+  val code' = code.int/uv-errno-t-enum
   Error(Exception(code'.message, AsyncExn(code')))
 
 pub inline fun result/untry(code: int, a: () -> a): exn a
   if code == 0 then a()
   else 
-    val code' = code.int32.int/uv-errno-t
+    val code' = code.int32.int/uv-errno-t-enum
     throw-exn(Exception(code'.message, AsyncExn(code'))) // TODO: Errno refactoring
 
 pub inline fun unit/untry(code: int): exn ()
   if code == 0 then ()
   else
-    val code' = code.int32.int/uv-errno-t 
+    val code' = code.int32.int/uv-errno-t-enum
     throw-exn(Exception(code'.message, AsyncExn(code')))
 
-pub fun message(code: uv-errno-t): string
+pub fun message(code: uv-errno-t-enum): string
   match code
     UV_E2BIG -> "argument list too long"
     UV_EACCES -> "permission denied"

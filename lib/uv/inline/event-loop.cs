@@ -9,44 +9,55 @@ using System.Threading;
 
 static class _Async
 {
-  public class ThreadTimer : IDisposable {
+  public class ThreadTimer : IDisposable
+  {
     private Primitive.EventloopEntry entry;
     private Timer timer;
 
-    public ThreadTimer( Fun0<Unit> cb, int ms ) {
+    public ThreadTimer(Fun0<Unit> cb, int ms)
+    {
       entry = Primitive.GetEventloopEntry();
-      if (ms <= 0) {
+      if (ms <= 0)
+      {
         timer = null;
         entry.Post(() => { cb.Apply(); });
       }
-      else {
-        timer = new Timer( (object state0) => { 
-                  if (entry != null) entry.Post(() => { cb.Apply(); }); 
-                }, null, ms, Timeout.Infinite );
+      else
+      {
+        timer = new Timer((object state0) =>
+        {
+          if (entry != null) entry.Post(() => { cb.Apply(); });
+        }, null, ms, Timeout.Infinite);
       }
     }
 
-    public void Dispose() {
+    public void Dispose()
+    {
       Dispose(true);
     }
 
-    protected virtual void Dispose(bool disposing) {
-      if (entry != null) {
+    protected virtual void Dispose(bool disposing)
+    {
+      if (entry != null)
+      {
         entry.Dispose();
         entry = null;
       }
-      if (timer != null) {
+      if (timer != null)
+      {
         timer.Dispose();
         timer = null;
       }
     }
   }
 
-  public static ThreadTimer SetTimeout( Fun0<Unit> cb, int ms ) {
-    return new ThreadTimer(cb,ms);
+  public static ThreadTimer SetTimeout(Fun0<Unit> cb, int ms)
+  {
+    return new ThreadTimer(cb, ms);
   }
 
-  public static void ClearTimeout( object obj ) {
+  public static void ClearTimeout(object obj)
+  {
     IDisposable d = obj as IDisposable;
     if (d != null) d.Dispose();
   }
