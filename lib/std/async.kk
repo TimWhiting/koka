@@ -218,7 +218,7 @@ pub fun float/wait( secs : float64 ) : asyncx ()
 
 // Wait (asynchronously) for optional `secs` seconds `:duration` (`= 0.seconds`).
 // Use `yield()` to yield generally to other asynchronous operations.
-pub fun wait( secs : duration = zero ) : asyncx ()
+pub fun wait( secs : duration = zero , ?set-timeout: (unitcb, int32) -> io-event any) : asyncx ()
   if secs <= zero then return yield()
   val msecs = max(zero:int32,secs.milli-seconds.int32)
   await fn(cb)
@@ -226,7 +226,7 @@ pub fun wait( secs : duration = zero ) : asyncx ()
     Just( { async/clear-timeout(tid) } )
 
 // Yield to other asynchronous operations. Same as `wait(0)`.
-pub fun yield() : asyncx ()
+pub fun yield(?set-timeout: (unitcb, int32) -> io-event any) : asyncx ()
   await0 fn(cb)
     async/set-timeout( cb, int32/zero )
     ()
@@ -237,11 +237,11 @@ abstract struct timeout-id(
 )
 
 alias unitcb = () -> io-event ()
-fun async/set-timeout( cb : unitcb, ms : int32 ) : io-event timeout-id
-  Timeout-id(uv/event-loop/set-timeout(cb,max(ms,int32/zero)))
+fun async/set-timeout( cb : unitcb, ms : int32 , ?set-timeout: (unitcb, int32) -> io-event any) : io-event timeout-id
+  Timeout-id(?set-timeout(cb,max(ms,int32/zero)))
 
-fun async/clear-timeout( tid : timeout-id) : io-event ()
-  uv/event-loop/clear-timeout(tid.timer)
+fun async/clear-timeout( tid : timeout-id, ?clear-timeout: (any) -> io-event ()) : io-event ()
+  ?clear-timeout(tid.timer)
 
 // ----------------------------------------------------------------------------
 // Interleaved strands of execution

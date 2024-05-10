@@ -1,5 +1,6 @@
 import std/time
 import std/async
+import uv/event-loop
 
 fun main()
   val x = ref(0)
