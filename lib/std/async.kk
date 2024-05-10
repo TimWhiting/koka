@@ -33,6 +33,7 @@ import std/os/null
 import std/core/unsafe
 pub import std/num/ddouble
 pub import std/num/float64
+import uv/event-loop
 
 // A type alias for asynchronous operations that can raise exceptions non-deterministically.
 // This is common for almost all `:async` operations since `cancel` and `timeout` can
@@ -221,13 +222,13 @@ pub fun wait( secs : duration = zero ) : asyncx ()
   if secs <= zero then return yield()
   val msecs = max(zero:int32,secs.milli-seconds.int32)
   await fn(cb)
-    val tid = set-timeout( fn(){ cb(Ok(())) }, msecs )
-    Just( { clear-timeout(tid) } )
+    val tid = async/set-timeout( fn(){ cb(Ok(())) }, msecs )
+    Just( { async/clear-timeout(tid) } )
 
 // Yield to other asynchronous operations. Same as `wait(0)`.
 pub fun yield() : asyncx ()
   await0 fn(cb)
-    set-timeout( cb, zero )
+    async/set-timeout( cb, int32/zero )
     ()
 
 // abstract wid for timeout handlers
@@ -236,12 +237,11 @@ abstract struct timeout-id(
 )
 
 alias unitcb = () -> io-event ()
+fun async/set-timeout( cb : unitcb, ms : int32 ) : io-event timeout-id
+  Timeout-id(uv/event-loop/set-timeout(cb,max(ms,int32/zero)))
 
-fun set-timeout( cb : unitcb, ms : int32 , ?set-timeout: (unitcb, int32) -> io-event any) : io-event timeout-id
-  Timeout-id(?set-timeout(cb,max(ms,int32/zero)))
-
-fun clear-timeout( tid : timeout-id, ?clear-timeout: any -> io-event ()) : io-event ()
-  ?clear-timeout(tid.timer)
+fun async/clear-timeout( tid : timeout-id) : io-event ()
+  uv/event-loop/clear-timeout(tid.timer)
 
 // ----------------------------------------------------------------------------
 // Interleaved strands of execution
