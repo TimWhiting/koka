@@ -29,6 +29,25 @@ pub alias c-null<t> = c-pointer<t>
 pub inline extern cnull(): c-null<t>
   c inline "(intptr_t)0"
 
+// A null callback pointer
+pub val null-cb = 0.intptr_t
+
+// Needs to be extern otherwise, the compiler will optimize out the function and not keep the reference alive
+// Ensure that a reference is > 1 until after this point
+pub extern owned/keepalive(^s: owned-c<a>): <> ()
+  ""
+
+// Release a reference (decref an owned reference)
+pub fun owned/release(s: owned-c<a>): <> ()
+  ()
+
+// Retain a reference (incref an owned reference)
+pub extern owned/retain(s: owned-c<a>): <> ()
+  ""
+
+pub inline extern int/ptr<t>(i: intptr_t): c-pointer<t>
+  c inline "(intptr_t)#1"
+
 pub inline extern carray/intptr<t>(c: c-array<t>): intptr_t
   c inline "#1"
 

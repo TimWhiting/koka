@@ -6,19 +6,6 @@ import std/core/cextern
 
 extern import
   c file "inline/utils"
-
-// Needs to be extern otherwise, the compiler will optimize out the function and not keep the reference alive
-// Ensure that a reference is > 1 until after this point
-pub extern owned/keepalive(^s: owned-c<a>): <> ()
-  ""
-
-// Release a reference (decref an owned reference)
-pub fun owned/release(s: owned-c<a>): <> ()
-  ()
-
-// Retain a reference (incref an owned reference)
-pub extern owned/retain(s: owned-c<a>): <> ()
-  ""
   
 pub alias uv-cb2<a,b> = (a, b) -> io-event () 
 pub alias uv-cb1<a> = (a) -> io-event () 
@@ -50,12 +37,6 @@ pub extern unit-cb-addr(): c-pointer<intptr_t>
   c inline "(intptr_t)kk_uv_unit_callback"
   wasm inline "0"
   js inline "0"
-
-pub val null-cb = 0.intptr_t
-
-pub inline extern int/ptr(i: intptr_t): c-pointer<t>
-  c inline "(intptr_t)#1"
-  wasm inline "0"
 
 pub inline extern ptr/uv-loop(): io-event c-pointer<uv-loop-s-c>
   c inline "(intptr_t)uvloop()"
