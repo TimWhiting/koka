@@ -17,7 +17,7 @@ pub import uv/timer
 
 extern import
   c { conan="libuv[>=1.47.0]"; vcpkg="libuv"; library="uv" }
-// TODO: wasm {}
+  wasm {}
 
 extern import
   c file "inline/event-loop"

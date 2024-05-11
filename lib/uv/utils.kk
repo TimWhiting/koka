@@ -32,6 +32,7 @@ pub inline fun uv-handle/unit/set-cb(^s: c-pointer<uv-handle-s-c>, f: uv-unit-cb
 
 inline extern ptr/unit/set-cb(^s: c-pointer<a>, f: uv-unit-cb): <> ()
   c inline "((uv_handle_t*)#1)->data = (void*)kk_function_as_ptr(#2, kk_context())"
+  wasm inline "kk_Unit"
 
 pub fun a/get-cb(a: a, ?uv-handle: (a) -> uv-handle-sp): io-event uv-unit-cb
   a.uv-handle.uv-handle/unit/get-cb()
@@ -41,22 +42,28 @@ pub fun uv-handle/unit/get-cb(^s: c-pointer<uv-handle-s-c>): io-event uv-unit-cb
 
 extern ptr/unit/get-cb(^s: c-pointer<a>): io-event uv-unit-cb
   c inline "kk_function_t fn = kk_function_from_ptr(((uv_handle_t*)#1)->data, kk_context());\n fn"
+  wasm inline "kk_function_t t;\n t"
 
 pub val unit-cb: c-pointer<intptr_t> = unit-cb-addr();
 
 pub extern unit-cb-addr(): c-pointer<intptr_t>
   c inline "(intptr_t)kk_uv_unit_callback"
+  wasm inline "0"
+  js inline "0"
 
 pub val null-cb = 0.intptr_t
 
 pub inline extern int/ptr(i: intptr_t): c-pointer<t>
   c inline "(intptr_t)#1"
+  wasm inline "0"
 
 pub inline extern ptr/uv-loop(): io-event c-pointer<uv-loop-s-c>
   c inline "(intptr_t)uvloop()"
+  wasm inline "0"
 
 pub inline extern fndup(): ()
   c inline "kk_function_dup(_fself, kk_context())"
+  wasm inline ""
 
 // Just the fact that f is an owned parameter will cause a dup
 pub inline extern unit/fndup(f: uv-unit-cb): ()

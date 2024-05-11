@@ -12,10 +12,11 @@ import std/num/int64
 import std/num/float64
 
 extern import
-  c { vcpkg="libuv" }
+  c { vcpkg="libuv"; library="uv" }
+  wasm {}
 
 extern import
-  c header-file "third-party/uv.h"
+  c header-file "inline/uv.h"
 
 pub extern external/uv-version(): int32
   c inline "(unsigned int)uv_version()"
@@ -195,7 +196,7 @@ pub inline fun ffi/uv-handle-size(^type1: uv-handle-type-enum): <exn> int
 
 pub extern external/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): int32
   c inline "(int32_t)uv_handle_get_type((uv_handle_t*)#1)"
-  wasm inline "null"
+  wasm inline "0"
 
 pub inline fun ffi/uv-handle-get-type(^handle1: c-pointer<uv-handle-s-c>): <exn> uv-handle-type-enum
   external/uv-handle-get-type(handle1).int/uv-handle-type-enum
@@ -236,7 +237,7 @@ pub extern external/uv-req-set-data(^req: c-pointer<uv-req-s-c>, ^data: c-pointe
 
 pub extern external/uv-req-get-type(^req: c-pointer<uv-req-s-c>): int32
   c inline "(int32_t)uv_req_get_type((uv_req_t*)#1)"
-  wasm inline "null"
+  wasm inline "0"
 
 pub inline fun ffi/uv-req-get-type(^req: c-pointer<uv-req-s-c>): <exn> uv-req-type-enum
   external/uv-req-get-type(req).int/uv-req-type-enum
@@ -671,7 +672,7 @@ pub inline fun ffi/uv-tty-get-vterm-state(^state: c-pointer<uv-tty-vtermstate-t-
 
 pub extern external/uv-guess-handle(^file: int32): int32
   c inline "(int32_t)uv_guess_handle((uv_file)#1)"
-  wasm inline "null"
+  wasm inline "0"
 
 pub inline fun ffi/uv-guess-handle(^file: int): <exn> uv-handle-type-enum
   external/uv-guess-handle(file.int32).int/uv-handle-type-enum
@@ -745,7 +746,7 @@ pub inline fun ffi/uv-pipe-pending-count(^handle1: c-pointer<uv-pipe-s-c>): <> i
 
 pub extern external/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): int32
   c inline "(int32_t)uv_pipe_pending_type((uv_pipe_t*)#1)"
-  wasm inline "null"
+  wasm inline "0"
 
 pub inline fun ffi/uv-pipe-pending-type(^handle1: c-pointer<uv-pipe-s-c>): <exn> uv-handle-type-enum
   external/uv-pipe-pending-type(handle1).int/uv-handle-type-enum
@@ -1205,7 +1206,7 @@ pub inline fun ffi/uv-metrics-idle-time(^loop: c-pointer<uv-loop-s-c>): <> int
 
 pub extern external/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): int32
   c inline "(int32_t)uv_fs_get_type((uv_fs_t*)#1)"
-  wasm inline "null"
+  wasm inline "0"
 
 pub inline fun ffi/uv-fs-get-type(^arg0: c-pointer<uv-fs-s-c>): <exn> uv-fs-type-enum
   external/uv-fs-get-type(arg0).int/uv-fs-type-enum
@@ -1988,403 +1989,20 @@ pub extern external/uv-loop-set-data(^arg0: c-pointer<uv-loop-s-c>, ^data: c-poi
   c inline "(void)uv_loop_set_data((uv_loop_t*)#1, (void*)#2)"
   wasm inline "kk_Unit"
 
-pub value struct uv-queue
-  next: uv-queue-c
-  prev: uv-queue-c
-
+pub struct uv-queue
 pub type uv-queue-c
 pub alias uv-queuep = c-pointer<uv-queue-c>
 pub alias uv-queuec = owned-c<uv-queue-c>
 pub alias uv-queuecb<s::S> = borrowed-c<s,uv-queue-c>
 pub alias uv-queueca = owned-c<c-array<uv-queue-c>>
 
-pub extern uv-queue/size-of(c: c-null<uv-queue-c>): int32
-  c inline "sizeof(struct uv__queue)"
-  wasm inline "0"
-
-pub fun uv-queuec(): uv-queuec
-  malloc(?size-of=uv-queue/size-of)
-
-pub fun uv-queuec-calloc(): uv-queuec
-  malloc-c(?size-of=uv-queue/size-of)
-
-pub fun uv-queuec-array(n: int): uv-queueca
-  malloc(n.int32, ?size-of=uv-queue/size-of)
-
-pub fun uv-queuec-array-calloc(n: int): uv-queueca
-  malloc-c(n.int32, ?size-of=uv-queue/size-of)
-
 pub struct uv-work
-  work: c-pointer<intptr_t>
-  done: c-pointer<intptr_t>
-  loop: uv-loop-s-c
-  wq: uv-queue-c
-
 pub type uv-work-c
 pub alias uv-workp = c-pointer<uv-work-c>
 pub alias uv-workc = owned-c<uv-work-c>
 pub alias uv-workcb<s::S> = borrowed-c<s,uv-work-c>
 pub alias uv-workca = owned-c<c-array<uv-work-c>>
 
-pub extern uv-work/size-of(c: c-null<uv-work-c>): int32
-  c inline "sizeof(struct uv__work)"
-  wasm inline "0"
-
-pub fun uv-workc(): uv-workc
-  malloc(?size-of=uv-work/size-of)
-
-pub fun uv-workc-calloc(): uv-workc
-  malloc-c(?size-of=uv-work/size-of)
-
-pub fun uv-workc-array(n: int): uv-workca
-  malloc(n.int32, ?size-of=uv-work/size-of)
-
-pub fun uv-workc-array-calloc(n: int): uv-workca
-  malloc-c(n.int32, ?size-of=uv-work/size-of)
-
-pub struct uv-loop-s
-pub type uv-loop-s-c
-pub alias uv-loop-sp = c-pointer<uv-loop-s-c>
-pub alias uv-loop-sc<s::S> = owned-c<uv-loop-s-c>
-pub alias uv-loop-scb<s::S> = borrowed-c<s,uv-loop-s-c>
-pub alias uv-loop-sca<s::S> = owned-c<c-array<uv-loop-s-c>>
-
-pub extern uv-loop-s/size-of(c: c-null<uv-loop-s-c>): int32
-  c inline "sizeof(struct uv_loop_s)"
-  wasm inline "0"
-
-pub fun uv-loop-sc(): uv-loop-sc<s::S>
-  malloc(?size-of=uv-loop-s/size-of)
-
-pub fun uv-loop-sc-calloc(): uv-loop-sc<s::S>
-  malloc-c(?size-of=uv-loop-s/size-of)
-
-pub fun uv-loop-sc-array(n: int): uv-loop-sca<s::S>
-  malloc(n.int32, ?size-of=uv-loop-s/size-of)
-
-pub fun uv-loop-sc-array-calloc(n: int): uv-loop-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-loop-s/size-of)
-
-pub struct unnamed-union22
-pub type unnamed-union22-c
-pub alias unnamed-union22p = c-pointer<unnamed-union22-c>
-pub alias unnamed-union22c = owned-c<unnamed-union22-c>
-pub alias unnamed-union22cb<s::S> = borrowed-c<s,unnamed-union22-c>
-pub alias unnamed-union22ca = owned-c<c-array<unnamed-union22-c>>
-
-alias uv-io-t = uv-io-s-c
-alias koka-uv-io-t = uv-io-s
-pub struct uv-io-s
-  cb: uv-io-cb
-  pending-queue: uv-queue-c
-  watcher-queue: uv-queue-c
-  pevents: int
-  events: int
-  fd: int
-  rcount: int
-  wcount: int
-
-pub type uv-io-s-c
-pub alias uv-io-sp = c-pointer<uv-io-s-c>
-pub alias uv-io-sc = owned-c<uv-io-s-c>
-pub alias uv-io-scb<s::S> = borrowed-c<s,uv-io-s-c>
-pub alias uv-io-sca = owned-c<c-array<uv-io-s-c>>
-
-pub extern uv-io-s/size-of(c: c-null<uv-io-s-c>): int32
-  c inline "sizeof(struct uv__io_s)"
-  wasm inline "0"
-
-pub fun uv-io-sc(): uv-io-sc
-  malloc(?size-of=uv-io-s/size-of)
-
-pub fun uv-io-sc-calloc(): uv-io-sc
-  malloc-c(?size-of=uv-io-s/size-of)
-
-pub fun uv-io-sc-array(n: int): uv-io-sca
-  malloc(n.int32, ?size-of=uv-io-s/size-of)
-
-pub fun uv-io-sc-array-calloc(n: int): uv-io-sca
-  malloc-c(n.int32, ?size-of=uv-io-s/size-of)
-
-alias uv-io-cb = c-pointer<intptr_t>
-alias uv-io-cbfn = ((loop : c-pointer<uv-loop-s-c>, w : c-pointer<uv-io-s-c>, events : int) -> ())
-alias uv-mutex-t = opaque-pthread-mutex-t-c
-alias pthread-mutex-t = opaque-pthread-mutex-t-c
-alias darwin-pthread-mutex-t = opaque-pthread-mutex-t-c
-pub struct opaque-pthread-mutex-t
-pub type opaque-pthread-mutex-t-c
-pub alias opaque-pthread-mutex-tp = c-pointer<opaque-pthread-mutex-t-c>
-pub alias opaque-pthread-mutex-tc<s::S> = owned-c<opaque-pthread-mutex-t-c>
-pub alias opaque-pthread-mutex-tcb<s::S> = borrowed-c<s,opaque-pthread-mutex-t-c>
-pub alias opaque-pthread-mutex-tca<s::S> = owned-c<c-array<opaque-pthread-mutex-t-c>>
-
-pub extern opaque-pthread-mutex-t/size-of(c: c-null<opaque-pthread-mutex-t-c>): int32
-  c inline "sizeof(struct _opaque_pthread_mutex_t)"
-  wasm inline "0"
-
-pub fun opaque-pthread-mutex-tc(): opaque-pthread-mutex-tc<s::S>
-  malloc(?size-of=opaque-pthread-mutex-t/size-of)
-
-pub fun opaque-pthread-mutex-tc-calloc(): opaque-pthread-mutex-tc<s::S>
-  malloc-c(?size-of=opaque-pthread-mutex-t/size-of)
-
-pub fun opaque-pthread-mutex-tc-array(n: int): opaque-pthread-mutex-tca<s::S>
-  malloc(n.int32, ?size-of=opaque-pthread-mutex-t/size-of)
-
-pub fun opaque-pthread-mutex-tc-array-calloc(n: int): opaque-pthread-mutex-tca<s::S>
-  malloc-c(n.int32, ?size-of=opaque-pthread-mutex-t/size-of)
-
-alias uv-async-t = uv-async-s-c
-alias koka-uv-async-t = uv-async-s
-pub struct uv-async-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union13-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  async-cb: uv-async-cb
-  queue: uv-queue-c
-  pending: int
-
-pub type uv-async-s-c
-pub alias uv-async-sp = c-pointer<uv-async-s-c>
-pub alias uv-async-sc = owned-c<uv-async-s-c>
-pub alias uv-async-scb<s::S> = borrowed-c<s,uv-async-s-c>
-pub alias uv-async-sca = owned-c<c-array<uv-async-s-c>>
-
-pub extern uv-async-s/size-of(c: c-null<uv-async-s-c>): int32
-  c inline "sizeof(struct uv_async_s)"
-  wasm inline "0"
-
-pub fun uv-async-sc(): uv-async-sc
-  malloc(?size-of=uv-async-s/size-of)
-
-pub fun uv-async-sc-calloc(): uv-async-sc
-  malloc-c(?size-of=uv-async-s/size-of)
-
-pub fun uv-async-sc-array(n: int): uv-async-sca
-  malloc(n.int32, ?size-of=uv-async-s/size-of)
-
-pub fun uv-async-sc-array-calloc(n: int): uv-async-sca
-  malloc-c(n.int32, ?size-of=uv-async-s/size-of)
-
-alias uv-loop-t = uv-loop-s-c
-pub type uv-handle-type-enum
-  UV_UNKNOWN_HANDLE
-  UV_ASYNC
-  UV_CHECK
-  UV_FS_EVENT
-  UV_FS_POLL
-  UV_HANDLE
-  UV_IDLE
-  UV_NAMED_PIPE
-  UV_POLL
-  UV_PREPARE
-  UV_PROCESS
-  UV_STREAM
-  UV_TCP
-  UV_TIMER
-  UV_TTY
-  UV_UDP
-  UV_SIGNAL
-  UV_FILE
-  UV_HANDLE_TYPE_MAX
-
-pub fun uv-handle-type-enum/int(i: uv-handle-type-enum): int32
-  match i
-    UV_UNKNOWN_HANDLE -> 0.int32
-    UV_ASYNC -> 1.int32
-    UV_CHECK -> 2.int32
-    UV_FS_EVENT -> 3.int32
-    UV_FS_POLL -> 4.int32
-    UV_HANDLE -> 5.int32
-    UV_IDLE -> 6.int32
-    UV_NAMED_PIPE -> 7.int32
-    UV_POLL -> 8.int32
-    UV_PREPARE -> 9.int32
-    UV_PROCESS -> 10.int32
-    UV_STREAM -> 11.int32
-    UV_TCP -> 12.int32
-    UV_TIMER -> 13.int32
-    UV_TTY -> 14.int32
-    UV_UDP -> 15.int32
-    UV_SIGNAL -> 16.int32
-    UV_FILE -> 17.int32
-    UV_HANDLE_TYPE_MAX -> 18.int32
-
-pub fun int/uv-handle-type-enum(i: int32): exn uv-handle-type-enum
-  match i.int
-    0 -> UV_UNKNOWN_HANDLE
-    1 -> UV_ASYNC
-    2 -> UV_CHECK
-    3 -> UV_FS_EVENT
-    4 -> UV_FS_POLL
-    5 -> UV_HANDLE
-    6 -> UV_IDLE
-    7 -> UV_NAMED_PIPE
-    8 -> UV_POLL
-    9 -> UV_PREPARE
-    10 -> UV_PROCESS
-    11 -> UV_STREAM
-    12 -> UV_TCP
-    13 -> UV_TIMER
-    14 -> UV_TTY
-    15 -> UV_UDP
-    16 -> UV_SIGNAL
-    17 -> UV_FILE
-    18 -> UV_HANDLE_TYPE_MAX
-
-alias uv-close-cb = c-pointer<intptr_t>
-alias uv-close-cbfn = ((handle1 : c-pointer<uv-handle-s-c>) -> ())
-alias uv-handle-t = uv-handle-s-c
-alias koka-uv-handle-t = uv-handle-s
-pub struct uv-handle-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union1-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-
-pub type uv-handle-s-c
-pub alias uv-handle-sp = c-pointer<uv-handle-s-c>
-pub alias uv-handle-sc = owned-c<uv-handle-s-c>
-pub alias uv-handle-scb<s::S> = borrowed-c<s,uv-handle-s-c>
-pub alias uv-handle-sca = owned-c<c-array<uv-handle-s-c>>
-
-pub extern uv-handle-s/size-of(c: c-null<uv-handle-s-c>): int32
-  c inline "sizeof(struct uv_handle_s)"
-  wasm inline "0"
-
-pub fun uv-handle-sc(): uv-handle-sc
-  malloc(?size-of=uv-handle-s/size-of)
-
-pub fun uv-handle-sc-calloc(): uv-handle-sc
-  malloc-c(?size-of=uv-handle-s/size-of)
-
-pub fun uv-handle-sc-array(n: int): uv-handle-sca
-  malloc(n.int32, ?size-of=uv-handle-s/size-of)
-
-pub fun uv-handle-sc-array-calloc(n: int): uv-handle-sca
-  malloc-c(n.int32, ?size-of=uv-handle-s/size-of)
-
-pub struct unnamed-union1
-pub type unnamed-union1-c
-pub alias unnamed-union1p = c-pointer<unnamed-union1-c>
-pub alias unnamed-union1c<s::S> = owned-c<unnamed-union1-c>
-pub alias unnamed-union1cb<s::S> = borrowed-c<s,unnamed-union1-c>
-pub alias unnamed-union1ca<s::S> = owned-c<c-array<unnamed-union1-c>>
-
-pub struct unnamed-union13
-pub type unnamed-union13-c
-pub alias unnamed-union13p = c-pointer<unnamed-union13-c>
-pub alias unnamed-union13c<s::S> = owned-c<unnamed-union13-c>
-pub alias unnamed-union13cb<s::S> = borrowed-c<s,unnamed-union13-c>
-pub alias unnamed-union13ca<s::S> = owned-c<c-array<unnamed-union13-c>>
-
-alias uv-async-cb = c-pointer<intptr_t>
-alias uv-async-cbfn = ((handle1 : c-pointer<uv-async-s-c>) -> ())
-alias uv-rwlock-t = opaque-pthread-rwlock-t-c
-alias pthread-rwlock-t = opaque-pthread-rwlock-t-c
-alias darwin-pthread-rwlock-t = opaque-pthread-rwlock-t-c
-pub struct opaque-pthread-rwlock-t
-pub type opaque-pthread-rwlock-t-c
-pub alias opaque-pthread-rwlock-tp = c-pointer<opaque-pthread-rwlock-t-c>
-pub alias opaque-pthread-rwlock-tc = owned-c<opaque-pthread-rwlock-t-c>
-pub alias opaque-pthread-rwlock-tcb<s::S> = borrowed-c<s,opaque-pthread-rwlock-t-c>
-pub alias opaque-pthread-rwlock-tca = owned-c<c-array<opaque-pthread-rwlock-t-c>>
-
-pub value struct unnamed-struct2
-  min: c-pointer<()>
-  nelts: int
-
-pub type unnamed-struct2-c
-pub alias unnamed-struct2p = c-pointer<unnamed-struct2-c>
-pub alias unnamed-struct2c = owned-c<unnamed-struct2-c>
-pub alias unnamed-struct2cb<s::S> = borrowed-c<s,unnamed-struct2-c>
-pub alias unnamed-struct2ca = owned-c<c-array<unnamed-struct2-c>>
-
-alias uv-signal-t = uv-signal-s-c
-alias koka-uv-signal-t = uv-signal-s
-pub struct uv-signal-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union17-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  signal-cb: uv-signal-cb
-  signum: int
-  tree-entry: unnamed-struct1-c
-  caught-signals: int
-  dispatched-signals: int
-
-pub type uv-signal-s-c
-pub alias uv-signal-sp = c-pointer<uv-signal-s-c>
-pub alias uv-signal-sc = owned-c<uv-signal-s-c>
-pub alias uv-signal-scb<s::S> = borrowed-c<s,uv-signal-s-c>
-pub alias uv-signal-sca = owned-c<c-array<uv-signal-s-c>>
-
-pub extern uv-signal-s/size-of(c: c-null<uv-signal-s-c>): int32
-  c inline "sizeof(struct uv_signal_s)"
-  wasm inline "0"
-
-pub fun uv-signal-sc(): uv-signal-sc
-  malloc(?size-of=uv-signal-s/size-of)
-
-pub fun uv-signal-sc-calloc(): uv-signal-sc
-  malloc-c(?size-of=uv-signal-s/size-of)
-
-pub fun uv-signal-sc-array(n: int): uv-signal-sca
-  malloc(n.int32, ?size-of=uv-signal-s/size-of)
-
-pub fun uv-signal-sc-array-calloc(n: int): uv-signal-sca
-  malloc-c(n.int32, ?size-of=uv-signal-s/size-of)
-
-pub struct unnamed-union17
-pub type unnamed-union17-c
-pub alias unnamed-union17p = c-pointer<unnamed-union17-c>
-pub alias unnamed-union17c<s::S> = owned-c<unnamed-union17-c>
-pub alias unnamed-union17cb<s::S> = borrowed-c<s,unnamed-union17-c>
-pub alias unnamed-union17ca<s::S> = owned-c<c-array<unnamed-union17-c>>
-
-alias uv-signal-cb = c-pointer<intptr_t>
-alias uv-signal-cbfn = ((handle1 : c-pointer<uv-signal-s-c>, signum : int) -> ())
-pub struct unnamed-struct1
-  rbe-left: uv-signal-s-c
-  rbe-right: uv-signal-s-c
-  rbe-parent: uv-signal-s-c
-  rbe-color: int
-
-pub type unnamed-struct1-c
-pub alias unnamed-struct1p = c-pointer<unnamed-struct1-c>
-pub alias unnamed-struct1c = owned-c<unnamed-struct1-c>
-pub alias unnamed-struct1cb<s::S> = borrowed-c<s,unnamed-struct1-c>
-pub alias unnamed-struct1ca = owned-c<c-array<unnamed-struct1-c>>
-
-alias uv-thread-t = pthread-t
-alias pthread-t = darwin-pthread-t
-alias darwin-pthread-t = c-pointer<opaque-pthread-t-c>
-pub struct opaque-pthread-t
-pub type opaque-pthread-t-c
-pub alias opaque-pthread-tp = c-pointer<opaque-pthread-t-c>
-pub alias opaque-pthread-tc = owned-c<opaque-pthread-t-c>
-pub alias opaque-pthread-tcb<s::S> = borrowed-c<s,opaque-pthread-t-c>
-pub alias opaque-pthread-tca = owned-c<c-array<opaque-pthread-t-c>>
-
-alias uv-sem-t = int
-alias semaphore-t = int
-alias mach-port-t = int
-alias darwin-mach-port-t = int
-alias darwin-mach-port-name-t = int
-alias darwin-natural-t = int
 pub type uv-errno-t-enum
   UV_E2BIG
   UV_EACCES
@@ -2648,6 +2266,71 @@ pub fun int/uv-errno-t-enum(i: int32): exn uv-errno-t-enum
     -4023 -> UV_EUNATCH
     -4096 -> UV_ERRNO_MAX
 
+pub type uv-handle-type-enum
+  UV_UNKNOWN_HANDLE
+  UV_ASYNC
+  UV_CHECK
+  UV_FS_EVENT
+  UV_FS_POLL
+  UV_HANDLE
+  UV_IDLE
+  UV_NAMED_PIPE
+  UV_POLL
+  UV_PREPARE
+  UV_PROCESS
+  UV_STREAM
+  UV_TCP
+  UV_TIMER
+  UV_TTY
+  UV_UDP
+  UV_SIGNAL
+  UV_FILE
+  UV_HANDLE_TYPE_MAX
+
+pub fun uv-handle-type-enum/int(i: uv-handle-type-enum): int32
+  match i
+    UV_UNKNOWN_HANDLE -> 0.int32
+    UV_ASYNC -> 1.int32
+    UV_CHECK -> 2.int32
+    UV_FS_EVENT -> 3.int32
+    UV_FS_POLL -> 4.int32
+    UV_HANDLE -> 5.int32
+    UV_IDLE -> 6.int32
+    UV_NAMED_PIPE -> 7.int32
+    UV_POLL -> 8.int32
+    UV_PREPARE -> 9.int32
+    UV_PROCESS -> 10.int32
+    UV_STREAM -> 11.int32
+    UV_TCP -> 12.int32
+    UV_TIMER -> 13.int32
+    UV_TTY -> 14.int32
+    UV_UDP -> 15.int32
+    UV_SIGNAL -> 16.int32
+    UV_FILE -> 17.int32
+    UV_HANDLE_TYPE_MAX -> 18.int32
+
+pub fun int/uv-handle-type-enum(i: int32): exn uv-handle-type-enum
+  match i.int
+    0 -> UV_UNKNOWN_HANDLE
+    1 -> UV_ASYNC
+    2 -> UV_CHECK
+    3 -> UV_FS_EVENT
+    4 -> UV_FS_POLL
+    5 -> UV_HANDLE
+    6 -> UV_IDLE
+    7 -> UV_NAMED_PIPE
+    8 -> UV_POLL
+    9 -> UV_PREPARE
+    10 -> UV_PROCESS
+    11 -> UV_STREAM
+    12 -> UV_TCP
+    13 -> UV_TIMER
+    14 -> UV_TTY
+    15 -> UV_UDP
+    16 -> UV_SIGNAL
+    17 -> UV_FILE
+    18 -> UV_HANDLE_TYPE_MAX
+
 pub type uv-req-type-enum
   UV_UNKNOWN_REQ
   UV_REQ
@@ -2692,55 +2375,641 @@ pub fun int/uv-req-type-enum(i: int32): exn uv-req-type-enum
     10 -> UV_RANDOM
     11 -> UV_REQ_TYPE_MAX
 
+pub struct uv-handle-s
+pub type uv-handle-s-c
+pub alias uv-handle-sp = c-pointer<uv-handle-s-c>
+pub alias uv-handle-sc = owned-c<uv-handle-s-c>
+pub alias uv-handle-scb<s::S> = borrowed-c<s,uv-handle-s-c>
+pub alias uv-handle-sca = owned-c<c-array<uv-handle-s-c>>
+
 pub struct uv-dir-s
 pub type uv-dir-s-c
 pub alias uv-dir-sp = c-pointer<uv-dir-s-c>
-pub alias uv-dir-sc<s::S> = owned-c<uv-dir-s-c>
+pub alias uv-dir-sc = owned-c<uv-dir-s-c>
 pub alias uv-dir-scb<s::S> = borrowed-c<s,uv-dir-s-c>
-pub alias uv-dir-sca<s::S> = owned-c<c-array<uv-dir-s-c>>
+pub alias uv-dir-sca = owned-c<c-array<uv-dir-s-c>>
 
-pub extern uv-dir-s/size-of(c: c-null<uv-dir-s-c>): int32
-  c inline "sizeof(struct uv_dir_s)"
-  wasm inline "0"
+pub struct uv-stream-s
+pub type uv-stream-s-c
+pub alias uv-stream-sp = c-pointer<uv-stream-s-c>
+pub alias uv-stream-sc = owned-c<uv-stream-s-c>
+pub alias uv-stream-scb<s::S> = borrowed-c<s,uv-stream-s-c>
+pub alias uv-stream-sca = owned-c<c-array<uv-stream-s-c>>
 
-pub fun uv-dir-sc(): uv-dir-sc<s::S>
-  malloc(?size-of=uv-dir-s/size-of)
+pub struct uv-tcp-s
+pub type uv-tcp-s-c
+pub alias uv-tcp-sp = c-pointer<uv-tcp-s-c>
+pub alias uv-tcp-sc = owned-c<uv-tcp-s-c>
+pub alias uv-tcp-scb<s::S> = borrowed-c<s,uv-tcp-s-c>
+pub alias uv-tcp-sca = owned-c<c-array<uv-tcp-s-c>>
 
-pub fun uv-dir-sc-calloc(): uv-dir-sc<s::S>
-  malloc-c(?size-of=uv-dir-s/size-of)
+pub struct uv-udp-s
+pub type uv-udp-s-c
+pub alias uv-udp-sp = c-pointer<uv-udp-s-c>
+pub alias uv-udp-sc = owned-c<uv-udp-s-c>
+pub alias uv-udp-scb<s::S> = borrowed-c<s,uv-udp-s-c>
+pub alias uv-udp-sca = owned-c<c-array<uv-udp-s-c>>
 
-pub fun uv-dir-sc-array(n: int): uv-dir-sca<s::S>
-  malloc(n.int32, ?size-of=uv-dir-s/size-of)
+pub struct uv-pipe-s
+pub type uv-pipe-s-c
+pub alias uv-pipe-sp = c-pointer<uv-pipe-s-c>
+pub alias uv-pipe-sc = owned-c<uv-pipe-s-c>
+pub alias uv-pipe-scb<s::S> = borrowed-c<s,uv-pipe-s-c>
+pub alias uv-pipe-sca = owned-c<c-array<uv-pipe-s-c>>
 
-pub fun uv-dir-sc-array-calloc(n: int): uv-dir-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-dir-s/size-of)
+pub struct uv-tty-s
+pub type uv-tty-s-c
+pub alias uv-tty-sp = c-pointer<uv-tty-s-c>
+pub alias uv-tty-sc = owned-c<uv-tty-s-c>
+pub alias uv-tty-scb<s::S> = borrowed-c<s,uv-tty-s-c>
+pub alias uv-tty-sca = owned-c<c-array<uv-tty-s-c>>
 
-alias uv-dirent-t = uv-dirent-s-c
-pub value struct uv-dirent-s
-  name: c-pointer<int>
-  type1: int
+pub struct uv-poll-s
+pub type uv-poll-s-c
+pub alias uv-poll-sp = c-pointer<uv-poll-s-c>
+pub alias uv-poll-sc = owned-c<uv-poll-s-c>
+pub alias uv-poll-scb<s::S> = borrowed-c<s,uv-poll-s-c>
+pub alias uv-poll-sca = owned-c<c-array<uv-poll-s-c>>
 
+pub struct uv-timer-s
+pub type uv-timer-s-c
+pub alias uv-timer-sp = c-pointer<uv-timer-s-c>
+pub alias uv-timer-sc = owned-c<uv-timer-s-c>
+pub alias uv-timer-scb<s::S> = borrowed-c<s,uv-timer-s-c>
+pub alias uv-timer-sca = owned-c<c-array<uv-timer-s-c>>
+
+pub struct uv-prepare-s
+pub type uv-prepare-s-c
+pub alias uv-prepare-sp = c-pointer<uv-prepare-s-c>
+pub alias uv-prepare-sc = owned-c<uv-prepare-s-c>
+pub alias uv-prepare-scb<s::S> = borrowed-c<s,uv-prepare-s-c>
+pub alias uv-prepare-sca = owned-c<c-array<uv-prepare-s-c>>
+
+pub struct uv-check-s
+pub type uv-check-s-c
+pub alias uv-check-sp = c-pointer<uv-check-s-c>
+pub alias uv-check-sc = owned-c<uv-check-s-c>
+pub alias uv-check-scb<s::S> = borrowed-c<s,uv-check-s-c>
+pub alias uv-check-sca = owned-c<c-array<uv-check-s-c>>
+
+pub struct uv-idle-s
+pub type uv-idle-s-c
+pub alias uv-idle-sp = c-pointer<uv-idle-s-c>
+pub alias uv-idle-sc = owned-c<uv-idle-s-c>
+pub alias uv-idle-scb<s::S> = borrowed-c<s,uv-idle-s-c>
+pub alias uv-idle-sca = owned-c<c-array<uv-idle-s-c>>
+
+pub struct uv-async-s
+pub type uv-async-s-c
+pub alias uv-async-sp = c-pointer<uv-async-s-c>
+pub alias uv-async-sc = owned-c<uv-async-s-c>
+pub alias uv-async-scb<s::S> = borrowed-c<s,uv-async-s-c>
+pub alias uv-async-sca = owned-c<c-array<uv-async-s-c>>
+
+pub struct uv-process-s
+pub type uv-process-s-c
+pub alias uv-process-sp = c-pointer<uv-process-s-c>
+pub alias uv-process-sc = owned-c<uv-process-s-c>
+pub alias uv-process-scb<s::S> = borrowed-c<s,uv-process-s-c>
+pub alias uv-process-sca = owned-c<c-array<uv-process-s-c>>
+
+pub struct uv-fs-event-s
+pub type uv-fs-event-s-c
+pub alias uv-fs-event-sp = c-pointer<uv-fs-event-s-c>
+pub alias uv-fs-event-sc = owned-c<uv-fs-event-s-c>
+pub alias uv-fs-event-scb<s::S> = borrowed-c<s,uv-fs-event-s-c>
+pub alias uv-fs-event-sca = owned-c<c-array<uv-fs-event-s-c>>
+
+pub struct uv-fs-poll-s
+pub type uv-fs-poll-s-c
+pub alias uv-fs-poll-sp = c-pointer<uv-fs-poll-s-c>
+pub alias uv-fs-poll-sc = owned-c<uv-fs-poll-s-c>
+pub alias uv-fs-poll-scb<s::S> = borrowed-c<s,uv-fs-poll-s-c>
+pub alias uv-fs-poll-sca = owned-c<c-array<uv-fs-poll-s-c>>
+
+pub struct uv-signal-s
+pub type uv-signal-s-c
+pub alias uv-signal-sp = c-pointer<uv-signal-s-c>
+pub alias uv-signal-sc = owned-c<uv-signal-s-c>
+pub alias uv-signal-scb<s::S> = borrowed-c<s,uv-signal-s-c>
+pub alias uv-signal-sca = owned-c<c-array<uv-signal-s-c>>
+
+pub struct uv-req-s
+pub type uv-req-s-c
+pub alias uv-req-sp = c-pointer<uv-req-s-c>
+pub alias uv-req-sc = owned-c<uv-req-s-c>
+pub alias uv-req-scb<s::S> = borrowed-c<s,uv-req-s-c>
+pub alias uv-req-sca = owned-c<c-array<uv-req-s-c>>
+
+pub struct uv-getaddrinfo-s
+pub type uv-getaddrinfo-s-c
+pub alias uv-getaddrinfo-sp = c-pointer<uv-getaddrinfo-s-c>
+pub alias uv-getaddrinfo-sc = owned-c<uv-getaddrinfo-s-c>
+pub alias uv-getaddrinfo-scb<s::S> = borrowed-c<s,uv-getaddrinfo-s-c>
+pub alias uv-getaddrinfo-sca = owned-c<c-array<uv-getaddrinfo-s-c>>
+
+pub struct uv-getnameinfo-s
+pub type uv-getnameinfo-s-c
+pub alias uv-getnameinfo-sp = c-pointer<uv-getnameinfo-s-c>
+pub alias uv-getnameinfo-sc = owned-c<uv-getnameinfo-s-c>
+pub alias uv-getnameinfo-scb<s::S> = borrowed-c<s,uv-getnameinfo-s-c>
+pub alias uv-getnameinfo-sca = owned-c<c-array<uv-getnameinfo-s-c>>
+
+pub struct uv-shutdown-s
+pub type uv-shutdown-s-c
+pub alias uv-shutdown-sp = c-pointer<uv-shutdown-s-c>
+pub alias uv-shutdown-sc = owned-c<uv-shutdown-s-c>
+pub alias uv-shutdown-scb<s::S> = borrowed-c<s,uv-shutdown-s-c>
+pub alias uv-shutdown-sca = owned-c<c-array<uv-shutdown-s-c>>
+
+pub struct uv-write-s
+pub type uv-write-s-c
+pub alias uv-write-sp = c-pointer<uv-write-s-c>
+pub alias uv-write-sc = owned-c<uv-write-s-c>
+pub alias uv-write-scb<s::S> = borrowed-c<s,uv-write-s-c>
+pub alias uv-write-sca = owned-c<c-array<uv-write-s-c>>
+
+pub struct uv-connect-s
+pub type uv-connect-s-c
+pub alias uv-connect-sp = c-pointer<uv-connect-s-c>
+pub alias uv-connect-sc = owned-c<uv-connect-s-c>
+pub alias uv-connect-scb<s::S> = borrowed-c<s,uv-connect-s-c>
+pub alias uv-connect-sca = owned-c<c-array<uv-connect-s-c>>
+
+pub struct uv-udp-send-s
+pub type uv-udp-send-s-c
+pub alias uv-udp-send-sp = c-pointer<uv-udp-send-s-c>
+pub alias uv-udp-send-sc = owned-c<uv-udp-send-s-c>
+pub alias uv-udp-send-scb<s::S> = borrowed-c<s,uv-udp-send-s-c>
+pub alias uv-udp-send-sca = owned-c<c-array<uv-udp-send-s-c>>
+
+pub struct uv-fs-s
+pub type uv-fs-s-c
+pub alias uv-fs-sp = c-pointer<uv-fs-s-c>
+pub alias uv-fs-sc = owned-c<uv-fs-s-c>
+pub alias uv-fs-scb<s::S> = borrowed-c<s,uv-fs-s-c>
+pub alias uv-fs-sca = owned-c<c-array<uv-fs-s-c>>
+
+pub struct uv-work-s
+pub type uv-work-s-c
+pub alias uv-work-sp = c-pointer<uv-work-s-c>
+pub alias uv-work-sc = owned-c<uv-work-s-c>
+pub alias uv-work-scb<s::S> = borrowed-c<s,uv-work-s-c>
+pub alias uv-work-sca = owned-c<c-array<uv-work-s-c>>
+
+pub struct uv-random-s
+pub type uv-random-s-c
+pub alias uv-random-sp = c-pointer<uv-random-s-c>
+pub alias uv-random-sc = owned-c<uv-random-s-c>
+pub alias uv-random-scb<s::S> = borrowed-c<s,uv-random-s-c>
+pub alias uv-random-sca = owned-c<c-array<uv-random-s-c>>
+
+pub struct uv-env-item-s
+pub type uv-env-item-s-c
+pub alias uv-env-item-sp = c-pointer<uv-env-item-s-c>
+pub alias uv-env-item-sc = owned-c<uv-env-item-s-c>
+pub alias uv-env-item-scb<s::S> = borrowed-c<s,uv-env-item-s-c>
+pub alias uv-env-item-sca = owned-c<c-array<uv-env-item-s-c>>
+
+pub struct uv-cpu-info-s
+pub type uv-cpu-info-s-c
+pub alias uv-cpu-info-sp = c-pointer<uv-cpu-info-s-c>
+pub alias uv-cpu-info-sc = owned-c<uv-cpu-info-s-c>
+pub alias uv-cpu-info-scb<s::S> = borrowed-c<s,uv-cpu-info-s-c>
+pub alias uv-cpu-info-sca = owned-c<c-array<uv-cpu-info-s-c>>
+
+pub struct uv-interface-address-s
+pub type uv-interface-address-s-c
+pub alias uv-interface-address-sp = c-pointer<uv-interface-address-s-c>
+pub alias uv-interface-address-sc = owned-c<uv-interface-address-s-c>
+pub alias uv-interface-address-scb<s::S> = borrowed-c<s,uv-interface-address-s-c>
+pub alias uv-interface-address-sca = owned-c<c-array<uv-interface-address-s-c>>
+
+pub struct uv-dirent-s
 pub type uv-dirent-s-c
 pub alias uv-dirent-sp = c-pointer<uv-dirent-s-c>
 pub alias uv-dirent-sc = owned-c<uv-dirent-s-c>
 pub alias uv-dirent-scb<s::S> = borrowed-c<s,uv-dirent-s-c>
 pub alias uv-dirent-sca = owned-c<c-array<uv-dirent-s-c>>
 
-pub extern uv-dirent-s/size-of(c: c-null<uv-dirent-s-c>): int32
-  c inline "sizeof(struct uv_dirent_s)"
-  wasm inline "0"
+pub struct uv-passwd-s
+pub type uv-passwd-s-c
+pub alias uv-passwd-sp = c-pointer<uv-passwd-s-c>
+pub alias uv-passwd-sc = owned-c<uv-passwd-s-c>
+pub alias uv-passwd-scb<s::S> = borrowed-c<s,uv-passwd-s-c>
+pub alias uv-passwd-sca = owned-c<c-array<uv-passwd-s-c>>
 
-pub fun uv-dirent-sc(): uv-dirent-sc
-  malloc(?size-of=uv-dirent-s/size-of)
+pub struct uv-group-s
+pub type uv-group-s-c
+pub alias uv-group-sp = c-pointer<uv-group-s-c>
+pub alias uv-group-sc = owned-c<uv-group-s-c>
+pub alias uv-group-scb<s::S> = borrowed-c<s,uv-group-s-c>
+pub alias uv-group-sca = owned-c<c-array<uv-group-s-c>>
 
-pub fun uv-dirent-sc-calloc(): uv-dirent-sc
-  malloc-c(?size-of=uv-dirent-s/size-of)
+pub struct uv-utsname-s
+pub type uv-utsname-s-c
+pub alias uv-utsname-sp = c-pointer<uv-utsname-s-c>
+pub alias uv-utsname-sc = owned-c<uv-utsname-s-c>
+pub alias uv-utsname-scb<s::S> = borrowed-c<s,uv-utsname-s-c>
+pub alias uv-utsname-sca = owned-c<c-array<uv-utsname-s-c>>
 
-pub fun uv-dirent-sc-array(n: int): uv-dirent-sca
-  malloc(n.int32, ?size-of=uv-dirent-s/size-of)
+pub struct uv-statfs-s
+pub type uv-statfs-s-c
+pub alias uv-statfs-sp = c-pointer<uv-statfs-s-c>
+pub alias uv-statfs-sc = owned-c<uv-statfs-s-c>
+pub alias uv-statfs-scb<s::S> = borrowed-c<s,uv-statfs-s-c>
+pub alias uv-statfs-sca = owned-c<c-array<uv-statfs-s-c>>
 
-pub fun uv-dirent-sc-array-calloc(n: int): uv-dirent-sca
-  malloc-c(n.int32, ?size-of=uv-dirent-s/size-of)
+pub struct uv-metrics-s
+pub type uv-metrics-s-c
+pub alias uv-metrics-sp = c-pointer<uv-metrics-s-c>
+pub alias uv-metrics-sc = owned-c<uv-metrics-s-c>
+pub alias uv-metrics-scb<s::S> = borrowed-c<s,uv-metrics-s-c>
+pub alias uv-metrics-sca = owned-c<c-array<uv-metrics-s-c>>
+
+pub type uv-loop-option-enum
+  UV_LOOP_BLOCK_SIGNAL
+  UV_METRICS_IDLE_TIME
+
+pub fun uv-loop-option-enum/int(i: uv-loop-option-enum): int32
+  match i
+    UV_LOOP_BLOCK_SIGNAL -> 0.int32
+    UV_METRICS_IDLE_TIME -> 1.int32
+
+pub fun int/uv-loop-option-enum(i: int32): exn uv-loop-option-enum
+  match i.int
+    0 -> UV_LOOP_BLOCK_SIGNAL
+    1 -> UV_METRICS_IDLE_TIME
+
+pub type uv-run-mode-enum
+  UV_RUN_DEFAULT
+  UV_RUN_ONCE
+  UV_RUN_NOWAIT
+
+pub fun uv-run-mode-enum/int(i: uv-run-mode-enum): int32
+  match i
+    UV_RUN_DEFAULT -> 0.int32
+    UV_RUN_ONCE -> 1.int32
+    UV_RUN_NOWAIT -> 2.int32
+
+pub fun int/uv-run-mode-enum(i: int32): exn uv-run-mode-enum
+  match i.int
+    0 -> UV_RUN_DEFAULT
+    1 -> UV_RUN_ONCE
+    2 -> UV_RUN_NOWAIT
+
+alias uv-malloc-func = c-pointer<intptr_t>
+alias uv-malloc-funcfn = ((size : int) -> c-pointer<()>)
+alias uv-realloc-func = c-pointer<intptr_t>
+alias uv-realloc-funcfn = ((ptr : c-pointer<()>, size : int) -> c-pointer<()>)
+alias uv-calloc-func = c-pointer<intptr_t>
+alias uv-calloc-funcfn = ((count : int, size : int) -> c-pointer<()>)
+alias uv-free-func = c-pointer<intptr_t>
+alias uv-free-funcfn = ((ptr : c-pointer<()>) -> ())
+alias uv-loop-t = uv-loop-s-c
+pub struct uv-loop-s
+pub type uv-loop-s-c
+pub alias uv-loop-sp = c-pointer<uv-loop-s-c>
+pub alias uv-loop-sc = owned-c<uv-loop-s-c>
+pub alias uv-loop-scb<s::S> = borrowed-c<s,uv-loop-s-c>
+pub alias uv-loop-sca = owned-c<c-array<uv-loop-s-c>>
+
+alias uv-handle-t = uv-handle-s-c
+pub type uv-clock-id-enum
+  UV_CLOCK_MONOTONIC
+  UV_CLOCK_REALTIME
+
+pub fun uv-clock-id-enum/int(i: uv-clock-id-enum): int32
+  match i
+    UV_CLOCK_MONOTONIC -> 0.int32
+    UV_CLOCK_REALTIME -> 1.int32
+
+pub fun int/uv-clock-id-enum(i: int32): exn uv-clock-id-enum
+  match i.int
+    0 -> UV_CLOCK_MONOTONIC
+    1 -> UV_CLOCK_REALTIME
+
+pub struct uv-timespec-t
+pub type uv-timespec-t-c
+pub alias uv-timespec-tp = c-pointer<uv-timespec-t-c>
+pub alias uv-timespec-tc = owned-c<uv-timespec-t-c>
+pub alias uv-timespec-tcb<s::S> = borrowed-c<s,uv-timespec-t-c>
+pub alias uv-timespec-tca = owned-c<c-array<uv-timespec-t-c>>
+
+pub struct uv-timespec64-t
+pub type uv-timespec64-t-c
+pub alias uv-timespec64-tp = c-pointer<uv-timespec64-t-c>
+pub alias uv-timespec64-tc = owned-c<uv-timespec64-t-c>
+pub alias uv-timespec64-tcb<s::S> = borrowed-c<s,uv-timespec64-t-c>
+pub alias uv-timespec64-tca = owned-c<c-array<uv-timespec64-t-c>>
+
+pub struct uv-timeval-t
+pub type uv-timeval-t-c
+pub alias uv-timeval-tp = c-pointer<uv-timeval-t-c>
+pub alias uv-timeval-tc = owned-c<uv-timeval-t-c>
+pub alias uv-timeval-tcb<s::S> = borrowed-c<s,uv-timeval-t-c>
+pub alias uv-timeval-tca = owned-c<c-array<uv-timeval-t-c>>
+
+pub struct uv-timeval64-t
+pub type uv-timeval64-t-c
+pub alias uv-timeval64-tp = c-pointer<uv-timeval64-t-c>
+pub alias uv-timeval64-tc = owned-c<uv-timeval64-t-c>
+pub alias uv-timeval64-tcb<s::S> = borrowed-c<s,uv-timeval64-t-c>
+pub alias uv-timeval64-tca = owned-c<c-array<uv-timeval64-t-c>>
+
+pub struct uv-stat-t
+pub type uv-stat-t-c
+pub alias uv-stat-tp = c-pointer<uv-stat-t-c>
+pub alias uv-stat-tc = owned-c<uv-stat-t-c>
+pub alias uv-stat-tcb<s::S> = borrowed-c<s,uv-stat-t-c>
+pub alias uv-stat-tca = owned-c<c-array<uv-stat-t-c>>
+
+pub type uv-membership-enum
+  UV_LEAVE_GROUP
+  UV_JOIN_GROUP
+
+pub fun uv-membership-enum/int(i: uv-membership-enum): int32
+  match i
+    UV_LEAVE_GROUP -> 0.int32
+    UV_JOIN_GROUP -> 1.int32
+
+pub fun int/uv-membership-enum(i: int32): exn uv-membership-enum
+  match i.int
+    0 -> UV_LEAVE_GROUP
+    1 -> UV_JOIN_GROUP
+
+alias uv-shutdown-t = uv-shutdown-s-c
+alias uv-stream-t = uv-stream-s-c
+alias uv-shutdown-cb = c-pointer<intptr_t>
+alias uv-shutdown-cbfn = ((req : c-pointer<uv-shutdown-s-c>, status : int) -> ())
+alias uv-req-t = uv-req-s-c
+alias uv-walk-cb = c-pointer<intptr_t>
+alias uv-walk-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, arg : c-pointer<()>) -> ())
+alias file = sfile-c
+pub struct sfile
+pub type sfile-c
+pub alias sfilep = c-pointer<sfile-c>
+pub alias sfilec = owned-c<sfile-c>
+pub alias sfilecb<s::S> = borrowed-c<s,sfile-c>
+pub alias sfileca = owned-c<c-array<sfile-c>>
+
+alias uv-close-cb = c-pointer<intptr_t>
+alias uv-close-cbfn = ((handle1 : c-pointer<uv-handle-s-c>) -> ())
+alias uv-os-fd-t = int
+pub struct uv-buf-t
+pub type uv-buf-t-c
+pub alias uv-buf-tp = c-pointer<uv-buf-t-c>
+pub alias uv-buf-tc = owned-c<uv-buf-t-c>
+pub alias uv-buf-tcb<s::S> = borrowed-c<s,uv-buf-t-c>
+pub alias uv-buf-tca = owned-c<c-array<uv-buf-t-c>>
+
+alias uv-file = int
+alias uv-os-sock-t = int
+alias uv-connection-cb = c-pointer<intptr_t>
+alias uv-connection-cbfn = ((server : c-pointer<uv-stream-s-c>, status : int) -> ())
+alias uv-alloc-cb = c-pointer<intptr_t>
+alias uv-alloc-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, suggested_size : int, buf : c-pointer<uv-buf-t-c>) -> ())
+alias uv-read-cb = c-pointer<intptr_t>
+alias uv-read-cbfn = ((stream : c-pointer<uv-stream-s-c>, nread : int, buf : c-pointer<uv-buf-t-c>) -> ())
+alias uv-write-t = uv-write-s-c
+alias uv-write-cb = c-pointer<intptr_t>
+alias uv-write-cbfn = ((req : c-pointer<uv-write-s-c>, status : int) -> ())
+alias uv-tcp-t = uv-tcp-s-c
+pub type uv-tcp-flags-enum
+  UV_TCP_IPV6ONLY
+
+pub fun uv-tcp-flags-enum/int(i: uv-tcp-flags-enum): int32
+  match i
+    UV_TCP_IPV6ONLY -> 1.int32
+
+pub fun int/uv-tcp-flags-enum(i: int32): exn uv-tcp-flags-enum
+  match i.int
+    1 -> UV_TCP_IPV6ONLY
+
+pub struct sockaddr
+pub type sockaddr-c
+pub alias sockaddrp = c-pointer<sockaddr-c>
+pub alias sockaddrc = owned-c<sockaddr-c>
+pub alias sockaddrcb<s::S> = borrowed-c<s,sockaddr-c>
+pub alias sockaddrca = owned-c<c-array<sockaddr-c>>
+
+alias uv-connect-t = uv-connect-s-c
+alias uv-connect-cb = c-pointer<intptr_t>
+alias uv-connect-cbfn = ((req : c-pointer<uv-connect-s-c>, status : int) -> ())
+pub type uv-udp-flags-enum
+  UV_UDP_IPV6ONLY
+  UV_UDP_PARTIAL
+  UV_UDP_REUSEADDR
+  UV_UDP_MMSG_CHUNK
+  UV_UDP_MMSG_FREE
+  UV_UDP_LINUX_RECVERR
+  UV_UDP_RECVMMSG
+
+pub fun uv-udp-flags-enum/int(i: uv-udp-flags-enum): int32
+  match i
+    UV_UDP_IPV6ONLY -> 1.int32
+    UV_UDP_PARTIAL -> 2.int32
+    UV_UDP_REUSEADDR -> 4.int32
+    UV_UDP_MMSG_CHUNK -> 8.int32
+    UV_UDP_MMSG_FREE -> 16.int32
+    UV_UDP_LINUX_RECVERR -> 32.int32
+    UV_UDP_RECVMMSG -> 256.int32
+
+pub fun int/uv-udp-flags-enum(i: int32): exn uv-udp-flags-enum
+  match i.int
+    1 -> UV_UDP_IPV6ONLY
+    2 -> UV_UDP_PARTIAL
+    4 -> UV_UDP_REUSEADDR
+    8 -> UV_UDP_MMSG_CHUNK
+    16 -> UV_UDP_MMSG_FREE
+    32 -> UV_UDP_LINUX_RECVERR
+    256 -> UV_UDP_RECVMMSG
+
+alias uv-udp-t = uv-udp-s-c
+alias uv-udp-send-t = uv-udp-send-s-c
+alias uv-udp-send-cb = c-pointer<intptr_t>
+alias uv-udp-send-cbfn = ((req : c-pointer<uv-udp-send-s-c>, status : int) -> ())
+alias uv-udp-recv-cb = c-pointer<intptr_t>
+alias uv-udp-recv-cbfn = ((handle1 : c-pointer<uv-udp-s-c>, nread : int, buf : c-pointer<uv-buf-t-c>, addr : c-pointer<sockaddr-c>, flags : int) -> ())
+pub type uv-tty-mode-t-enum
+  UV_TTY_MODE_NORMAL
+  UV_TTY_MODE_RAW
+  UV_TTY_MODE_IO
+
+pub fun uv-tty-mode-t-enum/int(i: uv-tty-mode-t-enum): int32
+  match i
+    UV_TTY_MODE_NORMAL -> 0.int32
+    UV_TTY_MODE_RAW -> 1.int32
+    UV_TTY_MODE_IO -> 2.int32
+
+pub fun int/uv-tty-mode-t-enum(i: int32): exn uv-tty-mode-t-enum
+  match i.int
+    0 -> UV_TTY_MODE_NORMAL
+    1 -> UV_TTY_MODE_RAW
+    2 -> UV_TTY_MODE_IO
+
+pub type uv-tty-vtermstate-t-enum
+  UV_TTY_SUPPORTED
+  UV_TTY_UNSUPPORTED
+
+pub fun uv-tty-vtermstate-t-enum/int(i: uv-tty-vtermstate-t-enum): int32
+  match i
+    UV_TTY_SUPPORTED -> 0.int32
+    UV_TTY_UNSUPPORTED -> 1.int32
+
+pub fun int/uv-tty-vtermstate-t-enum(i: int32): exn uv-tty-vtermstate-t-enum
+  match i.int
+    0 -> UV_TTY_SUPPORTED
+    1 -> UV_TTY_UNSUPPORTED
+
+alias uv-tty-t = uv-tty-s-c
+alias uv-pipe-t = uv-pipe-s-c
+pub type uv-poll-event-enum
+  UV_READABLE
+  UV_WRITABLE
+  UV_DISCONNECT
+  UV_PRIORITIZED
+
+pub fun uv-poll-event-enum/int(i: uv-poll-event-enum): int32
+  match i
+    UV_READABLE -> 1.int32
+    UV_WRITABLE -> 2.int32
+    UV_DISCONNECT -> 4.int32
+    UV_PRIORITIZED -> 8.int32
+
+pub fun int/uv-poll-event-enum(i: int32): exn uv-poll-event-enum
+  match i.int
+    1 -> UV_READABLE
+    2 -> UV_WRITABLE
+    4 -> UV_DISCONNECT
+    8 -> UV_PRIORITIZED
+
+alias uv-poll-t = uv-poll-s-c
+alias uv-poll-cb = c-pointer<intptr_t>
+alias uv-poll-cbfn = ((handle1 : c-pointer<uv-poll-s-c>, status : int, events : int) -> ())
+alias uv-prepare-t = uv-prepare-s-c
+alias uv-prepare-cb = c-pointer<intptr_t>
+alias uv-prepare-cbfn = ((handle1 : c-pointer<uv-prepare-s-c>) -> ())
+alias uv-check-t = uv-check-s-c
+alias uv-check-cb = c-pointer<intptr_t>
+alias uv-check-cbfn = ((handle1 : c-pointer<uv-check-s-c>) -> ())
+alias uv-idle-t = uv-idle-s-c
+alias uv-idle-cb = c-pointer<intptr_t>
+alias uv-idle-cbfn = ((handle1 : c-pointer<uv-idle-s-c>) -> ())
+alias uv-async-t = uv-async-s-c
+alias uv-async-cb = c-pointer<intptr_t>
+alias uv-async-cbfn = ((handle1 : c-pointer<uv-async-s-c>) -> ())
+alias uv-timer-t = uv-timer-s-c
+alias uv-timer-cb = c-pointer<intptr_t>
+alias uv-timer-cbfn = ((handle1 : c-pointer<uv-timer-s-c>) -> ())
+alias uv-getaddrinfo-t = uv-getaddrinfo-s-c
+alias uv-getaddrinfo-cb = c-pointer<intptr_t>
+alias uv-getaddrinfo-cbfn = ((req : c-pointer<uv-getaddrinfo-s-c>, status : int, res : c-pointer<addrinfo-c>) -> ())
+pub struct addrinfo
+pub type addrinfo-c
+pub alias addrinfop = c-pointer<addrinfo-c>
+pub alias addrinfoc = owned-c<addrinfo-c>
+pub alias addrinfocb<s::S> = borrowed-c<s,addrinfo-c>
+pub alias addrinfoca = owned-c<c-array<addrinfo-c>>
+
+alias uv-getnameinfo-t = uv-getnameinfo-s-c
+alias uv-getnameinfo-cb = c-pointer<intptr_t>
+alias uv-getnameinfo-cbfn = ((req : c-pointer<uv-getnameinfo-s-c>, status : int, hostname : c-pointer<int>, service : c-pointer<int>) -> ())
+pub type uv-stdio-flags-enum
+  UV_IGNORE
+  UV_CREATE_PIPE
+  UV_INHERIT_FD
+  UV_INHERIT_STREAM
+  UV_READABLE_PIPE
+  UV_WRITABLE_PIPE
+  UV_NONBLOCK_PIPE
+  UV_OVERLAPPED_PIPE
+
+pub fun uv-stdio-flags-enum/int(i: uv-stdio-flags-enum): int32
+  match i
+    UV_IGNORE -> 0.int32
+    UV_CREATE_PIPE -> 1.int32
+    UV_INHERIT_FD -> 2.int32
+    UV_INHERIT_STREAM -> 4.int32
+    UV_READABLE_PIPE -> 16.int32
+    UV_WRITABLE_PIPE -> 32.int32
+    UV_NONBLOCK_PIPE -> 64.int32
+    UV_OVERLAPPED_PIPE -> 64.int32
+
+pub fun int/uv-stdio-flags-enum(i: int32): exn uv-stdio-flags-enum
+  match i.int
+    0 -> UV_IGNORE
+    1 -> UV_CREATE_PIPE
+    2 -> UV_INHERIT_FD
+    4 -> UV_INHERIT_STREAM
+    16 -> UV_READABLE_PIPE
+    32 -> UV_WRITABLE_PIPE
+    64 -> UV_NONBLOCK_PIPE
+    64 -> UV_OVERLAPPED_PIPE
+
+pub struct uv-stdio-container-s
+pub type uv-stdio-container-s-c
+pub alias uv-stdio-container-sp = c-pointer<uv-stdio-container-s-c>
+pub alias uv-stdio-container-sc = owned-c<uv-stdio-container-s-c>
+pub alias uv-stdio-container-scb<s::S> = borrowed-c<s,uv-stdio-container-s-c>
+pub alias uv-stdio-container-sca = owned-c<c-array<uv-stdio-container-s-c>>
+
+pub struct uv-process-options-s
+pub type uv-process-options-s-c
+pub alias uv-process-options-sp = c-pointer<uv-process-options-s-c>
+pub alias uv-process-options-sc = owned-c<uv-process-options-s-c>
+pub alias uv-process-options-scb<s::S> = borrowed-c<s,uv-process-options-s-c>
+pub alias uv-process-options-sca = owned-c<c-array<uv-process-options-s-c>>
+
+pub type uv-process-flags-enum
+  UV_PROCESS_SETUID
+  UV_PROCESS_SETGID
+  UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS
+  UV_PROCESS_DETACHED
+  UV_PROCESS_WINDOWS_HIDE
+  UV_PROCESS_WINDOWS_HIDE_CONSOLE
+  UV_PROCESS_WINDOWS_HIDE_GUI
+  UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME
+
+pub fun uv-process-flags-enum/int(i: uv-process-flags-enum): int32
+  match i
+    UV_PROCESS_SETUID -> 1.int32
+    UV_PROCESS_SETGID -> 2.int32
+    UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS -> 4.int32
+    UV_PROCESS_DETACHED -> 8.int32
+    UV_PROCESS_WINDOWS_HIDE -> 16.int32
+    UV_PROCESS_WINDOWS_HIDE_CONSOLE -> 32.int32
+    UV_PROCESS_WINDOWS_HIDE_GUI -> 64.int32
+    UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME -> 128.int32
+
+pub fun int/uv-process-flags-enum(i: int32): exn uv-process-flags-enum
+  match i.int
+    1 -> UV_PROCESS_SETUID
+    2 -> UV_PROCESS_SETGID
+    4 -> UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS
+    8 -> UV_PROCESS_DETACHED
+    16 -> UV_PROCESS_WINDOWS_HIDE
+    32 -> UV_PROCESS_WINDOWS_HIDE_CONSOLE
+    64 -> UV_PROCESS_WINDOWS_HIDE_GUI
+    128 -> UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME
+
+alias uv-process-t = uv-process-s-c
+alias uv-process-options-t = uv-process-options-s-c
+alias uv-pid-t = int
+alias pid-t = int
+alias darwin-pid-t = int
+alias int32-t = int
+alias uv-work-t = uv-work-s-c
+alias uv-work-cb = c-pointer<intptr_t>
+alias uv-work-cbfn = ((req : c-pointer<uv-work-s-c>) -> ())
+alias uv-after-work-cb = c-pointer<intptr_t>
+alias uv-after-work-cbfn = ((req : c-pointer<uv-work-s-c>, status : int) -> ())
+pub struct uv-cpu-times-s
+pub type uv-cpu-times-s-c
+pub alias uv-cpu-times-sp = c-pointer<uv-cpu-times-s-c>
+pub alias uv-cpu-times-sc = owned-c<uv-cpu-times-s-c>
+pub alias uv-cpu-times-scb<s::S> = borrowed-c<s,uv-cpu-times-s-c>
+pub alias uv-cpu-times-sca = owned-c<c-array<uv-cpu-times-s-c>>
 
 pub type uv-dirent-type-t-enum
   UV_DIRENT_UNKNOWN
@@ -2774,953 +3043,23 @@ pub fun int/uv-dirent-type-t-enum(i: int32): exn uv-dirent-type-t-enum
     6 -> UV_DIRENT_CHAR
     7 -> UV_DIRENT_BLOCK
 
-pub struct dir
-pub type dir-c
-pub alias dirp = c-pointer<dir-c>
-pub alias dirc = owned-c<dir-c>
-pub alias dircb<s::S> = borrowed-c<s,dir-c>
-pub alias dirca = owned-c<c-array<dir-c>>
-
-pub struct uv-stream-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union2-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  write-queue-size: int
-  alloc-cb: uv-alloc-cb
-  read-cb: uv-read-cb
-  connect-req: c-pointer<uv-connect-s-c>
-  shutdown-req: c-pointer<uv-shutdown-s-c>
-  io-watcher: koka-uv-io-t
-  write-queue: uv-queue-c
-  write-completed-queue: uv-queue-c
-  connection-cb: uv-connection-cb
-  delayed-error: int
-  accepted-fd: int
-  queued-fds: c-pointer<()>
-  select: c-pointer<()>
-
-pub type uv-stream-s-c
-pub alias uv-stream-sp = c-pointer<uv-stream-s-c>
-pub alias uv-stream-sc = owned-c<uv-stream-s-c>
-pub alias uv-stream-scb<s::S> = borrowed-c<s,uv-stream-s-c>
-pub alias uv-stream-sca = owned-c<c-array<uv-stream-s-c>>
-
-pub extern uv-stream-s/size-of(c: c-null<uv-stream-s-c>): int32
-  c inline "sizeof(struct uv_stream_s)"
-  wasm inline "0"
-
-pub fun uv-stream-sc(): uv-stream-sc
-  malloc(?size-of=uv-stream-s/size-of)
-
-pub fun uv-stream-sc-calloc(): uv-stream-sc
-  malloc-c(?size-of=uv-stream-s/size-of)
-
-pub fun uv-stream-sc-array(n: int): uv-stream-sca
-  malloc(n.int32, ?size-of=uv-stream-s/size-of)
-
-pub fun uv-stream-sc-array-calloc(n: int): uv-stream-sca
-  malloc-c(n.int32, ?size-of=uv-stream-s/size-of)
-
-pub struct unnamed-union2
-pub type unnamed-union2-c
-pub alias unnamed-union2p = c-pointer<unnamed-union2-c>
-pub alias unnamed-union2c<s::S> = owned-c<unnamed-union2-c>
-pub alias unnamed-union2cb<s::S> = borrowed-c<s,unnamed-union2-c>
-pub alias unnamed-union2ca<s::S> = owned-c<c-array<unnamed-union2-c>>
-
-alias uv-alloc-cb = c-pointer<intptr_t>
-alias uv-alloc-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, suggested_size : int, buf : c-pointer<uv-buf-t-c>) -> ())
-pub value struct uv-buf-t
-  base: c-pointer<int>
-  len: int
-
-pub type uv-buf-t-c
-pub alias uv-buf-tp = c-pointer<uv-buf-t-c>
-pub alias uv-buf-tc = owned-c<uv-buf-t-c>
-pub alias uv-buf-tcb<s::S> = borrowed-c<s,uv-buf-t-c>
-pub alias uv-buf-tca = owned-c<c-array<uv-buf-t-c>>
-
-pub extern uv-buf-t/size-of(c: c-null<uv-buf-t-c>): int32
-  c inline "sizeof(struct uv_buf_t)"
-  wasm inline "0"
-
-pub fun uv-buf-tc(): uv-buf-tc
-  malloc(?size-of=uv-buf-t/size-of)
-
-pub fun uv-buf-tc-calloc(): uv-buf-tc
-  malloc-c(?size-of=uv-buf-t/size-of)
-
-pub fun uv-buf-tc-array(n: int): uv-buf-tca
-  malloc(n.int32, ?size-of=uv-buf-t/size-of)
-
-pub fun uv-buf-tc-array-calloc(n: int): uv-buf-tca
-  malloc-c(n.int32, ?size-of=uv-buf-t/size-of)
-
-alias uv-read-cb = c-pointer<intptr_t>
-alias uv-read-cbfn = ((stream : c-pointer<uv-stream-s-c>, nread : int, buf : c-pointer<uv-buf-t-c>) -> ())
-alias uv-stream-t = uv-stream-s-c
-alias koka-uv-stream-t = uv-stream-s
-alias uv-connect-t = uv-connect-s-c
-pub struct uv-connect-s
-pub type uv-connect-s-c
-pub alias uv-connect-sp = c-pointer<uv-connect-s-c>
-pub alias uv-connect-sc<s::S> = owned-c<uv-connect-s-c>
-pub alias uv-connect-scb<s::S> = borrowed-c<s,uv-connect-s-c>
-pub alias uv-connect-sca<s::S> = owned-c<c-array<uv-connect-s-c>>
-
-pub extern uv-connect-s/size-of(c: c-null<uv-connect-s-c>): int32
-  c inline "sizeof(struct uv_connect_s)"
-  wasm inline "0"
-
-pub fun uv-connect-sc(): uv-connect-sc<s::S>
-  malloc(?size-of=uv-connect-s/size-of)
-
-pub fun uv-connect-sc-calloc(): uv-connect-sc<s::S>
-  malloc-c(?size-of=uv-connect-s/size-of)
-
-pub fun uv-connect-sc-array(n: int): uv-connect-sca<s::S>
-  malloc(n.int32, ?size-of=uv-connect-s/size-of)
-
-pub fun uv-connect-sc-array-calloc(n: int): uv-connect-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-connect-s/size-of)
-
-alias uv-connect-cb = c-pointer<intptr_t>
-alias uv-connect-cbfn = ((req : c-pointer<uv-connect-s-c>, status : int) -> ())
-alias uv-shutdown-t = uv-shutdown-s-c
-pub struct uv-shutdown-s
-pub type uv-shutdown-s-c
-pub alias uv-shutdown-sp = c-pointer<uv-shutdown-s-c>
-pub alias uv-shutdown-sc<s::S> = owned-c<uv-shutdown-s-c>
-pub alias uv-shutdown-scb<s::S> = borrowed-c<s,uv-shutdown-s-c>
-pub alias uv-shutdown-sca<s::S> = owned-c<c-array<uv-shutdown-s-c>>
-
-pub extern uv-shutdown-s/size-of(c: c-null<uv-shutdown-s-c>): int32
-  c inline "sizeof(struct uv_shutdown_s)"
-  wasm inline "0"
-
-pub fun uv-shutdown-sc(): uv-shutdown-sc<s::S>
-  malloc(?size-of=uv-shutdown-s/size-of)
-
-pub fun uv-shutdown-sc-calloc(): uv-shutdown-sc<s::S>
-  malloc-c(?size-of=uv-shutdown-s/size-of)
-
-pub fun uv-shutdown-sc-array(n: int): uv-shutdown-sca<s::S>
-  malloc(n.int32, ?size-of=uv-shutdown-s/size-of)
-
-pub fun uv-shutdown-sc-array-calloc(n: int): uv-shutdown-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-shutdown-s/size-of)
-
-alias uv-shutdown-cb = c-pointer<intptr_t>
-alias uv-shutdown-cbfn = ((req : c-pointer<uv-shutdown-s-c>, status : int) -> ())
-alias uv-connection-cb = c-pointer<intptr_t>
-alias uv-connection-cbfn = ((server : c-pointer<uv-stream-s-c>, status : int) -> ())
-pub struct uv-tcp-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union3-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  write-queue-size: int
-  alloc-cb: uv-alloc-cb
-  read-cb: uv-read-cb
-  connect-req: c-pointer<uv-connect-s-c>
-  shutdown-req: c-pointer<uv-shutdown-s-c>
-  io-watcher: koka-uv-io-t
-  write-queue: uv-queue-c
-  write-completed-queue: uv-queue-c
-  connection-cb: uv-connection-cb
-  delayed-error: int
-  accepted-fd: int
-  queued-fds: c-pointer<()>
-  select: c-pointer<()>
-
-pub type uv-tcp-s-c
-pub alias uv-tcp-sp = c-pointer<uv-tcp-s-c>
-pub alias uv-tcp-sc = owned-c<uv-tcp-s-c>
-pub alias uv-tcp-scb<s::S> = borrowed-c<s,uv-tcp-s-c>
-pub alias uv-tcp-sca = owned-c<c-array<uv-tcp-s-c>>
-
-pub extern uv-tcp-s/size-of(c: c-null<uv-tcp-s-c>): int32
-  c inline "sizeof(struct uv_tcp_s)"
-  wasm inline "0"
-
-pub fun uv-tcp-sc(): uv-tcp-sc
-  malloc(?size-of=uv-tcp-s/size-of)
-
-pub fun uv-tcp-sc-calloc(): uv-tcp-sc
-  malloc-c(?size-of=uv-tcp-s/size-of)
-
-pub fun uv-tcp-sc-array(n: int): uv-tcp-sca
-  malloc(n.int32, ?size-of=uv-tcp-s/size-of)
-
-pub fun uv-tcp-sc-array-calloc(n: int): uv-tcp-sca
-  malloc-c(n.int32, ?size-of=uv-tcp-s/size-of)
-
-pub struct unnamed-union3
-pub type unnamed-union3-c
-pub alias unnamed-union3p = c-pointer<unnamed-union3-c>
-pub alias unnamed-union3c<s::S> = owned-c<unnamed-union3-c>
-pub alias unnamed-union3cb<s::S> = borrowed-c<s,unnamed-union3-c>
-pub alias unnamed-union3ca<s::S> = owned-c<c-array<unnamed-union3-c>>
-
-pub struct uv-udp-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union4-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  send-queue-size: int
-  send-queue-count: int
-  alloc-cb: uv-alloc-cb
-  recv-cb: uv-udp-recv-cb
-  io-watcher: koka-uv-io-t
-  write-queue: uv-queue-c
-  write-completed-queue: uv-queue-c
-
-pub type uv-udp-s-c
-pub alias uv-udp-sp = c-pointer<uv-udp-s-c>
-pub alias uv-udp-sc = owned-c<uv-udp-s-c>
-pub alias uv-udp-scb<s::S> = borrowed-c<s,uv-udp-s-c>
-pub alias uv-udp-sca = owned-c<c-array<uv-udp-s-c>>
-
-pub extern uv-udp-s/size-of(c: c-null<uv-udp-s-c>): int32
-  c inline "sizeof(struct uv_udp_s)"
-  wasm inline "0"
-
-pub fun uv-udp-sc(): uv-udp-sc
-  malloc(?size-of=uv-udp-s/size-of)
-
-pub fun uv-udp-sc-calloc(): uv-udp-sc
-  malloc-c(?size-of=uv-udp-s/size-of)
-
-pub fun uv-udp-sc-array(n: int): uv-udp-sca
-  malloc(n.int32, ?size-of=uv-udp-s/size-of)
-
-pub fun uv-udp-sc-array-calloc(n: int): uv-udp-sca
-  malloc-c(n.int32, ?size-of=uv-udp-s/size-of)
-
-pub struct unnamed-union4
-pub type unnamed-union4-c
-pub alias unnamed-union4p = c-pointer<unnamed-union4-c>
-pub alias unnamed-union4c<s::S> = owned-c<unnamed-union4-c>
-pub alias unnamed-union4cb<s::S> = borrowed-c<s,unnamed-union4-c>
-pub alias unnamed-union4ca<s::S> = owned-c<c-array<unnamed-union4-c>>
-
-alias uv-udp-recv-cb = c-pointer<intptr_t>
-alias uv-udp-recv-cbfn = ((handle1 : c-pointer<uv-udp-s-c>, nread : int, buf : c-pointer<uv-buf-t-c>, addr : c-pointer<sockaddr-c>, flags : int) -> ())
-alias uv-udp-t = uv-udp-s-c
-alias koka-uv-udp-t = uv-udp-s
-pub struct sockaddr
-pub type sockaddr-c
-pub alias sockaddrp = c-pointer<sockaddr-c>
-pub alias sockaddrc = owned-c<sockaddr-c>
-pub alias sockaddrcb<s::S> = borrowed-c<s,sockaddr-c>
-pub alias sockaddrca = owned-c<c-array<sockaddr-c>>
-
-pub struct uv-pipe-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union5-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  write-queue-size: int
-  alloc-cb: uv-alloc-cb
-  read-cb: uv-read-cb
-  connect-req: c-pointer<uv-connect-s-c>
-  shutdown-req: c-pointer<uv-shutdown-s-c>
-  io-watcher: koka-uv-io-t
-  write-queue: uv-queue-c
-  write-completed-queue: uv-queue-c
-  connection-cb: uv-connection-cb
-  delayed-error: int
-  accepted-fd: int
-  queued-fds: c-pointer<()>
-  select: c-pointer<()>
-  ipc: int
-  pipe-fname: c-pointer<int>
-
-pub type uv-pipe-s-c
-pub alias uv-pipe-sp = c-pointer<uv-pipe-s-c>
-pub alias uv-pipe-sc = owned-c<uv-pipe-s-c>
-pub alias uv-pipe-scb<s::S> = borrowed-c<s,uv-pipe-s-c>
-pub alias uv-pipe-sca = owned-c<c-array<uv-pipe-s-c>>
-
-pub extern uv-pipe-s/size-of(c: c-null<uv-pipe-s-c>): int32
-  c inline "sizeof(struct uv_pipe_s)"
-  wasm inline "0"
-
-pub fun uv-pipe-sc(): uv-pipe-sc
-  malloc(?size-of=uv-pipe-s/size-of)
-
-pub fun uv-pipe-sc-calloc(): uv-pipe-sc
-  malloc-c(?size-of=uv-pipe-s/size-of)
-
-pub fun uv-pipe-sc-array(n: int): uv-pipe-sca
-  malloc(n.int32, ?size-of=uv-pipe-s/size-of)
-
-pub fun uv-pipe-sc-array-calloc(n: int): uv-pipe-sca
-  malloc-c(n.int32, ?size-of=uv-pipe-s/size-of)
-
-pub struct unnamed-union5
-pub type unnamed-union5-c
-pub alias unnamed-union5p = c-pointer<unnamed-union5-c>
-pub alias unnamed-union5c<s::S> = owned-c<unnamed-union5-c>
-pub alias unnamed-union5cb<s::S> = borrowed-c<s,unnamed-union5-c>
-pub alias unnamed-union5ca<s::S> = owned-c<c-array<unnamed-union5-c>>
-
-pub struct uv-tty-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union6-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  write-queue-size: int
-  alloc-cb: uv-alloc-cb
-  read-cb: uv-read-cb
-  connect-req: c-pointer<uv-connect-s-c>
-  shutdown-req: c-pointer<uv-shutdown-s-c>
-  io-watcher: koka-uv-io-t
-  write-queue: uv-queue-c
-  write-completed-queue: uv-queue-c
-  connection-cb: uv-connection-cb
-  delayed-error: int
-  accepted-fd: int
-  queued-fds: c-pointer<()>
-  select: c-pointer<()>
-  orig-termios: termios-c
-  mode: int
-
-pub type uv-tty-s-c
-pub alias uv-tty-sp = c-pointer<uv-tty-s-c>
-pub alias uv-tty-sc = owned-c<uv-tty-s-c>
-pub alias uv-tty-scb<s::S> = borrowed-c<s,uv-tty-s-c>
-pub alias uv-tty-sca = owned-c<c-array<uv-tty-s-c>>
-
-pub extern uv-tty-s/size-of(c: c-null<uv-tty-s-c>): int32
-  c inline "sizeof(struct uv_tty_s)"
-  wasm inline "0"
-
-pub fun uv-tty-sc(): uv-tty-sc
-  malloc(?size-of=uv-tty-s/size-of)
-
-pub fun uv-tty-sc-calloc(): uv-tty-sc
-  malloc-c(?size-of=uv-tty-s/size-of)
-
-pub fun uv-tty-sc-array(n: int): uv-tty-sca
-  malloc(n.int32, ?size-of=uv-tty-s/size-of)
-
-pub fun uv-tty-sc-array-calloc(n: int): uv-tty-sca
-  malloc-c(n.int32, ?size-of=uv-tty-s/size-of)
-
-pub struct unnamed-union6
-pub type unnamed-union6-c
-pub alias unnamed-union6p = c-pointer<unnamed-union6-c>
-pub alias unnamed-union6c<s::S> = owned-c<unnamed-union6-c>
-pub alias unnamed-union6cb<s::S> = borrowed-c<s,unnamed-union6-c>
-pub alias unnamed-union6ca<s::S> = owned-c<c-array<unnamed-union6-c>>
-
-pub struct termios
-pub type termios-c
-pub alias termiosp = c-pointer<termios-c>
-pub alias termiosc<s::S> = owned-c<termios-c>
-pub alias termioscb<s::S> = borrowed-c<s,termios-c>
-pub alias termiosca<s::S> = owned-c<c-array<termios-c>>
-
-pub extern termios/size-of(c: c-null<termios-c>): int32
-  c inline "sizeof(struct termios)"
-  wasm inline "0"
-
-pub fun termiosc(): termiosc<s::S>
-  malloc(?size-of=termios/size-of)
-
-pub fun termiosc-calloc(): termiosc<s::S>
-  malloc-c(?size-of=termios/size-of)
-
-pub fun termiosc-array(n: int): termiosca<s::S>
-  malloc(n.int32, ?size-of=termios/size-of)
-
-pub fun termiosc-array-calloc(n: int): termiosca<s::S>
-  malloc-c(n.int32, ?size-of=termios/size-of)
-
-alias tcflag-t = int
-alias cc-t = int
-alias speed-t = int
-pub struct uv-poll-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union7-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  poll-cb: uv-poll-cb
-  io-watcher: koka-uv-io-t
-
-pub type uv-poll-s-c
-pub alias uv-poll-sp = c-pointer<uv-poll-s-c>
-pub alias uv-poll-sc = owned-c<uv-poll-s-c>
-pub alias uv-poll-scb<s::S> = borrowed-c<s,uv-poll-s-c>
-pub alias uv-poll-sca = owned-c<c-array<uv-poll-s-c>>
-
-pub extern uv-poll-s/size-of(c: c-null<uv-poll-s-c>): int32
-  c inline "sizeof(struct uv_poll_s)"
-  wasm inline "0"
-
-pub fun uv-poll-sc(): uv-poll-sc
-  malloc(?size-of=uv-poll-s/size-of)
-
-pub fun uv-poll-sc-calloc(): uv-poll-sc
-  malloc-c(?size-of=uv-poll-s/size-of)
-
-pub fun uv-poll-sc-array(n: int): uv-poll-sca
-  malloc(n.int32, ?size-of=uv-poll-s/size-of)
-
-pub fun uv-poll-sc-array-calloc(n: int): uv-poll-sca
-  malloc-c(n.int32, ?size-of=uv-poll-s/size-of)
-
-pub struct unnamed-union7
-pub type unnamed-union7-c
-pub alias unnamed-union7p = c-pointer<unnamed-union7-c>
-pub alias unnamed-union7c<s::S> = owned-c<unnamed-union7-c>
-pub alias unnamed-union7cb<s::S> = borrowed-c<s,unnamed-union7-c>
-pub alias unnamed-union7ca<s::S> = owned-c<c-array<unnamed-union7-c>>
-
-alias uv-poll-cb = c-pointer<intptr_t>
-alias uv-poll-cbfn = ((handle1 : c-pointer<uv-poll-s-c>, status : int, events : int) -> ())
-alias uv-poll-t = uv-poll-s-c
-alias koka-uv-poll-t = uv-poll-s
-pub struct uv-timer-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union8-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  timer-cb: uv-timer-cb
-  node: unnamed-union9-c
-  timeout: int
-  repeat: int
-  start-id: int
-
-pub type uv-timer-s-c
-pub alias uv-timer-sp = c-pointer<uv-timer-s-c>
-pub alias uv-timer-sc = owned-c<uv-timer-s-c>
-pub alias uv-timer-scb<s::S> = borrowed-c<s,uv-timer-s-c>
-pub alias uv-timer-sca = owned-c<c-array<uv-timer-s-c>>
-
-pub extern uv-timer-s/size-of(c: c-null<uv-timer-s-c>): int32
-  c inline "sizeof(struct uv_timer_s)"
-  wasm inline "0"
-
-pub fun uv-timer-sc(): uv-timer-sc
-  malloc(?size-of=uv-timer-s/size-of)
-
-pub fun uv-timer-sc-calloc(): uv-timer-sc
-  malloc-c(?size-of=uv-timer-s/size-of)
-
-pub fun uv-timer-sc-array(n: int): uv-timer-sca
-  malloc(n.int32, ?size-of=uv-timer-s/size-of)
-
-pub fun uv-timer-sc-array-calloc(n: int): uv-timer-sca
-  malloc-c(n.int32, ?size-of=uv-timer-s/size-of)
-
-pub struct unnamed-union8
-pub type unnamed-union8-c
-pub alias unnamed-union8p = c-pointer<unnamed-union8-c>
-pub alias unnamed-union8c<s::S> = owned-c<unnamed-union8-c>
-pub alias unnamed-union8cb<s::S> = borrowed-c<s,unnamed-union8-c>
-pub alias unnamed-union8ca<s::S> = owned-c<c-array<unnamed-union8-c>>
-
-alias uv-timer-cb = c-pointer<intptr_t>
-alias uv-timer-cbfn = ((handle1 : c-pointer<uv-timer-s-c>) -> ())
-alias uv-timer-t = uv-timer-s-c
-alias koka-uv-timer-t = uv-timer-s
-pub struct unnamed-union9
-pub type unnamed-union9-c
-pub alias unnamed-union9p = c-pointer<unnamed-union9-c>
-pub alias unnamed-union9c<s::S> = owned-c<unnamed-union9-c>
-pub alias unnamed-union9cb<s::S> = borrowed-c<s,unnamed-union9-c>
-pub alias unnamed-union9ca<s::S> = owned-c<c-array<unnamed-union9-c>>
-
-pub struct uv-prepare-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union10-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  prepare-cb: uv-prepare-cb
-  queue: uv-queue-c
-
-pub type uv-prepare-s-c
-pub alias uv-prepare-sp = c-pointer<uv-prepare-s-c>
-pub alias uv-prepare-sc = owned-c<uv-prepare-s-c>
-pub alias uv-prepare-scb<s::S> = borrowed-c<s,uv-prepare-s-c>
-pub alias uv-prepare-sca = owned-c<c-array<uv-prepare-s-c>>
-
-pub extern uv-prepare-s/size-of(c: c-null<uv-prepare-s-c>): int32
-  c inline "sizeof(struct uv_prepare_s)"
-  wasm inline "0"
-
-pub fun uv-prepare-sc(): uv-prepare-sc
-  malloc(?size-of=uv-prepare-s/size-of)
-
-pub fun uv-prepare-sc-calloc(): uv-prepare-sc
-  malloc-c(?size-of=uv-prepare-s/size-of)
-
-pub fun uv-prepare-sc-array(n: int): uv-prepare-sca
-  malloc(n.int32, ?size-of=uv-prepare-s/size-of)
-
-pub fun uv-prepare-sc-array-calloc(n: int): uv-prepare-sca
-  malloc-c(n.int32, ?size-of=uv-prepare-s/size-of)
-
-pub struct unnamed-union10
-pub type unnamed-union10-c
-pub alias unnamed-union10p = c-pointer<unnamed-union10-c>
-pub alias unnamed-union10c<s::S> = owned-c<unnamed-union10-c>
-pub alias unnamed-union10cb<s::S> = borrowed-c<s,unnamed-union10-c>
-pub alias unnamed-union10ca<s::S> = owned-c<c-array<unnamed-union10-c>>
-
-alias uv-prepare-cb = c-pointer<intptr_t>
-alias uv-prepare-cbfn = ((handle1 : c-pointer<uv-prepare-s-c>) -> ())
-alias uv-prepare-t = uv-prepare-s-c
-alias koka-uv-prepare-t = uv-prepare-s
-pub struct uv-check-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union11-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  check-cb: uv-check-cb
-  queue: uv-queue-c
-
-pub type uv-check-s-c
-pub alias uv-check-sp = c-pointer<uv-check-s-c>
-pub alias uv-check-sc = owned-c<uv-check-s-c>
-pub alias uv-check-scb<s::S> = borrowed-c<s,uv-check-s-c>
-pub alias uv-check-sca = owned-c<c-array<uv-check-s-c>>
-
-pub extern uv-check-s/size-of(c: c-null<uv-check-s-c>): int32
-  c inline "sizeof(struct uv_check_s)"
-  wasm inline "0"
-
-pub fun uv-check-sc(): uv-check-sc
-  malloc(?size-of=uv-check-s/size-of)
-
-pub fun uv-check-sc-calloc(): uv-check-sc
-  malloc-c(?size-of=uv-check-s/size-of)
-
-pub fun uv-check-sc-array(n: int): uv-check-sca
-  malloc(n.int32, ?size-of=uv-check-s/size-of)
-
-pub fun uv-check-sc-array-calloc(n: int): uv-check-sca
-  malloc-c(n.int32, ?size-of=uv-check-s/size-of)
-
-pub struct unnamed-union11
-pub type unnamed-union11-c
-pub alias unnamed-union11p = c-pointer<unnamed-union11-c>
-pub alias unnamed-union11c<s::S> = owned-c<unnamed-union11-c>
-pub alias unnamed-union11cb<s::S> = borrowed-c<s,unnamed-union11-c>
-pub alias unnamed-union11ca<s::S> = owned-c<c-array<unnamed-union11-c>>
-
-alias uv-check-cb = c-pointer<intptr_t>
-alias uv-check-cbfn = ((handle1 : c-pointer<uv-check-s-c>) -> ())
-alias uv-check-t = uv-check-s-c
-alias koka-uv-check-t = uv-check-s
-pub struct uv-idle-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union12-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  idle-cb: uv-idle-cb
-  queue: uv-queue-c
-
-pub type uv-idle-s-c
-pub alias uv-idle-sp = c-pointer<uv-idle-s-c>
-pub alias uv-idle-sc = owned-c<uv-idle-s-c>
-pub alias uv-idle-scb<s::S> = borrowed-c<s,uv-idle-s-c>
-pub alias uv-idle-sca = owned-c<c-array<uv-idle-s-c>>
-
-pub extern uv-idle-s/size-of(c: c-null<uv-idle-s-c>): int32
-  c inline "sizeof(struct uv_idle_s)"
-  wasm inline "0"
-
-pub fun uv-idle-sc(): uv-idle-sc
-  malloc(?size-of=uv-idle-s/size-of)
-
-pub fun uv-idle-sc-calloc(): uv-idle-sc
-  malloc-c(?size-of=uv-idle-s/size-of)
-
-pub fun uv-idle-sc-array(n: int): uv-idle-sca
-  malloc(n.int32, ?size-of=uv-idle-s/size-of)
-
-pub fun uv-idle-sc-array-calloc(n: int): uv-idle-sca
-  malloc-c(n.int32, ?size-of=uv-idle-s/size-of)
-
-pub struct unnamed-union12
-pub type unnamed-union12-c
-pub alias unnamed-union12p = c-pointer<unnamed-union12-c>
-pub alias unnamed-union12c<s::S> = owned-c<unnamed-union12-c>
-pub alias unnamed-union12cb<s::S> = borrowed-c<s,unnamed-union12-c>
-pub alias unnamed-union12ca<s::S> = owned-c<c-array<unnamed-union12-c>>
-
-alias uv-idle-cb = c-pointer<intptr_t>
-alias uv-idle-cbfn = ((handle1 : c-pointer<uv-idle-s-c>) -> ())
-alias uv-idle-t = uv-idle-s-c
-alias koka-uv-idle-t = uv-idle-s
-pub struct uv-process-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union14-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  exit-cb: uv-exit-cb
-  pid: int
-  queue: uv-queue-c
-  status: int
-
-pub type uv-process-s-c
-pub alias uv-process-sp = c-pointer<uv-process-s-c>
-pub alias uv-process-sc = owned-c<uv-process-s-c>
-pub alias uv-process-scb<s::S> = borrowed-c<s,uv-process-s-c>
-pub alias uv-process-sca = owned-c<c-array<uv-process-s-c>>
-
-pub extern uv-process-s/size-of(c: c-null<uv-process-s-c>): int32
-  c inline "sizeof(struct uv_process_s)"
-  wasm inline "0"
-
-pub fun uv-process-sc(): uv-process-sc
-  malloc(?size-of=uv-process-s/size-of)
-
-pub fun uv-process-sc-calloc(): uv-process-sc
-  malloc-c(?size-of=uv-process-s/size-of)
-
-pub fun uv-process-sc-array(n: int): uv-process-sca
-  malloc(n.int32, ?size-of=uv-process-s/size-of)
-
-pub fun uv-process-sc-array-calloc(n: int): uv-process-sca
-  malloc-c(n.int32, ?size-of=uv-process-s/size-of)
-
-pub struct unnamed-union14
-pub type unnamed-union14-c
-pub alias unnamed-union14p = c-pointer<unnamed-union14-c>
-pub alias unnamed-union14c<s::S> = owned-c<unnamed-union14-c>
-pub alias unnamed-union14cb<s::S> = borrowed-c<s,unnamed-union14-c>
-pub alias unnamed-union14ca<s::S> = owned-c<c-array<unnamed-union14-c>>
-
-alias uv-exit-cb = c-pointer<intptr_t>
-alias uv-exit-cbfn = ((c-pointer<uv-process-s-c>, int, int) -> ())
-alias uv-process-t = uv-process-s-c
-alias koka-uv-process-t = uv-process-s
-pub struct uv-fs-event-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union15-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  path: c-pointer<int>
-  cb: uv-fs-event-cb
-  event-watcher: koka-uv-io-t
-  realpath: c-pointer<int>
-  realpath-len: int
-  cf-flags: int
-  cf-cb: c-pointer<uv-async-s-c>
-  cf-events: uv-queue-c
-  cf-member: uv-queue-c
-  cf-error: int
-  cf-mutex: opaque-pthread-mutex-t
-
-pub type uv-fs-event-s-c
-pub alias uv-fs-event-sp = c-pointer<uv-fs-event-s-c>
-pub alias uv-fs-event-sc = owned-c<uv-fs-event-s-c>
-pub alias uv-fs-event-scb<s::S> = borrowed-c<s,uv-fs-event-s-c>
-pub alias uv-fs-event-sca = owned-c<c-array<uv-fs-event-s-c>>
-
-pub extern uv-fs-event-s/size-of(c: c-null<uv-fs-event-s-c>): int32
-  c inline "sizeof(struct uv_fs_event_s)"
-  wasm inline "0"
-
-pub fun uv-fs-event-sc(): uv-fs-event-sc
-  malloc(?size-of=uv-fs-event-s/size-of)
-
-pub fun uv-fs-event-sc-calloc(): uv-fs-event-sc
-  malloc-c(?size-of=uv-fs-event-s/size-of)
-
-pub fun uv-fs-event-sc-array(n: int): uv-fs-event-sca
-  malloc(n.int32, ?size-of=uv-fs-event-s/size-of)
-
-pub fun uv-fs-event-sc-array-calloc(n: int): uv-fs-event-sca
-  malloc-c(n.int32, ?size-of=uv-fs-event-s/size-of)
-
-pub struct unnamed-union15
-pub type unnamed-union15-c
-pub alias unnamed-union15p = c-pointer<unnamed-union15-c>
-pub alias unnamed-union15c<s::S> = owned-c<unnamed-union15-c>
-pub alias unnamed-union15cb<s::S> = borrowed-c<s,unnamed-union15-c>
-pub alias unnamed-union15ca<s::S> = owned-c<c-array<unnamed-union15-c>>
-
-alias uv-fs-event-cb = c-pointer<intptr_t>
-alias uv-fs-event-cbfn = ((handle1 : c-pointer<uv-fs-event-s-c>, filename : c-pointer<int>, events : int, status : int) -> ())
-alias uv-fs-event-t = uv-fs-event-s-c
-alias koka-uv-fs-event-t = uv-fs-event-s
-pub struct uv-fs-poll-s
-  data: c-pointer<()>
-  loop: c-pointer<uv-loop-s-c>
-  type1: int
-  close-cb: uv-close-cb
-  handle-queue: uv-queue-c
-  u: unnamed-union16-c
-  next-closing: c-pointer<uv-handle-s-c>
-  flags: int
-  poll-ctx: c-pointer<()>
-
-pub type uv-fs-poll-s-c
-pub alias uv-fs-poll-sp = c-pointer<uv-fs-poll-s-c>
-pub alias uv-fs-poll-sc = owned-c<uv-fs-poll-s-c>
-pub alias uv-fs-poll-scb<s::S> = borrowed-c<s,uv-fs-poll-s-c>
-pub alias uv-fs-poll-sca = owned-c<c-array<uv-fs-poll-s-c>>
-
-pub extern uv-fs-poll-s/size-of(c: c-null<uv-fs-poll-s-c>): int32
-  c inline "sizeof(struct uv_fs_poll_s)"
-  wasm inline "0"
-
-pub fun uv-fs-poll-sc(): uv-fs-poll-sc
-  malloc(?size-of=uv-fs-poll-s/size-of)
-
-pub fun uv-fs-poll-sc-calloc(): uv-fs-poll-sc
-  malloc-c(?size-of=uv-fs-poll-s/size-of)
-
-pub fun uv-fs-poll-sc-array(n: int): uv-fs-poll-sca
-  malloc(n.int32, ?size-of=uv-fs-poll-s/size-of)
-
-pub fun uv-fs-poll-sc-array-calloc(n: int): uv-fs-poll-sca
-  malloc-c(n.int32, ?size-of=uv-fs-poll-s/size-of)
-
-pub struct unnamed-union16
-pub type unnamed-union16-c
-pub alias unnamed-union16p = c-pointer<unnamed-union16-c>
-pub alias unnamed-union16c<s::S> = owned-c<unnamed-union16-c>
-pub alias unnamed-union16cb<s::S> = borrowed-c<s,unnamed-union16-c>
-pub alias unnamed-union16ca<s::S> = owned-c<c-array<unnamed-union16-c>>
-
-pub struct uv-req-s
-pub type uv-req-s-c
-pub alias uv-req-sp = c-pointer<uv-req-s-c>
-pub alias uv-req-sc<s::S> = owned-c<uv-req-s-c>
-pub alias uv-req-scb<s::S> = borrowed-c<s,uv-req-s-c>
-pub alias uv-req-sca<s::S> = owned-c<c-array<uv-req-s-c>>
-
-pub extern uv-req-s/size-of(c: c-null<uv-req-s-c>): int32
-  c inline "sizeof(struct uv_req_s)"
-  wasm inline "0"
-
-pub fun uv-req-sc(): uv-req-sc<s::S>
-  malloc(?size-of=uv-req-s/size-of)
-
-pub fun uv-req-sc-calloc(): uv-req-sc<s::S>
-  malloc-c(?size-of=uv-req-s/size-of)
-
-pub fun uv-req-sc-array(n: int): uv-req-sca<s::S>
-  malloc(n.int32, ?size-of=uv-req-s/size-of)
-
-pub fun uv-req-sc-array-calloc(n: int): uv-req-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-req-s/size-of)
-
-pub struct uv-getaddrinfo-s
-pub type uv-getaddrinfo-s-c
-pub alias uv-getaddrinfo-sp = c-pointer<uv-getaddrinfo-s-c>
-pub alias uv-getaddrinfo-sc<s::S> = owned-c<uv-getaddrinfo-s-c>
-pub alias uv-getaddrinfo-scb<s::S> = borrowed-c<s,uv-getaddrinfo-s-c>
-pub alias uv-getaddrinfo-sca<s::S> = owned-c<c-array<uv-getaddrinfo-s-c>>
-
-pub extern uv-getaddrinfo-s/size-of(c: c-null<uv-getaddrinfo-s-c>): int32
-  c inline "sizeof(struct uv_getaddrinfo_s)"
-  wasm inline "0"
-
-pub fun uv-getaddrinfo-sc(): uv-getaddrinfo-sc<s::S>
-  malloc(?size-of=uv-getaddrinfo-s/size-of)
-
-pub fun uv-getaddrinfo-sc-calloc(): uv-getaddrinfo-sc<s::S>
-  malloc-c(?size-of=uv-getaddrinfo-s/size-of)
-
-pub fun uv-getaddrinfo-sc-array(n: int): uv-getaddrinfo-sca<s::S>
-  malloc(n.int32, ?size-of=uv-getaddrinfo-s/size-of)
-
-pub fun uv-getaddrinfo-sc-array-calloc(n: int): uv-getaddrinfo-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-getaddrinfo-s/size-of)
-
-alias uv-getaddrinfo-cb = c-pointer<intptr_t>
-alias uv-getaddrinfo-cbfn = ((req : c-pointer<uv-getaddrinfo-s-c>, status : int, res : c-pointer<addrinfo-c>) -> ())
-alias uv-getaddrinfo-t = uv-getaddrinfo-s-c
-pub struct addrinfo
-pub type addrinfo-c
-pub alias addrinfop = c-pointer<addrinfo-c>
-pub alias addrinfoc = owned-c<addrinfo-c>
-pub alias addrinfocb<s::S> = borrowed-c<s,addrinfo-c>
-pub alias addrinfoca = owned-c<c-array<addrinfo-c>>
-
-pub struct uv-getnameinfo-s
-pub type uv-getnameinfo-s-c
-pub alias uv-getnameinfo-sp = c-pointer<uv-getnameinfo-s-c>
-pub alias uv-getnameinfo-sc<s::S> = owned-c<uv-getnameinfo-s-c>
-pub alias uv-getnameinfo-scb<s::S> = borrowed-c<s,uv-getnameinfo-s-c>
-pub alias uv-getnameinfo-sca<s::S> = owned-c<c-array<uv-getnameinfo-s-c>>
-
-pub extern uv-getnameinfo-s/size-of(c: c-null<uv-getnameinfo-s-c>): int32
-  c inline "sizeof(struct uv_getnameinfo_s)"
-  wasm inline "0"
-
-pub fun uv-getnameinfo-sc(): uv-getnameinfo-sc<s::S>
-  malloc(?size-of=uv-getnameinfo-s/size-of)
-
-pub fun uv-getnameinfo-sc-calloc(): uv-getnameinfo-sc<s::S>
-  malloc-c(?size-of=uv-getnameinfo-s/size-of)
-
-pub fun uv-getnameinfo-sc-array(n: int): uv-getnameinfo-sca<s::S>
-  malloc(n.int32, ?size-of=uv-getnameinfo-s/size-of)
-
-pub fun uv-getnameinfo-sc-array-calloc(n: int): uv-getnameinfo-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-getnameinfo-s/size-of)
-
-alias uv-getnameinfo-cb = c-pointer<intptr_t>
-alias uv-getnameinfo-cbfn = ((req : c-pointer<uv-getnameinfo-s-c>, status : int, hostname : c-pointer<int>, service : c-pointer<int>) -> ())
-alias uv-getnameinfo-t = uv-getnameinfo-s-c
-pub struct sockaddr-storage
-pub type sockaddr-storage-c
-pub alias sockaddr-storagep = c-pointer<sockaddr-storage-c>
-pub alias sockaddr-storagec<s::S> = owned-c<sockaddr-storage-c>
-pub alias sockaddr-storagecb<s::S> = borrowed-c<s,sockaddr-storage-c>
-pub alias sockaddr-storageca<s::S> = owned-c<c-array<sockaddr-storage-c>>
-
-pub extern sockaddr-storage/size-of(c: c-null<sockaddr-storage-c>): int32
-  c inline "sizeof(struct sockaddr_storage)"
-  wasm inline "0"
-
-pub fun sockaddr-storagec(): sockaddr-storagec<s::S>
-  malloc(?size-of=sockaddr-storage/size-of)
-
-pub fun sockaddr-storagec-calloc(): sockaddr-storagec<s::S>
-  malloc-c(?size-of=sockaddr-storage/size-of)
-
-pub fun sockaddr-storagec-array(n: int): sockaddr-storageca<s::S>
-  malloc(n.int32, ?size-of=sockaddr-storage/size-of)
-
-pub fun sockaddr-storagec-array-calloc(n: int): sockaddr-storageca<s::S>
-  malloc-c(n.int32, ?size-of=sockaddr-storage/size-of)
-
-alias uint8-t = int
-alias sa-family-t = int
-alias int64-t = int
-pub struct uv-write-s
-pub type uv-write-s-c
-pub alias uv-write-sp = c-pointer<uv-write-s-c>
-pub alias uv-write-sc<s::S> = owned-c<uv-write-s-c>
-pub alias uv-write-scb<s::S> = borrowed-c<s,uv-write-s-c>
-pub alias uv-write-sca<s::S> = owned-c<c-array<uv-write-s-c>>
-
-pub extern uv-write-s/size-of(c: c-null<uv-write-s-c>): int32
-  c inline "sizeof(struct uv_write_s)"
-  wasm inline "0"
-
-pub fun uv-write-sc(): uv-write-sc<s::S>
-  malloc(?size-of=uv-write-s/size-of)
-
-pub fun uv-write-sc-calloc(): uv-write-sc<s::S>
-  malloc-c(?size-of=uv-write-s/size-of)
-
-pub fun uv-write-sc-array(n: int): uv-write-sca<s::S>
-  malloc(n.int32, ?size-of=uv-write-s/size-of)
-
-pub fun uv-write-sc-array-calloc(n: int): uv-write-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-write-s/size-of)
-
-alias uv-write-cb = c-pointer<intptr_t>
-alias uv-write-cbfn = ((req : c-pointer<uv-write-s-c>, status : int) -> ())
-alias uv-write-t = uv-write-s-c
-pub struct uv-udp-send-s
-pub type uv-udp-send-s-c
-pub alias uv-udp-send-sp = c-pointer<uv-udp-send-s-c>
-pub alias uv-udp-send-sc<s::S> = owned-c<uv-udp-send-s-c>
-pub alias uv-udp-send-scb<s::S> = borrowed-c<s,uv-udp-send-s-c>
-pub alias uv-udp-send-sca<s::S> = owned-c<c-array<uv-udp-send-s-c>>
-
-pub extern uv-udp-send-s/size-of(c: c-null<uv-udp-send-s-c>): int32
-  c inline "sizeof(struct uv_udp_send_s)"
-  wasm inline "0"
-
-pub fun uv-udp-send-sc(): uv-udp-send-sc<s::S>
-  malloc(?size-of=uv-udp-send-s/size-of)
-
-pub fun uv-udp-send-sc-calloc(): uv-udp-send-sc<s::S>
-  malloc-c(?size-of=uv-udp-send-s/size-of)
-
-pub fun uv-udp-send-sc-array(n: int): uv-udp-send-sca<s::S>
-  malloc(n.int32, ?size-of=uv-udp-send-s/size-of)
-
-pub fun uv-udp-send-sc-array-calloc(n: int): uv-udp-send-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-udp-send-s/size-of)
-
-alias uv-udp-send-cb = c-pointer<intptr_t>
-alias uv-udp-send-cbfn = ((req : c-pointer<uv-udp-send-s-c>, status : int) -> ())
-alias uv-udp-send-t = uv-udp-send-s-c
-pub struct uv-fs-s
-pub type uv-fs-s-c
-pub alias uv-fs-sp = c-pointer<uv-fs-s-c>
-pub alias uv-fs-sc<s::S> = owned-c<uv-fs-s-c>
-pub alias uv-fs-scb<s::S> = borrowed-c<s,uv-fs-s-c>
-pub alias uv-fs-sca<s::S> = owned-c<c-array<uv-fs-s-c>>
-
-pub extern uv-fs-s/size-of(c: c-null<uv-fs-s-c>): int32
-  c inline "sizeof(struct uv_fs_s)"
-  wasm inline "0"
-
-pub fun uv-fs-sc(): uv-fs-sc<s::S>
-  malloc(?size-of=uv-fs-s/size-of)
-
-pub fun uv-fs-sc-calloc(): uv-fs-sc<s::S>
-  malloc-c(?size-of=uv-fs-s/size-of)
-
-pub fun uv-fs-sc-array(n: int): uv-fs-sca<s::S>
-  malloc(n.int32, ?size-of=uv-fs-s/size-of)
-
-pub fun uv-fs-sc-array-calloc(n: int): uv-fs-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-fs-s/size-of)
-
+pub struct uv-rusage-t
+pub type uv-rusage-t-c
+pub alias uv-rusage-tp = c-pointer<uv-rusage-t-c>
+pub alias uv-rusage-tc = owned-c<uv-rusage-t-c>
+pub alias uv-rusage-tcb<s::S> = borrowed-c<s,uv-rusage-t-c>
+pub alias uv-rusage-tca = owned-c<c-array<uv-rusage-t-c>>
+
+alias uv-passwd-t = uv-passwd-s-c
+alias uv-uid-t = int
+alias darwin-uid-t = int
+alias uint32-t = int
+alias uv-group-t = uv-group-s-c
+alias uv-cpu-info-t = uv-cpu-info-s-c
+alias uv-interface-address-t = uv-interface-address-s-c
+alias uv-env-item-t = uv-env-item-s-c
+alias uv-utsname-t = uv-utsname-s-c
+alias uv-metrics-t = uv-metrics-s-c
 pub type uv-fs-type-enum
   UV_FS_UNKNOWN
   UV_FS_CUSTOM
@@ -3843,941 +3182,13 @@ pub fun int/uv-fs-type-enum(i: int32): exn uv-fs-type-enum
     35 -> UV_FS_MKSTEMP
     36 -> UV_FS_LUTIME
 
+alias uv-fs-t = uv-fs-s-c
 alias uv-fs-cb = c-pointer<intptr_t>
 alias uv-fs-cbfn = ((req : c-pointer<uv-fs-s-c>) -> ())
-alias uv-fs-t = uv-fs-s-c
-pub struct uv-stat-t
-  st-dev: int
-  st-mode: int
-  st-nlink: int
-  st-uid: int
-  st-gid: int
-  st-rdev: int
-  st-ino: int
-  st-size: int
-  st-blksize: int
-  st-blocks: int
-  st-flags: int
-  st-gen: int
-  st-atim: uv-timespec-t-c
-  st-mtim: uv-timespec-t-c
-  st-ctim: uv-timespec-t-c
-  st-birthtim: uv-timespec-t-c
-
-pub type uv-stat-t-c
-pub alias uv-stat-tp = c-pointer<uv-stat-t-c>
-pub alias uv-stat-tc = owned-c<uv-stat-t-c>
-pub alias uv-stat-tcb<s::S> = borrowed-c<s,uv-stat-t-c>
-pub alias uv-stat-tca = owned-c<c-array<uv-stat-t-c>>
-
-pub extern uv-stat-t/size-of(c: c-null<uv-stat-t-c>): int32
-  c inline "sizeof(uv_stat_t)"
-  wasm inline "0"
-
-pub fun uv-stat-tc(): uv-stat-tc
-  malloc(?size-of=uv-stat-t/size-of)
-
-pub fun uv-stat-tc-calloc(): uv-stat-tc
-  malloc-c(?size-of=uv-stat-t/size-of)
-
-pub fun uv-stat-tc-array(n: int): uv-stat-tca
-  malloc(n.int32, ?size-of=uv-stat-t/size-of)
-
-pub fun uv-stat-tc-array-calloc(n: int): uv-stat-tca
-  malloc-c(n.int32, ?size-of=uv-stat-t/size-of)
-
-pub value struct uv-timespec-t
-  tv-sec: int
-  tv-nsec: int
-
-pub type uv-timespec-t-c
-pub alias uv-timespec-tp = c-pointer<uv-timespec-t-c>
-pub alias uv-timespec-tc = owned-c<uv-timespec-t-c>
-pub alias uv-timespec-tcb<s::S> = borrowed-c<s,uv-timespec-t-c>
-pub alias uv-timespec-tca = owned-c<c-array<uv-timespec-t-c>>
-
-pub extern uv-timespec-t/size-of(c: c-null<uv-timespec-t-c>): int32
-  c inline "sizeof(uv_timespec_t)"
-  wasm inline "0"
-
-pub fun uv-timespec-tc(): uv-timespec-tc
-  malloc(?size-of=uv-timespec-t/size-of)
-
-pub fun uv-timespec-tc-calloc(): uv-timespec-tc
-  malloc-c(?size-of=uv-timespec-t/size-of)
-
-pub fun uv-timespec-tc-array(n: int): uv-timespec-tca
-  malloc(n.int32, ?size-of=uv-timespec-t/size-of)
-
-pub fun uv-timespec-tc-array-calloc(n: int): uv-timespec-tca
-  malloc-c(n.int32, ?size-of=uv-timespec-t/size-of)
-
-alias uv-file = int
-alias darwin-mode-t = int
-alias uint16-t = int
-alias off-t = int
-alias darwin-off-t = int
-alias uv-uid-t = int
-alias darwin-uid-t = int
-alias uint32-t = int
+alias uv-dirent-t = uv-dirent-s-c
+alias uv-dir-t = uv-dir-s-c
 alias uv-gid-t = int
 alias darwin-gid-t = int
-pub struct uv-work-s
-pub type uv-work-s-c
-pub alias uv-work-sp = c-pointer<uv-work-s-c>
-pub alias uv-work-sc<s::S> = owned-c<uv-work-s-c>
-pub alias uv-work-scb<s::S> = borrowed-c<s,uv-work-s-c>
-pub alias uv-work-sca<s::S> = owned-c<c-array<uv-work-s-c>>
-
-pub extern uv-work-s/size-of(c: c-null<uv-work-s-c>): int32
-  c inline "sizeof(struct uv_work_s)"
-  wasm inline "0"
-
-pub fun uv-work-sc(): uv-work-sc<s::S>
-  malloc(?size-of=uv-work-s/size-of)
-
-pub fun uv-work-sc-calloc(): uv-work-sc<s::S>
-  malloc-c(?size-of=uv-work-s/size-of)
-
-pub fun uv-work-sc-array(n: int): uv-work-sca<s::S>
-  malloc(n.int32, ?size-of=uv-work-s/size-of)
-
-pub fun uv-work-sc-array-calloc(n: int): uv-work-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-work-s/size-of)
-
-alias uv-work-cb = c-pointer<intptr_t>
-alias uv-work-cbfn = ((req : c-pointer<uv-work-s-c>) -> ())
-alias uv-work-t = uv-work-s-c
-alias uv-after-work-cb = c-pointer<intptr_t>
-alias uv-after-work-cbfn = ((req : c-pointer<uv-work-s-c>, status : int) -> ())
-pub struct uv-random-s
-pub type uv-random-s-c
-pub alias uv-random-sp = c-pointer<uv-random-s-c>
-pub alias uv-random-sc<s::S> = owned-c<uv-random-s-c>
-pub alias uv-random-scb<s::S> = borrowed-c<s,uv-random-s-c>
-pub alias uv-random-sca<s::S> = owned-c<c-array<uv-random-s-c>>
-
-pub extern uv-random-s/size-of(c: c-null<uv-random-s-c>): int32
-  c inline "sizeof(struct uv_random_s)"
-  wasm inline "0"
-
-pub fun uv-random-sc(): uv-random-sc<s::S>
-  malloc(?size-of=uv-random-s/size-of)
-
-pub fun uv-random-sc-calloc(): uv-random-sc<s::S>
-  malloc-c(?size-of=uv-random-s/size-of)
-
-pub fun uv-random-sc-array(n: int): uv-random-sca<s::S>
-  malloc(n.int32, ?size-of=uv-random-s/size-of)
-
-pub fun uv-random-sc-array-calloc(n: int): uv-random-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-random-s/size-of)
-
-alias uv-random-cb = c-pointer<intptr_t>
-alias uv-random-cbfn = ((req : c-pointer<uv-random-s-c>, status : int, buf : c-pointer<()>, buflen : int) -> ())
-alias uv-random-t = uv-random-s-c
-pub value struct uv-env-item-s
-  name: c-pointer<int>
-  value: c-pointer<int>
-
-pub type uv-env-item-s-c
-pub alias uv-env-item-sp = c-pointer<uv-env-item-s-c>
-pub alias uv-env-item-sc = owned-c<uv-env-item-s-c>
-pub alias uv-env-item-scb<s::S> = borrowed-c<s,uv-env-item-s-c>
-pub alias uv-env-item-sca = owned-c<c-array<uv-env-item-s-c>>
-
-pub extern uv-env-item-s/size-of(c: c-null<uv-env-item-s-c>): int32
-  c inline "sizeof(struct uv_env_item_s)"
-  wasm inline "0"
-
-pub fun uv-env-item-sc(): uv-env-item-sc
-  malloc(?size-of=uv-env-item-s/size-of)
-
-pub fun uv-env-item-sc-calloc(): uv-env-item-sc
-  malloc-c(?size-of=uv-env-item-s/size-of)
-
-pub fun uv-env-item-sc-array(n: int): uv-env-item-sca
-  malloc(n.int32, ?size-of=uv-env-item-s/size-of)
-
-pub fun uv-env-item-sc-array-calloc(n: int): uv-env-item-sca
-  malloc-c(n.int32, ?size-of=uv-env-item-s/size-of)
-
-pub value struct uv-cpu-info-s
-  model: c-pointer<int>
-  speed: int
-  cpu-times: uv-cpu-times-s-c
-
-pub type uv-cpu-info-s-c
-pub alias uv-cpu-info-sp = c-pointer<uv-cpu-info-s-c>
-pub alias uv-cpu-info-sc = owned-c<uv-cpu-info-s-c>
-pub alias uv-cpu-info-scb<s::S> = borrowed-c<s,uv-cpu-info-s-c>
-pub alias uv-cpu-info-sca = owned-c<c-array<uv-cpu-info-s-c>>
-
-pub extern uv-cpu-info-s/size-of(c: c-null<uv-cpu-info-s-c>): int32
-  c inline "sizeof(struct uv_cpu_info_s)"
-  wasm inline "0"
-
-pub fun uv-cpu-info-sc(): uv-cpu-info-sc
-  malloc(?size-of=uv-cpu-info-s/size-of)
-
-pub fun uv-cpu-info-sc-calloc(): uv-cpu-info-sc
-  malloc-c(?size-of=uv-cpu-info-s/size-of)
-
-pub fun uv-cpu-info-sc-array(n: int): uv-cpu-info-sca
-  malloc(n.int32, ?size-of=uv-cpu-info-s/size-of)
-
-pub fun uv-cpu-info-sc-array-calloc(n: int): uv-cpu-info-sca
-  malloc-c(n.int32, ?size-of=uv-cpu-info-s/size-of)
-
-pub struct uv-cpu-times-s
-  user: int
-  nice: int
-  sys: int
-  idle: int
-  irq: int
-
-pub type uv-cpu-times-s-c
-pub alias uv-cpu-times-sp = c-pointer<uv-cpu-times-s-c>
-pub alias uv-cpu-times-sc = owned-c<uv-cpu-times-s-c>
-pub alias uv-cpu-times-scb<s::S> = borrowed-c<s,uv-cpu-times-s-c>
-pub alias uv-cpu-times-sca = owned-c<c-array<uv-cpu-times-s-c>>
-
-pub extern uv-cpu-times-s/size-of(c: c-null<uv-cpu-times-s-c>): int32
-  c inline "sizeof(struct uv_cpu_times_s)"
-  wasm inline "0"
-
-pub fun uv-cpu-times-sc(): uv-cpu-times-sc
-  malloc(?size-of=uv-cpu-times-s/size-of)
-
-pub fun uv-cpu-times-sc-calloc(): uv-cpu-times-sc
-  malloc-c(?size-of=uv-cpu-times-s/size-of)
-
-pub fun uv-cpu-times-sc-array(n: int): uv-cpu-times-sca
-  malloc(n.int32, ?size-of=uv-cpu-times-s/size-of)
-
-pub fun uv-cpu-times-sc-array-calloc(n: int): uv-cpu-times-sca
-  malloc-c(n.int32, ?size-of=uv-cpu-times-s/size-of)
-
-pub struct uv-interface-address-s
-pub type uv-interface-address-s-c
-pub alias uv-interface-address-sp = c-pointer<uv-interface-address-s-c>
-pub alias uv-interface-address-sc<s::S> = owned-c<uv-interface-address-s-c>
-pub alias uv-interface-address-scb<s::S> = borrowed-c<s,uv-interface-address-s-c>
-pub alias uv-interface-address-sca<s::S> = owned-c<c-array<uv-interface-address-s-c>>
-
-pub extern uv-interface-address-s/size-of(c: c-null<uv-interface-address-s-c>): int32
-  c inline "sizeof(struct uv_interface_address_s)"
-  wasm inline "0"
-
-pub fun uv-interface-address-sc(): uv-interface-address-sc<s::S>
-  malloc(?size-of=uv-interface-address-s/size-of)
-
-pub fun uv-interface-address-sc-calloc(): uv-interface-address-sc<s::S>
-  malloc-c(?size-of=uv-interface-address-s/size-of)
-
-pub fun uv-interface-address-sc-array(n: int): uv-interface-address-sca<s::S>
-  malloc(n.int32, ?size-of=uv-interface-address-s/size-of)
-
-pub fun uv-interface-address-sc-array-calloc(n: int): uv-interface-address-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-interface-address-s/size-of)
-
-pub struct unnamed-union18
-pub type unnamed-union18-c
-pub alias unnamed-union18p = c-pointer<unnamed-union18-c>
-pub alias unnamed-union18c = owned-c<unnamed-union18-c>
-pub alias unnamed-union18cb<s::S> = borrowed-c<s,unnamed-union18-c>
-pub alias unnamed-union18ca = owned-c<c-array<unnamed-union18-c>>
-
-pub struct sockaddr-in
-pub type sockaddr-in-c
-pub alias sockaddr-inp = c-pointer<sockaddr-in-c>
-pub alias sockaddr-inc<s::S> = owned-c<sockaddr-in-c>
-pub alias sockaddr-incb<s::S> = borrowed-c<s,sockaddr-in-c>
-pub alias sockaddr-inca<s::S> = owned-c<c-array<sockaddr-in-c>>
-
-pub extern sockaddr-in/size-of(c: c-null<sockaddr-in-c>): int32
-  c inline "sizeof(struct sockaddr_in)"
-  wasm inline "0"
-
-pub fun sockaddr-inc(): sockaddr-inc<s::S>
-  malloc(?size-of=sockaddr-in/size-of)
-
-pub fun sockaddr-inc-calloc(): sockaddr-inc<s::S>
-  malloc-c(?size-of=sockaddr-in/size-of)
-
-pub fun sockaddr-inc-array(n: int): sockaddr-inca<s::S>
-  malloc(n.int32, ?size-of=sockaddr-in/size-of)
-
-pub fun sockaddr-inc-array-calloc(n: int): sockaddr-inca<s::S>
-  malloc-c(n.int32, ?size-of=sockaddr-in/size-of)
-
-alias in-port-t = int
-pub value struct in-addr
-  s-addr: int
-
-pub type in-addr-c
-pub alias in-addrp = c-pointer<in-addr-c>
-pub alias in-addrc = owned-c<in-addr-c>
-pub alias in-addrcb<s::S> = borrowed-c<s,in-addr-c>
-pub alias in-addrca = owned-c<c-array<in-addr-c>>
-
-pub extern in-addr/size-of(c: c-null<in-addr-c>): int32
-  c inline "sizeof(struct in_addr)"
-  wasm inline "0"
-
-pub fun in-addrc(): in-addrc
-  malloc(?size-of=in-addr/size-of)
-
-pub fun in-addrc-calloc(): in-addrc
-  malloc-c(?size-of=in-addr/size-of)
-
-pub fun in-addrc-array(n: int): in-addrca
-  malloc(n.int32, ?size-of=in-addr/size-of)
-
-pub fun in-addrc-array-calloc(n: int): in-addrca
-  malloc-c(n.int32, ?size-of=in-addr/size-of)
-
-alias in-addr-t = int
-pub struct sockaddr-in6
-  sin6-len: int
-  sin6-family: int
-  sin6-port: int
-  sin6-flowinfo: int
-  sin6-addr: in6-addr-c
-  sin6-scope-id: int
-
-pub type sockaddr-in6-c
-pub alias sockaddr-in6p = c-pointer<sockaddr-in6-c>
-pub alias sockaddr-in6c = owned-c<sockaddr-in6-c>
-pub alias sockaddr-in6cb<s::S> = borrowed-c<s,sockaddr-in6-c>
-pub alias sockaddr-in6ca = owned-c<c-array<sockaddr-in6-c>>
-
-pub extern sockaddr-in6/size-of(c: c-null<sockaddr-in6-c>): int32
-  c inline "sizeof(struct sockaddr_in6)"
-  wasm inline "0"
-
-pub fun sockaddr-in6c(): sockaddr-in6c
-  malloc(?size-of=sockaddr-in6/size-of)
-
-pub fun sockaddr-in6c-calloc(): sockaddr-in6c
-  malloc-c(?size-of=sockaddr-in6/size-of)
-
-pub fun sockaddr-in6c-array(n: int): sockaddr-in6ca
-  malloc(n.int32, ?size-of=sockaddr-in6/size-of)
-
-pub fun sockaddr-in6c-array-calloc(n: int): sockaddr-in6ca
-  malloc-c(n.int32, ?size-of=sockaddr-in6/size-of)
-
-pub value struct in6-addr
-  u6-addr: unnamed-union19-c
-
-pub type in6-addr-c
-pub alias in6-addrp = c-pointer<in6-addr-c>
-pub alias in6-addrc = owned-c<in6-addr-c>
-pub alias in6-addrcb<s::S> = borrowed-c<s,in6-addr-c>
-pub alias in6-addrca = owned-c<c-array<in6-addr-c>>
-
-pub extern in6-addr/size-of(c: c-null<in6-addr-c>): int32
-  c inline "sizeof(struct in6_addr)"
-  wasm inline "0"
-
-pub fun in6-addrc(): in6-addrc
-  malloc(?size-of=in6-addr/size-of)
-
-pub fun in6-addrc-calloc(): in6-addrc
-  malloc-c(?size-of=in6-addr/size-of)
-
-pub fun in6-addrc-array(n: int): in6-addrca
-  malloc(n.int32, ?size-of=in6-addr/size-of)
-
-pub fun in6-addrc-array-calloc(n: int): in6-addrca
-  malloc-c(n.int32, ?size-of=in6-addr/size-of)
-
-pub struct unnamed-union19
-pub type unnamed-union19-c
-pub alias unnamed-union19p = c-pointer<unnamed-union19-c>
-pub alias unnamed-union19c<s::S> = owned-c<unnamed-union19-c>
-pub alias unnamed-union19cb<s::S> = borrowed-c<s,unnamed-union19-c>
-pub alias unnamed-union19ca<s::S> = owned-c<c-array<unnamed-union19-c>>
-
-pub struct unnamed-union20
-pub type unnamed-union20-c
-pub alias unnamed-union20p = c-pointer<unnamed-union20-c>
-pub alias unnamed-union20c = owned-c<unnamed-union20-c>
-pub alias unnamed-union20cb<s::S> = borrowed-c<s,unnamed-union20-c>
-pub alias unnamed-union20ca = owned-c<c-array<unnamed-union20-c>>
-
-pub struct uv-passwd-s
-  username: c-pointer<int>
-  uid: int
-  gid: int
-  shell: c-pointer<int>
-  homedir: c-pointer<int>
-
-pub type uv-passwd-s-c
-pub alias uv-passwd-sp = c-pointer<uv-passwd-s-c>
-pub alias uv-passwd-sc = owned-c<uv-passwd-s-c>
-pub alias uv-passwd-scb<s::S> = borrowed-c<s,uv-passwd-s-c>
-pub alias uv-passwd-sca = owned-c<c-array<uv-passwd-s-c>>
-
-pub extern uv-passwd-s/size-of(c: c-null<uv-passwd-s-c>): int32
-  c inline "sizeof(struct uv_passwd_s)"
-  wasm inline "0"
-
-pub fun uv-passwd-sc(): uv-passwd-sc
-  malloc(?size-of=uv-passwd-s/size-of)
-
-pub fun uv-passwd-sc-calloc(): uv-passwd-sc
-  malloc-c(?size-of=uv-passwd-s/size-of)
-
-pub fun uv-passwd-sc-array(n: int): uv-passwd-sca
-  malloc(n.int32, ?size-of=uv-passwd-s/size-of)
-
-pub fun uv-passwd-sc-array-calloc(n: int): uv-passwd-sca
-  malloc-c(n.int32, ?size-of=uv-passwd-s/size-of)
-
-pub value struct uv-group-s
-  groupname: c-pointer<int>
-  gid: int
-  members: c-pointer<c-pointer<int>>
-
-pub type uv-group-s-c
-pub alias uv-group-sp = c-pointer<uv-group-s-c>
-pub alias uv-group-sc = owned-c<uv-group-s-c>
-pub alias uv-group-scb<s::S> = borrowed-c<s,uv-group-s-c>
-pub alias uv-group-sca = owned-c<c-array<uv-group-s-c>>
-
-pub extern uv-group-s/size-of(c: c-null<uv-group-s-c>): int32
-  c inline "sizeof(struct uv_group_s)"
-  wasm inline "0"
-
-pub fun uv-group-sc(): uv-group-sc
-  malloc(?size-of=uv-group-s/size-of)
-
-pub fun uv-group-sc-calloc(): uv-group-sc
-  malloc-c(?size-of=uv-group-s/size-of)
-
-pub fun uv-group-sc-array(n: int): uv-group-sca
-  malloc(n.int32, ?size-of=uv-group-s/size-of)
-
-pub fun uv-group-sc-array-calloc(n: int): uv-group-sca
-  malloc-c(n.int32, ?size-of=uv-group-s/size-of)
-
-pub struct uv-utsname-s
-pub type uv-utsname-s-c
-pub alias uv-utsname-sp = c-pointer<uv-utsname-s-c>
-pub alias uv-utsname-sc<s::S> = owned-c<uv-utsname-s-c>
-pub alias uv-utsname-scb<s::S> = borrowed-c<s,uv-utsname-s-c>
-pub alias uv-utsname-sca<s::S> = owned-c<c-array<uv-utsname-s-c>>
-
-pub extern uv-utsname-s/size-of(c: c-null<uv-utsname-s-c>): int32
-  c inline "sizeof(struct uv_utsname_s)"
-  wasm inline "0"
-
-pub fun uv-utsname-sc(): uv-utsname-sc<s::S>
-  malloc(?size-of=uv-utsname-s/size-of)
-
-pub fun uv-utsname-sc-calloc(): uv-utsname-sc<s::S>
-  malloc-c(?size-of=uv-utsname-s/size-of)
-
-pub fun uv-utsname-sc-array(n: int): uv-utsname-sca<s::S>
-  malloc(n.int32, ?size-of=uv-utsname-s/size-of)
-
-pub fun uv-utsname-sc-array-calloc(n: int): uv-utsname-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-utsname-s/size-of)
-
-pub struct uv-statfs-s
-pub type uv-statfs-s-c
-pub alias uv-statfs-sp = c-pointer<uv-statfs-s-c>
-pub alias uv-statfs-sc<s::S> = owned-c<uv-statfs-s-c>
-pub alias uv-statfs-scb<s::S> = borrowed-c<s,uv-statfs-s-c>
-pub alias uv-statfs-sca<s::S> = owned-c<c-array<uv-statfs-s-c>>
-
-pub extern uv-statfs-s/size-of(c: c-null<uv-statfs-s-c>): int32
-  c inline "sizeof(struct uv_statfs_s)"
-  wasm inline "0"
-
-pub fun uv-statfs-sc(): uv-statfs-sc<s::S>
-  malloc(?size-of=uv-statfs-s/size-of)
-
-pub fun uv-statfs-sc-calloc(): uv-statfs-sc<s::S>
-  malloc-c(?size-of=uv-statfs-s/size-of)
-
-pub fun uv-statfs-sc-array(n: int): uv-statfs-sca<s::S>
-  malloc(n.int32, ?size-of=uv-statfs-s/size-of)
-
-pub fun uv-statfs-sc-array-calloc(n: int): uv-statfs-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-statfs-s/size-of)
-
-pub struct uv-metrics-s
-pub type uv-metrics-s-c
-pub alias uv-metrics-sp = c-pointer<uv-metrics-s-c>
-pub alias uv-metrics-sc<s::S> = owned-c<uv-metrics-s-c>
-pub alias uv-metrics-scb<s::S> = borrowed-c<s,uv-metrics-s-c>
-pub alias uv-metrics-sca<s::S> = owned-c<c-array<uv-metrics-s-c>>
-
-pub extern uv-metrics-s/size-of(c: c-null<uv-metrics-s-c>): int32
-  c inline "sizeof(struct uv_metrics_s)"
-  wasm inline "0"
-
-pub fun uv-metrics-sc(): uv-metrics-sc<s::S>
-  malloc(?size-of=uv-metrics-s/size-of)
-
-pub fun uv-metrics-sc-calloc(): uv-metrics-sc<s::S>
-  malloc-c(?size-of=uv-metrics-s/size-of)
-
-pub fun uv-metrics-sc-array(n: int): uv-metrics-sca<s::S>
-  malloc(n.int32, ?size-of=uv-metrics-s/size-of)
-
-pub fun uv-metrics-sc-array-calloc(n: int): uv-metrics-sca<s::S>
-  malloc-c(n.int32, ?size-of=uv-metrics-s/size-of)
-
-pub type uv-loop-option-enum
-  UV_LOOP_BLOCK_SIGNAL
-  UV_METRICS_IDLE_TIME
-
-pub fun uv-loop-option-enum/int(i: uv-loop-option-enum): int32
-  match i
-    UV_LOOP_BLOCK_SIGNAL -> 0.int32
-    UV_METRICS_IDLE_TIME -> 1.int32
-
-pub fun int/uv-loop-option-enum(i: int32): exn uv-loop-option-enum
-  match i.int
-    0 -> UV_LOOP_BLOCK_SIGNAL
-    1 -> UV_METRICS_IDLE_TIME
-
-pub type uv-run-mode-enum
-  UV_RUN_DEFAULT
-  UV_RUN_ONCE
-  UV_RUN_NOWAIT
-
-pub fun uv-run-mode-enum/int(i: uv-run-mode-enum): int32
-  match i
-    UV_RUN_DEFAULT -> 0.int32
-    UV_RUN_ONCE -> 1.int32
-    UV_RUN_NOWAIT -> 2.int32
-
-pub fun int/uv-run-mode-enum(i: int32): exn uv-run-mode-enum
-  match i.int
-    0 -> UV_RUN_DEFAULT
-    1 -> UV_RUN_ONCE
-    2 -> UV_RUN_NOWAIT
-
-alias uv-malloc-func = c-pointer<intptr_t>
-alias uv-malloc-funcfn = ((size : int) -> c-pointer<()>)
-alias uv-realloc-func = c-pointer<intptr_t>
-alias uv-realloc-funcfn = ((ptr : c-pointer<()>, size : int) -> c-pointer<()>)
-alias uv-calloc-func = c-pointer<intptr_t>
-alias uv-calloc-funcfn = ((count : int, size : int) -> c-pointer<()>)
-alias uv-free-func = c-pointer<intptr_t>
-alias uv-free-funcfn = ((ptr : c-pointer<()>) -> ())
-pub type uv-clock-id-enum
-  UV_CLOCK_MONOTONIC
-  UV_CLOCK_REALTIME
-
-pub fun uv-clock-id-enum/int(i: uv-clock-id-enum): int32
-  match i
-    UV_CLOCK_MONOTONIC -> 0.int32
-    UV_CLOCK_REALTIME -> 1.int32
-
-pub fun int/uv-clock-id-enum(i: int32): exn uv-clock-id-enum
-  match i.int
-    0 -> UV_CLOCK_MONOTONIC
-    1 -> UV_CLOCK_REALTIME
-
-pub value struct uv-timespec64-t
-  tv-sec: int
-  tv-nsec: int
-
-pub type uv-timespec64-t-c
-pub alias uv-timespec64-tp = c-pointer<uv-timespec64-t-c>
-pub alias uv-timespec64-tc = owned-c<uv-timespec64-t-c>
-pub alias uv-timespec64-tcb<s::S> = borrowed-c<s,uv-timespec64-t-c>
-pub alias uv-timespec64-tca = owned-c<c-array<uv-timespec64-t-c>>
-
-pub extern uv-timespec64-t/size-of(c: c-null<uv-timespec64-t-c>): int32
-  c inline "sizeof(uv_timespec64_t)"
-  wasm inline "0"
-
-pub fun uv-timespec64-tc(): uv-timespec64-tc
-  malloc(?size-of=uv-timespec64-t/size-of)
-
-pub fun uv-timespec64-tc-calloc(): uv-timespec64-tc
-  malloc-c(?size-of=uv-timespec64-t/size-of)
-
-pub fun uv-timespec64-tc-array(n: int): uv-timespec64-tca
-  malloc(n.int32, ?size-of=uv-timespec64-t/size-of)
-
-pub fun uv-timespec64-tc-array-calloc(n: int): uv-timespec64-tca
-  malloc-c(n.int32, ?size-of=uv-timespec64-t/size-of)
-
-pub value struct uv-timeval-t
-  tv-sec: int
-  tv-usec: int
-
-pub type uv-timeval-t-c
-pub alias uv-timeval-tp = c-pointer<uv-timeval-t-c>
-pub alias uv-timeval-tc = owned-c<uv-timeval-t-c>
-pub alias uv-timeval-tcb<s::S> = borrowed-c<s,uv-timeval-t-c>
-pub alias uv-timeval-tca = owned-c<c-array<uv-timeval-t-c>>
-
-pub extern uv-timeval-t/size-of(c: c-null<uv-timeval-t-c>): int32
-  c inline "sizeof(uv_timeval_t)"
-  wasm inline "0"
-
-pub fun uv-timeval-tc(): uv-timeval-tc
-  malloc(?size-of=uv-timeval-t/size-of)
-
-pub fun uv-timeval-tc-calloc(): uv-timeval-tc
-  malloc-c(?size-of=uv-timeval-t/size-of)
-
-pub fun uv-timeval-tc-array(n: int): uv-timeval-tca
-  malloc(n.int32, ?size-of=uv-timeval-t/size-of)
-
-pub fun uv-timeval-tc-array-calloc(n: int): uv-timeval-tca
-  malloc-c(n.int32, ?size-of=uv-timeval-t/size-of)
-
-pub value struct uv-timeval64-t
-  tv-sec: int
-  tv-usec: int
-
-pub type uv-timeval64-t-c
-pub alias uv-timeval64-tp = c-pointer<uv-timeval64-t-c>
-pub alias uv-timeval64-tc = owned-c<uv-timeval64-t-c>
-pub alias uv-timeval64-tcb<s::S> = borrowed-c<s,uv-timeval64-t-c>
-pub alias uv-timeval64-tca = owned-c<c-array<uv-timeval64-t-c>>
-
-pub extern uv-timeval64-t/size-of(c: c-null<uv-timeval64-t-c>): int32
-  c inline "sizeof(uv_timeval64_t)"
-  wasm inline "0"
-
-pub fun uv-timeval64-tc(): uv-timeval64-tc
-  malloc(?size-of=uv-timeval64-t/size-of)
-
-pub fun uv-timeval64-tc-calloc(): uv-timeval64-tc
-  malloc-c(?size-of=uv-timeval64-t/size-of)
-
-pub fun uv-timeval64-tc-array(n: int): uv-timeval64-tca
-  malloc(n.int32, ?size-of=uv-timeval64-t/size-of)
-
-pub fun uv-timeval64-tc-array-calloc(n: int): uv-timeval64-tca
-  malloc-c(n.int32, ?size-of=uv-timeval64-t/size-of)
-
-pub type uv-membership-enum
-  UV_LEAVE_GROUP
-  UV_JOIN_GROUP
-
-pub fun uv-membership-enum/int(i: uv-membership-enum): int32
-  match i
-    UV_LEAVE_GROUP -> 0.int32
-    UV_JOIN_GROUP -> 1.int32
-
-pub fun int/uv-membership-enum(i: int32): exn uv-membership-enum
-  match i.int
-    0 -> UV_LEAVE_GROUP
-    1 -> UV_JOIN_GROUP
-
-alias uv-req-t = uv-req-s-c
-alias uv-walk-cb = c-pointer<intptr_t>
-alias uv-walk-cbfn = ((handle1 : c-pointer<uv-handle-s-c>, arg : c-pointer<()>) -> ())
-alias file = sfile-c
-pub struct sfile
-pub type sfile-c
-pub alias sfilep = c-pointer<sfile-c>
-pub alias sfilec = owned-c<sfile-c>
-pub alias sfilecb<s::S> = borrowed-c<s,sfile-c>
-pub alias sfileca = owned-c<c-array<sfile-c>>
-
-alias uv-os-fd-t = int
-alias uv-os-sock-t = int
-alias uv-tcp-t = uv-tcp-s-c
-alias koka-uv-tcp-t = uv-tcp-s
-pub type uv-tcp-flags-enum
-  UV_TCP_IPV6ONLY
-
-pub fun uv-tcp-flags-enum/int(i: uv-tcp-flags-enum): int32
-  match i
-    UV_TCP_IPV6ONLY -> 1.int32
-
-pub fun int/uv-tcp-flags-enum(i: int32): exn uv-tcp-flags-enum
-  match i.int
-    1 -> UV_TCP_IPV6ONLY
-
-pub type uv-udp-flags-enum
-  UV_UDP_IPV6ONLY
-  UV_UDP_PARTIAL
-  UV_UDP_REUSEADDR
-  UV_UDP_MMSG_CHUNK
-  UV_UDP_MMSG_FREE
-  UV_UDP_LINUX_RECVERR
-  UV_UDP_RECVMMSG
-
-pub fun uv-udp-flags-enum/int(i: uv-udp-flags-enum): int32
-  match i
-    UV_UDP_IPV6ONLY -> 1.int32
-    UV_UDP_PARTIAL -> 2.int32
-    UV_UDP_REUSEADDR -> 4.int32
-    UV_UDP_MMSG_CHUNK -> 8.int32
-    UV_UDP_MMSG_FREE -> 16.int32
-    UV_UDP_LINUX_RECVERR -> 32.int32
-    UV_UDP_RECVMMSG -> 256.int32
-
-pub fun int/uv-udp-flags-enum(i: int32): exn uv-udp-flags-enum
-  match i.int
-    1 -> UV_UDP_IPV6ONLY
-    2 -> UV_UDP_PARTIAL
-    4 -> UV_UDP_REUSEADDR
-    8 -> UV_UDP_MMSG_CHUNK
-    16 -> UV_UDP_MMSG_FREE
-    32 -> UV_UDP_LINUX_RECVERR
-    256 -> UV_UDP_RECVMMSG
-
-pub type uv-tty-mode-t-enum
-  UV_TTY_MODE_NORMAL
-  UV_TTY_MODE_RAW
-  UV_TTY_MODE_IO
-
-pub fun uv-tty-mode-t-enum/int(i: uv-tty-mode-t-enum): int32
-  match i
-    UV_TTY_MODE_NORMAL -> 0.int32
-    UV_TTY_MODE_RAW -> 1.int32
-    UV_TTY_MODE_IO -> 2.int32
-
-pub fun int/uv-tty-mode-t-enum(i: int32): exn uv-tty-mode-t-enum
-  match i.int
-    0 -> UV_TTY_MODE_NORMAL
-    1 -> UV_TTY_MODE_RAW
-    2 -> UV_TTY_MODE_IO
-
-pub type uv-tty-vtermstate-t-enum
-  UV_TTY_SUPPORTED
-  UV_TTY_UNSUPPORTED
-
-pub fun uv-tty-vtermstate-t-enum/int(i: uv-tty-vtermstate-t-enum): int32
-  match i
-    UV_TTY_SUPPORTED -> 0.int32
-    UV_TTY_UNSUPPORTED -> 1.int32
-
-pub fun int/uv-tty-vtermstate-t-enum(i: int32): exn uv-tty-vtermstate-t-enum
-  match i.int
-    0 -> UV_TTY_SUPPORTED
-    1 -> UV_TTY_UNSUPPORTED
-
-alias uv-tty-t = uv-tty-s-c
-alias koka-uv-tty-t = uv-tty-s
-alias uv-pipe-t = uv-pipe-s-c
-alias koka-uv-pipe-t = uv-pipe-s
-pub type uv-poll-event-enum
-  UV_READABLE
-  UV_WRITABLE
-  UV_DISCONNECT
-  UV_PRIORITIZED
-
-pub fun uv-poll-event-enum/int(i: uv-poll-event-enum): int32
-  match i
-    UV_READABLE -> 1.int32
-    UV_WRITABLE -> 2.int32
-    UV_DISCONNECT -> 4.int32
-    UV_PRIORITIZED -> 8.int32
-
-pub fun int/uv-poll-event-enum(i: int32): exn uv-poll-event-enum
-  match i.int
-    1 -> UV_READABLE
-    2 -> UV_WRITABLE
-    4 -> UV_DISCONNECT
-    8 -> UV_PRIORITIZED
-
-pub type uv-stdio-flags-enum
-  UV_IGNORE
-  UV_CREATE_PIPE
-  UV_INHERIT_FD
-  UV_INHERIT_STREAM
-  UV_READABLE_PIPE
-  UV_WRITABLE_PIPE
-  UV_NONBLOCK_PIPE
-  UV_OVERLAPPED_PIPE
-
-pub fun uv-stdio-flags-enum/int(i: uv-stdio-flags-enum): int32
-  match i
-    UV_IGNORE -> 0.int32
-    UV_CREATE_PIPE -> 1.int32
-    UV_INHERIT_FD -> 2.int32
-    UV_INHERIT_STREAM -> 4.int32
-    UV_READABLE_PIPE -> 16.int32
-    UV_WRITABLE_PIPE -> 32.int32
-    UV_NONBLOCK_PIPE -> 64.int32
-    UV_OVERLAPPED_PIPE -> 64.int32
-
-pub fun int/uv-stdio-flags-enum(i: int32): exn uv-stdio-flags-enum
-  match i.int
-    0 -> UV_IGNORE
-    1 -> UV_CREATE_PIPE
-    2 -> UV_INHERIT_FD
-    4 -> UV_INHERIT_STREAM
-    16 -> UV_READABLE_PIPE
-    32 -> UV_WRITABLE_PIPE
-    64 -> UV_NONBLOCK_PIPE
-    64 -> UV_OVERLAPPED_PIPE
-
-pub value struct uv-stdio-container-s
-  flags: int
-  data: unnamed-union21-c
-
-pub type uv-stdio-container-s-c
-pub alias uv-stdio-container-sp = c-pointer<uv-stdio-container-s-c>
-pub alias uv-stdio-container-sc = owned-c<uv-stdio-container-s-c>
-pub alias uv-stdio-container-scb<s::S> = borrowed-c<s,uv-stdio-container-s-c>
-pub alias uv-stdio-container-sca = owned-c<c-array<uv-stdio-container-s-c>>
-
-pub extern uv-stdio-container-s/size-of(c: c-null<uv-stdio-container-s-c>): int32
-  c inline "sizeof(struct uv_stdio_container_s)"
-  wasm inline "0"
-
-pub fun uv-stdio-container-sc(): uv-stdio-container-sc
-  malloc(?size-of=uv-stdio-container-s/size-of)
-
-pub fun uv-stdio-container-sc-calloc(): uv-stdio-container-sc
-  malloc-c(?size-of=uv-stdio-container-s/size-of)
-
-pub fun uv-stdio-container-sc-array(n: int): uv-stdio-container-sca
-  malloc(n.int32, ?size-of=uv-stdio-container-s/size-of)
-
-pub fun uv-stdio-container-sc-array-calloc(n: int): uv-stdio-container-sca
-  malloc-c(n.int32, ?size-of=uv-stdio-container-s/size-of)
-
-pub struct unnamed-union21
-pub type unnamed-union21-c
-pub alias unnamed-union21p = c-pointer<unnamed-union21-c>
-pub alias unnamed-union21c = owned-c<unnamed-union21-c>
-pub alias unnamed-union21cb<s::S> = borrowed-c<s,unnamed-union21-c>
-pub alias unnamed-union21ca = owned-c<c-array<unnamed-union21-c>>
-
-pub struct uv-process-options-s
-  exit-cb: uv-exit-cb
-  file: c-pointer<int>
-  args: c-pointer<c-pointer<int>>
-  env: c-pointer<c-pointer<int>>
-  cwd: c-pointer<int>
-  flags: int
-  stdio-count: int
-  stdio: c-pointer<uv-stdio-container-s-c>
-  uid: int
-  gid: int
-
-pub type uv-process-options-s-c
-pub alias uv-process-options-sp = c-pointer<uv-process-options-s-c>
-pub alias uv-process-options-sc = owned-c<uv-process-options-s-c>
-pub alias uv-process-options-scb<s::S> = borrowed-c<s,uv-process-options-s-c>
-pub alias uv-process-options-sca = owned-c<c-array<uv-process-options-s-c>>
-
-pub extern uv-process-options-s/size-of(c: c-null<uv-process-options-s-c>): int32
-  c inline "sizeof(struct uv_process_options_s)"
-  wasm inline "0"
-
-pub fun uv-process-options-sc(): uv-process-options-sc
-  malloc(?size-of=uv-process-options-s/size-of)
-
-pub fun uv-process-options-sc-calloc(): uv-process-options-sc
-  malloc-c(?size-of=uv-process-options-s/size-of)
-
-pub fun uv-process-options-sc-array(n: int): uv-process-options-sca
-  malloc(n.int32, ?size-of=uv-process-options-s/size-of)
-
-pub fun uv-process-options-sc-array-calloc(n: int): uv-process-options-sca
-  malloc-c(n.int32, ?size-of=uv-process-options-s/size-of)
-
-alias uv-stdio-container-t = uv-stdio-container-s-c
-alias koka-uv-stdio-container-t = uv-stdio-container-s
-pub type uv-process-flags-enum
-  UV_PROCESS_SETUID
-  UV_PROCESS_SETGID
-  UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS
-  UV_PROCESS_DETACHED
-  UV_PROCESS_WINDOWS_HIDE
-  UV_PROCESS_WINDOWS_HIDE_CONSOLE
-  UV_PROCESS_WINDOWS_HIDE_GUI
-  UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME
-
-pub fun uv-process-flags-enum/int(i: uv-process-flags-enum): int32
-  match i
-    UV_PROCESS_SETUID -> 1.int32
-    UV_PROCESS_SETGID -> 2.int32
-    UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS -> 4.int32
-    UV_PROCESS_DETACHED -> 8.int32
-    UV_PROCESS_WINDOWS_HIDE -> 16.int32
-    UV_PROCESS_WINDOWS_HIDE_CONSOLE -> 32.int32
-    UV_PROCESS_WINDOWS_HIDE_GUI -> 64.int32
-    UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME -> 128.int32
-
-pub fun int/uv-process-flags-enum(i: int32): exn uv-process-flags-enum
-  match i.int
-    1 -> UV_PROCESS_SETUID
-    2 -> UV_PROCESS_SETGID
-    4 -> UV_PROCESS_WINDOWS_VERBATIM_ARGUMENTS
-    8 -> UV_PROCESS_DETACHED
-    16 -> UV_PROCESS_WINDOWS_HIDE
-    32 -> UV_PROCESS_WINDOWS_HIDE_CONSOLE
-    64 -> UV_PROCESS_WINDOWS_HIDE_GUI
-    128 -> UV_PROCESS_WINDOWS_FILE_PATH_EXACT_NAME
-
-alias uv-process-options-t = uv-process-options-s-c
-alias koka-uv-process-options-t = uv-process-options-s
-alias uv-pid-t = int
-alias pid-t = int
-alias darwin-pid-t = int
-alias int32-t = int
-pub struct uv-rusage-t
-  ru-utime: uv-timeval-t-c
-  ru-stime: uv-timeval-t-c
-  ru-maxrss: int
-  ru-ixrss: int
-  ru-idrss: int
-  ru-isrss: int
-  ru-minflt: int
-  ru-majflt: int
-  ru-nswap: int
-  ru-inblock: int
-  ru-oublock: int
-  ru-msgsnd: int
-  ru-msgrcv: int
-  ru-nsignals: int
-  ru-nvcsw: int
-  ru-nivcsw: int
-
-pub type uv-rusage-t-c
-pub alias uv-rusage-tp = c-pointer<uv-rusage-t-c>
-pub alias uv-rusage-tc = owned-c<uv-rusage-t-c>
-pub alias uv-rusage-tcb<s::S> = borrowed-c<s,uv-rusage-t-c>
-pub alias uv-rusage-tca = owned-c<c-array<uv-rusage-t-c>>
-
-pub extern uv-rusage-t/size-of(c: c-null<uv-rusage-t-c>): int32
-  c inline "sizeof(uv_rusage_t)"
-  wasm inline "0"
-
-pub fun uv-rusage-tc(): uv-rusage-tc
-  malloc(?size-of=uv-rusage-t/size-of)
-
-pub fun uv-rusage-tc-calloc(): uv-rusage-tc
-  malloc-c(?size-of=uv-rusage-t/size-of)
-
-pub fun uv-rusage-tc-array(n: int): uv-rusage-tca
-  malloc(n.int32, ?size-of=uv-rusage-t/size-of)
-
-pub fun uv-rusage-tc-array-calloc(n: int): uv-rusage-tca
-  malloc-c(n.int32, ?size-of=uv-rusage-t/size-of)
-
-alias uv-passwd-t = uv-passwd-s-c
-alias koka-uv-passwd-t = uv-passwd-s
-alias uv-group-t = uv-group-s-c
-alias koka-uv-group-t = uv-group-s
-alias uv-cpu-info-t = uv-cpu-info-s-c
-alias koka-uv-cpu-info-t = uv-cpu-info-s
-alias uv-interface-address-t = uv-interface-address-s-c
-alias uv-env-item-t = uv-env-item-s-c
-alias koka-uv-env-item-t = uv-env-item-s
-alias uv-utsname-t = uv-utsname-s-c
-alias uv-metrics-t = uv-metrics-s-c
-alias uv-dir-t = uv-dir-s-c
 pub type uv-fs-event-enum
   UV_RENAME
   UV_CHANGE
@@ -4793,9 +3204,11 @@ pub fun int/uv-fs-event-enum(i: int32): exn uv-fs-event-enum
     2 -> UV_CHANGE
 
 alias uv-fs-poll-t = uv-fs-poll-s-c
-alias koka-uv-fs-poll-t = uv-fs-poll-s
 alias uv-fs-poll-cb = c-pointer<intptr_t>
 alias uv-fs-poll-cbfn = ((handle1 : c-pointer<uv-fs-poll-s-c>, status : int, prev : c-pointer<uv-stat-t-c>, curr : c-pointer<uv-stat-t-c>) -> ())
+alias uv-signal-t = uv-signal-s-c
+alias uv-signal-cb = c-pointer<intptr_t>
+alias uv-signal-cbfn = ((handle1 : c-pointer<uv-signal-s-c>, signum : int) -> ())
 pub type uv-fs-event-flags-enum
   UV_FS_EVENT_WATCH_ENTRY
   UV_FS_EVENT_STAT
@@ -4813,6 +3226,26 @@ pub fun int/uv-fs-event-flags-enum(i: int32): exn uv-fs-event-flags-enum
     2 -> UV_FS_EVENT_STAT
     4 -> UV_FS_EVENT_RECURSIVE
 
+alias uv-fs-event-t = uv-fs-event-s-c
+alias uv-fs-event-cb = c-pointer<intptr_t>
+alias uv-fs-event-cbfn = ((handle1 : c-pointer<uv-fs-event-s-c>, filename : c-pointer<int>, events : int, status : int) -> ())
+pub struct sockaddr-in
+pub type sockaddr-in-c
+pub alias sockaddr-inp = c-pointer<sockaddr-in-c>
+pub alias sockaddr-inc = owned-c<sockaddr-in-c>
+pub alias sockaddr-incb<s::S> = borrowed-c<s,sockaddr-in-c>
+pub alias sockaddr-inca = owned-c<c-array<sockaddr-in-c>>
+
+pub struct sockaddr-in6
+pub type sockaddr-in6-c
+pub alias sockaddr-in6p = c-pointer<sockaddr-in6-c>
+pub alias sockaddr-in6c = owned-c<sockaddr-in6-c>
+pub alias sockaddr-in6cb<s::S> = borrowed-c<s,sockaddr-in6-c>
+pub alias sockaddr-in6ca = owned-c<c-array<sockaddr-in6-c>>
+
+alias uv-random-t = uv-random-s-c
+alias uv-random-cb = c-pointer<intptr_t>
+alias uv-random-cbfn = ((req : c-pointer<uv-random-s-c>, status : int, buf : c-pointer<()>, buflen : int) -> ())
 pub struct uv-lib-t
 pub type uv-lib-t-c
 pub alias uv-lib-tp = c-pointer<uv-lib-t-c>
@@ -4820,6 +3253,32 @@ pub alias uv-lib-tc = owned-c<uv-lib-t-c>
 pub alias uv-lib-tcb<s::S> = borrowed-c<s,uv-lib-t-c>
 pub alias uv-lib-tca = owned-c<c-array<uv-lib-t-c>>
 
+alias uv-mutex-t = opaque-pthread-mutex-t-c
+alias pthread-mutex-t = opaque-pthread-mutex-t-c
+alias darwin-pthread-mutex-t = opaque-pthread-mutex-t-c
+pub struct opaque-pthread-mutex-t
+pub type opaque-pthread-mutex-t-c
+pub alias opaque-pthread-mutex-tp = c-pointer<opaque-pthread-mutex-t-c>
+pub alias opaque-pthread-mutex-tc = owned-c<opaque-pthread-mutex-t-c>
+pub alias opaque-pthread-mutex-tcb<s::S> = borrowed-c<s,opaque-pthread-mutex-t-c>
+pub alias opaque-pthread-mutex-tca = owned-c<c-array<opaque-pthread-mutex-t-c>>
+
+alias uv-rwlock-t = opaque-pthread-rwlock-t-c
+alias pthread-rwlock-t = opaque-pthread-rwlock-t-c
+alias darwin-pthread-rwlock-t = opaque-pthread-rwlock-t-c
+pub struct opaque-pthread-rwlock-t
+pub type opaque-pthread-rwlock-t-c
+pub alias opaque-pthread-rwlock-tp = c-pointer<opaque-pthread-rwlock-t-c>
+pub alias opaque-pthread-rwlock-tc = owned-c<opaque-pthread-rwlock-t-c>
+pub alias opaque-pthread-rwlock-tcb<s::S> = borrowed-c<s,opaque-pthread-rwlock-t-c>
+pub alias opaque-pthread-rwlock-tca = owned-c<c-array<opaque-pthread-rwlock-t-c>>
+
+alias uv-sem-t = int
+alias semaphore-t = int
+alias mach-port-t = int
+alias darwin-mach-port-t = int
+alias darwin-mach-port-name-t = int
+alias darwin-natural-t = int
 alias uv-cond-t = opaque-pthread-cond-t-c
 alias pthread-cond-t = opaque-pthread-cond-t-c
 alias darwin-pthread-cond-t = opaque-pthread-cond-t-c
@@ -4850,6 +3309,16 @@ pub alias opaque-pthread-once-tca = owned-c<c-array<opaque-pthread-once-t-c>>
 alias uv-key-t = int
 alias pthread-key-t = int
 alias darwin-pthread-key-t = int
+alias uv-thread-t = pthread-t
+alias pthread-t = darwin-pthread-t
+alias darwin-pthread-t = c-pointer<opaque-pthread-t-c>
+pub struct opaque-pthread-t
+pub type opaque-pthread-t-c
+pub alias opaque-pthread-tp = c-pointer<opaque-pthread-t-c>
+pub alias opaque-pthread-tc = owned-c<opaque-pthread-t-c>
+pub alias opaque-pthread-tcb<s::S> = borrowed-c<s,opaque-pthread-t-c>
+pub alias opaque-pthread-tca = owned-c<c-array<opaque-pthread-t-c>>
+
 alias uv-thread-cb = c-pointer<intptr_t>
 alias uv-thread-cbfn = ((arg : c-pointer<()>) -> ())
 pub type uv-thread-create-flags-enum
@@ -4866,34 +3335,14 @@ pub fun int/uv-thread-create-flags-enum(i: int32): exn uv-thread-create-flags-en
     0 -> UV_THREAD_NO_FLAGS
     1 -> UV_THREAD_HAS_STACK_SIZE
 
-pub value struct uv-thread-options-s
-  flags: int
-  stack-size: int
-
+pub struct uv-thread-options-s
 pub type uv-thread-options-s-c
 pub alias uv-thread-options-sp = c-pointer<uv-thread-options-s-c>
 pub alias uv-thread-options-sc = owned-c<uv-thread-options-s-c>
 pub alias uv-thread-options-scb<s::S> = borrowed-c<s,uv-thread-options-s-c>
 pub alias uv-thread-options-sca = owned-c<c-array<uv-thread-options-s-c>>
 
-pub extern uv-thread-options-s/size-of(c: c-null<uv-thread-options-s-c>): int32
-  c inline "sizeof(struct uv_thread_options_s)"
-  wasm inline "0"
-
-pub fun uv-thread-options-sc(): uv-thread-options-sc
-  malloc(?size-of=uv-thread-options-s/size-of)
-
-pub fun uv-thread-options-sc-calloc(): uv-thread-options-sc
-  malloc-c(?size-of=uv-thread-options-s/size-of)
-
-pub fun uv-thread-options-sc-array(n: int): uv-thread-options-sca
-  malloc(n.int32, ?size-of=uv-thread-options-s/size-of)
-
-pub fun uv-thread-options-sc-array-calloc(n: int): uv-thread-options-sca
-  malloc-c(n.int32, ?size-of=uv-thread-options-s/size-of)
-
 alias uv-thread-options-t = uv-thread-options-s-c
-alias koka-uv-thread-options-t = uv-thread-options-s
 pub struct uv-any-handle
 pub type uv-any-handle-c
 pub alias uv-any-handlep = c-pointer<uv-any-handle-c>

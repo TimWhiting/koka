@@ -1,3 +1,4 @@
+#ifndef __EMSCRIPTEN__
 void kk_uv_unit_callback(uv_handle_t* hndl) {
   kk_context_t* _ctx = kk_get_context();
   kk_function_t cb = kk_function_from_ptr(hndl->data, _ctx);
@@ -34,3 +35,4 @@ uv_buf_t* kk_bytes_to_uv_buffs(kk_bytes_t bytes, kk_context_t* _ctx){
   kk_bytes_drop(bytes, _ctx);
   return uv_buffs;
 }
+#endif

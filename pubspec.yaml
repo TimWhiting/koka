@@ -15,7 +15,7 @@ dev_dependencies:
 ffigen:
   name: libuv
   ffi-native:
-    assetId: "c { vcpkg=\"libuv\" }\n\nextern import\n  c header-file \"third-party/uv.h\""
+    assetId: "c { vcpkg=\"libuv\"; library=\"uv\" }\n  wasm {}\n\nextern import\n  c header-file \"inline/uv.h\""
   description: Bindings to `libuv.h`.
   output: 'lib/uv/generated.kk'
   is-wasm-compatible: false
@@ -57,6 +57,9 @@ ffigen:
   structs:
     exclude:
       - (-)+.*
+    opaque: 
+      include: 
+        - '.*'
     rename:
       'uv--(.*)' : 'uv-$1'
       '-*(.*)': '$1'
