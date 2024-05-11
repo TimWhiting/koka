@@ -18,6 +18,7 @@ ffigen:
     assetId: "c { vcpkg=\"libuv\" }\n\nextern import\n  c header-file \"third-party/uv.h\""
   description: Bindings to `libuv.h`.
   output: 'lib/uv/generated.kk'
+  is-wasm-compatible: false
   generate-compound-member-accessors: false
   compiler-opts:
     - '-I./lib/uv/third-party/'
@@ -75,6 +76,7 @@ ffigen:
     rename:
       'uv--(.*)' : 'uv-$1'
       '-*(.*)': '$1'
+    dependency-only: opaque
   globals:
     exclude:
       - (-)+.*

@@ -8,5 +8,6 @@ typedef struct kk_wasm_timer_s {
 } kk_wasm_timer_t;
 
 EMSCRIPTEN_KEEPALIVE void wasm_timer_callback(kk_wasm_timer_t* timer_info);
-#endif
+#else
 #include <uv.h>
+#endif
