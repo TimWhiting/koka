@@ -12,10 +12,10 @@ pub alias kstructb<s> = borrowed-c<s,c-struct>;
 pub extern size-of(c: c-null<c-struct>): int32
   c inline "sizeof(c_struct_t)"
 
-inline extern ptr/xint(s: intptr_t): int32
+inline extern ptr/xint(s: c-pointer<c-struct>): int32
   c inline "((c_struct_t*)#1)->xint"
  
-inline extern ptr/set-xint(s: intptr_t, x: int32): ()
+inline extern ptr/set-xint(s: c-pointer<c-struct>, x: int32): ()
   c inline "((c_struct_t*)#1)->xint = #2"
 
 pub fun kstructo(): kstructo
@@ -33,7 +33,7 @@ pub inline fun kstruct/xint(^s: kstructo): int32
 pub inline fun kstructb/xint(^s: kstructb<s>): int32
   s.with-ptr(xint)
 
-pub fun set-xintf(x: int32): ((intptr_t) -> ())
+pub fun set-xintf(x: int32): ((c-pointer<c-struct>) -> ())
   fn(p) set-xint(p, x)
 
 pub inline fun kstruct/set-xint(^s: kstructo, x: int32): ()
