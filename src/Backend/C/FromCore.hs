@@ -1336,6 +1336,10 @@ cTypeCon c
          then CPrim "kk_ssize_t"
         else if (name == nameTpIntPtrT)
          then CPrim "intptr_t"
+        else if (name == nameTpCPointer)
+         then CPrim "intptr_t"
+        else if (name == nameTpCArray)
+         then CPrim "intptr_t"
         else if (name == nameTpFloat)
          then CPrim "double"
         else if (name == nameTpBool)
