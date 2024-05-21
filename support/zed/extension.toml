@@ -1,0 +1,15 @@
+id = "koka"
+name = "Koka Extension"
+description = "Koka support."
+version = "0.0.1"
+schema_version = 1
+authors = ["Tim Whiting <tim@whitings.org>"]
+repository = "https://github.com/koka-lang/koka"
+
+[grammars.koka]
+repository = "https://github.com/mtoohey31/tree-sitter-koka"
+commit = "96d070c3700692858035f3524cc0ad944cef2594"
+
+[language_servers.koka]
+languages = ["koka"]
+name = "koka"
