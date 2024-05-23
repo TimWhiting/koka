@@ -31,6 +31,18 @@ nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
 nameIntGe  = coreIntName ">="
 
+nameCoreCharLt = newQualified "std/core/char" "<"
+nameCoreCharLtEq = newQualified "std/core/char" "<="
+nameCoreCharGt = newQualified "std/core/char" ">"
+nameCoreCharGtEq = newQualified "std/core/char" ">="
+nameCoreCharEq = newQualified "std/core/char" "=="
+nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-string"
+nameCoreStringListChar = newQualified "std/core/string" "list"
+nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
+
+nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
+nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
+nameCoreCharInt = newQualified "std/core/char" "int"
 nameClauseControl1 = newQualified "std/core/hnd" "clause-control1"
 nameClauseControl2 = newQualified "std/core/hnd" "clause-control2"
 nameClauseControl3 = newQualified "std/core/hnd" "clause-control3"
@@ -48,6 +60,17 @@ intOp f (ctx, env) = do
     (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> return $ AChangeLit (LiteralChangeInt LChangeTop) env
     _ -> doBottom
 
+charCmpOp :: (Char -> Char -> Bool) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+charCmpOp f (ctx, env) = do
+  p1 <- evalParam 0 ctx env
+  p2 <- evalParam 1 ctx env
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeChar (LChangeSingle c1)) _, AChangeLit (LiteralChangeChar (LChangeSingle c2)) _) -> return $! toChange (f c1 c2) env
+    (AChangeLit (LiteralChangeChar _) _, AChangeLit (LiteralChangeChar _) _) -> each [return $ toChange False env, return $ toChange True env]
+    _ -> doBottom
+
+anyListChar = AChangeConstr $ ExprPrim C.exprTrue
+anyChar = AChangeConstr $ ExprPrim C.exprTrue
 trueCon = AChangeConstr $ ExprPrim C.exprTrue
 falseCon = AChangeConstr $ ExprPrim C.exprFalse
 toChange :: Bool -> EnvCtx -> AChange
@@ -66,76 +89,73 @@ createPrimitives :: FixDemandR x s e ()
 createPrimitives = do
   -- Open applied to some function results in that function
   addPrimitive nameEffectOpen (\(ctx, env) -> evalParam 0 ctx env)
+  
   addPrimitiveExpr nameEffectOpen (\i (ctx, env) -> do
     -- Open's first parameter is a function and flows anywhere that the application flows to
     qexpr (fromJust $ contextOf ctx, env))
-  addPrimitive nameClauseControl1 (\(ctx, env) -> do
-    evalParam 0 ctx env)
-  addPrimitive nameClauseTail1 (\(ctx, env) -> do
-    evalParam 0 ctx env)
-  addPrimitiveExpr nameClauseTail1 (\i (ctx, env) -> do
-    qexpr (fromJust $ contextOf ctx, env))
-  addPrimitiveExpr nameClauseControl1 (\index (ctx, env) -> do
-    -- ClauseControl1's first parameter is the operation function and flows to wherever the function is applied
-    let hnd = enclosingHandle ctx
-    let hndapp = fromJust $ contextOf hnd
-    let hndenv = envtail env
-    let (nm,tp) = fromJust $ maybeHandlerName ctx
-    act <- focusParam 2 hnd -- The first parameter is the operation clause, second is the return clause, third is the action lambda
-    AChangeClos act actenv <- evalParam 2 hnd env
-    (bd, bdenv) <- enterBod act actenv hndapp hndenv
-    findEffectApps nm tp bd bdenv
+  
+  addPrimitive nameCoreIntExternShow (\(ctx, env) -> do
+    param <- evalParam 0 ctx env
+    case param of
+      AChangeLit (LiteralChangeInt (LChangeSingle i)) _ -> return $ AChangeLit (LiteralChangeString $ LChangeSingle $ show i) env
+      _ -> return $ AChangeLit (LiteralChangeString $ LChangeTop) env
     )
-  addPrimitive (namePerform 1) (\(ctx, env) -> do
-    -- Perform's second parameter is the function to run with the handler as an argument
-    AChangeClos lam lamenv <- evalParam 1 ctx env
-    (bd, bdenv) <- enterBod lam lamenv ctx env
-    AChangeClos op openv <- qeval (bd, bdenv)
-    -- trace ("Perform Result " ++ show res) $ return ()
-    (res, resenv) <- enterBod op openv bd bdenv
-    qeval (res, resenv)
+  addPrimitiveExpr nameCoreIntExternShow (\i (ctx, env) -> doBottom)
+
+  addPrimitive nameCoreTypesExternAppend (\(ctx, env) -> do
+    p0 <- evalParam 0 ctx env
+    p1 <- evalParam 1 ctx env
+    case (p0, p1) of
+      (AChangeLit (LiteralChangeString (LChangeSingle s0)) _, AChangeLit (LiteralChangeString (LChangeSingle s1)) _) -> return $ AChangeLit (LiteralChangeString (LChangeSingle (s0 ++ s1))) env
+      (AChangeLit (LiteralChangeString _) _, AChangeLit (LiteralChangeString _) _) -> return $ AChangeLit (LiteralChangeString LChangeTop) env
+      _ -> doBottom
     )
-  addPrimitiveExpr (namePerform 1) (\i (ctx, env) -> do
-    assertion "Expression for operator" (i == 1) $ return ()
-    -- Perform's second parameter is the function to run with the handler as an argument (ctx)
-    let parentCtx = fromJust $ contextOf ctx
-    -- Perform's third paremeter is the argument to the operation
-    arg <- focusParam 2 parentCtx
-    trace ("Perform " ++ showSimpleContext parentCtx) $ return ()
-    case exprOfCtx parentCtx of
-      C.App perform _ rng -> do
-        -- We need to search for the handler with the correct type
-        let tp = typeOf perform
-        AChangeConstr hnd hndEnv <- qexprx (parentCtx, env, tp)
-        -- trace ("Perform Handler " ++ showSimpleContext hnd ++ "\n\n" ++ showSimpleContext ctx ++ "\n\n" ++ showSimpleContext arg ++ "\n\n") $ return ()
-        -- TODO: Check to make sure this gets cached properly and not re-evaluated
-        ap0 <- addSpecialId (contextId hnd, contextId ctx) (\id -> LamCBody id parentCtx [] (C.App (C.App (exprOfCtx ctx) [exprOfCtx hnd] Nothing) [exprOfCtx arg] Nothing))
-        appCtx <- focusChild 0 ap0
-        -- ap1 <- focusChild 0 appCtx
-        trace ("Function " ++ showSimpleContext ctx ++ " flows to application as an operator " ++ showSimpleContext appCtx) $ return ()
-        -- This is where the function flows to (this is an application of the parameter - but the indexes of parameters adjusted)
-        return $ AChangeClosApp appCtx parentCtx env
-      )
-  addPrimitive nameHandle (\(ctx, env) -> do
-      trace ("Handle " ++ showSimpleContext ctx) $ return ()
-      AChangeClos ret retenv <- evalParam 1 ctx env -- The return clause is the result of a handler (as well as any ctl clauses TODO)
-      (bd, bdenv) <- enterBod ret retenv ctx env
-      trace ("Handle " ++ showSimpleContext ctx ++ " result body " ++ show bd) $ return ()
-      qeval (bd, bdenv)
+  addPrimitiveExpr nameCoreTypesExternAppend (\i (ctx, env) -> doBottom)
+
+  addPrimitive nameCoreCharToString (\(ctx, env) -> do
+      p0 <- evalParam 0 ctx env
+      case p0 of
+        AChangeLit (LiteralChangeChar (LChangeSingle c)) _ -> return $ AChangeLit (LiteralChangeString (LChangeSingle [c])) env
+        AChangeLit (LiteralChangeChar _) _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
+        _ -> doBottom
     )
-  addPrimitiveExpr nameHandle (\i (ctx, env) -> do
-      trace ("HandleExpr " ++ showSimpleContext ctx ++ " index " ++ show i) $ return ()
-      if i == 1 then
-        doBottom -- TODO: the return clause is "called" with the result of the action
-      else if i == 3 then do 
-        AChangeClos app appenv <- qexpr (fromJust $ contextOf ctx, env)
-        trace ("HandleExprRet " ++ showSimpleContext ctx ++ " result " ++ show app) $ return ()
-        return $ AChangeClos app appenv
-      else doBottom
+  addPrimitiveExpr nameCoreCharToString (\i (ctx, env) -> doBottom)
+
+  addPrimitive nameCoreCharInt (\(ctx, env) -> do
+      p0 <- evalParam 0 ctx env
+      case p0 of
+        AChangeLit (LiteralChangeChar (LChangeSingle c)) _ -> return $ AChangeLit (LiteralChangeInt (LChangeSingle $ fromIntegral $ fromEnum c)) env
+        AChangeLit (LiteralChangeChar _) _ -> return $ AChangeLit (LiteralChangeInt LChangeTop) env
+        _ -> doBottom
     )
+  addPrimitiveExpr nameCoreCharInt (\i (ctx, env) -> doBottom)
+
+  addPrimitive nameCoreStringListChar (\(ctx, env) -> do
+      p0 <- evalParam 0 ctx env
+      case p0 of
+        AChangeLit (LiteralChangeString (LChangeSingle s)) _ -> return $ AChangeLit (LiteralChangeString (LChangeSingle "")) env
+        AChangeLit (LiteralChangeString _) _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
+        _ -> doBottom
+    )
+  addPrimitiveExpr nameCoreStringListChar (\i (ctx, env) -> doBottom)
+
+  addPrimitive nameCoreSliceString (\(ctx, env) -> do
+      p0 <- evalParam 0 ctx env
+      case p0 of
+        AChangeConstr _ _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
+        _ -> doBottom
+    )
+  addPrimitiveExpr nameCoreSliceString (\i (ctx, env) -> doBottom)
+
 
   addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
   -- Integer functions
+
+  addPrimitive nameCoreCharLt (charCmpOp (<))
+  addPrimitive nameCoreCharLtEq (charCmpOp (<=))
+  addPrimitive nameCoreCharGt (charCmpOp (>))
+  addPrimitive nameCoreCharGtEq (charCmpOp (>=))
+  addPrimitive nameCoreCharEq (charCmpOp (==))
   addPrimitive nameIntEq  (opCmpInt (==))
   addPrimitive nameIntLt  (opCmpInt (<))
   addPrimitive nameIntLe  (opCmpInt (<=))

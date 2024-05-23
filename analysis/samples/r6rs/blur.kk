@@ -8,4 +8,5 @@ fun lp(a: bool, n)
     !blur(lp)(s, n - 1)
 
 fun main()
-  lp(False, 2).println
+  val res = lp(False, 2)
+  res.println

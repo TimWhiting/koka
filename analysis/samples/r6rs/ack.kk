@@ -6,4 +6,5 @@ fun ack(m, n)
   else ack(m - 1, ack(m, n - 1))
 
 fun main()
-  ack(3, 12).println
+  val res = ack(3, 12)
+  res.println
