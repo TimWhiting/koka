@@ -9,6 +9,11 @@ type ast
   Num(i: int)
   Err(s: string)
 
+fun map2(ls: list<a>, f: (a) -> e b): e list<b>
+  match ls
+    Nil -> Nil
+    Cons(x, xs) -> Cons(f(x), xs.map2(f))
+
 fun map(a: ast, f: ast -> e ast): e ast
   match a
     List(a') -> List(a'.map(f))
@@ -22,18 +27,20 @@ fun deriv(a: ast): div ast
     Sym(_) -> Num(0)
     Num(_) -> Num(0)
     List(Cons(Sym('+'), a2)) ->
-      List(Cons(Sym('+'), a2.map(deriv)))
+      List(Cons(Sym('+'), a2.map2(deriv)))
     List(Cons(Sym('-'), a2)) ->
-      List(Cons(Sym('-'), a2.map(deriv)))
+      List(Cons(Sym('-'), a2.map2(deriv)))
     List(Cons(Sym('*'), a2)) ->
-      List([Sym('*'), a, List(Cons(Sym('+'), a2.map(fn(a') List([Sym('/'), a'.deriv, a']))))])
+      List([Sym('*'), a, List(Cons(Sym('+'), a2.map2(fn(a') List([Sym('/'), a'.deriv, a']))))])
     List(Cons(Sym('/'), Cons(a1, Cons(a2, Nil)))) ->
       List([Sym('-'), List([Sym('/'), a1.deriv, a2]), List([Sym('/'), a1, List([Sym('*'), a2, a2, a2.deriv])])])
     _ -> Err("No derivation method available")
 
-fun show(a: ast): div string
+fun ast/show(a: ast): div string
   match a
-    List(a') -> "(" ++ a'.map(show).join(" ") ++ ")"
+    List(a') -> 
+      val res = a'.map2(show)
+      "List" // "(" ++ .join(" ") ++ ")"
     Sym(a') -> "'" ++ a'.show-char
     Num(i) -> i.show
     Err(s) -> "ERR: " ++ s
