@@ -1,4 +1,4 @@
-fun id1(x)
+fun id2(x)
   x
 
 fun f(n)
@@ -8,5 +8,7 @@ fun g(n)
   if n <= 1 then 1 else n * g(n - 1)
 
 fun main()
-  val x = id(f)(3) + id(g)(4)
-  println(x)
+  val x = id2(f)(3)
+  val y = id2(g)(4)
+  val z = x + y
+  println(z.show)

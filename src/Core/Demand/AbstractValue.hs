@@ -254,7 +254,8 @@ data BindInfo =
   BoundLam ExprContext EnvCtx Int
   | BoundDef ExprContext ExprContext EnvCtx Int
   | BoundDefRec ExprContext ExprContext EnvCtx Int
-  | BoundLetDef ExprContext ExprContext EnvCtx Int
+  | BoundLetDefRec ExprContext ExprContext EnvCtx Int
+  | BoundLetDefNonRec ExprContext ExprContext EnvCtx Int
   | BoundLetBod ExprContext ExprContext EnvCtx Int
   | BoundCase ExprContext ExprContext EnvCtx Int {- which match branch -} PatBinding
   | BoundModule ExprContext EnvCtx
@@ -282,8 +283,9 @@ bind ctx var@(C.Var tname vInfo) env =
     LamCBody _ ctx' names _  -> lookupNameNewCtx BoundLam names ctx'
     AppCLambda _ ctx _ -> bind ctx var env
     AppCParam _ ctx _ _ -> bind ctx var env
-    LetCDef _ ctx' names i _ -> lookupName (BoundLetDef ctx') names ctx'
-    LetCBody _ ctx' names _ -> lookupName (BoundLetBod ctx') names ctx'
+    LetCDefRec _ ctx' names i _ -> lookupName1 (BoundLetDefRec ctx') names ctx'
+    LetCDefNonRec _ ctx' names _ -> lookupName1 (BoundLetDefNonRec ctx') names ctx'
+    LetCBody _ ctx' names _ -> lookupName1 (BoundLetBod ctx') names ctx'
     CaseCMatch _ ctx _ -> bind ctx var env
     CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
     ExprCBasic _ ctx _ -> bind ctx var env
@@ -310,6 +312,10 @@ bind ctx var@(C.Var tname vInfo) env =
     lookupName mk names ctx' =
       case elemIndex tname names
         of Just x -> mk ctx env x
+           _ -> bind ctx' var env
+    lookupName1 mk names ctx' = -- Let bindings are put after the body
+      case elemIndex tname names
+        of Just x -> mk ctx env (1 + x)
            _ -> bind ctx' var env
 
 data EnvCtx = EnvCtx Ctx EnvCtx
@@ -358,7 +364,8 @@ indeterminateStaticCtx m ctx =
       in if m == 0 then EnvCtx CtxEnd parent else EnvCtx (IndetCtx tn) parent
     AppCLambda _ ctx _ -> indeterminateStaticCtx m ctx
     AppCParam _ ctx _ _ -> indeterminateStaticCtx m ctx
-    LetCDef _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
+    LetCDefRec _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
+    LetCDefNonRec _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     LetCBody _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     CaseCMatch _ ctx _ -> indeterminateStaticCtx m ctx
     CaseCBranch _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'

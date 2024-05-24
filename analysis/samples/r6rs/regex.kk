@@ -109,5 +109,5 @@ fun check(c: a, b: a, ?(==): (a,a) -> bool): bool
 
 
 fun main()
-  val r = regex-match(Seq(Atom("foo"), Rep(Atom("bar"))), ["foo", "bar"]).show
-  check(r, "True")
+  val r = regex-match(Seq(Atom("foo"), Rep(Atom("bar"))), ["foo", "bar"])
+  check(r.show, "True")

@@ -7,5 +7,7 @@ fun id1(y)
   y
 
 fun main()
-  id1(fn(a) a)(True)
-  id1(fn(b) b)(False).println
+  val a = id1(fn(a) a)(True)
+  val b = id1(fn(b) b)(False)
+  a.println
+  b.println

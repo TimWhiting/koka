@@ -21,6 +21,7 @@ import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
 import Type.Unify (runUnifyEx, unify)
+import Common.Name (newLocallyQualified)
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -30,6 +31,7 @@ nameIntLt  = coreIntName "<"
 nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
 nameIntGe  = coreIntName ">="
+nameIntOdd = coreIntName "is-odd"
 
 nameCoreCharLt = newQualified "std/core/char" "<"
 nameCoreCharLtEq = newQualified "std/core/char" "<="
@@ -43,13 +45,13 @@ nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
 nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
 nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
 nameCoreCharInt = newQualified "std/core/char" "int"
-nameClauseControl1 = newQualified "std/core/hnd" "clause-control1"
-nameClauseControl2 = newQualified "std/core/hnd" "clause-control2"
-nameClauseControl3 = newQualified "std/core/hnd" "clause-control3"
-nameClauseTail1 = newQualified "std/core/hnd" "clause-tail1"
-nameClauseTail2 = newQualified "std/core/hnd" "clause-tail2"
-nameClauseTail3 = newQualified "std/core/hnd" "clause-tail3"
-
+nameNumInt32Int = newQualified "std/num/int32" "int"
+namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
+nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
+nameNumRandom = newQualified "std/num/random" "random-int"
+nameCoreTrace = newQualified "std/core/debug" "trace"
+nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
+nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
 intOp :: (Integer -> Integer -> Integer) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 intOp f (ctx, env) = do
@@ -60,13 +62,22 @@ intOp f (ctx, env) = do
     (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> return $ AChangeLit (LiteralChangeInt LChangeTop) env
     _ -> doBottom
 
+opCmpInt :: (Integer -> Integer -> Bool) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
+opCmpInt f (ctx, env) = do
+  p1 <- evalParam 0 ctx env
+  p2 <- evalParam 1 ctx env
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) env
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> anyBool env
+    _ -> doBottom
+
 charCmpOp :: (Char -> Char -> Bool) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 charCmpOp f (ctx, env) = do
   p1 <- evalParam 0 ctx env
   p2 <- evalParam 1 ctx env
   case (p1, p2) of
     (AChangeLit (LiteralChangeChar (LChangeSingle c1)) _, AChangeLit (LiteralChangeChar (LChangeSingle c2)) _) -> return $! toChange (f c1 c2) env
-    (AChangeLit (LiteralChangeChar _) _, AChangeLit (LiteralChangeChar _) _) -> each [return $ toChange False env, return $ toChange True env]
+    (AChangeLit (LiteralChangeChar _) _, AChangeLit (LiteralChangeChar _) _) -> anyBool env
     _ -> doBottom
 
 anyListChar = AChangeConstr $ ExprPrim C.exprTrue
@@ -75,15 +86,8 @@ trueCon = AChangeConstr $ ExprPrim C.exprTrue
 falseCon = AChangeConstr $ ExprPrim C.exprFalse
 toChange :: Bool -> EnvCtx -> AChange
 toChange b env = if b then trueCon env else falseCon env
-
-opCmpInt :: (Integer -> Integer -> Bool) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
-opCmpInt f (ctx, env) = do
-  p1 <- evalParam 0 ctx env
-  p2 <- evalParam 1 ctx env
-  case (p1, p2) of
-    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) env
-    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> each [return $ toChange False env, return $ toChange True env]
-    _ -> doBottom
+anyBool env = each [return $ toChange False env, return $ toChange True env]
+changeUnit env = AChangeConstr (ExprPrim C.exprUnit) env
 
 createPrimitives :: FixDemandR x s e ()
 createPrimitives = do
@@ -94,6 +98,12 @@ createPrimitives = do
     -- Open's first parameter is a function and flows anywhere that the application flows to
     qexpr (fromJust $ contextOf ctx, env))
   
+  addPrimitive namePretendDecreasing (\(ctx, env) -> evalParam 0 ctx env)
+  addPrimitiveExpr namePretendDecreasing (\i (ctx, env) -> qexpr (fromJust $ contextOf ctx, env))
+
+  addPrimitive nameUnsafeTotalCast (\(ctx, env) -> evalParam 0 ctx env)
+  addPrimitiveExpr nameUnsafeTotalCast (\i (ctx, env) -> qexpr (fromJust $ contextOf ctx, env))
+
   addPrimitive nameCoreIntExternShow (\(ctx, env) -> do
     param <- evalParam 0 ctx env
     case param of
@@ -140,7 +150,27 @@ createPrimitives = do
         AChangeConstr _ _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
         _ -> doBottom
     )
+  
+  addPrimitive nameIntOdd (\(ctx, env) -> do
+      p0 <- evalParam 0 ctx env
+      case p0 of
+        AChangeLit (LiteralChangeInt (LChangeSingle i)) _ -> return $ toChange (odd i) env
+        AChangeLit (LiteralChangeInt _) _ -> anyBool env
+        _ -> doBottom
+    )
 
+  addPrimitive nameNumInt32Int (\(ctx, env) -> do
+      p0 <- evalParam 0 ctx env
+      case p0 of
+        AChangeLit (LiteralChangeInt (LChangeSingle i)) _ -> return $ AChangeLit (LiteralChangeInt (LChangeSingle i)) env
+        AChangeLit (LiteralChangeInt _) _ -> return $ AChangeLit (LiteralChangeInt LChangeTop) env
+        _ -> doBottom
+    )
+  
+  addPrimitive nameNumRandom (\(ctx, env) -> return $ AChangeLit (LiteralChangeInt LChangeTop) env)
+  addPrimitive nameCoreTrace (\(ctx, env) -> return $ changeUnit env)
+  addPrimitive nameCorePrint (\(ctx, env) -> return $ changeUnit env)
+  addPrimitive nameCorePrintln (\(ctx, env) -> return $ changeUnit env)
 
   addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
   -- Integer functions

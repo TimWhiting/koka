@@ -5,4 +5,5 @@ fun tak(x: int, y, z)
     tak(tak(x - 1, y, z), tak(y - 1, z, x), tak(z - 1, x, y))
 
 fun main()
-  tak(32, 15, 8).println
+  val res = tak(32, 15, 8)
+  res.println

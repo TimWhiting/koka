@@ -52,7 +52,8 @@ data ExprContext =
   | AppCLambda !ExprContextId !ExprContext !C.Expr -- Application context inside function context
   | AppCParam !ExprContextId !ExprContext !Int !C.Expr -- Application context inside param context
   -- TODO: This needs adjustment, currently it flat-maps over the defgroup and indexes over that
-  | LetCDef !ExprContextId !ExprContext ![TName] !Int !C.DefGroups -- In a let definition context working on a particular defgroup
+  | LetCDefRec !ExprContextId !ExprContext ![TName] !Int !C.DefGroup -- In a let definition context working on a particular def
+  | LetCDefNonRec !ExprContextId !ExprContext ![TName] !C.DefGroup -- In a let definition context working on a particular def
   | LetCBody !ExprContextId !ExprContext ![TName] !C.Expr -- In a let body expression
   | CaseCMatch !ExprContextId !ExprContext !C.Expr -- In a case match context working on the match expression (assumes only one)
   | CaseCBranch !ExprContextId !ExprContext ![TName] !Int !C.Branch -- Which branch currently inspecting, as well as the Case context
@@ -104,7 +105,8 @@ enclosingDef ctx =
   case ctx of
     DefCRec _ _ _ index dg -> defsOf dg !! index
     DefCNonRec _ _ _ dg -> head $ defsOf dg
-    LetCDef _ c _ _ dg -> enclosingDef c
+    LetCDefRec _ c _ _ _ -> enclosingDef c
+    LetCDefNonRec _ c _ _ -> enclosingDef c
     _ -> case contextOf ctx
       of Just c -> enclosingDef c
          Nothing -> error "No parent def"
@@ -145,7 +147,8 @@ ppContextPath ctx =
     LamCBody _ c tn _ -> ppContextPath c <+> text "->" <+> text ("LamB(" ++ show tn ++ ")")
     AppCLambda _ c _ -> ppContextPath c <+> text "->" <+> text "AppL"
     AppCParam _ c i _ -> ppContextPath c <+> text "->" <+> text ("AppP" ++ show i)
-    LetCDef _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("LtD " ++ show (defTName $ defOfCtx ctx))
+    LetCDefNonRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("LtD " ++ show (defTName $ defOfCtx ctx))
+    LetCDefRec _ c _ _ _ -> ppContextPath c <+> text "->" <+> text ("LtDR " ++ show (defTName $ defOfCtx ctx))
     LetCBody _ c names _ -> ppContextPath c <+> text "->" <+> text ("LtB" ++ show names)
     CaseCMatch _ c _ -> ppContextPath c <+> text "->" <+> text "CaseM"
     CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseB"
@@ -182,8 +185,8 @@ closestRange :: ExprContext -> Range
 closestRange ctx =
   case ctx of
     ModuleC{} -> rangeNull
-    DefCRec _ _ _ i d -> C.defNameRange (defOfCtx ctx)
-    DefCNonRec _ _ _ d -> C.defNameRange (defOfCtx ctx)
+    DefCRec{} -> C.defNameRange (defOfCtx ctx)
+    DefCNonRec{} -> C.defNameRange (defOfCtx ctx)
     LamCBody _ c tn _ ->
       case tn of
         t:_ -> case C.originalRange t
@@ -192,7 +195,8 @@ closestRange ctx =
         _ -> closestRange c
     AppCLambda _ c _ -> closestRange c
     AppCParam _ c _ _ -> closestRange c
-    LetCDef _ _ _ i dg -> C.defNameRange (defOfCtx ctx)
+    LetCDefNonRec{} -> C.defNameRange (defOfCtx ctx)
+    LetCDefRec{} -> C.defNameRange (defOfCtx ctx)
     LetCBody _ c _ _ -> closestRange c
     CaseCMatch _ c _ -> closestRange c
     CaseCBranch _ c tn _ _ ->
@@ -210,12 +214,13 @@ showSimpleContext ctx =
   -- show (contextId ctx) ++ " " ++ 
   case ctx of
     ModuleC _ _ n -> "Module " ++ show n
-    DefCRec _ _ _ i d -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    DefCNonRec _ _ _ d -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+    DefCRec{} -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+    DefCNonRec{} -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     LamCBody _ _ tn _-> "LamBody(" ++ showSimple tn ++ ")"
     AppCLambda{} -> "AppLambda(" ++ showSimple (exprOfCtx ctx) ++ ")"
     AppCParam{} -> "AppParam(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    LetCDef _ _ _ i d -> "LetDef(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+    LetCDefNonRec _ _ _ d -> "LetDef(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+    LetCDefRec _ _ _ i d -> "LetDefR(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     LetCBody{} -> "LetBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCMatch{} -> "CaseMatch(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
@@ -248,12 +253,13 @@ instance Show ExprContext where
   show e =
     case e of
       ModuleC _ _ nm -> "Module " ++ show nm
-      DefCRec _ _ _ i df -> "DefRec " ++ showDef (defOfCtx e)
-      DefCNonRec _ _ _ df -> "DefNonRec " ++ showDef (defOfCtx e)
+      DefCRec{} -> "DefRec " ++ showDef (defOfCtx e)
+      DefCNonRec{} -> "DefNonRec " ++ showDef (defOfCtx e)
       LamCBody _ _ tn e -> "LamBody " ++ show tn ++ " " ++ showExpr e
       AppCLambda _ _ f -> "AppLambda " ++ showExpr f
       AppCParam _ _ i p -> "AppParam " ++ show i ++ " " ++ showExpr p
-      LetCDef _ _ _ i dg -> "LetDef " ++ showDef (defOfCtx e)
+      LetCDefNonRec{} -> "LetDef " ++ showDef (defOfCtx e)
+      LetCDefRec{} -> "LetDef " ++ showDef (defOfCtx e)
       LetCBody _ _ _ e -> "LetBody " ++ showExpr e
       CaseCMatch _ _ e -> "CaseMatch " ++ showExpr e
       CaseCBranch _ _ _ i b -> "CaseBranch " ++ show i ++ " " ++ show b
@@ -265,7 +271,8 @@ defOfCtx ctx =
   case ctx of
     DefCNonRec _ _ _ dg -> head $ defsOf dg
     DefCRec _ _ _ i dg -> defsOf dg !! i
-    LetCDef _ _ _ i dg -> concatMap defsOf dg !! i
+    LetCDefNonRec _ _ _ dg -> head $ defsOf dg
+    LetCDefRec _ _ _ i dg -> defsOf dg !! i
     _ -> error "Query should never be queried for definition"
 
 exprOfCtx :: ExprContext -> C.Expr
@@ -277,7 +284,8 @@ exprOfCtx ctx =
     LamCBody _ _ _ e -> e
     AppCLambda _ _ f -> f
     AppCParam _ _ _ param -> param
-    LetCDef _ _ _ i dg -> defExpr $ defOfCtx ctx
+    LetCDefNonRec _ _ _ dg -> defExpr $ defOfCtx ctx
+    LetCDefRec _ _ _ i dg -> defExpr $ defOfCtx ctx
     LetCBody _ _ _ e -> e
     CaseCMatch _ _ e -> e
     CaseCBranch _ _ _ _ b -> C.guardExpr (head (C.branchGuards b))
@@ -294,7 +302,8 @@ maybeExprOfCtx ctx =
     LamCBody _ _ _ e -> Just e
     AppCLambda _ _ f -> Just f
     AppCParam _ _ _ param -> Just param
-    LetCDef _ _ _ i dg -> Just (defExpr $ defOfCtx ctx)
+    LetCDefNonRec _ _ _ dg -> Just (defExpr $ defOfCtx ctx)
+    LetCDefRec _ _ _ i dg -> Just (defExpr $ defOfCtx ctx)
     LetCBody _ _ _ e -> Just e
     CaseCMatch _ _ e -> Just e
     CaseCBranch _ _ _ _ b -> Just $ C.guardExpr (head (C.branchGuards b))
@@ -317,7 +326,8 @@ contextId ctx =
     LamCBody c _ _ _ -> c
     AppCLambda c _ _ -> c
     AppCParam c _ _ _ -> c
-    LetCDef c _ _ _ _ -> c
+    LetCDefNonRec c _ _ _ -> c
+    LetCDefRec c _ _ _ _ -> c
     LetCBody c _ _ _ -> c
     CaseCMatch c _ _ -> c
     CaseCBranch c _ _ _ _ -> c
@@ -334,7 +344,8 @@ contextOf ctx =
     LamCBody _ c _ _ -> Just c
     AppCLambda _ c _ -> Just c
     AppCParam _ c _ _ -> Just c
-    LetCDef _ c _ _ _ -> Just c
+    LetCDefNonRec _ c _ _ -> Just c
+    LetCDefRec _ c _ _ _ -> Just c
     LetCBody _ c _ _ -> Just c
     CaseCMatch _ c _ -> Just c
     CaseCBranch _ c _ _ _ -> Just c

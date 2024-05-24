@@ -7,4 +7,5 @@ fun lp1(i, x)
     lp2(10, fn(n) n + i, x)
 
 fun main()
-  lp1(10, 0).println
+  val res = lp1(10, 0)
+  res.println
