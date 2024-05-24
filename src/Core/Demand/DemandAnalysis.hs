@@ -13,6 +13,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module Core.Demand.DemandAnalysis(
   query,refine,qcall,qexpr,qeval,qexprx,qevalx,
@@ -101,8 +102,6 @@ query q isRefined = do
                         CallQ e -> doCall e queryStr
                         ExprQ e -> doExpr e queryStr
                         EvalQ e -> doEval e queryStr
-                        ExprxQ e -> doExprx e queryStr
-                        EvalxQ e -> doEvalx e queryStr
                 if log q then demandLog (queryStr ++ "==> " ++ show x) else return ()
                 return x
                 )
@@ -168,21 +167,30 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   -- trace ("Looking for usages of " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env ++ " first " ++ show first) $ return ()
   let nameEq = (== name)
       childrenNoShadow tn =
-        if first || tname `notElem` tn then childrenUsages else doBottom
-      childrenUsages = do
+        if first || tname `notElem` tn then childrenUsages False else doBottom
+      childrenUsages first = do
         -- trace ("Looking for " ++ show name ++ " in " ++ show ctx ++ " in env " ++ show env) $ return ()
         visitEachChild ctx $ do
           -- visitChildrenCtxs sets the currentContext
           childCtx <- currentContext <$> getEnv
-          findUsage False expr childCtx env in
+          findUsage first expr childCtx env in
     case ctx of
-      LetCDef _ _ _ i d -> childrenNoShadow [defTName $ defOfCtx ctx]
-      LetCBody _ _ tn _ -> childrenNoShadow tn
-      DefCNonRec _ _ _ d -> childrenNoShadow [defTName $ defOfCtx ctx]
+      LetCDefNonRec _ _ tn _ -> childrenNoShadow tn
+      LetCDefRec _ _ tn _ _ -> childrenNoShadow tn
+      DefCNonRec _ _ tn _ -> childrenNoShadow tn
       DefCRec _ _ tn _ _ -> childrenNoShadow tn
-      LamCBody _ _ tn _ ->
+      LetCBody _ _ tn _ ->
+        if first then
+          case maybeExprOfCtx ctx of
+            Just Let{} -> childrenUsages first
+            _ -> childrenNoShadow tn
+        else childrenNoShadow tn
+      LamCBody _ _ tn _ -> 
         -- No adding an IndetCtx because we are starting our search in the body itself
-        if first then childrenUsages
+        if first then
+          case maybeExprOfCtx ctx of
+            Just Let{} -> childrenUsages first
+            _ -> childrenUsages False
         -- No usages if the name is shadowed
         else if tname `elem` tn then
           doBottom
@@ -194,7 +202,7 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
       ExprCBasic _ c (Var{varName=TName{getName=name2}}) ->
         if nameEq name2 then do
           query <- getQueryString
-          demandLog (query ++ "Found usage in " ++ show (ppContextPath ctx))
+          -- trace (query ++ "Found usage in " ++ show (ppContextPath ctx)) $ return ()
           return (c, env)
         else
           -- trace ("Not found usage in " ++ show ctx ++ " had name " ++ show name2 ++ " expected " ++ show name) $ empty
@@ -204,7 +212,8 @@ findUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
           -- visitChildrenCtxs sets the currentContext
           childCtx <- currentContext <$> getEnv
           findUsage first expr childCtx env
-      _ -> childrenUsages
+      _ -> 
+        childrenUsages False
 
 addPrimitive :: Name -> ((ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
 addPrimitive name m = do
@@ -242,78 +251,11 @@ exprPrimitive var index ctx env = do
         Nothing -> error ("exprPrimitive: Primitive not found! " ++ show tn)
     _ -> error ("exprPrimitive: Not a primitive! " ++ show var)
 
--- Relates an operation in a specific context to the nearest handler of that operation
--- TODO: Handle masking of handlers
-doExprx :: (ExprContext, EnvCtx, Type) -> String -> FixDemandR x s e AChange
-doExprx (ctx, env, effectTp) query = do
-    appc <- getApp ctx env
-    case appc of
-      Nothing -> searchEnclosing
-      Just (appc, appenv) -> do
-        case exprOfCtx appc of
-          (C.App (C.Lam [tn] _ _) args rng) | getName tn == (newHiddenName "action")-> do
-            trace ("Is handler? " ++ showSimpleContext appc ++ " " ++ showSimpleEnv env) $ return ()
-            getHandler appc appenv tn
-          _ -> do
-            -- trace ("Not handler? " ++ (showSimpleContext appc) ++ " " ++ showSimpleEnv env) $ return ()
-            searchEnclosing
-  where
-    getHandler c env tn = do
-      handleLam <- focusFun c
-      handleApp <- focusChild 0 handleLam
-      let newEnv = EnvCtx (IndetCtx [tn]) env
-      hndlerStruct <- focusParam 0 handleApp
-      qeval (hndlerStruct, newEnv)
-    getApp c env = do
-      case exprOfCtx c of
-        (C.Lam args _ e) -> do
-          child <- focusChild 0 c
-          getApp child (EnvCtx (IndetCtx args) env)
-        (C.TypeLam _ _) -> do
-          child <- focusChild 0 c
-          getApp child env
-        (C.App v args rng) -> return (Just (c, env))
-        _ -> return Nothing
-    searchEnclosing = do
-      lctx <- liftMaybe $ enclosingLambda ctx
-      AChangeClos cctx cenv <- qcall (lctx, env)
-      qexprx (cctx, cenv, effectTp)
-
 effContains :: Effect -> Effect -> Bool
 effContains eff' eff =
   let (res, _, _) = runUnifyEx 0 $ do
                         unify eff' eff
   in isLeft res
-
-doEvalx :: (ExprContext, EnvCtx, Name, Type) -> String -> FixDemandR x s e AChange
-doEvalx (ctx, env, nm, eff) query = do
-  trace ("FindEffApp: " ++ show ctx ++ " " ++ showSimpleEnv env) $
-    case exprOfCtx ctx of
-      C.App (C.TypeApp (C.Var n _) _) _ _ | getName n == namePerform 1 -> do
-        trace ("Found Effect Application " ++ show nm ++ " : " ++ show ctx ++ " " ++ showSimpleEnv env) $ return ()
-        qexpr (ctx, env)
-      C.App{} -> do
-        f <- focusFun ctx
-        res <- qeval (f, env)
-        case res of
-          AChangeClos lam lamenv -> do
-            trace ("FindEffAppLam: " ++ show lam ++ " " ++ showSimpleEnv lamenv) $ return ()
-            let getLamEff e =
-                  case e of
-                    C.Lam _ eff _ -> eff
-                    C.TypeLam _ e -> getLamEff e
-                    C.TypeApp e _ -> getLamEff e
-                    l -> error ("Not a lambda: " ++ show l)
-            let eff' = getLamEff (exprOfCtx lam)
-            -- Really need to do findEffectApps (enterBod lam lamenv)
-            if effContains eff eff' then do
-              (bd, bdenv) <- enterBod lam lamenv ctx env
-              qevalx (bd, bdenv, nm, eff)
-            else doBottom
-          _ -> doBottom
-      _ -> visitEachChild ctx $ do
-            childCtx <- currentContext <$> getEnv
-            qevalx (childCtx, env, nm, eff)
 
 doEval :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
 doEval (ctx, env) query = do
@@ -337,9 +279,9 @@ doEval (ctx, env) query = do
               BoundLam lamctx lamenv index -> do
                 -- For a lambda bound name, we find the callers, and then evaluate the corresponding parameter of the applications found
                 AChangeClos appctx appenv <- qcall (lamctx, lamenv)
-                trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return ()
+                -- trace (query ++ "REF: found application " ++ showSimpleContext appctx ++ " " ++ showSimpleEnv appenv ++ " param index " ++ show index) $ return ()
                 prm <- focusParam index appctx
-                trace (query ++ "REF: found param" ++ showSimpleContext prm) $ return ()
+                -- trace (query ++ "REF: found param" ++ showSimpleContext prm) $ return ()
                 evalParam index appctx appenv
               BoundDef parentCtx ctx boundEnv index -> do
                 -- trace (query ++ "REF-def: " ++ show parentCtx ++ " " ++ show index) $ return []
@@ -349,8 +291,12 @@ doEval (ctx, env) query = do
                 -- trace (query ++ "REF-defrec: " ++ show parentCtx ++ " " ++ show index) $ return []
                 -- For a top level definition, it evaluates to itself
                 qeval (ctx, boundEnv)
-              BoundLetDef parentCtx ctx boundEnv index -> do
-                -- trace (query ++ "REF-let: " ++ show parentCtx ++ " " ++ show index) $ return []
+              BoundLetDefRec parentCtx ctx boundEnv index -> do
+                -- trace (query ++ "REF-letrec: " ++ show ctx ++ " " ++ show index) $ return []
+                -- For a top level definition, it evaluates to itself
+                qeval (ctx, boundEnv)
+              BoundLetDefNonRec parentCtx ctx boundEnv index -> do
+                -- trace (query ++ "REF-let: " ++ show ctx ++ " " ++ show index) $ return []
                 -- For a top level definition, it evaluates to itself
                 qeval (ctx, boundEnv)
               BoundLetBod parentCtx ctx boundEnv index -> do
@@ -393,12 +339,13 @@ doEval (ctx, env) query = do
           fun <- focusFun ctx
           -- trace (query ++ "APP: Lambda Fun " ++ show fun) $ return []
           AChangeClos lam lamenv <- qeval (fun, env)
+          -- trace (query ++ "APP: Lambda is " ++ show lam ++ showSimpleEnv lamenv) $ return ()
           prim <- isPrimitive lam
           if prim then do
             -- trace (query ++ "APP: Primitive " ++ show lam) $ return ()
             evalPrimitive lam ctx env
           else do
-            trace (query ++ "APP: Lambda is " ++ show lam) $ return ()
+            -- trace (query ++ "APP: Lambda is " ++ show lam ++ showSimpleEnv lamenv) $ return ()
             (bd, bdenv) <- enterBod lam lamenv ctx env
             qeval (bd, bdenv)
         TypeApp{} ->
@@ -414,6 +361,8 @@ doEval (ctx, env) query = do
           case ctx of
             DefCNonRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
             DefCRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
+            LetCDefNonRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
+            LetCDefRec{} -> return $! AChangeClos ctx env-- Don't further evaluate if it is just the definition / lambda
             _ -> do
               ctx' <- focusChild 0 ctx
               qeval (ctx',env)
@@ -421,6 +370,7 @@ doEval (ctx, env) query = do
         Let defs e -> do
           -- trace (query ++ "LET: " ++ show ctx) $ return []
           ex <- focusChild 0 ctx -- Lets have their return expression as first child
+          -- trace (query ++ "LET: " ++ show ctx ++ " " ++ show ex) $ return ()
           qeval (ex, env)
         Case expr branches -> do
           -- trace (query ++ "CASE: " ++ show ctx) $ return []
@@ -596,6 +546,20 @@ doExpr (ctx,env) query = do
           -- trace (query ++ "DEF Rec: In other binding " ++ show c ++ " looking for usages of " ++ show (lamVarDef df)) $ return ()
           findAllUsage True (lamVarDef df) (fromJust $ contextOf c) env
       -- trace (query ++ "DEF: Usages are " ++ show ctxs) $ return []
+      -- Find the actual call point, this could just be a val x = topLevelFunction with no application
+      qexpr call
+    LetCDefRec _ c _ _ _ -> do
+      -- trace (query ++ "LetDEF Rec: " ++ show c) $ return []
+      let df = defOfCtx ctx
+      call <- findUsage True (lamVarDef df) c env
+      -- trace (query ++ "LetDEF: Usages are " ++ show ctxs) $ return []
+      -- Find the actual call point, this could just be a val x = topLevelFunction with no application
+      qexpr call
+    LetCDefNonRec _ c _ _ -> do
+      -- trace (query ++ "LetDEF Rec: " ++ show c) $ return []
+      let df = defOfCtx ctx
+      call <- findUsage True (lamVarDef df) c env
+      -- trace (query ++ "LetDEF: Usages are " ++ show ctxs) $ return []
       -- Find the actual call point, this could just be a val x = topLevelFunction with no application
       qexpr call
     ExprCBasic _ c _ -> error "Should never get here" -- qexpr (c, env)

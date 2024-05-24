@@ -1,5 +1,5 @@
 fun debug-trace()
-  False
+  trace("Hi")
 
 fun id1(xx)
   debug-trace()
@@ -14,6 +14,7 @@ fun my-map(f, l)
   lp(l)
 
 fun main()
-  my-map(id1(fn(a) a + 1), [1, 2, 3]).show.println
-  my-map(id1(fn(b) b + 1), [7, 8, 9]).show.println
-   
+  val res1 = my-map(id1(fn(a) a + 1), [1, 2, 3])
+  res1.show.println
+  val res2 = my-map(id1(fn(b) b + 1), [7, 8, 9])
+  res2.show.println

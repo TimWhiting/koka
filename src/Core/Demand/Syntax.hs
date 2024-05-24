@@ -51,7 +51,8 @@ findContext r ri = do
         return (ctx, rng)
     ExprCBasic _ _ (Var (TName _ _ (Just rng)) _) -> -- trace ("var range doesn't overlap "++ show ctx ++ " " ++ showFullRange rng) $
       doBottom
-    LetCDef{} -> fromNames ctx [defTName (defOfCtx ctx)]
+    LetCDefNonRec{} -> fromNames ctx [defTName (defOfCtx ctx)]
+    LetCDefRec{} -> fromNames ctx [defTName (defOfCtx ctx)]
     -- Hovering over a lambda parameter should query what values that parameter can evaluate to -- need to create an artificial Var expression
     LamCBody _ _ tnames _ -> fromNames ctx tnames
     CaseCBranch _ _ tnames _ _ -> fromNames ctx tnames
@@ -173,7 +174,8 @@ findSourceExpr ctx =
   case ctx of
     DefCNonRec{} -> findDef (defOfCtx ctx)
     DefCRec{} -> findDef (defOfCtx ctx)
-    LetCDef{} -> findDef (defOfCtx ctx)
+    LetCDefRec{} -> findDef (defOfCtx ctx)
+    LetCDefNonRec{} -> findDef (defOfCtx ctx)
     AppCParam _ c _ _ -> findSourceExpr c
     AppCLambda _ c _ -> findSourceExpr c
     ExprCBasic _ c _ -> do

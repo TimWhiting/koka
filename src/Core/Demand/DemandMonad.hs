@@ -59,7 +59,7 @@ data State r e s = State{
   states :: M.Map ExprContextId ExprContext,
   moduleContexts :: M.Map ModuleName ExprContext,
   maxContextId :: Int,
-  childrenIds :: M.Map ExprContextId (Set ExprContextId),
+  childrenIds :: M.Map ExprContextId [ExprContextId],
   specialIds :: M.Map (ExprContextId, ExprContextId) ExprContextId,
   unique :: Int,
   finalResults :: Set r,
@@ -406,7 +406,7 @@ addChildrenContexts :: ExprContextId -> [ExprContext] -> FixDemandR x s e ()
 addChildrenContexts parentCtx contexts = do
   state <- getState
   let newIds = map contextId contexts
-      newChildren = M.insert parentCtx (S.fromList newIds) (childrenIds state)
+      newChildren = M.insert parentCtx newIds (childrenIds state)
    -- trace ("Adding " ++ show childStates ++ " previously " ++ show (M.lookup parentCtx (childrenIds state))) 
   setState state{childrenIds = newChildren}
 
@@ -438,7 +438,7 @@ addSpecialId :: (ExprContextId, ExprContextId) -> (ExprContextId -> ExprContext)
 addSpecialId ids f = do
   state <- getState
   case M.lookup ids $ specialIds state of
-    Just id -> 
+    Just id ->
       -- trace ("Special Id already exists " ++ show ids ++ " " ++ show id) $ do
       return $! states state M.! id
     Nothing -> do
@@ -459,9 +459,17 @@ childrenOfExpr ctx expr =
       return $! x : rest
     Let defs result -> do
       let defNames = map defTName (concatMap defsOf defs)
-      defs <- zipWithM (\i x -> addContextId (\newId -> LetCDef newId ctx defNames i defs)) [0..] defs
+      defs <- mapM defsFor defs
+      -- trace ("Let " ++ show (map contextId defs)) $ return ()
       result <- addContextId (\newId -> LetCBody newId ctx defNames result)
-      return $! result:defs
+      -- trace ("Let " ++ show (contextId result) ++ show result) $ return ()
+      return $! result:concat defs
+      where
+        defsFor dg@(C.DefNonRec d) = do
+          res <- addContextId (\newId -> LetCDefNonRec newId ctx [(defTName d)] dg)
+          return [res]
+        defsFor dg@(C.DefRec ds) = do
+          mapM (\(i, _) -> addContextId (\newId -> LetCDefRec newId ctx (map defTName ds) i dg)) (zip [0..] ds)
     Case exprs branches -> do
       match <- addContextId (\newId -> CaseCMatch newId ctx (head exprs))
       branches <- zipWithM (\i x -> addContextId (\newId -> CaseCBranch newId ctx (branchVars x) i x)) [0..] branches
@@ -515,7 +523,8 @@ childrenContexts ctx = do
                 LamCBody _ _ names body -> childrenOfExpr ctx body
                 AppCLambda _ _ f -> childrenOfExpr ctx f
                 AppCParam _ _ _ param -> childrenOfExpr ctx param
-                LetCDef{} -> childrenOfExpr ctx (exprOfCtx ctx)
+                LetCDefRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
+                LetCDefNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 LetCBody _ _ _ e -> childrenOfExpr ctx e
                 CaseCMatch _ _ e -> childrenOfExpr ctx e
                 CaseCBranch _ _ _ _ b -> do
@@ -532,7 +541,7 @@ childrenContexts ctx = do
       Just childIds -> do
         -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show childIds) $ return ()
         states <- states <$> getState
-        return $! map (states M.!) (S.toList childIds)
+        return $! map (states M.!) childIds
 
 visitChildrenCtxs :: ([a] -> a) -> ExprContext -> FixDemandR x s e a -> FixDemandR x s e a
 visitChildrenCtxs combine ctx analyze = do

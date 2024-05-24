@@ -23,5 +23,6 @@ fun g(x)
   else !y
 
 fun main()
-  g(False).println
+  val res = g(False)
+  res.println
 
