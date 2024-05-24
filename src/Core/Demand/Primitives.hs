@@ -98,9 +98,8 @@ createPrimitives = do
     param <- evalParam 0 ctx env
     case param of
       AChangeLit (LiteralChangeInt (LChangeSingle i)) _ -> return $ AChangeLit (LiteralChangeString $ LChangeSingle $ show i) env
-      _ -> return $ AChangeLit (LiteralChangeString $ LChangeTop) env
+      _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
     )
-  addPrimitiveExpr nameCoreIntExternShow (\i (ctx, env) -> doBottom)
 
   addPrimitive nameCoreTypesExternAppend (\(ctx, env) -> do
     p0 <- evalParam 0 ctx env
@@ -110,7 +109,6 @@ createPrimitives = do
       (AChangeLit (LiteralChangeString _) _, AChangeLit (LiteralChangeString _) _) -> return $ AChangeLit (LiteralChangeString LChangeTop) env
       _ -> doBottom
     )
-  addPrimitiveExpr nameCoreTypesExternAppend (\i (ctx, env) -> doBottom)
 
   addPrimitive nameCoreCharToString (\(ctx, env) -> do
       p0 <- evalParam 0 ctx env
@@ -119,7 +117,6 @@ createPrimitives = do
         AChangeLit (LiteralChangeChar _) _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
         _ -> doBottom
     )
-  addPrimitiveExpr nameCoreCharToString (\i (ctx, env) -> doBottom)
 
   addPrimitive nameCoreCharInt (\(ctx, env) -> do
       p0 <- evalParam 0 ctx env
@@ -128,7 +125,6 @@ createPrimitives = do
         AChangeLit (LiteralChangeChar _) _ -> return $ AChangeLit (LiteralChangeInt LChangeTop) env
         _ -> doBottom
     )
-  addPrimitiveExpr nameCoreCharInt (\i (ctx, env) -> doBottom)
 
   addPrimitive nameCoreStringListChar (\(ctx, env) -> do
       p0 <- evalParam 0 ctx env
@@ -137,7 +133,6 @@ createPrimitives = do
         AChangeLit (LiteralChangeString _) _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
         _ -> doBottom
     )
-  addPrimitiveExpr nameCoreStringListChar (\i (ctx, env) -> doBottom)
 
   addPrimitive nameCoreSliceString (\(ctx, env) -> do
       p0 <- evalParam 0 ctx env
@@ -145,7 +140,6 @@ createPrimitives = do
         AChangeConstr _ _ -> return $ AChangeLit (LiteralChangeString LChangeTop) env
         _ -> doBottom
     )
-  addPrimitiveExpr nameCoreSliceString (\i (ctx, env) -> doBottom)
 
 
   addPrimitive nameInternalSSizeT (\(ctx, env) -> evalParam 0 ctx env)
