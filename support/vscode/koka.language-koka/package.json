@@ -2,8 +2,8 @@
   "name": "language-koka",
   "displayName": "Koka Language",
   "description": "The official Koka programming language extension.",
-  "version": "3.1.1",
-  "compilerVersion": "3.1.1",
+  "version": "3.1.2",
+  "compilerVersion": "3.1.2",
   "publisher": "koka",
   "engines": {
     "vscode": ">=1.85.0"
@@ -40,7 +40,8 @@
   ],
   "main": "./out/extension",
   "activationEvents": [
-    "workspaceContains:**/*.kk"
+    "workspaceContains:**/*.kk",
+    "onStartupFinished"
   ],
   "contributes": {
     "languages": [

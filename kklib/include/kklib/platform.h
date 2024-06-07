@@ -156,6 +156,7 @@
 #elif defined(__arm__) || defined(_ARM) || defined(_M_ARM)  || defined(_M_ARMT) || defined(__arm)
   #define KK_ARCH_ARM32     1
 #elif defined(__riscv) || defined(_M_RISCV)
+  #define KK_ARCH_RISCV     1
   #if (LONG_MAX == INT32_MAX)
   #define KK_ARCH_RISCV32   1
   #else
@@ -275,16 +276,16 @@
 #endif
 
 #ifdef _MSC_VER
-# define KK_I128(i)      (i##i128)
-# define KK_U128(i)      (i##ui128)
+# define KK_I128(i)     (i##i128)
+# define KK_U128(i)     (i##ui128)
 #else
-# define KK_I128(i)      (INT128_C(i))
-# define KK_U128(i)      (UINT128_C(i))
+# define KK_I128(i)     (INT128_C(i))
+# define KK_U128(i)     (UINT128_C(i))
 #endif
 
-#define KK_KiB        (1024)
-#define KK_MiB        (KK_I32(1024)*KK_KiB)
-#define KK_GiB        (KK_I32(1024)*KK_MiB)
+#define KK_KiB          (1024)
+#define KK_MiB          (KK_I32(1024)*KK_KiB)
+#define KK_GiB          (KK_I32(1024)*KK_MiB)
 
 
 // Define size of intptr_t
@@ -394,17 +395,9 @@ static inline size_t kk_to_size_t(kk_ssize_t sz) {
 #endif
 
 
-// `inttypes.h` is not always available; define print formatting ourselves
-#if (LONG_MAX >= INT64_MAX)
-#define PRIdI64        "ld"
-#define PRIuI64        "lu"
-#define PRIxI64        "lx"
-#define PRIXI64        "lX"
-#define PRIdI32        "d"
-#define PRIuI32        "u"
-#define PRIxI32        "x"
-#define PRIXI32        "X"
-#else
+// `inttypes.h` is not always available on Windows; define print formatting ourselves
+#if defined(_WIN32)
+#if (LONG_MAX < INT64_MAX)    // usually `sizeof(long)==4` on Windows!
 #define PRIdI64        "lld"
 #define PRIuI64        "llu"
 #define PRIxI64        "llx"
@@ -413,6 +406,27 @@ static inline size_t kk_to_size_t(kk_ssize_t sz) {
 #define PRIuI32        "lu"
 #define PRIxI32        "lx"
 #define PRIXI32        "lX"
+#else
+#define PRIdI64        "ld"
+#define PRIuI64        "lu"
+#define PRIxI64        "lx"
+#define PRIXI64        "lX"
+#define PRIdI32        "d"
+#define PRIuI32        "u"
+#define PRIxI32        "x"
+#define PRIXI32        "X"
+#endif
+#else
+// use standard inttypes on other platforms.
+#include <inttypes.h>
+#define PRIdI64        PRId64
+#define PRIuI64        PRIu64
+#define PRIxI64        PRIx64
+#define PRIXI64        PRIX64
+#define PRIdI32        PRId32
+#define PRIuI32        PRIu32
+#define PRIxI32        PRIx32
+#define PRIXI32        PRIX32
 #endif
 
 

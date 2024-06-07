@@ -845,8 +845,11 @@ getKokaBuildDir "" eval
       then do exist <- doesDirectoryExist kkbuild
               if (exist)
                 then return kkbuild
-                else do tmp <- getTemporaryDirectory
-                        return (joinPath tmp kkbuild)
+                else do -- avoid the tmp directory as it does not always have execute permissions
+                        -- tmp <- getTemporaryDirectory
+                        -- instead use `$HOME/.koka` if in the interpreter
+                        home <- getHomeDirectory
+                        return (joinPath home kkbuild)
       else return kkbuild
 getKokaBuildDir buildDir _ = return buildDir
 
@@ -1150,16 +1153,16 @@ ccGcc name opt platform path
     archBits= 8 * sizePtr platform
     arch    = -- unfortunately, these flags are not as widely supported as one may hope so we only enable at -O2 or higher
               if (opt < 2) then []
-              else if (cpuArch=="x64" && archBits==64) then ["-march=haswell","-mtune=native"]      -- popcnt, lzcnt, tzcnt, pdep, pext
+              else if (cpuArch=="x64" && archBits==64) then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
               else if (cpuArch=="arm64" && archBits==64) then ["-march=armv8.1-a","-mtune=native"]  -- popcnt, simd, lse
               else []
 
 ccMsvc name opt platform path
   = CC name path ["-DWIN32","-nologo"]
-         [(DebugFull,words "-MDd -Zi -Od -RTC1" ++ arch),
-          (Debug,words "-MDd -Zi -O1" ++ arch),
+         [(DebugFull,words "-MDd -Zi -FS -Od -RTC1" ++ arch),
+          (Debug,words "-MDd -Zi -FS -O1" ++ arch),
           (Release,words "-MD -O2 -Ob2 -DNDEBUG" ++ arch),
-          (RelWithDebInfo,words "-MD -Zi -O2 -Ob2 -DNDEBUG" ++ arch)]
+          (RelWithDebInfo,words "-MD -Zi -FS -O2 -Ob2 -DNDEBUG" ++ arch)]
          ["-W3"]
          ["-EHs","-TP","-c"]   -- always compile as C++ on msvc (for atomics etc.)
          ["-link"]             -- , "/NODEFAULTLIB:msvcrt"]

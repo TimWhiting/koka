@@ -2102,7 +2102,13 @@ appexpr allowTrailingLam
           = expr
         injectApply expr fargs
           = case expr of
-              App fun args rng -> App fun (args ++ nfargs) rng
+              App fun args rng -> 
+                App fun (positional ++ named) rng
+                where 
+                  positional :: [(Maybe (Name, Range), UserExpr)] 
+                  positional = [(Nothing,a) | (Nothing, a) <- args] ++ nfargs
+                  named :: [(Maybe (Name, Range), UserExpr)] 
+                  named = [(Just n,a) | (Just n,a) <- args]
               _                -> App expr nfargs (combineRanged expr fargs)
           where
             nfargs = [(Nothing,f) | f <- fargs]

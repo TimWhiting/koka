@@ -1,5 +1,6 @@
 {-# OPTIONS -cpp #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE BangPatterns #-}
 -----------------------------------------------------------------------------
 -- Copyright 2012-2021, Microsoft Research, Daan Leijen.
 --
@@ -74,6 +75,7 @@ import Core.BindingGroups( regroup )
 
 import qualified Syntax.RangeMap as RM
 import Core.Core (makeInt32)
+import Common.File (seqqList)
 
 
 {--------------------------------------------------------------------------
@@ -121,7 +123,7 @@ inferDefGroupX topLevel defGroup cont
   = do (cgroups0,(g,cgroups1)) <- inferDefGroup topLevel defGroup cont
        -- resetUnique
        -- zapSubst
-       return (g,cgroups0 ++ cgroups1)
+       return (g,seqqList cgroups0 ++ cgroups1)
 
 inferDefGroup :: Bool -> DefGroup Type -> Inf a -> Inf ([Core.DefGroup], a)
 inferDefGroup topLevel (DefNonRec def) cont
@@ -180,7 +182,7 @@ inferDefGroup topLevel (DefRec defs) cont
            coreGroups3 = (CoreVar.|~>) sub coreGroups2
        -- extend gamma
        x <- (if topLevel then extendGammaCore True {- already canonical -} else extendInfGammaCore False {-toplevel -}) coreGroups3 cont
-       return (coreGroups3,x)
+       return (seqqList coreGroups3,x)
 
        {-
        coreDefsY <- if analyzeDivergence coreDefsX
@@ -205,7 +207,7 @@ inferDefGroup topLevel (DefRec defs) cont
     --   types will end up in gamma.
     createGammas :: [(Name,NameInfo)] -> [(Name,NameInfo)] -> [Def Type] -> Inf ([(Name,NameInfo)],[(Name,NameInfo)])
     createGammas gamma infgamma []
-      = return (reverse gamma, reverse infgamma)
+      = return (seqqList (reverse gamma), seqqList (reverse infgamma))
     createGammas gamma infgamma (Def (ValueBinder name () expr nameRng vrng) rng vis sort inl doc : defs)
       = case (lookup name infgamma) of
           (Just _)
@@ -222,7 +224,7 @@ inferDefGroup topLevel (DefRec defs) cont
                     -> do qname <- qualifyName name
                           let nameInfo = createNameInfoX Public qname sort nameRng tp doc -- (not topLevel || isValue) nameRng tp  -- NOTE: Val is fixed later in "FixLocalInfo"
                           -- trace ("*** createGammas: assume: " ++ show name ++ ": " ++ show nameInfo) $ return ()
-                          createGammas ((qname,nameInfo):gamma) infgamma defs
+                          createGammas ((qname,nameInfo):gamma) (seqqList infgamma) defs
                   _ -> case lookup name gamma of
                          Just _
                           -> do env <- getPrettyEnv
@@ -241,7 +243,7 @@ inferDefGroup topLevel (DefRec defs) cont
                                                   -- trace ("*** assume defVal: " ++ show qname) $
                                                   return (createNameInfoX Public qname DefVal nameRng tp doc)  -- must assume Val for now: get fixed later in inferRecDef2
                                 -- trace ("*** createGammasx: assume: " ++ show qname ++ ": " ++ show info) $ return ()
-                                createGammas gamma ((qname,info):infgamma) defs
+                                createGammas gamma (seqqList ((qname,info):infgamma)) defs
 
 checkRecVal :: Core.DefGroup -> Inf ()
 checkRecVal (Core.DefNonRec def) = return ()
@@ -272,9 +274,9 @@ mapMDefs :: Monad m => (Core.Def -> m Core.Def) -> Core.DefGroups -> m Core.DefG
 mapMDefs f cgroups
   = mapM (\cgroup -> case cgroup of
                        Core.DefRec cdefs   -> do cdefs' <- mapM f cdefs
-                                                 return (Core.DefRec cdefs')
+                                                 return (Core.DefRec (seqqList cdefs'))
                        Core.DefNonRec cdef -> do cdef' <- f cdef
-                                                 return (Core.DefNonRec cdef')) cgroups
+                                                 return (Core.DefNonRec cdef')) (seqqList cgroups)
 
 mapMDefs_ :: Monad m => (Core.Def -> m ()) -> Core.DefGroups -> m ()
 mapMDefs_ f cgroups
@@ -1503,8 +1505,8 @@ inferApp propagated expect fun nargs rng
 
            case amb of
              Just (prop,funExpr,implicits)
-                      -> inferAppFunFirst (Just prop) funExpr fresolved' fixed named implicits
-             Nothing  -> inferAppArgsFirst fresolved' fixs fixed named
+                      -> inferAppFunFirst (Just prop) funExpr (seqqList fresolved') fixed named implicits
+             Nothing  -> inferAppArgsFirst (seqqList fresolved') fixs fixed named
 
 
 getRangeArg :: ArgExpr -> Range
@@ -1973,7 +1975,8 @@ rootExpr expr
 inferArgsN :: Context -> Range -> [(Type,ArgExpr)] -> Inf ([Effect],[Core.Expr])
 inferArgsN ctx range parArgs
   = do res <- inferArg [] parArgs
-       return (unzip res)
+       let (!eff, !expr) = unzip res
+       return (seqqList eff, seqqList expr)
   where
     inferArgExpr tp argexpr hidden -- TODO: add context for better error messages for implicit parameters?
       = (if hidden then withNoRangeInfo else id) $
@@ -1982,9 +1985,9 @@ inferArgsN ctx range parArgs
           (if isRho tp then Instantiated else Generalized False)
           argexpr
 
-    inferArg acc []
+    inferArg !acc []
       = return (reverse acc)
-    inferArg acc ((tpar,arg):args)
+    inferArg !acc ((tpar,arg):args)
       = do tpar0 <- subst tpar
            let subsumeArg (targ,teff,core)
                  = do tpar1  <- subst tpar0
@@ -2045,7 +2048,7 @@ splitNamedArgs nargs
          (arg:_) -> infError (getRange (snd arg)) (text "positional arguments cannot follow named arguments")
        checkDuplicates [] named
 
-       return (fixed,named)
+       return (seqqList fixed,seqqList named)
   where
     checkDuplicates seen named
       = case named of
@@ -2141,7 +2144,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
                           (iargs,pars,eff,res,_) <- matchFunTypeArgs context fun contp fresolved (fun:fixed) named
                           let coreAddCopy core coreArgs
                                 = let coreVar = coreExprFromNameInfo qname info
-                                  in (Core.App (coreInst coreVar) (coreArgs))
+                                  in (Core.App (coreInst coreVar) (seqqList coreArgs))
                           return (iargs,pars,eff,res,coreAddCopy)
                   _ -> do typeError context range (text "only functions or types with a copy constructor can be applied") tp []
                           return (zip [1..] (map (\x -> ArgExpr x True) (fixed ++ map snd named)), [], typeTotal, typeUnit, Core.App)
@@ -2361,7 +2364,7 @@ coreList tp cs
   = do (consName,consTp,consRepr,_) <- resolveConName nameCons Nothing rangeNull
        (nilName,nilTp,nilRepr,_) <- resolveConName nameListNil Nothing rangeNull
        let consx = Core.TypeApp (Core.Con (Core.TName consName consTp) consRepr) [tp]
-           cons x xs = Core.App consx [x,xs]
+           cons x xs = Core.App consx (seqqList [x,xs])
            nil  = Core.TypeApp (Core.Con (Core.TName nilName nilTp) nilRepr) [tp]
        return (foldr cons nil cs)
 

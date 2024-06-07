@@ -316,7 +316,7 @@ static inline const uint8_t* kk_utf8_prev(const uint8_t* s) {
   return s;
 }
 
-// utf-8 valitating read.
+// utf-8 validating read.
 kk_decl_export kk_char_t kk_utf8_read_validate(const uint8_t* s, kk_ssize_t* count, kk_ssize_t* vcount, bool qutf8_identity );
 
 // Non-validating utf-8 decoding of a single code point

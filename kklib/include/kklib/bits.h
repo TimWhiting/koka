@@ -275,22 +275,6 @@ static inline kk_uintx_t kk_bits_only_keep_lsb(kk_uintx_t x) {
   return kk_bitsx(only_keep_lsb)(x);
 }
 
-/* -----------------------------------------------------------
-  Is a word a power of two? (0 is not a power of two)
------------------------------------------------------------ */
-
-static inline bool kk_bits_is_power_of2_32(uint32_t x) {
-  return (x != 0 && kk_bits_clear_lsb32(x) == 0);
-}
-
-static inline bool kk_bits_is_power_of2_64(uint64_t x) {
-  return (x != 0 && kk_bits_clear_lsb64(x) == 0);
-}
-
-static inline bool kk_bits_is_power_of2(kk_uintx_t x) {
-  return kk_bitsx(is_power_of2_)(x);
-}
-
 
 /* -----------------------------------------------------------
   Byte operations
@@ -411,7 +395,7 @@ static inline int kk_bits_popcount64(uint64_t x) {
 #include <intrin.h>
 #define KK_BITS_HAS_FAST_POPCOUNT32  1
 static inline int kk_bits_popcount32(uint32_t x) {
-  (int)__popcnt(x);
+  return (int)__popcnt(x);
 }
 #if (KK_INTX_SIZE>=8)
 #define KK_BITS_HAS_FAST_POPCOUNT64  1
@@ -677,6 +661,30 @@ static inline double kk_bits_to_double(uint64_t x) {
 
 static inline int64_t kk_int64_hi_lo( int32_t hi, int32_t lo ) {
   return (((int64_t)hi << 32) | (uint32_t)lo);
+}
+
+/* -----------------------------------------------------------
+  Is a word a power of two? (0 is not a power of two)
+----------------------------------------------------------- */
+
+static inline bool kk_bits_is_power_of2_32(uint32_t x) {
+  #if defined(__BMI2__)  // does the host have fast popcount instructions?
+  return (kk_bits_popcount32(x) == 1);
+  #else
+  return (x != 0 && kk_bits_clear_lsb32(x) == 0);
+  #endif
+}
+
+static inline bool kk_bits_is_power_of2_64(uint64_t x) {
+  #if defined(__BMI2__)  // does the host have fast popcount instructions?
+  return (kk_bits_popcount64(x) == 1);
+  #else
+  return (x != 0 && kk_bits_clear_lsb64(x) == 0);
+  #endif
+}
+
+static inline bool kk_bits_is_power_of2(kk_uintx_t x) {
+  return kk_bitsx(is_power_of2_)(x);
 }
 
 
