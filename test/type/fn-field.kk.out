@@ -1,4 +1,8 @@
+type/fn-field/fn-field/call/funx: (fn-field, ?name : string) -> io ()
+type/fn-field/fn-field/call/noarg: (fn-field) -> io ()
 type/fn-field/fn-field/call/xrun: (fn-field, string) -> io ()
+type/fn-field/fn-field/get/funx: (fn-field) -> ((?name : string) -> io ())
+type/fn-field/fn-field/get/noarg: (fn-field) -> (() -> io ())
 type/fn-field/fn-field/get/xrun: (fn-field) -> ((string) -> io ())
-type/fn-field/Fn-field: (xrun : (string) -> io ()) -> fn-field
+type/fn-field/Fn-field: (xrun : (string) -> io (), funx : (?name : string) -> io (), noarg : () -> io ()) -> fn-field
 type/fn-field/main: () -> io ()
