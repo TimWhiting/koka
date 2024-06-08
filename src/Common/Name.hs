@@ -48,7 +48,7 @@ module Common.Name
           , toImplicitParamName, isImplicitParamName, splitImplicitParamName
           , fromImplicitParamName
 
-          , prepend, postpend
+          , prepend, postpend, addLocalPostfix
           , asciiEncode, moduleNameToPath, pathToModuleName
           -- , canonicalSep, canonicalName, nonCanonicalName, canonicalSplit
 
@@ -301,7 +301,13 @@ nameMapStem :: Name -> (String -> String) -> Name
 nameMapStem (Name m hm l hl n _) f
   = let fn = f n in Name m hm l hl fn (hash fn)
 
+nameMapLocal :: Name -> (String -> String) -> Name
+nameMapLocal (Name m hm l hl n hn) f
+  = let fl = f l in Name m hm fl (hash fl) n hn
 
+addLocalPostfix :: Name -> String -> Name
+addLocalPostfix nm postfix
+  = nameMapLocal nm $ \l -> join l postfix
 
 readQualifiedName :: String -> Name
 readQualifiedName ('?':s)
@@ -580,7 +586,6 @@ postpend post name
   = nameMapStem name $ \stem ->
     let (xs,ys) = span (\c -> c=='?' || c=='\'') (reverse stem)
     in reverse (xs ++ reverse post ++ ys)
-
 
 ----------------------------------------------------------------
 -- hidden names

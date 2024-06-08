@@ -1,4 +1,5 @@
-type/inf1/linear-set/eq: forall<a,e> (linear-set<a>) -> ((a, a) -> e bool)
+type/inf1/linear-set/call/eq: forall<a> (linear-set<a>, a, a) -> bool
+type/inf1/linear-set/get/eq: forall<a,e> (linear-set<a>) -> ((a, a) -> e bool)
 type/inf1/linear-set/list: forall<a> (linear-set<a>) -> list<a>
 type/inf1/set/(+): forall<e,a> (l1 : linear-set<a>, l2 : linear-set<a>) -> e linear-set<a>
 type/inf1/val/(+): forall<e,a> (l : linear-set<a>, a : a) -> e linear-set<a>

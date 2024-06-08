@@ -1,0 +1,4 @@
+type/fn-field/fn-field/call/xrun: (fn-field, string) -> io ()
+type/fn-field/fn-field/get/xrun: (fn-field) -> ((string) -> io ())
+type/fn-field/Fn-field: (xrun : (string) -> io ()) -> fn-field
+type/fn-field/main: () -> io ()
