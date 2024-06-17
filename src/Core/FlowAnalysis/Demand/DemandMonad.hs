@@ -50,12 +50,41 @@ import Common.Failure (assertion, HasCallStack)
 import Common.Error (Errors)
 import Type.Type (Type)
 
-type State r e s = BasicState r (DemandState r e s) 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
 type PostFixR r s e a = FixIn (DEnv e) (State r e s) FixInput FixOutput AFixChange a
 type PostFix r s e = PostFixR r s e (FixOutput AFixChange)
 
+-- The fixpoint input is either a query to get an abstract value result, or an environment to get a set of refined environments
+data FixInput =
+  QueryInput Query
+  | EnvInput EnvCtx deriving (Ord, Eq, Show)
+
+-- The output of the fixpoint is either a value, or set of environments 
+-- (depending on whether the input is a query or wanting the refined environments for a particular environment)
+data FixOutput d =
+  A AbValue
+  | E (S.Set EnvCtx)
+  | N deriving (Show, Eq)
+
+data AFixChange =
+  FA AChange
+  | FE EnvCtx
+  | B
+  deriving (Show, Eq)
+
+data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
+
+type DEnv x = AnalysisEnv (DemandEnv x)
+data DemandEnv x = DemandEnv {
+  analysisKind :: !AnalysisKind,
+  currentQuery :: !String,
+  currentQueryId :: !Int,
+  queryIndentation :: !String,
+  additionalEnv2 :: x
+}
+
+type State r e s = BasicState r (DemandState r e s) 
 data DemandState r e s = DemandState {
   -- Evaluators given an application site / environment of a primitive (what does the application evaluate to)
   primitives :: M.Map Name ((ExprContext,EnvCtx) -> FixDemandR r s e AChange),
@@ -65,6 +94,15 @@ data DemandState r e s = DemandState {
   outOfGas :: Bool,
   additionalState2 :: s
 }
+
+-- A query type representing the mutually recursive queries we can make that result in an abstract value
+data Query =
+  CallQ (ExprContext, EnvCtx) |
+  ExprQ (ExprContext, EnvCtx) |
+  EvalQ (ExprContext, EnvCtx) |
+  EvalxQ (ExprContext, EnvCtx, Name, Type) | -- Find Applications for the type
+  ExprxQ (ExprContext, EnvCtx, Type) -- Find Handler for the operation's effect type
+  deriving (Eq, Ord)
 
 getDemandState :: FixDemandR r s e (DemandState r e s)
 getDemandState = additionalState <$> getState
@@ -119,17 +157,6 @@ updateAdditionalState f = do
   st <- getState
   setState st{additionalState = (additionalState st){additionalState2 = f (additionalState2 (additionalState st))}}
 
-data AnalysisKind = BasicEnvs | LightweightEnvs | HybridEnvs deriving (Eq, Ord, Show)
-
-data DemandEnv x = DemandEnv {
-  analysisKind :: !AnalysisKind,
-  currentQuery :: !String,
-  currentQueryId :: !Int,
-  queryIndentation :: !String,
-  additionalEnv2 :: x
-}
-
-type DEnv x = AnalysisEnv (DemandEnv x)
 
 emptyEnv :: HasCallStack => Int -> AnalysisKind -> TypeChecker -> Bool -> e -> DEnv e
 emptyEnv m kind build log e = emptyBasicEnv m build log (DemandEnv kind "" (-1) "" e) 
@@ -140,15 +167,6 @@ getQueryString = do
   denv <- getDemandEnv
   env <- getEnv
   return $ queryIndentation denv ++ show (contextId $ currentContext env) ++ " " ++ currentQuery denv ++ " "
-
--- A query type representing the mutually recursive queries we can make that result in an abstract value
-data Query =
-  CallQ (ExprContext, EnvCtx) |
-  ExprQ (ExprContext, EnvCtx) |
-  EvalQ (ExprContext, EnvCtx) |
-  EvalxQ (ExprContext, EnvCtx, Name, Type) | -- Find Applications for the type
-  ExprxQ (ExprContext, EnvCtx, Type) -- Find Handler for the operation's effect type
-  deriving (Eq, Ord)
 
 -- Unwraps query pieces
 queryCtx :: Query -> ExprContext
@@ -189,29 +207,12 @@ queryKindCaps (ExprxQ _) = "EXPRX"
 instance Show Query where
   show q = queryKindCaps q ++ ": " ++ showSimpleEnv (queryEnv q) ++ " " ++ showSimpleContext (queryCtx q)
 
--- The fixpoint input is either a query to get an abstract value result, or an environment to get a set of refined environments
-data FixInput =
-  QueryInput Query
-  | EnvInput EnvCtx deriving (Ord, Eq, Show)
-
-data AFixChange =
-  FA AChange
-  | FE EnvCtx
-  | B
-  deriving (Show, Eq)
 
 toAChange :: AFixChange -> AChange
 toAChange (FA a) = a
 
 toEnv :: AFixChange -> EnvCtx
 toEnv (FE e) = e
-
--- The output of the fixpoint is either a value, or set of environments 
--- (depending on whether the input is a query or wanting the refined environments for a particular environment)
-data FixOutput d =
-  A AbValue
-  | E (S.Set EnvCtx)
-  | N deriving (Show, Eq)
 
 getAllRefines :: EnvCtx -> PostFixR x s e(Set EnvCtx)
 getAllRefines env = do
