@@ -1,16 +1,17 @@
 {-# LANGUAGE RankNTypes #-}
-module Core.Demand.ConstantProp where
+module Core.FlowAnalysis.Demand.ConstantProp where
 import Core.Core
 import Common.NamePrim
 import Type.Type
-import Core.Demand.FixpointMonad
 import Compile.Options (Terminal(..), Flags)
-import Core.Demand.DemandMonad
 import Compile.BuildMonad (BuildContext, Build)
-import Core.Demand.DemandAnalysis
-import Core.Demand.Primitives
-import Core.Demand.StaticContext
-import Core.Demand.AbstractValue
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.FixpointMonad
+import Core.FlowAnalysis.AbstractValue
+import Core.FlowAnalysis.Monad
+import Core.FlowAnalysis.Demand.DemandMonad
+import Core.FlowAnalysis.Demand.DemandAnalysis
+import Core.FlowAnalysis.Demand.Primitives
 import Debug.Trace (trace)
 import qualified Data.Set as S
 import Data.List (intercalate)
@@ -42,10 +43,10 @@ propConstants build state name = do
           trace (showSimpleContext v ++ " " ++ show res) $ return ()
           -- TODO: Check gas limit and assume the variable is not constant if gas ran out
           setResults $ S.fromList rst
-          updateAdditionalState $ \s -> 
-            let old = fromMaybe emptyAbValue $ M.lookup v s
-                new = addChange old res in
-            M.insert v new s
+          -- updateAdditionalState $ \s -> 
+          --   let old = fromMaybe emptyAbValue $ M.lookup v s
+          --       new = addChange old res in
+            -- M.insert v new s
   return s
 
 constantPropagation :: TypeChecker -> BuildContext -> Core -> IO ()
@@ -64,7 +65,7 @@ propAllConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AbVal
 propAllConstants build state name = do
   s <- propConstants build state name
   let varsLeft = finalResults s
-  let results = additionalState s
+  let results = additionalState2 $ additionalState s
   if varsLeft == S.empty
     then return results
     else propAllConstants build (transformState id id (-1) s) name

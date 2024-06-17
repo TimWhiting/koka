@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
-module Core.Demand.AbstractValue(
+module Core.FlowAnalysis.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
                           LiteralLattice(..),
@@ -43,9 +43,9 @@ import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
 import Common.Failure (assertion)
-import Core.Demand.StaticContext
-import Core.Demand.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice)
-import qualified Core.Demand.FixpointMonad as FM
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice)
+import qualified Core.FlowAnalysis.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)
 

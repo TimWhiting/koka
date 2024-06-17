@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-module Core.Demand.StaticContext(
+module Core.FlowAnalysis.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
                           ExpressionSet,

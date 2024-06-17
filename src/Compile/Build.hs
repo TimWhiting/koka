@@ -63,7 +63,7 @@ import Compile.CodeGen        ( codeGen, Link, LinkResult(..), noLink )
 import Compile.BuildMonad
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
-import Core.Demand.ConstantProp (constantPropagation)
+import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 
 
 {---------------------------------------------------------------

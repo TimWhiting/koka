@@ -15,7 +15,7 @@
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
 
-module Core.Demand.FixpointMonad(
+module Core.FlowAnalysis.FixpointMonad(
   FixTS, FixT, FixIn,
   SimpleChange(..),
   SimpleLattice(..), SLattice,

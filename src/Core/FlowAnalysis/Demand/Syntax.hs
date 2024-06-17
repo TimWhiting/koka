@@ -9,7 +9,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Core.Demand.Syntax where
+module Core.FlowAnalysis.Demand.Syntax where
 
 import Data.List (intercalate, find)
 import qualified Data.Map.Strict as M
@@ -29,12 +29,13 @@ import Type.Type
 import Lib.PPrint
 import Compile.BuildMonad (BuildContext, Build)
 import Compile.Options (Terminal, Flags)
-import Core.Demand.StaticContext
-import Core.Demand.FixpointMonad
-import Core.Demand.DemandMonad
-import Core.Demand.AbstractValue
-import Core.Demand.Primitives
-import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.FixpointMonad
+import Core.FlowAnalysis.AbstractValue
+import Core.FlowAnalysis.Monad
+import Core.FlowAnalysis.Demand.DemandMonad
+import Core.FlowAnalysis.Demand.Primitives
+import Core.FlowAnalysis.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
 import Debug.Trace (trace)
 import Core.Pretty (prettyExpr)
 import Type.Pretty (defaultEnv)

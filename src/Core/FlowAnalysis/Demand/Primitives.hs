@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use uncurry" #-}
 {-# LANGUAGE NamedFieldPuns #-}
-module Core.Demand.Primitives(createPrimitives) where
+module Core.FlowAnalysis.Demand.Primitives(createPrimitives) where
 
 import Data.Maybe(fromJust)
 import Debug.Trace(trace)
@@ -9,11 +9,11 @@ import Common.Name
 import Common.NamePrim
 import Common.Failure
 import Compile.Module
-import Core.Demand.FixpointMonad
-import Core.Demand.AbstractValue
-import Core.Demand.StaticContext
-import Core.Demand.DemandAnalysis
-import Core.Demand.DemandMonad
+import Core.FlowAnalysis.FixpointMonad
+import Core.FlowAnalysis.StaticContext
+import Core.FlowAnalysis.AbstractValue
+import Core.FlowAnalysis.Demand.DemandAnalysis
+import Core.FlowAnalysis.Demand.DemandMonad
 import Core.Core as C
 import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
 import Data.List (findIndex)
