@@ -64,7 +64,7 @@ data LiteralChange =
   | LiteralChangeFloat (SimpleChange Double)
   | LiteralChangeChar (SimpleChange Char)
   | LiteralChangeString (SimpleChange String)
- deriving (Eq)
+ deriving (Eq, Ord)
 
 instance Show LiteralChange where
   show (LiteralChangeInt LChangeTop) = "int -> top"
@@ -84,7 +84,7 @@ data AChange =
   | AChangeClosApp ExprContext ExprContext EnvCtx -- This is a closure that has a different application for it's calling context abstraction
   | AChangeConstr ExprContext EnvCtx
   | AChangeLit LiteralChange EnvCtx
-  deriving (Eq)
+  deriving (Eq, Ord)
 
 callOfClos :: AChange -> ExprContext
 callOfClos res = 

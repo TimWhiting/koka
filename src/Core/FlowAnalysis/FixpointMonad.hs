@@ -70,7 +70,7 @@ data SimpleLattice a d = LBottom
 
 type SLattice a = SimpleLattice a (SimpleChange a)
 
-data SimpleChange a = LChangeTop | LChangeSingle a deriving (Show,Eq)
+data SimpleChange a = LChangeTop | LChangeSingle a deriving (Show,Eq,Ord)
 
 instance Show a => Show (SimpleLattice a d) where
   show LBottom = "LBottom"
