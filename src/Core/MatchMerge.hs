@@ -32,7 +32,7 @@ trace s x =
   Lib.Trace.trace s
     x
 
-matchMergeDefs :: CorePhase ()
+matchMergeDefs :: CorePhase b ()
 matchMergeDefs
   = liftCorePhaseUniq $ \uniq defs ->
     runUnique uniq $ matchMergeDefGroups defs
@@ -63,9 +63,8 @@ matchMergeExpr body
       Case exprs branches ->
         do
           (branches', changed) <- mergeBranches branches
-          -- if changed then trace ("matchMergeExpr:\n" ++ show branches ++ "\nrewrote to: \n" ++ show branches' ++ "\n")
+          -- if changed then trace ("matchMergeExpr:\n" ++ show branches ++ "\nrewrote to: \n" ++ show branches' ++ "\n") (return ()) else return ()
           return $ Case exprs branches'
-          -- else return $ Case exprs branches
       _ -> return body
 
 -- Takes a set of branches, and transforms them by merging branches that have some shared superstructure.
@@ -79,22 +78,22 @@ mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst)
       splitted <- splitBranchConstructors b rst
       case splitted of
         -- Single branch, return itself unchanged
-        ([b], [], err, pat') -> return ([b], False)
+        ([b], [], err, tns, pat') -> return ([b], False)
         -- Single branch shares structure, rest do not, merge the rest and append
-        ([b], rst, err, pat') ->
+        ([b], rst, err, tns, pat') ->
           do
             (rest, v) <- mergeBranches rst
-            return (b:rest, v)
+            return (b : rest, v)
         -- Multiple branches share structure
-        (bs, rst, err, pat') ->
+        (bs, rst, err, tns, pat') ->
           do
-            trace ("mergeBranches:\n" ++ intercalate "\n" (map (show . branchPatterns) bs) ++ "\n with common superstructure:\n" ++ show pat' ++ "\n\n") $ return ()
+            -- trace ("mergeBranches:\n" ++ " has error? " ++ show err ++ "\n" ++ intercalate "\n" (map (show . branchPatterns) bs) ++ "\n with common superstructure:\n" ++ show pat' ++ "\n\n") $ return ()
             let
-              vars' = collectPatsVars pat' -- Collect the variables introduced by the shared structure
+              vars' = tns -- collectPatsVars pat' -- Collect the variables introduced by the shared structure
               varsMatch =  [Var tn InfoNone | tn <- vars'] -- Create expressions for those vars
             -- Get rid of the common superstructure from the branches that share superstructure
             -- Also add the implicit error branch if it exists
-              subBranches = map (stripOuterConstructors pat') bs ++ maybeToList err
+              subBranches = (map (stripOuterConstructors pat') bs) ++ maybeToList err
             (newSubBranches, innerV) <- mergeBranches subBranches 
             (rest, v) <- mergeBranches rst -- Merge the branches that do not share structure with the current set
             -- Replace the set of common branches, with a single branch that matches on the shared superstructure, and delegates
@@ -123,15 +122,15 @@ collectVars p
 -- - a possible (implicit error) branch found 
 -- - and the pattern that unifies the matched branches
 -- Greedily in order processing, The first branch is the branch under consideration and the others are the next parameter
-splitBranchConstructors :: Branch -> [Branch] -> Unique ([Branch], [Branch], Maybe Branch, [Pattern])
+splitBranchConstructors :: Branch -> [Branch] -> Unique ([Branch], [Branch], Maybe Branch, [TName], [Pattern])
 splitBranchConstructors b@(Branch ps _) branches =
   case branches of
     -- Only one branch, it matches it's own pattern
-    [] -> return ([b], [], if isErrorBranch b then Just b else Nothing, ps) 
+    [] -> return ([b], [], if isErrorBranch b then Just b else Nothing, [], ps) 
     b'@(Branch ps' _):bs ->
       do
         -- First do the rest other than b'
-        (bs', bs2', e, accP) <- splitBranchConstructors b bs
+        (bs', bs2', e, restTns, accP) <- splitBranchConstructors b bs
         -- keep track of error branch to propagate into sub branches
         let newError = case (e, b') of
               (Just e, _) -> Just e -- implicit error is in the rest of the branches
@@ -139,14 +138,15 @@ splitBranchConstructors b@(Branch ps _) branches =
               _ -> Nothing -- no error branch
         -- Acumulated pattern and p'
         patNew <- zipWithM patternsMatch accP ps'
-        if not $ isSimpleMatches patNew then
+        let (newVars, patNews) = unzip patNew
+        if not $ isSimpleMatches patNews then
           -- Restrict the pattern to the smallest that matches multiple branches
           -- Add the new branch to the list of branches that match partially
-          trace ("splitConstructors:\n" ++ show accP ++ "\nand\n" ++ show ps' ++ "\n have common superstructure:\n" ++ show patNew ++ "\n\n")
-            $ return (bs' ++ [b'], bs2', newError, patNew)
+          -- trace ("splitConstructors:\n" ++ show accP ++ "\nand\n" ++ show ps' ++ "\n have common superstructure:\n" ++ show patNew ++ "\n\n") $
+            return (bs' ++ [b'], bs2', newError, concat newVars, patNews)
           -- Didn't match the current branch, keep the old pattern
           -- Add the new branch to the list of branches that don't match any subpattern
-        else return (bs', b':bs2', newError, accP)
+        else return (bs', b':bs2', newError, restTns, accP)
 
 isPatWild :: Pattern -> Bool
 isPatWild PatWild = True
@@ -164,33 +164,45 @@ isSimpleMatch p =
 
 -- Checks to see if the branch is an error branch
 isErrorBranch:: Branch -> Bool
-isErrorBranch (Branch _ [Guard _ (App (TypeApp (Var name _) _) _)]) = getName name == namePatternMatchError
+isErrorBranch (Branch _ [Guard _ e]) = isErrorExpr e
 isErrorBranch _ = False
+
+isErrorExpr :: Expr -> Bool
+isErrorExpr (TypeApp (Var name _) _) = 
+  let nm = getName name in
+  nm == namePatternMatchError 
+isErrorExpr (App (App (TypeApp (Var name _) _) [e]) args) = 
+  getName name == nameEffectOpen && isErrorExpr e  
+isErrorExpr (App e args) = isErrorExpr e
+isErrorExpr (TypeApp e args) = isErrorExpr e
+isErrorExpr e =
+  False
 
 generalErrorBranch:: Branch -> Branch
 generalErrorBranch b@(Branch p g) | isErrorBranch b = Branch [PatWild] g
 generalErrorBranch b = b
 
--- Returns largest common pattern superstructure, with variables added where needed
-patternsMatch :: Pattern -> Pattern -> Unique Pattern
+-- Returns largest common pattern superstructure, with variables added where needed, and the distinguishing variables returned
+patternsMatch :: Pattern -> Pattern -> Unique ([TName], Pattern)
 patternsMatch p p'
   = case (p, p') of
     (PatLit l1, PatLit l2) -> 
-      if l1 == l2 then return p -- Literals that match, just match the literal
+      if l1 == l2 then return ([], p) -- Literals that match, just match the literal
       else do -- Match a variable of the literal's type
         name <- newVarName 
-        return $ PatVar (TName name (typeOf l1)) PatWild
+        let tn = TName name (typeOf l1)
+        return ([tn], PatVar tn PatWild)
     (PatVar tn1 v1, PatVar tn2 v2) | tn1 == tn2 -> do 
       -- Same pattern variable, reuse the variable name, but find common substructure 
-      sub <- patternsMatch v1 v2
-      return $ PatVar tn1 sub
+      (tns, sub) <- patternsMatch v1 v2
+      return (tns, PatVar tn1 sub)
     (PatVar tn1 v1, PatVar tn2 v2) -> do
       -- Variables that don't match name, but (should match types because of type checking)
       -- Create a common name to match for
       name <- newVarName 
-      sub <- patternsMatch v1 v2
-      return $ PatVar (TName name (typeOf tn1)) sub
-    (PatWild, PatWild) -> return PatWild -- Wilds match trivially
+      (tns, sub) <- patternsMatch v1 v2
+      return (tns, PatVar (TName name (typeOf tn1)) sub)
+    (PatWild, PatWild) -> return ([], PatWild) -- Wilds match trivially
     (PatCon name1 patterns1 cr targs1 exists1 res1 ci sk, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) -> 
       if -- Same constructor (name, and types) -- types should match due to type checking, but names could differ
         name1 == name2 &&
@@ -199,27 +211,50 @@ patternsMatch p p'
         res1 == res2
       then do 
         -- Same constructor, match substructure
-        subs <- zipWithM patternsMatch patterns1 patterns2
-        return $ PatCon name1 subs cr targs1 exists1 res1 ci sk
+        res <- zipWithM patternsMatch patterns1 patterns2
+        let (subs, pats) = unzip res
+        return (concat subs, PatCon name1 pats cr targs1 exists1 res1 ci sk)
       else do
         name <- newVarName
-        return $ PatVar (TName name res1) PatWild -- Different constructors, no match
+        let tn = TName name res1
+        return ([tn], PatVar tn PatWild) -- Different constructors, no match
+    (PatVar tn PatWild, PatWild) -> do
+      return ([], PatVar tn PatWild)
+    (PatWild, PatVar tn PatWild) -> do
+      return ([], PatVar tn PatWild)
+    (PatVar tn PatWild, _) -> do
+      return ([tn], PatVar tn PatWild)
+    (_, PatVar tn PatWild) -> do
+      return ([tn], PatVar tn PatWild)
     (PatVar tn pat, _) -> do
-      sub <- patternsMatch pat p'
-      return $ PatVar tn sub
+      (tns, sub) <- patternsMatch pat p'
+      return (tns, PatVar tn sub)
     (_, PatVar tn pat) -> do
-      sub <- patternsMatch p pat
-      return $ PatVar tn sub
-    (_, PatWild) -> return PatWild
-    (PatWild, _) -> return PatWild
+      (tns, sub) <- patternsMatch p pat
+      return (tns, PatVar tn sub)
+    -- Double sided wilds already handled so we can safely request the type, as well as one sided vars
+    (_, PatWild) -> do
+      name <- newVarName
+      let tn = TName name (patternType p)
+      return ([tn], PatVar tn PatWild)
+    (PatWild, _) -> do
+      name <- newVarName
+      let tn = TName name (patternType p')
+      return ([tn], PatVar tn PatWild)
     (_, _) -> failure $ "patternsMatch: " ++ show p ++ " " ++ show p' ++ " "
     where newVarName = uniqueId "case" >>= (\id -> return $ newHiddenName ("case" ++ show id))
 
+patternType :: Pattern -> Type
+patternType p = case p of
+  PatLit l -> typeOf l
+  PatVar tn _ -> typeOf tn
+  PatCon tn _ _ targs _ resTp _ _ -> resTp
+
 -- Strip the outer constructors and propagate variable substitution into branch expressions
 stripOuterConstructors :: [Pattern] -> Branch -> Branch
-stripOuterConstructors templates (Branch pts exprs)
-  = trace ("Using template\n" ++ show templates ++ "\nand outer subpattern from\n" ++ show pts ++ "\ngot:\n" ++ show (patNew, replaceMap) ++ "\n") $ 
-      Branch (concatMap (fromMaybe [PatWild]) patNew) $ map replaceInGuard exprs
+stripOuterConstructors templates (Branch pts exprs) = 
+  -- trace ("Using template\n" ++ show templates ++ "\nand outer subpattern from\n" ++ show pts ++ "\ngot:\n" ++ show (patNew, replaceMap) ++ "\n") $ 
+    Branch (concatMap (fromMaybe [PatWild]) patNew) $ map replaceInGuard exprs
   where
     replaceInGuard (Guard tst expr)
       = Guard (rewriteBottomUp replaceInExpr tst) (rewriteBottomUp replaceInExpr expr)
@@ -250,8 +285,8 @@ getReplaceMap template p'
           (patterns', replaceMaps) = unzip res
           replaceMap = concat replaceMaps
       in (Just (concatMap (fromMaybe []) patterns'), replaceMap)
+    (PatVar tn PatWild, PatWild) -> (Nothing, [])
     (PatVar tn PatWild, pat2) -> (Just [pat2], [])
     (PatVar tn pat, pat2) -> getReplaceMap pat pat2
-    (pat, PatVar tn pat2) -> getReplaceMap pat pat2
     (PatWild, pat2) -> (Just [pat2], [])
     _ -> failure $ "\ngetReplaceMap:\n" ++ show template ++ "\n:" ++ show p' ++ "\n" 
