@@ -85,15 +85,14 @@ mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst)
             (rest, v) <- mergeBranches rst
             return (b : rest, v)
         -- Multiple branches share structure
-        (bs, rst, err, tns, pat') ->
+        (bs, rst, err, distinguishingVars, pat') ->
           do
             -- trace ("mergeBranches:\n" ++ " has error? " ++ show err ++ "\n" ++ intercalate "\n" (map (show . branchPatterns) bs) ++ "\n with common superstructure:\n" ++ show pat' ++ "\n\n") $ return ()
             let
-              vars' = tns -- collectPatsVars pat' -- Collect the variables introduced by the shared structure
-              varsMatch =  [Var tn InfoNone | tn <- vars'] -- Create expressions for those vars
+              varsMatch =  [Var tn InfoNone | tn <- distinguishingVars] -- Create expressions for those vars
             -- Get rid of the common superstructure from the branches that share superstructure
             -- Also add the implicit error branch if it exists
-              subBranches = (map (stripOuterConstructors pat') bs) ++ maybeToList err
+              subBranches = map (stripOuterConstructors distinguishingVars pat') bs ++ maybeToList err
             (newSubBranches, innerV) <- mergeBranches subBranches 
             (rest, v) <- mergeBranches rst -- Merge the branches that do not share structure with the current set
             -- Replace the set of common branches, with a single branch that matches on the shared superstructure, and delegates
@@ -101,20 +100,7 @@ mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst)
             return (Branch pat' [Guard exprTrue (Case varsMatch newSubBranches)] : rest, True)
 -- Default (non-constructor patterns), just merge the rest, and add the first branch back
 mergeBranches (b:bs) = mergeBranches bs >>= (\(bs', v) -> return (b:bs', v))
--- TODO: Add support for var patterns
 -- TODO: Add support for branches with multiple patterns
-
--- Collects the vars from a pattern in a canonical order (instead of fvs which uses sets)
-collectPatsVars :: [Pattern] -> [TName]
-collectPatsVars = concatMap collectVars
-
-collectVars :: Pattern -> [TName]
-collectVars p
-  = case p of
-      PatVar name PatWild -> [name]
-      PatVar name pt -> collectVars pt 
-      PatCon{patConPatterns = ps} -> concatMap collectVars ps
-      _ -> []
 
 -- Split branches into 
 -- - a list of those that match
@@ -251,9 +237,9 @@ patternType p = case p of
   PatCon tn _ _ targs _ resTp _ _ -> resTp
 
 -- Strip the outer constructors and propagate variable substitution into branch expressions
-stripOuterConstructors :: [Pattern] -> Branch -> Branch
-stripOuterConstructors templates (Branch pts exprs) = 
-  -- trace ("Using template\n" ++ show templates ++ "\nand outer subpattern from\n" ++ show pts ++ "\ngot:\n" ++ show (patNew, replaceMap) ++ "\n") $ 
+stripOuterConstructors :: [TName] -> [Pattern] -> Branch -> Branch
+stripOuterConstructors tns templates (Branch pts exprs) = 
+  -- trace ("Using template\n" ++ show templates ++"\n" ++ show pts ++ "\ngot:\n" ++ show (zip tns patNew) ++ "\n" ++ " with variable name mapping " ++ show replaceMap ++ "\n") $ 
     Branch (concatMap (fromMaybe [PatWild]) patNew) $ map replaceInGuard exprs
   where
     replaceInGuard (Guard tst expr)
@@ -265,28 +251,33 @@ stripOuterConstructors templates (Branch pts exprs) =
             Just (Var name info) -> Var name info
             _ -> e
           e' -> e'
-    (patNew, replaceMaps) = unzip $ zipWith getReplaceMap templates pts
+    (patNew, replaceMaps) = unzip $ zipWith (getReplaceMap tns) templates pts
     replaceMap = concat replaceMaps
 
 -- Get the new pattern that differs from the old pattern and the subsitution map
-getReplaceMap :: Pattern -> Pattern -> (Maybe [Pattern], [(TName, Expr)])
-getReplaceMap template p'
-  = case (template, p') of
+getReplaceMap :: [TName] -> Pattern -> Pattern -> (Maybe [Pattern], [(TName, Expr)])
+getReplaceMap keepVars template p'
+  = let recur = getReplaceMap keepVars in
+    case (template, p') of
     (PatLit l1, PatLit l2) -> (Nothing, [])
     (PatVar tn1 v1, PatVar tn2 v2) | tn1 == tn2 -> 
-      let (pat', rp) = getReplaceMap v1 v2
-      in (pat', rp)
+      let (pat', rp) = recur v1 v2 
+      in case pat' of
+        Nothing -> if tn1 `notElem` keepVars then (Nothing, rp) else (Just [PatWild], rp)
+        Just _ -> (pat', rp)
     (PatVar tn1 v1, PatVar tn2 v2) -> 
-      let (pat', rp) = getReplaceMap v1 v2
-      in (pat', (tn2, Var tn1 InfoNone):rp)
+      let (pat', rp) = recur v1 v2
+      in case pat' of
+        Nothing -> if tn1 `notElem` keepVars then (Nothing, rp) else (Just [PatWild], (tn1, Var tn2 InfoNone):rp)
+        Just _ -> (pat', (tn2, Var tn1 InfoNone):rp)
     (PatWild, PatWild) -> (Nothing, [])
     (PatCon name1 patterns1 cr targs1 exists1 res1 ci _, PatCon name2 patterns2 _ targs2 exists2 res2 _ sk) -> 
-      let res = zipWith getReplaceMap patterns1 patterns2
+      let res = zipWith recur patterns1 patterns2 
           (patterns', replaceMaps) = unzip res
           replaceMap = concat replaceMaps
       in (Just (concatMap (fromMaybe []) patterns'), replaceMap)
-    (PatVar tn PatWild, PatWild) -> (Nothing, [])
+    (PatVar tn PatWild, PatWild) -> (if tn `notElem` keepVars then Nothing else Just [PatWild], [])
     (PatVar tn PatWild, pat2) -> (Just [pat2], [])
-    (PatVar tn pat, pat2) -> getReplaceMap pat pat2
+    (PatVar tn pat, pat2) -> recur pat pat2
     (PatWild, pat2) -> (Just [pat2], [])
     _ -> failure $ "\ngetReplaceMap:\n" ++ show template ++ "\n:" ++ show p' ++ "\n" 
