@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
-module Core.FlowAnalysis.AbstractValue(
+module Core.FlowAnalysis.Demand.AbstractValue(
                           Ctx(..),
                           EnvCtx(..),
                           LiteralLattice(..),

@@ -31,8 +31,8 @@ import Compile.BuildMonad (BuildContext, Build)
 import Compile.Options (Terminal, Flags)
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
-import Core.FlowAnalysis.AbstractValue
 import Core.FlowAnalysis.Monad
+import Core.FlowAnalysis.Demand.AbstractValue
 import Core.FlowAnalysis.Demand.DemandMonad
 import Core.FlowAnalysis.Demand.Primitives
 import Core.FlowAnalysis.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)

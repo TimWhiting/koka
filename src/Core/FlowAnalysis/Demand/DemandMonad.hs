@@ -33,7 +33,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Set (Set)
 import Data.Maybe (fromMaybe, fromJust, maybeToList)
-import Core.FlowAnalysis.AbstractValue
+import Core.FlowAnalysis.Demand.AbstractValue
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Monad

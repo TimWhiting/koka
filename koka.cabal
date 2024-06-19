@@ -68,7 +68,7 @@ library
       Core.CoreVar
       Core.CTail
       Core.Divergent
-      Core.FlowAnalysis.AbstractValue
+      Core.FlowAnalysis.Demand.AbstractValue
       Core.FlowAnalysis.Demand.ConstantProp
       Core.FlowAnalysis.Demand.DemandAnalysis
       Core.FlowAnalysis.Demand.DemandMonad
@@ -76,6 +76,7 @@ library
       Core.FlowAnalysis.Demand.Syntax
       Core.FlowAnalysis.FixpointMonad
       Core.FlowAnalysis.Full.AAC
+      Core.FlowAnalysis.Full.AbstractValue
       Core.FlowAnalysis.Monad
       Core.FlowAnalysis.StaticContext
       Core.FunLift

@@ -11,7 +11,7 @@ import Common.Failure
 import Compile.Module
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.StaticContext
-import Core.FlowAnalysis.AbstractValue
+import Core.FlowAnalysis.Demand.AbstractValue
 import Core.FlowAnalysis.Demand.DemandAnalysis
 import Core.FlowAnalysis.Demand.DemandMonad
 import Core.Core as C

@@ -7,8 +7,8 @@ import Compile.Options (Terminal(..), Flags)
 import Compile.BuildMonad (BuildContext, Build)
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
-import Core.FlowAnalysis.AbstractValue
 import Core.FlowAnalysis.Monad
+import Core.FlowAnalysis.Demand.AbstractValue
 import Core.FlowAnalysis.Demand.DemandMonad
 import Core.FlowAnalysis.Demand.DemandAnalysis
 import Core.FlowAnalysis.Demand.Primitives

@@ -9,7 +9,6 @@ import qualified Data.Set as S
 import Data.Maybe (fromMaybe, fromJust, maybeToList)
 import Data.List (find, intercalate)
 import Control.Monad (zipWithM, when)
-import Core.FlowAnalysis.AbstractValue
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
 import Compile.Options

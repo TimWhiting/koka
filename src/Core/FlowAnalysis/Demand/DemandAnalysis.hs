@@ -47,7 +47,7 @@ import Debug.Trace
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Monad
-import Core.FlowAnalysis.AbstractValue
+import Core.FlowAnalysis.Demand.AbstractValue
 import Core.FlowAnalysis.Demand.DemandMonad
 import Syntax.Syntax (UserExpr, UserDef)
 import qualified Syntax.Syntax as Syn
