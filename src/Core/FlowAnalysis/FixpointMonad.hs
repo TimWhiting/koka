@@ -27,6 +27,7 @@ module Core.FlowAnalysis.FixpointMonad(
   getCache, cacheLookup,
   getState, getStateR, setState, updateState,
   runFix, runFixCont, runFixFinish, runFixFinishC,
+  writeDependencyGraph,
   runExample
   ) where
 import Debug.Trace (trace)
@@ -256,8 +257,8 @@ push key value = do
       ) conts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
-writeDependencyGraph :: (Label i, Show d, Label (l d), Ord i) => M.Map i (l d, Integer, [ContX e s i l d]) -> IO ()
-writeDependencyGraph cache = do
+writeDependencyGraph :: (Label i, Show d, Label (l d), Ord i) => String -> M.Map i (l d, Integer, [ContX e s i l d]) -> IO ()
+writeDependencyGraph mn cache = do
   let values = M.foldl (\acc (v, toId, conts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache
   let nodes = M.foldlWithKey (\acc k (v, toId, conts) -> (toId,k,v):acc) [] cache
   let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
@@ -266,7 +267,8 @@ writeDependencyGraph cache = do
             ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes) 
             ++ "\n 0 [label=\"Start\"]\n"
             ++ "\n}"
-  writeFile "scratch/debug/graph.dot" dot
+  -- trace (show edges) $ return ()
+  writeFile ("scratch/debug/graph-" ++ mn ++ ".dot") dot
   return ()
 
 -- Runs a fixpoint computation with an environment and state
@@ -284,13 +286,11 @@ runFixCont f =
 runFixFinish :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d), s, x)
 runFixFinish e s f = do
   (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
-  writeDependencyGraph cache
   return (fmap (\(f, s, t) -> f) cache, state, x)
 
 runFixFinishC :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d, Integer, [ContX e s i l d]), s, x)
 runFixFinishC e s f = do
   (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
-  writeDependencyGraph cache
   return (cache, state, x)
 
 ------------------------------ EXAMPLE USAGE ---------------------------------

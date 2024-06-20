@@ -92,6 +92,16 @@ focusBody e = do
 focusFun :: ExprContext -> FixAR x s e i o c ExprContext
 focusFun = focusChild 0
 
+focusDefBody :: ExprContext -> FixAR x s e i o c ExprContext
+focusDefBody e = do
+  children <- childrenContexts e
+  -- query <- getQueryString
+  case find (\x -> case x of
+              LamCBody{} -> True
+              _ -> False) children of
+    Just x -> return x
+    Nothing -> error ("Children looking for def body " ++ show children)
+
 focusChild :: Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusChild index e = do
   children <- childrenContexts e
@@ -331,6 +341,13 @@ visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
+
+bindExternal :: TName -> FixAR r s e i o c (Maybe ExprContext)
+bindExternal name = do
+  let modName = newModuleName (nameModule (getName name))
+  (mod', ctx) <- loadModule modName
+  if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
+  else trace ("External variable binding not found " ++ show name) (return Nothing)
 
 maybeLoadModuleR :: ModuleName -> PostFixAR x s e i o c (Maybe Module)
 maybeLoadModuleR mn = do

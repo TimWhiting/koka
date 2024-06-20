@@ -125,13 +125,6 @@ getRefine env =
             return (EnvCtx cc tailRefine)]
     EnvTail cc -> refine env
 
-bindExternal :: Expr -> FixDemandR x s e (Maybe ExprContext)
-bindExternal var@(Var tn@(TName name tp _) vInfo) = do
-  let modName = newModuleName (nameModule name)
-  (mod', ctx) <- loadModule modName
-  if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') tn then return (Just ctx)
-  else trace ("External variable binding not found " ++ show tn ++ ": " ++ show vInfo) (return Nothing)
-
 findAllUsage :: Bool -> Expr -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findAllUsage first expr@Var{varName=tname@TName{getName = name}} ctx env = do
   case ctx of
@@ -314,7 +307,7 @@ doEval (ctx, env) query = do
                   error ("Hnd: missing primitive " ++ showSimpleContext ctx)
                 else do
                   -- For other names we evaluate to the lambda of the definition, and load the module's source on demand if needed
-                  ext <- bindExternal v
+                  ext <- bindExternal tn
                   case ext of
                     Just modulectx@ModuleC{} -> do
                       -- trace (query ++ "REF: External module " ++ showSimpleContext modulectx) $ return ()

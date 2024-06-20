@@ -34,8 +34,8 @@ import Core.FlowAnalysis.Literals
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
-type Addr = Int
-type VEnv = M.Map Name Addr
+type Addr = (TName, Int)
+type VEnv = M.Map TName Addr
 
 data AChange =
   AChangeClos ExprContext VEnv

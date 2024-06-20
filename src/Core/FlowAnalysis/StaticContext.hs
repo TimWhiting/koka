@@ -225,24 +225,65 @@ closestRange ctx =
     ExprCTerm _ _ -> rangeNull
     ExprPrim e -> rangeNull
 
+simplePrettyExprN :: Env -> Int -> C.Expr -> Doc
+simplePrettyExprN env n e = 
+  if n <= 0 then text "..."
+  else case e of
+    C.Var n _ -> prettyVar env n
+    C.App f args _ -> simplePrettyExprN env (n -1) f <+> argsdoc
+      where argsdoc =
+              if length args > 2 then
+                tupled (map (simplePrettyExprN env (n - 1)) args ++ [text "..."])
+              else
+                tupled (map (simplePrettyExprN env (n - 1)) args)
+    C.Lam ns _ e -> text "(fn" <.> tupled (map (prettyVar env) ns) <+> indent 2 (simplePrettyExprN env (n - 1) e) <.> text ")"
+    C.Let dgs e -> vcat (map (simplePrettyDefGroup env n) dgs ++ [simplePrettyExprN env (n - 1) e])
+    C.Case e bs -> text "match" <+> simplePrettyExprN env (n - 1) (head e) <--> indent 2 (vcat (map (simplePrettyBranch env (n - 1)) bs))
+    C.TypeLam ns e -> text "(tfn()" <.> simplePrettyExprN env (n - 1) e <.> text ")"
+    C.TypeApp e ts -> text "tapp(" <.> simplePrettyExprN env (n - 1) e <.> text ")"
+
+simplePrettyBranch :: Env -> Int -> C.Branch -> Doc
+simplePrettyBranch env n (C.Branch pat guards) =
+  let (env', patDoc) = prettyPattern env (head pat) in
+  patDoc <+> text "->" <--> indent 2 (simplePrettyExprN env' (n - 1) (C.guardExpr (head guards)))
+
+simplePrettyDefGroup :: Env -> Int -> C.DefGroup -> Doc
+simplePrettyDefGroup env n dg =
+  case dg of
+    C.DefNonRec d -> simplePrettyDef env n d
+    C.DefRec ds -> vcat (map (simplePrettyDef env n) ds)
+  
+simplePrettyDef :: Env -> Int -> C.Def -> Doc
+simplePrettyDef env n d =
+  text "val" <+> pretty (C.defName d) <+> text "=" <--> indent 2 (simplePrettyExprN env (n - 1) (C.defExpr d))
+
+simplePrettyExpr :: Env -> C.Expr -> Doc
+simplePrettyExpr env e = simplePrettyExprN env 2 e
+
+showSimpleExpr :: C.Expr -> String
+showSimpleExpr e = show $ simplePrettyExpr simpleEnv e
+
 showSimpleContext ctx =
   let r = show (closestRange ctx) in
   -- show (contextId ctx) ++ " " ++ 
-  case ctx of
-    ModuleC _ _ n -> "Module " ++ show n
-    DefCRec{} -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    DefCNonRec{} -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    LamCBody _ _ tn _-> "LamBody(" ++ showSimple tn ++ ")"
-    AppCLambda{} -> "AppLambda(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    AppCParam{} -> "AppParam(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    LetCDefNonRec _ _ _ d -> "LetDef(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    LetCDefRec _ _ _ i d -> "LetDefR(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    LetCBody{} -> "LetBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    CaseCMatch{} -> "CaseMatch(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    ExprCBasic{} -> "ExprBasic(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    ExprCTerm{} -> "Query Error"
-    ExprPrim e -> "Primitive(" ++ showSimple e ++ ")"
+  case maybeExprOfCtx ctx of 
+    Just e -> showSimpleExpr e
+    Nothing -> 
+      case ctx of
+        ModuleC _ _ n -> "Module " ++ show n
+        DefCRec{} -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+        DefCNonRec{} -> "DefNonRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+        LamCBody _ _ tn _-> "LamBody(" ++ showSimple tn ++ ")"
+        AppCLambda{} -> "AppLambda(" ++ showSimple (exprOfCtx ctx) ++ ")"
+        AppCParam{} -> "AppParam(" ++ showSimple (exprOfCtx ctx) ++ ")"
+        LetCDefNonRec _ _ _ d -> "LetDef(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+        LetCDefRec _ _ _ i d -> "LetDefR(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
+        LetCBody{} -> "LetBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
+        CaseCMatch{} -> "CaseMatch(" ++ showSimple (exprOfCtx ctx) ++ ")"
+        CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
+        ExprCBasic{} -> "ExprBasic(" ++ showSimple (exprOfCtx ctx) ++ ")"
+        ExprCTerm{} -> "Query Error"
+        ExprPrim e -> "Primitive(" ++ showSimple e ++ ")"
 
 rmNl :: String -> String
 rmNl s = T.unpack $ T.replace "\n" "  " (T.pack s)
@@ -398,7 +439,7 @@ findDefFromRange prog rng name =
 findLambdaFromRange :: UserProgram -> Range -> Maybe UserExpr
 findLambdaFromRange prog rng =
   findFromRange prog rng (const Nothing) $ \e -> case e of
-    S.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then Just body else Nothing
+    S.Lam _ body rng0 -> if rng `rangesOverlap` rng0 then Just e else Nothing
     _ -> Nothing
 
 findFromRange :: Ranged a => UserProgram -> Range -> (UserDef -> Maybe a) -> (UserExpr -> Maybe a) -> Maybe a

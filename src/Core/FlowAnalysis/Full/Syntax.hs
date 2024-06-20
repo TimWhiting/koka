@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 module Core.FlowAnalysis.Full.Syntax where
 
 import Data.List (intercalate, find, minimumBy)
@@ -53,20 +54,14 @@ topTypesOf ab =
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAACR a b c d) -> FixAACR a b c d
 analyzeEach = analyzeEachChild
 
-
-
 findMainBody :: FixAR x s e i o c ExprContext
 findMainBody = do
   ctx <- currentContext <$> getEnv
   case ctx of
     DefCNonRec{} -> do
       let name = unqualify $ getName $ defTName (defOfCtx ctx)
-      if nameMain == name then do
-        trace ("found main " ++ show ctx) $ return ()
-        focusChild 0 ctx
-      else 
-        trace ("not main " ++ show ctx)
-        doBottom
+      if "main" == nameStem name then do focusDefBody ctx
+      else doBottom
     _ -> doBottom
 
 runQueryAtRange :: HasCallStack => BuildContext
@@ -86,7 +81,9 @@ runQueryAtRange bc build mod m doQuery = do
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
     case S.toList ctxs of
-      [] -> return (M.empty, s', (Nothing, bc))
+      [] -> 
+        trace "No main context found" $
+        return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
         do
           runFixFinishC (emptyBasicEnv m build True ()) s' $ do
@@ -99,9 +96,10 @@ runQueryAtRange bc build mod m doQuery = do
                           let achanges = map (\(AC c) -> c) (filter (\c -> case c of {AC ac -> True; _ -> False}) res)
                               resM = foldl addChange emptyAbValue achanges
                           ress' <- getAbResult resM
+                          trace ("ress': " ++ show ress') $ return ()
                           return (Just ress', buildc')
+  writeDependencyGraph (moduleNameToPath (modName mod)) l
   return (M.map (\(x, _, _) -> x) l, r, bc)
-
 
 evalMain :: BuildContext
   -> TypeChecker -> Module -> Int
@@ -129,8 +127,6 @@ getAbResult res = do
   let sourceLambdas = map (\(SourceExpr e) -> e) $ filter (\s -> case s of {SourceExpr _ -> True; _ -> False}) source
       sourceDefs = map (\(SourceDef e) -> e) $ filter (\s -> case s of {SourceDef _ -> True; _ -> False}) source
       sourceExterns = map (\(SourceExtern e) -> e) $ filter (\s -> case s of {SourceExtern _ -> True; _ -> False}) source
-  -- trace ("eval " ++ concat (map (maybe "nolambda" (\_ -> "lambda")) sourceLambdas)) $ return ()
-  -- trace ("eval " ++ concat (map (maybe "nodef" (\_ -> "def")) sourceDefs)) $ return ()
   return $ trace
     ("eval " ++
      "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
@@ -144,7 +140,7 @@ escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
 escape [] = []
 
 instance Label (FixOutput m) where
-  label (A a) = "A"
+  label (A a) = escape $ showSimpleAbValue a
   label (K a) = "K"
   label (C a) = "C"
   label (B a) = "B"
@@ -153,3 +149,7 @@ instance Label (FixOutput m) where
 instance Label FixInput where
   label (Eval q _ _ _ _ _ _) = "EVAL: " ++ showSimpleContext q
   label (Cont e _ _ _ _ _) = "CONT: "
+  label (KStoreGet _) = "KSTOREGET"
+  label (CStoreGet _) = "CSTOREGET"
+  label (Pop _ _) = "POP"
+  label (NoTop _ _) = "NOTOP"

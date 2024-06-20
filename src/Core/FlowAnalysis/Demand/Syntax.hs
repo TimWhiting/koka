@@ -109,8 +109,8 @@ sourceEnvCtx ctx =
         SourceExtern ex -> show (ppSyntaxExtern ex <+> text e)
         SourceNotFound -> "Not found" ++ e
 
-writeDependencyGraph :: forall r e x . M.Map FixInput (FixOutput AFixChange, Integer, [ContX (DEnv e) (State r e x) FixInput FixOutput AFixChange]) -> IO ()
-writeDependencyGraph cache = do
+writeDemandDependencyGraph :: forall r e x . M.Map FixInput (FixOutput AFixChange, Integer, [ContX (DEnv e) (State r e x) FixInput FixOutput AFixChange]) -> IO ()
+writeDemandDependencyGraph cache = do
   let cache' = M.filterWithKey (\k v -> case k of {QueryInput _ -> True; _ -> False}) cache
   let values = M.foldl (\acc (v, toId, conts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
   let nodes = M.foldlWithKey (\acc k (v, toId, conts) -> (toId,k,v):acc) [] cache'
@@ -173,5 +173,5 @@ runQueryAtRange bc build (r, ri) mod kind m doQuery = do
                           let resM = M.fromListWith joinAbValue (concat ress)
                           ress' <- mapM getAbResult (M.toList resM)
                           return (ress', buildc')
-  writeDependencyGraph l
+  writeDemandDependencyGraph l
   return (M.map (\(x, _, _) -> x) l, r, bc)

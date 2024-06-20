@@ -13,6 +13,10 @@ import Data.Int (Int)
 import Common.Name
 import Debug.Trace (trace)
 import Common.NamePrim (nameOpen, nameEffectOpen)
+import Data.Maybe (fromJust)
+import Compile.Module (Module(..))
+import Common.Failure (HasCallStack)
+import Type.Type (splitFunType)
 
 type VStore = M.Map Addr AbValue
 data FixInput =
@@ -75,41 +79,73 @@ data MetaKont =
 eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
 eachValue ab = each $ map return (changes ab)
 
-storeUpdate :: VStore -> [Int] -> [AChange] -> VStore
+storeUpdate :: VStore -> [(TName,Int)] -> [AChange] -> VStore
 storeUpdate store [] [] = store
 storeUpdate store (i:is) (v:vs) =
   let updated = M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
   in storeUpdate updated is vs
 
 limitEnv :: VEnv -> S.Set TName -> VEnv
-limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` S.map getName fvs) env
+limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 
-extendEnv :: VEnv -> [TName] -> [Int] -> VEnv
-extendEnv env args addrs = M.union (M.fromList $ zip (map getName args) addrs) env -- Left biased will take the new
+extendEnv :: VEnv -> [TName] -> [(TName,Int)] -> VEnv
+extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
-doStep :: FixInput -> FixAACR r s e FixChange
+alloc :: FixInput -> LocalKont -> FixAACR r s e [Addr]
+alloc (Cont _ _ _ (AChangeClos lam env) store xclos) (AppR argvs:ls) = do
+  let names = lamArgNames lam
+      addrs = [0..(length argvs - 1)]
+  return $ zip names addrs
+alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppR argvs:ls) = do
+  case exprOfCtx con of
+    Con tn _ -> do
+      let addrs = [0..(length argvs - 1)]
+          tp = typeOf tn
+      case splitFunType tp of
+        Just (args, _, _) -> return $ zip (map (\(n,t) -> TName n t Nothing) args) addrs
+        Nothing -> return [(tn, 0)]
+
+doStep :: HasCallStack => FixInput -> FixAACR r s e FixChange
 doStep i = do
   memo i $ do
     trace ("Step: " ++ show i) $ return ()
     case i of
       Eval expr env store xclos local kont meta ->
+        trace ("Eval: " ++ show (exprOfCtx expr)) $ do
         case exprOfCtx expr of
           Var x _ -> do -- TODO: Eval top defs to a closure?
-            let addr  = env M.! getName x
-                value = store M.! addr
-            v <- eachValue value
-            doStep $ Cont local kont meta v store xclos
+            let maddr  = M.lookup x env
+            case maddr of 
+              Just addr -> do 
+                let value = store M.! addr
+                v <- eachValue value
+                doStep $ Cont local kont meta v store xclos
+              Nothing -> do 
+                mdef <- bindExternal x
+                case mdef of
+                  Nothing -> doBottom
+                  Just def -> do
+                    lam <- focusChild 0 def
+                    doStep $ Cont local kont meta (AChangeClos lam M.empty) store xclos
+          Con _ _ -> do
+            doStep $ Cont local kont meta (AChangeConstr expr env) store xclos
           App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
             f <- focusChild 1 expr
-            doStep $ Eval f env store xclos local kont meta
+            doStep $ Eval f env store xclos (AppL [] expr 0 (length args) env : local) kont meta
           App f args _ -> do
             f <- focusChild 0 expr
             doStep $ Eval f env store xclos (AppL [] expr 0 (length args) env : local) kont meta
           Lam args eff body -> do
             doStep $ Cont local kont meta (AChangeClos expr env) store xclos
-          _ -> doBottom
+          TypeLam args body -> do
+            doStep $ Cont local kont meta (AChangeClos expr env) store xclos
+          Let binds body -> do
+            let (names, exprs) = unzip binds
+            doStep $ Eval (head exprs) env store xclos (LetL expr env : local) (Just (MPrecise (expr, env, store, xclos))) meta
+          _ -> error $ "doStep: " ++ show expr ++ " not handled"
       Cont [] Nothing Nothing achange store xclos -> return $ AC achange
       Cont [] kont meta achange store xclos -> do
+        (error "Cont []") -- TODO: Approximate
         -- Need no-top?
         doBottom
       Cont lc kont meta achange store xclos -> do
@@ -120,12 +156,18 @@ doStep i = do
             if n == t - 1 then doStep (Eval arge p store xclos (AppR (achange:chs):ls) k meta)
             else doStep (Eval arge p store xclos (AppL (achange:chs) e (n + 1 ) t p:ls) k meta)
           (AppR (AChangeClos clos env:argvs)):ls -> do
-            -- TODO: Alloc & GC
+            -- TODO: GC
             body <- focusBody clos
             let args = lamArgNames clos
                 free = fvs clos
-                addrs = [0..(length argvs - 1)]
+            addrs <- alloc i l
             doStep (Eval body (extendEnv (limitEnv env free) args addrs) (storeUpdate store addrs argvs) xclos [] k meta)
+          (AppR (AChangeConstr con env:argvs)):ls -> do
+            case exprOfCtx con of
+              Con _ _ -> do
+                -- TODO: GC
+                addrs <- alloc i l
+                doStep (Cont l k meta (AChangeConstr con M.empty) (storeUpdate store addrs argvs) xclos)
       KStoreGet ctx -> doBottom
       CStoreGet meta -> doBottom
       Pop (l:ls) kont -> return $ KC (l:ls) kont
@@ -178,7 +220,11 @@ instance Show FixChange where
 
 instance Show FixInput where
   show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr
-  show (Cont local kont meta achange store kclos) = "Cont"
+  show (Cont local kont meta achange store kclos) = "Cont " ++ show local ++ " " ++ show kont ++ " " ++ show meta ++ " " ++ show achange
+  show (KStoreGet ctx) = "KStoreGet"
+  show (CStoreGet meta) = "CStoreGet"
+  show (Pop local kont) = "Pop"
+  show (NoTop local kont) = "NoTop"
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom
@@ -201,11 +247,12 @@ instance Lattice FixOutput FixChange where
   join (C x) (C y) = C (S.union x y)
   join (B x) (B y) = B (S.union x y)
   lte ChangeBottom _ = True
-  lte (AC x) Bottom = False
+  lte _ Bottom = False
   lte (CC l k c) (C y) = (l, k, c) `S.member` y
   lte (KC l k) (K y) = (l, k) `S.member` y
   lte (AC x) (A y) = x `changeIn` y
   lte (BC x) (B y) = x `elem` y
+  lte x y = error ("lte: " ++ show x ++ " " ++ show y)
   elems (A a) = map AC $ changes a
   elems (K x) = map (uncurry KC) $ S.toList x
   elems (C x) = map (\(l,k,c) -> CC l k c) $ S.toList x
