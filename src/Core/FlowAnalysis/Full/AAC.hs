@@ -53,7 +53,8 @@ data Frame =
   End
   | AppL [AChange] ExprContext Int Int VEnv
   | AppR [AChange]
-  | LetL ExprContext VEnv
+  | LetL [AChange] ExprContext Int Int VEnv
+  | LetR [AChange] -- TODO: Need to figure out recursive binding times
   deriving (Eq, Ord, Show)
 type LocalKont = [Frame]
 
