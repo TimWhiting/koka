@@ -26,38 +26,16 @@ import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contain
 import qualified Core.FlowAnalysis.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)
+import Core.FlowAnalysis.Literals
+    ( LiteralChange(..),
+      LiteralLattice(LiteralLattice),
+      litLattice,
+      joinLit )
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
 type Addr = Int
 type VEnv = M.Map Name Addr
-data LiteralLattice =
-    LiteralLattice{
-      intVL :: SLattice Integer,
-      floatVL :: SLattice Double,
-      charVL :: SLattice Char,
-      stringVL :: SLattice String
-    } deriving (Eq, Ord)
-
-data LiteralChange =
-  LiteralChangeInt (SimpleChange Integer)
-  | LiteralChangeFloat (SimpleChange Double)
-  | LiteralChangeChar (SimpleChange Char)
-  | LiteralChangeString (SimpleChange String)
- deriving (Eq, Ord)
-
-instance Show LiteralChange where
-  show (LiteralChangeInt LChangeTop) = "int -> top"
-  show (LiteralChangeFloat LChangeTop) = "float -> top"
-  show (LiteralChangeChar LChangeTop) = "char -> top"
-  show (LiteralChangeString LChangeTop) = "string -> top"
-  show (LiteralChangeInt (LChangeSingle l)) = "int -> " ++ show l
-  show (LiteralChangeFloat (LChangeSingle l)) = "float -> " ++ show l
-  show (LiteralChangeChar (LChangeSingle l)) = "char -> " ++ show l
-  show (LiteralChangeString (LChangeSingle l)) = "string -> " ++ show l
-
-instance Show LiteralLattice where
-  show (LiteralLattice i f c s) = intercalate "," [show i, show f, show c, show s]
 
 data AChange =
   AChangeClos ExprContext VEnv
@@ -202,17 +180,6 @@ addChange ab@(AbValue cls clsapp cs lit) change =
     AChangeClosApp lam app env -> AbValue cls (S.insert (lam,app,env) clsapp) cs lit
     AChangeConstr c env -> AbValue cls clsapp (S.insert (c,env) cs) lit
     AChangeLit l env -> AbValue cls clsapp cs (M.insertWith joinLit env (litLattice l) lit)
-
-litLattice :: LiteralChange -> LiteralLattice
-litLattice lit =
-  case lit of
-    LiteralChangeInt ch -> LiteralLattice (ch `FM.insert` LBottom) LBottom LBottom LBottom
-    LiteralChangeFloat ch -> LiteralLattice LBottom (ch `FM.insert` LBottom) LBottom LBottom
-    LiteralChangeChar ch -> LiteralLattice LBottom LBottom (ch `FM.insert` LBottom) LBottom
-    LiteralChangeString ch -> LiteralLattice LBottom LBottom LBottom (ch `FM.insert` LBottom)
-
-joinLit :: LiteralLattice -> LiteralLattice -> LiteralLattice
-joinLit (LiteralLattice i1 f1 c1 s1) (LiteralLattice i2 f2 c2 s2) = LiteralLattice (i1 `join` i2) (f1 `join` f2) (c1 `join` c2) (s1 `join` s2)
 
 joinAbValue :: AbValue -> AbValue -> AbValue
 joinAbValue (AbValue cls0 clsa0 cs0 lit0) (AbValue cls1 clsa1 cs1 lit1) = AbValue (S.union cls0 cls1) (S.union clsa0 clsa1) (S.union cs0 cs1) (M.unionWith joinLit lit0 lit1)

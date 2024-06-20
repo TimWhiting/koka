@@ -77,8 +77,11 @@ library
       Core.FlowAnalysis.FixpointMonad
       Core.FlowAnalysis.Full.AAC
       Core.FlowAnalysis.Full.AbstractValue
+      Core.FlowAnalysis.Full.Syntax
+      Core.FlowAnalysis.Literals
       Core.FlowAnalysis.Monad
       Core.FlowAnalysis.StaticContext
+      Core.FlowAnalysis.Syntax
       Core.FunLift
       Core.Inline
       Core.Inlines

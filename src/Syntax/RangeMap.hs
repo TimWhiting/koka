@@ -22,6 +22,7 @@ module Syntax.RangeMap( RangeMap, RangeInfo(..), NameInfo(..)
                       , mangle
                       , mangleConName
                       , mangleTypeName
+                      , rmFindFirst, rmFindAll
                       ) where
 
 import Debug.Trace(trace)
@@ -43,6 +44,16 @@ import Syntax.Lexeme
 
 data RangeMap = RM ![(Range,RangeInfo)]
   deriving Show
+
+rmFindFirst :: (RangeInfo -> Bool) -> RangeMap -> (Range, RangeInfo)
+rmFindFirst p (RM rm)
+  = case filter (p . snd) rm of
+      [] -> failure "Syntax.RangeMap.rmFindFirst: not found"
+      (x:_) -> x
+
+rmFindAll :: (RangeInfo -> Bool) -> RangeMap -> [(Range, RangeInfo)]
+rmFindAll p (RM rm)
+  = filter (p . snd) rm
 
 mangleConName :: Name -> Name
 mangleConName name

@@ -15,13 +15,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
-module Core.FlowAnalysis.Demand.DemandAnalysis(
-  query,refine,qcall,qexpr,qeval,qexprx,qevalx,
-  FixDemandR,FixDemand,State(..),DEnv(..),FixInput(..),FixOutput(..),Query(..),AnalysisKind(..),
-  refineQuery,getEnv,withEnv,succAEnv,
-  getQueryString,getState,updateState,getUnique,getAbValueResults,
-  childrenContexts,analyzeEachChild,visitChildrenCtxs,addPrimitive,addPrimitiveExpr,evalParam,
-) where
+module Core.FlowAnalysis.Demand.DemandAnalysis where
 import GHC.IO (unsafePerformIO)
 import Control.Monad hiding (join)
 import Control.Monad.Reader (lift, ReaderT (runReaderT), local, ask)
@@ -620,15 +614,6 @@ getAbValueResults q = do
       st <- getAllStates (refineQuery q env)
       return (env, st)
     ) (S.toList refines)
-
-analyzeEachChild :: Show a => ExprContext -> (ExprContext -> FixDemandR x s e a) -> FixDemandR x s e a
-analyzeEachChild ctx analyze = do
-  let self = analyze ctx
-      children = do
-        visitEachChild ctx $ do
-          childCtx <- currentContext <$> getEnv
-          analyzeEachChild childCtx analyze
-  each [self, children]
 
 showEscape :: Show a => a -> String
 showEscape = escape . show

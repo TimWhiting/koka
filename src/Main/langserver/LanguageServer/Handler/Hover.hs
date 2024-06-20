@@ -54,7 +54,7 @@ import Syntax.RangeMap
 import Syntax.Colorize ( removeComment, removeComment )
 import Syntax.Pretty (ppSyntaxExpr, ppSyntaxDef, ppSyntaxExtern, ppLit)
 import Core.FlowAnalysis.Demand.Syntax (runEvalQueryFromRangeSource)
-import Core.FlowAnalysis.Demand.DemandAnalysis (AnalysisKind (..))
+import Core.FlowAnalysis.Demand.DemandMonad (AnalysisKind (..))
 import LanguageServer.Conversions (fromLspPos, toLspRange)
 import LanguageServer.Monad
 import LanguageServer.Handler.Pretty (ppComment, asKokaCode)

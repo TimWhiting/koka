@@ -14,8 +14,8 @@ import Common.Name
 
 type VStore = M.Map Addr AbValue
 data FixInput =
-  Eval ExprContext VEnv VStore LocalKont (Maybe Kont) (Maybe MetaKont)
-  | Cont LocalKont (Maybe Kont) (Maybe MetaKont) AChange VStore
+  Eval ExprContext VEnv VStore KClos LocalKont (Maybe Kont) (Maybe MetaKont)
+  | Cont LocalKont (Maybe Kont) (Maybe MetaKont) AChange VStore KClos
   | KStoreGet ExactContext
   | CStoreGet MetaKont
   | Pop LocalKont (Maybe Kont)
@@ -73,27 +73,53 @@ data MetaKont =
 eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
 eachValue ab = each $ map return (changes ab)
 
+storeUpdate :: VStore -> [Int] -> [AChange] -> VStore
+storeUpdate store [] [] = store
+storeUpdate store (i:is) (v:vs) =
+  let updated = M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
+  in storeUpdate updated is vs
+
+limitEnv :: VEnv -> S.Set TName -> VEnv
+limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` S.map getName fvs) env
+
+extendEnv :: VEnv -> [TName] -> [Int] -> VEnv
+extendEnv env args addrs = M.union (M.fromList $ zip (map getName args) addrs) env -- Left biased will take the new
+
 doStep :: FixInput -> FixAACR r s e FixChange
 doStep i = do
   memo i $ do
     case i of
-      Eval expr env store local kont meta ->
+      Eval expr env store xclos local kont meta ->
         case exprOfCtx expr of
           Var x _ -> do
             let addr  = env M.! getName x
                 value = store M.! addr
             v <- eachValue value
-            doStep $ Cont local kont meta v store
+            doStep $ Cont local kont meta v store xclos
           App f args _ -> do
             f <- focusChild 0 expr
-            doStep $ Eval f env store (AppL [] expr 0 (length args) env : local) kont meta
+            doStep $ Eval f env store xclos (AppL [] expr 0 (length args) env : local) kont meta
           Lam args eff body -> do
-            doStep $ Cont local kont meta (AChangeClos expr env) store
+            doStep $ Cont local kont meta (AChangeClos expr env) store xclos
           _ -> doBottom
-      Cont [] Nothing Nothing achange store -> return $ AC achange
-      Cont [] kont meta achange store -> do
+      Cont [] Nothing Nothing achange store xclos -> return $ AC achange
+      Cont [] kont meta achange store xclos -> do
         -- Need no-top?
         doBottom
+      Cont lc kont meta achange store xclos -> do
+        KC l k <- doStep (Pop lc kont)
+        case l of
+          AppL chs e n t p:ls -> do
+            arge <- focusChild (n + 1) e -- TODO: Assert the first value is a function
+            if n == t - 1 then doStep (Eval arge p store xclos (AppR (achange:chs):ls) k meta)
+            else doStep (Eval arge p store xclos (AppL (achange:chs) e (n + 1 ) t p:ls) k meta)
+          (AppR (AChangeClos clos env:argvs)):ls -> do
+            -- TODO: Alloc & GC
+            body <- focusBody clos
+            let args = lamArgNames clos
+                free = fvs clos
+                addrs = [0..(length argvs - 1)]
+            doStep (Eval body (extendEnv (limitEnv env free) args addrs) (storeUpdate store addrs argvs) xclos [] k meta)
       KStoreGet ctx -> doBottom
       CStoreGet meta -> doBottom
       Pop (l:ls) kont -> return $ KC (l:ls) kont
@@ -145,8 +171,8 @@ instance Show FixChange where
   show ChangeBottom = "Bottom"
 
 instance Show FixInput where
-  show (Eval expr env store local kont meta) = "Eval"
-  show (Cont local kont meta achange store) = "Cont"
+  show (Eval expr env store kclos local kont meta) = "Eval"
+  show (Cont local kont meta achange store kclos) = "Cont"
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom

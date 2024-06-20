@@ -47,6 +47,15 @@ data AnalysisEnv x = AnalysisEnv{
   additionalEnv :: x
 }
 
+analyzeEachChild ::  (Show a, Show c, Show (o c), Lattice o c, Ord i) => ExprContext -> (ExprContext -> FixAR x s e i o c a) -> FixAR x s e i o c a
+analyzeEachChild ctx analyze = do
+  let self = analyze ctx
+      children = do
+        visitEachChild ctx $ do
+          childCtx <- currentContext <$> getEnv
+          analyzeEachChild childCtx analyze
+  each [self, children]
+
 analysisLog :: String -> FixAR x s e i o c ()
 analysisLog s = do
   env <- getEnv
@@ -92,7 +101,6 @@ focusChild index e = do
     -- trace (query ++ "Focused child " ++ show (children !! index) ++ " " ++ show index ++ " " ++ show children) $
       return $ children !! index
     else error ("Children looking for child at " ++ show index ++ " " ++ show children)
-
 
 ------------------ State Helpers -----------------------------------
 

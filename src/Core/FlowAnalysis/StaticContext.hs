@@ -14,8 +14,8 @@ module Core.FlowAnalysis.StaticContext(
                           enclosingDef,maybeHandleInLambda,enclosingHandle,enclosingLambda,maybeHandlerName,
                           maybeExprOfCtx,
                           rangesOverlap,
-                          lamVar,lamVarDef,lamNames,
-                          showDg,showDef,showCtxExpr,
+                          lamVar,lamVarDef,lamArgNames,
+                          showDg,showDef,showCtxExpr,fvs,
                           branchContainsBinding,
                           branchVars,
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,
@@ -28,12 +28,12 @@ import Core.Core as C
 import Common.Name
 import Compile.Module
 import Type.Type
-import Data.Set hiding (map)
+import Data.Set hiding (filter, map)
 import Type.Pretty
 import Syntax.Syntax as S
 import Common.Range
 import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
-import Core.CoreVar (bv)
+import Core.CoreVar (bv, HasExpVar (..))
 import Core.Pretty
 import Debug.Trace (trace)
 import Data.List (intercalate, intersperse, minimumBy)
@@ -41,6 +41,7 @@ import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 import qualified Data.Text as T
 import Lib.PPrint
 import Common.Failure (HasCallStack)
+import qualified Data.Set as S
 
 -- Uniquely identifies expressions despite naming
 data ExprContext =
@@ -64,8 +65,8 @@ data ExprContext =
 isMain :: ExprContext -> Bool
 isMain ctx = nameStem (C.defName (defOfCtx ctx)) == "main"
 
-lamNames :: ExprContext -> [TName]
-lamNames ctx =
+lamArgNames :: ExprContext -> [TName]
+lamArgNames ctx =
   case maybeExprOfCtx ctx of
     Just (C.Lam names _ _) -> names
     Just (C.TypeLam _ (C.Lam names _ _)) -> names
@@ -93,6 +94,21 @@ instance Eq C.Def where
   def1 == def2 = C.defName def1 == C.defName def2 && C.defType def1 == C.defType def2
 
 type ExpressionSet = Set ExprContextId
+
+localFv :: C.Expr -> Set TName
+localFv expr
+  = S.fromList $ filter (not . isQualified . C.getName) (tnamesList (fv expr)) -- trick: only local names are not qualified
+
+fvs :: ExprContext -> S.Set TName
+fvs ctx = localFv $ lambdaOfCtx ctx
+
+lambdaOfCtx :: ExprContext -> C.Expr
+lambdaOfCtx ctx = 
+  case maybeExprOfCtx ctx of
+    Nothing -> error "doEval: can't find expression"
+    Just expr ->
+      case expr of
+        C.Lam{} -> expr
 
 enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
