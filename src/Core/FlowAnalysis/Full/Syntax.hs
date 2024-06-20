@@ -53,32 +53,47 @@ topTypesOf ab =
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAACR a b c d) -> FixAACR a b c d
 analyzeEach = analyzeEachChild
 
+
+
+findMainBody :: FixAR x s e i o c ExprContext
+findMainBody = do
+  ctx <- currentContext <$> getEnv
+  case ctx of
+    DefCNonRec{} -> do
+      let name = unqualify $ getName $ defTName (defOfCtx ctx)
+      if nameMain == name then do
+        trace ("found main " ++ show ctx) $ return ()
+        focusChild 0 ctx
+      else 
+        trace ("not main " ++ show ctx)
+        doBottom
+    _ -> doBottom
+
 runQueryAtRange :: HasCallStack => BuildContext
-  -> TypeChecker -> (Range, RangeInfo)
+  -> TypeChecker
   -> Module -> Int
   -> (ExprContext -> FixAACR FixChange () () ())
   -> IO (M.Map FixInput (FixOutput FixChange), Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type), BuildContext)
-runQueryAtRange bc build (r, ri) mod m doQuery = do
+runQueryAtRange bc build mod m doQuery = do
   (l, s, (r, bc)) <- do
     (_, s, ctxs) <- runFixFinish (emptyBasicEnv m build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
                       trace ("Context: " ++ show (contextId ctx)) $ return ()
-                      res <- analyzeEach ctx (const $ findContext r ri)
+                      res <- analyzeEach ctx (const findMainBody)
                       addResult res
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
     case S.toList ctxs of
       [] -> return (M.empty, s', (Nothing, bc))
-      ctxs ->
+      [mainCtx] ->
         do
-          let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
           runFixFinishC (emptyBasicEnv m build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()
-                            withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery smallestCtx
+                            withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                           res <- S.toList <$> getResults
                           buildc' <- buildc <$> getStateR
                           let achanges = map (\(AC c) -> c) (filter (\c -> case c of {AC ac -> True; _ -> False}) res)
@@ -93,8 +108,7 @@ evalMain :: BuildContext
   -> IO (Maybe ([S.UserExpr], [S.UserDef], [S.External], [S.Lit], [String],
                                    Set Type), BuildContext)
 evalMain bc build mod m = do
-  let mainRng = rmFindFirst (\ri -> case ri of {Decl kind nm _ _ -> nameStem nm == "main"; _ -> False}) (fromJust $ modRangeMap mod)
-  (lattice, r, bc) <- runQueryAtRange bc build mainRng mod m $ \ctx -> do
+  (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
     q <- doStep (Eval ctx M.empty M.empty M.empty [] Nothing Nothing)
     addResult q
   return (r, bc)
@@ -130,7 +144,11 @@ escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
 escape [] = []
 
 instance Label (FixOutput m) where
-  label (A a) = ""
+  label (A a) = "A"
+  label (K a) = "K"
+  label (C a) = "C"
+  label (B a) = "B"
+  label Bottom = "Bottom"
 
 instance Label FixInput where
   label (Eval q _ _ _ _ _ _) = "EVAL: " ++ showSimpleContext q

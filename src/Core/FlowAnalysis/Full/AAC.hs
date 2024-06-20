@@ -11,6 +11,8 @@ import Core.FlowAnalysis.Full.AbstractValue
 import Core.Core
 import Data.Int (Int)
 import Common.Name
+import Debug.Trace (trace)
+import Common.NamePrim (nameOpen, nameEffectOpen)
 
 type VStore = M.Map Addr AbValue
 data FixInput =
@@ -88,14 +90,18 @@ extendEnv env args addrs = M.union (M.fromList $ zip (map getName args) addrs) e
 doStep :: FixInput -> FixAACR r s e FixChange
 doStep i = do
   memo i $ do
+    trace ("Step: " ++ show i) $ return ()
     case i of
       Eval expr env store xclos local kont meta ->
         case exprOfCtx expr of
-          Var x _ -> do
+          Var x _ -> do -- TODO: Eval top defs to a closure?
             let addr  = env M.! getName x
                 value = store M.! addr
             v <- eachValue value
             doStep $ Cont local kont meta v store xclos
+          App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
+            f <- focusChild 1 expr
+            doStep $ Eval f env store xclos local kont meta
           App f args _ -> do
             f <- focusChild 0 expr
             doStep $ Eval f env store xclos (AppL [] expr 0 (length args) env : local) kont meta
@@ -171,7 +177,7 @@ instance Show FixChange where
   show ChangeBottom = "Bottom"
 
 instance Show FixInput where
-  show (Eval expr env store kclos local kont meta) = "Eval"
+  show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr
   show (Cont local kont meta achange store kclos) = "Cont"
 
 instance Lattice FixOutput FixChange where
@@ -204,6 +210,7 @@ instance Lattice FixOutput FixChange where
   elems (K x) = map (uncurry KC) $ S.toList x
   elems (C x) = map (\(l,k,c) -> CC l k c) $ S.toList x
   elems (B x) = map BC $ S.toList x
+  elems Bottom = []
 
 
 

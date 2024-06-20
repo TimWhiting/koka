@@ -31,7 +31,7 @@ import Data.Maybe (mapMaybe, isJust, fromJust, maybeToList, fromMaybe, catMaybes
 import Data.List (find, findIndex, elemIndex, union, intercalate)
 import Common.Name
 import Common.Range (Range, showFullRange, rangeNull)
-import Common.NamePrim (nameOpen, nameEffectOpen, nameIntAdd, nameCoreHnd, nameHandle, namePerform)
+import Common.NamePrim (nameCoreHnd, nameHandle, namePerform)
 import Compile.Module (Module(..), ModStatus (..), moduleNull, modImportNames)
 import Compile.BuildMonad (BuildContext(..))
 import Syntax.RangeMap

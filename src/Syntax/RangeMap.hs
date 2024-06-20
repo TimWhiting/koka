@@ -45,11 +45,11 @@ import Syntax.Lexeme
 data RangeMap = RM ![(Range,RangeInfo)]
   deriving Show
 
-rmFindFirst :: (RangeInfo -> Bool) -> RangeMap -> (Range, RangeInfo)
+rmFindFirst :: (RangeInfo -> Bool) -> RangeMap -> Maybe (Range, RangeInfo)
 rmFindFirst p (RM rm)
   = case filter (p . snd) rm of
-      [] -> failure "Syntax.RangeMap.rmFindFirst: not found"
-      (x:_) -> x
+      [] -> Nothing
+      (x:_) -> Just x
 
 rmFindAll :: (RangeInfo -> Bool) -> RangeMap -> [(Range, RangeInfo)]
 rmFindAll p (RM rm)
