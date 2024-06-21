@@ -241,6 +241,7 @@ simplePrettyExprN env n e =
     C.Case e bs -> text "match" <+> simplePrettyExprN env (n - 1) (head e) <--> indent 2 (vcat (map (simplePrettyBranch env (n - 1)) bs))
     C.TypeLam ns e -> text "(tfn()" <.> simplePrettyExprN env (n - 1) e <.> text ")"
     C.TypeApp e ts -> text "tapp(" <.> simplePrettyExprN env (n - 1) e <.> text ")"
+    C.Con n _ -> prettyVar env n
 
 simplePrettyBranch :: Env -> Int -> C.Branch -> Doc
 simplePrettyBranch env n (C.Branch pat guards) =
