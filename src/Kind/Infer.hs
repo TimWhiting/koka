@@ -372,12 +372,18 @@ bindTypeDef :: TypeDef UserType UserType UserKind -> KInfer (TypeBinder InfKind,
 bindTypeDef tdef -- extension
   = do (TypeBinder name kind rngName rng) <- bindTypeBinder (typeDefBinder tdef)
        qname <- if isExtend then return name else qualifyDef name
+       addRecursiveEffectData qname
        return (TypeBinder qname kind rngName rng, not isExtend)
   where
     isExtend =
       case tdef of
         (DataType newtp args constructors range vis sort ddef dataEff isExtend doc) -> isExtend
         _ -> False
+    addRecursiveEffectData name = do
+      case tdef of
+        (DataType newtp args constructors range vis sort ddef dataEff isExtend doc) ->
+           addEffectData name dataEff
+        _ -> return ()
 
 bindTypeBinder :: TypeBinder UserKind -> KInfer (TypeBinder InfKind)
 bindTypeBinder (TypeBinder name userKind rngName rng)
@@ -793,17 +799,16 @@ getEffectLift utp
                       -> getEffectLift tp
       TpParens tp _   -> getEffectLift tp
       TpApp tp _ _    -> getEffectLift tp
-      TpCon name rng  -> do mbInfo <- lookupDataInfo name
+      TpCon name rng  -> do mbInfo <- lookupEffectData name
+                            -- trace ("getEffectLift: " ++ show name ++ ": " ++ show mbInfo) $ return ()
                             case mbInfo of
-                              Just info
-                                 -> case dataInfoEffect info of
-                                      DataEffect named linear
-                                        -> return (\u r -> TpApp (TpCon (makeTpHandled named linear) rangeNull) [u] rangeNull)
-                                      DataNoEffect
-                                        -> --trace ("getEffectLift: no effect: " ++ show utp) $
-                                           return (\tp _ -> tp)
-                              _  -> --trace ("getEffectLift: no data info: " ++ show utp) $
+                              Just (DataEffect named linear)
+                                -> return (\u r -> TpApp (TpCon (makeTpHandled named linear) rangeNull) [u] rangeNull)
+                              Just DataNoEffect
+                                -> --trace ("getEffectLift: no effect: " ++ show utp) $
                                     return (\tp _ -> tp)
+                              _ -> --trace ("getEffectLift: no data info: " ++ show utp) $
+                                return (\tp _ -> tp)
       _               -> --trace ("getEffectLift: strange type " ++ show utp) $
                          return (\tp _ -> tp)
 
