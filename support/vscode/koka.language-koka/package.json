@@ -2,8 +2,8 @@
   "name": "language-koka",
   "displayName": "Koka Language",
   "description": "The official Koka programming language extension.",
-  "version": "3.1.2",
-  "compilerVersion": "3.1.2",
+  "version": "3.1.3",
+  "compilerVersion": "3.1.3",
   "publisher": "koka",
   "engines": {
     "vscode": ">=1.85.0"
@@ -78,14 +78,23 @@
       },
       "editor.tokenColorCustomizations": {
         "textMateRules": [
-          { "scope": "koka.type.typeparam",
-            "settings": { "foreground": "#AAA" }
+          {
+            "scope": "koka.type.typeparam",
+            "settings": {
+              "foreground": "#AAA"
+            }
           },
-          { "scope": "koka.param.implicit",
-            "settings": { "foreground": "#AAA" }
+          {
+            "scope": "koka.param.implicit",
+            "settings": {
+              "foreground": "#AAA"
+            }
           },
-          { "scope": "koka.comment.doc.pre",
-            "settings": { "foreground": "#84a084" }
+          {
+            "scope": "koka.comment.doc.pre",
+            "settings": {
+              "foreground": "#84a084"
+            }
           }
         ]
       }
