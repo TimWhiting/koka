@@ -20,6 +20,10 @@ jobs:
           submodules: true
 
       - uses: freckle/stack-action@v5
+        with:
+          test: false
+          stack-build-arguments: ""
+          cache-save-always: true
       # - uses: haskell-actions/setup@v2
       #   with:
       #     enable-stack: true
@@ -59,7 +63,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            bundle/*.tar.gz
+            bundle/**/*.tar.gz
           make_latest: true
 
       # - name: Save cached dependencies of Pantry
