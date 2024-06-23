@@ -44,20 +44,19 @@ jobs:
         run: |
           stack exec koka -- -e -O2 util/bundle
       
-      - name: Package VSCode Extension
-        working-directory: support/vscode/koka.language-koka
-        run: |
-          npm install
-          npm run build
-          npm run package
+      # - name: Package VSCode Extension
+      #   working-directory: support/vscode/koka.language-koka
+      #   run: |
+      #     npm install
+      #     npm run build
+      #     npm run package
 
       # Create a release https://github.com/softprops/action-gh-release
       - name: Release
         uses: softprops/action-gh-release@v2
-        with:
+        with: # support/vscode/koka.language-koka/*.vsix
           files: |
             bundle/**/*.tar.gz
-            support/vscode/koka.language-koka/*.vsix
             util/install.bat
             util/install.sh
           make_latest: true
