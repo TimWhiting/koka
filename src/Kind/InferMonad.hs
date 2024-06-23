@@ -17,7 +17,7 @@ module Kind.InferMonad( KInfer
                       , extendInfGamma, extendKGamma, extendKSub
                       , findInfKind
                       , getColorScheme
-                      , lookupSynInfo, lookupDataInfo
+                      , lookupSynInfo, lookupDataInfo, lookupEffectData, addEffectData
                       , qualifyDef
                       , addRangeInfo
                       , infQualifiedName
@@ -32,7 +32,7 @@ import Lib.Trace
 import Lib.PPrint
 import Common.Failure( failure )
 import Common.Range
-import Common.Syntax( Platform )
+import Common.Syntax( Platform, DataEffect )
 import Common.ColorScheme
 import Common.Unique
 import Common.Name
@@ -60,7 +60,7 @@ import qualified Core.Core as Core
 
 data KInfer a = KInfer (KEnv -> KSt -> KResult a)
 
-data KSt        = KSt{ kunique :: !Int, ksub :: !KSub, mbRangeMap :: Maybe RangeMap, localSyns:: !Synonyms, externals :: M.NameMap Range }
+data KSt        = KSt{ kunique :: !Int, ksub :: !KSub, mbRangeMap :: Maybe RangeMap, localSyns:: !Synonyms, externals :: M.NameMap Range, keffects :: M.NameMap DataEffect }
 data KEnv       = KEnv{ cscheme :: !ColorScheme, platform :: !Platform, currentModule :: !Name, imports :: ImportMap
                       , kgamma :: !KGamma, infgamma :: !InfKGamma, synonyms :: !Synonyms
                       , newtypesImported :: !Newtypes, newtypesExtended :: !Newtypes
@@ -73,8 +73,8 @@ runKindInfer cscheme platform mbRangeMap moduleName imports kgamma syns datas un
                      Just imp -> imp
                      Nothing  -> imports -- ignore
     in -- trace ("Kind.InferMonad.runKindInfer: current module: " ++ show moduleName) $
-       case ki (KEnv cscheme platform moduleName imports' kgamma M.empty syns datas newtypesEmpty) (KSt unique ksubEmpty mbRangeMap synonymsEmpty M.empty) of
-         KResult x errs warns (KSt unique1 ksub rm _ _) -> (errs,warns,rm,unique1,x)
+       case ki (KEnv cscheme platform moduleName imports' kgamma M.empty syns datas newtypesEmpty) (KSt unique ksubEmpty mbRangeMap synonymsEmpty M.empty M.empty) of
+         KResult x errs warns (KSt unique1 ksub rm _ _ _) -> (errs,warns,rm,unique1,x)
 
 
 instance Functor KInfer where
@@ -144,6 +144,22 @@ addExternal name range
 lookupExternal :: Name -> KInfer (Maybe Range)
 lookupExternal name
   = KInfer (\env -> \st -> KResult (M.lookup name (externals st)) [] [] st)
+
+-- Adds effect data prior to the type being inferred since there could be recursion
+addEffectData :: Name -> DataEffect -> KInfer ()
+addEffectData name eff
+  = KInfer (\env -> \st -> KResult () [] [] st{ keffects = M.insert name eff (keffects st) })
+
+lookupEffectData :: Name -> KInfer (Maybe DataEffect)
+lookupEffectData name = do -- Handle recursion 
+  local <- KInfer (\env -> \st -> KResult (M.lookup name (keffects st)) [] [] st)
+  case local of 
+    Just eff -> return (Just eff)
+    Nothing -> do
+      mdi <- lookupDataInfo name
+      case mdi of
+        Just di -> return (Just (dataInfoEffect di))
+        _ -> return Nothing
 
 {---------------------------------------------------------------
   Operations
@@ -216,7 +232,6 @@ extendInfGammaUnsafe tbinders (KInfer ki)
   where
     infGamma = M.fromList bindMap
     bindMap  = map (\(TypeBinder name infkind _ _) -> (name,infkind)) tbinders
-
 
 -- | Extend the kind assumption; checks for duplicate definitions
 extendKGamma :: [Range] -> Core.TypeDefGroup -> KInfer a -> KInfer a

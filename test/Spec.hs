@@ -140,7 +140,7 @@ runKoka cfg kokaDir fp
          else do let stackFlags = if (sysghc (options cfg)) then ["--system-ghc","--skip-ghc-check"] else []
                      argv = ["exec","koka"] ++ stackFlags ++ ["--"] ++ kokaFlags ++ [relTest]
                  (exitCode, stdout, stderr) <- readProcessWithExitCode "stack" argv ""
-                 -- putStrLn stdout
+                --  putStrLn (stdout ++ "\n" ++ stderr)
                  return (testSanitize kokaDir stdout)
 
 
