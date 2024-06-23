@@ -19,33 +19,34 @@ jobs:
         with:
           submodules: true
 
-      - uses: haskell-actions/setup@v2
-        with:
-          enable-stack: true
-          stack-version: 'latest'
-      - run: |
-          stack config set system-ghc --global false
-          stack config set install-ghc --global true
+      - uses: freckle/stack-action@v5
+      # - uses: haskell-actions/setup@v2
+      #   with:
+      #     enable-stack: true
+      #     stack-version: 'latest'
+      # - run: |
+      #     stack config set system-ghc --global false
+      #     stack config set install-ghc --global true
       
-      - name: List dependencies
-        run: stack ls dependencies json | jq > stack-deps.json
+      # - name: List dependencies
+      #   run: stack ls dependencies json | jq > stack-deps.json
       
-      - name: Restore cached dependency of Pantry (Stackage package index)
-        uses: actions/cache/restore@v4
-        id: pantry
-        env:
-          key: ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
-        with:
-          path: ${{ steps.setup.outputs.stack-root }}/pantry
-          key: all-plan-${{ hashFiles('stack-deps.json') }}
-          restore-keys: all
+      # - name: Restore cached dependency of Pantry (Stackage package index)
+      #   uses: actions/cache/restore@v4
+      #   id: pantry
+      #   env:
+      #     key: ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
+      #   with:
+      #     path: ${{ steps.setup.outputs.stack-root }}/pantry
+      #     key: all-plan-${{ hashFiles('stack-deps.json') }}
+      #     restore-keys: all
       
-      - name: Recompute Stackage package index (~/.stack/pantry)
-        if: steps.pantry.outputs.cache-hit != 'true'
-        run: stack update
+      # - name: Recompute Stackage package index (~/.stack/pantry)
+      #   if: steps.pantry.outputs.cache-hit != 'true'
+      #   run: stack update
       
-      - name: Stack lock check
-        run: stack build --dry-run --lock-file=error-on-write
+      # - name: Stack lock check
+      #   run: stack build --dry-run --lock-file=error-on-write
       
       - name: Build
         run: stack build
@@ -59,11 +60,11 @@ jobs:
         with:
           files: |
             bundle/*.tar.gz
-
-      - name: Save cached dependencies of Pantry
-        uses: actions/cache/save@v4
-        if: steps.pantry.outputs.cache-hit != 'true'
-        with:
-          path: ${{ steps.setup.outputs.stack-root }}/pantry
-          key: ${{ steps.pantry.outputs.cache-primary-key }}
           make_latest: true
+
+      # - name: Save cached dependencies of Pantry
+      #   uses: actions/cache/save@v4
+      #   if: steps.pantry.outputs.cache-hit != 'true'
+      #   with:
+      #     path: ${{ steps.setup.outputs.stack-root }}/pantry
+      #     key: ${{ steps.pantry.outputs.cache-primary-key }}
