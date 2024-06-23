@@ -58,4 +58,6 @@ jobs:
           files: |
             bundle/**/*.tar.gz
             support/vscode/koka.language-koka/*.vsix
+            util/install.bat
+            util/install.sh
           make_latest: true
