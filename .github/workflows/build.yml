@@ -6,6 +6,9 @@ on:
 permissions:
   contents: write
 
+env: 
+    VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
 name: build
 jobs:
   build:
@@ -13,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macOS-latest]
+        os: [ubuntu-latest, macOS-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,36 +27,16 @@ jobs:
           test: false
           stack-build-arguments: ""
           cache-save-always: true
-      # - uses: haskell-actions/setup@v2
-      #   with:
-      #     enable-stack: true
-      #     stack-version: 'latest'
-      # - run: |
-      #     stack config set system-ghc --global false
-      #     stack config set install-ghc --global true
-      
-      # - name: List dependencies
-      #   run: stack ls dependencies json | jq > stack-deps.json
-      
-      # - name: Restore cached dependency of Pantry (Stackage package index)
-      #   uses: actions/cache/restore@v4
-      #   id: pantry
-      #   env:
-      #     key: ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
-      #   with:
-      #     path: ${{ steps.setup.outputs.stack-root }}/pantry
-      #     key: all-plan-${{ hashFiles('stack-deps.json') }}
-      #     restore-keys: all
-      
-      # - name: Recompute Stackage package index (~/.stack/pantry)
-      #   if: steps.pantry.outputs.cache-hit != 'true'
-      #   run: stack update
-      
-      # - name: Stack lock check
-      #   run: stack build --dry-run --lock-file=error-on-write
-      
+
       - name: Build
         run: stack build
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: Run Koka Packaging
         run: |
@@ -65,10 +48,3 @@ jobs:
           files: |
             bundle/**/*.tar.gz
           make_latest: true
-
-      # - name: Save cached dependencies of Pantry
-      #   uses: actions/cache/save@v4
-      #   if: steps.pantry.outputs.cache-hit != 'true'
-      #   with:
-      #     path: ${{ steps.setup.outputs.stack-root }}/pantry
-      #     key: ${{ steps.pantry.outputs.cache-primary-key }}
