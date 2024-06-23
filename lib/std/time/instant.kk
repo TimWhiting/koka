@@ -105,15 +105,15 @@ fun convert( t : timestamp, from : timescale, to : timescale ) : timestamp
   else
     // transform through TAI
     // trace( "convert: " + from.name + " -> " + to.name +  ", t: " + t.show )
-    (to.from-tai)( (from.to-tai)(t) )
+    to.call/from-tai( from.call/to-tai(t) )
 
 
 // Return the `:duration` since the `epoch` for a timestamp `t` interpreted in time scale `ts`.
-pub fun to-tai(  ts : timescale, t : timestamp ) : duration
+pub fun pub/to-tai(  ts : timescale, t : timestamp ) : duration
   t.convert(ts,ts-tai).unsafe-duration
 
 // Given a `:duration` since the `epoch`, return a `:timespan` for that instant in time scale `ts`.
-pub fun from-tai(ts : timescale, d : duration ) : timestamp
+pub fun pub/from-tai(ts : timescale, d : duration ) : timestamp
   d.timestamp.convert(ts-tai,ts)
 
 /*----------------------------------------------------------------------------

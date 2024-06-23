@@ -27,7 +27,7 @@ import Debug.Trace
 
 import Data.Char(isAlphaNum)
 import Data.List(groupBy,intersperse,nubBy,sortOn)
-import Data.Maybe(catMaybes)
+import Data.Maybe(catMaybes, mapMaybe)
 import Control.Monad(when)
 
 import Lib.PPrint
@@ -107,6 +107,7 @@ inferKinds isValue colors platform mbRangeMap imports kgamma0 syns0 data0
           warns     = [warningMessageKind ErrKind rng doc | (rng,doc) <- warns1 ++ warns2 ++ warns3]
           errs      = [errorMessageKind ErrKind rng doc  | (rng,doc) <- errs1 ++ errs2 ++ errs3 ++ errs4]
           dgroups   = concatMap (synTypeDefGroup modName) cgroups
+      -- trace ("inferKinds: " ++ show dgroups) $ return ()
       setUnique unique3
       Core.liftError  (addWarnings warns $
                         if (null errs)
@@ -221,20 +222,24 @@ synAccessors modName info
         synAccessor (name,(tp,xrng,visibility,cinfo))
           = let rng      = rangeHide xrng
                 dataName = unqualify $ dataInfoName info
-                defName  = qualifyLocally (nameAsModuleName dataName) name -- TODO: only for type names that are valid module names!
-
+                -- TODO: only for type names that are valid module names!
+     
                 arg = if (all isAlphaNum (show dataName))
                        then dataName else newName "@this"
                 fld = newName "@x"
 
                 dataTp = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
-                fullTp = let (foralls,preds,rho) = splitPredType tp
-                         in tForall (dataInfoParams info ++ foralls) preds $
-                            typeFun [(arg,dataTp)] (if isPartial then typePartial else typeTotal) rho
+                
+                (foralls,preds,rho) = splitPredType tp
+
+                fullTp = tForall (dataInfoParams info ++ foralls) preds $ 
+                         typeFun [(arg,dataTp)] (if isPartial then typePartial else typeTotal) rho                        
 
                 expr       = Ann (Lam [ValueBinder arg Nothing Nothing rng rng] caseExpr rng) fullTp xrng
                 caseExpr   = Case (Var arg False rng) (map snd branches ++ defaultBranch) rng
                 -- visibility = if (all (==Public) (map fst branches)) then Public else Private
+                defPlainName = qualifyLocally (nameAsModuleName dataName) name
+                defName = if splitFunType rho == Nothing then defPlainName else addLocalPostfix defPlainName "get" 
 
                 isPartial = (length branches < length (dataInfoConstrs info)) || dataInfoIsOpen info
 
@@ -257,8 +262,55 @@ synAccessors modName info
                   = [Lit (LitString (sourceName (posSource (rangeStart rng)) ++ show rng) rng), Lit (LitString (show name) rng)]
                 doc = "// Automatically generated. Retrieves the `" ++ show name ++ "` constructor field of the `:" ++ nameLocal (dataInfoName info) ++ "` type.\n"
             in DefNonRec (Def (ValueBinder defName () expr xrng xrng) rng visibility (defFunEx [Borrow] noFip) InlineAlways doc)
+        synCallAccessor :: (Name,(Type,Range,Visibility,ConInfo)) -> Maybe (DefGroup Type)
+        synCallAccessor (name,(tp,xrng,visibility,cinfo))
+          = let rng      = rangeHide xrng
+                dataName = unqualify $ dataInfoName info
+                defName  = addLocalPostfix (qualifyLocally (nameAsModuleName dataName) name) "call" -- TODO: only for type names that are valid module names!
 
-    in map synAccessor fields
+                arg = if (all isAlphaNum (show dataName))
+                       then dataName else newName "@this"
+                fld = newName "@x"
+
+                dataTp = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
+                
+                (foralls,preds,rho) = splitPredType tp
+
+            in case splitFunType rho of
+                  Nothing -> Nothing
+                  Just (args, eff, res) -> 
+                    let namedArgs = [(if name == nameNil then newName ("@arg" ++ show i) else name, name == nameNil, tp) | (i, (name, tp)) <- zip [0..] args]
+                        fullTp = tForall (dataInfoParams info ++ foralls) preds $
+                          typeFun ((arg,dataTp):(map (\(nm, gen, atp) -> (nm, atp)) namedArgs)) (if isPartial then effectExtend typePartial eff else eff) res                    
+
+                        expr       = Ann (Lam (ValueBinder arg Nothing Nothing rng rng:map (\(nm, genname, atp) -> ValueBinder nm Nothing Nothing rng rng) namedArgs) caseExpr rng) fullTp xrng
+                        caseExpr   = Case (Var arg False rng) (map snd branches ++ defaultBranch) rng
+                        -- visibility = if (all (==Public) (map fst branches)) then Public else Private
+
+                        isPartial = (length branches < length (dataInfoConstrs info)) || dataInfoIsOpen info
+
+                        branches :: [(Visibility,Branch Type)]
+                        branches = concatMap makeBranch (dataInfoConstrs info)
+                        makeBranch (con)
+                            = let r = conInfoRange con
+                              in case lookup name (zip (map fst (conInfoParams con)) [0..]) of
+                                Just i
+                                  -> let patterns = [(Nothing,PatWild r) | _ <- [0..i-1]] ++ [(Nothing,PatVar (ValueBinder fld Nothing (PatWild r) r r))] ++ [(Nothing,PatWild r) | _ <- [i+1..length (conInfoParams con)-1]]
+                                    in [(conInfoVis con,Branch (PatCon (conInfoName con) patterns r r)
+                                          [Guard guardTrue
+                                              (App (Var fld False r) (map (\(nm, gen, tp) -> (if gen then Nothing else Just (nm, r), (Var nm False r))) namedArgs) r)])]
+                                Nothing -> []
+                        defaultBranch
+                          = if isPartial
+                            then [Branch (PatWild rng)
+                                    [Guard guardTrue (App (Var namePatternMatchError False rng) [(Nothing,msg) | msg <- messages] rng)]]
+                            else []
+                        messages
+                          = [Lit (LitString (sourceName (posSource (rangeStart rng)) ++ show rng) rng), Lit (LitString (show name) rng)]
+                        doc = "// Automatically generated. Calls the `" ++ show name ++ "` function field of the `:" ++ nameLocal (dataInfoName info) ++ "` type.\n"
+                    in Just $ DefNonRec (Def (ValueBinder defName () expr xrng xrng) rng visibility (defFunEx [Borrow] noFip) InlineAlways doc)
+    
+    in map synAccessor fields ++ mapMaybe synCallAccessor fields
 
 synTester :: DataInfo -> ConInfo -> [DefGroup Type]
 synTester info con | isHiddenName (conInfoName con)
