@@ -4,6 +4,9 @@ on:
     tags: 
       - 'v*'
 
+permissions:
+  contents: write
+
 name: build
 jobs:
   build:
@@ -20,8 +23,8 @@ jobs:
           enable-stack: true
           stack-version: 'latest'
       - run: |
-          stack config set system-ghc --global true
-          stack config set install-ghc --global false
+          stack config set system-ghc --global false
+          stack config set install-ghc --global true
       
       - name: List dependencies
         run: stack ls dependencies json | jq > stack-deps.json
