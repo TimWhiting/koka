@@ -141,7 +141,7 @@ doStep i = do
       Eval expr env store xclos local kont meta ->
         -- trace ("Eval: " ++ showSimpleContext expr) $ do
         case exprOfCtx expr of
-          Lit l -> return $ AC $ injLit l env
+          Lit l -> doStep $ Cont local kont meta (injLit l env) store xclos
           Var x _ -> do
             let maddr  = M.lookup x env
             case maddr of
@@ -160,7 +160,7 @@ doStep i = do
             doStep $ Cont local kont meta (AChangeConstr expr env) store xclos
           App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
             f <- focusChild 1 expr
-            doStep $ Eval f env store xclos (AppL (length args) expr (limitEnv env (fvs expr)) : local) kont meta
+            doStep $ Eval f env store xclos local kont meta
           App f args _ -> do
             f <- focusChild 0 expr
             doStep $ Eval f env store xclos (AppL (length args) expr env : local) kont meta
@@ -190,15 +190,18 @@ doStep i = do
         case l of
           AppL n e p:ls -> do
             let AChangeClos lam env = achange
-            arge <- focusChild n e
-            if n == 0 then doStep $ Eval arge p store xclos (AppR achange []:ls) k meta
+            if n == 0 then do
+              body <- focusBody lam
+              doStep $ Eval body env store xclos [] k meta
             else do
+              trace ("AppL: " ++ show n ++ " " ++ show e ++ " " ++ show p) $ return ()
+              arge <- focusChild 1 e
               addrs <- alloc i l
               doStep $ Eval arge p store xclos (AppM achange addrs e 1 n p:ls) k meta
           AppM clos addrs e n t p:ls -> do
-            arge <- focusChild n e
-            let store' = storeUpdate store [addrs !! (n - 1)] [achange]
-            if n == t then doStep $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
+            arge <- focusChild (n + 1) e
+            let store' = storeUpdate store [addrs !! n] [achange]
+            if n + 1 == t then doStep $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
             else doStep $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
           (AppR (AChangeClos clos env) addrs):ls -> do
             body <- focusBody clos
@@ -293,7 +296,7 @@ doStep i = do
       NoTop [] Nothing -> return $ BC True
       NoTop (l:ls) k -> return $ BC False
       NoTop [] k -> do
-        KC l k <- doStep (Pop [] k)
+        KC l k <- doStep $ Pop [] k
         doStep $ NoTop l k -- TODO: can we assume no new values get added & get a set and use (or)
 
 approximate :: Addr -> KClos -> LocalKont -> Maybe Kont -> (KClos, KontA)
