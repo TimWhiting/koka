@@ -130,6 +130,9 @@ allocBindAddrs (DefRec defs) = do
   return $ zip names [0..]
 allocBindAddrs (DefNonRec df) = return [(TName (defName df) (defType df) Nothing, 0)]
 
+tnamesCons :: Int -> [TName]
+tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
+
 doStep :: HasCallStack => FixInput -> FixAACR r s e FixChange
 doStep i = do
   memo i $ do
@@ -139,7 +142,7 @@ doStep i = do
         -- trace ("Eval: " ++ showSimpleContext expr) $ do
         case exprOfCtx expr of
           Lit l -> return $ AC $ injLit l env
-          Var x _ -> do -- TODO: Eval top defs to a closure?
+          Var x _ -> do
             let maddr  = M.lookup x env
             case maddr of
               Just addr -> do
@@ -165,6 +168,9 @@ doStep i = do
             doStep $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
           TypeLam args body -> do
             doStep $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
+          TypeApp e _ -> do
+            e <- focusChild 0 expr
+            doStep $ Eval e env store xclos local kont meta
           Case [e] bs -> do
             ex <- focusChild 0 expr
             doStep $ Eval ex env store xclos (CaseR expr env : local) kont meta
@@ -195,17 +201,14 @@ doStep i = do
             if n == t then doStep $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
             else doStep $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
           (AppR (AChangeClos clos env) addrs):ls -> do
-            -- TODO: GC
             body <- focusBody clos
             let args = lamArgNames clos
             doStep $ Eval body (extendEnv env args addrs) store xclos [] k meta
           (AppR ccon@(AChangeConstr con env) addrs):ls -> do
             case exprOfCtx con of
               Con _ _ -> do
-                -- TODO: GC && Environment for constructor args
-                addrs <- alloc i l
-                doStep $ Cont l k meta (AChangeConstr con M.empty) store xclos
-          LetL bgi bgn bi bn addrs e p:ls -> do
+                doStep $ Cont l k meta (AChangeConstr con (M.fromList (zip (tnamesCons (length addrs)) addrs))) store xclos
+          LetL bgi bgn bi bn addrs e p:ls -> do 
             let dgs = letDefsOf e
             -- trace ("LetL: " ++ show bgi ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ show addrs) $ return ()
             let store' = storeUpdate store [addrs !! bi] [achange]
@@ -250,12 +253,21 @@ doStep i = do
                             env' = M.insert x addr env
                         in matchBindPattern achange pat' env' (storeUpdate vstore [addr] [achange])
                       PatCon _ pats _ _ _ _ _ _ -> do
-                        foldM (\isMatch (pat, n) -> do
+                        foldM (\isMatch (pat, i) -> do
                             case isMatch of
                               Just (venv, vstore) -> do
-                                matchBindPattern achange pat venv vstore
+                                case achange of 
+                                  AChangeConstr acon aenv -> do
+                                    let maddr  = M.lookup (TName (newName $ "con" ++ show i) typeAny Nothing) aenv
+                                    case maddr of
+                                      Just addr -> do
+                                        let value = store M.! addr
+                                        v <- eachValue value
+                                        matchBindPattern v pat venv vstore
+                                      _ -> error ("matchBindPattern: " ++ show pat ++ " " ++ show achange)
+                                  _ -> return Nothing
                               Nothing -> return Nothing
-                          ) (Just (venv, vstore)) (zip pats [1..])
+                          ) (Just (venv, vstore)) (zip pats [0..])
                       PatLit x ->
                         case (x, achange) of
                           (LitInt i, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> if i == i2 then return (Just (venv, vstore)) else doBottom
