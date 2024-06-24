@@ -1,8 +1,5 @@
 fun main()
-  (fn(f) 
-    (fn(g) 
-      (fn(do) 
-        if do then f(1) else g(2)
-      )(True)
-    )(fn(z) z)
-  )(fn(y) y)
+  val f = fn(y) y
+  val g = fn(z) z
+  val do = fn(k) if k then f(1) else g(2)
+  do(True)

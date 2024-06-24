@@ -58,8 +58,7 @@ data Frame =
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr]
-  | LetL [AChange] ExprContext Int Int VEnv
-  | LetR [AChange] -- TODO: Need to figure out recursive binding times
+  | LetL Int Int Int Int [Addr] ExprContext VEnv -- Binding group index, num binding groups, binding index, num bindings, addresses for binding group, parent expresion, parent env
   | CaseR ExprContext VEnv
   deriving (Eq, Ord)
 
@@ -68,9 +67,8 @@ instance Show Frame where
   show (AppL nargs e p) = "AppL " ++ show nargs ++ " " ++ showSimpleEnv p
   show (AppM ch chs e n t p) = "AppL " ++ show n ++ " " ++ show t
   show (AppR ch chs) = "AppR " ++ show ch ++ " " ++ show chs
-  show (LetL chs e n t p) = "LetL " ++ show n ++ " " ++ show t
-  show (LetR chs) = "LetR"
   show (CaseR e p) = "CaseR"
+  show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " " ++ showSimpleEnv p
 
 type LocalKont = [Frame]
 
@@ -109,6 +107,7 @@ limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 extendEnv :: VEnv -> [TName] -> [(TName,Int)] -> VEnv
 extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
+-- 0CFA Allocation
 alloc :: HasCallStack => FixInput -> LocalKont -> FixAACR r s e [Addr]
 alloc (Cont _ _ _ (AChangeClos lam env) store xclos) (AppL nargs e env':ls) = do
   let names = lamArgNames lam
@@ -124,6 +123,12 @@ alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppL nargs e env':ls) = 
       case splitFunType tp of
         Just (args, _, _) -> return $ zip (map (\(n,t) -> TName n t Nothing) args) addrs
         Nothing -> return [(tn, 0)]
+
+allocBindAddrs :: HasCallStack => DefGroup -> FixAACR r s e [Addr]
+allocBindAddrs (DefRec defs) = do
+  let names = dfsTNames defs
+  return $ zip names [0..]
+allocBindAddrs (DefNonRec df) = return [(TName (defName df) (defType df) Nothing, 0)]
 
 doStep :: HasCallStack => FixInput -> FixAACR r s e FixChange
 doStep i = do
@@ -163,9 +168,11 @@ doStep i = do
           Case [e] bs -> do
             ex <- focusChild 0 expr
             doStep $ Eval ex env store xclos (CaseR expr env : local) kont meta
-          -- Let binds body -> do
-          --   let (names, exprs) = unzip binds
-          --   doStep $ Eval (head exprs) env store xclos (LetL expr env : local) (Just (MPrecise (expr, env, store, xclos))) meta
+          Let binds body -> do
+            ex <- focusChild 1 expr
+            let bg = head binds
+            addrs <- allocBindAddrs bg
+            doStep $ Eval ex (extendEnv env (dgTNames bg) addrs) store xclos (LetL 0 (length binds) 0 (length $ defsOf bg) addrs expr env : local) kont meta
           _ -> error $ "doStep: " ++ show expr ++ " not handled"
       Cont [] Nothing Nothing achange store xclos -> return $ AC achange
       Cont [] kont meta achange store xclos -> do
@@ -178,26 +185,47 @@ doStep i = do
           AppL n e p:ls -> do
             let AChangeClos lam env = achange
             arge <- focusChild n e
-            if n == 0 then doStep (Eval arge p store xclos (AppR achange []:ls) k meta)
+            if n == 0 then doStep $ Eval arge p store xclos (AppR achange []:ls) k meta
             else do
               addrs <- alloc i l
-              doStep (Eval arge p store xclos (AppM achange addrs e 1 n p:ls) k meta)
+              doStep $ Eval arge p store xclos (AppM achange addrs e 1 n p:ls) k meta
           AppM clos addrs e n t p:ls -> do
             arge <- focusChild n e
             let store' = storeUpdate store [addrs !! (n - 1)] [achange]
-            if n == t then doStep (Eval arge p store' xclos (AppR clos addrs:ls) k meta)
-            else doStep (Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta)
+            if n == t then doStep $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
+            else doStep $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
           (AppR (AChangeClos clos env) addrs):ls -> do
             -- TODO: GC
             body <- focusBody clos
             let args = lamArgNames clos
-            doStep (Eval body (extendEnv env args addrs) store xclos [] k meta)
+            doStep $ Eval body (extendEnv env args addrs) store xclos [] k meta
           (AppR ccon@(AChangeConstr con env) addrs):ls -> do
             case exprOfCtx con of
               Con _ _ -> do
                 -- TODO: GC && Environment for constructor args
                 addrs <- alloc i l
-                doStep (Cont l k meta (AChangeConstr con M.empty) store xclos)
+                doStep $ Cont l k meta (AChangeConstr con M.empty) store xclos
+          LetL bgi bgn bi bn addrs e p:ls -> do
+            let dgs = letDefsOf e
+            -- trace ("LetL: " ++ show bgi ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ show addrs) $ return ()
+            let store' = storeUpdate store [addrs !! bi] [achange]
+            if bgi + 1 == bgn && bi + 1 == bn then do
+              -- trace ("LetL End") $ return ()
+              body <- focusChild 0 e
+              doStep $ Eval body (extendEnv p (dgsTNames dgs) addrs) store' xclos ls k meta
+            else if bi + 1 /= bn then do
+              -- trace ("LetL In Group") $ return ()
+              bind <- focusLetDefBinding bgi bi e
+              doStep $ Eval bind p store' xclos (LetL bgi bgn (bi + 1) bn addrs e p:ls) k meta
+            else if bi + 1 == bn then do
+              -- trace ("LetL End Group") $ return ()
+              let bgi' = bgi + 1
+              let bg = dgs !! bgi'
+              bind <- focusLetDefBinding bgi' bi e
+              addrs <- allocBindAddrs bg
+              doStep $ Eval bind (extendEnv p (dgTNames bg) addrs) store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs e p:ls) k meta
+            else
+              error "Cont LetL"
           (CaseR expr env): ls -> do
             case exprOfCtx expr of
               Case [e] bs -> do
@@ -211,7 +239,7 @@ doStep i = do
                       Just (venv, vstore) -> do
                         body <- focusChild n expr
                         let free = fvs body `S.difference` bv pat
-                        doStep (Eval body (limitEnv venv free) vstore xclos [] k meta)
+                        doStep $ Eval body (limitEnv venv free) vstore xclos [] k meta
                       Nothing -> matchBranches achange bs
                   matchBindPattern :: AChange -> Pattern -> VEnv -> VStore -> FixAACR r s e (Maybe (VEnv, VStore))
                   matchBindPattern achange pat venv vstore = do
@@ -245,8 +273,8 @@ doStep i = do
       Pop (l:ls) kont -> return $ KC (l:ls) kont
       Pop [] Nothing -> return $ KC [] Nothing
       Pop [] (Just (MPrecise ctx)) -> do
-        KC l k <- doStep (KStoreGet ctx)
-        doStep (Pop l k)
+        KC l k <- doStep $ KStoreGet ctx
+        doStep $ Pop l k
       -- Pop [] (Just approx@KApprox ctx) = do
       --   precise <- forT ctx
       --   doStep (Pop l k)
@@ -254,7 +282,7 @@ doStep i = do
       NoTop (l:ls) k -> return $ BC False
       NoTop [] k -> do
         KC l k <- doStep (Pop [] k)
-        doStep (NoTop l k) -- TODO: can we assume no new values get added & get a set and use (or)
+        doStep $ NoTop l k -- TODO: can we assume no new values get added & get a set and use (or)
 
 approximate :: Addr -> KClos -> LocalKont -> Maybe Kont -> (KClos, KontA)
 approximate a x l Nothing = (x, KExact l)
@@ -291,7 +319,7 @@ instance Show FixChange where
   show ChangeBottom = "Bottom"
 
 instance Show FixInput where
-  show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr ++ " " ++ showSimpleEnv env ++ " " ++ show store
+  show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr ++ " " ++ showSimpleEnv env
   show (Cont local kont meta achange store kclos) = "Cont " ++ show local ++ " " ++ show kont ++ " " ++ show meta ++ " " ++ show achange
   show (KStoreGet ctx) = "KStoreGet"
   show (CStoreGet meta) = "CStoreGet"

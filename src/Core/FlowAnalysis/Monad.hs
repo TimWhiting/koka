@@ -102,6 +102,11 @@ focusDefBody e = do
     Just x -> return x
     Nothing -> error ("Children looking for def body " ++ show children)
 
+focusLetDefBinding :: Int -> Int -> ExprContext -> FixAR x s e i o c ExprContext
+focusLetDefBinding defGroupIndex bindingIndex e = do
+  let index = letDefBindingIndex defGroupIndex bindingIndex e
+  focusChild (index + 1) e
+
 focusChild :: Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusChild index e = do
   children <- childrenContexts e

@@ -21,6 +21,8 @@ module Core.FlowAnalysis.StaticContext(
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,
                           basicExprOf,defsOf,defOfCtx,
                           lookupDefGroup,lookupDefGroups,lookupDef,
+                          isLetDefBindingFinished,letDefBinding,letDefBindingIndex,
+                          dgTNames,dgsTNames,dfsTNames,letDefsOf,
                           showSimpleContext,
                           isMain
                         ) where
@@ -28,7 +30,7 @@ import Core.Core as C
 import Common.Name
 import Compile.Module
 import Type.Type
-import Data.Set hiding (filter, map)
+import Data.Set hiding (take, filter, map)
 import Type.Pretty
 import Syntax.Syntax as S
 import Common.Range
@@ -41,7 +43,7 @@ import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 import qualified Data.Text as T
 import Lib.PPrint
 import Common.Failure (HasCallStack)
-import qualified Data.Set as S
+import qualified Data.Set as S hiding (take)
 
 -- Uniquely identifies expressions despite naming
 data ExprContext =
@@ -100,7 +102,7 @@ localFv expr
   = S.fromList $ filter (not . isQualified . C.getName) (tnamesList (fv expr)) -- trick: only local names are not qualified
 
 fvs :: HasCallStack => ExprContext -> S.Set TName
-fvs ctx = 
+fvs ctx =
   case maybeExprOfCtx ctx of
     Just expr -> localFv expr
 
@@ -182,6 +184,42 @@ lamVarExpr index e =
 lamVarDef :: C.Def -> C.Expr
 lamVarDef def = C.Var (TName (C.defName def) (C.defType def) Nothing) InfoNone
 
+letDefsOf :: ExprContext -> C.DefGroups
+letDefsOf ctx =
+  case exprOfCtx ctx of
+    C.Let defs _ -> defs
+    _ -> error "Not a let expression"
+
+isLetDefBindingFinished :: Int -> Int -> ExprContext -> Bool
+isLetDefBindingFinished defGroupIndex bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      let dfs = defs !! defGroupIndex
+      in length (defsOf dfs) == bindingIndex
+
+letDefBinding :: Int -> Int -> ExprContext -> C.Def
+letDefBinding defGroupIndex bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      let dfs = defs !! defGroupIndex
+      in defsOf dfs !! bindingIndex
+
+letDefBindingIndex :: Int -> Int -> ExprContext -> Int
+letDefBindingIndex defGroupIndex bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      let dfs = sum $ map (length . defsOf) $ take defGroupIndex defs
+      in dfs + bindingIndex
+      
+dgsTNames :: C.DefGroups -> [TName]
+dgsTNames = concatMap (\dg -> dfsTNames (defsOf dg))
+
+dfsTNames :: [C.Def] -> [TName]
+dfsTNames = map (\d -> TName (C.defName d) (C.defType d) Nothing)
+
+dgTNames :: C.DefGroup -> [TName]
+dgTNames (C.DefRec defs) = dfsTNames defs
+dgTNames (C.DefNonRec df) = [TName (C.defName df) (C.defType df) Nothing]
 simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
 
 showExpr :: C.Expr -> String
