@@ -20,6 +20,7 @@ import Type.Type (splitFunType, typeAny)
 import Control.Monad (foldM)
 import Core.FlowAnalysis.Demand.AbstractValue (LiteralChange(..))
 import GHC.Base (when)
+import Core.CoreVar (HasExpVar(fv), bv)
 
 type VStore = M.Map Addr AbValue
 data FixInput =
@@ -54,8 +55,9 @@ type PostFixAAC r s e = PostFixAACR r s e (FixOutput FixChange)
 
 data Frame =
   End
-  | AppL [AChange] ExprContext Int Int VEnv
-  | AppR [AChange]
+  | AppL Int ExprContext VEnv -- Length of args and parent expression
+  | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
+  | AppR AChange [Addr]
   | LetL [AChange] ExprContext Int Int VEnv
   | LetR [AChange] -- TODO: Need to figure out recursive binding times
   | CaseR ExprContext VEnv
@@ -63,8 +65,9 @@ data Frame =
 
 instance Show Frame where
   show End = "End"
-  show (AppL chs e n t p) = "AppL " ++ show n ++ " " ++ show t
-  show (AppR chs) = "AppR"
+  show (AppL nargs e p) = "AppL " ++ show nargs ++ " " ++ showSimpleEnv p
+  show (AppM ch chs e n t p) = "AppL " ++ show n ++ " " ++ show t
+  show (AppR ch chs) = "AppR " ++ show ch ++ " " ++ show chs
   show (LetL chs e n t p) = "LetL " ++ show n ++ " " ++ show t
   show (LetR chs) = "LetR"
   show (CaseR e p) = "CaseR"
@@ -106,15 +109,17 @@ limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 extendEnv :: VEnv -> [TName] -> [(TName,Int)] -> VEnv
 extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
-alloc :: FixInput -> LocalKont -> FixAACR r s e [Addr]
-alloc (Cont _ _ _ (AChangeClos lam env) store xclos) (AppR argvs:ls) = do
+alloc :: HasCallStack => FixInput -> LocalKont -> FixAACR r s e [Addr]
+alloc (Cont _ _ _ (AChangeClos lam env) store xclos) (AppL nargs e env':ls) = do
   let names = lamArgNames lam
-      addrs = [0..length argvs]
-  return $ zip names addrs
-alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppR argvs:ls) = do
+  if length names /= nargs then error ("alloc: " ++ show names ++ " " ++ show nargs)
+  else do
+    let addrs = [0..length names]
+    return $ zip names addrs
+alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppL nargs e env':ls) = do
   case exprOfCtx con of
     Con tn _ -> do
-      let addrs = [0..length argvs]
+      let addrs = [0..nargs]
           tp = typeOf tn
       case splitFunType tp of
         Just (args, _, _) -> return $ zip (map (\(n,t) -> TName n t Nothing) args) addrs
@@ -128,14 +133,15 @@ doStep i = do
       Eval expr env store xclos local kont meta ->
         -- trace ("Eval: " ++ showSimpleContext expr) $ do
         case exprOfCtx expr of
+          Lit l -> return $ AC $ injLit l env
           Var x _ -> do -- TODO: Eval top defs to a closure?
             let maddr  = M.lookup x env
-            case maddr of 
-              Just addr -> do 
+            case maddr of
+              Just addr -> do
                 let value = store M.! addr
                 v <- eachValue value
                 doStep $ Cont local kont meta v store xclos
-              Nothing -> do 
+              Nothing -> do
                 mdef <- bindExternal x
                 case mdef of
                   Nothing -> doBottom
@@ -146,14 +152,14 @@ doStep i = do
             doStep $ Cont local kont meta (AChangeConstr expr env) store xclos
           App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
             f <- focusChild 1 expr
-            doStep $ Eval f env store xclos (AppL [] expr 1 (length args) env : local) kont meta
+            doStep $ Eval f env store xclos (AppL (length args) expr (limitEnv env (fvs expr)) : local) kont meta
           App f args _ -> do
             f <- focusChild 0 expr
-            doStep $ Eval f env store xclos (AppL [] expr 1 (length args) env : local) kont meta
+            doStep $ Eval f env store xclos (AppL (length args) expr env : local) kont meta
           Lam args eff body -> do
-            doStep $ Cont local kont meta (AChangeClos expr env) store xclos
+            doStep $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
           TypeLam args body -> do
-            doStep $ Cont local kont meta (AChangeClos expr env) store xclos
+            doStep $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
           Case [e] bs -> do
             ex <- focusChild 0 expr
             doStep $ Eval ex env store xclos (CaseR expr env : local) kont meta
@@ -169,32 +175,29 @@ doStep i = do
       Cont lc kont meta achange store xclos -> do
         KC l k <- doStep (Pop lc kont)
         case l of
-          AppL chs e n t p:ls -> do
-            arge <- focusChild n e -- TODO: Assert the first value is a function
-            if n == t then doStep (Eval arge p store xclos (AppR (achange:chs):ls) k meta)
-            else doStep (Eval arge p store xclos (AppL (achange:chs) e (n + 1) t p:ls) k meta)
-          (AppR (AChangeClos clos env:argvs)):ls -> do
+          AppL n e p:ls -> do
+            let AChangeClos lam env = achange
+            arge <- focusChild n e
+            if n == 0 then doStep (Eval arge p store xclos (AppR achange []:ls) k meta)
+            else do
+              addrs <- alloc i l
+              doStep (Eval arge p store xclos (AppM achange addrs e 1 n p:ls) k meta)
+          AppM clos addrs e n t p:ls -> do
+            arge <- focusChild n e
+            let store' = storeUpdate store [addrs !! (n - 1)] [achange]
+            if n == t then doStep (Eval arge p store' xclos (AppR clos addrs:ls) k meta)
+            else doStep (Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta)
+          (AppR (AChangeClos clos env) addrs):ls -> do
             -- TODO: GC
             body <- focusBody clos
             let args = lamArgNames clos
-                free = fvs clos
-            addrs <- alloc i l
-            when (length addrs /= length (achange:argvs)) $ do
-              trace (show addrs) $ return ()
-              trace (show argvs) $ return ()
-              error "Cont AppR"
-            doStep (Eval body (extendEnv (limitEnv env free) args addrs) (storeUpdate store addrs (achange:argvs)) xclos [] k meta)
-          (AppR (ccon@(AChangeConstr con env):argvs)):ls -> do
+            doStep (Eval body (extendEnv env args addrs) store xclos [] k meta)
+          (AppR ccon@(AChangeConstr con env) addrs):ls -> do
             case exprOfCtx con of
               Con _ _ -> do
-                -- TODO: GC
+                -- TODO: GC && Environment for constructor args
                 addrs <- alloc i l
-                when (length addrs /= length argvs + 1) $ do
-                  trace (show addrs) $ return ()
-                  trace (show ccon) $ return ()
-                  trace (show argvs) $ return ()
-                  error "Cont AppR Con"
-                doStep (Cont l k meta (AChangeConstr con M.empty) (storeUpdate store addrs (ccon:argvs)) xclos)
+                doStep (Cont l k meta (AChangeConstr con M.empty) store xclos)
           (CaseR expr env): ls -> do
             case exprOfCtx expr of
               Case [e] bs -> do
@@ -207,26 +210,26 @@ doStep i = do
                     case matches of
                       Just (venv, vstore) -> do
                         body <- focusChild n expr
-                        let free = fvs body
+                        let free = fvs body `S.difference` bv pat
                         doStep (Eval body (limitEnv venv free) vstore xclos [] k meta)
                       Nothing -> matchBranches achange bs
                   matchBindPattern :: AChange -> Pattern -> VEnv -> VStore -> FixAACR r s e (Maybe (VEnv, VStore))
                   matchBindPattern achange pat venv vstore = do
                     case pat of
                       PatWild -> return $ Just (venv, vstore)
-                      PatVar x pat' -> 
+                      PatVar x pat' ->
                         let addr = (x, 0)
                             env' = M.insert x addr env
                         in matchBindPattern achange pat' env' (storeUpdate vstore [addr] [achange])
                       PatCon _ pats _ _ _ _ _ _ -> do
                         foldM (\isMatch (pat, n) -> do
-                            case isMatch of 
+                            case isMatch of
                               Just (venv, vstore) -> do
                                 matchBindPattern achange pat venv vstore
                               Nothing -> return Nothing
                           ) (Just (venv, vstore)) (zip pats [1..])
-                      PatLit x -> 
-                        case (x, achange) of 
+                      PatLit x ->
+                        case (x, achange) of
                           (LitInt i, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> if i == i2 then return (Just (venv, vstore)) else doBottom
                           (LitFloat f, AChangeLit (LiteralChangeFloat (LChangeSingle f2)) _) -> if f == f2 then return (Just (venv, vstore)) else doBottom
                           (LitChar c, AChangeLit (LiteralChangeChar (LChangeSingle c2)) _) -> if c == c2 then return (Just (venv, vstore)) else doBottom
@@ -288,7 +291,7 @@ instance Show FixChange where
   show ChangeBottom = "Bottom"
 
 instance Show FixInput where
-  show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr
+  show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr ++ " " ++ showSimpleEnv env ++ " " ++ show store
   show (Cont local kont meta achange store kclos) = "Cont " ++ show local ++ " " ++ show kont ++ " " ++ show meta ++ " " ++ show achange
   show (KStoreGet ctx) = "KStoreGet"
   show (CStoreGet meta) = "CStoreGet"

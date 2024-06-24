@@ -99,16 +99,10 @@ localFv :: C.Expr -> Set TName
 localFv expr
   = S.fromList $ filter (not . isQualified . C.getName) (tnamesList (fv expr)) -- trick: only local names are not qualified
 
-fvs :: ExprContext -> S.Set TName
-fvs ctx = localFv $ lambdaOfCtx ctx
-
-lambdaOfCtx :: ExprContext -> C.Expr
-lambdaOfCtx ctx = 
+fvs :: HasCallStack => ExprContext -> S.Set TName
+fvs ctx = 
   case maybeExprOfCtx ctx of
-    Nothing -> error "doEval: can't find expression"
-    Just expr ->
-      case expr of
-        C.Lam{} -> expr
+    Just expr -> localFv expr
 
 enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
@@ -226,11 +220,11 @@ closestRange ctx =
     ExprPrim e -> rangeNull
 
 simplePrettyExprN :: Env -> Int -> C.Expr -> Doc
-simplePrettyExprN env n e = 
+simplePrettyExprN env n e =
   if n <= 0 then text "..."
   else case e of
     C.Var n _ -> prettyVar env n
-    C.App f args _ -> simplePrettyExprN env (n -1) f <+> argsdoc
+    C.App f args _ -> simplePrettyExprN env (n -1) f <.> argsdoc
       where argsdoc =
               if length args > 2 then
                 tupled (map (simplePrettyExprN env (n - 1)) args ++ [text "..."])
@@ -242,6 +236,12 @@ simplePrettyExprN env n e =
     C.TypeLam ns e -> text "(tfn()" <.> simplePrettyExprN env (n - 1) e <.> text ")"
     C.TypeApp e ts -> text "tapp(" <.> simplePrettyExprN env (n - 1) e <.> text ")"
     C.Con n _ -> prettyVar env n
+    C.Lit n -> case n of
+      C.LitChar c -> text (show c)
+      C.LitInt i -> text (show i)
+      C.LitFloat f -> text (show f)
+      C.LitString s -> text (show s)
+
 
 simplePrettyBranch :: Env -> Int -> C.Branch -> Doc
 simplePrettyBranch env n (C.Branch pat guards) =
@@ -253,7 +253,7 @@ simplePrettyDefGroup env n dg =
   case dg of
     C.DefNonRec d -> simplePrettyDef env n d
     C.DefRec ds -> vcat (map (simplePrettyDef env n) ds)
-  
+
 simplePrettyDef :: Env -> Int -> C.Def -> Doc
 simplePrettyDef env n d =
   text "val" <+> pretty (C.defName d) <+> text "=" <--> indent 2 (simplePrettyExprN env (n - 1) (C.defExpr d))
@@ -267,9 +267,9 @@ showSimpleExpr e = show $ simplePrettyExpr simpleEnv e
 showSimpleContext ctx =
   let r = show (closestRange ctx) in
   -- show (contextId ctx) ++ " " ++ 
-  case maybeExprOfCtx ctx of 
+  case maybeExprOfCtx ctx of
     Just e -> showSimpleExpr e
-    Nothing -> 
+    Nothing ->
       case ctx of
         ModuleC _ _ n -> "Module " ++ show n
         DefCRec{} -> "DefRec(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
