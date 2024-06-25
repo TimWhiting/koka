@@ -259,13 +259,13 @@ closestRange ctx =
 
 simplePrettyExprN :: Env -> Int -> C.Expr -> Doc
 simplePrettyExprN env n e =
-  if n <= 0 then text "..."
+  if n <= 0 then text "."
   else case e of
     C.Var n _ -> prettyVar env n
     C.App f args _ -> simplePrettyExprN env (n -1) f <.> argsdoc
       where argsdoc =
               if length args > 2 then
-                tupled (map (simplePrettyExprN env (n - 1)) args ++ [text "..."])
+                tupled (map (simplePrettyExprN env (n - 1)) args ++ [text "."])
               else
                 tupled (map (simplePrettyExprN env (n - 1)) args)
     C.Lam ns _ e -> text "(fn" <.> tupled (map (prettyVar env) ns) <+> indent 2 (simplePrettyExprN env (n - 1) e) <.> text ")"

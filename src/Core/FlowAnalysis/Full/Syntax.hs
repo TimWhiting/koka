@@ -6,14 +6,12 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Maybe (catMaybes, mapMaybe, isJust, fromJust)
 import Data.Set(Set)
-import Common.Range
 import Compile.Module (Module(..))
 import qualified Syntax.Syntax as Syn
 import qualified Syntax.Syntax as S
 import Syntax.Pretty
 import Syntax.RangeMap (RangeInfo (..), rmFindFirst)
 import qualified Core.Core as C
-import Common.Name (Name(..))
 import Core.Core
 import Type.Type
 import Lib.PPrint
@@ -25,10 +23,13 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Syntax
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Full.AAC
-import Common.Failure (HasCallStack)
 import Core.FlowAnalysis.Full.AbstractValue
-import Debug.Trace (trace)
+import Core.FlowAnalysis.Full.Monad
+import Common.Failure (HasCallStack)
 import Common.NamePrim (nameMain)
+import Common.Name (Name(..))
+import Common.Range
+import Debug.Trace (trace)
 
 intV :: AbValue -> M.Map VEnv (SLattice Integer)
 intV a = fmap intVL (alits a)

@@ -77,6 +77,8 @@ library
       Core.FlowAnalysis.FixpointMonad
       Core.FlowAnalysis.Full.AAC
       Core.FlowAnalysis.Full.AbstractValue
+      Core.FlowAnalysis.Full.Monad
+      Core.FlowAnalysis.Full.Primitives
       Core.FlowAnalysis.Full.Syntax
       Core.FlowAnalysis.Literals
       Core.FlowAnalysis.Monad

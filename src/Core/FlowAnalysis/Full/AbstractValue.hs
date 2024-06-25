@@ -26,6 +26,7 @@ import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contain
 import qualified Core.FlowAnalysis.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)
+import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
     ( LiteralChange(..),
       LiteralLattice(LiteralLattice),
@@ -39,6 +40,7 @@ type VEnv = M.Map TName Addr
 
 data AChange =
   AChangeClos ExprContext VEnv
+  | AChangePrim Name ExprContext VEnv
   | AChangeClosApp ExprContext ExprContext VEnv -- This is a closure that has a different application for it's calling context abstraction
   | AChangeConstr ExprContext VEnv
   | AChangeLit LiteralChange VEnv
@@ -64,6 +66,8 @@ ctxOfClos res =
 
 instance Show AChange where
   show (AChangeClos expr env) =
+    showNoEnvClosure (expr, env)
+  show (AChangePrim name expr env) =
     showNoEnvClosure (expr, env)
   show (AChangeClosApp expr _ env) =
     showNoEnvClosure (expr, env)
@@ -140,7 +144,7 @@ showNoEnvClosure (ctx, env) = showSimpleContext ctx
 
 showSimpleEnv :: VEnv -> String
 showSimpleEnv c =
-  "<<>>"
+  "<<" ++ show c ++ ">>"
 
 showSimpleAbValueCtx :: (VEnv, AbValue) -> String
 showSimpleAbValueCtx (env, ab) =
