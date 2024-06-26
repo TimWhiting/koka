@@ -21,29 +21,30 @@ import Type.Type (splitFunType, typeAny)
 import Control.Monad (foldM)
 import GHC.Base (when)
 import Core.CoreVar (HasExpVar(fv), bv)
+import Lib.PPrint (vcat, text)
 
 type VStore = M.Map Addr AbValue
 data FixInput =
-  Eval ExprContext VEnv VStore KClos LocalKont (Maybe Kont) (Maybe MetaKont)
-  | Cont LocalKont (Maybe Kont) (Maybe MetaKont) AChange VStore KClos
+  Eval ExprContext VEnv VStore KClos LocalKont Kont MetaKont
+  | Cont LocalKont Kont MetaKont AChange VStore KClos
   | KStoreGet ExactContext
   | CStoreGet MetaKont
-  | Pop LocalKont (Maybe Kont)
-  | NoTop LocalKont (Maybe Kont)
+  | Pop LocalKont Kont
+  | NoTop LocalKont Kont
   deriving (Eq, Ord)
 
 data FixOutput a =
   A AbValue
-  | K (S.Set (LocalKont, Maybe Kont))
-  | C (S.Set (LocalKont, Maybe Kont, Maybe MetaKont))
+  | K (S.Set (LocalKont, Kont))
+  | C (S.Set (LocalKont, Kont, MetaKont))
   | B (S.Set Bool)
   | Bottom
   deriving (Eq, Ord)
 
 data FixChange =
   AC AChange
-  | KC LocalKont (Maybe Kont)
-  | CC LocalKont (Maybe Kont) (Maybe MetaKont)
+  | KC LocalKont Kont
+  | CC LocalKont Kont MetaKont
   | BC Bool
   | ChangeBottom
   deriving (Eq, Ord)
@@ -54,7 +55,8 @@ type PostFixAACR r s e a = PostFixAR r s e FixInput FixOutput FixChange a
 type PostFixAAC r s e = PostFixAACR r s e (FixOutput FixChange)
 
 data Frame =
-  End
+  EndProgram
+  | EndCall
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr]
@@ -63,7 +65,8 @@ data Frame =
   deriving (Eq, Ord)
 
 instance Show Frame where
-  show End = "End"
+  show EndProgram = "EndProgram"
+  show EndCall = "EndCall"
   show (AppL nargs e p) = "AppL " ++ show nargs ++ " " ++ showSimpleEnv p
   show (AppM ch chs e n t p) = "AppL " ++ show n ++ " " ++ show t
   show (AppR ch chs) = "AppR " ++ show ch ++ " " ++ show chs
@@ -75,21 +78,41 @@ type LocalKont = [Frame]
 type ApproxContext = (ExprContext, VEnv, Addr)
 type ExactContext = (ExprContext, VEnv, VStore, KClos)
 data Kont =
-  MPrecise ExactContext
-  | MApprox ApproxContext
-  deriving (Eq, Ord, Show)
+  KPrecise ExactContext
+  | KApprox ApproxContext
+  | KEnd
+  deriving (Eq, Ord)
+
+instance Show Kont where
+  show (KPrecise (e, v, s, k)) = "KPrecise " ++ showSimpleContext e ++ " " ++ showSimpleEnv v
+  show (KApprox (e, v, a)) = "KApprox " ++ showSimpleContext e ++ " " ++ showSimpleEnv v ++ " " ++ show a
+  show KEnd = "KEnd"
 
 data KontA =
-  KApprox LocalKont ApproxContext
-  | KExact LocalKont
+  KAppr LocalKont ApproxContext
+  | KPrec LocalKont
   deriving (Eq, Ord, Show)
 
 type KClos = M.Map Addr (S.Set VStore)
 data MetaKont =
   MReset ExprContext VEnv VStore KClos
   | MApply KontA AChange VStore KClos
+  | MEnd
   deriving (Eq, Ord, Show)
 
+approximate :: Addr -> KClos -> LocalKont -> Kont -> (KClos, KontA)
+approximate a x l KEnd = (x, KPrec l)
+approximate a x l (KPrecise (f, v, st, x1)) = ((x `unionK` x1) `unionK` M.singleton a (S.singleton st), KAppr l (f, v, a))
+approximate a x l (KApprox (f, v, b)) = let Just !xx = M.lookup b x in (x, KAppr l (f, v, a))
+
+unionK :: KClos -> KClos -> KClos
+unionK = M.unionWith S.union
+
+addKont :: ExactContext -> LocalKont -> Kont -> FixAACR r s e ()
+addKont c lk mk = lift $ push (KStoreGet c) (KC lk mk)
+
+addMetaKont :: MetaKont -> LocalKont -> Kont -> MetaKont -> FixAACR r s e ()
+addMetaKont c lk mk mmk = lift $ push (CStoreGet c) (CC lk mk mmk)
 
 storeLookup :: HasCallStack => TName -> VEnv -> VStore -> FixAACR r s e AChange
 storeLookup x env store = do
@@ -98,13 +121,17 @@ storeLookup x env store = do
       let value = store M.! addr
       eachValue value
     Nothing -> do
-      mdef <- bindExternal x
-      case mdef of
+      lam <- bindExternal x
+      case lam of
         Nothing -> doBottom
-        Just def -> do
-          lam <- focusChild 0 def
+        Just lam -> do
           return $ AChangeClos lam M.empty
 
+storeGet :: HasCallStack => VStore -> Addr -> FixAACR r s e AChange
+storeGet store addr = do
+  case M.lookup addr store of
+    Just value -> eachValue value
+    Nothing -> error $ "storeGet: " ++ show addr ++ " not found"
 
 tnamesCons :: Int -> [TName]
 tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
@@ -112,14 +139,43 @@ tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0.
 eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
 eachValue ab = each $ map return (changes ab)
 
-extendStore :: VStore -> (TName,Int) -> AChange -> VStore
+extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
 extendStore store i v =
   M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
 
 limitEnv :: VEnv -> S.Set TName -> VEnv
 limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 
-extendEnv :: VEnv -> [TName] -> [(TName,Int)] -> VEnv
+limitStore :: VStore -> S.Set Addr -> VStore
+limitStore store fvs = M.filterWithKey (\k _ -> k `S.member` fvs) store
+
+llEnv :: VEnv -> S.Set Addr
+llEnv env = S.fromList $ M.elems env
+
+llKont :: LocalKont -> S.Set Addr
+llKont l = S.unions (map llFrame l)
+
+-- TODO: Live locations for other continuations
+
+llFrame :: Frame -> S.Set Addr
+llFrame EndProgram = S.empty
+llFrame EndCall = S.empty
+llFrame (AppL _ _ env) = llEnv env
+llFrame (AppM v addrs _ _ _ env) = S.unions [llEnv env, S.fromList addrs, llV v]
+llFrame (AppR v addrs) = S.union (llV v) (S.fromList addrs)
+llFrame (LetL _ _ _ _ addrs _ env) = S.union (llEnv env) (S.fromList addrs)
+llFrame (CaseR _ env) = llEnv env
+
+llV :: AChange -> S.Set Addr
+llV achange =
+  case achange of
+    AChangeClos _ env -> llEnv env
+    AChangePrim _ _ env -> llEnv env
+    AChangeClosApp _ _ env -> llEnv env
+    AChangeConstr _ env -> llEnv env
+    AChangeLit _ env -> S.empty
+
+extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
 extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
 

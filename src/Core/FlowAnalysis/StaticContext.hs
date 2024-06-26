@@ -67,12 +67,17 @@ data ExprContext =
 isMain :: ExprContext -> Bool
 isMain ctx = nameStem (C.defName (defOfCtx ctx)) == "main"
 
-lamArgNames :: ExprContext -> [TName]
+lamArgNames :: HasCallStack => ExprContext -> [TName]
 lamArgNames ctx =
-  case maybeExprOfCtx ctx of
-    Just (C.Lam names _ _) -> names
-    Just (C.TypeLam _ (C.Lam names _ _)) -> names
-    _ -> error ("Not a lambda: " ++ show ctx)
+  lamExprArgNames (exprOfCtx ctx)
+
+lamExprArgNames :: HasCallStack => C.Expr -> [TName]
+lamExprArgNames e =
+  case e of
+    C.Lam names _ _ -> names
+    C.TypeLam _ expr -> lamExprArgNames expr
+    C.TypeApp expr _ -> lamExprArgNames expr
+    _ -> error ("Not a lambda: " ++ showSimpleExpr e)
 
 data ExprContextId = ExprContextId{
   exprId:: !Int,
@@ -167,13 +172,13 @@ ppContextPath ctx =
     ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
     ExprCTerm _ _ -> text "Query Error"
 
-lamVar :: Int -> ExprContext -> C.Expr
+lamVar :: HasCallStack => Int -> ExprContext -> C.Expr
 lamVar index ctx =
   case maybeExprOfCtx ctx of
     Just x -> lamVarExpr index x
     Nothing -> trace ("DemandAnalysis.lamVar: not a lambda " ++ show ctx) error "Not a lambda"
 
-lamVarExpr :: Int -> C.Expr -> C.Expr
+lamVarExpr :: HasCallStack => Int -> C.Expr -> C.Expr
 lamVarExpr index e =
   case e of
     C.Lam names _ _ -> C.Var (names !! index) InfoNone
@@ -184,7 +189,7 @@ lamVarExpr index e =
 lamVarDef :: C.Def -> C.Expr
 lamVarDef def = C.Var (TName (C.defName def) (C.defType def) Nothing) InfoNone
 
-letDefsOf :: ExprContext -> C.DefGroups
+letDefsOf :: HasCallStack => ExprContext -> C.DefGroups
 letDefsOf ctx =
   case exprOfCtx ctx of
     C.Let defs _ -> defs
@@ -262,7 +267,7 @@ simplePrettyExprN env n e =
   if n <= 0 then text "."
   else case e of
     C.Var n _ -> prettyVar env n
-    C.App f args _ -> simplePrettyExprN env (n -1) f <.> argsdoc
+    C.App f args _ -> simplePrettyExprN env n f <.> argsdoc
       where argsdoc =
               if length args > 2 then
                 tupled (map (simplePrettyExprN env (n - 1)) args ++ [text "."])
@@ -271,8 +276,8 @@ simplePrettyExprN env n e =
     C.Lam ns _ e -> text "(fn" <.> tupled (map (prettyVar env) ns) <+> indent 2 (simplePrettyExprN env (n - 1) e) <.> text ")"
     C.Let dgs e -> vcat (map (simplePrettyDefGroup env n) dgs ++ [simplePrettyExprN env (n - 1) e])
     C.Case e bs -> text "match" <+> simplePrettyExprN env (n - 1) (head e) <--> indent 2 (vcat (map (simplePrettyBranch env (n - 1)) bs))
-    C.TypeLam ns e -> text "(tfn()" <.> simplePrettyExprN env (n - 1) e <.> text ")"
-    C.TypeApp e ts -> text "tapp(" <.> simplePrettyExprN env (n - 1) e <.> text ")"
+    C.TypeLam ns e -> text "(tfn()" <.> simplePrettyExprN env n e <.> text ")"
+    C.TypeApp e ts -> text "tapp(" <.> simplePrettyExprN env n e <.> text ")"
     C.Con n _ -> prettyVar env n
     C.Lit n -> case n of
       C.LitChar c -> text (show c)
@@ -294,10 +299,10 @@ simplePrettyDefGroup env n dg =
 
 simplePrettyDef :: Env -> Int -> C.Def -> Doc
 simplePrettyDef env n d =
-  text "val" <+> pretty (C.defName d) <+> text "=" <--> indent 2 (simplePrettyExprN env (n - 1) (C.defExpr d))
+  text "val" <+> pretty (C.defName d) <+> text "=" <--> indent 2 (simplePrettyExprN env n (C.defExpr d))
 
 simplePrettyExpr :: Env -> C.Expr -> Doc
-simplePrettyExpr env e = simplePrettyExprN env 2 e
+simplePrettyExpr env e = simplePrettyExprN env 3 e
 
 showSimpleExpr :: C.Expr -> String
 showSimpleExpr e = show $ simplePrettyExpr simpleEnv e

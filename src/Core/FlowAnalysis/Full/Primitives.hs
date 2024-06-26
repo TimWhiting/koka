@@ -19,7 +19,7 @@ import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
 import Type.Unify (runUnifyEx, unify)
-import Common.Name (newLocallyQualified, newQualified)
+import Common.Name (newLocallyQualified, newQualified, Name)
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -30,6 +30,7 @@ nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
 nameIntGe  = coreIntName ">="
 nameIntOdd = coreIntName "is-odd"
+nameBoolNegate = newLocallyQualified "std/core/types" "bool" "!"
 
 nameCoreCharLt = newQualified "std/core/char" "<"
 nameCoreCharLtEq = newQualified "std/core/char" "<="
@@ -51,25 +52,94 @@ nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
+anyListChar :: VEnv -> AChange
 anyListChar = AChangeConstr $ ExprPrim C.exprTrue
+anyChar :: VEnv -> AChange
 anyChar = AChangeConstr $ ExprPrim C.exprTrue
+trueCon :: VEnv -> AChange
 trueCon = AChangeConstr $ ExprPrim C.exprTrue
+falseCon :: VEnv -> AChange
 falseCon = AChangeConstr $ ExprPrim C.exprFalse
 toChange :: Bool -> VEnv -> AChange
 toChange b env = if b then trueCon env else falseCon env
+anyBool :: (Ord i, Show d, Show (l d), Lattice l d) => VEnv -> FixT e s i l d AChange
 anyBool env = each [return $ toChange False env, return $ toChange True env]
-changeUnit env = AChangeConstr (ExprPrim C.exprUnit) env
+changeUnit :: VEnv -> AChange
+changeUnit = AChangeConstr (ExprPrim C.exprUnit)
 
 isPrimitive :: TName -> Bool
 isPrimitive tn =
   getName tn `elem` [
-    nameIntMul, nameIntDiv, nameIntMod, 
-    nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe, 
-    nameIntOdd, 
-    nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq, 
-    nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow, 
-    nameCoreCharInt, nameNumInt32Int, 
-    namePretendDecreasing, nameUnsafeTotalCast, 
-    nameNumRandom, 
-    nameCoreTrace, 
+    nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
+    nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
+    nameIntOdd,
+    nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
+    nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow,
+    nameCoreCharInt, nameNumInt32Int,
+    namePretendDecreasing, nameUnsafeTotalCast,
+    nameNumRandom,
+    nameCoreTrace,
     nameCorePrint, nameCorePrintln]
+
+intOp :: (Integer -> Integer -> Integer) -> [AChange] -> VEnv -> FixAACR x s e AChange
+intOp f [p1, p2] venv = do
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2))) venv
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> return $ AChangeLit (LiteralChangeInt LChangeTop) venv
+    _ -> doBottom
+
+charCmpOp :: (Char -> Char -> Bool) -> [AChange] -> VEnv -> FixAACR x s e AChange
+charCmpOp f [p1, p2] venv = do
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeChar (LChangeSingle c1)) _, AChangeLit (LiteralChangeChar (LChangeSingle c2)) _) -> return $! toChange (f c1 c2) venv
+    (AChangeLit (LiteralChangeChar _) _, AChangeLit (LiteralChangeChar _) _) -> anyBool venv
+    _ -> doBottom
+
+opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> VEnv -> FixAACR x s e AChange
+opCmpInt f [p1, p2] venv = do
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) venv
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> anyBool venv
+    _ -> doBottom
+
+doPrimitive :: Name -> [Addr] -> VEnv -> VStore -> FixAACR r s e AChange
+doPrimitive nm addrs env store = do
+  achanges <- mapM (storeGet store) addrs
+  trace ("Primitive: " ++ show nm ++ " " ++ show achanges) $ return ()
+  if nm == nameIntEq then
+    opCmpInt (==) achanges env
+  else if nm == nameIntLt then
+    opCmpInt (<=) achanges env
+  else if nm == nameIntLe then
+    opCmpInt (<) achanges env
+  else if nm == nameIntGt then
+    opCmpInt (>) achanges env
+  else if nm == nameIntGe then
+    opCmpInt (>=) achanges env
+  else if nm == nameIntAdd then
+    intOp (+) achanges env
+  else if nm == nameIntMul then
+    intOp (*) achanges env
+  else if nm == nameIntSub then
+    intOp (-) achanges env
+  else if nm == nameIntDiv then
+    intOp div achanges env
+  else if nm == nameIntMod then
+    intOp mod achanges env
+  else if nm == nameBoolNegate then
+    case achanges of
+      [AChangeConstr (ExprPrim e) _] | isExprTrue e -> return $ AChangeConstr (ExprPrim C.exprFalse) env
+      [AChangeConstr (ExprPrim e) _] | isExprFalse e -> return $ AChangeConstr (ExprPrim C.exprTrue) env
+      _ -> doBottom
+  else if nm == nameCoreCharLt then
+    charCmpOp (<) achanges env
+  else if nm == nameCoreCharLtEq then
+    charCmpOp (<=) achanges env
+  else if nm == nameCoreCharGt then
+    charCmpOp (>) achanges env
+  else if nm == nameCoreCharGtEq then
+    charCmpOp (>=) achanges env
+  else if nm == nameCoreCharEq then
+    charCmpOp (==) achanges env
+  else
+    error $ "doPrimitive: " ++ show nm

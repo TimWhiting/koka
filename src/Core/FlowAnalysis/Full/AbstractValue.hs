@@ -35,7 +35,7 @@ import Core.FlowAnalysis.Literals
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
-type Addr = (TName, Int)
+type Addr = (TName, ExprContextId)
 type VEnv = M.Map TName Addr
 
 data AChange =
@@ -68,7 +68,7 @@ instance Show AChange where
   show (AChangeClos expr env) =
     showNoEnvClosure (expr, env)
   show (AChangePrim name expr env) =
-    showNoEnvClosure (expr, env)
+    show name
   show (AChangeClosApp expr _ env) =
     showNoEnvClosure (expr, env)
   show (AChangeConstr expr env) =
@@ -128,7 +128,7 @@ instance Show AbValue where
   show (AbValue cls clsapp cntrs lit) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
-    (if M.null lit then "" else " lit: " ++ show (map show (M.toList lit)))
+    (if M.null lit then "" else " lit: " ++ show (map (show . snd) (M.toList lit)))
 
 instance Contains AbValue where
   contains :: AbValue -> AbValue -> Bool

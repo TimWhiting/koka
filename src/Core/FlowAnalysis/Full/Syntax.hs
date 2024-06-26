@@ -61,7 +61,7 @@ findMainBody = do
   case ctx of
     DefCNonRec{} -> do
       let name = unqualify $ getName $ defTName (defOfCtx ctx)
-      if "main" == nameStem name then do focusDefBody ctx
+      if "analyze" == nameStem name then do focusDefBody ctx
       else doBottom
     _ -> doBottom
 
@@ -82,7 +82,7 @@ runQueryAtRange bc build mod m doQuery = do
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
     case S.toList ctxs of
-      [] -> 
+      [] ->
         trace "No main context found" $
         return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
@@ -108,7 +108,7 @@ evalMain :: BuildContext
                                    Set Type), BuildContext)
 evalMain bc build mod m = do
   (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
-    q <- doStep (Eval ctx M.empty M.empty M.empty [] Nothing Nothing)
+    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd MEnd)
     addResult q
   return (r, bc)
 
@@ -142,15 +142,21 @@ escape [] = []
 
 instance Label (FixOutput m) where
   label (A a) = escape $ showSimpleAbValue a
-  label (K a) = "K"
-  label (C a) = "C"
-  label (B a) = "B"
+  label (K a) = escape $ show $ vcat [text "K" , hcat $ map (\(l, k) -> vcat $ showC (l, k)) (S.toList a)]
+  label (C a) = escape $ show $ vcat [text "C" , hcat $ map (\(l, k, m) -> vcat $ showCont (l, k, m)) (S.toList a)]
+  label (B a) = escape $ show $ vcat [text "B" , hcat $ map (text . show) (S.toList a)]
   label Bottom = "Bottom"
 
+showCont :: (LocalKont, Kont, MetaKont) -> [Doc]
+showCont (l, k, m) = [text $ show m, text $ show k, text "Local"] ++ map (text . show) l
+
+showC :: (LocalKont, Kont) -> [Doc]
+showC (l, k) = text (show k) : text "Local " : map (text . show) l
+
 instance Label FixInput where
-  label (Eval q _ _ _ _ _ _) = "EVAL: " ++ showSimpleContext q
-  label (Cont e _ _ _ _ _) = "CONT: "
-  label (KStoreGet _) = "KSTOREGET"
-  label (CStoreGet _) = "CSTOREGET"
-  label (Pop _ _) = "POP"
-  label (NoTop _ _) = "NOTOP"
+  label (Eval q env _ _ l k c) = escape $ show (vcat (text "EVAL": showCont (l, k, c) ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
+  label (Cont l k c ch _ _) = escape $ show (vcat $ text "CONT" :  showCont (l, k, c) ++ [text $ show ch])
+  label (KStoreGet c) = escape $ show (vcat [text "KSTOREGET", text (show c)])
+  label (CStoreGet c) = escape $ show (vcat [text "CSTOREGET", text (show c)])
+  label (Pop l c) = escape $ show (vcat $ text "POP" :  showC (l, c))
+  label (NoTop l c) = escape $ show (vcat $ text "NOTOP" : showC (l, c))

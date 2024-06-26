@@ -347,12 +347,22 @@ visitEachChild ctx analyze = do
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
 
-bindExternal :: TName -> FixAR r s e i o c (Maybe ExprContext)
-bindExternal name = do
+externalModule :: TName -> FixAR r s e i o c (Maybe ExprContext)
+externalModule name = do
   let modName = newModuleName (nameModule (getName name))
   (mod', ctx) <- loadModule modName
   if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
   else trace ("External variable binding not found " ++ show name) (return Nothing)
+
+bindExternal :: TName -> FixAR r s e i o c (Maybe ExprContext)
+bindExternal name = do
+  extMod <- externalModule name
+  case extMod of
+    Just modulectx -> do
+      withModuleCtx modulectx $ do
+        res <- getTopDefCtx modulectx (getName name)
+        return (Just res)
+    Nothing -> return Nothing
 
 maybeLoadModuleR :: ModuleName -> PostFixAR x s e i o c (Maybe Module)
 maybeLoadModuleR mn = do

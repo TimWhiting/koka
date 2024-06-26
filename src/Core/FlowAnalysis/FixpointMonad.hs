@@ -46,6 +46,7 @@ import Control.Monad.Cont.Class (callCC)
 import Data.Foldable (foldlM)
 import GHC.IORef (newIORef)
 import Data.IORef (writeIORef)
+import System.Process (callCommand)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
@@ -269,6 +270,7 @@ writeDependencyGraph mn cache = do
             ++ "\n}"
   -- trace (show edges) $ return ()
   writeFile ("scratch/debug/graph-" ++ mn ++ ".dot") dot
+  -- callCommand $ "dot -Tsvg scratch/debug/graph-" ++ mn ++ ".dot -o scratch/debug/graph-" ++ mn ++ ".svg"
   return ()
 
 -- Runs a fixpoint computation with an environment and state

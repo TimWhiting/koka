@@ -10,3 +10,9 @@ fun lp(a: bool, n)
 fun main()
   val res = lp(False, 2)
   res.println
+
+fun analyze()
+  if 8 <= 9 then id1(2)
+  else 
+    !id1(True)
+    3

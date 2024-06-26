@@ -354,7 +354,9 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
-                  liftIO $ evalMain bc (\_ -> error "Should not require loading") mod 0
+                  liftIO $ evalMain bc (\bc mn -> 
+                      runBuild term flags $ buildcTypeCheck [mn] bc
+                    ) mod 0
                   -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
                   --     runBuild term flags $ buildcTypeCheck [m] bc
                   --    ) bc core
