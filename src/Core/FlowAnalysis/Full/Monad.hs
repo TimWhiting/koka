@@ -152,8 +152,8 @@ limitStore store fvs = M.filterWithKey (\k _ -> k `S.member` fvs) store
 llEnv :: VEnv -> S.Set Addr
 llEnv env = S.fromList $ M.elems env
 
-llKont :: LocalKont -> S.Set Addr
-llKont l = S.unions (map llFrame l)
+llLKont :: LocalKont -> S.Set Addr
+llLKont l = S.unions (map llFrame l)
 
 -- TODO: Live locations for other continuations
 
@@ -174,6 +174,22 @@ llV achange =
     AChangeClosApp _ _ env -> llEnv env
     AChangeConstr _ env -> llEnv env
     AChangeLit _ env -> S.empty
+
+llAbValue :: AbValue -> S.Set Addr
+llAbValue ab = S.unions $ map llV $ changes ab
+
+llA :: Addr -> VStore -> S.Set Addr
+llA a store = maybe S.empty llAbValue (M.lookup a store)
+
+liveAddrs :: VStore -> S.Set Addr -> S.Set Addr
+liveAddrs store frontier =
+  recur frontier S.empty
+  where recur frontier marked =
+          if null frontier then marked
+          else
+            let (next, frontier') = S.deleteFindMin frontier in
+            recur (S.union (llA next store) frontier') (S.insert next marked)
+
 
 extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
 extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new

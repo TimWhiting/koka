@@ -33,7 +33,7 @@ alloc (Cont _ _ _ (AChangeClos lam env) store xclos) (AppL nargs e env':ls) = do
     let addrs = repeat (contextId lam)
     return $ zip names addrs
 alloc (Cont _ _ _ (AChangePrim n expr _) store xclos) (AppL nargs e0 env':ls) = do
-  let addrs = repeat $ contextId expr
+  let addrs = repeat $ contextId e0
   let names =  map (\x -> TName (newHiddenName $ nameStem n ++ show x) typeAny Nothing) (take nargs [0..])
   return $ zip names addrs
 alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppL nargs e env':ls) = do
@@ -67,7 +67,7 @@ doStep i = do
             else do
               -- trace ("Var: " ++ show x ++ " " ++ show env) $ return ()
               v <- storeLookup x env store
-              doStep $ Cont local kont meta v store xclos
+              doGC $ Cont local kont meta v store xclos
           Con _ _ -> do
             doStep $ Cont local kont meta (AChangeConstr expr env) store xclos
           App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
@@ -101,22 +101,22 @@ doStep i = do
             if n == 0 then do
               let AChangeClos lam env = achange
               body <- focusBody lam
-              doStep $ Eval body env store xclos ls k meta
+              doGC $ Eval body env store xclos ls k meta
             else if n == 1 then do
               arge <- focusChild 1 e
               addrs <- alloc i l
-              doStep $ Eval arge p store xclos (AppR achange addrs:ls) k meta
+              doGC $ Eval arge p store xclos (AppR achange addrs:ls) k meta
             else do
               arge <- focusChild 1 e
               -- trace ("AppL: " ++ show n ++ " " ++ show arge ++ " " ++ show p) $ return ()
               addrs <- alloc i l
-              doStep $ Eval arge p store xclos (AppM achange addrs e 1 n p:ls) k meta
+              doGC $ Eval arge p store xclos (AppM achange addrs e 1 n p:ls) k meta
           AppM clos addrs e n t p:ls -> do
             arge <- focusChild (n + 1) e
             -- trace ("AppM: " ++ show n ++ " " ++ show arge ++ " " ++ show p) $ return ()
             let store' = extendStore store (addrs !! (n - 1)) achange
-            if n + 1 == t then doStep $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
-            else doStep $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
+            if n + 1 == t then doGC $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
+            else doGC $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
           (AppR c@(AChangeClos clos env) addrs):ls -> do
             body <- focusBody clos
             let args = lamArgNames clos
@@ -125,17 +125,17 @@ doStep i = do
             let tau = (clos, env, store, xclos)
             addKont tau ls k
             -- trace ("AppR: " ++ show clos ++ " " ++ show (extendEnv env args addrs) ++ " " ++ show addrs) $ return ()
-            doStep $ Eval body (extendEnv env args addrs) store' xclos [EndCall] (KPrecise tau) meta
+            doGC $ Eval body (extendEnv env args addrs) store' xclos [EndCall] (KPrecise tau) meta
           (AppR ccon@(AChangeConstr con env) addrs):ls -> do
             case exprOfCtx con of
               Con _ _ -> do
                 let store' = extendStore store (last addrs) achange
                 -- trace ("AppR: " ++ show con ++ " " ++ show addrs) $ return ()
-                doStep $ Cont l k meta (AChangeConstr con (M.fromList (zip (tnamesCons (length addrs)) addrs))) store' xclos
+                doGC $ Cont l k meta (AChangeConstr con (M.fromList (zip (tnamesCons (length addrs)) addrs))) store' xclos
           (AppR cprim@(AChangePrim p ctx env) addrs):ls -> do
             let store' = extendStore store (last addrs) achange
             res <- doPrimitive p addrs env store'
-            doStep $ Cont ls k meta res store xclos
+            doGC $ Cont ls k meta res store xclos
           LetL bgi bgn bi bn addrs e p:ls -> do 
             let dgs = letDefsOf e
             -- trace ("LetL: " ++ show bgi ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ show addrs) $ return ()
@@ -143,18 +143,18 @@ doStep i = do
             if bgi + 1 == bgn && bi + 1 == bn then do
               -- trace ("LetL End") $ return ()
               body <- focusChild 0 e
-              doStep $ Eval body (extendEnv p (dgsTNames dgs) addrs) store' xclos ls k meta
+              doGC $ Eval body (extendEnv p (dgsTNames dgs) addrs) store' xclos ls k meta
             else if bi + 1 /= bn then do
               -- trace ("LetL In Group") $ return ()
               bind <- focusLetDefBinding bgi bi e
-              doStep $ Eval bind p store' xclos (LetL bgi bgn (bi + 1) bn addrs e p:ls) k meta
+              doGC $ Eval bind p store' xclos (LetL bgi bgn (bi + 1) bn addrs e p:ls) k meta
             else if bi + 1 == bn then do
               -- trace ("LetL End Group") $ return ()
               let bgi' = bgi + 1
               let bg = dgs !! bgi'
               bind <- focusLetDefBinding bgi' bi e
               addrs <- allocBindAddrs bg e
-              doStep $ Eval bind (extendEnv p (dgTNames bg) addrs) store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs e p:ls) k meta
+              doGC $ Eval bind (extendEnv p (dgTNames bg) addrs) store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs e p:ls) k meta
             else
               error "Cont LetL"
           (CaseR expr env): ls -> do
@@ -171,7 +171,7 @@ doStep i = do
                       Just (venv, vstore) -> do
                         body <- focusChild n expr
                         let free = fvs body `S.difference` bv pat
-                        doStep $ Eval body (limitEnv venv free) vstore xclos ls k meta
+                        doGC $ Eval body (limitEnv venv free) vstore xclos ls k meta
                       Nothing -> matchBranches achange bs
                   matchBindPattern :: HasCallStack => AChange -> Pattern -> VEnv -> VStore -> FixAACR r s e (Maybe (VEnv, VStore))
                   matchBindPattern achange pat venv vstore = do
@@ -231,3 +231,41 @@ doStep i = do
 
 -- TODO: Garbage collection
 -- TODO: Delimited Control
+
+llKont :: Kont -> S.Set Kont -> FixAACR r s e (S.Set Addr)
+llKont kont seen =
+  if kont `S.member` seen then return S.empty
+  else do 
+    case kont of
+      KEnd -> return S.empty
+      KPrecise ctx@(_, env, store, xclos) -> do
+        let envAddrs = llEnv env
+        KC l k <- doStep $ KStoreGet ctx
+        reckaddrs <- llKont k (S.insert kont seen)
+        return $ S.unions [envAddrs, reckaddrs, llLKont l]
+
+llMeta :: MetaKont -> FixAACR r s e (S.Set Addr)
+llMeta kont = return $ S.empty
+
+doGC :: FixInput -> FixAACR r s e FixChange
+doGC i = do
+  i' <- gc i
+  doStep i'
+
+gc :: FixInput ->  FixAACR r s e FixInput
+gc (Eval e env store kclos klocal kont meta) = do
+  let env' = limitEnv env (fv (exprOfCtx e)) 
+  let laddrs = llLKont klocal
+  kaddrs <- llKont kont S.empty
+  maddrs <- llMeta meta
+  let live = liveAddrs store (S.unions [llEnv env', laddrs, kaddrs, maddrs])
+  let store' = limitStore store live
+  return $ Eval e env' store' kclos klocal kont meta
+gc (Cont l k meta achange store xclos) = do
+  let laddrs = llLKont l
+  let vaddrs = llV achange
+  kaddrs <- llKont k S.empty
+  maddrs <- llMeta meta
+  let live = liveAddrs store (S.unions [vaddrs, laddrs, kaddrs, maddrs])
+  let store' = limitStore store live
+  return $ Cont l k meta achange store' xclos
