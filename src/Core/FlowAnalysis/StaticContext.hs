@@ -89,10 +89,22 @@ instance Show ExprContextId where
     showFullyExplicit (moduleName id) ++ ":" ++ show (exprId id)
 
 instance Eq ExprContext where
-  ctx1 == ctx2 = contextId ctx1 == contextId ctx2
+  ctx1 == ctx2 = 
+    case (ctx1, ctx2) of
+      (ExprPrim e1, ExprPrim e2) -> e1 == e2
+      _ -> contextId ctx1 == contextId ctx2
 
 instance Ord ExprContext where
-  compare ctx1 ctx2 = compare (contextId ctx1) (contextId ctx2)
+  compare ctx1 ctx2 = 
+    case (ctx1, ctx2) of
+      (ExprPrim e1, ExprPrim e2) -> compare e1 e2
+      _ -> compare (contextId ctx1) (contextId ctx2)
+
+instance Eq C.Expr where
+  e1 == e2 = showSimpleExpr e1 == showSimpleExpr e2
+
+instance Ord C.Expr where
+  compare e1 e2 = compare (showSimpleExpr e1) (showSimpleExpr e2)
 
 instance Ord Type where
   compare tp1 tp2 = compare (show $ ppType defaultEnv tp1) (show $ ppType defaultEnv tp2)
@@ -302,7 +314,7 @@ simplePrettyDef env n d =
   text "val" <+> pretty (C.defName d) <+> text "=" <--> indent 2 (simplePrettyExprN env n (C.defExpr d))
 
 simplePrettyExpr :: Env -> C.Expr -> Doc
-simplePrettyExpr env e = simplePrettyExprN env 3 e
+simplePrettyExpr env e = simplePrettyExprN env 4 e
 
 showSimpleExpr :: C.Expr -> String
 showSimpleExpr e = show $ simplePrettyExpr simpleEnv e

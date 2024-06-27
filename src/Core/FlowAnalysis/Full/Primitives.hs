@@ -52,18 +52,14 @@ nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
-anyListChar :: VEnv -> AChange
-anyListChar = AChangeConstr $ ExprPrim C.exprTrue
-anyChar :: VEnv -> AChange
-anyChar = AChangeConstr $ ExprPrim C.exprTrue
 trueCon :: VEnv -> AChange
 trueCon = AChangeConstr $ ExprPrim C.exprTrue
 falseCon :: VEnv -> AChange
 falseCon = AChangeConstr $ ExprPrim C.exprFalse
 toChange :: Bool -> VEnv -> AChange
 toChange b env = if b then trueCon env else falseCon env
-anyBool :: (Ord i, Show d, Show (l d), Lattice l d) => VEnv -> FixT e s i l d AChange
-anyBool env = each [return $ toChange False env, return $ toChange True env]
+anyBool :: VEnv -> FixAACR x s e AChange
+anyBool env = each [return $ toChange True env, return $ toChange False env]
 changeUnit :: VEnv -> AChange
 changeUnit = AChangeConstr (ExprPrim C.exprUnit)
 
@@ -99,7 +95,9 @@ opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> VEnv -> FixAACR x s e A
 opCmpInt f [p1, p2] venv = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) venv
-    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> anyBool venv
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> 
+      trace "opCmpInt: top" $
+      anyBool venv
     _ -> doBottom
 
 doPrimitive :: Name -> [Addr] -> VEnv -> VStore -> FixAACR r s e AChange

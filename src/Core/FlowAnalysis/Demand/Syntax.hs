@@ -109,11 +109,11 @@ sourceEnvCtx ctx =
         SourceExtern ex -> show (ppSyntaxExtern ex <+> text e)
         SourceNotFound -> "Not found" ++ e
 
-writeDemandDependencyGraph :: forall r e x . M.Map FixInput (FixOutput AFixChange, Integer, [ContX (DEnv e) (State r e x) FixInput FixOutput AFixChange]) -> IO ()
+writeDemandDependencyGraph :: forall r e x . M.Map FixInput (FixOutput AFixChange, Integer, [ContX (DEnv e) (State r e x) FixInput FixOutput AFixChange], [ContF (DEnv e) (State r e x) FixInput FixOutput AFixChange]) -> IO ()
 writeDemandDependencyGraph cache = do
   let cache' = M.filterWithKey (\k v -> case k of {QueryInput _ -> True; _ -> False}) cache
-  let values = M.foldl (\acc (v, toId, conts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
-  let nodes = M.foldlWithKey (\acc k (v, toId, conts) -> (toId,k,v):acc) [] cache'
+  let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
+  let nodes = M.foldlWithKey (\acc k (v, toId, conts, fconts) -> (toId,k,v):acc) [] cache'
   let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
   let dot = "digraph G {\n"
             ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
@@ -174,4 +174,4 @@ runQueryAtRange bc build (r, ri) mod kind m doQuery = do
                           ress' <- mapM getAbResult (M.toList resM)
                           return (ress', buildc')
   writeDemandDependencyGraph l
-  return (M.map (\(x, _, _) -> x) l, r, bc)
+  return (M.map (\(x, _, _, _) -> x) l, r, bc)

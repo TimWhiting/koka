@@ -99,8 +99,10 @@ runQueryAtRange bc build mod m doQuery = do
                           ress' <- getAbResult resM
                           trace ("ress': " ++ show ress') $ return ()
                           return (Just ress', buildc')
+  -- trace ("l: " ++ show (length l)) $ return ()
   writeDependencyGraph (moduleNameToPath (modName mod)) l
-  return (M.map (\(x, _, _) -> x) l, r, bc)
+  writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
+  return (M.map (\(x, _, _, _) -> x) l, r, bc)
 
 evalMain :: BuildContext
   -> TypeChecker -> Module -> Int
@@ -111,6 +113,21 @@ evalMain bc build mod m = do
     q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd MEnd)
     addResult q
   return (r, bc)
+
+writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
+writeSimpleDependencyGraph name cache = do
+  let cache' = M.filterWithKey (\k v -> case k of {Eval {} -> True; Cont {} -> True;  _ -> False}) cache
+  -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
+  let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
+  let nodes = M.foldlWithKey (\acc k (v, toId, conts, fconts) -> (toId,k,v):acc) [] cache'
+  let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
+  let dot = "digraph G {\n"
+            ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
+            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes)
+            ++ "\n 0 [label=\"Start\"]\n"
+            ++ "\n}"
+  writeFile ("scratch/debug/graph_" ++ name ++ ".dot") dot
+  return ()
 
 getAbResult :: AbValue -> PostFixAR x s e i o c ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type)
 getAbResult res = do
@@ -143,20 +160,22 @@ escape [] = []
 instance Label (FixOutput m) where
   label (A a) = escape $ showSimpleAbValue a
   label (K a) = escape $ show $ vcat [text "K" , hcat $ map (\(l, k) -> vcat $ showC (l, k)) (S.toList a)]
+  label (KK a) = escape $ show $ vcat [text "KK" , hcat $ map (\(l, k, _) -> vcat $ showC (l, k)) (S.toList a)]
   label (C a) = escape $ show $ vcat [text "C" , hcat $ map (\(l, k, m) -> vcat $ showCont (l, k, m)) (S.toList a)]
   label (B a) = escape $ show $ vcat [text "B" , hcat $ map (text . show) (S.toList a)]
   label Bottom = "Bottom"
 
 showCont :: (LocalKont, Kont, MetaKont) -> [Doc]
-showCont (l, k, m) = [text $ show m, text $ show k, text "Local"] ++ map (text . show) l
+showCont (l, k, m) = [text $ show m, text $ show k, text "Local"] ++ map (text . show) (reverse l)-- (take 2 $ reverse l)
 
 showC :: (LocalKont, Kont) -> [Doc]
-showC (l, k) = text (show k) : text "Local " : map (text . show) l
+showC (l, k) = text (show k) : text "Local " : map (text . show) (reverse l)-- (take 2 $ reverse l)
 
 instance Label FixInput where
   label (Eval q env _ _ l k c) = escape $ show (vcat (text "EVAL": showCont (l, k, c) ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
   label (Cont l k c ch _ _) = escape $ show (vcat $ text "CONT" :  showCont (l, k, c) ++ [text $ show ch])
-  label (KStoreGet c) = escape $ show (vcat [text "KSTOREGET", text (show c)])
+  label (KStoreGet (e, v, s, k)) = escape $ show (vcat [text "KSTOREGET", text (show e)])
+  label (KApproxGet (e, v, s)) = escape $ show (vcat [text "KAPPROXGET", text (show e)])
   label (CStoreGet c) = escape $ show (vcat [text "CSTOREGET", text (show c)])
   label (Pop l c) = escape $ show (vcat $ text "POP" :  showC (l, c))
   label (NoTop l c) = escape $ show (vcat $ text "NOTOP" : showC (l, c))

@@ -28,6 +28,7 @@ data FixInput =
   Eval ExprContext VEnv VStore KClos LocalKont Kont MetaKont
   | Cont LocalKont Kont MetaKont AChange VStore KClos
   | KStoreGet ExactContext
+  | KApproxGet (ExprContext, VEnv, VStore) -- Reverse lookup all the addresses 
   | CStoreGet MetaKont
   | Pop LocalKont Kont
   | NoTop LocalKont Kont
@@ -37,6 +38,7 @@ data FixOutput a =
   A AbValue
   | K (S.Set (LocalKont, Kont))
   | C (S.Set (LocalKont, Kont, MetaKont))
+  | KK (S.Set (LocalKont, Kont, KClos))
   | B (S.Set Bool)
   | Bottom
   deriving (Eq, Ord)
@@ -44,6 +46,7 @@ data FixOutput a =
 data FixChange =
   AC AChange
   | KC LocalKont Kont
+  | KKC LocalKont Kont KClos
   | CC LocalKont Kont MetaKont
   | BC Bool
   | ChangeBottom
@@ -67,10 +70,10 @@ data Frame =
 instance Show Frame where
   show EndProgram = "EndProgram"
   show EndCall = "EndCall"
-  show (AppL nargs e p) = "AppL " ++ show nargs ++ " " ++ showSimpleEnv p
-  show (AppM ch chs e n t p) = "AppL " ++ show n ++ " " ++ show t
-  show (AppR ch chs) = "AppR " ++ show ch ++ " " ++ show chs
-  show (CaseR e p) = "CaseR"
+  show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
+  show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
+  show (AppR ch chs) = "AppR " ++ show ch
+  show (CaseR e p) = "CaseR " ++ showSimpleContext e
   show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " " ++ showSimpleEnv p
 
 type LocalKont = [Frame]
@@ -109,7 +112,9 @@ unionK :: KClos -> KClos -> KClos
 unionK = M.unionWith S.union
 
 addKont :: ExactContext -> LocalKont -> Kont -> FixAACR r s e ()
-addKont c lk mk = lift $ push (KStoreGet c) (KC lk mk)
+addKont ctx@(expr, env, store, kclos) lk mk = do
+  lift $ push (KStoreGet ctx) (KC lk mk)
+  lift $ push (KApproxGet (expr, env, store)) (KKC lk mk kclos)
 
 addMetaKont :: MetaKont -> LocalKont -> Kont -> MetaKont -> FixAACR r s e ()
 addMetaKont c lk mk mmk = lift $ push (CStoreGet c) (CC lk mk mmk)
@@ -143,19 +148,30 @@ extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
 extendStore store i v =
   M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
 
+extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
+extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
+
+entails :: KClos -> KClos -> Bool
+entails a b =
+  M.isSubmapOfBy (\a b -> S.isSubsetOf a b) b a
+
 limitEnv :: VEnv -> S.Set TName -> VEnv
 limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 
 limitStore :: VStore -> S.Set Addr -> VStore
 limitStore store fvs = M.filterWithKey (\k _ -> k `S.member` fvs) store
 
+konts :: ApproxContext -> KClos -> FixAACR r s e [(LocalKont, Kont)]
+konts (e, env, a) kclos = do
+  ress' <- mapM (\store -> memoFull (KApproxGet (e, env, store)) doBottom) (S.toList $ kclos M.! a)
+  let res = S.unions (map (\(KK k) -> k) ress')
+  return $ map (\(l,k,kc) -> (l,k)) $ filter (\(l,k, kclos') -> kclos `entails` kclos') (S.toList res)
+
 llEnv :: VEnv -> S.Set Addr
 llEnv env = S.fromList $ M.elems env
 
 llLKont :: LocalKont -> S.Set Addr
 llLKont l = S.unions (map llFrame l)
-
--- TODO: Live locations for other continuations
 
 llFrame :: Frame -> S.Set Addr
 llFrame EndProgram = S.empty
@@ -190,10 +206,79 @@ liveAddrs store frontier =
             let (next, frontier') = S.deleteFindMin frontier in
             recur (S.union (llA next store) frontier') (S.insert next marked)
 
+llKont :: Kont -> KClos -> S.Set Kont -> FixAACR r s e (S.Set Addr)
+llKont kont kclos seen =
+  if kont `S.member` seen then return S.empty
+  else do 
+    case kont of
+      KEnd -> return S.empty
+      KPrecise ctx@(_, env, store, xclos) -> do
+        let envAddrs = llEnv env
+        K lks <- memoFull (KStoreGet ctx) doBottom 
+        (seen, addrs) <- foldM (\(seen, addrs) (l, k) -> do
+              addrs <- llKont k kclos seen
+              return (S.insert k seen, S.union addrs (llLKont l))
+          ) (S.insert kont seen, envAddrs) lks
+        return addrs
+      KApprox ctx@(_, env, a) -> do
+        let envAddrs = llEnv env
+        reckaddrs <- llApprox ctx kclos (S.insert kont seen)
+        return $ S.unions [envAddrs, reckaddrs]
 
-extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
-extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
+llApprox:: ApproxContext -> KClos -> S.Set Kont -> FixAACR r s e (S.Set Addr)
+llApprox appr@(e, env, a) kclos seen = do
+  lks <- konts appr kclos
+  foldM (\acc (l,k) -> do
+    kaddrs <- llKont k kclos seen
+    return $ S.union acc (S.unions [llLKont l, kaddrs])
+    ) (S.singleton a) lks
 
+llKontA :: KontA -> KClos -> FixAACR r s e (S.Set Addr)
+llKontA (KAppr l k) kclos = do
+  llK <- llApprox k kclos S.empty
+  return $ S.union llK (llLKont l)
+llKontA (KPrec l) kclos = return $ llLKont l
+
+llMeta :: MetaKont -> KClos -> S.Set MetaKont -> FixAACR r s e (S.Set Addr)
+llMeta kont kclos seen = 
+  if kont `S.member` seen then return S.empty
+  else do
+    case kont of
+      MEnd -> return S.empty
+      MApply ka v store kclos' -> do
+        llKA <- llKontA ka kclos'
+        let vaddrs = llV v
+        rest <- other
+        return $ S.unions [llKA, vaddrs, rest]
+      MReset e env store kclos' -> do
+        let envAddrs = llEnv env
+        rest <- other
+        return $ S.unions [envAddrs, rest]
+  where other = do
+          C res <- memoFull (CStoreGet kont) doBottom
+          foldM (\acc (l, k, m) -> do
+            kaddrs <- llKont k kclos S.empty
+            maddrs <- llMeta m kclos (S.insert kont seen)
+            return $ S.union acc (S.unions [llLKont l, kaddrs, maddrs])
+            ) S.empty (S.toList res)
+
+gc :: FixInput ->  FixAACR r s e FixInput
+gc (Eval e env store kclos klocal kont meta) = do
+  let env' = limitEnv env (fv (exprOfCtx e)) 
+  let laddrs = llLKont klocal
+  kaddrs <- llKont kont kclos S.empty
+  maddrs <- llMeta meta kclos S.empty
+  let live = liveAddrs store (S.unions [llEnv env', laddrs, kaddrs, maddrs])
+  let store' = limitStore store live
+  return $ Eval e env' store' kclos klocal kont meta
+gc (Cont l k meta achange store kclos) = do
+  let laddrs = llLKont l
+  let vaddrs = llV achange
+  kaddrs <- llKont k kclos S.empty
+  maddrs <- llMeta meta kclos S.empty
+  let live = liveAddrs store (S.unions [vaddrs, laddrs, kaddrs, maddrs])
+  let store' = limitStore store live
+  return $ Cont l k meta achange store' kclos
 
 instance Show (FixOutput a) where
   show (A x) = show x
@@ -211,7 +296,7 @@ instance Show FixChange where
 
 instance Show FixInput where
   show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr ++ " " ++ showSimpleEnv env ++ show store ++ show local
-  show (Cont local kont meta achange store kclos) = "Cont " ++ show local ++ " " ++ show kont ++ " " ++ show meta ++ " " ++ show achange
+  show (Cont local kont meta achange store kclos) = "Cont " ++ show local ++ " " ++ show kont ++ " " ++ show meta ++ " " ++ show achange ++ " " ++ show store
   show (KStoreGet ctx) = "KStoreGet"
   show (CStoreGet meta) = "CStoreGet"
   show (Pop local kont) = "Pop"
@@ -225,6 +310,8 @@ instance Lattice FixOutput FixChange where
   insert (AC a) (A x) = A $ addChange x a
   insert (KC l k) (K x) = K $ S.insert (l, k) x
   insert (KC l k) Bottom = K $ S.singleton (l, k)
+  insert (KKC l k kclos) (KK x) = KK $ S.insert (l, k, kclos) x
+  insert (KKC l k kclos) Bottom = KK $ S.singleton (l, k, kclos)
   insert (CC l k c) (C x) = C $ S.insert (l, k, c) x
   insert (CC l k c) Bottom = C $ S.singleton (l, k, c)
   insert (BC b) (B x) = B $ S.insert b x
@@ -235,17 +322,20 @@ instance Lattice FixOutput FixChange where
   join x Bottom = x
   join (A x) (A y) = A (joinAbValue x y)
   join (K x) (K y) = K (S.union x y)
+  join (KK x) (KK y) = KK (S.union x y)
   join (C x) (C y) = C (S.union x y)
   join (B x) (B y) = B (S.union x y)
   lte ChangeBottom _ = True
   lte _ Bottom = False
   lte (CC l k c) (C y) = (l, k, c) `S.member` y
   lte (KC l k) (K y) = (l, k) `S.member` y
+  lte (KKC l k kclos) (KK y) = (l, k, kclos) `S.member` y
   lte (AC x) (A y) = x `changeIn` y
   lte (BC x) (B y) = x `elem` y
   lte x y = error ("lte: " ++ show x ++ " " ++ show y)
   elems (A a) = map AC $ changes a
   elems (K x) = map (uncurry KC) $ S.toList x
+  elems (KK x) = map (\(l,k,c) -> KKC l k c) $ S.toList x
   elems (C x) = map (\(l,k,c) -> CC l k c) $ S.toList x
   elems (B x) = map BC $ S.toList x
   elems Bottom = []
