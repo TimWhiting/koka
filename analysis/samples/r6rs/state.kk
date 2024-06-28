@@ -22,6 +22,9 @@ fun g(x)
   if x then g(True)
   else !y
 
+fun analyze()
+  g(False)
+
 fun main()
   val res = g(False)
   res.println

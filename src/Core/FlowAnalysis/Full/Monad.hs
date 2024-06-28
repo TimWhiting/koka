@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Core.FlowAnalysis.Full.Monad where
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -21,14 +22,14 @@ import Type.Type (splitFunType, typeAny)
 import Control.Monad (foldM)
 import GHC.Base (when)
 import Core.CoreVar (HasExpVar(fv), bv)
-import Lib.PPrint (vcat, text)
+import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 
 type VStore = M.Map Addr AbValue
 data FixInput =
   Eval ExprContext VEnv VStore KClos LocalKont Kont MetaKont
   | Cont LocalKont Kont MetaKont AChange VStore KClos
   | KStoreGet ExactContext
-  | KApproxGet (ExprContext, VEnv, VStore) -- Reverse lookup all the addresses 
+  | KApproxGet (AChange, AChange, VStore) -- Reverse lookup all the addresses 
   | CStoreGet MetaKont
   | Pop LocalKont Kont
   | NoTop LocalKont Kont
@@ -67,19 +68,10 @@ data Frame =
   | CaseR ExprContext VEnv
   deriving (Eq, Ord)
 
-instance Show Frame where
-  show EndProgram = "EndProgram"
-  show EndCall = "EndCall"
-  show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
-  show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
-  show (AppR ch chs) = "AppR " ++ show ch
-  show (CaseR e p) = "CaseR " ++ showSimpleContext e
-  show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " " ++ showSimpleEnv p
-
 type LocalKont = [Frame]
 
-type ApproxContext = (ExprContext, VEnv, Addr)
-type ExactContext = (ExprContext, VEnv, VStore, KClos)
+type ApproxContext = (AChange, AChange, Addr)
+type ExactContext = (AChange, AChange, VStore, KClos)
 data Kont =
   KPrecise ExactContext
   | KApprox ApproxContext
@@ -87,8 +79,8 @@ data Kont =
   deriving (Eq, Ord)
 
 instance Show Kont where
-  show (KPrecise (e, v, s, k)) = "KPrecise " ++ showSimpleContext e ++ " " ++ showSimpleEnv v
-  show (KApprox (e, v, a)) = "KApprox " ++ showSimpleContext e ++ " " ++ showSimpleEnv v ++ " " ++ show a
+  show (KPrecise (e, v, s, k)) = "KPrecise " ++ show e ++ " " ++ show v
+  show (KApprox (e, v, a)) = "KApprox " ++ show e ++ " " ++ show v ++ " " ++ show a
   show KEnd = "KEnd"
 
 data KontA =
@@ -112,9 +104,9 @@ unionK :: KClos -> KClos -> KClos
 unionK = M.unionWith S.union
 
 addKont :: ExactContext -> LocalKont -> Kont -> FixAACR r s e ()
-addKont ctx@(expr, env, store, kclos) lk mk = do
+addKont ctx@(clos, arg, store, kclos) lk mk = do
   lift $ push (KStoreGet ctx) (KC lk mk)
-  lift $ push (KApproxGet (expr, env, store)) (KKC lk mk kclos)
+  lift $ push (KApproxGet (clos, arg, store)) (KKC lk mk kclos)
 
 addMetaKont :: MetaKont -> LocalKont -> Kont -> MetaKont -> FixAACR r s e ()
 addMetaKont c lk mk mmk = lift $ push (CStoreGet c) (CC lk mk mmk)
@@ -123,9 +115,11 @@ storeLookup :: HasCallStack => TName -> VEnv -> VStore -> FixAACR r s e AChange
 storeLookup x env store = do
   case M.lookup x env of
     Just addr -> do
-      let value = store M.! addr
-      eachValue value
+      case M.lookup addr store of
+        Just value -> eachValue value
+        Nothing -> error ("storeLookup: " ++ show addr ++ " not found")
     Nothing -> do
+      -- trace ("storeLookup: " ++ show x ++ " not found") $ return ()
       lam <- bindExternal x
       case lam of
         Nothing -> doBottom
@@ -200,37 +194,37 @@ llA a store = maybe S.empty llAbValue (M.lookup a store)
 liveAddrs :: VStore -> S.Set Addr -> S.Set Addr
 liveAddrs store frontier =
   recur frontier S.empty
-  where recur frontier marked =
-          if null frontier then marked
+  where recur left marked =
+          if null left then marked
           else
-            let (next, frontier') = S.deleteFindMin frontier in
-            recur (S.union (llA next store) frontier') (S.insert next marked)
+            let (next, nextLeft) = S.deleteFindMin left
+                newMarked = S.insert next marked
+                newFrontier = S.union (llA next store) nextLeft `S.difference` marked in
+            recur newFrontier newMarked
 
 llKont :: Kont -> KClos -> S.Set Kont -> FixAACR r s e (S.Set Addr)
 llKont kont kclos seen =
   if kont `S.member` seen then return S.empty
-  else do 
+  else do
     case kont of
       KEnd -> return S.empty
-      KPrecise ctx@(_, env, store, xclos) -> do
-        let envAddrs = llEnv env
-        K lks <- memoFull (KStoreGet ctx) doBottom 
+      KPrecise ctx@(clos, arg, store, xclos) -> do
+        K lks <- memoFull (KStoreGet ctx) doBottom
         (seen, addrs) <- foldM (\(seen, addrs) (l, k) -> do
               addrs <- llKont k kclos seen
               return (S.insert k seen, S.union addrs (llLKont l))
-          ) (S.insert kont seen, envAddrs) lks
+          ) (S.insert kont seen, S.union (llV clos) (llV arg)) lks
         return addrs
-      KApprox ctx@(_, env, a) -> do
-        let envAddrs = llEnv env
+      KApprox ctx@(clos, arg, a) -> do
         reckaddrs <- llApprox ctx kclos (S.insert kont seen)
-        return $ S.unions [envAddrs, reckaddrs]
+        return $ S.unions [llV clos, llV arg, reckaddrs]
 
 llApprox:: ApproxContext -> KClos -> S.Set Kont -> FixAACR r s e (S.Set Addr)
 llApprox appr@(e, env, a) kclos seen = do
   lks <- konts appr kclos
   foldM (\acc (l,k) -> do
     kaddrs <- llKont k kclos seen
-    return $ S.union acc (S.unions [llLKont l, kaddrs])
+    return $ S.unions [acc, llLKont l, kaddrs]
     ) (S.singleton a) lks
 
 llKontA :: KontA -> KClos -> FixAACR r s e (S.Set Addr)
@@ -240,7 +234,7 @@ llKontA (KAppr l k) kclos = do
 llKontA (KPrec l) kclos = return $ llLKont l
 
 llMeta :: MetaKont -> KClos -> S.Set MetaKont -> FixAACR r s e (S.Set Addr)
-llMeta kont kclos seen = 
+llMeta kont kclos seen =
   if kont `S.member` seen then return S.empty
   else do
     case kont of
@@ -264,12 +258,17 @@ llMeta kont kclos seen =
 
 gc :: FixInput ->  FixAACR r s e FixInput
 gc (Eval e env store kclos klocal kont meta) = do
-  let env' = limitEnv env (fv (exprOfCtx e)) 
+  trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
+  let env' = limitEnv env (fv (exprOfCtx e))
+  trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env') ++ "\n") $ return ()
   let laddrs = llLKont klocal
   kaddrs <- llKont kont kclos S.empty
   maddrs <- llMeta meta kclos S.empty
   let live = liveAddrs store (S.unions [llEnv env', laddrs, kaddrs, maddrs])
+  trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
+  trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let store' = limitStore store live
+  trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
   return $ Eval e env' store' kclos klocal kont meta
 gc (Cont l k meta achange store kclos) = do
   let laddrs = llLKont l
@@ -279,6 +278,21 @@ gc (Cont l k meta achange store kclos) = do
   let live = liveAddrs store (S.unions [vaddrs, laddrs, kaddrs, maddrs])
   let store' = limitStore store live
   return $ Cont l k meta achange store' kclos
+
+showStore store = show $ pretty store
+
+instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
+  pretty amap =
+      vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
+
+instance Pretty AbValue where
+  pretty ab = text $ showSimpleAbValue ab
+
+instance Pretty TName where
+  pretty (TName n t _) = hcat [pretty n, text ":", pretty t]
+
+instance Pretty ExprContextId where
+  pretty id = text $ show id
 
 instance Show (FixOutput a) where
   show (A x) = show x
@@ -294,12 +308,25 @@ instance Show FixChange where
   show (BC b) = show b
   show ChangeBottom = "Bottom"
 
+prettyLocal :: LocalKont -> Doc
+prettyLocal l = vcat $ map (text . show) (reverse l)
+
+
+instance Show Frame where
+  show EndProgram = "EndProgram"
+  show EndCall = "EndCall"
+  show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
+  show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
+  show (AppR ch chs) = "AppR " ++ show ch
+  show (CaseR e p) = "CaseR " ++ showSimpleContext e
+  show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " "
+
 instance Show FixInput where
-  show (Eval expr env store kclos local kont meta) = "Eval " ++ showSimpleContext expr ++ " " ++ showSimpleEnv env ++ show store ++ show local
-  show (Cont local kont meta achange store kclos) = "Cont " ++ show local ++ " " ++ show kont ++ " " ++ show meta ++ " " ++ show achange ++ " " ++ show store
+  show (Eval expr env store kclos local kont meta) = show $ vcat [text "Eval", indent 2 (vcat [prettyLocal local, text (showSimpleContext expr), pretty env, pretty store])]
+  show (Cont local kont meta achange store kclos) = show $ vcat [text "Cont", indent 2 (vcat [prettyLocal local, text (show kont), text (show meta), text (show achange), pretty store])]
   show (KStoreGet ctx) = "KStoreGet"
   show (CStoreGet meta) = "CStoreGet"
-  show (Pop local kont) = "Pop"
+  show (Pop local kont) = "Pop " ++ show local ++ " " ++ show kont
   show (NoTop local kont) = "NoTop"
 
 instance Lattice FixOutput FixChange where

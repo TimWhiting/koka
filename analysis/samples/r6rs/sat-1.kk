@@ -8,6 +8,9 @@ fun try(f: (bool) -> bool)
 fun sat-solve4(p)
   try(fn(n1) try(fn(n2) try(fn(n3) try(fn(n4) p(n1, n2, n3, n4)))))
 
+fun analyze()
+  sat-solve4(phi)
+
 fun main()
   val res = sat-solve4(phi)
   res.println

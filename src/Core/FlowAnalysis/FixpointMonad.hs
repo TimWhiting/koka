@@ -214,11 +214,12 @@ memo key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
     (cache, state, newId, invalid) <- get -- TODO: Invalidate cache on all continuations
+    -- trace "Memo" $ return ()
     let cont = ContX c from fromId
     case fromMaybe (bottom, newId, [], []) (M.lookup key cache) of
       (xss, tid, [], []) -> do
         -- First time requesting the memoed function with this key
-        trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         put (M.insert key (xss, tid, [cont], []) cache, state, if tid == newId then newId + 1 else newId, invalid)
         mapM_ c (elems xss)
         runContT (localCtxT (Just key) tid f) (\x -> do
@@ -227,11 +228,9 @@ memo key f = do
             push key x
           )
       (xss, tid, conts, fconts) -> do
-        trace (show conts) $ return ()
-        trace (show fconts) $ return ()
         -- Requesting the result of the memoized function from a different dependant
         put (M.insert key (xss, tid, cont:conts, fconts) cache, state, newId, invalid)
-        trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
+        -- trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         mapM_ c (elems xss)
       
       )
@@ -241,6 +240,7 @@ memoFull key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
     (cache, state, newId, invalid) <- get -- TODO: Invalidate cache on all continuations
+    -- trace "MemoFull" $ return ()
     let cont = ContF c from fromId
     case fromMaybe (bottom, newId, [], []) (M.lookup key cache) of
       (xss, tid, [], []) -> do
@@ -262,15 +262,17 @@ memoFull key f = do
 
 each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [FixT e s i l d b] -> FixT e s i l d b
 each xs =
+  -- For each monadic fixpoint, run the continuation piece, and call our continuation with each result
   ContT $ \c -> do -- Get the continuation
-    -- For each monadic fixpoint, run the continuation piece, and call our continuation with each result
-    mapM_ (\comp -> runContT comp (\res -> do      
-      -- trace ("Calling continuation with " ++ show res) $ return ()
-      c res)) xs
+    -- trace "MemoEach" $ return ()
+    mapM_ (\comp -> do
+      -- trace "CompEach" $ return ()
+      runContT comp (\res -> c res)) xs
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
 push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
+  -- trace "Push" $ return ()
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state, newId, invalid) <- get
   let cur = M.lookup key cache
@@ -289,12 +291,13 @@ push key value = do
       put (M.insert key (added, keyId, conts, fconts) cache, state, newId, invalid)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi) -> do
+      -- trace "ContX" $ return ()
       -- trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()
       c value
       ) conts
     mapM_ (\(ContF c f fi) -> do
-      c added
-      ) fconts
+      -- trace "ContF" $ return ()
+      c added) fconts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
 writeDependencyGraph :: (Label i, Show d, Label (l d), Ord i) => String -> M.Map i (l d, Integer, [ContX e s i l d], [ContF e s i l d]) -> IO ()
@@ -360,9 +363,9 @@ fib n =
 
 swap :: [Int] -> FixT () () [Int] (SimpleLattice [Int]) (SimpleChange [Int]) (SimpleChange [Int])
 swap l = do
-  trace ("Swapping " ++ show l) $ return ()
+  -- trace ("Swapping " ++ show l) $ return ()
   memo l $
-    trace ("Memoizing " ++ show l) $
+    -- trace ("Memoizing " ++ show l) $
     case l of
       [x, y, z] -> do
         each [swap [y, x], swap [z, y]]

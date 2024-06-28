@@ -45,6 +45,10 @@ fun ast/show(a: ast): div string
     Num(i) -> i.show
     Err(s) -> "ERR: " ++ s
 
+fun analyze()
+  val eq = List([Sym('+'), List([Sym('*'), Num(3), Sym('x'), Sym('x')]), List([Sym('*'), Sym('a'), Sym('x'), Sym('x')]), List([Sym('*'), Sym('b'), Sym('x')]), Num(5)])        
+  eq.deriv
+
 fun main()
   val eq = List([Sym('+'), List([Sym('*'), Num(3), Sym('x'), Sym('x')]), List([Sym('*'), Sym('a'), Sym('x'), Sym('x')]), List([Sym('*'), Sym('b'), Sym('x')]), Num(5)])        
   val d = eq.deriv

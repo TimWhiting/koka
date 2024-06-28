@@ -347,14 +347,15 @@ visitEachChild ctx analyze = do
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()
   each $ map (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
 
-externalModule :: TName -> FixAR r s e i o c (Maybe ExprContext)
+externalModule :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 externalModule name = do
+  -- trace ("External module " ++ show name) $ return ()
   let modName = newModuleName (nameModule (getName name))
   (mod', ctx) <- loadModule modName
   if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
   else trace ("External variable binding not found " ++ show name) (return Nothing)
 
-bindExternal :: TName -> FixAR r s e i o c (Maybe ExprContext)
+bindExternal :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 bindExternal name = do
   extMod <- externalModule name
   case extMod of
@@ -389,8 +390,9 @@ maybeLoadModuleR mn = do
               trace ("Loaded module " ++ show mn) $ return ()
               return $ buildcLookupModule mn bc'
 
-maybeLoadModule :: HasCallStack => ModuleName -> FixAR x s e i o c (Maybe Module)
+maybeLoadModule :: HasCallStack => HasCallStack => ModuleName -> FixAR x s e i o c (Maybe Module)
 maybeLoadModule mn = do
+  -- trace ("Maybe loading module " ++ show mn) $ return ()
   state <- getState
   case M.lookup mn (moduleContexts state) of
     Just (ModuleC _ m _) -> return $ Just m
@@ -418,14 +420,17 @@ maybeLoadModule mn = do
               return Nothing
             Right (bc', e) -> do
               -- trace ("Loaded module " ++ show mn) $ return ()
-              let Just mod' = buildcLookupModule mn bc'
-              let modCtx = ModuleC ctxId mod' mn
-              updateState (\state ->
-                state{
-                  buildc = bc',
-                  moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
-                })
-              return $ Just mod'
+              let mmod = buildcLookupModule mn bc'
+              case mmod of
+                Just mod' -> do
+                  let modCtx = ModuleC ctxId mod' mn
+                  updateState (\state ->
+                    state{
+                      buildc = bc',
+                      moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
+                    })
+                  return $ Just mod'
+                Nothing -> error ("Module " ++ show mn ++ " not found")
 
 loadModule :: HasCallStack => ModuleName -> FixAR x s e i o c (Module, ExprContext)
 loadModule mn = do

@@ -20,6 +20,9 @@ fun show(x: pair): div string
     List(l) -> l.show
     Num(n) -> n.show
 
+fun analyze()
+  flatten(List([List([Num(1), Num(2)]), List([List([Num(3), Num(4), Num(5)])])]))
+
 fun main()
   val res = flatten(List([List([Num(1), Num(2)]), List([List([Num(3), Num(4), Num(5)])])]))
   res.show.println

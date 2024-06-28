@@ -13,6 +13,10 @@ fun my-map(f, l)
       Cons(x, xs) -> Cons(id1(f)(x), lp(xs))
   lp(l)
 
+fun analyze()
+  val res1 = my-map(id1(fn(a) a + 1), [1, 2, 3])
+  my-map(id1(fn(b) b + 1), [7, 8, 9])
+
 fun main()
   val res1 = my-map(id1(fn(a) a + 1), [1, 2, 3])
   res1.show.println

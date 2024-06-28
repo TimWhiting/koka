@@ -19,7 +19,7 @@ import Common.NamePrim (nameOpen, nameEffectOpen)
 import Data.Maybe (fromJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
-import Type.Type (splitFunType, typeAny)
+import Type.Type (splitFunType, typeAny, splitFunScheme)
 import Control.Monad (foldM)
 import GHC.Base (when)
 import Core.CoreVar (HasExpVar(fv), bv)
@@ -41,8 +41,10 @@ alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppL nargs e env':ls) = 
     Con tn _ -> do
       let addrs = repeat $ contextId e
           tp = typeOf tn
-      case splitFunType tp of
-        Just (args, _, _) -> return $ zip (map (\(n,t) -> TName n t Nothing) args) addrs
+      case splitFunScheme tp of
+        Just (_, _, args, _, _) -> 
+          if nargs /= length args then error "Wrong number of arguments "
+          else return $ zip (map (\(n,t) -> TName n t Nothing) args) addrs
         Nothing -> return [(tn, contextId e)]
 
 allocBindAddrs :: HasCallStack => DefGroup -> ExprContext -> FixAACR r s e [Addr]
@@ -51,10 +53,10 @@ allocBindAddrs (DefRec defs) expr = do
   return $ zip names (repeat $ contextId expr)
 allocBindAddrs (DefNonRec df) expr = return [(TName (defName df) (defType df) Nothing, contextId expr)]
 
-doStep :: FixInput -> FixAACR r s e FixChange
-doStep i = do
-  trace ("Step: " ++ show i) $ return ()
+doStep :: HasCallStack => FixInput -> FixAACR r s e FixChange
+doStep i =
   memo i $ do
+    -- trace ("Step: " ++ show i) $ return ()
     case i of
       Eval expr env store xclos local kont meta ->
         -- trace ("Eval: " ++ showSimpleContext expr) $ do
@@ -80,27 +82,36 @@ doStep i = do
             doGC $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
           TypeLam args body -> do
             doGC $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
-          TypeApp e _ -> do
-            e <- focusChild 0 expr
-            doGC $ Eval e env store xclos local kont meta
+          TypeApp (TypeLam _ _) _ -> do
+            -- trace ("TypeApp: " ++ showSimpleContext e) $ return ()
+            doGC $ Cont local kont meta (AChangeClos expr (limitEnv env (fvs expr))) store xclos
+          TypeApp (Var _ _) _ -> do
+            ex <- focusChild 0 expr
+            doGC $ Eval ex env store xclos local kont meta
+          TypeApp (Con _ _) _ -> do
+            ex <- focusChild 0 expr
+            doGC $ Eval ex env store xclos local kont meta
           Case [e] bs -> do
             ex <- focusChild 0 expr
             doGC $ Eval ex env store xclos (CaseR expr env : local) kont meta
           Let binds body -> do
             ex <- focusChild 1 expr
+            -- trace ("Let: " ++ show binds ++ showSimpleContext ex) $ return ()
             let bg = head binds
             addrs <- allocBindAddrs bg expr
-            doGC $ Eval ex (extendEnv env (dgTNames bg) addrs) store xclos (LetL 0 (length binds) 0 (length $ defsOf bg) addrs expr env : local) kont meta
+            let env' = extendEnv env (dgTNames bg) addrs
+            doGC $ Eval ex env' store xclos (LetL 0 (length binds) 0 (length $ defsOf bg) addrs expr env': local) kont meta
           _ -> error $ "doStep: " ++ show expr ++ " not handled"
       Cont [EndProgram] KEnd MEnd achange store xclos -> return $ AC achange
       Cont [EndProgram] KEnd meta achange store xclos -> error "Not handled yet" -- TODO: Handle the no-top condition
       Cont lc kont meta achange store xclos -> do
         KC l k <- doStep (Pop lc kont)
+        -- trace ("Cont: " ++ show l ++ " " ++ show k) $ return ()
         case l of
           AppL n e p:ls -> do
             if n == 0 then do
               let AChangeClos lam env = achange
-              let tau = (lam, env, store, xclos)
+              let tau = (achange, achange, store, xclos)
               addKont tau ls k
               body <- focusBody lam
               doGC $ Eval body env store xclos [EndCall] (KPrecise tau) meta
@@ -123,11 +134,13 @@ doStep i = do
               doGC $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
             else doGC $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
           (AppR c@(AChangeClos clos env) addrs):ls -> do
+            -- trace ("AppR: " ++ show c ++ " " ++ show ls) $ return ()
             body <- focusBody clos
             let args = lamArgNames clos
             let store' = extendStore store (last addrs) achange
             -- (ExprContext, VEnv, VStore, KClos)
-            let tau = (clos, env, store, xclos)
+            let tau = (c, achange, store, xclos)
+            -- trace ("AddKont " ++ show tau) $ return ()
             addKont tau ls k
             -- trace ("AppR: " ++ show c ++ " " ++ show ls) $ return ()
             doGC $ Eval body (extendEnv env args addrs) store' xclos [EndCall] (KPrecise tau) meta
@@ -135,13 +148,15 @@ doStep i = do
             case exprOfCtx con of
               Con _ _ -> do
                 let store' = extendStore store (last addrs) achange
-                -- trace ("AppRCon: " ++ show con ++ " " ++ show addrs) $ return ()
-                doGC $ Cont ls k meta (AChangeConstr con (M.fromList (zip (tnamesCons (length addrs)) addrs))) store' xclos
+                let env' = M.fromList (zip (tnamesCons (length addrs)) addrs)
+                -- trace ("AppRCon: " ++ show con ++ " " ++ show env' ++ " " ++ show addrs) $ return ()
+                -- trace ("AppRCon:\n" ++ showStore store) $ return ()
+                doGC $ Cont ls k meta (AChangeConstr con env') store' xclos
           (AppR cprim@(AChangePrim p ctx env) addrs):ls -> do
             let store' = extendStore store (last addrs) achange
             res <- doPrimitive p addrs env store'
-            trace ("Primitive Result " ++ show cprim ++ " " ++ show res ++ " " ++ show ls) $ return ()
-            doGC $ Cont ls k meta res store xclos
+            -- trace ("Primitive Result " ++ show cprim ++ " " ++ show res ++ " " ++ show ls) $ return ()
+            doGC $ Cont ls k meta res store' xclos
           LetL bgi bgn bi bn addrs e p:ls -> do 
             let dgs = letDefsOf e
             -- trace ("LetL: " ++ show bgi ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ show addrs) $ return ()
@@ -160,7 +175,8 @@ doStep i = do
               let bg = dgs !! bgi'
               bind <- focusLetDefBinding bgi' bi e
               addrs <- allocBindAddrs bg e
-              doGC $ Eval bind (extendEnv p (dgTNames bg) addrs) store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs e p:ls) k meta
+              let env' = extendEnv p (dgTNames bg) addrs
+              doGC $ Eval bind env' store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs e env':ls) k meta
             else
               error "Cont LetL"
           (CaseR expr env): ls -> do
@@ -176,17 +192,19 @@ doStep i = do
                     case matches of
                       Just (venv, vstore) -> do
                         body <- focusChild n expr
-                        let free = fvs body `S.difference` bv pat
-                        doGC $ Eval body (limitEnv venv free) vstore xclos ls k meta
+                        let free = fvs body
+                        -- trace ("Match: " ++ show pat ++ " " ++ show venv ++ "\n") $ return ()
+                        doGC $ Eval body venv vstore xclos ls k meta
                       Nothing -> matchBranches achange bs
                   matchBindPattern :: HasCallStack => AChange -> Pattern -> VEnv -> VStore -> FixAACR r s e (Maybe (VEnv, VStore))
                   matchBindPattern achange pat venv vstore = do
                     case pat of
                       PatWild -> return $ Just (venv, vstore)
-                      PatVar x pat' ->
+                      PatVar x pat' -> do
                         let addr = (x, contextId expr)
-                            env' = M.insert x addr env
-                        in matchBindPattern achange pat' env' (extendStore vstore addr achange)
+                            env' = M.insert x addr venv
+                        -- trace ("Match: " ++ show x ++ " " ++ show addr ++ " " ++ show env') $ return ()
+                        matchBindPattern achange pat' env' (extendStore vstore addr achange)
                       PatCon con pats _ _ _ _ _ _ -> do
                         case achange of 
                           AChangeConstr acon aenv -> do
@@ -196,7 +214,8 @@ doStep i = do
                                 foldM (\isMatch (pat, i) -> do
                                   case isMatch of
                                     Just (venv, vstore) -> do
-                                      -- trace ("Match: " ++ show acon ++ "--" ++ show con) $ return ()
+                                      -- trace ("Match: " ++ show acon ++ "--" ++ show aenv ++ " " ++ show i) $ return ()
+                                      -- trace ("Match: \n" ++ showStore vstore) $ return ()
                                       v <- storeLookup (TName (newName $ "con" ++ show i) typeAny Nothing) aenv vstore
                                       matchBindPattern v pat venv vstore
                                     _ -> return Nothing
@@ -225,7 +244,7 @@ doStep i = do
       CStoreGet meta -> doBottom
       Pop [EndCall] (KPrecise ctx) -> do
         KC l k <- doStep $ KStoreGet ctx
-        trace ("Pop: " ++ show ctx ++ "\ngives:\n" ++ show l ++ " " ++ show k) $ return ()
+        -- trace ("Pop: " ++ show ctx ++ "\ngives:\n" ++ show l ++ " " ++ show k) $ return ()
         doStep $ Pop l k
       Pop (l:ls) kont -> return $ KC (l:ls) kont
       -- Pop [] (Just approx@KApprox ctx) = do

@@ -378,6 +378,7 @@ instance Show ExprContext where
       CaseCBranch _ _ _ i b -> "CaseBranch " ++ show i ++ " " ++ show b
       ExprCBasic _ _ e -> "ExprBasic " ++ showExpr e
       ExprCTerm _ s -> "Query: " ++ s
+      ExprPrim e -> "Primitive " ++ showSimpleExpr e
 
 defOfCtx :: ExprContext -> C.Def
 defOfCtx ctx =

@@ -61,6 +61,18 @@ fun decrypt(c: int, d, n)
 
 // RSA example.
 
+fun analyze()
+  val p = 41 // A "large" prime.
+  val q = 47 // Another "large" prime.
+  val n = p * q // The public modulus
+
+  val e = 7 // The public exponent
+  val d = private-exponent(e, p, q) // The private exponent
+  
+  val plaintext = 42
+  val ciphertext = encrypt(plaintext, e, n)
+  decrypt(ciphertext, d, n)
+
 fun main()
   val p = 41 // A "large" prime.
   val q = 47 // Another "large" prime.

@@ -95,7 +95,7 @@ opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> VEnv -> FixAACR x s e A
 opCmpInt f [p1, p2] venv = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) venv
-    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> 
+    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) ->
       trace "opCmpInt: top" $
       anyBool venv
     _ -> doBottom
@@ -139,5 +139,7 @@ doPrimitive nm addrs env store = do
     charCmpOp (>=) achanges env
   else if nm == nameCoreCharEq then
     charCmpOp (==) achanges env
+  else if (nm == nameCoreTrace) || (nm == nameCorePrint) || (nm == nameCorePrintln) then
+    return $ changeUnit env
   else
     error $ "doPrimitive: " ++ show nm
