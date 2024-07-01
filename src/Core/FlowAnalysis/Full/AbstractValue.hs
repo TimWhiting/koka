@@ -154,7 +154,7 @@ showSimpleAbValue :: AbValue -> String
 showSimpleAbValue (AbValue cls clsa cntrs lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleClosure (S.toList cntrs)) ++ "]") ++
-  (if M.null lit then "" else " lits: " ++ show (M.toList lit))
+  (if M.null lit then "" else " lits: " ++ show (map snd (M.toList lit)))
 
 showNoEnvAbValue :: AbValue -> String
 showNoEnvAbValue (AbValue cls clsa cntrs lit) =

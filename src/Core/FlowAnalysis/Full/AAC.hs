@@ -42,7 +42,7 @@ alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppL nargs e env':ls) = 
       let addrs = repeat $ contextId e
           tp = typeOf tn
       case splitFunScheme tp of
-        Just (_, _, args, _, _) -> 
+        Just (_, _, args, _, _) ->
           if nargs /= length args then error "Wrong number of arguments "
           else return $ zip (map (\(n,t) -> TName n t Nothing) args) addrs
         Nothing -> return [(tn, contextId e)]
@@ -105,7 +105,7 @@ doStep i =
       Cont [EndProgram] KEnd MEnd achange store xclos -> return $ AC achange
       Cont [EndProgram] KEnd meta achange store xclos -> error "Not handled yet" -- TODO: Handle the no-top condition
       Cont lc kont meta achange store xclos -> do
-        KC l k <- doStep (Pop lc kont)
+        KC l k <- pop lc kont
         -- trace ("Cont: " ++ show l ++ " " ++ show k) $ return ()
         case l of
           AppL n e p:ls -> do
@@ -129,7 +129,7 @@ doStep i =
             arge <- focusChild (n + 1) e
             -- trace ("AppM: " ++ show n ++ " " ++ show arge ++ " " ++ show clos) $ return ()
             let store' = extendStore store (addrs !! (n - 1)) achange
-            if n + 1 == t then do 
+            if n + 1 == t then do
               -- trace ("AppRM: " ++ show clos) $ return ()
               doGC $ Eval arge p store' xclos (AppR clos addrs:ls) k meta
             else doGC $ Eval arge p store' xclos (AppM clos addrs e (n + 1) t p:ls) k meta
@@ -153,11 +153,12 @@ doStep i =
                 -- trace ("AppRCon:\n" ++ showStore store) $ return ()
                 doGC $ Cont ls k meta (AChangeConstr con env') store' xclos
           (AppR cprim@(AChangePrim p ctx env) addrs):ls -> do
+            -- trace ("Prim store " ++ showStore store) $ return ()
             let store' = extendStore store (last addrs) achange
             res <- doPrimitive p addrs env store'
             -- trace ("Primitive Result " ++ show cprim ++ " " ++ show res ++ " " ++ show ls) $ return ()
             doGC $ Cont ls k meta res store' xclos
-          LetL bgi bgn bi bn addrs e p:ls -> do 
+          LetL bgi bgn bi bn addrs e p:ls -> do
             let dgs = letDefsOf e
             -- trace ("LetL: " ++ show bgi ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ show addrs) $ return ()
             let store' = extendStore store (addrs !! bi) achange
@@ -174,9 +175,9 @@ doStep i =
               let bgi' = bgi + 1
               let bg = dgs !! bgi'
               bind <- focusLetDefBinding bgi' bi e
-              addrs <- allocBindAddrs bg e
-              let env' = extendEnv p (dgTNames bg) addrs
-              doGC $ Eval bind env' store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs e env':ls) k meta
+              addrs' <- allocBindAddrs bg e
+              let env' = extendEnv p (dgTNames bg) addrs'
+              doGC $ Eval bind env' store' xclos (LetL bgi' bgn 0 (length $ defsOf bg) addrs' e env':ls) k meta
             else
               error "Cont LetL"
           (CaseR expr env): ls -> do
@@ -206,7 +207,7 @@ doStep i =
                         -- trace ("Match: " ++ show x ++ " " ++ show addr ++ " " ++ show env') $ return ()
                         matchBindPattern achange pat' env' (extendStore vstore addr achange)
                       PatCon con pats _ _ _ _ _ _ -> do
-                        case achange of 
+                        case achange of
                           AChangeConstr acon aenv -> do
                             case exprOfCtx acon of
                               Con c _ | c == con -> do
@@ -236,25 +237,36 @@ doStep i =
               _ -> error "Cont CaseR"
           [EndCall] ->
             doGC $ Cont [EndCall] k meta achange store xclos
-          [EndProgram] -> 
+          [EndProgram] ->
             doGC $ Cont [EndProgram] k meta achange store xclos
           _ -> error $ "Cont: " ++ show l
       KStoreGet ctx -> doBottom
       KApproxGet ctx -> doBottom
       CStoreGet meta -> doBottom
-      Pop [EndCall] (KPrecise ctx) -> do
-        KC l k <- doStep $ KStoreGet ctx
-        -- trace ("Pop: " ++ show ctx ++ "\ngives:\n" ++ show l ++ " " ++ show k) $ return ()
-        doStep $ Pop l k
-      Pop (l:ls) kont -> return $ KC (l:ls) kont
-      -- Pop [] (Just approx@KApprox ctx) = do
-      --   precise <- forT ctx
-      --   doStep (Pop l k)
-      NoTop [EndCall] KEnd -> return $ BC True
-      NoTop [EndCall] k -> do
-        KC l k <- doStep $ Pop [EndCall] k
-        doStep $ NoTop l k -- TODO: can we assume no new values get added & get a set and use (or)
-      NoTop (l:ls) k -> return $ BC False
+
+
+      -- NoTop [EndCall] KEnd -> return $ BC True
+      -- NoTop [EndCall] k -> do
+      --   KC l k <- doStep $ Pop [EndCall] k
+      --   doStep $ NoTop l k -- TODO: can we assume no new values get added & get a set and use (or)
+      -- NoTop (l:ls) k -> return $ BC False
+pop :: LocalKont -> Kont -> FixAACR r s e FixChange
+pop lk k = do
+  res <- popS lk k S.empty
+  each (map (\(l, k) -> return (KC l k)) (S.toList res))
+
+popS :: LocalKont -> Kont -> S.Set Kont -> FixAACR r s e (S.Set (LocalKont, Kont))
+popS [EndCall] k@(KPrecise ctx) seen = do
+  if S.member k seen then return $ S.empty -- return $ KC (l:ls) kont
+  else do
+    KC l k <- doStep $ KStoreGet ctx
+    -- trace ("Pop: " ++ show ctx ++ "\ngives:\n" ++ show l ++ " " ++ show k) $ return ()
+    rest <- popS l k (S.insert k seen)
+    return $ S.insert ([EndCall], k) rest
+popS (l:ls) kont seen = return (S.singleton (l:ls, kont))
+-- Pop [] (Just approx@KApprox ctx) = do
+--   precise <- forT ctx
+--   doStep (Pop l k)
 
 doGC :: FixInput -> FixAACR r s e FixChange
 doGC i = do

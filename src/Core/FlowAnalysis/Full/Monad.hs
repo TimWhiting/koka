@@ -31,8 +31,6 @@ data FixInput =
   | KStoreGet ExactContext
   | KApproxGet (AChange, AChange, VStore) -- Reverse lookup all the addresses 
   | CStoreGet MetaKont
-  | Pop LocalKont Kont
-  | NoTop LocalKont Kont
   deriving (Eq, Ord)
 
 data FixOutput a =
@@ -209,23 +207,31 @@ llKont kont kclos seen =
     case kont of
       KEnd -> return S.empty
       KPrecise ctx@(clos, arg, store, xclos) -> do
+        -- trace ("ClosV " ++ show (llV clos)) $ return ()
+        -- trace ("ClosEnv " ++ show (envOfClos clos)) $ return ()
         K lks <- memoFull (KStoreGet ctx) doBottom
+        -- trace ("Konts: " ++ show lks) $ return ()
         (seen, addrs) <- foldM (\(seen, addrs) (l, k) -> do
               addrs <- llKont k kclos seen
               return (S.insert k seen, S.union addrs (llLKont l))
           ) (S.insert kont seen, S.union (llV clos) (llV arg)) lks
-        return addrs
+        return $ S.union (S.fromList $ M.keys store) addrs
       KApprox ctx@(clos, arg, a) -> do
         reckaddrs <- llApprox ctx kclos (S.insert kont seen)
         return $ S.unions [llV clos, llV arg, reckaddrs]
 
 llApprox:: ApproxContext -> KClos -> S.Set Kont -> FixAACR r s e (S.Set Addr)
 llApprox appr@(e, env, a) kclos seen = do
+  let stores = M.lookup a kclos
   lks <- konts appr kclos
-  foldM (\acc (l,k) -> do
+  res <- foldM (\acc (l,k) -> do
     kaddrs <- llKont k kclos seen
     return $ S.unions [acc, llLKont l, kaddrs]
     ) (S.singleton a) lks
+  let transitiveclosure = case stores of
+        Just stores -> S.unions $ map (\s -> liveAddrs s res) $ S.toList stores
+        Nothing -> S.empty
+  return $ S.unions [res, transitiveclosure]
 
 llKontA :: KontA -> KClos -> FixAACR r s e (S.Set Addr)
 llKontA (KAppr l k) kclos = do
@@ -258,26 +264,30 @@ llMeta kont kclos seen =
 
 gc :: FixInput ->  FixAACR r s e FixInput
 gc (Eval e env store kclos klocal kont meta) = do
-  trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
-  let env' = limitEnv env (fv (exprOfCtx e))
-  trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env') ++ "\n") $ return ()
+  -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
+  -- let env' = limitEnv env (fv (exprOfCtx e))
+  -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()
   let laddrs = llLKont klocal
   kaddrs <- llKont kont kclos S.empty
   maddrs <- llMeta meta kclos S.empty
-  let live = liveAddrs store (S.unions [llEnv env', laddrs, kaddrs, maddrs])
-  trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
-  trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
+  let live = liveAddrs store (S.unions [llEnv env, laddrs, kaddrs, maddrs])
+  -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
+  -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let store' = limitStore store live
-  trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Eval e env' store' kclos klocal kont meta
-gc (Cont l k meta achange store kclos) = do
+  -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
+  return $ Eval e env store' kclos klocal kont meta
+gc (Cont l kont meta achange store kclos) = do
   let laddrs = llLKont l
   let vaddrs = llV achange
-  kaddrs <- llKont k kclos S.empty
+  -- trace "\n\nGC Cont:\n" $ return ()
+  kaddrs <- llKont kont kclos S.empty
   maddrs <- llMeta meta kclos S.empty
+  -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
+  -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let live = liveAddrs store (S.unions [vaddrs, laddrs, kaddrs, maddrs])
   let store' = limitStore store live
-  return $ Cont l k meta achange store' kclos
+  -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
+  return $ Cont l kont meta achange store' kclos
 
 showStore store = show $ pretty store
 
@@ -326,8 +336,6 @@ instance Show FixInput where
   show (Cont local kont meta achange store kclos) = show $ vcat [text "Cont", indent 2 (vcat [prettyLocal local, text (show kont), text (show meta), text (show achange), pretty store])]
   show (KStoreGet ctx) = "KStoreGet"
   show (CStoreGet meta) = "CStoreGet"
-  show (Pop local kont) = "Pop " ++ show local ++ " " ++ show kont
-  show (NoTop local kont) = "NoTop"
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom

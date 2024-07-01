@@ -177,5 +177,3 @@ instance Label FixInput where
   label (KStoreGet (e, v, s, k)) = escape $ show (vcat [text "KSTOREGET", text (show e)])
   label (KApproxGet (e, v, s)) = escape $ show (vcat [text "KAPPROXGET", text (show e)])
   label (CStoreGet c) = escape $ show (vcat [text "CSTOREGET", text (show c)])
-  label (Pop l c) = escape $ show (vcat $ text "POP" :  showC (l, c))
-  label (NoTop l c) = escape $ show (vcat $ text "NOTOP" : showC (l, c))
