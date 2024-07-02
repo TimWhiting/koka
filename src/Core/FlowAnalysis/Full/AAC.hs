@@ -225,14 +225,14 @@ doStep i =
                           _ -> return Nothing
                       PatLit x ->
                         case (x, achange) of
-                          (LitInt i, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> if i == i2 then return (Just (venv, vstore)) else doBottom
-                          (LitFloat f, AChangeLit (LiteralChangeFloat (LChangeSingle f2)) _) -> if f == f2 then return (Just (venv, vstore)) else doBottom
-                          (LitChar c, AChangeLit (LiteralChangeChar (LChangeSingle c2)) _) -> if c == c2 then return (Just (venv, vstore)) else doBottom
-                          (LitString s, AChangeLit (LiteralChangeString (LChangeSingle s2)) _) -> if s == s2 then return (Just (venv, vstore)) else doBottom
-                          (LitInt i, AChangeLit (LiteralChangeInt LChangeTop) _) -> each [return (Just (venv, vstore)), return Nothing] -- TODO: Also evaluate other branches
-                          (LitFloat f, AChangeLit (LiteralChangeFloat LChangeTop) _) -> each [return (Just (venv, vstore)), return Nothing]
-                          (LitChar c, AChangeLit (LiteralChangeChar LChangeTop) _) -> each [return (Just (venv, vstore)), return Nothing]
-                          (LitString s, AChangeLit (LiteralChangeString LChangeTop) _) -> each [return (Just (venv, vstore)), return Nothing]
+                          (LitInt i, AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> if i == i2 then return (Just (venv, vstore)) else doBottom
+                          (LitFloat f, AChangeLit (LiteralChangeFloat (LChangeSingle f2))) -> if f == f2 then return (Just (venv, vstore)) else doBottom
+                          (LitChar c, AChangeLit (LiteralChangeChar (LChangeSingle c2))) -> if c == c2 then return (Just (venv, vstore)) else doBottom
+                          (LitString s, AChangeLit (LiteralChangeString (LChangeSingle s2))) -> if s == s2 then return (Just (venv, vstore)) else doBottom
+                          (LitInt i, AChangeLit (LiteralChangeInt LChangeTop)) -> each [return (Just (venv, vstore)), return Nothing] -- TODO: Also evaluate other branches
+                          (LitFloat f, AChangeLit (LiteralChangeFloat LChangeTop)) -> each [return (Just (venv, vstore)), return Nothing]
+                          (LitChar c, AChangeLit (LiteralChangeChar LChangeTop)) -> each [return (Just (venv, vstore)), return Nothing]
+                          (LitString s, AChangeLit (LiteralChangeString LChangeTop)) -> each [return (Just (venv, vstore)), return Nothing]
                           _ -> doBottom
               _ -> error "Cont CaseR"
           [EndCall] ->

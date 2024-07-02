@@ -4,6 +4,7 @@ module Core.FlowAnalysis.Full.Primitives where
 
 import Data.Maybe(fromJust)
 import Debug.Trace(trace)
+import qualified Data.Map.Strict as M
 import Common.NamePrim
 import Common.Failure
 import Compile.Module
@@ -52,16 +53,16 @@ nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
-trueCon :: VEnv -> AChange
-trueCon = AChangeConstr $ ExprPrim C.exprTrue
-falseCon :: VEnv -> AChange
-falseCon = AChangeConstr $ ExprPrim C.exprFalse
-toChange :: Bool -> VEnv -> AChange
-toChange b env = if b then trueCon env else falseCon env
-anyBool :: VEnv -> FixAACR x s e AChange
-anyBool env = each [return $ toChange True env, return $ toChange False env]
-changeUnit :: VEnv -> AChange
-changeUnit = AChangeConstr (ExprPrim C.exprUnit)
+trueCon ::  AChange
+trueCon = AChangeConstr (ExprPrim C.exprTrue) M.empty
+falseCon :: AChange
+falseCon = AChangeConstr (ExprPrim C.exprFalse) M.empty
+toChange :: Bool  -> AChange
+toChange b = if b then trueCon else falseCon
+anyBool :: FixAACR x s e AChange
+anyBool = each [return $ toChange True, return $ toChange False]
+changeUnit :: AChange
+changeUnit = AChangeConstr (ExprPrim C.exprUnit) M.empty
 
 isPrimitive :: TName -> Bool
 isPrimitive tn =
@@ -77,69 +78,72 @@ isPrimitive tn =
     nameCoreTrace,
     nameCorePrint, nameCorePrintln]
 
-intOp :: (Integer -> Integer -> Integer) -> [AChange] -> VEnv -> FixAACR x s e AChange
-intOp f [p1, p2] venv = do
+intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAACR x s e AChange
+intOp f [p1, p2] = do
   case (p1, p2) of
-    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2))) venv
-    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) -> return $ AChangeLit (LiteralChangeInt LChangeTop) venv
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2)))
+    (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) -> return $ AChangeLit (LiteralChangeInt LChangeTop)
     _ -> doBottom
 
-charCmpOp :: (Char -> Char -> Bool) -> [AChange] -> VEnv -> FixAACR x s e AChange
-charCmpOp f [p1, p2] venv = do
+charCmpOp :: (Char -> Char -> Bool) -> [AChange] -> FixAACR x s e AChange
+charCmpOp f [p1, p2] = do
   case (p1, p2) of
-    (AChangeLit (LiteralChangeChar (LChangeSingle c1)) _, AChangeLit (LiteralChangeChar (LChangeSingle c2)) _) -> return $! toChange (f c1 c2) venv
-    (AChangeLit (LiteralChangeChar _) _, AChangeLit (LiteralChangeChar _) _) -> anyBool venv
+    (AChangeLit (LiteralChangeChar (LChangeSingle c1)), AChangeLit (LiteralChangeChar (LChangeSingle c2))) -> return $! toChange (f c1 c2)
+    (AChangeLit (LiteralChangeChar _), AChangeLit (LiteralChangeChar _)) -> anyBool
     _ -> doBottom
 
-opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> VEnv -> FixAACR x s e AChange
-opCmpInt f [p1, p2] venv = do
+opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> FixAACR x s e AChange
+opCmpInt f [p1, p2] = do
   case (p1, p2) of
-    (AChangeLit (LiteralChangeInt (LChangeSingle i1)) _, AChangeLit (LiteralChangeInt (LChangeSingle i2)) _) -> return $! toChange (f i1 i2) venv
-    (AChangeLit (LiteralChangeInt _) _, AChangeLit (LiteralChangeInt _) _) ->
-      trace "opCmpInt: top" $
-      anyBool venv
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! toChange (f i1 i2)
+    (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) ->
+      trace "opCmpInt: top" anyBool
     _ -> doBottom
 
 doPrimitive :: Name -> [Addr] -> VEnv -> VStore -> FixAACR r s e AChange
 doPrimitive nm addrs env store = do
   achanges <- mapM (storeGet store) addrs
-  trace ("Primitive: " ++ show nm ++ " " ++ show achanges) $ return ()
+  -- trace ("Primitive: " ++ show nm ++ " " ++ show achanges) $ return ()
   if nm == nameIntEq then
-    opCmpInt (==) achanges env
+    opCmpInt (==) achanges
   else if nm == nameIntLt then
-    opCmpInt (<=) achanges env
+    opCmpInt (<=) achanges
   else if nm == nameIntLe then
-    opCmpInt (<) achanges env
+    opCmpInt (<) achanges
   else if nm == nameIntGt then
-    opCmpInt (>) achanges env
+    opCmpInt (>) achanges
   else if nm == nameIntGe then
-    opCmpInt (>=) achanges env
+    opCmpInt (>=) achanges
   else if nm == nameIntAdd then
-    intOp (+) achanges env
+    intOp (+) achanges
   else if nm == nameIntMul then
-    intOp (*) achanges env
+    intOp (*) achanges
   else if nm == nameIntSub then
-    intOp (-) achanges env
+    intOp (-) achanges
   else if nm == nameIntDiv then
-    intOp div achanges env
+    intOp div achanges
   else if nm == nameIntMod then
-    intOp mod achanges env
+    intOp mod achanges
   else if nm == nameBoolNegate then
     case achanges of
-      [AChangeConstr (ExprPrim e) _] | isExprTrue e -> return $ AChangeConstr (ExprPrim C.exprFalse) env
-      [AChangeConstr (ExprPrim e) _] | isExprFalse e -> return $ AChangeConstr (ExprPrim C.exprTrue) env
+      [AChangeConstr (ExprPrim e) _] | isExprTrue e -> return $ AChangeConstr (ExprPrim C.exprFalse) M.empty
+      [AChangeConstr (ExprPrim e) _] | isExprFalse e -> return $ AChangeConstr (ExprPrim C.exprTrue) M.empty
       _ -> doBottom
+  else if nm == nameIntOdd then
+    case achanges of
+      [AChangeLit (LiteralChangeInt (LChangeSingle i))] -> return $ toChange (odd i)
+      [AChangeLit (LiteralChangeInt _)] -> anyBool
   else if nm == nameCoreCharLt then
-    charCmpOp (<) achanges env
+    charCmpOp (<) achanges
   else if nm == nameCoreCharLtEq then
-    charCmpOp (<=) achanges env
+    charCmpOp (<=) achanges
   else if nm == nameCoreCharGt then
-    charCmpOp (>) achanges env
+    charCmpOp (>) achanges
   else if nm == nameCoreCharGtEq then
-    charCmpOp (>=) achanges env
+    charCmpOp (>=) achanges
   else if nm == nameCoreCharEq then
-    charCmpOp (==) achanges env
+    charCmpOp (==) achanges
   else if (nm == nameCoreTrace) || (nm == nameCorePrint) || (nm == nameCorePrintln) then
-    return $ changeUnit env
+    return changeUnit
   else
     error $ "doPrimitive: " ++ show nm

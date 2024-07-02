@@ -18,7 +18,7 @@
 module Core.FlowAnalysis.FixpointMonad(
   FixTS, FixT, FixIn,
   SimpleChange(..),
-  SimpleLattice(..), SLattice,
+  SimpleLattice(..), SLattice,subsumes,
   Lattice(..),
   Contains(..),
   Label(..), ContX(..), ContF(..),
@@ -102,6 +102,13 @@ instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
   elems (LSingle a) = [LChangeSingle a]
   isBottom LBottom = True
   isBottom _ = False
+
+subsumes :: Eq a => SimpleLattice a d1 -> SimpleLattice a d2 -> Bool
+subsumes (LSingle a) (LSingle b) =
+  a == b
+subsumes LTop _ = True
+subsumes LBottom LBottom = True
+subsumes _ _ = False
 
 -- A type class to allow us to easily define lattices for types that can implement a contains relation
 -- 

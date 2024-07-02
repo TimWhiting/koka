@@ -31,25 +31,25 @@ import Common.Name (Name(..))
 import Common.Range
 import Debug.Trace (trace)
 
-intV :: AbValue -> M.Map VEnv (SLattice Integer)
-intV a = fmap intVL (alits a)
+intV :: AbValue -> SLattice Integer
+intV a = intVL (alits a)
 
-floatV :: AbValue -> M.Map VEnv (SLattice Double)
-floatV a = fmap floatVL (alits a)
+floatV :: AbValue -> SLattice Double
+floatV a = floatVL (alits a)
 
-charV :: AbValue -> M.Map VEnv (SLattice Char)
-charV a = fmap charVL (alits a)
+charV :: AbValue -> SLattice Char
+charV a = charVL (alits a)
 
-stringV :: AbValue -> M.Map VEnv (SLattice String)
-stringV a = fmap stringVL (alits a)
+stringV :: AbValue -> SLattice String
+stringV a = stringVL (alits a)
 
 topTypesOf :: AbValue -> Set Type
 topTypesOf ab =
   S.fromList $ catMaybes (
-    map maybeTopI (M.elems (intV ab)) ++
-    map maybeTopD (M.elems (floatV ab)) ++
-    map maybeTopC (M.elems (charV ab)) ++
-    map maybeTopS (M.elems (stringV ab))
+   [maybeTopI (intV ab)
+   ,maybeTopD (floatV ab)
+   ,maybeTopC (charV ab) 
+   ,maybeTopS (stringV ab)]
   )
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAACR a b c d) -> FixAACR a b c d
@@ -133,12 +133,12 @@ getAbResult :: AbValue -> PostFixAR x s e i o c ([S.UserExpr], [S.UserDef], [S.E
 getAbResult res = do
   let vals = [res]
       lams = map fst $ concatMap (S.toList . aclos) vals
-      i = concatMap ((mapMaybe toSynLit . M.elems) . intV) vals
-      f = concatMap ((mapMaybe toSynLitD . M.elems) . floatV) vals
-      c = concatMap ((mapMaybe toSynLitC . M.elems) . charV) vals
-      s = concatMap ((mapMaybe toSynLitS . M.elems) . stringV) vals
+      i = map (toSynLit . intV) vals
+      f = map (toSynLitD . floatV) vals
+      c = map (toSynLitC . charV) vals
+      s = map (toSynLitS . stringV) vals
       topTypes = S.unions $ map topTypesOf vals
-      vs = i ++ f ++ c ++ s
+      vs = catMaybes $ i ++ f ++ c ++ s
       cs = map fst $ concatMap (S.toList . acons) vals
   consts <- mapM toSynConstr cs
   source <- mapM findSourceExpr lams

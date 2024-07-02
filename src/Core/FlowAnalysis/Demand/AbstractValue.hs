@@ -144,7 +144,7 @@ instance Show AbValue where
 instance Contains AbValue where
   contains :: AbValue -> AbValue -> Bool
   contains (AbValue cls0 clsa0 cntrs0 lit0) (AbValue cls1 clsa1 cntrs1 lit1) =
-    S.isSubsetOf cls1 cls0 && S.isSubsetOf clsa1 clsa0 && cntrs1 `S.isSubsetOf` cntrs0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 < lit1) lit0 lit1
+    S.isSubsetOf cls1 cls0 && S.isSubsetOf clsa1 clsa0 && cntrs1 `S.isSubsetOf` cntrs0 && M.isSubmapOfBy (\lit0 lit1 -> lit0 `litContainsLattice` lit1) lit0 lit1
 
 -- Basic creating of abstract values
 showSimpleClosure :: (ExprContext, EnvCtx) -> String

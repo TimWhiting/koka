@@ -1,7 +1,7 @@
 // Mathematical routines.
 
 // extended-gcd(a,b) = (x,y), such that a*x + b*y = gcd(a,b)
-fun extended-gcd(a: int, b)
+fun extended-gcd(a: int, b:int): div (int, int)
   if a % b == 0 then
     (0, 1)
   else
@@ -14,7 +14,7 @@ fun modulo-inverse(a, n)
 
 // totient(n) = (p - 1)*(q - 1), 
 // where pq is the prime factorization of n.
-fun totient(p, q)
+fun totient(p, q): int
   (p - 1) * (q - 1)
 
 // square(x) = x^2
@@ -22,7 +22,7 @@ fun square(x: int)
   x * x
 
 // modulo-power(base,exp,n) = base^exp [mod n]
-fun modulo-power(base: int, exp, n)
+fun modulo-power(base: int, exp: int, n: int)
   if exp == 0 then
     1
   elif exp.is-odd then
@@ -31,18 +31,18 @@ fun modulo-power(base: int, exp, n)
     square(modulo-power(base, exp / 2, n)) % n
 
 fun gcd( x : int, y : int )
-  if (x>y) then gcd(x - y, y)
-  elif (x < y) then gcd(x,y - x)
+  if (x > y) then gcd(x - y, y)
+  elif (x < y) then gcd(x, y - x)
   else x
 
 // RSA routines.
 // A legal public exponent e is between
 // 1 and totient(n), and gcd(e,totient(n)) = 1
-fun is-legal-public-exponent(e, p, q)
+fun is-legal-public-exponent(e: int, p, q)
   (1 < e) && (e < totient(p, q)) && (1 == gcd(e, totient(p, q)))
 
 // The private exponent is the inverse of the public exponent, mod n.
-fun private-exponent(e, p, q)
+fun private-exponent(e: int, p, q)
   if is-legal-public-exponent(e, p, q) then
     modulo-inverse(e, totient(p, q))
   else

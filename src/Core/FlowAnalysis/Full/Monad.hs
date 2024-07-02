@@ -181,7 +181,7 @@ llV achange =
     AChangePrim _ _ env -> llEnv env
     AChangeClosApp _ _ env -> llEnv env
     AChangeConstr _ env -> llEnv env
-    AChangeLit _ env -> S.empty
+    AChangeLit _ -> S.empty
 
 llAbValue :: AbValue -> S.Set Addr
 llAbValue ab = S.unions $ map llV $ changes ab
@@ -265,17 +265,17 @@ llMeta kont kclos seen =
 gc :: FixInput ->  FixAACR r s e FixInput
 gc (Eval e env store kclos klocal kont meta) = do
   -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
-  -- let env' = limitEnv env (fv (exprOfCtx e))
+  let env' = limitEnv env (fv (exprOfCtx e))
   -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()
   let laddrs = llLKont klocal
   kaddrs <- llKont kont kclos S.empty
   maddrs <- llMeta meta kclos S.empty
-  let live = liveAddrs store (S.unions [llEnv env, laddrs, kaddrs, maddrs])
+  let live = liveAddrs store (S.unions [llEnv env', laddrs, kaddrs, maddrs])
   -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let store' = limitStore store live
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Eval e env store' kclos klocal kont meta
+  return $ Eval e env' store' kclos klocal kont meta
 gc (Cont l kont meta achange store kclos) = do
   let laddrs = llLKont l
   let vaddrs = llV achange

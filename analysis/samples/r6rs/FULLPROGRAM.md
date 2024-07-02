@@ -1,5 +1,4 @@
 TODO: Full program analysis (AAC)
-- ack
 - flatten
 - deriv
 - primtest
