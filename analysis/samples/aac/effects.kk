@@ -9,7 +9,10 @@ type tree
 effect iterator<i>
   ctl yield(v: i): ()
 
-fun breadth-first(l: tree): iterator<int> ()
+linear effect literator<i>
+  fun lyield(v: i): ()
+
+fun breadth-first(^l: tree): iterator<int> ()
   match l
     Leaf -> ()
     Node(l, r, v) ->
@@ -17,7 +20,7 @@ fun breadth-first(l: tree): iterator<int> ()
       breadth-first(l)
       breadth-first(r)
 
-fun depth-first(l: tree): iterator<int> ()
+fun depth-first(^l: tree): iterator<int> ()
   match l
     Leaf -> ()
     Node(l, r, v) ->
@@ -33,19 +36,66 @@ fun count-tree(t: tree, iterate: (tree) -> <iterator<int>> ()): int
   iterate(t)
   c
 
-fun benchmark(name: string, f: () -> <console,ndet,utc|e> a, ?show: (a) -> string): <console,ndet,utc|e> a
+fun lbreadth-first(^l: tree): literator<int> ()
+  match l
+    Leaf -> ()
+    Node(l, r, v) ->
+      lyield(v)
+      lbreadth-first(l)
+      lbreadth-first(r)
+
+fun ldepth-first(^l: tree): literator<int> ()
+  match l
+    Leaf -> ()
+    Node(l, r, v) ->
+      ldepth-first(l)
+      lyield(v)
+      ldepth-first(r)
+
+fun lcount-tree(t: tree, iterate: (tree) -> <literator<int>> ()): int
+  var c := 0
+  with handler
+    fun lyield(v: int) 
+      c := c + v
+  iterate(t)
+  c
+
+fun benchmark(name: string, f: () -> <console,ndet,utc|e> a): <console,ndet,utc|e> ()
   val start = now()
-  val res = f()
+  for(10, fn(i) {f(); ()})
   val end = now()
   println(name ++ " took " ++ (end - start).show)
-  res.println
-  res
 
 fun make-tree(n: int): tree
   if n == 0 then
     Leaf
   else
     Node(make-tree((n - 1).pretend-decreasing), make-tree((n - 1).pretend-decreasing), n)
+
+fun count-tree-breadth-first-local(t: tree): int
+  var c := 0
+  fun count-tree-rec(t1: tree)
+    match t1
+      Leaf -> ()
+      Node(l, r, v) ->
+        c := c + v
+        count-tree-rec(l)
+        count-tree-rec(r)
+  count-tree-rec(t)
+  c
+
+
+fun count-tree-depth-first-local(t: tree): int
+  var c := 0
+  fun count-tree-rec(t1: tree)
+    match t1
+      Leaf -> ()
+      Node(l, r, v) ->
+        count-tree-rec(l)
+        c := c + v
+        count-tree-rec(r)
+  count-tree-rec(t)
+  c
 
 fun count-tree-breadth-first(t: tree): int
   val c = ref(0)
@@ -89,16 +139,25 @@ fun optimized2(t: tree): int
   count-tree-rec(t, 0)
 
 fun main()
-  val tree = make-tree(15)
+  val tree = make-tree(23)
   benchmark("Breadth-first")
     count-tree(tree, breadth-first)
-  benchmark("Breadth-first Hand optimized")
-    count-tree-breadth-first(tree) 
+  benchmark("Breadth-first Linear")
+    lcount-tree(tree, lbreadth-first)
+  benchmark("Breadth-first optimized ref")
+    count-tree-breadth-first(tree)
+  benchmark("Breadth-first optimized local")
+    count-tree-breadth-first-local(tree)
   benchmark("Depth-first")
     count-tree(tree, depth-first)
-  benchmark("Depth-first Hand optimized")
+  benchmark("Depth-first Linear")
+    lcount-tree(tree, ldepth-first)
+  benchmark("Depth-first optimized ref")
     count-tree-depth-first(tree) 
+  benchmark("Depth-first optimized local")
+    count-tree-depth-first-local(tree) 
   benchmark("Optimized1")
     optimized1(tree) 
   benchmark("Optimized2")
-    optimized2(tree) 
+    optimized2(tree)
+  optimized2(tree)
