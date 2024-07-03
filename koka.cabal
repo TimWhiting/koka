@@ -75,11 +75,14 @@ library
       Core.FlowAnalysis.Demand.Primitives
       Core.FlowAnalysis.Demand.Syntax
       Core.FlowAnalysis.FixpointMonad
-      Core.FlowAnalysis.Full.AAC
+      Core.FlowAnalysis.Full.AAC.AAC
+      Core.FlowAnalysis.Full.AAC.Monad
+      Core.FlowAnalysis.Full.AAC.Syntax
+      Core.FlowAnalysis.Full.AAM.AAM
+      Core.FlowAnalysis.Full.AAM.Monad
+      Core.FlowAnalysis.Full.AAM.Syntax
       Core.FlowAnalysis.Full.AbstractValue
-      Core.FlowAnalysis.Full.Monad
       Core.FlowAnalysis.Full.Primitives
-      Core.FlowAnalysis.Full.Syntax
       Core.FlowAnalysis.Literals
       Core.FlowAnalysis.Monad
       Core.FlowAnalysis.StaticContext

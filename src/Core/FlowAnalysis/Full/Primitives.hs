@@ -10,7 +10,6 @@ import Common.Failure
 import Compile.Module
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.StaticContext
-import Core.FlowAnalysis.Full.Monad
 import Core.FlowAnalysis.Full.AbstractValue
 import Core.FlowAnalysis.Literals
 import Core.Core as C
@@ -21,6 +20,7 @@ import Lib.PPrint (pretty)
 import Data.Either (isLeft)
 import Type.Unify (runUnifyEx, unify)
 import Common.Name (newLocallyQualified, newQualified, Name)
+import Core.FlowAnalysis.Monad (FixAR)
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -59,7 +59,7 @@ falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim C.exprFalse) M.empty
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
-anyBool :: FixAACR x s e AChange
+anyBool :: (Ord i, Show c, Show (o c), Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
 changeUnit = AChangeConstr (ExprPrim C.exprUnit) M.empty
@@ -78,21 +78,21 @@ isPrimitive tn =
     nameCoreTrace,
     nameCorePrint, nameCorePrintln]
 
-intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAACR x s e AChange
+intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAR x s e i o c AChange
 intOp f [p1, p2] = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2)))
     (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) -> return $ AChangeLit (LiteralChangeInt LChangeTop)
     _ -> doBottom
 
-charCmpOp :: (Char -> Char -> Bool) -> [AChange] -> FixAACR x s e AChange
+charCmpOp :: (Ord i, Show c, Show (o c), Lattice o c) => (Char -> Char -> Bool) -> [AChange] -> FixAR x s e i o c AChange
 charCmpOp f [p1, p2] = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeChar (LChangeSingle c1)), AChangeLit (LiteralChangeChar (LChangeSingle c2))) -> return $! toChange (f c1 c2)
     (AChangeLit (LiteralChangeChar _), AChangeLit (LiteralChangeChar _)) -> anyBool
     _ -> doBottom
 
-opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> FixAACR x s e AChange
+opCmpInt ::(Ord i, Show c, Show (o c), Lattice o c) =>  (Integer -> Integer -> Bool) -> [AChange] -> FixAR x s e i o c AChange
 opCmpInt f [p1, p2] = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! toChange (f i1 i2)
@@ -100,9 +100,9 @@ opCmpInt f [p1, p2] = do
       trace "opCmpInt: top" anyBool
     _ -> doBottom
 
-doPrimitive :: Name -> [Addr] -> VEnv -> VStore -> FixAACR r s e AChange
+doPrimitive :: (Ord i, Show c, Show (o c), Lattice o c) => Name -> [Addr] -> VEnv -> VStore -> FixAR r s e i o c AChange
 doPrimitive nm addrs env store = do
-  achanges <- mapM (storeGet store) addrs
+  achanges <- mapM (\a -> storeGet store a) addrs
   -- trace ("Primitive: " ++ show nm ++ " " ++ show achanges) $ return ()
   if nm == nameIntEq then
     opCmpInt (==) achanges

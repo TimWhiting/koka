@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-module Core.FlowAnalysis.Full.Syntax where
+module Core.FlowAnalysis.Full.AAC.Syntax where
 
 import Data.List (intercalate, find, minimumBy)
 import qualified Data.Map.Strict as M
@@ -22,9 +22,9 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Syntax
 import Core.FlowAnalysis.Monad
-import Core.FlowAnalysis.Full.AAC
+import Core.FlowAnalysis.Full.AAC.AAC
 import Core.FlowAnalysis.Full.AbstractValue
-import Core.FlowAnalysis.Full.Monad
+import Core.FlowAnalysis.Full.AAC.Monad
 import Common.Failure (HasCallStack)
 import Common.NamePrim (nameMain)
 import Common.Name (Name(..))

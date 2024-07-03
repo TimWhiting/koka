@@ -20,9 +20,9 @@ import Debug.Trace (trace)
 import Common.Range
 import Data.Maybe (fromMaybe, catMaybes, isJust, fromJust)
 import GHC.Base (mplus)
-import Common.Failure (assertion)
+import Common.Failure (assertion, HasCallStack)
 import Core.FlowAnalysis.StaticContext
-import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice)
+import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice, FixT, doBottom, each)
 import qualified Core.FlowAnalysis.FixpointMonad as FM
 import Core.CoreVar (bv)
 import Data.Foldable (find)
@@ -30,6 +30,48 @@ import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
+  
+type VStore = M.Map Addr AbValue
+
+storeLookup :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => TName -> VEnv -> VStore -> FixAR r s e i o c AChange
+storeLookup x env store = do
+  case M.lookup x env of
+    Just addr -> do
+      case M.lookup addr store of
+        Just value -> eachValue value
+        Nothing -> error ("storeLookup: " ++ show addr ++ " not found")
+    Nothing -> do
+      -- trace ("storeLookup: " ++ show x ++ " not found") $ return ()
+      lam <- bindExternal x
+      case lam of
+        Nothing -> doBottom
+        Just lam -> do
+          return $ AChangeClos lam M.empty
+
+storeGet :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => VStore -> Addr -> FixAR r s e i o c AChange
+storeGet store addr = do
+  case M.lookup addr store of
+    Just value -> eachValue value
+    Nothing -> error $ "storeGet: " ++ show addr ++ " not found"
+
+eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
+eachValue ab = each $ map return (changes ab)
+
+tnamesCons :: Int -> [TName]
+tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
+
+limitEnv :: VEnv -> S.Set TName -> VEnv
+limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
+
+limitStore :: VStore -> S.Set Addr -> VStore
+limitStore store fvs = M.filterWithKey (\k _ -> k `S.member` fvs) store
+
+extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
+extendStore store i v =
+  M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
+
+extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
+extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
 type Addr = (TName, ExprContextId)
 type VEnv = M.Map TName Addr

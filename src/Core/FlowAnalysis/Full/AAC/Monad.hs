@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Core.FlowAnalysis.Full.Monad where
+module Core.FlowAnalysis.Full.AAC.Monad where
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Control.Monad.Reader (lift)
@@ -24,7 +24,6 @@ import GHC.Base (when)
 import Core.CoreVar (HasExpVar(fv), bv)
 import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 
-type VStore = M.Map Addr AbValue
 data FixInput =
   Eval ExprContext VEnv VStore KClos LocalKont Kont MetaKont
   | Cont LocalKont Kont MetaKont AChange VStore KClos
@@ -109,49 +108,9 @@ addKont ctx@(clos, arg, store, kclos) lk mk = do
 addMetaKont :: MetaKont -> LocalKont -> Kont -> MetaKont -> FixAACR r s e ()
 addMetaKont c lk mk mmk = lift $ push (CStoreGet c) (CC lk mk mmk)
 
-storeLookup :: HasCallStack => TName -> VEnv -> VStore -> FixAACR r s e AChange
-storeLookup x env store = do
-  case M.lookup x env of
-    Just addr -> do
-      case M.lookup addr store of
-        Just value -> eachValue value
-        Nothing -> error ("storeLookup: " ++ show addr ++ " not found")
-    Nothing -> do
-      -- trace ("storeLookup: " ++ show x ++ " not found") $ return ()
-      lam <- bindExternal x
-      case lam of
-        Nothing -> doBottom
-        Just lam -> do
-          return $ AChangeClos lam M.empty
-
-storeGet :: HasCallStack => VStore -> Addr -> FixAACR r s e AChange
-storeGet store addr = do
-  case M.lookup addr store of
-    Just value -> eachValue value
-    Nothing -> error $ "storeGet: " ++ show addr ++ " not found"
-
-tnamesCons :: Int -> [TName]
-tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
-
-eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
-eachValue ab = each $ map return (changes ab)
-
-extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
-extendStore store i v =
-  M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
-
-extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
-extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
-
 entails :: KClos -> KClos -> Bool
 entails a b =
   M.isSubmapOfBy (\a b -> S.isSubsetOf a b) b a
-
-limitEnv :: VEnv -> S.Set TName -> VEnv
-limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
-
-limitStore :: VStore -> S.Set Addr -> VStore
-limitStore store fvs = M.filterWithKey (\k _ -> k `S.member` fvs) store
 
 konts :: ApproxContext -> KClos -> FixAACR r s e [(LocalKont, Kont)]
 konts (e, env, a) kclos = do
