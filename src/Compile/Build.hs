@@ -64,7 +64,7 @@ import Compile.BuildMonad
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
-import Core.FlowAnalysis.Full.AAC.Syntax (evalMain)
+import Core.FlowAnalysis.Full.AAM.Syntax (evalMain)
 
 
 {---------------------------------------------------------------

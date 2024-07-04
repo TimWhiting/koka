@@ -76,7 +76,11 @@ isPrimitive tn =
     namePretendDecreasing, nameUnsafeTotalCast,
     nameNumRandom,
     nameCoreTrace,
-    nameCorePrint, nameCorePrintln]
+    nameCorePrint, nameCorePrintln,
+    nameHandle,
+    namePerform 0,
+    nameClause "tail" 0
+    ]
 
 intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAR x s e i o c AChange
 intOp f [p1, p2] = do

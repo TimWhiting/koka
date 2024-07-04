@@ -78,7 +78,7 @@ type VEnv = M.Map TName Addr
 
 data AChange =
   AChangeClos ExprContext VEnv
-  | AChangePrim Name ExprContext VEnv
+  | AChangePrim TName ExprContext VEnv
   | AChangeClosApp ExprContext ExprContext VEnv -- This is a closure that has a different application for it's calling context abstraction
   | AChangeConstr ExprContext VEnv
   | AChangeLit LiteralChange
@@ -110,7 +110,7 @@ instance Show AChange where
   show (AChangeClosApp expr _ env) =
     showNoEnvClosure (expr, env)
   show (AChangeConstr expr env) =
-    showNoEnvClosure (expr, env)
+    showSimpleClosure (expr, env)
   show (AChangeLit lit) =
     show lit
 

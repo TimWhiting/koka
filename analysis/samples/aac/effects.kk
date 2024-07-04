@@ -12,6 +12,9 @@ effect iterator<i>
 linear effect literator<i>
   fun lyield(v: i): ()
 
+linear effect viterator<h,i>
+  val sumv: ref<h,i>
+
 fun breadth-first(^l: tree): iterator<int> ()
   match l
     Leaf -> ()
@@ -60,9 +63,62 @@ fun lcount-tree(t: tree, iterate: (tree) -> <literator<int>> ()): int
   iterate(t)
   c
 
+fun vcount-tree(t: tree, iterate: (tree) -> <viterator<h,int>> ()): int
+  val c = ref(0)
+  with handler
+    val sumv = c
+  iterate(t)
+  !c
+
+fun vbreadth-first(^l: tree): viterator<h,int> ()
+  match l
+    Leaf -> ()
+    Node(l, r, v) ->
+      val s:some<h> ref<h,int> = sumv
+      s := !s + v
+      vbreadth-first(l)
+      vbreadth-first(r)
+
+fun hcount-breadth(t: tree): int
+  val c = ref(0)
+  with handler
+    val sumv = c
+  fun internal(^l: tree)
+    match l
+      Leaf -> ()
+      Node(l, r, v) ->
+        c := !c + v
+        internal(l)
+        internal(r)
+  internal(t)
+  !c
+
+fun hcount-depth(t: tree): int
+  val c = ref(0)
+  with handler
+    val sumv = c
+  fun internal(^l: tree)
+    match l
+      Leaf -> ()
+      Node(l, r, v) ->
+        c := !c + v
+        internal(l)
+        internal(r)
+  internal(t)
+  !c
+
+fun vdepth-first(^l: tree): viterator<h,int> ()
+  match l
+    Leaf -> ()
+    Node(l, r, v) ->
+      vdepth-first(l)
+      val s :some<h> ref<h,int> = sumv
+      s := !s + v
+      vdepth-first(r)
+
 fun benchmark(name: string, f: () -> <console,ndet,utc|e> a): <console,ndet,utc|e> ()
   val start = now()
-  for(10, fn(i) {f(); ()})
+  for(5, fn(i) {f(); ()})
   val end = now()
   println(name ++ " took " ++ (end - start).show)
 
@@ -139,11 +195,15 @@ fun optimized2(t: tree): int
   count-tree-rec(t, 0)
 
 fun main()
-  val tree = make-tree(23)
+  val tree = make-tree(24)
   benchmark("Breadth-first")
     count-tree(tree, breadth-first)
   benchmark("Breadth-first Linear")
     lcount-tree(tree, lbreadth-first)
+  benchmark("Breadth-first Val")
+    vcount-tree(tree, vbreadth-first)
+  benchmark("Breadth-first Hand insertion")
+    hcount-breadth(tree)
   benchmark("Breadth-first optimized ref")
     count-tree-breadth-first(tree)
   benchmark("Breadth-first optimized local")
@@ -152,6 +212,10 @@ fun main()
     count-tree(tree, depth-first)
   benchmark("Depth-first Linear")
     lcount-tree(tree, ldepth-first)
+  benchmark("Depth-first Val")
+    vcount-tree(tree, vdepth-first)
+  benchmark("Depth-first Hand insertion")
+    hcount-depth(tree)
   benchmark("Depth-first optimized ref")
     count-tree-depth-first(tree) 
   benchmark("Depth-first optimized local")

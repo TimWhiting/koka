@@ -34,7 +34,7 @@ alloc (Cont _ _ _ (AChangeClos lam env) store xclos) (AppL nargs e env':ls) = do
     return $ zip names addrs
 alloc (Cont _ _ _ (AChangePrim n expr _) store xclos) (AppL nargs e0 env':ls) = do
   let addrs = repeat $ contextId e0
-  let names =  map (\x -> TName (newHiddenName $ nameStem n ++ show x) typeAny Nothing) (take nargs [0..])
+  let names =  map (\x -> TName (newHiddenName $ nameStem (getName n) ++ show x) typeAny Nothing) (take nargs [0..])
   return $ zip names addrs
 alloc (Cont _ _ _ (AChangeConstr con env) store xclos) (AppL nargs e env':ls) = do
   case exprOfCtx con of
@@ -64,8 +64,7 @@ doStep i =
           Lit l -> doGC $ Cont local kont meta (injLit l env) store xclos
           Var x _ -> do
             if isPrimitive x then
-              let n = getName x in
-              doGC $ Cont local kont meta (AChangePrim n expr env) store xclos
+              doGC $ Cont local kont meta (AChangePrim x expr env) store xclos
             else do
               -- trace ("Var: " ++ show x ++ " " ++ show env) $ return ()
               v <- storeLookup x env store
@@ -155,7 +154,7 @@ doStep i =
           (AppR cprim@(AChangePrim p ctx env) addrs):ls -> do
             -- trace ("Prim store " ++ showStore store) $ return ()
             let store' = extendStore store (last addrs) achange
-            res <- doPrimitive p addrs env store'
+            res <- doPrimitive (getName p) addrs env store'
             -- trace ("Primitive Result " ++ show cprim ++ " " ++ show res ++ " " ++ show ls) $ return ()
             doGC $ Cont ls k meta res store' xclos
           LetL bgi bgn bi bn addrs e p:ls -> do

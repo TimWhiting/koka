@@ -116,7 +116,7 @@ evalMain bc build mod m = do
 
 writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 writeSimpleDependencyGraph name cache = do
-  let cache' = M.filterWithKey (\k v -> case k of {Eval {} -> True; Cont {} -> True;  _ -> False}) cache
+  let cache' = M.filterWithKey (\k v -> case k of {Eval {} -> True; Cont {} -> True}) cache
   -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
   let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
   let nodes = M.foldlWithKey (\acc k (v, toId, conts, fconts) -> (toId,k,v):acc) [] cache'
