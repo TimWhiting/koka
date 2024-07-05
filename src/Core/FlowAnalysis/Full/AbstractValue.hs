@@ -7,11 +7,11 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 module Core.FlowAnalysis.Full.AbstractValue where
-import Data.Map.Strict as M hiding (map)
+import Data.Map.Strict as M hiding (foldl, map)
 import Common.Name
 import Type.Type
-import Data.Set hiding (map, map)
-import Data.Set as S hiding (map)
+import Data.Set hiding (foldl, map, map)
+import Data.Set as S hiding (foldl, map)
 import Core.Core as C
 import Syntax.Syntax as S
 import Data.List (elemIndex, intercalate)
@@ -30,7 +30,7 @@ import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
-  
+
 type VStore = M.Map Addr AbValue
 
 storeLookup :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => TName -> VEnv -> VStore -> FixAR r s e i o c AChange
@@ -70,64 +70,62 @@ extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
 extendStore store i v =
   M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
 
+extendStoreAll :: VStore -> [(TName,ExprContextId)] -> [AChange] -> VStore
+extendStoreAll store addrs changes = foldl (\acc (addr, ch) -> extendStore acc addr ch) store (zip addrs changes)
+
 extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
 extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
 type Addr = (TName, ExprContextId)
 type VEnv = M.Map TName Addr
 
+newtype KAddr = KAddr (ExprContext, VEnv) deriving (Eq, Ord, Show)
+
 data AChange =
   AChangeClos ExprContext VEnv
   | AChangePrim TName ExprContext VEnv
-  | AChangeClosApp ExprContext ExprContext VEnv -- This is a closure that has a different application for it's calling context abstraction
   | AChangeConstr ExprContext VEnv
+  | AChangeOp Name ExprContext VEnv -- AChangeOp
   | AChangeLit LiteralChange
+  | AChangeKont KAddr
   deriving (Eq, Ord)
-
-callOfClos :: AChange -> ExprContext
-callOfClos res =
-  case res of
-    AChangeClos c e -> c
-    AChangeClosApp _ c e -> c
 
 envOfClos :: AChange -> VEnv
 envOfClos res =
   case res of
     AChangeClos c e -> e
-    AChangeClosApp _ c e -> e
+    AChangeOp _ c e -> e
 
 ctxOfClos :: AChange -> ExprContext
 ctxOfClos res =
   case res of
     AChangeClos c e -> c
-    AChangeClosApp c _ e -> c
+    AChangeOp _ c e -> c
 
 instance Show AChange where
-  show (AChangeClos expr env) =
-    showNoEnvClosure (expr, env)
-  show (AChangePrim name expr env) =
-    show name
-  show (AChangeClosApp expr _ env) =
-    showNoEnvClosure (expr, env)
-  show (AChangeConstr expr env) =
-    showSimpleClosure (expr, env)
-  show (AChangeLit lit) =
-    show lit
+  show (AChangeClos expr env) = showNoEnvClosure (expr, env)
+  show (AChangeOp nm expr env) = showNoEnvClosure (expr, env)
+  show (AChangeConstr expr env) = showSimpleClosure (expr, env)
+  show (AChangePrim name expr env) = show name
+  show (AChangeKont k) = show k
+  show (AChangeLit lit) = show lit
 
 data AbValue =
   AbValue{
     aclos:: !(Set (ExprContext, VEnv)),
-    aclosapps:: !(Set (ExprContext, ExprContext, VEnv)),
+    aops:: !(Set (Name, ExprContext, VEnv)),
     acons:: !(Set (ExprContext, VEnv)),
+    akonts:: !(Set KAddr),
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
 
 changes :: AbValue -> [AChange]
-changes (AbValue clos clsapp constrs lits) =
-  closs ++ closapps ++ constrss ++ litss
+changes (AbValue clos clsops constrs konts lits) =
+  closs ++ closops ++ constrss ++ ckonts ++ litss
   where
     closs = map (uncurry AChangeClos) $ S.toList clos
-    closapps = map (\(a, b, c) -> AChangeClosApp a b c) $ S.toList clsapp
+    closops = map (\(nm,ctx,env) -> AChangeOp nm ctx env) $ S.toList clsops
+    ckonts = map AChangeKont $ S.toList konts
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     litss = changesLit lits
 
@@ -141,10 +139,11 @@ changesLit (LiteralLattice ints floats chars strings) =
     stringChanges = map (\x -> AChangeLit (LiteralChangeString x)) $ FM.elems strings
 
 changeIn :: AChange -> AbValue -> Bool
-changeIn (AChangeClos ctx env) (AbValue clos _ _ _) = S.member (ctx,env) clos
-changeIn (AChangeClosApp ctx app env) (AbValue _ closapps _ _) = S.member (ctx,app,env) closapps
-changeIn (AChangeConstr ctx env) (AbValue _ _ constr _) = S.member (ctx,env) constr
-changeIn (AChangeLit lit) (AbValue _ _ _ (LiteralLattice ints floats chars strings)) =
+changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _) = S.member (ctx,env) clos
+changeIn (AChangeOp nm ctx env) (AbValue _ closops _ _ _) = S.member (nm,ctx,env) closops
+changeIn (AChangeConstr ctx env) (AbValue _ _ constr _ _) = S.member (ctx,env) constr
+changeIn (AChangeKont kont) (AbValue _ _ _ konts _) = S.member kont konts
+changeIn (AChangeLit lit) (AbValue _ _ _ _ (LiteralLattice ints floats chars strings)) =
   case lit of
     LiteralChangeInt i -> i `lte` ints
     LiteralChangeFloat f -> f `lte` floats
@@ -161,25 +160,28 @@ instance Monoid AbValue where
 
 instance Contains AbValue where
   contains :: AbValue -> AbValue -> Bool
-  contains (AbValue cls0 clsa0 cntrs0 lit0) (AbValue cls1 clsa1 cntrs1 lit1) =
-    S.isSubsetOf cls1 cls0 && S.isSubsetOf clsa1 clsa0 && cntrs1 `S.isSubsetOf` cntrs0 && lit0 `litContainsLattice` lit1
+  contains (AbValue cls0 clsa0 cntrs0 konts0 lit0) (AbValue cls1 clsa1 cntrs1 konts1 lit1) =
+    S.isSubsetOf cls1 cls0 && S.isSubsetOf clsa1 clsa0 && cntrs1 `S.isSubsetOf` cntrs0 && lit0 `litContainsLattice` lit1 && konts0 `S.isSubsetOf` konts1
 
 instance Show AbValue where
-  show (AbValue cls clsapp cntrs lit) =
+  show (AbValue cls clsapp cntrs konts lit) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
+    (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
     (if litIsBottom lit then "" else " lit: " ++ show lit)
 
 showSimpleAbValue :: AbValue -> String
-showSimpleAbValue (AbValue cls clsa cntrs lit) =
+showSimpleAbValue (AbValue cls clsa cntrs konts lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showSimpleClosure (S.toList cntrs)) ++ "]") ++
+  (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
   (if litIsBottom lit then "" else " lits: " ++ show lit)
 
 showNoEnvAbValue :: AbValue -> String
-showNoEnvAbValue (AbValue cls clsa cntrs lit) =
+showNoEnvAbValue (AbValue cls clsa cntrs konts lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
   (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map showNoEnvClosure (S.toList cntrs)) ++ "]") ++
+  (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
   (if litIsBottom lit then "" else " lits: " ++ show lit)
 
 -- Basic creating of abstract values
@@ -198,7 +200,7 @@ showSimpleAbValueCtx (env, ab) =
   showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
 
 emptyAbValue :: AbValue
-emptyAbValue = AbValue S.empty S.empty S.empty litBottom
+emptyAbValue = AbValue S.empty S.empty S.empty S.empty litBottom
 
 injLit :: C.Lit -> VEnv -> AChange
 injLit x env =
@@ -213,12 +215,13 @@ joinML :: Ord x => M.Map VEnv (SLattice x) -> M.Map VEnv (SLattice x) -> M.Map V
 joinML = M.unionWith join
 
 addChange :: AbValue -> AChange -> AbValue
-addChange ab@(AbValue cls clsapp cs lit) change =
+addChange ab@(AbValue cls clsapp cs konts lit) change =
   case change of
-    AChangeClos lam env -> AbValue (S.insert (lam,env) cls) clsapp cs lit
-    AChangeClosApp lam app env -> AbValue cls (S.insert (lam,app,env) clsapp) cs lit
-    AChangeConstr c env -> AbValue cls clsapp (S.insert (c,env) cs) lit
-    AChangeLit l -> AbValue cls clsapp cs (joinLit (litLattice l) lit)
+    AChangeClos lam env -> AbValue (S.insert (lam,env) cls) clsapp cs konts lit
+    AChangeOp nm app env -> AbValue cls (S.insert (nm,app,env) clsapp) cs konts lit
+    AChangeConstr c env -> AbValue cls clsapp (S.insert (c,env) cs) konts lit
+    AChangeKont k -> AbValue cls clsapp cs (S.insert k konts) lit
+    AChangeLit l -> AbValue cls clsapp cs konts (joinLit (litLattice l) lit)
 
 joinAbValue :: AbValue -> AbValue -> AbValue
-joinAbValue (AbValue cls0 clsa0 cs0 lit0) (AbValue cls1 clsa1 cs1 lit1) = AbValue (S.union cls0 cls1) (S.union clsa0 clsa1) (S.union cs0 cs1) (joinLit lit0 lit1)
+joinAbValue (AbValue cls0 clsa0 cs0 konts0 lit0) (AbValue cls1 clsa1 cs1 konts1 lit1) = AbValue (S.union cls0 cls1) (S.union clsa0 clsa1) (S.union cs0 cs1) (S.union konts0 konts1) (joinLit lit0 lit1)

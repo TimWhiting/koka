@@ -35,6 +35,7 @@ nameBoolNegate = newLocallyQualified "std/core/types" "bool" "!"
 
 nameCoreCharLt = newQualified "std/core/char" "<"
 nameCoreCharLtEq = newQualified "std/core/char" "<="
+nameCoreIntShow = newQualified "std/core/int" "show"
 nameCoreCharGt = newQualified "std/core/char" ">"
 nameCoreCharGtEq = newQualified "std/core/char" ">="
 nameCoreCharEq = newQualified "std/core/char" "=="
@@ -70,6 +71,7 @@ isPrimitive tn =
     nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
     nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
     nameIntOdd,
+    nameCoreIntShow,
     nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
     nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow,
     nameCoreCharInt, nameNumInt32Int,
@@ -77,9 +79,10 @@ isPrimitive tn =
     nameNumRandom,
     nameCoreTrace,
     nameCorePrint, nameCorePrintln,
-    nameHandle,
-    namePerform 0,
-    nameClause "tail" 0
+    nameHandle, 
+    namePerform 0, namePerform 1, namePerform 2, namePerform 3, namePerform 4,
+    nameClause "tail" 0, nameClause "tail" 1, nameClause "tail" 2, nameClause "tail" 3, nameClause "tail" 4,
+    nameClause "control" 0, nameClause "control" 1, nameClause "control" 2, nameClause "control" 3, nameClause "control" 4
     ]
 
 intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAR x s e i o c AChange
@@ -128,6 +131,11 @@ doPrimitive nm addrs env store = do
     intOp div achanges
   else if nm == nameIntMod then
     intOp mod achanges
+  else if nm == nameCoreIntShow then
+    case achanges of
+      [AChangeLit (LiteralChangeInt (LChangeSingle i))] -> return $ AChangeLit (LiteralChangeString (LChangeSingle (show i)))
+      [AChangeLit (LiteralChangeInt _)] -> return $ AChangeLit (LiteralChangeString LChangeTop)
+      _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
       [AChangeConstr (ExprPrim e) _] | isExprTrue e -> return $ AChangeConstr (ExprPrim C.exprFalse) M.empty
@@ -137,6 +145,11 @@ doPrimitive nm addrs env store = do
     case achanges of
       [AChangeLit (LiteralChangeInt (LChangeSingle i))] -> return $ toChange (odd i)
       [AChangeLit (LiteralChangeInt _)] -> anyBool
+  else if nm == nameCoreTypesExternAppend then
+    case achanges of
+      [AChangeLit (LiteralChangeString (LChangeSingle s1)), AChangeLit (LiteralChangeString (LChangeSingle s2))] -> return $ AChangeLit (LiteralChangeString (LChangeSingle (s1 ++ s2)))
+      [AChangeLit (LiteralChangeString _), AChangeLit (LiteralChangeString _)] -> return $ AChangeLit (LiteralChangeString LChangeTop)
+      _ -> doBottom
   else if nm == nameCoreCharLt then
     charCmpOp (<) achanges
   else if nm == nameCoreCharLtEq then

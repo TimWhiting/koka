@@ -138,7 +138,6 @@ llV achange =
   case achange of
     AChangeClos _ env -> llEnv env
     AChangePrim _ _ env -> llEnv env
-    AChangeClosApp _ _ env -> llEnv env
     AChangeConstr _ env -> llEnv env
     AChangeLit _ -> S.empty
 

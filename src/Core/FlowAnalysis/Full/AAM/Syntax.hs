@@ -166,4 +166,4 @@ showCont l =  map (text . show) (reverse l)-- (take 2 $ reverse l)
 
 instance Label FixInput where
   label (Eval q env _ _ kont) = escape $ show (vcat (text "EVAL": showCont kont ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
-  label (Cont ch env _ _ kont) = escape $ show (vcat $ text "CONT" :  showCont kont ++ [text $ show ch])
+  label (Cont ch _ _ kont) = escape $ show (vcat $ text "CONT" :  showCont kont ++ [text $ show ch])

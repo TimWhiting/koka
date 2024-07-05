@@ -25,14 +25,12 @@ import Core.CoreVar (HasExpVar(fv), bv)
 import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
-type KStore = M.Map Kont (S.Set [Frame])
+type KStore = M.Map KAddr (S.Set [Frame])
 
 data FixInput =
   Eval ExprContext VEnv VStore KStore [Frame]
-  | Cont AChange VEnv VStore KStore [Frame]
+  | Cont AChange VStore KStore [Frame]
   deriving (Eq, Ord)
-
-newtype Kont = Kont (ExprContext, VEnv) deriving (Eq, Ord, Show)
 
 data FixOutput a =
   A AbValue
@@ -49,7 +47,7 @@ type FixAAM r s e = FixAAMR r s e (FixOutput FixChange)
 type PostFixAAMR r s e a = PostFixAR r s e FixInput FixOutput FixChange a
 type PostFixAAM r s e = PostFixAAMR r s e (FixOutput FixChange)
 
-kstoreExtend :: Kont -> [Frame] -> KStore -> KStore
+kstoreExtend :: KAddr -> [Frame] -> KStore -> KStore
 kstoreExtend k frames store =
   case M.lookup k store of
     Just oldFrames -> M.insert k (S.insert frames oldFrames) store
@@ -57,15 +55,17 @@ kstoreExtend k frames store =
 
 data Frame =
   EndProgram
-  | EndCall Kont
+  | EndCall KAddr
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr]
   | HandleL [AChange] Effect ExprContext VEnv -- The handle expression (changes are the tag, the handler object, the return closure, and the action closure)
   | HandleR [AChange] Effect ExprContext VEnv -- The handle expression (changes are the tag, the handler object, the return closure, and the action closure)
-  | OpL Effect Kont
-  | OpL2 Effect Kont
-  | OpR [AChange] Kont
+  | OpL ExprContext VEnv Int Effect KAddr
+  | OpL1 ExprContext VEnv Int Effect KAddr
+  | OpL2 ExprContext VEnv Int AChange [AChange] Effect KAddr
+  | KResume KAddr
+  | OpR [AChange] Effect KAddr
   | LetL Int Int Int Int [Addr] ExprContext VEnv -- Binding group index, num binding groups, binding index, num bindings, addresses for binding group, parent expresion, parent env
   | CaseR ExprContext VEnv
   deriving (Eq, Ord)
@@ -73,74 +73,82 @@ data Frame =
 llEnv :: VEnv -> S.Set Addr
 llEnv env = S.fromList $ M.elems env
 
-llFrame :: Frame -> KStore -> S.Set Addr
-llFrame EndProgram store = S.empty
-llFrame (EndCall kont) store = llKont kont store
-llFrame (AppL _ _ env) store = llEnv env
-llFrame (AppM v addrs _ _ _ env) store = S.unions [llEnv env, S.fromList addrs, llV v]
-llFrame (AppR v addrs) store = S.union (llV v) (S.fromList addrs)
-llFrame (LetL _ _ _ _ addrs _ env) store = S.union (llEnv env) (S.fromList addrs)
-llFrame (CaseR _ env) store = llEnv env
-llFrame (HandleL changes ef e env) store = S.unions (llEnv env:map llV changes)
-llFrame (HandleR changes ef e env) store = S.unions (llEnv env:map llV changes)
-llFrame (OpL eff kont) store = llKont kont store
-llFrame (OpL2 eff kont) store = llKont kont store
-llFrame (OpR changes kont) store = S.unions $ llKont kont store : map llV changes
+llFrame :: KStore -> S.Set KAddr -> Frame -> S.Set Addr
+llFrame kstore seen f =
+  case f of 
+    EndProgram -> S.empty
+    EndCall kont -> llKont kont kstore seen
+    KResume kont -> llKont kont kstore seen
+    CaseR _ env -> llEnv env
+    AppL _ _ env -> llEnv env
+    AppR v addrs -> S.union (llV kstore seen v) (S.fromList addrs)
+    AppM v addrs _ _ _ env -> S.unions [llEnv env, S.fromList addrs, llV kstore seen v]
+    LetL _ _ _ _ addrs _ env -> S.union (llEnv env) (S.fromList addrs)
+    HandleL changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
+    HandleR changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
+    OpR changes eff kont -> S.unions $ llKont kont kstore seen : map (llV kstore seen) changes
+    OpL expr env n eff kont -> llKont kont kstore seen `S.union` llEnv env
+    OpL1 expr env n eff kont -> S.unions [llKont kont kstore seen, llEnv env]
+    OpL2 expr env n ch changes eff kont -> S.unions $ llKont kont kstore seen : llV kstore seen ch : llEnv env : map (llV kstore seen) changes
 
-llV :: AChange -> S.Set Addr
-llV achange =
+llV :: KStore -> S.Set KAddr -> AChange -> S.Set Addr
+llV kstore seen achange  =
   case achange of
     AChangeClos _ env -> llEnv env
     AChangePrim _ _ env -> llEnv env
-    AChangeClosApp _ _ env -> llEnv env
+    AChangeOp _ _ env -> llEnv env
+    AChangeKont k -> llKont k kstore seen
     AChangeConstr _ env -> llEnv env
     AChangeLit _ -> S.empty
 
-llAbValue :: AbValue -> S.Set Addr
-llAbValue ab = S.unions $ map llV $ changes ab
+llAbValue :: KStore -> S.Set KAddr -> AbValue -> S.Set Addr
+llAbValue kstore seen ab = S.unions $ map (llV kstore seen) $ changes ab
 
-llA :: Addr -> VStore -> S.Set Addr
-llA a store = maybe S.empty llAbValue (M.lookup a store)
+llA :: Addr -> VStore -> KStore -> S.Set KAddr -> S.Set Addr
+llA a store kstore seen = maybe S.empty (llAbValue kstore seen) (M.lookup a store)
 
-liveAddrs :: VStore -> S.Set Addr -> S.Set Addr
-liveAddrs store frontier =
+liveAddrs :: KStore -> VStore -> S.Set Addr -> S.Set Addr
+liveAddrs kstore store frontier =
   recur frontier S.empty
   where recur left marked =
           if null left then marked
           else
             let (next, nextLeft) = S.deleteFindMin left
                 newMarked = S.insert next marked
-                newFrontier = S.union (llA next store) nextLeft `S.difference` marked in
+                newFrontier = S.union (llA next store kstore S.empty) nextLeft `S.difference` marked in
             recur newFrontier newMarked
 
-llKont :: Kont -> KStore -> S.Set Addr
-llKont kaddr store =
-  case M.lookup kaddr store of
-    Just frames -> S.unions $ map (\f -> llFrame f store) $ concat $ S.toList frames
-    Nothing -> S.empty
+llKont :: KAddr -> KStore -> S.Set KAddr -> S.Set Addr
+llKont kaddr store konts =
+  if S.member kaddr konts then
+    S.empty
+  else
+    case M.lookup kaddr store of
+      Just frames -> S.unions $ map (llFrame store (S.insert kaddr konts)) $ concat $ S.toList frames
+      Nothing -> S.empty
 
-llLKont :: [Frame] -> KStore -> S.Set Addr
-llLKont kont store = S.unions $ map (\f -> llFrame f store) kont
+llLKont :: [Frame] -> KStore -> S.Set KAddr -> S.Set Addr
+llLKont kont store konts = S.unions $ map (llFrame store konts) kont
 
 gc :: FixInput -> FixAAMR r s e FixInput
 gc (Eval e env store kstore kont) = do
   -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
   let env' = limitEnv env (fv (exprOfCtx e))
   -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()\
-  let live = liveAddrs store (S.unions [llEnv env', llLKont kont kstore])
+  let live = liveAddrs kstore store (S.unions [llEnv env', llLKont kont kstore S.empty])
   -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let store' = limitStore store live
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
   return $ Eval e env' store' kstore kont
-gc (Cont achange env store kstore kont) = do
-  let vaddrs = llV achange
+gc (Cont achange store kstore kont) = do
+  let vaddrs = llV kstore S.empty achange
   -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
-  let live = liveAddrs store (S.unions [vaddrs, llEnv env, llLKont kont kstore])
+  let live = liveAddrs kstore store (S.unions [vaddrs, llLKont kont kstore S.empty])
   let store' = limitStore store live
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Cont achange env store' kstore kont
+  return $ Cont achange store' kstore kont
 
 showStore store = show $ pretty store
 
@@ -171,17 +179,19 @@ instance Show Frame where
   show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
   show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
   show (AppR ch chs) = "AppR " ++ show ch
-  show (OpL eff r) = "Op " ++ show (ppType defaultEnv eff) ++ " " ++ show r
-  show (OpL2 eff r) = "Op2 " ++ show (ppType defaultEnv eff) ++ " " ++ show r
-  show (OpR changes r) = "OpR " ++ show changes ++ " " ++ show r
+  show (OpL expr env n eff r) = "Op " ++ show (ppType defaultEnv eff) ++ " " ++ show r
+  show (OpL1 expr env n eff r) = "Op1L " ++ show n ++ " " ++ show (ppType defaultEnv eff) ++ " " ++ show r
+  show (OpL2 expr env n ch changes eff r) = "Op2L " ++ show (length changes) ++ " " ++ show n ++ " " ++ show (ppType defaultEnv eff) ++ " " ++ show r
+  show (OpR changes eff r) = "OpR " ++ show changes ++ " " ++ show r
   show (HandleL changes ef e p) = "HandleL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
   show (HandleR changes ef e p) = "HandleL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
   show (CaseR e p) = "CaseR " ++ showSimpleContext e
   show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " "
+  show (KResume k) = "KResume " ++ show k
 
 instance Show FixInput where
   show (Eval expr env store kstore kont) = show $ vcat [text "Eval", indent 2 (vcat [text (showSimpleContext expr), pretty env, pretty store])]
-  show (Cont achange env store kstore kont) = show $ vcat [text "Cont", indent 2 (vcat [vcat (map (text . show) kont), text (show achange), pretty store])]
+  show (Cont achange store kstore kont) = show $ vcat [text "Cont", indent 2 (vcat [vcat (map (text . show) kont), text (show achange), pretty store])]
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom
