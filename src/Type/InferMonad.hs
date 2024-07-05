@@ -1173,7 +1173,7 @@ resolveBest allowDisambiguate depth candidates
                             assertion "Type.InferMonad.resolveBest: unresolved implicit!" (isDone iarg) $
                             return (Right iarg)
         Continue sorted  -> do -- keep looking
-                              when (depth>=3) $
+                              when (depth>=6) $
                                 traceDefDoc $ \penv -> text "resolveBest" <+> pretty depth <+> text "continue with:" <->
                                                         indent 2 (vcat (map (prettyImplicitArg penv) sorted))
                               candidates' <- resolveStep [] sorted
