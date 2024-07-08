@@ -15,7 +15,7 @@ module Core.FlowAnalysis.StaticContext(
                           maybeExprOfCtx,
                           rangesOverlap,
                           lamVar,lamVarDef,lamArgNames,
-                          showDg,showDef,showCtxExpr,fvs,
+                          showDg,showDef,showCtxExpr,fvs,localFv,
                           branchContainsBinding,
                           branchVars,
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,

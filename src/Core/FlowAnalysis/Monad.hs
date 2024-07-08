@@ -351,9 +351,14 @@ externalModule :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 externalModule name = do
   -- trace ("External module " ++ show name) $ return ()
   let modName = newModuleName (nameModule (getName name))
-  (mod', ctx) <- loadModule modName
-  if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
-  else trace ("External variable binding not found " ++ show name) (return Nothing)
+  mmctx <- maybeLoadModuleCtx modName 
+  case mmctx of
+    Just (mod', ctx) -> do
+      if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
+      else trace ("External variable binding not found " ++ show name) (return Nothing)
+    Nothing -> 
+      doBottom 
+      -- error ("External module " ++ show (show modName) ++ " for " ++ show (nameStem (getName name)) ++ " not found")
 
 bindExternal :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 bindExternal name = do
@@ -378,7 +383,7 @@ maybeLoadModuleR mn = do
       let x = find (\m -> modName m == mn) deps
       case x of
         Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
-          trace ("Module already loaded " ++ show mn) $ return ()
+          -- trace ("Module already loaded " ++ show mn) $ return ()
           return $ Just mod
         _ -> do
           buildc' <- liftIO (build bc mn)
@@ -387,7 +392,7 @@ maybeLoadModuleR mn = do
               trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
               return Nothing
             Right (bc', e) -> do
-              trace ("Loaded module " ++ show mn) $ return ()
+              -- trace ("Loaded module " ++ show mn) $ return ()
               return $ buildcLookupModule mn bc'
 
 maybeLoadModule :: HasCallStack => HasCallStack => ModuleName -> FixAR x s e i o c (Maybe Module)
@@ -430,7 +435,7 @@ maybeLoadModule mn = do
                       moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
                     })
                   return $ Just mod'
-                Nothing -> error ("Module " ++ show mn ++ " not found")
+                Nothing -> return Nothing
 
 loadModule :: HasCallStack => ModuleName -> FixAR x s e i o c (Module, ExprContext)
 loadModule mn = do
@@ -440,3 +445,12 @@ loadModule mn = do
       st <- getState
       return (m, moduleContexts st M.! mn)
     Nothing -> error ("Module " ++ show mn ++ " not found")
+
+maybeLoadModuleCtx :: HasCallStack => ModuleName -> FixAR x s e i o c (Maybe (Module, ExprContext))
+maybeLoadModuleCtx mn = do
+  res <- maybeLoadModule mn
+  case res of
+    Just m -> do
+      st <- getState
+      return $ Just (m, moduleContexts st M.! mn)
+    Nothing -> return Nothing

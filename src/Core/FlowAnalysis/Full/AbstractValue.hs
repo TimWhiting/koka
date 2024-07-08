@@ -64,7 +64,10 @@ limitEnv :: VEnv -> S.Set TName -> VEnv
 limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 
 limitStore :: VStore -> S.Set Addr -> VStore
-limitStore store fvs = M.filterWithKey (\k _ -> k `S.member` fvs) store
+limitStore store fvs =
+  let res' = M.filterWithKey (\k _ -> k `S.member` fvs) store in res'
+  -- if M.size res' == S.size fvs then res' 
+  -- else error $ "limitStore: not all addresses found \n" ++ show fvs ++ "\n" ++ show store
 
 extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
 extendStore store i v =

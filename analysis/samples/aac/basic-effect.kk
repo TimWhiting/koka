@@ -56,6 +56,18 @@ fun x10()
   val y = x8()
   y ++ z
 
+fun x11()
+  with ctl op2(i) "2" ++ i.show
+  op2(0)
+
+fun x12()
+  with ctl op2(i) "4" ++ resume("2" ++ i.show)
+  op2(0)
+
+fun x13()
+  with ctl op2(i) resume("2" ++ i.show)
+  op2(0)
+
 fun analyze()
   // x0()
   // x1()
@@ -67,7 +79,8 @@ fun analyze()
   // x7()
   // x8()
   // x9()
-  x10()
+  // x11()
+  x12()
 
 fun main()
   with val hi = 0

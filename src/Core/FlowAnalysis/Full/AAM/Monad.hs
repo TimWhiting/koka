@@ -70,20 +70,25 @@ data Frame =
   | CaseR ExprContext VEnv
   deriving (Eq, Ord)
 
-llEnv :: VEnv -> S.Set Addr
-llEnv env = S.fromList $ M.elems env
+data AnyAddr =
+  VA Addr
+  | KA KAddr
+  deriving (Eq, Ord)
 
-llFrame :: KStore -> S.Set KAddr -> Frame -> S.Set Addr
+llEnv :: VEnv -> S.Set AnyAddr
+llEnv env = S.fromList $ map VA $ M.elems env
+
+llFrame :: KStore -> S.Set KAddr -> Frame -> S.Set AnyAddr
 llFrame kstore seen f =
   case f of 
     EndProgram -> S.empty
-    EndCall kont -> llKont kont kstore seen
-    KResume kont -> llKont kont kstore seen
+    EndCall kont -> S.insert (KA kont) $ llKont kont kstore seen
+    KResume kont -> S.insert (KA kont) $ llKont kont kstore seen
     CaseR _ env -> llEnv env
     AppL _ _ env -> llEnv env
-    AppR v addrs -> S.union (llV kstore seen v) (S.fromList addrs)
-    AppM v addrs _ _ _ env -> S.unions [llEnv env, S.fromList addrs, llV kstore seen v]
-    LetL _ _ _ _ addrs _ env -> S.union (llEnv env) (S.fromList addrs)
+    AppR v addrs -> S.union (llV kstore seen v) (S.fromList $ map VA addrs)
+    AppM v addrs _ _ _ env -> S.unions [llEnv env, S.fromList $ map VA addrs, llV kstore seen v]
+    LetL _ _ _ _ addrs _ env -> S.union (llEnv env) (S.fromList $ map VA addrs)
     HandleL changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
     HandleR changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
     OpR changes eff kont -> S.unions $ llKont kont kstore seen : map (llV kstore seen) changes
@@ -91,44 +96,57 @@ llFrame kstore seen f =
     OpL1 expr env n eff kont -> S.unions [llKont kont kstore seen, llEnv env]
     OpL2 expr env n ch changes eff kont -> S.unions $ llKont kont kstore seen : llV kstore seen ch : llEnv env : map (llV kstore seen) changes
 
-llV :: KStore -> S.Set KAddr -> AChange -> S.Set Addr
+llV :: KStore -> S.Set KAddr -> AChange -> S.Set AnyAddr
 llV kstore seen achange  =
   case achange of
     AChangeClos _ env -> llEnv env
     AChangePrim _ _ env -> llEnv env
     AChangeOp _ _ env -> llEnv env
-    AChangeKont k -> llKont k kstore seen
+    AChangeKont k -> S.insert (KA k) $ llKont k kstore seen
     AChangeConstr _ env -> llEnv env
     AChangeLit _ -> S.empty
 
-llAbValue :: KStore -> S.Set KAddr -> AbValue -> S.Set Addr
+llAbValue :: KStore -> S.Set KAddr -> AbValue -> S.Set AnyAddr
 llAbValue kstore seen ab = S.unions $ map (llV kstore seen) $ changes ab
 
-llA :: Addr -> VStore -> KStore -> S.Set KAddr -> S.Set Addr
+llA :: Addr -> VStore -> KStore -> S.Set KAddr -> S.Set AnyAddr
 llA a store kstore seen = maybe S.empty (llAbValue kstore seen) (M.lookup a store)
 
-liveAddrs :: KStore -> VStore -> S.Set Addr -> S.Set Addr
-liveAddrs kstore store frontier =
-  recur frontier S.empty
-  where recur left marked =
-          if null left then marked
-          else
-            let (next, nextLeft) = S.deleteFindMin left
-                newMarked = S.insert next marked
-                newFrontier = S.union (llA next store kstore S.empty) nextLeft `S.difference` marked in
-            recur newFrontier newMarked
-
-llKont :: KAddr -> KStore -> S.Set KAddr -> S.Set Addr
+llKont :: KAddr -> KStore -> S.Set KAddr -> S.Set AnyAddr
 llKont kaddr store konts =
   if S.member kaddr konts then
     S.empty
   else
     case M.lookup kaddr store of
-      Just frames -> S.unions $ map (llFrame store (S.insert kaddr konts)) $ concat $ S.toList frames
+      Just frames -> S.insert (KA kaddr) $ S.unions $ map (llFrame store (S.insert kaddr konts)) $ concat $ S.toList frames
       Nothing -> S.empty
 
-llLKont :: [Frame] -> KStore -> S.Set KAddr -> S.Set Addr
+llLKont :: [Frame] -> KStore -> S.Set KAddr -> S.Set AnyAddr
 llLKont kont store konts = S.unions $ map (llFrame store konts) kont
+
+liveAddrs :: KStore -> VStore -> S.Set AnyAddr -> S.Set AnyAddr
+liveAddrs kstore store frontier =
+  recur frontier S.empty
+  where 
+    recur :: S.Set AnyAddr -> S.Set AnyAddr -> S.Set AnyAddr
+    recur left marked =
+          if null left then marked
+          else
+            let (next, nextLeft) = S.deleteFindMin left
+                newMarked = S.insert next marked
+                newFrontier = case next of
+                  VA a -> S.union (llA a store kstore S.empty) nextLeft `S.difference` newMarked 
+                  KA a -> S.union (llKont a kstore S.empty) nextLeft `S.difference` newMarked
+            in recur newFrontier newMarked
+
+vaddrs :: S.Set AnyAddr -> S.Set Addr
+vaddrs = S.map (\(VA a) -> a) . S.filter (\a -> case a of {(VA _) -> True; _ -> False})
+
+kaddrs :: S.Set AnyAddr -> S.Set KAddr
+kaddrs = S.map (\(KA a) -> a) . S.filter (\a -> case a of {(KA _) -> True; _ -> False})
+
+limitKStore :: KStore -> S.Set KAddr -> KStore
+limitKStore kstore live = M.filterWithKey (\k _ -> k `S.member` live) kstore
 
 gc :: FixInput -> FixAAMR r s e FixInput
 gc (Eval e env store kstore kont) = do
@@ -138,17 +156,17 @@ gc (Eval e env store kstore kont) = do
   let live = liveAddrs kstore store (S.unions [llEnv env', llLKont kont kstore S.empty])
   -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
-  let store' = limitStore store live
+  let store' = limitStore store (vaddrs live)
+  let kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
   return $ Eval e env' store' kstore kont
 gc (Cont achange store kstore kont) = do
-  let vaddrs = llV kstore S.empty achange
-  -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
-  let live = liveAddrs kstore store (S.unions [vaddrs, llLKont kont kstore S.empty])
-  let store' = limitStore store live
+  let live = liveAddrs kstore store (S.unions [llV kstore S.empty achange, llLKont kont kstore S.empty])
+  let store' = limitStore store (vaddrs live)
+  let kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Cont achange store' kstore kont
+  return $ Cont achange store' kstore' kont
 
 showStore store = show $ pretty store
 
@@ -190,8 +208,8 @@ instance Show Frame where
   show (KResume k) = "KResume " ++ show k
 
 instance Show FixInput where
-  show (Eval expr env store kstore kont) = show $ vcat [text "Eval", indent 2 (vcat [text (showSimpleContext expr), pretty env, pretty store])]
-  show (Cont achange store kstore kont) = show $ vcat [text "Cont", indent 2 (vcat [vcat (map (text . show) kont), text (show achange), pretty store])]
+  show (Eval expr env store kstore kont) = show $ vcat [text "Eval", indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (showSimpleContext expr), pretty env, text " ", text " "])]
+  show (Cont achange store kstore kont) = show $ vcat [text "Cont", indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (show achange), text " ", text " "])]
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom
