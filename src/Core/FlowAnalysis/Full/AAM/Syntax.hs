@@ -110,7 +110,7 @@ evalMain :: BuildContext
                                    Set Type), BuildContext)
 evalMain bc build mod m = do
   (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
-    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram])
+    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] (KTime []))
     addResult q
   return (r, bc)
 
@@ -165,5 +165,5 @@ showCont :: [Frame] -> [Doc]
 showCont l =  map (text . show) (reverse l)-- (take 2 $ reverse l)
 
 instance Label FixInput where
-  label (Eval q env _ _ kont) = escape $ show (vcat (text "EVAL": showCont kont ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
-  label (Cont ch _ _ kont) = escape $ show (vcat $ text "CONT" :  showCont kont ++ [text $ show ch])
+  label (Eval q env _ _ kont time) = escape $ show (vcat (text "EVAL": showCont kont ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
+  label (Cont ch _ _ kont time) = escape $ show (vcat $ text "CONT" :  showCont kont ++ [text $ show ch])

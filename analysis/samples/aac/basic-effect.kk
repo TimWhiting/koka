@@ -80,7 +80,8 @@ fun analyze()
   // x8()
   // x9()
   // x11()
-  x12()
+  // x12()
+  x13()
 
 fun main()
   with val hi = 0

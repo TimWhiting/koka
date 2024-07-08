@@ -25,8 +25,8 @@ import Core.CoreVar (HasExpVar(fv), bv)
 import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 
 data FixInput =
-  Eval ExprContext VEnv VStore KClos LocalKont Kont MetaKont
-  | Cont LocalKont Kont MetaKont AChange VStore KClos
+  Eval ExprContext VEnv VStore KClos LocalKont Kont MetaKont Time
+  | Cont LocalKont Kont MetaKont AChange VStore KClos Time
   | KStoreGet ExactContext
   | KApproxGet (AChange, AChange, VStore) -- Reverse lookup all the addresses 
   | CStoreGet MetaKont
@@ -221,7 +221,7 @@ llMeta kont kclos seen =
             ) S.empty (S.toList res)
 
 gc :: FixInput ->  FixAACR r s e FixInput
-gc (Eval e env store kclos klocal kont meta) = do
+gc (Eval e env store kclos klocal kont meta time) = do
   -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
   let env' = limitEnv env (fv (exprOfCtx e))
   -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()
@@ -233,8 +233,8 @@ gc (Eval e env store kclos klocal kont meta) = do
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let store' = limitStore store live
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Eval e env' store' kclos klocal kont meta
-gc (Cont l kont meta achange store kclos) = do
+  return $ Eval e env' store' kclos klocal kont meta time
+gc (Cont l kont meta achange store kclos time) = do
   let laddrs = llLKont l
   let vaddrs = llV achange
   -- trace "\n\nGC Cont:\n" $ return ()
@@ -245,22 +245,8 @@ gc (Cont l kont meta achange store kclos) = do
   let live = liveAddrs store (S.unions [vaddrs, laddrs, kaddrs, maddrs])
   let store' = limitStore store live
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Cont l kont meta achange store' kclos
+  return $ Cont l kont meta achange store' kclos time
 
-showStore store = show $ pretty store
-
-instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
-  pretty amap =
-      vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
-
-instance Pretty AbValue where
-  pretty ab = text $ showSimpleAbValue ab
-
-instance Pretty TName where
-  pretty (TName n t _) = hcat [pretty n, text ":", pretty t]
-
-instance Pretty ExprContextId where
-  pretty id = text $ show id
 
 instance Show (FixOutput a) where
   show (A x) = show x
@@ -290,8 +276,8 @@ instance Show Frame where
   show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " "
 
 instance Show FixInput where
-  show (Eval expr env store kclos local kont meta) = show $ vcat [text "Eval", indent 2 (vcat [prettyLocal local, text (showSimpleContext expr), pretty env, pretty store])]
-  show (Cont local kont meta achange store kclos) = show $ vcat [text "Cont", indent 2 (vcat [prettyLocal local, text (show kont), text (show meta), text (show achange), pretty store])]
+  show (Eval expr env store kclos local kont meta time) = show $ vcat [text "Eval", indent 2 (vcat [prettyLocal local, text (showSimpleContext expr), pretty env, pretty store])]
+  show (Cont local kont meta achange store kclos time) = show $ vcat [text "Cont", indent 2 (vcat [prettyLocal local, text (show kont), text (show meta), text (show achange), pretty store])]
   show (KStoreGet ctx) = "KStoreGet"
   show (CStoreGet meta) = "CStoreGet"
 

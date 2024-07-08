@@ -110,7 +110,7 @@ evalMain :: BuildContext
                                    Set Type), BuildContext)
 evalMain bc build mod m = do
   (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
-    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd MEnd)
+    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd MEnd (KTime []))
     addResult q
   return (r, bc)
 
@@ -172,8 +172,8 @@ showC :: (LocalKont, Kont) -> [Doc]
 showC (l, k) = text (show k) : text "Local " : map (text . show) (reverse l)-- (take 2 $ reverse l)
 
 instance Label FixInput where
-  label (Eval q env _ _ l k c) = escape $ show (vcat (text "EVAL": showCont (l, k, c) ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
-  label (Cont l k c ch _ _) = escape $ show (vcat $ text "CONT" :  showCont (l, k, c) ++ [text $ show ch])
+  label (Eval q env _ _ l k c time) = escape $ show (vcat (text "EVAL": showCont (l, k, c) ++ [text (showSimpleContext q), text (showSimpleEnv env)]))
+  label (Cont l k c ch _ _ time) = escape $ show (vcat $ text "CONT" :  showCont (l, k, c) ++ [text $ show ch])
   label (KStoreGet (e, v, s, k)) = escape $ show (vcat [text "KSTOREGET", text (show e)])
   label (KApproxGet (e, v, s)) = escape $ show (vcat [text "KAPPROXGET", text (show e)])
   label (CStoreGet c) = escape $ show (vcat [text "CSTOREGET", text (show c)])

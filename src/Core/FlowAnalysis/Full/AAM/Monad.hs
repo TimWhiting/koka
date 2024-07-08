@@ -28,8 +28,8 @@ import Type.Pretty (defaultEnv, ppType)
 type KStore = M.Map KAddr (S.Set [Frame])
 
 data FixInput =
-  Eval ExprContext VEnv VStore KStore [Frame]
-  | Cont AChange VStore KStore [Frame]
+  Eval ExprContext VEnv VStore KStore [Frame] Time
+  | Cont AChange VStore KStore [Frame] Time
   deriving (Eq, Ord)
 
 data FixOutput a =
@@ -58,7 +58,7 @@ data Frame =
   | EndCall KAddr
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
-  | AppR AChange [Addr]
+  | AppR AChange [Addr] ExprContext
   | HandleL [AChange] Effect ExprContext VEnv -- The handle expression (changes are the tag, the handler object, the return closure, and the action closure)
   | HandleR [AChange] Effect ExprContext VEnv -- The handle expression (changes are the tag, the handler object, the return closure, and the action closure)
   | OpL ExprContext VEnv Int Effect KAddr
@@ -86,7 +86,7 @@ llFrame kstore seen f =
     KResume kont -> S.insert (KA kont) $ llKont kont kstore seen
     CaseR _ env -> llEnv env
     AppL _ _ env -> llEnv env
-    AppR v addrs -> S.union (llV kstore seen v) (S.fromList $ map VA addrs)
+    AppR v addrs _ -> S.union (llV kstore seen v) (S.fromList $ map VA addrs)
     AppM v addrs _ _ _ env -> S.unions [llEnv env, S.fromList $ map VA addrs, llV kstore seen v]
     LetL _ _ _ _ addrs _ env -> S.union (llEnv env) (S.fromList $ map VA addrs)
     HandleL changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
@@ -149,7 +149,7 @@ limitKStore :: KStore -> S.Set KAddr -> KStore
 limitKStore kstore live = M.filterWithKey (\k _ -> k `S.member` live) kstore
 
 gc :: FixInput -> FixAAMR r s e FixInput
-gc (Eval e env store kstore kont) = do
+gc (Eval e env store kstore kont ktime) = do
   -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
   let env' = limitEnv env (fv (exprOfCtx e))
   -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()\
@@ -159,29 +159,14 @@ gc (Eval e env store kstore kont) = do
   let store' = limitStore store (vaddrs live)
   let kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Eval e env' store' kstore kont
-gc (Cont achange store kstore kont) = do
+  return $ Eval e env' store' kstore kont ktime
+gc (Cont achange store kstore kont ktime) = do
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let live = liveAddrs kstore store (S.unions [llV kstore S.empty achange, llLKont kont kstore S.empty])
   let store' = limitStore store (vaddrs live)
   let kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Cont achange store' kstore' kont
-
-showStore store = show $ pretty store
-
-instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
-  pretty amap =
-      vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
-
-instance Pretty AbValue where
-  pretty ab = text $ showSimpleAbValue ab
-
-instance Pretty TName where
-  pretty (TName n t _) = hcat [pretty n, text ":", pretty t]
-
-instance Pretty ExprContextId where
-  pretty id = text $ show id
+  return $ Cont achange store' kstore' kont ktime
 
 instance Show (FixOutput a) where
   show (A x) = show x
@@ -196,7 +181,7 @@ instance Show Frame where
   show (EndCall _) = "EndCall"
   show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
   show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
-  show (AppR ch chs) = "AppR " ++ show ch
+  show (AppR ch chs _) = "AppR " ++ show ch
   show (OpL expr env n eff r) = "Op " ++ show (ppType defaultEnv eff) ++ " " ++ show r
   show (OpL1 expr env n eff r) = "Op1L " ++ show n ++ " " ++ show (ppType defaultEnv eff) ++ " " ++ show r
   show (OpL2 expr env n ch changes eff r) = "Op2L " ++ show (length changes) ++ " " ++ show n ++ " " ++ show (ppType defaultEnv eff) ++ " " ++ show r
@@ -208,8 +193,8 @@ instance Show Frame where
   show (KResume k) = "KResume " ++ show k
 
 instance Show FixInput where
-  show (Eval expr env store kstore kont) = show $ vcat [text "Eval", indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (showSimpleContext expr), pretty env, text " ", text " "])]
-  show (Cont achange store kstore kont) = show $ vcat [text "Cont", indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (show achange), text " ", text " "])]
+  show (Eval expr env store kstore kont ktime) = show $ vcat [text $ "Eval " ++ show ktime, indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (showSimpleContext expr), pretty env, text " ", text " "])]
+  show (Cont achange store kstore kont ktime) = show $ vcat [text $ "Cont " ++ show ktime, indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (show achange), text " ", text " "])]
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom

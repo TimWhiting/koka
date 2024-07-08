@@ -28,61 +28,38 @@ import Core.CoreVar (bv)
 import Data.Foldable (find)
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
+import Lib.PPrint (Pretty (..), hcat, text, vcat)
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
 
+instance Pretty AbValue where
+  pretty ab = text $ showSimpleAbValue ab
+
+instance Pretty TName where
+  pretty (TName n t _) = hcat [pretty n, text ":", pretty t]
+
+instance Pretty Time where
+  pretty (KTime ctx) = text $ "KTime " ++ intercalate "," (map showSimpleContext ctx)
+
+instance Pretty ExprContextId where
+  pretty id = text $ show id
+
 type VStore = M.Map Addr AbValue
 
-storeLookup :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => TName -> VEnv -> VStore -> FixAR r s e i o c AChange
-storeLookup x env store = do
-  case M.lookup x env of
-    Just addr -> do
-      case M.lookup addr store of
-        Just value -> eachValue value
-        Nothing -> error ("storeLookup: " ++ show addr ++ " not found")
-    Nothing -> do
-      -- trace ("storeLookup: " ++ show x ++ " not found") $ return ()
-      lam <- bindExternal x
-      case lam of
-        Nothing -> doBottom
-        Just lam -> do
-          return $ AChangeClos lam M.empty
+data Time = 
+  KTime [ExprContext]
+  deriving (Eq, Ord, Show)
 
-storeGet :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => VStore -> Addr -> FixAR r s e i o c AChange
-storeGet store addr = do
-  case M.lookup addr store of
-    Just value -> eachValue value
-    Nothing -> error $ "storeGet: " ++ show addr ++ " not found"
-
-eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
-eachValue ab = each $ map return (changes ab)
-
-tnamesCons :: Int -> [TName]
-tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
-
-limitEnv :: VEnv -> S.Set TName -> VEnv
-limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
-
-limitStore :: VStore -> S.Set Addr -> VStore
-limitStore store fvs =
-  let res' = M.filterWithKey (\k _ -> k `S.member` fvs) store in res'
-  -- if M.size res' == S.size fvs then res' 
-  -- else error $ "limitStore: not all addresses found \n" ++ show fvs ++ "\n" ++ show store
-
-extendStore :: VStore -> (TName,ExprContextId) -> AChange -> VStore
-extendStore store i v =
-  M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
-
-extendStoreAll :: VStore -> [(TName,ExprContextId)] -> [AChange] -> VStore
-extendStoreAll store addrs changes = foldl (\acc (addr, ch) -> extendStore acc addr ch) store (zip addrs changes)
-
-extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId)] -> VEnv
-extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
-
-type Addr = (TName, ExprContextId)
+type Addr = (TName, ExprContextId, Time)
 type VEnv = M.Map TName Addr
 
 newtype KAddr = KAddr (ExprContext, VEnv) deriving (Eq, Ord, Show)
+
+showStore store = show $ pretty store
+
+instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
+  pretty amap =
+      vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
 
 data AChange =
   AChangeClos ExprContext VEnv
@@ -121,6 +98,52 @@ data AbValue =
     akonts:: !(Set KAddr),
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
+
+storeLookup :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => TName -> VEnv -> VStore -> FixAR r s e i o c AChange
+storeLookup x env store = do
+  case M.lookup x env of
+    Just addr -> do
+      case M.lookup addr store of
+        Just value -> eachValue value
+        Nothing -> error ("storeLookup: " ++ show addr ++ " not found")
+    Nothing -> do
+      -- trace ("storeLookup: " ++ show x ++ " not found") $ return ()
+      lam <- bindExternal x
+      case lam of
+        Nothing -> doBottom
+        Just lam -> do
+          return $ AChangeClos lam M.empty
+
+storeGet :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => VStore -> Addr -> FixAR r s e i o c AChange
+storeGet store addr = do
+  case M.lookup addr store of
+    Just value -> eachValue value
+    Nothing -> error $ "storeGet: " ++ show addr ++ " not found"
+
+eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
+eachValue ab = each $ map return (changes ab)
+
+tnamesCons :: Int -> [TName]
+tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
+
+limitEnv :: VEnv -> S.Set TName -> VEnv
+limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
+
+limitStore :: VStore -> S.Set Addr -> VStore
+limitStore store fvs =
+  let res' = M.filterWithKey (\k _ -> k `S.member` fvs) store in res'
+  -- if M.size res' == S.size fvs then res' 
+  -- else error $ "limitStore: not all addresses found \n" ++ show fvs ++ "\n" ++ show store
+
+extendStore :: VStore -> (TName,ExprContextId,Time) -> AChange -> VStore
+extendStore store i v =
+  M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
+
+extendStoreAll :: VStore -> [(TName,ExprContextId,Time)] -> [AChange] -> VStore
+extendStoreAll store addrs changes = foldl (\acc (addr, ch) -> extendStore acc addr ch) store (zip addrs changes)
+
+extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId,Time)] -> VEnv
+extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
 changes :: AbValue -> [AChange]
 changes (AbValue clos clsops constrs konts lits) =
