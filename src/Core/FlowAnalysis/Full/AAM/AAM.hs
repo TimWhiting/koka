@@ -26,6 +26,9 @@ import Core.CoreVar (HasExpVar(fv), bv)
 import Type.Pretty (defaultEnv, ppType)
 import Lib.PPrint (hcat, tupled, vcat, text)
 
+kLimit :: Int
+kLimit = 2
+
 lamAddrs :: ExprContext -> Time -> ([TName], [Addr])
 lamAddrs lam time =
   let names = lamArgNames lam
@@ -36,7 +39,8 @@ allocBindAddrs :: HasCallStack => DefGroup -> ExprContext -> Time -> FixAAMR r s
 allocBindAddrs (DefRec defs) expr time = do
   let names = dfsTNames defs
   return $ zip3 names (repeat $ contextId expr) (repeat time)
-allocBindAddrs (DefNonRec df) expr time = return [(TName (defName df) (defType df) Nothing, contextId expr, time)]
+allocBindAddrs (DefNonRec df) expr time = 
+  return [(TName (defName df) (defType df) Nothing, contextId expr, time)]
 
 extend :: VEnv -> VStore -> [TName] -> [Addr] -> [AChange] -> (VEnv, VStore)
 extend env store names addrs changes = 
@@ -44,7 +48,7 @@ extend env store names addrs changes =
 
 -- 0CFA Allocation
 alloc :: HasCallStack => FixInput -> Frame -> FixAAMR r s e [Addr]
-alloc (Cont (AChangeKont k) store kstore kont time) (AppL nargs e0 env') = do
+alloc (Cont (AChangeKont k kr) store kstore kont time) (AppL nargs e0 env') = do
   let names = [TName (newHiddenName $ "k" ++ show x) typeAny Nothing | x <- [0..nargs - 1]]
   return $ zip3 names (repeat $ contextId e0) (repeat time)
 alloc (Cont (AChangeClos lam env) store kstore kont time) (AppL nargs e env') = do
@@ -55,7 +59,7 @@ alloc (Cont (AChangeClos lam env) store kstore kont time) (AppL nargs e env') = 
     return $ zip3 names addrs (repeat time)
 alloc (Cont (AChangePrim n expr _) store kstore kont time) (AppL nargs e0 env') = do
   let addrs = repeat $ contextId e0
-  let names =  map (\x -> TName (newHiddenName $ nameStem (getName n) ++ show x) typeAny Nothing) (take nargs [0..])
+      names =  map (\x -> TName (newHiddenName $ nameStem (getName n) ++ show x) typeAny Nothing) (take nargs [0..])
   return $ zip3 names addrs (repeat time)
 alloc (Cont (AChangeConstr con env) store kstore kont time) (AppL nargs e env') = do
   case exprOfCtx con of
@@ -73,19 +77,20 @@ isNamePerform n = n == namePerform 0 || n == namePerform 1 || n == namePerform 2
 
 isNameClause :: Name -> Bool
 isNameClause n =
-  -- trace ("isNameClause: " ++ show n) $
-  n == nameClause "tail" 0 || n == nameClause "tail" 1 || n == nameClause "tail" 2 || n == nameClause "tail" 3 || n == nameClause "tail" 4 ||
-  n == nameClause "control" 0 || n == nameClause "control" 1 || n == nameClause "control" 2 || n == nameClause "control" 3 || n == nameClause "control" 4
+  n == nameClause "tail" 0 || n == nameClause "tail" 1 || n == nameClause "tail" 2 
+  || n == nameClause "tail" 3 || n == nameClause "tail" 4 ||
+  n == nameClause "control" 0 || n == nameClause "control" 1 || n == nameClause "control" 2 
+  || n == nameClause "control" 3 || n == nameClause "control" 4
 
 isNameControl :: Name -> Bool
 isNameControl n =
-  -- trace ("isNameControl: " ++ show n) $
-  n == nameClause "control" 0 || n == nameClause "control" 1 || n == nameClause "control" 2 || n == nameClause "control" 3 || n == nameClause "control" 4
+  n == nameClause "control" 0 || n == nameClause "control" 1 || n == nameClause "control" 2 
+  || n == nameClause "control" 3 || n == nameClause "control" 4
 
 isNameTail :: Name -> Bool
 isNameTail n =
-  -- trace ("isNameTail: " ++ show n) $
-  n == nameClause "tail" 0 || n == nameClause "tail" 1 || n == nameClause "tail" 2 || n == nameClause "tail" 3 || n == nameClause "tail" 4
+  n == nameClause "tail" 0 || n == nameClause "tail" 1 || n == nameClause "tail" 2 
+  || n == nameClause "tail" 3 || n == nameClause "tail" 4
 
 toClause :: Name -> AChange -> AChange
 toClause n (AChangeClos clos env) = AChangeOp n clos env
@@ -121,14 +126,15 @@ doStep i =
           App (TypeApp (Var name _) tps@[_, _, tp, _, _]) args _ | nameHandle == getName name -> do
             c <- focusChild 1 expr
             -- trace ("Handle: " ++ show (vcat $ map (text . show) tps)) $ return ()
-            doGC $ Eval c env store kstore (HandleL [] tp expr env:kont) time
+            let kaddr = KAddr (expr, env, time)
+            doGC $ Eval c env store  (kstoreExtend kaddr kont kstore) [HandleL [] tp expr env,EndHandle kaddr] time
           App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
             f <- focusChild 1 expr
             doGC $ Eval f env store kstore kont time
           App (TypeApp (Var name _) _) args _ | isNamePerform $ getName name -> do
             select <- focusChild 2 expr
-            let kaddr = KAddr (expr, env)
-            let eff =
+            let kaddr = KAddr (expr, env, time)
+                eff =
                   case contextOf <$> enclosingLambda expr of
                     Just (Just lam) -> case exprOfCtx lam of
                       Lam args eff body -> eff
@@ -173,50 +179,55 @@ doStep i =
             if n == 0 then do
               handframes <- getHandler eff kaddr kstore
               let HandleR [tag, hnd, ret, act] ef e p:ls = handframes
-              let AChangeClos select senv = achange
+                  AChangeClos select senv = achange
               body <- focusBody select -- Body of the select 
               -- trace ("OpL20: " ++ show body) $ return ()
               let (names, addrs) = lamAddrs select time
                   (env', store') = extend env store names [head addrs] [hnd]
-              doGC $ Eval body env' store' kstore (OpR [] eff kaddr:handframes) time
+              doGC $ Eval body env' store' kstore (OpR expr [] eff kaddr:handframes) time
             else do
               arg <- focusChild 3 expr
               doGC $ Eval arg env store kstore [OpL2 expr env n achange [] eff kaddr] time
           [OpL2 expr env n ch achanges eff kaddr] -> do
             if n == length achanges + 1 then do
               handframes <- getHandler eff kaddr kstore
-              let HandleR [tag, hnd, ret, act] ef e p:ls = handframes
-              let AChangeClos select senv = ch
+              let HandleR [tag, hnd, ret, act] ef e p:handframesrest = handframes
+                  AChangeClos select senv = ch
               body <- focusBody select -- Body of the select 
               -- trace ("OpL2=l" ++ show n ++ ": " ++ show body) $ return ()
               let (names, addrs) = lamAddrs select time
                   (env', store') = extend env store [head names] [head addrs] [hnd]
-              doGC $ Eval body env' store' kstore (OpR (achanges ++ [achange]) eff kaddr:handframes) time
+              doGC $ Eval body env' store' kstore (OpR expr (achanges ++ [achange]) eff kaddr:handframes) time
             else do
               -- trace ("OpL2: " ++ show (length achanges)) $ return ()
               arg <- focusChild (4 + length achanges) expr
               doGC $ Eval arg env store kstore [OpL2 expr env n ch (achanges ++ [achange]) eff kaddr] time
-          (OpR changes eff kaddr:handlerframes) -> do -- This is realy OpRTail, we should add a 
+          [OpR expr changes eff kaddr,hndframe@(HandleR [tag, hnd, ret, act] ef e p), EndHandle kend] -> do 
+            -- TODO: This has a problem of not returning to after calling resume to the operation body
+            -- TODO: Write the math for algebraic effects + AAM
             -- trace ("OpR: " ++ show achange) $ return ()
             let AChangeOp nm op openv = achange
             opbod <- focusBody op
-            let (names, addrs) = lamAddrs op time
+            let KTime old = time
+                newTime = KTime (take kLimit (expr:old)) -- TODO: Should the addresses of the allocations be based on the new time?
+                (names, addrs) = lamAddrs op time
             if isNameTail nm then do
               -- If reaching the continuation normally resume to kaddr, if searching for a handler lookup from above this handler
               let (env', store') = extend openv store names addrs changes
-              doGC $ Eval opbod env' store' kstore (KResume kaddr:handlerframes) time
+              doGC $ Eval opbod env' store' kstore [KResume kaddr,hndframe,EndHandle kend] time
             else if isNameControl nm then do
+              -- trace ("Is Control" ++ show handlerframes) $ return ()
               -- Need to add continuation to the addrs & changes
               let addrs' = addrs ++ [(last names, contextId op, time)]
-              let changes' = changes ++ [AChangeKont kaddr]
-              let (env', store') = extend openv store names addrs' changes'
-              doGC $ Eval opbod env' store' kstore handlerframes time
+                  changes' = changes ++ [AChangeKont kaddr kend]
+                  (env', store') = extend openv store names addrs' changes'
+              doGC $ Eval opbod env' store' kstore [EndHandle kend] time
             else
               error "OpR"
           HandleR [tag, hnd, retClos, act] ef e p:ls -> do
             -- trace ("HandleR: " ++ show (length [tag, hnd, retClos, act])) $ return ()
             let AChangeClos ret env = retClos
-            let (names, addrs) = lamAddrs ret time
+                (names, addrs) = lamAddrs ret time
                 (env', store') = extend env store [head names] [head addrs] [achange]
             body <- focusBody ret
             doGC $ Eval body env' store' kstore ls time
@@ -225,7 +236,7 @@ doStep i =
             if length changes == 3 then do
               let AChangeClos lam env = achange
               body <- focusBody lam
-              let kaddr = KAddr (lam, env)
+              let kaddr = KAddr (lam, env, time)
               doGC $ Eval body env store (kstoreExtend kaddr (HandleR (changes ++ [achange]) ef e p:ls) kstore) [EndCall kaddr] time
             else do
               nextparam <- focusChild (length changes + 2) e
@@ -234,7 +245,7 @@ doStep i =
             if n == 0 then do
               let AChangeClos lam env = achange
               body <- focusBody lam
-              let kaddr = KAddr (lam, env) 
+              let kaddr = KAddr (lam, env, time)
               doGC $ Eval body env store (kstoreExtend kaddr ls kstore) [EndCall kaddr] time
             else if n == 1 then do
               arge <- focusChild 1 e
@@ -247,7 +258,7 @@ doStep i =
               -- trace ("AppL: " ++ show n ++ " " ++ show arge ++ " " ++ show p) $ return ()
               addrs <- alloc i l
               doGC $ Eval arge p store kstore (AppM achange addrs e 1 n p:ls) time
-          AppM clos addrs e n t p:ls -> do 
+          AppM clos addrs e n t p:ls -> do
             arge <- focusChild (n + 1) e
             -- trace ("AppM: " ++ show n ++ " " ++ show arge ++ " " ++ show clos) $ return ()
             let store' = extendStore store (addrs !! (n - 1)) achange
@@ -259,26 +270,26 @@ doStep i =
           (AppR c@(AChangePrim p clos env) addrs e):ls | isNameClause (getName p) -> do
             -- trace ("ClauseTail: " ++ show c ++ " " ++ show ls) $ return ()
             doGC $ Cont (toClause (getName p) achange) store kstore ls time
-          (AppR c@(AChangeKont k) addrs e):ls -> do
+          (AppR c@(AChangeKont k kaddr) addrs e):ls -> do
+            -- trace ("Call resume:" ++ show k) $ return ()
             case M.lookup k kstore of
               Just sframes -> do
-                frames <- each $ map return (S.toList sframes)
-                doGC $ Cont achange store kstore frames time
+                frames <- each $ map return (S.toList sframes) -- TODO: GC the kstore prior to extending it
+                doGC $ Cont achange store (kstoreExtend kaddr ls kstore) frames time
           (AppR c@(AChangeClos lam env) addrs e):ls -> do
             -- trace ("AppR: " ++ show c ++ " " ++ show ls) $ return ()
             body <- focusBody lam
             let args = lamArgNames lam
-            let store' = extendStore store (last addrs) achange
-            let kaddr = KAddr (lam, env)
-            -- (ExprContext, VEnv, VStore, KClos)
+                store' = extendStore store (last addrs) achange
+                kaddr = KAddr (lam, env, time)
+                KTime old = time
             -- trace ("AppR: " ++ show c ++ " " ++ show ls) $ return ()
-            let KTime old = time
-            doGC $ Eval body (extendEnv env args addrs) store' (kstoreExtend kaddr ls kstore) [EndCall kaddr] (KTime (take 2 (e:old)))
+            doGC $ Eval body (extendEnv env args addrs) store' (kstoreExtend kaddr ls kstore) [EndCall kaddr] (KTime (take kLimit (e:old)))
           (AppR ccon@(AChangeConstr con env) addrs e):ls -> do
             case exprOfCtx con of
               Con _ _ -> do
                 let store' = extendStore store (last addrs) achange
-                let env' = M.fromList (zip (tnamesCons (length addrs)) addrs)
+                    env' = M.fromList (zip (tnamesCons (length addrs)) addrs)
                 -- trace ("AppRCon: " ++ show con ++ " " ++ show env' ++ " " ++ show addrs) $ return ()
                 -- trace ("AppRCon:\n" ++ showStore store) $ return ()
                 doGC $ Cont (AChangeConstr con env') store' kstore ls time
@@ -290,8 +301,8 @@ doStep i =
             doGC $ Cont res store' kstore ls time
           LetL bgi bgn bi bn addrs e p:ls -> do
             let dgs = letDefsOf e
+                store' = extendStore store (addrs !! bi) achange
             -- trace ("LetL: " ++ show bgi ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ show addrs) $ return ()
-            let store' = extendStore store (addrs !! bi) achange
             if bgi + 1 == bgn && bi + 1 == bn then do
               -- trace ("LetL End") $ return ()
               body <- focusChild 0 e
@@ -303,7 +314,7 @@ doStep i =
             else if bi + 1 == bn then do
               -- trace ("LetL End Group") $ return ()
               let bgi' = bgi + 1
-              let bg = dgs !! bgi'
+                  bg = dgs !! bgi'
               bind <- focusLetDefBinding bgi' bi e
               addrs' <- allocBindAddrs bg e time
               let env' = extendEnv p (dgTNames bg) addrs'
@@ -372,6 +383,10 @@ doStep i =
             let res = M.lookup k kstore
             l <- each $ map return (maybe [] S.toList res)
             doGC $ Cont achange store kstore l time
+          [EndHandle k] -> do
+            let res = M.lookup k kstore
+            l <- each $ map return (maybe [] S.toList res)
+            doGC $ Cont achange store kstore l time
           KResume k:handlerframes -> do
             let res = M.lookup k kstore
             l <- each $ map return (maybe [] S.toList res)
@@ -397,6 +412,7 @@ getHandlerF eff frames kstore = do
       return frames
     -- (HandleL changes ef e p):ls | ef /= eff -> trace ("getHandlerX:\n" ++ show ef ++ "\n" ++ show eff) $ return []
     [EndCall k] -> getHandler eff k kstore
+    [EndHandle k] -> getHandler eff k kstore
     f:ls -> getHandlerF eff ls kstore
     [] -> doBottom -- error "getHandlerF: Not found"
 

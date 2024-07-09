@@ -61,7 +61,7 @@ fun x11()
   op2(0)
 
 fun x12()
-  with ctl op2(i) "4" ++ resume("2" ++ i.show)
+  with ctl op2(i) "4" ++ resume("2" ++ i.show) 
   op2(0)
 
 fun x13()
@@ -80,8 +80,8 @@ fun analyze()
   // x8()
   // x9()
   // x11()
-  // x12()
-  x13()
+  x12()
+  // x13()
 
 fun main()
   with val hi = 0

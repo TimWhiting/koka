@@ -56,6 +56,7 @@ kstoreExtend k frames store =
 data Frame =
   EndProgram
   | EndCall KAddr
+  | EndHandle KAddr
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr] ExprContext
@@ -65,7 +66,7 @@ data Frame =
   | OpL1 ExprContext VEnv Int Effect KAddr
   | OpL2 ExprContext VEnv Int AChange [AChange] Effect KAddr
   | KResume KAddr
-  | OpR [AChange] Effect KAddr
+  | OpR ExprContext [AChange] Effect KAddr
   | LetL Int Int Int Int [Addr] ExprContext VEnv -- Binding group index, num binding groups, binding index, num bindings, addresses for binding group, parent expresion, parent env
   | CaseR ExprContext VEnv
   deriving (Eq, Ord)
@@ -83,6 +84,7 @@ llFrame kstore seen f =
   case f of 
     EndProgram -> S.empty
     EndCall kont -> S.insert (KA kont) $ llKont kont kstore seen
+    EndHandle kont -> S.insert (KA kont) $ llKont kont kstore seen
     KResume kont -> S.insert (KA kont) $ llKont kont kstore seen
     CaseR _ env -> llEnv env
     AppL _ _ env -> llEnv env
@@ -91,7 +93,7 @@ llFrame kstore seen f =
     LetL _ _ _ _ addrs _ env -> S.union (llEnv env) (S.fromList $ map VA addrs)
     HandleL changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
     HandleR changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
-    OpR changes eff kont -> S.unions $ llKont kont kstore seen : map (llV kstore seen) changes
+    OpR expr changes eff kont -> S.unions $ llKont kont kstore seen : map (llV kstore seen) changes
     OpL expr env n eff kont -> llKont kont kstore seen `S.union` llEnv env
     OpL1 expr env n eff kont -> S.unions [llKont kont kstore seen, llEnv env]
     OpL2 expr env n ch changes eff kont -> S.unions $ llKont kont kstore seen : llV kstore seen ch : llEnv env : map (llV kstore seen) changes
@@ -102,7 +104,7 @@ llV kstore seen achange  =
     AChangeClos _ env -> llEnv env
     AChangePrim _ _ env -> llEnv env
     AChangeOp _ _ env -> llEnv env
-    AChangeKont k -> S.insert (KA k) $ llKont k kstore seen
+    AChangeKont k kr -> S.insert (KA k) $ S.insert (KA kr) $ S.union (llKont k kstore seen) (llKont kr kstore seen)
     AChangeConstr _ env -> llEnv env
     AChangeLit _ -> S.empty
 
@@ -152,19 +154,19 @@ gc :: FixInput -> FixAAMR r s e FixInput
 gc (Eval e env store kstore kont ktime) = do
   -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
   let env' = limitEnv env (fv (exprOfCtx e))
+      live = liveAddrs kstore store (S.unions [llEnv env', llLKont kont kstore S.empty])
+      store' = limitStore store (vaddrs live)
+      kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()\
-  let live = liveAddrs kstore store (S.unions [llEnv env', llLKont kont kstore S.empty])
   -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
-  let store' = limitStore store (vaddrs live)
-  let kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
   return $ Eval e env' store' kstore kont ktime
 gc (Cont achange store kstore kont ktime) = do
-  -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   let live = liveAddrs kstore store (S.unions [llV kstore S.empty achange, llLKont kont kstore S.empty])
-  let store' = limitStore store (vaddrs live)
-  let kstore' = limitKStore kstore (kaddrs live)
+      store' = limitStore store (vaddrs live)
+      kstore' = limitKStore kstore (kaddrs live)
+  -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
   return $ Cont achange store' kstore' kont ktime
 
@@ -179,13 +181,14 @@ instance Show FixChange where
 instance Show Frame where
   show EndProgram = "EndProgram"
   show (EndCall _) = "EndCall"
+  show (EndHandle _) = "EndHandle"
   show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
   show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
   show (AppR ch chs _) = "AppR " ++ show ch
   show (OpL expr env n eff r) = "Op " ++ show (ppType defaultEnv eff) ++ " " ++ show r
   show (OpL1 expr env n eff r) = "Op1L " ++ show n ++ " " ++ show (ppType defaultEnv eff) ++ " " ++ show r
   show (OpL2 expr env n ch changes eff r) = "Op2L " ++ show (length changes) ++ " " ++ show n ++ " " ++ show (ppType defaultEnv eff) ++ " " ++ show r
-  show (OpR changes eff r) = "OpR " ++ show changes ++ " " ++ show r
+  show (OpR expr changes eff r) = "OpR " ++ show changes ++ " " ++ show r
   show (HandleL changes ef e p) = "HandleL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
   show (HandleR changes ef e p) = "HandleL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
   show (CaseR e p) = "CaseR " ++ showSimpleContext e
@@ -193,8 +196,14 @@ instance Show Frame where
   show (KResume k) = "KResume " ++ show k
 
 instance Show FixInput where
-  show (Eval expr env store kstore kont ktime) = show $ vcat [text $ "Eval " ++ show ktime, indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (showSimpleContext expr), pretty env, text " ", text " "])]
-  show (Cont achange store kstore kont ktime) = show $ vcat [text $ "Cont " ++ show ktime, indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", text (show achange), text " ", text " "])]
+  show (Eval expr env store kstore kont ktime) = show $ vcat 
+    [text $ "Eval " ++ show ktime, 
+     indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", 
+     text (showSimpleContext expr), pretty env, text " ", text " "])]
+  show (Cont achange store kstore kont ktime) = show $ vcat 
+    [text $ "Cont " ++ show ktime, 
+     indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", 
+     text (show achange), text " ", text " "])]
 
 instance Lattice FixOutput FixChange where
   bottom = Bottom
