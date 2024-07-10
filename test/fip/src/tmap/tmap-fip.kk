@@ -1,5 +1,6 @@
 import std/num/int32
 import std/os/env
+import std/core/undiv
 
 type tree<a>
   Leaf
@@ -24,12 +25,12 @@ type accum<a,b>
   BinR(k : accum<a,b>, x : a, r : tree<a>)
   BinL(l : tree<b>, x : b, k : accum<a,b>)
 
-fun tmap-acc( t : tree<a>, ^f : a -> e b, k : accum<a,b>) : e tree<b>
+fun tree/tmap-acc( t : tree<a>, ^f : a -> <div|e> b, k : accum<a,b>) : <div|e> tree<b>
   match t
     Leaf -> tmap-app( k, f, Leaf )
     Bin(l, x, r) -> tmap-acc( l, f, BinR(k, x, r) )
 
-fun tmap-app( k0 : accum<a,b>, ^f : a -> e b, t : tree<b> ) : e tree<b>
+fun acc/tmap-app( k0 : accum<a,b>, ^f : a -> <div|e> b, t : tree<b> ) : <div|e> tree<b>
   match k0
     BinR(k, x, r) -> tmap-acc( r, f, BinL( t, f(x), k ) )
     BinL(l, x, k) -> tmap-app( k, f, Bin(l, x, t) )

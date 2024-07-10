@@ -9,7 +9,7 @@ type tree
   Node(color : color, lchild : tree, key : int32, value : bool, rchild : tree)
   Leaf
 
-fip fun is-red(^t : tree) : bool
+fip fun tree/is-red(^t : tree) : bool
   match t
     Node(Red) -> True
     _         -> False

@@ -1,0 +1,1065 @@
+~/koka ~/koka/test/fip
+~/koka/test/fip
+using koka: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka
+expanded benches:  rbtree/rbtree-fip.kk rbtree/rbtree-fip-icfp.kk rbtree/rbtree-std-reuse.kk rbtree/rbtree-std.kk rbtree/rbtree-fip-clrs.kk rbtree/rbtree-clrs.c rbtree/rbtree-clrs-mi.c rbtree/rbtree-clrs-full.c rbtree/rbtree-clrs-full-mi.c rbtree/rbtree-stl.cpp rbtree/rbtree-stl-mi.cpp ftree/ftree-fip.kk ftree/ftree-std-reuse.kk ftree/ftree-std.kk msort/msort-fip.kk msort/msort-std-reuse.kk msort/msort-std.kk qsort/qsort-fip.kk qsort/qsort-std-reuse.kk qsort/qsort-std.kk tmap/tmap-fip.kk tmap/tmap-std-reuse.kk tmap/tmap-std.kk tmap/tmap-fip.c tmap/tmap-fip-mi.c tmap/tmap-std.c tmap/tmap-std-mi.c
+
+build: rbtree/rbtree-fip.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=rbtree-fip -isrc src/rbtree/rbtree-fip.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/undiv
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/vector
+load    : std/core/sslice
+load    : std/core/list
+load    : std/core/maybe
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/os/path
+load    : std/core/int
+load    : std/core/char
+load    : std/core/string
+load    : std/text/parse
+parse   : .../rbtree/rbtree-fip.kk
+check   : rbtree/rbtree-fip
+linking : rbtree/rbtree-fip/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/rbtree-fip
+
+build: rbtree/rbtree-fip-icfp.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=rbtree-fip-icfp -isrc src/rbtree/rbtree-fip-icfp.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/undiv
+load    : std/core/string
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/sslice
+load    : std/core/int
+load    : std/core/list
+load    : std/core/either
+load    : std/core/maybe
+load    : std/core/tuple
+load    : std/core/vector
+load    : std/core/char
+load    : std/core/delayed
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/console
+load    : std/os/path
+load    : std/text/parse
+parse   : .../rbtree/rbtree-fip-icfp.kk
+check   : rbtree/rbtree-fip-icfp
+linking : rbtree/rbtree-fip-icfp/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/rbtree-fip-icfp
+
+build: rbtree/rbtree-std-reuse.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=rbtree-std-reuse -isrc src/rbtree/rbtree-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/bool
+load    : std/core/order
+load    : std/core/vector
+load    : std/core/list
+load    : std/core/sslice
+load    : std/core/char
+load    : std/core/int
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/show
+load    : std/core/string
+load    : std/core/console
+load    : std/core/maybe
+load    : std/os/path
+load    : std/text/parse
+parse   : .../rbtree/rbtree-std.kk
+check   : rbtree/rbtree-std
+rbtree/rbtree-std(1, 1): internal error: Map.!: given key is not an element in the map
+CallStack (from HasCallStack):
+  error, called at libraries/containers/containers/src/Data/Map/Internal.hs:617:17 in containers-0.6.7:Data.Map.Internal
+
+
+build: rbtree/rbtree-std.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=rbtree-std --fno-reuse -isrc src/rbtree/rbtree-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/sslice
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/string
+load    : std/core/list
+load    : std/core/vector
+load    : std/core/int
+load    : std/core/char
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/maybe
+load    : std/core/show
+load    : std/os/path
+load    : std/core/console
+load    : std/text/parse
+parse   : .../rbtree/rbtree-std.kk
+check   : rbtree/rbtree-std
+rbtree/rbtree-std(1, 1): internal error: Map.!: given key is not an element in the map
+CallStack (from HasCallStack):
+  error, called at libraries/containers/containers/src/Data/Map/Internal.hs:617:17 in containers-0.6.7:Data.Map.Internal
+
+
+build: rbtree/rbtree-fip-clrs.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=rbtree-fip-clrs -isrc src/rbtree/rbtree-fip-clrs.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/string
+load    : std/core/char
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/list
+load    : std/core/sslice
+load    : std/core/either
+load    : std/core/show
+load    : std/core/maybe
+load    : std/core/tuple
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/os/path
+load    : std/text/parse
+parse   : .../rbtree/rbtree-fip-clrs.kk
+check   : rbtree/rbtree-fip-clrs
+linking : rbtree/rbtree-fip-clrs/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/rbtree-fip-clrs
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: calling a non-fip function: error-pattern
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: not all branches use the same variables:
+  (Node(_, l, k, v, r)) -> (l1/1, r2/1, z2/1)
+  (_) -> ()
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: not all branches can reuse the space provided by NodeL/22
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: not all branches can reuse the space provided by NodeR/22
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: calling a non-fip function: error-pattern
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: not all branches use the same variables:
+  (Node(_, l, k, v, r)) -> (l2/1, r1/1, z2/1)
+  (_) -> ()
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: not all branches can reuse the space provided by NodeR/22
+
+src/rbtree/rbtree-fip-clrs.kk(41, 9): warning: fip fun balance: not all branches can reuse the space provided by NodeL/22
+
+
+build: rbtree/rbtree-clrs.c: clang -O3 -o .koka/ccomp/rbtree-clrs -lpthread -mcpu=apple-m1 src/rbtree/rbtree-clrs.c
+
+build: rbtree/rbtree-clrs-mi.c: clang -O3 -o .koka/ccomp/rbtree-clrs-mi -lpthread -mcpu=apple-m1 /usr/local/lib/mimalloc-2.1/mimalloc.o -I include/ src/rbtree/rbtree-clrs.c
+
+build: rbtree/rbtree-clrs-full.c: clang -O3 -o .koka/ccomp/rbtree-clrs-full -lpthread -mcpu=apple-m1 src/rbtree/rbtree-clrs-full.c
+
+build: rbtree/rbtree-clrs-full-mi.c: clang -O3 -o .koka/ccomp/rbtree-clrs-full-mi -lpthread -mcpu=apple-m1 /usr/local/lib/mimalloc-2.1/mimalloc.o -I include/ src/rbtree/rbtree-clrs-full.c
+
+build: rbtree/rbtree-stl.cpp: clang++ --std=c++17 -O3 -o .koka/cppcomp/rbtree-stl -lpthread -mcpu=apple-m1 src/rbtree/rbtree-stl.cpp
+
+build: rbtree/rbtree-stl-mi.cpp: clang++ --std=c++17 -O3 -o .koka/cppcomp/rbtree-stl-mi -lpthread -mcpu=apple-m1 /usr/local/lib/mimalloc-2.1/mimalloc.o -I include/ src/rbtree/rbtree-stl.cpp
+
+build: ftree/ftree-fip.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=ftree-fip -isrc src/ftree/ftree-fip.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/unsafe
+load    : std/core/bool
+load    : std/core/order
+load    : std/core/exn
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/sslice
+load    : std/core/string
+load    : std/core/list
+load    : std/core/char
+load    : std/core/maybe
+load    : std/core/tuple
+load    : std/core/show
+load    : std/core/either
+load    : std/core/delayed
+load    : std/core/debug
+load    : std/os/path
+load    : std/core/console
+load    : std/text/parse
+parse   : .../ftree/ftree-fip.kk
+check   : ftree/ftree-fip
+ftree/ftree-fip(1, 1): internal error: Backend.C.FromCore.genFunDefSig: not a function: (ftree/ftree-fip/@unroll-glue@10008,val  : (ftree/ftree-fip/tuple :: V -> V)<a>;
+val  : (ftree/ftree-fip/afew :: V -> V)<a>;
+fn<(pure :: E)>(q1: (ftree/ftree-fip/seq :: V -> V)<3896>, b1@5: ftree/ftree-fip/buffer, xs@5: (ftree/ftree-fip/list3 :: V -> V)<3896>, bs0: ftree/ftree-fip/buffer, q2@5: (ftree/ftree-fip/seq :: V -> V)<3896>, b2@5: ftree/ftree-fip/buffer){
+  match (q2@5) {
+    (ftree/ftree-fip/Empty() : ((ftree/ftree-fip/seq :: V -> V)<a>) )
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val w@11 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@17 : ftree/ftree-fip/buffer;
+          val keep@11 : ();
+          val w@12 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@18 : ftree/ftree-fip/buffer;
+          val keep@12 : ();
+          val w@13 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@19 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+          val keep@13 : ();
+      (match (x@19) {
+        (ftree/ftree-fip/Nil3() : ((ftree/ftree-fip/list3 :: V -> V)<a>) )
+           -> std/core/types/Tuple2((std/core/types/@box(q2@5)), (std/core/types/@box(x@18)));
+        _
+           -> ftree/ftree-fip/@lift-unroll-glue@10008@10398(x@19, q2@5, x@18);
+      });
+    (ftree/ftree-fip/Empty() : ((ftree/ftree-fip/seq :: V -> V)<a>) )
+       -> val  : ();
+          val  : ();
+          val w@14 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@20 : ftree/ftree-fip/buffer;
+          val keep@14 : ();
+          val w@15 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@21 : ftree/ftree-fip/buffer;
+          val keep@15 : ();
+      (match (xs@5) {
+        (ftree/ftree-fip/Nil3() : ((ftree/ftree-fip/list3 :: V -> V)<a>) )
+           -> std/core/types/Tuple2((std/core/types/@box(q1)), (std/core/types/@box(x@21)));
+        _
+           -> ftree/ftree-fip/@lift-unroll-glue@10008@10399(xs@5, q1, x@21);
+      });
+    (ftree/ftree-fip/SUnit((x@22: 3896) : a, ((@skip ftree/ftree-fip/Pad() : ftree/ftree-fip/pad ) as @pat@3@0@0: ftree/ftree-fip/pad) : ftree/ftree-fip/pad, ((@skip ftree/ftree-fip/Pad() : ftree/ftree-fip/pad ) as @pat@4@0@0: ftree/ftree-fip/pad) : ftree/ftree-fip/pad) : (ftree/ftree-fip/seq :: V -> V)<a> )
+       -> val  : a;
+          val  : ();
+          val  : ();
+          val  : ();
+          val w@16 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@23 : ftree/ftree-fip/buffer;
+          val keep@16 : ();
+          val w@17 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@24 : ftree/ftree-fip/buffer;
+          val keep@17 : ();
+          val w@18 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val xs@11 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+          val x@25 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+          val keep@18 : ();
+      (match (x@25) {
+        (ftree/ftree-fip/Nil3() : ((ftree/ftree-fip/list3 :: V -> V)<a>) )
+           -> std/core/types/Tuple2((std/core/types/@box(q2@5)), (std/core/types/@box(x@24)));
+        _
+           -> ftree/ftree-fip/@lift-unroll-glue@10008@10400(x@25, q2@5, x@24);
+      });
+    (ftree/ftree-fip/SUnit((x@0@0: 3896) : a, ((@skip ftree/ftree-fip/Pad() : ftree/ftree-fip/pad ) as @pat@6@0: ftree/ftree-fip/pad) : ftree/ftree-fip/pad, ((@skip ftree/ftree-fip/Pad() : ftree/ftree-fip/pad ) as @pat@7@0@0: ftree/ftree-fip/pad) : ftree/ftree-fip/pad) : (ftree/ftree-fip/seq :: V -> V)<a> )
+       -> val  : ();
+          val  : ();
+          val @ru-x1164 : @reuse;
+          val  : ();
+          val w@19 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val ys@7 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+          val x@26 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+          val keep@19 : ();
+          val w@20 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@27 : ftree/ftree-fip/buffer;
+          val keep@20 : ();
+          val w@21 : (hnd/evv :: E -> V)<<(exn :: (E, V) -> V),(div :: X)>>;
+          val x@28 : ftree/ftree-fip/buffer;
+          val keep@21 : ();
+      (match (x@26) {
+        (ftree/ftree-fip/Nil3() : ((ftree/ftree-fip/list3 :: V -> V)<a>) )
+           -> std/core/types/Tuple2((std/core/types/@box(q1)), (std/core/types/@box(x@28)));
+        _
+           -> ftree/ftree-fip/@lift-unroll-glue@10008@10401(x@26, q1, x@28);
+      });
+    (ftree/ftree-fip/More((u1@3: (ftree/ftree-fip/tuple :: V -> V)<3896>) : (ftree/ftree-fip/tuple :: V -> V)<a>, (q1@0@1: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, (v1: (ftree/ftree-fip/afew :: V -> V)<3896>) : (ftree/ftree-fip/afew :: V -> V)<a>) : (ftree/ftree-fip/seq :: V -> V)<a> )
+       -> val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+          val  : (ftree/ftree-fip/tuple :: V -> V)<a>;
+          val  : (ftree/ftree-fip/afew :: V -> V)<a>;
+          val  : ();
+          val b@10096 : ftree/ftree-fip/buffer;
+          val x@29@10937 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer);
+          val @match-x1038 : bool;
+      (match (@match-x1038) {
+        (std/core/types/True() : bool )
+           -> val _ : ()
+                    = std/core/types/@drop(x@29@10937);
+          std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x712: 5896){
+            val @c-x10566@0@821 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer)
+                  = (std/core/types/@unbox(@b-x712));
+            (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10774(b1@5, b2@5, q1@0@1, q2@5, u1@3, u2, v2, xs@5, @c-x10566@0@821))));
+          }))));
+        (@skip std/core/types/False() : bool )
+           -> (match (x@29@10937) {
+            (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((v1@3': (ftree/ftree-fip/list3 :: V -> V)<3896>) : (ftree/ftree-fip/list3 :: V -> V)<a>) : @Box ) as @box-x713: @Box) : (ftree/ftree-fip/list3 :: V -> V)<a>, ((@skip std/core/types/@Box((bs1@3: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x714: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer) )
+               -> val  : ftree/ftree-fip/buffer;
+                  val  : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val  : ();
+                  val x@30@10940 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer);
+                  val @match-x1039 : bool;
+              (match (@match-x1039) {
+                (std/core/types/True() : bool )
+                   -> val _ : ()
+                            = std/core/types/@drop(x@30@10940);
+                  std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x716: 5896){
+                    val @y-x10567@1@822 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer)
+                          = (std/core/types/@unbox(@b-x716));
+                    (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10773(b1@5, b2@5, q1@0@1, q2@5, u1@3, v1@3', v2, xs@5, @y-x10567@1@822))));
+                  }))));
+                (@skip std/core/types/False() : bool )
+                   -> (match (x@30@10940) {
+                    (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((u2@1': (ftree/ftree-fip/list3 :: V -> V)<3896>) : (ftree/ftree-fip/list3 :: V -> V)<a>) : @Box ) as @box-x717: @Box) : (ftree/ftree-fip/list3 :: V -> V)<a>, ((@skip std/core/types/@Box((bs2@1: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x718: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer) )
+                       -> val  : ftree/ftree-fip/buffer;
+                          val  : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                          val  : ();
+                          val w@22 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                          val x@31 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                          val keep@22 : ();
+                          val w@23 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                          val x@32 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                          val keep@23 : ();
+                          val w@24 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                          val x@33 : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                          val keep@24 : ();
+                      (match (x@33) {
+                        (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((ts@3: (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x719: @Box) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((bs3@3: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x720: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                           -> val  : ftree/ftree-fip/buffer;
+                              val  : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                              val  : ();
+                              val x@34@10952 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                              val @match-x1040 : bool;
+                          (match (@match-x1040) {
+                            (std/core/types/True() : bool )
+                               -> val _ : ()
+                                        = std/core/types/@drop(x@34@10952);
+                              std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x722: 5896){
+                                val @y-x10568@1@823 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer)
+                                      = (std/core/types/@unbox(@b-x722));
+                                (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10772(u1@3, v2, @y-x10568@1@823))));
+                              }))));
+                            (@skip std/core/types/False() : bool )
+                               -> (match (x@34@10952) {
+                                (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((q@3: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x723: @Box) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((b@0@1: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x724: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                                   -> val  : ftree/ftree-fip/buffer;
+                                      val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                                      val  : ();
+                                  std/core/types/Tuple2((std/core/types/@box((ftree/ftree-fip/More(u1@3, q@3, v2)))), (std/core/types/@box(b@0@1)));
+                              });
+                          });
+                      });
+                  });
+              });
+          });
+      });
+    (ftree/ftree-fip/More0((u1@0@3: 3896) : a, (q1@1@1: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, (v1@0: (ftree/ftree-fip/afew :: V -> V)<3896>) : (ftree/ftree-fip/afew :: V -> V)<a>) : (ftree/ftree-fip/seq :: V -> V)<a> )
+       -> val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+          val  : a;
+          val  : (ftree/ftree-fip/afew :: V -> V)<a>;
+          val  : ();
+          val b@1@10102 : ftree/ftree-fip/buffer;
+          val x@35@10955 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer);
+          val @match-x1035 : bool;
+      (match (@match-x1035) {
+        (std/core/types/True() : bool )
+           -> val _ : ()
+                    = std/core/types/@drop(x@35@10955);
+          std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x748: 5896){
+            val @c-x10576@0@824 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer)
+                  = (std/core/types/@unbox(@b-x748));
+            (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10777(b1@5, b2@5, q1@1@1, q2@5, u1@0@3, u2, v2, xs@5, @c-x10576@0@824))));
+          }))));
+        (@skip std/core/types/False() : bool )
+           -> (match (x@35@10955) {
+            (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((v1@0@2': (ftree/ftree-fip/list3 :: V -> V)<3896>) : (ftree/ftree-fip/list3 :: V -> V)<a>) : @Box ) as @box-x749: @Box) : (ftree/ftree-fip/list3 :: V -> V)<a>, ((@skip std/core/types/@Box((bs1@0@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x750: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer) )
+               -> val  : ftree/ftree-fip/buffer;
+                  val  : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val  : ();
+                  val x@36@10958 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer);
+                  val @match-x1036 : bool;
+              (match (@match-x1036) {
+                (std/core/types/True() : bool )
+                   -> val _ : ()
+                            = std/core/types/@drop(x@36@10958);
+                  std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x752: 5896){
+                    val @y-x10577@1@825 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer)
+                          = (std/core/types/@unbox(@b-x752));
+                    (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10776(b1@5, b2@5, q1@1@1, q2@5, u1@0@3, v1@0@2', v2, xs@5, @y-x10577@1@825))));
+                  }))));
+                (@skip std/core/types/False() : bool )
+                   -> (match (x@36@10958) {
+                    (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((u2@0@0': (ftree/ftree-fip/list3 :: V -> V)<3896>) : (ftree/ftree-fip/list3 :: V -> V)<a>) : @Box ) as @box-x753: @Box) : (ftree/ftree-fip/list3 :: V -> V)<a>, ((@skip std/core/types/@Box((bs2@0@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x754: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer) )
+                       -> val  : ftree/ftree-fip/buffer;
+                          val  : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                          val  : ();
+                          val w@25 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                          val x@37 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                          val keep@25 : ();
+                          val w@26 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                          val x@38 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                          val keep@26 : ();
+                          val w@27 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                          val x@39 : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                          val keep@27 : ();
+                      (match (x@39) {
+                        (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((ts@0@0: (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x755: @Box) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((bs3@0@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x756: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                           -> val  : ftree/ftree-fip/buffer;
+                              val  : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                              val  : ();
+                              val x@40@10970 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                              val @match-x1037 : bool;
+                          (match (@match-x1037) {
+                            (std/core/types/True() : bool )
+                               -> val _ : ()
+                                        = std/core/types/@drop(x@40@10970);
+                              std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x758: 5896){
+                                val @y-x10578@1@826 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer)
+                                      = (std/core/types/@unbox(@b-x758));
+                                (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10775(u1@0@3, v2, @y-x10578@1@826))));
+                              }))));
+                            (@skip std/core/types/False() : bool )
+                               -> (match (x@40@10970) {
+                                (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((q@0@0: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x759: @Box) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((b@0@0@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x760: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                                   -> val  : ftree/ftree-fip/buffer;
+                                      val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                                      val  : ();
+                                  std/core/types/Tuple2((std/core/types/@box((ftree/ftree-fip/More0(u1@0@3, q@0@0, v2)))), (std/core/types/@box(b@0@0@0)));
+                              });
+                          });
+                      });
+                  });
+              });
+          });
+      });
+    (ftree/ftree-fip/More((u1@1@2: (ftree/ftree-fip/tuple :: V -> V)<3896>) : (ftree/ftree-fip/tuple :: V -> V)<a>, (q1@2@0: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, (v1@1: (ftree/ftree-fip/afew :: V -> V)<3896>) : (ftree/ftree-fip/afew :: V -> V)<a>) : (ftree/ftree-fip/seq :: V -> V)<a> )
+       -> val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+          val  : (ftree/ftree-fip/tuple :: V -> V)<a>;
+          val  : (ftree/ftree-fip/afew :: V -> V)<a>;
+          val  : ();
+          val x@41@10973 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer);
+          val @match-x1033 : bool;
+      (match (@match-x1033) {
+        (std/core/types/True() : bool )
+           -> val _ : ()
+                    = std/core/types/@drop(x@41@10973);
+          std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x764: 5896){
+            val @y-x10582@0@827 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer)
+                  = (std/core/types/@unbox(@b-x764));
+            (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10779(b1@5, b2@5, q1@2@0, q2@5, u1@1@2, u2, v2, xs@5, @y-x10582@0@827))));
+          }))));
+        (@skip std/core/types/False() : bool )
+           -> (match (x@41@10973) {
+            (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((v1@1@0': (ftree/ftree-fip/list3 :: V -> V)<3896>) : (ftree/ftree-fip/list3 :: V -> V)<a>) : @Box ) as @box-x765: @Box) : (ftree/ftree-fip/list3 :: V -> V)<a>, ((@skip std/core/types/@Box((bs1@1@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x766: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer) )
+               -> val  : ftree/ftree-fip/buffer;
+                  val  : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val  : ();
+                  val w@28 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                  val ys@20@0 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val x@42 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val keep@28 : ();
+                  val w@29 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                  val x@43 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val keep@29 : ();
+                  val w@30 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                  val x@44 : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                  val keep@30 : ();
+              (match (x@44) {
+                (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((ts@1@0: (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x767: @Box) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((bs3@1@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x768: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                   -> val  : ftree/ftree-fip/buffer;
+                      val  : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                      val  : ();
+                      val x@45@10985 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                      val @match-x1034 : bool;
+                  (match (@match-x1034) {
+                    (std/core/types/True() : bool )
+                       -> val _ : ()
+                                = std/core/types/@drop(x@45@10985);
+                      std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x770: 5896){
+                        val @y-x10583@1@828 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer)
+                              = (std/core/types/@unbox(@b-x770));
+                        (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10778(u1@1@2, v2, @y-x10583@1@828))));
+                      }))));
+                    (@skip std/core/types/False() : bool )
+                       -> (match (x@45@10985) {
+                        (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((q@1@0: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x771: @Box) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((b@1@0@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x772: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                           -> val  : ftree/ftree-fip/buffer;
+                              val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                              val  : ();
+                          std/core/types/Tuple2((std/core/types/@box((ftree/ftree-fip/More(u1@1@2, q@1@0, v2)))), (std/core/types/@box(b@1@0@0)));
+                      });
+                  });
+              });
+          });
+      });
+    (ftree/ftree-fip/More0((u1@2@1: 3896) : a, (q1@3@0: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, (v1@2: (ftree/ftree-fip/afew :: V -> V)<3896>) : (ftree/ftree-fip/afew :: V -> V)<a>) : (ftree/ftree-fip/seq :: V -> V)<a> )
+       -> val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+          val  : a;
+          val  : (ftree/ftree-fip/afew :: V -> V)<a>;
+          val  : ();
+          val x@46@10988 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer);
+          val @match-x1031 : bool;
+      (match (@match-x1031) {
+        (std/core/types/True() : bool )
+           -> val _ : ()
+                    = std/core/types/@drop(x@46@10988);
+          std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x776: 5896){
+            val @y-x10586@0@829 : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer)
+                  = (std/core/types/@unbox(@b-x776));
+            (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10781(b1@5, b2@5, q1@3@0, q2@5, u1@2@1, u2, v2, xs@5, @y-x10586@0@829))));
+          }))));
+        (@skip std/core/types/False() : bool )
+           -> (match (x@46@10988) {
+            (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((v1@2@0': (ftree/ftree-fip/list3 :: V -> V)<3896>) : (ftree/ftree-fip/list3 :: V -> V)<a>) : @Box ) as @box-x777: @Box) : (ftree/ftree-fip/list3 :: V -> V)<a>, ((@skip std/core/types/@Box((bs1@2@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x778: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<a>, ftree/ftree-fip/buffer) )
+               -> val  : ftree/ftree-fip/buffer;
+                  val  : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val  : ();
+                  val w@31 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                  val ys@24@0 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val x@47 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val keep@31 : ();
+                  val w@32 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                  val x@48 : (ftree/ftree-fip/list3 :: V -> V)<a>;
+                  val keep@32 : ();
+                  val w@33 : (hnd/evv :: E -> V)<<(div :: X),(exn :: (E, V) -> V)>>;
+                  val x@49 : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                  val keep@33 : ();
+              (match (x@49) {
+                (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((ts@2@0: (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x779: @Box) : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((bs3@2@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x780: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                   -> val  : ftree/ftree-fip/buffer;
+                      val  : (ftree/ftree-fip/list3 :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                      val  : ();
+                      val x@50@11000 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer);
+                      val @match-x1032 : bool;
+                  (match (@match-x1032) {
+                    (std/core/types/True() : bool )
+                       -> val _ : ()
+                                = std/core/types/@drop(x@50@11000);
+                      std/core/types/@unbox((std/core/hnd/yield-extend((fn<(e :: E)>(@b-x782: 5896){
+                        val @y-x10587@1@830 : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer)
+                              = (std/core/types/@unbox(@b-x782));
+                        (std/core/types/@box((ftree/ftree-fip/@mlift-unroll-glue@10008@10780(u1@2@1, v2, @y-x10587@1@830))));
+                      }))));
+                    (@skip std/core/types/False() : bool )
+                       -> (match (x@50@11000) {
+                        (@skip std/core/types/Tuple2(((@skip std/core/types/@Box((q@2@0: (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<3896>>) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>) : @Box ) as @box-x783: @Box) : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ((@skip std/core/types/@Box((b@2@0: ftree/ftree-fip/buffer) : ftree/ftree-fip/buffer) : @Box ) as @box-x784: @Box) : ftree/ftree-fip/buffer) : ((ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>, ftree/ftree-fip/buffer) )
+                           -> val  : ftree/ftree-fip/buffer;
+                              val  : (ftree/ftree-fip/seq :: V -> V)<(ftree/ftree-fip/tuple :: V -> V)<a>>;
+                              val  : ();
+                          std/core/types/Tuple2((std/core/types/@box((ftree/ftree-fip/More0(u1@2@1, q@2@0, v2)))), (std/core/types/@box(b@2@0)));
+                      });
+                  });
+              });
+          });
+      });
+    _
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+      std/core/types/@unbox((std/core/exn/error-pattern("ftree/ftree-fip(234, 3)", "glue")));
+    _
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+          val  : ();
+      std/core/types/@unbox((std/core/exn/error-pattern("ftree/ftree-fip(234, 3)", "glue")));
+  };
+})
+CallStack (from HasCallStack):
+  error, called at src/Backend/C/FromCore.hs:326:42 in koka-3.1.2-7SWN83ElxwDEblvTDAD6Nq:Backend.C.FromCore
+
+
+build: ftree/ftree-std-reuse.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=ftree-std-reuse -isrc src/ftree/ftree-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/char
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/vector
+load    : std/core/int
+load    : std/core/sslice
+load    : std/core/maybe
+load    : std/core/list
+load    : std/core/string
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/os/path
+load    : std/core/console
+load    : std/core/show
+load    : std/text/parse
+parse   : .../ftree/ftree-std.kk
+check   : ftree/ftree-std
+ftree/ftree-std(1, 1): internal error: Backend.C.FromCore.genFunDefSig: not a function: (ftree/ftree-std/@trmc-unroll-glue@10003,val  : (ftree/ftree-std/afew :: V -> V)<a>;
+val  : (ftree/ftree-std/afew :: V -> V)<a>;
+fn<(div :: X)>(q1: (ftree/ftree-std/seq :: V -> V)<1455>, xs: (list :: V -> V)<1455>, q2: (ftree/ftree-std/seq :: V -> V)<1455>, @acc: (ctx :: V -> V)<(ftree/ftree-std/seq :: V -> V)<1455>>){
+  match (q2) {
+    (ftree/ftree-std/Empty() : ((ftree/ftree-std/seq :: V -> V)<a>) )
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val @b-x224@238 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x224@238)))));
+    (ftree/ftree-std/Empty() : ((ftree/ftree-std/seq :: V -> V)<a>) )
+       -> val  : ();
+          val  : ();
+          val @b-x226@240 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x226@240)))));
+    (ftree/ftree-std/SUnit((x: 1455) : a) : (ftree/ftree-std/seq :: V -> V)<a> )
+       -> val  : a;
+          val  : ();
+          val  : ();
+          val  : ();
+          val @b-x228@242 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x228@242)))));
+    (ftree/ftree-std/SUnit((x@0: 1455) : a) : (ftree/ftree-std/seq :: V -> V)<a> )
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val ys@10005 : (list :: V -> V)<a>;
+          val @uniq-xs@10174@10302 : (list :: V -> V)<a>;
+          val @b-x230@244 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x230@244)))));
+    (@skip ftree/ftree-std/More((u1: (ftree/ftree-std/afew :: V -> V)<1455>) : (ftree/ftree-std/afew :: V -> V)<a>, (q1@0: (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<1455>>) : (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>, (v1: (ftree/ftree-std/afew :: V -> V)<1455>) : (ftree/ftree-std/afew :: V -> V)<a>) : (ftree/ftree-std/seq :: V -> V)<a> )
+       -> val  : (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>;
+          val  : (ftree/ftree-std/afew :: V -> V)<a>;
+          val  : (ftree/ftree-std/afew :: V -> V)<a>;
+          val  : ();
+          val xs@1@10006 : (list :: V -> V)<a>;
+          val ys@1@10009 : (list :: V -> V)<a>;
+          val ys@0@10007 : (list :: V -> V)<a>;
+          val @trmc-x10325 : (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>;
+          val @trmc-x10326 : (ftree/ftree-std/seq :: V -> V)<a>;
+          val @b-x236@247 : (@field-addr :: V -> V)<(ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>>;
+      ftree/ftree-std/@trmc-unroll-glue@10003(q1@0, (ftree/ftree-std/to-tuples((match (xs@1@10006) {
+          (std/core/types/Nil() : ((list :: V -> V)<a>) )
+             -> ys@0@10007;
+          _
+             -> std/core/list/@unroll-append@10004(xs@1@10006, ys@0@10007);
+        }))), q2, (std/core/types/@cctx-extend(@acc, (std/core/types/@box(@trmc-x10326)), @b-x236@247)));
+  };
+})
+CallStack (from HasCallStack):
+  error, called at src/Backend/C/FromCore.hs:326:42 in koka-3.1.2-7SWN83ElxwDEblvTDAD6Nq:Backend.C.FromCore
+
+
+build: ftree/ftree-std.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=ftree-std --fno-reuse -isrc src/ftree/ftree-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/int
+load    : std/core/char
+load    : std/core/sslice
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/string
+load    : std/core/exn
+load    : std/core/list
+load    : std/core/maybe
+load    : std/core/either
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/tuple
+load    : std/os/path
+load    : std/core/console
+load    : std/core/vector
+load    : std/text/parse
+parse   : .../ftree/ftree-std.kk
+check   : ftree/ftree-std
+ftree/ftree-std(1, 1): internal error: Backend.C.FromCore.genFunDefSig: not a function: (ftree/ftree-std/@trmc-unroll-glue@10003,val  : (ftree/ftree-std/afew :: V -> V)<a>;
+val  : (ftree/ftree-std/afew :: V -> V)<a>;
+fn<(div :: X)>(q1: (ftree/ftree-std/seq :: V -> V)<1455>, xs: (list :: V -> V)<1455>, q2: (ftree/ftree-std/seq :: V -> V)<1455>, @acc: (ctx :: V -> V)<(ftree/ftree-std/seq :: V -> V)<1455>>){
+  match (q2) {
+    (ftree/ftree-std/Empty() : ((ftree/ftree-std/seq :: V -> V)<a>) )
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val @b-x224@238 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x224@238)))));
+    (ftree/ftree-std/Empty() : ((ftree/ftree-std/seq :: V -> V)<a>) )
+       -> val  : ();
+          val  : ();
+          val @b-x226@240 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x226@240)))));
+    (ftree/ftree-std/SUnit((x: 1455) : a) : (ftree/ftree-std/seq :: V -> V)<a> )
+       -> val  : a;
+          val  : ();
+          val  : ();
+          val  : ();
+          val @b-x228@242 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x228@242)))));
+    (ftree/ftree-std/SUnit((x@0: 1455) : a) : (ftree/ftree-std/seq :: V -> V)<a> )
+       -> val  : ();
+          val  : ();
+          val  : ();
+          val ys@10005 : (list :: V -> V)<a>;
+          val @uniq-xs@10174@10302 : (list :: V -> V)<a>;
+          val @b-x230@244 : (ftree/ftree-std/seq :: V -> V)<a>;
+      std/core/types/@unbox((std/core/types/cctx/((++.))(@acc, (std/core/types/@box(@b-x230@244)))));
+    (@skip ftree/ftree-std/More((u1: (ftree/ftree-std/afew :: V -> V)<1455>) : (ftree/ftree-std/afew :: V -> V)<a>, (q1@0: (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<1455>>) : (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>, (v1: (ftree/ftree-std/afew :: V -> V)<1455>) : (ftree/ftree-std/afew :: V -> V)<a>) : (ftree/ftree-std/seq :: V -> V)<a> )
+       -> val  : (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>;
+          val  : (ftree/ftree-std/afew :: V -> V)<a>;
+          val  : (ftree/ftree-std/afew :: V -> V)<a>;
+          val  : ();
+          val xs@1@10006 : (list :: V -> V)<a>;
+          val ys@1@10009 : (list :: V -> V)<a>;
+          val ys@0@10007 : (list :: V -> V)<a>;
+          val @trmc-x10325 : (ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>;
+          val @trmc-x10326 : (ftree/ftree-std/seq :: V -> V)<a>;
+          val @b-x236@247 : (@field-addr :: V -> V)<(ftree/ftree-std/seq :: V -> V)<(ftree/ftree-std/tuple :: V -> V)<a>>>;
+      ftree/ftree-std/@trmc-unroll-glue@10003(q1@0, (ftree/ftree-std/to-tuples((match (xs@1@10006) {
+          (std/core/types/Nil() : ((list :: V -> V)<a>) )
+             -> ys@0@10007;
+          _
+             -> std/core/list/@unroll-append@10004(xs@1@10006, ys@0@10007);
+        }))), q2, (std/core/types/@cctx-extend(@acc, (std/core/types/@box(@trmc-x10326)), @b-x236@247)));
+  };
+})
+CallStack (from HasCallStack):
+  error, called at src/Backend/C/FromCore.hs:326:42 in koka-3.1.2-7SWN83ElxwDEblvTDAD6Nq:Backend.C.FromCore
+
+
+build: msort/msort-fip.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=msort-fip -isrc src/msort/msort-fip.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/char
+load    : std/core/sslice
+load    : std/core/vector
+load    : std/core/string
+load    : std/core/int
+load    : std/core/maybe
+load    : std/core/tuple
+load    : std/core/either
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/console
+load    : std/os/path
+load    : std/core/delayed
+load    : std/core/list
+load    : std/text/parse
+parse   : .../msort/msort-fip.kk
+check   : msort/msort-fip
+linking : msort/msort-fip/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/msort-fip
+src/msort/msort-fip.kk(69, 9): warning: fip fun merge-pairs: not all branches use the same variables:
+  (Sublist(b, xs1)) -> (a/1)
+  (Singleton(b, xs1)) -> (a/1)
+  (xs) -> ()
+
+src/msort/msort-fip.kk(69, 9): warning: fip fun merge-pairs: not all branches can reuse the space provided by Sublist/16
+
+src/msort/msort-fip.kk(69, 9): warning: fip fun merge-pairs: not all branches can reuse the space provided by Singleton/16
+
+
+build: msort/msort-std-reuse.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=msort-std-reuse -isrc src/msort/msort-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/int
+load    : std/core/order
+load    : std/core/char
+load    : std/core/string
+load    : std/core/vector
+load    : std/core/maybe
+load    : std/core/sslice
+load    : std/core/list
+load    : std/core/either
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/core/show
+load    : std/core/tuple
+load    : std/os/path
+load    : std/text/parse
+parse   : .../msort/msort-std.kk
+check   : msort/msort-std
+linking : msort/msort-std/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/msort-std-reuse
+
+build: msort/msort-std.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=msort-std --fno-reuse -isrc src/msort/msort-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/vector
+load    : std/core/int
+load    : std/core/sslice
+load    : std/core/string
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/list
+load    : std/core/maybe
+load    : std/core/show
+load    : std/core/char
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/os/path
+load    : std/text/parse
+parse   : .../msort/msort-std.kk
+check   : msort/msort-std
+linking : msort/msort-std/@main
+created : .koka/v3.1.2-bench/clang-release-579b75/msort-std
+
+build: qsort/qsort-fip.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=qsort-fip -isrc src/qsort/qsort-fip.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/unsafe
+load    : std/core/sslice
+load    : std/core/order
+load    : std/core/exn
+load    : std/core/bool
+load    : std/core/string
+load    : std/core/list
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/maybe
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/os/path
+load    : std/core/char
+load    : std/text/parse
+parse   : .../qsort/qsort-fip.kk
+check   : qsort/qsort-fip
+linking : qsort/qsort-fip/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/qsort-fip
+
+build: qsort/qsort-std-reuse.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=qsort-std-reuse -isrc src/qsort/qsort-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/undiv
+load    : std/core/int
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/char
+load    : std/core/vector
+load    : std/core/string
+load    : std/core/maybe
+load    : std/core/list
+load    : std/core/sslice
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/os/path
+load    : std/core/console
+load    : std/text/parse
+parse   : .../qsort/qsort-std.kk
+check   : qsort/qsort-std
+linking : qsort/qsort-std/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/qsort-std-reuse
+
+build: qsort/qsort-std.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=qsort-std --fno-reuse -isrc src/qsort/qsort-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/bool
+load    : std/core/order
+load    : std/core/char
+load    : std/core/string
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/sslice
+load    : std/core/maybe
+load    : std/core/either
+load    : std/core/tuple
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/os/path
+load    : std/core/console
+load    : std/core/list
+load    : std/text/parse
+parse   : .../qsort/qsort-std.kk
+check   : qsort/qsort-std
+linking : qsort/qsort-std/@main
+created : .koka/v3.1.2-bench/clang-release-579b75/qsort-std
+
+build: tmap/tmap-fip.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=tmap-fip -isrc src/tmap/tmap-fip.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/undiv
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/char
+load    : std/core/sslice
+load    : std/core/int
+load    : std/core/string
+load    : std/core/maybe
+load    : std/core/list
+load    : std/core/either
+load    : std/core/vector
+load    : std/core/tuple
+load    : std/core/delayed
+load    : std/os/path
+load    : std/core/debug
+load    : std/core/console
+load    : std/core/show
+load    : std/text/parse
+parse   : .../tmap/tmap-fip.kk
+check   : tmap/tmap-fip
+linking : tmap/tmap-fip/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/tmap-fip
+
+build: tmap/tmap-std-reuse.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=tmap-std-reuse -isrc src/tmap/tmap-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/num/int32
+load    : std/os/env
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/exn
+load    : std/core/bool
+load    : std/core/order
+load    : std/core/unsafe
+load    : std/core/vector
+load    : std/core/int
+load    : std/core/string
+load    : std/core/maybe
+load    : std/core/sslice
+load    : std/core/char
+load    : std/core/either
+load    : std/core/list
+load    : std/core/tuple
+load    : std/core/debug
+load    : std/core/show
+load    : std/core/delayed
+load    : std/os/path
+load    : std/core/console
+load    : std/text/parse
+parse   : .../tmap/tmap-std.kk
+check   : tmap/tmap-std
+linking : tmap/tmap-std/@main
+created : .koka/v3.1.2-bench/clang-release-30b944/tmap-std-reuse
+
+build: tmap/tmap-std.kk: /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin/koka -O3 --no-debug --cc=clang --buildtag=bench --buildname=tmap-std --fno-reuse -isrc src/tmap/tmap-std.kk
+]4;0;?\[6nload    : std/core
+load    : std/os/env
+load    : std/num/int32
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/undiv
+load    : std/core/exn
+load    : std/core/int
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/string
+load    : std/core/char
+load    : std/core/sslice
+load    : std/core/vector
+load    : std/core/maybe
+load    : std/core/either
+load    : std/core/show
+load    : std/core/tuple
+load    : std/core/list
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/os/path
+load    : std/core/console
+load    : std/text/parse
+parse   : .../tmap/tmap-std.kk
+check   : tmap/tmap-std
+linking : tmap/tmap-std/@main
+created : .koka/v3.1.2-bench/clang-release-579b75/tmap-std
+
+build: tmap/tmap-fip.c: clang -O3 -o .koka/ccomp/tmap-fip -lpthread -mcpu=apple-m1 src/tmap/tmap-fip.c
+
+build: tmap/tmap-fip-mi.c: clang -O3 -o .koka/ccomp/tmap-fip-mi -lpthread -mcpu=apple-m1 /usr/local/lib/mimalloc-2.1/mimalloc.o -I include/ src/tmap/tmap-fip.c
+
+build: tmap/tmap-std.c: clang -O3 -o .koka/ccomp/tmap-std -lpthread -mcpu=apple-m1 src/tmap/tmap-std.c
+
+build: tmap/tmap-std-mi.c: clang -O3 -o .koka/ccomp/tmap-std-mi -lpthread -mcpu=apple-m1 /usr/local/lib/mimalloc-2.1/mimalloc.o -I include/ src/tmap/tmap-std.c

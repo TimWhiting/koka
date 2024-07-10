@@ -50,7 +50,7 @@ fun test(n : int32)
   val xs = rand-list(n, 13.int32)
   val x = fold-int32( (10_000_000.int32)/(max(n,1.int32)), 0.int32) fn(i,acc)
             val ys = merge-all(sequences(xs))
-            acc + ys.last(0.int32)
+            acc + ys.last.default(0.int32)
   println("total: " ++ x.show)
 
 fun main()

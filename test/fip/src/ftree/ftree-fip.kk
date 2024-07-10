@@ -19,7 +19,7 @@ type tuple<a>
 
 type seq<a>
   Empty
-  Unit(a : a, b : pad, c : pad)
+  SUnit(a : a, b : pad, c : pad)
   More0(l : a, s : seq<tuple<a>>, r : afew<a>)
   More(l : tuple<a>, s : seq<tuple<a>>, r : afew<a>)
 
@@ -32,7 +32,7 @@ value type bseq<a>
 
 // Isomorphic to (,,,) but unboxed
 value type tuple4<a,b,c,d>
-  Tuple4(fst:a,snd:b,thd:c,field4:d)
+  TTuple4(fst:a,snd:b,thd:c,field4:d)
 
 fun bhead(^bs : bseq<a>) : exn a
   match bs
@@ -40,7 +40,7 @@ fun bhead(^bs : bseq<a>) : exn a
 
 fun head(^s : seq<a>) : exn a
   match s
-    Unit(x) -> x
+    SUnit(x) -> x
     More0(x, _, _) -> x
     More(Pair(x, _, _), _, _) -> x
     More(Triple(x, _, _), _, _) -> x
@@ -52,8 +52,8 @@ fip fun bcons(x : a, u3 : reuse3, bs : bseq<a>) : exn bseq<a>
 
 fip fun cons(x : a, u3 : reuse3, s : seq<a>, b : buffer) : exn (seq<a>, buffer)
   match s
-    Empty                     -> (Unit(x, Pad, Pad), b)
-    Unit(y, _, _)             -> (More0(x, Empty, One(y, Pad, Pad)), b)
+    Empty                     -> (SUnit(x, Pad, Pad), b)
+    SUnit(y, _, _)             -> (More0(x, Empty, One(y, Pad, Pad)), b)
     More0(y, q, u)            -> (More(Pair(x, y, Pad), q, u), b)
     More(Pair(y, z, _), q, u) ->
       (More(Triple(x, y, z), q, u), BCons(b, Pad, Pad))
@@ -64,39 +64,39 @@ fip fun cons(x : a, u3 : reuse3, s : seq<a>, b : buffer) : exn (seq<a>, buffer)
 
 fip fun buncons(bs : bseq<a>) : exn (a, reuse3, bseq<a>)
   val BSeq(s, b) = bs
-  val Tuple4(x, u3, s', b') = uncons(s, b)
+  val TTuple4(x, u3, s', b') = uncons(s, b)
   (x, u3, BSeq(s', b'))
 
 fip fun uncons(s : seq<a>, b : buffer) : exn tuple4<a, reuse3, seq<a>, buffer>
   match s
-    Unit(x, _, _) ->
-      Tuple4(x, Reuse3(Pad,Pad,Pad), Empty, b)
+    SUnit(x, _, _) ->
+      TTuple4(x, Reuse3(Pad,Pad,Pad), Empty, b)
     More(Triple(x, y, z), q, u) ->
       val BCons(b', _, _) = b
-      Tuple4(x, Reuse3(Pad,Pad,Pad), More(Pair(y, z, Pad), q, u), b')
+      TTuple4(x, Reuse3(Pad,Pad,Pad), More(Pair(y, z, Pad), q, u), b')
     More(Pair(x, y, _), q, u) ->
-      Tuple4(x, Reuse3(Pad,Pad,Pad), More0(y, q, u), b)
+      TTuple4(x, Reuse3(Pad,Pad,Pad), More0(y, q, u), b)
     More0(x, q, u) ->
       val (q', b') = more0(q, u, b)
-      Tuple4(x, Reuse3(Pad,Pad,Pad), q', b')
+      TTuple4(x, Reuse3(Pad,Pad,Pad), q', b')
 
 fip fun more0(q : seq<tuple<a>>, u : afew<a>, b : buffer) : exn (seq<a>, buffer)
   match q
     Empty ->
       match u
-        One(x, y, z) -> (Unit(x, y, z), b)
+        One(x, y, z) -> (SUnit(x, y, z), b)
         Two(y, z, _) ->
           val BCons(b', _, _) = b
           (More0(y, Empty, One(z, Pad, Pad)), b')
         Three(y, z, w) ->
           val BCons(b', _, _) = b
           (More0(y, Empty, Two(z, w, Pad)), b')
-    Unit(p, _, _) ->
+    SUnit(p, _, _) ->
       match p
         Pair(x, y, _)   -> (More(Pair(x, y, Pad), Empty, u), b)
         Triple(x, y, z) ->
           val BCons(b', _, _) = b
-          (More0(x, Unit(Pair(y,z,Pad),Pad,Pad), u), b')
+          (More0(x, SUnit(Pair(y,z,Pad),Pad,Pad), u), b')
     More0(p, q1, u1) ->
       match p
         Pair(x, y) ->
@@ -126,8 +126,8 @@ fip fun bsnoc(bs : bseq<a>, u3 : reuse3, x : a) : exn bseq<a>
 
 fip fun snoc(s : seq<a>, b : buffer, u3 : reuse3, x : a) : exn (seq<a>, buffer)
   match s
-    Empty                     -> (Unit(x, Pad, Pad), b)
-    Unit(y, _, _)             -> (More0(y, Empty, One(x, Pad, Pad)), b)
+    Empty                     -> (SUnit(x, Pad, Pad), b)
+    SUnit(y, _, _)             -> (More0(y, Empty, One(x, Pad, Pad)), b)
     More0(u, q, One(y, _, _)) -> (More0(u, q, Two(y, x, Pad)), BCons(b, Pad, Pad))
     More (u, q, One(y, _, _)) -> (More (u, q, Two(y, x, Pad)), BCons(b, Pad, Pad))
     More0(u, q, Two(y, z, _)) -> (More0(u, q, Three(y, z, x)), BCons(b, Pad, Pad))
@@ -184,7 +184,7 @@ fip fun foldl3_flipped(xs,z1,z2,^f)
 fip fun foldr3(xs,z1,z2,^f)
   xs.reverse3.foldl3_flipped(z1,z2,f)
 
-fip fun (++)( xs : buffer, ys : buffer ) : buffer
+fip fun buff/(++)( xs : buffer, ys : buffer ) : buffer
   append-buffers(xs, ys)
 
 fip fun append-buffers(b1 : buffer, b2 : buffer) : buffer
@@ -234,8 +234,8 @@ fip fun glue(q1 : seq<a>, b1 : buffer, xs : list3<a>, bs0 : buffer, q2 : seq<a>,
   match(q1, q2)
     (Empty, q2) -> xs.foldr3(q2, (bs0 ++ b1 ++ b2), cons)
     (q1, Empty) -> xs.foldl3(q1, (bs0 ++ b2 ++ b1), snoc)
-    (Unit(x,_,_), q2) -> (Cons3(x,xs,Pad)).foldr3(q2, (bs0 ++ b1 ++ b2), cons)
-    (q1, Unit(x,_,_)) -> append3(xs,Cons3(x,Nil3,Pad)).foldl3(q1, (bs0 ++ b2 ++ b1), snoc)
+    (SUnit(x,_,_), q2) -> (Cons3(x,xs,Pad)).foldr3(q2, (bs0 ++ b1 ++ b2), cons)
+    (q1, SUnit(x,_,_)) -> append3(xs,Cons3(x,Nil3,Pad)).foldl3(q1, (bs0 ++ b2 ++ b1), snoc)
     (More(u1, q1, v1), More(u2, q2, v2)) ->
       val (v1', bs1) = afew-to-list(v1, BCons(bs0, Pad, Pad))
       val (u2', bs2) = tuple-to-list(u2, bs1)

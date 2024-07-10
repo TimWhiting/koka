@@ -195,7 +195,7 @@ function build_kk { # <bench>
   local srcname="$1"
   local base=${1%.*}            # no ext
   local stem=${base##*/}     # dashed dir
-  local options="-O2 --no-debug --cc=$ccomp --buildtag=bench --buildname=$stem $kkopts"  
+  local options="-O3 --no-debug --cc=$ccomp --buildtag=bench --buildname=$stem $kkopts"  
   if [[ $1 == *-std-reuse\.kk ]]; then
     srcname="${1%-std-reuse.kk}-std.kk"    
   fi
