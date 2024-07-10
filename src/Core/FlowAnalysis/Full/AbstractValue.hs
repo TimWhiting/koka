@@ -60,11 +60,17 @@ instance Show Time where
 
 instance Show KAddr where
   show (KAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
+  show KEnd = "End"
+
+instance Show MKAddr where
+  show (MKAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
+  show MKEnd = "End"
 
 type Addr = (TName, ExprContextId, Time)
 type VEnv = M.Map TName Addr
 
-newtype KAddr = KAddr (ExprContext, VEnv, Time) deriving (Eq, Ord)
+data KAddr = KAddr (ExprContext, VEnv, Time) | KEnd deriving (Eq, Ord)
+data MKAddr = MKAddr (ExprContext, VEnv, Time) | MKEnd deriving (Eq, Ord)
 
 showStore store = show $ pretty store
 
@@ -78,7 +84,7 @@ data AChange =
   | AChangeConstr ExprContext VEnv
   | AChangeOp Name ExprContext VEnv -- AChangeOp
   | AChangeLit LiteralChange
-  | AChangeKont KAddr KAddr -- Where to return to and where to extend the return continuation
+  | AChangeKont KAddr MKAddr -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
 
 envOfClos :: AChange -> VEnv
@@ -106,7 +112,7 @@ data AbValue =
     aclos:: !(Set (ExprContext, VEnv)),
     aops:: !(Set (Name, ExprContext, VEnv)),
     acons:: !(Set (ExprContext, VEnv)),
-    akonts:: !(Set (KAddr, KAddr)),
+    akonts:: !(Set (KAddr, MKAddr)),
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
 

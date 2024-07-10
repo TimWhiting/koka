@@ -101,8 +101,8 @@ doStep i =
             let env' = extendEnv env (dgTNames bg) addrs
             doGC $ Eval ex env' store xclos (LetL 0 (length binds) 0 (length $ defsOf bg) addrs expr env': local) kont meta time
           _ -> error $ "doStep: " ++ show expr ++ " not handled"
-      Cont [EndProgram] KEnd MEnd achange store xclos time -> return $ AC achange
-      Cont [EndProgram] KEnd meta achange store xclos time -> error "Not handled yet" -- TODO: Handle the no-top condition
+      Cont [EndProgram] KEnd2 MEnd achange store xclos time -> return $ AC achange
+      Cont [EndProgram] KEnd2 meta achange store xclos time -> error "Not handled yet" -- TODO: Handle the no-top condition
       Cont lc kont meta achange store xclos time -> do
         KC l k <- pop lc kont
         -- trace ("Cont: " ++ show l ++ " " ++ show k) $ return ()

@@ -72,13 +72,13 @@ type ExactContext = (AChange, AChange, VStore, KClos)
 data Kont =
   KPrecise ExactContext
   | KApprox ApproxContext
-  | KEnd
+  | KEnd2
   deriving (Eq, Ord)
 
 instance Show Kont where
   show (KPrecise (e, v, s, k)) = "KPrecise " ++ show e ++ " " ++ show v
   show (KApprox (e, v, a)) = "KApprox " ++ show e ++ " " ++ show v ++ " " ++ show a
-  show KEnd = "KEnd"
+  show KEnd2 = "KEnd"
 
 data KontA =
   KAppr LocalKont ApproxContext
@@ -93,7 +93,7 @@ data MetaKont =
   deriving (Eq, Ord, Show)
 
 approximate :: Addr -> KClos -> LocalKont -> Kont -> (KClos, KontA)
-approximate a x l KEnd = (x, KPrec l)
+approximate a x l KEnd2 = (x, KPrec l)
 approximate a x l (KPrecise (f, v, st, x1)) = ((x `unionK` x1) `unionK` M.singleton a (S.singleton st), KAppr l (f, v, a))
 approximate a x l (KApprox (f, v, b)) = let Just !xx = M.lookup b x in (x, KAppr l (f, v, a))
 
@@ -163,7 +163,7 @@ llKont kont kclos seen =
   if kont `S.member` seen then return S.empty
   else do
     case kont of
-      KEnd -> return S.empty
+      KEnd2 -> return S.empty
       KPrecise ctx@(clos, arg, store, xclos) -> do
         -- trace ("ClosV " ++ show (llV clos)) $ return ()
         -- trace ("ClosEnv " ++ show (envOfClos clos)) $ return ()

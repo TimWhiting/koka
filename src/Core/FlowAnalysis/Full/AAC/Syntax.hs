@@ -110,7 +110,7 @@ evalMain :: BuildContext
                                    Set Type), BuildContext)
 evalMain bc build mod m = do
   (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
-    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd MEnd (KTime []))
+    q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd2 MEnd (KTime []))
     addResult q
   return (r, bc)
 
