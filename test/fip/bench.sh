@@ -39,7 +39,7 @@ if ! [ -d "$koka_install_dir" ]; then
 fi      
 
 koka="${koka_install_dir}/bin/koka"
-koka_ver="v2.4.1"
+koka_ver="v3.1.2"
 
 echo "using koka: $koka"
 
