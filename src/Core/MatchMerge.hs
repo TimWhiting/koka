@@ -27,6 +27,7 @@ import Core.Pretty
 import Core.CoreVar
 import Core.Uniquefy
 import Data.List (intercalate)
+import qualified Data.Set as S
 
 trace s x =
   Lib.Trace.trace s
@@ -54,7 +55,8 @@ matchMergeDefGroup (DefNonRec def)
 
 matchMergeRecDef :: Def -> Unique Def
 matchMergeRecDef def
-  = do e <- rewriteBottomUpM matchMergeExpr $ defExpr def
+  = -- rewrite expressions using matchMergeExpr
+    do e <- rewriteBottomUpM matchMergeExpr $ defExpr def
        return def{defExpr=e}
 
 matchMergeExpr :: Expr -> Unique Expr
@@ -63,8 +65,8 @@ matchMergeExpr body
       Case exprs branches ->
         do
           (branches', changed) <- mergeBranches branches
-          -- if changed then 
-          --   trace ("matchMergeExpr:\n" ++ show (vcat (map (text . show) branches)) ++ "\nrewrote to: \n" ++ show (vcat (map (text . show) branches')) ++ "\n") (return ()) 
+          -- if changed then
+          --   trace ("matchMergeExpr:\n" ++ show (vcat (map (text . show) branches)) ++ "\nrewrote to: \n" ++ show (vcat (map (text . show) branches')) ++ "\n") (return ())
           -- else return ()
           return $ Case exprs branches'
       _ -> return body
@@ -81,86 +83,84 @@ mergeBranches [] = return ([], False)
 mergeBranches (b@(Branch [pat@PatCon{patConPatterns=ps}] guard):bs) | not (all isTrueGuard guard) =
   mergeBranches bs >>= (\(bs', v) -> return (b:bs', v))
 -- Branch with constructor pattern, try to merge it with the rest
-mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst) = 
+mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst) =
   -- trace ("mergeBranches:\n" ++ show b ++ "\n\n" ++ show rst ++ "\n\n\n") $
   do
-    splitted <- splitBranchConstructors b rst
+    splitted <- splitBranchConstructors b rst -- split into common structure and the rest, along with error and any branches
     case splitted of
       -- Single branch, return itself unchanged
-      ([b], [], err, any, tns, pat') -> return ([b], False)
+      ([b], [], [], tns, pat') -> return ([b], False)
       -- Single branch shares structure, rest do not, merge the rest and append
-      ([b], rst, err, any, tns, pat') ->
+      ([b], rst, matchAnys, tns, pat') ->
         do
-          (rest, v) <- mergeBranches rst
+          (rest, v) <- mergeBranches (rst ++ matchAnys)
           return (b : rest, v)
       -- Multiple branches share structure
-      (bs, rst, err, any, distinguishingVars, pat') ->
+      (bs, rst, matchAnys, distinguishingVars, pat') ->
         do
-          -- trace ("mergeBranches:\n" ++ " has error? " ++ show err ++ "\n" ++ intercalate "\n" (map (show . branchPatterns) bs) ++ "\n with common superstructure:\n" ++ show pat' ++ "\n\n") $ return ()
+          -- trace ("mergeBranches: has error?\n " ++ show (length matchAnys) ++ "\n\n" ++ intercalate "\n" (map (show . branchPatterns) bs) ++ "\n with common superstructure:\n" ++ show pat' ++ "\n\n") $ return ()
           let
-            varsMatch = [Var tn InfoNone | tn <- distinguishingVars] -- Create expressions for those vars
+            varsMatch = [Var tn InfoNone | tn <- distinguishingVars] -- Create expressions for the vars distinguishing the branches
           -- Get rid of the common superstructure from the branches that share superstructure
-          -- Also add the implicit error branch if it exists
-            subBranches = map (stripOuterConstructors distinguishingVars pat') bs ++ maybeToList any ++ maybeToList err
-          (newSubBranches, innerV) <- mergeBranches subBranches 
-          (rest, v) <- mergeBranches rst -- Merge the branches that do not share structure with the current set
+          -- Also add wildcard/catch-all branches and implicit error branch if they exists
+            subBranches = map (stripOuterConstructors distinguishingVars pat') bs ++ matchAnys
+          -- Now recur on the inner branches to merge 
+          (newSubBranches, innerV) <- mergeBranches subBranches
+          -- Now merge the branches that do not share structure with the current set
+          (rest, v) <- mergeBranches (rst ++ matchAnys)
           -- Replace the set of common branches, with a single branch that matches on the shared superstructure, and delegates
           -- to another case expression to distinguish between the different substructures
           return (Branch pat' [Guard exprTrue (Case varsMatch newSubBranches)] : rest, True)
 -- Default (non-constructor patterns), just merge the rest, and add the first branch back
 mergeBranches (b:bs) = mergeBranches bs >>= (\(bs', v) -> return (b:bs', v))
--- TODO: Add support for branches with multiple patterns
 
-splitBranchConstructors :: Branch -> [Branch] -> Unique ([Branch], [Branch], Maybe Branch, Maybe Branch, [TName], [Pattern])
+-- Wrapper for splitBranchConstructors' that adds back the branch we are currently attempting to merge to the set of branches that match it
+splitBranchConstructors :: Branch -> [Branch] -> Unique ([Branch], [Branch], [Branch], [TName], [Pattern])
 splitBranchConstructors b branches = do
-  res <- splitBranchConstructors' b branches 
+  res <- splitBranchConstructors' b branches
   case res of -- Add branch back to the front of the list
-    (bs, no, err, any, tns, pat) -> return (b:bs, no, err, any, tns, pat)
+    (bs, no, anys, tns, pat) -> return (b:bs, no, anys, tns, pat)
 
 -- Split branches into 
--- - a list of those that match
+-- - a list of those that match (have common structure)
 -- - those that are left
--- - a possible (implicit error) branch found 
+-- - (wildcard / match any or implicit error) branches found (which should be propagated into sub branches, as well as stay outside)
+-- - The set of variables that discriminate the branches that have common structure
 -- - and the pattern that unifies the matched branches
--- Greedily in order processing, The first branch is the branch under consideration and the others are the next parameter
-splitBranchConstructors' :: Branch -> [Branch] -> Unique ([Branch], [Branch], Maybe Branch, Maybe Branch, [TName], [Pattern])
+-- Does not change the order of the branches
+splitBranchConstructors' :: Branch -> [Branch] -> Unique ([Branch], [Branch], [Branch], [TName], [Pattern])
 splitBranchConstructors' b@(Branch ps _) branches =
   -- trace ("splitBranchConstructors:\n" ++ show b ++ "\n\n" ++ show (vcat (map (text . show) branches)) ++ "\n\n") $
   case branches of
     -- Only one branch, it matches it's own pattern
-    [] -> return ([], [], if isErrorBranch b then Just b else Nothing, Nothing, [], ps) 
+    [] -> return ([], [], [b | isMatchAnyBranch b], [], ps)
     b'@(Branch ps' _):bs ->
       do
-        -- First do the rest other than b'
-        (bs', bs2', err, matchAny, restTns, accP) <- splitBranchConstructors' b bs
-        -- keep track of error branch to propagate into sub branches
-        let newError = case (err, b') of
-              (Just e, _) -> Just e -- implicit error is in the rest of the branches
-              (_, b') | isErrorBranch b' -> Just b' -- b' is the error branch
-              _ -> Nothing -- no error branch
-        let newAny = case (matchAny, b') of
-              (Just e, _) -> Just e
-              (_, b') | isMatchAnyBranch b' -> Just b'
-              _ -> Nothing -- no error branch
-        -- Acumulated pattern and p'
-        patNew <- zipWithM (\acc p -> patternsMatch restTns acc p) accP ps' 
-        let (newVars, patNews) = unzip patNew
-        if not $ isSimpleMatches patNews then
-          -- Restrict the pattern to the smallest that matches multiple branches
-          -- Add the new branch to the list of branches that match partially
-          -- trace ("splitConstructors:\n" ++ show accP ++ "\nand\n" ++ show ps' ++ "\n have common superstructure:\n" ++ show patNew ++ "\nwith discriminating variables: " ++ show newVars ++ "\n") $
-            return (b':bs', bs2', newError, newAny, concat newVars, patNews)
-          -- Didn't match the current branch, keep the old pattern
-          -- Add the new branch to the list of branches that don't match any subpattern
-        else return (bs', b':bs2', newError, newAny, restTns, accP)
+        -- First recur on the rest of the branches
+        (bs', bs2', matchAnys, discriminators, accP) <- splitBranchConstructors' b bs
+         -- Check if the current branch would match any pattern (not discriminating and should be propagated to sub branches)
+        if isMatchAnyBranch b' then do
+          -- trace ("splitBranchConstructors: Match any branch\n" ++ show b' ++ "\n\n") $ return ()
+          return (bs', bs2', b':matchAnys, discriminators, accP)
+        else do
+          -- Accumulate common pattern (least common superstructure)
+          common <- zipWithM (patternsMatch discriminators) accP ps'
+          let (newVars, patNews) = unzip common -- split into the discriminating variables and patterns
+          let subs = map (stripOuterConstructors (concat newVars) patNews) bs' ++ matchAnys
+          -- trace ("Common superstructure of\n" 
+          --   ++ show (vcat (text (show accP) : map (text . show) ps')) 
+          --   ++ "\nis\n" ++ show (vcat (map (text . show) patNews)) 
+          --   ++ "\nwith new discriminators" ++ show newVars ++ "\n") $ return ()
+          if all isSimpleMatch patNews then
+            -- Didn't match the current branch (i.e. returned a trivial common superstructure - just wildcards / vars), keep the old pattern
+            -- Add the new branch to the list of branches that don't match any subpattern
+            return (bs', b':bs2', matchAnys, discriminators, accP)
+          else -- There is some common superstructure
+            -- Add the new branch to the list of branches that match partially
+            -- trace ("splitConstructors:\n" ++ show accP ++ "\nand\n" ++ show ps' ++ "\n have common superstructure:\n" ++ show patNew ++ "\n\n") $
+              return (b':bs', bs2', matchAnys, concat newVars, patNews)
 
-isPatWild :: Pattern -> Bool
-isPatWild PatWild = True
-isPatWild _ = False
-
-isSimpleMatches :: [Pattern] -> Bool
-isSimpleMatches = all isSimpleMatch
-
+-- Checks to see if a pattern is trivial
 isSimpleMatch :: Pattern -> Bool
 isSimpleMatch p =
   case p of
@@ -168,109 +168,111 @@ isSimpleMatch p =
     PatWild -> True
     _ -> False
 
--- Checks to see if the branch is an error branch
-isErrorBranch:: Branch -> Bool
-isErrorBranch (Branch _ [Guard _ e]) = isErrorExpr e
-isErrorBranch _ = False
-
+-- Checks if a branch just has simple matches
 isMatchAnyBranch:: Branch -> Bool
 isMatchAnyBranch (Branch [pat] _) = isSimpleMatch pat
 isMatchAnyBranch _ = False
 
-isErrorExpr :: Expr -> Bool
-isErrorExpr (TypeApp (Var name _) _) = 
-  let nm = getName name in
-  nm == namePatternMatchError 
-isErrorExpr (App (App (TypeApp (Var name _) _) [e]) args) = 
-  getName name == nameEffectOpen && isErrorExpr e  
-isErrorExpr (App e args) = isErrorExpr e
-isErrorExpr (TypeApp e args) = isErrorExpr e
-isErrorExpr e =
-  False
-
-generalErrorBranch:: Branch -> Branch
-generalErrorBranch b@(Branch p g) | isErrorBranch b = Branch [PatWild] g
-generalErrorBranch b = b
-
 -- Returns largest common pattern superstructure, with variables added where needed, and the distinguishing variables returned
+-- Discriminating differences include:
+-- - Different constructors
+-- - Different literals
+-- - A wildcard on one side but not the other -- if both sides have wildcards, they match trivially
+-- - The tricky cases involved named subpatterns: we first see if the subpatterns match
+--   - We recur into the named pattern, and then when it is returned we 
+--       make sure that we don't double wrap pattern vars in two names 
+--       if a name gets introduced due to it's subpattern being a discriminator in the recurrance
+--   - While we could reuse names in this case, we would need to make sure we don't reuse names that are in use in the other pattern in some other location
+-- - For all discriminating cases, we introduce a new named wildcard, and add the name to the set of distinguishing variables
 patternsMatch :: [TName] -> Pattern -> Pattern -> Unique ([TName], Pattern)
-patternsMatch distinguishingVars p p' = 
-  let recur = patternsMatch distinguishingVars in
-    -- trace ("Common superstructure of " ++ (show $ vcat [text $ show p, text $ show p'])) $
-    case (p, p') of
-    (PatLit l1, PatLit l2) -> 
-      if l1 == l2 then return ([], p) -- Literals that match, just match the literal
-      else do -- Match a variable of the literal's type
-        name <- newVarName 
-        let tn = TName name (typeOf l1)
-        return ([tn], PatVar tn PatWild)
-    (PatVar tn1 v1, PatVar tn2 v2) | tn1 == tn2 -> do 
-      -- Same pattern variable, can't reuse the variable name - because it could be a name representing another location in another pattern
-      name <- newVarName 
-      (tns, sub) <- recur v1 v2
-      let tn' = TName name (typeOf tn1)
-      let distinguished = tn1 `elem` distinguishingVars
-      return (tns ++ if distinguished then [tn'] else [], PatVar tn' sub)
-    (PatVar tn1 v1, PatVar tn2 v2) -> do
-      -- Variables that don't match name, but (should match types because of type checking)
-      -- Create a common name to match for
-      name <- newVarName 
-      (tns, sub) <- recur v1 v2
-      let distinguished = tn1 `elem` distinguishingVars
-      let tn' = TName name (typeOf tn1)
-      return (tns ++ if distinguished then [tn'] else [], PatVar tn' sub)
+patternsMatch distinguishingVars template p' =
+  case (template, p') of
     (PatWild, PatWild) -> return ([], PatWild) -- Wilds match trivially
-    (PatCon name1 patterns1 cr targs1 exists1 res1 ci sk, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) -> 
+    (PatVar tn PatWild, _) | tn `elem` distinguishingVars -> -- The variable distinguishes another case, we need to keep it as a distinguishing variable
+      return ([tn], PatVar tn PatWild)
+    (PatVar tn PatWild, PatWild) -> do -- The variable doesn't distinguish, but the common pattern needs to bind the variable name
+      newLeafVar (typeOf tn)
+    (PatWild, PatVar tn PatWild) -> do -- ditto, but the tn needs to be unique from the bound variables in the template pattern
+      newLeafVar (typeOf tn)
+    (PatVar tn PatWild, _) -> do -- The variable definitely distinguishes, because it is a wild on one side, and not on the other (otherwise it would have been dealt with prior)
+      newDiscriminator (typeOf tn)
+    (_, PatVar tn PatWild) -> do -- ditto, but the tn needs to be unique from the bound variables in the template pattern
+      newDiscriminator (typeOf tn)
+    -- Double sided wilds already handled so we can safely request the type, as well as one sided vars
+    (_, PatWild) -> do
+      newDiscriminator (patternType template)
+    (PatWild, _) -> do
+      newDiscriminator (patternType p')
+    (PatLit l1, PatLit l2) ->
+      if l1 == l2 then return ([], template) -- Literals that match, just match the literal
+      else do -- Match a variable of the literal's type, add it to discriminating variables
+        newDiscriminator (typeOf l1)
+    (PatCon name1 patterns1 cr targs1 exists1 res1 ci sk, PatCon name2 patterns2 _ targs2 exists2 res2 _ _) ->
       if -- Same constructor (name, and types) -- types should match due to type checking, but names could differ
         name1 == name2 &&
         targs1 == targs2 &&
         exists1 == exists2 &&
         res1 == res2
-      then do 
+      then do
         -- Same constructor, match substructure
         res <- zipWithM recur patterns1 patterns2
         let (subs, pats) = unzip res
         return (concat subs, PatCon name1 pats cr targs1 exists1 res1 ci sk)
-      else do
+      else do -- Different constructors, create a distinguishing variable
+        newDiscriminator res1
+    (PatVar tn1 v1, PatVar tn2 v2) -> do -- both pattern variables
+      recurEnsureVar v1 v2 (typeOf tn1)
+    (PatVar tn pat, _) -> do -- Same as above but recurring on full rhs pattern
+      recurEnsureVar pat p' (typeOf tn)
+    (_, PatVar tn pat) -> do -- Same as above but recurring on full lhs pattern
+      recurEnsureVar template pat (typeOf tn)
+    (_, _) -> failure $ "patternsMatch: " ++ show template ++ " " ++ show p' ++ " "
+    where
+      recur = patternsMatch distinguishingVars
+      -- recurs on the left and right patterns, creating a new variable if the new subpattern doesn't already introduce a variable
+      recurEnsureVar pl pr tp = do
+        -- Note we cannot reuse names from variables because they could be a name representing another location in another pattern, 
+        -- which could have been or will be merged into the template at a different leaf, or become part of a subpattern
+        (tns, sub) <- recur pl pr
+        case sub of
+           -- recurring could introduce a new variable which we should prefer over double wrapping the variable
+          PatVar tnnew PatWild -> return (tns, sub)
+          _ -> newInnerVar tp sub -- Not directly distinguishing
+      -- creates a new unique name
+      newVarName = uniqueId "case" >>= (\id -> return $ newHiddenName ("case" ++ show id))
+      -- creates a new leaf discriminator variable
+      newDiscriminator tp = do
         name <- newVarName
-        let tn = TName name res1
-        return ([tn], PatVar tn PatWild) -- Different constructors, no match
-    (PatVar tn PatWild, PatWild) -> do
-      return ([], PatVar tn PatWild)
-    (PatWild, PatVar tn PatWild) -> do
-      return ([], PatVar tn PatWild)
-    (PatVar tn PatWild, _) -> do
-      return ([tn], PatVar tn PatWild)
-    (_, PatVar tn PatWild) -> do
-      return ([tn], PatVar tn PatWild)
-    (PatVar tn pat, _) -> do
-      (tns, sub) <- recur pat p'
-      return (tns, PatVar tn sub)
-    (_, PatVar tn pat) -> do
-      (tns, sub) <- recur p pat
-      return (tns, PatVar tn sub)
-    -- Double sided wilds already handled so we can safely request the type, as well as one sided vars
-    (_, PatWild) -> do
-      name <- newVarName
-      let tn = TName name (patternType p)
-      return ([tn], PatVar tn PatWild)
-    (PatWild, _) -> do
-      name <- newVarName
-      let tn = TName name (patternType p')
-      return ([tn], PatVar tn PatWild)
-    (_, _) -> failure $ "patternsMatch: " ++ show p ++ " " ++ show p' ++ " "
-    where newVarName = uniqueId "case" >>= (\id -> return $ newHiddenName ("case" ++ show id))
+        let tn = TName name tp
+        return ([tn], PatVar tn PatWild)
+      -- creates a new leaf variable that doesn't discriminate patterns
+      newLeafVar tp = do
+        name <- newVarName
+        let tn = TName name tp
+        return ([], PatVar tn PatWild)
+      -- creates a new inner variable (does not discriminate patterns)
+      newInnerVar tp pat = do
+        name <- newVarName
+        let tn = TName name tp
+        return ([], PatVar tn pat)
 
+-- Precondition -- not a wildcard
+-- Returns the type of a pattern
 patternType :: Pattern -> Type
 patternType p = case p of
   PatLit l -> typeOf l
   PatVar tn _ -> typeOf tn
   PatCon tn _ _ targs _ resTp _ _ -> resTp
 
--- Strip the outer constructors and propagate variable substitution into branch expressions
+-- Strip the outer constructors (matching the template)
+-- Return a new subbranch involving the same guards but with patterns matching the discriminating variables of the template
+-- and propagate name substitutios from the template into branch expressions
 stripOuterConstructors :: [TName] -> [Pattern] -> Branch -> Branch
-stripOuterConstructors discriminatingVars templates (Branch pts exprs) = 
-  -- trace ("Using template\n" ++ show templates ++"\n" ++ show pts ++ "\ngot:\n" ++ show discriminatingVars ++ "\n" ++ show patNew ++ "\n\n" ++ show (vcat (map (text . show) (zip discriminatingVars patNew))) ++ "\nWith variable name mapping:\n" ++ show replaceMap ++ "\n") $ 
+stripOuterConstructors discriminatingVars templates (Branch pts exprs) =
+  -- trace ("Using template\n" ++ show templates ++"\n" ++ show pts
+  --     ++ "\ngot:\n" ++ show discriminatingVars ++ "\n" ++ show patNew ++ "\n"
+  --     ++ show (vcat (map (text . show) (zip discriminatingVars patNew)))
+  --     ++ "\nWith variable name mapping:\n" ++ show replaceMap ++ "\n") $
     assertion "Invalid subpattern match " (length patNew == length discriminatingVars) $
     Branch patNew $ map replaceInGuard exprs
   where
@@ -287,48 +289,30 @@ stripOuterConstructors discriminatingVars templates (Branch pts exprs) =
     patNew = concat patsNew
     replaceMap = concat replaceMaps
 
+-- Get the patterns where the template has holes for discriminating vars 
+-- And the subsitution map to replace variables in the body with the new discriminator names
 getReplaceMap :: [TName] -> Pattern -> Pattern -> ([Pattern], [(TName, Expr)])
-getReplaceMap discriminatingVars template p' = 
-  case getReplaceMap' discriminatingVars template p' of
-    (Just pats, replacers) -> (pats, replacers)
-    (Nothing, replacers) -> error "Should never happen"
-
--- Get the new pattern that differs from the old pattern and the subsitution map
-getReplaceMap' :: [TName] -> Pattern -> Pattern -> (Maybe [Pattern], [(TName, Expr)])
-getReplaceMap' discriminatingVars template p'
-  = let recur = getReplaceMap' discriminatingVars in
+getReplaceMap discriminatingVars template p'
+  = -- trace (show template) $
+    let recur = getReplaceMap discriminatingVars in
     case (template, p') of
-    (PatLit l1, PatLit l2) -> (Nothing, [])
-    (PatVar tn1 v1, PatVar tn2 v2) | tn1 == tn2 -> 
-      let (pat', rp) = recur v1 v2 
-      in case pat' of
-        Nothing -> if tn1 `notElem` discriminatingVars then (Nothing, rp) else (Just [PatWild], rp)
-        Just _ -> (pat', rp)
-    (PatVar tn1 v1, PatVar tn2 v2) -> 
-      let (pat', rp) = recur v1 v2
-          -- introduce a new variable using the template's name, and map the other name to the template
-          rp' = (tn2, Var tn1 InfoNone):rp in
-      -- trace (show pat' ++ show (tn1 `elem` discriminatingVars) ++ show tn1) $
-      case pat' of 
-        Nothing -> -- 
-          -- Differs but doesn't discriminate
-          if tn1 `notElem` discriminatingVars then (Nothing, rp') 
-          else (Just [PatWild], rp') 
-        Just _ -> -- Use the new pattern
-          (pat', rp')
-    (PatWild, PatWild) -> (Nothing, [])
-    (PatCon name1 patterns1 cr targs1 exists1 res1 ci _, PatCon name2 patterns2 _ targs2 exists2 res2 _ sk) -> 
-      let res = zipWith recur patterns1 patterns2 
-          (patterns', replaceMaps) = unzip res
-          replaceMap = concat replaceMaps in 
-      -- trace ("Subpats " ++ show (vcat (map (text . show) patterns')) ++ " " ++ show (length (concatMap (fromMaybe []) patterns'))) $
-      (Just (concatMap (fromMaybe []) patterns'), replaceMap)
-    (PatVar tn PatWild, PatWild) -> 
-      (if tn `notElem` discriminatingVars then Nothing else Just [PatWild], [])
-    (PatVar tn PatWild, pat2) -> 
-      -- trace ("Here " ++ show discriminatingVars) $
-       (if tn `notElem` discriminatingVars then Nothing else Just [pat2], [])
-    (PatVar tn pat, pat2) -> recur pat pat2
-    (PatWild, pat2) -> (Just [pat2], [])
-    -- (PatCon _ _ _ _ _ _ _ _, PatWild) -> (Just [template], [])
-    _ -> failure $ "\ngetReplaceMap:\n" ++ show template ++ "\n:" ++ show p' ++ "\n" 
+    (PatLit l1, PatLit l2) -> ([], []) -- Must not have been discriminating (otherwise would be a variable)
+    (PatWild, PatWild) -> ([], [])
+    (PatCon name1 patterns1 cr targs1 exists1 res1 ci _, PatCon name2 patterns2 _ targs2 exists2 res2 _ sk) ->
+      let (patterns', replaceMaps) = unzip $ zipWith recur patterns1 patterns2 
+      in (concat patterns', concat replaceMaps)
+    (PatVar tn1 v1, PatVar tn2 v2) -> do 
+      -- trace (show tn2) $ return ()
+      if tn1 `elem` discriminatingVars then ([v2], [(tn2, Var tn1 InfoNone) | tn1 /= tn2]) -- What is left of the pattern is v2 and tn2 should be substituted with tn1
+      else
+        let (pats', rp) = recur v1 v2
+            rp' = if tn1 == tn2 then rp -- no replacement needed since the variables are identical
+                  else (tn2, Var tn1 InfoNone):rp in 
+        case pats' of
+          [] -> ([], rp') -- All subpatterns do not discriminate, just update the variable replacement map
+          _ -> (pats', rp') -- Some subpatterns differ, propagate those, in addition to the replacement map
+    (PatVar tn PatWild, pat2) ->
+      -- No substitution needed, and what is left of the pattern is pat2 if it is needed due to being a discriminating variable
+      ([pat2 | tn `elem` discriminatingVars], [])
+    (PatVar tn pat, pat2) -> recur pat pat2 -- Recur on the subpattern, template added an inner variable we don't care about
+    _ -> failure $ "\ngetReplaceMap:\n" ++ show template ++ "\n:" ++ show p' ++ "\n"
