@@ -26,17 +26,17 @@ import Core.CoreVar (HasExpVar(fv), bv)
 
 -- 0CFA Allocation
 alloc :: HasCallStack => FixInput -> LocalKont -> FixAACR r s e [Addr]
-alloc (Cont _ _ _ (AChangeClos lam env) store xclos time) (AppL nargs e env':ls) = do
+alloc (Cont _ _ _ (AChangeClos lam env) store xclos (KTime l time)) (AppL nargs e env':ls) = do
   let names = lamArgNames lam
   if length names /= nargs then doBottom -- error ("alloc: " ++ show names ++ " " ++ show nargs)
   else do
     let addrs = repeat (contextId lam)
     return $ zip3 names addrs (repeat time)
-alloc (Cont _ _ _ (AChangePrim n expr _) store xclos time) (AppL nargs e0 env':ls) = do
+alloc (Cont _ _ _ (AChangePrim n expr _) store xclos (KTime l time)) (AppL nargs e0 env':ls) = do
   let addrs = repeat $ contextId e0
   let names =  map (\x -> TName (newHiddenName $ nameStem (getName n) ++ show x) typeAny Nothing) (take nargs [0..])
   return $ zip3 names addrs (repeat time)
-alloc (Cont _ _ _ (AChangeConstr con env) store xclos time) (AppL nargs e env':ls) = do
+alloc (Cont _ _ _ (AChangeConstr con env) store xclos (KTime l time)) (AppL nargs e env':ls) = do
   case exprOfCtx con of
     Con tn _ -> do
       let addrs = repeat $ contextId e
@@ -48,10 +48,10 @@ alloc (Cont _ _ _ (AChangeConstr con env) store xclos time) (AppL nargs e env':l
         Nothing -> return [(tn, contextId e, time)]
 
 allocBindAddrs :: HasCallStack => DefGroup -> ExprContext -> Time -> FixAACR r s e [Addr]
-allocBindAddrs (DefRec defs) expr time = do
+allocBindAddrs (DefRec defs) expr (KTime l time) = do
   let names = dfsTNames defs
   return $ zip3 names (repeat $ contextId expr) (repeat time)
-allocBindAddrs (DefNonRec df) expr time = return [(TName (defName df) (defType df) Nothing, contextId expr, time)]
+allocBindAddrs (DefNonRec df) expr (KTime l time) = return [(TName (defName df) (defType df) Nothing, contextId expr, time)]
 
 doStep :: HasCallStack => FixInput -> FixAACR r s e FixChange
 doStep i =
@@ -103,7 +103,7 @@ doStep i =
           _ -> error $ "doStep: " ++ show expr ++ " not handled"
       Cont [EndProgram] KEnd2 MEnd achange store xclos time -> return $ AC achange
       Cont [EndProgram] KEnd2 meta achange store xclos time -> error "Not handled yet" -- TODO: Handle the no-top condition
-      Cont lc kont meta achange store xclos time -> do
+      Cont lc kont meta achange store xclos time@(KTime tlabel contour) -> do
         KC l k <- pop lc kont
         -- trace ("Cont: " ++ show l ++ " " ++ show k) $ return ()
         case l of
@@ -201,7 +201,7 @@ doStep i =
                     case pat of
                       PatWild -> return $ Just (venv, vstore)
                       PatVar x pat' -> do
-                        let addr = (x, contextId expr, time)
+                        let addr = (x, contextId expr, contour)
                             env' = M.insert x addr venv 
                         -- trace ("Match: " ++ show x ++ " " ++ show addr ++ " " ++ show env') $ return ()
                         matchBindPattern achange pat' env' (extendStore vstore addr achange)
@@ -256,7 +256,7 @@ pop lk k = do
 
 popS :: LocalKont -> Kont -> S.Set Kont -> FixAACR r s e (S.Set (LocalKont, Kont))
 popS [EndCall] k@(KPrecise ctx) seen = do
-  if S.member k seen then return $ S.empty -- return $ KC (l:ls) kont
+  if S.member k seen then return S.empty -- return $ KC (l:ls) kont
   else do
     KC l k <- doStep $ KStoreGet ctx
     -- trace ("Pop: " ++ show ctx ++ "\ngives:\n" ++ show l ++ " " ++ show k) $ return ()

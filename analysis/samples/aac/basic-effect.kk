@@ -2,6 +2,7 @@ effect val hi: int
 
 effect fun op1(i: int): string
 effect ctl op2(i: int): string
+effect ctl op3(i: int): int
 
 fun x0()
   with val hi = 0
@@ -61,12 +62,16 @@ fun x11()
   op2(0)
 
 fun x12()
-  with ctl op2(i) "4" ++ resume("2" ++ i.show) 
+  with ctl op2(i) "4" ++ resume("2" ++ i.show)
   op2(0)
 
 fun x13()
   with ctl op2(i) resume("2" ++ i.show)
   op2(0)
+
+fun x14()
+  with ctl op3(i) 4 - resume(i + 1)
+  op3(1)
 
 fun analyze()
   // x0()
@@ -82,6 +87,7 @@ fun analyze()
   // x11()
   x12()
   // x13()
+  // x14()
 
 fun main()
   with val hi = 0
