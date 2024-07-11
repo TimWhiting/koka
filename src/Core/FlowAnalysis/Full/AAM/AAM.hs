@@ -46,6 +46,10 @@ extend :: VEnv -> VStore -> [TName] -> [Addr] -> [AChange] -> (VEnv, VStore)
 extend env store names addrs changes =
   (extendEnv env names addrs, extendStoreAll store addrs changes)
 
+integrate :: Maybe ExprContext -> Contour -> Contour
+integrate (Just e) (KContour old) = KContour $ take kLimit (e:old)
+integrate Nothing c = c
+
 -- 0CFA Allocation
 alloc :: HasCallStack => FixInput -> Frame -> FixAAMR r s e [Addr]
 alloc (Cont (AChangeKont k kr) store kstore lkont kont mkont (KTime l time)) (AppL nargs e0 env') = do
@@ -73,12 +77,13 @@ alloc (Cont (AChangeConstr con env) store kstore lkont kont mkont (KTime l time)
         Nothing -> return [(tn, contextId e, time)]
 
 newTime :: Time -> FixInput -> Maybe Frame -> Time
-newTime (KTime (Just local) (KContour old)) (Cont (AChangeClos _ _) _ _ _ _ _ _) (Just (AppR{})) = KTime Nothing (KContour $ take kLimit (local:old))
-newTime (KTime (Just local) (KContour old)) (Cont (AChangeClos _ _) _ _ _ _ _ _) (Just (OpR{})) = KTime Nothing (KContour $ take kLimit (local:old))
+newTime (KTime local old) (Cont (AChangeClos _ _) _ _ _ _ _ _) (Just (AppR{})) = KTime Nothing (integrate local old)
+newTime (KTime local old) (Cont{}) (Just (OpR{})) = KTime Nothing (integrate local old)
 newTime time (Cont{}) _ = time
 newTime old@(KTime _ k) (Eval e1 _ _ _ _ _ _ _) Nothing = 
   case exprOfCtx e1 of
     App{} -> KTime (Just e1) k
+    TypeApp{} -> KTime (Just e1) k
     _ -> old
 
 isNamePerform :: Name -> Bool
@@ -139,21 +144,20 @@ doStep i =
           App (TypeApp (Var name _) tps@[_, _, tp, _, _]) args _ | nameHandle == getName name -> do
             c <- focusChild 1 expr
             -- trace ("Handle: " ++ show (vcat $ map (text . show) tps)) $ return ()
-            let kaddr = KAddr (expr, env, contour)
-            doGC $ Eval c env store (kstoreExtend kaddr lkont kont kstore) [HandleL [] tp expr env,EndHandle] kaddr mkont time'
+
+            doGC $ Eval c env store kstore [HandleL [] tp expr env,EndHandle] kont mkont time'
           App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
             f <- focusChild 1 expr
             doGC $ Eval f env store kstore lkont kont mkont time'
           App (TypeApp (Var name _) _) args _ | isNamePerform $ getName name -> do
             select <- focusChild 2 expr
-            let kaddr = KAddr (expr, env, contour)
-                eff =
+            let eff =
                   case contextOf <$> enclosingLambda expr of
                     Just (Just lam) -> case exprOfCtx lam of
                       Lam args eff body -> eff
                       _ -> error "doStep: Perform"
                 n = performN $ getName name
-            doGC $ Eval select env store (kstoreExtend kaddr lkont kont kstore) [OpL expr env n eff] kaddr mkont time'
+            doGC $ Eval select env store kstore [OpL expr env n eff] kont mkont time'
           App f args _ -> do
             f <- focusChild 0 expr
             doGC $ Eval f env store kstore (AppL (length args) expr env:lkont) kont mkont time'
@@ -286,16 +290,16 @@ doStep i =
             else do
               doGC $ Eval arge p store' kstore (AppM clos addrs e (n + 1) t p:ls) kont mkont time'
           (AppR c@(AChangePrim p clos env) addrs e):ls | isNameClause (getName p) -> do
-            -- trace ("ClauseTail: " ++ show c ++ " " ++ show ls) $ return ()
+            trace ("ClauseTail: " ++ show c ++ " " ++ show ls) $ return ()
             doGC $ Cont (toClause (getName p) achange) store kstore ls kont mkont time'
           (AppR c@(AChangeKont k mk) addrs e):ls -> do
-            -- trace ("Call resume:" ++ show k) $ return ()
+            trace ("Call resume:" ++ show k) $ return ()
             case M.lookup k (fst kstore) of
               Just sframes -> do
                 (frames, retKont) <- each $ map return (S.toList sframes) -- TODO: GC the kstore prior to extending it
                 doGC $ Cont achange store kstore frames retKont mk time'
           (AppR c@(AChangeClos lam env) addrs e):ls -> do
-            -- trace ("AppR: " ++ show c ++ " " ++ show ls) $ return ()
+            trace ("AppR: " ++ show c ++ " " ++ show ls) $ return ()
             body <- focusBody lam
             let args = lamArgNames lam
                 store' = extendStore store (last addrs) achange
@@ -311,7 +315,7 @@ doStep i =
                 -- trace ("AppRCon:\n" ++ showStore store) $ return ()
                 doGC $ Cont (AChangeConstr con env') store' kstore ls kont mkont time'
           (AppR cprim@(AChangePrim p ctx env) addrs e):ls -> do
-            -- trace ("Prim store " ++ showStore store) $ return ()
+            trace ("Prim store " ++ showStore store) $ return ()
             let store' = extendStore store (last addrs) achange
             res <- doPrimitive (getName p) addrs env store'
             -- trace ("Primitive Result " ++ show cprim ++ " " ++ show res ++ " " ++ show ls) $ return ()

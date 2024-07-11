@@ -135,7 +135,7 @@ storeLookup x env store = do
       -- trace ("storeLookup: " ++ show x ++ " not found") $ return ()
       lam <- bindExternal x
       case lam of
-        Nothing -> doBottom
+        Nothing -> error ("storeLookup: " ++ show x ++ " not found")
         Just lam -> do
           return $ AChangeClos lam M.empty
 

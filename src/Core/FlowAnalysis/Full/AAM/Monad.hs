@@ -63,6 +63,7 @@ data Frame =
   EndProgram
   | EndCall
   | EndHandle
+  | KResume
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr] ExprContext
@@ -72,7 +73,6 @@ data Frame =
   | OpL1 ExprContext VEnv Int Effect
   | OpL2 ExprContext VEnv Int AChange [AChange] Effect
   | OpR ExprContext [AChange] Effect ([Frame], KAddr, MKAddr)
-  | KResume
   | LetL Int Int Int Int [Addr] ExprContext VEnv -- Binding group index, num binding groups, binding index, num bindings, addresses for binding group, parent expresion, parent env
   | CaseR ExprContext VEnv
   deriving (Eq, Ord)
