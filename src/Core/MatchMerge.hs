@@ -151,7 +151,7 @@ splitBranchConstructors' b@(Branch ps _) branches =
           --   ++ show (vcat (text (show accP) : map (text . show) ps')) 
           --   ++ "\nis\n" ++ show (vcat (map (text . show) patNews)) 
           --   ++ "\nwith new discriminators" ++ show newVars ++ "\n") $ return ()
-          if all isSimpleMatch patNews then
+          if all isSimpleMatch patNews || all null newVars then -- If there are no discriminators we assume they don't match because the guard distinguishes
             -- Didn't match the current branch (i.e. returned a trivial common superstructure - just wildcards / vars), keep the old pattern
             -- Add the new branch to the list of branches that don't match any subpattern
             return (bs', b':bs2', matchAnys, discriminators, accP)

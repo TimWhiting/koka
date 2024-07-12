@@ -1,7 +1,7 @@
 fun test(xs:list<int>, y:int, z:int) {
   // drop z
   match(xs) {
-    Cons(x as 0) ->
+    Cons(x) ->
       // dup x; drop y
       match(xs) {
         Cons -> /* drop xs */ x
