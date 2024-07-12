@@ -1,4 +1,5 @@
 use std::fs;
+use std::process::Command;
 use zed::settings::LspSettings;
 use zed::LanguageServerId;
 use zed_extension_api::{self as zed, Result};
