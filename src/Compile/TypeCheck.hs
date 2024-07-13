@@ -114,14 +114,15 @@ typeCheck flags defs coreImports program0
         unreturn penv
 
         -- checkCoreDefs "unreturn"
+        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
+        checkFBIP penv (platform flags) newtypes borrowed gamma
+        
         matchMergeDefs
         -- trace "Finished match merging" $ return ()
         -- coreDefs <- Core.getCoreDefs
         -- let coreDoc2 = Core.Pretty.prettyCore (prettyEnvFromFlags flags){ coreIface = False, coreShowDef = True } (C CDefault) [] 
         --                  (coreProgram{ Core.coreProgDefs = coreDefs })
         -- trace (show coreDoc2) $ return ()
-        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
-        checkFBIP penv (platform flags) newtypes borrowed gamma
 
         -- initial simplify
         let ndebug  = optimize flags > 0

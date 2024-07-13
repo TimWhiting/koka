@@ -107,7 +107,7 @@ mergeBranches branches@(b@(Branch ps _): rst) | any isPatCon ps =
             varsMatch = [Var tn InfoNone | tn <- distinguishingVars] -- Create expressions for the vars distinguishing the branches
           -- Get rid of the common superstructure from the branches that share superstructure
           -- Also add wildcard/catch-all branches and implicit error branch if they exists
-            subBranches = map (stripOuterConstructors distinguishingVars pat') bs ++ matchAnys
+            subBranches = map (stripOuterConstructors distinguishingVars pat') bs ++ map (makeAnyMatches (length distinguishingVars)) matchAnys
           -- Now recur on the inner branches to merge 
           (newSubBranches, innerV) <- mergeBranches subBranches
           -- Now merge the branches that do not share structure with the current set
@@ -117,6 +117,10 @@ mergeBranches branches@(b@(Branch ps _): rst) | any isPatCon ps =
           return (Branch pat' [Guard exprTrue (Case varsMatch newSubBranches)] : rest, True)
 -- Default (non-constructor patterns), just merge the rest, and add the first branch back
 mergeBranches (b:bs) = mergeBranches bs >>= (\(bs', v) -> return (b:bs', v))
+
+makeAnyMatches :: Int -> Branch -> Branch
+makeAnyMatches n (Branch _ g) =
+  Branch [PatWild | _ <- [1..n]] g
 
 -- Wrapper for splitBranchConstructors' that adds back the branch we are currently attempting to merge to the set of branches that match it
 splitBranchConstructors :: Branch -> [Branch] -> Unique ([Branch], [Branch], [Branch], [TName], [Pattern])
@@ -138,7 +142,7 @@ splitBranchConstructors' b@(Branch ps _) branches =
   case branches of
     -- Only one branch, it matches it's own pattern
     [] -> return ([], [], [b | isMatchAnyBranch b], [], ps)
-    b'@(Branch ps' _):bs ->
+    b'@(Branch ps' g):bs ->
       do
         -- First recur on the rest of the branches
         (bs', bs2', matchAnys, discriminators, accP) <- splitBranchConstructors' b bs
@@ -155,7 +159,7 @@ splitBranchConstructors' b@(Branch ps _) branches =
           --   ++ show (vcat (text (show accP) : map (text . show) ps')) 
           --   ++ "\nis\n" ++ show (vcat (map (text . show) patNews)) 
           --   ++ "\nwith new discriminators" ++ show newVars ++ "\n") $ return ()
-          if all isSimpleMatch patNews || all null newVars then -- If there are no discriminators we assume they don't match because the guard distinguishes
+          if all isSimpleMatch patNews || null newVars then
             -- Didn't match the current branch (i.e. returned a trivial common superstructure - just wildcards / vars), keep the old pattern
             -- Add the new branch to the list of branches that don't match any subpattern
             return (bs', b':bs2', matchAnys, discriminators, accP)
@@ -174,8 +178,7 @@ isSimpleMatch p =
 
 -- Checks if a branch just has simple matches
 isMatchAnyBranch:: Branch -> Bool
-isMatchAnyBranch (Branch [pat] _) = isSimpleMatch pat
-isMatchAnyBranch _ = False
+isMatchAnyBranch (Branch pts _) = all isSimpleMatch pts
 
 -- Returns largest common pattern superstructure, with variables added where needed, and the distinguishing variables returned
 -- Discriminating differences include:
@@ -198,10 +201,6 @@ patternsMatch distinguishingVars template p' =
       newLeafVar (typeOf tn)
     (PatWild, PatVar tn PatWild) -> do -- ditto, but the tn needs to be unique from the bound variables in the template pattern
       newLeafVar (typeOf tn)
-    (PatVar tn PatWild, _) -> do -- The variable definitely distinguishes, because it is a wild on one side, and not on the other (otherwise it would have been dealt with prior)
-      newDiscriminator (typeOf tn)
-    (_, PatVar tn PatWild) -> do -- ditto, but the tn needs to be unique from the bound variables in the template pattern
-      newDiscriminator (typeOf tn)
     -- Double sided wilds already handled so we can safely request the type, as well as one sided vars
     (_, PatWild) -> do
       newDiscriminator (patternType template)
@@ -226,6 +225,10 @@ patternsMatch distinguishingVars template p' =
         newDiscriminator res1
     (PatVar tn1 v1, PatVar tn2 v2) -> do -- both pattern variables
       recurEnsureVar v1 v2 (typeOf tn1)
+    (PatVar tn PatWild, _) -> do -- The variable definitely distinguishes, because it is a wild on one side, and not on the other (otherwise it would have been dealt with prior)
+      newDiscriminator (typeOf tn)
+    (_, PatVar tn PatWild) -> do -- ditto, but the tn needs to be unique from the bound variables in the template pattern
+      newDiscriminator (typeOf tn)
     (PatVar tn pat, _) -> do -- Same as above but recurring on full rhs pattern
       recurEnsureVar pat p' (typeOf tn)
     (_, PatVar tn pat) -> do -- Same as above but recurring on full lhs pattern
@@ -303,15 +306,15 @@ getReplaceMap discriminatingVars template p'
     (PatLit l1, PatLit l2) -> ([], []) -- Must not have been discriminating (otherwise would be a variable)
     (PatWild, PatWild) -> ([], [])
     (PatCon name1 patterns1 cr targs1 exists1 res1 ci _, PatCon name2 patterns2 _ targs2 exists2 res2 _ sk) ->
-      let (patterns', replaceMaps) = unzip $ zipWith recur patterns1 patterns2 
+      let (patterns', replaceMaps) = unzip $ zipWith recur patterns1 patterns2
       in (concat patterns', concat replaceMaps)
-    (PatVar tn1 v1, PatVar tn2 v2) -> do 
+    (PatVar tn1 v1, PatVar tn2 v2) -> do
       -- trace (show tn2) $ return ()
       if tn1 `elem` discriminatingVars then ([v2], [(tn2, Var tn1 InfoNone) | tn1 /= tn2]) -- What is left of the pattern is v2 and tn2 should be substituted with tn1
       else
         let (pats', rp) = recur v1 v2
             rp' = if tn1 == tn2 then rp -- no replacement needed since the variables are identical
-                  else (tn2, Var tn1 InfoNone):rp in 
+                  else (tn2, Var tn1 InfoNone):rp in
         case pats' of
           [] -> ([], rp') -- All subpatterns do not discriminate, just update the variable replacement map
           _ -> (pats', rp') -- Some subpatterns differ, propagate those, in addition to the replacement map
