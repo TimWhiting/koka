@@ -74,16 +74,20 @@ matchMergeExpr body
 isTrueGuard :: Guard -> Bool
 isTrueGuard guard = isExprTrue (guardTest guard)
 
+isPatCon :: Pattern -> Bool
+isPatCon (PatCon{}) = True
+isPatCon _ = False
+
 -- Takes a set of branches, and transforms them by merging branches that have some shared superstructure.
 -- Returns the new branch structure and whether any changes were made
 mergeBranches :: [Branch] -> Unique ([Branch], Bool)
 -- No branches, no changes
 mergeBranches [] = return ([], False)
 -- Skip branches with complex guards (in the future we can optimize to merge guards)
-mergeBranches (b@(Branch [pat@PatCon{patConPatterns=ps}] guard):bs) | not (all isTrueGuard guard) =
+mergeBranches (b@(Branch ps guard):bs) | not (all isTrueGuard guard) =
   mergeBranches bs >>= (\(bs', v) -> return (b:bs', v))
 -- Branch with constructor pattern, try to merge it with the rest
-mergeBranches branches@(b@(Branch [pat@PatCon{patConPatterns=ps}] _): rst) =
+mergeBranches branches@(b@(Branch ps _): rst) | any isPatCon ps =
   -- trace ("mergeBranches:\n" ++ show b ++ "\n\n" ++ show rst ++ "\n\n\n") $
   do
     splitted <- splitBranchConstructors b rst -- split into common structure and the rest, along with error and any branches
