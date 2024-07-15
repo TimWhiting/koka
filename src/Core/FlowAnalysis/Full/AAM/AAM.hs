@@ -270,7 +270,7 @@ doStep i =
           (AppR c@(AChangePrim p clos env) addrs e):ls | isNameClause (getName p) -> do
             -- trace ("ClauseTail: " ++ show c ++ " " ++ show ls) $ return ()
             doGC $ Cont (toClause (getName p) achange) store kstore ls time
-          (AppR c@(AChangeKont k kaddr) addrs e):ls -> do
+          (AppR c@(AChangeKont k) addrs e):ls -> do
             -- trace ("Call resume:" ++ show k) $ return ()
             case M.lookup k kstore of
               Just sframes -> do

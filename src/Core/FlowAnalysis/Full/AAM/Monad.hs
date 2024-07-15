@@ -26,6 +26,7 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 type KStore = M.Map KAddr (S.Set [Frame])
+type MKStore = M.Map MKAddr (S.Set ([Frame], MKAddr))
 
 data FixInput =
   Eval ExprContext VEnv VStore KStore [Frame] Time
@@ -74,6 +75,7 @@ data Frame =
 data AnyAddr =
   VA Addr
   | KA KAddr
+  | MKA MKAddr
   deriving (Eq, Ord)
 
 llEnv :: VEnv -> S.Set AnyAddr
@@ -104,7 +106,7 @@ llV kstore seen achange  =
     AChangeClos _ env -> llEnv env
     AChangePrim _ _ env -> llEnv env
     AChangeOp _ _ env -> llEnv env
-    AChangeKont k kr -> S.insert (KA k) $ S.insert (KA kr) $ S.union (llKont k kstore seen) (llKont kr kstore seen)
+    AChangeKont k -> S.insert (KA k) $ S.insert (KA kr) $ S.union (llKont k kstore seen) (llKont kr kstore seen)
     AChangeConstr _ env -> llEnv env
     AChangeLit _ -> S.empty
 

@@ -60,11 +60,14 @@ instance Show Time where
 
 instance Show KAddr where
   show (KAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
+instance Show MKAddr where
+  show (MKAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
 
 type Addr = (TName, ExprContextId, Time)
 type VEnv = M.Map TName Addr
 
 newtype KAddr = KAddr (ExprContext, VEnv, Time) deriving (Eq, Ord)
+newtype MKAddr = MKAddr (ExprContext, VEnv, Time) deriving (Eq, Ord)
 
 showStore store = show $ pretty store
 
@@ -78,7 +81,7 @@ data AChange =
   | AChangeConstr ExprContext VEnv
   | AChangeOp Name ExprContext VEnv -- AChangeOp
   | AChangeLit LiteralChange
-  | AChangeKont KAddr KAddr -- Where to return to and where to extend the return continuation
+  | AChangeKont MKAddr -- Where to return to up to the 
   deriving (Eq, Ord)
 
 envOfClos :: AChange -> VEnv
@@ -98,7 +101,7 @@ instance Show AChange where
   show (AChangeOp nm expr env) = showNoEnvClosure (expr, env)
   show (AChangeConstr expr env) = showSimpleClosure (expr, env)
   show (AChangePrim name expr env) = show name
-  show (AChangeKont k _) = show k
+  show (AChangeKont mk) = show mk
   show (AChangeLit lit) = show lit
 
 data AbValue =
@@ -106,7 +109,7 @@ data AbValue =
     aclos:: !(Set (ExprContext, VEnv)),
     aops:: !(Set (Name, ExprContext, VEnv)),
     acons:: !(Set (ExprContext, VEnv)),
-    akonts:: !(Set (KAddr, KAddr)),
+    akonts:: !(Set MKAddr),
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
 
@@ -162,7 +165,7 @@ changes (AbValue clos clsops constrs konts lits) =
   where
     closs = map (uncurry AChangeClos) $ S.toList clos
     closops = map (\(nm,ctx,env) -> AChangeOp nm ctx env) $ S.toList clsops
-    ckonts = map (uncurry AChangeKont) $ S.toList konts
+    ckonts = map AChangeKont $ S.toList konts
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     litss = changesLit lits
 
@@ -179,7 +182,7 @@ changeIn :: AChange -> AbValue -> Bool
 changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _) = S.member (ctx,env) clos
 changeIn (AChangeOp nm ctx env) (AbValue _ closops _ _ _) = S.member (nm,ctx,env) closops
 changeIn (AChangeConstr ctx env) (AbValue _ _ constr _ _) = S.member (ctx,env) constr
-changeIn (AChangeKont kont kontret) (AbValue _ _ _ konts _) = S.member (kont, kontret) konts
+changeIn (AChangeKont kont) (AbValue _ _ _ konts _) = S.member kont konts
 changeIn (AChangeLit lit) (AbValue _ _ _ _ (LiteralLattice ints floats chars strings)) =
   case lit of
     LiteralChangeInt i -> i `lte` ints
@@ -257,7 +260,7 @@ addChange ab@(AbValue cls clsapp cs konts lit) change =
     AChangeClos lam env -> AbValue (S.insert (lam,env) cls) clsapp cs konts lit
     AChangeOp nm app env -> AbValue cls (S.insert (nm,app,env) clsapp) cs konts lit
     AChangeConstr c env -> AbValue cls clsapp (S.insert (c,env) cs) konts lit
-    AChangeKont k kr -> AbValue cls clsapp cs (S.insert (k,kr) konts) lit
+    AChangeKont mk -> AbValue cls clsapp cs (S.insert mk konts) lit
     AChangeLit l -> AbValue cls clsapp cs konts (joinLit (litLattice l) lit)
 
 joinAbValue :: AbValue -> AbValue -> AbValue
