@@ -240,6 +240,11 @@ addSpecialId ids f = do
       setState state{states=M.insert newId x (states state), specialIds=M.insert ids newId (specialIds state)}
       return x
 
+newExpr :: ExprContext -> C.Expr -> FixAR x s e i o c ExprContext
+newExpr ctx expr = do
+  [child] <- childrenOfExpr ctx expr
+  return child
+
 childrenOfExpr :: ExprContext -> Expr -> FixAR x s e i o c [ExprContext]
 childrenOfExpr ctx expr =
   case expr of

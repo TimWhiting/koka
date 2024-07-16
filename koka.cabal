@@ -79,6 +79,7 @@ library
       Core.FlowAnalysis.Full.AAC.Monad
       Core.FlowAnalysis.Full.AAC.Syntax
       Core.FlowAnalysis.Full.AAM.AAM
+      Core.FlowAnalysis.Full.AAM.DelimitedTransform
       Core.FlowAnalysis.Full.AAM.Monad
       Core.FlowAnalysis.Full.AAM.Syntax
       Core.FlowAnalysis.Full.AbstractValue

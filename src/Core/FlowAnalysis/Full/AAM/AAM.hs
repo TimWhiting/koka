@@ -50,6 +50,14 @@ integrate :: Maybe ExprContext -> Contour -> Contour
 integrate (Just e) (KContour old) = KContour $ take kLimit (e:old)
 integrate Nothing c = c
 
+
+--TODO: select-op(h)(v) ==> \v,s -> Shift0 \k -> \h -> h(OpParams(s,v,fn(y) k(y,h)))
+--TODO: Handle hnd e_body x.e_return ==>
+--   let h_x = \o -> runop(o) -- runop is primitive
+--        OpParams(s,v,k) -> s(hnd)(v,k)
+--        OpParams(s,v,k) -> Shift0 \k' -> \h -> h(OpParams(s,v,fn(y) k'(k(y,h))))
+--   <e_body|\(x,h) -> e_return>(h_x) -- <|> is primitive
+
 -- 0CFA Allocation
 alloc :: HasCallStack => FixInput -> Frame -> FixAAMR r s e [Addr]
 alloc (Cont (AChangeKont k kr) store kstore lkont kont mkont (KTime l time)) (AppL nargs e0 env') = do
@@ -196,33 +204,22 @@ doStep i =
             let AChangeClos select senv = achange
             child <- focusChild 0 select
             doGC $ Eval child senv store kstore [OpL1 expr env n eff] kont mkont time'
-          [OpL1 expr env n eff] -> do
-            if n == 0 then do
-              handframes <- getHandler eff lkont kont mkont kstore
-              let (HandleR [tag, hnd, ret, act] ef e p:ls, kont', mkont') = handframes
-                  AChangeClos select senv = achange
-              body <- focusBody select -- Body of the select 
-              -- trace ("OpL20: " ++ show body) $ return ()
-              let (names, addrs) = lamAddrs select time
-                  (env', store') = extend env store names [head addrs] [hnd]
-              doGC $ Eval body env' store' kstore [OpR expr [] eff handframes] kont mkont time'
-            else do
-              arg <- focusChild 3 expr
-              doGC $ Eval arg env store kstore [OpL2 expr env n achange [] eff] kont mkont time'
-          [OpL2 expr env n ch achanges eff] -> do
-            if n == length achanges + 1 then do
-              handframes <- getHandler eff lkont kont mkont kstore
-              let (HandleR [tag, hnd, ret, act] ef e p:handframesrest, kont', mkont') = handframes
-                  AChangeClos select senv = ch
-              body <- focusBody select -- Body of the select 
-              -- trace ("OpL2=l" ++ show n ++ ": " ++ show body) $ return ()
-              let (names, addrs) = lamAddrs select time
-                  (env', store') = extend env store [head names] [head addrs] [hnd]
-              doGC $ Eval body env' store' kstore [OpR expr (achanges ++ [achange]) eff handframes] kont mkont time'
-            else do
-              -- trace ("OpL2: " ++ show (length achanges)) $ return ()
-              arg <- focusChild (4 + length achanges) expr
-              doGC $ Eval arg env store kstore [OpL2 expr env n ch (achanges ++ [achange]) eff] kont mkont time'
+          -- [OpL1 expr env n eff] -> do
+          --   if n == 0 then do --TODO: \v,s -> Shift0 \k -> \h -> h(OpParams(s,v,fn(y) k(y,h)))
+          --     -- trace ("OpL20: " ++ show body) $ return ()
+          --     -- x <- newExpr (Lam ["k", "h", "s", "v"] typeTotal (App [Var "h" typeTotal], [Var "k" typeTotal, Var "h" typeTotal] typeTotal) typeTotal
+          --     doGC $ Cont store kstore [Shift0k achange env 0 eff] kont mkont time'
+          --   else do
+          --     arg <- focusChild 3 expr
+          --     doGC $ Eval arg env store kstore [OpL2 expr env n achange [] eff] kont mkont time'
+          -- [OpL2 expr env n ch achanges eff] -> do
+          --   if n == length achanges + 1 then do
+          --     -- trace ("OpL2=l" ++ show n ++ ": " ++ show body) $ return ()
+          --     doGC $ Eval body env store kstore [OpR expr (achanges ++ [achange]) eff ch] kont mkont time'
+          --   else do
+          --     -- trace ("OpL2: " ++ show (length achanges)) $ return ()
+          --     arg <- focusChild (4 + length achanges) expr
+          --     doGC $ Eval arg env store kstore [OpL2 expr env n ch (achanges ++ [achange]) eff] kont mkont time'
           [OpR expr changes eff ([hndframe@(HandleR [tag, hnd, ret, act] ef e p), EndHandle], kont', mkont')] -> do
             -- TODO: This has a problem of not returning to after calling resume to the operation body
             -- TODO: Write the math for algebraic effects + AAM
@@ -243,7 +240,13 @@ doStep i =
               doGC $ Eval opbod env' store' kstore [EndHandle] kont' mkont' time'
             else
               error "OpR"
-          HandleR [tag, hnd, retClos, act] ef e p:ls -> do
+          HandleR [tag, hnd, retClos, act] ef e p:ls -> do 
+            -- (Eval body) [Cont AppR retClos, EndHandle] 
+            --    [OpMatch (\o -> 
+            --        case o of OpParams(s,v,k) && o in hnd -> s(hnd)(v,k)
+            --             OpParams(s,v,k) -> Shift0 \k' -> \h -> h(OpParams(s,v,fn(y) k'(k(y,h))))
+            --        
+            --     ]:mkont)
             -- trace ("HandleR: " ++ show (length [tag, hnd, retClos, act])) $ return ()
             let AChangeClos ret env = retClos
                 (names, addrs) = lamAddrs ret time
@@ -437,18 +440,6 @@ pop lkont kont mkont kstore =
               each (map (\(l, k) -> return (l, k, mkont)) (S.toList konts))
             Nothing -> error "pop: Not found"
     f:ls -> return (ls, kont, mkont)
-
-getHandler :: HasCallStack => Effect -> [Frame] -> KAddr -> MKAddr -> KStore -> FixAAMR r s e ([Frame], KAddr, MKAddr)
-getHandler eff lkont kont mkont kstore = do
-  trace ("getHandlerF: " ++ show lkont) $ return []
-  case lkont of
-    (HandleR changes ef e p):ls | fst (extractEffectExtend ef) == fst (extractEffectExtend eff) -> do
-      -- trace ("getHandlerF:\n" ++ show (head frames)) $ return []
-      return (lkont, kont, mkont)
-    -- (HandleL changes ef e p):ls | ef /= eff -> trace ("getHandlerX:\n" ++ show ef ++ "\n" ++ show eff) $ return []
-    _ -> do
-      (l, k, mk) <- pop lkont kont mkont kstore
-      getHandler eff l k mk kstore
 
 doGC :: FixInput -> FixAAMR r s e FixChange
 doGC i = do

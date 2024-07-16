@@ -72,6 +72,10 @@ data Frame =
   | OpL ExprContext VEnv Int Effect
   | OpL1 ExprContext VEnv Int Effect
   | OpL2 ExprContext VEnv Int AChange [AChange] Effect
+  | Shift0k AChange VEnv Int Effect -- selector 
+  | Shift0h AChange VEnv Int Effect
+  | Shift0Select AChange VEnv Int Effect
+  | Shift0Fn AChange VEnv
   | OpR ExprContext [AChange] Effect ([Frame], KAddr, MKAddr)
   | LetL Int Int Int Int [Addr] ExprContext VEnv -- Binding group index, num binding groups, binding index, num bindings, addresses for binding group, parent expresion, parent env
   | CaseR ExprContext VEnv
