@@ -47,6 +47,7 @@ import Type.Infer( inferTypes )
 import qualified Core.Core as Core
 import Compile.Options
 import Compile.Module( Definitions(..), Module (modName) )
+import Core.FlowAnalysis.Full.AAM.DelimitedTransform (delimitedControlTransformDefs)
 
 
 {---------------------------------------------------------------
@@ -129,7 +130,7 @@ typeCheck flags defs coreImports program0
         liftFunctions penv
         checkCoreDefs "lifted"
         -- traceDefGroups "lifted"
-
+        delimitedControlTransformDefs
         coreDefsFinal <- Core.getCoreDefs
         uniqueFinal   <- unique
         -- traceM ("final: " ++ show uniqueFinal)

@@ -72,8 +72,9 @@ performN n
   | otherwise = error "performN"
 
 shift0 = TName (newName "shift0") typeTotal Nothing
-varshift0 :: Expr
 varshift0 = Var shift0 InfoNone
+resetdollar = TName (newName "reset$") typeTotal Nothing
+varResetDollar = Var resetdollar InfoNone
 tnk = TName (newName "k") typeTotal Nothing
 vark = Var tnk InfoNone
 
@@ -83,18 +84,39 @@ varh = Var tnh InfoNone
 tns = TName (newName "s") typeTotal Nothing
 tnv i = TName (newName ("v" ++ show i)) typeTotal Nothing
 tny = TName (newName "y") typeTotal Nothing
+tnx = TName (newName "x") typeTotal Nothing
 s = Var tns InfoNone
 vn i = Var (tnv i) InfoNone
 y = Var tny InfoNone
+x = Var tnx InfoNone
+
+opn = TName (newName "op") typeTotal Nothing
+opv = Var opn InfoNone
+
+runop = TName (newName "runop") typeTotal Nothing
+varrunop = Var runop InfoNone
 
 opConName = TName (newName "OpParams") typeTotal Nothing
 
+opConRepr = ConSingleton (newName "xx") DataSingleStruct valueReprZero (-1)
+
+tnSelect = TName (newName "select") typeAny Nothing
+tnKont = TName (newName "kont") typeAny Nothing
+tnVars v = TName (newName $ "v" ++ show v) typeAny Nothing
+
+vSelect = Var tnSelect InfoNone
+vKont = Var tnKont InfoNone
+
+conInfo :: ConInfo
+conInfo = ConInfo (newName "xx") (newName "xx") [] [] [] typeAny Inductive rangeNull [] [] False [] valueReprZero Private ""
+
 delimitedControlTransformExpr :: Expr -> Unique Expr
-delimitedControlTransformExpr body
-  = case body of
--- perform(s)(v) ==> \v,s -> Shift0 \k -> \h -> h(OpParams(v,s,fn(y) k(y,h)))
-      App (TypeApp (Var name _) _) (idx:TypeLam targs select:args) rng | isNamePerform $ getName name -> do
-        trace ("Perform: " ++ show (vcat $ map (text . show) targs)) $ return ()
+delimitedControlTransformExpr body =
+    -- trace ("Transforming: " ++ show body) $ do
+    case body of
+-- perform(s)(v..) ==> \v..,s -> Shift0 \k -> \h -> h(OpParams(s,fn(y) k(y)(h), v..)) -- There is a few places we can add v.. (we could apply it to k(y)(h)(v..))
+      App (TypeApp (Var name _) _) (idx:select:args) rng | isNamePerform $ getName name -> do
+        trace ("Perform: " ++ show select) $ return ()
         let nargs = performN $ getName name
         let argsVars = [vn i | i <- [0..nargs-1]]
         let argNms = [tnv i | i <- [0..nargs-1]]
@@ -103,16 +125,36 @@ delimitedControlTransformExpr body
                       Lam [tnk] typeTotal $
                         Lam [tnh] typeTotal $
                           App varh [
-                              App (Con opConName (ConSingleton (newName "xx") DataSingleStruct valueReprZero (-1)))
-                                 ([select, Lam [tny] typeTotal (App vark [y,varh] Nothing)] ++ argsVars) Nothing
+                              App (Con opConName opConRepr)
+                                 ([select, Lam [tny] typeTotal (App (App vark [y] Nothing) [varh] Nothing)] ++ argsVars) Nothing
                                 ] Nothing
                         ] rng) args Nothing
---TODO: Handle hnd e_body x.e_return ==>
+-- TODO: Specialize for no continuation also in perform / propagate
+-- Handle hnd e_body x.e_return ==>
 --   let h_x = \o -> runop(o) -- runop is primitive
---        OpParams(s,v,k) -> s(hnd)(v,k)
---        OpParams(s,v,k) -> Shift0 \k' -> \h -> h(OpParams(s,v,fn(y) k'(k(y,h))))
+--        OpParams(s,k,v..) -> s(hnd)(v..,k)
+--        OpParams(s,k,v..) -> Shift0 \k' -> \h' -> h'(OpParams(s,fn(y) k(k'(y)(h')), v..))
 --   <e_body|\(x,h) -> e_return>(h_x) -- <|> is primitive
-      App (TypeApp (Var name _) tps@[_, _, tp, _, _]) args _ | nameHandle == getName name -> do
+      App (TypeApp (Var name _) tps@[_, _, tp, _, _]) [tag, hnd, retfn, action] _ | nameHandle == getName name -> do
         trace ("Handle: " ++ show (vcat $ map (text . show) tps)) $ return ()
-        return body
+        let pselect = PatVar tnSelect PatWild
+            pk = PatVar tnKont PatWild
+        let hx = Lam [opn] typeTotal $
+                  Case [App varrunop [opv] Nothing]
+                    [
+                      Branch [PatCon opConName [pselect, pk] opConRepr [] [] typeAny conInfo False]
+                        [Guard exprTrue (App (App vSelect [hnd] Nothing) [vKont] Nothing)],
+                      Branch [PatCon opConName [pselect, pk] opConRepr [] [] typeAny conInfo False]
+                        [Guard exprTrue (App varshift0 [
+                          Lam [tnk] typeTotal $
+                            Lam [tnh] typeTotal $
+                              App varh [
+                                App (Con opConName opConRepr)
+                                 ([vSelect, Lam [tny] typeTotal
+                                 (App vKont [App (App vark [y] Nothing) [varh] Nothing] Nothing)]) Nothing
+                              ] Nothing
+                            ] Nothing)
+                          ]
+                    ]
+        return $ App varResetDollar [action, Lam [tnx] typeTotal $ Lam [tnh] typeTotal (App retfn [x] Nothing)] Nothing
       _ -> return body

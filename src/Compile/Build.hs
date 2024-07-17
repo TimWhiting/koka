@@ -65,6 +65,7 @@ import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.AAM.Syntax (evalMain)
+import Core.FlowAnalysis.Full.AAM.DelimitedTransform (delimitedControlTransformDefs)
 
 
 {---------------------------------------------------------------
@@ -351,12 +352,14 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   term <- getTerminal
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
-                  (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
+
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   liftIO $ evalMain bc (\bc mn -> 
                       runBuild term flags $ buildcTypeCheck [mn] bc
                     ) mod 0
+                  
+                  (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
                   -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
                   --     runBuild term flags $ buildcTypeCheck [m] bc
                   --    ) bc core
