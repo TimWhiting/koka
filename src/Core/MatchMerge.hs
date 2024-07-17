@@ -1,33 +1,20 @@
 module Core.MatchMerge(matchMergeDefs) where
 
-import qualified Lib.Trace
-import Control.Monad
-import Control.Monad.Identity
-import Control.Applicative
 import Data.Maybe( catMaybes, isJust, maybeToList, isNothing, fromJust, fromMaybe )
+import Data.List (intercalate)
+import qualified Data.Set as S
+import qualified Lib.Trace
 import Lib.PPrint
 import Common.Failure
 import Common.NamePrim ( nameEffectOpen, namePatternMatchError )
 import Common.Name
 import Common.Range
 import Common.Unique
-import Common.Error
-import Common.Syntax
-
-import Kind.Kind
 import Type.Type
-import Type.Kind
-import Type.TypeVar
-import Type.Pretty hiding (Env)
 import qualified Type.Pretty as Pretty
-import Type.Assumption
 import Core.Core
-import qualified Core.Core as Core
 import Core.Pretty
-import Core.CoreVar
-import Core.Uniquefy
-import Data.List (intercalate)
-import qualified Data.Set as S
+import Control.Monad (zipWithM)
 
 trace s x =
   Lib.Trace.trace s
