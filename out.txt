@@ -1,0 +1,1619 @@
+koka-3.1.2: unregistering (local file changes: src/Core/FlowAnalysis/Full/AAM/AAM.hs)
+koka> build (lib + exe) with ghc-9.6.4
+Preprocessing library for koka-3.1.2..
+Building library for koka-3.1.2..
+[111 of 128] Compiling Core.FlowAnalysis.Full.AAM.AAM [Source file changed]
+Preprocessing executable 'koka' for koka-3.1.2..
+Building executable 'koka' for koka-3.1.2..
+[17 of 17] Linking .stack-work/dist/aarch64-osx/ghc-9.6.4/build/koka/koka [Library changed]
+koka> copy/register
+Installing library in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/lib/aarch64-osx-ghc-9.6.4/koka-3.1.2-ERXxTs8AiqZEQRLyLzflc9
+Installing executable koka in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/01674bf5c960005d993ddd61fc4c8358ebe0ad37c88fecc2ad9987d6d870c206/9.6.4/bin
+Registering library for koka-3.1.2..
+]4;0;?\Context: analysis/samples/aac/basic-effect:1
+Context: analysis/samples/aac/basic-effect:1
+Step: Eval KTime  
+  EndProgram
+   
+  tapp(@open)(x12)()
+   
+   
+Step: Eval KTime 925 
+  EndProgram
+  AppL tapp(@open)(x12)() nargs: 0
+   
+  tapp(@open)(x12)
+   
+   
+Step: Eval KTime 926 
+  EndProgram
+  AppL tapp(@open)(x12)() nargs: 0
+   
+  x12
+   
+   
+Step: Cont KTime 926 
+  EndProgram
+  AppL tapp(@open)(x12)() nargs: 0
+   
+  (fn()   (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(., .), (fn(@x)   .), @action, .))((fn()   tapp(@open)(.)(.))))
+   
+   
+Step: Eval KTime 926 
+  EndCall
+   
+  (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))((fn()   tapp(@open)(op2)(0)))
+   
+   
+Step: Eval KTime 817 
+  EndCall
+  AppL (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))((fn()   tapp(@open)(op2)(0))) nargs: 1
+   
+  (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))
+   
+   
+Step: Cont KTime 817 
+  EndCall
+  AppL (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))((fn()   tapp(@open)(op2)(0))) nargs: 1
+   
+  (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))
+   
+   
+Step: Eval KTime 817 
+  EndCall
+  AppR (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))
+   
+  (fn()   tapp(@open)(op2)(0))
+   
+   
+Step: Cont KTime 817 
+  EndCall
+  AppR (fn(@action)   tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(.)(.)), (fn(@x)   @x), @action, .))
+   
+  (fn()   tapp(@open)(op2)(0))
+   
+   
+Step: Eval KTime  817
+  EndCall
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   .))), (fn(@x)   @x), @action, .)
+  @action:() -> analysis/samples/aac/basic-effect/op2 string -> (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, )
+   
+   
+Step: Eval KTime 820 817
+  EndCall
+  AppL tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   .))), (fn(@x)   @x), @action, .) nargs: 3
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  tapp(@handle-op2)
+   
+   
+Step: Eval KTime 821 817
+  EndCall
+  AppL tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   .))), (fn(@x)   @x), @action, .) nargs: 3
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  @handle-op2
+   
+   
+Step: Cont KTime 821 817
+  EndCall
+  AppL tapp(@handle-op2)(tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   .))), (fn(@x)   @x), @action, .) nargs: 3
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .)))))
+   
+   
+Step: Eval KTime 821 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)(.)(., .))))
+   
+   
+Step: Eval KTime 822 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppL tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)(.)(., .)))) nargs: 2
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  tapp(@Hnd-op2)
+   
+   
+Step: Eval KTime 826 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppL tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)(.)(., .)))) nargs: 2
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  @Hnd-op2
+   
+   
+Step: Cont KTime 826 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppL tapp(@Hnd-op2)(3, tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)(.)(., .)))) nargs: 2
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  @Hnd-op2 in <<fromList []>>
+   
+   
+Step: Eval KTime 826 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppM @Hnd-op2 in <<fromList []>> arg: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  3
+   
+   
+Step: Cont KTime 826 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppM @Hnd-op2 in <<fromList []>> arg: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+   
+  int -> 3
+   
+   
+Step: Eval KTime 826 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)((++))(resume(.), "4")))
+   
+   
+Step: Eval KTime 828 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  AppL tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)((++))(resume(.), "4"))) nargs: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  tapp(@open)(tapp(clause-control1))
+   
+   
+Step: Eval KTime 831 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  AppL tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)((++))(resume(.), "4"))) nargs: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  tapp(clause-control1)
+   
+   
+Step: Eval KTime 834 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  AppL tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)((++))(resume(.), "4"))) nargs: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  clause-control1
+   
+   
+Step: Cont KTime 834 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  AppL tapp(@open)(tapp(clause-control1))((fn(i, resume)   tapp(@open)((++))(resume(.), "4"))) nargs: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  std/core/hnd/clause-control1
+   
+   
+Step: Eval KTime 834 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  AppR std/core/hnd/clause-control1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  (fn(i, resume)   tapp(@open)((++))(resume(tapp(@open)(.)(., .)), "4"))
+   
+   
+Step: Cont KTime 834 817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  AppR std/core/hnd/clause-control1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  (fn(i, resume)   tapp(@open)((++))(resume(tapp(@open)(.)(., .)), "4"))
+   
+   
+Step: Cont KTime  834,817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  AppR @Hnd-op2 in <<fromList []>>
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+   
+  (fn(i, resume)   tapp(@open)((++))(resume(tapp(@open)(.)(., .)), "4"))
+   
+   
+Step: Cont KTime  834,817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 1
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+   
+  @Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+   
+   
+Step: Eval KTime  834,817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 2
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+   
+  (fn(@x)   @x)
+   
+   
+Step: Cont KTime  834,817
+  EndCall
+  AppM (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .))))) arg: 2
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+   
+  (fn(@x)   @x)
+   
+   
+Step: Eval KTime  834,817
+  EndCall
+  AppR (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .)))))
+  (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, ) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  @action
+  @action:() -> analysis/samples/aac/basic-effect/op2 string -> (@action:() -> analysis/samples/aac/basic-effect/op2 string, 818, )
+   
+   
+Step: Cont KTime  834,817
+  EndCall
+  AppR (tfn()tapp((tfn()(fn(hnd, ret, action)   tapp(@hhandle)(@tag-op2, hnd, ret, action, .)))))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn()   tapp(@open)(op2)(0))
+   
+   
+Step: Eval KTime  834,817
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  action:() -> <analysis/samples/aac/basic-effect/op2|498> 497 -> (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817)
+  hnd:analysis/samples/aac/basic-effect/op2<498,499> -> (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817)
+  ret:(res : 497) -> 498 499 -> (ret:(res : 497) -> 498 499, 18, 817)
+   
+   
+Step: Eval KTime 161 834,817
+  EndHandle
+  HandleL tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  @tag-op2
+   
+   
+Step: Cont KTime 161 834,817
+  EndHandle
+  HandleL tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+   
+   
+Step: Eval KTime 161 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  hnd
+  hnd:analysis/samples/aac/basic-effect/op2<498,499> -> (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817)
+   
+   
+Step: Cont KTime 161 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  @Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+   
+   
+Step: Eval KTime 161 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  ret
+  ret:(res : 497) -> 498 499 -> (ret:(res : 497) -> 498 499, 18, 817)
+   
+   
+Step: Cont KTime 161 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn(@x)   @x)
+   
+   
+Step: Eval KTime 161 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  action
+  action:() -> <analysis/samples/aac/basic-effect/op2|498> 497 -> (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817)
+   
+   
+Step: Cont KTime 161 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn()   tapp(@open)(op2)(0))
+   
+   
+Step: Eval KTime 161 834,817
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)(op2)(0)
+   
+   
+Step: Eval KTime 867 834,817
+  EndCall
+  AppL tapp(@open)(op2)(0) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)(op2)
+   
+   
+Step: Eval KTime 868 834,817
+  EndCall
+  AppL tapp(@open)(op2)(0) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  op2
+   
+   
+Step: Cont KTime 868 834,817
+  EndCall
+  AppL tapp(@open)(op2)(0) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn(i)   tapp(@perform1)(tapp(@open)(tapp(@evv-at))(tapp(@open)(.)(.)), (tfn()tapp(@select-op2)), i, .))
+   
+   
+Step: Eval KTime 868 834,817
+  EndCall
+  AppR (fn(i)   tapp(@perform1)(tapp(@open)(tapp(@evv-at))(tapp(@open)(.)(.)), (tfn()tapp(@select-op2)), i, .))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  0
+   
+   
+Step: Cont KTime 868 834,817
+  EndCall
+  AppR (fn(i)   tapp(@perform1)(tapp(@open)(tapp(@evv-at))(tapp(@open)(.)(.)), (tfn()tapp(@select-op2)), i, .))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  int -> 0
+   
+   
+Step: Eval KTime 868 834,817
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@perform1)(tapp(@open)(tapp(@evv-at))(tapp(@open)(@make-ssize_t)(0)), (tfn()tapp(@select-op2)), i, .)
+  i:int -> (i:int, 20, 834,817)
+   
+   
+Step: Eval KTime 177 834,817
+  Op analysis/samples/aac/basic-effect/op2 analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (tfn()tapp(@select-op2))
+   
+   
+Step: Cont KTime 177 834,817
+  Op analysis/samples/aac/basic-effect/op2 analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (tfn()tapp(@select-op2))
+   
+   
+Step: Eval KTime 177 834,817
+  Op1L 1 analysis/samples/aac/basic-effect/op2 analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  @select-op2
+   
+   
+Step: Cont KTime 177 834,817
+  Op1L 1 analysis/samples/aac/basic-effect/op2 analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (tfn()tapp((tfn()(fn(hnd)   match hnd
+                              (@skip @Hnd-op2(_, (@ctl-op2)) : analysis/samples/aac/basic-effect/op2<e,a> ) ->
+                                @ctl-op2))))
+   
+   
+Step: Eval KTime 177 834,817
+  Op2L 0 1 analysis/samples/aac/basic-effect/op2 analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  i
+  i:int -> (i:int, 20, 834,817)
+   
+   
+Step: Cont KTime 177 834,817
+  Op2L 0 1 analysis/samples/aac/basic-effect/op2 analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 20, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  int -> 0
+   
+   
+Step: Eval KTime 177 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)
+(fn()   tapp(@open)(op2)(0))tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  OpR [int -> 0] analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (hnd:analysis/samples/aac/basic-effect/op2<539,540>, 19, 834,817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  match hnd
+  (@skip @Hnd-op2(_, (@ctl-op2)) : analysis/samples/aac/basic-effect/op2<e,a> ) ->
+    @ctl-op2
+  hnd:analysis/samples/aac/basic-effect/op2<539,540> -> (hnd:analysis/samples/aac/basic-effect/op2<539,540>, 19, 834,817)
+   
+   
+Step: Eval KTime 177 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)
+(fn()   tapp(@open)(op2)(0))tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  OpR [int -> 0] analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  CaseR match hnd
+  (@skip @Hnd-op2(_, (@ctl-op2)) : analysis/samples/aac/basic-effect/op2<e,a> ) ->
+    @ctl-op2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (hnd:analysis/samples/aac/basic-effect/op2<539,540>, 19, 834,817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  hnd
+  hnd:analysis/samples/aac/basic-effect/op2<539,540> -> (hnd:analysis/samples/aac/basic-effect/op2<539,540>, 19, 834,817)
+   
+   
+Step: Cont KTime 177 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)
+(fn()   tapp(@open)(op2)(0))tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  OpR [int -> 0] analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  CaseR match hnd
+  (@skip @Hnd-op2(_, (@ctl-op2)) : analysis/samples/aac/basic-effect/op2<e,a> ) ->
+    @ctl-op2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (hnd:analysis/samples/aac/basic-effect/op2<539,540>, 19, 834,817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  @Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+   
+   
+Step: Eval KTime 177 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)
+(fn()   tapp(@open)(op2)(0))tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  OpR [int -> 0] analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,539,540>, 172, 834,817) -> 
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  @ctl-op2
+  @ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,539,540> -> (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,539,540>, 172, 834,817)
+   
+   
+Step: Cont KTime 177 834,817
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)
+(fn()   tapp(@open)(op2)(0))tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  OpR [int -> 0] analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn(i, resume)   tapp(@open)((++))(resume(tapp(@open)(.)(., .)), "4"))
+   
+   
+Step: Eval KTime  177,834
+  EndHandle
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)((++))(resume(tapp(@open)((++))("2", tapp(@open)(.)(.))), "4")
+  i:int -> (i:int, 832, 834,817)
+  resume:(string) -> string -> (resume:(string) -> string, 832, 834,817)
+   
+   
+Step: Eval KTime 837 177,834
+  EndHandle
+  AppL tapp(@open)((++))(resume(tapp(@open)((++))("2", tapp(@open)(.)(.))), "4") nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)((++))
+   
+   
+Step: Eval KTime 838 177,834
+  EndHandle
+  AppL tapp(@open)((++))(resume(tapp(@open)((++))("2", tapp(@open)(.)(.))), "4") nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (++)
+   
+   
+[6ninitial contexts for module std/core/types:965
+Step: Cont KTime 838 177,834
+  EndHandle
+  AppL tapp(@open)((++))(resume(tapp(@open)((++))("2", tapp(@open)(.)(.))), "4") nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+   
+   
+Step: Eval KTime 838 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  resume(tapp(@open)((++))("2", tapp(@open)(show)(i)))
+  i:int -> (i:int, 832, 834,817)
+  resume:(string) -> string -> (resume:(string) -> string, 832, 834,817)
+   
+   
+Step: Eval KTime 839 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppL resume(tapp(@open)((++))("2", tapp(@open)(show)(i))) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  resume
+  resume:(string) -> string -> (resume:(string) -> string, 832, 834,817)
+   
+   
+Step: Cont KTime 839 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppL resume(tapp(@open)((++))("2", tapp(@open)(show)(i))) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+   
+   
+Step: Eval KTime 839 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)((++))("2", tapp(@open)(show)(i))
+  i:int -> (i:int, 832, 834,817)
+   
+   
+Step: Eval KTime 846 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppL tapp(@open)((++))("2", tapp(@open)(show)(i)) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  tapp(@open)((++))
+   
+   
+Step: Eval KTime 848 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppL tapp(@open)((++))("2", tapp(@open)(show)(i)) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (++)
+   
+   
+Step: Cont KTime 848 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppL tapp(@open)((++))("2", tapp(@open)(show)(i)) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+   
+   
+Step: Eval KTime 848 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  "2"
+   
+   
+Step: Cont KTime 848 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+   
+  string -> "2"
+   
+   
+Step: Eval KTime 848 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  tapp(@open)(show)(i)
+  i:int -> (i:int, 832, 834,817)
+   
+   
+Step: Eval KTime 850 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  AppL tapp(@open)(show)(i) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  tapp(@open)(show)
+   
+   
+Step: Eval KTime 856 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  AppL tapp(@open)(show)(i) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  show
+   
+   
+Step: Cont KTime 856 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  AppL tapp(@open)(show)(i) nargs: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  std/core/int/show
+   
+   
+Step: Eval KTime 856 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  AppR std/core/int/show
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  i
+  i:int -> (i:int, 832, 834,817)
+   
+   
+Step: Cont KTime 856 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  AppR std/core/int/show
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  int -> 0
+   
+   
+Step: Cont KTime 856 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+   
+  string -> "0"
+   
+   
+Step: Eval KTime 856 177,834
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  tapp(@open)((@extern-x++))(x, y)
+  x:string -> (x:string, 1011, 177,834)
+  y:string -> (y:string, 1011, 177,834)
+   
+   
+Step: Eval KTime 1016 177,834
+  EndCall
+  AppL tapp(@open)((@extern-x++))(x, y) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  tapp(@open)((@extern-x++))
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  AppL tapp(@open)((@extern-x++))(x, y) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  (@extern-x++)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  AppL tapp(@open)((@extern-x++))(x, y) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  std/core/types/(@extern-x++)
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  AppM std/core/types/(@extern-x++) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  x
+  x:string -> (x:string, 1011, 177,834)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  AppM std/core/types/(@extern-x++) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "2"
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  AppR std/core/types/(@extern-x++)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (@extern-x++0:any, 1016, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  y
+  y:string -> (y:string, 1011, 177,834)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  AppR std/core/types/(@extern-x++)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (@extern-x++0:any, 1016, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "0"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  AppR analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  HandleL tapp(@open)(tapp(@new-htag))("op2@basic-effect")
+@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>
+(fn(@x)   @x)
+(fn()   tapp(@open)(op2)(0))tapp(@hhandle)(@tag-op2, hnd, ret, action, .)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Eval KTime 1017 177,834
+  EndHandle
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (@x:string, 823, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "20"
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  @x
+  @x:string -> (@x:string, 823, 177,834)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndProgram
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "2"
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "20"
+   
+   
+Step: Eval KTime 1017 177,834
+  EndHandle
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  "4"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LSingle "0"
+   
+  string -> "4"
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  tapp(@open)((@extern-x++))(x, y)
+  x:string -> (x:string, 1011, 177,834)
+  y:string -> (y:string, 1011, 177,834)
+   
+   
+Step: Eval KTime 1016 177,834
+  EndCall
+  AppL tapp(@open)((@extern-x++))(x, y) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  tapp(@open)((@extern-x++))
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  AppL tapp(@open)((@extern-x++))(x, y) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  (@extern-x++)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  AppL tapp(@open)((@extern-x++))(x, y) nargs: 2
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  std/core/types/(@extern-x++)
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  AppM std/core/types/(@extern-x++) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  x
+  x:string -> (x:string, 1011, 177,834)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  AppM std/core/types/(@extern-x++) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> top
+   
+   
+Step: Eval KTime 1017 177,834
+  EndCall
+  AppR std/core/types/(@extern-x++)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (@extern-x++0:any, 1016, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  y
+  y:string -> (y:string, 1011, 177,834)
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  AppR std/core/types/(@extern-x++)
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (@extern-x++0:any, 1016, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> top
+   
+   
+Step: Cont KTime 1017 177,834
+  EndCall
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> top
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> top
+   
+   
+Step: Cont KTime 1017 177,834
+  EndProgram
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> top
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  AppM (fn(x, y)   tapp(@open)((@extern-x++))(x, y)) arg: 1
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> top
+   
+   
+Step: Eval KTime 1017 177,834
+  EndHandle
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  "4"
+   
+   
+Step: Cont KTime 1017 177,834
+  EndHandle
+  AppR (fn(x, y)   tapp(@open)((@extern-x++))(x, y))
+  (@cfc:int, 822, 817) ->  lits: LSingle 3,LBottom,LBottom,LBottom
+  (@ctl-op2:hnd/clause1<int,string,analysis/samples/aac/basic-effect/op2,21,22>, 822, 817) -> 
+  (action:() -> <analysis/samples/aac/basic-effect/op2|498> 497, 18, 817) -> closures: ["(fn()   tapp(@open)(op2)(0)) in <<fromList []>>"]
+  (hnd:analysis/samples/aac/basic-effect/op2<498,499>, 18, 817) ->  constrs: [@Hnd-op2 in <<fromList [(con0,(@cfc,analysis/samples/aac/basic-effect:822,817)),(con1,(@ctl-op2,analysis/samples/aac/basic-effect:822,817))]>>]
+  (i:int, 832, 834,817) ->  lits: LSingle 0,LBottom,LBottom,LBottom
+  (resume:(string) -> string, 832, 834,817) ->  konts: ["(analysis/samples/aac/basic-effect:177 in fromList [(i,(i,analysis/samples/aac/basic-effect:20,834,817))] at KTime 868 834,817,analysis/samples/aac/basic-effect:925 in fromList [] at KTime  )"]
+  (ret:(res : 497) -> 498 499, 18, 817) -> closures: ["(fn(@x)   @x) in <<fromList []>>"]
+  (x:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+  (y:string, 1011, 177,834) ->  lits: LBottom,LBottom,LBottom,LTop
+   
+  string -> "4"
+   
+   
+eval 
+result:
+----------------------
+ lits: LBottom,LBottom,LBottom,LTop
+----------------------
+
+ress': ([],[],[],[],[],fromList [TCon (TypeCon {typeconName = std/core/types/string, typeconKind = KCon V})])
+load    : std/core
+load    : std/core/types
+load    : std/core/unsafe
+load    : std/core/undiv
+load    : std/core/hnd
+load    : std/core/int
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/char
+load    : std/core/sslice
+load    : std/core/vector
+load    : std/core/list
+load    : std/core/either
+load    : std/core/maybe
+load    : std/core/show
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/core/tuple
+load    : std/core/string
+parse   : .../analysis/samples/aac/basic-effect.kk
+check   : analysis/samples/aac/basic-effect
+parse   : .../std/core/types.kk
+parse   : .../std/core/undiv.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/hnd.kk
+parse   : .../std/core/exn.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/string.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/list.kk
+parse   : .../std/core/either.kk
+parse   : .../std/core/show.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/console.kk
+parse   : .../std/core.kk
+parse   : .../std/core/debug.kk
+parse   : .../std/core/delayed.kk
+parse   : .../analysis/samples/aac/basic-effect.kk
+check   : std/core/types
+check   : std/core/int
+check   : std/core/unsafe
+check   : std/core/bool
+check   : std/core/undiv
+check   : std/core/hnd
+check   : std/core/order
+check   : std/core/char
+check   : std/core/tuple
+check   : std/core/either
+check   : std/core/delayed
+check   : std/core/exn
+check   : std/core/maybe
+check   : std/core/vector
+check   : std/core/string
+check   : std/core/sslice
+check   : std/core/list
+check   : std/core/show
+check   : std/core/console
+check   : std/core/debug
+check   : std/core
+check   : analysis/samples/aac/basic-effect
+Context: analysis/samples/aac/basic-effect/@main:1
+No main context found
+linking : analysis/samples/aac/basic-effect/@main
+created : /Users/timwhiting/.koka/v3.1.2/clang-debug-5dca25/analysis_samples_aac_basic_dash_effect__main
+analysis/samples/aac/basic-effect.kk(28, 3): type warning: expression has no effect and is unused
+   hint: did you forget an operator? or used "fun" instead of "fn"?
+
+0

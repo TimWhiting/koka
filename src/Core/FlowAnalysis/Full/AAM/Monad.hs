@@ -28,8 +28,8 @@ import Type.Pretty (defaultEnv, ppType)
 type KStore = M.Map KAddr (S.Set [Frame])
 
 data FixInput =
-  Eval ExprContext VEnv VStore KStore [Frame] Time
-  | Cont AChange VStore KStore [Frame] Time
+  Eval ExprContext VEnv VStore KStore [Frame] KAddr Time
+  | Cont AChange VStore KStore [Frame] KAddr Time
   deriving (Eq, Ord)
 
 data FixOutput a =
@@ -53,10 +53,15 @@ kstoreExtend k frames store =
     Just oldFrames -> M.insert k (S.insert frames oldFrames) store
     Nothing -> M.insert k (S.singleton frames) store
 
+data HCont =
+  KontFrame KAddr
+  | KontEnd KAddr -- Actually meta continuation
+  deriving (Eq, Ord, Show)
+
 data Frame =
   EndProgram
   | EndCall KAddr
-  | EndHandle KAddr
+  | EndHandle HCont -- Continuation and Meta Continuation 
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr] ExprContext
@@ -84,7 +89,8 @@ llFrame kstore seen f =
   case f of 
     EndProgram -> S.empty
     EndCall kont -> S.insert (KA kont) $ llKont kont kstore seen
-    EndHandle kont -> S.insert (KA kont) $ llKont kont kstore seen
+    EndHandle (KontFrame kont) -> S.insert (KA kont) $ llKont kont kstore seen
+    EndHandle (KontEnd kont) -> S.insert (KA kont) $ llKont kont kstore seen
     KResume kont -> S.insert (KA kont) $ llKont kont kstore seen
     CaseR _ env -> llEnv env
     AppL _ _ env -> llEnv env
@@ -151,24 +157,24 @@ limitKStore :: KStore -> S.Set KAddr -> KStore
 limitKStore kstore live = M.filterWithKey (\k _ -> k `S.member` live) kstore
 
 gc :: FixInput -> FixAAMR r s e FixInput
-gc (Eval e env store kstore kont ktime) = do
+gc (Eval e env store kstore lkont mkont ktime) = do
   -- trace ("\n\nGC:\n" ++ showSimpleContext e ++ "\n") $ return ()
   let env' = limitEnv env (fv (exprOfCtx e))
-      live = liveAddrs kstore store (S.unions [llEnv env', llLKont kont kstore S.empty])
+      live = liveAddrs kstore store (S.unions [llEnv env', llLKont lkont kstore S.empty, llKont mkont kstore S.empty])
       store' = limitStore store (vaddrs live)
       kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC Env:\n" ++ show (pretty env) ++ "\n=>\n" ++ show (pretty env) ++ "\n") $ return ()\
   -- trace ("GC LocalAddrs:\n" ++ show laddrs ++ "\n") $ return ()
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Eval e env' store' kstore kont ktime
-gc (Cont achange store kstore kont ktime) = do
-  let live = liveAddrs kstore store (S.unions [llV kstore S.empty achange, llLKont kont kstore S.empty])
+  return $ Eval e env' store' kstore lkont mkont ktime
+gc (Cont achange store kstore lkont mkont ktime) = do
+  let live = liveAddrs kstore store (S.unions [llV kstore S.empty achange, llLKont lkont kstore S.empty, llKont mkont kstore S.empty])
       store' = limitStore store (vaddrs live)
       kstore' = limitKStore kstore (kaddrs live)
   -- trace ("GC KontAddrs:\n" ++ show kaddrs ++ show kont ++ "\n") $ return ()
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
-  return $ Cont achange store' kstore' kont ktime
+  return $ Cont achange store' kstore' lkont mkont ktime
 
 instance Show (FixOutput a) where
   show (A x) = show x
@@ -196,13 +202,13 @@ instance Show Frame where
   show (KResume k) = "KResume " ++ show k
 
 instance Show FixInput where
-  show (Eval expr env store kstore kont ktime) = show $ vcat 
+  show (Eval expr env store kstore lkont mkont ktime) = show $ vcat 
     [text $ "Eval " ++ show ktime, 
-     indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", 
+     indent 2 (vcat [vcat (map (text . show) (reverse lkont)), pretty store, text " ", 
      text (showSimpleContext expr), pretty env, text " ", text " "])]
-  show (Cont achange store kstore kont ktime) = show $ vcat 
+  show (Cont achange store kstore lkont mkont ktime) = show $ vcat 
     [text $ "Cont " ++ show ktime, 
-     indent 2 (vcat [vcat (map (text . show) (reverse kont)), pretty store, text " ", 
+     indent 2 (vcat [vcat (map (text . show) (reverse lkont)), pretty store, text " ", 
      text (show achange), text " ", text " "])]
 
 instance Lattice FixOutput FixChange where

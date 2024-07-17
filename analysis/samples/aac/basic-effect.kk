@@ -61,7 +61,7 @@ fun x11()
   op2(0)
 
 fun x12()
-  with ctl op2(i) "4" ++ resume("2" ++ i.show) 
+  with ctl op2(i) resume("2" ++ i.show) ++ "4"
   op2(0)
 
 fun x13()

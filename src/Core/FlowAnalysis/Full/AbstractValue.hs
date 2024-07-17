@@ -28,7 +28,7 @@ import Core.CoreVar (bv)
 import Data.Foldable (find)
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
-import Lib.PPrint (Pretty (..), hcat, text, vcat)
+import Lib.PPrint (Pretty (..), hcat, text, vcat, (<.>))
 import Type.Pretty (ppType, defaultEnv)
 
 -- TODO: Top Closures (expr, env, but eval results to the top of their type)
@@ -40,7 +40,7 @@ instance Pretty TName where
   pretty (TName n t _) = hcat [pretty n, text ":", ppType defaultEnv t]
 
 instance Pretty Time where
-  pretty (KTime ctxs) = text $ "KTime " ++ intercalate "," (map (showSimpleCtxId . contextId) ctxs)
+  pretty (KTime local ctxs) = text ("KTime " ++ maybe "" (showSimpleCtxId . contextId) local) <.> pretty ctxs
 
 instance Pretty ExprContextId where
   pretty id = text $ showSimpleCtxId id
@@ -51,17 +51,26 @@ showSimpleCtxId ctxId =
 
 type VStore = M.Map Addr AbValue
 
+
+newtype Contour = KContour [ExprContext] deriving (Eq, Ord)
+
+instance Show Contour where
+  show (KContour ctxs) = intercalate "," (map (showSimpleCtxId . contextId) ctxs)
+
+instance Pretty Contour where
+  pretty (KContour ctxs) = text $ intercalate "," (map (showSimpleCtxId . contextId) ctxs)
+
 data Time =
-  KTime [ExprContext]
+  KTime (Maybe ExprContext) Contour
   deriving (Eq, Ord)
 
 instance Show Time where
-  show (KTime ctxs) = "KTime " ++ intercalate "," (map (showSimpleCtxId . contextId) ctxs)
+  show (KTime local ctxs) = "KTime " ++ maybe "" (showSimpleCtxId . contextId) local ++ " " ++ show ctxs
 
 instance Show KAddr where
   show (KAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
 
-type Addr = (TName, ExprContextId, Time)
+type Addr = (TName, ExprContextId, Contour)
 type VEnv = M.Map TName Addr
 
 newtype KAddr = KAddr (ExprContext, VEnv, Time) deriving (Eq, Ord)
@@ -146,14 +155,14 @@ limitStore store fvs =
   -- if M.size res' == S.size fvs then res' 
   -- else error $ "limitStore: not all addresses found \n" ++ show fvs ++ "\n" ++ show store
 
-extendStore :: VStore -> (TName,ExprContextId,Time) -> AChange -> VStore
+extendStore :: VStore -> (TName,ExprContextId,Contour) -> AChange -> VStore
 extendStore store i v =
   M.alter (\oldv -> case oldv of {Nothing -> Just (addChange emptyAbValue v); Just ab -> Just (addChange ab v)}) i store
 
-extendStoreAll :: VStore -> [(TName,ExprContextId,Time)] -> [AChange] -> VStore
+extendStoreAll :: VStore -> [(TName,ExprContextId,Contour)] -> [AChange] -> VStore
 extendStoreAll store addrs changes = foldl (\acc (addr, ch) -> extendStore acc addr ch) store (zip addrs changes)
 
-extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId,Time)] -> VEnv
+extendEnv :: VEnv -> [TName] -> [(TName,ExprContextId,Contour)] -> VEnv
 extendEnv env args addrs = M.union (M.fromList $ zip args addrs) env -- Left biased will take the new
 
 changes :: AbValue -> [AChange]

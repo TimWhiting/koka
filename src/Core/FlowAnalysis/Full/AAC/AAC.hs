@@ -26,17 +26,17 @@ import Core.CoreVar (HasExpVar(fv), bv)
 
 -- 0CFA Allocation
 alloc :: HasCallStack => FixInput -> LocalKont -> FixAACR r s e [Addr]
-alloc (Cont _ _ _ (AChangeClos lam env) store xclos time) (AppL nargs e env':ls) = do
+alloc (Cont _ _ _ (AChangeClos lam env) store xclos (KTime old cont)) (AppL nargs e env':ls) = do
   let names = lamArgNames lam
   if length names /= nargs then doBottom -- error ("alloc: " ++ show names ++ " " ++ show nargs)
   else do
     let addrs = repeat (contextId lam)
-    return $ zip3 names addrs (repeat time)
-alloc (Cont _ _ _ (AChangePrim n expr _) store xclos time) (AppL nargs e0 env':ls) = do
+    return $ zip3 names addrs (repeat cont)
+alloc (Cont _ _ _ (AChangePrim n expr _) store xclos (KTime old cont)) (AppL nargs e0 env':ls) = do
   let addrs = repeat $ contextId e0
   let names =  map (\x -> TName (newHiddenName $ nameStem (getName n) ++ show x) typeAny Nothing) (take nargs [0..])
-  return $ zip3 names addrs (repeat time)
-alloc (Cont _ _ _ (AChangeConstr con env) store xclos time) (AppL nargs e env':ls) = do
+  return $ zip3 names addrs (repeat cont)
+alloc (Cont _ _ _ (AChangeConstr con env) store xclos (KTime old cont)) (AppL nargs e env':ls) = do
   case exprOfCtx con of
     Con tn _ -> do
       let addrs = repeat $ contextId e
@@ -44,14 +44,14 @@ alloc (Cont _ _ _ (AChangeConstr con env) store xclos time) (AppL nargs e env':l
       case splitFunScheme tp of
         Just (_, _, args, _, _) ->
           if nargs /= length args then error "Wrong number of arguments "
-          else return $ zip3 (map (\(n,t) -> TName n t Nothing) args) addrs (repeat time)
-        Nothing -> return [(tn, contextId e, time)]
+          else return $ zip3 (map (\(n,t) -> TName n t Nothing) args) addrs (repeat cont)
+        Nothing -> return [(tn, contextId e, cont)]
 
 allocBindAddrs :: HasCallStack => DefGroup -> ExprContext -> Time -> FixAACR r s e [Addr]
-allocBindAddrs (DefRec defs) expr time = do
+allocBindAddrs (DefRec defs) expr (KTime old cont) = do
   let names = dfsTNames defs
-  return $ zip3 names (repeat $ contextId expr) (repeat time)
-allocBindAddrs (DefNonRec df) expr time = return [(TName (defName df) (defType df) Nothing, contextId expr, time)]
+  return $ zip3 names (repeat $ contextId expr) (repeat cont)
+allocBindAddrs (DefNonRec df) expr (KTime old cont) = return [(TName (defName df) (defType df) Nothing, contextId expr, cont)]
 
 doStep :: HasCallStack => FixInput -> FixAACR r s e FixChange
 doStep i =
@@ -103,7 +103,7 @@ doStep i =
           _ -> error $ "doStep: " ++ show expr ++ " not handled"
       Cont [EndProgram] KEnd MEnd achange store xclos time -> return $ AC achange
       Cont [EndProgram] KEnd meta achange store xclos time -> error "Not handled yet" -- TODO: Handle the no-top condition
-      Cont lc kont meta achange store xclos time -> do
+      Cont lc kont meta achange store xclos time@(KTime tlabel contour) -> do
         KC l k <- pop lc kont
         -- trace ("Cont: " ++ show l ++ " " ++ show k) $ return ()
         case l of
@@ -201,7 +201,7 @@ doStep i =
                     case pat of
                       PatWild -> return $ Just (venv, vstore)
                       PatVar x pat' -> do
-                        let addr = (x, contextId expr, time)
+                        let addr = (x, contextId expr, contour)
                             env' = M.insert x addr venv 
                         -- trace ("Match: " ++ show x ++ " " ++ show addr ++ " " ++ show env') $ return ()
                         matchBindPattern achange pat' env' (extendStore vstore addr achange)
