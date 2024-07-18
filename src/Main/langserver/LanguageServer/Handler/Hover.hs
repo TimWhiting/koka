@@ -109,7 +109,7 @@ hoverHandler
                  liftIO $ writeFile "scratch/debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                             runEvalQueryFromRangeSource 
-                              buildContext (\bc mod -> (runBuild term flags (buildcTypeCheck [mod] bc))) (rng, rngInfo) 
+                              buildContext flags (\bc mod -> (runBuild term flags (buildcTypeCheck [mod] bc))) (rng, rngInfo) 
                               (fromJust mod) BasicEnvs 1
                  tend <- liftIO getCurrentTime
                  case res of

@@ -27,10 +27,10 @@ findAllVars ctx =
         Just (Var (TName n (TCon tc) _) _) | typeConName tc == nameTpInt -> each [return childCtx, findAllVars childCtx]
         _ -> findAllVars childCtx
 
-propConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AbValue) -> Name -> IO (State ExprContext () (M.Map ExprContext AbValue))
-propConstants build state name = do
+propConstants :: TypeChecker -> Flags -> State ExprContext () (M.Map ExprContext AbValue) -> Name -> IO (State ExprContext () (M.Map ExprContext AbValue))
+propConstants build flags state name = do
   (l, s) <-
-    runFix (emptyEnv 2 BasicEnvs build False ()) state $ do
+    runFix (emptyEnv 2 flags BasicEnvs build False ()) state $ do
       createPrimitives
       (_, ctx) <- loadModule name
       st <- getState
@@ -49,23 +49,23 @@ propConstants build state name = do
             -- M.insert v new s
   return s
 
-constantPropagation :: TypeChecker -> BuildContext -> Core -> IO ()
-constantPropagation build bc core = do
-  (lattice, state) <- runFix (emptyEnv 2 BasicEnvs build False ()) (emptyState bc (-1) ()) $ do
+constantPropagation :: TypeChecker -> Flags -> BuildContext -> Core -> IO ()
+constantPropagation build flags bc core = do
+  (lattice, state) <- runFix (emptyEnv 2 flags BasicEnvs build False ()) (emptyState bc (-1) ()) $ do
     (_, ctx) <- loadModule (coreProgName core)
     var <- findAllVars ctx
     addResult var
   let vars = S.toList $ finalResults state
   -- TODO: Run an evaluation query on each var separately or in batches until some gas limit is hit
-  results <- propAllConstants build (transformState (\s -> M.empty) (\s -> s) (-1) state) (coreProgName core)
+  results <- propAllConstants build flags (transformState (\s -> M.empty) (\s -> s) (-1) state) (coreProgName core)
   trace (intercalate "\n" (map (\(exprCtx, abstractValue) -> showSimpleContext exprCtx ++ ": " ++ showNoEnvAbValue abstractValue) (M.toList results))) $ return ()
   return ()
 
-propAllConstants :: TypeChecker -> State ExprContext () (M.Map ExprContext AbValue) -> Name -> IO (M.Map ExprContext AbValue)
-propAllConstants build state name = do
-  s <- propConstants build state name
+propAllConstants :: TypeChecker -> Flags -> State ExprContext () (M.Map ExprContext AbValue) -> Name -> IO (M.Map ExprContext AbValue)
+propAllConstants build flags state name = do
+  s <- propConstants build flags state name
   let varsLeft = finalResults s
   let results = additionalState2 $ additionalState s
   if varsLeft == S.empty
     then return results
-    else propAllConstants build (transformState id id (-1) s) name
+    else propAllConstants build flags (transformState id id (-1) s) name

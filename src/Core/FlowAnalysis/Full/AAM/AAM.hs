@@ -11,6 +11,7 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.AbstractValue
 import Core.FlowAnalysis.Full.AAM.Monad
 import Core.FlowAnalysis.Full.Primitives
+import Core.FlowAnalysis.Full.AAM.DelimitedTransform
 import Core.Core
 import Data.Int (Int)
 import Common.Name
@@ -126,10 +127,18 @@ performN n
   | n == namePerform 4 = 4
   | otherwise = error "performN"
 
+getTypeFromHandler :: Expr -> Effect
+getTypeFromHandler (App (TypeApp (Con tn _) targs) hargs n) =
+  case splitFunScheme (typeOf tn) of
+    Just (_, _, targs, eff, res) -> 
+      -- trace ("getTypeFromHandler: " ++ show res) $
+      res
+    Nothing -> error "getTypeFromHandler"
+
 doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
   memo i $ do
-    trace ("Step: " ++ show i) $ return ()
+    analysisLog ("Step: " ++ show i)
     case i of
       Eval expr env store kstore lkont kont mkont time@(KTime tlabel contour) -> do
         let time' = 
@@ -149,15 +158,14 @@ doStep i =
               doGC $ Cont v store kstore lkont kont mkont time'
           Con _ _ -> do
             doGC $ Cont (AChangeConstr expr env) store kstore lkont kont mkont time'
-          App (TypeApp (Var name _) tps@[_, _, tp, _, _]) args _ | nameHandle == getName name -> do
+          App (Var name _) (hnd:args) _ | isNameReset name -> do
             c <- focusChild 1 expr
+            let tp = getTypeFromHandler hnd
+            trace ("Reset: " ++ show tp) $ return ()
             -- trace ("Handle: " ++ show (vcat $ map (text . show) tps)) $ return ()
-
             doGC $ Eval c env store kstore [HandleL [] tp expr env,EndHandle] kont mkont time'
-          App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
-            f <- focusChild 1 expr
-            doGC $ Eval f env store kstore lkont kont mkont time'
-          App (TypeApp (Var name _) _) args _ | isNamePerform $ getName name -> do
+          
+          App (TypeApp (Var name _) _) args _ | isNameShift name -> do
             select <- focusChild 2 expr
             let eff =
                   case contextOf <$> enclosingLambda expr of
@@ -255,13 +263,14 @@ doStep i =
             doGC $ Eval body env' store' kstore ls kont mkont time'
           HandleL changes ef e p:ls -> do -- TODO: Time?
             -- trace ("HandleL: " ++ show (length changes)) $ return ()
-            if length changes == 3 then do
-              let AChangeClos lam env = achange
+            if length changes == 2 then do
+              let AChangeClos lam env = head changes
               body <- focusBody lam
               let kaddr = KAddr (lam, env, contour)
               let mkaddr = MKAddr (lam, env, contour)
               let kstore' = kstoreExtend kaddr (HandleR (changes ++ [achange]) ef e p:ls) kont kstore
               let mkstore' = mkstoreExtend mkaddr (HandleR (changes ++ [achange]) ef e p:ls) kont mkont kstore'
+              trace ("Evaluating action body" ++ show body) $ return ()
               doGC $ Eval body env store mkstore' [EndCall] kaddr mkaddr time'
             else do
               nextparam <- focusChild (length changes + 2) e

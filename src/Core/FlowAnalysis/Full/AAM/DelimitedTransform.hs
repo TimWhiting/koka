@@ -1,4 +1,7 @@
-module Core.FlowAnalysis.Full.AAM.DelimitedTransform(delimitedControlTransformDefs) where
+module Core.FlowAnalysis.Full.AAM.DelimitedTransform(
+  isNameReset, 
+  isNameShift, 
+  delimitedControlTransformDefs) where
 
 import qualified Lib.Trace
 import Control.Monad
@@ -57,6 +60,7 @@ delimitedControlTransformRecDef :: Def -> Unique Def
 delimitedControlTransformRecDef def
   = -- rewrite expressions using delimitedControlTransformExpr
     do e <- rewriteBottomUpM delimitedControlTransformExpr $ defExpr def
+      --  trace ("Transformed: " ++ show e) $ return ()
        return def{defExpr=e}
 
 isNamePerform :: Name -> Bool
@@ -71,10 +75,18 @@ performN n
   | n == namePerform 4 = 4
   | otherwise = error "performN"
 
-shift0 = TName (newName "shift0") typeTotal Nothing
+nshift0 = newName "shift0"
+shift0 = TName nshift0 typeTotal Nothing
 varshift0 = Var shift0 InfoNone
-resetdollar = TName (newName "reset$") typeTotal Nothing
+nreset = newName "reset$"
+resetdollar = TName nreset typeTotal Nothing
 varResetDollar = Var resetdollar InfoNone
+
+isNameReset :: TName -> Bool
+isNameReset n = getName n == nreset
+
+isNameShift n = getName n == nshift0
+
 tnk = TName (newName "k") typeTotal Nothing
 vark = Var tnk InfoNone
 
@@ -116,7 +128,7 @@ delimitedControlTransformExpr body =
     case body of
 -- perform(s)(v..) ==> \v..,s -> Shift0 \k -> \h -> h(OpParams(s,fn(y) k(y)(h), v..)) -- There is a few places we can add v.. (we could apply it to k(y)(h)(v..))
       App (TypeApp (Var name _) _) (idx:select:args) rng | isNamePerform $ getName name -> do
-        trace ("Perform: " ++ show select) $ return ()
+        -- trace ("Perform: " ++ show select) $ return ()
         let nargs = performN $ getName name
         let argsVars = [vn i | i <- [0..nargs-1]]
         let argNms = [tnv i | i <- [0..nargs-1]]
@@ -129,14 +141,16 @@ delimitedControlTransformExpr body =
                                  ([select, Lam [tny] typeTotal (App (App vark [y] Nothing) [varh] Nothing)] ++ argsVars) Nothing
                                 ] Nothing
                         ] rng) args Nothing
+      App (TypeApp (Var name _) _) [f] _ | nameEffectOpen == getName name -> do
+        return f
 -- TODO: Specialize for no continuation also in perform / propagate
 -- Handle hnd e_body x.e_return ==>
 --   let h_x = \o -> runop(o) -- runop is primitive
 --        OpParams(s,k,v..) -> s(hnd)(v..,k)
 --        OpParams(s,k,v..) -> Shift0 \k' -> \h' -> h'(OpParams(s,fn(y) k(k'(y)(h')), v..))
 --   <e_body|\(x,h) -> e_return>(h_x) -- <|> is primitive
-      App (TypeApp (Var name _) tps@[_, _, tp, _, _]) [tag, hnd, retfn, action] _ | nameHandle == getName name -> do
-        trace ("Handle: " ++ show (vcat $ map (text . show) tps)) $ return ()
+      App (TypeApp (Var name _) tps) [hnd, Lam [tnx] _ retfn, action] _ | isHandleName (getName name) -> do
+        trace ("Handle: " ++ show tps) $ return ()
         let pselect = PatVar tnSelect PatWild
             pk = PatVar tnKont PatWild
         let hx = Lam [opn] typeTotal $
@@ -156,5 +170,7 @@ delimitedControlTransformExpr body =
                             ] Nothing)
                           ]
                     ]
-        return $ App varResetDollar [action, Lam [tnx] typeTotal $ Lam [tnh] typeTotal (App retfn [x] Nothing)] Nothing
+        let res = App (App varResetDollar [hnd, action, Lam [tnx] typeTotal $ Lam [tnh] typeTotal retfn] Nothing) [hx] Nothing
+        -- trace (show res) $ return ()
+        return res
       _ -> return body

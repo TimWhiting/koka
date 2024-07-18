@@ -158,8 +158,8 @@ updateAdditionalState f = do
   setState st{additionalState = (additionalState st){additionalState2 = f (additionalState2 (additionalState st))}}
 
 
-emptyEnv :: HasCallStack => Int -> AnalysisKind -> TypeChecker -> Bool -> e -> DEnv e
-emptyEnv m kind build log e = emptyBasicEnv m build log (DemandEnv kind "" (-1) "" e) 
+emptyEnv :: HasCallStack => Int -> Flags -> AnalysisKind -> TypeChecker -> Bool -> e -> DEnv e
+emptyEnv m flags kind build log e = emptyBasicEnv m flags build log (DemandEnv kind "" (-1) "" e) 
 
 -- Gets a string representing the current query
 getQueryString :: FixDemandR x s e String

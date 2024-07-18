@@ -40,6 +40,7 @@ data BasicState r s = BasicState{
 }
 data AnalysisEnv x = AnalysisEnv{
   contextLength :: !Int,
+  flage :: Flags,
   builder :: BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)),
   currentContext :: ExprContext,
   currentModContext :: ExprContext,
@@ -71,9 +72,9 @@ transformBasicState f final (BasicState bc s mc mid cid sid u fr ad) =
 
 type TypeChecker = (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)))
 
-emptyBasicEnv :: HasCallStack => Int -> TypeChecker -> Bool -> e -> AnalysisEnv e
-emptyBasicEnv m build log e =
-  AnalysisEnv m build (error "Context used prior to loading") (error "Mod context used prior to loading") log e
+emptyBasicEnv :: HasCallStack => Int -> Flags -> TypeChecker -> Bool -> e -> AnalysisEnv e
+emptyBasicEnv m flags build log e =
+  AnalysisEnv m flags build (error "Context used prior to loading") (error "Mod context used prior to loading") (log || (verbose flags) > 1) e
 
 ------------------------ Navigating the syntax tree ----------------------------------
 focusParam :: Int -> ExprContext -> FixAR x s e i o c ExprContext

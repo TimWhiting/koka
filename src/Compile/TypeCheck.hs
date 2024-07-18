@@ -103,6 +103,8 @@ typeCheck flags defs coreImports program0
 
         Core.setCoreDefs coreDefs
 
+        when (delimitedTransform flags) delimitedControlTransformDefs
+        coreDefsDelimited <- Core.getCoreDefs
         -- when (show progName == "std/text/parse") $
         --   trace ("type check " ++ show progName ++ ", gamma: " ++ showHidden gamma) $ return ()
 
@@ -130,7 +132,7 @@ typeCheck flags defs coreImports program0
         liftFunctions penv
         checkCoreDefs "lifted"
         -- traceDefGroups "lifted"
-        delimitedControlTransformDefs
+        
         coreDefsFinal <- Core.getCoreDefs
         uniqueFinal   <- unique
         -- traceM ("final: " ++ show uniqueFinal)
@@ -148,7 +150,7 @@ typeCheck flags defs coreImports program0
             typeImports      = [Core.Import name "" Core.ImportTypes Private "" | name <- typeDeps, not (S.member name currentImports) && not (name == progName)]
             coreFinal        = coreUnique{ Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports }
 
-        return (coreFinal{Core.coreProgDefs = coreDefs},coreFinal,mbRangeMap)
+        return (coreFinal{Core.coreProgDefs = coreDefsDelimited},coreFinal,mbRangeMap)
 
 
 

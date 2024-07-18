@@ -65,14 +65,14 @@ findMainBody = do
       else doBottom
     _ -> doBottom
 
-runQueryAtRange :: HasCallStack => BuildContext
+runQueryAtRange :: HasCallStack => BuildContext -> Flags
   -> TypeChecker
   -> Module -> Int
   -> (ExprContext -> FixAACR FixChange () () ())
   -> IO (M.Map FixInput (FixOutput FixChange), Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type), BuildContext)
-runQueryAtRange bc build mod m doQuery = do
+runQueryAtRange bc flags build mod m doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m build False ()) (emptyBasicState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m flags build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -87,7 +87,7 @@ runQueryAtRange bc build mod m doQuery = do
         return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
         do
-          runFixFinishC (emptyBasicEnv m build True ()) s' $ do
+          runFixFinishC (emptyBasicEnv m flags build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()
@@ -104,12 +104,12 @@ runQueryAtRange bc build mod m doQuery = do
   writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
   return (M.map (\(x, _, _, _) -> x) l, r, bc)
 
-evalMain :: BuildContext
+evalMain :: BuildContext -> Flags
   -> TypeChecker -> Module -> Int
   -> IO (Maybe ([S.UserExpr], [S.UserDef], [S.External], [S.Lit], [String],
                                    Set Type), BuildContext)
-evalMain bc build mod m = do
-  (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
+evalMain bc flags build mod m = do
+  (lattice, r, bc) <- runQueryAtRange bc flags build mod m $ \ctx -> do
     q <- doStep (Eval ctx M.empty M.empty M.empty [EndProgram] KEnd2 MEnd (KTime Nothing (KContour [])))
     addResult q
   return (r, bc)

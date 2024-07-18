@@ -127,11 +127,11 @@ writeDemandDependencyGraph cache = do
   -- 1. Environment -> Refinements
   -- TODO: Integrate results with vscode extension proving GOTO like resolution
 
-runEvalQueryFromRangeSource :: BuildContext
+runEvalQueryFromRangeSource :: BuildContext -> Flags
   -> TypeChecker -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int
   -> IO ([(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
-runEvalQueryFromRangeSource bc build rng mod kind m = do
-  (lattice, r, bc) <- runQueryAtRange bc build rng mod kind m $ \ctx -> do
+runEvalQueryFromRangeSource bc flags build rng mod kind m = do
+  (lattice, r, bc) <- runQueryAtRange bc flags build rng mod kind m $ \ctx -> do
     createPrimitives
     let q = EvalQ (ctx, indeterminateStaticCtx m ctx)
     query q False
@@ -141,14 +141,14 @@ runEvalQueryFromRangeSource bc build rng mod kind m = do
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixDemandR a b c d) -> FixDemandR a b c d
 analyzeEach = analyzeEachChild
 
-runQueryAtRange :: HasCallStack => BuildContext
+runQueryAtRange :: HasCallStack => BuildContext -> Flags
   -> TypeChecker -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int
   -> (ExprContext -> FixDemandR Query () () ())
   -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
-runQueryAtRange bc build (r, ri) mod kind m doQuery = do
+runQueryAtRange bc flags build (r, ri) mod kind m doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyEnv m kind build False ()) (emptyState bc (-1) ()) $
+    (_, s, ctxs) <- runFixFinish (emptyEnv m flags kind build False ()) (emptyState bc (-1) ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -162,7 +162,7 @@ runQueryAtRange bc build (r, ri) mod kind m doQuery = do
       ctxs ->
         do
           let smallestCtx = fst (minimumBy (\a b -> rangeLength (snd a) `compare` rangeLength (snd b)) ctxs)
-          runFixFinishC (emptyEnv m kind build True ()) s' $ do
+          runFixFinishC (emptyEnv m flags kind build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()

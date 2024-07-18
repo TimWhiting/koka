@@ -211,6 +211,8 @@ data Flags
          , maxConcurrency   :: !Int
          , maxErrors        :: !Int
          , useBuildDirHash  :: !Bool
+         , analyze          :: !Bool
+         , delimitedTransform :: !Bool
          } deriving (Eq,Show)
 
 instance Hashable Flags where
@@ -358,6 +360,8 @@ flagsNull
           16    -- max concurrency
           25    -- max errors
           True  -- use variant hash
+          False -- analyze
+          False -- delimited transform
 
 isHelp Help = True
 isHelp _    = False
@@ -453,6 +457,8 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["showc"]          (\b f -> f{showAsmC=b})          "show generated C"
  , flag   []    ["core"]           (\b f -> f{genCore=b})           "generate a core file"
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
+ , flag   ['a'] ["analyze"]        (\b f -> f{analyze=b})           "analyze"
+ , flag   ['d'] ["delimited"]      (\b f -> f{delimitedTransform=b}) "delimited control transform"
  , emptyline
 
  -- hidden
