@@ -159,13 +159,13 @@ doStep i =
           Con _ _ -> do
             doGC $ Cont (AChangeConstr expr env) store kstore lkont kont mkont time'
           App (Var name _) (hnd:args) _ | isNameReset name -> do
-            c <- focusChild 1 expr
+            c <- focusChild 2 expr
             let tp = getTypeFromHandler hnd
             trace ("Reset: " ++ show tp) $ return ()
             -- trace ("Handle: " ++ show (vcat $ map (text . show) tps)) $ return ()
             doGC $ Eval c env store kstore [HandleL [] tp expr env,EndHandle] kont mkont time'
           
-          App (TypeApp (Var name _) _) args _ | isNameShift name -> do
+          App (Var name _) args _ | isNameShift name -> do
             select <- focusChild 2 expr
             let eff =
                   case contextOf <$> enclosingLambda expr of
@@ -212,22 +212,23 @@ doStep i =
             let AChangeClos select senv = achange
             child <- focusChild 0 select
             doGC $ Eval child senv store kstore [OpL1 expr env n eff] kont mkont time'
-          -- [OpL1 expr env n eff] -> do
-          --   if n == 0 then do --TODO: \v,s -> Shift0 \k -> \h -> h(OpParams(s,v,fn(y) k(y,h)))
-          --     -- trace ("OpL20: " ++ show body) $ return ()
-          --     -- x <- newExpr (Lam ["k", "h", "s", "v"] typeTotal (App [Var "h" typeTotal], [Var "k" typeTotal, Var "h" typeTotal] typeTotal) typeTotal
-          --     doGC $ Cont store kstore [Shift0k achange env 0 eff] kont mkont time'
-          --   else do
-          --     arg <- focusChild 3 expr
-          --     doGC $ Eval arg env store kstore [OpL2 expr env n achange [] eff] kont mkont time'
-          -- [OpL2 expr env n ch achanges eff] -> do
-          --   if n == length achanges + 1 then do
-          --     -- trace ("OpL2=l" ++ show n ++ ": " ++ show body) $ return ()
-          --     doGC $ Eval body env store kstore [OpR expr (achanges ++ [achange]) eff ch] kont mkont time'
-          --   else do
-          --     -- trace ("OpL2: " ++ show (length achanges)) $ return ()
-          --     arg <- focusChild (4 + length achanges) expr
-          --     doGC $ Eval arg env store kstore [OpL2 expr env n ch (achanges ++ [achange]) eff] kont mkont time'
+          [OpL1 expr env n eff] -> do
+            if n == 0 then do -- perform(s)(v..) ==> \v..,s -> Shift0 \k -> \h -> h(OpParams(s,fn(y) k(y)(h), v..)) -- There is a few places we can add v.. (we could apply it to k(y)(h)(v..))
+              let AChangeClos lam env = achange
+              -- trace ("OpL20: " ++ show body) $ return ()
+              -- x <- newExpr (Lam ["k", "h", "s", "v"] typeTotal (App [Var "h" typeTotal], [Var "k" typeTotal, Var "h" typeTotal] typeTotal) typeTotal
+              doGC $ Cont achange store kstore [Shift0k achange env 0 eff] kont mkont time'
+            else do
+              arg <- focusChild 3 expr
+              doGC $ Eval arg env store kstore [OpL2 expr env n achange [] eff] kont mkont time'
+          [OpL2 expr env n ch achanges eff] -> do
+            if n == length achanges + 1 then do
+              trace ("OpL2=l" ++ show n ++ ": " ++ show achange) $ return ()
+              doGC $ Eval expr env store kstore [Shift0k achange env 0 eff] kont mkont time'
+            else do
+              -- trace ("OpL2: " ++ show (length achanges)) $ return ()
+              arg <- focusChild (4 + length achanges) expr
+              doGC $ Eval arg env store kstore [OpL2 expr env n ch (achanges ++ [achange]) eff] kont mkont time'
           [OpR expr changes eff ([hndframe@(HandleR [tag, hnd, ret, act] ef e p), EndHandle], kont', mkont')] -> do
             -- TODO: This has a problem of not returning to after calling resume to the operation body
             -- TODO: Write the math for algebraic effects + AAM
@@ -262,7 +263,7 @@ doStep i =
             body <- focusBody ret
             doGC $ Eval body env' store' kstore ls kont mkont time'
           HandleL changes ef e p:ls -> do -- TODO: Time?
-            -- trace ("HandleL: " ++ show (length changes)) $ return ()
+            trace ("HandleL: " ++ show (length changes) ++ show changes) $ return ()
             if length changes == 2 then do
               let AChangeClos lam env = head changes
               body <- focusBody lam

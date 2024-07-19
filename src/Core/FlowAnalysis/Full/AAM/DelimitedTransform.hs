@@ -127,9 +127,11 @@ delimitedControlTransformExpr body =
     -- trace ("Transforming: " ++ show body) $ do
     case body of
 -- perform(s)(v..) ==> \v..,s -> Shift0 \k -> \h -> h(OpParams(s,fn(y) k(y)(h), v..)) -- There is a few places we can add v.. (we could apply it to k(y)(h)(v..))
-      App (TypeApp (Var name _) _) (idx:select:args) rng | isNamePerform $ getName name -> do
-        -- trace ("Perform: " ++ show select) $ return ()
-        let nargs = performN $ getName name
+      App (TypeApp (Var tn _) tps) (idx:select:args) rng | isNamePerform $ getName tn -> do
+        trace ("Perform: " ++ show (map (ppType defaultEnv) tps)) $ return ()
+        case splitFunScheme (typeOf tn) of
+          Just (_, _, _, eff, ret) ->  trace ("Perform: " ++ show eff) $ return ()
+        let nargs = performN $ getName tn
         let argsVars = [vn i | i <- [0..nargs-1]]
         let argNms = [tnv i | i <- [0..nargs-1]]
         return $ App (Lam argNms typeTotal
