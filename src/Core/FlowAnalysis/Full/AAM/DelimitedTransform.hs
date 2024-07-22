@@ -1,7 +1,8 @@
 module Core.FlowAnalysis.Full.AAM.DelimitedTransform(
   isNameReset, 
   isNameShift, 
-  delimitedControlTransformDefs) where
+  delimitedControlTransformDefs,
+  ppTpShow) where
 
 import qualified Lib.Trace
 import Control.Monad
@@ -121,26 +122,26 @@ vKont = Var tnKont InfoNone
 
 conInfo :: ConInfo
 conInfo = ConInfo (newName "xx") (newName "xx") [] [] [] typeAny Inductive rangeNull [] [] False [] valueReprZero Private ""
+ppTpShow tp = show (ppType defaultEnv tp)
 
 delimitedControlTransformExpr :: Expr -> Unique Expr
 delimitedControlTransformExpr body =
     -- trace ("Transforming: " ++ show body) $ do
     case body of
 -- perform(s)(v..) ==> \v..,s -> Shift0 \k -> \h -> h(OpParams(s,fn(y) k(y)(h), v..)) -- There is a few places we can add v.. (we could apply it to k(y)(h)(v..))
-      App (TypeApp (Var tn _) tps) (idx:select:args) rng | isNamePerform $ getName tn -> do
-        trace ("Perform: " ++ show (map (ppType defaultEnv) tps)) $ return ()
-        case splitFunScheme (typeOf tn) of
-          Just (_, _, _, eff, ret) ->  trace ("Perform: " ++ show eff) $ return ()
+      App (TypeApp (Var tn _) [_, _, _, tp]) (idx:select:args) rng | isNamePerform $ getName tn -> do
+        -- trace ("Perform: " ++ show (map (ppType defaultEnv) [tp])) $ return ()
+        trace ("Perform: " ++ ppTpShow tp) $ return ()
         let nargs = performN $ getName tn
         let argsVars = [vn i | i <- [0..nargs-1]]
         let argNms = [tnv i | i <- [0..nargs-1]]
         return $ App (Lam argNms typeTotal
-                    $ App varshift0 [
+                    $ App (TypeApp varshift0 [tp]) [
                       Lam [tnk] typeTotal $
                         Lam [tnh] typeTotal $
                           App varh [
                               App (Con opConName opConRepr)
-                                 ([select, Lam [tny] typeTotal (App (App vark [y] Nothing) [varh] Nothing)] ++ argsVars) Nothing
+                                ([select, Lam [tny] typeTotal (App (App vark [y] Nothing) [varh] Nothing)] ++ argsVars) Nothing
                                 ] Nothing
                         ] rng) args Nothing
       App (TypeApp (Var name _) _) [f] _ | nameEffectOpen == getName name -> do

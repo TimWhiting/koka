@@ -62,13 +62,13 @@ mkstoreExtend mk fr k mknext (kstore, mkstore) =
 data Frame =
   EndProgram
   | EndCall
-  | EndHandle
-  | KResume
+  | EndReset
+  | KResume -- TODO: Something here
   | AppL Int ExprContext VEnv -- Length of args and parent expression
   | AppM AChange [Addr] ExprContext Int Int VEnv -- This environment is the one in which the args are evaluated
   | AppR AChange [Addr] ExprContext
-  | HandleL [AChange] Effect ExprContext VEnv -- The handle expression (changes are the tag, the handler object, the return closure, and the action closure)
-  | HandleR [AChange] Effect ExprContext VEnv -- The handle expression (changes are the tag, the handler object, the return closure, and the action closure)
+  | ResetL [AChange] Effect ExprContext VEnv -- The Reset expression (the handle object, the return closure, and the action closure)
+  | ResetR [AChange] Effect ExprContext VEnv -- The Reset expression (the handle object, the return closure, and the action closure)
   | OpL ExprContext VEnv Int Effect
   | OpL1 ExprContext VEnv Int Effect
   | OpL2 ExprContext VEnv Int AChange [AChange] Effect
@@ -94,15 +94,15 @@ llFrame kstore seen f =
   case f of
     EndProgram -> S.empty
     EndCall -> S.empty
-    EndHandle -> S.empty
+    EndReset -> S.empty
     KResume -> S.empty
     CaseR _ env -> llEnv env
     AppL _ _ env -> llEnv env
     AppR v addrs _ -> S.union (llV kstore seen v) (S.fromList $ map VA addrs)
     AppM v addrs _ _ _ env -> S.unions [llEnv env, S.fromList $ map VA addrs, llV kstore seen v]
     LetL _ _ _ _ addrs _ env -> S.union (llEnv env) (S.fromList $ map VA addrs)
-    HandleL changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
-    HandleR changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
+    ResetL changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
+    ResetR changes ef e env -> S.unions (llEnv env:map (llV kstore seen) changes)
     OpR expr changes eff (ll, k, mk) -> S.unions (map (llV kstore seen) changes ++ [llKont k kstore seen, llLKont ll kstore (S.insert k seen)])
     OpL expr env n eff -> llEnv env
     OpL1 expr env n eff -> S.unions [llEnv env]
@@ -198,7 +198,7 @@ instance Show FixChange where
 instance Show Frame where
   show EndProgram = "EndProgram"
   show EndCall = "EndCall"
-  show EndHandle = "EndHandle"
+  show EndReset = "EndReset"
   show KResume = "KResume "
   show (AppL nargs e p) = "AppL " ++ showSimpleContext e ++ " nargs: " ++ show nargs
   show (AppM ch chs e n t p) = "AppM " ++ show ch ++ " arg: " ++ show n
@@ -207,8 +207,8 @@ instance Show Frame where
   show (OpL1 expr env n eff) = "Op1L " ++ show n ++ " " ++ show (ppType defaultEnv eff)
   show (OpL2 expr env n ch changes eff) = "Op2L " ++ show (length changes) ++ " " ++ show n ++ " " ++ show (ppType defaultEnv eff)
   show (OpR expr changes eff (l,k,m)) = "OpR " ++ show changes
-  show (HandleL changes ef e p) = "HandleL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
-  show (HandleR changes ef e p) = "HandleL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
+  show (ResetL changes ef e p) = "ResetL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
+  show (ResetR changes ef e p) = "ResetL " ++ show (vcat $ map (text . show) changes) ++ showSimpleContext e
   show (CaseR e p) = "CaseR " ++ showSimpleContext e
   show (LetL bgi bgn bi bn addrs e p) = "LetL " ++ show bgi ++ " " ++ show bgn ++ " " ++ show bi ++ " " ++ show bn ++ " " ++ showSimpleContext e ++ " "
 

@@ -68,11 +68,11 @@ instance Show Time where
 
 instance Show KAddr where
   show (KAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
-  show KEnd = "End"
+  show KEnd = "KEnd"
 
 instance Show MKAddr where
   show (MKAddr (ctx, env, time)) = show (contextId ctx) ++ " in " ++ show env ++ " at " ++ show time
-  show MKEnd = "End"
+  show MKEnd = "MKEnd"
 
 type Addr = (TName, ExprContextId, Contour)
 type VEnv = M.Map TName Addr
