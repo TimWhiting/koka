@@ -25,16 +25,10 @@ static inline void kk_sslice_start_end_borrow( kk_std_core_sslice__sslice sslice
 }
 
 kk_integer_t kk_slice_count( kk_std_core_sslice__sslice sslice, kk_context_t* ctx ) {
-  // TODO: optimize this by extending kk_string_count
   const uint8_t* start;
   const uint8_t* end;
   kk_sslice_start_end_borrow(sslice, &start, &end, ctx);
-  kk_ssize_t count = 0;
-  while( start < end && *start != 0 ) {
-    const uint8_t* next = kk_utf8_next(start);
-    count++;
-    start = next;
-  }
+  kk_ssize_t count = kk_string_count_substring_borrow(start,end,ctx);
   kk_std_core_sslice__sslice_drop(sslice,ctx);
   return kk_integer_from_ssize_t(count,ctx);
 }

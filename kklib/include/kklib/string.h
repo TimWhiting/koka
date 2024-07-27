@@ -461,7 +461,7 @@ static inline bool   kk_string_contains(kk_string_t str, kk_string_t sub, kk_con
 /*--------------------------------------------------------------------------------------------------
   Utilities that are string specific
 --------------------------------------------------------------------------------------------------*/
-
+kk_decl_export kk_ssize_t kk_decl_pure kk_string_count_substring_borrow(const uint8_t* start, const uint8_t* end, kk_context_t* ctx); // Number of code points in a substring (assumes valid start / end points)
 kk_decl_export kk_ssize_t kk_decl_pure kk_string_count_borrow(kk_string_t str, kk_context_t* ctx);  // number of code points
 kk_decl_export kk_ssize_t kk_decl_pure kk_string_count(kk_string_t str, kk_context_t* ctx);  // number of code points
 kk_decl_export kk_ssize_t kk_decl_pure kk_string_count_pattern_borrow(kk_string_t str, kk_string_t pattern, kk_context_t* ctx);

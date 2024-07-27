@@ -70,15 +70,21 @@ int kk_string_icmp(kk_string_t str1, kk_string_t str2, kk_context_t* ctx) {
   return ord;
 }
 
-
 // Count code points in a valid utf-8 string.
 kk_ssize_t kk_decl_pure kk_string_count_borrow(kk_string_t str, kk_context_t* ctx) {
   kk_ssize_t len;
-  const uint8_t* s = kk_string_buf_borrow(str, &len, ctx);
-  kk_ssize_t cont = 0;      // continuation character counts
-  const uint8_t* t = s; // current position 
-  const uint8_t* end = t + len;
+  const uint8_t* start = kk_string_buf_borrow(str, &len, ctx);
+  const uint8_t* end = start + len;
   kk_assert_internal(*end == 0);
+  kk_ssize_t count = kk_string_count_substring_borrow(start,end,ctx);
+  return count;
+}
+
+// Count code points in a valid utf-8 string.
+kk_ssize_t kk_decl_pure kk_string_count_substring_borrow(const uint8_t* start, const uint8_t* end, kk_context_t* ctx) {
+  kk_ssize_t len = end - start;
+  kk_ssize_t cont = 0;      // continuation character counts
+  const uint8_t* t = start; // current position 
 
   // advance per byte until aligned
   for (; ((((uintptr_t)t) % sizeof(kk_uintx_t)) != 0) && (t < end); t++) {
@@ -105,13 +111,13 @@ kk_ssize_t kk_decl_pure kk_string_count_borrow(kk_string_t str, kk_context_t* ct
     if (kk_utf8_is_cont(*t)) cont++;
   }
   kk_assert_internal(t == end);
-  kk_assert_internal(len == (t - s));
+  kk_assert_internal(len == (t - start));
   kk_assert_internal(len == 0 || len > cont);
   return (len - cont);
 }
 
 kk_ssize_t kk_decl_pure kk_string_count(kk_string_t str, kk_context_t* ctx) {
-  kk_ssize_t count = kk_string_count_borrow(str,ctx);
+  kk_ssize_t count = kk_string_count_borrow(str, ctx);
   kk_string_drop(str, ctx);
   return count;
 }
