@@ -166,7 +166,7 @@ extern fresh-marker-named() : marker<e,a>
 
 // -------------------------------------------
 // Internal Evidence vectors
-// The datatype is `:evv<e>` is internal for performance
+// The datatype `:evv<e>` is internal for performance
 // reasons and since different backends may have different
 // requirements.
 // -------------------------------------------
@@ -612,6 +612,12 @@ fun protect( x : a, clause : (x:a, k: b -> e r) -> e r, k : resume-result<b,r> -
   val res = clause(x,kprotect)
   if yielding() return yield-extend( fn(xres) protect-check(resumed,k,xres) )
   protect-check(resumed,k,res)
+
+pub fun top-protect(f: () -> e r): e r
+  ext-top-protect(f())
+
+extern ext-top-protect(r: r): r
+  c "kk_top_finish"
 
 /*
 pub fun clause-control1( clause : (x:a, k: b -> e r) -> e r ) : clause1<a,b,e,r>

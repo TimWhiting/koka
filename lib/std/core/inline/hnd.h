@@ -133,6 +133,7 @@ struct kk_std_core_hnd_yld_s;
 typedef int32_t kk_marker_t;
 
 kk_box_t        kk_fatal_resume_final(kk_context_t* ctx);
+kk_box_t        kk_top_finish(kk_box_t x, kk_context_t* ctx);
 kk_box_t        kk_yield_cont( kk_function_t next, kk_context_t* ctx );
 kk_box_t        kk_yield_extend( kk_function_t next, kk_context_t* ctx );
 kk_box_t        kk_yield_final( kk_marker_t m, kk_function_t clause, kk_context_t* ctx );

@@ -337,6 +337,13 @@ static kk_box_t cont_apply( kk_function_t fself, kk_box_t x, kk_context_t* ctx )
   return kk_function_call( kk_box_t, (kk_function_t, kk_function_t, kk_box_t, kk_context_t* ctx), f, (f, cont, x, ctx), ctx);
 }
 
+kk_box_t kk_top_finish(kk_box_t x, kk_context_t* ctx) {
+  kk_yield_t* yield = &ctx->yield;
+  kk_function_t comp = new_kcompose( yield->conts, yield->conts_count, ctx );
+  kk_function_call(kk_box_t, (kk_function_t, kk_box_t, kk_context_t* ctx), comp, (comp, x, ctx), ctx);
+  return x;
+}
+
 static kk_function_t kk_new_cont_apply( kk_function_t f, kk_function_t cont, kk_context_t* ctx ) {
   struct cont_apply_fun_s* self = kk_function_alloc_as(struct cont_apply_fun_s, 3, ctx);
   self->_base.fun = kk_kkfun_ptr_box(&cont_apply,ctx);
