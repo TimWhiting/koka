@@ -175,7 +175,7 @@ rebuildFile mbFlags mbRun uri fpath
                             case mbRun of
                               -- just type check
                               Nothing    -> -- trace ("koka: rebuild: type check " ++ show focus) $
-                                            do bc <- buildcTypeCheck [focus] buildcF  -- only force on "open" to build range maps etc.
+                                            do bc <- buildcTypeCheck False [focus] buildcF  -- only force on "open" to build range maps etc.
                                                     -- buildcBuildEx False [focus] [] buildcF
                                                return (bc,Nothing)
                               -- full build and return the executable

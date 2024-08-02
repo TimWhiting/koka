@@ -119,20 +119,6 @@ typeCheck flags defs coreImports program0
         let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
         checkFBIP penv (platform flags) newtypes borrowed gamma
 
-        -- initial simplify
-        let ndebug  = optimize flags > 0
-            simplifyX dupMax = simplifyDefs penv False {-unsafe-} ndebug (simplify flags) dupMax
-            simplifyDupN     = when (simplify flags >= 0) $
-                                simplifyX (simplifyMaxDup flags)
-            simplifyNoDup    = simplifyX 0
-        simplifyNoDup
-        -- traceDefGroups "simplify1"
-
-        -- lift recursive functions to top-level before specialize (so specializeDefs do not contain local recursive definitions)
-        liftFunctions penv
-        checkCoreDefs "lifted"
-        -- traceDefGroups "lifted"
-        
         coreDefsFinal <- Core.getCoreDefs
         uniqueFinal   <- unique
         -- traceM ("final: " ++ show uniqueFinal)
@@ -143,14 +129,11 @@ typeCheck flags defs coreImports program0
                                  Core.coreProgDefs    = coreDefsFinal,
                                  Core.coreProgFixDefs = coreFixities
                                }
-
             -- add extra imports needed to resolve types in this module
             typeDeps         = extractDepsFromSignatures coreUnique
             currentImports   = S.fromList (map Core.importName coreImports)
             typeImports      = [Core.Import name "" Core.ImportTypes Private "" | name <- typeDeps, not (S.member name currentImports) && not (name == progName)]
-            coreFinal        = coreUnique{ Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports }
-
-        return (coreFinal{Core.coreProgDefs = coreDefsDelimited},coreFinal,mbRangeMap)
+        return (coreUnique{Core.coreProgDefs = coreDefsDelimited, Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports},coreUnique,mbRangeMap)
 
 
 

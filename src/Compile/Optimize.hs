@@ -25,7 +25,7 @@ import qualified Common.NameSet as S
 import Core.Pretty( prettyDef )
 import Core.Check( checkCore )
 
-import Core.CoreVar( extractDepsFromInlineDefs )
+import Core.CoreVar( extractDepsFromInlineDefs, extractDepsFromSignatures )
 import Core.Simplify( simplifyDefs )
 import Core.Uniquefy( uniquefy )
 import Core.FunLift( liftFunctions )
@@ -44,6 +44,7 @@ import Type.Assumption( Gamma )
 import qualified Core.Core as Core
 import Compile.Options
 import Compile.Module( Definitions(..) )
+import Syntax.RangeMap (rangeMapSort)
 
 {---------------------------------------------------------------
   compile core:
@@ -55,9 +56,24 @@ coreOptimize :: Flags -> Newtypes -> Gamma -> Inlines -> Core.Core -> Error () (
 coreOptimize flags newtypes gamma inlines coreProgram
   = Core.runCorePhase 10000 {-unique-} $
      do Core.setCoreDefs (Core.coreProgDefs coreProgram)
+     
         let progName = Core.coreProgName coreProgram
             penv     = prettyEnvFromFlags flags
             checkCoreDefs title = when (coreCheck flags) $ Core.Check.checkCore False False penv gamma
+
+        -- initial simplify
+        let ndebug  = optimize flags > 0
+            simplifyX dupMax = simplifyDefs penv False {-unsafe-} ndebug (simplify flags) dupMax
+            simplifyDupN     = when (simplify flags >= 0) $
+                                simplifyX (simplifyMaxDup flags)
+            simplifyNoDup    = simplifyX 0
+        simplifyNoDup
+        -- traceDefGroups "simplify1"
+
+        -- lift recursive functions to top-level before specialize (so specializeDefs do not contain local recursive definitions)
+        liftFunctions penv
+        checkCoreDefs "lifted"
+        -- traceDefGroups "lifted"
 
         -- when (show progName == "std/text/parse") $
         --  trace ("compile " ++ show progName ++ ", gamma: " ++ showHidden gamma) $ return ()

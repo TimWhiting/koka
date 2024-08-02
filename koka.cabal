@@ -102,6 +102,7 @@ library
       Core.UnReturn
       Core.Unroll
       Interpreter.Command
+      Interpreter.Interp
       Interpreter.Interpret
       Kind.Assumption
       Kind.Constructors

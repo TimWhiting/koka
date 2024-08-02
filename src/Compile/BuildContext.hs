@@ -271,8 +271,8 @@ buildcSplitRoots buildc
 
 
 -- Type check the current build context (also validates and resolves)
-buildcTypeCheck :: [ModuleName] -> BuildContext -> Build BuildContext
-buildcTypeCheck force buildc0
+buildcTypeCheck :: Bool -> [ModuleName] -> BuildContext -> Build BuildContext
+buildcTypeCheck rebuild force buildc0
   = do buildc <- buildcValidate False force buildc0
        mods   <- modulesTypeCheck (buildcModules buildc)
        return $! buildc{ buildcModules = seqqList $ mods }
@@ -309,7 +309,7 @@ buildcRunEntry name buildc
 -- Used from the interpreter and IDE.
 buildcRunExpr :: [ModuleName] -> String -> BuildContext -> Build BuildContext
 buildcRunExpr importNames expr buildc
-  = do (buildc1,mbTpEntry) <- buildcCompileExpr True False importNames expr buildc
+  = do (buildc1,mbTpEntry) <- buildcCompileExpr True False True importNames expr buildc
        case mbTpEntry of
           Just(_,Just (_,run))
             -> do phase "" (\penv -> empty)
@@ -320,12 +320,12 @@ buildcRunExpr importNames expr buildc
 -- Compile a function call (called as `<name>()`) and return its type and possible entry point (if `typeCheckOnly` is `False`)
 buildcCompileEntry :: Bool -> Name -> BuildContext -> Build (BuildContext,Maybe (Type, Maybe (FilePath,IO ())))
 buildcCompileEntry typeCheckOnly name buildc
-  = buildcCompileExpr False typeCheckOnly [qualifier name] (show name ++ "()") buildc
+  = buildcCompileExpr False typeCheckOnly typeCheckOnly [qualifier name] (show name ++ "()") buildc
 
 -- Compile an expression with functions visible in the given module names (including private definitions),
 -- and return its type and possible entry point (if `typeCheckOnly` is `False`).
-buildcCompileExpr :: Bool -> Bool -> [ModuleName] -> String -> BuildContext -> Build (BuildContext, Maybe (Type, Maybe (FilePath,IO ())))
-buildcCompileExpr addShow typeCheckOnly importNames0 expr buildc
+buildcCompileExpr :: Bool -> Bool -> Bool -> [ModuleName] -> String -> BuildContext -> Build (BuildContext, Maybe (Type, Maybe (FilePath,IO ())))
+buildcCompileExpr addShow typeCheckOnly complete importNames0 expr buildc
   = phaseTimed 2 "compile" (\penv -> empty) $
     do let importNames = if null importNames0 then buildcRoots buildc else importNames0
            sourcePath = joinPaths [
@@ -348,16 +348,16 @@ buildcCompileExpr addShow typeCheckOnly importNames0 expr buildc
          -- trace ("virtual main: " ++ sourcePath ++ ", name: " ++ show mainModName) $
          do -- type check first
             let exprName = qualify mainModName (newName "@expr")
-            buildc2 <- buildcTypeCheck [] buildc1
+            buildc2 <- buildcTypeCheck False [] buildc1
             hasErr  <- seq buildc2 $ buildcHasError buildc2
             if hasErr
               then return (buildc2,Nothing)
               else case buildcLookupTypeOf exprName buildc2 of
                       Nothing -> do addErrorMessageKind ErrBuild (\penv -> text "unable to resolve the type of the expression" <+> parens (TP.ppName penv exprName))
                                     return (buildc2, Nothing)
-                      Just tp -> if typeCheckOnly
+                      Just tp -> if typeCheckOnly && not complete
                                   then return (buildc2,Just (tp,Nothing))
-                                  else buildcCompileMainBody addShow expr importDecls sourcePath mainModName exprName tp buildc2
+                                  else buildcCompileMainBody typeCheckOnly addShow expr importDecls sourcePath mainModName exprName tp buildc2
 
 buildcGetErrorRangeOf :: BuildContext -> Maybe Range
 buildcGetErrorRangeOf buildc
@@ -384,8 +384,8 @@ buildcThrowOnError buildc
        when err $ do buildcFlushErrors buildc
                      throwNil
 
-buildcCompileMainBody :: Bool -> String -> [String] -> FilePath -> Name -> Name -> Type -> BuildContext -> Build (BuildContext,Maybe (Type, Maybe (FilePath,IO ())))
-buildcCompileMainBody addShow expr importDecls sourcePath mainModName exprName tp buildc1
+buildcCompileMainBody :: Bool -> Bool -> String -> [String] -> FilePath -> Name -> Name -> Type -> BuildContext -> Build (BuildContext,Maybe (Type, Maybe (FilePath,IO ())))
+buildcCompileMainBody addShow typeCheckOnly expr importDecls sourcePath mainModName exprName tp buildc1
   = do  -- then compile with a main function
         (tp,showIt,mainBody,extraImports) <- completeMain True exprName tp buildc1
         let mainName = qualify mainModName (newName "@main")
@@ -399,7 +399,7 @@ buildcCompileMainBody addShow expr importDecls sourcePath mainModName exprName t
                         ""
                         ]
         withVirtualFile sourcePath mainDef $ \_ ->
-           do buildc2 <- buildcBuildEx False [mainModName] [mainName] buildc1
+           do buildc2 <- if typeCheckOnly then buildcTypeCheck False [] buildc1 else buildcBuildEx False [mainModName] [mainName] buildc1
               hasErr  <- buildcHasError buildc2
               if hasErr
                 then return (buildc2,Nothing)

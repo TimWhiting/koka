@@ -158,7 +158,7 @@ topBindExpr ctx var@(C.Var tname _) = do
   mmod <- maybeLoadModuleR mName
   let m = do -- Maybe monad
         mod <- mmod
-        core <- modCoreUnopt mod
+        core <- modCore mod
         let defs = coreProgDefs core
         case find (\d -> defTName d == tname) (flattenDefGroups defs) of
           Just d -> return (Just d, Nothing)
@@ -290,7 +290,7 @@ initialModuleContexts modCtx = do
     case modCtx of
       ModuleC id@(ExprContextId _ n1) mod n2 -> do
         -- trace ("Getting children of module " ++ show (contextId modCtx)) $ return ()
-        res <- mapM (childrenOfDef modCtx) (coreProgDefs $ fromJust $ modCoreUnopt mod)
+        res <- mapM (childrenOfDef modCtx) (coreProgDefs $ fromJust $ modCore mod)
         let newCtxs = concat res
         return newCtxs
 
@@ -360,7 +360,7 @@ externalModule name = do
   mmctx <- maybeLoadModuleCtx modName 
   case mmctx of
     Just (mod', ctx) -> do
-      if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
+      if lookupDefGroups (coreProgDefs $ fromJust $ modCore mod') name then return (Just ctx)
       else trace ("External variable binding not found " ++ show name) (return Nothing)
     Nothing -> 
       doBottom 
@@ -388,7 +388,7 @@ maybeLoadModuleR mn = do
       let deps = buildcModules bc
       let x = find (\m -> modName m == mn) deps
       case x of
-        Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
+        Just mod@Module{modStatus=LoadedSource, modCore=Just _} -> do
           -- trace ("Module already loaded " ++ show mn) $ return ()
           return $ Just mod
         _ -> do
@@ -414,7 +414,7 @@ maybeLoadModule mn = do
       let x = find (\m -> modName m == mn) deps
       ctxId <- newModContextId mn
       case x of
-        Just mod@Module{modStatus=LoadedSource, modCoreUnopt=Just _} -> do
+        Just mod@Module{modStatus=LoadedSource, modCore=Just _} -> do
           -- trace ("Module already loaded " ++ show mn) $ return ()
           let modCtx = ModuleC ctxId mod mn
           updateState (\state ->

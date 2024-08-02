@@ -30,7 +30,7 @@ import Common.Name
 import Common.File            ( joinPath, getCwd )
 
 import Core.Core              ( coreProgDefs, flattenDefGroups, defType, Def(..) )
-import Interpreter.Interpret  ( interpret  )
+import Interpreter.Interp  ( interpret  )
 import Kind.ImportMap         ( importsEmpty )
 import Kind.Synonym           ( synonymsIsEmpty, ppSynonyms, synonymsFilter )
 import Kind.Assumption        ( kgammaFilter, ppKGamma )

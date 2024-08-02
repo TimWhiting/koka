@@ -1,5 +1,7 @@
+module Interpreter.Interp where
+
 ------------------------------------------------------------------------------
--- Copyright 2012-2021, Microsoft Research, Daan Leijen.
+-- Copyright 2024, Tim Whiting
 --
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be
@@ -9,8 +11,6 @@
     Interpreter
 -}
 -----------------------------------------------------------------------------
-module Interpreter.Interpret( interpret ) where
-
 import Lib.Trace
 
 import Platform.Filetime
@@ -213,7 +213,7 @@ command st buildc cmd
                           = do if (null files)
                                  then messageLn st ""
                                  else messageError st "(ignoring file arguments)"
-                               (mbBuildc,_) <- B.runBuildIO (terminal st) newFlags False (B.buildcValidate False [] buildc)
+                               (mbBuildc,_) <- B.runBuildIO (terminal st) newFlags False (B.buildcValidate True [] buildc)
                                nextClear (st{ flags = newFlags, flags0 = newFlags0 }) (maybe buildc id mbBuildc)
                    ; case mode of
                        ModeHelp     -> do doc <- commandLineHelp (flags st)
@@ -259,25 +259,26 @@ loadModulesEx :: Terminal -> Flags -> B.BuildContext -> [FilePath] -> Bool -> Bo
 loadModulesEx term fl buildc0 files forceAll forceRoots
   = do (mbBuildc,erng) <- B.runBuildIO term fl True $ B.buildcLiftErrors id $
                           do (buildc1,rootNames) <- B.buildcAddRootSources files (B.buildcClearRoots buildc0)
-                             B.buildcBuildEx (forceAll || rebuild fl)
+                             B.buildcTypeCheck (forceAll || rebuild fl)
                                              (if forceRoots then rootNames else [])
-                                                [] -- [newQualified "samples/basic/caesar" "main"]
                                                 buildc1
        return (mbBuildc,erng)
 
 buildRunExpr :: State -> B.BuildContext -> String -> IO (State,B.BuildContext)
 buildRunExpr st buildc expr
-  = do (mbBuildc,erng) <- B.runBuildIO (terminal st) (flags st) True $ B.buildcLiftErrors id $
-                          do B.buildcRunExpr [] expr buildc
+  = do (mbBuildc,erng) <- B.runBuildIO (terminal st) (flags st) True $ B.buildcLiftErrors fst $
+                          do B.buildcCompileExpr True True True [] expr buildc
        case mbBuildc of
          Nothing -> return (st{ errorRange = erng }, buildc)
-         Just bc -> return (st{ errorRange = erng }, bc)
+         Just (bc,mbEntry) -> 
+          trace "TODO: Run abstract machine"
+          return (st{ errorRange = erng }, bc)
 
 
 buildTypeExpr :: State -> B.BuildContext -> String -> IO (Maybe Type,State,B.BuildContext)
 buildTypeExpr st buildc expr
   = do (mbBuildc,erng) <- B.runBuildIO (terminal st) (flags st) True $ B.buildcLiftErrors fst $
-                          do B.buildcCompileExpr False True True [] expr buildc
+                          do B.buildcCompileExpr True True True [] expr buildc
        case mbBuildc of
          Nothing           -> return (Nothing, st{ errorRange = erng }, buildc)
          Just (bc,mbEntry) -> let st' = st{ errorRange = erng }

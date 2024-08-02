@@ -238,7 +238,7 @@ bind :: ExprContext -> C.Expr -> EnvCtx -> BindInfo
 bind ctx var@(C.Var tname vInfo) env =
   case ctx of
     ModuleC _ mod _ ->
-      if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod) tname then BoundModule ctx env
+      if lookupDefGroups (coreProgDefs $ fromJust $ modCore mod) tname then BoundModule ctx env
       else trace ("External variable binding " ++ show tname ++ ": " ++ show vInfo) (BoundGlobal tname vInfo)
     DefCRec _ ctx' names i d -> lookupName (BoundDefRec ctx) names ctx'
     DefCNonRec _ ctx' names d -> lookupName (BoundDef ctx) names ctx'
