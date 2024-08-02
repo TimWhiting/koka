@@ -26,24 +26,24 @@ module Core.FlowAnalysis.StaticContext(
                           showSimpleContext,
                           isMain
                         ) where
-import Core.Core as C
+import Data.List (intercalate, intersperse, minimumBy)
+import qualified Data.Text as T
+import qualified Data.Set as S hiding (take)
+import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
+import Data.Set hiding (take, filter, map)
+import Common.Range
+import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
 import Common.Name
+import Common.Failure (HasCallStack)
 import Compile.Module
 import Type.Type
-import Data.Set hiding (take, filter, map)
 import Type.Pretty
-import Syntax.Syntax as S
-import Common.Range
-import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
 import Core.CoreVar (bv, HasExpVar (..))
 import Core.Pretty
+import Core.Core as C
 import Debug.Trace (trace)
-import Data.List (intercalate, intersperse, minimumBy)
-import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
-import qualified Data.Text as T
 import Lib.PPrint
-import Common.Failure (HasCallStack)
-import qualified Data.Set as S hiding (take)
+import Syntax.Syntax as S
 
 -- Uniquely identifies expressions despite naming
 data ExprContext =

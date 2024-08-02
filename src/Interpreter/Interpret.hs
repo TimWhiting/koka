@@ -282,7 +282,7 @@ buildTypeExpr st buildc expr
          Nothing           -> return (Nothing, st{ errorRange = erng }, buildc)
          Just (bc,mbEntry) -> let st' = st{ errorRange = erng }
                               in case mbEntry of
-                                  Just (tp,_) -> return (Just tp,st',bc)
+                                  Just (_,tp,_) -> return (Just tp,st',bc)
                                   Nothing     -> return (Nothing,st',bc)
 
 

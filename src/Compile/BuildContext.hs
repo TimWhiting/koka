@@ -311,7 +311,7 @@ buildcRunExpr :: [ModuleName] -> String -> BuildContext -> Build BuildContext
 buildcRunExpr importNames expr buildc
   = do (buildc1,mbTpEntry) <- buildcCompileExpr True False True importNames expr buildc
        case mbTpEntry of
-          Just(_,Just (_,run))
+          Just(_, _,Just (_,run))
             -> do phase "" (\penv -> empty)
                   liftIO $ run
           _ -> return ()
@@ -320,11 +320,15 @@ buildcRunExpr importNames expr buildc
 -- Compile a function call (called as `<name>()`) and return its type and possible entry point (if `typeCheckOnly` is `False`)
 buildcCompileEntry :: Bool -> Name -> BuildContext -> Build (BuildContext,Maybe (Type, Maybe (FilePath,IO ())))
 buildcCompileEntry typeCheckOnly name buildc
-  = buildcCompileExpr False typeCheckOnly typeCheckOnly [qualifier name] (show name ++ "()") buildc
+  = do 
+      res <- buildcCompileExpr False typeCheckOnly typeCheckOnly [qualifier name] (show name ++ "()") buildc
+      case res of
+        (bc, Just (_, b, c)) -> return (bc, Just (b, c))
+        (bc, Nothing) -> return (bc, Nothing)
 
 -- Compile an expression with functions visible in the given module names (including private definitions),
 -- and return its type and possible entry point (if `typeCheckOnly` is `False`).
-buildcCompileExpr :: Bool -> Bool -> Bool -> [ModuleName] -> String -> BuildContext -> Build (BuildContext, Maybe (Type, Maybe (FilePath,IO ())))
+buildcCompileExpr :: Bool -> Bool -> Bool -> [ModuleName] -> String -> BuildContext -> Build (BuildContext, Maybe (Name, Type, Maybe (FilePath,IO ())))
 buildcCompileExpr addShow typeCheckOnly complete importNames0 expr buildc
   = phaseTimed 2 "compile" (\penv -> empty) $
     do let importNames = if null importNames0 then buildcRoots buildc else importNames0
@@ -356,7 +360,7 @@ buildcCompileExpr addShow typeCheckOnly complete importNames0 expr buildc
                       Nothing -> do addErrorMessageKind ErrBuild (\penv -> text "unable to resolve the type of the expression" <+> parens (TP.ppName penv exprName))
                                     return (buildc2, Nothing)
                       Just tp -> if typeCheckOnly && not complete
-                                  then return (buildc2,Just (tp,Nothing))
+                                  then return (buildc2,Just (exprName,tp,Nothing))
                                   else buildcCompileMainBody typeCheckOnly addShow expr importDecls sourcePath mainModName exprName tp buildc2
 
 buildcGetErrorRangeOf :: BuildContext -> Maybe Range
@@ -384,7 +388,7 @@ buildcThrowOnError buildc
        when err $ do buildcFlushErrors buildc
                      throwNil
 
-buildcCompileMainBody :: Bool -> Bool -> String -> [String] -> FilePath -> Name -> Name -> Type -> BuildContext -> Build (BuildContext,Maybe (Type, Maybe (FilePath,IO ())))
+buildcCompileMainBody :: Bool -> Bool -> String -> [String] -> FilePath -> Name -> Name -> Type -> BuildContext -> Build (BuildContext,Maybe (Name, Type, Maybe (FilePath,IO ())))
 buildcCompileMainBody addShow typeCheckOnly expr importDecls sourcePath mainModName exprName tp buildc1
   = do  -- then compile with a main function
         (tp,showIt,mainBody,extraImports) <- completeMain True exprName tp buildc1
@@ -406,7 +410,7 @@ buildcCompileMainBody addShow typeCheckOnly expr importDecls sourcePath mainModN
                 else do -- and return the entry point
                         let mainMod = buildcFindModule mainModName buildc2
                             entry   = modEntry mainMod
-                        return $! seq entry $ seq buildc2 $ (buildc2,Just(tp,entry))
+                        return $! seq entry $ seq buildc2 $ (buildc2,Just(exprName,tp,entry))
 
 
 bunlines :: [String] -> BString

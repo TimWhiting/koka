@@ -49,7 +49,7 @@ import Compile.Options
 import Interpreter.Command
 import qualified Compile.BuildContext   as B
 import Compile.BuildContext (buildcEmpty)
-
+import Interpreter.AbstractMachine
 
 
 {---------------------------------------------------------------
@@ -270,9 +270,14 @@ buildRunExpr st buildc expr
                           do B.buildcCompileExpr True True True [] expr buildc
        case mbBuildc of
          Nothing -> return (st{ errorRange = erng }, buildc)
-         Just (bc,mbEntry) -> 
-          trace "TODO: Run abstract machine"
-          return (st{ errorRange = erng }, bc)
+         Just (bc,mbEntry) ->
+          case mbEntry of
+            Just (name,_,_) -> do
+              interpMain bc name
+              trace "TODO: Run abstract machine" $ return ()
+              return (st{ errorRange = erng }, bc)
+            Nothing ->
+              return (st{ errorRange = erng }, bc)
 
 
 buildTypeExpr :: State -> B.BuildContext -> String -> IO (Maybe Type,State,B.BuildContext)
@@ -283,7 +288,7 @@ buildTypeExpr st buildc expr
          Nothing           -> return (Nothing, st{ errorRange = erng }, buildc)
          Just (bc,mbEntry) -> let st' = st{ errorRange = erng }
                               in case mbEntry of
-                                  Just (tp,_) -> return (Just tp,st',bc)
+                                  Just (_,tp,_) -> return (Just tp,st',bc)
                                   Nothing     -> return (Nothing,st',bc)
 
 
