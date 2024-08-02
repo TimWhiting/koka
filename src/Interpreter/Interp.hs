@@ -274,7 +274,6 @@ buildRunExpr st buildc expr
           case mbEntry of
             Just (name,_,_) -> do
               interpMain bc name
-              trace "TODO: Run abstract machine" $ return ()
               return (st{ errorRange = erng }, bc)
             Nothing ->
               return (st{ errorRange = erng }, bc)

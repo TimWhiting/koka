@@ -14,7 +14,7 @@ module Core.FlowAnalysis.StaticContext(
                           enclosingDef,maybeHandleInLambda,enclosingHandle,enclosingLambda,maybeHandlerName,
                           maybeExprOfCtx,
                           rangesOverlap,
-                          lamVar,lamVarDef,lamArgNames,
+                          lamVar,lamVarDef,lamArgNames,lamExprArgNames,
                           showDg,showDef,showCtxExpr,fvs,localFv,
                           branchContainsBinding,
                           branchVars,
@@ -24,7 +24,12 @@ module Core.FlowAnalysis.StaticContext(
                           isLetDefBindingFinished,letDefBinding,letDefBindingIndex,
                           dgTNames,dgsTNames,dfsTNames,letDefsOf,
                           showSimpleContext,
-                          isMain
+                          isMain,
+                          nameIntMul, nameIntDiv, nameIntMod, nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe, nameIntOdd,
+                          nameBoolNegate, 
+                          nameCoreCharLt, nameCoreCharLtEq, nameCoreIntShow, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq, nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
+                          nameCoreTypesExternAppend, nameCoreIntExternShow, nameCoreCharInt, nameNumInt32Int, namePretendDecreasing, nameUnsafeTotalCast, nameNumRandom, 
+                          nameCorePrint, nameCorePrintln, nameCoreShowPrintln, nameConsoleUnsafeNoState, nameCoreTrace, nameCorePrints, nameCorePrintsln,
                         ) where
 import Data.List (intercalate, intersperse, minimumBy)
 import qualified Data.Text as T
@@ -32,7 +37,7 @@ import qualified Data.Set as S hiding (take)
 import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
 import Data.Set hiding (take, filter, map)
 import Common.Range
-import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
+import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue, coreIntName)
 import Common.Name
 import Common.Failure (HasCallStack)
 import Compile.Module
@@ -45,6 +50,42 @@ import Debug.Trace (trace)
 import Lib.PPrint
 import Syntax.Syntax as S
 
+nameIntMul = coreIntName "*"
+nameIntDiv = coreIntName "/"
+nameIntMod = coreIntName "%"
+nameIntEq  = coreIntName "=="
+nameIntLt  = coreIntName "<"
+nameIntLe  = coreIntName "<="
+nameIntGt  = coreIntName ">"
+nameIntGe  = coreIntName ">="
+nameIntOdd = coreIntName "is-odd"
+nameBoolNegate = newLocallyQualified "std/core/types" "bool" "!"
+
+nameCoreCharLt = newQualified "std/core/char" "<"
+nameCoreCharLtEq = newQualified "std/core/char" "<="
+nameCoreIntShow = newQualified "std/core/int" "show"
+nameCoreCharGt = newQualified "std/core/char" ">"
+nameCoreCharGtEq = newQualified "std/core/char" ">="
+nameCoreCharEq = newQualified "std/core/char" "=="
+nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-string"
+nameCoreStringListChar = newQualified "std/core/string" "list"
+nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
+
+nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
+nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
+nameCoreCharInt = newQualified "std/core/char" "int"
+nameNumInt32Int = newQualified "std/num/int32" "int"
+namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
+nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
+nameNumRandom = newQualified "std/num/random" "random-int"
+nameCoreTrace = newQualified "std/core/debug" "trace"
+nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
+nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
+
+nameCoreShowPrintln = newLocallyQualified "std/core/console" "show" "println"
+nameCorePrints = newQualified "std/core/console" "prints"
+nameCorePrintsln = newQualified "std/core/console" "printsln"
+nameConsoleUnsafeNoState = newQualified "std/core/console" "unsafe-nostate"
 -- Uniquely identifies expressions despite naming
 data ExprContext =
   -- Current expression context

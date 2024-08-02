@@ -23,36 +23,6 @@ import Data.Either (isLeft)
 import Type.Unify (runUnifyEx, unify)
 import Common.Name (newLocallyQualified)
 
-nameIntMul = coreIntName "*"
-nameIntDiv = coreIntName "/"
-nameIntMod = coreIntName "%"
-nameIntEq  = coreIntName "=="
-nameIntLt  = coreIntName "<"
-nameIntLe  = coreIntName "<="
-nameIntGt  = coreIntName ">"
-nameIntGe  = coreIntName ">="
-nameIntOdd = coreIntName "is-odd"
-
-nameCoreCharLt = newQualified "std/core/char" "<"
-nameCoreCharLtEq = newQualified "std/core/char" "<="
-nameCoreCharGt = newQualified "std/core/char" ">"
-nameCoreCharGtEq = newQualified "std/core/char" ">="
-nameCoreCharEq = newQualified "std/core/char" "=="
-nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-string"
-nameCoreStringListChar = newQualified "std/core/string" "list"
-nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
-
-nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
-nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
-nameCoreCharInt = newQualified "std/core/char" "int"
-nameNumInt32Int = newQualified "std/num/int32" "int"
-namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
-nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
-nameNumRandom = newQualified "std/num/random" "random-int"
-nameCoreTrace = newQualified "std/core/debug" "trace"
-nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
-nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
-
 intOp :: (Integer -> Integer -> Integer) -> (ExprContext, EnvCtx) -> FixDemandR x s e AChange
 intOp f (ctx, env) = do
   p1 <- evalParam 0 ctx env
