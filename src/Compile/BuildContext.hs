@@ -273,7 +273,7 @@ buildcSplitRoots buildc
 -- Type check the current build context (also validates and resolves)
 buildcTypeCheck :: Bool -> [ModuleName] -> BuildContext -> Build BuildContext
 buildcTypeCheck rebuild force buildc0
-  = do buildc <- buildcValidate False force buildc0
+  = do buildc <- buildcValidate rebuild force buildc0
        mods   <- modulesTypeCheck (buildcModules buildc)
        return $! buildc{ buildcModules = seqqList $ mods }
 

@@ -101,6 +101,7 @@ library
       Core.Uniquefy
       Core.UnReturn
       Core.Unroll
+      Interpreter.AbstractMachine
       Interpreter.Command
       Interpreter.Interp
       Interpreter.Interpret

@@ -77,9 +77,9 @@ interpret printer flags0 flagspre files
     do{ let st0 = (State printer flags0 flagspre False [] Nothing [] nameNil)
       ; messageHeader st0
       ; let coreSt = st0
-      ; (buildc,erng) <- loadModules coreSt{flags = flags0{showCore=False}} (buildcEmpty flags0) [show (nameSystemCore)] False False
+      ; (buildc,erng) <- loadModules coreSt{flags = flags0{showCore=False}} (buildcEmpty flags0) [show (nameSystemCore)] True True
       ; case erng of
-          Nothing -> interpreterEx (if null files then Nothing else Just (Load files False))
+          Nothing -> interpreterEx (if null files then Nothing else Just (Load files True))
                                    coreSt{ lastLoad = [show nameSystemCore] } buildc
           Just _  -> do messageInfoLn coreSt ("unable to load the " ++ show nameSystemCore ++ " module; standard functions are not available")
                         messageEvaluation coreSt
@@ -125,7 +125,7 @@ command st buildc cmd
                     (buildc1,erng) <- loadModules st1 buildc fnames forceAll {- :f -} True {-force roots-}
                     next st1{errorRange = erng, moduleName = mainModuleName buildc1} buildc1
 
-  Reload      -> do (buildc1,erng) <- loadModules st buildc (lastLoad st) False True {-force roots-}
+  Reload      -> do (buildc1,erng) <- loadModules st buildc (lastLoad st) True True {-force roots-}
                     next st{errorRange = erng, moduleName = mainModuleName buildc1} buildc1
 
 
