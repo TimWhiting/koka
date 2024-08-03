@@ -34,28 +34,29 @@ fun main()
     y0(1)
     fn(x4)
       y0(x4)
-  )(fn(x3) x3)(2)
+  )(fn(x3) x3)(2).println
 
   (fn(y0) 
     y0(True)
     fn(x4)
       y0(x4)
-  )(fn(x3) x3)(False)
+  )(fn(x3) x3)(False).println
   a1(testhover/id).println
   a1(fn(i) i + 1).println
-  something(1, 1)
-  something(2, 3)
+  something(1, 1).println
+  something(2, 3).println
 
   val x0 = s4([1, 2, 3])
-
+  x0.println
 
   val x1 = s2([1, 2, 3])
-
+  x1.println
 
   val x2 = s2([1, 2, 3])
+  x2.println
 
   val x3 = xs()
 
+  val f1 = fn((x1', y1)) something(x1', y1)
+  [(1, 2), (2, 3), (4, 5)].map(f1).show.println
   ()
-  // val f1 = fn((x1, y1)) something(x1, y1)
-  // [(1, 2), (2, 3), (4, 5)].map(f1).show.println

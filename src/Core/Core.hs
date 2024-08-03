@@ -68,7 +68,7 @@ module Core.Core ( -- Data structures
                    , DataRepr(..), ConRepr(..)
                    , isConSingleton
                    , isConNormal
-                   , isConIso, isConAsJust
+                   , isConIso, isConAsJust, conNoFields
                    , conReprHasCtxPath, conReprCtxPath, CtxPath(..)
                    , isDataStruct, isDataAsMaybe, isDataStructAsMaybe
                    , conReprAllocSize, conReprAllocSizeScan, conReprScanCount
@@ -414,6 +414,10 @@ data CtxPath = CtxNone | CtxField TName
 
 isConSingleton (ConSingleton{}) = True
 isConSingleton _ = False
+
+conNoFields (ConSingleton{}) = True
+conNoFields (ConEnum{}) = True
+conNoFields _ = False
 
 isConNormal (ConNormal{}) = True
 isConNormal _  = False

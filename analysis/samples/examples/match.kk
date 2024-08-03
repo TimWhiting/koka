@@ -13,7 +13,7 @@ fun main()
 
   val x' = f(False)
   
-  val y = g([1])
+  val y = g([])
 
   val y' = g([[3], [4]])
 

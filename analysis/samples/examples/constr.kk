@@ -9,10 +9,18 @@ fun s2(ls2: list<int>): list<int>
 fun main()
   val x1 = s2([1, 2, 3])
 
+  x1.println
+
   val xaslkdfj = 1 + 2
+
+  xaslkdfj.println
   
   val y = xaslkdfj * 4
+
+  y.println
   
   val z = y - (y + xaslkdfj)
+
+  z.println
   
   ()

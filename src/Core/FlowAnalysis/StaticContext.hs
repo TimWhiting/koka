@@ -29,7 +29,7 @@ module Core.FlowAnalysis.StaticContext(
                           nameBoolNegate, 
                           nameCoreCharLt, nameCoreCharLtEq, nameCoreIntShow, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq, nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
                           nameCoreTypesExternAppend, nameCoreIntExternShow, nameCoreCharInt, nameNumInt32Int, namePretendDecreasing, nameUnsafeTotalCast, nameNumRandom, 
-                          nameCorePrint, nameCorePrintln, nameCoreShowPrintln, nameConsoleUnsafeNoState, nameCoreTrace, nameCorePrints, nameCorePrintsln,
+                          nameCorePrint, nameCorePrintln, nameCoreShowPrintln, nameConsoleUnsafeNoState, nameCoreTrace, nameCorePrints, nameCorePrintsln, nameVectorSepJoin,
                         ) where
 import Data.List (intercalate, intersperse, minimumBy)
 import qualified Data.Text as T
@@ -86,6 +86,7 @@ nameCoreShowPrintln = newLocallyQualified "std/core/console" "show" "println"
 nameCorePrints = newQualified "std/core/console" "prints"
 nameCorePrintsln = newQualified "std/core/console" "printsln"
 nameConsoleUnsafeNoState = newQualified "std/core/console" "unsafe-nostate"
+nameVectorSepJoin = newLocallyQualified "std/core/string" "vectorsep" "join"
 -- Uniquely identifies expressions despite naming
 data ExprContext =
   -- Current expression context

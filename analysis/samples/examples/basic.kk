@@ -5,5 +5,6 @@ fun main()
       y0(x4)
   )(fn(x3) x3)(2)
 
-  val x = 1.show
+  val x = 5.show
+  x.println
   ()
