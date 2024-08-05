@@ -1,6 +1,6 @@
 module Interpreter.AbstractMachine (interpMain) where
 import Core.Core
-import Data.Map.Strict as M hiding (map)
+import Data.Map.Strict as M hiding (take, map)
 import Common.Name
 import Kind.Constructors (ConInfo)
 import Compile.Module
@@ -10,19 +10,23 @@ import Data.Maybe (fromJust, isJust)
 import Core.FlowAnalysis.StaticContext
 import Debug.Trace
 import Common.NamePrim
-import Type.Type (typeUnit, typeBool)
+import Type.Type (typeUnit, typeBool, Type (..), TypeCon (TypeCon, typeconName))
 import Data.List (intercalate)
+import Control.Monad.ST.Strict (ST)
+import Control.Monad.State (StateT (runStateT), evalStateT, gets, modify)
+import Type.Pretty (ppType, defaultEnv)
+import Common.Syntax (DefSort(..), isDefFun)
+import Common.File (splitOn)
 
 newtype Marker = Mark Int deriving (Show)
 
-data Ev = Ev Env Handler Marker Evv deriving (Show)
 
 data Handler = Handler {
   label:: Label,
   ops:: M.Map OpName Expr,
   ret:: Expr
 } deriving (Show)
-type Evv = [Ev]
+type Evv = [Val]
 type Kont = [KontFrame]
 type PureKont = [PureKontFrame]
 type Env = M.Map Var Val
@@ -36,8 +40,10 @@ data Val =
   | VConI TName
   | VFun Expr Env
   | VKont Kont
-  | VNamed Ev
+  | VNamed Marker
   | VPrim Name
+  | VEvv Evv
+  | VMarker Marker
   deriving (Show)
 
 data State =
@@ -48,24 +54,60 @@ data State =
   | Halt Val
   deriving (Show)
 
+showSimple :: State -> String
+showSimple (Eval e _ _ _) = "Eval " ++ showSimpleExpr e
+showSimple (Apply k v _) = "Apply " ++ show v ++ " " ++ showSimpleK k
+showSimple (FindPrompt _ m _ v _) = "FindPrompt " ++ show m ++ " " ++ show v
+showSimple (ApplyKont _ v _ _) = "ApplyKont " ++ show v
+
+showSimpleK :: Kont -> String
+showSimpleK [] = ""
+showSimpleK (kf:k) = showSimpleKF kf ++ " " ++ showSimpleK k
+
+showSimpleKF :: KontFrame -> String
+showSimpleKF (KF pk kd) = showSimplePK pk ++ " " ++ showSimpleKD kd
+
+showSimplePK :: PureKont -> String
+showSimplePK [] = ""
+showSimplePK (kf:k) = showSimplePF kf ++ " " ++ showSimplePK k
+
+showSimplePF :: PureKontFrame -> String
+showSimplePF (FLet _ _ _ _ e _) = "FLet ... " ++ showSimpleExpr e 
+showSimplePF (FApp _ es _) = "FApp " ++ maybe "" showSimpleExpr (case es of [] -> Nothing; e:es -> Just e)
+showSimplePF (FOp _ _ _ _) = "FOp"
+showSimplePF (FCase _ _) = "FCase"
+showSimplePF (FTyApp _) = "FTyApp"
+
+showSimpleKD :: KontDelim -> String
+showSimpleKD (KHnd v) = "KHnd " ++ show v
+showSimpleKD (KMask l) = "KMask " ++ l
+showSimpleKD KTop = "KTop"
+
+data GlobalState =
+  GlobalState {
+    markerUnique :: Int,
+    namedMarkerUnique :: Int
+  } deriving (Show)
+
 data KontFrame = KF PureKont KontDelim deriving (Show)
-data KontDelim = KHnd Ev | KMask Label | KTop deriving (Show)
+data KontDelim = KHnd Val | KMask Label | KTop deriving (Show)
 
 data PureKontFrame =
   FLet [Val] [TName] [Def] [DefGroup] Expr Env
   | FApp [Val] [Expr] Env
   | FOp TName [Val] [Expr] Env
   | FCase [Branch] Env
+  | FTyApp [Type]
   deriving (Show)
 
 interpMain :: BuildContext -> Name -> IO Val
 interpMain ctx exprName =
   case lookupBCDef ctx exprName of
     Just e -> do
-      interpExpr ctx (lamBody e)
+      evalStateT ( interpExpr ctx (lamBody (defExpr e))) (GlobalState 1 (-1))
     Nothing -> error $ "interpMain: could not find " ++ show exprName
 
-lookupBCDef :: BuildContext -> Name -> Maybe Expr
+lookupBCDef :: BuildContext -> Name -> Maybe Def
 lookupBCDef ctx name =
   case buildcLookupModule (qualifier name) ctx of
     Just m -> lookupModDef name (fromJust $ modCore m)
@@ -77,7 +119,7 @@ lamBody (TypeLam _ e) = lamBody e
 lamBody (TypeApp e _) = lamBody e
 lamBody e = e
 
-lookupModDef :: Name -> Core -> Maybe Expr
+lookupModDef :: Name -> Core -> Maybe Def
 lookupModDef name core = lookupDG (coreProgDefs core)
   where
     lookupDG [] = Nothing
@@ -87,14 +129,14 @@ lookupModDef name core = lookupDG (coreProgDefs core)
           case lookupD dfs of
             Just e -> Just e
             Nothing -> lookupDG dgs
-        DefNonRec d -> if defName d == name then Just (defExpr d) else lookupDG dgs
+        DefNonRec d -> if defName d == name then Just d else lookupDG dgs
     lookupD [] = Nothing
-    lookupD (d:ds) = if defName d == name then Just (defExpr d) else lookupD ds
+    lookupD (d:ds) = if defName d == name then Just d else lookupD ds
 
-interpExpr :: BuildContext -> Expr -> IO Val
+interpExpr :: BuildContext -> Expr -> StateT GlobalState IO Val
 interpExpr bc e = do
   let start = Eval e M.empty [KF [] KTop] []
-      loop :: State -> IO Val
+      loop :: State -> StateT GlobalState IO Val
       loop state = do
         res <- interpret bc state
         case res of
@@ -109,13 +151,33 @@ primitives =
   nameCoreIntExternShow,
   nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
   nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
-  nameVectorSepJoin, nameVector, nameCoreTypesExternAppend
-
+  nameVectorSepJoin, nameVector, nameCoreTypesExternAppend,
+  nameCastEv0, nameCastEv1, nameCastEv2, nameCastEv3, nameCastEv4, nameCastEv5,
+  nameEvvGet, nameEvvAt, nameFreshMarker, nameFreshMarkerNamed, nameEvvInsert, nameEvvSet,
+  nameInternalSSizeT, nameCastClause0, nameCastClause1, nameCastClause2
   ]
 
-interpret :: BuildContext -> State -> IO State
+idPrims = [nameEffectOpen, nameConsoleUnsafeNoState, nameUnsafeTotal, nameUnsafeTotalCast, 
+  nameCastEv0, nameCastEv1, nameCastEv2, nameCastEv3, nameCastEv4, nameCastEv5,
+  nameInternalSSizeT, nameCastClause0, nameCastClause1, nameCastClause2]
+
+
+findFirstEv :: Evv -> Type -> Val
+findFirstEv [] tp = error "findEvv: empty"
+findFirstEv (v:vs) tp = 
+  case v of
+    VCon (TName n _ _) [h, m, hnd, hevv] | n == nameTpEv && h `hndMatchesTp` tp -> 
+      trace ("Found ev: " ++ show h) v
+    _ -> findFirstEv vs tp
+
+hndMatchesTp :: Val -> Type -> Bool
+hndMatchesTp (VCon (TName n tp1 _) [VLit (LitString hndName)]) (TCon (TypeCon{typeconName = tp2})) = 
+  head (splitOn (== '@') hndName) == nameStem tp2
+hndMatchesTp x _ = error $ "hndMatchesTp: " ++ show x
+
+interpret :: BuildContext -> State -> StateT GlobalState IO State
 interpret bc s =
-  -- trace (show s) $
+  trace ("\n\n\n" ++ showSimple s) $
   case s of
     Eval e@Lam{} env k evv ->
       -- trace "Lam" $
@@ -123,23 +185,33 @@ interpret bc s =
     Eval (Lit l) env k evv ->
       -- trace "Lit" $
       return $ Apply k (VLit l) evv
-    Eval (Var v@(TName n _ _) _) env k evv ->
+    Eval (Var v@(TName n tp _) _) env k evv ->
       -- trace "VAR" $
-      if n `elem` primitives then return $ Apply k (VPrim n) evv
+      if n `elem` primitives then 
+        trace ("Primitive: " ++ show n ++ " " ++ show (ppType defaultEnv tp)) $
+        return $ Apply k (VPrim n) evv
       else
         case M.lookup v env of
           Just v -> return $ Apply k v evv
           Nothing ->
             case lookupBCDef bc n of
-              Just e -> return $ Apply k (VFun e M.empty) evv
+              Just d -> 
+                if isDefFun (defSort d) then
+                  return $ Apply k (VFun (defExpr d) M.empty) evv
+                else
+                  return $ Eval (defExpr d) M.empty k evv
               Nothing -> error $ "interpret var: " ++ show v
-    Eval (Con c cr) env k evv -> return $ Apply k (if conNoFields cr then VCon c [] else VConI c) evv
+    Eval (Con c cr) env k evv -> 
+      trace ("Con: " ++ show c ++ " " ++ show cr ++ " " ++ show (conNoFields cr)) $
+      return $ Apply k (if conNoFields cr then VCon c [] else VConI c) evv
+    Eval (TypeApp (Var (TName n _ _) _) [tp]) env (KF (pk1:pk2:pk) kd:k) evv | n == nameEvvAt ->
+      return $ Apply (KF pk kd:k) (findFirstEv evv tp) evv
     Eval (App e1 es _) env (KF pk kd:k) evv ->
       -- trace "APP" $
       return $ Eval e1 env (KF (FApp [] es env:pk) kd:k) evv
-    Eval (TypeApp e1 _) env k evv ->
+    Eval (TypeApp e1 tps) env (KF pk kd:k) evv ->
       -- trace "TyApp" $
-      return $ Eval e1 env k evv
+      return $ Eval e1 env (KF (FTyApp tps: pk) kd:k)evv
     Eval (TypeLam _ e1) env k evv ->
       -- trace "TyLam" $ 
       return $ Eval e1 env k evv
@@ -159,13 +231,15 @@ interpret bc s =
           let kont = KF pk kd:k
               fn:args = vals in
           case fn of
-            VConI c -> return $ Apply kont (VCon c args) evv
+            VConI c -> 
+              trace ("ConI: " ++ show args)
+              return $ Apply kont (VCon c args) evv
             VFun e env ->
               -- trace (show "Entering fun " ++ show e) $
               let env' = M.union env (M.fromList $ zip (lamExprArgNames e) args)
               in return $ Eval (lamBody e) env' kont evv
             VPrim n -> do
-              if n == nameEffectOpen || n == nameConsoleUnsafeNoState || n == nameUnsafeTotal || n == nameUnsafeTotalCast then return $ Apply kont v evv
+              if n `elem` idPrims then return $ Apply kont v evv
               else if n == nameCoreIntExternShow then
                 let VLit (LitInt i) = v in
                 return $ Apply kont (VLit (LitString (show i))) evv
@@ -182,6 +256,26 @@ interpret bc s =
               else if n == nameIntLe then intCmpOp (<=) kont evv args
               else if n == nameIntGt then intCmpOp (>) kont evv args
               else if n == nameIntGe then intCmpOp (>=) kont evv args
+              else if n == nameEvvGet then return $ Apply kont (VEvv evv) evv
+              else if n == nameEvvAt then 
+                -- TODO: 
+                error "Evv at not implemented"
+              else if n == nameFreshMarker then do
+                m <- gets markerUnique
+                let marker = Mark m
+                modify $ \st -> st { markerUnique = m + 1 }
+                return $ Apply kont (VMarker marker) evv
+              else if n == nameFreshMarkerNamed then do
+                m <- gets namedMarkerUnique
+                let marker = Mark m
+                modify $ \st -> st { namedMarkerUnique = m - 1 }
+                return $ Apply kont (VMarker marker) evv
+              else if n == nameEvvInsert then
+                let [VEvv vs, v] = args in
+                return $ Apply kont (VEvv (v : vs)) evv
+              else if n == nameEvvSet then
+                let [VEvv vs] = args in 
+                return $ Apply kont unitCon vs
               else if n == nameVectorSepJoin then
                 case args of
                   [VCon vec args, VLit (LitString sep)] -> return $ Apply kont (VLit (LitString (intercalate sep (map tostring args)))) evv
@@ -195,7 +289,7 @@ interpret bc s =
                 case args of
                   [VLit (LitString s1), VLit (LitString s2)] -> return $ Apply kont (VLit (LitString (s1 ++ s2))) evv
               else error $ "interpret prim: " ++ show n
-
+            _ -> error $ "interpret app: " ++ show fn ++ "\nargs:" ++ show args
     Apply ((KF (FCase (Branch [p] [Guard gd body]:bs) env:pk) kd):k) v evv ->
       case v `patMatches` p of
         Just binds -> do
@@ -220,13 +314,19 @@ interpret bc s =
             [] -> do -- Evaluate the body
               let env' = M.union env (M.fromList $ zip defnames (vs ++ [v]))
               return $ Eval e env' (KF pk kd:k) evv
+    Apply (KF (FTyApp tps:pk) kd:k) v evv ->
+      case v of
+        VCon (TName n tp _) vs -> return $ Apply (KF pk kd:k) (VCon (TName n (TApp tp tps)  Nothing) vs) evv
+        VConI (TName n tp _)  -> return $ Apply (KF pk kd:k) (VConI (TName n (TApp tp tps) Nothing)) evv
+        _ -> return $ Apply (KF pk kd:k) v evv
     Apply [KF [] KTop] v evv -> trace "HALT" return $ Halt v
     Apply (KF (pkf:_) _:k) v _ -> error $ "interpret: " ++ show pkf ++ " " ++ show v
+    _ -> error $ "interpret: " ++ show s
 
-intBinaryOp :: (Integer -> Integer -> Integer) -> Kont -> Evv -> [Val] -> IO State
+intBinaryOp :: (Integer -> Integer -> Integer) -> Kont -> Evv -> [Val] -> StateT GlobalState IO State
 intBinaryOp op k evv [VLit (LitInt i1), VLit (LitInt i2)] = return $ Apply k (VLit (LitInt (op i1 i2))) evv
 
-intCmpOp :: (Integer -> Integer -> Bool) -> Kont -> Evv -> [Val] -> IO State
+intCmpOp :: (Integer -> Integer -> Bool) -> Kont -> Evv -> [Val] -> StateT GlobalState IO State
 intCmpOp op k evv [VLit (LitInt i1), VLit (LitInt i2)] = return $ Apply k (fromBool (i1 `op` i2)) evv
 
 unitCon = VCon (TName nameUnit typeUnit Nothing) []

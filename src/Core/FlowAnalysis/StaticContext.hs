@@ -30,6 +30,10 @@ module Core.FlowAnalysis.StaticContext(
                           nameCoreCharLt, nameCoreCharLtEq, nameCoreIntShow, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq, nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
                           nameCoreTypesExternAppend, nameCoreIntExternShow, nameCoreCharInt, nameNumInt32Int, namePretendDecreasing, nameUnsafeTotalCast, nameNumRandom, 
                           nameCorePrint, nameCorePrintln, nameCoreShowPrintln, nameConsoleUnsafeNoState, nameCoreTrace, nameCorePrints, nameCorePrintsln, nameVectorSepJoin,
+                          nameEvvGet, nameFreshMarker, nameFreshMarkerNamed, nameEvvInsert, nameEvvSet,
+                          nameCastEv0, nameCastEv1, nameCastEv2, nameCastEv3, nameCastEv4, nameCastEv5,
+                          nameCastClause0, nameCastClause1, nameCastClause2,
+                          showSimpleExpr
                         ) where
 import Data.List (intercalate, intersperse, minimumBy)
 import qualified Data.Text as T
@@ -87,6 +91,23 @@ nameCorePrints = newQualified "std/core/console" "prints"
 nameCorePrintsln = newQualified "std/core/console" "printsln"
 nameConsoleUnsafeNoState = newQualified "std/core/console" "unsafe-nostate"
 nameVectorSepJoin = newLocallyQualified "std/core/string" "vectorsep" "join"
+nameEvvGet       = coreHndName "@extern-evv-get"
+coreHndName s   = qualify nameCoreHnd (newName s)
+nameCoreHnd     = newModuleName "std/core/hnd"
+nameFreshMarker = coreHndName "@extern-fresh-marker"
+nameFreshMarkerNamed = coreHndName "@extern-fresh-marker-named"
+nameEvvInsert   = coreHndName "@extern-evv-insert"
+nameEvvSet = coreHndName "evv-set"
+nameCastEv0 = coreHndName "cast-ev0"
+nameCastEv1 = coreHndName "cast-ev1"
+nameCastEv2 = coreHndName "cast-ev2"
+nameCastEv3 = coreHndName "cast-ev3"
+nameCastEv4 = coreHndName "cast-ev4"
+nameCastEv5 = coreHndName "cast-ev5"
+nameCastClause0 = coreHndName "cast-clause0"
+nameCastClause1 = coreHndName "cast-clause1"
+nameCastClause2 = coreHndName "cast-clause2"
+
 -- Uniquely identifies expressions despite naming
 data ExprContext =
   -- Current expression context
