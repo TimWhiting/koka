@@ -36,6 +36,8 @@ interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	program: string
 	/** Additional arguments */
 	compilerArgs?: string
+	/** Current working directory (for running the compiled program from) */ 
+	cwd: string
 	/** Additional arguments */
 	programArgs?: string[]
 	/** enable logging the Debug Adapter Protocol */
@@ -223,7 +225,21 @@ class KokaRuntime extends EventEmitter {
 			}
 			if (target == 'c') {
 				console.log(`Executing ${resp} ${args.programArgs ?? []}`)
-				this.ps = child_process.spawn(resp, args.programArgs ?? [], { cwd: this.config.cwd, env: process.env })
+				// prefer the working directory argument from the run configuration
+				let cwd = args.cwd 
+				if (!cwd) {
+					// For multiple workspace folders or include directories:
+					// Find the include directory for the file that we are launching
+					cwd = this.config.cwd
+					this.config.includeDirs.forEach((dir) => {
+						if (args.program.startsWith(dir)) {
+							cwd = dir
+						}
+					})
+				}
+				// Resolve the program to a full path based on the directory where it was compiled from
+				const program = path.resolve(this.config.cwd, resp)
+				this.ps = child_process.spawn(program, args.programArgs ?? [], { cwd: cwd, env: process.env })
 				this.ps.stdout?.on('data', (data) => {
 					this.emit('output', data.toString(), 'stdout')
 				})
