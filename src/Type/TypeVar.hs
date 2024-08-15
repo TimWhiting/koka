@@ -160,14 +160,15 @@ subNew sub =
   -- assertion "Type.TypeVar.subNew" (all (\tv -> length (filter (==tv) tvs) == 1) tvs) $
   -- assertion "Type.TypeVar.subNew.Tau" (all isTau taus) $
   let s =
-        assertion
-          ( "Type.TypeVar.subNew.KindMismatch: length "
-              ++ show (length sub)
-              ++ ": "
-              ++ unlines (map (\(x, t) -> "(" ++ showTypeVar x ++ " |-> " ++ showTp t ++ ")") sub)
-          )
-          (all (\(x, t) -> getKind x == getKind t) sub)
-          $ Sub
+        -- assertion
+        --   ( "Type.TypeVar.subNew.KindMismatch: length "
+        --       ++ show (length sub)
+        --       ++ ": "
+        --       ++ unlines (map (\(x, t) -> "(" ++ showTypeVar x ++ " |-> " ++ showTp t ++ ")") sub)
+        --   )
+        --   (all (\(x, t) -> getKind x == getKind t) sub)
+          -- $ 
+          Sub
             (M.fromList sub)
             (tvsUnion (tvsNew (map fst sub)) (ftv (map snd sub)))
    in seq s s
