@@ -12,6 +12,9 @@ import std/num/int32
 extern import
   c file "inline/utils"
 
+extern import
+  c { conan="libuv[>=1.47.0]"; vcpkg="libuv"; library="uv" }
+
 // The base uv handle type
 pub value struct uv-handle { internal: any }
 
