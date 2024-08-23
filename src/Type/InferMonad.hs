@@ -1138,7 +1138,7 @@ prettyImplicitAssign penv prefix pname iarg
 -- This is done in a breadth-first search to reduce exponential search times
 -----------------------------------------------------------------------
 resolveMaxChainDepth :: Int
-resolveMaxChainDepth = 8   -- prevent infinite expansion
+resolveMaxChainDepth = 4   -- prevent infinite expansion
 
 resolveImplicitArg :: Bool -> Bool -> [(NameInfo -> Bool, Name, NameContext, Range)] -> Inf (Either [Doc] (ImplicitArg))
 resolveImplicitArg allowDisambiguate allowUnitFunVal roots
