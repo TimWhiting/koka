@@ -634,7 +634,7 @@ dataTypeDecl dvis =
                return (vis,vis,vrng,x))
       tbind <- if isExtend
                 then do (qid,rng) <- qtypeid
-                        return (\kind -> TypeBinder qid kind rng rng)
+                        return (\kind -> TypeBinder qid kind rng (combineRanges [vrng,trng,rng]))
                 else tbinderDef
       (tpars,kind,prng) <- typeKindParams
       let name = tbind kind
@@ -650,15 +650,15 @@ dataTypeDecl dvis =
 structDecl dvis =
    do (vis,defvis,ddef,vrng,trng,doc) <-
         (try $
-          do (vis,dvis,rng) <-     do{ rng <- keyword "abstract"; return (Public,Private,rng) }
+          do (vis,dvis,rng1) <-    do{ rng <- keyword "abstract"; return (Public,Private,rng) }
                                <|> do{ (vis,rng) <- visibility dvis; return (vis,vis,rng) }
-             ddef           <-     do { specialId "value"; return (DataDefValue valueReprZero) }
-                               <|> do { specialIdOr "ref" ["reference"];
+             (rng2,ddef)     <-    do { rng <- specialId "value"; return (rng, DataDefValue valueReprZero) }
+                               <|> do { rng <- specialIdOr "reference" ["ref"];
                                         -- pwarningMessage "using 'reference' is deprecated and is always the default now";
-                                        return DataDefNormal }
-                               <|> do { return DataDefAuto }
+                                        return (rng,DataDefNormal) }
+                               <|> do { return (rng1,DataDefAuto True) }
              (trng,doc) <- dockeyword "struct"
-             return (vis,dvis,ddef,rng,trng,doc))
+             return (vis,dvis,ddef,combineRanges [rng1,rng2,trng], trng, doc))
 
       tbind <- tbinderDef
       tpars <- angles tbinders <|> return []
@@ -689,21 +689,21 @@ enum
 typeDeclKind :: LexParser (DataKind,Range,String,DataDef, Bool)
 typeDeclKind
   = try(
-    do (rng1,kind) <-     do{ rng <- specialId "rec"; return (rng,Retractive) }
+    do (rng1,kind) <-     do{ rng <- specialIdOr "div" ["rec"]; return (rng,Retractive) }
                       <|> do{ rng <- specialId "co"; return (rng,CoInductive) }
        (rng2,doc)  <- dockeyword "type"
        return (kind,combineRanges [rng1,rng2],doc,DataDefNormal,False)
     )
   <|>
     try(
-    do (ddef,isExtend) <-     do { specialId "open"; return (DataDefOpen, False) }
-                          <|> do { specialId "extend"; return (DataDefOpen, True) }
-                          <|> do { specialId "value"; return (DataDefValue valueReprZero, False) }
-                          <|> do { specialIdOr "ref" ["reference"];
-                                   return (DataDefNormal, False) }
-                          <|> return (DataDefAuto, False)
-       (rng,doc) <- dockeyword "type"
-       return (Inductive,rng,doc,ddef,isExtend))
+    do (rng1, ddef,isExtend) <- do { rng <- specialId "open"; return (rng, DataDefOpen, False) }
+                            <|> do { rng <- specialId "extend"; return (rng, DataDefOpen, True) }
+                            <|> do { rng <- specialId "value"; return (rng, DataDefValue valueReprZero, False) }
+                            <|> do { rng <- specialIdOr "reference" ["ref","heap"];
+                                    return (rng, DataDefNormal, False) }
+                            <|> return (rangeNull, DataDefAuto False {-not a struct-}, False)
+       (rng2,doc) <- dockeyword "type"
+       return (Inductive,combineRanges [rng1,rng2],doc,ddef,isExtend))
 
 
 typeKindParams
@@ -858,19 +858,21 @@ parseEffectDecl dvis =
              isInstance <- do{ keyword "named"; return True } <|> return False
              isScoped   <- do{ specialId "scoped"; return True } <|> return False
              (rng1,singleShot) <- do{ rng <- specialId "linear"; return (rng,True) } <|> return (rangeNull,False)
-             sort              <- do{ specialId "rec"; return Retractive } <|> return Inductive
+             sort              <- do{ specialIdOr "div" ["rec"]; return Retractive } <|> return Inductive
              (rng2,doc)        <- dockeyword "effect"
              let erng = combineRange rng1 rng2
              return (vis,vis,vrng,erng,doc,singleShot,sort,isInstance,isScoped))
+     let extra = if sort==Retractive then [TpCon nameTpDiv (combineRanges [vrng,erng])] else []
      (do (effectId,irng) <- typeid
          (tpars,kind,prng) <- typeKindParams
-         effectsExtra <- if (not isInstance) then return (EffectExtra [])
+         effectsExtra <- if (not isInstance)
+                            then return (EffectExtra extra)
                             else do keyword "in"
                                     tp <- ptype
-                                    return (EffectReplace [tp,TpCon nameTpPartial irng])
-                                 <|>
-                                    return (if (isScoped) then (EffectExtra []) -- use regular effect type
-                                                          else (EffectReplace [TpCon nameTpPartial irng]))
+                                    return (EffectReplace ([tp,TpCon nameTpPartial irng] ++ extra))
+                                  <|>
+                                    return (if (isScoped) then (EffectExtra extra) -- use regular effect type
+                                                          else (EffectReplace ([TpCon nameTpPartial irng]++extra)))
                                     -- todo: still need to add TpNamed for the JavaScript backend?
                                     -- return (Just (TpCon nameTpNamed irng))  -- todo: needed only if not using exn?
          (operations, xrng) <- semiBracesRanged (parseOpDecl singleShot defvis)
@@ -883,7 +885,7 @@ parseEffectDecl dvis =
          let effectId   = toBasicOperationsName (opdeclName op)
          return $ -- trace ("parsed effect decl " ++ show opId ++ " " ++ show sort ++ " " ++ show singleShot ++ " " ++ show linear ) $
           EffectDecl vis defvis vrng erng doc sort (singleShot || opdeclIsLinear op) False isScoped effectId
-                     (extendRange (opdeclNameRange op) (-1)) tpars kind prng (EffectExtra []) [op]
+                     (extendRange (opdeclNameRange op) (-1)) tpars kind prng (EffectExtra extra) [op]
       )
 
 dockeywordEffect
@@ -987,14 +989,14 @@ makeEffectDecl decl =
       {- scopeEff    = TpApp (TpCon nameTpScope krng) [TpVar (tbinderName tb) krng | tb <- tparsScoped] krng
       extraEffects = (if (isScoped && isInstance) then [scopeEff] else [])
                      ++ -}
-      extraEffects = if (sort==Retractive) then [TpCon nameTpDiv krng] else []
+      -- extraEffects = [] -- if (sort==Retractive) then [TpCon nameTpDiv krng] else []
 
       -- parse the operations and return the constructor fields and function definitions
       opCount = length operations
       (opFields,opSelects,opDefs,opValDefs)
           = unzip4 $ map (operationDecl opCount vis tparsScoped tparsNonScoped docEffect docx hndName
                                                  id isInstance effectsExtra effTp (tpCon hndTpName)
-                                                 ([hndEffTp,hndResTp]) extraEffects)
+                                                 ([hndEffTp,hndResTp]))
                                                  (zip [0..opCount-1] (sortBy cmpName operations))
       cmpName op1 op2 = compare (getOpName op1) (getOpName op2)
       getOpName op = show (unqualify (opdeclName op))
@@ -1137,11 +1139,11 @@ paramInfo
 
 -- smart constructor for operations
 operationDecl :: Int -> Visibility -> [UserTypeBinder] -> [UserTypeBinder] ->
-                 String -> String -> Name -> Name -> Bool -> EffectExtra -> UserType -> UserType -> [UserTypeBinder] ->
-                 [UserType] -> (Int,OpDecl) ->
+                 String -> String -> Name -> Name -> Bool -> EffectExtra ->
+                 UserType -> UserType -> [UserTypeBinder] -> (Int,OpDecl) ->
                  (ValueBinder UserType (Maybe UserExpr), UserDef, UserDef, Maybe UserDef)
 operationDecl opCount vis forallsScoped forallsNonScoped docEffect docEffectDecl
-              hndName effName isInstance effectsExtra effTp hndTp hndTpVars extraEffects (opIndex,op)
+              hndName effName isInstance effectsExtra effTp hndTp hndTpVars (opIndex,op)
   = let -- teff     = makeEffectExtend rangeNull effTp (makeEffectEmpty rangeNull)
            foralls  = forallsScoped ++ forallsNonScoped
            -- todo: use record operations
@@ -1155,7 +1157,7 @@ operationDecl opCount vis forallsScoped forallsNonScoped docEffect docEffectDecl
            opEffTps = case effectsExtra of
                         EffectExtra extra    -> [effTp] ++ extra
                         EffectReplace extra  -> extra
-           teff0    = foldr (makeEffectExtend krng) (makeEffectEmpty krng) (opEffTps ++ extraEffects)
+           teff0    = foldr (makeEffectExtend krng) (makeEffectEmpty krng) (opEffTps) -- ++ extraEffects)
 
 
            nameA    = newName ".a"
@@ -1174,7 +1176,8 @@ operationDecl opCount vis forallsScoped forallsNonScoped docEffect docEffectDecl
            -- for now add a divergence effect to named effects/resources when there are type variables...
            -- this is too conservative though; we should generate the `ediv` constraint instead but
            -- that is a TODO for now
-           teff     = if (not (null (forallsNonScoped ++ exists)) && isInstance && all notDiv extraEffects)
+           teff     = if ((not (null (forallsNonScoped ++ exists)) && isInstance)
+                           && all notDiv opEffTps)
                        then makeEffectExtend krng (TpCon nameTpDiv krng) teff0
                        else teff0
                     where
@@ -2102,12 +2105,12 @@ appexpr allowTrailingLam
           = expr
         injectApply expr fargs
           = case expr of
-              App fun args rng -> 
+              App fun args rng ->
                 App fun (positional ++ named) rng
-                where 
-                  positional :: [(Maybe (Name, Range), UserExpr)] 
+                where
+                  positional :: [(Maybe (Name, Range), UserExpr)]
                   positional = [(Nothing,a) | (Nothing, a) <- args] ++ nfargs
-                  named :: [(Maybe (Name, Range), UserExpr)] 
+                  named :: [(Maybe (Name, Range), UserExpr)]
                   named = [(Just n,a) | (Just n,a) <- args]
               _                -> App expr nfargs (combineRanged expr fargs)
           where
@@ -2222,7 +2225,7 @@ injectExpr
 injectType :: LexParser (Range, UserExpr -> UserExpr)
 injectType
  = do rng1 <- keywordInject
-      behind <- do { specialId "behind" <|> specialId "other"; return True } <|> return False
+      behind <- do { specialId "behind"; return True } <|> return False
       langle
       tp   <- ptype
       rng2 <- rangle

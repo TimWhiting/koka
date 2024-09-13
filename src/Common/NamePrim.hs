@@ -50,7 +50,7 @@ module Common.NamePrim
           -- Effects
           , nameTpHTag, nameHTag
           , nameTpClause, namePerform
-          , nameTpEvv, nameEvvAt, nameEvvIndex
+          , nameTpEvv, nameEvvAt, nameEvvIndex, nameEvvIndexMask
           , nameOpenAt, nameOpen, nameOpenNone
           , nameTpEv, nameHandle, nameNamedHandle
           , nameTpResumeContext
@@ -154,7 +154,9 @@ module Common.NamePrim
 
 
           , nameTpOptional
-          , nameTpArray, nameTpVector, nameVector
+          , nameTpArray, nameTpVector
+          , nameVector, nameVectorFromList
+          , nameVectorUnsafeCreate
 
           , nameTpTotal, nameTpDiv, nameTpPartial, nameTpPure
           , nameTpST
@@ -250,7 +252,9 @@ nameCoreFileModule = qualify nameCoreDebug (newLocallyQualified "" "file" "kk-mo
 {--------------------------------------------------------------------------
   std/core/vector
 --------------------------------------------------------------------------}
-nameVector      = coreVectorName "unvlist"
+nameVector              = coreVectorName "unvlist"
+nameVectorFromList      = newLocallyQualified "std/core/vector" "list" "vector"
+nameVectorUnsafeCreate  = coreVectorName "@unsafe-vector"
 
 {--------------------------------------------------------------------------
   std/core/int
@@ -324,6 +328,7 @@ nameHTag        = coreHndName "@new-htag"
 namePerform i   = coreHndName ("@perform" ++ show i)
 nameEvvAt       = coreHndName "@evv-at"
 nameEvvIndex    = coreHndName "@evv-index"
+nameEvvIndexMask= coreHndName "@evv-index-mask"
 nameMaskAt      = coreHndName "@mask-at"
 nameMaskBuiltin = coreHndName "@mask-builtin"
 nameOpenAt i    = coreHndName ("@open-at" ++ show i)

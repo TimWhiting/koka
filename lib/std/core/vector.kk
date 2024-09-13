@@ -43,7 +43,7 @@ inline fip extern unsafe-assign( ^v : vector<a>, i : ssize_t, x : a ): total ()
   js inline "(#1)[#2] = #3"
 
 // Create a new vector of length `n`  with uninitialized elements.
-inline extern unsafe-vector : forall<a> ( n : ssize_t ) -> total vector<a>
+pub extern @unsafe-vector : forall<a> ( n : ssize_t ) -> total vector<a>
   c  inline "kk_vector_alloc(#1,kk_box_null(),kk_context())"
   cs inline "(new ##1[#1])"
   js inline "Array(#1)"
@@ -73,7 +73,7 @@ pub inline extern copy(v: vector<a>): vector<a>
   c "kk_vector_copy"
   js inline "[...(#1)]"
   cs inline "(#1).Clone()"
- 
+
 // Assign to an entry in a local `:vector` variable.
 // ```
 // var v := vector(10, 0) 

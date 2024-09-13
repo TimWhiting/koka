@@ -1,19 +1,15 @@
 // --------------------------------------------------------
-// 
+//
 // --------------------------------------------------------
 
-effect diverge {
-  fix( f : (a -> diverge b, a) -> diverge b, x : a ) : b
-}
+div effect diverge
+  ctl fix( f : (a -> <div,diverge> b, a) -> diverge b, x : a ) : b
 
-val diverge = handler {
-  return x  -> x
-  fix(f,x)    -> resume( f(fn(y){ fix(f,y) }, x) ) 
-}
+effect test
+  fun op( f : (int -> test int) -> int ) : int
 
-effect mut {
-  newref(x : a) : mref<a>
-  getref(r : mref<a> ) : a
-  setref(r : mref<a>, x : a) : ()
-}
+
+val diverge = handler
+  ctl fix(f,x) resume( f(fn(y){ fix(f,y) }, x) )
+
 

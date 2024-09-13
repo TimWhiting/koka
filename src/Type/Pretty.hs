@@ -261,7 +261,7 @@ prettyDataInfo env0 showBody publicOnly isExtend info@(DataInfo datakind name ki
       (case datakind of
          Inductive -> keyword env "type"
          CoInductive -> keyword env "co type"
-         Retractive  -> keyword env "rec type") <+>  -- this "rec" means a retractive type
+         Retractive  -> keyword env "div type") <+>  -- this "div" means a retractive type or non-(co)inductive type
       -- ppVis env vis <+>
       ppName env name <.> pretty range <.>
       (if null args then empty else space <.> angled (map (ppTypeVar env) args)) <.>
@@ -378,13 +378,13 @@ ppType env tp
                         ppTypeCon env cv
       TApp (TCon con) [_,_] | typeConName con == nameEffectExtend
                     -> let (ls,tl) = shallowExtractEffectExtend tp
-                           tldoc   = if (tl == effectEmpty)
+                           tldoc   = if (matchType tl effectEmpty)
                                       then empty
                                       else text "|" <.> ppType env{prec=precTop} tl
                        in color (colorEffect (colors env)) $
                           case ls of
                             --[]  | tl == effectEmpty && not (coreIface env) -> ppNamePlain env nameTpTotal
-                            [l] | tl == effectEmpty && not (coreIface env) -> ppType env{prec=precAtom} l
+                            [l] | matchType tl effectEmpty && not (coreIface env) -> ppType env{prec=precAtom} l
                             _   -> text "<" <.> hcat (punctuate comma (map (ppType env{prec=precTop}) ls)) <.> tldoc <.> text ">"
 
       TApp (TCon con) [eff,res]
