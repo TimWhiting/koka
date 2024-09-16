@@ -174,7 +174,7 @@ pub fun vector-init-total( ^n : int, f : int -> a ) : vector<a>
 // Create a new vector of length `n`  with initial elements given by function `f` which can have a control effect.
 pub fun vector-init( ^n : int, f : int -> e a ) : e vector<a>
   val len = n.ssize_t
-  val v = unsafe-vector(len)
+  val v = @unsafe-vector(len)
   forz( len ) fn(i)
     unsafe-assign(v,i,f(i.int))
   v
