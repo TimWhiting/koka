@@ -40,13 +40,13 @@ pub extern vector : ( s : string ) -> vector<char>
 
 // Are two strings equal?
 // Uses exact equality between character codes.
-pub inline extern (==) : (string,string) -> bool
+pub inline fip extern (==) : (string,string) -> bool
   c  "kk_string_is_eq"
   cs inline "(#1 == #2)"
   js inline "(#1 === #2)"
 
 // Are two strings not equal?
-pub inline extern (!=) : (string,string) -> bool
+pub inline fip extern (!=) : (string,string) -> bool
   c  "kk_string_is_neq"
   inline "(#1 != #2)"
   js inline "(#1 !== #2)"
@@ -61,8 +61,13 @@ fip extern string-cmp( ^x : string, ^y : string ) : int
 pub fip fun cmp( ^x : string, ^y : string) : order
   string-cmp(x,y).order
 
-pub fip fun order2( x : string, y : string ) : (string,string)
+pub fip fun lt/order2( x : string, y : string ) : (string,string)
   if (x<=y) then (x,y) else (y,x)
+
+pub fip fun total/order2( x : string, y : string ) : order2<string>
+  if (x<y) then Lt2(x,y) 
+  elif x == y then Eq2(x)
+  else Gt2(y,x)
 
 pub fip fun (>=)( ^x : string, ^y : string ) : bool { cmp(x,y) > Lt }
 pub fip fun (<=)( ^x : string, ^y : string ) : bool { cmp(x,y) < Gt }
