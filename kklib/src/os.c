@@ -246,15 +246,36 @@ kk_decl_export int kk_os_write_text_file(kk_string_t path, kk_string_t content, 
 
 kk_decl_export int kk_os_read_line(kk_string_t* result, kk_context_t* ctx)
 {
+  kk_string_t line = kk_string_empty();
   char buf[1024];
-  if (fgets(buf, 1023, stdin) == NULL) return errno;
-  buf[1023] = 0;      // ensure zero termination
-  const size_t len = strlen(buf);
-  if (len > 0 && buf[len-1] == '\n') {
-    buf[len-1] = 0;   // remove possible ending newline character
+  bool newline_found = false;
+
+  // read until '\n', EOF, or error
+  while (!newline_found && fgets(buf, sizeof buf, stdin) != NULL) {
+    kk_ssize_t len = kk_sstrlen(buf); // assumes no embedded '\0' characters
+
+    // check if we have a reached a newline character
+    if (len > 0 && buf[len-1] == '\n') {
+      newline_found = true;
+      buf[--len] = '\0';  // remove newline
+    }
+
+    // append buf to line
+    kk_string_t buf_str = kk_string_alloc_from_qutf8n(len, buf, ctx);
+    line = kk_string_cat(line, buf_str, ctx);
   }
-  *result = kk_string_alloc_from_qutf8(buf, ctx);
-  return 0;
+
+  // success if we reach '\n', or EOF with a non-empty line
+  // this mimics the behaviour of `fgets`
+  if(newline_found || (feof(stdin) && !kk_string_is_empty_borrow(line, ctx))) {
+    *result = line;
+    return 0;
+  }
+  else {
+    // error or EOF with an empty line
+    kk_string_drop(line, ctx);
+    return ferror(stdin) ? errno : EOF;
+  }
 }
 
 
