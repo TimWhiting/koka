@@ -62,6 +62,10 @@ static inline void kk_atomic_yield(void) {
   std::this_thread::yield();
 }
 #elif defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
 static inline void kk_atomic_yield(void) {
   YieldProcessor();
 }
