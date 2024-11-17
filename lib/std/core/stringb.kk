@@ -14,8 +14,8 @@ pub infixr 60  (\-)
 // As such it is like a list of strings but: 
 //   1. Will convert polymorphic values to strings
 //     - only when / as needed
-//     - ensuring a short lifetime for the converted string values (for unique references to the builder)
 //     - only converting once (for non-unique references to the builder)
+//     - ensuring a short lifetime for the converted string values (for unique references to the builder, and immediate usage)
 //   2. Will concat two string builders incrementally
 // 
 // For example this datastructure is useful for writing to a file
