@@ -34,7 +34,7 @@ type stringb
   SSpace( acc : stringb )
   SUnindent( acc : stringb )
   
-  lazy SBuilderString(a: string, b : stringb) -> 
+  lazy fip SBuilderString(a: string, b : stringb) -> 
     match b
       SDone -> SStep(a, SDone)
       // TODO: Optimize so we allocate the right buffer for the strings, and then just do a low level copy of the data
@@ -45,7 +45,7 @@ type stringb
       SSpace(acc) -> SStep(a, SSpace(acc))
 
   // Delays conversion until the string is actually needed
-  lazy SBuilderAny<a>( a: a, b: stringb, show: (a) -> string) ->
+  lazy fip SBuilderAny<a>( a: a, b: stringb, show: (a) -> string) ->
     match b  // TODO: Split strings on newlines?
       SDone -> SStep(show(a), SDone)
       SStep(s1, acc) -> SStep(show(a), SStep(s1, acc))
@@ -62,14 +62,7 @@ type stringb
       SUnindent(acc) -> SUnindent(SBuilderConcat(acc, str2))
       SNewline(acc) -> SNewline(SBuilderConcat(acc, str2))
       SSpace(acc) -> SSpace(SBuilderConcat(acc, str2))
-      SStep(s1, acc) -> 
-        match acc
-          SDone -> SStep(s1, str2)
-          SIndent(acc2) -> SStep(s1, SIndent(SBuilderConcat(acc2, str2)))
-          SUnindent(acc2) -> SStep(s1, SUnindent(SBuilderConcat(acc2, str2)))
-          SNewline(acc2) -> SStep(s1, SNewline(SBuilderConcat(acc2, str2)))
-          SSpace(acc2) -> SStep(s1, SSpace(SBuilderConcat(acc2, str2)))
-          SStep(s2, acc2) -> SStep(s1, SStep(s2, SBuilderConcat(acc2, str2))) 
+      SStep(s1, acc) -> SStep(s1, SBuilderConcat(acc, str2))
 
 // Concatenates two string builders with no space between
 inline fun builder/(|.|)(a: stringb, b: stringb) : stringb
@@ -120,19 +113,19 @@ inline fun any/(\-)(a: a, s: stringb, ?show: (a) -> string) : stringb
   SBuilderAny(a, SIndent(SNewline(s)), ?show)
 
 // Creates an indented block starting and ending with a newline
-fun indented(s: stringb): stringb
+inline fun indented(s: stringb): stringb
   SBuilderConcat(SIndent(SNewline(s)), SUnindent(SNewline(SDone)))
 
 // Ends a string builder with a string
-fun string/build(a: string): stringb
+inline fun string/build(a: string): stringb
   SStep(a, SDone)
 
 // Ends a string builder with a value
-fun any/build(a: a, ?show: (a) -> string): stringb
+inline fun any/build(a: a, ?show: (a) -> string): stringb
   SBuilderAny(a, SDone, ?show)
 
 // Ends a string builder with an empty value
-fun empty/build(): stringb
+inline fun empty/build(): stringb
   SDone
 
 // Show the string builder as a string
