@@ -5,7 +5,7 @@ fun sb(l: list<int>)
   match l
     Nil -> build()
     Cons(x, Nil) ->
-      x |.| build()
+      x.build()
     Cons(x, xs) ->
       x |-| sb(xs)
 
@@ -14,8 +14,8 @@ fun main()
   "".println
 
   val b = "Hello" |-| "world!" |.|
-            indented([1, 2, 3].sb \ [1, 2, 3] |.| build()) |.|
-            2 \ 4.5 |.| build()
+            indented([1, 2, 3].sb \ [1, 2, 3].build()) |.|
+            2 \ 4.5.build()
   b.println
   "".println
 
@@ -23,5 +23,5 @@ fun main()
               \- [1, 2, 3].sb 
                 \- [1, 2, 3] 
                   \- 2 
-                  \ 4.5 |.| build()
+                  \ 4.5.build()
   b1.println

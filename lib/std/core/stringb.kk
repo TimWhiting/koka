@@ -119,10 +119,20 @@ inline fun any/(\)(a: a, s: stringb, ?show: (a) -> string) : stringb
 inline fun any/(\-)(a: a, s: stringb, ?show: (a) -> string) : stringb
   SBuilderAny(a, SIndent(SNewline(s)), ?show)
 
+// Creates an indented block starting and ending with a newline
 fun indented(s: stringb): stringb
   SBuilderConcat(SIndent(SNewline(s)), SUnindent(SNewline(SDone)))
 
-fun string/build(): stringb
+// Ends a string builder with a string
+fun string/build(a: string): stringb
+  SStep(a, SDone)
+
+// Ends a string builder with a value
+fun any/build(a: a, ?show: (a) -> string): stringb
+  SBuilderAny(a, SDone, ?show)
+
+// Ends a string builder with an empty value
+fun empty/build(): stringb
   SDone
 
 // Show the string builder as a string
