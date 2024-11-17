@@ -1,8 +1,11 @@
-import std/core/string
+module std/core/stringb
+
 import std/core/types
 import std/core/lazy
-import std/core/undiv
+import std/core/string
 import std/core/int
+import std/core/console
+import std/core/undiv
 
 pub infixr 60  (|.|)
 pub infixr 60  (|-|)
@@ -25,7 +28,7 @@ pub infixr 60  (\-)
 // 
 // The string builder has some pretty-printing ability as well with newlines and indentation handled specially
 // Additionally spaces are handled specially so that they don't need to be materialized as values until the string is demanded.
-type stringb
+pub type stringb
   SDone 
   // Denotes a partially built string with the first part ready
   SStep( str: string, acc: stringb)
@@ -65,71 +68,71 @@ type stringb
       SStep(s1, acc) -> SStep(s1, SBuilderConcat(acc, str2))
 
 // Concatenates two string builders with no space between
-inline fun builder/(|.|)(a: stringb, b: stringb) : stringb
+pub inline fun builder/(|.|)(a: stringb, b: stringb) : stringb
   SBuilderConcat(a, b)
 
 // Concatenates two string builders with a space between
-inline fun builder/(|-|)(a: stringb, b: stringb) : stringb
+pub inline fun builder/(|-|)(a: stringb, b: stringb) : stringb
   SBuilderConcat(a, SSpace(b))
 
 // Concatenates two string builders with a newline between
-inline fun builder/(\)(a: stringb, b: stringb) : stringb
+pub inline fun builder/(\)(a: stringb, b: stringb) : stringb
   SBuilderConcat(a, SNewline(b))
 
 // Concatenates two string builders with a newline and indented block
-inline fun builder/(\-)(a: stringb, b: stringb) : stringb
+pub inline fun builder/(\-)(a: stringb, b: stringb) : stringb
   SBuilderConcat(a, SIndent(SNewline(b)))
 
 // Concatenates a string and a string builder with no space between
-inline fun string/(|.|)(a: string, b: stringb) : stringb
+pub inline fun string/(|.|)(a: string, b: stringb) : stringb
   SBuilderString(a, b)
 
 // Concatenates a string and a string builder with a space between
-inline fun stringb/(|-|)(a: string, b: stringb) : stringb
+pub inline fun stringb/(|-|)(a: string, b: stringb) : stringb
   SBuilderString(a, SSpace(b))
 
 // Concatenates a string and a string builder with a newline between
-inline fun stringb/(\)(a: string, b: stringb) : stringb
+pub inline fun stringb/(\)(a: string, b: stringb) : stringb
   SBuilderString(a, SNewline(b))
 
 // Concatenates a string and a string builder with a newline and indented block
-inline fun stringb/(\-)(a: string, b: stringb) : stringb
+pub inline fun stringb/(\-)(a: string, b: stringb) : stringb
   SBuilderString(a, SIndent(SNewline(b)))
 
 // Concatenates any value and a string builder with no space between
-inline fun any/(|.|)(a: a, s: stringb, ?show: (a) -> string) : stringb
+pub inline fun any/(|.|)(a: a, s: stringb, ?show: (a) -> string) : stringb
   SBuilderAny(a, s, ?show)
 
 // Concatenates any value and a string builder with a space between
-inline fun any/(|-|)(a: a, s: stringb, ?show: (a) -> string) : stringb
+pub inline fun any/(|-|)(a: a, s: stringb, ?show: (a) -> string) : stringb
   SBuilderAny(a, SSpace(s), ?show)
 
 // Concatenates any value and a string builder with a newline between
-inline fun any/(\)(a: a, s: stringb, ?show: (a) -> string) : stringb
+pub inline fun any/(\)(a: a, s: stringb, ?show: (a) -> string) : stringb
   SBuilderAny(a, SNewline(s), ?show)
 
 // Concatenates any value and a string builder with a newline and indented block
-inline fun any/(\-)(a: a, s: stringb, ?show: (a) -> string) : stringb
+pub inline fun any/(\-)(a: a, s: stringb, ?show: (a) -> string) : stringb
   SBuilderAny(a, SIndent(SNewline(s)), ?show)
 
 // Creates an indented block starting and ending with a newline
-inline fun indented(s: stringb): stringb
+pub inline fun indented(s: stringb): stringb
   SBuilderConcat(SIndent(SNewline(s)), SUnindent(SNewline(SDone)))
 
 // Ends a string builder with a string
-inline fun string/build(a: string): stringb
+pub inline fun string/build(a: string): stringb
   SStep(a, SDone)
 
 // Ends a string builder with a value
-inline fun any/build(a: a, ?show: (a) -> string): stringb
+pub inline fun any/build(a: a, ?show: (a) -> string): stringb
   SBuilderAny(a, SDone, ?show)
 
 // Ends a string builder with an empty value
-inline fun empty/build(): stringb
+pub inline fun empty/build(): stringb
   SDone
 
 // Show the string builder as a string
-fun stringb/show(s: stringb, indent: int = 0): string
+pub fun stringb/show(s: stringb, indent: int = 0): string
   match s
     SDone -> ""
     SIndent(acc) -> acc.pretend-decreasing.show(indent = indent + 2)
@@ -139,7 +142,7 @@ fun stringb/show(s: stringb, indent: int = 0): string
     SUnindent(acc) -> acc.pretend-decreasing.show(indent = max(0, indent - 2))
 
 // Print the string builder to the console
-fun stringb/println(s: stringb, indent: int = 0): console ()
+pub fun stringb/println(s: stringb, indent: int = 0): console ()
   match s
     SDone -> "".println
     SIndent(acc) -> 
@@ -158,7 +161,7 @@ fun stringb/println(s: stringb, indent: int = 0): console ()
       acc.pretend-decreasing.println(indent = max(0, indent - 2))
 
 // Print the string builder to the console with no ending newline
-fun stringb/print(s: stringb, indent: int = 0): console ()
+pub fun stringb/print(s: stringb, indent: int = 0): console ()
   match s
     SDone -> "".print
     SIndent(acc) -> 
