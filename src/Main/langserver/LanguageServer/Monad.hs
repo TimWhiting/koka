@@ -14,7 +14,7 @@
 module LanguageServer.Monad
   ( LSState (..),
     InlayHintOptions(..),
-    SignatureContext(..),clearSignatureContext,updateSignatureContext,getSignatureContext,
+    SignatureContext(..),clearSignatureContext,updateSignatureContext,getSignatureContext,toJSON,fromJSON,
     defaultLSState,
     newLSStateVar,
     LSM,
