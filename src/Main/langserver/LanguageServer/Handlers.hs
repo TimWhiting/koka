@@ -135,11 +135,11 @@ lspHandlers rin = mapHandlers goReq goNot handlers where
             -- If the request is cancelled before we start we return a cancelled error
             if newId `S.member` cancelled then do
               
-              runLSM (k $ Left $ ResponseError (J.InL J.LSPErrorCodes_RequestCancelled) (T.pack "") Nothing) state env
+              runLSM (k $ Left $ J.TResponseError (J.InL J.LSPErrorCodes_RequestCancelled) (T.pack "") Nothing) state env
             -- Otherwise we run the request
             else 
-              catchAny (runLSM (f msg k) state env) $
-                (\err -> runLSM (k $ Left $ ResponseError (J.InL J.LSPErrorCodes_RequestFailed) (T.pack (show err)) Nothing) state env)
+              catchAny (runLSM (f msg k) state env)
+                (\err -> runLSM (k $ Left $ J.TResponseError (J.InL J.LSPErrorCodes_RequestFailed) (T.pack (show err)) Nothing) state env)
         liftIO $ atomically $ do -- After it finishes we remove it from the pending requests set and canceled set
           modifyTVar (pendingRequests stVal) $ \t -> S.delete newId t
           modifyTVar (cancelledRequests stVal) $ \t -> S.delete newId t
