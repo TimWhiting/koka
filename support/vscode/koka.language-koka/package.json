@@ -16,6 +16,10 @@
   "files": [
     "syntaxes/*.json",
     "images/",
+    "out/",
+    "koka-configuration.json",
+    "node_modules/",
+    "package.json",
     "README.md",
     "whatsnew.md"
   ],
@@ -283,19 +287,19 @@
     }
   },
   "scripts": {
-    "build": "tsc && npx copyfiles -V ../../../whatsnew.md support/vscode/koka.language-koka/ && vsce package",
+    "build": "tsc && npx copyfiles -V ../../../whatsnew.md support/vscode/koka.language-koka/ && vsce package --allow-unused-files-pattern",
     "compile": "tsc",
     "watch": "tsc -w",
     "readme": "npx copyfiles -V ../../../whatsnew.md support/vscode/koka.language-koka/",
-    "package": "vsce package",
+    "package": "vsce package --allow-unused-files-pattern",
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/node": "^20.5.6",
+    "@types/node": "^22.10.2",
     "@types/vscode": "1.85.0",
-    "@vscode/vsce": "2.24.0",
-    "@types/semver": "^7.5.6",
-    "typescript": "^5.2.2",
+    "@vscode/vsce": "3.2.1",
+    "@types/semver": "^7.5.8",
+    "typescript": "^5.7.2",
     "copyfiles": "^2.4.1"
   },
   "dependencies": {
