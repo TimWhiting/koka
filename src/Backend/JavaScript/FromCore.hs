@@ -897,7 +897,7 @@ genExprExternal tname formats argDocs0
                          let try = parens $
                                    parens (text "function()" <+> block (vcat (
                                      [text "try" <+> block (vcat (decls ++ [text "return" <+> doc <.> semi]))
-                                     ,text "catch(_err){ return $std_core._throw_exception(_err); }"]
+                                     ,text "catch(_err){ return $std_core_exn._throw_exception(_err); }"]
                                      )))
                                    <.> text "()"
                          in return ([],try)
