@@ -165,9 +165,9 @@ $ stack build
 $ stack exec koka -- -e util/bundle
 ...
 distribution bundle created.
-  bundle : bundle/v2.3.9/koka-v2.3.9-linux-x64.tar.gz
-  cc     : gcc
-  version: v2.3.9
+  bundle : bundle/<version>/koka-<version>-<platform>.tar.gz
+  cc     : <compiler>
+  version: <version>
 ```
 
 This takes a while as it pre-compiles the standard libraries in three build
@@ -175,7 +175,7 @@ variants (`debug`, `drelease` (release with debug info), and `release`).
 After generating the bundle, you can install it locally as:
 
 ```sh
-$ util/install.sh  bundle/v2.3.9/koka-v2.3.9-linux-x64.tar.gz
+$ util/install.sh  bundle/<version>/koka-<version>-<platform>
 ```
 
 (use `util/install.bat` on Windows).
@@ -186,8 +186,8 @@ $ koka --version
 ```
 
 Koka is by default installed for the current user in `<prefix>/bin/koka`,
-(with architecture specific files under `<prefix>/lib/koka/v2.x.x`
-and libraries and samples under `<prefix>/share/koka/v2.x.x`).
+(with architecture specific files under `<prefix>/lib/koka/v3.x.x`
+and libraries and samples under `<prefix>/share/koka/v3.x.x`).
 On Unix and macOS the default prefix is `/usr/local` while
 on Windows the default prefix is `%LOCALAPPDATA%\koka`.
 
@@ -305,12 +305,6 @@ LSP Related Tasks:
 * [ ] Generate completions for effect handlers (with empty bodies of all the functions)
 * [ ] Generate show / (==) for datatypes
 * [ ] Find References
-* [ ] Generate Type Annotations
-
-Extension Related Tasks:
-
-VSCode:
-* [ ] Add support for debugging an executable
 
 Contact me if you are interested in tackling some of these :-)
 
