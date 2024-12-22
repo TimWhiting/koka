@@ -1672,7 +1672,8 @@ getTypeName tp
 
 inferBranch :: PatternKind -> Maybe (Type,Range) -> Type -> Range -> [Name] -> Branch Type -> Inf ([(Type,Effect)],Core.Branch)
 inferBranch patkind propagated matchType matchRange matchedNames branch@(Branch pattern guards)
-  = inferPattern patkind matchType (getRange branch) pattern (
+  = -- trace ("inferBranch: " ++ show matchType) $
+    inferPattern patkind matchType (getRange branch) pattern (
     \pcore gcores ->
        do when (rangeNull /= getRange pattern) $
             -- check for unused pattern bindings
@@ -1749,7 +1750,7 @@ inferPattern :: HasTypeVar a => PatternKind -> Type -> Range -> Pattern Type -> 
                   -> ([(Name,NameInfo)] -> Inf ([(Type,Effect)],a))
                   -> Inf ([(Type,Effect)],b)
 inferPattern patkind matchType branchRange (PatCon name patterns0 nameRange range) withPattern inferGuards
-  = do (qname,gconTp,repr,coninfo) <- resolveConPatternName name (length patterns0) range
+  = do (qname,gconTp,repr,coninfo) <- resolveConPatternName name matchType (length patterns0) range
        addRangeInfo nameRange (RM.Id qname (RM.NICon gconTp (conInfoDoc coninfo)) [] False)
        -- traceDoc $ \env -> text "inferPattern.constructor:" <+> pretty qname <.> text ":" <+> ppType env gconTp
 

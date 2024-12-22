@@ -901,10 +901,33 @@ resolveConName name mbType range
   = do (qname,tp,info) <- resolveNameEx isInfoCon Nothing name (maybeToContext mbType) range  range
        return (qname,tp,infoRepr info,infoCon info)
 
-resolveConPatternName :: Name -> Int -> Range -> Inf (Name,Type,Core.ConRepr,ConInfo)
-resolveConPatternName name patternCount range
-  = do (qname,tp,info) <- resolveNameEx isInfoCon Nothing name ctx range  range
-       return (qname,tp,infoRepr info,infoCon info)
+getDataTpName :: Type -> Maybe Name
+getDataTpName tp = 
+  let tp' = expandSyn tp in
+  case splitPredType tp of
+    (_,_,TCon tcon) -> Just $ typeconName tcon
+    (_,_,TApp (TCon tcon) _) -> Just $ typeconName tcon
+    _ -> 
+      case splitFunScheme tp of
+        Just (_, _, _, _, TCon tcon) -> Just $ typeconName tcon
+        Just (_, _, _, _, TApp (TCon tcon) _) -> Just $ typeconName tcon
+        _ -> -- trace ("TypeCon not found " ++ show tp) $ 
+              Nothing
+
+resolveConPatternName :: Name -> Type -> Int -> Range -> Inf (Name,Type,Core.ConRepr,ConInfo)
+resolveConPatternName name expected patternCount range
+  = do case getDataTpName expected of 
+          Just nm -> do
+            (qname,tp,info) <- resolveNameEx (\ni -> 
+                  isInfoCon ni && 
+                    (case ni of -- Check for exact type name match since we have the expected type
+                        InfoCon {infoCon = ConInfo{conInfoTypeName = tname}} -> nm == tname
+                        _ -> False)
+                ) Nothing name ctx range  range
+            return (qname,tp,infoRepr info,infoCon info)
+          _ -> do
+            (qname,tp,info) <- resolveNameEx isInfoCon Nothing name ctx range range
+            return (qname,tp,infoRepr info,infoCon info)
   where
     ctx = if patternCount > 0 then CtxFunArgs True {-partial?-} patternCount [] Nothing else CtxNone
 

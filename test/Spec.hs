@@ -14,6 +14,7 @@ import Text.JSON
 import Test.Hspec
 import Test.Hspec.Core.Runner
 import Test.Hspec.Core.Formatters hiding (Error)
+import Debug.Trace (trace)
 
 commonFlags :: [String]
 commonFlags = ["-c", "-v0", "--console=raw",
@@ -27,7 +28,7 @@ data Mode = Test | New | Update
   deriving (Eq, Ord, Show)
 
 
-data Options = Options{ mode :: Mode, cabal :: Bool, sysghc:: Bool, opt :: Int, target :: String, par :: Bool, rebuild :: Bool }
+data Options = Options{ mode :: Mode, cabal :: Bool, sysghc:: Bool, opt :: Int, target :: String, par :: Bool, rebuild :: Bool } deriving Show
 
 optionsDefault = Options Test False False 0 "" True False
 
@@ -36,6 +37,9 @@ data Cfg = Cfg{ flags   :: [String],
                 exclude :: [String],
                 fexclude:: !(String -> Bool)
               }
+
+showCfg (Cfg flags options exclude _)
+  = "Cfg " ++ show flags ++ " " ++ show options ++ " " ++ show exclude
 
 makeCfg :: [String] -> Options -> [String] -> Cfg
 makeCfg flags options []
@@ -155,6 +159,7 @@ makeTest cfg fp
            when shouldRun $
              it (takeBaseName fp) $ do
                kokaDir <- getCurrentDirectory
+               -- trace ("running: " ++ fp ++ " " ++ showCfg cfg) $ return ()
                out <- runKoka cfg kokaDir fp
                unless (mode (options cfg) == Test) $ (withBinaryFile expectedFile WriteMode (\h -> hPutStr h out)) -- writeFile expectedFile out
                expected <- testSanitize kokaDir <$> readFile expectedFile
