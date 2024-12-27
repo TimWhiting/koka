@@ -111,9 +111,9 @@ typeCheck flags defs coreImports program0
 
         -- remove return statements
         unreturn penv
-
+        coreDefs' <- Core.getCoreDefs
         -- checkCoreDefs "unreturn"
-        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
+        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs' }) (defsBorrowed defs)
         checkFBIP penv (platform flags) newtypes borrowed gamma
 
         -- initial simplify
@@ -146,7 +146,7 @@ typeCheck flags defs coreImports program0
             currentImports   = S.fromList (map Core.importName coreImports)
             typeImports      = [Core.Import name "" Core.ImportTypes Private "" | name <- typeDeps, not (S.member name currentImports) && not (name == progName)]
             coreFinal        = coreUnique{ Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports }
-
+        
         return (coreFinal,mbRangeMap)
 
   where

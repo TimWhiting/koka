@@ -44,13 +44,12 @@ import Core.Pretty
 import Core.CoreVar
 
 trace s x =
-   -- Lib.Trace.trace s
+    -- Lib.Trace.trace s
     x
 
 unreturn :: Pretty.Env -> CorePhase b ()
 unreturn penv
   = liftCorePhaseUniq $ \uniq defs -> runUR penv uniq (urTopDefGroups defs)
-
 
 {--------------------------------------------------------------------------
   transform definition groups
@@ -116,7 +115,15 @@ urExpr expr
 
       -- case: scrutinee cannot contain return due to grammar
       Case scruts branches
-        -> urCase expr scruts branches
+        -> if any containsReturn scruts then do
+            names <- mapM (\scrut -> (uniqueName "scrut")) scruts
+            let tnscrut = zipWith (\nm scrut -> (TName nm (typeOf scrut), scrut)) names scruts
+            let addDefs :: [(TName, Expr)] -> Expr -> Expr
+                addDefs dfs = Let (map (\(tn, dexpr) -> DefNonRec (Def (getName tn) (typeOf tn) dexpr Private DefVal InlineNever rangeNull "")) dfs)
+            let case' = addDefs tnscrut (Case (map (\(nm, scrut) -> Var nm InfoNone) tnscrut) branches)
+            urExpr case'
+           else
+            urCase expr scruts branches
 
       -- return
       App ret@(Var v _) [arg] | getName v == nameReturn
@@ -129,6 +136,20 @@ urExpr expr
               args' <- mapM urPure args
               return (I (App f' args'))
       _ -> return (U expr)
+
+containsReturn :: Expr -> Bool
+containsReturn expr
+  = case expr of
+      Lam pars eff body -> containsReturn body
+      Var _ _ -> False
+      App ret@(Var v _) [arg] | getName v == nameReturn -> True
+      App f args -> any containsReturn (f:args)
+      TypeLam tvars body -> containsReturn body
+      TypeApp body targs -> containsReturn body
+      Lit _ -> False
+      Con _ _ -> False
+      Let defgs body -> any (containsReturn . defExpr) (flattenDefGroups defgs)
+      Case scruts branches -> any containsReturn scruts || any (any (containsReturn . guardExpr) . branchGuards) branches
 
 urPure :: Expr -> UR Expr
 urPure expr
@@ -156,7 +177,7 @@ urLet org defgroups kbody
     fold (Right (makeDefGroup,kdefexpr) : kdefgs) kexpr
       = fold kdefgs (bind Nothing combine kdefexpr kexpr)
       where
-        combine e1 e2 = trace ("combine: " ++ show (e1,e2)) $
+        combine e1 e2 = trace ("combine: " ++ show (e1, e2) ++ "\n") $
                         addDef (makeDefGroup e1) e2
 
     addDef :: DefGroup -> Expr -> Expr
@@ -242,7 +263,11 @@ data KExpr  = U Expr   -- unchanged expression
             | R Expr   -- returned expression
             | F ((Expr -> Expr) -> Expr)  -- cps transformed, needs continuation
 
-
+showKExpr :: KExpr -> String
+showKExpr (U e) = "U(" ++ show e ++ ")"
+showKExpr (I e) = "I(" ++ show e ++ ")"
+showKExpr (R e) = "R(" ++ show e ++ ")"
+showKExpr (F _) = "F"
 
 isU (U _) = True
 isU _     = False
@@ -284,7 +309,7 @@ emapK mbOrg g kexpr
 
 
 bind :: Maybe Expr -> (Expr -> Expr -> Expr) -> KExpr -> KExpr -> KExpr
-bind mbOrg combine  ke1 ke2
+bind mbOrg combine ke1 ke2
   = case (ke1,ke2) of
       (R r, _) -> R r
       (U a, k) -> case k of
