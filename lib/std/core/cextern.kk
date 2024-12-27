@@ -7,6 +7,78 @@ import std/core/int
 extern import
   c header-file "inline/cextern.h"
 
+// TIM: Some thoughts / notes on wrapping C libraries and C / extern memory management
+
+// C structs / memory has the following allocation / ownership behavior for function calls
+
+// Parameters to C functions
+// - Passed as value: 
+//   + Caller is not responsible for the struct's memory anymore, but could be responsible for embedded pointers
+//   + Allocation of the struct itself is stack based, and unimportant for memory management
+// - Passed as pointer
+//   + Could be stack or heap allocated pointer, and could be caller owned or transfer of ownership to callee (for heap allocated references)
+//   + If ownership is transferred the caller should not have any other references to the memory, and should not use it anymore.
+// Return values from C functions
+// - As value
+//   + Caller is responsible for continuing to hold onto the important pieces by value
+//   + or if the struct escapes the stack / is returned by value the caller needs to allocate + own (at least the outer struct)
+// - As pointer
+//   + Could be stack or heap allocated pointer, and could be callee owned or transferred to caller (for heap allocated references)
+//   + If ownership is transferred to caller then the caller needs to become responsible for deallocation 
+//   + Unlikely to be a stack allocated pointer, unless it is of one that we have access to otherwise, (e.g. a pointer into an array we allocated on the stack)
+
+// In summary we have values, stack references and heap references. Following covers the difference between these.
+
+// Stack allocated values
+//   The normal value types of Koka could be used with no changes, other than the object header, which would require a boxing step, which happens anyways. 
+//   We'd just need to specialize the boxing step for this kind of memory.
+//   Maybe we could introduce a `raw struct` variant - to ensure native (C) ordering / representation, and restrict fields to native compatible types
+//   Raw structs embedded within other structs are boxed
+//   
+// Stack allocated references
+// Could we reuse Koka's `local<h>` effect, maybe `local-raw<h>` to prevent scope escaping? 
+//   For example we could have a function that like `local-new` returns a local that cannot escape the stack - but for a `raw value` type.
+// 
+// Stack allocation: 
+//   On the parameter side, we would need to be able to pass the struct by value or by reference
+//   We could also have a `.ref` to get the reference to the stack location, and a `.value` to copy a stack allocated ref into the value type. 
+//   Return types from C functions could introduce the `local-raw<h>` effect tied to the return value (for reference types), and transparently represent `raw struct`s.
+//   Stack allocation is similar to the concept of Rust lifetimes. However, I expect that Koka's lifetime will always be stack related (region-like?) and not infinitely relatable to other objects (other than through invariant type polymorphism?)
+
+// Heap allocated raw types (all heap types are references)
+//   In the heap we have two main concepts owned and borrowed
+//   - The owner is in charge of determining the lifetime and deallocating the pointer
+//   - A borrower should not deallocate the pointer, and needs to know that the memory is still valid
+
+// Owned references:
+//   This one is somewhat easy for Koka. 
+//   We can use a reference counting wrapper to determine how many references to the pointer are from Koka
+//   The C object might have specific deallocation / cleanup functions to call, and might have been allocated with a different allocator.
+//   Unfortunately the wrapper won't transparently pass through the C code.
+//   Function calls will require domain specific understanding of the APIs and whether C maintains it's own references or not.
+//   If the reference is duplicated and both sides can access it (shared ownership), the `dup` / `drop` calls needs to happen in a domain specific manner.
+//     Using borrow annotations on the parameters should help to handle this, but the C code needs the raw pointer, so we also want to unwrap it when we generate the binding code.
+//     Also we need to defer the `drop` call to after the C function is run so that the memory is still accessible to the function.
+//   If the reference should be accessible by only one side at a time, and ownership should be passed, we need to guard calls to C by making sure the reference count is one when handing it off.
+//     This is where we would need some sort of static reference counting / escape analysis at compile time to make a guarantee that this won't cause an error.
+//   When C passes an owned reference to us that is much easier, we do as normal and wrap it up. Again, some automatic wrapping would be nice here.
+
+// Borrowed references: These are really just a special case of owned references, with specific patterns
+//   C code might want to borrow a reference, this is fine with a Koka owned reference, as long as we know when the C code is done with it and we can `drop` the reference count.
+//   C code might give us a reference (e.g. in a callback) that we should not own permanently, which it is in charge of cleaning up (likely after the function returns).
+//     In this case, treating it as a stack allocated region limited reference is the appropriate thing to do, with maybe some restrictions / warnings on copying it into a value?
+//     Some fields might be okay or intended for you to copy / own, and some may not.
+
+// I imagine that most C interfaces follow these common patterns:
+//  - Owned handles with create() and destruct() functions, with the user of the library in charge of cleaning up & lifetime as long as the user wants.
+//  - Passing / returning by value
+//  - Taking in a stack allocated reference (i.e. calls where the C code doesn't store the reference long term)
+//  - Embedded owned handles. (Composition of heap allocated references)
+
+// The tricky part is likely not any of the basics, but rather dealing with nested / nullable fields / mutation.
+// Rust is complicated because of lifetime annotation equivalence, upper bounds, multiple lifetimes, etc. 
+
+
 // A managed koka pointer to C memory
 // Owned values can be freely passed around, captured in lambdas, escape their scope, etc.
 pub alias owned-c<t> = extern-owned<t>
