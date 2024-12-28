@@ -1,0 +1,2 @@
+fun main()
+  host() == "libc"
