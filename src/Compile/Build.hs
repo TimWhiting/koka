@@ -301,10 +301,10 @@ moduleCodeGen mainEntries parsedMap tcheckedMap optimizedMap codegenMap
   = moduleGuard PhaseOptimized PhaseCodeGen codegenMap (\mod -> mod) (\mod -> (False,noLink,mod))
                 (moduleOptimize parsedMap tcheckedMap optimizedMap) $ \done mod ->
     do -- wait for all required imports to be optimized (no need to wait for codegen!)
-       imports <- moduleWaitForImports False optimizedMap [] (modImportNames mod)
+       imports <- moduleWaitForImports True optimizedMap [] (modImportNames mod)
        if any (\m -> modPhase m < PhaseOptimized) imports
          then done mod
-         else do  phaseVerbose 2 "codegen" $ \penv -> TP.ppName penv (modName mod) -- <.> text ": imported:" <+> list (map (pretty . modName) imports)
+         else do  phaseVerbose 2 "codegen" $ \penv -> TP.ppName penv (modName mod) <.> text ": imported:" <+> list (map (pretty . modName) imports)
                   flags <- getFlags
                   term  <- getTerminal
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the compile?
