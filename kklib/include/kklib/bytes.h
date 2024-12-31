@@ -157,7 +157,15 @@ static inline const char* kk_bytes_cbuf_borrow(const kk_bytes_t b, kk_ssize_t* l
   return (const char*)kk_bytes_buf_borrow(b, len, ctx);
 }
 
+static inline int8_t kk_bytes_at(kk_bytes_t p, uint64_t i, kk_context_t* ctx){
+  const uint8_t* buf = kk_bytes_buf_borrow(p, NULL, ctx);
+  return (int8_t)buf[i];
+}
 
+static inline void kk_bytes_set(kk_bytes_t p, uint64_t i, int8_t b, kk_context_t* ctx){
+  uint8_t* buf = (uint8_t*)kk_bytes_buf_borrow(p, NULL, ctx);
+  buf[i] = (uint8_t)b;
+}
 
 /*--------------------------------------------------------------------------------------------------
   Length, compare
