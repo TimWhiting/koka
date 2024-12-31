@@ -30,6 +30,7 @@ module Core.Core ( -- Data structures
                    , typeDefVis
                    , typeDefDoc
                    , externalImportLookup, eimportLookup, lookupTarget
+                   , coreDependencies
 
                      -- Core term builders
                    , defIsVal, defParamInfos
@@ -501,7 +502,7 @@ getDataReprEx getIsValue info
         hasExistentials = any (\con -> not (null (conInfoExists con))) conInfos
         isValue = getIsValue info && not (dataInfoIsRec info)
         (dataRepr,conReprFuns) =
-         if (dataInfoIsOpen(info))
+         if (dataInfoIsOpen (info))
           then (DataOpen, map (\conInfo conTag -> ConOpen typeName DataOpen (conInfoValueRepr conInfo) CtxNone conTag) conInfos)
          -- TODO: only for C#? check this during kind inference?
          -- else if (hasExistentials)
@@ -644,7 +645,7 @@ instance Functor (CorePhase b) where
 
 instance Applicative (CorePhase b) where
   pure x = CP (\uniq defs -> return (CPState x uniq defs))
-  m<*>n  = do{ f<-m; x<-n; return (f x) }
+  m<*>n  = do { f<-m; x<-n; return (f x) }
 
 instance Monad (CorePhase b) where
   -- return = pure
@@ -1320,7 +1321,7 @@ type Deps = S.Set Name
 depsUnions xs = foldr S.union S.empty xs
 
 depTName :: TName -> Deps
-depTName tname = depName (getName tname)
+depTName tname = depsUnions [depName (getName tname), depType (tnameType tname)]
 
 depName :: Name -> Deps
 depName name
@@ -1351,14 +1352,16 @@ depType :: Type -> Deps
 depType tp
   = case tp of
       TForall vars preds rho  -> depType rho
-      TFun args eff tp        -> depsUnions (map depType (tp:eff:map snd args))
+      TFun args eff tp'        -> depsUnions (map depType (tp':eff:map snd args))
       TCon tc                 -> depName (typeConName tc)
       TVar _                  -> S.empty
-      TApp tp tps             -> depsUnions (map depType (tp:tps))
-      TSyn syn args tp        -> depsUnions (depName (typesynName syn):(map depType (tp:args)))
+      TApp tp' tps             -> depsUnions (map depType (tp':tps))
+      TSyn syn args tp'        -> depsUnions (depName (typesynName syn):(map depType (tp':args)))
 
 depDef :: Def -> Deps
-depDef def  = depsUnions [depType (defType def), depExpr (defExpr def)]
+depDef def  = 
+  -- trace ("depDef: " ++ show (defName def)) $
+  S.union (depType (defType def)) (depExpr (defExpr def))
 
 depExpr :: Expr -> Deps
 depExpr expr
@@ -1379,11 +1382,14 @@ depBranch (Branch patterns guards)
 depGuard (Guard test expr)
   = S.union (depExpr test) (depExpr expr)
 
+depPat :: Pattern -> S.Set Name
 depPat pat
   = case pat of
-      PatCon{patConName=tname,patConPatterns=pats}
-        -> depsUnions (depTName tname : map depPat pats)
+      PatCon{patConName=tname,patConPatterns=pats,patTypeRes=tp}
+        ->
+          -- trace ("depPat: " ++ show (tname))
+          depsUnions (depType tp:depTName tname : map depPat pats)
       PatVar tname pat
-        -> depPat pat
+        -> S.union (depTName tname) (depPat pat)
       _ -> S.empty
 

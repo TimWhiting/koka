@@ -46,6 +46,7 @@ import Type.Infer( inferTypes )
 import qualified Core.Core as Core
 import Compile.Options
 import Compile.Module( Definitions(..), Module (modName) )
+import Core.Core (coreDependencies)
 
 
 {---------------------------------------------------------------
@@ -132,7 +133,6 @@ typeCheck flags defs coreImports program0
 
         coreDefsFinal <- Core.getCoreDefs
         uniqueFinal   <- unique
-        -- traceM ("final: " ++ show uniqueFinal)
 
         let mbRangeMap       = fmap rangeMapSort mbRangeMap1
             coreUnique       = uniquefy $ coreProgram {
@@ -142,11 +142,11 @@ typeCheck flags defs coreImports program0
                                }
 
             -- add extra imports needed to resolve types in this module
-            typeDeps         = extractDepsFromSignatures coreUnique
+            exprDeps         = coreDependencies coreUnique
+            typeDeps         = S.toList (S.union (S.fromList (extractDepsFromSignatures coreUnique)) exprDeps)
             currentImports   = S.fromList (map Core.importName coreImports)
             typeImports      = [Core.Import name "" Core.ImportTypes Private "" | name <- typeDeps, not (S.member name currentImports) && not (name == progName)]
             coreFinal        = coreUnique{ Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports }
-
         return (coreFinal,mbRangeMap)
 
   where

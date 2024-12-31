@@ -44,6 +44,7 @@ import Type.Assumption( Gamma )
 import qualified Core.Core as Core
 import Compile.Options
 import Compile.Module( Definitions(..) )
+import Core.Core (dependencies)
 
 {---------------------------------------------------------------
   compile core:
@@ -146,7 +147,8 @@ coreOptimize flags newtypes gamma inlines coreProgram
             allInlineDefs    = specializeDefs ++ localInlineDefs
 
             -- add extra required imports for inlined definitions
-            inlineDeps       = extractDepsFromInlineDefs allInlineDefs
+            exprDeps         = dependencies localInlineDefs (coreProgram{ Core.coreProgDefs = coreDefsFinal })
+            inlineDeps       = S.toList (S.union (S.fromList (extractDepsFromInlineDefs allInlineDefs)) exprDeps)
             currentImports   = map Core.importName (Core.coreProgImports coreProgram)
             inlineImports    = [Core.Import name "" Core.ImportCompiler Private "" | name <- inlineDeps, not (name `elem` currentImports) && not (name == progName)]
 
