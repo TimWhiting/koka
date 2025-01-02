@@ -167,7 +167,9 @@ lspHandlers rin = mapHandlers goReq goNot handlers where
         liftIO $ atomically $ writeTChan rin $
           ReactorAction $ do
             -- When running the request we check if the version is the same as the latest version, if not we don't run the change handler
-            versions <- readTVarIO (documentVersions stVal)
+            versions <- readTVarIO (documentVersions stateV)
+            -- runLSM (emitNotification (\env -> text ("Latest versions: " ++ show versions))) state env
+            -- runLSM (emitNotification (\env -> text ("Doc Version: " ++ show normUri ++ ": " ++ show _version))) state env
             when (M.lookup normUri versions == Just _version) runCatchErrors
       _ ->
         liftIO $ atomically $ writeTChan rin $
