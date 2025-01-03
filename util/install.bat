@@ -18,11 +18,13 @@ set KOKA_PREV_PREFIX=
 set KOKA_ARCH=x64
 set KOKA_VSCODE=N
 
-rem for now, koka runs emulated as an x64 process (as ghc does not yet have a windows arm64 port)
-rem but koka generates native arm64 code.
+rem On Windows for arm64, koka runs (for now) emulated as an x64 process (as ghc does not yet have a windows arm64 port)
+rem Koka still generates native arm64 code though.
 set KOKA_TARGET_ARCH=x64
 for /F "tokens=1" %%x in ("%PROCESSOR_IDENTIFIER%") do (
-  if "%%x" == "ARMv8" (set KOKA_TARGET_ARCH=arm64)    
+  if "%%x" == "ARMv8" (set KOKA_TARGET_ARCH=arm64)
+  if "%%x" == "ARMv9" (set KOKA_TARGET_ARCH=arm64)
+  if "%%x" == "ARM64" (set KOKA_TARGET_ARCH=arm64)
 )
 
 set CLANG_PLATFORM=win64
@@ -37,9 +39,10 @@ set CLANG_INSTALL_SHA256=94af030060d88cc17e9f00ef1663ebdc1126b35e16bebdfa1e80798
 if "%CLANG_PLATFORM%" == "woa64" (set CLANG_INSTALL_SHA256=e25bf44d67fe86708490cf08de085fe1d6e1e50f3249c212c9077a06247cdc9e)
 
 set VS_VERSION=2022
-set VS_VC_TOOLS="--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-if "%KOKA_TARGET_ARCH%" == "arm64" (set VS_VC_TOOLS="--add Microsoft.VisualStudio.Component.VC.Tools.ARM64")
-set VS_INSTALL_CMD=winget install Microsoft.VisualStudio.%VS_VERSION%.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows11SDK.22000 %VS_TC_TOOLS%"
+set VS_SDK_VERSION=Windows11SDK.26100
+set VS_VCTOOLS_TARGET=x86.x64
+if "%KOKA_TARGET_ARCH%" == "arm64" (set VS_VCTOOLS_TARGET=ARM64)
+set VS_INSTALL_CMD=winget install Microsoft.VisualStudio.%VS_VERSION%.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.%VS_VCTOOLS_TARGET% --add Microsoft.VisualStudio.Component.%VS_SDK_VERSION%"
 
 
 rem check if %LOCALAPPDATA% was not empty
@@ -486,7 +489,11 @@ rem ---------------------------------------------------------
 rem Install Visual Studio Build tools if needed
 rem ---------------------------------------------------------
 
-if exist "C:\Program Files (x86)\Microsoft Visual Studio" (
+if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019" (
+  echo Found Microsoft Visual Studio 2019 build tools.
+  goto vs_done
+)
+if exist "C:\Program Files\Microsoft Visual Studio" (
   echo Found Microsoft Visual Studio build tools.
   goto vs_done
 )
@@ -509,7 +516,7 @@ if /i "%KOKA_ANSWER:~,1%" neq "Y" (
   goto vs_showurl
 )
 
-echo Installing Microsoft Visual Studio %VS_VERSION% build tools using 'winget': 
+echo Installing Microsoft Visual Studio %VS_VERSION% build tools using 'winget':
 echo   %VS_INSTALL_CMD%
 %VS_INSTALL_CMD%
 
