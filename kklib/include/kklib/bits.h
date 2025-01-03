@@ -933,7 +933,7 @@ static inline uint64_t kk_clmul64_wide(uint64_t x, uint64_t y, uint64_t* hi) {
   return _mm_extract_epi64(res, 0);
 }
 
-#elif KK_ARCH_ARM64 && defined(__ARM_NEON) // (defined(__ARM_FEATURE_SME) || defined(__ARM_FEATURE_SVE))
+#elif KK_ARCH_ARM64 && defined(__ARM_NEON) && defined(__ARM_FEATURE_AES)
 #define KK_BITS_HAS_FAST_CLMUL64  1
 #include <arm_neon.h>
 #include <arm_acle.h>
