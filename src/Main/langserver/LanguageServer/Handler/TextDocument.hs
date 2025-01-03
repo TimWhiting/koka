@@ -75,7 +75,8 @@ didChangeHandler = notificationHandler J.SMethod_TextDocumentDidChange $ \msg ->
 didSaveHandler :: Handlers LSM
 didSaveHandler = notificationHandler J.SMethod_TextDocumentDidSave $ \msg -> do
   let uri = msg ^. J.params . J.textDocument . J.uri
-  rebuildUri Nothing Nothing (J.toNormalizedUri uri)
+  -- rebuildUri Nothing Nothing (J.toNormalizedUri uri)
+  -- Don't recompile (since we already do it on change)
   return ()
 
 -- Closing the file

@@ -18,15 +18,28 @@ set KOKA_PREV_PREFIX=
 set KOKA_ARCH=x64
 set KOKA_VSCODE=N
 
+rem for now, koka runs emulated as an x64 process (as ghc does not yet have a windows arm64 port)
+rem but koka generates native arm64 code.
+set KOKA_TARGET_ARCH=x64
+for /F "tokens=1" %%x in ("%PROCESSOR_IDENTIFIER%") do (
+  if "%%x" == "ARMv8" (set KOKA_TARGET_ARCH=arm64)    
+)
+
+set CLANG_PLATFORM=win64
+if "%KOKA_TARGET_ARCH%" == "arm64" (set CLANG_PLATFORM=woa64)
+
 set CLANG_REQUIRED_MAJOR=18
 set CLANG_VERSION=18.1.8
-set CLANG_INSTALL_BASE=LLVM-%CLANG_VERSION%-win64.exe
+set CLANG_INSTALL_BASE=LLVM-%CLANG_VERSION%-%CLANG_PLATFORM%.exe
 set CLANG_INSTALL=%TEMP%\%CLANG_INSTALL_BASE%
 set CLANG_INSTALL_URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-%CLANG_VERSION%/%CLANG_INSTALL_BASE%
 set CLANG_INSTALL_SHA256=94af030060d88cc17e9f00ef1663ebdc1126b35e16bebdfa1e807984b70abd8f
+if "%CLANG_PLATFORM%" == "woa64" (set CLANG_INSTALL_SHA256=e25bf44d67fe86708490cf08de085fe1d6e1e50f3249c212c9077a06247cdc9e)
 
 set VS_VERSION=2022
-set VS_INSTALL_CMD=winget install Microsoft.VisualStudio.%VS_VERSION%.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22000"
+set VS_VC_TOOLS="--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+if "%KOKA_TARGET_ARCH%" == "arm64" (set VS_VC_TOOLS="--add Microsoft.VisualStudio.Component.VC.Tools.ARM64")
+set VS_INSTALL_CMD=winget install Microsoft.VisualStudio.%VS_VERSION%.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows11SDK.22000 %VS_TC_TOOLS%"
 
 
 rem check if %LOCALAPPDATA% was not empty

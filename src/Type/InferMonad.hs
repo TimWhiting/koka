@@ -109,6 +109,7 @@ import Type.TypeVar
 import Type.Kind
 import qualified Type.Pretty as Pretty
 import qualified Core.Core as Core
+import Core.Pretty
 
 import Type.Operations hiding (instantiate, instantiateNoEx, instantiateEx)
 import qualified Type.Operations as Op
@@ -195,8 +196,10 @@ generalize contextRange range close eff0 rho0 core0
                 -- check for satisifiable constraints
                 checkSatisfiable contextRange ps4
                 score <- subst (core4 (core2 (core1 core0)))
+                -- traceDoc $ \penv -> text "score:" <+> prettyExpr penv{Pretty.coreShowTypes=True} score
+                
                 -- trace (" before normalize: " ++ show (eff4,rho4) ++ " with " ++ show ps4) $ return ()
-
+                
                 -- update the free variables since substitution may have changed it
                 free1 <- freeInGamma
                 let free = tvsUnion free1 (fuv eff4)
@@ -218,8 +221,8 @@ generalize contextRange range close eff0 rho0 core0
                     -- bsub  = subNew (zip tvars (map TVar bvars))
                     (TForall [] ps5 rho5) = bsub |-> (TForall [] (map evPred ps4) nrho)
                     -- core
-                    core5 = Core.addTypeLambdas bvars $
-                            bsub |-> score
+                    corePre = bsub |-> score
+                    core5 = Core.addTypeLambdas bvars corePre
                             -- no lambdas for now...
                             -- (Core.addLambda (map evName ps4) score)
 
@@ -227,7 +230,7 @@ generalize contextRange range close eff0 rho0 core0
                 -- extendSub bsub
                 -- substitute more free variables in the core with ()
                 let core6 = substFree free core5
-                -- trace ("generalized to: " ++ show (pretty resTp)  ++ show (core6)) $ return ()
+                -- traceDoc $ \penv -> text "corePre:" <+> prettyExpr penv{Pretty.coreShowTypes=True} corePre
                 return (resTp, core6)
 
   where

@@ -9,7 +9,7 @@
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 
-#define KKLIB_BUILD          162    // modify on changes to trigger recompilation..
+#define KKLIB_BUILD          165    // modify on changes to trigger recompilation..
 // #define KK_DEBUG_FULL       1    // set to enable full internal debug checks
 
 // Includes
@@ -148,7 +148,11 @@ static inline void kk_header_init(kk_header_t* h, kk_ssize_t scan_fsize, kk_cpat
   *((uint64_t*)h) = ((uint64_t)scan_fsize | ((uint64_t)cpath << 8) | ((uint64_t)tag << 16)); // explicit shifts leads to better codegen in general
 #else
   kk_header_t header = KK_HEADER((uint8_t)scan_fsize, (uint8_t)cpath, (uint16_t)tag);
-  *h = header;
+  #if __cplusplus
+  memcpy(h,&header,sizeof(kk_header_t));  // we cannot assing directly in C++ due to deleted copy constructor of the atomic refcount (on windows only?)
+  #else
+  *h = header;  
+  #endif
 #endif
 }
 

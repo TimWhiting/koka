@@ -285,9 +285,7 @@ genLocalDef def@(Def name tp expr vis sort inl rng comm)
   = do penv <- getPrettyEnv
        let resDoc = typeComment (Pretty.ppType penv tp)
        defDoc <- genStat (ResultAssign (defTName def) Nothing) expr
-       let fdoc = vcat ([ if null comm
-                           then empty
-                           else align (vcat (space : map text (lines (trimComment comm)))) {- already a valid C comment -}]
+       let fdoc = vcat ([userComment comm]
                         ++
                         if (not (nameIsNil name) && dstartsWith defDoc (show (ppName name) ++ " ="))
                           then --single assignment without declarations
@@ -299,9 +297,20 @@ genLocalDef def@(Def name tp expr vis sort inl rng comm)
   where
     isDiscardExpr expr                     = isExprUnit expr  || isReuseNull expr
 
+
+
+userComment :: String -> Doc
+userComment comm
+  = if null comm
+      then empty
+      else let lcomm = if take 2 (dropWhile isSpace comm) == "/*"
+                         then map ("// " ++) (lines comm)
+                         else trimComment comm
+           in align (vcat (space : map text lcomm)) 
+
 -- remove final newlines and whitespace and line continuations (\\)
 trimComment comm
-  = unlines (map trimLine (lines comm))
+  = map trimLine (lines comm)
   where
     trimLine s = case reverse s of
                    '\\':xs -> trimRest xs
@@ -358,7 +367,7 @@ genLamSig inlineC vis name params body
 genTopDef :: Bool -> Bool -> Def -> Asm ()
 genTopDef genSig inlineC def@(Def name tp expr vis sort inl rng comm)
   = do when (not (null comm)) $
-         (if inlineC then emitToH else emitToC) (align (vcat (space : map text (lines (trimComment comm))))) {- already a valid C comment -}
+         (if inlineC then emitToH else emitToC) (userComment comm) {- already a valid C comment -}
        genTopDefDecl genSig inlineC def
 
 genTopDefDecl :: Bool -> Bool -> Def -> Asm ()
@@ -2764,6 +2773,7 @@ object xs
 tab :: Doc -> Doc
 tab doc
   = indent 2 doc
+
 
 typeComment = comment
 

@@ -485,7 +485,7 @@ getCommand st buildc
        let cscheme = colorSchemeFromFlags (flags st)
            matches = B.buildcGetMatchNames [] buildc
            incPath = includePath (flags st)
-           ansiPrompt = if isConsolePrinter (printer st) -- || osName == "macos"
+           ansiPrompt = if isConsolePrinter (printer st) 
                           then ""
                           else if isAnsiPrinter (printer st)
                             then let c = ansiColor (colorInterpreter cscheme)
@@ -637,7 +637,7 @@ messageHeader st
                     ++ show (8*sizePtr (platform (flags st)))
                     ++ " (" ++ (ccName (ccomp (flags st))) ++ ")"
           C _   -> ", " ++ show tgt
-                    ++ " " ++ cpuArch -- show (8*sizePtr (platform (flags st))) ++ "-bit"
+                    ++ " " ++ targetArch (flags st) -- show (8*sizePtr (platform (flags st))) ++ "-bit"
                     ++ " (" ++ (ccName (ccomp (flags st))) ++ ")"
           JS _  -> ", " ++ show tgt
           CS    -> ", .net"

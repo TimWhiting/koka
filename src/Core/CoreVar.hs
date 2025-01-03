@@ -12,6 +12,7 @@ module Core.CoreVar ( HasExprVar, (|~>)
                     , freeLocals
                     , extractDepsFromInlineDefs
                     , extractDepsFromSignatures
+                    , addTypeApps
                     ) where
 
 
@@ -66,6 +67,15 @@ isTopLevel (Def name tp expr vis isVal inl nameRng doc)
 freeLocals :: HasExpVar a => a -> TNames
 freeLocals expr
   = S.filter (\(TName nm _) -> not (isQualified nm)) (fv expr)
+
+
+-- | Add kind and type application
+addTypeApps :: [TypeVar] -> (Expr -> Expr)
+addTypeApps [] e                = e
+addTypeApps ts (TypeApp e args) = TypeApp e (args ++ [TVar t | t <- ts])
+addTypeApps (t:ts) (TypeLam (tpar:tpars) body) 
+  = addTypeApps ts (addTypeLambdas tpars (subSingle tpar (TVar t) |-> body))
+addTypeApps ts e                = TypeApp e [TVar t | t <- ts]
 
 
 {--------------------------------------------------------------------------

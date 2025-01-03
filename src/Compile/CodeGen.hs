@@ -129,7 +129,7 @@ codeGen term flags sequential newtypes borrowed kgamma gamma entry imported mod
                 -> do let finalOut = outFinalPath flags
                       exe <- if (not (null finalOut))
                                 then do let targetOut = ensureExt finalOut (targetExeExtension (target flags))
-                                        when (osName == "macos") $
+                                        when onMacOS $
                                           removeFileIfExists targetOut  -- needed on macOS due to code signing issues (see https://developer.apple.com/forums/thread/669145)
                                         copyBinaryFile out targetOut
                                         return finalOut
@@ -713,7 +713,7 @@ runSystemEcho term flags cmd
 runCommand :: Terminal -> Flags -> [String] -> IO ()
 runCommand term flags cargs@(cmd:args)
   = do let command = unwords (shellQuote cmd : map shellQuote args)
-       if (osName == "windows" && cmd `endsWith` "emcc") -- hack to run emcc correctly on windows (due to Python?)
+       if (onWindows && cmd `endsWith` "emcc") -- hack to run emcc correctly on windows (due to Python?)
          then runSystemEcho term flags command
          else  do when (verbose flags >= 3) $
                     termTrace term ("command> " ++ command) -- cmd ++ " [" ++ concat (intersperse "," args) ++ "]")

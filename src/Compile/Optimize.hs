@@ -61,6 +61,7 @@ coreOptimize flags newtypes gamma inlines coreProgram
 
         -- when (show progName == "std/text/parse") $
         --  trace ("compile " ++ show progName ++ ", gamma: " ++ showHidden gamma) $ return ()
+        -- traceDefGroups flags "before optimization"
 
         -- define simplify
         let ndebug           = optimize flags > 0

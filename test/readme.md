@@ -40,4 +40,5 @@ Options:
 -O2                          # Use optimization
 -O-1                         # Full debug mode with internal runtime assertions enabled
 --seq                        # Test sequentially (instead of in parallel) 
+--rebuild                    # Rebuild standard library for tests
 ```

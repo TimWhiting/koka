@@ -135,11 +135,11 @@ lspHandlers rin = mapHandlers goReq goNot handlers where
             -- If the request is cancelled before we start we return a cancelled error
             if newId `S.member` cancelled then do
               
-              runLSM (k $ Left $ ResponseError (J.InL J.LSPErrorCodes_RequestCancelled) (T.pack "") Nothing) state env
+              runLSM (k $ Left $ J.TResponseError (J.InL J.LSPErrorCodes_RequestCancelled) (T.pack "") Nothing) state env
             -- Otherwise we run the request
             else 
-              catchAny (runLSM (f msg k) state env) $
-                (\err -> runLSM (k $ Left $ ResponseError (J.InL J.LSPErrorCodes_RequestFailed) (T.pack (show err)) Nothing) state env)
+              catchAny (runLSM (f msg k) state env)
+                (\err -> runLSM (k $ Left $ J.TResponseError (J.InL J.LSPErrorCodes_RequestFailed) (T.pack (show err)) Nothing) state env)
         liftIO $ atomically $ do -- After it finishes we remove it from the pending requests set and canceled set
           modifyTVar (pendingRequests stVal) $ \t -> S.delete newId t
           modifyTVar (cancelledRequests stVal) $ \t -> S.delete newId t
@@ -167,7 +167,9 @@ lspHandlers rin = mapHandlers goReq goNot handlers where
         liftIO $ atomically $ writeTChan rin $
           ReactorAction $ do
             -- When running the request we check if the version is the same as the latest version, if not we don't run the change handler
-            versions <- readTVarIO (documentVersions stVal)
+            versions <- readTVarIO (documentVersions stateV)
+            -- runLSM (emitNotification (\env -> text ("Latest versions: " ++ show versions))) state env
+            -- runLSM (emitNotification (\env -> text ("Doc Version: " ++ show normUri ++ ": " ++ show _version))) state env
             when (M.lookup normUri versions == Just _version) runCatchErrors
       _ ->
         liftIO $ atomically $ writeTChan rin $

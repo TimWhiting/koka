@@ -125,6 +125,16 @@ inferDefGroupX topLevel defGroup cont
        -- zapSubst
        return (g,seqqList cgroups0 ++ cgroups1)
 
+traceCoreDefs :: [Core.Def] -> Inf ()
+traceCoreDefs cdefs
+  = traceDoc $ \penv -> vcat (map (\cdef -> prettyDef penv{coreShowDef=True} cdef) cdefs)       
+
+traceCoreDefGroups :: [Core.DefGroup] -> Inf ()
+traceCoreDefGroups cdefgs
+  = traceDoc $ \penv -> vcat (map (\cdefg -> prettyDefGroup penv{coreShowDef=True} cdefg) cdefgs)       
+
+
+
 inferDefGroup :: Bool -> DefGroup Type -> Inf a -> Inf ([Core.DefGroup], a)
 inferDefGroup topLevel (DefNonRec def) cont
   = --- trace ("\ninfer single " ++ show (defName def)) $
@@ -157,6 +167,7 @@ inferDefGroup topLevel (DefRec defs) cont
        scoreDefsX <- subst coreDefsX
        let coreGroups0 = regroup scoreDefsX
        when topLevel (mapM_ checkRecVal coreGroups0)
+       -- traceCoreDefGroups coreGroups0
        -- now analyze divergence
        (coreGroups1,divTNames)
             <- fmap unzip $
@@ -165,11 +176,13 @@ inferDefGroup topLevel (DefRec defs) cont
                                                                                      return (Core.DefRec cdefs',map Core.defTName cdefs')
                                    _ -> return (cgroup,[])) $
                coreGroups0
+       -- traceCoreDefGroups coreGroups1
        -- build a mapping from core name to original definition and assumed type
        -- hack: we map from the name range since there may be overloaded names, and the types are not fully determined yet..
        let coreMap = M.fromList (map (\(def,tp) -> (binderNameRange (defBinder def), (def,tp))) (zip defs assumed))
        -- check assumed types agains inferred types
        coreGroups2 <- mapMDefs (\cdef -> inferRecDef2 topLevel cdef ((Core.defTName cdef) `elem` concat divTNames) (find (Core.defNameRange cdef) coreMap)) coreGroups1
+       -- traceCoreDefGroups coreGroups2
        -- add range info (for documentation)
        mod <- getModuleName
        mapMDefs_ (\cdef -> addRangeInfoCoreDef topLevel mod (fst (find (Core.defNameRange cdef) coreMap)) cdef) coreGroups2
@@ -349,10 +362,11 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                                     (resTp,coref) <- inferSubsume (checkRec rng) nameRng assumedTp (Core.defType coreDef)
                                     -- traceDoc $ \penv -> text " infer subsume:" <+> ppName penv (Core.defName coreDef) <.> colon <+> ppType penv assumedTp <+> text "~" <+> ppType penv  (Core.defType coreDef)
                                     sassumedTp    <- subst assumedTp  -- needed for `type/wrong/scheduler2`
-                                    return (resTp,sassumedTp,coref)
-
+                                    sresTp <- subst resTp
+                                    return (sresTp,sassumedTp,coref)
+ 
         (resTp1,resCore1) <- generalize rng nameRng True typeTotal resTp0 (coref0 (Core.defExpr coreDef)) -- typeTotal is ok since only functions are recursive (?)
-
+        
         let name = Core.defName coreDef
             csort = if (topLevel || CoreVar.isTopLevel coreDef) then Core.defSort coreDef else DefVal
             info = coreVarInfoFromNameInfo (createNameInfoX Public name csort (defRange def) resTp1 (defDoc def))
@@ -366,6 +380,7 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                                   -- resTpX <- subst resTp0 >>= normalize
                                   simexpr <- return expr -- liftUnique $ uniqueSimplify penv False False 1 {-runs-} 0 expr
                                   coreX <- subst simexpr
+                                  -- traceDoc $ \penv -> prettyExpr penv coreX
                                   (mvars,msub) <- Op.freshSub Bound tvars
                                   let -- coreX = simplify expr -- coref0 (Core.defExpr coreDef)
                                       -- mvars = [TypeVar id kind Bound | TypeVar id kind _ <- tvars]
@@ -377,12 +392,10 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                                                                              (map TVar mvars))] -- TODO: check: was `tvars` TODO: wrong for unannotated polymorphic recursion: see codegen/wrong/rec2
                                                  (msub |-> coreX)
 
-                                      resCoreY = Core.TypeLam mvars resCoreX
+                                      resCoreY = Core.addTypeLambdas mvars resCoreX
                                       -- TODO: check: this was:
                                       -- bsub  = subNew (zip mvars (map TVar tvars))
                                       -- resCoreY = Core.TypeLam tvars (bsub |-> resCoreX)
-
-                                  -- trace (" substitute typeapp\n" ++ show (resTpX, assumedTpX, msub |-> coreX)) $ return ()
                                   -- generalize rng nameRng typeTotal resTp0 resCoreX
                                   return (resTp1,resCoreY)
                                {-

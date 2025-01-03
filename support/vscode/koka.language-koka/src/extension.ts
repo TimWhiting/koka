@@ -293,7 +293,7 @@ function createCommands(
         compilerArgs,
         programArgs
       }
-      console.log(`Launch config ${launchConfig}`)
+      console.log(`Launch config`, launchConfig)
       vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration)
     }),
 
@@ -309,7 +309,7 @@ function createCommands(
         compilerArgs,
         programArgs
       }
-      console.log(`Launch config ${launchConfig}`)
+      console.log(`Launch config`, launchConfig)
       vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration)
     }),
 

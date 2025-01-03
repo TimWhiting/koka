@@ -7,6 +7,7 @@ found in the LICENSE file at the root of this distribution.
 Used by `stack test` to pre-compil everyting in the `std/toc` module.
 -----------------------------------------------------------------------------*/
 import toc
+import samples/all
 
 fun main() : console () 
   println("done.")

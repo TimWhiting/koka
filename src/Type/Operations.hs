@@ -28,6 +28,7 @@ import Kind.Kind
 import Type.Type
 import Type.TypeVar
 import Core.Core as Core
+import Core.CoreVar
 import Type.Assumption
 
 requiresImplicits :: Type -> [(Name, Type)]
@@ -138,7 +139,7 @@ instantiateExFl flavour range tp
                let corevars = map (\name -> Core.Var name InfoNone) pnames
                    evidence = [Ev name pred range | (name,pred) <- zip pnames spreds]
                return $!(tvars, evidence, srho
-                         , (if null corevars then id else id {- Core.addApps corevars -}) . Core.addTypeApps tvars)
+                         , (if null corevars then id else id {- Core.addApps corevars -}) . addTypeApps tvars)
 
 
 predName :: HasUnique m => Pred -> m Core.TName

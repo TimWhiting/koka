@@ -37,7 +37,7 @@ import Type.Kind
 import Type.Pretty()
 import Type.Operations
 import qualified Core.Core as Core
-
+import Core.CoreVar
 import qualified Debug.Trace(trace)
 
 trace s x =
@@ -205,11 +205,21 @@ subsume range free tp1 tp2
        (vars,ssub) <- freshSub Bound sks
        let subx = ssub @@ sub
            tp = quantifyType vars (qualifyType [(subx |-> evPred ev) | ev <- evs1] (subx |-> rho1)) -- TODO: do rho1 and we get skolem errors: see 'Prelude.choose'
+           coref0 expr 
+             = subx |-> (coreEnt $                      -- apply evidence evs2 & abstract evidence evs1
+                          addTypeApps tvs expr)
+           coref1 expr 
+             = Core.addTypeLambdas vars (coref0 expr)   -- generalize
+           {-
+           coref2 expr
+             = case expr of
+                 Core.TypeApp (Core.TypeLam tpars e) tvars 
+                   | length tpars == length tvars &&
+                     and [typeVarId tpar == typeVarId tvar | (tpar,TVar tvar) <- zip tpars tvars] 
+                   -> e
+                 _ -> expr -}
        -- return
-       return (tp, sub |-> rho2, subx |-> evsEnt,
-                (\expr -> Core.addTypeLambdas vars $     -- generalize
-                          subx |-> (coreEnt $                      -- apply evidence evs2 & abstract evidence evs1
-                                    Core.addTypeApps tvs expr)))   -- instantiate
+       return (tp, sub |-> rho2, subx |-> evsEnt, coref1)
 
 
 -- | @entails skolems known preds@ returns both predicates that need to be proved

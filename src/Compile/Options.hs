@@ -22,7 +22,6 @@ module Compile.Options( -- * Command line options
                        , CC(..), BuildType(..), ccFlagsBuildFromFlags
                        , buildType, unquote
                        , outName, fullBuildDir, buildVariant, buildLibVariant
-                       , cpuArch, osName
                        , optionCompletions
                        , targetExeExtension
                        , targets
@@ -136,8 +135,8 @@ data Flags
          , execOpts         :: !String
          , library          :: !Bool
          , target           :: !Target
-         , targetOS         :: !String
-         , targetArch       :: !String
+         , targetOS         :: !String        -- windows, macos, linux, ...
+         , targetArch       :: !String        -- x64, arm64, ...
          , platform         :: !Platform
          , stackSize        :: !Int
          , heapSize         :: !Int
@@ -286,8 +285,8 @@ flagsNull
           ""    -- execution options
           False -- library
           (C LibC)  -- target
-          osName  -- target OS
-          cpuArch -- target CPU
+          hostOsName  -- target OS
+          hostArch    -- target CPU
           platform64
           0     -- stack size
           0     -- reserved heap size (for wasm)
@@ -313,7 +312,7 @@ flagsNull
           []       -- clink args
           []       -- clink sys libs
           []       -- clink full lib paths
-          (ccGcc "gcc" 0 platform64 "gcc")
+          (ccGcc "gcc" 0 hostArch "gcc")
           (if onWindows then []        -- ccomp library dirs
                         else (["/usr/local/lib","/usr/lib","/lib"]
                                ++ if onMacOS then ["/opt/homebrew/lib"] else []))
@@ -764,12 +763,12 @@ processDerivedOptions defaultFlags flags
         triplet   = if (not (null (vcpkgTriplet flags))) then vcpkgTriplet flags
                       else if (isTargetWasm (target flags))
                         then ("wasm" ++ show (8*sizePtr (platform flags)) ++ "-emscripten")
-                        else tripletArch ++
+                        else targetArch flags ++
                               (if onWindows
                                   then (if (ccName (ccomp flags) `startsWith` "mingw")
                                           then "-mingw-static"
                                           else "-windows-static-md")
-                                  else ("-" ++ tripletOsName))
+                                  else ("-" ++ tripletOsName (targetOS flags)))
 
     in  flags{  outBaseName = if null (outBaseName flags) && not (null (outFinalPath flags))
                                 then basename (outFinalPath flags)
@@ -796,44 +795,45 @@ processInitialOptions flags0 opts
   = case parseOptions flags0 opts of
       Left err -> invokeError [err]
       Right (flags1,mode)
-        ->   let flags = case mode of
-                           ModeInteractive _    -> flags1{evaluate = True }
-                           ModeLanguageServer _ -> flags1{genRangeMap = True }
-                           _                    -> flags1
-             in do buildDir <- getKokaBuildDir (buildDir flags) (evaluate flags)
-                   buildTag <- if (null (buildTag flags)) then getDefaultBuildTag else return (buildTag flags)
-                   ed   <- if (null (editor flags))
-                            then detectEditor
-                            else return (editor flags)
-                   pkgs <- discoverPackages buildDir
+        -> do arch <- getTargetArch 
+              let flags = case mode of
+                            ModeInteractive _    -> flags1{evaluate = True, targetArch = arch }
+                            ModeLanguageServer _ -> flags1{genRangeMap = True, targetArch = arch }
+                            _                    -> flags1
+              buildDir <- getKokaBuildDir (buildDir flags) (evaluate flags)
+              buildTag <- if (null (buildTag flags)) then getDefaultBuildTag else return (buildTag flags)
+              ed   <- if (null (editor flags))
+                      then detectEditor
+                      else return (editor flags)
+              pkgs <- discoverPackages buildDir
 
-                   (localDir,localLibDir,localShareDir,localBinDir)
-                        <- getKokaDirs (localLibDir flags) (localShareDir flags) buildDir
+              (localDir,localLibDir,localShareDir,localBinDir)
+                  <- getKokaDirs (localLibDir flags) (localShareDir flags) buildDir
 
-                   normalizedIncludes <- mapM realPath ("." : (localShareDir ++ "/lib") : includePath flags)
+              normalizedIncludes <- mapM realPath ("." : (localShareDir ++ "/lib") : includePath flags)
 
-                   -- cc
-                   ccmd <- if (ccompPath flags == "") then detectCC (target flags)
-                           else if (ccompPath flags == "mingw") then return "gcc"
-                           else return (ccompPath flags)
-                   (cc,asan) <- ccFromPath flags ccmd
-                   ccCheckExist cc
+              -- cc
+              ccmd <- if (ccompPath flags == "") then detectCC (target flags)
+                      else if (ccompPath flags == "mingw") then return "gcc"
+                      else return (ccompPath flags)
+              (cc,asan) <- ccFromPath flags ccmd
+              ccCheckExist cc
 
-                   let flagsx  = flags{ packages    = pkgs,
-                                        buildDir    = buildDir,
-                                        buildTag    = buildTag,
-                                        localBinDir = localBinDir,
-                                        localDir    = localDir,
-                                        localLibDir = localLibDir,
-                                        localShareDir = localShareDir,
-                                        ccompPath   = ccmd,
-                                        ccomp       = cc,
-                                        asan        = asan,
-                                        editor      = ed,
-                                        includePath = normalizedIncludes,
-                                        genRangeMap = outHtml flags > 0 || genRangeMap flags
-                                    }
-                   return (flagsx,mode)
+              let flagsx  = flags{ packages    = pkgs,
+                                  buildDir    = buildDir,
+                                  buildTag    = buildTag,
+                                  localBinDir = localBinDir,
+                                  localDir    = localDir,
+                                  localLibDir = localLibDir,
+                                  localShareDir = localShareDir,
+                                  ccompPath   = ccmd,
+                                  ccomp       = cc,
+                                  asan        = asan,
+                                  editor      = ed,
+                                  includePath = normalizedIncludes,
+                                  genRangeMap = outHtml flags > 0 || genRangeMap flags
+                              }
+              return (flagsx,mode)
 
 parseOptions :: Flags -> [String] -> Either String (Flags,Mode)
 parseOptions flags0 opts
@@ -884,6 +884,7 @@ getKokaDirs libDir1 shareDir1 buildDir0
   = do bin        <- getProgramPath
        let binDir  = dirname bin
            rootDir = rootDirFrom binDir
+       putStrLn ("rootdir: " ++ rootDir ++ ", bindir: " ++ binDir)
        isRootRepo <- doesDirectoryExist (joinPath rootDir "kklib")
        let libDir   = if (not (null libDir1)) then libDir1
                       else if (isRootRepo) then joinPath rootDir kkbuild
@@ -907,6 +908,7 @@ rootDirFrom binDir
                   ("bin":_:"install":".stack-work":es)     -> joinPaths (reverse es)
                   ("bin":_:_:"install":".stack-work":es)   -> joinPaths (reverse es)
                   ("bin":_:_:_:"install":".stack-work":es) -> joinPaths (reverse es)
+                  (_:"build":_:"dist":".stack-work":es)    -> joinPaths (reverse es)
                   -- regular install
                   ("bin":es)   -> joinPaths (reverse es)
                   -- minbuild
@@ -1113,7 +1115,7 @@ buildLibVariant flags
                         WasmJs -> "-wasmjs"
                         WasmWeb-> "-wasmweb"
                         _      | platformHasCompressedFields (platform flags)
-                               -> "-" ++ cpuArch ++ "c"
+                               -> "-" ++ targetArch flags ++ "c"
                                | otherwise -> "")
                  JS _  -> "js"
                  _     -> show (target flags)
@@ -1141,8 +1143,8 @@ gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
           words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value" ++
           words "-Wno-unused-but-set-variable"
 
-ccGcc,ccMsvc :: String -> Int -> Platform -> FilePath -> CC
-ccGcc name opt platform path
+ccGcc,ccMsvc :: String -> Int -> String -> FilePath -> CC
+ccGcc name opt cpuArch path
   = CC name path []
         ([(DebugFull,     ["-g","-O0","-fno-omit-frame-pointer"] ++ arch),
           (Debug,         ["-g","-Og"] ++ arch),
@@ -1166,14 +1168,13 @@ ccGcc name opt platform path
         (\lib -> libPrefix ++ lib ++ libExtension)
         (\obj -> obj ++ objExtension)
   where
-    archBits= 8 * sizePtr platform
     arch    = -- unfortunately, these flags are not as widely supported as one may hope so we only enable at -O2 or higher
               if (opt < 2) then []
-              else if (cpuArch=="x64" && archBits==64) then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
-              else if (cpuArch=="arm64" && archBits==64) then ["-march=armv8.1-a","-mtune=native"]  -- popcnt, simd, lse
+              else if (cpuArch=="x64") then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
+              else if (cpuArch=="arm64") then ["-march=armv8.1-a","-mtune=native"]  -- popcnt, simd, lse
               else []
 
-ccMsvc name opt platform path
+ccMsvc name opt cpuArch path
   = CC name path ["-DWIN32","-nologo"]
          [(DebugFull,words "-MDd -Zi -FS -Od -RTC1" ++ arch),
           (Debug,words "-MDd -Zi -FS -O1" ++ arch),
@@ -1194,16 +1195,16 @@ ccMsvc name opt platform path
          (\lib -> libPrefix ++ lib ++ libExtension)
          (\obj -> obj ++ objExtension)
   where
-    archBits= 8 * sizePtr platform
     arch    = if (opt < 2) then []
-              else if (cpuArch=="x64" && archBits==64) then ["-arch:AVX2"] -- popcnt, lzcnt, tzcnt, pdep, pext, clmul
+              else if (cpuArch == "x64") then ["-arch:AVX2"] -- popcnt, lzcnt, tzcnt, pdep, pext, clmul
+              else if (cpuArch == "arm64") then ["-arch:armv8.1"] -- popcnt, simd, lse
               else []
 
 ccFromPath :: Flags -> FilePath -> IO (CC,Bool {-asan-})
 ccFromPath flags path
   = let name    = -- reverse $ dropWhile (not . isAlpha) $ reverse $
                   basename path
-        gcc     = ccGcc name (optimize flags) (platform flags) path
+        gcc     = ccGcc name (optimize flags) (targetArch flags) path
         mingw   = gcc{ ccName = "mingw",
                        ccLibFile = \lib -> "lib" ++ lib ++ ".a",
                        ccFlagStack = (\stksize -> if stksize > 0 then ["-Wl,--stack," ++ show stksize] else [])
@@ -1218,10 +1219,10 @@ ccFromPath flags path
                      }
         clang   = gcc{ ccFlagsWarn = gnuWarn
                                      ++ words "-Wno-cast-qual -Wno-undef -Wno-reserved-id-macro -Wno-unused-macros -Wno-cast-align"
-                                     ++ (if onMacOS && cpuArch == "arm64" then ["-Wno-unknown-warning-option"] else [])
+                                     ++ (if onMacOS && targetArch flags == "arm64" then ["-Wno-unknown-warning-option"] else [])
                      }
         generic = gcc{ ccFlagsWarn = [] }
-        msvc    = ccMsvc name (optimize flags) (platform flags) path
+        msvc    = ccMsvc name (optimize flags) (targetArch flags) path
         clangcl = msvc{ ccFlagsWarn = ["-Wno-everything"] ++ ccFlagsWarn clang ++
                                       words "-Wno-extra-semi-stmt -Wno-extra-semi -Wno-float-equal",
                         ccFlagsLink = words "-Wno-unused-command-line-argument" ++ ccFlagsLink msvc,
@@ -1303,27 +1304,33 @@ onWindows :: Bool
 onWindows
   = (exeExtension == ".exe")
 
-tripletOsName, osName :: String
-tripletOsName
-  = case System.Info.os of
+tripletOsName :: String -> String
+tripletOsName osName
+  = case osName of
       "linux-android" -> "android"
       "mingw32"       -> "mingw-static"
       "darwin"        -> "osx"
       os              -> os
 
-osName
+hostOsName
   = case System.Info.os of
       "mingw32"       -> "windows"
       "darwin"        -> "macos"
       "linux-android" -> "android"
       os              -> os
 
-tripletArch :: String
-tripletArch
-  = cpuArch
+getTargetArch :: IO String
+getTargetArch 
+  = case hostOsName of
+      "windows" -> -- on windows on arm, koka is a Haskell x64 exe but targets native arm64
+                   do procId <- getEnvVar "PROCESSOR_IDENTIFIER"  
+                      if (take 5 procId `elem` ["ARMv8","ARMv9"])
+                        then return "arm64"  -- windows on arm
+                        else return hostArch
+      _         -> return hostArch
 
-cpuArch :: String
-cpuArch
+hostArch :: String
+hostArch
   = case System.Info.arch of
       "aarch64"     -> "arm64"
       "x86_64"      -> "x64"

@@ -27,9 +27,9 @@ data Mode = Test | New | Update
   deriving (Eq, Ord, Show)
 
 
-data Options = Options{ mode :: Mode, cabal :: Bool, sysghc:: Bool, opt :: Int, target :: String, par :: Bool }
+data Options = Options{ mode :: Mode, cabal :: Bool, sysghc:: Bool, opt :: Int, target :: String, par :: Bool, rebuild :: Bool }
 
-optionsDefault = Options Test False False 0 "" True
+optionsDefault = Options Test False False 0 "" True False
 
 data Cfg = Cfg{ flags   :: [String],
                 options :: Options,
@@ -214,6 +214,8 @@ processOptions arg (options,hargs)
       then (options{target="c64c"}, hargs)
     else if (arg == "--seq")
       then (options{par=False}, hargs)
+    else if (arg == "--rebuild" || arg == "-r")
+      then (options{rebuild=True}, hargs)
       else (options, arg : hargs)
   where
     parseMode :: String -> Mode
@@ -238,7 +240,8 @@ main = do
   putStrLn "pre-compiling standard libraries..."
   -- compile all standard libraries before testing so we can run in parallel
   let cfg = initialCfg options
-  runKoka cfg "" "util/link-test.kk"
+      stdcfg = if rebuild options then cfg{ flags = flags cfg ++ ["-r"]} else cfg
+  runKoka stdcfg "" "util/link-test.kk"
   putStrLn "ok."
   let spec = (if (target options == "js" || not (par options)) then id else parallel) $
              discoverTests cfg (pwd </> "test")

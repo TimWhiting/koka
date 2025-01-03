@@ -34,7 +34,7 @@ module Core.Core ( -- Data structures
                      -- Core term builders
                    , defIsVal, defParamInfos
                    , defTName , defsTNames, defGroupTNames , defGroupsTNames
-                   , addTypeLambdas, addTypeApps, addLambdas, addLambdasTName, addApps
+                   , addTypeLambdas, addLambdas, addLambdasTName, addApps
                    , makeLet, makeTypeApp
                    , addNonRec, addCoreDef, coreNull
                    , freshName
@@ -1107,11 +1107,6 @@ addApps [] e             = e
 addApps es (App e args)  = App e (args ++ es)
 addApps es e             = App e es
 
--- | Add kind and type application
-addTypeApps :: [TypeVar] -> (Expr -> Expr)
-addTypeApps [] e                = e
-addTypeApps ts (TypeApp e args) = TypeApp e (args ++ [TVar t | t <- ts])
-addTypeApps ts e                = TypeApp e [TVar t | t <- ts]
 
 -- | Add kind and type lambdas
 addTypeLambdas :: [TypeVar] -> (Expr -> Expr)

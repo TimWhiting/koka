@@ -83,6 +83,7 @@ runLanguageServer flags files = do
             { parseConfig = const $ const $ Right (),
               onConfigChange = const $ pure (),
               defaultConfig = (),
+              
               configSection = T.pack "koka",
               -- Two threads, the request thread and the message thread (so we can send messages to the client, while the compilation is happening)
               doInitialize = \env _ -> forkIO (reactor rin) >> forkIO (messageHandler messageChan env state) >> forkIO (progressHandler progressChan env state) >> pure (Right env),
@@ -93,8 +94,10 @@ runLanguageServer flags files = do
                   { optTextDocumentSync = Just syncOptions,
                     optExecuteCommandCommands = Just [T.pack "koka/compile", T.pack "koka/compileFunction", T.pack "koka/signature-help/set-context"],
                     optCompletionTriggerCharacters = Just ['.', ':', '/', ' '],
-                    optSignatureHelpTriggerCharacters = Just ['(', ',', ' ']
+                    optSignatureHelpTriggerCharacters = Just ['(', ',', ' '],
                   -- TODO: ? https://www.stackage.org/haddock/lts-18.21/lsp-1.2.0.0/src/Language.LSP.Server.Core.html#Options
+                    optProgressStartDelay = 100000, -- Microseconds (100ms) don't send progress if the task finishes quickly
+                    optProgressUpdateDelay = 20000 -- Microseconds (20ms) send progress updates at most every 20ms for long running tasks
                   }
             }
     -- io logger, prints all log level messages to stdout or stderr
