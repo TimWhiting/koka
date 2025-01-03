@@ -260,8 +260,7 @@ instance Hashable Flags where
           show $ parcBorrowInference flags,
           show $ asan flags,
           show $ useStdAlloc flags,
-          show $ optSpecialize flags,
-          show $ mainEntryName flags
+          show $ optSpecialize flags
         ]
 
 flagsHash :: Flags -> String
