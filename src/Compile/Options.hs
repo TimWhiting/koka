@@ -795,7 +795,7 @@ processInitialOptions flags0 opts
   = case parseOptions flags0 opts of
       Left err -> invokeError [err]
       Right (flags1,mode)
-        -> do arch <- getTargetArch 
+        -> do arch <- getTargetArch
               let flags = case mode of
                             ModeInteractive _    -> flags1{evaluate = True, targetArch = arch }
                             ModeLanguageServer _ -> flags1{genRangeMap = True, targetArch = arch }
@@ -1171,7 +1171,7 @@ ccGcc name opt cpuArch path
     arch    = -- unfortunately, these flags are not as widely supported as one may hope so we only enable at -O2 or higher
               if (opt < 2) then []
               else if (cpuArch=="x64") then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
-              else if (cpuArch=="arm64") then ["-march=armv8.1-a","-mtune=native"]  -- popcnt, simd, lse
+              else if (cpuArch=="arm64") then ["-march=armv8.1-a+aes","-mtune=native"]  -- popcnt, simd, lse, pmull (+aes)
               else []
 
 ccMsvc name opt cpuArch path
@@ -1320,10 +1320,10 @@ hostOsName
       os              -> os
 
 getTargetArch :: IO String
-getTargetArch 
+getTargetArch
   = case hostOsName of
       "windows" -> -- on windows on arm, koka is a Haskell x64 exe but targets native arm64
-                   do procId <- getEnvVar "PROCESSOR_IDENTIFIER"  
+                   do procId <- getEnvVar "PROCESSOR_IDENTIFIER"
                       if (take 5 procId `elem` ["ARMv8","ARMv9"])
                         then return "arm64"  -- windows on arm
                         else return hostArch
