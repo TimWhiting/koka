@@ -149,9 +149,9 @@ static inline void kk_header_init(kk_header_t* h, kk_ssize_t scan_fsize, kk_cpat
 #else
   kk_header_t header = KK_HEADER((uint8_t)scan_fsize, (uint8_t)cpath, (uint16_t)tag);
   #if __cplusplus
-  memcpy(h,&header,sizeof(kk_header_t));  // we cannot assing directly in C++ due to deleted copy constructor of the atomic refcount (on windows only?)
+  memcpy(h,&header,sizeof(kk_header_t));  // we cannot assign directly in C++ due to deleted copy constructor of the atomic refcount (on windows only?)
   #else
-  *h = header;  
+  *h = header;
   #endif
 #endif
 }
