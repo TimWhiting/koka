@@ -1,0 +1,62 @@
+on: 
+  push:
+    tags: 
+      - 'v*'
+
+permissions:
+  contents: write
+
+env: 
+    VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+name: build
+jobs:
+  build:
+    name: Build Koka
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Set up stack and cache dependencies: https://github.com/freckle/stack-action
+      - uses: freckle/stack-action@v5
+        with:
+          test: false
+          stack-build-arguments: ""
+          cache-save-always: true
+
+      - name: Build
+        run: stack build
+
+      # Cache setup for vcpkg (https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-actions-cache)
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Run Koka Packaging
+        run: |
+          stack exec koka -- -e -O2 util/bundle
+      
+      # - name: Package VSCode Extension
+      #   working-directory: support/vscode/koka.language-koka
+      #   run: |
+      #     npm install
+      #     npm run build
+      #     npm run package
+
+      # Create a release https://github.com/softprops/action-gh-release
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with: # support/vscode/koka.language-koka/*.vsix
+          files: |
+            bundle/**/*.tar.gz
+            util/install.bat
+            util/install.sh
+          make_latest: true
