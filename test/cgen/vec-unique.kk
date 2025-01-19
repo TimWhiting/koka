@@ -115,3 +115,10 @@ fun test-error3()
         ExnL(l) -> println(if l.unsafe-is-unique then "unique a" else "not unique a")
       a7.foreach(fn(x) x.show.trace)
   }
+
+// This works for some reason?
+fun test-error4()
+  println("Non-fip update to item in local vector variable")
+  val a6 = vector-init-total(3, fn(i) [i])
+  var a7 := a6
+  update(std/core/types/@byref(a7), 2, update-throw)
