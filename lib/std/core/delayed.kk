@@ -17,7 +17,7 @@ import std/core/unsafe
 // Delayed values
 // ----------------------------------------------------------------------------
 
-ref type computation<e, a>
+reference type computation<e, a>
   con XComputation( action : () -> e a )
   con XDone( value : a )
   con XBlocking
