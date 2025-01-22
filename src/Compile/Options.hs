@@ -898,7 +898,7 @@ getKokaDirs libDir1 shareDir1 buildDir0
   = do bin        <- getProgramPath
        let binDir  = dirname bin
            rootDir = rootDirFrom binDir
-       putStrLn ("rootdir: " ++ rootDir ++ ", bindir: " ++ binDir)
+       -- putStrLn ("rootdir: " ++ rootDir ++ ", bindir: " ++ binDir)
        isRootRepo <- doesDirectoryExist (joinPath rootDir "kklib")
        let libDir   = if (not (null libDir1)) then libDir1
                       else if (isRootRepo) then joinPath rootDir kkbuild
