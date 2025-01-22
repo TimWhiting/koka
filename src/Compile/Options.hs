@@ -286,7 +286,7 @@ flagsNull
           False -- library
           (C LibC)  -- target
           hostOsName  -- target OS
-          hostArch    -- target CPU
+          ""    -- target CPU architecture
           platform64
           0     -- stack size
           0     -- reserved heap size (for wasm)
@@ -410,7 +410,8 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , numOption 1 "n" ['v'] ["verbose"] (\i f -> f{verbose=i})         "verbosity 'n' (0=quiet, 1=default, 2=trace)"
  , flag   ['r'] ["rebuild"]         (\b f -> f{rebuild = b})        "rebuild all"
  , flag   ['l'] ["library"]         (\b f -> f{library=b, evaluate=if b then False else (evaluate f) }) "generate a library"
- , configstr [] ["target"]          (map fst targets) "tgt" targetFlag  ("target: " ++ show (map fst targets))
+ , configstr [] ["target"]          (map fst targets) "target" targetFlag  ("target: " ++ showL (map fst targets))
+ , configstr [] ["target-arch"]     targetArchs "arch" targetArchFlag ("target architecture: " ++ showL targetArchs)
  -- , config []    ["host"]            [("node",Node),("browser",Browser)] "host" (\h f -> f{ target=JS, host=h}) "specify host for javascript: <node|browser>"
  , emptyline
 
@@ -494,6 +495,10 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , hide $ option []    ["cmakeopts"]       (ReqArg cmakeArgsFlag "opts")   "pass <opts> to cmake"
  ]
  where
+  showL :: [String] -> String
+  showL []  = ""
+  showL xs  = concatMap (++",") (init xs) ++ (last xs)
+
   emptyline
     = flag [] [] (\b f -> f) ""
 
@@ -544,6 +549,15 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
     = case lookup t targets of
         Just update -> update f
         Nothing     -> f
+
+  targetArchFlag t f
+    = if t `elem` targetArchs
+        then f{ targetArch = t }
+        else f
+
+  targetArchs :: [String]
+  targetArchs
+    = ["x64","arm64","x86","riscv64","riscv32"]
 
   colorFlag s
     = Flag (\f -> f{ colorScheme = readColorFlags s (colorScheme f) })
@@ -795,11 +809,11 @@ processInitialOptions flags0 opts
   = case parseOptions flags0 opts of
       Left err -> invokeError [err]
       Right (flags1,mode)
-        -> do arch <- getTargetArch
+        -> do arch <- if (null (targetArch flags1)) then getTargetArch else return hostArch
               let flags = case mode of
                             ModeInteractive _    -> flags1{evaluate = True, targetArch = arch }
                             ModeLanguageServer _ -> flags1{genRangeMap = True, targetArch = arch }
-                            _                    -> flags1
+                            _                    -> flags1{targetArch = arch}
               buildDir <- getKokaBuildDir (buildDir flags) (evaluate flags)
               buildTag <- if (null (buildTag flags)) then getDefaultBuildTag else return (buildTag flags)
               ed   <- if (null (editor flags))
@@ -1324,7 +1338,7 @@ getTargetArch
   = case hostOsName of
       "windows" -> -- on windows on arm, koka is a Haskell x64 exe but targets native arm64
                    do procId <- getEnvVar "PROCESSOR_IDENTIFIER"
-                      if (take 5 procId `elem` ["ARMv8","ARMv9"])
+                      if (any (\tgt -> procId `startsWith` tgt) ["ARMv8","ARMv9","ARM64","aarch64"])
                         then return "arm64"  -- windows on arm
                         else return hostArch
       _         -> return hostArch
