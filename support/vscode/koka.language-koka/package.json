@@ -287,7 +287,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && npx copyfiles -V ../../../whatsnew.md support/vscode/koka.language-koka/ && vsce package --allow-unused-files-pattern",
+    "build": "tsc && npx copyfiles -V ../../../whatsnew.md support/vscode/koka.language-koka/ && vsce package --allow-unused-files-pattern --skip-license",
     "compile": "tsc",
     "watch": "tsc -w",
     "readme": "npx copyfiles -V ../../../whatsnew.md support/vscode/koka.language-koka/",

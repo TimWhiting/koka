@@ -121,10 +121,19 @@ fun bundle( prefixdir : path, extrametadir : string, solibsdir : string, cc : st
   ensure-dir(libdir)
   ensure-dir(sharedir)
 
+  // Build vscode extension
+  match build-vsix("support/vscode/koka.language-koka",version)
+    Just(vsix) | !install ->
+      println("created vsix package: " ++ vsix.basename ++ "\n")
+      copy-file-to-dir(vsix, prefixdir / "..")
+    _ ->
+      if install
+        then println("warning: could not create the VS code extension package!\n")
+        else println("\nERROR: could not create the VS code extension package!\n")
+
   // Build kklib versions
   [Debug,DRelease,Release].foreach fn(v)
     build-libraries( cc,usecl,v,version,install,minimal,koka-run )
-
 
   // Copy Koka
   println("copy koka executable...")
@@ -327,4 +336,13 @@ fun build-libraries(cc : string, usecl : bool, variant : variant, version : stri
     run-system( clcmd )
     ()
 
+
+fun build-vsix(vsix-dir : string, version : string ) : io maybe<path>
+  println("creating vsix package...")
+  println(" npm install...")
+  if (run-system("cd " ++ vsix-dir ++ " && npm install") != 0) return Nothing
+  println(" npm run build...")
+  if (run-system("cd " ++ vsix-dir ++ " && npm run build") != 0) return Nothing
+  val ver = if version.starts-with("v").bool then version.tail else version
+  Just(vsix-dir / ("language-koka-" ++ ver ++ ".vsix"))
 
