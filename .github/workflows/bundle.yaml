@@ -1,5 +1,5 @@
 on:
-  workflow_dispatch:
+  workflow_dispatch:   # so we can run the workflow manually as well
   push:
     tags:
       - 'v*'
@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # macOS 13 is Intel based, later versions are arm64
+        # macOS 13 is x64, later versions are arm64
         # we build on the oldest ubuntu for better binary compatibility.
         os: [window-latest, ubuntu-20.04, ubuntu-22.04-arm, macOS-13, macOS-15]
     steps:
@@ -45,16 +45,16 @@ jobs:
       - name: Build compiler
         run: stack build
 
-      - name: Bundle compiler and libraries
-        run: |
-          stack exec koka -- -e util/bundle
-
       - name: Package VS code extension
-        if: startsWith(matrix.platform,'ubuntu') && !contains(matrix.platform,'arm')
+        if: runner.os == 'Linux' && runner.arch == 'X64'
         working-directory: support/vscode/koka.language-koka
         run: |
           npm install
           npm run build
+
+      - name: Bundle compiler and libraries
+        run: |
+          stack exec koka -- -e util/bundle
 
       # Create a release: https://github.com/softprops/action-gh-release (MIT license)
       - name: Release
