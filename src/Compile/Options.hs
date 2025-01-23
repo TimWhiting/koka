@@ -1185,7 +1185,7 @@ ccGcc name opt cpuArch path
     arch    = -- unfortunately, these flags are not as widely supported as one may hope so we only enable at -O2 or higher
               if (opt < 2) then []
               else if (cpuArch=="x64") then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
-              else if (cpuArch=="arm64") then ["-march=armv8.1-a+aes","-mtune=native"]  -- popcnt, simd, lse, pmull (+aes)
+              else if (cpuArch=="arm64") then ["-march=armv8.1-a+crypto+aes","-mtune=native"]  -- popcnt, simd, lse, pmull (+aes)
               else []
 
 ccMsvc name opt cpuArch path

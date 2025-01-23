@@ -21,19 +21,10 @@ jobs:
         # we build on the oldest ubuntu for better binary compatibility.
         os: [window-latest, ubuntu-20.04, ubuntu-22.04-arm, macOS-13, macOS-15]
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           submodules: true
-
-      # Set up stack and cache dependencies: https://github.com/freckle/stack-action (MIT license)
-      - uses: freckle/stack-action@v5
-        with:
-          test: false
-          stack-build-arguments: ""
-          cache-save-always: true
-
-      - name: Build
-        run: stack build
 
       # Cache setup for vcpkg (https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-actions-cache)
       - name: Setup vcpkg cache
@@ -43,9 +34,20 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - name: Bundle
+      # Set up stack and cache dependencies: https://github.com/freckle/stack-action (MIT license)
+      - name: Setup stack
+        uses: freckle/stack-action@v5
+        with:
+          test: false
+          stack-build-arguments: ""
+          cache-save-always: true
+
+      - name: Build compiler
+        run: stack build
+
+      - name: Bundle compiler and libraries
         run: |
-          stack exec koka -- -e -O2 util/bundle
+          stack exec koka -- -e util/bundle
 
       # Create a release https://github.com/softprops/action-gh-release (MIT license)
       # - name: Release
