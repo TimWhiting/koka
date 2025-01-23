@@ -18,8 +18,9 @@ jobs:
     strategy:
       matrix:
         # macOS 13 is x64, later versions are arm64
-        # we build on the oldest ubuntu for better binary compatibility.
-        os: [windows-latest, ubuntu-20.04, ubuntu-22.04-arm, macOS-13, macOS-15]
+        # we build on the oldest ubuntu version for better binary compatibility.
+        os: [windows-latest, macOS-latest, macOS-13, ubuntu-20.04, ubuntu-22.04-arm]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,6 +35,13 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
+      # Use a VS shell on Windows (so `cl` is on the PATH): https://github.com/egor-tensin/vs-shell (MIT license)
+      - name: Set up Visual Studio shell
+        uses: egor-tensin/vs-shell@v2
+        if: runner.os == 'Windows' && runner.arch == 'X64'
+        with:
+          arch: x64
+
       # Set up stack and cache dependencies: https://github.com/freckle/stack-action (MIT license)
       - name: Setup stack
         uses: freckle/stack-action@v5
@@ -46,7 +54,7 @@ jobs:
         run: stack build
 
       - name: Package VS code extension
-        if: runner.os == 'Linux' && runner.arch == 'X64'
+        if: runner.os == 'Windows' && runner.arch == 'X64'
         working-directory: support/vscode/koka.language-koka
         run: |
           npm install
@@ -54,7 +62,7 @@ jobs:
 
       - name: Bundle compiler and libraries
         run: |
-          stack exec koka -- -e util/bundle
+          stack exec koka -- -e -O2 util/bundle
 
       # Create a release: https://github.com/softprops/action-gh-release (MIT license)
       - name: Release
