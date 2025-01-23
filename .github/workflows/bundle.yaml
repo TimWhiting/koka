@@ -19,7 +19,7 @@ jobs:
       matrix:
         # macOS 13 is x64, later versions are arm64
         # we build on the oldest ubuntu for better binary compatibility.
-        os: [window-latest, ubuntu-20.04, ubuntu-22.04-arm, macOS-13, macOS-15]
+        os: [windows-latest, ubuntu-20.04, ubuntu-22.04-arm, macOS-13, macOS-15]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
