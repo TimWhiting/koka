@@ -49,7 +49,7 @@ fun re-version( version : string ) : _ ()
               , ("support/vscode/koka.language-koka/package.json", ["\"version\"\\s*:\\s*\"","\"compilerVersion\"\\s*:\\s*\""] )
               ]
 
-  val date = ts-ti.time-now().date.show
+  val date = ts-ti.local-time-now().date.show
   val rversionDate = rversion ++ "\\s*,\\s*[\\w\\d\\-]+\\s*$"
   val filesDate    = [ ("whatsnew.md", ["^##+\\s*v"]), // first match only
                        ("readme.md", ["^_Latest release_: v"] )]
@@ -73,7 +73,7 @@ fun re-version( version : string ) : _ ()
         txt
       Just(m) ->
         println("  update: " ++ m)
-        txt.replace(rx, "$1" ++ version ++ ", " ++ date)
+        txt.replace(rx, "$1" ++ version ++ ", " ++ date ++ "\n")
 
   println("done.")
 
