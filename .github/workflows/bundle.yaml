@@ -44,17 +44,12 @@ jobs:
           arch: x64
 
       # Set up stack and cache dependencies: https://github.com/freckle/stack-action (MIT license)
-      - name: Setup stack
+      - name: Build compiler
         uses: freckle/stack-action@v5
         with:
           test: false
           stack-build-arguments: ""
           cache-save-always: true
-
-      # Build compiler
-      - name: Build compiler
-        run: |
-          stack build
 
       # Bundle
       - name: Build libraries
