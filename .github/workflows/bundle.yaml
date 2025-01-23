@@ -49,13 +49,21 @@ jobs:
         run: |
           stack exec koka -- -e util/bundle
 
-      # Create a release https://github.com/softprops/action-gh-release (MIT license)
-      # - name: Release
-      #   uses: softprops/action-gh-release@v2
-      #   with: # support/vscode/koka.language-koka/*.vsix
-      #     files: |
-      #       bundle/**/*.tar.gz
-      #       bundle/**/*.vsix
-      #       util/install.bat
-      #       util/install.sh
-      #     make_latest: true
+      - name: Package VS code extension
+        if: matrix.platform == 'ubuntu-20.04'
+        working-directory: support/vscode/koka.language-koka
+        run: |
+          npm install
+          npm run build
+
+      # Create a release: https://github.com/softprops/action-gh-release (MIT license)
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')  # only release if tagged with a version
+        with:
+          files: |
+            bundle/**/*.tar.gz
+            support/vscode/koka.language-koka/*.vsix
+            util/install.bat
+            util/install.sh
+          draft: true
