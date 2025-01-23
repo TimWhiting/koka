@@ -47,6 +47,7 @@ fun re-version( version : string ) : _ ()
               , ("util/install.sh",  ["^VERSION=\"v"] )
               , ("util/minbuild.sh", ["^KOKA_VERSION="] )
               , ("support/vscode/koka.language-koka/package.json", ["\"version\"\\s*:\\s*\"","\"compilerVersion\"\\s*:\\s*\""] )
+              , ("util/release.md",  ["/download/v"])
               ]
 
   val date = ts-ti.local-time-now().date.show
@@ -63,7 +64,7 @@ fun re-version( version : string ) : _ ()
         txt
       Just(m) ->
         println("  update: " ++ m)
-        txt.replace(rx, "$1" ++ version)
+        txt.replace-all(rx, "$1" ++ version)
 
   filesDate.replace fn(txt,pre)
     val rx = regex("(" ++ pre ++ ")" ++ rversionDate, multiline=True)
@@ -72,7 +73,7 @@ fun re-version( version : string ) : _ ()
         println("  WARNING: could not find regex: " ++ rx.source)
         txt
       Just(m) ->
-        println("  update: " ++ m)
+        print("  update: " ++ m)
         txt.replace(rx, "$1" ++ version ++ ", " ++ date ++ "\n")
 
   println("done.")

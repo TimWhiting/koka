@@ -67,3 +67,5 @@ jobs:
             util/install.bat
             util/install.sh
           draft: true
+          body_path: util/release.md
+

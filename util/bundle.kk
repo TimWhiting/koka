@@ -247,10 +247,11 @@ fun koka-exe-path(exe-opt : string, sysghc : bool) : io (path,string)
                  elif exe == "cabal" then "cabal new-run koka --"
                  else exe
   val info     = run-system-read(koka-run ++ " --version").exn
+  println(koka-run ++ " --version" ++ "\n" ++ info)
   val bin      = info.lines.filter(fn(s){ s.starts-with("bin ").bool }).head.unjust
   val fpath    = bin.find(": ").unjust.after.string.trim / "koka"
   val koka-exe = if fpath.is-file then fpath else fpath.change-ext(".exe")
-  if !koka-exe.is-file then throw("unable to find koka executable: use '> stack build' first.\n  (" ++ koka-exe.string ++ ")")
+  if !koka-exe.is-file then throw("unable to find koka executable: use '> stack build' first.\n  (" ++ fpath.string ++ ")")
   (koka-exe, koka-run)
 
 
