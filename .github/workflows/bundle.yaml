@@ -50,7 +50,7 @@ jobs:
           stack exec koka -- -e util/bundle
 
       - name: Package VS code extension
-        if: matrix.platform == 'ubuntu-20.04'
+        if: startsWith(matrix.platform,'ubuntu') && !contains(matrix.platform,'arm')
         working-directory: support/vscode/koka.language-koka
         run: |
           npm install
