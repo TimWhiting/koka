@@ -312,7 +312,7 @@ flagsNull
           []       -- clink args
           []       -- clink sys libs
           []       -- clink full lib paths
-          (ccGcc "gcc" 0 hostArch "gcc")
+          (ccGcc "gcc" "gcc")
           (if onWindows then []        -- ccomp library dirs
                         else (["/usr/local/lib","/usr/lib","/lib"]
                                ++ if onMacOS then ["/opt/homebrew/lib"] else []))
@@ -1057,7 +1057,8 @@ data CC = CC{  ccName       :: String,
                ccAddLib     :: FilePath -> Args,
                ccAddDef     :: (String,String) -> Args,
                ccLibFile    :: String -> FilePath,  -- make lib file name
-               ccObjFile    :: String -> FilePath   -- make object file namen
+               ccObjFile    :: String -> FilePath,  -- make object file name
+               ccFlagsOpt   :: Int -> String -> Args  -- optimize and cpuArch to extra build arguments
             }
 
 instance Show CC where  -- for the hash
@@ -1149,7 +1150,7 @@ buildType flags
 ccFlagsBuildFromFlags :: CC -> Flags -> Args
 ccFlagsBuildFromFlags cc flags
   = case lookup (buildType flags) (ccFlagsBuild cc) of
-      Just s -> s
+      Just s -> s ++ (ccFlagsOpt cc) (optimize flags) (targetArch flags)
       Nothing -> []
 
 gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
@@ -1157,13 +1158,13 @@ gnuWarn = words "-Wall -Wextra -Wpointer-arith -Wshadow -Wstrict-aliasing" ++
           words "-Wno-unused-parameter -Wno-unused-variable -Wno-unused-value" ++
           words "-Wno-unused-but-set-variable"
 
-ccGcc,ccMsvc :: String -> Int -> String -> FilePath -> CC
-ccGcc name opt cpuArch path
+ccGcc,ccMsvc :: String -> FilePath -> CC
+ccGcc name path
   = CC name path []
-        ([(DebugFull,     ["-g","-O0","-fno-omit-frame-pointer"] ++ arch),
-          (Debug,         ["-g","-Og"] ++ arch),
-          (RelWithDebInfo,["-O2", "-g", "-DNDEBUG"] ++ arch),
-          (Release,       ["-O2", "-DNDEBUG"] ++ arch) ]
+        ([(DebugFull,     ["-g","-O0","-fno-omit-frame-pointer"]),
+          (Debug,         ["-g","-Og"]),
+          (RelWithDebInfo,["-O2", "-g", "-DNDEBUG"]),
+          (Release,       ["-O2", "-DNDEBUG"]) ]
         )
         (gnuWarn)
         (["-c"]) -- ++ (if onWindows then [] else ["-D_GNU_SOURCE"]))
@@ -1181,19 +1182,21 @@ ccGcc name opt cpuArch path
         (\(def,val) -> ["-D" ++ def ++ (if null val then "" else "=" ++ val)])
         (\lib -> libPrefix ++ lib ++ libExtension)
         (\obj -> obj ++ objExtension)
+        (optArch)
   where
-    arch    = -- unfortunately, these flags are not as widely supported as one may hope so we only enable at -O2 or higher
-              if (opt < 2) then []
-              else if (cpuArch=="x64") then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
-              else if (cpuArch=="arm64") then ["-march=armv8.1-a+crypto+aes","-mtune=native"]  -- popcnt, simd, lse, pmull (+aes)
-              else []
+    optArch opt cpuArch
+      = -- unfortunately, these flags are not as widely supported as one may hope so we only enable at -O2 or higher
+        if (opt < 2) then []
+        else if (cpuArch=="x64") then ["-march=haswell","-mtune=native"]    -- Haswell (2013) = x86-64-v3: popcnt, lzcnt, tzcnt, pdep, pext
+        else if (cpuArch=="arm64") then ["-march=armv8.1-a+crypto+aes","-mtune=native"]  -- popcnt, simd, lse, pmull (+aes)
+        else []
 
-ccMsvc name opt cpuArch path
+ccMsvc name path
   = CC name path ["-DWIN32","-nologo"]
-         [(DebugFull,words "-MDd -Zi -FS -Od -RTC1" ++ arch),
-          (Debug,words "-MDd -Zi -FS -O1" ++ arch),
-          (Release,words "-MD -O2 -Ob2 -DNDEBUG" ++ arch),
-          (RelWithDebInfo,words "-MD -Zi -FS -O2 -Ob2 -DNDEBUG" ++ arch)]
+         [(DebugFull,words "-MDd -Zi -FS -Od -RTC1"),
+          (Debug,words "-MDd -Zi -FS -O1"),
+          (Release,words "-MD -O2 -Ob2 -DNDEBUG"),
+          (RelWithDebInfo,words "-MD -Zi -FS -O2 -Ob2 -DNDEBUG")]
          ["-W3"]
          ["-EHs","-TP","-c"]   -- always compile as C++ on msvc (for atomics etc.)
          ["-link"]             -- , "/NODEFAULTLIB:msvcrt"]
@@ -1208,17 +1211,19 @@ ccMsvc name opt cpuArch path
          (\(def,val) -> ["-D" ++ def ++ (if null val then "" else "=" ++ val)])
          (\lib -> libPrefix ++ lib ++ libExtension)
          (\obj -> obj ++ objExtension)
+         (optArch)
   where
-    arch    = if (opt < 2) then []
-              else if (cpuArch == "x64") then ["-arch:AVX2"] -- popcnt, lzcnt, tzcnt, pdep, pext, clmul
-              else if (cpuArch == "arm64") then ["-arch:armv8.1"] -- popcnt, simd, lse
-              else []
+    optArch opt cpuArch
+      = if (opt < 2) then []
+        else if (cpuArch == "x64") then ["-arch:AVX2"] -- popcnt, lzcnt, tzcnt, pdep, pext, clmul
+        else if (cpuArch == "arm64") then ["-arch:armv8.1"] -- popcnt, simd, lse
+        else []
 
 ccFromPath :: Flags -> FilePath -> IO (CC,Bool {-asan-})
 ccFromPath flags path
   = let name    = -- reverse $ dropWhile (not . isAlpha) $ reverse $
                   basename path
-        gcc     = ccGcc name (optimize flags) (targetArch flags) path
+        gcc     = ccGcc name path
         mingw   = gcc{ ccName = "mingw",
                        ccLibFile = \lib -> "lib" ++ lib ++ ".a",
                        ccFlagStack = (\stksize -> if stksize > 0 then ["-Wl,--stack," ++ show stksize] else [])
@@ -1236,7 +1241,7 @@ ccFromPath flags path
                                      ++ (if onMacOS && targetArch flags == "arm64" then ["-Wno-unknown-warning-option"] else [])
                      }
         generic = gcc{ ccFlagsWarn = [] }
-        msvc    = ccMsvc name (optimize flags) (targetArch flags) path
+        msvc    = ccMsvc name path
         clangcl = msvc{ ccFlagsWarn = ["-Wno-everything"] ++ ccFlagsWarn clang ++
                                       words "-Wno-extra-semi-stmt -Wno-extra-semi -Wno-float-equal",
                         ccFlagsLink = words "-Wno-unused-command-line-argument" ++ ccFlagsLink msvc,
