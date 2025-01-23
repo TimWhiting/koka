@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 env:
-    VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
 name: bundle
 jobs:
@@ -26,6 +26,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+
+      # Debug
+      - name: Environment
+        if: runner.os == 'Windows' && runner.arch == 'X64'
+        run: set
 
       # Use a VS shell on Windows (so `cl` is on the PATH): https://github.com/egor-tensin/vs-shell (MIT license)
       - name: Set up Visual Studio shell
