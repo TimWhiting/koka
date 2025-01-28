@@ -170,7 +170,7 @@ synTypeDef modName lazyExprs (Core.Data dataInfo)
   = do synLazy <-
           if (dataDefIsLazy (dataInfoDef dataInfo))
            then do eval <- synLazyEval lazyExprs dataInfo
-                   return [synLazyTag dataInfo,eval,synLazyWhnf dataInfo,synLazyForce dataInfo]
+                   return [synLazyTag dataInfo,eval,synLazyStep dataInfo,synLazyWhnf dataInfo,synLazyForce dataInfo]
            else return []
        return $
         (if not (dataInfoIsOpen dataInfo) then synAccessors modName dataInfo else [])
@@ -312,7 +312,19 @@ synConstrTag (con)
     in DefNonRec (Def (ValueBinder name () expr rc rc) rc (conInfoVis con) DefVal InlineNever "")
 
 
+{- add a lazy tag
+   ```
+   lazy type stream<a>
+    SNil
+    SCons( head : a, tail : stream<a> )
+    lazy SAppRev( pre : stream<a>, post : list<a> ) ->
+      match pre
+        SNil        -> sreverse(post)
+        SCons(x,xx) -> SCons(x,SAppRev(xx,post))
 
+   stream/lazy-tag = 3
+   ```
+-}
 synLazyTag :: DataInfo -> DefGroup Type
 synLazyTag info
   = let xrng     = dataInfoRange info
@@ -325,16 +337,19 @@ synLazyTag info
     in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) DefVal InlineAlways "// Automatically generated tag value of lazy indirection")
 
 {-
-noinline fbip fun stream-eval( s : stream<a> ) : _ stream<a>
-  lazy-whnf-target(s)
-  match s
-    SAppRev( pre, post )
-      -> match pre
-           SNil        -> lazy-update(s,stream-eval(sreverse(post)))
-           SCons(x,xx) -> lazy-update(s,SCons(x,SAppRev(xx,post)))
-    SIndirect(ind)
-      -> ind   // or stream-eval(ind) ?
-    _ -> s
+  Add lazy evaluation step:
+  ```
+  noinline fbip fun stream/eval( s : stream<a> ) : _ stream<a>
+    lazy-whnf-target(s)
+    match s
+      SAppRev( pre, post )
+        -> match pre
+            SNil        -> lazy-update(s,sreverse(post))
+            SCons(x,xx) -> lazy-update(s,SCons(x,SAppRev(xx,post)))
+      SIndirect(ind)
+        -> ind
+      _ -> s
+  ```
 -}
 synLazyEval :: [LazyExpr] -> DataInfo -> KInfer (DefGroup Type)
 synLazyEval lazyExprs info
@@ -375,8 +390,7 @@ synLazyEval lazyExprs info
             def = Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""
        return $ DefNonRec def
 
-{- Add `lazy-update(s,...)` to tail positions if `...` is a whnf constructor.
-   otherwise, use `lazy-update(s,stream/eval(...))` for arbitratry expressions `...`.
+{- Add `lazy-update(s,...)` to tail positions
 
 SAppRev( pre, post )
       -> match pre
@@ -387,7 +401,7 @@ SAppRev( pre, post )
 
 SAppRev( pre, post )
       -> match pre
-           SNil        -> lazy-update(s,stream-eval(sreverse(post)))
+           SNil        -> lazy-update(s,sreverse(post))
            SCons(x,xx) -> lazy-update(s,SCons(x,SAppRev(xx,post)))
 
 -}
@@ -458,11 +472,7 @@ lazyAddUpdate info conInfo evalName arg topExpr
           Nothing -> case lookupCon cname lazyConstrs of
                        Nothing     -> unknownUpdate expr
                        Just cinfo  -> recursiveUpdate expr cinfo
-          Just whnfCon -> do platform <- getPlatform
-                             let lazySize = Core.conReprAllocSize platform (Core.getConRepr info conInfo)
-                                 whnfSize = Core.conReprAllocSize platform (Core.getConRepr info whnfCon)
-                             when (lazySize < whnfSize) $
-                               updateWarning (getRange expr) $ \_ -> text "in-place as the result constructor is larger (" <.> pretty lazySize <+> text "vs" <+> pretty whnfSize <+> text "bytes) -- using an indirection instead"
+          Just whnfCon -> do warnUpdate (getRange expr) whnfCon
                              lazyUpdate expr
 
     unknownUpdate expr
@@ -472,8 +482,18 @@ lazyAddUpdate info conInfo evalName arg topExpr
 
     recursiveUpdate expr cinfo
       = do let rng = rangeHide $ getRange expr
-           updateWarning rng $ \showCon -> text "in-place as the lazy result constructor" <+> showCon (conInfoName cinfo) <+> text "needs to be recursively forced -- using an indirection instead"
+           -- no need to warn anymore as we don't force recursively here
+           -- updateWarning rng $ \showCon -> text "in-place as the lazy result constructor" <+> showCon (conInfoName cinfo) <+> text "needs to be recursively forced -- using an indirection instead"
+           warnUpdate (getRange expr) cinfo
            lazyUpdate (App (Var evalName False rng) [(Nothing,expr)] rng)
+
+    warnUpdate range resultCon
+      = do platform <- getPlatform
+           let lazySize = Core.conReprAllocSize platform (Core.getConRepr info conInfo)
+               whnfSize = Core.conReprAllocSize platform (Core.getConRepr info resultCon)
+           when (lazySize < whnfSize) $
+             updateWarning range $ \_ -> text "in-place as the result constructor is larger (" <.> pretty lazySize <+> text "vs" <+> pretty whnfSize <+> text "bytes) -- using an indirection instead"
+
 
     -- lazyUpdate :: Expr t -> KInfer (Expr t)
     lazyUpdate expr
@@ -482,19 +502,19 @@ lazyAddUpdate info conInfo evalName arg topExpr
 
 
 {-
-noinline fun stream-whnf( s : stream<a> ) : _ stream<a>
+noinline fun stream/step( s : stream<a> ) : _ stream<a>
   if kk-datatype-ptr-is-unique || !lazy-atomic-enter(s,stream/lazy-tag) then
-    stream-eval(s)
+    stream/eval(s)
   else
-    val v = stream-eval(s)
+    val v = stream/eval(s)
     lazy-atomic-leave(s)
     v
 -}
-synLazyWhnf :: DataInfo -> DefGroup Type
-synLazyWhnf info
+synLazyStep :: DataInfo -> DefGroup Type
+synLazyStep info
   = let xrng     = dataInfoRange info
         rng      = rangeHide xrng
-        defName  = lazyName info "whnf"
+        defName  = lazyName info "step"
         dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
         fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
 
@@ -515,9 +535,44 @@ synLazyWhnf info
                     in Bind vdef (Bind bdef (Var v False rng) rng) rng
     in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever "")
 
+{- recursive force:
+  noinline fun stream/whnf(s : stream<a> ) : div stream<a>
+    val x = stream/step(s)
+    if lazy/datatype-is-whnf(x,steam/lazy-tag) then x else stream/whnf(x)
+-}
+synLazyWhnf :: DataInfo -> DefGroup Type
+synLazyWhnf info
+  = let xrng     = dataInfoRange info
+        rng      = rangeHide xrng
+        defName  = lazyName info "whnf"
+        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
+        -- fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
+        nameIsWhnf = if (all (\conInfo -> not (null (conInfoParams conInfo))) (dataInfoConstrs info))
+                       then nameLazyPtrIsWhnf else nameLazyIsWhnf
 
-{-
-    if kk-datatype-is-whnf(s,stream/lazy-tag) then s else stream-whnf(s)
+        valName   = newHiddenName "val"
+        val       = Var valName False rng
+
+        argName   = newHiddenName "lazy"
+        arg       = Var argName False rng
+
+        nameStep  = lazyName info "step"
+        stepExpr  = App (Var nameStep False rng) [(Nothing,arg)] rng
+        valDef    = Def (ValueBinder valName () stepExpr rng rng) rng Private DefVal InlineNever ""
+
+        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
+        body      = Let (DefNonRec valDef)
+                    (Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue val]
+                              ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue whnf]] False rng) rng
+        tst       = App (Var nameIsWhnf False rng) [(Nothing,val),(Nothing,Var (lazyName info "lazy-tag") False rng)] rng
+        whnf      = App (Var (lazyName info "whnf") False rng) [(Nothing,val)] rng
+    in DefRec [Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""]
+
+{- force is a one step unfolding of whnf and is inlined at call sites.
+  inline fun stream/force( s : stream<a> ) : div stream<a>
+    if lazy/datatype-is-whnf(s,stream/lazy-tag)
+      then s
+      else stream/whnf(s)
 -}
 synLazyForce :: DataInfo -> DefGroup Type
 synLazyForce info
@@ -537,6 +592,8 @@ synLazyForce info
         tst       = App (Var nameIsWhnf False rng) [(Nothing,arg),(Nothing,Var (lazyName info "lazy-tag") False rng)] rng
         whnf      = App (Var (lazyName info "whnf") False rng) [(Nothing,arg)] rng
     in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineAlways "")
+
+
 
 lazyFip :: HasCallStack => DataInfo -> Fip
 lazyFip info

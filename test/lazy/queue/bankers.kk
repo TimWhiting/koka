@@ -78,6 +78,43 @@ inline fun stream/force( s : stream<a> ) : div stream<a>
     else stream-whnf(s)
 */
 
+/*
+noinline fun stream/eval( s : stream<a> ) : _ stream<a>
+  lazy/whnf-target(s)      // just for the compiler to reference count and reuse correctly
+  lazy match s             // lazy match so we can match on the lazy constructors (and no `stream/force` is inserted)
+    SAppRev( pre, post )
+      -> match stream/force(pre)
+           SNil        -> lazy/whnf-update(s,sreverse(post))  // does this guarantee we never update an indirection with an indirection?
+           SCons(x,xx) -> lazy/whnf-update(s,SCons(x,SAppRev(xx,post)))     // no recursive `stream/force` is inserted as we can statically see the `SCons`
+    stream/Indirect(ind)   // generated
+      -> ind               // we don't use `stream/force(ind)` as we guarantee `ind` is never an indirection itself (and always whnf)
+    _ -> s
+
+noinline fun stream/step( s : stream<a> ) : div stream<a>
+  if lazy/datatype-ptr-is-unique(s) ||      // we never need to blackhole a unique lazy value (?)
+     !lazy/enter(s,stream/lazy-tag)         // otherwise try to enter (maybe atomically and block waiting)
+  then
+    stream/eval(s)                          // we always eval (even if waiting) in order to resolve indirections
+  else
+    val v = stream/eval(s)                  // if entered first, we need to call `lazy/leave` later
+    lazy/leave(s)                           // unblock any others waiting for the value
+    v
+
+val stream/lazy-tag = 3   // always the indirection tag; anything >= 3 is considered a lazy constructor
+
+noinline fun stream/whnf(s : stream<a> ) : div stream<a>
+  val x = stream/step(s)
+  if lazy/datatype-is-whnf(x,steam/lazy-tag) then x else stream/whnf(x)
+
+// `stream/force` is inserted at any `match` on a `:stream<a>` type. (but not for a `lazy match`).
+inline fun stream/force( s : stream<a> ) : div stream<a>
+  // `lazy/datatype-ptr-is-whnf` is fast as it just does `s->tag < stream/lazy-tag` (so we want to inline this)
+  // (if a type can have singletons, it becomes `lazy/datatype-is-whnf(s)` == `is-value(s) || s->tag < stream/lazy-tag`)
+  if lazy/datatype-is-whnf(s,stream/lazy-tag)
+    then s\
+    else stream/whnf(s)
+*/
+
 struct bqueue<a>
   front : stream<a>
   front-len : int
