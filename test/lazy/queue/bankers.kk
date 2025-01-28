@@ -37,49 +37,13 @@ pub fun test1()
 /*
 // The following should be generated.
 // Note that `lazy/whnf-update(s,...)`` is always inserted at tail-position.
-// If the argument is not a syntactic non-lazy constructor a recursive call to `stream/force` is added as well. (`SNil` case in `SAppRev` below)
-// (note: that makes `stream/eval` and `stream/force` mutually recursive and `div` will be inferred)
 //
 // If the argument is a singleton (`SNil`), larger, or unknown (`sreverse(post)`),
 // an indirection is automatically inserted (`stream/Indirect`). Larger or unknown issue a warning.
 //
 // `lazy/whnf-update(s)` is compiled specially to only updates `s` if `s` is not unique.
-// It also always returns the final whnf, not a potential indirection (so we don't need to call `stream/eval` recursively afterwards)
 
-noinline fun stream/eval( s : stream<a> ) : _ stream<a>
-  lazy/whnf-target(s)      // just for the compiler to reference count and reuse correctly
-  lazy match s             // lazy match so we can match on the lazy constructors (and no `stream/force` is inserted)
-    SAppRev( pre, post )
-      -> match stream/force(pre)
-           SNil        -> lazy/whnf-update(s,stream/force(sreverse(post)))  // does this guarantee we never update an indirection with an indirection?
-           SCons(x,xx) -> lazy/whnf-update(s,SCons(x,SAppRev(xx,post)))     // no recursive `stream/force` is inserted as we can statically see the `SCons`
-    stream/Indirect(ind)   // generated
-      -> ind               // we don't use `stream/force(ind)` as we guarantee `ind` is never an indirection itself (and always whnf)
-    _ -> s
-
-noinline fun stream/whnf( s : stream<a> ) : div stream<a>
-  if lazy/datatype-ptr-is-unique(s) ||      // we never need to blackhole a unique lazy value (?)
-     !lazy/enter(s,stream/lazy-tag)         // otherwise try to enter (maybe atomically and block waiting)
-  then
-    stream/eval(s)                          // we always eval (even if waiting) in order to resolve indirections
-  else
-    val v = stream/eval(s)                  // if entered first, we need to call `lazy/leave` later
-    lazy/leave(s)                           // unblock any others waiting for the value
-    v
-
-val stream/lazy-tag = 3   // always the indirection tag; anything >= 3 is considered a lazy constructor
-
-// `stream/force` is inserted at any `match` on a `:stream<a>` type. (but not for a `lazy match`).
-inline fun stream/force( s : stream<a> ) : div stream<a>
-  // `lazy/datatype-ptr-is-whnf` is fast as it just does `s->tag < stream/lazy-tag` (so we want to inline this)
-  // (if a type can have singletons, it becomes `lazy/datatype-is-whnf(s)` == `is-value(s) || s->tag < stream/lazy-tag`)
-  if lazy/datatype-is-whnf(s,stream/lazy-tag)
-    then s
-    else stream-whnf(s)
-*/
-
-/*
-noinline fun stream/eval( s : stream<a> ) : _ stream<a>
+noinline fun stream/lazy-eval( s : stream<a> ) : _ stream<a>
   lazy/whnf-target(s)      // just for the compiler to reference count and reuse correctly
   lazy match s             // lazy match so we can match on the lazy constructors (and no `stream/force` is inserted)
     SAppRev( pre, post )
@@ -90,29 +54,32 @@ noinline fun stream/eval( s : stream<a> ) : _ stream<a>
       -> ind               // we don't use `stream/force(ind)` as we guarantee `ind` is never an indirection itself (and always whnf)
     _ -> s
 
-noinline fun stream/step( s : stream<a> ) : div stream<a>
+// evaluate one step and update
+noinline fun stream/lazy-step( s : stream<a> ) : div stream<a>
   if lazy/datatype-ptr-is-unique(s) ||      // we never need to blackhole a unique lazy value (?)
      !lazy/enter(s,stream/lazy-tag)         // otherwise try to enter (maybe atomically and block waiting)
   then
-    stream/eval(s)                          // we always eval (even if waiting) in order to resolve indirections
+    stream/lazy-eval(s)                     // we always eval (even if waiting) in order to resolve indirections
   else
-    val v = stream/eval(s)                  // if entered first, we need to call `lazy/leave` later
+    val v = stream/lazy-eval(s)             // if entered first, we need to call `lazy/leave` later
     lazy/leave(s)                           // unblock any others waiting for the value
     v
 
 val stream/lazy-tag = 3   // always the indirection tag; anything >= 3 is considered a lazy constructor
 
-noinline fun stream/whnf(s : stream<a> ) : div stream<a>
-  val x = stream/step(s)
-  if lazy/datatype-is-whnf(x,steam/lazy-tag) then x else stream/whnf(x)
+// evaluate tail-recursively to whnf
+noinline fun stream/lazy-whnf(s : stream<a> ) : div stream<a>
+  val x = stream/lazy-step(s)
+  if lazy/datatype-is-whnf(x,steam/lazy-tag) then x else stream/lazy-whnf(x)
 
-// `stream/force` is inserted at any `match` on a `:stream<a>` type. (but not for a `lazy match`).
+// `stream/lazy-force` is inserted at any `match` on a `:stream<a>` type. (but not for a `lazy match`).
+// it is a one-step unfolding of `lazy-whnf` for efficiency
 inline fun stream/force( s : stream<a> ) : div stream<a>
   // `lazy/datatype-ptr-is-whnf` is fast as it just does `s->tag < stream/lazy-tag` (so we want to inline this)
   // (if a type can have singletons, it becomes `lazy/datatype-is-whnf(s)` == `is-value(s) || s->tag < stream/lazy-tag`)
   if lazy/datatype-is-whnf(s,stream/lazy-tag)
-    then s\
-    else stream/whnf(s)
+    then s
+    else stream/lazy-whnf(s)
 */
 
 struct bqueue<a>
@@ -130,17 +97,13 @@ fun size( ^q : bqueue<a> ) : int
   q.front-len + q.rear-len
 
 
-fip(1) fun check( q : bqueue<a> ) : bqueue<a>
-  match q
-    Bqueue(front, front-len, rear, rear-len) ->
-      if (front-len >= rear-len)
-       then Bqueue(front, front-len, rear, rear-len)
-       else Bqueue( SAppRev(front,rear), front-len + rear-len, Nil, 0)
+fip(1) fun check( Bqueue(front, front-len, rear, rear-len) : bqueue<a> ) : bqueue<a>
+  if (front-len >= rear-len)
+    then Bqueue(front, front-len, rear, rear-len)
+    else Bqueue( SAppRev(front,rear), front-len + rear-len, Nil, 0)
 
-fip(2) fun snoc( q : bqueue<a>, x : a ) : bqueue<a>
-  match q
-    Bqueue(front,front-len,rear,rear-len) ->
-      Bqueue(front, front-len, Cons(x,rear), rear-len+1).check
+fip(2) fun snoc( Bqueue(front,front-len,rear,rear-len) : bqueue<a>, x : a ) : bqueue<a>
+  Bqueue(front, front-len, Cons(x,rear), rear-len+1).check
 
 fbip(2) fun uncons( Bqueue(front,front-len,rear,rear-len) : bqueue<a> ) : div maybe2<a,bqueue<a>>
   match front

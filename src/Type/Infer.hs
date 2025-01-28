@@ -127,11 +127,11 @@ inferDefGroupX topLevel defGroup cont
 
 traceCoreDefs :: [Core.Def] -> Inf ()
 traceCoreDefs cdefs
-  = traceDoc $ \penv -> vcat (map (\cdef -> prettyDef penv{coreShowDef=True} cdef) cdefs)       
+  = traceDoc $ \penv -> vcat (map (\cdef -> prettyDef penv{coreShowDef=True} cdef) cdefs)
 
 traceCoreDefGroups :: [Core.DefGroup] -> Inf ()
 traceCoreDefGroups cdefgs
-  = traceDoc $ \penv -> vcat (map (\cdefg -> prettyDefGroup penv{coreShowDef=True} cdefg) cdefgs)       
+  = traceDoc $ \penv -> vcat (map (\cdefg -> prettyDefGroup penv{coreShowDef=True} cdefg) cdefgs)
 
 
 
@@ -364,9 +364,9 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                                     sassumedTp    <- subst assumedTp  -- needed for `type/wrong/scheduler2`
                                     sresTp <- subst resTp
                                     return (sresTp,sassumedTp,coref)
- 
+
         (resTp1,resCore1) <- generalize rng nameRng True typeTotal resTp0 (coref0 (Core.defExpr coreDef)) -- typeTotal is ok since only functions are recursive (?)
-        
+
         let name = Core.defName coreDef
             csort = if (topLevel || CoreVar.isTopLevel coreDef) then Core.defSort coreDef else DefVal
             info = coreVarInfoFromNameInfo (createNameInfoX Public name csort (defRange def) resTp1 (defDoc def))
@@ -1627,7 +1627,7 @@ inferCase propagated expect expr branches isLazyMatch rng
        -- todo: warning if lazy match on regular datatype?
        ccore1  <- if not isLazyMatch && (dataInfoIsLazy dataInfo)
                     then do -- traceDefDoc $ \penv -> text "match force:" <+> prettyDataInfo penv False False  dataInfo
-                            let forceName = typeQualifiedName (dataInfoName dataInfo) "force"
+                            let forceName = lazyName dataInfo "force"
                             (force,forceTp,forceInfo) <- resolveFunName forceName (CtxFunArgs False 1 [] Nothing) rng (getRange expr)
                             let cforce   = coreExprFromNameInfo force forceInfo
                             case ccore0 of

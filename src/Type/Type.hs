@@ -15,7 +15,7 @@ module Type.Type (-- * Types
                   , DataInfo(..), DataKind(..), ConInfo(..), SynInfo(..)
                   , dataInfoIsOpen, dataInfoIsExtend, dataInfoIsLiteral
                   , conInfoSize, conInfoScanCount
-                  , conInfoIsLazy, dataInfoIsLazy, conInfoLazyFip
+                  , conInfoIsLazy, dataInfoIsLazy, conInfoLazyFip, lazyName
                   , eqType, eqTypes, elemType
                   -- Predicates
                   , splitPredType, shallowSplitPreds, shallowSplitVars
@@ -198,6 +198,11 @@ dataInfoIsLiteral info
 dataInfoIsLazy :: DataInfo -> Bool
 dataInfoIsLazy dataInfo
   = dataDefIsLazy (dataInfoDef dataInfo)
+
+lazyName :: DataInfo -> String -> Name
+lazyName info stem
+  = unqualify $ typeQualifiedName (dataInfoName info) ("lazy-" ++ stem)
+
 
 -- | Constructor information: constructor name, name of the newtype, field types, and the full type of the constructor
 data ConInfo = ConInfo{ conInfoName :: !Name
