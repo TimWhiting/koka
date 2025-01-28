@@ -483,14 +483,14 @@ lazyAddUpdate info conInfo evalName arg topExpr
     unknownUpdate expr
       = do let rng = rangeHide $ getRange expr
            updateWarning rng $ \_ -> text "in-place as the result constructor is not statically known -- using an indirection instead"
-           lazyUpdate (App (Var evalName False rng) [(Nothing,expr)] rng)
+           lazyUpdate expr -- (App (Var evalName False rng) [(Nothing,expr)] rng)
 
     recursiveUpdate expr cinfo
       = do let rng = rangeHide $ getRange expr
            -- no need to warn anymore as we don't force recursively here
            -- updateWarning rng $ \showCon -> text "in-place as the lazy result constructor" <+> showCon (conInfoName cinfo) <+> text "needs to be recursively forced -- using an indirection instead"
            warnUpdate (getRange expr) cinfo
-           lazyUpdate (App (Var evalName False rng) [(Nothing,expr)] rng)
+           lazyUpdate expr -- (App (Var evalName False rng) [(Nothing,expr)] rng)
 
     warnUpdate range resultCon
       = do platform <- getPlatform
