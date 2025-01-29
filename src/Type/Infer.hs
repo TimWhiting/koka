@@ -2149,14 +2149,11 @@ isAnnot _                     = False
 
 splitNamedArgs :: Ranged e => [(Maybe (Name,Range),e)] -> Inf ([e],[((Name,Range),e)])
 splitNamedArgs nargs
-  = do let (nfixed,rest)      = span (isNothing . fst) nargs
-           (nnamed,morefixed) = span (not . isNothing . fst) rest
+  = do let nfixed      = filter (isNothing . fst) nargs
+           nnamed      = filter (not . isNothing . fst) nargs
            fixed              = map snd nfixed
            named              = [((name,rng),expr) | (Just (name,rng),expr) <- nnamed]
        -- check that named arguments all come after the positional ones
-       case morefixed of
-         [] -> return ()
-         (arg:_) -> infError (getRange (snd arg)) (text "positional arguments cannot follow named arguments")
        checkDuplicates [] named
 
        return (seqqList fixed,seqqList named)
