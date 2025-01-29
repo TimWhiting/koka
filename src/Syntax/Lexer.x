@@ -410,10 +410,13 @@ xdigitToInt :: Char -> Int
 xdigitToInt c
   = if (isHexDigit c) then fromIntegral (digitToInt c) else trace ("lexer hex digit: " ++ [c]) (0)
 
+isAt :: Char -> Bool
+isAt c = c == '@'
+
 isMalformed :: String -> Bool
 isMalformed s
   = case s of
-      '-':c:cs   | not (isLetter c) -> True
+      '-':c:cs   | not (isLetter c || isAt c) -> True -- @ signs are added postpend to unique names (e.g. "x-@1") for variable x monadic lifted in a function (-).
       c:'-':cs   | not (isLetter c || isDigit c) -> True
       c:cs       -> isMalformed cs
       []         -> False

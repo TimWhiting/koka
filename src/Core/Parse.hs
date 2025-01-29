@@ -547,7 +547,7 @@ parseDefGroups0 env
 parseDefGroup :: Env -> LexParser (Env,DefGroup)
 parseDefGroup env
   = do (sort,inl,isRec,doc) <- pdefSort
-       (name,_)   <- funid False <|> do{ wildcard; return (nameNil,rangeNull) }
+       (name,_)   <- funid True <|> do{ wildcard; return (nameNil,rangeNull) } -- Allow locally qualified identifiers in Core
        range      <- prange env
        -- inl        <- parseInline
        tp         <- typeAnnot env
