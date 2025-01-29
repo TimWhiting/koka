@@ -113,7 +113,8 @@ typeCheck flags defs coreImports program0
         unreturn penv
 
         -- checkCoreDefs "unreturn"
-        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs }) (defsBorrowed defs)
+        coreDefs1 <- Core.getCoreDefs
+        let borrowed = borrowedExtendICore (coreProgram{ Core.coreProgDefs = coreDefs1 }) (defsBorrowed defs)
         checkFBIP penv (platform flags) newtypes borrowed gamma
 
         -- initial simplify
