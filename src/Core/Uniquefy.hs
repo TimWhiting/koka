@@ -12,7 +12,7 @@
 module Core.Uniquefy ( uniquefy
                      , uniquefyDefGroup {- used for divergence analysis -}
                      , uniquefyExpr, uniquefyExprWith, uniquefyExprU
-                     , uniquefyDefGroups {- used in inline -}                     
+                     , uniquefyDefGroups {- used in inline -}
                      ) where
 
 import Control.Monad
@@ -36,7 +36,7 @@ instance Functor Un where
                                 (x,st1) -> (f x,st1))
 
 instance Applicative Un where
-  pure x  = Un (\st -> (x,st))  
+  pure x  = Un (\st -> (x,st))
   (<*>) = ap
 
 instance Monad Un where
@@ -44,7 +44,7 @@ instance Monad Un where
   (Un u) >>= f  = Un (\st0 -> case u st0 of (x,st1) -> case f x of Un u1 -> u1 st1)
 
 instance HasUnique Un where
-  updateUnique f  
+  updateUnique f
     = do st' <- updateSt (\st -> st{ uniq = f (uniq st)})
          return (uniq st')
 
@@ -72,7 +72,7 @@ getRenaming = fmap renaming getSt
 setLocals l = updateSt (\st -> st{ locals = l })
 setRenaming r = updateSt (\st -> st{ renaming = r })
 
-makeFullUnique 
+makeFullUnique
   = do st <- getSt
        return (uniq st /= 0)
 
@@ -80,18 +80,18 @@ runUn uniq (Un u)
   = fst (u (St S.empty M.empty uniq))
 
 uniquefyExpr :: Expr -> Expr
-uniquefyExpr expr 
+uniquefyExpr expr
   = uniquefyExprWith tnamesEmpty expr
 
 uniquefyExprWith :: TNames -> Expr -> Expr
-uniquefyExprWith free expr  
+uniquefyExprWith free expr
   = let locals = S.map getName (free `tnamesUnion` (freeLocals expr))
     in runUn 0 $
        do setLocals locals
           uniquefyExprX expr
 
 uniquefyExprU :: HasUnique m => Expr -> m Expr
-uniquefyExprU expr 
+uniquefyExprU expr
   = withUnique $ \uniq0 ->
     runUn uniq0 $
     do expr' <- uniquefyExprX expr
@@ -109,7 +109,7 @@ uniquefyDefGroups dgs
     do locals <- getLocals
        let toplevelDefs = filter (not . nameIsNil) (map defName (flattenDefGroups dgs))
        setLocals (foldr (\name locs -> S.insert (unqualify name) locs) locals toplevelDefs)
-       mapM (fullLocalized . uniquefyDG) dgs       
+       mapM (fullLocalized . uniquefyDG) dgs
   where
     uniquefyDG (DefNonRec def)
       = fmap DefNonRec $
@@ -123,7 +123,7 @@ uniquefyDefGroups dgs
 
 uniquefyDefGroup :: DefGroup -> DefGroup
 uniquefyDefGroup defgroup
-  = runUn 0 $  
+  = runUn 0 $
     case defgroup of
       DefNonRec def
         -> fmap DefNonRec $ uniquefyDef def
@@ -181,7 +181,7 @@ uniquefyExprX expr
                                 return (Let defGroups1 expr1)
       Case exprs branches
         -> do exprs1 <- mapM uniquefyExprX exprs
-              branches1 <- localized $ mapM (uniquefyBranch (map typeOf exprs)) branches
+              branches1 <- localized $ mapM (localized . uniquefyBranch (map typeOf exprs)) branches
               return (Case exprs1 branches1 )
 
 
@@ -204,17 +204,17 @@ uniquefyPattern (pattern, patTp)
               name <- uniquefyName (newHiddenName "pat")
               pat  <- uniquefyPatternX pattern patTp
               return (PatVar (TName name patTp) pat)
-              
 
-uniquefyPatternX pattern patTp           
+
+uniquefyPatternX pattern patTp
   = case pattern of
      PatWild  -> return pattern
      PatLit _ -> return pattern
      PatCon { patConPatterns = patterns, patTypeArgs = patTps }
         -> do patterns1 <- mapM uniquefyPattern (zip patterns patTps)
               return pattern{ patConPatterns = patterns1 }
-     PatVar tname pat 
-        -> do tname' <- uniquefyTName tname        
+     PatVar tname pat
+        -> do tname' <- uniquefyTName tname
               pat' <- uniquefyPatternX pat patTp
               return (PatVar tname' pat')
      -- _  -> failure "Core.Uniquefy.UniquefyPatternX: unexpected case"
@@ -232,7 +232,7 @@ uniquefyName name
        full <- makeFullUnique
        if (full || S.member name locals)
         then do renaming <- getRenaming
-                name1 <- if full 
+                name1 <- if full
                            then uniqueNameFrom name
                            else return (findUniqueName 0 name locals)
                 let locals1 = S.insert name1 locals
