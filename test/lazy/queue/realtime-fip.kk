@@ -28,7 +28,7 @@ value type queue<a>
 
 val realtime/empty = Queue( SNil, Nil, SNil )
 
-fbip fun is-empty(  Queue(front,_,_) : queue<a> ) : pure bool
+fbip fun is-empty(  Queue(front,_,_) : queue<a> ) : div bool
   match front
     SNil -> True
     _    -> False

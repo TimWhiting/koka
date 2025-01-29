@@ -1,8 +1,12 @@
 module bench
 
+import std/core/undiv
+import std/core/unsafe
 import std/os/env
 import std/num/random
 import std/num/int32
+import std/num/int64
+
 
 pub alias rndstate = sfc
 alias rndres = sfc-result
@@ -56,4 +60,5 @@ pub fun bench( ops : int32, n : int32, qi : queueI<q> ) : _ int32
 pub fun benchmain( qi : queueI<q>, ops : int = 100000, queues : int = 1000) : io ()
   val n = get-args().head("").parse-int.default(queues).int32
   val sum = bench(ops.int32, n, qi)
-  println("checksum: " ++ show(sum))
+  println("Checksum: " ++ show(sum))
+

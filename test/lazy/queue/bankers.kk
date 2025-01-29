@@ -97,17 +97,17 @@ fun size( ^q : bqueue<a> ) : int
   q.front-len + q.rear-len
 
 
-fip(1) fun check( Bqueue(front, front-len, rear, rear-len) : bqueue<a> ) : bqueue<a>
+fip(1) fun balance( Bqueue(front, front-len, rear, rear-len) : bqueue<a> ) : bqueue<a>
   if (front-len >= rear-len)
     then Bqueue(front, front-len, rear, rear-len)
     else Bqueue( SAppRev(front,rear), front-len + rear-len, Nil, 0)
 
 fip(2) fun snoc( Bqueue(front,front-len,rear,rear-len) : bqueue<a>, x : a ) : bqueue<a>
-  Bqueue(front, front-len, Cons(x,rear), rear-len+1).check
+  Bqueue(front, front-len, Cons(x,rear), rear-len+1).balance
 
 fbip(2) fun uncons( Bqueue(front,front-len,rear,rear-len) : bqueue<a> ) : div maybe2<a,bqueue<a>>
   match front
-    SCons(x,xx) -> Just2(x, Bqueue(xx,front-len - 1,rear,rear-len).check)
+    SCons(x,xx) -> Just2(x, Bqueue(xx,front-len - 1,rear,rear-len).balance)
     SNil        -> Nothing2
 
 pub fun main()
