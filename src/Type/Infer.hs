@@ -1751,7 +1751,7 @@ inferPattern :: HasTypeVar a => PatternKind -> Type -> Range -> Pattern Type -> 
                   -> ([(Name,NameInfo)] -> Inf ([(Type,Effect)],a))
                   -> Inf ([(Type,Effect)],b)
 inferPattern patkind matchType branchRange (PatCon name patterns0 nameRange range) withPattern inferGuards
-  = do (qname,gconTp,repr,coninfo) <- resolveConPatternName name (length patterns0) range
+  = do (qname,gconTp,repr,coninfo) <- resolveConPatternName name matchType (length patterns0) range
        addRangeInfo nameRange (RM.Id qname (RM.NICon gconTp (conInfoDoc coninfo)) [] False)
        -- traceDoc $ \env -> text "inferPattern.constructor:" <+> pretty qname <.> text ":" <+> ppType env gconTp
 

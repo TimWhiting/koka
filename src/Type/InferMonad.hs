@@ -197,9 +197,9 @@ generalize contextRange range close eff0 rho0 core0
                 checkSatisfiable contextRange ps4
                 score <- subst (core4 (core2 (core1 core0)))
                 -- traceDoc $ \penv -> text "score:" <+> prettyExpr penv{Pretty.coreShowTypes=True} score
-                
+
                 -- trace (" before normalize: " ++ show (eff4,rho4) ++ " with " ++ show ps4) $ return ()
-                
+
                 -- update the free variables since substitution may have changed it
                 free1 <- freeInGamma
                 let free = tvsUnion free1 (fuv eff4)
@@ -901,12 +901,15 @@ resolveConName name mbType range
   = do (qname,tp,info) <- resolveNameEx isInfoCon Nothing name (maybeToContext mbType) range  range
        return (qname,tp,infoRepr info,infoCon info)
 
-resolveConPatternName :: Name -> Int -> Range -> Inf (Name,Type,Core.ConRepr,ConInfo)
-resolveConPatternName name patternCount range
+resolveConPatternName :: Name -> Type -> Int -> Range -> Inf (Name,Type,Core.ConRepr,ConInfo)
+resolveConPatternName name matchType patternCount range
   = do (qname,tp,info) <- resolveNameEx isInfoCon Nothing name ctx range  range
        return (qname,tp,infoRepr info,infoCon info)
   where
-    ctx = if patternCount > 0 then CtxFunArgs True {-partial?-} patternCount [] Nothing else CtxNone
+    ctx = CtxFunArgs True {-partial?-} patternCount [] (Just matchType)
+          {- if patternCount > 0
+            then CtxFunArgs True {-partial?-} patternCount [] (Just matchType)
+            else CtxType matchType -}
 
 
 resolveNameEx :: (NameInfo -> Bool) -> Maybe (NameInfo -> Bool) -> Name -> NameContext -> Range -> Range -> Inf (Name,Type,NameInfo)
@@ -1463,8 +1466,11 @@ filterMatchNameContextEx range ctx candidates
       CtxType expect  -> do mss <- mapM (matchType expect) candidates
                             return (concat mss)
       CtxFunArgs partial n named mbResTp
-                      -> do mss <- mapM (matchNamedArgs partial n named mbResTp) candidates
-                            return (concat mss)
+                      -> do mss1 <- mapM (matchNamedArgs partial n named mbResTp) candidates
+                            mss2 <- case mbResTp of
+                                      Just tp | (partial && n==0) -> mapM (matchType tp) candidates -- for partial constructor like `Nil`
+                                      _ -> return []
+                            return (concat (mss1 ++ mss2))
       CtxFunTypes partial fixed named mbResTp
                       -> do mss <- mapM (matchArgs partial fixed named mbResTp) candidates
                             return (concat mss)
