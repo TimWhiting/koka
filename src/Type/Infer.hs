@@ -1631,10 +1631,11 @@ inferCase propagated expect expr branches isLazyMatch rng
                             (force,forceTp,forceInfo) <- resolveFunName forceName (CtxFunArgs False 1 [] Nothing) rng (getRange expr)
                             let cforce   = coreExprFromNameInfo force forceInfo
                             case ccore0 of
-                              Core.App (Core.Var fname _) [_] | force == Core.getName fname -> return ccore0 -- don't duplicate as force(force(expr))
+                              Core.App (Core.Var fname _) [_] | force == Core.getName fname -> return ccore0 -- don't duplicate as force(force(expr)) -- this can happen in Kind/Infer where force is explicitly inserted sometimes
                               _ -> do (ftp,_,coref) <- instantiate rng forceTp
                                       case splitFunType ftp of
-                                        Just (_,_,rtp) -> inferUnify (Infer rng) rng ctp rtp
+                                        Just (_,eff,rtp) -> do inferUnify (Infer rng) (getRange expr) ctp rtp
+                                                               inferUnify (checkEffectSubsume rng) (getRange expr) eff resEff
                                       return $ Core.App (coref cforce) [ccore0]
                   else return ccore0
        -- return core
