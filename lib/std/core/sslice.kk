@@ -226,10 +226,11 @@ pub fun foreach-while( slice : sslice, action : (c : char) -> e maybe<a> ) : e m
 
 // Apply a function for each character in a string slice.
 pub fun foreach( slice : sslice, action : (c:char) -> e ()) : e ()
-  foreach-while( slice ) fn(c)
-    action(c)
-    Nothing
-  ()
+  match slice.next
+    Nothing -> ()
+    Just((c,rest)) ->
+      action(c)
+      foreach(pretend-decreasing(rest),action)
 
 // Invoke a function for each character in a string.
 // If `action` returns `Just`, the function returns immediately with that result.

@@ -8,15 +8,15 @@ val strings = [
     // "Tëst 👨‍👩‍👦 🇺🇸 नी நி!"
 ]
 
-fun info( s : string ) 
-  println( "count: " ++ s.count.show ++ 
+fun info( s : string )
+  println( "count: " ++ s.count.show ++
           ", width: " ++ s.width.show ++
-          ", grapheme len: " ++ s.graphemes.length.show ++ ",") 
+          ", grapheme len: " ++ s.graphemes.length.show ++ ",")
   println("    graphemes: " ++ s.graphemes.show-list(fn(g) g.list.show-list(fn(c) c.show) ) ++
           ", unicodes: " ++ s.list.show-list(fn(i) show-hex(i.int))
          )
 
 
-pub fun main() 
+pub fun main()
   strings.foreach(info)
 
