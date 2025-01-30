@@ -39,6 +39,7 @@ import Data.Hashable
 import Control.Monad          ( when )
 import qualified System.Info  ( os, arch )
 import System.Environment     ( getArgs )
+import System.Environment.XDG.BaseDir ( getUserCacheDir )
 import System.Directory       ( doesFileExist, doesDirectoryExist, getHomeDirectory, getTemporaryDirectory )
 import Platform.GetOptions
 import Platform.Config
@@ -877,8 +878,8 @@ getKokaBuildDir "" eval
                 else do -- avoid the tmp directory as it does not always have execute permissions
                         -- tmp <- getTemporaryDirectory
                         -- instead use `$HOME/.koka` if in the interpreter
-                        home <- getHomeDirectory
-                        return (joinPath home kkbuild)
+                        cache <- getUserCacheDir
+                        return (joinPath cache kkbuild)
       else return kkbuild
 getKokaBuildDir buildDir _ = return buildDir
 

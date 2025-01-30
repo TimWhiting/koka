@@ -161,6 +161,7 @@ library
     , process
     , text
     , time
+    , xdg-basedir
   default-language: Haskell2010
   if os(windows)
     cpp-options: -DWINDOWS
@@ -212,6 +213,7 @@ executable koka
     , text
     , text-rope
     , time
+    , xdg-basedir
   default-language: Haskell2010
 
 executable koka-plain
@@ -237,6 +239,7 @@ executable koka-plain
     , process
     , text
     , time
+    , xdg-basedir
   default-language: Haskell2010
 
 test-suite koka-test
@@ -268,4 +271,5 @@ test-suite koka-test
     , regex-compat >=0.95.2.1
     , text
     , time
+    , xdg-basedir
   default-language: Haskell2010

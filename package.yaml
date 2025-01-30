@@ -36,6 +36,7 @@ dependencies:
   - isocline >= 1.0.6
   - FloatingHex >= 0.5
   - hashable >= 1.4
+  - xdg-basedir
 
 library:
   other-extensions:
