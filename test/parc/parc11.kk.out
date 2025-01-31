@@ -23,7 +23,7 @@ import std/core = std/core = "";
 pub fun test : (x : list<int>) -> list<int>
  = fn(x: list<int>){
  match (x) {
- (std/core/types/Cons(((@skip std/core/types/@Box((@pat@xxx: int)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<int>)) : list<int> )
+ (std/core/types/Cons(((@skip std/core/types/@Box((@pat@xxx: int)) : @box ) as @box-xxx: @box), (@pat@xxx: list<int>)) : list<int> )
  -> x;
  (@skip std/core/types/Nil() : (list<int>) )
  -> std/core/types/Nil;

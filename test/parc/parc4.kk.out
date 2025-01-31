@@ -23,7 +23,7 @@ import std/core = std/core = "";
 pub fun test : (xs : list<maybe<int>>, y : int) -> int
  = fn(xs: list<maybe<int>>, y: int){
  match (xs) {
- (std/core/types/Cons(((@skip std/core/types/@Box(((std/core/types/Just(((@skip std/core/types/@Box((x: int)) : @Box ) as @box-xxx: @Box)) : maybe<int> ) as @pat@xxx: maybe<int>)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<maybe<int>>)) : list<maybe<int>> )
+ (std/core/types/Cons(((@skip std/core/types/@Box(((std/core/types/Just(((@skip std/core/types/@Box((x: int)) : @box ) as @box-xxx: @box)) : maybe<int> ) as @pat@xxx: maybe<int>)) : @box ) as @box-xxx: @box), (@pat@xxx: list<maybe<int>>)) : list<maybe<int>> )
  | std/core/int/(==)(x, y) -> val _ : ()
  = std/core/types/@drop(y);
  val _ : ()
@@ -48,7 +48,7 @@ pub fun test : (xs : list<maybe<int>>, y : int) -> int
  std/core/types/Unit;
  });
  x;
- (std/core/types/Cons(((@skip std/core/types/@Box(((std/core/types/Nothing() : maybe<int> ) as @pat@xxx: maybe<int>)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<maybe<int>>)) : list<maybe<int>> )
+ (std/core/types/Cons(((@skip std/core/types/@Box(((std/core/types/Nothing() : maybe<int> ) as @pat@xxx: maybe<int>)) : @box ) as @box-xxx: @box), (@pat@xxx: list<maybe<int>>)) : list<maybe<int>> )
  -> val _ : ()
  = std/core/types/@drop(y);
  val _ : ()

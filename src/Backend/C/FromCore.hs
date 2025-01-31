@@ -8,9 +8,10 @@
 
 module Backend.C.FromCore ( cFromCore ) where
 
+import Lib.Trace
+
 import Platform.Runtime( showHFloat )
 import Platform.Config(version)
-import Lib.Trace
 import Control.Applicative hiding (empty)
 import Control.Monad
 import Data.Maybe( isJust )
@@ -40,6 +41,7 @@ import Common.Unique
 import Common.Syntax
 
 import Core.Core
+import Type.Pretty( defaultEnv )
 import Core.Pretty
 import Core.CoreVar
 import Core.Borrowed ( Borrowed, borrowedExtendICore )
@@ -48,6 +50,7 @@ import Backend.C.Parc( parcCore )
 import Backend.C.ParcReuse ( parcReuseCore )
 import Backend.C.ParcReuseSpec (parcReuseSpecialize )
 import Backend.C.Box
+
 
 type CommentDoc   = Doc
 type ConditionDoc = Doc
@@ -88,6 +91,7 @@ genModule separateMain ctarget buildType sourceDir penv platform newtypes borrow
   =  do core <- liftUnique (do bcore <- boxCore core0            -- box/unbox transform
                                let borrowed = borrowedExtendICore bcore borrowed0
                                pcore <- parcCore penv platform newtypes borrowed enableSpecialize bcore -- precise automatic reference counting
+                               -- trace (show (prettyCore defaultEnv (C ctarget) [] pcore)) $ return ()
                                rcore <- parcReuseCore penv enableReuse platform newtypes pcore -- constructor reuse analysis
                                if enableReuse && enableReuseSpecialize
                                   then parcReuseSpecialize penv newtypes rcore -- selective reuse
@@ -306,7 +310,7 @@ userComment comm
       else let lcomm = if take 2 (dropWhile isSpace comm) == "/*"
                          then map ("// " ++) (lines comm)
                          else trimComment comm
-           in align (vcat (space : map text lcomm)) 
+           in align (vcat (space : map text lcomm))
 
 -- remove final newlines and whitespace and line continuations (\\)
 trimComment comm

@@ -471,7 +471,7 @@ nameTpAny       = coreTypesName "any"
 nameTpVector    = coreTypesName "vector"
 
 -- These are internal only inserted by the boxing phase
-nameTpBox       = coreTypesName "@Box"
+nameTpBox       = coreTypesName "@box"
 nameBoxCon      = coreTypesName "@Box"
 nameBox         = coreTypesName "@box"
 nameUnbox       = coreTypesName "@unbox"
