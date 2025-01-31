@@ -145,7 +145,7 @@ ruExpr expr
         -> do registerLazyCon tname
               return exprUnit -- expr
       App (Var name _) [Var tname _, conApp] | getName name == nameLazyUpdate
-        -> ruLazyUpdate tname conApp
+        -> do ruLazyUpdate tname conApp
 
       App con@(Con cname repr) args
         -> do args' <- mapM ruExpr args
@@ -387,7 +387,8 @@ ruLazyUpdate lazyTName arg
        reuseName <- uniqueReuseName typeReuse
        -- let reuseAssign = genReuseAssignWith reuseName (genReuseAddress lazyTName)
        let (boxDefs, tailArg) = stripLets arg
-       makeLets (boxDefs ++ [DefNonRec (makeDef (getName reuseName) (genReuseAddress lazyTName))]) <$>
+       boxDefs' <- mapM ruDefGroup boxDefs
+       makeLets (boxDefs' ++ [DefNonRec (makeDef (getName reuseName) (genReuseAddress lazyTName))]) <$>
         case NameMap.lookup (getName lazyTName) ds of
           Nothing
             -> do warning $ \penv -> text "cannot find lazy update target" <+> ppName penv (getName lazyTName) <+> text ", using indirection instead"
