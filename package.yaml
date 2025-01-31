@@ -89,6 +89,7 @@ executables:
       - -O2
       - -threaded
       - '"-with-rtsopts=-N8"'
+    # stack build --profile
 
   koka-plain:
     main: Main.hs
