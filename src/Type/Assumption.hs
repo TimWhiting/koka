@@ -8,7 +8,7 @@
 
 module Type.Assumption (
                     -- * Typothesis
-                      Gamma, NameInfo(..)
+                      Gamma, NameInfo(..), ValInfo(..)
                     , gammaInit
                     , gammaNew, gammaSingle
                     , gammaEmpty
@@ -26,6 +26,7 @@ module Type.Assumption (
                     , isInfoFun
                     , isInfoVal
                     , isInfoValFunExt
+                    , infoIsVar, infoIsPar
                     , isInfoFunOrExternal
                     , infoElement
                     , infoDocString
@@ -64,12 +65,26 @@ import Lib.Trace
 import Syntax.Syntax (TypeDef(typeDefDoc))
 
 data NameInfo
-  = InfoVal{ infoVis :: !Visibility, infoCName :: !Name, infoType :: !Scheme, infoRange :: !Range, infoIsVar :: !Bool, infoDoc :: !String }
+  = InfoVal{ infoVis :: !Visibility, infoCName :: !Name, infoType :: !Scheme, infoRange :: !Range, infoValInfo :: !ValInfo, infoDoc :: !String }
   | InfoFun{ infoVis :: !Visibility, infoCName :: !Name, infoType :: !Scheme, infoArity :: !(Int,Int), infoFip :: !Fip, infoRange :: !Range, infoDoc :: !String }
   | InfoCon{ infoVis :: !Visibility, infoType :: !Scheme, infoRepr  :: !Core.ConRepr, infoCon :: !ConInfo, infoRange :: !Range, infoDoc :: !String }
   | InfoExternal{ infoVis :: !Visibility, infoCName :: !Name, infoType :: !Scheme, infoFormat :: ![(Target,String)], infoFip :: !Fip, infoRange :: !Range, infoDoc :: !String}
   | InfoImport{ infoVis :: !Visibility, infoType :: !Scheme, infoAlias :: !Name, infoFullName :: !Name, infoRange :: !Range}
   deriving (Show)
+
+data ValInfo
+  = ValNormal
+  | ValVar     -- variable (mutable)
+  | ValPar     -- parameter
+  deriving(Eq,Ord,Show)
+
+infoIsVar :: NameInfo -> Bool
+infoIsVar (InfoVal{ infoValInfo = ValVar }) = True
+infoIsVar _ = False
+
+infoIsPar :: NameInfo -> Bool
+infoIsPar (InfoVal{ infoValInfo = ValPar }) = True
+infoIsPar _ = False
 
 infoSort :: NameInfo -> String
 infoSort info
@@ -144,7 +159,7 @@ infoIsVisible info = case infoVis info of
 coreVarInfoFromNameInfo :: NameInfo -> Core.VarInfo
 coreVarInfoFromNameInfo info
   = case info of
-      InfoVal _ _ tp _ _ _             -> Core.InfoNone
+      InfoVal _ _ tp _ _ _           -> Core.InfoNone
       InfoFun _ _ tp (m,n) _ _ _       -> Core.InfoArity m n
       InfoExternal _ _ tp format _ _ _ -> Core.InfoExternal format
       _                                -> matchFailure "Type.Infer.coreVarInfoFromNameInfo"
@@ -401,8 +416,9 @@ createNameInfoX vis name sort rng tp doc
   = -- trace ("createNameInfoX: " ++ show name ++ ", " ++ show sort ++ ": " ++ show (pretty tp)) $
     case sort of
       DefFun _ fip -> InfoFun vis name tp (getArity tp) fip rng doc
-      DefVar       -> InfoVal vis name tp rng True doc
-      _            -> InfoVal vis name tp rng False doc
+      DefVar       -> InfoVal vis name tp rng ValVar doc
+      DefPar       -> InfoVal vis name tp rng ValPar doc
+      DefVal       -> InfoVal vis name tp rng ValNormal doc
 
 createNameInfo name isVal rng tp
   = createNameInfoX Public name (if isVal then DefVal else defFun []) rng tp

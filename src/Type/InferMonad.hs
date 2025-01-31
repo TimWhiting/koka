@@ -74,6 +74,7 @@ module Type.InferMonad( Inf, InfGamma
                       , termError
                       , infError, infWarning
                       , withHiddenTermDoc, inHiddenTermDoc
+                      , withLocalScope, withNoLocalScope, localScopeDepth
 
                       -- * Documentation, Intellisense
                       , addRangeInfo, withNoRangeInfo
@@ -1713,13 +1714,14 @@ data Env    = Env{ prettyEnv :: !Pretty.Env
                  , returnAllowed :: !Bool
                  , inLhs :: !Bool
                  , hiddenTermDoc :: Maybe (Range,Doc)
+                 , localDepth :: Int   -- number of local-scope's
                  }
 data St     = St{ uniq :: !Int, sub :: !Sub, preds :: ![Evidence], holeAllowed :: !Bool, mbRangeMap :: Maybe RangeMap }
 
 
 runInfer :: Pretty.Env -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Int -> Inf a -> Error b (a,Int,Maybe RangeMap)
 runInfer env mbrm syns newTypes imports assumption context unique (Inf f)
-  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False Nothing)
+  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False Nothing 0)
            (St unique subNull [] False mbrm) of
       Err (rng,doc) warnings
         -> addWarnings (map (toWarning ErrType) warnings) (errorMsg (errorMessageKind ErrType rng doc))
@@ -1808,6 +1810,19 @@ withNoRangeInfo inf
        x   <- inf
        updateSt ( \st -> st{ mbRangeMap = rm0 })
        return x
+
+withLocalScope :: Inf a -> Inf a
+withLocalScope inf
+  = withEnv (\env -> env{ localDepth = localDepth env + 1 }) inf
+
+withNoLocalScope :: Inf a -> Inf a
+withNoLocalScope inf
+  = withEnv (\env -> env{ localDepth = 0 }) inf
+
+localScopeDepth :: Inf Int
+localScopeDepth
+  = do env <- getEnv
+       return (localDepth env)
 
 {--------------------------------------------------------------------------
   Helpers
@@ -2040,7 +2055,7 @@ withGammaType :: Range -> Type -> Inf a -> Inf a
 withGammaType range tp inf
   = do defName <- currentDefName
        name <- uniqueNameFrom defName
-       extendInfGamma [(name,(InfoVal Public name tp range False ""))] inf
+       extendInfGamma [(name,(InfoVal Public name tp range ValNormal ""))] inf
 
 currentDefName :: Inf Name
 currentDefName

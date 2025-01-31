@@ -1486,7 +1486,7 @@ genExprStat result expr
 
       Let groups body
         -> case (reverse groups, body) of
-             (DefNonRec (Def name tp expr Private DefVal _ _ _):rgroups, (Case [Var vname _] branches))
+             (DefNonRec (Def name tp expr Private DefVal{} _ _ _):rgroups, (Case [Var vname _] branches))
                | name == getName vname && not (S.member vname (freeLocals branches)) && isInlineableExpr expr
                -> genExprStat result (makeLet (reverse rgroups) (Case [expr] branches))
              _ -> do docs1 <- genLocalGroups groups

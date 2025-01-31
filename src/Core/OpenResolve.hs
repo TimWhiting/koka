@@ -132,7 +132,7 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
         then {- if (and [matchType t1 t2 | (t1,t2) <- zip lsFrom lsTo])
               then -- all handled effect match, just use expr
                    trace "masking? " $ expr
-              else -} failure $ ("Core.openResolve.resOpen: todo: masking handled effect: " ++ show (ppType penv effFrom))
+              else -} failure $ ("Core.openResolve.resOpen: todo: masking handled effect: " ++ show (ppType penv effTo,ppType penv effFrom))
        else if (matchType tlFrom tlTo && length lsFrom == length lsTo && and [matchType t1 t2 | (t1,t2) <- zip lsFrom lsTo])
         then -- same handled effects, just use expr
              trace "  same handled effects, leave as is" $
@@ -171,7 +171,7 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
 
                  -- get the index of an effect type but at mask-level (used for duplicate labels)
                  evIndexOfMask (l,0)     = evIndexOf l
-                 evIndexOfMask (l,level) = App (makeTypeApp (resolve nameEvvIndexMask) [effTo]) 
+                 evIndexOfMask (l,level) = App (makeTypeApp (resolve nameEvvIndexMask) [effTo])
                                                [evIndexOf l, makeEvIndex level]
 
              in case lsFrom of
@@ -212,7 +212,7 @@ addLevels (l:ls) = (l,0) : addLevelsPrev (labelName l,0) ls
 
 addLevelsPrev :: (Name,Integer) -> [Tau] -> [(Tau,Integer)]
 addLevelsPrev _ [] = []
-addLevelsPrev (namePrev,levelPrev) (l:ls) 
+addLevelsPrev (namePrev,levelPrev) (l:ls)
   = let name  = labelName l
         level = if namePrev == name then levelPrev+1 else 0
     in (l,level) : addLevelsPrev (name,level) ls

@@ -48,7 +48,7 @@ module Type.Type (-- * Types
                   , typeOptional, typeMakeTuple
                   , typeCCtx, typeCCtxx, typeFieldAddr
                   , isOptional, makeOptionalType, unOptional
-                  , typeReuse, typeLocal
+                  , typeReuse, typeLocal, isTypeLocal
 
                   , tconHandled, tconHandled1, wrapHandledFromDataEffect
                   -- , typeCps
@@ -642,6 +642,11 @@ typeLocal :: Type
 typeLocal
   = TCon (TypeCon nameTpLocal kindLocal)
 
+isTypeLocal :: Type -> Bool
+isTypeLocal tp
+  = case expandSyn tp of
+      TApp (TCon (TypeCon name _)) [_]  -> name == nameTpLocal
+      _ -> False
 
 -- typeCps :: Type
 -- typeCps

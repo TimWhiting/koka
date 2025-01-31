@@ -85,7 +85,7 @@ fun counter()
 
 
 // State handler.
-fun state(init, action)
+fun state(init : s, action : () -> <state<s>,div|e> a) : <div|e> (a,s)
   var s := init        // use a local mutable variable
   handle action
     return(x)  (x,s)

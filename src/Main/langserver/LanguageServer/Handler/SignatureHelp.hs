@@ -107,7 +107,7 @@ getSignatureInformation penv (n, ninfo)
   = do  let signature name tp      = ppName penv name <+> text ":" <+> ppScheme penv tp
             toMarkdown name tp doc = asKokaCode (signature name tp) <.> ppComment doc
         case ninfo of
-          InfoVal{ infoVis, infoCName , infoType , infoRange, infoIsVar, infoDoc } ->
+          InfoVal{ infoVis, infoCName , infoType , infoRange, infoDoc } ->
             do
               markdown <- prettyMarkdown $ toMarkdown infoCName infoType infoDoc
               return [(n, J.SignatureInformation (T.pack $ show $ pretty infoCName) (Just $ J.InR (J.mkMarkdown markdown)) Nothing Nothing)]
