@@ -463,7 +463,7 @@ fun prompt-local-var(loc:local-var<s,a>, res : b  ) : <div,local<s>|e> b
   val v = loc
   yield-cont(fn(cont,x){ loc := v; prompt-local-var(std/core/types/@byref(loc),cont(x)) } )  // restore state early before the resume
 
-pub inline fun local-var(init:a, action: (l:local-var<s,a>) -> <local<s>|e> b ) : <local<s>|e> b
+pub inline fun local-var(init:a, action: (@local-var:local-var<s,a>) -> <local<s>|e> b ) : <local<s>|e> b
   pretend-no-div
     val loc : local-var<_,_> = local-new(init)
     val res = cast-ev1(action)(std/core/types/@byref(loc))
