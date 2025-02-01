@@ -1369,7 +1369,7 @@ cTypeCon c
 
 cPrimCanBeBoxed :: String -> Bool
 cPrimCanBeBoxed prim
-  = prim `elem` ["kk_char_t", "int64_t", "int16_t", "int32_t", "float", "double", "intptr_t", "kk_ssize_t"]
+  = prim `elem` ["kk_char_t", "int64_t", "int8_t", "int16_t", "int32_t", "float", "double", "intptr_t", "kk_ssize_t"]
 
 
 ---------------------------------------------------------------------------------
