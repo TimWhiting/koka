@@ -34,7 +34,7 @@ import Common.Syntax( Visibility(..) )
 import Type.Type
 import Type.TypeVar
 import Type.Pretty
-import Type.Assumption( NameInfo(..), ValInfo(..), matchQualifiers )
+import Type.Assumption( NameInfo(..), matchQualifiers )
 
 {--------------------------------------------------------------------------
   InfGamma
@@ -78,11 +78,11 @@ infgammaExtends tnames ig
 
 infgammaExtendTp :: Name -> Name -> Scheme -> String -> InfGamma -> InfGamma
 infgammaExtendTp name cname tp doc infgamma
-  = infgammaExtendX name cname tp rangeNull ValNormal doc infgamma
+  = infgammaExtendX name cname tp rangeNull False doc infgamma
 
-infgammaExtendX :: Name -> Name -> Scheme -> Range -> ValInfo -> String -> InfGamma -> InfGamma
-infgammaExtendX name cname tp rng valInfo doc infgamma
-  = infgammaExtend name (InfoVal Public cname tp rng valInfo doc) infgamma
+infgammaExtendX :: Name -> Name -> Scheme -> Range -> Bool -> String -> InfGamma -> InfGamma
+infgammaExtendX name cname tp rng isVar doc infgamma
+  = infgammaExtend name (InfoVal Public cname tp rng isVar False doc) infgamma
 
 
 -- lookup any exact match in the local scope

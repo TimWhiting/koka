@@ -8,7 +8,7 @@
 
 module Type.InferMonad( Inf, InfGamma
                       , runInfer, tryRun
-                      , traceDoc, traceDefDoc
+                      , traceDoc, traceDefDoc, traceIndent
 
                       -- * substitutation
                       , zapSubst
@@ -99,6 +99,8 @@ import Common.Name
 import Common.NamePrim(nameTpVoid,nameTpPure,nameTpIO,nameTpST,nameTpAsyncX,
                        nameTpRead,nameTpWrite,namePredHeapDiv,nameReturn,
                        nameTpLocal, nameCopy)
+
+
 -- import Common.Syntax( DefSort(..) )
 import Common.ColorScheme
 import Kind.Kind
@@ -2055,7 +2057,7 @@ withGammaType :: Range -> Type -> Inf a -> Inf a
 withGammaType range tp inf
   = do defName <- currentDefName
        name <- uniqueNameFrom defName
-       extendInfGamma [(name,(InfoVal Public name tp range ValNormal ""))] inf
+       extendInfGamma [(name,(InfoVal Public name tp range False False ""))] inf
 
 currentDefName :: Inf Name
 currentDefName
@@ -2064,7 +2066,7 @@ currentDefName
 
 withDefName :: Name -> Inf a -> Inf a
 withDefName name inf
-  = withEnv (\env -> env{ currentDef = name, namedLam = True }) inf
+  = withEnv (\env -> env{ currentDef = name, namedLam = not (nameIsNil name || isWildcard name) }) inf
 
 isNamedLam :: (Bool -> Inf a) -> Inf a
 isNamedLam action
@@ -2142,6 +2144,9 @@ findDataInfo typeName
          Just info -> return info
          Nothing   -> failure ("Type.InferMonad.findDataInfo: unknown type: " ++ show typeName ++ "\n in: " ++ show (types env))
 
+traceIndent :: Inf a -> Inf a
+traceIndent inf
+  = withEnv (\env -> env{ prettyEnv = (prettyEnv env){ Pretty.indentation = Pretty.indentation (prettyEnv env) + 2 } }) inf
 
 traceDefDoc :: (Pretty.Env -> Doc) -> Inf ()
 traceDefDoc f
@@ -2151,7 +2156,7 @@ traceDefDoc f
 traceDoc :: (Pretty.Env -> Doc) -> Inf ()
 traceDoc f
   = do penv <- getPrettyEnv
-       trace (show (f penv)) $ return ()
+       trace (show (indent (Pretty.indentation penv) $ f penv)) $ return ()
 
 ppNameType penv (name,tp)
   = Pretty.ppName penv name <+> colon <+> Pretty.ppType penv tp

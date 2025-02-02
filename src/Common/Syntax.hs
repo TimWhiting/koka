@@ -306,7 +306,6 @@ data DefSort
              defFunFip        :: !Fip }
   | DefVal
   | DefVar
-  | DefPar
   deriving Eq
 
 data ParamInfo
@@ -327,7 +326,6 @@ defSortShowFull :: DefSort -> String
 defSortShowFull ds
   = case ds of
       DefFun pinfos fip -> sepBySpace [show fip,"fun"]
-      DefPar      -> "par"
       DefVal      -> "val"
       DefVar      -> "var"
 
@@ -336,7 +334,6 @@ instance Show DefSort where
   show ds = case ds of
               DefFun{} -> "fun"
               DefVal   -> "val"
-              DefPar   -> "par"
               DefVar   -> "var"
 
 
