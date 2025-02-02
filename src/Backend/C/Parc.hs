@@ -1004,7 +1004,7 @@ getDataInfo' :: Newtypes -> Type -> Maybe DataInfo
 getDataInfo' newtypes tp
   = case extractDataDefType tp of
       Nothing   -> Nothing
-      Just name | name == nameBoxCon -> Nothing
+      Just name | name == nameTpBox -> Nothing
       Just name -> case newtypesLookupAny name newtypes of
                       Nothing -> failure $ "Core.Parc.getDataDefInfo: cannot find type: " ++ show name -- ++ "\n" ++ show newtypes
                       Just di -> -- trace ("datainfo of " ++ show (pretty tp) ++ " = " ++ show di) $
