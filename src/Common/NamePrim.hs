@@ -56,7 +56,7 @@ module Common.NamePrim
           , nameTpResumeContext
           , nameClause
           , nameIdentity
-          , nameMaskAt, nameMaskBuiltin, nameMaskLocal
+          , nameMaskAt, nameMaskBuiltin
           , isClauseTailName, nameClauseTailNoOp
           , nameTpEvIndex, nameYielding, nameYieldExtend
           , nameEvvIsAffine
@@ -353,7 +353,6 @@ nameEvvIndex    = coreHndName "@evv-index"
 nameEvvIndexMask= coreHndName "@evv-index-mask"
 nameMaskAt      = coreHndName "@mask-at"
 nameMaskBuiltin = coreHndName "@mask-builtin"
-nameMaskLocal i = coreHndName ("@mask-local" ++ show i)
 nameOpenAt i    = coreHndName ("@open-at" ++ show i)
 nameOpenNone i  = coreHndName ("@open-none" ++ show i)
 nameOpen i      = coreHndName ("@open" ++ show i)

@@ -48,8 +48,7 @@ fun pretty-emit2(action)
 // with lexically scoped state
 fun pretty-emit(action)
   var out := ""
-  with fun emit(s){ out := out ++ s ++ "\n" }
-  action()
+  with fun emit(s){ out := out ++ s ++ "\n" } in action()
   out
 
 

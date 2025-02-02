@@ -1123,9 +1123,8 @@ inferHandler propagated expect handlerSort handlerScoped allowMask
        (_,handleTp,_)  <- resolveFunName handleName CtxNone rng rng
        (handleRho,_,_) <- instantiateEx rng handleTp
        actionTp <- case splitFunType handleRho of
-                        Just ([_,_,actionTp],effTp,resTp)
-                          -> do inferUnify (Infer rng) rng eff effTp
-                                subst (snd actionTp)
+                        Just ([_,_,actionTp],_,_)
+                          -> subst (snd actionTp)
                         _ -> failure ("Type.Infer: unexpected handler type: " ++ show (ppType penv handleRho))
        -- traceDoc $ \penv -> text " the handler action type: " <+> ppType penv actionTp <.> text ", prop: " <+> ppProp penv propagated
        let handlerExpr = Parens (Lam [ValueBinder actionName (Just actionTp) Nothing rng rng]
@@ -1369,7 +1368,7 @@ inferApp propagated expect fun nargs rng
 
            -- infer type of function
            fprop <- case (prop,funExpr) of
-                      (Nothing,Var name _ _)
+                      (Nothing,Var name _ _) | not (isConstructorName name)
                         -> do (_,ptp,info) <- resolveName name prop rng
                               case (ptp,infoAllowImplictMask info) of
                                 (TVar{},True) -> do teff <- Op.freshEffect  -- we propagate a function type (for example to mask<local> for function parameters)
