@@ -87,9 +87,14 @@ executables:
       - -rtsopts
       - -j8
       - -O2
-      - -threaded
-      - '"-with-rtsopts=-N8"'
+      # - -threaded
+      # - '"-with-rtsopts=-N8"'
+    # rm -rf .stack-work
     # stack build --profile
+    # rm -rf .koka && mkdir .koka
+    # Build until it starts unicode, then cancel the build, and rebuild starting from the unicode module
+    # Memory grows past 12GB
+    # stack exec --profile koka -- samples/basic/unicode -v4 +RTS -p
 
   koka-plain:
     main: Main.hs
