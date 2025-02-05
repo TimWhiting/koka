@@ -2,11 +2,12 @@ module Backend.Interp.Interp where
 
 
 import Control.Monad
-import Control.Monad.State (StateT)
+import Control.Monad.State (StateT, MonadState (..))
 import Control.Monad.Reader (ReaderT)
 import qualified Data.Map.Strict as M
 import Core.Core
 import Compile.Module (Module)
+import Common.Name (Name)
 
 data Value =
   VInt Int
@@ -24,7 +25,12 @@ data Handlers =
 
 type Operations = [Value]
 
-type Interp a = StateT (M.Map Addr Value, Module) (ReaderT Handlers IO) a 
+type Interp a = StateT (M.Map Addr Value, [Module]) (ReaderT Handlers IO) a 
 
-interp :: Expr -> Interp a
-interp = undefined 
+getDef :: Name -> Interp Def
+getDef name = do
+  (_, modules) <- get
+  undefined
+
+interp :: Name -> [Module] -> IO ()
+interp mainEntry modules = undefined  -- TODO: Run interp
