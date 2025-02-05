@@ -247,7 +247,7 @@ buildcFreshFromRoots buildc
        flags <- getFlags
        (buildc1,_) <- buildcAddRootSources rootSources (buildc{ buildcRoots = [], buildcModules=[], buildcHash = flagsHash flags })
        let (roots1,_) = buildcSplitRoots buildc1
-       mods  <- modulesReValidate False [] [] roots1
+       mods  <- modulesReValidate False (doInterpret flags) [] [] roots1
        return $! buildc1{ buildcModules = seqqList mods }
 
 -- Check if the flags are still valid for this context
@@ -271,7 +271,7 @@ buildcValidate rebuild forced buildc
        if (hash /= buildcHash buildc)
          then buildcFreshFromRoots buildc
          else do let (roots,imports) = buildcSplitRoots buildc
-                 mods <- modulesReValidate rebuild forced imports roots
+                 mods <- modulesReValidate rebuild (doInterpret flags) forced imports roots
                  return $! buildc{ buildcModules = seqqList mods }
 
 -- Return the root modules and their (currently cached) dependencies.

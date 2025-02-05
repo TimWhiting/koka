@@ -187,6 +187,7 @@ data Flags
          , enableMon        :: !Bool
          , semiInsert       :: !Bool
          , genRangeMap      :: !Bool
+         , doInterpret      :: !Bool
          , languageServerPort :: !Int
          , languageServerStdio :: !Bool
          , localBinDir      :: !FilePath  -- directory of koka executable
@@ -342,6 +343,7 @@ flagsNull
           True  -- enableMonadic
           True  -- semi colon insertion
           False -- generate range map
+          False -- doInterpret
           6061  -- language server port
           False -- language server stdio
           ""    -- koka executable dir
@@ -401,6 +403,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , option ['p'] ["prompt"]          (NoArg Interactive)             "interactive mode"
  , option []    ["language-server"] (NoArg LanguageServer)          "language server mode"
  , flag   ['e'] ["execute"]         (\b f -> f{evaluate= b})        "compile and execute"
+ , flag   ['q'] ["run"]             (\b f -> f{doInterpret= b})     "interpret"
  , flag   ['c'] ["compile"]         (\b f -> f{evaluate= not b})    "only compile, do not execute (default)"
  , numOption 16 "n" ['j'] ["jobs"]  (\i f -> f{maxConcurrency=max i 1})  "maximum concurrency (16)"
  , option ['i'] ["include"]         (OptArg includePathFlag "dirs") "add <dirs> to module search path (empty resets)"

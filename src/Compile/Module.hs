@@ -68,6 +68,7 @@ data ModulePhase
   | PhaseTyped          -- modCore, modRangeMap, modDefines
   | PhaseIfaceLoaded    -- interface is loaded, but the inline definitions are not yet parsed
   | PhaseOptimized      -- compiled and optimized core, modCore is updated, modInlines
+  | PhaseInterpret      -- Don't finish compiling, keep all the info in memory for interpretation
   | PhaseCodeGen        -- compiled to backend code (.c,.js files)
   | PhaseLibIfaceLoaded -- a (library) interface is loaded but it's kki and libs are not yet copied to the output directory
   | PhaseLinkedError

@@ -74,6 +74,7 @@ import Compile.Optimize       ( coreOptimize )
 import Compile.CodeGen        ( codeGen, Link, LinkResult(..), noLink )
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
+import Data.Map.Internal.Debug (ordered)
 
 
 {---------------------------------------------------------------
@@ -87,7 +88,7 @@ import GHC.IORef (atomicSwapIORef)
 -- Internally composed of `modulesReValidate` and `modulesBuild`.
 modulesFullBuild :: Bool -> [ModuleName] -> [Name] -> [Module] -> [Module] -> Build [Module]
 modulesFullBuild rebuild forced mainEntries cachedImports roots
-  = do modules <- modulesReValidate rebuild forced cachedImports roots
+  = do modules <- modulesReValidate rebuild False forced cachedImports roots
        modulesBuild mainEntries modules
 
 
@@ -109,6 +110,25 @@ modulesBuild mainEntries modules
        -- mapM_ modmapClear [tcheckedMap,optimizedMap,codegenMap,linkedMap]
        return compiled -- modulesFlushErrors compiled
 
+
+-- Given a complete list of modules in build order (and main entry points), build them all.
+modulesInterpret :: Name -> [Module] -> Build [Module]
+modulesInterpret mainEntry modules
+  = -- phaseTimed 2 "build" (\_ -> Lib.PPrint.empty) $ -- (list (map (pretty . modName) modules))
+    do parsedMap   <- modmapCreate modules
+       tcheckedMap <- modmapCreate modules
+       optimizedMap<- modmapCreate modules
+       let buildOrder = map modName modules
+       compiled    <- seqList buildOrder $
+                      withTotalWork (workNeeded PhaseInterpret modules) $
+                      mapConcurrentModules
+                       (moduleOptimize parsedMap tcheckedMap optimizedMap)
+                       modules
+      
+       -- mapM_ modmapClear [tcheckedMap,optimizedMap,codegenMap,linkedMap]
+       return compiled -- modulesFlushErrors compiled
+
+
 -- Given a complete list of modules in build order, type check them all.
 modulesTypeCheck :: [Module] -> Build [Module]
 modulesTypeCheck modules
@@ -127,11 +147,11 @@ modulesTypeCheck modules
 -- Can force to rebuild everything (`rebuild`), or give list of specicfic modules that need to be rebuild (`forced`).
 --
 -- after revalidate, typecheck and build are valid operations.
-modulesReValidate :: Bool -> [ModuleName] -> [Module] -> [Module] -> Build [Module]
-modulesReValidate rebuild forced cachedImports roots
+modulesReValidate :: Bool -> Bool -> [ModuleName] -> [Module] -> [Module] -> Build [Module]
+modulesReValidate rebuild interpret forced cachedImports roots
   = phaseTimed 4 "resolving" (const Lib.PPrint.empty) $
     do -- rootsv    <- modulesValidate roots
-       resolved  <- modulesResolveDependencies rebuild forced cachedImports roots
+       resolved  <- modulesResolveDependencies rebuild interpret forced cachedImports roots
        return resolved -- modulesFlushErrors resolved
 
 
@@ -535,28 +555,28 @@ moduleParse tparsedMap
 -- load- or parse all required modules to compile the root set.
 -- needs also `rebuild` and `forced` to know whether re-parse or load from an interface file
 -- to determine dependencies
-modulesResolveDependencies :: Bool -> [ModuleName] -> [Module] -> [Module] -> Build [Module]
-modulesResolveDependencies rebuild forced cached roots
+modulesResolveDependencies :: Bool ->  Bool -> [ModuleName] -> [Module] -> [Module] -> Build [Module]
+modulesResolveDependencies rebuild interpret forced cached roots
   = do ordered <- -- phaseTimed "resolving" (list (map (pretty . modName) roots)) $
-                  modulesResolveDeps rebuild forced cached roots []
+                  modulesResolveDeps rebuild interpret forced cached roots []
        return ordered
 
-modulesResolveDeps :: Bool -> [ModuleName] -> [Module] -> [Module] -> [Module] -> Build [Module]
-modulesResolveDeps rebuild forced cached roots acc
-  = do lroots     <- mapConcurrentModules (moduleLoad rebuild forced) roots    -- we can concurrently load (and lex) modules
+modulesResolveDeps :: Bool -> Bool -> [ModuleName] -> [Module] -> [Module] -> [Module] -> Build [Module]
+modulesResolveDeps rebuild interpret forced cached roots acc
+  = do lroots     <- mapConcurrentModules (moduleLoad rebuild interpret forced) roots    -- we can concurrently load (and lex) modules
        let loaded = lroots ++ acc
        newimports <- nubBy (\m1 m2 -> modName m1 == modName m2) <$> concat <$>
                      mapM (addImports loaded) lroots
        if (null newimports)
          then do ordered <- toBuildOrder loaded    -- all modules in build order
-                 validateDependencies ordered      -- now bottom-up reload also modules whose dependencies have updated
+                 validateDependencies interpret ordered      -- now bottom-up reload also modules whose dependencies have updated
                                                    -- so, we have have optimistically loaded an (previously compiled) interface
                                                    -- for its dependencies, but then discover one of its dependencies has changed,
                                                    -- in which case we need to load from source anyways. (This is still good as any
                                                    -- definitions from the interface etc. will stay even if there are compilation
                                                    -- errors which helps for the IDE.)
          else do -- phaseVerbose 2 "resolve" $ \penv -> list (map (TP.ppName penv . modName) newimports)
-                 modulesResolveDeps rebuild forced cached newimports loaded  -- keep resolving until all have been loaded
+                 modulesResolveDeps rebuild interpret forced cached newimports loaded  -- keep resolving until all have been loaded
   where
     addImports loaded mod
       = catMaybes <$> mapM (addImport . lexImportName) (modDeps mod)
@@ -585,8 +605,8 @@ toBuildOrder modules
 
 -- validate that dependencies of a module are not out-of-date
 -- modules must be in build order
-validateDependencies :: [Module] -> Build [Module]
-validateDependencies modules
+validateDependencies :: Bool -> [Module] -> Build [Module]
+validateDependencies interpret modules
   = do mods <- foldM validateDependency [] modules
        return (reverse mods)
   where
@@ -600,7 +620,7 @@ validateDependencies modules
                                               _      -> PhaseInit) imports
                in if (minimum phases < modPhase mod)
                     then -- trace ("invalidated: " ++ show (modName mod)) $
-                         do mod' <- moduleLoad True [] mod
+                         do mod' <- moduleLoad True interpret [] mod
                             return (mod' : visited)
                     else return (mod : visited)
 
@@ -621,8 +641,8 @@ moduleFlushErrors mod
   After this, `modDeps` should be valid
 ---------------------------------------------------------------}
 
-moduleLoad :: Bool -> [ModuleName] -> Module -> Build Module
-moduleLoad rebuild forced mod0
+moduleLoad :: Bool -> Bool -> [ModuleName] -> Module -> Build Module
+moduleLoad rebuild interpret forced mod0
   = do mod <- moduleValidate mod0  -- check file times
        let force = (rebuild || modName mod `elem` forced || isErrorPhase (modPhase mod))
        if (modPhase mod >= PhaseLexed) && not force
@@ -631,7 +651,7 @@ moduleLoad rebuild forced mod0
                do (mod',errs) <- checkedDefault mod $ -- on error, return the original module
                                  if not (null (modLibIfacePath mod)) && (modIfaceTime mod < modLibIfaceTime mod) && not force
                                    then moduleLoadLibIface mod
-                                   else if (modSourceTime mod < modIfaceTime mod) && not force
+                                   else if (modSourceTime mod < modIfaceTime mod) && not force && not interpret
                                      then moduleLoadIface mod
                                      else moduleLex mod
                   return mod'{ modErrors = mergeErrors errs (modErrors mod') }
@@ -1047,7 +1067,7 @@ checked :: Build a -> Build (Either Errors (a,Errors))
 checked (Build cmp)
   = Build   (\env0 ->do errsRef <- newIORef errorsNil
                         let env = env0{ envErrors = errsRef }
-                        res <- do{ x <- cmp env; return (Right x) }
+                        res <- do { x <- cmp env; return (Right x) }
                                `catch` (\errs -> return (Left errs)) -- ErrorMessage's
                                `catchError` (\err -> makeErr env ErrInternal (show err))  -- error(...)
                                `catchIO` (\exn -> makeErr env ErrBuild (show exn))  -- IO errors
