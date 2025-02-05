@@ -10,7 +10,7 @@ module Compile.Build( Build
                       , runBuildIO, runBuildMaybe, runBuild
 
                       , modulesFullBuild
-                      , modulesBuild
+                      , modulesBuild, modulesInterpret
                       , modulesTypeCheck
 
                       , modulesResolveDependencies
@@ -75,6 +75,7 @@ import Compile.CodeGen        ( codeGen, Link, LinkResult(..), noLink )
 import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 import Data.Map.Internal.Debug (ordered)
+import Backend.Interp.Interp (interp)
 
 
 {---------------------------------------------------------------
@@ -117,15 +118,15 @@ modulesInterpret mainEntry modules
   = -- phaseTimed 2 "build" (\_ -> Lib.PPrint.empty) $ -- (list (map (pretty . modName) modules))
     do parsedMap   <- modmapCreate modules
        tcheckedMap <- modmapCreate modules
-       optimizedMap<- modmapCreate modules
        let buildOrder = map modName modules
        compiled    <- seqList buildOrder $
                       withTotalWork (workNeeded PhaseInterpret modules) $
                       mapConcurrentModules
-                       (moduleOptimize parsedMap tcheckedMap optimizedMap)
+                       (moduleTypeCheck parsedMap tcheckedMap)
                        modules
       
        -- mapM_ modmapClear [tcheckedMap,optimizedMap,codegenMap,linkedMap]
+       liftIO $ interp mainEntry compiled
        return compiled -- modulesFlushErrors compiled
 
 

@@ -89,6 +89,8 @@ mainMode runLanguageServer flags mode p
       -> showHelp flags p
      ModeVersion
       -> withNoColorPrinter stdout (\monop -> showVersion flags monop)
+     ModeInterpret fp
+      -> interp p flags fp
      ModeCompiler files
       -> do ok <- compileAll p flags files
             when (not ok) $
@@ -99,6 +101,36 @@ mainMode runLanguageServer flags mode p
      ModeLanguageServer files
       -> runLanguageServer p flags files
 
+
+interp :: ColorPrinter -> Flags -> FilePath -> IO ()
+interp p flags fp = do
+  cwd <- getCwd
+  runBuildIO (term cwd) flags False $
+      do -- build
+        (buildc0,roots) <- buildcAddRootSources [fp] (buildcEmpty flags)
+        buildc          <- buildcInterpEx (qualify (head roots) (newName "main")) buildc0
+        buildcThrowOnError buildc
+        -- when (evaluate flags) $ mapM_ buildLiftIO runs
+        -- show info
+        mapM_ (compileShowInfo buildc) roots
+        buildcFlushErrors buildc -- for warnings
+        return ()
+  return ()
+  where
+    term cwd
+      = Terminal (putErrorMessage p cwd (showSpan flags) cscheme)
+                 (if (verbose flags > 1) then (\msg -> withColor p (colorSource cscheme) (writeLn p msg))
+                                         else (\_ -> return ()))
+                 (\_ -> return ())
+                 (if (verbose flags > 0) then writePrettyLn p else (\_ -> return ()))
+                 (writePrettyLn p)
+
+    cscheme
+      = colorSchemeFromFlags flags
+
+    putErrorMessage p cwd endToo cscheme err
+      = do writePrettyLn p (ppErrorMessage cwd endToo cscheme err)
+           writeLn p ""
 
 -- Compile (and/or link and/or evaluate) argument files
 compileAll :: ColorPrinter -> Flags -> [FilePath] -> IO Bool

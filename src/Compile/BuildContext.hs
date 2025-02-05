@@ -10,7 +10,7 @@ module Compile.BuildContext ( BuildContext
 
                             , buildcTypeCheck, buildcBuild
                             , buildcValidate
-                            , buildcBuildEx
+                            , buildcBuildEx, buildcInterpEx
 
                             , buildcRunExpr, buildcRunEntry
                             , buildcCompileExpr, buildcCompileEntry
@@ -300,6 +300,16 @@ buildcBuildEx rebuild forced mainEntries buildc0
   = phaseTimed 2 "building" (\penv -> empty) $
     do buildc <- buildcValidate rebuild forced buildc0
        mods   <- modulesBuild mainEntries (buildcModules buildc)
+       return $! buildc{ buildcModules = seqqList mods}
+
+
+-- Build the current build context under a given set of main entry points. (also validates)
+-- Can pass a flag to force a rebuild of everything, or a recompile of specific modules.
+buildcInterpEx :: Name -> BuildContext -> Build BuildContext
+buildcInterpEx mainEntry buildc0
+  = phaseTimed 2 "building" (\penv -> empty) $
+    do buildc <- buildcValidate True [] buildc0
+       mods   <- modulesInterpret mainEntry (buildcModules buildc)
        return $! buildc{ buildcModules = seqqList mods}
 
 -- After a build with given main entry points, return a compiled entry

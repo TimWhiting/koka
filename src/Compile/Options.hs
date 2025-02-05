@@ -103,10 +103,12 @@ data Mode
   | ModeCompiler       { files :: [FilePath] }
   | ModeInteractive    { files :: [FilePath] }
   | ModeLanguageServer { files :: [FilePath] }
+  | ModeInterpret      { file :: FilePath }
 
 data Option
   = Interactive
   | LanguageServer
+  | Interpret
   | Version
   | Help
   | Flag (Flags -> Flags)
@@ -382,6 +384,9 @@ isVersion _      = False
 isInteractive Interactive = True
 isInteractive _ = False
 
+isInterpret Interpret = True
+isInterpret _ = False
+
 isLanguageServer LanguageServer = True
 isLanguageServer _ = False
 
@@ -403,7 +408,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , option ['p'] ["prompt"]          (NoArg Interactive)             "interactive mode"
  , option []    ["language-server"] (NoArg LanguageServer)          "language server mode"
  , flag   ['e'] ["execute"]         (\b f -> f{evaluate= b})        "compile and execute"
- , flag   ['q'] ["run"]             (\b f -> f{doInterpret= b})     "interpret"
+ , option ['q'] ["run"]             (NoArg Interpret)               "interpret"
  , flag   ['c'] ["compile"]         (\b f -> f{evaluate= not b})    "only compile, do not execute (default)"
  , numOption 16 "n" ['j'] ["jobs"]  (\i f -> f{maxConcurrency=max i 1})  "maximum concurrency (16)"
  , option ['i'] ["include"]         (OptArg includePathFlag "dirs") "add <dirs> to module search path (empty resets)"
@@ -861,8 +866,9 @@ parseOptions flags0 opts
         (options,files,errs0) = getOpt Permute optionsAll preOpts
         errs = errs0 ++ extractErrors options
     in if null errs
-         then let mode = if (any isHelp options) then ModeHelp
+         then let mode =  if (any isHelp options) then ModeHelp
                           else if (any isVersion options) then ModeVersion
+                          else if (any isInterpret options) then ModeInterpret (head files)
                           else if (any isInteractive options) then ModeInteractive files
                           else if (any isLanguageServer options) then ModeLanguageServer files
                           else if (null files) then ModeInteractive files
