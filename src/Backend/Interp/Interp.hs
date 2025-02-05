@@ -113,10 +113,16 @@ nameNumFloat64Int = newQualified "std/num/float64" "int"
 nameNumFloat64Ceil = newQualified "std/num/float64" "ceiling"
 nameNumFloat64Ln = newQualified "std/num/float64" "ln"
 nameNumFloat64Div = newQualified "std/num/float64" "/"
+nameNumFloat64Mult = newQualified "std/num/float64" "*"
+nameNumFloat64Sub = newQualified "std/num/float64" "-"
+nameNumFloat64Add = newQualified "std/num/float64" "+"
+nameNumFloat64Pow = newQualified "std/num/float64" "^"
 nameNumFloat64IntFloat64 = newQualified "std/num/float64" "float64"
 nameThrow = newQualified "std/core/exn" "throw"
 namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
 nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
+nameUnsafeNoLocalCast = newQualified "std/core/types" "unsafe-no-local-cast"
+namePretendNoDivCast = newQualified "std/core/undiv" "pretend-nodiv-cast"
 nameNumRandom = newQualified "std/num/random" "random-int"
 nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
@@ -223,27 +229,55 @@ interpPrim name vals
   | name == nameIntMod = do
     let [VInt a1, VInt a2] = vals
     return $ VInt $ a1 `mod` a2
+  | name == nameIntLt = do
+    let [VInt a1, VInt a2] = vals
+    return $ fromBool $ a1 < a2
   | name == nameIntLe = do
     let [VInt a1, VInt a2] = vals
     return $ fromBool $ a1 <= a2
+  | name == nameIntGt = do
+    let [VInt a1, VInt a2] = vals
+    return $ fromBool $ a1 > a2
+  | name == nameIntEq = do
+    let [VInt a1, VInt a2] = vals
+    return $ fromBool $ a1 == a2
   | name == nameIntChar = do
     let [VInt a1] = vals
     return $ VChar $ toEnum $ fromInteger a1
   | name == nameNumFloat64IntFloat64 = do
     let [VInt a1] = vals
     return $ VDouble $ fromIntegral a1
-  | name `elem` [nameEffectOpen, nameEffectExternOpen, nameUnsafeNoState, nameUnsafeTotalCast, namePretendDecreasing] = do
+  | name == nameNumFloat64Div = do
+    let [VDouble a1, VDouble a2] = vals
+    return $ VDouble $ a1 / a2
+  | name == nameNumFloat64Mult = do
+    let [VDouble a1, VDouble a2] = vals
+    return $ VDouble $ a1 * a2
+  | name == nameNumFloat64Sub = do
+    let [VDouble a1, VDouble a2] = vals
+    return $ VDouble $ a1 - a2
+  | name == nameNumFloat64Add = do
+    let [VDouble a1, VDouble a2] = vals
+    return $ VDouble $ a1 + a2
+  | name == nameNumFloat64Pow = do
+    let [VDouble a1, VDouble a2] = vals
+    return $ VDouble $ a1 ** a2
+  | name `elem` [nameEffectOpen, nameEffectExternOpen, nameUnsafeNoState, nameUnsafeNoLocalCast, nameUnsafeTotalCast, namePretendDecreasing, namePretendNoDivCast] = do
     let [f] = vals
     return f
-  | name == nameRef = do
+  | name == nameRef || name == nameLocalNew = do
     let [val] = vals
     a <- freshAddr
     store a val
     return $ VBox a
-  | name == nameDeref = do
+  | name == nameDeref || name == nameLocalGet = do
     let [VBox a] = vals
     (store, _) <- get
     return $ store M.! a
+  | name == nameRefSet || name == nameLocalSet = do
+    let [VBox a, val] = vals
+    store a val
+    return val
   | otherwise = error $ "Unknown primitive: " ++ show name
 
 freshAddr :: Interp Addr
