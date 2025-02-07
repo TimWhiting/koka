@@ -153,6 +153,7 @@ you can correct this by running `git submodule update --init --recursive`).
 To run all tests, use `stack test --fast`. To run a single test you can run stack test 
 filtering based on paths such as `stack test --fast --test-arguments="--match /lib"`.
 This will run all tests that are under the `test/lib` directory.
+On MacOS make sure that you're locale is C by running: `export LANG=C` prior to running the tests (otherwise you will get Haskell issues in some unicode tests).
 
 You can also use `stack build` without the `--fast` flag to build an optimized version of the compiler.
 
