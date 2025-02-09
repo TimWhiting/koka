@@ -326,15 +326,15 @@ defSortShowFull :: DefSort -> String
 defSortShowFull ds
   = case ds of
       DefFun pinfos fip -> sepBySpace [show fip,"fun"]
-      DefVal -> "val"
-      DefVar -> "var"
+      DefVal      -> "val"
+      DefVar      -> "var"
 
 
 instance Show DefSort where
   show ds = case ds of
               DefFun{} -> "fun"
-              DefVal -> "val"
-              DefVar -> "var"
+              DefVal   -> "val"
+              DefVar   -> "var"
 
 
 data DefInline

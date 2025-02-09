@@ -26,10 +26,16 @@ pub fun default( m : maybe<a>, nothing : a ) : a
     Just(x) -> x
 
 // Get the value of the `Just` constructor or raise an exception
-pub fun unjust( m : maybe<a> ) : exn a
+pub fun unjust( m : maybe<a>, ?kk-file-line: string) : exn a
   match m
     Just(x) -> x
-    Nothing -> throw("unexpected Nothing in std/core/maybe/unjust")
+    Nothing -> throw("unexpected Nothing in " ++ ?kk-file-line)
+
+// Get the value of the `Just` constructor or raise an exception with `error-msg`
+pub fun expect( m : maybe<a>, error-msg: string) : exn a
+  match m
+    Just(x) -> x
+    Nothing -> throw(error-msg)
 
 pub fun map( m : maybe<a>, f : a -> e b ) : e maybe<b>
   match m

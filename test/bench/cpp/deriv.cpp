@@ -96,10 +96,10 @@ static const Expr* mul( const Expr* x, const Expr* y ) {
     return new ValExpr(((ValExpr*)x)->value * ((ValExpr*)y)->value);
   }
   else if (x->kind==Val && ((ValExpr*)x)->value==0) {
-    return x;
+    return new ValExpr(0);
   }
   else if (y->kind==Val && ((ValExpr*)y)->value==0) {
-    return y;
+    return new ValExpr(0);
   }
   else if (x->kind==Val && ((ValExpr*)x)->value==1) {
     return y;

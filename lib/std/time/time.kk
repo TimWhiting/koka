@@ -155,12 +155,12 @@ pub fun instant/time( i : instant, tz : timezone = tz-utc, cal : calendar = cal-
 pub fun time/time( t : time, tz : timezone = t.timezone, cal : calendar = t.calendar, ts : timescale = t.instant.timescale ) : time
   time(t.instant,tz,cal,ts)
 
-pub fun timescale/time( ts : timescale, year : int, month : int = 1, day : int = 1,
+pub fun timescale/time( tscale : timescale, year : int, month : int = 1, day : int = 1,
                  hours : int = 0, minutes : int = 0, secs : int = 0,
                  frac : float64 = 0.0, tz : timezone = tz-utc,
                  cal : calendar = cal-iso ) : time
 
-  time(ts.instant(year,month,day,hours,minutes,secs,frac,tz,cal),tz,cal,ts)
+  time(tscale.instant(year,month,day,hours,minutes,secs,frac,tz,cal),tz,cal,tscale)
 
 
 /* Return the `:time` value for a given date and clock in a timezone `tz` (=`tz-utc` by default)

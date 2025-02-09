@@ -23,7 +23,7 @@ import std/core = std/core = "";
 pub fun test : (xs : list<int>, y : int, z : int) -> int
  = fn(xs: list<int>, y: int, z: int){
  match (xs) {
- (std/core/types/Cons(((@skip std/core/types/@Box((x: int)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<int>)) : list<int> )
+ (std/core/types/Cons(((@skip std/core/types/@Box((x: int)) : @box ) as @box-xxx: @box), (@pat@xxx: list<int>)) : list<int> )
  | std/core/int/(==)(x, z) -> val _ : ()
  = std/core/types/@drop(z);
  val _ : ()
@@ -46,7 +46,7 @@ pub fun test : (xs : list<int>, y : int, z : int) -> int
  std/core/types/Unit;
  });
  x;
- (std/core/types/Cons(((@skip std/core/types/@Box((x@xxx: int)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<int>)) : list<int> )
+ (std/core/types/Cons(((@skip std/core/types/@Box((x@xxx: int)) : @box ) as @box-xxx: @box), (@pat@xxx: list<int>)) : list<int> )
  | std/core/int/(==)(x@xxx, y) -> val _ : ()
  = std/core/types/@drop(z);
  val _ : ()
@@ -54,9 +54,9 @@ pub fun test : (xs : list<int>, y : int, z : int) -> int
  (std/core/types/True() : bool )
  -> val _ : ()
  = val _ : ()
- = std/core/types/@drop(@pat@xxx);
+ = std/core/types/@drop(x@xxx);
  val _ : ()
- = std/core/types/@drop(@box-xxx);
+ = std/core/types/@drop(@pat@xxx);
  std/core/types/Unit;
  std/core/types/@free(xs);
  _
@@ -67,7 +67,7 @@ pub fun test : (xs : list<int>, y : int, z : int) -> int
  std/core/types/Unit;
  });
  y;
- (std/core/types/Cons(((@skip std/core/types/@Box((@pat@xxx: int)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<int>)) : list<int> )
+ (std/core/types/Cons(((@skip std/core/types/@Box((@pat@xxx: int)) : @box ) as @box-xxx: @box), (@pat@xxx: list<int>)) : list<int> )
  | std/core/int/(==)(y, z) -> val _ : ()
  = std/core/types/@drop(z);
  val _ : ()
@@ -79,7 +79,7 @@ pub fun test : (xs : list<int>, y : int, z : int) -> int
  = val _ : ()
  = std/core/types/@drop(@pat@xxx);
  val _ : ()
- = std/core/types/@drop(@box-xxx);
+ = std/core/types/@drop(@pat@xxx);
  std/core/types/Unit;
  std/core/types/@free(xs);
  _

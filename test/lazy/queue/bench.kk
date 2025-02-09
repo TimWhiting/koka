@@ -1,8 +1,12 @@
 module bench
 
+import std/core/undiv
+import std/core/unsafe
 import std/os/env
 import std/num/random
 import std/num/int32
+import std/num/int64
+
 
 pub alias rndstate = sfc
 alias rndres = sfc-result
@@ -21,31 +25,40 @@ pub value struct queueI<q>
 fun bench-snoc( i : int32, qi : queueI<q>, rs : rndstate, queue : q ) : pure q
   if i > 0.int32 then
     val step = rnd-step(rs)
-    val q' = qi.qsnoc.(queue, step.rnd.int)
+    val q' = (qi.qsnoc)(queue, step.rnd.int)
     bench-snoc(i - 1.int32, qi, step.rstate, q')
   else queue
 
+fun bench-pass-on( i : int32, from : q, to : q, qi : queueI<q>) : pure q
+  if i > 0.int32 then
+    match (qi.quncons)(from)
+      Just2( x, from' ) ->
+        val to' = (qi.qsnoc)(to, x)
+        bench-pass-on(i - 1.int32, from', to', qi)
+      Nothing2 -> throw("uncons failed")
+  else
+    to
+
 fun bench-uncons( i : int32, queue : q, qi : queueI<q>, acc = 0.int32 ) : _ int32
   if i > 0.int32 then
-    match qi.quncons.(queue)
+    match (qi.quncons)(queue)
       Just2( x, q ) -> bench-uncons(i - 1.int32, q, qi, acc + i*x.int32)
       Nothing2 -> throw("uncons failed")
   else acc
 
-fun bench-unconsn( i : int32, n : int32, queue : q, qi : queueI<q>, acc = 0.int32 ) : _ int32
+fun bench-iterate( i : int32, n : int32, queue : q, qi : queueI<q>) : pure int32
   if n > 1.int32 then
-    val acc' = bench-uncons(i, queue, qi, acc)
-    bench-unconsn(i, n - 1.int32, queue, qi, acc')
-  elif n == 1.int32 then
-    bench-uncons(i, queue, qi, acc)
-  else acc
+    val q = bench-pass-on(i, queue, qi.qempty, qi)
+    bench-iterate(i, n - 1.int32, q, qi)
+  else
+    bench-uncons(i, queue, qi)
 
 pub fun bench( ops : int32, n : int32, qi : queueI<q> ) : _ int32
   val q = bench-snoc( ops, qi, rnd-init(42,43), qi.qempty)
-  bench-unconsn( ops / n, n, q, qi )
+  bench-iterate( ops, n, q, qi )
 
-pub fun benchmain( qi : queueI<q>, ops : int = 5000000) : io ()
-  val n = get-args().head("").parse-int.default(1).int32
-  //  val ops = 5000000.int32
+pub fun benchmain( qi : queueI<q>, ops : int = 100000, queues : int = 1000) : io ()
+  val n = get-args().head("").parse-int.default(queues).int32
   val sum = bench(ops.int32, n, qi)
   println("Checksum: " ++ show(sum))
+

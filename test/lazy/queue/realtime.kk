@@ -27,17 +27,17 @@ struct queue<a>
 val realtime/empty = Queue(SNil,Nil,SNil)
 
 // evaluate one step into the front (by evaluating the schedule one step at a time)
-fun schedule( Queue(front,rear,sched) : queue<a> ) : div queue<a>
+inline fun queue( front : stream<a>, rear : list<a>, sched : stream<a> ) : div queue<a>
   match sched
     SCons(_,s) -> Queue(front,rear,s)
     SNil       -> val f = SRotate(front,rear,SNil ) in Queue(f,Nil,f) // start a fresh schedule (sharing the front)
 
 fun snoc( Queue(front,rear,sched) : queue<a>, x : a ) : div queue<a>
-  schedule( Queue(front, Cons(x,rear), sched) )
+  queue(front, Cons(x,rear), sched)
 
 fun uncons( Queue(front,rear,sched) : queue<a> ) : div maybe2<a,queue<a>>
   match front
-    SCons(x,xx) -> Just2(x, schedule(Queue(xx,rear,sched)))
+    SCons(x,xx) -> Just2(x, queue(xx,rear,sched))
     SNil        -> Nothing2
 
 pub fun main()

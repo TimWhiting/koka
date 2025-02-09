@@ -145,7 +145,7 @@ ruExpr expr
         -> do registerLazyCon tname
               return exprUnit -- expr
       App (Var name _) [Var tname _, conApp] | getName name == nameLazyUpdate
-        -> ruLazyUpdate tname conApp
+        -> do ruLazyUpdate tname conApp
 
       App con@(Con cname repr) args
         -> do args' <- mapM ruExpr args
@@ -381,23 +381,29 @@ ruTryReuseCon cname repr conApp
 ruLazyUpdate :: HasCallStack => TName -> Expr -> Reuse Expr
 ruLazyUpdate lazyTName arg
   = do ds <- getDeconstructed
-       (_, reuseName) <- getDeconstructedLazyCon
-       markReused reuseName
-       case NameMap.lookup (getName lazyTName) ds of
-         Nothing -> failure $ "Backend.C.ParcReuse.ruExpr.lazy-update: cannot find lazy update target: " ++ show lazyTName
-         Just lazyInfo
-           -> let (boxDefs, tailArg) = stripLets arg
-              in makeLets boxDefs <$>
-                 case tailArg of
-                   -- try to write the constructor in-place on the lazy one
-                   App con@(Con cname repr) args                 -> updateCon reuseName lazyInfo cname repr con args
-                   App con@(TypeApp (Con cname repr) targs) args -> updateCon reuseName lazyInfo cname repr con args
-                   -- singleton uses an indirection
-                   Con cname repr -> lazyIndirect reuseName lazyInfo True tailArg
-                   -- otherwise use an indirection
-                   _ -> do -- no warning needed as it is checked in Kind.Infer
-                           -- warning (\penv -> text "cannot update lazy value directly as the whnf is not statically known -- using indirection")
-                           lazyIndirect reuseName lazyInfo False tailArg
+       -- (_, reuseName0) <- getDeconstructedLazyCon
+       -- markReused reuseName0
+       maybeMarkDeconstructedLazyConAsReused lazyTName
+       reuseName <- uniqueReuseName typeReuse
+       -- let reuseAssign = genReuseAssignWith reuseName (genReuseAddress lazyTName)
+       let (boxDefs, tailArg) = stripLets arg
+       boxDefs' <- mapM ruDefGroup boxDefs
+       makeLets (boxDefs' ++ [DefNonRec (makeDef (getName reuseName) (genReuseAddress lazyTName))]) <$>
+        case NameMap.lookup (getName lazyTName) ds of
+          Nothing
+            -> do warning $ \penv -> text "cannot find lazy update target" <+> ppName penv (getName lazyTName) <+> text ", using indirection instead"
+                  lazyIndirect reuseName (Nothing,0,0) False tailArg
+          Just lazyInfo
+            -> case tailArg of
+                    -- try to write the constructor in-place on the lazy one
+                    App con@(Con cname repr) args                 -> updateCon reuseName lazyInfo cname repr con args
+                    App con@(TypeApp (Con cname repr) targs) args -> updateCon reuseName lazyInfo cname repr con args
+                    -- singleton uses an indirection
+                    Con cname repr -> lazyIndirect reuseName lazyInfo True tailArg
+                    -- otherwise use an indirection
+                    _ -> do -- no warning needed as it is checked in Kind.Infer
+                            -- warning (\penv -> text "cannot update lazy value directly as the whnf is not statically known -- using indirection")
+                            lazyIndirect reuseName lazyInfo False tailArg
   where
     ppName penv name = prettyName (Pretty.colors penv) name
 
@@ -767,6 +773,14 @@ getDeconstructedLazyCon = do
     DeconstructedLazyCon tname rname -> return (tname, rname)
     KnownLazyCon tname -> ruError $ "getDeconstructedLazyCon: " ++ show tname ++ " was not deconstructed"
     NoLazyCon -> ruError $ "getDeconstructedLazyCon: no known lazy con"
+
+maybeMarkDeconstructedLazyConAsReused :: HasCallStack => TName -> Reuse ()
+maybeMarkDeconstructedLazyConAsReused lazyTName = do  -- todo: check if lazyTName matches tname?
+  s <- lazyCon <$> getSt
+  case s of
+    DeconstructedLazyCon tname rname -> markReused rname -- return (tname, rname)
+    _ -> return ()
+
 
 --
 

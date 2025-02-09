@@ -4,7 +4,7 @@ rem Installation script for Koka; use -h to see command line options.
 rem ------------------------------------------------------------------
 
 setlocal
-set KOKA_VERSION=v3.1.2
+set KOKA_VERSION=v3.1.3
 set KOKA_PREFIX=%LOCALAPPDATA%\koka
 set KOKA_UNINSTALL=N
 set KOKA_HELP=N
@@ -516,9 +516,12 @@ if /i "%KOKA_ANSWER:~,1%" neq "Y" (
   goto vs_showurl
 )
 
-echo Installing Microsoft Visual Studio %VS_VERSION% build tools using 'winget':
+echo Installing Microsoft Visual Studio %VS_VERSION% build tools:
 echo   %VS_INSTALL_CMD%
 %VS_INSTALL_CMD%
+if errorlevel 1 (
+  echo Could not install the Microsoft Visual Studio %VS_VERSION% build tools, error %ERRORLEVEL%.
+)
 
 goto vs_done
 

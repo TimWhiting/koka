@@ -26,10 +26,16 @@ pub fun default( m : maybe2<a,b>, nothing : (a,b) ) : (a,b)
     Just2(x,y) -> (x,y)
 
 // Get the value of the `Just` constructor or raise an exception
-pub fun unjust2( m : maybe2<a,b> ) : exn (a,b)
+pub fun unjust( m : maybe2<a,b>, ?kk-file-line: string) : exn (a,b)
   match m
     Just2(x,y) -> (x,y)
-    Nothing2   -> throw("unexpected Nothing2 in std/core/maybe/unjust2")
+    Nothing2   -> throw("unexpected Nothing2 in " ++ ?kk-file-line)
+
+// Get the value of the `Just` constructor or raise an exception
+pub fun expect( m : maybe2<a,b>, error-msg: string) : exn (a,b)
+  match m
+    Just2(x,y) -> (x,y)
+    Nothing2   -> throw(error-msg)
 
 pub fun map( m : maybe2<a,b>, f : (a,b) -> e (c,d) ) : e maybe2<c,d>
   match m

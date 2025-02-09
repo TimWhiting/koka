@@ -139,6 +139,7 @@ data Env     = Env{ showKinds      :: !Bool
                   , importsMap :: !ImportMap -- ^ import aliases
                   , fullNames :: !Bool
                   , alwaysUnqualify :: !Bool
+                  , indentation :: Int
 
                   -- should not really belong here. Contains link bases for documentation generation (see Syntax.Colorize)
                   , colorizing:: !Bool
@@ -167,6 +168,7 @@ defaultEnv
         defaultColorScheme niceEmpty (precTop-1) M.empty (newName "Main") (importsEmpty)
         False -- fullNames
         False
+        0
         False
         []
         ("styles/" ++ programName ++ ".css") -- [("System.","file://c:/users/daan/dev/koka/out/lib/")]

@@ -128,7 +128,7 @@ monExpr' topLevel expr
                       in case splitFunType rho of
                            Just(_,feff,_) -> return feff
                            _ -> do monTraceDoc $ \env -> text "Core.Monadic.App: illegal application:" <+> ppType env ftp
-                                   failure ("Core.Monadic.App: illegal application")
+                                   failure ("Core.Monadic.App: illegal application: " ++ show (ppType defaultEnv ftp))
               if ((not (isMonType ftp || isAlwaysMon f)) || isNeverMon f)
                then do monTraceDoc $ \env -> text "app non-mon: eff:" <+> pretty feff <+> text ", expr:" <+> prettyExpr env expr
                        return $ \k -> f' (\ff ->

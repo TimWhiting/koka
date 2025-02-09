@@ -160,21 +160,27 @@ lowerCompareS [] (d:ds) = LT
 lowerCompareS [] []     = EQ
 
 instance Eq Name where
-  n1@(Name _ hm1 _ hl1 _ hn1) == n2@(Name _ hm2 _ hl2 _ hn2)
+  nm1@(Name m1 hm1 l1 hl1 n1 hn1) == nm2@(Name m2 hm2 l2 hl2 n2 hn2)
     = let eq = (hn1 == hn2) && (hl1 == hl2) && (hm1 == hm2) in
-      assertion ("Common.Name.Eq: wrong hashes: " ++ show [(hm1,hl1,hn1),(hm2,hl2,hn2)] ++ show (n1,n2))
-                (if not eq then showFullyExplicit n1 /= showFullyExplicit n2 else True) $
-      (eq && (lowerCompare n1 n2 == EQ))
+      assertion ("Common.Name.Eq: wrong hashes: " ++ show [(hm1,hl1,hn1),(hm2,hl2,hn2)] ++ show (nm1,nm2))
+                (if not eq then showFullyExplicit nm1 /= showFullyExplicit nm2 else True) $
+      eq && (lowerCompare nm1 nm2 == EQ)
+      -- eq && m1 == m2 && l1 == l2 && n1 == n2 -- (eq && (lowerCompare n1 n2 == EQ)) // Lower compare doesn't make a difference since the hash will likely not be equal
 
 
 
 instance Ord Name where
   -- compare module, stem name, and then local name for dependencies
-  compare n1@(Name _ hm1 _ hl1 _ hn1) n2@(Name _ hm2 _ hl2 _ hn2)
+  compare nm1@(Name m1 hm1 l1 hl1 n1 hn1) nm2@(Name m2 hm2 l2 hl2 n2 hn2)
     = case compare hm1 hm2 of
         EQ -> case compare hn1 hn2 of
                 EQ -> case compare hl1 hl2 of
-                        EQ -> lowerCompare n1 n2
+                        EQ -> lowerCompare nm1 nm2
+                        -- EQ -> case compare m1 m2 of -- Don't use lowerCompare here, since the hash will not be equal (ruled out by EQ)
+                        --         EQ -> case compare l1 l2 of
+                        --                 EQ -> compare n1 n2
+                        --                 lg -> lg
+                        --         lg -> lg
                         lg -> lg
                 lg -> lg
         lg -> lg
@@ -184,9 +190,9 @@ labelNameCompare (Name m1 hm1 l1 hl1 n1 hn1) (Name m2 hm2 l2 hl2 n2 hn2)
   = case compare hn1 hn2 of
       EQ -> case lowerCompareS n1 n2 of
               EQ -> case compare hl1 hl2 of
-                      EQ -> case lowerCompareS l1 l2 of
+                      EQ -> case compare l1 l2 of
                               EQ -> case compare hm1 hm2 of
-                                      EQ -> lowerCompareS m1 m2
+                                      EQ -> compare m1 m2
                                       lg -> lg
                               lg -> lg
                       lg -> lg

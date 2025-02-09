@@ -160,14 +160,14 @@ pub fun instant-dc( i : instant, tz :timezone = tz-utc, cal : calendar = cal-iso
   happened (as it was skipped by a timezone change), or ambigious times (as a timezone springs back).
   In such cases, the time is always interpreted in the earlier timezone.
 */
-pub fun timescale/instant( ts : timescale,
+pub fun timescale/instant( tscale : timescale,
                     year : int, month : int = 1, day : int = 1,
                     hours : int = 0, minutes : int = 0, seconds : int = 0,
                     frac : float64 = 0.0, tz : timezone = tz-utc,
                     cal : calendar = cal-iso ) : instant
 
   val fsecs = seconds.ddouble + frac.ddouble
-  ts.instant( Date(year,month,day), Clock(hours,minutes,fsecs), tz, cal )
+  tscale.instant( Date(year,month,day), Clock(hours,minutes,fsecs), tz, cal )
 
 pub fun utc/instant( year : int, month : int = 1, day : int = 1,
                     hours : int = 0, minutes : int = 0, seconds : int = 0,

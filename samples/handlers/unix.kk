@@ -26,11 +26,18 @@ val stdout = 0
 fun echo( s : string ) : bio ()
   write(stdout,s)
 
-fun bio( action : () -> <bio|e> a ) : e (a,string)
+fun bio( action : () -> <bio|e> a) : e (a,string)
+  var buf := ""
+  with fun write(fd,s) buf := buf ++ s
+  (action(),buf)
+
+// we can also write the previous `bio` using a `with return`
+fun bio2( action : () -> <bio|e> a) : e (a,string)
   var buf := ""
   with return(x) (x,buf)
   with fun write(fd,s) buf := buf ++ s
   action()
+
 
 pub fun example1()
   with bio

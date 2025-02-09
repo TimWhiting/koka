@@ -15,7 +15,7 @@ module Type.Type (-- * Types
                   , DataInfo(..), DataKind(..), ConInfo(..), SynInfo(..)
                   , dataInfoIsOpen, dataInfoIsExtend, dataInfoIsLiteral
                   , conInfoSize, conInfoScanCount
-                  , conInfoIsLazy, dataInfoIsLazy, conInfoLazyFip
+                  , conInfoIsLazy, dataInfoIsLazy, conInfoLazyFip, lazyName
                   , eqType, eqTypes, elemType
                   -- Predicates
                   , splitPredType, shallowSplitPreds, shallowSplitVars
@@ -48,7 +48,7 @@ module Type.Type (-- * Types
                   , typeOptional, typeMakeTuple
                   , typeCCtx, typeCCtxx, typeFieldAddr
                   , isOptional, makeOptionalType, unOptional
-                  , typeReuse, typeLocal
+                  , typeReuse, typeLocal, isTypeLocal
 
                   , tconHandled, tconHandled1, wrapHandledFromDataEffect
                   -- , typeCps
@@ -198,6 +198,11 @@ dataInfoIsLiteral info
 dataInfoIsLazy :: DataInfo -> Bool
 dataInfoIsLazy dataInfo
   = dataDefIsLazy (dataInfoDef dataInfo)
+
+lazyName :: DataInfo -> String -> Name
+lazyName info stem
+  = unqualify $ typeQualifiedName (dataInfoName info) ("lazy-" ++ stem)
+
 
 -- | Constructor information: constructor name, name of the newtype, field types, and the full type of the constructor
 data ConInfo = ConInfo{ conInfoName :: !Name
@@ -637,6 +642,11 @@ typeLocal :: Type
 typeLocal
   = TCon (TypeCon nameTpLocal kindLocal)
 
+isTypeLocal :: Type -> Bool
+isTypeLocal tp
+  = case expandSyn tp of
+      TApp (TCon (TypeCon name _)) [_]  -> name == nameTpLocal
+      _ -> False
 
 -- typeCps :: Type
 -- typeCps

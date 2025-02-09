@@ -1,0 +1,86 @@
+on:
+  workflow_dispatch:   # so we can run the workflow manually as well
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+name: bundle
+jobs:
+  build:
+    name: Bundle Koka
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # macOS 13 is x64, later versions are arm64
+        # we build on the oldest ubuntu version for better binary compatibility.
+        os: [windows-latest, macOS-latest, macOS-13, ubuntu-20.04, ubuntu-22.04-arm]
+
+    steps:
+      # Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Cache setup for vcpkg (https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-github-actions-cache)
+      - name: Setup vcpkg cache
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      # Use a VS shell on Windows (so `cl` is on the PATH): https://github.com/egor-tensin/vs-shell (MIT license)
+      - name: Set up Visual Studio shell
+        uses: egor-tensin/vs-shell@v2
+        if: runner.os == 'Windows' && runner.arch == 'X64'
+        with:
+          arch: x64
+
+      # Set up stack and cache dependencies: https://github.com/freckle/stack-action (MIT license)
+      - name: Build compiler
+        uses: freckle/stack-action@v5
+        with:
+          test: false
+          stack-build-arguments: ""
+          cache-save-always: true
+
+      # Bundle
+      - name: Build libraries
+        if: runner.os == 'Windows'
+        run: |
+          $env:VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT
+          stack exec koka -- -e -O2 util/bundle
+
+      - name: Build libraries
+        if: runner.os != 'Windows'
+        run: |
+          stack exec koka -- -e -O2 util/bundle
+
+      # VS code extension
+      - name: Package VS code extension
+        if: runner.os == 'Windows' && runner.arch == 'X64'
+        working-directory: support/vscode/koka.language-koka
+        run: |
+          npm install
+          npm run build
+
+      # Create a release: https://github.com/softprops/action-gh-release (MIT license)
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')  # only release if tagged with a version
+        with:
+          files: |
+            bundle/**/*.tar.gz
+            support/vscode/koka.language-koka/*.vsix
+            util/install.bat
+            util/install.sh
+          draft: true
+          body_path: util/release.md
+

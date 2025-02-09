@@ -35,7 +35,8 @@ fixityResolve :: ColorScheme -> Fixities -> UserProgram -> Error b (UserProgram,
 fixityResolve cscheme fixMap (Program source modName nameRange tdgroups defs importdefs externals fixdefs doc)
   = let fixMap1 = fixitiesCompose fixMap (extractFixMap fixdefs)
     in  do defs1 <- runFixM fixMap1 (resolveDefs defs)
-           return (Program source modName nameRange tdgroups defs1 importdefs externals fixdefs doc,fixMap1)
+           tdgroups1 <- runFixM fixMap1 (resolveTypeDefs tdgroups)  -- for lazy constructors
+           return (Program source modName nameRange tdgroups1 defs1 importdefs externals fixdefs doc,fixMap1)
 
 extractFixMap :: [FixDef] -> Fixities
 extractFixMap fixDefs
@@ -43,6 +44,35 @@ extractFixMap fixDefs
   where
     extractFix (FixDef name fixity range vis)
       = [(name,fixity)]
+
+
+{--------------------------------------------------------------------------
+  Resolve lazy constructor definitions
+--------------------------------------------------------------------------}
+resolveTypeDefs :: TypeDefGroups UserType UserKind -> FixM (TypeDefGroups UserType UserKind)
+resolveTypeDefs tdefs
+  = mapM resolveTypeDefGroup tdefs
+
+resolveTypeDefGroup (TypeDefRec tdefs)
+  = do defs' <- mapM resolveTypeDef tdefs
+       return (TypeDefRec defs')
+resolveTypeDefGroup (TypeDefNonRec tdef)
+  = resolveTypeDef tdef >>= return . TypeDefNonRec
+
+
+resolveTypeDef :: UserTypeDef -> FixM UserTypeDef
+resolveTypeDef tdef@(DataType{ typeDefConstrs = constrs })
+  = do constrs' <- mapM resolveConstr constrs
+       return (tdef{ typeDefConstrs = constrs' })
+resolveTypeDef tdef
+  = return tdef
+
+resolveConstr :: UserUserCon -> FixM UserUserCon
+resolveConstr con@(UserCon{userConLazy = Just (fip,expr) })
+  = do expr' <- resolveExpr expr
+       return (con{ userConLazy = Just(fip,expr') })
+resolveConstr con
+  = return con
 
 
 {--------------------------------------------------------------------------

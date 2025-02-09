@@ -82,7 +82,7 @@ infgammaExtendTp name cname tp doc infgamma
 
 infgammaExtendX :: Name -> Name -> Scheme -> Range -> Bool -> String -> InfGamma -> InfGamma
 infgammaExtendX name cname tp rng isVar doc infgamma
-  = infgammaExtend name (InfoVal Public cname tp rng isVar doc) infgamma
+  = infgammaExtend name (InfoVal Public cname tp rng isVar False doc) infgamma
 
 
 -- lookup any exact match in the local scope

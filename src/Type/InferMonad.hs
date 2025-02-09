@@ -8,7 +8,7 @@
 
 module Type.InferMonad( Inf, InfGamma
                       , runInfer, tryRun
-                      , traceDoc, traceDefDoc
+                      , traceDoc, traceDefDoc, traceIndent
 
                       -- * substitutation
                       , zapSubst
@@ -74,6 +74,7 @@ module Type.InferMonad( Inf, InfGamma
                       , termError
                       , infError, infWarning
                       , withHiddenTermDoc, inHiddenTermDoc
+                      , withLocalScope, withNoLocalScope, localScopeDepth
 
                       -- * Documentation, Intellisense
                       , addRangeInfo, withNoRangeInfo
@@ -98,6 +99,8 @@ import Common.Name
 import Common.NamePrim(nameTpVoid,nameTpPure,nameTpIO,nameTpST,nameTpAsyncX,
                        nameTpRead,nameTpWrite,namePredHeapDiv,nameReturn,
                        nameTpLocal, nameCopy)
+
+
 -- import Common.Syntax( DefSort(..) )
 import Common.ColorScheme
 import Kind.Kind
@@ -197,9 +200,9 @@ generalize contextRange range close eff0 rho0 core0
                 checkSatisfiable contextRange ps4
                 score <- subst (core4 (core2 (core1 core0)))
                 -- traceDoc $ \penv -> text "score:" <+> prettyExpr penv{Pretty.coreShowTypes=True} score
-                
+
                 -- trace (" before normalize: " ++ show (eff4,rho4) ++ " with " ++ show ps4) $ return ()
-                
+
                 -- update the free variables since substitution may have changed it
                 free1 <- freeInGamma
                 let free = tvsUnion free1 (fuv eff4)
@@ -901,12 +904,15 @@ resolveConName name mbType range
   = do (qname,tp,info) <- resolveNameEx isInfoCon Nothing name (maybeToContext mbType) range  range
        return (qname,tp,infoRepr info,infoCon info)
 
-resolveConPatternName :: Name -> Int -> Range -> Inf (Name,Type,Core.ConRepr,ConInfo)
-resolveConPatternName name patternCount range
+resolveConPatternName :: Name -> Type -> Int -> Range -> Inf (Name,Type,Core.ConRepr,ConInfo)
+resolveConPatternName name matchType patternCount range
   = do (qname,tp,info) <- resolveNameEx isInfoCon Nothing name ctx range  range
        return (qname,tp,infoRepr info,infoCon info)
   where
-    ctx = if patternCount > 0 then CtxFunArgs True {-partial?-} patternCount [] Nothing else CtxNone
+    ctx = CtxFunArgs True {-partial?-} patternCount [] (Just matchType)
+          {- if patternCount > 0
+            then CtxFunArgs True {-partial?-} patternCount [] (Just matchType)
+            else CtxType matchType -}
 
 
 resolveNameEx :: (NameInfo -> Bool) -> Maybe (NameInfo -> Bool) -> Name -> NameContext -> Range -> Range -> Inf (Name,Type,NameInfo)
@@ -1463,8 +1469,11 @@ filterMatchNameContextEx range ctx candidates
       CtxType expect  -> do mss <- mapM (matchType expect) candidates
                             return (concat mss)
       CtxFunArgs partial n named mbResTp
-                      -> do mss <- mapM (matchNamedArgs partial n named mbResTp) candidates
-                            return (concat mss)
+                      -> do mss1 <- mapM (matchNamedArgs partial n named mbResTp) candidates
+                            mss2 <- case mbResTp of
+                                      Just tp | (partial && n==0) -> mapM (matchType tp) candidates -- for partial constructor like `Nil`
+                                      _ -> return []
+                            return (concat (mss1 ++ mss2))
       CtxFunTypes partial fixed named mbResTp
                       -> do mss <- mapM (matchArgs partial fixed named mbResTp) candidates
                             return (concat mss)
@@ -1489,9 +1498,9 @@ filterMatchNameContextEx range ctx candidates
     matchArgs :: Bool -> [Type] -> [(Name,Type)] -> Maybe Type -> (Name,NameInfo) -> Inf [(Name,NameInfo,Rho)]
     matchArgs matchSome fixed named mbResTp (name,info)
       = do free <- freeInGamma
-            --  traceDefDoc $ \penv -> text "  match fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
-            --                               <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
-            --                               <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
+          --  traceDefDoc $ \penv -> text "  match fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
+          --                                 <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
+          --                                 <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
            res <- runUnify (matchArguments matchSome range free (infoType info) fixed named mbResTp)
            case res of
              (Right rho,_) -> return [(name,info,rho)]
@@ -1707,13 +1716,14 @@ data Env    = Env{ prettyEnv :: !Pretty.Env
                  , returnAllowed :: !Bool
                  , inLhs :: !Bool
                  , hiddenTermDoc :: Maybe (Range,Doc)
+                 , localDepth :: Int   -- number of local-scope's
                  }
 data St     = St{ uniq :: !Int, sub :: !Sub, preds :: ![Evidence], holeAllowed :: !Bool, mbRangeMap :: Maybe RangeMap }
 
 
 runInfer :: Pretty.Env -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Int -> Inf a -> Error b (a,Int,Maybe RangeMap)
 runInfer env mbrm syns newTypes imports assumption context unique (Inf f)
-  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False Nothing)
+  = case f (Env env context (newName "") False newTypes syns assumption infgammaEmpty imports False False Nothing 0)
            (St unique subNull [] False mbrm) of
       Err (rng,doc) warnings
         -> addWarnings (map (toWarning ErrType) warnings) (errorMsg (errorMessageKind ErrType rng doc))
@@ -1802,6 +1812,19 @@ withNoRangeInfo inf
        x   <- inf
        updateSt ( \st -> st{ mbRangeMap = rm0 })
        return x
+
+withLocalScope :: Inf a -> Inf a
+withLocalScope inf
+  = withEnv (\env -> env{ localDepth = localDepth env + 1 }) inf
+
+withNoLocalScope :: Inf a -> Inf a
+withNoLocalScope inf
+  = withEnv (\env -> env{ localDepth = 0 }) inf
+
+localScopeDepth :: Inf Int
+localScopeDepth
+  = do env <- getEnv
+       return (localDepth env)
 
 {--------------------------------------------------------------------------
   Helpers
@@ -2034,7 +2057,7 @@ withGammaType :: Range -> Type -> Inf a -> Inf a
 withGammaType range tp inf
   = do defName <- currentDefName
        name <- uniqueNameFrom defName
-       extendInfGamma [(name,(InfoVal Public name tp range False ""))] inf
+       extendInfGamma [(name,(InfoVal Public name tp range False False ""))] inf
 
 currentDefName :: Inf Name
 currentDefName
@@ -2043,7 +2066,7 @@ currentDefName
 
 withDefName :: Name -> Inf a -> Inf a
 withDefName name inf
-  = withEnv (\env -> env{ currentDef = name, namedLam = True }) inf
+  = withEnv (\env -> env{ currentDef = name, namedLam = not (nameIsNil name || isWildcard name) }) inf
 
 isNamedLam :: (Bool -> Inf a) -> Inf a
 isNamedLam action
@@ -2121,6 +2144,9 @@ findDataInfo typeName
          Just info -> return info
          Nothing   -> failure ("Type.InferMonad.findDataInfo: unknown type: " ++ show typeName ++ "\n in: " ++ show (types env))
 
+traceIndent :: Inf a -> Inf a
+traceIndent inf
+  = withEnv (\env -> env{ prettyEnv = (prettyEnv env){ Pretty.indentation = Pretty.indentation (prettyEnv env) + 2 } }) inf
 
 traceDefDoc :: (Pretty.Env -> Doc) -> Inf ()
 traceDefDoc f
@@ -2130,7 +2156,7 @@ traceDefDoc f
 traceDoc :: (Pretty.Env -> Doc) -> Inf ()
 traceDoc f
   = do penv <- getPrettyEnv
-       trace (show (f penv)) $ return ()
+       trace (show (indent (Pretty.indentation penv) $ f penv)) $ return ()
 
 ppNameType penv (name,tp)
   = Pretty.ppName penv name <+> colon <+> Pretty.ppType penv tp

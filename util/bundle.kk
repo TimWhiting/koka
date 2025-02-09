@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------------------
-Copyright 2020-2021, Microsoft Research, Daan Leijen.
+Copyright 2020-2025, Microsoft Research, Daan Leijen.
 This is free software; you can redistribute it and/or modify it under the
 terms of the Apache License, Version 2.0. A copy of the License can be
 found in the LICENSE file at the root of this distribution.
@@ -121,10 +121,19 @@ fun bundle( prefixdir : path, extrametadir : string, solibsdir : string, cc : st
   ensure-dir(libdir)
   ensure-dir(sharedir)
 
+  // Build vscode extension
+  // match build-vsix("support/vscode/koka.language-koka",version)
+  //   Just(vsix) | !install ->
+  //     println("created vsix package: " ++ vsix.basename ++ "\n")
+  //     copy-file-to-dir(vsix, prefixdir / "..")
+  //   _ ->
+  //     if install
+  //       then println("warning: could not create the VS code extension package!\n")
+  //       else println("\nERROR: could not create the VS code extension package!\n")
+
   // Build kklib versions
   [Debug,DRelease,Release].foreach fn(v)
     build-libraries( cc,usecl,v,version,install,minimal,koka-run )
-
 
   // Copy Koka
   println("copy koka executable...")
@@ -238,10 +247,11 @@ fun koka-exe-path(exe-opt : string, sysghc : bool) : io (path,string)
                  elif exe == "cabal" then "cabal new-run koka --"
                  else exe
   val info     = run-system-read(koka-run ++ " --version").exn
+  println(koka-run ++ " --version" ++ "\n" ++ info)
   val bin      = info.lines.filter(fn(s){ s.starts-with("bin ").bool }).head.unjust
   val fpath    = bin.find(": ").unjust.after.string.trim / "koka"
   val koka-exe = if fpath.is-file then fpath else fpath.change-ext(".exe")
-  if !koka-exe.is-file then throw("unable to find koka executable: use '> stack build' first.\n  (" ++ koka-exe.string ++ ")")
+  if !koka-exe.is-file then throw("unable to find koka executable: use '> stack build' first.\n  (" ++ fpath.string ++ ")")
   (koka-exe, koka-run)
 
 
@@ -327,4 +337,13 @@ fun build-libraries(cc : string, usecl : bool, variant : variant, version : stri
     run-system( clcmd )
     ()
 
+
+// fun build-vsix(vsix-dir : string, version : string ) : io maybe<path>
+//   println("creating vsix package...")
+//   println(" npm install...")
+//   if (run-system("cd " ++ vsix-dir ++ " && npm install") != 0) return Nothing
+//   println(" npm run build...")
+//   if (run-system("cd " ++ vsix-dir ++ " && npm run build") != 0) return Nothing
+//   val ver = if version.starts-with("v").bool then version.tail else version
+//   Just(vsix-dir / ("language-koka-" ++ ver ++ ".vsix"))
 

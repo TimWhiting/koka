@@ -93,10 +93,10 @@ public class deriv {
       return new ValExpr( a.value * b.value );
     }
     else if (x instanceof ValExpr a && a.value == 0) {
-      return x;
+      return new ValExpr(0);
     }
     else if (y instanceof ValExpr b && b.value == 0) {
-      return y;
+      return new ValExpr(0);
     }
     else if (x instanceof ValExpr a && a.value == 1) {
       return y;
@@ -110,7 +110,7 @@ public class deriv {
     else if (x instanceof ValExpr a && y instanceof MulExpr b && b.left instanceof ValExpr bl) {
       return mul(new ValExpr(a.value * bl.value), b.right);
     }
-    else if (y instanceof MulExpr b && b.left instanceof MulExpr) {
+    else if (y instanceof MulExpr b && b.left instanceof ValExpr) {
       return mul(b.left, mul(x,b.right));
     }
     else if (x instanceof MulExpr a) {

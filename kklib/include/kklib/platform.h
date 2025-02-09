@@ -147,12 +147,12 @@
 #define WIN32  1
 #endif
 
-#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) || defined(_M_AMD64)
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) // must come first as we consider ARM64EC as ARM64
+  #define KK_ARCH_ARM64     1
+#elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) || defined(_M_AMD64)
   #define KK_ARCH_X64       1
 #elif defined(__i386__) || defined(__i386) || defined(_M_IX86) || defined(_X86_) || defined(__X86__)
   #define KK_ARCH_X86       1
-#elif defined(__aarch64__) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
-  #define KK_ARCH_ARM64     1
 #elif defined(__arm__) || defined(_ARM) || defined(_M_ARM)  || defined(_M_ARMT) || defined(__arm)
   #define KK_ARCH_ARM32     1
 #elif defined(__riscv) || defined(_M_RISCV)

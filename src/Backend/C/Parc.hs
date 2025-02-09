@@ -410,20 +410,22 @@ fuseAliases :: (TName -> TNames) -> Dups -> Drops -> Parc (Dups,Drops)
 fuseAliases childrenOf dups drops
   = do newtypes <- getNewtypes
        platform <- getPlatform
-       return $ L.foldl' (fuseAlias platform newtypes) (dups,S.empty) (S.toList drops)
+       return $ L.foldl' (fuseAlias platform newtypes) (dups,S.empty) (S.toList drops)  -- go through each drop
   where
     fuseAlias :: Platform -> Newtypes -> (Dups,Drops) -> TName -> (Dups,Drops)
     fuseAlias platform newtypes (dups,drops) y
       = case forwardingChild platform newtypes childrenOf dups y of
-          Just child -> assertion ("Backend.C.Parc.fuseAlias: not a member? " ++ show (child,dups))
-                                  (S.member child dups) $
-                        (S.delete child dups, drops)
-          Nothing    -> (dups,S.insert y drops)        -- not (S.member y dups)
+          Just child -> -- assertion ("Backend.C.Parc.fuseAlias: not a member? " ++ show (child,dups))
+                        --          (S.member child dups) $
+                        if S.member child dups
+                          then (S.delete child dups, drops)   -- fuse the dup with the alias
+                          else (dups, S.insert child drops)   -- use the alias child as that may reveal more shape info for reuse later on (see `parc23.kk`)
+          Nothing    -> (dups,S.insert y drops)             -- not (S.member y dups)
 
 -- | Return a dupped name which is a child of the given name
 -- if the given name will always forward a drop directly to the child
 -- (e.g. because the given name is a box or a newtype).
-forwardingChild :: Platform -> Newtypes -> (TName -> TNames) -> Dups -> TName -> (Maybe TName)
+forwardingChild :: Platform -> Newtypes -> (TName -> TNames) -> Dups -> TName -> Maybe TName
 forwardingChild platform newtypes childrenOf dups y
   = case tnamesList (childrenOf y) of
       [x] -> -- trace ("forwarding child?: " ++ show y ++ " -> " ++ show x) $
@@ -436,21 +438,21 @@ forwardingChild platform newtypes childrenOf dups y
                               -> case tnamesList (childrenOf x) of
                                    [x'] -> case getBoxForm' platform newtypes (typeOf x') of
                                             BoxIdentity
-                                              -> findChild x' dups  -- y as Just(x as Box(x'))
+                                              -> Just x' -- findChild x' dups  -- y as Just(x as Box(x'))
                                             _ -> Nothing
                                    _ -> Nothing
                       Nothing -> -- trace (" check box type child: " ++ show (y,x)) $
                                  case getBoxForm' platform newtypes (typeOf x) of
                                    BoxIdentity
                                      -> case tnamesList (childrenOf x) of
-                                          [x'] -> findChild x' dups
+                                          [x'] -> Just x' -- findChild x' dups
                                           _    -> Nothing
                                    _ -> Nothing
                Just _  -> Nothing
                Nothing | isBoxType (typeOf y)
                        -> case getBoxForm' platform newtypes (typeOf x) of
                             BoxIdentity -> --trace (" box identity: " ++ show y) $
-                                           findChild x dups  -- y as Box(x)
+                                           Just x -- findChild x dups  -- y as Box(x)
                             _ -> Nothing
                _       -> Nothing
       _ -> Nothing
@@ -705,6 +707,19 @@ genDupDrop isDup tname mbConRepr mbScanCount
                                      return normal
                 _ -> do -- parcTrace $ "  dup/drop(2), " ++ show tname
                         return normal
+
+
+isIsoBox :: Type -> Bool
+isIsoBox tp
+  = case tp of
+      TForall vars preds t
+        -> isIsoBox t
+      TApp t ts
+        -> isIsoBox t
+      TCon c
+        -> True
+      _ -> False
+
 
 genDup name  = do genDupDrop True name Nothing Nothing
 genDrop name = do shape <- getShapeInfo name
@@ -989,7 +1004,7 @@ getDataInfo' :: Newtypes -> Type -> Maybe DataInfo
 getDataInfo' newtypes tp
   = case extractDataDefType tp of
       Nothing   -> Nothing
-      Just name | name == nameBoxCon -> Nothing
+      Just name | name == nameTpBox -> Nothing
       Just name -> case newtypesLookupAny name newtypes of
                       Nothing -> failure $ "Core.Parc.getDataDefInfo: cannot find type: " ++ show name -- ++ "\n" ++ show newtypes
                       Just di -> -- trace ("datainfo of " ++ show (pretty tp) ++ " = " ++ show di) $

@@ -16,7 +16,7 @@ import std/core/undiv
 // Grapheme's are an alias for `:string`.
 // Each grapheme is a self-contained symbol consisting of
 // a unicode character followed by combining characters and/or
-// combining marks.
+//  combining marks.
 pub alias grapheme = string
 
 extern import {
@@ -108,7 +108,7 @@ pub fun char/width( c : char ) : int {
 // Return the total column-width of a string.
 pub fun string/width( s : string ) : int {
   var total := 0
-  s.foreach( fn(c) {
+  s.foreach( fn(c : char) {
     total := total + c.width
   })
   total

@@ -152,8 +152,16 @@ kk_ssize_t kk_decl_pure kk_bytes_count_pattern_borrow(kk_bytes_t b, kk_bytes_t p
 kk_bytes_t kk_bytes_cat(kk_bytes_t b1, kk_bytes_t b2, kk_context_t* ctx) {
   kk_ssize_t len1;
   const uint8_t* s1 = kk_bytes_buf_borrow(b1, &len1, ctx);
+  if(len1 == 0) {
+    kk_bytes_drop(b1, ctx);
+    return b2;
+  }
   kk_ssize_t len2;
   const uint8_t* s2 = kk_bytes_buf_borrow(b2, &len2, ctx);
+  if(len2 == 0) {
+    kk_bytes_drop(b2, ctx);
+    return b1;
+  }
   uint8_t* p;
   kk_bytes_t t = kk_bytes_alloc_buf(len1 + len2, &p, ctx );
   kk_memcpy(p, s1, len1);

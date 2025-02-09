@@ -24,7 +24,7 @@ import std/core = std/core = "";
 pub fun test : (xs : list<int>) -> list<int>
  = fn(xs: list<int>){
  match (xs) {
- (std/core/types/Cons(((@skip std/core/types/@Box((x: int)) : @Box ) as @box-xxx: @Box), (@pat@xxx: list<int>)) : list<int> )
+ (std/core/types/Cons(((@skip std/core/types/@Box((x: int)) : @box ) as @box-xxx: @box), (@pat@xxx: list<int>)) : list<int> )
  -> val _ : int
  = std/core/types/@dup(x);
  std/core/types/Cons((std/core/types/@box(x)), xs);
