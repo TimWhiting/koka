@@ -286,6 +286,20 @@ parcGuardRC dups drops body
        rcStats <- optimizeGuard enable dups drops
        return $ maybeStats rcStats body
 
+mchildrenOf :: ShapeMap -> TName -> Maybe TNames
+mchildrenOf shapes x
+  = case M.lookup x shapes of
+      Just (ShapeInfo (Just mchildren) _ _) | not (null mchildren) -> Just mchildren
+      _    -> Nothing
+
+childrenOf :: ShapeMap -> TName -> TNames
+childrenOf shapes x = fromMaybe S.empty $ mchildrenOf shapes x
+
+conNameOf :: ShapeMap -> TName -> Maybe Name
+conNameOf shapes x
+  = case M.lookup x shapes of
+      Just (ShapeInfo _ (Just (_,cname)) _) -> Just cname
+      _    -> Nothing
 
 -- TODO:interaction with borrowed names
 -- order invariant:
@@ -301,30 +315,19 @@ optimizeGuard False dups rdrops
 
 optimizeGuard True {-specialize-} dups rdrops
   = do shapes <- getShapeMap
-       let mchildrenOf x = case M.lookup x shapes of
-                             Just (ShapeInfo (Just mchildren) _ _) | not (null mchildren) -> Just mchildren
-                             _    -> Nothing
-       let conNameOf x  = case M.lookup x shapes of
-                            Just (ShapeInfo _ (Just (_,cname)) _) -> Just cname
-                            _    -> Nothing
-       optimizeDupDrops mchildrenOf conNameOf dups rdrops
+       optimizeDupDrops shapes dups rdrops
 
 
-optimizeDupDrops :: (TName -> Maybe TNames) -> (TName -> Maybe Name) -> Dups -> Drops -> Parc [Maybe Expr]
-optimizeDupDrops mchildrenOf conNameOf dups0 drops0
-  = do (fdups, fdrops) <- fuseDupDrops childrenOf dups0 drops0
+optimizeDupDrops :: ShapeMap -> Dups -> Drops -> Parc [Maybe Expr]
+optimizeDupDrops shapes dups0 drops0
+  = do (fdups, fdrops) <- fuseDupDrops shapes dups0 drops0
        assertion ("Backend.C.Parc.optimizeDupDrops: intersection not empty: " ++ show (fdups,fdrops))
                  (S.null (S.intersection fdups fdrops)) $
          optimizeDisjoint fdups (S.toList fdrops)
   where
-    childrenOf x
-      = case mchildrenOf x of
-          Just children -> children
-          Nothing       -> S.empty
-
-    isDescendentOf parent x
-      = let ys = childrenOf parent
-        in S.member x ys || any (`isDescendentOf` x) ys
+    isDescendentOf shapes parent x
+      = let ys = childrenOf shapes parent
+        in S.member x ys || any (\c -> isDescendentOf shapes c x) ys
 
     optimizeDisjoint :: Dups -> [TName] -> Parc [Maybe Expr]
     optimizeDisjoint dups []
@@ -332,34 +335,34 @@ optimizeDupDrops mchildrenOf conNameOf dups0 drops0
     -- optimizeDisjoint dups drops | S.null dups  -- todo: do not do this as it will not specialize all drops
     --  = do foldMapM genDrop drops
     optimizeDisjoint dups (y:drops)
-      = do  let (yDups, dups')    = S.partition (isDescendentOf y) dups
-            let (yDrops, drops')  = L.partition (isDescendentOf y) drops
+      = do  let (yDups, dups')    = S.partition (isDescendentOf shapes y) dups
+            let (yDrops, drops')  = L.partition (isDescendentOf shapes y) drops
             rest   <- optimizeDisjoint dups' drops'             -- optimize outside the y tree
             prefix <- mapM genDrop yDrops                       -- todo: these could be decRef as these can never be unique
-            spec   <- specializeDrop mchildrenOf conNameOf yDups y   -- specialize the y tree
+            spec   <- specializeDrop shapes yDups y          -- specialize the y tree
             return $ rest ++ prefix ++ spec
 
 
-specializeDrop :: (TName -> Maybe TNames) -> (TName -> Maybe Name) -> Dups -> TName -> Parc [Maybe Expr]
-specializeDrop mchildrenOf conNameOf dups v    -- dups are descendents of v
+specializeDrop :: ShapeMap -> Dups -> TName -> Parc [Maybe Expr]
+specializeDrop shapes dups v    -- dups are descendents of v
   = do  -- parcTrace ("enter specialize: " ++ show v ++ ", children: " ++ show (mchildrenOf v) ++ ", dups: " ++ show dups)
         xShared <- foldMapM genDup dups         -- for the non-unique branch
-        xUnique <- optimizeDupDrops mchildrenOf conNameOf dups (childrenOf v) -- drop direct children in unique branch (note: `v \notin drops`)
+        xUnique <- optimizeDupDrops shapes dups (childrenOf shapes v) -- drop direct children in unique branch (note: `v \notin drops`)
         let tp = typeOf v
         isValue <- isJust <$> getValueForm tp
         isDataAsMaybe <- getIsDataAsMaybe tp
-        let hasKnownChildren = isJust (mchildrenOf v)
+        let hasKnownChildren = isJust $ mchildrenOf shapes v
             dontSpecialize   = not hasKnownChildren ||   -- or otherwise xUnique is wrong!
                                isValue || isBoxType tp || isFun tp || isTypeInt tp || isDataAsMaybe
 
             noSpecialize y   = do xDrop <- genDrop y
                                   return $ xShared ++ [xDrop]
-        if isValue && all (\child -> S.member child dups) (S.toList (childrenOf v))
+        if isValue && all (\child -> S.member child dups) (S.toList (childrenOf shapes v))
             -- Try to optimize a dropped value type where all fields are dup'd and where
             -- the fields are not boxed in a special way (all BoxIdentity).
             -- this optimization is important for TRMC for the `ctail` value type.
           then -- trace ("drop spec value: " ++ show v ++ ", children: " ++ show (mchildrenOf v) ++ ", dups: " ++ show (dups) ++ ", tp: " ++ show tp) $
-               do mftps <- getFieldTypes tp (conNameOf v)
+               do mftps <- getFieldTypes tp (conNameOf shapes v)
                   case mftps of
                     Nothing   -> noSpecialize v
                     Just ftps -> do bforms <- mapM getBoxForm ftps
@@ -393,28 +396,22 @@ specializeDrop mchildrenOf conNameOf dups v    -- dups are descendents of v
                           -- = case catMaybes xs of
                           --    []     -> exprUnit
                           --    exprs  -> makeStats exprs
-                    return $ [Just (makeDropSpecial v (maybeStatsUnit xUnique) (maybeStatsUnit xShared) (maybeStatsUnit [xDecRef]))]
-
-  where
-    childrenOf x
-      = case mchildrenOf x of
-          Just children -> children
-          Nothing       -> S.empty
+                    return [Just (makeDropSpecial v (maybeStatsUnit xUnique) (maybeStatsUnit xShared) (maybeStatsUnit [xDecRef]))]
 
 -- Remove dup/drop pairs
-fuseDupDrops :: (TName -> TNames) -> Dups -> Drops -> Parc (Dups, Drops)
-fuseDupDrops childrenOf dups drops
-  = fuseAliases childrenOf (dups S.\\ drops) (drops S.\\ dups)
+fuseDupDrops :: ShapeMap -> Dups -> Drops -> Parc (Dups, Drops)
+fuseDupDrops shapes dups drops
+  = fuseAliases shapes (dups S.\\ drops) (drops S.\\ dups)
 
-fuseAliases :: (TName -> TNames) -> Dups -> Drops -> Parc (Dups,Drops)
-fuseAliases childrenOf dups drops
+fuseAliases :: ShapeMap -> Dups -> Drops -> Parc (Dups,Drops)
+fuseAliases shapes dups drops
   = do newtypes <- getNewtypes
        platform <- getPlatform
        return $ L.foldl' (fuseAlias platform newtypes) (dups,S.empty) (S.toList drops)  -- go through each drop
   where
     fuseAlias :: Platform -> Newtypes -> (Dups,Drops) -> TName -> (Dups,Drops)
     fuseAlias platform newtypes (dups,drops) y
-      = case forwardingChild platform newtypes childrenOf dups y of
+      = case forwardingChild platform newtypes shapes dups y of
           Just child -> -- assertion ("Backend.C.Parc.fuseAlias: not a member? " ++ show (child,dups))
                         --          (S.member child dups) $
                         if S.member child dups
@@ -425,9 +422,9 @@ fuseAliases childrenOf dups drops
 -- | Return a dupped name which is a child of the given name
 -- if the given name will always forward a drop directly to the child
 -- (e.g. because the given name is a box or a newtype).
-forwardingChild :: Platform -> Newtypes -> (TName -> TNames) -> Dups -> TName -> Maybe TName
-forwardingChild platform newtypes childrenOf dups y
-  = case tnamesList (childrenOf y) of
+forwardingChild :: Platform -> Newtypes -> ShapeMap -> Dups -> TName -> Maybe TName
+forwardingChild platform newtypes shapes dups y
+  = case tnamesList (childrenOf shapes y) of
       [x] -> -- trace ("forwarding child?: " ++ show y ++ " -> " ++ show x) $
              case getValueForm' newtypes (typeOf y) of
                Just ValueOneScan  -- for example `value type maybe<a> { Nothing; Just(val:a) }`
@@ -435,7 +432,7 @@ forwardingChild platform newtypes childrenOf dups y
                       Just x  -> -- trace (" is forwarding: " ++ show y ++ " -> " ++ show x) $
                                  Just x -- y as Just(x)
                       Nothing | isBoxType (typeOf x)
-                              -> case tnamesList (childrenOf x) of
+                              -> case tnamesList (childrenOf shapes x) of
                                    [x'] -> case getBoxForm' platform newtypes (typeOf x') of
                                             BoxIdentity
                                               -> Just x' -- findChild x' dups  -- y as Just(x as Box(x'))
@@ -444,7 +441,7 @@ forwardingChild platform newtypes childrenOf dups y
                       Nothing -> -- trace (" check box type child: " ++ show (y,x)) $
                                  case getBoxForm' platform newtypes (typeOf x) of
                                    BoxIdentity
-                                     -> case tnamesList (childrenOf x) of
+                                     -> case tnamesList (childrenOf shapes x) of
                                           [x'] -> Just x' -- findChild x' dups
                                           _    -> Nothing
                                    _ -> Nothing
