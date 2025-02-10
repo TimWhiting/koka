@@ -20,7 +20,7 @@ Notes:
   the same in a scope.
 ----------------------------------------------------------------------------}
 
-module Backend.C.Parc ( parcCore, getDataDef', getDataInfo' ) where
+module Backend.C.Parc ( parcCore, getDataDef', getDataInfo', needsDupDropData ) where
 
 import Lib.Trace (trace)
 import Control.Monad
@@ -635,13 +635,23 @@ genDecRef tname
   where
     funTp = TFun [(nameNil, typeOf tname)] typeTotal typeUnit
 
--- value types with reference fields still need a drop
 needsDupDrop :: Type -> Parc Bool
 needsDupDrop tp
-  = do dd <- getDataDef tp
-       return $ case dd of
-         (DataDefValue vr) | valueReprIsRaw vr -> False
-         _                 -> True
+  = do info <- getDataInfo tp
+       pure $ case info of
+         Nothing -> True
+         Just info -> needsDupDropData info
+
+needsDupDropData :: DataInfo -> Bool
+needsDupDropData info =
+  case dataInfoDef info of
+    -- value types with no reference fields don't need a drop
+    DataDefValue vr | valueReprIsRaw vr -> False
+    _ -> case dataInfoConstrs info of
+      -- types with no constructors and structs with no fields (eg. Pad) don't need a drop
+      [] -> False
+      [ConInfo { conInfoParams = [] }] ->  False
+      _ -> True
 
 isValueType :: Type -> Parc Bool
 isValueType tp

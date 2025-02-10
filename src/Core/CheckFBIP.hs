@@ -42,7 +42,7 @@ import Common.NamePrim (nameEffectEmpty, nameTpDiv, nameEffectOpen, namePatternM
                         nameCCtxSetCtxPath, nameFieldAddrOf, nameTpInt,
                         nameLazyTarget,nameLazyLeave,nameLazyEnter,nameLazyUpdate)
 import Backend.C.ParcReuse (getFixedDataAllocSize, Reusable(..), ruIsReusable)
-import Backend.C.Parc (getDataInfo')
+import Backend.C.Parc (getDataInfo', needsDupDropData)
 import Data.Ratio
 import Data.Ord (Down (Down))
 import Control.Monad.Reader
@@ -681,14 +681,11 @@ needsDupDrop tname
 needsDupDropTp :: Type -> Chk Bool
 needsDupDropTp tp
   = do mbdi <- getDataInfo tp
-       return $
-          case mbdi of
-            Nothing -> True
-            Just di -> case dataInfoDef di of
-                          DataDefValue vrepr | valueReprIsRaw vrepr -> False
-                          _  -> if dataInfoName di == nameTpInt  -- ignore special types (just `int` for now)
-                                  then False
-                                  else True
+       pure $ case mbdi of
+         Nothing -> True
+         Just di ->
+           -- We pretend that integers are always small and don't need to be dropped.
+           (dataInfoName di /= nameTpInt) && needsDupDropData di
 
 isFlatType :: TName -> Chk Bool
 isFlatType tname = dataTypeIsFlat (tnameType tname)
