@@ -214,6 +214,7 @@ chkApp (App (TypeApp (Var openName _) _) [fn]) args | getName openName == nameEf
   = chkApp fn args
 chkApp (Con cname repr) args -- try reuse
   = do chkModCons args
+       chkLazyCon cname repr
        chkAllocation cname repr
 chkApp (Var tname info) args | not (infoIsRefCounted info) -- toplevel function
   = do bs <- getParamInfos (getName tname)
@@ -404,7 +405,6 @@ chkFunCallable fn
            -> if fip' `isCallableFrom` fip then writeCallAllocation fn fip'
               else emitWarning $ \penv -> text "calling a non-fip function:" <+> ppName penv fn
   where
-    isCallableFrom :: Fip -> Fip -> Bool
     isCallableFrom (Fip _)    _          = True
     isCallableFrom (Fbip _ _) (Fbip _ _) = True
     isCallableFrom _          (NoFip _)  = True
@@ -418,6 +418,35 @@ chkFunCallable fn
     writeCallAllocation :: Name -> Fip -> Chk ()
     writeCallAllocation fn fip
       = do defs <- currentDefNames
+           let call = if fn `elem` defs then CallSelf else Call
+           case fip of
+             Fip n    -> tell (Output mempty mempty (call n), mempty)
+             Fbip n _ -> tell (Output mempty mempty (call n), mempty)
+             NoFip _  -> pure ()
+
+chkLazyCon :: TName -> ConRepr -> Chk ()
+chkLazyCon (TName cname _) repr
+  = do fip <- getFip
+       mdi <- getDataInfoTypeName (conTypeName repr)
+       case mdi of
+             Just di -> case filter (\ci -> cname == conInfoName ci) (dataInfoConstrs di) of
+                          [conInfo] -> do
+                             let fip' = conInfoLazyFip conInfo
+                             if fip' `isCallableFrom` fip then writeCallAllocation cname fip'
+                             else emitWarning $ \penv -> text "allocating a non-fip lazy constructor:" <+> ppName penv cname
+                          _     -> warn
+             Nothing -> warn
+  where
+    warn = emitWarning $  \penv -> text "internal: fip analysis could not find fip information for constructor:" <+> ppName penv cname
+
+    -- you can use an fbip lazy constructor in a fip function
+    isCallableFrom (NoFip _)  (Fip _)    = False
+    isCallableFrom (NoFip _)  (Fbip _ _) = False
+    isCallableFrom _          _          = True
+
+    writeCallAllocation :: Name -> Fip -> Chk ()
+    writeCallAllocation fn fip
+      = do defs <- currentDefNames -- TODO: this should be type defs
            let call = if fn `elem` defs then CallSelf else Call
            case fip of
              Fip n    -> tell (Output mempty mempty (call n), mempty)
@@ -700,6 +729,9 @@ dataTypeIsFlat tp
   where
     allM f xs = and <$> traverse f xs
     constrIsFlat constr = allM (fmap not . needsDupDropTp . snd) $ conInfoParams constr
+
+getDataInfoTypeName :: Name -> Chk (Maybe DataInfo)
+getDataInfoTypeName name = newtypesLookupAny name <$> getNewtypes
 
 getDataInfo :: Type -> Chk (Maybe DataInfo)
 getDataInfo tp
