@@ -259,7 +259,7 @@ parcGuard scrutinees pats live (Guard test expr)
        let ownedPvs = bv ownedPats
        let pvs = bv pats
        scoped pvs $ extendOwned ownedPvs $
-         do shapes <- inferShapes scrutinees pats  -- create alias map for the pattern
+         do let shapes = inferShapes scrutinees pats  -- create alias map for the pattern
             extendShapes shapes $ -- merge with current alias map
               do (expr', liveInThisBranch) <- isolateWith live $ parcExpr expr
                  markLives liveInThisBranch
@@ -457,43 +457,40 @@ forwardingChild platform newtypes shapes dups y
    findChild x dups
      = if (S.member x dups) then Just x else Nothing
 
-inferShapes :: [TName] -> [Pattern] -> Parc ShapeMap
+inferShapes :: [TName] -> [Pattern] -> ShapeMap
 inferShapes scrutineeNames pats
-  = do ms <- zipWithM shapesOf scrutineeNames pats
-       return (M.unionsWith noDup ms)
-  where shapesOf :: TName -> Pattern -> Parc ShapeMap
-        shapesOf parent pat
-          = case pat of
-              PatCon{patConPatterns,patConName,patConRepr,patConInfo}
-                -> do ms <- mapM shapesChild patConPatterns
-                      let scan = conReprScanCount patConRepr
-                          m  = M.unionsWith noDup ms
-                          shape = ShapeInfo (Just (tnamesFromList (map patName patConPatterns)))
-                                            (Just (patConRepr,getName patConName)) (Just scan)
-                      return (M.insert parent shape m)
-              PatVar{patName,patPattern}
-                -> do m <- shapesOf patName patPattern
-                      case M.lookup patName m of
-                        Just shape -> return (M.insert parent shape m)   -- same children as parent == patName
-                        Nothing -> failure $ ("Backend.C.Parc.aliasMap: unbound alias: " ++ show patName)
-              PatLit _
-                -> return (M.singleton parent (ShapeInfo Nothing Nothing (Just 0)))
-              PatWild
-                -> return (M.singleton parent (ShapeInfo Nothing Nothing Nothing))
+  = M.unionsWith noDup (zipWith shapesOf scrutineeNames pats)
+  where
+    shapesOf :: TName -> Pattern -> ShapeMap
+    shapesOf parent pat
+      = case pat of
+          PatCon{patConPatterns,patConName,patConRepr,patConInfo}
+            -> let scan = conReprScanCount patConRepr
+                   shape = ShapeInfo (Just (tnamesFromList (map patName patConPatterns)))
+                                     (Just (patConRepr,getName patConName)) (Just scan)
+                   childMap  = M.unionsWith noDup $ map shapesChild patConPatterns
+                in M.insert parent shape childMap
+          PatVar{patName,patPattern}
+            -> let childMap = shapesOf patName patPattern in
+               case M.lookup patName childMap of
+                  Just shape -> M.insert parent shape childMap   -- same children as parent == patName
+                  Nothing -> failure $ "Backend.C.Parc.aliasMap: unbound alias: " ++ show patName
+          PatLit _
+            -> M.singleton parent (ShapeInfo Nothing Nothing (Just 0))
+          PatWild
+            -> M.singleton parent (ShapeInfo Nothing Nothing Nothing)
 
-        shapesChild :: Pattern -> Parc ShapeMap
-        shapesChild pat
-          = case pat of
-              PatVar{patName,patPattern}
-                -> shapesOf patName patPattern
-              PatCon{patConPatterns}
-                -> failure $ ("Backend.C.Parc.aliasMap: unnamed nested pattern")
-                   -- do ms <- mapM shapesChild patConPatterns
-                   --    return (M.unionsWith noDup ms)
-              _ -> return M.empty
+    shapesChild :: Pattern -> ShapeMap
+    shapesChild pat
+      = case pat of
+          PatVar{patName,patPattern}
+            -> shapesOf patName patPattern
+          PatCon{patConPatterns}
+            -> failure $ "Backend.C.Parc.aliasMap: unnamed nested pattern"
+          _ -> M.empty
 
-        noDup :: ShapeInfo -> ShapeInfo -> ShapeInfo
-        noDup shape1 shape2 = failure $ "Backend.C.Parc.aliasMap.noDup: duplicate pattern names"
+    noDup :: ShapeInfo -> ShapeInfo -> ShapeInfo
+    noDup shape1 shape2 = failure $ "Backend.C.Parc.aliasMap.noDup: duplicate pattern names"
 
 
 mergeShapeInfo :: ShapeInfo -> ShapeInfo -> ShapeInfo   -- prefer most info
