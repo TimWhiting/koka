@@ -104,9 +104,9 @@ parcExpr expr
   = case expr of
       App (Var name _) _ | getName name == nameLazyMemoizeTarget
         -> do return expr
-      App (Var name varInfo) [var, conApp] | getName name == nameLazyMemoize
-        -> do conApp' <- parcExpr conApp
-              return $ App (Var name varInfo) [var, conApp']
+      --App (Var name varInfo) [var, conApp] | getName name == nameLazyMemoize
+      --  -> do conApp' <- parcExpr conApp
+      --        return $ App (Var name varInfo) [var, conApp']
 
       TypeLam tpars body
         -> TypeLam tpars <$> parcExpr body
@@ -267,7 +267,11 @@ parcGuard scrutinees pats live (Guard test expr)
                  return $ \liveInSomeBranch -> scoped pvs $ extendOwned ownedPvs $ extendShapes shapes $ do
                   let dups = S.intersection ownedPvs liveInThisBranch
                   drops <- filterM isOwned (S.toList $ liveInSomeBranch \\ liveInThisBranch)
-                  Guard test' <$> parcGuardRC dups (S.fromList drops) expr'
+                  -- special case for a lazy match in lazy-eval where we do not dup the children (which is unsafe in general) (generated in Kind/Infer/synLazyEval)
+                  let dups1 = case scrutinees of
+                                [lazyName] | getName lazyName == newHiddenName "lazy" -> tnamesEmpty
+                                _ -> dups
+                  Guard test' <$> parcGuardRC dups1 (S.fromList drops) expr'
 
 type Dups     = TNames
 type Drops    = TNames

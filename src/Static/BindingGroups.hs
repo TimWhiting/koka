@@ -399,9 +399,9 @@ group defs deps
                                     else map DefNonRec (M.find id defMap)
                            _    -> [DefRec [def | id <- ids, def <- M.find id defMap]]
         finalGroup     = concatMap makeGroup defOrder
-    in -- trace ("groups:\n"
-              -- ++ unlines [show (defName def) ++ ": line " ++ show (posLine (rangeStart (defRange def))) ++ ": " ++ show defdeps | (def,defdeps) <- defDepsList]
-              -- ++ "\ninitial order: " ++ show defOrderScc ++ "\n\nfinal order: " ++ show defOrder) $
+    in --trace ("groups:\n"
+       --  ++ unlines [show (defName def) ++ ": line " ++ show (posLine (rangeStart (defRange def))) ++ ": " ++ show defdeps | (def,defdeps) <- defDepsList]
+       --  ++ "\ninitial order: " ++ show defOrderScc ++ "\n\nfinal order: " ++ show defOrder) $
        finalGroup
 
 

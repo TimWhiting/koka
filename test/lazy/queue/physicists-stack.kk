@@ -3,7 +3,7 @@ module physicists-stack
 import bench
 
 lazy type thunk<a>
-  Done( xs : list<a>, _p : pad )
+  Done( xs : list<a>, p : pad )
   lazy Tail( thunk : thunk<a>, _p : pad ) ->
     match thunk
       Done( xs, p ) ->  Done( xs.tail, p )
