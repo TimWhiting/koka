@@ -42,17 +42,17 @@ pub fun test1()
 // an indirection is automatically inserted (`stream/Indirect`). Larger or unknown issue a warning.
 //
 // `lazy/whnf-update(s)` is compiled specially to only updates `s` if `s` is not unique.
+fun stream/lazy-sapprev( memo : stream<a>, pre : stream<a>, post : list<a> ) : _ stream<a>
+  lazy/memoize-target(memo)   // just for the compiler to reference count and reuse correctly
+  match stream/force(pre)
+    SNil        -> lazy/memoize(memo,sreverse(post))
+    SCons(x,xx) -> lazy/memoize(memo,SCons(x,SAppRev(xx,post)))
 
 noinline fun stream/lazy-eval( s : stream<a> ) : _ stream<a>
-  lazy/whnf-target(s)      // just for the compiler to reference count and reuse correctly
   lazy match s             // lazy match so we can match on the lazy constructors (and no `stream/force` is inserted)
-    SAppRev( pre, post )
-      -> match stream/force(pre)
-           SNil        -> lazy/whnf-update(s,sreverse(post))  // does this guarantee we never update an indirection with an indirection?
-           SCons(x,xx) -> lazy/whnf-update(s,SCons(x,SAppRev(xx,post)))     // no recursive `stream/force` is inserted as we can statically see the `SCons`
-    stream/Indirect(ind)   // generated
-      -> ind               // we don't use `stream/force(ind)` as we guarantee `ind` is never an indirection itself (and always whnf)
-    _ -> s
+    SAppRev(pre, post)   -> stream/sapprev(s, pre, post)
+    stream/Indirect(ind) -> stream/lazy-eval(ind)
+    _                    -> s
 
 // evaluate one step and update
 noinline fun stream/lazy-step( s : stream<a> ) : div stream<a>

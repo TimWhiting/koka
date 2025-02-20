@@ -78,7 +78,7 @@ boxExpr expectTp expr
 
       -- special internals
       App (TypeApp fun@(Var name _) targs) args
-        | getName name `elem`  [nameLazyTarget, nameLazyUpdate, nameLazyEnter, nameLazyLeave
+        | getName name `elem`  [nameLazyMemoizeTarget, nameLazyMemoize, nameLazyEnter, nameLazyLeave
                                ,nameLazyIsWhnf, nameLazyPtrIsWhnf, nameDataTypePtrIsThreadShared, nameDataTypePtrIsUnique]
         -> do bargs <- mapM (\arg -> boxExpr (boxTypeOf arg) arg) args
               return (App fun bargs)

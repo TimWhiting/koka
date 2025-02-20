@@ -102,9 +102,9 @@ parcTopLevelExpr _ expr = parcExpr expr
 parcExpr :: Expr -> Parc Expr
 parcExpr expr
   = case expr of
-      App (Var name _) _ | getName name == nameLazyTarget
+      App (Var name _) _ | getName name == nameLazyMemoizeTarget
         -> do return expr
-      App (Var name varInfo) [var, conApp] | getName name == nameLazyUpdate
+      App (Var name varInfo) [var, conApp] | getName name == nameLazyMemoize
         -> do conApp' <- parcExpr conApp
               return $ App (Var name varInfo) [var, conApp']
 

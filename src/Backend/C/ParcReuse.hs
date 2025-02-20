@@ -141,10 +141,10 @@ makeLets dgs expr = makeLet dgs expr
 ruExpr :: Expr -> Reuse Expr
 ruExpr expr
   = case expr of
-      App (Var name _) [Var tname _] | getName name == nameLazyTarget
+      App (Var name _) [Var tname _] | getName name == nameLazyMemoizeTarget
         -> do registerLazyCon tname
               return exprUnit -- expr
-      App (Var name _) [Var tname _, conApp] | getName name == nameLazyUpdate
+      App (Var name _) [Var tname _, conApp] | getName name == nameLazyMemoize
         -> do ruLazyUpdate tname conApp
 
       App con@(Con cname repr) args

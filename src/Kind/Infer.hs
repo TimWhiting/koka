@@ -390,7 +390,7 @@ synLazyEval lazyExprs info
        branches <- mapM branch lazyConstrs
 
        let  expr      = Lam [ValueBinder argName Nothing Nothing rng rng] (Bind mark body rng) xrng
-            mark      = Def (ValueBinder nameNil () (App (Var nameLazyTarget False rng) [(Nothing,arg)] rng) rng rng) rng Private DefVal InlineNever ""
+            mark      = Def (ValueBinder nameNil () (App (Var nameLazyMemoizeTarget False rng) [(Nothing,arg)] rng) rng rng) rng Private DefVal InlineNever ""
             body      = Case arg (branches ++ [Branch (PatWild rng) [Guard guardTrue arg]]) True rng
             def = Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""
        return $ DefNonRec def
@@ -503,7 +503,7 @@ lazyAddUpdate info conInfo evalName arg topExpr
     -- lazyUpdate :: Expr t -> KInfer (Expr t)
     lazyUpdate expr
       = let rng = rangeHide $ getRange expr
-        in return $ App (Var nameLazyUpdate False rng) [(Nothing,arg),(Nothing,expr)] rng
+        in return $ App (Var nameLazyMemoize False rng) [(Nothing,arg),(Nothing,expr)] rng
 
 
 {-
