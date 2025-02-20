@@ -40,7 +40,7 @@ import Core.CoreVar
 import Core.Borrowed
 import Common.NamePrim (nameEffectEmpty, nameTpDiv, nameEffectOpen, namePatternMatchError, nameTpException, nameTpPartial, nameTrue,
                         nameCCtxSetCtxPath, nameFieldAddrOf, nameTpInt,
-                        nameLazyTarget,nameLazyLeave,nameLazyEnter,nameLazyUpdate)
+                        nameLazyMemoizeTarget,nameLazyLeave,nameLazyEnter,nameLazyMemoize)
 import Backend.C.ParcReuse (getFixedDataAllocSize, Reusable(..), ruIsReusable)
 import Backend.C.Parc (getDataInfo', needsDupDropData)
 import Data.Ratio
@@ -116,9 +116,9 @@ chkExpr expr
               out <- extractOutput $ chkExpr body
               writeOutput =<< foldM (\out nm -> bindName nm NotReusable out) out pars
 
-      App (TypeApp (Var tname _) _) _ | getName tname `elem` [nameCCtxSetCtxPath,nameLazyTarget,nameLazyEnter,nameLazyLeave]
+      App (TypeApp (Var tname _) _) _ | getName tname `elem` [nameCCtxSetCtxPath,nameLazyMemoizeTarget,nameLazyEnter,nameLazyLeave]
         -> return ()
-      App (TypeApp (Var tname _) _) [_, conApp] | getName tname == nameLazyUpdate
+      App (TypeApp (Var tname _) _) [_, conApp] | getName tname == nameLazyMemoize
         -> chkExpr conApp
 
       App fn args -> chkApp fn args

@@ -170,7 +170,7 @@ synTypeDef modName lazyExprs (Core.Data dataInfo)
   = do synLazy <-
           if (dataInfoIsLazy dataInfo)
            then do eval <- synLazyEval lazyExprs dataInfo
-                   return [synLazyTag dataInfo,eval,synLazyStep dataInfo,synLazyWhnf dataInfo,synLazyForce dataInfo]
+                   return ([synLazyTag dataInfo] ++ eval ++ [synLazyStep dataInfo,synLazyWhnf dataInfo,synLazyForce dataInfo])
            else return []
        return $
         (if not (dataInfoIsOpen dataInfo || dataInfoIsLazy dataInfo) then synAccessors modName dataInfo else [])
@@ -312,7 +312,9 @@ synConstrTag (con)
         expr = Lit (LitString (show (conInfoName con)) rc)
     in DefNonRec (Def (ValueBinder name () expr rc rc) rc (conInfoVis con) DefVal InlineNever "")
 
-
+{- ------------------------------------------------------------------------------------------------------------
+   Lazy types and constructors
+------------------------------------------------------------------------------------------------------------ -}
 {- add a lazy tag
    ```
    lazy type stream<a>
@@ -337,22 +339,115 @@ synLazyTag info
         expr      = App (Var nameInternalInt32 False rng) [(Nothing,Lit (LitInt (toInteger lazyTag) rng))] rng
     in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) DefVal InlineAlways "// Automatically generated tag value of lazy indirection")
 
+{- force is a one step unfolding of whnf and is inlined at call sites.
+  inline fun stream/lazy-force( s : stream<a> ) : div stream<a>
+    if lazy/datatype-is-whnf(s,stream/lazy-tag)
+      then s
+      else stream/lazy-whnf(s)
+-}
+synLazyForce :: DataInfo -> DefGroup Type
+synLazyForce info
+  = let xrng     = dataInfoRange info
+        rng      = rangeHide xrng
+        defName  = lazyName info "force"
+        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
+        -- fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
+        nameIsWhnf = if (all (\conInfo -> not (null (conInfoParams conInfo))) (dataInfoConstrs info))
+                       then nameLazyPtrIsWhnf else nameLazyIsWhnf
+
+        argName   = newHiddenName "lazy"
+        arg       = Var argName False rng
+        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
+        body      = Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue arg]
+                             ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue whnf]] False rng
+        tst       = App (Var nameIsWhnf False rng) [(Nothing,arg),(Nothing,Var (lazyName info "tag") False rng)] rng
+        whnf      = App (Var (lazyName info "whnf") False rng) [(Nothing,arg)] rng
+    in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineAlways "")
+
+
+{- recursive force:
+  noinline fun stream/lazy-whnf(s : stream<a> ) : div stream<a>
+    val x = stream/lazy-step(s)
+    if lazy/datatype-is-whnf(x,steam/lazy-tag) then x else stream/lazy-whnf(x)
+-}
+synLazyWhnf :: DataInfo -> DefGroup Type
+synLazyWhnf info
+  = let xrng     = dataInfoRange info
+        rng      = rangeHide xrng
+        defName  = lazyName info "whnf"
+        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
+        -- fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
+        nameIsWhnf = if (all (\conInfo -> not (null (conInfoParams conInfo))) (dataInfoConstrs info))
+                       then nameLazyPtrIsWhnf else nameLazyIsWhnf
+
+        valName   = newHiddenName "val"
+        val       = Var valName False rng
+
+        argName   = newHiddenName "lazy"
+        arg       = Var argName False rng
+
+        nameStep  = lazyName info "step"
+        stepExpr  = App (Var nameStep False rng) [(Nothing,arg)] rng
+        valDef    = Def (ValueBinder valName () stepExpr rng rng) rng Private DefVal InlineNever ""
+
+        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
+        body      = Let (DefNonRec valDef)
+                    (Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue val]
+                              ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue whnf]] False rng) rng
+        tst       = App (Var nameIsWhnf False rng) [(Nothing,val),(Nothing,Var (lazyName info "tag") False rng)] rng
+        whnf      = App (Var (lazyName info "whnf") False rng) [(Nothing,val)] rng
+    in DefRec [Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""]
+
+
 {-
-  Add lazy evaluation step:
+Lazy step function
+
+noinline fun stream/lazy-step( s : stream<a> ) : _ stream<a>
+  if lazy/datatype-ptr-is-unique || !lazy/atomic-enter(s,stream/lazy-tag) then
+    stream/lazy-eval(s)
+  else
+    val v = stream/lazy-eval(s)
+    lazy/atomic-leave(s)
+    v
+-}
+synLazyStep :: DataInfo -> DefGroup Type
+synLazyStep info
+  = let xrng     = dataInfoRange info
+        rng      = rangeHide xrng
+        defName  = lazyName info "step"
+        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
+        fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
+
+        argName   = newHiddenName "lazy"
+        arg       = Var argName False rng
+        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
+        body      = Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue eval]
+                             ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue atomic]] False rng
+        tst       = App (Var nameOr False rng)
+                     [(Nothing,App (Var nameDataTypePtrIsUnique False rng) [(Nothing,arg)] rng),
+                      (Nothing,App (Var (newQualified "std/core/types" "not") False rng)
+                                   [(Nothing, App (Var nameLazyEnter False rng)
+                                                  [(Nothing,arg),(Nothing,Var (lazyName info "tag") False rng)] rng)] rng)] rng
+        eval      = App (Var (lazyName info "eval") False rng) [(Nothing,arg)] rng
+        atomic    = let v = newName "v"
+                        vdef = Def (ValueBinder v () eval rng rng) rng Private DefVal InlineNever ""
+                        bdef = Def (ValueBinder nameNil () (App (Var nameLazyLeave False rng) [(Nothing,arg)] rng) rng rng) rng Private DefVal InlineNever ""
+                    in Bind vdef (Bind bdef (Var v False rng) rng) rng
+    in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever "")
+
+
+{-
+  Add lazy evaluation:
   ```
   noinline fbip fun stream/lazy-eval( s : stream<a> ) : _ stream<a>
     lazy-whnf-target(s)
     match s
-      SAppRev( pre, post )
-        -> match pre
-            SNil        -> lazy-update(s,sreverse(post))
-            SCons(x,xx) -> lazy-update(s,SCons(x,SAppRev(xx,post)))
-      SIndirect(ind)
-        -> ind
-      _ -> s
+      SAppRev(pre, post) -> stream/lazy-SAppRev( s, pre, post )
+      SIndirect(ind)     -> ind
+      _                  -> s
   ```
 -}
-synLazyEval :: [LazyExpr] -> DataInfo -> KInfer (DefGroup Type)
+synLazyEval :: [LazyExpr] -> DataInfo -> KInfer [DefGroup Type]
 synLazyEval lazyExprs info
   = do let  xrng     = dataInfoRange info
             rng      = rangeHide xrng
@@ -370,47 +465,186 @@ synLazyEval lazyExprs info
             -- fullTp    = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
 
             -- generate branch
+            branch :: ConInfo -> KInfer ([Def Type],Branch Type)
             branch conInfo | isLazyIndirectConName (conInfoName conInfo)
               = let [(par,tp)] = conInfoParams conInfo
-                in return $ Branch (PatCon (conInfoName conInfo) [(Nothing,PatVar (ValueBinder par Nothing (PatWild rng) rng rng))] rng rng)
-                                    [Guard guardTrue (Var par False rng)]
+                in return $ ([],Branch (PatCon (conInfoName conInfo) [(Nothing,PatVar (ValueBinder par Nothing (PatWild rng) rng rng))] rng rng)
+                                 [Guard guardTrue (Var par False rng)])
             branch conInfo
-              = do body <- branchExpr conInfo
-                   return $ Branch (PatCon (conInfoName conInfo) [(Nothing,makePat par rng) | (par,_) <- conInfoParams conInfo] rng rng)
-                                   [Guard guardTrue body]
+              = do let parNames = [(unWildcard (show i) par) | (i,(par,tp)) <- zip [1..] (conInfoParams conInfo)]
+                   (def,body) <- branchExpr conInfo parNames
+                   return $ ([def], Branch (PatCon (conInfoName conInfo) [(Nothing,makePat par rng) | par <- parNames] rng rng)
+                                     [Guard guardTrue body])
               where
                 makePat par rng
                   = if (isWildcard par) then PatWild rng else PatVar (ValueBinder par Nothing (PatWild rng) rng rng)
 
-            branchExpr conInfo
+            branchExpr :: ConInfo -> [Name] -> KInfer (Def Type,Expr Type)
+            branchExpr conInfo parNames
               = case lookup (conInfoName conInfo) lazyExprs of
-                  Just lazyExpr -> lazyAddUpdate info conInfo defName arg lazyExpr
+                  Just lazyExpr -> lazyConDefCall info conInfo parNames defName arg lazyExpr
                   Nothing -> failure $ "Kind.Infer.synLazyEval.branchExpr: cannot find expression for lazy constructor " ++ show (conInfoName conInfo)
 
-       branches <- mapM branch lazyConstrs
+       (defss,branches) <- unzip <$> mapM branch lazyConstrs
 
-       let  expr      = Lam [ValueBinder argName Nothing Nothing rng rng] (Bind mark body rng) xrng
-            mark      = Def (ValueBinder nameNil () (App (Var nameLazyTarget False rng) [(Nothing,arg)] rng) rng rng) rng Private DefVal InlineNever ""
-            body      = Case arg (branches ++ [Branch (PatWild rng) [Guard guardTrue arg]]) True rng
-            def = Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""
-       return $ DefNonRec def
+       let  body      = Case arg (branches ++ [Branch (PatWild rng) [Guard guardTrue arg]]) True rng
+            lam       = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
+            def       = Def (ValueBinder defName () lam rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""
+       return $ (map DefNonRec (concat defss)) ++ [DefNonRec def]
 
-{- Add `lazy-update(s,...)` to tail positions
 
-SAppRev( pre, post )
+{- Lazy constructor
+  ```
+  SAppRev( pre, post )
       -> match pre
            SNil        -> sreverse(post)
            SCons(x,xx) -> SCons(x,SAppRev(xx,post))
-
-~>
-
-SAppRev( pre, post )
-      -> match pre
-           SNil        -> lazy-update(s,sreverse(post))
-           SCons(x,xx) -> lazy-update(s,SCons(x,SAppRev(xx,post)))
-
+  ```
+  ~>
+  ```
+  fun stream/lazy-SAppRev( @lazy : stream<a>, pre : stream<a>, post : stream<a> ) : stream<a>
+    lazy/memoize-target(@lazy)
+    match pre
+      SNil        -> lazy/memoize(@lazy,sreverse(post))
+      SCons(x,xx) -> lazy/memoize(@lazy,SCons(x,SAppRev(xx,post)))
+  ```
 -}
+
+
 type ErrDoc = ColorScheme -> Doc
+
+
+lazyConDefCall :: DataInfo -> ConInfo -> [Name] -> Name -> Expr t -> Expr t -> KInfer (Def t,Expr t)
+lazyConDefCall info conInfo parNames evalName memoTarget topExpr
+  = do let rng         = conInfoRange conInfo
+           -- lazy-SAppRev(memo,pre,post)
+           callExpr    = App (Var nameLazyCon False rng)
+                             ([(Nothing,memoTarget)] ++ [(Nothing,Var par False rng) | par <- parNames]) rng
+
+       branchExpr <- memoizeExpr topExpr
+       let -- fun lazy-SAppRev(@memo,pre,post)
+           --   lazy/memoize-target(@memo)
+           --   <memoize topExpr>
+           def     = Def (ValueBinder nameLazyCon () lam rng rng) rng Private (DefFun [] (conInfoLazyFip conInfo)) InlineAuto ""
+           lam     = Lam ([ValueBinder nameLazyMemo Nothing Nothing rng rng] ++ [ValueBinder par Nothing Nothing rng rng | par <- parNames])
+                         (Bind target branchExpr rng) rng
+           target  = Def (ValueBinder nameNil ()
+                         (App (Var nameLazyMemoizeTarget False rng)
+                          [(Nothing,Var nameLazyMemo False rng),(Nothing,conExpr)] rng) rng rng) rng Private DefVal InlineNever ""
+           conExpr = makeApp (Var (conInfoName conInfo) False rng)
+                             [(Nothing,Var par False rng) | par <- parNames] rng
+
+       return (def, callExpr)
+  where
+    nameLazyCon  = lazyName info (show (unqualify (conInfoName conInfo)))  -- lazy-SAppRev
+    nameLazyMemo = newHiddenName "lazy"
+
+    (lazyConstrs,whnfConstrs) = partition conInfoIsLazy (dataInfoConstrs info)
+    modName      = qualifier (dataInfoName info)
+
+    lookupCon cname constrs
+      = find (\cinfo -> (if isQualified cname then cname else qualify modName cname) == conInfoName cinfo) constrs
+
+    isWhnfCon cname
+      = isJust (lookupCon cname whnfConstrs)
+
+    -- memoizeExpr :: Expr t -> KInfer (Expr t)
+    memoizeExpr expr
+      = case expr of
+          Lam    binds expr rng  -> (\expr' -> Lam binds expr' rng) <$> memoizeExpr expr
+          Let    defs expr range -> (\expr' -> Let defs expr' range) <$> memoizeExpr expr
+          Bind   def expr range  -> (\expr' -> Bind def expr' range) <$> memoizeExpr expr
+          Ann    expr tp range   -> (\expr' -> Ann expr' tp range) <$> memoizeExpr expr
+          Case   expr brs lazyMatch range
+            -> do brs' <- mapM memoizeBranch brs
+                  -- specialize force insertion here so the dependency is known
+                  -- for all other matches, this is done during type inference
+                  let isWhnfConPat p
+                        = case p of
+                            PatParens pat _      -> isWhnfConPat pat
+                            PatAnn pat _ _       -> isWhnfConPat pat
+                            PatVar v             -> isWhnfConPat (binderExpr v)
+                            PatCon cname _ _ _   -> isWhnfCon cname
+                            _                    -> False
+                      isWhnfConBranch (Branch pat guards) = isWhnfConPat pat
+                      forceName = lazyName info "force"
+                      exprForce = if not lazyMatch && any isWhnfConBranch brs
+                                    then let r = rangeHide (getRange expr)
+                                         in App (Var forceName False r) [(Nothing,expr)] r
+                                    else expr
+                  return (Case exprForce brs' lazyMatch range)
+          Parens expr name pre range -> do expr' <- memoizeExpr expr
+                                           return $ Parens expr' name pre range
+          App con@(Var cname _ _) nargs range
+            -> memoizeCon cname con nargs range
+          Var cname _ range
+            -> memoizeCon cname expr [] range
+          _ -> memoizeUnknown expr
+
+    memoizeBranch (Branch pattern guards)
+      = do guards' <- mapM memoizeGuard guards
+           return $ Branch pattern guards'
+
+    memoizeGuard (Guard test body)
+      = do body' <- memoizeExpr body
+           return $ Guard test body'
+
+
+    memoizeWarning rng fdoc
+      = do cs <- getColorScheme
+           let showConName name = color (colorCons cs) (pretty (unqualify name))
+           addWarning rng $ text "Cannot update the lazy constructor" <+> showConName (conInfoName conInfo) <+> fdoc showConName
+
+
+    memoizeCon cname con nargs range
+      = case lookupCon cname whnfConstrs of
+          Nothing -> case lookupCon cname lazyConstrs of
+                       Nothing     -> memoizeUnknown (makeApp con nargs range)
+                       Just cinfo  -> -- recursiveMemoize expr cinfo
+                                      do platform <- getPlatform
+                                         let targetSize = Core.conReprAllocSize platform (Core.getConRepr info conInfo)
+                                             resultSize = Core.conReprAllocSize platform (Core.getConRepr info cinfo)
+                                         if targetSize == resultSize
+                                           then -- call a constructor function directly
+                                                do let conFunName = lazyName info (show (unqualify (conInfoName cinfo)))
+                                                   return (App (Var conFunName False range)
+                                                               ([(Nothing,Var nameLazyMemo False range)] ++ nargs) range)
+                                           else -- memoize and return; whnf does the recursion
+                                                do memoizeWarning range $ \_ -> text "in-place as the result constructor does not have the same size as the lazy target (" <.> pretty targetSize <+> text "vs" <+> pretty resultSize <+> text "bytes) -- using an indirection instead"
+                                                   memoize (makeApp con nargs range)
+          Just whnfCon -> do memoizeCheckCanFit range whnfCon
+                             memoize (makeApp con nargs range)
+
+    makeApp con [] range    = con
+    makeApp con nargs range = App con nargs range
+
+    memoizeUnknown expr
+      = do let rng = rangeHide $ getRange expr
+           memoizeWarning rng $ \_ -> text "in-place as the result constructor is not statically known -- using an indirection instead"
+           memoize expr -- (App (Var evalName False rng) [(Nothing,expr)] rng)
+
+    -- a lazy constructor of our datatype
+    recursiveMemoize expr cinfo
+      = do let rng = rangeHide $ getRange expr
+           -- no need to warn anymore as we don't force recursively here
+           -- memoizeWarning rng $ \showCon -> text "in-place as the lazy result constructor" <+> showCon (conInfoName cinfo) <+> text "needs to be recursively forced -- using an indirection instead"
+           memoizeCheckCanFit (getRange expr) cinfo
+           memoize expr -- (App (Var evalName False rng) [(Nothing,expr)] rng)
+
+    memoizeCheckCanFit range resultCon
+      = do platform <- getPlatform
+           let lazySize = Core.conReprAllocSize platform (Core.getConRepr info conInfo)
+               whnfSize = Core.conReprAllocSize platform (Core.getConRepr info resultCon)
+           when (lazySize < whnfSize) $
+             memoizeWarning range $ \_ -> text "in-place as the result constructor is larger (" <.> pretty lazySize <+> text "vs" <+> pretty whnfSize <+> text "bytes) -- using an indirection instead"
+
+
+    -- memoize :: Expr t -> KInfer (Expr t)
+    memoize expr
+      = let rng = rangeHide $ getRange expr
+        in return $ App (Var nameLazyMemoize False rng) [(Nothing,Var nameLazyMemo False rng),(Nothing,expr)] rng
+
+
 lazyAddUpdate :: DataInfo -> ConInfo -> Name -> Expr t -> Expr t -> KInfer (Expr t)
 lazyAddUpdate info conInfo evalName arg topExpr
   = add topExpr
@@ -503,101 +737,7 @@ lazyAddUpdate info conInfo evalName arg topExpr
     -- lazyUpdate :: Expr t -> KInfer (Expr t)
     lazyUpdate expr
       = let rng = rangeHide $ getRange expr
-        in return $ App (Var nameLazyUpdate False rng) [(Nothing,arg),(Nothing,expr)] rng
-
-
-{-
-noinline fun stream/lazy-step( s : stream<a> ) : _ stream<a>
-  if kk-datatype-ptr-is-unique || !lazy-atomic-enter(s,stream/lazy-tag) then
-    stream/lazy-eval(s)
-  else
-    val v = stream/lazy-eval(s)
-    lazy-atomic-leave(s)
-    v
--}
-synLazyStep :: DataInfo -> DefGroup Type
-synLazyStep info
-  = let xrng     = dataInfoRange info
-        rng      = rangeHide xrng
-        defName  = lazyName info "step"
-        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
-        fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
-
-        argName   = newHiddenName "lazy"
-        arg       = Var argName False rng
-        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
-        body      = Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue eval]
-                             ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue atomic]] False rng
-        tst       = App (Var nameOr False rng)
-                     [(Nothing,App (Var nameDataTypePtrIsUnique False rng) [(Nothing,arg)] rng),
-                      (Nothing,App (Var (newQualified "std/core/types" "not") False rng)
-                                   [(Nothing, App (Var nameLazyEnter False rng)
-                                                  [(Nothing,arg),(Nothing,Var (lazyName info "tag") False rng)] rng)] rng)] rng
-        eval      = App (Var (lazyName info "eval") False rng) [(Nothing,arg)] rng
-        atomic    = let v = newName "v"
-                        vdef = Def (ValueBinder v () eval rng rng) rng Private DefVal InlineNever ""
-                        bdef = Def (ValueBinder nameNil () (App (Var nameLazyLeave False rng) [(Nothing,arg)] rng) rng rng) rng Private DefVal InlineNever ""
-                    in Bind vdef (Bind bdef (Var v False rng) rng) rng
-    in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever "")
-
-{- recursive force:
-  noinline fun stream/lazy-whnf(s : stream<a> ) : div stream<a>
-    val x = stream/lazy-step(s)
-    if lazy/datatype-is-whnf(x,steam/lazy-tag) then x else stream/lazy-whnf(x)
--}
-synLazyWhnf :: DataInfo -> DefGroup Type
-synLazyWhnf info
-  = let xrng     = dataInfoRange info
-        rng      = rangeHide xrng
-        defName  = lazyName info "whnf"
-        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
-        -- fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
-        nameIsWhnf = if (all (\conInfo -> not (null (conInfoParams conInfo))) (dataInfoConstrs info))
-                       then nameLazyPtrIsWhnf else nameLazyIsWhnf
-
-        valName   = newHiddenName "val"
-        val       = Var valName False rng
-
-        argName   = newHiddenName "lazy"
-        arg       = Var argName False rng
-
-        nameStep  = lazyName info "step"
-        stepExpr  = App (Var nameStep False rng) [(Nothing,arg)] rng
-        valDef    = Def (ValueBinder valName () stepExpr rng rng) rng Private DefVal InlineNever ""
-
-        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
-        body      = Let (DefNonRec valDef)
-                    (Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue val]
-                              ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue whnf]] False rng) rng
-        tst       = App (Var nameIsWhnf False rng) [(Nothing,val),(Nothing,Var (lazyName info "tag") False rng)] rng
-        whnf      = App (Var (lazyName info "whnf") False rng) [(Nothing,val)] rng
-    in DefRec [Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineNever ""]
-
-{- force is a one step unfolding of whnf and is inlined at call sites.
-  inline fun stream/lazy-force( s : stream<a> ) : div stream<a>
-    if lazy/datatype-is-whnf(s,stream/lazy-tag)
-      then s
-      else stream/lazy-whnf(s)
--}
-synLazyForce :: DataInfo -> DefGroup Type
-synLazyForce info
-  = let xrng     = dataInfoRange info
-        rng      = rangeHide xrng
-        defName  = lazyName info "force"
-        dataTp   = typeApp (TCon (TypeCon (dataInfoName info) (dataInfoKind info))) (map TVar (dataInfoParams info))
-        -- fullTp   = tForall (dataInfoParams info) [] (typeFun [(nameNil,dataTp)] typePure dataTp )
-        nameIsWhnf = if (all (\conInfo -> not (null (conInfoParams conInfo))) (dataInfoConstrs info))
-                       then nameLazyPtrIsWhnf else nameLazyIsWhnf
-
-        argName   = newHiddenName "lazy"
-        arg       = Var argName False rng
-        expr      = Lam [ValueBinder argName Nothing Nothing rng rng] body xrng
-        body      = Case tst [Branch (PatCon nameTrue [] rng rng) [Guard guardTrue arg]
-                             ,Branch (PatCon nameFalse [] rng rng) [Guard guardTrue whnf]] False rng
-        tst       = App (Var nameIsWhnf False rng) [(Nothing,arg),(Nothing,Var (lazyName info "tag") False rng)] rng
-        whnf      = App (Var (lazyName info "whnf") False rng) [(Nothing,arg)] rng
-    in DefNonRec (Def (ValueBinder defName () expr rng rng) rng (dataInfoVis info) (DefFun [] (lazyFip info)) InlineAlways "")
-
+        in return $ App (Var nameLazyMemoize False rng) [(Nothing,arg),(Nothing,expr)] rng
 
 
 lazyFip :: HasCallStack => DataInfo -> Fip

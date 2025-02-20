@@ -141,11 +141,12 @@ makeLets dgs expr = makeLet dgs expr
 ruExpr :: Expr -> Reuse Expr
 ruExpr expr
   = case expr of
-      App (Var name _) [Var tname _] | getName name == nameLazyTarget
+      App (Var name _) [Var tname _, patExpr] | getName name == nameLazyMemoizeTarget
         -> do registerLazyCon tname
+              ruLazyDeconstruct tname patExpr
               return exprUnit -- expr
-      App (Var name _) [Var tname _, conApp] | getName name == nameLazyUpdate
-        -> do ruLazyUpdate tname conApp
+      App (Var name _) [Var tname _, conApp] | getName name == nameLazyMemoize
+        -> do ruLazyMemoize tname conApp
 
       App con@(Con cname repr) args
         -> do args' <- mapM ruExpr args
@@ -338,6 +339,20 @@ ruPattern varName _
          Just (size, scan) -> return [(varName, Nothing, size, scan)]
          Nothing -> return []
 
+-- pretend to match on a lazy value (where we encoded the pattern as an expression)
+ruLazyDeconstruct :: TName -> Expr -> Reuse ()
+ruLazyDeconstruct target (App (Con conName conRepr) args)
+  = do mbConInfo <- getConInfo (typeOf conName) (getName conName)
+       case mbConInfo of
+         Nothing -> trace ("unknown lazy constructor:" ++ show conName) $
+                    return ()
+         Just conInfo
+           -> do let patArgs = [PatVar name PatWild | Var name _ <- args]
+                     pat = PatCon conName patArgs conRepr [] [] (typeOf conName) conInfo True
+                 reuses <- ruPattern target pat
+                 mapM_ addDeconstructed reuses
+                 deconstructLazyCon (TName nameNil typeReuse)
+
 ruGuard :: Guard -> Reuse (Map.Map TName Expr -> Guard, Available)
 ruGuard (Guard test expr)  -- expects patAdded in depth-order
   = isolateGetAvailable $
@@ -390,14 +405,14 @@ ruTryReuseCon cname repr conApp
     pick cname rinfo (rinfo':rinfos)
       = let (r,rs) = pick cname rinfo' rinfos in (r,rinfo:rs)
 
-ruLazyUpdate :: HasCallStack => TName -> Expr -> Reuse Expr
-ruLazyUpdate lazyTName arg
+ruLazyMemoize :: HasCallStack => TName -> Expr -> Reuse Expr
+ruLazyMemoize lazyTName arg
   = do ds <- getDeconstructed
        -- (_, reuseName0) <- getDeconstructedLazyCon
        -- markReused reuseName0
        maybeMarkDeconstructedLazyConAsReused lazyTName
+
        reuseName <- uniqueReuseName typeReuse
-       -- let reuseAssign = genReuseAssignWith reuseName (genReuseAddress lazyTName)
        let (boxDefs, tailArg) = stripLets arg
        boxDefs' <- mapM ruDefGroup boxDefs
        makeLets (boxDefs' ++ [DefNonRec (makeDef (getName reuseName) (genReuseAddress lazyTName))]) <$>
@@ -790,7 +805,7 @@ maybeMarkDeconstructedLazyConAsReused :: HasCallStack => TName -> Reuse ()
 maybeMarkDeconstructedLazyConAsReused lazyTName = do  -- todo: check if lazyTName matches tname?
   s <- lazyCon <$> getSt
   case s of
-    DeconstructedLazyCon tname rname -> markReused rname -- return (tname, rname)
+    DeconstructedLazyCon tname rname | not (nameIsNil (getName rname)) -> markReused rname -- return (tname, rname)
     _ -> return ()
 
 
@@ -915,11 +930,22 @@ getDataInfo newtypes dataType
     extractDataName :: Type -> Maybe Name
     extractDataName tp
       = case expandSyn tp of
+          TForall _ _ t -> extractDataName t
           TFun _ _ t -> extractDataName t
           TApp t _   -> extractDataName t
           TCon tc    -> Just (typeConName tc)
           _          -> Nothing
 
+{-
+getConInfo :: Newtypes -> TName -> Maybe ConInfo
+getConInfo newtypes conTName
+  = case getDataInfo newtypes (typeOf conTName) of
+      Nothing -> Nothing
+      Just (dataName,dataInfo)
+        -> case filter (\cinfo -> conInfoName cinfo == getName conTName) of
+             [cinfo] -> Just cinfo
+             _       -> Nothing
+-}
 
 {-
 

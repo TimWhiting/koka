@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------
-  Copyright 2012-2024, Microsoft Research, Daan Leijen.
+  Copyright 2012-2025, Microsoft Research, Daan Leijen.
 
   This is free software; you can redistribute it and/or modify it under the
   terms of the Apache License, Version 2.0. A copy of the License can be
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 
-// Internal functions to support lazy types
+// Internal functions to support lazy constructors
 //
 module std/core/lazy
 
@@ -15,19 +15,19 @@ import std/core/types
 // note: all of the following definitions will be made hidden (prefix with `@`)
 // in the future and are only exposed for now for experimentation
 
-// internal: marker for lazy values that get matched to evaluate to whnf
-pub fip extern whnf-target(target : a) : ()
+// internal: marker for lazy values that will be memoized (used to for correct reuse and reference counting)
+pub fip extern memoize-target(^target : a, ^pattern : a) : ()
   inline "/**/"
 
 // internal: explicitly force update-in-place for lazy values
-pub fip extern whnf-update(target : a, x : a) : a
+pub fip extern memoize(target : a, x : a) : a
   inline "#1"
 
-// internal: evaluate atomically (or return `false` if already evaluated)
+// internal: atomically set a lazy value to locked (or return `false` if already memoized)
 pub inline fip extern atomic-enter(^target : a, lazy-tag: int32 ) : bool
   c "kk_lazy_atomic_enter"
 
-// internal: release an atomically evaluated value
+// internal: release an atomically memoized lazy value
 pub inline fip extern atomic-leave(target : a) : ()
   c "kk_lazy_atomic_leave"
 

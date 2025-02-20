@@ -285,7 +285,7 @@ static inline void kk_block_set_invalid(kk_block_t* b) {
 static inline kk_decl_pure bool kk_block_is_valid(kk_block_t* b) {
   return (b != NULL && ((uintptr_t)b & 1) == 0 && *((uint64_t*)b) != KK_U64(0xDFDFDFDFDFDFDFDF) // already freed!
     && (b->header.tag > KK_TAG_MAX || b->header.tag < 0xFF)
-    && (b->header._field_idx <= b->header.scan_fsize)
+    && (b->header._field_idx <= b->header.scan_fsize || b->header._field_idx == KK_FIELD_IDX_LAZY_BLOCKED)
     );
 }
 
@@ -337,7 +337,7 @@ static inline kk_decl_pure uint8_t kk_block_field_idx(const kk_block_t* b) {
 }
 
 static inline void kk_block_field_idx_set(kk_block_t* b, uint8_t idx ) {
-  kk_assert_internal(idx <= b->header.scan_fsize); // allow +1 for trmc context paths
+  kk_assert_internal(idx <= b->header.scan_fsize || idx == KK_FIELD_IDX_LAZY_BLOCKED); // allow +1 for trmc context paths
   b->header._field_idx = idx;
 }
 

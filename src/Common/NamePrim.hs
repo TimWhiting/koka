@@ -112,7 +112,7 @@ module Common.NamePrim
           -- * Lists
           , nameListNil, nameCons, nameTpList
           -- * Lazy
-          , nameLazyTarget, nameLazyUpdate
+          , nameLazyMemoizeTarget, nameLazyMemoize
           , nameLazyEnter, nameLazyLeave
           , nameLazyIsWhnf, nameLazyPtrIsWhnf
           , nameDataTypePtrIsUnique, nameDataTypePtrIsThreadShared
@@ -262,8 +262,9 @@ nameCoreFileModule = qualify nameCoreDebug (newLocallyQualified "" "file" "kk-mo
   std/core/lazy
 --------------------------------------------------------------------------}
 
-nameLazyTarget    = coreLazyName "whnf-target"
-nameLazyUpdate    = coreLazyName "whnf-update"
+nameLazyMemoizeTarget = coreLazyName "memoize-target"
+nameLazyMemoize       = coreLazyName "memoize"
+nameLazyEnter :: Name
 nameLazyEnter     = coreLazyName "atomic-enter"
 nameLazyLeave     = coreLazyName "atomic-leave"
 nameLazyIsWhnf    = coreLazyName "datatype-is-whnf"
