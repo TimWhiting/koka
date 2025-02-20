@@ -268,10 +268,10 @@ parcGuard scrutinees pats live (Guard test expr)
                   let dups = S.intersection ownedPvs liveInThisBranch
                   drops <- filterM isOwned (S.toList $ liveInSomeBranch \\ liveInThisBranch)
                   -- special case for a lazy match in lazy-eval where we do not dup the children (which is unsafe in general) (generated in Kind/Infer/synLazyEval)
-                  let dups1 = case scrutinees of
-                                [lazyName] | getName lazyName == newHiddenName "lazy" -> tnamesEmpty
-                                _ -> dups
-                  Guard test' <$> parcGuardRC dups1 (S.fromList drops) expr'
+                  let (dups1,drops1) = case scrutinees of
+                                        [lazyName] | getName lazyName == newHiddenName "lazy" && null drops -> (tnamesEmpty,tnamesEmpty)
+                                        _ -> (dups,S.fromList drops)
+                  Guard test' <$> parcGuardRC dups1 drops1 expr'
 
 type Dups     = TNames
 type Drops    = TNames

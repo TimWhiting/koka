@@ -14,7 +14,7 @@ type stream<a>
       SNil -> acc
   lazy SAppend( xs : stream<a>, ys : stream<a> ) ->
     // TODO: this fails to compile without unsafe-total here
-    val ysx = unsafe-total{ stream/lazy-step(ys) }
+    val ysx = unsafe-total { stream/lazy-step(ys) }
     match xs
       SCons(x, xx) -> SCons(x, SAppend(xx, ysx))
       SNil         -> ysx
