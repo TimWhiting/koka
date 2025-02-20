@@ -432,7 +432,8 @@ chkLazyCon (TName cname _) repr
              Just di -> case filter (\ci -> cname == conInfoName ci) (dataInfoConstrs di) of
                           [conInfo] -> do
                              let fip' = conInfoLazyFip conInfo
-                             if fip' `isCallableFrom` fip then writeCallAllocation cname fip'
+                             if not (conInfoIsLazy conInfo) || fip' `isCallableFrom` fip
+                             then writeCallAllocation cname fip'
                              else emitWarning $ \penv -> text "allocating a non-fip lazy constructor:" <+> ppName penv cname
                           _     -> warn
              Nothing -> warn
