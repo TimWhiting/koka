@@ -11,7 +11,7 @@
 -- constructor reuse analysis
 -----------------------------------------------------------------------------
 
-module Backend.C.ParcReuse ( parcReuseCore, getFixedDataAllocSize ) where
+module Backend.C.ParcReuse ( parcReuseCore, getFixedDataAllocSize, Reusable(..), ruIsReusable ) where
 
 import Lib.Trace (trace)
 import Control.Monad
@@ -363,26 +363,38 @@ ruGuard (Guard test expr)  -- expects patAdded in depth-order
          -> let dropsHere = Map.elems $ reuseDrops Map.\\ Map.fromSet (const undefined) reusedHere
             in Guard test' (makeStats (dropsHere ++ [expr']))
 
+data Reusable
+  = NotReusable
+  | ReusableWithSize Int
+
+ruIsReusable :: ConRepr -> Platform -> Reusable
+ruIsReusable repr platform
+  = let size = conReprAllocSize platform repr in
+    -- never try to reuse a Just-like constructor:
+    if isConAsJust repr
+      -- special case to allow benchmarking the effect of reuse analysis:
+      || "_noreuse" `isSuffixOf` nameLocal (conTypeName repr)
+    -- size zero indicates value types:
+      || size == 0
+    then NotReusable
+    else ReusableWithSize size
 
 ruTryReuseCon :: TName -> ConRepr -> Expr -> Reuse Expr
-ruTryReuseCon cname repr conApp | isConAsJust repr  -- never try to reuse a Just-like constructor
-  = return conApp
-ruTryReuseCon cname repr conApp | "_noreuse" `isSuffixOf` nameLocal (conTypeName repr)
-  = return conApp -- special case to allow benchmarking the effect of reuse analysis
 ruTryReuseCon cname repr conApp
-  = do -- newtypes <- getNewtypes
-       platform <- getPlatform
-       let size = conReprAllocSize platform repr
-       available <- getAvailable
-       -- ruTrace $ "try reuse: " ++ show (getName cname) ++ ": " ++ show size
-       case M.lookup size available of
-         Just (rinfo:rinfos)
-           -> do -- let (rinfo,rinfos) = pick cname rinfo0 rinfos0
-                 -- Picking can prevent reuse in FIP programs, disabled for now.
-                 setAvailable (M.insert size rinfos available)
-                 markReused (reuseName rinfo)
-                 return (genAllocAt rinfo conApp (typeOf conApp))
-         _ -> return conApp
+  = do platform <- getPlatform
+       case ruIsReusable repr platform of
+         NotReusable -> pure conApp
+         ReusableWithSize size
+           -> do available <- getAvailable
+                 -- ruTrace $ "try reuse: " ++ show (getName cname) ++ ": " ++ show size
+                 case M.lookup size available of
+                   Just (rinfo:rinfos)
+                     -> do -- let (rinfo,rinfos) = pick cname rinfo0 rinfos0
+                           -- Picking can prevent reuse in FIP programs, disabled for now.
+                           setAvailable (M.insert size rinfos available)
+                           markReused (reuseName rinfo)
+                           return (genAllocAt rinfo conApp (typeOf conApp))
+                   _ -> return conApp
   where
     -- pick a good match: for now we prefer the same constructor
     -- todo: match also common fields/arguments to help specialized reuse

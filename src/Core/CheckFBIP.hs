@@ -41,8 +41,8 @@ import Core.Borrowed
 import Common.NamePrim (nameEffectEmpty, nameTpDiv, nameEffectOpen, namePatternMatchError, nameTpException, nameTpPartial, nameTrue,
                         nameCCtxSetCtxPath, nameFieldAddrOf, nameTpInt,
                         nameLazyMemoizeTarget,nameLazyLeave,nameLazyEnter,nameLazyMemoize)
-import Backend.C.ParcReuse (getFixedDataAllocSize)
-import Backend.C.Parc (getDataInfo')
+import Backend.C.ParcReuse (getFixedDataAllocSize, Reusable(..), ruIsReusable)
+import Backend.C.Parc (getDataInfo', needsDupDropData)
 import Data.Ratio
 import Data.Ord (Down (Down))
 import Control.Monad.Reader
@@ -96,7 +96,7 @@ chkTopLevelExpr borrows (Lam pars eff body)
        let opars = map snd $ filter ((==Own) . fst) $ zipParamInfo borrows pars
        withBorrowed (S.fromList $ map getName bpars) $ do
          out <- extractOutput $ chkExpr body
-         writeOutput =<< foldM (\out nm -> bindName nm Nothing out) out opars
+         writeOutput =<< foldM (\out nm -> bindName nm NotReusable out) out opars
 chkTopLevelExpr borrows (TypeLam _ body)
   = chkTopLevelExpr borrows body
 chkTopLevelExpr borrows (TypeApp body _)
@@ -114,7 +114,7 @@ chkExpr expr
               requireCapability mayAlloc $ \ppenv -> Just $
                 text "allocating a lambda expression"
               out <- extractOutput $ chkExpr body
-              writeOutput =<< foldM (\out nm -> bindName nm Nothing out) out pars
+              writeOutput =<< foldM (\out nm -> bindName nm NotReusable out) out pars
 
       App (TypeApp (Var tname _) _) _ | getName tname `elem` [nameCCtxSetCtxPath,nameLazyMemoizeTarget,nameLazyEnter,nameLazyLeave]
         -> return ()
@@ -127,7 +127,7 @@ chkExpr expr
       Let [] body -> chkExpr body
       Let (DefNonRec def:dgs) body
         -> do out <- extractOutput $ chkExpr (Let dgs body)
-              gamma2 <- bindName (defTName def) Nothing out
+              gamma2 <- bindName (defTName def) NotReusable out
               writeOutput gamma2
               withBorrowed (S.map getName $ M.keysSet $ gammaNm gamma2) $
                 withTailMod [Let dgs body] $ chkExpr $ defExpr def
@@ -194,9 +194,9 @@ bindPattern (PatCon cname pats crepr types _ _ _ _, tp) out
        provideToken cname size =<< foldM (flip bindPattern) out (zip pats types)
 bindPattern (PatVar tname (PatCon cname pats crepr types _ _ _ _), tp) out
   = do size <- getConstructorAllocSize crepr
-       bindName tname (Just size) out
+       bindName tname size out
 bindPattern (PatVar tname PatWild, _) out
-  = bindName tname Nothing out
+  = bindName tname NotReusable out
 bindPattern (PatVar tname pat, tp) out   -- Else, don't bind the name.
   = bindPattern (pat, tp) out            -- The end of the analysis fails if the name is actually used.
 bindPattern (PatLit _, _) out = pure out
@@ -391,34 +391,6 @@ mayDealloc
 mayAlloc :: Chk Bool
 mayAlloc = (==AllocUnlimited) . fipAlloc <$> getFip
 
-isCallableFrom :: Fip -> Fip -> Bool
-isCallableFrom a b
-  = case (a, b) of
-      (Fip _, _) -> True
-      (Fbip _ _, Fbip _ _) -> True
-      (_, NoFip _) -> True
-      _  -> False
-
-writeCallAllocation :: Name -> Fip -> Chk ()
-writeCallAllocation fn fip
-  = do defs <- currentDefNames
-       let call = if fn `elem` defs then CallSelf else Call
-       case fip of
-         Fip n    -> tell (Output mempty mempty (call n), mempty)
-         Fbip n _ -> tell (Output mempty mempty (call n), mempty)
-         NoFip _  -> pure ()
-
-getFipInfo :: [NameInfo] -> Maybe Fip
-getFipInfo xs
-  = case xs of
-      [info] -> case info of
-        InfoFun _ _ _ _ fip' _ _
-          -> Just fip'
-        Type.Assumption.InfoExternal _ _ _ _ fip' _ _
-          -> Just fip'
-        _ -> Nothing
-      infos -> Nothing
-
 chkFunCallable :: Name -> Chk ()
 chkFunCallable fn
   = do fip <- getFip
@@ -431,6 +403,26 @@ chkFunCallable fn
          Just fip'
            -> if fip' `isCallableFrom` fip then writeCallAllocation fn fip'
               else emitWarning $ \penv -> text "calling a non-fip function:" <+> ppName penv fn
+  where
+    isCallableFrom :: Fip -> Fip -> Bool
+    isCallableFrom (Fip _)    _          = True
+    isCallableFrom (Fbip _ _) (Fbip _ _) = True
+    isCallableFrom _          (NoFip _)  = True
+    isCallableFrom _          _          = False
+
+    getFipInfo :: [NameInfo] -> Maybe Fip
+    getFipInfo [InfoFun _ _ _ _ fip _ _] = Just fip
+    getFipInfo [Type.Assumption.InfoExternal _ _ _ _ fip _ _] = Just fip
+    getFipInfo _ = Nothing
+
+    writeCallAllocation :: Name -> Fip -> Chk ()
+    writeCallAllocation fn fip
+      = do defs <- currentDefNames
+           let call = if fn `elem` defs then CallSelf else Call
+           case fip of
+             Fip n    -> tell (Output mempty mempty (call n), mempty)
+             Fbip n _ -> tell (Output mempty mempty (call n), mempty)
+             NoFip _  -> pure ()
 
 -- | Run the given check, keep the warnings but extract the output.
 extractOutput :: Chk () -> Chk Output
@@ -463,32 +455,32 @@ withTailModProduct _ = withNonTail
 withTailMod :: [Expr] -> Chk a -> Chk a
 withTailMod modExpr
   = withInput (\st -> st { isTailContext = isTailContext st && all isModCons modExpr })
+  where
+    isModCons :: Expr -> Bool
+    isModCons expr
+     = case expr of
+         Var _ _     -> True
+         TypeLam _ e -> isModCons e
+         TypeApp e _ -> isModCons e
+         Con _ _     -> True
+         Lit _       -> True
+         Let dgs e   -> all isModConsDef (flattenDefGroups dgs) && isModCons e
+         App f args  -> isModConsFun f && all isModCons args
+         _           -> False
 
-isModCons :: Expr -> Bool
-isModCons expr
- = case expr of
-     Var _ _     -> True
-     TypeLam _ e -> isModCons e
-     TypeApp e _ -> isModCons e
-     Con _ _     -> True
-     Lit _       -> True
-     Let dgs e   -> all isModConsDef (flattenDefGroups dgs) && isModCons e
-     App f args  -> isModConsFun f && all isModCons args
-     _           -> False
+    -- | Functions with non-observable execution can be moved before the mod-cons call.
+    -- This is necessary for various casts introduced in the effect checker.
+    isModConsFun :: Expr -> Bool
+    isModConsFun expr
+      = case expr of
+          TypeLam _ e   -> isModConsFun e
+          TypeApp e _   -> isModConsFun e
+          Con _ _       -> True
+          Let dgs e     -> all isModConsDef (flattenDefGroups dgs) && isModConsFun e
+          App f args    -> hasTotalEffect (typeOf expr) && isModConsFun f && all isModCons args
+          _             -> False
 
--- | Functions with non-observable execution can be moved before the mod-cons call.
--- This is necessary for various casts introduced in the effect checker.
-isModConsFun :: Expr -> Bool
-isModConsFun expr
-  = case expr of
-      TypeLam _ e   -> isModConsFun e
-      TypeApp e _   -> isModConsFun e
-      Con _ _       -> True
-      Let dgs e     -> all isModConsDef (flattenDefGroups dgs) && isModConsFun e
-      App f args    -> hasTotalEffect (typeOf expr) && isModConsFun f && all isModCons args
-      _             -> False
-
-isModConsDef def = isModCons (defExpr def)
+    isModConsDef def = isModCons (defExpr def)
 
 withBorrowed :: S.Set Name -> Chk a -> Chk a
 withBorrowed names action
@@ -516,15 +508,15 @@ markBorrowed nm info
            requireCapability mayDealloc $ \ppenv -> Just $
              text "the last use of" <+> ppName ppenv (getName nm) <+> text "is borrowed (causing deallocation)"
 
-getAllocation :: TName -> Int -> Chk ()
-getAllocation nm 0 = pure ()
-getAllocation nm size
+getAllocation :: TName -> Reusable -> Chk ()
+getAllocation nm NotReusable = pure ()
+getAllocation nm (ReusableWithSize size)
   = do id <- lift $ lift $ uniqueId "alloc"
        writeOutput (Output mempty (M.singleton size [(1 % 1, [(nm,id)])]) (Alloc id))
 
-provideToken :: TName -> Int -> Output -> Chk Output
-provideToken _ 0 out = pure out
-provideToken debugName size out
+provideToken :: TName -> Reusable -> Output -> Chk Output
+provideToken _ NotReusable out = pure out
+provideToken debugName (ReusableWithSize size) out
   = do requireCapability mayDealloc $ \ppenv ->
          let fittingAllocs = M.findWithDefault [] size (gammaDia out) in
          case fittingAllocs of
@@ -556,11 +548,14 @@ joinContexts pats cs
     zipTokens [] ys = ys
 
     tryReuse (allReusable, out) tname
-      = do mOut <- tryDropReuse tname out
-           isHeapVal <- needsDupDrop tname
-           pure $ case mOut of
-             Nothing -> (allReusable && not isHeapVal, out)
-             Just out -> (allReusable, out)
+      = do isReusable <- addTypeReuseInfo tname NotReusable
+           case isReusable of
+             NotReusable -> do
+              isHeapVal <- needsDupDrop tname
+              pure (allReusable && not isHeapVal, out)
+             size@(ReusableWithSize _) -> do
+              out <- provideToken tname size out
+              pure (allReusable, out)
 
     prettyPat ppenv (PatCon nm [] _ _ _ _ _ _) = ppName ppenv (getName nm)
     prettyPat ppenv (PatCon nm pats _ _ _ _ _ _) = ppName ppenv (getName nm) <.> tupled (map (prettyPat ppenv) pats)
@@ -569,37 +564,42 @@ joinContexts pats cs
     prettyPat ppenv (PatLit l) = text $ show l
     prettyPat ppenv PatWild = text "_"
 
-tryDropReuse :: TName -> Output -> Chk (Maybe Output)
-tryDropReuse nm out
+addTypeReuseInfo :: TName -> Reusable -> Chk Reusable
+addTypeReuseInfo nm size@(ReusableWithSize _) = pure size
+addTypeReuseInfo nm NotReusable
   = do newtypes <- getNewtypes
        platform <- getPlatform
-       case getFixedDataAllocSize platform newtypes (tnameType nm) of
-         Nothing -> pure Nothing
-         Just (sz, _) -> Just <$> provideToken nm sz out
+       pure $ case getFixedDataAllocSize platform newtypes (tnameType nm) of
+         Nothing -> NotReusable
+         Just (sz, _) -> ReusableWithSize sz
 
-bindName :: TName -> Maybe Int -> Output -> Chk Output
+bindName :: TName -> Reusable -> Output -> Chk Output
 bindName nm msize out
-  = do newtypes <- getNewtypes
-       platform <- getPlatform
-       out <- case M.lookup nm (gammaNm out) of
-         Nothing -- unused, so available for drop-guided reuse!
-           -> do mOut <- tryDropReuse nm out
-                 case (msize, mOut) of
-                   (Just sz, _) -> provideToken nm sz out
-                   (_, Just out) -> pure out
-                   (Nothing, Nothing) -> do
-                     isHeapValue <- needsDupDrop nm
-                     when isHeapValue $
-                       requireCapability mayDealloc $ \ppenv -> Just $
-                         text "the variable" <+> ppName ppenv (getName nm) <+> text "is unused (causing deallocation)"
-                     pure out
-         Just n
-           -> do isHeapVal <- needsDupDrop nm
-                 when (n > 1 && isHeapVal) $
-                   requireCapability mayAlloc $ \ppenv -> Just $
-                     text "the variable" <+> ppName ppenv (getName nm) <+> text "is used multiple times (causing sharing and preventing reuse)"
-                 pure out
-       pure (out { gammaNm = M.delete nm (gammaNm out) })
+  = case M.lookup nm (gammaNm out) of
+      Nothing -- unused, so available for drop-guided reuse!
+        -> do isReusable <- addTypeReuseInfo nm msize
+              (out, isReused) <- case isReusable of
+                NotReusable -> pure (out, False)
+                size@(ReusableWithSize _) -> do
+                  out <- provideToken nm size out
+                  pure (out, True)
+              chkDrop isReused nm
+              pure out
+      Just n -- variable is used 'n' times
+        -> do isHeapVal <- needsDupDrop nm
+              when (n > 1 && isHeapVal) $
+                requireCapability mayAlloc $ \ppenv -> Just $
+                  text "the variable" <+> ppName ppenv (getName nm) <+> text "is used multiple times (causing sharing and preventing reuse)"
+              pure $ out { gammaNm = M.delete nm (gammaNm out) }
+
+chkDrop :: Bool -> TName -> Chk ()
+chkDrop isTopLevelReused nm
+  = do isHeapValue <- needsDupDrop nm
+       isFlat <- isFlatType nm
+       unless ((isTopLevelReused && isFlat) || not isHeapValue) $
+          -- non-reused heap values are dropped
+         requireCapability mayDealloc $ \ppenv -> Just $
+           text "the variable" <+> ppName ppenv (getName nm) <+> text "is unused (causing deallocation)"
 
 -- | We record if the program has both an allocation
 -- and a self-call which may be executed in sequence.
@@ -681,14 +681,25 @@ needsDupDrop tname
 needsDupDropTp :: Type -> Chk Bool
 needsDupDropTp tp
   = do mbdi <- getDataInfo tp
-       return $
-          case mbdi of
-            Nothing -> True
-            Just di -> case dataInfoDef di of
-                          DataDefValue vrepr | valueReprIsRaw vrepr -> False
-                          _  -> if dataInfoName di == nameTpInt  -- ignore special types (just `int` for now)
-                                  then False
-                                  else True
+       pure $ case mbdi of
+         Nothing -> True
+         Just di ->
+           -- We pretend that integers are always small and don't need to be dropped.
+           (dataInfoName di /= nameTpInt) && needsDupDropData di
+
+isFlatType :: TName -> Chk Bool
+isFlatType tname = dataTypeIsFlat (tnameType tname)
+
+-- A type is flat if no field of any constructor needs a dup/drop.
+dataTypeIsFlat :: Type -> Chk Bool
+dataTypeIsFlat tp
+  = do mbdi <- getDataInfo tp
+       case mbdi of
+         Nothing -> return True
+         Just di -> allM constrIsFlat $ dataInfoConstrs di
+  where
+    allM f xs = and <$> traverse f xs
+    constrIsFlat constr = allM (fmap not . needsDupDropTp . snd) $ conInfoParams constr
 
 getDataInfo :: Type -> Chk (Maybe DataInfo)
 getDataInfo tp
@@ -745,7 +756,6 @@ emitWarning makedoc
            fdoc = text "fip fun" <+> ppName penv name <.> colon <+> makedoc penv
        emitDoc rng fdoc
 
-getConstructorAllocSize :: ConRepr -> Chk Int
+getConstructorAllocSize :: ConRepr -> Chk Reusable
 getConstructorAllocSize conRepr
-  = do platform <- getPlatform
-       return (conReprAllocSize platform conRepr)
+  = do ruIsReusable conRepr <$> getPlatform

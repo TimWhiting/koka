@@ -48,7 +48,7 @@ pub extern @unsafe-vector : forall<a> ( n : ssize_t ) -> total vector<a>
 pub inline extern assign/@index( ^self : local-var<s,vector<a>>, ^index : int, assigned : a ) : <local<s>,exn|e> ()
   c  "kk_ref_vector_assign_borrow"
   cs inline "(#1)[(int)#2] = #3"  // check bounds?
-  js inline "(#1)[#2] = #3"       // todo: check bounds!
+  js inline "(#1).value[#2] = #3"       // todo: check bounds!
 
 // Length of a vector.
 inline extern lengthz( ^v : vector<a> ) : ssize_t
