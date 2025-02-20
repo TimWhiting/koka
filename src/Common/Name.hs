@@ -26,7 +26,7 @@ module Common.Name
           , nameModule, nameStem, nameLocal, nameLocalQual, isModuleName
 
           , newPaddingName, isPaddingName, isCCtxName
-          , newFieldName, isFieldName, isWildcard
+          , newFieldName, isFieldName, isWildcard, unWildcard
           , typeQualifiedName, typeQualifiedNameOf, typeQualifiedGetTypeName
           , newHiddenExternalName, isHiddenExternalName
           , newHiddenName, isHiddenName, hiddenNameStartsWith
@@ -401,6 +401,13 @@ isWildcard name
       ('_':_)     -> True
       ('@':'_':_) -> True
       _           -> False
+
+unWildcard :: String -> Name -> Name
+unWildcard post name
+  = case nameStem name of
+      ('_':_)     -> nameMapStem name (\s -> tail s ++ post)
+      ('@':'_':_) -> nameMapStem name (\s -> "@" ++ drop 2 s ++ post)
+      _           -> name
 
 isHiddenName :: Name -> Bool
 isHiddenName name

@@ -417,7 +417,7 @@ ruLazyMemoize lazyTName arg
                     Con cname repr -> lazyIndirect reuseName lazyInfo True tailArg
                     -- otherwise use an indirection
                     _ -> do -- no warning needed as it is checked in Kind.Infer
-                            warning (\penv -> text "cannot update lazy value directly as the whnf is not statically known -- using indirection")
+                            -- warning (\penv -> text "cannot update lazy value directly as the whnf is not statically known -- using indirection")
                             lazyIndirect reuseName lazyInfo False tailArg
   where
     ppName penv name = prettyName (Pretty.colors penv) name

@@ -471,17 +471,18 @@ synLazyEval lazyExprs info
                 in return $ ([],Branch (PatCon (conInfoName conInfo) [(Nothing,PatVar (ValueBinder par Nothing (PatWild rng) rng rng))] rng rng)
                                  [Guard guardTrue (Var par False rng)])
             branch conInfo
-              = do (def,body) <- branchExpr conInfo
-                   return $ ([def], Branch (PatCon (conInfoName conInfo) [(Nothing,makePat par rng) | (par,_) <- conInfoParams conInfo] rng rng)
+              = do let parNames = [(unWildcard (show i) par) | (i,(par,tp)) <- zip [1..] (conInfoParams conInfo)]
+                   (def,body) <- branchExpr conInfo parNames
+                   return $ ([def], Branch (PatCon (conInfoName conInfo) [(Nothing,makePat par rng) | par <- parNames] rng rng)
                                      [Guard guardTrue body])
               where
                 makePat par rng
                   = if (isWildcard par) then PatWild rng else PatVar (ValueBinder par Nothing (PatWild rng) rng rng)
 
-            branchExpr :: ConInfo -> KInfer (Def Type,Expr Type)
-            branchExpr conInfo
+            branchExpr :: ConInfo -> [Name] -> KInfer (Def Type,Expr Type)
+            branchExpr conInfo parNames
               = case lookup (conInfoName conInfo) lazyExprs of
-                  Just lazyExpr -> lazyConDefCall info conInfo defName arg lazyExpr
+                  Just lazyExpr -> lazyConDefCall info conInfo parNames defName arg lazyExpr
                   Nothing -> failure $ "Kind.Infer.synLazyEval.branchExpr: cannot find expression for lazy constructor " ++ show (conInfoName conInfo)
 
        (defss,branches) <- unzip <$> mapM branch lazyConstrs
@@ -513,25 +514,25 @@ synLazyEval lazyExprs info
 type ErrDoc = ColorScheme -> Doc
 
 
-lazyConDefCall :: DataInfo -> ConInfo -> Name -> Expr t -> Expr t -> KInfer (Def t,Expr t)
-lazyConDefCall info conInfo evalName memoTarget topExpr
-  = do let parTypes    = conInfoParams conInfo
-           rng         = conInfoRange conInfo
+lazyConDefCall :: DataInfo -> ConInfo -> [Name] -> Name -> Expr t -> Expr t -> KInfer (Def t,Expr t)
+lazyConDefCall info conInfo parNames evalName memoTarget topExpr
+  = do let rng         = conInfoRange conInfo
            -- lazy-SAppRev(memo,pre,post)
-           callExpr    = App (Var nameLazyCon False rng) ([(Nothing,memoTarget)] ++ [(Nothing,Var par False rng) | (par,_) <- parTypes]) rng
+           callExpr    = App (Var nameLazyCon False rng)
+                             ([(Nothing,memoTarget)] ++ [(Nothing,Var par False rng) | par <- parNames]) rng
 
        branchExpr <- memoizeExpr topExpr
        let -- fun lazy-SAppRev(@memo,pre,post)
            --   lazy/memoize-target(@memo)
            --   <memoize topExpr>
            def     = Def (ValueBinder nameLazyCon () lam rng rng) rng Private (DefFun [] (conInfoLazyFip conInfo)) InlineAuto ""
-           lam     = Lam ([ValueBinder nameLazyMemo Nothing Nothing rng rng] ++ [ValueBinder par Nothing Nothing rng rng | (par,_) <- parTypes])
+           lam     = Lam ([ValueBinder nameLazyMemo Nothing Nothing rng rng] ++ [ValueBinder par Nothing Nothing rng rng | par <- parNames])
                          (Bind target branchExpr rng) rng
            target  = Def (ValueBinder nameNil ()
                          (App (Var nameLazyMemoizeTarget False rng)
                           [(Nothing,Var nameLazyMemo False rng),(Nothing,conExpr)] rng) rng rng) rng Private DefVal InlineNever ""
            conExpr = makeApp (Var (conInfoName conInfo) False rng)
-                             [(Nothing,Var par False rng) | (par,_) <- parTypes] rng
+                             [(Nothing,Var par False rng) | par <- parNames] rng
 
        return (def, callExpr)
   where
