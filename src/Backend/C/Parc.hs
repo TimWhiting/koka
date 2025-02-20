@@ -646,9 +646,8 @@ needsDupDropData info =
     -- value types with no reference fields don't need a drop
     DataDefValue vr | valueReprIsRaw vr -> False
     _ -> case dataInfoConstrs info of
-      -- types with no constructors and structs with no fields (eg. Pad) don't need a drop
-      [] -> False
-      [ConInfo { conInfoParams = [] }] ->  False
+      -- structs with no fields (eg. Pad) don't need a drop
+      [ConInfo { conInfoParams = [], conInfoValueRepr = ValueRepr 0 0 _ }] ->  False
       _ -> True
 
 isValueType :: Type -> Parc Bool
