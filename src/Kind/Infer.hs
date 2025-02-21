@@ -482,7 +482,7 @@ synLazyEval lazyExprs info
             branchExpr :: ConInfo -> [Name] -> KInfer (Def Type,Expr Type)
             branchExpr conInfo parNames
               = case lookup (conInfoName conInfo) lazyExprs of
-                  Just lazyExpr -> lazyConDefCall info conInfo parNames defName arg lazyExpr
+                  Just lazyExpr -> lazyConDefCall False {-eval-} info conInfo parNames defName arg lazyExpr
                   Nothing -> failure $ "Kind.Infer.synLazyEval.branchExpr: cannot find expression for lazy constructor " ++ show (conInfoName conInfo)
 
        (defss,branches) <- unzip <$> mapM branch lazyConstrs
@@ -514,23 +514,28 @@ synLazyEval lazyExprs info
 type ErrDoc = ColorScheme -> Doc
 
 
-lazyConDefCall :: DataInfo -> ConInfo -> [Name] -> Name -> Expr t -> Expr t -> KInfer (Def t,Expr t)
-lazyConDefCall info conInfo parNames evalName memoTarget topExpr
-  = do let rng         = conInfoRange conInfo
+lazyConDefCall :: Bool -> DataInfo -> ConInfo -> [Name] -> Name -> Expr t -> Expr t -> KInfer (Def t,Expr t)
+lazyConDefCall stepOnly info conInfo parNames evalName memoTarget topExpr
+  = do platform <- getPlatform
+       let rng         = conInfoRange conInfo
            -- lazy-SAppRev(memo,pre,post)
            callExpr    = App (Var nameLazyCon False rng)
                              ([(Nothing,memoTarget)] ++ [(Nothing,Var par False rng) | par <- parNames]) rng
 
        branchExpr <- memoizeExpr topExpr
+
        let -- fun lazy-SAppRev(@memo,pre,post)
            --   lazy/memoize-target(@memo)
            --   <memoize topExpr>
            def     = Def (ValueBinder nameLazyCon () lam rng rng) rng Private (DefFun [] (conInfoLazyFip conInfo)) InlineAuto ""
            lam     = Lam ([ValueBinder nameLazyMemo Nothing Nothing rng rng] ++ [ValueBinder par Nothing Nothing rng rng | par <- parNames])
                          (Bind target branchExpr rng) rng
+           (targetSize,targetScan) = Core.conReprAllocSizeScan platform (Core.getConRepr info conInfo)
            target  = Def (ValueBinder nameNil ()
                          (App (Var nameLazyMemoizeTarget False rng)
-                          [(Nothing,Var nameLazyMemo False rng),(Nothing,conExpr)] rng) rng rng) rng Private DefVal InlineNever ""
+                          [(Nothing,Var nameLazyMemo False rng),
+                           (Nothing,Lit (LitInt (toInteger targetSize) rng)),
+                           (Nothing,Lit (LitInt (toInteger targetScan) rng))] rng) rng rng) rng Private DefVal InlineNever ""
            conExpr = makeApp (Var (conInfoName conInfo) False rng)
                              [(Nothing,Var par False rng) | par <- parNames] rng
 
@@ -598,22 +603,28 @@ lazyConDefCall info conInfo parNames evalName memoTarget topExpr
 
     memoizeCon cname con nargs range
       = case lookupCon cname whnfConstrs of
+          -- strict constructor result
+          Just whnfCon -> do memoizeCheckCanFit range whnfCon
+                             memoize (makeApp con nargs range)
+          -- lazy constructor
           Nothing -> case lookupCon cname lazyConstrs of
+                       -- unknown constructor
                        Nothing     -> memoizeUnknown (makeApp con nargs range)
-                       Just cinfo  -> -- recursiveMemoize expr cinfo
-                                      do platform <- getPlatform
-                                         let targetSize = Core.conReprAllocSize platform (Core.getConRepr info conInfo)
-                                             resultSize = Core.conReprAllocSize platform (Core.getConRepr info cinfo)
-                                         if targetSize == resultSize
-                                           then -- call a constructor function directly
-                                                do let conFunName = lazyName info (show (unqualify (conInfoName cinfo)))
-                                                   return (App (Var conFunName False range)
-                                                               ([(Nothing,Var nameLazyMemo False range)] ++ nargs) range)
+                       -- known lazy constructor
+                       Just cinfo  -> do platform <- getPlatform
+                                         let (targetSize,targetScan) = Core.conReprAllocSizeScan platform (Core.getConRepr info conInfo)
+                                             (resultSize,resultScan) = Core.conReprAllocSizeScan platform (Core.getConRepr info cinfo)
+                                         if targetSize >= resultSize && targetScan >= resultScan
+                                           then if not stepOnly
+                                                  then -- recursively call a lazy constructor function directly
+                                                       do let conFunName = lazyName info (show (unqualify (conInfoName cinfo)))
+                                                          return (App (Var conFunName False range)
+                                                                    ([(Nothing,Var nameLazyMemo False range)] ++ nargs) range)
+                                                  else -- step function; return the lazy constructor
+                                                       do memoize (makeApp con nargs range)
                                            else -- memoize and return; whnf does the recursion
                                                 do memoizeWarning range $ \_ -> text "in-place as the result constructor does not have the same size as the lazy target (" <.> pretty targetSize <+> text "vs" <+> pretty resultSize <+> text "bytes) -- using an indirection instead"
                                                    memoize (makeApp con nargs range)
-          Just whnfCon -> do memoizeCheckCanFit range whnfCon
-                             memoize (makeApp con nargs range)
 
     makeApp con [] range    = con
     makeApp con nargs range = App con nargs range
@@ -633,10 +644,10 @@ lazyConDefCall info conInfo parNames evalName memoTarget topExpr
 
     memoizeCheckCanFit range resultCon
       = do platform <- getPlatform
-           let lazySize = Core.conReprAllocSize platform (Core.getConRepr info conInfo)
-               whnfSize = Core.conReprAllocSize platform (Core.getConRepr info resultCon)
-           when (lazySize < whnfSize) $
-             memoizeWarning range $ \_ -> text "in-place as the result constructor is larger (" <.> pretty lazySize <+> text "vs" <+> pretty whnfSize <+> text "bytes) -- using an indirection instead"
+           let (targetSize,targetScan) = Core.conReprAllocSizeScan platform (Core.getConRepr info conInfo)
+               (resultSize,resultScan) = Core.conReprAllocSizeScan platform (Core.getConRepr info resultCon)
+           when (targetSize < resultSize) $
+             memoizeWarning range $ \_ -> text "in-place as the result constructor is larger (" <.> pretty targetSize <+> text "vs" <+> pretty resultSize <+> text "bytes) -- using an indirection instead"
 
 
     -- memoize :: Expr t -> KInfer (Expr t)

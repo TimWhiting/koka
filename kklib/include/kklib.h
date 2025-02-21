@@ -610,7 +610,7 @@ static inline kk_block_t* kk_block_alloc_at(kk_reuse_t at, kk_ssize_t size, kk_s
     b = (kk_block_t*)kk_malloc_small(size, ctx);
   }
   else {
-    kk_assert_internal(kk_block_is_unique(at)); // TODO: check usable size of `at`
+    kk_assert_internal(kk_block_is_unique(at) || kk_block_field_idx(at) == KK_FIELD_IDX_LAZY_BLOCKED); // TODO: check usable size of `at`
     b = at;
   }
   kk_block_init(b, size, scan_fsize, cpath, tag);

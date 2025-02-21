@@ -16,7 +16,7 @@ import std/core/types
 // in the future and are only exposed for now for experimentation
 
 // internal: marker for lazy values that will be memoized (used to for correct reuse and reference counting)
-pub fip extern memoize-target(^target : a, ^pattern : a) : ()
+pub fip extern memoize-target(^target : a, size : int, scan-size : int) : ()
   inline "/**/"
 
 // internal: explicitly force update-in-place for lazy values

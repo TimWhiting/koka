@@ -141,9 +141,10 @@ makeLets dgs expr = makeLet dgs expr
 ruExpr :: Expr -> Reuse Expr
 ruExpr expr
   = case expr of
-      App (Var name _) [Var tname _, patExpr] | getName name == nameLazyMemoizeTarget
+      App (Var name _) [Var tname _, Lit (LitInt size), Lit (LitInt scanSize)] | getName name == nameLazyMemoizeTarget
         -> do registerLazyCon tname
-              ruLazyDeconstruct tname patExpr
+              addDeconstructed (tname, Nothing, fromInteger size, fromInteger scanSize)
+              deconstructLazyCon (TName nameNil typeReuse)
               return exprUnit -- expr
       App (Var name _) [Var tname _, conApp] | getName name == nameLazyMemoize
         -> do ruLazyMemoize tname conApp
@@ -339,20 +340,6 @@ ruPattern varName _
          Just (size, scan) -> return [(varName, Nothing, size, scan)]
          Nothing -> return []
 
--- pretend to match on a lazy value (where we encoded the pattern as an expression)
-ruLazyDeconstruct :: TName -> Expr -> Reuse ()
-ruLazyDeconstruct target (App (Con conName conRepr) args)
-  = do mbConInfo <- getConInfo (typeOf conName) (getName conName)
-       case mbConInfo of
-         Nothing -> trace ("unknown lazy constructor:" ++ show conName) $
-                    return ()
-         Just conInfo
-           -> do let patArgs = [PatVar name PatWild | Var name _ <- args]
-                     pat = PatCon conName patArgs conRepr [] [] (typeOf conName) conInfo True
-                 reuses <- ruPattern target pat
-                 mapM_ addDeconstructed reuses
-                 deconstructLazyCon (TName nameNil typeReuse)
-
 ruGuard :: Guard -> Reuse (Map.Map TName Expr -> Guard, Available)
 ruGuard (Guard test expr)  -- expects patAdded in depth-order
   = isolateGetAvailable $
@@ -441,8 +428,6 @@ ruLazyMemoize lazyTName arg
                      text "lazy value" <+> ppName penv (getName lazyTName)) <.> colon <+> (f penv)
            trace (show doc) $ return ()
 
-
-
     updateCon :: TName -> (Maybe Pattern,Int,Int) -> TName -> ConRepr -> Expr -> [Expr] -> Reuse Expr
     updateCon reuseName lazyInfo@(pat,lazySize,scan) cname crepr con args
       = do platform <- getPlatform
@@ -474,9 +459,13 @@ ruLazyMemoize lazyTName arg
                conApp    = App con args'
            ruSpecCon' reuseName cname crepr ci mbTagScan matches
     -- fallback
-    lazyReuse reuseName lazyInfo@(pat,size,scan) _ cname crepr con args'
-      = -- lazyReuseConApp reuseName pat (App con args')
-        return (genAllocAt (ReuseInfo reuseName pat) (App con args') (typeOf lazyTName))
+    lazyReuse reuseName lazyInfo@(pat,size,scan) (Just ci) cname crepr con args'
+      = -- we cannot use allocAt since that resets the reference count to 0 (and we need to keep the current ref count)
+        -- return (genAllocAt (ReuseInfo reuseName pat) (App con args') (typeOf lazyTName))
+        do let matches   = map NoMatch args'
+               mbTagScan = Just (conTag crepr, Just (conReprScanCount crepr))
+               conApp    = App con args'
+           ruSpecCon' reuseName cname crepr ci mbTagScan matches
 
     -- create an indirection
     lazyIndirect :: TName -> (Maybe Pattern,Int,Int) -> Bool -> Expr -> Reuse Expr
