@@ -2229,9 +2229,8 @@ genExprExternal tname formats [fieldDoc,argDoc] | getName tname == nameCFieldSet
 -- normal external
 genExprExternal tname formats argDocs0
   = do
-      ctarget <- getCTarget
       let name = getName tname
-          format = getFormat ctarget tname formats
+          format = getFormat tname formats
           argDocs = map (\argDoc -> if (all (\c -> isAlphaNum c || c == '_') (asString argDoc)) then argDoc else parens argDoc) argDocs0
       return $ case map (\fmt -> ppExternalF name fmt argDocs) $ lines format of
           [] -> ([],empty)

@@ -7,11 +7,17 @@
 ---------------------------------------------------------------------------*/
 
 // Byte slices
-module std/data/bslice
-import std/data/bytes
+module std/core/bslice
+import std/core/bytes
+import std/core/types
+import std/core/int
+import std/core/exn
+
+extern import 
+  c file "inline/bslice" 
 
 // A byte slice
-pub struct bslice 
+pub value struct bslice 
   bytes: bytes
   start: int
   len: int // The length of the slice
@@ -80,3 +86,17 @@ pub fun @index( ^b : bslice, i : int ) : exn int8
   val Bslice(bts, start, len, _) = b
   if i < 0 || i >= len then throw("index out of bounds", ExnRange)
   bts.unsafe-index((start + i).ssize_t)
+
+// Assigns the bytes starting at offset `i` to `new-value`, throws if there is not enough space or the index is invalid
+pub fun assign( b : bytes, i : int, new-value : bslice ) : exn bytes
+  val l = b.length.int
+  val size = new-value.len
+  if i < 0 || i > l then 
+    throw("index out of bounds", ExnRange)
+  elif size + i > l then
+    throw("size overflow", ExnRange)
+  else
+    assign(b, i.ssize_t, new-value)
+
+extern slice/assign(b : bytes, i : ssize_t, new-value : bslice ): bytes
+  c "kk_bslice_assign"

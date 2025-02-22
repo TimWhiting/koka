@@ -7,7 +7,11 @@
 ---------------------------------------------------------------------------*/
 
 // Byte arrays
-module std/data/bytes
+module std/core/bytes
+import std/core/types
+import std/core/exn
+import std/core/bool
+import std/core/int
 
 // Create a new empty array of bytes
 pub extern empty(): bytes
@@ -27,7 +31,7 @@ pub extern string( bytes : bytes ) : string
 // Gets a view of the string as raw bytes
 pub extern string/bytes( s : string ) : bytes
   c  inline "#1.bytes"
-  js inline "new TextEncoder().encode(#1)"
+  js inline "(new TextEncoder()).encode(#1)"
 
 // Gets the length of the byte array
 pub extern length( ^b : bytes ) : ssize_t
@@ -51,6 +55,6 @@ pub extern unsafe-index( ^b : bytes, i : ssize_t ) : int8
   js inline "#1[#2]"
 
 // Assigns the byte at offset `i` to `new-value`
-pub extern byte/assign( ^b : bytes, i : ssize_t, new-value : int8 ) : ()
+pub extern byte/assign( b : bytes, i : ssize_t, new-value : int8 ) : bytes
   c  "kk_bytes_set"
   js inline "#1[#2] = #3"
