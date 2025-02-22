@@ -40,7 +40,7 @@ import Core.CoreVar
 import Core.Borrowed
 import Common.NamePrim (nameEffectEmpty, nameTpDiv, nameEffectOpen, namePatternMatchError, nameTpException, nameTpPartial, nameTrue,
                         nameCCtxSetCtxPath, nameFieldAddrOf, nameTpInt,
-                        nameLazyMemoizeTarget,nameLazyLeave,nameLazyEnter,nameLazyMemoize)
+                        nameLazyMemoizeTarget,nameLazyLeave,nameLazyEnter,nameLazyMemoize, nameCoreDebug)
 import Backend.C.ParcReuse (getFixedDataAllocSize, Reusable(..), ruIsReusable)
 import Backend.C.Parc (getDataInfo', needsDupDropData)
 import Data.Ratio
@@ -787,7 +787,8 @@ emitWarning makedoc
                           _ -> (rangeNull, nameNil)
            penv = prettyEnv env
            fdoc = text "fip fun" <+> ppName penv name <.> colon <+> makedoc penv
-       emitDoc rng fdoc
+       when (qualifier name /= nameCoreDebug) $
+          emitDoc rng fdoc
 
 getConstructorAllocSize :: ConRepr -> Chk Reusable
 getConstructorAllocSize conRepr

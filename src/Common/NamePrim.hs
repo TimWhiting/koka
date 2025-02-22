@@ -14,7 +14,7 @@ module Common.NamePrim
           -- * Interpreter
             nameExpr, nameMain, nameType
           , nameInteractiveModule
-          , nameSystemCore, nameCoreTypes
+          , nameSystemCore, nameCoreTypes, nameCoreDebug
           , isSystemCoreName, shortenSystemCoreName
           , isPrimitiveModule -- no monadic lifting
           , nameCoreHnd

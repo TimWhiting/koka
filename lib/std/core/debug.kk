@@ -38,12 +38,12 @@ pub fun file/kk-file-line( ?kk-file, ?kk-line )
 // Trace, assert, todo
 // ----------------------------------------------------------------------------
 
-extern xtrace : ( message : string ) -> ()
+fip extern xtrace : ( message : string ) -> ()
   c  "kk_trace"
   cs "Primitive.Trace"
   js "$std_core_console._trace"
 
-extern xtrace-any : forall<a> ( message: string, x : a ) -> ()
+fip extern xtrace-any : forall<a> ( message: string, x : a ) -> ()
   c  "kk_trace_any"
   cs "Primitive.TraceAny"
   js "$std_core_console._trace_any"
@@ -54,17 +54,17 @@ val trace-enabled : ref<global,bool> = unsafe-total{ ref(True) }
 // The behaviour is system dependent. On a browser and node it uses
 // `console.log`  by default.
 // Disabled if `notrace` is called.
-pub fun trace( message : string ) : ()
+pub fip fun trace( message : string ) : ()
   unsafe-total
     if !trace-enabled then xtrace(message)
 
-pub fun trace-info( message : string, ?kk-file-line : string ) : ()
+pub fip fun trace-info( message : string, ?kk-file-line : string ) : ()
   trace(?kk-file-line ++ ": " ++ message)
 
-pub fun trace-show( x : a, ?show : a -> string, ?kk-file-line : string ) : ()
+pub fip fun trace-show( x : a, ?show : a -> string, ?kk-file-line : string ) : ()
   trace-info(x.show)
 
-pub fun trace-any( message : string, x : a ) : ()
+pub fip fun trace-any( message : string, x : a ) : ()
   unsafe-total
     if !trace-enabled then xtrace-any(message,x)
 
@@ -72,16 +72,22 @@ pub fun trace-any( message : string, x : a ) : ()
 pub noinline fun notrace() : st<global> ()
   trace-enabled := False
 
-noinline extern unsafe-assert-fail( msg : string ) : ()
-  c "kk_assert_fail"
-  js inline "function() { throw new Error(\"assertion failed: \" + #1) }()"
 
-pub fun assert( message : string, condition : bool, ?kk-file-line : string ) : ()   // Compiler removes assert calls in optimized builds
-  if !condition then unsafe-assert-fail(kk-file-line ++ ": " ++ message)
+noinline extern unsafe-abort( msg : string ) : a
+  c "kk_abort"
+  js inline "function() { throw new Error(\"fatal error: \" + #1) }()"
+
+pub noinline fip fun impossible( message : string = "?", ?kk-file-line : string ) : a
+  unsafe-abort(kk-file-line ++ ": impossible:" ++ message)
+
+pub fip fun assert( message : string, condition : bool, ?kk-file-line : string ) : ()   // Compiler removes assert calls in optimized builds
+  if !condition then unsafe-abort(kk-file-line ++ ": assertion failed: " ++ message)
+
 
 // Explicitly trigger a breakpoint
-pub extern breakpoint() : ndet () {
+pub fip extern breakpoint() : ndet () {
   c "kk_debugger_break"
   cs "System.Diagnostics.Debugger.Break"
   js inline "(function(){ debugger; })()"
 }
+

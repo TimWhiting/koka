@@ -11,3 +11,9 @@ kk_unit_t kk_assert_fail( kk_string_t msg, kk_context_t* ctx ) {
   kk_string_drop(msg,ctx);
   return kk_Unit;
 }
+
+kk_box_t kk_abort( kk_string_t msg, kk_context_t* ctx ) {
+  kk_fatal_error(EINVAL, "%s\n", kk_string_cbuf_borrow(msg,NULL,ctx));
+  kk_string_drop(msg,ctx);
+  return kk_box_null();
+}
