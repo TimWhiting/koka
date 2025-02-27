@@ -1760,7 +1760,7 @@ genExprPrim expr
               then return ([],text "kk_string_empty()")
               else do let (cstr,clen) = cstring s
                       return ([text "kk_define_string_literal" <.> arguments [empty,ppName name,pretty clen,cstr]]
-                             ,text "kk_string_dup" <.> arguments [ppName name]);
+                             ,ppName name);
 
      Var vname (InfoExternal formats)
        -> case splitFunScheme (typeOf vname) of
