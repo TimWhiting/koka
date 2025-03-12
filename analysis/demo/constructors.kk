@@ -18,13 +18,6 @@ fun map2(ls: list<a>, f: (a) -> e b): e list<b>
     Nil -> Nil
     Cons(x, xs) -> Cons(f(x), xs.map2(f))
 
-fun map(a: ast, f: ast -> e ast): e ast
-  match a
-    List(a') -> List(a'.map(f))
-    Sym(a') -> Sym(a')
-    Num(i) -> Num(i)
-    Err(s) -> Err(s)
-
 fun deriv(a: ast): div ast
   match a
     Sym('x') -> Num(1)
@@ -40,16 +33,21 @@ fun deriv(a: ast): div ast
       List([Sym('-'), List([Sym('/'), a1.deriv, a2]), List([Sym('/'), a1, List([Sym('*'), a2, a2, a2.deriv])])])
     _ -> Err("No derivation method available")
 
+fun map3(ls: list<a>, f: (a) -> e b): e list<b>
+  match ls
+    Nil -> Nil
+    Cons(x, xs) -> Cons(f(x), xs.map3(f))
+
 fun ast/show(a: ast): div string
   match a
     List(a') -> 
-      val res = a'.map2(show)
-      "List" // "(" ++ .join(" ") ++ ")"
+      val res = a'.map3(show)
+      "List(" ++ res.join(" ") ++ ")"
     Sym(a') -> "'" ++ a'.show-char
     Num(i) -> i.show
     Err(s) -> "ERR: " ++ s
 
 fun main()
-  val eq = List([Sym('+'), List([Sym('*'), Num(3), Sym('x'), Sym('x')]), List([Sym('*'), Sym('a'), Sym('x'), Sym('x')]), List([Sym('*'), Sym('b'), Sym('x')]), Num(5)])        
+  val eq = List([Sym('*'), Num(3), Sym('x'), Sym('x')]) 
   val d = eq.deriv
   println(d.show)

@@ -100,7 +100,7 @@ query q isRefined = do
     let refined = do
           refine <- getRefine (queryEnv q)
           let qr = refineQuery q refine
-          res <- query qr True
+          res <- withGas $ query qr True
           return $ FA res
     each [cq, refined]
   return $ toAChange res
@@ -154,7 +154,7 @@ importedBy modN = do
 
 findUsages :: TName -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findUsages tname ctx env = 
-  trace ("findUsages: " ++ show ctx) $ 
+  -- trace ("findUsages: " ++ show ctx) $ 
   let searchChildren =  
         visitEachChild ctx $ do
           -- visitChildrenCtxs sets the currentContext
@@ -184,7 +184,7 @@ findUsages tname ctx env =
 -- Avoids shadowed names
 findUsage :: TName -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 findUsage tname@TName{getName = name} ctx env = do
-  trace ("findUsage: " ++ show name ++ " (" ++ show ctx ++ "," ++ show env ++ ")") $ return ()
+  -- trace ("findUsage: " ++ show name ++ " (" ++ show ctx ++ "," ++ show env ++ ")") $ return ()
   let nameEq = (== name)
       childrenNoShadow tn = if tname `notElem` tn then childrenUsages else doBottom
       childrenUsages = do

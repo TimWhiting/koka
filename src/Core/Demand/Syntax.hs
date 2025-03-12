@@ -39,7 +39,7 @@ import Core.Demand.Primitives
 import Core.Demand.DemandAnalysis (query, analyzeEachChild, getAbValueResults)
 import Debug.Trace (trace)
 import Core.Pretty (prettyExpr)
-import Type.Pretty (defaultEnv)
+import Type.Pretty (defaultEnv, Env (..))
 import Data.Foldable (minimumBy)
 import Common.Failure (HasCallStack)
 import Common.Error (Errors)
@@ -147,12 +147,14 @@ appRng ctx = case exprOfCtx ctx of
   App _ _ rng -> rng
   _ -> Nothing
 
+simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
+
 toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
 toSynConstr ctx = do
   let rng = case appRng ctx of
               Just rng -> ":" <> showSimpleRange rng
               _ -> ""
-  return $ Just (show (prettyExpr defaultEnv $ exprOfCtx ctx) <> rng)
+  return $ Just (show (prettyExpr simpleEnv $ exprOfCtx ctx) <> rng)
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv (EnvCtx env tail) = do
