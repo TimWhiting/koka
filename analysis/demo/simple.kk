@@ -1,8 +1,8 @@
 // 0-CFA
 // Numbers & Booleans
 
-fun width(wide): total int
-  if wide then 10 else 4
+fun width(w): total int
+  if w then 10 else 4
 
 fun test()
   val wide = width(True)

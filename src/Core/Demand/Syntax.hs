@@ -16,7 +16,7 @@ module Core.Demand.Syntax where
 import Data.List (intercalate, find)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import Data.Maybe (catMaybes, mapMaybe, isJust)
+import Data.Maybe (catMaybes, mapMaybe, isJust, fromJust)
 import Data.Set(Set)
 import Compile.Module (Module(..))
 import qualified Syntax.Syntax as Syn
@@ -74,7 +74,7 @@ findContext r ri = do
 
 runEvalQueryFromRangeSource :: BuildContext
   -> TypeChecker -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> Bool -> Int
-  -> IO ([(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
+  -> IO ([(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
 runEvalQueryFromRangeSource bc build rng mod kind m debug gas = do
   (lattice, r, bc) <- runQueryAtRange bc build rng mod kind m debug gas $ \ctx -> do
     createPrimitives
@@ -87,7 +87,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int -> Bool -> Int
   -> (ExprContext -> FixDemandR Query () () ())
-  -> IO (M.Map FixInput (FixOutput AFixChange), [(EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
+  -> IO (M.Map FixInput (FixOutput AFixChange), [(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
 runQueryAtRange bc build (r, ri) mod kind m debug gas doQuery = do
   (l, s, (r, bc)) <- do
     (_, s, ctxs) <- runFixFinish (emptyEnv m kind build False ()) (emptyState bc (-1) ()) $
@@ -118,7 +118,7 @@ runQueryAtRange bc build (r, ri) mod kind m debug gas doQuery = do
   writeDependencyGraph l
   return (M.map (\(x, _, _) -> x) l, r, bc)
 
-getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (EnvCtx, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))
+getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))
 getAbResult (envctx, res) = do
   let vals = res
       lams = map fst $ (S.toList . aclos) vals
@@ -131,45 +131,60 @@ getAbResult (envctx, res) = do
       cs = map fst $ (S.toList . acons) vals
   consts <- mapM toSynConstr cs
   source <- mapM findSourceExpr lams
-  let sourceLambdas = map (\(SourceExpr e) -> e) $ filter (\s -> case s of {SourceExpr _ -> True; _ -> False}) source
-      sourceDefs = map (\(SourceDef e) -> e) $ filter (\s -> case s of {SourceDef _ -> True; _ -> False}) source
-      sourceExterns = map (\(SourceExtern e) -> e) $ filter (\s -> case s of {SourceExtern _ -> True; _ -> False}) source
+  let sourceLambdas = map (\(SourceExpr e _) -> e) $ filter (\s -> case s of {SourceExpr{} -> True; _ -> False}) source
+      sourceDefs = map (\(SourceDef e _) -> e) $ filter (\s -> case s of {SourceDef{} -> True; _ -> False}) source
+      sourceExterns = map (\(SourceExtern e _) -> e) $ filter (\s -> case s of {SourceExtern{} -> True; _ -> False}) source
   -- trace ("eval " ++ concat (map (maybe "nolambda" (\_ -> "lambda")) sourceLambdas)) $ return ()
   -- trace ("eval " ++ concat (map (maybe "nodef" (\_ -> "def")) sourceDefs)) $ return ()
+  env <- sourceEnv envctx
   return $ trace
     ("eval " ++ show envctx ++
      "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
-    (envctx, (sourceLambdas, sourceDefs, sourceExterns, vs, catMaybes consts, topTypes))
+    (env, (sourceLambdas, sourceDefs, sourceExterns, vs, catMaybes consts, topTypes))
+
+appRng :: ExprContext -> Maybe Range
+appRng ctx = case exprOfCtx ctx of
+  App _ _ rng -> rng
+  _ -> Nothing
 
 toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
-toSynConstr ctx =
-  return $ Just (show (prettyExpr defaultEnv $ exprOfCtx ctx))
+toSynConstr ctx = do
+  let rng = case appRng ctx of
+              Just rng -> ":" <> showSimpleRange rng
+              _ -> ""
+  return $ Just (show (prettyExpr defaultEnv $ exprOfCtx ctx) <> rng)
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv (EnvCtx env tail) = do
   envs <- sourceEnvCtx env
   envt <- sourceEnv tail
-  return $ envs ++ ":::" ++ envt
+  return $ "<" ++ envs ++ ":::" ++ envt ++ ">"
 sourceEnv (EnvTail env) = sourceEnvCtx env
+
+sourceRange :: Ranged e => e -> Doc
+sourceRange e = text $ showSimpleRange $ getRange e
 
 sourceEnvCtx :: Ctx -> PostFixR x s e String
 sourceEnvCtx ctx =
   case ctx of
     IndetCtx tn -> return $ "?" ++ intercalate "," (map show tn)
     TopCtx -> return "Top"
+    CtxEnd -> return ""
     BCallCtx c cc -> do
-      se <- findSourceExpr c
+      se <- findForApp c (appRng c)
+      -- trace (show $ showCompactRange <$> appRng c) $ return ()
       e <- sourceEnvCtx cc
       return $ case se of
-        SourceExpr se -> show (ppSyntaxExpr se <+> text e)
-        SourceDef de -> show (ppSyntaxDef de <+> text e)
-        SourceExtern ex -> show (ppSyntaxExtern ex <+> text e)
+        SourceExpr se rng -> show (ppSyntaxExpr se <.> text ":" <.> sourceRange se <+> text "::" <+> text e)
+        SourceDef de rng -> show (ppSyntaxDef de <.> text ":" <.> sourceRange de <+> text "::" <+> text e)
+        SourceExtern ex rng -> show (ppSyntaxExtern ex <.> text ":" <.> text (show $ S.extRange ex) <+> text "::" <+> text e)
         SourceNotFound -> "Not found" ++ e
 
+
 data SourceKind =
-  SourceExpr Syn.UserExpr
-  | SourceDef Syn.UserDef
-  | SourceExtern Syn.External
+  SourceExpr Syn.UserExpr Range
+  | SourceDef Syn.UserDef Range
+  | SourceExtern Syn.External Range
   | SourceNotFound
 
 findSourceExpr :: ExprContext -> PostFixR x s e SourceKind
@@ -194,7 +209,7 @@ findSourceExpr ctx =
       case maybeExprOfCtx ctx of
         Just (Lam (n:_) _ _) -> findForName n
         Just (TypeLam _ (Lam (n:_) _ _)) -> findForName n
-        Just (App _ _ rng) -> findForApp rng
+        Just (App _ _ rng) -> findForApp ctx rng
         _ ->
           trace ("Unknown lambda type " ++ show ctx ++ ": " ++ show (maybeExprOfCtx ctx)) $ return SourceNotFound
     findExtern e = do
@@ -202,7 +217,7 @@ findSourceExpr ctx =
       case (program, C.externalName e) of
         (Just prog, name) -> trace ("Finding location for " ++ show name ++ " " ++ show (S.programExternals prog)) $
           case find (\e -> case e of S.External{} -> nameStem (S.extName e) == nameStem name; _ -> False) (S.programExternals prog) of
-            Just e -> return (SourceExtern e)
+            Just e -> return (SourceExtern e (S.extNameRange e))
             Nothing -> return SourceNotFound
         _ -> trace ("No program or rng" ++ show e ++ " " ++ show (isJust program)) $ return SourceNotFound
     findDef d = do
@@ -211,7 +226,7 @@ findSourceExpr ctx =
       case (program, C.defNameRange d) of
         (Just prog, rng) ->
           -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in " ++ show (moduleName $ contextId ctx)) $ 
-          case findDefFromRange prog rng (C.defName d) of Just e -> return (SourceDef e); _ -> return SourceNotFound
+          case findDefFromRange prog rng (C.defName d) of Just e -> return (SourceDef e rng); _ -> return SourceNotFound
         _ -> trace ("No program or rng" ++ show d ++ " " ++ show (isJust program)) $ return SourceNotFound
       -- case (program, defNameRange d) of
       --   (Just prog, rng) -> trace ("Finding location for " ++ show rng ++ " " ++ show ctx ++ " in module " ++ show (moduleName $ contextId ctx)) $ return $! findLocation prog rng
@@ -220,13 +235,15 @@ findSourceExpr ctx =
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, originalRange n) of
         (Just prog, Just rng) -> -- trace ("Finding location for " ++ show rng ++ " " ++ show ctx) $ 
-          case findLambdaFromRange prog rng of Just e -> return (SourceExpr e); _ -> return SourceNotFound
+          case findLambdaFromRange prog rng of Just e -> return (SourceExpr e rng); _ -> return SourceNotFound
         _ -> trace ("No program or rng" ++ show n ++ " " ++ show (isJust program)) $ return SourceNotFound
-    findForApp rng = do
+
+findForApp :: ExprContext -> Maybe Range -> PostFixR x s e SourceKind
+findForApp ctx rng = do
       program <- modProgram <$> getModuleR (moduleName $ contextId ctx)
       case (program, rng) of
         (Just prog, Just rng) -> trace ("Finding application location for " ++ show rng ++ " " ++ show ctx) $
-          case findApplicationFromRange prog rng of Just e -> return (SourceExpr e); _ -> return SourceNotFound
+          case findApplicationFromRange prog rng of Just e -> return (SourceExpr e rng); _ -> return SourceNotFound
         _ -> trace ("No program or rng" ++ show rng ++ " " ++ show (isJust program)) $ return SourceNotFound
 
 -- Converting to user visible expressions

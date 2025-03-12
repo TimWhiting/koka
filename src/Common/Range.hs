@@ -23,7 +23,7 @@ module Common.Range
           , bigLine
           , after, rangeContains, rangeIsBefore, rangeStartsAt
           , endOfRange, rangeJustBefore, rangeJustAfter
-          , showRange, showCompactRange
+          , showRange, showCompactRange, showSimpleRange
           , BString, bstringToString, bstringToText, stringToBString
           , bstringEmpty, bstringIsEmpty
           , readInput
@@ -259,6 +259,11 @@ instance Pretty Range where
 showCompactRange :: Range -> String
 showCompactRange (Range p1 p2 _)
   = "[" ++ showPos 0 p1 ++ "," ++ showPos 0 p2 ++ "]"
+
+showSimpleRange :: Range -> String
+showSimpleRange (Range (Pos _ _ line1 col1) (Pos _ _ line2 col2) _)
+  = if line1 == line2 then "(" ++ show line1 ++ ":" ++ show col1 ++ "-" ++ show col2 ++ ")"
+    else "(" ++ show line1 ++ ":" ++ show col1 ++ "-" ++ show line2 ++ ":" ++ show col2 ++ ")"
 
 showRange :: FilePath -> Bool -> Range -> String
 showRange cwd endToo (Range p1 p2 _)

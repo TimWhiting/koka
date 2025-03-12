@@ -389,7 +389,7 @@ branchVars (C.Branch pat guards) = Data.Set.toList $ bv pat
 findApplicationFromRange :: UserProgram -> Range -> Maybe UserExpr
 findApplicationFromRange prog rng =
   findFromRange prog rng (const Nothing) $ \e -> case e of
-    S.App f args rng0 -> if rng `rangesOverlap` rng0 then Just f else Nothing
+    S.App f args rng0 -> if rng `rangesOverlap` rng0 then Just e else Nothing
     _ -> Nothing
 
 findDefFromRange :: UserProgram -> Range -> Name -> Maybe UserDef
@@ -418,7 +418,15 @@ findFromRange prog rng extractDef extractExpr =
     getBest ls =
       case ls of
         [] -> Nothing
-        xs -> Just $ minimumBy (\l1 l2 -> compare (rangeLength (getRange l1)) (rangeLength (getRange l2))) xs
+        [x] -> 
+          -- trace ("One result " ++ showCompactRange rng) $ 
+          Just x
+        x1:x2:xs -> -- trace ("getBest: goal: " ++ showCompactRange rng ++ " got: " ++ showCompactRange (getRange x1) ++ " and: " ++ showCompactRange (getRange x2)) $
+                    if getRange x1 == rng then Just x1 else if getRange x2 == rng then Just x2 else
+                    case compare (rangeLength (getRange x1)) (rangeLength (getRange x2)) of
+                      LT -> getBest (x1:xs)
+                      EQ -> getBest (x1:xs)
+                      GT -> getBest (x2:xs)
     findInDefGs defgs = getBest $ mapMaybe findInDefG defgs
     findInDefG def =
       case def of
@@ -446,7 +454,7 @@ findFromRange prog rng extractDef extractExpr =
               S.Ann e _ _ -> findInExpr e
               S.Handler _ _ _ _ _ _ init ret fin bs _ _ ->
                 getBest (mapMaybe findInExpr (catMaybes [init, ret, fin]) ++ mapMaybe findInHandlerBranch bs)
-        in if rng `rangesOverlap` getRange e then getBest (catMaybes [bestChild, extractExpr e]) else bestChild
+        in getBest (catMaybes [bestChild, extractExpr e])
     findInHandlerBranch (S.HandlerBranch _ _ body _ _ _) = findInExpr body
     findInBranch (S.Branch pat guards) = getBest $ mapMaybe findInGuard guards
     findInGuard (S.Guard e body) = getBest $ catMaybes [findInExpr e, findInExpr body]

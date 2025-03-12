@@ -11,8 +11,6 @@ fun test0()
 
 
 
-
-// TODO: Add call location to environments & constructors
 fun do-something(x: int)
   println(x.show)
   if x == 0 then error(Nothing) else x

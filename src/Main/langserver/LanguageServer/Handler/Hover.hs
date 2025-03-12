@@ -77,7 +77,7 @@ toAbValueText (env, (fns, defs, externs, lits, constrs, topTypes)) =
       topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
       resText = closureText <> litsText <> defsText <> externsText <> constrsText <> topTypesText
       hc =
-        ("\n\nIn Context: " <> show env <> "\n\nEvaluates to:\n\n" <> (if null resText then "?" else resText))
+        ("\n\nIn Context: " <> env <> "\n\nEvaluates to:\n\n" <> (if null resText then "?" else resText))
   in T.pack hc
 
 -- Handles hover requests
