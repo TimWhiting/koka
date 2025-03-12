@@ -17,6 +17,11 @@ fun test()
 fun fact(n)
   if n == 0 then 1 else n * fact(n - 1)
 
+fun test-fact()
+  val res = fact(10)
+  val res2 = fact(1)
+  ()
+
 fun this/map(l, f)
   match l
     Cons(x, rst) -> Cons(f(x), rst.this/map(f))
