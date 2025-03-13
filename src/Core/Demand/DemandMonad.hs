@@ -199,8 +199,18 @@ data FixOutput d =
   | E (S.Set EnvCtx)
   | N deriving (Show, Eq)
 
-getAllRefines :: EnvCtx -> PostFixR x s e(Set EnvCtx)
+getAllRefines :: EnvCtx -> PostFixR x s e (Set EnvCtx)
 getAllRefines env = do
+  resX <- case env of
+    EnvCtx ctx tail -> do
+      s <- getAllRefines tail
+      return $ S.insert env $ S.map (\t -> EnvCtx ctx t) s
+    EnvTail ctx -> return $  S.singleton env
+  ress <- mapM getAllRefinesX (S.toList resX)
+  return $ S.unions ress
+
+getAllRefinesX :: EnvCtx -> PostFixR x s e (Set EnvCtx)
+getAllRefinesX env = do
   res <- cacheLookup (EnvInput env)
   let res' = fmap (\v ->
                 case v of

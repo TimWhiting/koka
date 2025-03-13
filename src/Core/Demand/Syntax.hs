@@ -157,11 +157,16 @@ toSynConstr ctx = do
   return $ Just (show (prettyExpr simpleEnv $ exprOfCtx ctx) <> rng)
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
-sourceEnv (EnvCtx env tail) = do
+sourceEnv env = do
+  envs <- sourceEnvX env
+  return $ "<" ++ envs ++ ">"
+
+sourceEnvX :: EnvCtx -> PostFixR x s e String
+sourceEnvX (EnvCtx env tail) = do
   envs <- sourceEnvCtx env
-  envt <- sourceEnv tail
-  return $ "<" ++ envs ++ ":::" ++ envt ++ ">"
-sourceEnv (EnvTail env) = sourceEnvCtx env
+  envt <- sourceEnvX tail
+  return $ envs ++ ":::" ++ envt
+sourceEnvX (EnvTail env) = sourceEnvCtx env
 
 sourceRange :: Ranged e => e -> Doc
 sourceRange e = text $ showSimpleRange $ getRange e
