@@ -190,7 +190,7 @@ defaultLSState flags = do
                          showFullQualifiers=True
         }
       },
-      analysis=DemandAnalysisOptions{
+      analysisOpts=DemandAnalysisOptions{
         callSensitivity=1,
         debugAnalysis=False,
         analysisGas=(-1)
@@ -224,7 +224,7 @@ instance FromJSON KokaConfig where
 
 data Config = Config {
   langServerOpts :: LanguageServerOptions,
-  analysis :: DemandAnalysisOptions
+  analysisOpts :: DemandAnalysisOptions
 } deriving Show
 
 instance FromJSON Config where
@@ -256,7 +256,6 @@ data Colors = Colors {
 instance FromJSON Colors where
   parseJSON (A.Object v) = Colors <$> v .: "mode"
   parseJSON _ = empty
-
 
 data DemandAnalysisOptions = DemandAnalysisOptions {
   callSensitivity :: Int,
@@ -308,7 +307,7 @@ getInlayHintOptions :: LSM InlayHintOptions
 getInlayHintOptions = inlayHintOpts . langServerOpts . config <$> getLSState
 
 getAnalysisOptions :: LSM DemandAnalysisOptions
-getAnalysisOptions = analysis . config <$> getLSState
+getAnalysisOptions = analysisOpts . config <$> getLSState
 
 getVirtualFileVersion :: J.NormalizedUri -> LSM (Maybe J.Int32)
 getVirtualFileVersion uri

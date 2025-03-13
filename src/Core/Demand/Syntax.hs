@@ -159,33 +159,47 @@ toSynConstr ctx = do
 sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv env = do
   envs <- sourceEnvX env
-  return $ "<" ++ envs ++ ">"
+  case envs of
+    Just envs -> return $ "<" ++ envs ++ ">"
+    Nothing -> return "<>"
 
-sourceEnvX :: EnvCtx -> PostFixR x s e String
+sourceEnvX :: EnvCtx -> PostFixR x s e (Maybe String)
 sourceEnvX (EnvCtx env tail) = do
-  envs <- sourceEnvCtx env
+  envc <- sourceEnvCtx env
   envt <- sourceEnvX tail
-  return $ envs ++ ":::" ++ envt
-sourceEnvX (EnvTail env) = sourceEnvCtx env
+  case envt of
+    Just envt -> return $ Just $ envc ++ ":::" ++ envt
+    Nothing -> return $ Just envc
+sourceEnvX (EnvTail env) = return Nothing
 
 sourceRange :: Ranged e => e -> Doc
 sourceRange e = text $ showSimpleRange $ getRange e
 
 sourceEnvCtx :: Ctx -> PostFixR x s e String
-sourceEnvCtx ctx =
+sourceEnvCtx ctx = do
+  env <- sourceEnvCtxX ctx
+  case env of
+    Just e -> return $ "[" ++ e ++ "]"
+    Nothing -> return ""
+
+sourceEnvCtxX :: Ctx -> PostFixR x s e (Maybe String)
+sourceEnvCtxX ctx =
   case ctx of
-    IndetCtx tn -> return $ "?" ++ intercalate "," (map show tn)
-    TopCtx -> return "Top"
-    CtxEnd -> return ""
+    IndetCtx tn -> return $ Just $ "?(" ++ intercalate "," (map show tn) ++ ")"
+    TopCtx -> return $ Just "(top)"
+    CtxEnd -> return Nothing
     BCallCtx c cc -> do
       se <- findForApp c (appRng c)
       -- trace (show $ showCompactRange <$> appRng c) $ return ()
-      e <- sourceEnvCtx cc
-      return $ case se of
-        SourceExpr se rng -> show (ppSyntaxExpr se <.> text ":" <.> sourceRange se <+> text "::" <+> text e)
-        SourceDef de rng -> show (ppSyntaxDef de <.> text ":" <.> sourceRange de <+> text "::" <+> text e)
-        SourceExtern ex rng -> show (ppSyntaxExtern ex <.> text ":" <.> text (show $ S.extRange ex) <+> text "::" <+> text e)
-        SourceNotFound -> "Not found" ++ e
+      let head = case se of
+                SourceExpr se rng -> show (ppSyntaxExpr se <.> text ":" <.> sourceRange se)
+                SourceDef de rng -> show (ppSyntaxDef de <.> text ":" <.> sourceRange de)
+                SourceExtern ex rng -> show (ppSyntaxExtern ex <.> text ":" <.> text (show $ S.extRange ex))
+                SourceNotFound -> "Not found"
+      tail <- sourceEnvCtxX cc
+      case tail of 
+        Just t -> return $ Just $ head <> "::" ++ t
+        Nothing -> return $ Just head
 
 
 data SourceKind =

@@ -214,6 +214,7 @@ findUsage tname@TName{getName = name} ctx env = do
           visitEachChild ctx $ do
             childCtx <- currentContext <$> getEnv
             m <- contextLength <$> getEnv
+            trace ("m" ++ show m) $ return ()
             findUsage tname childCtx (limitmenv (EnvCtx (IndetCtx tn) env) m)
       _ -> childrenUsages
 

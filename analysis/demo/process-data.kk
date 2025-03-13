@@ -5,3 +5,4 @@ fun process-data(input, process)
 
 fun example1()
   process-data(1, fn(a, b) a + 3)
+  process-data(2, fn(c, d) c + d)
