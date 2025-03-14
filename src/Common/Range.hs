@@ -23,7 +23,7 @@ module Common.Range
           , bigLine
           , after, rangeContains, rangeIsBefore, rangeStartsAt
           , endOfRange, rangeJustBefore, rangeJustAfter
-          , showRange, showCompactRange, showSimpleRange
+          , showRange, showCompactRange, showSimpleRange, showFileUriRange
           , BString, bstringToString, bstringToText, stringToBString
           , bstringEmpty, bstringIsEmpty
           , readInput
@@ -264,6 +264,12 @@ showSimpleRange :: Range -> String
 showSimpleRange (Range (Pos _ _ line1 col1) (Pos _ _ line2 col2) _)
   = if line1 == line2 then "(" ++ show line1 ++ ":" ++ show col1 ++ "-" ++ show col2 ++ ")"
     else "(" ++ show line1 ++ ":" ++ show col1 ++ "-" ++ show line2 ++ ":" ++ show col2 ++ ")"
+
+-- file:///some/file.js#L73,84-L83,52
+-- https://github.com/microsoft/vscode/blob/b3ec8181fc49f5462b5128f38e0723ae85e295c2/src/vs/platform/opener/common/opener.ts#L151-L160
+showFileUriRange :: Range -> String
+showFileUriRange (Range (Pos (Source file _) _ line1 col1) (Pos _ _ line2 col2) _)
+  = "file://" ++ file ++ "#L" ++ show line1 ++ "," ++ show col1 ++ "-L" ++ show line2 ++ "," ++ show (col2 + 1)
 
 showRange :: FilePath -> Bool -> Range -> String
 showRange cwd endToo (Range p1 p2 _)

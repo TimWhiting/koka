@@ -74,7 +74,7 @@ findContext r ri = do
 
 runEvalQueryFromRangeSource :: BuildContext
   -> TypeChecker -> (Range, RangeInfo) -> Module -> AnalysisKind -> Int -> Bool -> Int
-  -> IO ([(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
+  -> IO ([(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))], BuildContext)
 runEvalQueryFromRangeSource bc build rng mod kind m debug gas = do
   (lattice, r, bc) <- runQueryAtRange bc build rng mod kind m debug gas $ \ctx -> do
     createPrimitives
@@ -87,7 +87,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int -> Bool -> Int
   -> (ExprContext -> FixDemandR Query () () ())
-  -> IO (M.Map FixInput (FixOutput AFixChange), [(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))], BuildContext)
+  -> IO (M.Map FixInput (FixOutput AFixChange), [(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))], BuildContext)
 runQueryAtRange bc build (r, ri) mod kind m debug gas doQuery = do
   (l, s, (r, bc)) <- do
     (_, s, ctxs) <- runFixFinish (emptyEnv m kind build False ()) (emptyState bc (-1) ()) $
@@ -118,7 +118,7 @@ runQueryAtRange bc build (r, ri) mod kind m debug gas doQuery = do
   writeDependencyGraph l
   return (M.map (\(x, _, _) -> x) l, r, bc)
 
-getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [String], Set Type))
+getAbResult :: (EnvCtx, AbValue) -> PostFixR x s e (String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))
 getAbResult (envctx, res) = do
   let vals = res
       lams = map fst $ (S.toList . aclos) vals
@@ -140,7 +140,7 @@ getAbResult (envctx, res) = do
   return $ trace
     ("eval " ++ show envctx ++
      "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
-    (env, (sourceLambdas, sourceDefs, sourceExterns, vs, catMaybes consts, topTypes))
+    (env, (sourceLambdas, sourceDefs, sourceExterns, vs, consts, topTypes))
 
 appRng :: ExprContext -> Maybe Range
 appRng ctx = case exprOfCtx ctx of
@@ -149,12 +149,9 @@ appRng ctx = case exprOfCtx ctx of
 
 simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}
 
-toSynConstr :: ExprContext -> PostFixR x s e (Maybe String)
+toSynConstr :: ExprContext -> PostFixR x s e (String, Maybe Range)
 toSynConstr ctx = do
-  let rng = case appRng ctx of
-              Just rng -> ":" <> showSimpleRange rng
-              _ -> ""
-  return $ Just (show (prettyExpr simpleEnv $ exprOfCtx ctx) <> rng)
+  return (show (prettyExpr simpleEnv $ exprOfCtx ctx), appRng ctx)
 
 sourceEnv :: EnvCtx -> PostFixR x s e String
 sourceEnv env = do
@@ -172,15 +169,16 @@ sourceEnvX (EnvCtx env tail) = do
     Nothing -> return $ Just envc
 sourceEnvX (EnvTail env) = return Nothing
 
-sourceRange :: Ranged e => e -> Doc
-sourceRange e = text $ showSimpleRange $ getRange e
-
 sourceEnvCtx :: Ctx -> PostFixR x s e String
 sourceEnvCtx ctx = do
   env <- sourceEnvCtxX ctx
   case env of
     Just e -> return $ "[" ++ e ++ "]"
-    Nothing -> return ""
+    Nothing -> return "[]"
+
+linkText :: Doc -> Range -> Doc
+linkText doc rng =
+  text "[" <.> doc <.> text "](" <.> text (showFileUriRange rng) <.> text ")"
 
 sourceEnvCtxX :: Ctx -> PostFixR x s e (Maybe String)
 sourceEnvCtxX ctx =
@@ -192,9 +190,9 @@ sourceEnvCtxX ctx =
       se <- findForApp c (appRng c)
       -- trace (show $ showCompactRange <$> appRng c) $ return ()
       let head = case se of
-                SourceExpr se rng -> show (ppSyntaxExpr se <.> text ":" <.> sourceRange se)
-                SourceDef de rng -> show (ppSyntaxDef de <.> text ":" <.> sourceRange de)
-                SourceExtern ex rng -> show (ppSyntaxExtern ex <.> text ":" <.> text (show $ S.extRange ex))
+                SourceExpr se rng -> show (linkText (ppSyntaxExpr se) (getRange se))
+                SourceDef de rng -> show (linkText (ppSyntaxDef de) (getRange de))
+                SourceExtern ex rng -> show (linkText (ppSyntaxExtern ex) (S.extRange ex))
                 SourceNotFound -> "Not found"
       tail <- sourceEnvCtxX cc
       case tail of 

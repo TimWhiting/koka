@@ -41,7 +41,7 @@ import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
 import Kind.Pretty (prettyKind)
 import Kind.ImportMap (importsEmpty, ImportMap)
 import Type.Pretty (ppScheme, defaultEnv, Env(..), ppName, keyword)
-import Type.Type (Name)
+import Type.Type (Name, Scheme)
 import Lib.PPrint
     ( Pretty(..), Doc, text, (<+>), color, empty, (<.>), (<->), vcat, (<-->))
 import Syntax.RangeMap
@@ -63,18 +63,23 @@ import Core.Pretty (prettyCore)
 import Common.Syntax (Target(..), CTarget (..))
 import System.Directory (createDirectoryIfMissing)
 import Control.Exception (catch, ErrorCall)
+import Syntax.Syntax (External, UserDef, UserExpr, Lit)
 
 catchError :: IO a -> (ErrorCall -> IO a) -> IO a
 catchError io f
   = io `catch` f
 
+toAbValueText :: ([Char], ([UserExpr], [UserDef], [External], [Lit], [([Char], Maybe Range)], S.Set Scheme)) -> T.Text
 toAbValueText (env, (fns, defs, externs, lits, constrs, topTypes)) =
-  let closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
-      litsText = if null lits then "" else intercalate "\n" (map ppLit lits)
+  let litsText = if null lits then "" else intercalate "\n" (map ppLit lits) 
+      topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
+      closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
       defsText = if null defs then "" else "\n\nDefinitions:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxDef d) ++ "\n```") defs)
       externsText = if null externs then "" else "\n\nExterns:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxExtern d) ++ "\n```") externs)
-      constrsText = if null constrs then "" else "\n\nConstructors:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ d ++ "\n```") constrs)
-      topTypesText = if null topTypes then "" else "\n\nTop-level types:\n\n" <> unwords (map (show . ppScheme defaultEnv) (S.toList topTypes))
+      constrsText = if null constrs then "" else "\n\nConstructors:\n\n" <> intercalate "\n\n " (map (\d -> 
+        case d of
+          (d, Just range) -> "[`" ++ d ++ "`](" ++ showFileUriRange range ++ ")"
+          (d, Nothing) -> "```koka\n" ++ d ++ "\n```") constrs)
       resText = closureText <> litsText <> defsText <> externsText <> constrsText <> topTypesText
       hc =
         ("\n\nIn Context: " <> env <> "\n\nEvaluates to:\n\n" <> (if null resText then "?" else resText))

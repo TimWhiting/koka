@@ -3,12 +3,16 @@
 fun error(v: maybe<a>): exn a
   v.unjust()
 
+
+
+
+
+
+
+
 fun test0()
   error(Just(10))
   error(Nothing)
-
-
-
 
 
 fun do-something(x: int)
