@@ -76,13 +76,13 @@ toAbValueText (env, (fns, defs, externs, lits, constrs, topTypes)) =
       closureText = if null fns then "" else intercalate "\n" (map (\d -> "```koka\n" ++ show (ppSyntaxExpr d) ++ "\n```") fns)
       defsText = if null defs then "" else "\n\nDefinitions:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxDef d) ++ "\n```") defs)
       externsText = if null externs then "" else "\n\nExterns:\n\n" <> intercalate "\n\n " (map (\d -> "```koka\n" ++ show (ppSyntaxExtern d) ++ "\n```") externs)
-      constrsText = if null constrs then "" else "\n\nConstructors:\n\n" <> intercalate "\n\n " (map (\d -> 
+      constrsText = if null constrs then "" else intercalate "\n\n " (map (\d -> 
         case d of
           (d, Just range) -> "[`" ++ d ++ "`](" ++ showFileUriRange range ++ ")"
           (d, Nothing) -> "```koka\n" ++ d ++ "\n```") constrs)
       resText = closureText <> litsText <> defsText <> externsText <> constrsText <> topTypesText
       hc =
-        ("\n\nIn Context: " <> env <> "\n\nEvaluates to:\n\n" <> (if null resText then "?" else resText))
+        ("\n\nIn Context: " <> env <> "\n\n" <> (if null resText then "⊥" else resText))
   in T.pack hc
 
 -- Handles hover requests
@@ -132,7 +132,7 @@ hoverHandler
                     Right(!x:xs, !newBuildContext) -> do
                       updateBuildContext newBuildContext
                       markdown <- prettyMarkdown doc
-                      let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <>
+                      let rsp = J.Hover (J.InL (J.mkMarkdown (markdown <> "\n\nEvaluates to:\n\n" <> 
                                                           T.intercalate "\n\n" (map toAbValueText (x:xs)) <>
                                                           "\n\n" <> T.pack (show $ diffUTCTime tend tstart))))
                                                           (Just (toLspRange rng))

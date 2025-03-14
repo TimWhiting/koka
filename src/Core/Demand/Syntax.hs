@@ -140,7 +140,7 @@ getAbResult (envctx, res) = do
   return $ trace
     ("eval " ++ show envctx ++
      "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
-    (env, (sourceLambdas, sourceDefs, sourceExterns, vs, consts, topTypes))
+    (env, (sourceLambdas, sourceDefs, sourceExterns, vs, S.toList $ S.fromList consts, topTypes))
 
 appRng :: ExprContext -> Maybe Range
 appRng ctx = case exprOfCtx ctx of
