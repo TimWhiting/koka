@@ -683,9 +683,9 @@ genExpr expr
      TypeLam _ e -> genExpr e
 
      -- handle not inlineable cases
-     App (TypeApp (Con name repr) _) [arg] rng  | getName name == nameOptional || isConIso repr
+     App (TypeApp (Con name repr _) _) [arg] rng  | getName name == nameOptional || isConIso repr
        -> genExpr arg
-     App (Con _ repr) [arg] rng  | isConIso repr
+     App (Con _ repr _) [arg] rng  | isConIso repr
        -> genExpr arg
      App (Var tname _) [Lit (LitInt i)] rng | getName tname == nameByte && (i >= 0 && i < 256)
        -> return (empty, pretty i)
@@ -756,7 +756,7 @@ extractList e
   where
     extract acc expr
       = case expr of
-          App (TypeApp (Con name info) _) [hd,tl] rng  | getName name == nameCons
+          App (TypeApp (Con name info _) _) [hd,tl] rng  | getName name == nameCons
             -> extract (hd:acc) tl
           _ -> (reverse acc, expr)
 
@@ -809,7 +809,7 @@ genPure expr
        -> genWrapExternal name formats  -- unapplied inlined external: wrap as function
      Var name info
        -> genTName name
-     Con name repr
+     Con name repr _
        -> genTName name
      Lit l
        -> return $ ppLit l
@@ -835,9 +835,9 @@ genInline expr
       _  | isPureExpr expr -> genPure expr
       TypeLam _ e -> genInline e
       TypeApp e _ -> genInline e
-      App (TypeApp (Con name repr) _) [arg] rng  | getName name == nameOptional || isConIso repr
+      App (TypeApp (Con name repr _) _) [arg] rng  | getName name == nameOptional || isConIso repr
         -> genInline arg
-      App (Con _ repr) [arg] rng  | isConIso repr
+      App (Con _ repr _) [arg] rng  | isConIso repr
         -> genInline arg
       App f args rng
         -> do argDocs <- mapM genInline (trimOptionalArgs args)
@@ -987,7 +987,7 @@ trimOptionalArgs args
   where
     isOptionalNone arg
       = case arg of
-          TypeApp (Con tname _) _ -> getName tname == nameOptionalNone
+          TypeApp (Con tname _ _) _ -> getName tname == nameOptionalNone
           _ -> False
 
 ---------------------------------------------------------------------------------
@@ -1040,7 +1040,7 @@ isPureExpr expr
       Var n (InfoConField{}) -> False
       Var n _  | getName n == nameReturn -> False -- make sure return will never be inlined
                | otherwise               -> True
-      Con _ _ -> True
+      Con _ _ _ -> True
       Lit _   -> True
       Lam _ _ _ -> True
       _       -> False
@@ -1053,7 +1053,7 @@ isTailCalling expr n
       TypeLam _ expr    -> expr `isTailCalling` n     -- trivial
       Lam _ _ _           -> False                      -- lambda body is a new context, can't tailcall
       Var _ _           -> False                      -- a variable is not a call
-      Con _ _           -> False                      -- a constructor is not a call
+      Con _ _ _         -> False                      -- a constructor is not a call
       Lit _             -> False                      -- a literal is not a call
       App (Var tn info) args rng   | getName tn == n            -- direct application can be a tail call
                         -> infoArity info == length args

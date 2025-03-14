@@ -507,7 +507,7 @@ isAtomic expr
   = case expr of
       Lit _          -> True
       Var _ info     -> infoIsLocal info
-      Con _ _        -> True
+      Con _ _ _      -> True
       _              -> False
 
 genExpr :: Expr  -> Asm ()
@@ -547,13 +547,13 @@ genExpr expr
             -> genTailCall expr tname [] args
 
           -- constructors
-          TypeApp (Con tname repr) targs
+          TypeApp (Con tname repr _) targs
             -> genCon tname repr targs []
 
-          App con@(Con tname repr) args rng
+          App con@(Con tname repr _) args rng
             -> genCon tname repr [] args
 
-          App tapp@(TypeApp (Con tname repr) targs) args rng
+          App tapp@(TypeApp (Con tname repr _) targs) args rng
             -> genCon tname repr targs args
 
           -- externals
@@ -740,7 +740,7 @@ genCon tname repr targs args
  = let (m,n) = getTypeArities (typeOf tname)
    in if (n > length args)
        then assertion "CSharp.FromCore.genCon: m /= targs" (m == length targs) $
-         do eta <- etaExpand (TypeApp (Con tname repr) targs) args n
+         do eta <- etaExpand (TypeApp (Con tname repr Nothing) targs) args n
             genExpr eta
        else assertion "CSharp.FromCore.genCon: n < args" (n == length args && m == length targs) $
          do argDocs <- genArguments args
@@ -840,7 +840,7 @@ genExprBasic expr
                           then result (text "this")  -- recursive call to a first-class function: this only works because we disallow polymorphic recursive local definitions
                           else -}
                          result (ppQName ctx (getName tname))
-          Con tname repr
+          Con tname repr _
             -> genCon tname repr [] []
           App e es rng
             -> genDynamic e es
@@ -1021,7 +1021,7 @@ genAtomic expr
           Var tname InfoNone
             -> do ctx <- getModule
                   return (ppQName ctx (getName tname))
-          Con tname repr
+          Con tname repr _
             -> withIdOne (genCon tname repr [] [])
           Lit lit
             -> return (ppLit lit)
@@ -1079,7 +1079,7 @@ genBranch _ _ _ _
 genGuard :: Expr -> Expr -> Asm ()
 genGuard guard expr
   = case guard of
-      Con tname repr | getName tname == nameTrue
+      Con tname repr _ | getName tname == nameTrue
         -> genExpr expr
       _ -> do gdoc <- withIdOne $ genExpr guard  -- TODO: wrap the guard for existentials
               do putLn (text "if" <+> parens (gdoc))

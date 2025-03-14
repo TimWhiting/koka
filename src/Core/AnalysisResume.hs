@@ -60,7 +60,7 @@ arExpr' appResume expr
         -> arExpr body
       Var tname info
         -> if (isResuming tname) then ResumeNormal else ResumeNever
-      Con tname repr
+      Con tname repr _
         -> ResumeNever
       Lit lit
         -> ResumeNever

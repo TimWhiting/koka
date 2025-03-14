@@ -136,8 +136,8 @@ ruSpecialize reuseName info conApp
              Nothing -> return Nothing
       _ -> return Nothing
   where
-    extractCon (Con cname repr) = Just (cname, repr)
-    extractCon (TypeApp (Con cname repr) _) = Just (cname, repr)
+    extractCon (Con cname repr _) = Just (cname, repr)
+    extractCon (TypeApp (Con cname repr _) _) = Just (cname, repr)
     extractCon _ = Nothing
 
 -- | Move dups before the allocation and emit:
@@ -175,9 +175,9 @@ tryMatch expr pat
          | vname == pname -> Match [] expr
       (App (Var dname _) [v@(Var vname _)] rng, PatVar pname _)  -- match dup (x == dup(x))
          | getName dname == nameDup && vname == pname -> Match [expr] v
-      (Con cname _, PatCon{patConName,patConPatterns = []})
+      (Con cname _ _, PatCon{patConName,patConPatterns = []})
          | cname == patConName -> Match [] expr
-      (Con cname _, PatVar pname (PatCon{patConName,patConPatterns = []}))
+      (Con cname _ _, PatVar pname (PatCon{patConName,patConPatterns = []}))
          | cname == patConName -> Match [] expr
       _ -> NoMatch expr
 

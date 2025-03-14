@@ -72,10 +72,10 @@ cctxExpr :: Expr -> CCtx Ctx
 cctxExpr expr
   = case expr of
       -- constructor
-      App con@(Con name repr) args rng       | conReprHasCtxPath repr && not (null args)
+      App con@(Con name repr _) args rng       | conReprHasCtxPath repr && not (null args)
         -> cctxCon name repr [] args
 
-      App (TypeApp (con@(Con name repr)) targs) args rng  | conReprHasCtxPath repr && not (null args)
+      App (TypeApp (con@(Con name repr _)) targs) args rng  | conReprHasCtxPath repr && not (null args)
         -> cctxCon name repr targs args
 
       -- App (App (TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f]) []) | getName open == nameEffectOpen
@@ -108,7 +108,7 @@ cctxConRecurse conName conRepr targs args
         (ds,vars) <- unzip <$> mapM makeUniqueDef pre
         fname <- getFieldName conName (length pre + 1)
         let ctxrepr = conRepr{ conCtxPath = CtxField fname }
-        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr) targs) (vars ++ [top ctx] ++ post) Nothing)
+        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr Nothing) targs) (vars ++ [top ctx] ++ post) Nothing)
         -- (d2,var2) <- makeUniqueDef (makeCCtxSetContextPath var1 conName fname)
         return (ctx{ defs = ds ++ defs ctx ++ [d1], top = var1 })
 
@@ -120,7 +120,7 @@ cctxConFinal conName conRepr targs pre hole post
         let holetp = typeOf hole
             ctxrepr = conRepr{ conCtxPath = CtxField fname }
         ensureValidHoleType holetp
-        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr) targs) (pre ++ [hole] ++ post) Nothing)
+        (d1,var1) <- makeUniqueDef (App (makeTypeApp (Con conName ctxrepr Nothing) targs) (pre ++ [hole] ++ post) Nothing)
         (d2,addr) <- makeUniqueDef (makeFieldAddrOf var1 conName (getName fname)   holetp)
         -- (d3,var3) <- makeUniqueDef (makeCCtxSetContextPath var1 conName fname) -- should be last as it consumes var1
         return (Ctx [d1,d2] var1 (Hole addr holetp))

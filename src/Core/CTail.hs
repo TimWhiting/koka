@@ -252,10 +252,10 @@ ctailExpr top expr
                     _ -> return (TypeApp expr' targs)
 
 
-          App f@(TypeApp (Con cname _) _) fargs _
+          App f@(TypeApp (Con cname _ _) _) fargs _
             -> handleConApp dname cname f fargs
 
-          App f@(Con cname _) fargs _
+          App f@(Con cname _ _) fargs _
             -> handleConApp dname cname f fargs
 
           App f@(TypeApp (Var name _) targs) fargs _ | name == dname
@@ -296,8 +296,8 @@ mkConApp :: CtxPath -> Expr -> [Expr] -> Expr
 mkConApp cpath fcon xs
   = case cpath of
       CtxField fname -> case fcon of
-                          Con conName conRepr -> App (Con conName conRepr{conCtxPath=cpath}) xs Nothing
-                          TypeApp (Con conName conRepr) targs -> App (TypeApp (Con conName conRepr{conCtxPath=cpath}) targs) xs Nothing
+                          Con conName conRepr rng -> App (Con conName conRepr{conCtxPath=cpath} rng) xs Nothing
+                          TypeApp (Con conName conRepr rng) targs -> App (TypeApp (Con conName conRepr{conCtxPath=cpath} rng) targs) xs Nothing
                           _ -> failure ("Core.CTail.mkConApp: invalid constructor: " ++ show fcon)
       _ -> App fcon xs Nothing
 
@@ -344,11 +344,11 @@ ctailTryArg useCtxPath dname cname mbC mkApp field (rarg:rargs)
                                return (Just expr)
 
       -- recurse into other con
-      App f@(TypeApp (Con cname2 _) _) fargs _  | tnamesMember dname (fv fargs) -- && all isTotal rargs
+      App f@(TypeApp (Con cname2 _ _) _) fargs _  | tnamesMember dname (fv fargs) -- && all isTotal rargs
        -> do x <- uniqueTName (typeOf rarg)
              ctailTryArg useCtxPath dname cname2 (Just x) (mkAppNested x f) (length fargs) (reverse fargs)
 
-      App f@(Con cname2 _) fargs _ | tnamesMember dname (fv fargs)  -- && all isTotal rargs
+      App f@(Con cname2 _ _) fargs _ | tnamesMember dname (fv fargs)  -- && all isTotal rargs
        -> do x <- uniqueTName (typeOf rarg)
              ctailTryArg useCtxPath dname cname2 (Just x) (mkAppNested x f) (length fargs) (reverse fargs)
 
@@ -617,7 +617,7 @@ getFieldName cname field
                 then return (Left ("cannot optimize modulo-cons tail-call through a value type (" ++ show (getName cname) ++ ")"))
                 else do case filter (\con -> conInfoName con == getName cname) (dataInfoConstrs dataInfo) of
                           [con] -> case drop (field - 1) (conInfoParams con) of
-                                      ((fname,ftp):_) -> return $ Right (Con cname (getConRepr dataInfo con), TName fname ftp Nothing)
+                                      ((fname,ftp):_) -> return $ Right (Con cname (getConRepr dataInfo con) Nothing, TName fname ftp Nothing)
                                       _ -> failure $ "Core.CTail.getFieldName: field index is off: " ++ show cname ++ ", field " ++ show  field ++ ", in " ++ show (conInfoParams con)
                           _ -> failure $ "Core.CTail.getFieldName: cannot find constructor: " ++ show cname ++ ", field " ++ show  field ++ ", in " ++ show (dataInfoConstrs dataInfo)
          _ -> failure $ "Core.CTail.getFieldName: no such constructor: " ++ show cname ++ ", field " ++ show  field

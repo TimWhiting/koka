@@ -499,7 +499,7 @@ childrenOfExpr ctx expr =
     Var name info -> addContextId (\newId -> ExprCBasic newId ctx expr ) >>= single
     TypeLam tvars expr -> childrenOfExpr ctx expr
     TypeApp expr tps -> childrenOfExpr ctx expr
-    Con name repr -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
+    Con name repr rng -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
     Lit lit -> addContextId (\newId -> ExprCBasic newId ctx expr) >>= single
   where single x = return [x]
 

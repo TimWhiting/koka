@@ -1577,7 +1577,7 @@ genGuard result (docs, bindings) (Guard guard expr)
            guardLocals             = map snd bindsGuard
            exprLocals              = map snd (filter (\(name,_) -> tnamesMember name exprFree) bindsOther)
        case guard of
-         Con tname repr | getName tname == nameTrue
+         Con tname repr _ | getName tname == nameTrue
            -> do doc <- genStat result expr
                  return (docs ++ [vcat (guardLocals ++ exprLocals ++ [doc])], bindsOther)
          _ -> do (gddoc,gdoc) <- genExpr guard
@@ -1736,8 +1736,8 @@ genExpr expr
 genExprPrim expr
   = -- trace ("genExpr: " ++ show expr) $
     case expr of
-     Con _ _              -> genConEtaExpand expr
-     TypeApp (Con _ _) _  -> genConEtaExpand expr
+     Con _ _ _            -> genConEtaExpand expr
+     TypeApp (Con _ _ _) _  -> genConEtaExpand expr
 
      TypeApp e _ -> genExpr e
      TypeLam _ e -> genExpr e
@@ -1841,7 +1841,7 @@ genPure expr
             _ -> case info of
                    InfoExternal formats -> genInlineExternal name formats []
                    _ -> return (ppName (getName name))
-     Con name info
+     Con name info _
        | getName name == nameTrue -> return (text "true")
        | getName name == nameFalse -> return (text "false")
        | getName name == nameUnit  -> return (text "kk_Unit")
@@ -1917,9 +1917,9 @@ genAppNormal (Var tname _) [xs] | getName tname `elem` [nameVectorFromList,nameV
        return (decls ++ [vecDecl,bufDecl] ++ assigns,vec)
   where
     isConsList xs = isJust (extractConsList xs)
-    extractConsList (Con tname repr) | getName tname == nameListNil
+    extractConsList (Con tname repr _) | getName tname == nameListNil
       = Just []
-    extractConsList (App (Con tname repr) [hd,tl] _) | getName tname == nameCons
+    extractConsList (App (Con tname repr _) [hd,tl] _) | getName tname == nameCons
       = case extractConsList tl of
           Just xs -> Just (hd:xs)
           _       -> Nothing
@@ -1927,11 +1927,11 @@ genAppNormal (Var tname _) [xs] | getName tname `elem` [nameVectorFromList,nameV
                         Nothing
 
 -- special: allocat
-genAppNormal (Var allocAt _) [Var at _, App (Con tname repr) args rng]  | getName allocAt == nameAllocAt
+genAppNormal (Var allocAt _) [Var at _, App (Con tname repr _) args rng]  | getName allocAt == nameAllocAt
   = do (decls,argDocs) <- genInlineableExprs args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
-genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr) targs) args rng]  | getName allocAt == nameAllocAt
+genAppNormal (Var allocAt _) [Var at _, App (TypeApp (Con tname repr _) targs) args rng]  | getName allocAt == nameAllocAt
   = do (decls,argDocs) <- genInlineableExprs args
        let atDoc = ppName (getName at)
        return (decls,conCreateName (getName tname) <.> arguments ([atDoc] ++ ppCtxPath repr tname (null args) ++ argDocs))
@@ -2011,7 +2011,7 @@ genAppNormal f args
          Nothing
            -> case f of
                -- constructor
-               Con tname repr
+               Con tname repr _
                  -> let at = if (dataReprIsValue (conDataRepr repr) || isConAsJust repr) then [] else [text "kk_reuse_null"]
                     in return (decls,conCreateName (getName tname) <.> arguments (at ++ ppCtxPath repr tname (null argDocs) ++ argDocs))
                -- call to known function
@@ -2344,7 +2344,7 @@ isPureExpr expr
       TypeLam _ expr  -> isPureExpr expr
       Var _ (InfoExternal{}) -> False
       Var _ _ -> True
-      Con _ _ -> case splitFunScheme (typeOf expr) of
+      Con _ _ _ -> case splitFunScheme (typeOf expr) of
                    Just _ -> False  -- partially applied constructor gets eta-expanded
                    _      -> True
       Lit (LitString _) -> False  -- for our purposes, it's not pure (as it needs a declaration)
@@ -2360,7 +2360,7 @@ isTailCalling expr n
       TypeLam _ expr    -> expr `isTailCalling` n     -- trivial
       Lam _ _ _           -> False                      -- lambda body is a new context, can't tailcall
       Var _ _           -> False                      -- a variable is not a call
-      Con _ _           -> False                      -- a constructor is not a call
+      Con _ _ _         -> False                      -- a constructor is not a call
       Lit _             -> False                      -- a literal is not a call
       App (Var tn info) args rng   | getName tn == n            -- direct application can be a tail call
                         -> infoArity info == length args

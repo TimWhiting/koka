@@ -264,7 +264,7 @@ specInnerCalls from to isSpecParam specParamNames expr
           Let defGroups body -> sicLet defGroups body
           Case exprs branches-> Case (map sicExpr exprs) (map sicBranch branches)
           Var tname info     -> expr
-          Con tname repr     -> expr
+          Con{}              -> expr
           Lit lit            -> expr
 
     -- capture avoiding rewrite over let bindings

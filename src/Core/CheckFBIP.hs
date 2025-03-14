@@ -136,7 +136,7 @@ chkExpr expr
 
       Case scrutinees branches
         -> chkBranches scrutinees branches
-      Con _ _ -> pure () -- Atoms are non-allocated
+      Con _ _ _ -> pure () -- Atoms are non-allocated
       Lit lit -> chkLit lit
 
 chkModCons :: [Expr] -> Chk ()
@@ -183,7 +183,7 @@ chkGuard (Guard test expr)
 
 -- | We ignore default branches that create a pattern match error
 isPatternMatchError :: Branch -> Bool
-isPatternMatchError (Branch pats [Guard (Con gname _) (App (App _ [TypeApp (Var (TName fnname _ _) _) _] _) _ rng)])
+isPatternMatchError (Branch pats [Guard (Con gname _ _) (App (App _ [TypeApp (Var (TName fnname _ _) _) _] _) _ rng)])
   | all isPatWild pats && getName gname == nameTrue && fnname == namePatternMatchError = True
   where isPatWild PatWild = True; isPatWild _ = False
 isPatternMatchError b = False
@@ -212,7 +212,7 @@ chkApp (TypeLam _ fn) args = chkApp fn args -- ignore type machinery
 chkApp (TypeApp fn _) args = chkApp fn args
 chkApp (App (TypeApp (Var openName _) _) [fn] rng) args | getName openName == nameEffectOpen
   = chkApp fn args
-chkApp (Con cname repr) args -- try reuse
+chkApp (Con cname repr _) args -- try reuse
   = do chkModCons args
        chkLazyCon cname repr
        chkAllocation cname repr
@@ -492,7 +492,7 @@ withTailMod modExpr
          Var _ _     -> True
          TypeLam _ e -> isModCons e
          TypeApp e _ -> isModCons e
-         Con _ _     -> True
+         Con _ _ _   -> True
          Lit _       -> True
          Let dgs e   -> all isModConsDef (flattenDefGroups dgs) && isModCons e
          App f args _  -> isModConsFun f && all isModCons args
@@ -505,7 +505,7 @@ withTailMod modExpr
       = case expr of
           TypeLam _ e   -> isModConsFun e
           TypeApp e _   -> isModConsFun e
-          Con _ _       -> True
+          Con _ _ _     -> True
           Let dgs e     -> all isModConsDef (flattenDefGroups dgs) && isModConsFun e
           App f args rng    -> hasTotalEffect (typeOf expr) && isModConsFun f && all isModCons args
           _             -> False

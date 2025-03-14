@@ -137,17 +137,17 @@ import Type.Kind    ( getKind, getOperationEffect, HandledSort(ResumeMany), isHa
 
 import Lib.Trace
 
-isExprUnit (Con tname _)  = getName tname == nameUnit
+isExprUnit (Con tname _ _)  = getName tname == nameUnit
 isExprUnit _              = False
 
-isExprTrue (Con tname _)  = (getName tname == nameTrue)
+isExprTrue (Con tname _ _)  = (getName tname == nameTrue)
 isExprTrue _              = False
 
-isExprFalse (Con tname _)  = (getName tname == nameFalse)
+isExprFalse (Con tname _ _)  = (getName tname == nameFalse)
 isExprFalse _              = False
 
 exprUnit :: Expr
-exprUnit = Con (TName nameUnit typeUnit Nothing) (ConEnum nameTpUnit DataEnum valueReprZero 0)
+exprUnit = Con (TName nameUnit typeUnit Nothing) (ConEnum nameTpUnit DataEnum valueReprZero 0) Nothing
            -- (ConInfo nameUnit typeUnit [] [] [] (TFun [] typeTotal typeUnit) Inductive rangeNull [] [] False Public "")
 
 (patFalse,exprFalse) = patExprBool nameFalse 0
@@ -159,7 +159,7 @@ patExprBool name tag
         conInfo = ConInfo name nameTpBool [] [] [] (TFun [] typeTotal typeBool) Inductive rangeNull [] [] False
                             [] valueReprZero Nothing tag Public ""
         pat = PatCon tname [] conEnum [] [] typeBool conInfo False
-        expr = Con tname conEnum
+        expr = Con tname conEnum Nothing
     in (pat,expr)
 
 makeIfExpr :: Expr -> Expr -> Expr -> Expr
@@ -178,7 +178,7 @@ makeVector tp exprs
 
 wrapOptional :: Type -> Expr -> Maybe Range -> Expr
 wrapOptional tp expr rng
-  = App (TypeApp (Con (TName nameOptional tpOptional rng) conInfo) [tp]) [expr] Nothing
+  = App (TypeApp (Con (TName nameOptional tpOptional rng) conInfo Nothing) [tp]) [expr] Nothing
   where
     conInfo    = ConAsJust nameTpOptional DataAsMaybe (valueReprScan 1) nameOptionalNone {-the Nothing-} 0
     tpOptional = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
@@ -186,7 +186,7 @@ wrapOptional tp expr rng
 
 makeOptionalNone :: Type -> Range -> Expr
 makeOptionalNone tp rng
-  = TypeApp (Con (TName nameOptionalNone tpOptionalNone (Just rng)) conInfo) [tp]
+  = TypeApp (Con (TName nameOptionalNone tpOptionalNone (Just rng)) conInfo Nothing) [tp]
   where
     conInfo    = ConSingleton nameTpOptional DataAsMaybe valueReprZero 1
     tpOptionalNone = TForall [a] [] (typeFun [(nameNil,TVar a)] typeTotal (makeOptionalType (TVar a)))
@@ -197,10 +197,10 @@ makeList tp exprs
   = foldr cons nil exprs
   where
     nilTp    = TForall [a] [] (TApp typeList [TVar a])
-    nilCon   = Con (TName nameListNil nilTp Nothing) (ConSingleton nameTpList DataAsList valueReprZero 0)
+    nilCon   = Con (TName nameListNil nilTp Nothing) (ConSingleton nameTpList DataAsList valueReprZero 0) Nothing
     nil      = TypeApp nilCon [tp]
     consTp   = TForall [a] [] (typeFun [(nameNil,TVar a),(nameNil,TApp typeList [TVar a])] typeTotal (TApp typeList [TVar a]))
-    consCon  = Con (TName nameCons consTp Nothing) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2)  -- NOTE: depends on Cons being second in the definition in std/core :-(
+    consCon  = Con (TName nameCons consTp Nothing) (ConAsCons nameTpList DataAsList (valueReprScan 2) nameListNil CtxNone 2) Nothing  -- NOTE: depends on Cons being second in the definition in std/core :-(
     cons expr xs = App (TypeApp consCon [tp]) [expr,xs] Nothing
     a = TypeVar (0) kindStar Bound
 
@@ -714,7 +714,7 @@ data Expr =
   | TypeLam ![TypeVar] !Expr                       -- ^ Type (universal) abstraction/application
   | TypeApp !Expr ![Type]
   -- Literals, constants and labels
-  | Con{ conName :: !TName, conRepr ::  !ConRepr  }          -- ^ typed name and its representation
+  | Con{ conName :: !TName, conRepr ::  !ConRepr, conRange :: !(Maybe Range)  }          -- ^ typed name and its representation
   | Lit !Lit
   -- Let
   | Let !DefGroups !Expr
@@ -827,7 +827,7 @@ isTotal expr
      Var _ _     -> True
      TypeLam _ e -> isTotal e
      TypeApp e _ -> isTotal e
-     Con _ _     -> True
+     Con _ _ _   -> True
      Lit _      -> True
      Let dgs e  -> all isTotalDef (flattenDefGroups dgs) && isTotal e
      Case exps branches -> all isTotal exps && all isTotalBranch branches
@@ -844,7 +844,7 @@ isTotalFun expr
       Lam _ _ body  -> isTotal body
       TypeLam _ e   -> isTotalFun e
       TypeApp e _   -> isTotalFun e
-      Con _ _       -> True
+      Con _ _ _     -> True
       Lit _         -> True  -- not possible due to typing
       Let dgs e     -> all isTotalDef (flattenDefGroups dgs) && isTotalFun e
       Case exps branches -> all isTotal exps && all isTotalBranchFun branches
@@ -924,7 +924,7 @@ costExpr expr
       App e args _         -> 1 + costExpr e + sum (map costExpr args)
       TypeLam tvs e      -> costExpr e
       TypeApp e tps      -> costExpr e
-      Con tname repr     -> 0
+      Con tname repr _   -> 0
       Lit lit            -> 0
       Let defGroups body -> sum (map costDefGroup defGroups) + (costExpr body)
       Case exprs branches -> (length branches - 1) + sum (map costExpr exprs) + sum (map costBranch branches)
@@ -961,7 +961,7 @@ foldMapExpr acc e = case e of
   App f xs _ -> acc e <> foldMapExpr acc f <> mconcat (foldMapExpr acc <$> xs)
   TypeLam _ body -> acc e <> foldMapExpr acc body
   TypeApp expr _ -> acc e <> foldMapExpr acc expr
-  Con _ _ -> acc e
+  Con{} -> acc e
   Lit _ -> acc e
   Let binders body -> acc e <> mconcat [foldMapExpr acc (defExpr def) | def <- flattenDefGroups binders] <> foldMapExpr acc body
   Case cases branches -> acc e <> mconcat (foldMapExpr acc <$> cases) <>
@@ -983,7 +983,7 @@ rewriteBottomUpM f e = f =<< case e of
   App fun xs rng -> liftA2 (\f xs -> App f xs rng) (rec fun) (mapM rec xs)
   TypeLam types body -> TypeLam types <$> rec body
   TypeApp expr types -> (\fexpr -> TypeApp fexpr types) <$> rec expr
-  Con _ _ -> pure e
+  Con{} -> pure e
   Lit _ -> pure e
   Let binders body -> do
     newBinders <- forM binders $ \binder ->
@@ -1015,7 +1015,7 @@ rewriteTopDownM f e = f e >>= \e -> case e of
   App fun xs rng -> liftA2 (\f xs -> App f xs rng) (rec fun) (mapM rec xs)
   TypeLam types body -> TypeLam types <$> rec body
   TypeApp expr types -> (\fexpr -> TypeApp fexpr types) <$> rec expr
-  Con _ _ -> pure e
+  Con{} -> pure e
   Lit _ -> pure e
   Let binders body -> do
     newBinders <- forM binders $ \binder ->
@@ -1227,7 +1227,7 @@ instance HasType Expr where
     = typeOf tname
 
   -- Constants
-  typeOf (Con tname repr)
+  typeOf (Con tname repr _)
     = typeOf tname
 
   -- Application
@@ -1382,7 +1382,7 @@ depExpr expr
       App e args _         -> depsUnions (map depExpr (e:args))
       TypeLam tvs e      -> depExpr e
       TypeApp e tps      -> depsUnions (depExpr e : map depType tps)
-      Con tname repr     -> depTName tname
+      Con tname repr _   -> depTName tname
       Lit lit            -> S.empty
       Let defGroups body -> depsUnions (depExpr body : map depDef (flattenDefGroups defGroups))
       Case exprs branches -> depsUnions (map depExpr exprs ++ map depBranch branches)

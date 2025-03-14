@@ -145,6 +145,7 @@ getAbResult (envctx, res) = do
 appRng :: ExprContext -> Maybe Range
 appRng ctx = case exprOfCtx ctx of
   App _ _ rng -> rng
+  Con _ _ rng -> rng
   _ -> Nothing
 
 simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSynonyms=False,showFlavours=False,coreShowTypes=False}

@@ -506,7 +506,7 @@ parseCon :: Env -> LexParser Expr
 parseCon env
   = do name <- qualifiedConId
        con  <- envLookupCon env name
-       return $ Con (TName name (infoType con) Nothing) (infoRepr con)
+       return $ Con (TName name (infoType con) Nothing) (infoRepr con) Nothing
 
 parseVar :: Env -> LexParser Expr
 parseVar env

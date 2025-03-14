@@ -125,7 +125,7 @@ instance HasExpVar Expr where
   fv (App e1 e2 _)          = fv e1 `S.union` fv e2
   fv (TypeLam tyvar expr) = fv expr
   fv (TypeApp expr ty)    = fv expr
-  fv (Con tname repr)     = S.empty
+  fv (Con tname repr _)   = S.empty
   fv (Lit i)              = S.empty
   fv (Let dfgrps expr)    = fvDefGroups dfgrps expr
   fv (Case exprs bs)      = fv exprs `S.union` fv bs
@@ -192,7 +192,7 @@ instance HasExprVar Expr where
                                           || all (\name -> not (S.member name (fv exp) )) (map fst sub)) $ -}
                               TypeLam typeVars (sub |~> exp)
       TypeApp expr tp      -> TypeApp (sub |~> expr) tp
-      Con tname repr       -> expr
+      Con tname repr _     -> expr
       Lit lit              -> expr
       Let defGroups expr   -> let defnames = map defName (flattenDefGroups defGroups)
                                   sub' = [(name,e) | (name,e) <- sub, all (getName name /=) defnames]

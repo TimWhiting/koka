@@ -157,7 +157,7 @@ parcExpr expr
               return $ App fn' args' rng
       Lit _
         -> return expr
-      Con ctor repr
+      Con ctor repr _
         -> return expr
       Let [] body
         -> parcExpr body

@@ -174,7 +174,7 @@ uniquefyExprX expr
                               return (TypeLam tvs expr1)
       TypeApp expr tps  -> do expr1 <- uniquefyExprX expr
                               return (TypeApp expr1 tps)
-      Con tname repr    -> return expr
+      Con tname repr _  -> return expr
       Lit lit           -> return expr
       Let defGroups expr  -> do defGroups1 <- mapM uniquefyInnerDefGroup defGroups
                                 expr1 <- uniquefyExprX expr

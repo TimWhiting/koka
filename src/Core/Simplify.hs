@@ -379,11 +379,11 @@ bottomUp expr@(App (TypeApp (Var isValidK _) _) [arg])  | getName isValidK == na
 
 -- case on a single constructor, including tuples.
 -- extracts the arguments to do a direct multi-pattern match
-bottomUp expr@(Case [App (TypeApp (Con name ConSingle{}) targs) args rng] branches)
+bottomUp expr@(Case [App (TypeApp (Con name ConSingle{} _) targs) args rng] branches)
   | length (branchPatterns (head branches)) == 1 && all (isMatchOnCon name (length args)) branches
   = Case args (map (extractMatchOnCon (length args)) branches)
 
-bottomUp expr@(Case [App (Con name ConSingle{}) args rng] branches)
+bottomUp expr@(Case [App (Con name ConSingle{} _) args rng] branches)
   | length (branchPatterns (head branches)) == 1 && all (isMatchOnCon name (length args)) branches
   = Case args (map (extractMatchOnCon (length args)) branches)
 
@@ -562,20 +562,20 @@ kmatchPattern scrut@(Lit lit) (PatLit pLit)
   = --trace "kmatchPat PatLit " $
     if lit /= pLit then NoMatch else Match ([], scrut)
 
-kmatchPattern scrut@(Con name _repr) (PatCon pname [] _prepr _ _ _ _info _)
+kmatchPattern scrut@(Con name _repr _) (PatCon pname [] _prepr _ _ _ _info _)
   = --trace ("kmatchPat PatCon empty pats " ++ show name ++ " ___pat___ " ++ show pname) $
     if name /= pname then NoMatch else
       --trace ("kmatchPat PatCon empty pats match " ++ show name) $
       Match ([], scrut)
 
-kmatchPattern scrut@(App con@(Con name conRepr) args rng) (PatCon pname pats _ _ _ _ _ _)
+kmatchPattern scrut@(App con@(Con name conRepr _) args rng) (PatCon pname pats _ _ _ _ _ _)
   = --trace "kmatchPat PatCon non empty pats " $
     if name /= pname then NoMatch else
       do ds <- matchAll (zipWith kmatchPattern args pats)
          let (defs,scruts) = unzip ds
          Match (concat defs, App con scruts rng)
 
-kmatchPattern scrut@(App con@(TypeApp (Con name conRepr) targs) args rng) (PatCon pname pats _ _ _ _ _ _)
+kmatchPattern scrut@(App con@(TypeApp (Con name conRepr _) targs) args rng) (PatCon pname pats _ _ _ _ _ _)
   = --trace "kmatchPat PatCon non empty pats " $
     if name /= pname then NoMatch else
       do ds <- matchAll (zipWith kmatchPattern args pats)
@@ -688,7 +688,7 @@ instance Simplify Expr where
                 TypeApp expr tps
                   -> do x <- simplify expr
                         return (TypeApp x tps)
-                Con tname repr
+                Con tname repr _
                   -> return td
                 Lit lit
                   -> return td
@@ -726,7 +726,7 @@ sizeOfExpr :: Expr -> Int
 sizeOfExpr expr
   = case expr of
       Var tname info     -> 0
-      Con tname repr     -> 0
+      Con tname repr _   -> 0
       Lit lit            -> 0
       Lam tname eff body -> 1 + sizeOfExprX body
       App e args rng        -> 1 + sizeOfFun e + sum (map sizeOfExpr args)
@@ -754,7 +754,7 @@ sizeOfExpr expr
 sizeOfFun :: Expr -> Int   -- for functions we must be conservative or we could lose sharing from allocations
 sizeOfFun expr
   = case expr of
-      Con _ _    -> maxSize
+      Con{}      -> maxSize
       Var _ _    -> 1
       Lit _      -> 0  -- cannot happen?
       Lam tname eff body -> 1 + sizeOfExpr body
@@ -768,7 +768,7 @@ sizeOfFun expr
 sizeOfExprX expr
   = case expr of
       Var tname info     -> 0
-      Con tname repr     -> 0
+      Con{}              -> 0
       Lit lit            -> 0
       Lam tname eff body -> 1 + sizeOfExprX body
       App e args rng        -> 1 + sizeOfExprX e + sum (map sizeOfExprX args)

@@ -103,8 +103,8 @@ ruToAssign (NoMatch expr)
              return ([def],(var,False))
 
 extractCon :: Expr -> Maybe (TName, ConRepr)
-extractCon (Con cname repr) = Just (cname, repr)
-extractCon (TypeApp (Con cname repr) _) = Just (cname, repr)
+extractCon (Con cname repr _) = Just (cname, repr)
+extractCon (TypeApp (Con cname repr _) _) = Just (cname, repr)
 extractCon _ = Nothing
 
 ruSpecCon' :: HasCallStack => TName -> TName -> ConRepr -> ConInfo -> Maybe (Int,Maybe Int) -> [Match] -> Reuse Expr
@@ -149,10 +149,10 @@ ruExpr expr
       App (Var name _) [Var tname _, conApp] _ | getName name == nameLazyMemoize
         -> do ruLazyMemoize tname conApp
 
-      App con@(Con cname repr) args rng
+      App con@(Con cname repr _) args rng
         -> do args' <- mapM ruExpr args
               ruTryReuseCon cname repr (App con args' rng)
-      App ta@(TypeApp (Con cname repr) _) args rng
+      App ta@(TypeApp (Con cname repr _) _) args rng
         -> do args' <- mapM ruExpr args
               ruTryReuseCon cname repr (App ta args' rng)
 
@@ -410,10 +410,10 @@ ruLazyMemoize lazyTName arg
           Just lazyInfo
             -> case tailArg of
                     -- try to write the constructor in-place on the lazy one
-                    App con@(Con cname repr) args _                 -> updateCon reuseName lazyInfo cname repr con args
-                    App con@(TypeApp (Con cname repr) targs) args _ -> updateCon reuseName lazyInfo cname repr con args
+                    App con@(Con cname repr _) args _                 -> updateCon reuseName lazyInfo cname repr con args
+                    App con@(TypeApp (Con cname repr _) targs) args _ -> updateCon reuseName lazyInfo cname repr con args
                     -- singleton uses an indirection
-                    Con cname repr -> lazyIndirect reuseName lazyInfo True tailArg
+                    Con cname repr _ -> lazyIndirect reuseName lazyInfo True tailArg
                     -- otherwise use an indirection
                     _ -> do -- no warning needed as it is checked in Kind.Infer
                             -- warning (\penv -> text "cannot update lazy value directly as the whnf is not statically known -- using indirection")
@@ -489,7 +489,7 @@ ruLazyMemoize lazyTName arg
              Just (cinfo,crepr)
                -> let (_,_,rho) = splitPredType (conInfoType cinfo)
                       cname = TName (conInfoName cinfo) rho Nothing
-                      con   = Con cname crepr 
+                      con   = Con cname crepr Nothing
                   in lazyReuse reuseName lazyInfo (Just cinfo) cname crepr con [arg']
              Nothing
                -> do failure ("Backend.C.ParcReuse.getLazyIndirectCon: cannot find indirection constructor for " ++ show lazyTName)

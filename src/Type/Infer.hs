@@ -629,7 +629,7 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
   where
     errorAssignable
       = do contextError rng (getRange lval) (text "not an assignable expression") [(text "because",text "an assignable expression must be an application, index expression, or variable")]
-           return (typeUnit,typeTotal,Core.Con (Core.TName (nameTuple 0) typeUnit (Just $ getRange lval)) (Core.ConEnum nameTpUnit Core.DataEnum valueReprZero 0))
+           return (typeUnit,typeTotal,Core.Con (Core.TName (nameTuple 0) typeUnit (Just $ getRange lval)) (Core.ConEnum nameTpUnit Core.DataEnum valueReprZero 0) Nothing)
 
     checkAssign
       = Check "an assignable identifier must have a reference type"
@@ -2534,9 +2534,9 @@ coreList :: Maybe Range -> Type -> [Core.Expr] -> Inf Core.Expr
 coreList rng tp cs
   = do (consName,consTp,consRepr,_) <- resolveConName nameCons Nothing rangeNull
        (nilName,nilTp,nilRepr,_) <- resolveConName nameListNil Nothing rangeNull
-       let consx = Core.TypeApp (Core.Con (Core.TName consName consTp Nothing) consRepr) [tp]
+       let consx = Core.TypeApp (Core.Con (Core.TName consName consTp Nothing) consRepr rng) [tp]
            cons x xs = Core.App consx (seqqList [x,xs]) rng
-           nil  = Core.TypeApp (Core.Con (Core.TName nilName nilTp Nothing) nilRepr) [tp]
+           nil  = Core.TypeApp (Core.Con (Core.TName nilName nilTp Nothing) nilRepr rng) [tp]
        return (foldr cons nil cs)
 
 unzip4 xs = unzipx4 [] [] [] [] xs

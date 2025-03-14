@@ -183,7 +183,7 @@ check expr
               return (typeFun [(name,tp) | TName name tp _ <- pars'] eff tpRes)
       Var tname info
         -> checkType $ typeOf tname
-      Con tname info
+      Con tname info _
         -> return $ typeOf tname
       App fun args rng
         -> do tpFun <- check fun

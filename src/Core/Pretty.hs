@@ -371,7 +371,7 @@ prettyExpr env (TypeApp expr tps)
     env'' = env { prec = precTop }
 
 -- Literals and constants
-prettyExpr env (Con tname repr)
+prettyExpr env (Con tname repr _)
   = -- prettyTName env tname
     prettyVar env tname
 
@@ -652,7 +652,7 @@ instance HasTypeVar Expr where
         TypeLam tvs expr  -> let sub' = subRemove tvs sub
                               in TypeLam tvs (sub' |-> expr)
         TypeApp expr tps   -> TypeApp (sub `substitute` expr) (sub `substitute` tps)
-        Con tname repr     -> Con (sub `substitute` tname) repr
+        Con tname repr rng -> Con (sub `substitute` tname) repr rng
         Lit lit            -> Lit lit
         Let defGroups expr -> Let (sub `substitute` defGroups) (sub `substitute` expr)
         Case exprs branches -> Case (sub `substitute` exprs) (sub `substitute` branches)
@@ -664,7 +664,7 @@ instance HasTypeVar Expr where
                   App a b _           -> ftv a `tvsUnion` ftv b
                   TypeLam tvs expr   -> tvsRemove tvs (ftv expr)
                   TypeApp expr tp    -> ftv expr `tvsUnion` ftv tp
-                  Con tname repr     -> ftv tname
+                  Con tname repr _   -> ftv tname
                   Lit lit            -> tvsEmpty
                   Let defGroups expr -> ftv defGroups `tvsUnion` ftv expr
                   Case exprs branches -> ftv exprs `tvsUnion` ftv branches
@@ -678,7 +678,7 @@ instance HasTypeVar Expr where
         App a b _            -> btv a `tvsUnion` btv b
         TypeLam tvs expr   -> tvsInsertAll tvs (btv expr)
         TypeApp expr tp    -> btv expr `tvsUnion` btv tp
-        Con tname repr     -> btv tname
+        Con tname repr _   -> btv tname
         Lit lit            -> tvsEmpty
         Let defGroups expr -> btv defGroups `tvsUnion` btv expr
         Case exprs branches -> btv exprs `tvsUnion` btv branches
@@ -690,7 +690,7 @@ instance HasTypeVar Expr where
                   App a b _            -> ftc a `tcsUnion` ftc b
                   TypeLam tvs expr   -> ftc expr
                   TypeApp expr tp    -> ftc expr `tcsUnion` ftc tp
-                  Con tname repr     -> ftc tname
+                  Con tname repr _   -> ftc tname
                   Lit lit            -> tcsEmpty
                   Let defGroups expr -> ftc defGroups `tcsUnion` ftc expr
                   Case exprs branches -> ftc exprs `tcsUnion` ftc branches

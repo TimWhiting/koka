@@ -158,7 +158,7 @@ coreExprFromNameInfo qname info rng
     case info of
       InfoVal vis cname tp _ _ _ _           -> Core.Var (Core.TName cname tp (Just rng)) (Core.InfoNone)
       InfoFun vis cname tp ((m,n)) _ _ _     -> Core.Var (Core.TName cname tp (Just rng)) (Core.InfoArity m n)
-      InfoCon vis  tp repr _ _ _             -> Core.Con (Core.TName qname tp (Just rng)) repr
+      InfoCon vis  tp repr _ _ _             -> Core.Con (Core.TName qname tp (Just rng)) repr (Just rng)
       InfoExternal vis cname tp format _ _ _ -> Core.Var (Core.TName cname tp (Just rng)) (Core.InfoExternal format)
       InfoImport _ _ _ _ _                   -> matchFailure "Type.Infer.coreExprFromNameInfo"
 

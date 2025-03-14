@@ -325,10 +325,10 @@ doEval (ctx, env) query = do
                         -- trace (query ++ "REF: External module " ++ showSimpleContext lamctx) $ return ()
                         qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
                     _ -> error $ "REF: can't find what the following refers to " ++ showSimpleContext ctx ++ "\n\n Unhandled Primitive?"
-        App (TypeApp (Con nm repr) _) args rng -> do
+        App (TypeApp (Con nm repr _) _) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           return $ AChangeConstr ctx env
-        App (Con nm repr) args rng -> do
+        App (Con nm repr _) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
           return $ AChangeConstr ctx env
         App f tms rng -> do
@@ -376,7 +376,7 @@ doEval (ctx, env) query = do
           res <- qeval (e, env)
           -- trace (query ++ "CASE: " ++ show e ++ " " ++ show res) $ return ()
           evalBranches res ctx env (zip branches [0..]) -- Offset by one to skip the scrutinee
-        Con nm repr -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
+        Con nm repr _ -> return $! AChangeConstr ctx env -- TODO: Check that the constructor is a singleton
 
 --------------------------------- PATTERN EVALUATION HELPERS -----------------------------------------------
 evalPatternRef :: ExprContext -> EnvCtx -> PatBinding -> FixDemandR x s e AChange
@@ -395,13 +395,13 @@ evalPatternRef expr env pat = do
               f <- focusChild 0 conApp -- Evaluate the head of the application to get the constructor (could be polymorphic)
               AChangeConstr cexpr _ <- qeval (f, cenv)
               case exprOfCtx cexpr of
-                Con nm _ ->
+                Con nm _ _ ->
                   if con /= nm then
                     doBottom
                   else do
                     x <- focusParam i conApp
                     evalPatternRef x cenv subBinding
-            Con nm _ -> doBottom -- Could also be a singleton constructor, but there are no bound variables there
+            Con nm _ _ -> doBottom -- Could also be a singleton constructor, but there are no bound variables there
         e ->
           -- trace ("EVALPatRef: Not a constructor " ++ show e)
           doBottom
@@ -434,8 +434,8 @@ matchesPatternConstr conApp env pat = do
   case pat of
     PatCon{patConName, patConInfo=ci} -> do
       case exprOfCtx conApp of
-        Con nm _ | nm == patConName -> return True
-        Con nm _ | nm /= patConName -> return False
+        Con nm _ _ | nm == patConName -> return True
+        Con nm _ _ | nm /= patConName -> return False
         _ -> do
           -- trace ("Looking for matching constructor " ++ show patConName ++ " in " ++ show (exprOfCtx conApp)) $ return ()
           conE <- focusChild 0 conApp
@@ -443,7 +443,7 @@ matchesPatternConstr conApp env pat = do
           case con of
             AChangeConstr c _ -> do
               case exprOfCtx c of
-                Con nm _ | nm == patConName ->
+                Con nm _ _ | nm == patConName ->
                   if Prelude.null (patConPatterns pat) then return True
                   else do
                     childs <- childrenContexts conApp
