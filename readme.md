@@ -12,7 +12,7 @@ _Koka v3 is a research language that is currently under development and not quit
 
 -----------
 NOTE!
-_Context Sensitive Demand CFA (ESOP 2025)_
+_Context Sensitive Demand CFA (ESOP 2025)_ v3.1.100
 Eventually I'll get around to compiling a version that can be installed locally without all the dependencies.
 For now, install Koka using the source install instructions below (make sure to check out this branch!)
 Then install the VSCode extension (language-koka-3.1.3.vsix) by right clicking it in the VSCode explorer, and selecting install (bottom of the dropdown).
@@ -21,7 +21,7 @@ The VSCode extension has two additional settings beyond the normal Koka settings
 To use those settings with a local extension install you will need to edit your workspace settings (not the user settings).
 You will also need to reload the window for the setting changes to take effect (Cmd/Ctrl + Shift + P) and select `Developer: Reload Window`
 
-The `koka.analysis.callSensitivityDepth` setting changes the `m` parameter from the paper.
+The `koka.analysis.callSensitivity` setting changes the `m` parameter from the paper.
 The `koka.analysis.debug` setting prints out a debug log to the OUTPUT panel in VSCode (select Koka Language Server Stdout from the dropdown)
 Note that due to Koka algebraic effects you will see a bunch of inferred calls to `@open` which adjust evidence vectors prior to calling functions.
 

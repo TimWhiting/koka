@@ -284,7 +284,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
   let warning = ""
   const platform = `${osGetPlatform()}-${osGetArch()}`
   if (!binaryPlatforms.includes(platform)) {
-    warning = `Unfortunately, it looks like your platform ${platform} does not have a binary installer -- see <https://github.com/koka-lang/koka> for build instructions.  `
+    warning = `Unfortunately, it looks like your platform ${platform} does not have a binary installer -- see <https://github.com/TimWhiting/koka> for build instructions.  `
   }
 
   // ask the user to install
@@ -313,7 +313,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
     }
     else {
       const tmpDir = (process.env.TMP || process.env.TEMP || "%HOMEDRIVE%%HOMEPATH%")
-      shellCmd = `curl -sSL -o "${tmpDir}\\install-koka.bat" https://github.com/koka-lang/koka/releases/latest/download/install.bat && "${tmpDir}\\install-koka.bat" ${flags} && exit`
+      shellCmd = `curl -sSL -o "${tmpDir}\\install-koka.bat" https://github.com/TimWhiting/koka/releases/latest/download/install.bat && "${tmpDir}\\install-koka.bat" ${flags} && exit`
     }
   }
   else {
@@ -322,7 +322,7 @@ async function installKoka(context: vscode.ExtensionContext, config: vscode.Work
       shellCmd = `${kokaDevDir}/util/install.sh ${flags} ${kokaBundle} && exit`
     }
     else {
-      shellCmd = `curl -sSL https://github.com/koka-lang/koka/releases/latest/download/install.sh | sh -s -- ${flags} && exit`
+      shellCmd = `curl -sSL https://github.com/TimWhiting/koka/releases/latest/download/install.sh | sh -s -- ${flags} && exit`
     }
   }
   console.log(`Koka: install: ${shellCmd}`)
@@ -397,7 +397,7 @@ async function uninstallKoka(context: vscode.ExtensionContext) {
     }
     else {
       const tmpDir = (process.env.TMP || process.env.TEMP || "%HOMEDRIVE%%HOMEPATH%")
-      shellCmd = `curl -sSL -o "${tmpDir}\\install-koka.bat" https://github.com/koka-lang/koka/releases/latest/download/install.bat && "${tmpDir}\\install-koka.bat" ${flags}`
+      shellCmd = `curl -sSL -o "${tmpDir}\\install-koka.bat" https://github.com/TimWhiting/koka/releases/latest/download/install.bat && "${tmpDir}\\install-koka.bat" ${flags}`
     }
   }
   else {
@@ -405,7 +405,7 @@ async function uninstallKoka(context: vscode.ExtensionContext) {
       shellCmd = `${kokaDevDir}/util/install.sh ${flags}`
     }
     else {
-      shellCmd = `curl -sSL https://github.com/koka-lang/koka/releases/latest/download/install.sh | sh -s -- ${flags}`
+      shellCmd = `curl -sSL https://github.com/TimWhiting/koka/releases/latest/download/install.sh | sh -s -- ${flags}`
     }
   }
   const term = vscode.window.createTerminal({ name: "Uninstall Koka", cwd: home, shellPath: defaultShell, isTransient: true, message: "Uninstalling Koka, you can close the terminal when done" })
