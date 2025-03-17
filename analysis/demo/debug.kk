@@ -7,16 +7,55 @@ fun error(x : int, v: maybe<int>): exn int
     res
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 fun test0()
   error(10, Just(10))
   if False then 
     val res = error(0, Nothing)
     ()
 
+
+
+
+
+
+
+
+
 fun do-something(x: int, y)
   println(x.show)
   if x == 0 then error(x, y) else x
   error(x, Just(x))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 fun test1()
   val res1 = do-something(13, Nothing)

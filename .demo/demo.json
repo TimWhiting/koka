@@ -87,5 +87,118 @@
         }
       ]
     },
+    {
+      "title": "1CFA-process-data",
+      "description": "1CFA partial evaluation",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/process-data.kk",
+          "position": "3,7:3,8",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-environments",
+      "description": "1CFA environment instantiation",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/apply.kk",
+          "position": "3,17:3,18",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-debugging",
+      "description": "1CFA find places v flows from",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/debug.kk",
+          "position": "6,15:6,16",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-debugging",
+      "description": "1CFA find places v flows from",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/debug.kk",
+          "position": "6,15:6,16",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-optimization",
+      "description": "Optimize first condition",
+      "steps": [
+        {
+          "action": "create",
+          "path": "/analysis/samples/r6rs/rsa.kk",
+          "contentPath": "/snapshots/rsa.snapshot.kk"
+        },
+        {
+          "action": "open",
+          "path": "/analysis/samples/r6rs/rsa.kk"
+        },
+        {
+          "action": "highlight",
+          "path": "/analysis/samples/r6rs/rsa.kk",
+          "position": "42,8:42,9",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-optimization",
+      "description": "Lift totient",
+      "steps": [
+        {
+          "action": "applyPatch",
+          "path": "/analysis/samples/r6rs/rsa.kk",
+          "contentPath": "/snapshots/rsa.snapshot.kk",
+          "patch": "/patches/rsa-totient.patch"
+        },
+        {
+          "action": "open",
+          "path": "/analysis/samples/r6rs/rsa.kk"
+        },
+        {
+          "action": "highlight",
+          "path": "/analysis/samples/r6rs/rsa.kk",
+          "position": "43,19:43,20",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-optimization",
+      "description": "Lift condition",
+      "steps": [
+        {
+          "action": "applyPatch",
+          "path": "/analysis/samples/r6rs/rsa.kk",
+          "contentPath": "/snapshots/rsa.snapshot.kk",
+          "patch": "/patches/rsa-condition.patch"
+        },
+        {
+          "action": "open",
+          "path": "/analysis/samples/r6rs/rsa.kk"
+        },
+        {
+          "action": "highlight",
+          "path": "/analysis/samples/r6rs/rsa.kk",
+          "position": "44,14:44,27",
+          "highlightWholeLine": false
+        }
+      ]
+    }
   ]
 }

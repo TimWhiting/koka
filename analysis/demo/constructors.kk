@@ -1,7 +1,5 @@
 // Lazy constructor evaluation
 
-// TODO: Improve visualization of constructor results
-
 // DERIV -- Symbolic derivation.
 
 // Returns the wrong answer for quotients.

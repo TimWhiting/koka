@@ -1,6 +1,5 @@
 // Improvement from OCFA to 1CFA to 2CFA
 
-// TODO: Improve visualization of environment & callers
 fun lp(a: bool, n)
   if n <= 1 then id(a)
   else

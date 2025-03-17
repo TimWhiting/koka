@@ -39,8 +39,7 @@ fun gcd( x : int, y : int )
 // A legal public exponent e is between
 // 1 and totient(n), and gcd(e,totient(n)) = 1
 fun is-legal-public-exponent(e, p, q)
-  val t = totient(p, q)
-  (1 < e) && (e < t) && (1 == gcd(e, t))
+  (1 < e) && (e < totient(p, q)) && (1 == gcd(e, totient(p, q)))
 
 // The private exponent is the inverse of the public exponent, mod n.
 fun private-exponent(e, p, q)
