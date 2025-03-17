@@ -5,7 +5,7 @@
   "demos": [
     {
       "title": "0CFA-intT",
-      "description": "integer resolution",
+      "description": "0CFA integer imprecision",
       "steps": [
         {
           "action": "highlight",
@@ -14,6 +14,78 @@
           "highlightWholeLine": false
         }
       ]
-    }
+    },
+    {
+      "title": "0CFA-closures",
+      "description": "0CFA closure sets",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/process-data.kk",
+          "position": "3,11:3,18",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "0CFA-error",
+      "description": "0CFA Errors due to call-insensitivity",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/process-data.kk",
+          "position": "5,3:5,4",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "0CFA-primitives",
+      "description": "0CFA primitive wrappers",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/lib/std/core/int.kk",
+          "position": "85,17:85,18",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "0CFA-primitives",
+      "description": "0CFA primitive no-wrapper",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/lib/std/core/int.kk",
+          "position": "98,24:98,25",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "0CFA-primitive-top",
+      "description": "0CFA primitive top",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/process-data.kk",
+          "position": "2,7:2,8",
+          "highlightWholeLine": false
+        }
+      ]
+    },
+    {
+      "title": "1CFA-process-data",
+      "description": "1CFA remembering call site",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/process-data.kk",
+          "position": "3,11:3,18",
+          "highlightWholeLine": false
+        }
+      ]
+    },
   ]
 }
