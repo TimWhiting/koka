@@ -1,0 +1,19 @@
+{
+  "$schema": "https://demotime.elio.dev/demo-time.schema.json",
+  "title": "demo",
+  "description": "",
+  "demos": [
+    {
+      "title": "0CFA-intT",
+      "description": "integer resolution",
+      "steps": [
+        {
+          "action": "highlight",
+          "path": "/analysis/demo/process-data.kk",
+          "position": "2,11:2,16",
+          "highlightWholeLine": false
+        }
+      ]
+    }
+  ]
+}
