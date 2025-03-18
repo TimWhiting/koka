@@ -4,9 +4,14 @@ fun process-data(input, process)
   // y will result in an error with 0CFA
   y
 
-fun example1()
+fun main()
+  example1(2)
+  example1(3)
+
+fun example1(z : int)
   // When evaluating + we will lose the context of which call to "+" was demanded with 0CFA.
   // We have to represent all values that flow out of +
   // Resolving some of those paths might cause the analysis to fail
   process-data(1, fn(a, b) a + 3)
-  process-data(2, fn(c, d) c + d)
+  val y = process-data(2, fn(c, d) c + d)
+  y
