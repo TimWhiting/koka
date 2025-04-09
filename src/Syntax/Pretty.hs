@@ -75,7 +75,7 @@ ppVis env vis
 ppSyntaxDef :: PrettyEnv t => Env -> S.Def t -> Doc
 ppSyntaxDef env (S.Def binder range vis sort inline doc)
   = prettyComment env doc $
-    ppVis env vis <+> ppDefBinder env sort binder
+    ppVis env vis <.> ppDefBinder env sort binder
 
 ppDefBinder env DefVal binder =
   text "val" <+> text (nameStem (binderName binder)) <+> text "=" <+> ppSyntaxExpr env (binderExpr binder)
