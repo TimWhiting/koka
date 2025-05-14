@@ -923,6 +923,7 @@ genLamOrTypeLam tailCtx expr
          _ -> matchFailure "Backend.CSharp.FromCore.genLamOrTypeLam"
 
 
+localFv :: HasExpVar a => a -> [(Name, Type)]
 localFv expr
   = filter (not . isQualified . fst) (tnames (fv expr)) -- trick: only local names are not qualified
 

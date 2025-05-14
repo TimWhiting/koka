@@ -377,6 +377,12 @@ struct kk_function_s {
 };
 typedef kk_datatype_ptr_t kk_function_t;
 
+struct kk_function_res_s {
+  kk_function_t fun;
+  int8_t nargs; // number of arguments
+};
+typedef struct kk_function_res_s* kk_function_res_t;
+
 // A vector is an array of boxed values, or an empty singleton
 typedef kk_datatype_t kk_vector_t;
 
@@ -463,7 +469,11 @@ kk_decl_export void          kk_free_context(void);
 static inline kk_decl_pure bool kk_yieldingx(const kk_context_t* ctx) {
   return (ctx->yielding != KK_YIELD_NONE);
 }
+static inline kk_decl_pure bool kk_returningx(const kk_context_t* ctx) {
+  return (ctx->yielding == KK_YIELD_NONE);
+}
 #define kk_yielding(ctx)   kk_unlikely(kk_yieldingx(ctx))
+#define kk_returning(ctx)   kk_likely(kk_returningx(ctx))
 
 
 static inline kk_decl_pure bool kk_yielding_non_final(const kk_context_t* ctx) {
@@ -1283,6 +1293,19 @@ static inline kk_decl_const kk_unit_t kk_unit_unbox(kk_box_t u) {
 #define kk_function_as(tp,fun,ctx)                 kk_datatype_as_assert(tp,fun,KK_TAG_FUNCTION,ctx)
 #define kk_function_alloc_as(tp,scan_fsize,ctx)    kk_block_alloc_as(tp,scan_fsize,KK_TAG_FUNCTION,ctx)
 #define kk_function_call(restp,argtps,f,args,ctx)  ((restp(*)argtps)(kk_kkfun_ptr_unbox(kk_datatype_as_assert(struct kk_function_s*,f,KK_TAG_FUNCTION,ctx)->fun,ctx)))args
+
+
+
+// inline kk_box_t kk_function_resume(f,ctx) {
+//   kk_function_t f = kk_datatype_as_assert(struct kk_function_s*,f,KK_TAG_FUNCTION,ctx);
+//   kk_box_t res = kk_kkfun_ptr_unbox(f->fun,ctx);
+//   if (kk_is_ptr(res)) {
+//     return res;
+//   }
+//   else {
+//     return kk_box_null();
+//   }
+// }            
 
 #if (KK_COMPRESS==0)
 #define kk_define_static_function(name,cfun,ctx) \

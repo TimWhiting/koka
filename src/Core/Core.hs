@@ -703,8 +703,10 @@ data Expr =
   -- Literals, constants and labels
   | Con{ conName :: !TName, conRepr ::  !ConRepr  }          -- ^ typed name and its representation
   | Lit !Lit
+  | Label !Name !Expr -- label for jump targets, debugging, etc.
   -- Let
   | Let !DefGroups !Expr
+  | LamLocal !Name ![TName] !Effect !Expr -- A local target point, can either use monadic lifting, or jumping (to be assigned later)
   -- Case expressions
   | Case{ caseExprs :: ![Expr], caseBranches :: ![Branch] }
 

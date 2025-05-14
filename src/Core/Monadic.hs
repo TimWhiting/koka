@@ -58,40 +58,35 @@ monTransform penv
   transform definition groups
 --------------------------------------------------------------------------}
 monDefGroups :: DefGroups -> Mon DefGroups
-monDefGroups monDefGroups
-  = do defGroups <- mapM monDefGroup monDefGroups
-       return (defGroups)
+monDefGroups = mapM monDefGroup
 
 monDefGroup (DefRec defs)
-  = do defs <- mapM (monDef True) defs
+  = do defs <- mapM monDef defs
        return (DefRec defs)
 
 monDefGroup (DefNonRec def)
-  = do def <- monDef False def
+  = do def <- monDef def
        return (DefNonRec def)
 
 
 {--------------------------------------------------------------------------
   transform a definition
 --------------------------------------------------------------------------}
-monDef :: Bool -> Def -> Mon Def
-monDef recursive def
-  = if (not (isMonDef def))
+monDef :: Def -> Mon Def
+monDef def
+  = if not (isMonDef def)
      then return def
      else withCurrentDef def $
-          do expr' <- monExpr' True (defExpr def)
+          do expr' <- monExpr (defExpr def)
              return def{ defExpr = expr' id }
 
 
 type Trans a = TransX a a
 type TransX a b  = (a -> b) ->b
 
-monExpr :: Expr -> Mon (TransX Expr Expr)
-monExpr expr
-  = do monExpr' False expr
 
-monExpr' :: Bool -> Expr -> Mon (TransX Expr Expr)
-monExpr' topLevel expr
+monExpr :: Expr -> Mon (Trans Expr)
+monExpr expr
   = case expr of
       -- optimized open binding
       -- note: we cannot just check for `isMonEffect effFrom` as the effFrom
@@ -115,7 +110,7 @@ monExpr' topLevel expr
 
       -- regular cases
       Lam args eff body
-        -> do -- monTraceDoc $ \env -> text "not effectful lambda:" <+> niceType env eff
+        -> do monTraceDoc $ \env -> text "not effectful lambda:" <+> niceType env eff
               body' <- monExpr body
               return $ \k -> k (Lam args eff (body' id))
 
@@ -129,7 +124,7 @@ monExpr' topLevel expr
                            Just(_,feff,_) -> return feff
                            _ -> do monTraceDoc $ \env -> text "Core.Monadic.App: illegal application:" <+> ppType env ftp
                                    failure ("Core.Monadic.App: illegal application: " ++ show (ppType defaultEnv ftp))
-              if ((not (isMonType ftp || isAlwaysMon f)) || isNeverMon f)
+              if not (isMonType ftp || isAlwaysMon f) || isNeverMon f
                then do monTraceDoc $ \env -> text "app non-mon: eff:" <+> pretty feff <+> text ", expr:" <+> prettyExpr env expr
                        return $ \k -> f' (\ff ->
                                             applies args' (\argss ->
@@ -159,7 +154,7 @@ monExpr' topLevel expr
       Case exprs bs
         -> do exprs' <- monTrans monExpr exprs
               bs'    <- mapM monBranch bs
-              if (not (any isMonBranch bs))
+              if not (any isMonBranch bs)
                then return $ \k -> exprs' (\xxs -> k (Case xxs bs'))
                else do nameC <- uniqueName "c"
                        let resTp = typeOf expr
@@ -176,12 +171,12 @@ monExpr' topLevel expr
 
       -- type application and abstraction
       TypeLam tvars body
-        -> do body' <- monExpr' topLevel body
+        -> do body' <- monExpr body
               return $ \k -> body' (\xx -> k (TypeLam tvars xx))
               -- return $ \k -> k (TypeLam tvars (body' id))
 
       TypeApp body tps
-        -> do body' <- monExpr' topLevel body
+        -> do body' <- monExpr body
               return $ \k -> body' (\xx -> k (TypeApp xx tps))
 
       _ -> return (\k -> k expr) -- leave unchanged
@@ -209,16 +204,16 @@ monLetGroups (dg:dgs) body
 monLetGroup :: DefGroup -> Mon (TransX [DefGroup] Expr)
 monLetGroup dg
   = case dg of
-      DefRec defs -> do ldefs <- monTrans (monLetDef True) defs
-                        return $ \k -> ldefs (\xss -> k (concat ([[DefRec xds] ++ (if null yds then [] else [DefRec yds]) ++ map DefNonRec nds | (xds,yds,nds) <- xss])))
-      DefNonRec d -> do ldef <- monLetDef False d
-                        return $ \k -> ldef (\(xds,yds,nds) -> k (map DefNonRec (xds ++ yds ++ nds)))
+      DefRec defs -> do ldefs <- monTrans monLetDef defs
+                        return $ \k -> ldefs (\xss -> k (concat ([[DefRec xds] | xds <- xss])))
+      DefNonRec d -> do ldef <- monLetDef d
+                        return $ \k -> ldef (\xds -> k (map DefNonRec xds))
 
-monLetDef :: Bool -> Def -> Mon (TransX ([Def],[Def],[Def]) Expr)
-monLetDef recursive def
+monLetDef :: Def -> Mon (TransX [Def] Expr)
+monLetDef def
   = withCurrentDef def $
-    do expr' <- monExpr' True (defExpr def) -- don't increase depth
-       return $ \k -> expr' (\xx -> k ([def{defExpr = xx}],[],[]))
+    do expr' <- monExpr (defExpr def) -- don't increase depth
+       return $ \k -> expr' (\xx -> k [def{defExpr = xx}])
                          -- \k -> k [def{ defExpr = expr' id}]
 
 
@@ -327,10 +322,10 @@ isMonExpr expr
       App f args
         -> any isMonExpr (f:args)
       Lam pars eff body
-        -> or [isMonEffect eff, isMonExpr body]
+        -> isMonEffect eff || isMonExpr body
 
       TypeApp (TypeLam tpars body) targs
-        -> (any isMonType targs) || (isMonExpr body)
+        -> any isMonType targs || isMonExpr body
       TypeApp (Var tname info) targs
         -> any isMonType targs || isMonType (typeOf expr)
 
@@ -362,7 +357,6 @@ isMonGuard (Guard g e)
 newtype Mon a = Mon (Env -> State -> Result a)
 
 data Env = Env{ currentDef :: [Def],
-                isInBind   :: Bool,
                 prettyEnv :: Pretty.Env }
 
 data State = State{ uniq :: Int }
@@ -371,7 +365,7 @@ data Result a = Ok a State
 
 runMon :: Pretty.Env -> Int -> Mon a -> (a,Int)
 runMon penv u (Mon c)
-  = case c (Env [] False penv) (State u) of
+  = case c (Env [] penv) (State u) of
       Ok x (State u') -> (x,u')
 
 instance Functor Mon where
@@ -409,16 +403,6 @@ withCurrentDef def action
   = -- trace ("mon def: " ++ show (defName def)) $
     withEnv (\env -> env{currentDef = def:currentDef env}) $
     action
-
-withBindContext :: Bool -> Mon a -> Mon a
-withBindContext inBind action
-  = withEnv (\env -> env{ isInBind = inBind }) action
-
-isInBindContext :: Mon Bool
-isInBindContext
-  = do env <- getEnv
-       return (isInBind env)
-
 
 monTraceDoc :: (Pretty.Env -> Doc) -> Mon ()
 monTraceDoc f
