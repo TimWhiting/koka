@@ -31,105 +31,117 @@ import Core.CoreVar (HasExpVar, fv)
 -- Also resumptions are specially called by using the first n arguments in the closure record (where $n$ is the number of original arguments in that stack frame)
 
 -- Example: (Assume f and g are monadic)
--- fun g (a, b) = 
---   val x = f(a, b)
---   val y = g(x + a)
---   y + x
+-- fun f(a, b) = 
+--   val x = g(a, b)
+--   val y = h(x + a)
+--   val z = op()
+--   y + x + z
 --
 -- Assumes all local variables have unique names (throughout the function), also assumes all inner functions are lifted to the top level (FunLift)
 -- After an ANF transformation -- all arguments to calls & returns are in local variables, local variables are lifted to the top of the function
--- fun g (a, b) = 
+-- fun f(a, b) = 
 --   var x
 --   var tmp
---   x = f(a, b)
+--   x = g(a, b)
 --   tmp = x + a
---   val y = g(tmp) -- variables after the last monadic binding do not need to be lifted to local variables
---   val res = y + x
+--   val y = h(tmp) -- variables after the last monadic binding do not need to be lifted to local variables
+--   val z = op()
+--   val res = y + x + z
 --   res
 -- 
 -- Becomes (after this transformation & dup/drop insertion):
--- fun g(a, b, res, ctx) = 
+-- fun f(a, b, res, ctx) = 
 --  var x = int/null
 --  var y = int/null -- ideally uninitialized, but right now we are using DefVal
 --  if kk_likely(res == null) then
---    x = f(a, b, res, ctx)
---    label f':
+--    x = g(a, b, res, ctx)
+--    label g':
 --    if returning() then
---      drop(b)
 --      dup(x)
 --      tmp = x + a
---      drops(x,a) (in addition function - inlined)
---      y = g(tmp, res, ctx)
---      label g':
+--      drops(x, a) (in addition function - inlined)
+--      y = h(tmp, res, ctx)
+--      label h':
 --      if returning() then
---        drop(tmp)
---        val res = y + x
---        drops(x,y) (in addition function - inlined)
---        return res
+--        ctx->res = alloc_g_Op(x, y) 
+--        set-yielding()
+--        return res/null
+--        var z = z/null
+--        label z': 
+--        val result = y + x + z
+--        drops(x, y, z) (in addition function - inlined)
+--        return result
 --      else
---        ctx->res = g_G(&g, 2, int/null, int/null, x, tmp, ctx->res) // y is the resumption, int/null is a dummy version of a/b (no allocation, will never be used)
+--        ctx->res = alloc_g_H(g, x, ctx->res) // y is the resumption, int/null is a dummy version of a/b (no allocation, will never be used)
 --        return int/null
 --    else
---      ctx->res = g_F(&g, 2, a, b, ctx->res) // x is the resumption
+--      ctx->res = alloc_g_G(f, a, ctx->res) // x is the resumption, f could be a static function or closure
 --      return int/null
 --  else
---    case res of
---      g_F(target, _, a', b', res') ->
---        x = target(a, b, res', ctx) -- No closure needed.
---        goto f'
---      g_G(target, _, _, _, x', tmp', res') ->
---        x = x'
---        y = target(tmp', res', ctx)
+--    case res of // optimize this to a jump table based on the variant or let C optimize this (probably best to do a switch statement)
+--      g_G(target, a', res') ->
+--        a = a'
+--        x = target(a/null, b/null, res', ctx) -- g is the target
 --        goto g'
--- 
--- With some analysis and optimization (recognizing that a & b are not used in g_G, and x & tmp could be stored in them - if the appropriate size)
--- Becomes:
--- fun g(a, b, res, ctx) = 
---  ...
---        return g_G(&g, 2, x, tmp, y) // y is the resumption, tmp
---  ...
---      g_G(_, _, tmp', _, res') ->
---        tmp = tmp'
---  ...
--- also we might be able to optimize f - since there is nothing before it in the function?
+--      g_H(target, x', res') ->
+--        x = x'
+--        y = target(tmp/null, res', ctx) -- h is the target (for static functions we could omit the target field)
+--        goto h'
+--      g_Op(x', y') ->
+--        x = x'
+--        y = y'
+--        z = ctx->value
+--        goto z'
+--
+-- also we might be able to optimize g - since there is nothing before it in the function?
 -- Also monadic tail calls are just directly returned (we don't need to do anything else in this function)
--- Actually we would need to adjust the parameters :( - unless they have the same number of parameters of the same size
+-- Actually we would need to adjust the parameters :( 
+--  - unless they have the same number of parameters of the same size (which is the case for recursive functions!)
+--  - we should also put mutually recursive functions in the same function with jumps (but we would need to make the parameters compatible)
 
 -- In Javascript / direct WASM the control flow structure becomes:
 -- Becomes (after this transformation & codegen):
--- fun g(a, b, res, ctx) = 
+-- fun f(a, b, res, ctx) = 
 --  let x = null; -- ideally uninitialized, but right now we are using DefVal
---  let y = null; 
---  g': { // labels are all at the beginning of the function and delimit various scopes which we can jump to (forwards using break)
---    f': { start': { 
+--  let y = null;
+--  let z = null; 
+--  z': { h': { // labels are all at the beginning of the function and delimit various scopes which we can jump to (forwards using break)
+--    g': { start': { 
 --      if (res == null) {
 --        break start'; // f and start are the same in this case, but start' might be needed.
---      } else if (res.variant == 'f') {
---        x = res.func(...res.args, res.res, ctx);
---        break f';
 --      } else if (res.variant == 'g') {
+--        x = res.func(int/null, int/null, res.res, ctx);
+--        break f';
+--      } else if (res.variant == 'h') {
 --        x = res.x;
---        y = res.func(...res.args, res.res, ctx);
+--        y = res.func(int/null, res.res, ctx);
 --        break g';
---      } 
+--      } else if (res.variant == 'z') {
+--        x = res.x; y = res.y; z = ctx.value
+--        break z';
+--      }
 --    } // end start' 
---    x = f(a, b, res, ctx);
---    } // end f' 
+--    x = g(a, b, res, ctx);
+--    } // end g' 
 --    if (returning()) then {
 --      tmp = x + a;
 --    } else {
---      ctx.res = {variant: 'f', func: g, args: [a, b], res: ctx.res}; // x is the resumption
+--      ctx.res = {variant: 'g', func: g, a: a, res: ctx.res}; // x is the resumption
 --      return null;
 --    }
---    y = g(tmp, res, ctx);
---  } // end g'
+--    y = h(tmp, res, ctx);
+--  } // end h'
 --  if (returning()) then {
---    val res = y + x;
---    return res;
+--    set-yielding();
+--    ctx.res = {variant: 'z', x : x, y : y};
+--    return null;
 --  } else {
---    ctx.res = {variant: 'g', func: g, x: x, args: [tmp], res: ctx.res}; // y is the resumption, int/null is a dummy version of a/b (no allocation, will never be used)
+--    ctx.res = {variant: 'h', func: g, x: x, res: ctx.res}; // y is the resumption, int/null is a dummy version of a/b (no allocation, will never be used)
 --    return null;
 --  } 
+--  } // end z'
+--  val res = y + x + z;
+--  return res;
 -- This is a bit more complicated than C, also, it might pose problems with nested ifs - requiring multiple jumps.
 -- If we have nested ifs we cannot jump inside the if. 
 -- So if we have a case statement, we need to split the function at the call to the monadic function, and return the result of the subpiece.
@@ -140,19 +152,28 @@ import Core.CoreVar (HasExpVar, fv)
 
 -- Notes: 
 -- The return value  with dummy value returned?
--- Parameters have to be boxed? (Otherwise how to we start calling the resumption?)
--- Still need to figure out where to pass the value given to the resumption
+-- How do we start calling the resumption?
 
 -- Struct information
--- Sizes: &g == intptr_t, size == int8_t, res == kk_box_t, args = function args
+-- Sizes: g == kk_function_t, res == kk_box_t, args = function args
 -- Additional free variables: (prior to monadic call) - including lifting parameters to variables prior to call
 -- * Free variables can be stored in missing function arguments (if they are the same size and the function args are not in the free variables)
 -- Ideally names of variants & corresponding labels use source locations of the join points.
 
 
 -- Every value type should have a null/value (corresponding to a zero-initialized value), pointer types can reuse 0
+-- This is in the C codegen
+-- genHoleCall :: Type -> Doc
+-- genHoleCall tp        = --  ppType tp <.> text "_hole()")
+--                         case cType tp of
+--                           CPrim "kk_integer_t" -> text "kk_integer_zero"
+--                           CPrim "kk_string_t"  -> text "kk_string_empty()"
+--                           CPrim "kk_vector_t"  -> text "kk_vector_empty()"
+--                           _      -> text "kk_datatype_null()"
 
--- We will want to optimize case expressions as much as we can
+
+
+-- We will want to optimize case expressions as much as we can (to switch statements)
 
 
 -- If the function is not effectful, we omit the resumption parameter, and the jump tables.
