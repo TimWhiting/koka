@@ -31,7 +31,7 @@ import Core.Uniquefy( uniquefy )
 import Core.FunLift( liftFunctions )
 import Core.Inline( inlineDefs  )
 import Core.Inlines( Inlines, inlinesFilter, inlinesExtends, extractInlineDefGroups)
-import Core.Monadic( monTransform )
+import Core.MonadicTransform( monTransform )
 import Core.MonadicLift( monadicLift )
 import Core.Specialize( specialize, extractSpecializeDefs )
 import Core.CTail( ctailOptimize )
@@ -111,7 +111,7 @@ coreOptimize flags newtypes gamma inlines coreProgram
         -- transform effects to explicit monadic binding (and resolve .open calls)
         when (enableMon flags && not (isPrimitiveModule progName)) $
           -- trace (show progName ++ ": monadic transform") $
-          do Core.Monadic.monTransform penv
+          do Core.MonadicTransform.monTransform penv
              openResolve penv gamma           -- must be after monTransform
         checkCoreDefs "monadic transform"
 
