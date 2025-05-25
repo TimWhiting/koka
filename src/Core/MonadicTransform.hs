@@ -45,7 +45,7 @@ import qualified Core.Core as Core
 import Core.Pretty
 import Core.CoreVar
 import Debug.Trace (trace)
-import Control.Monad.Cont (ContT (..), MonadCont (..), evalContT, callCC) -- Added callCC
+import Control.Monad.Cont (ContT (..), MonadCont (..), evalContT, callCC, Cont, runCont, evalCont) -- Added callCC
 
 -- Entry point
 monTransform :: Pretty.Env -> CorePhase b ()
@@ -82,18 +82,13 @@ runMon penv u m =
 withCurrentDef :: Def -> Mon a -> Mon a
 withCurrentDef def = local (\env -> env { currentDef = def : currentDef env })
 
--- Corrected withCurrentDefCont to use the ContT constructor and runContT
-withCurrentDefCont :: Def -> ContT r Mon a -> ContT r Mon a
-withCurrentDefCont def contTAction = ContT $ \k ->
-  withCurrentDef def (runContT contTAction k)
-
 getPrettyEnv :: Mon Pretty.Env
 getPrettyEnv = asks prettyEnv
 
-monTraceDoc :: (Pretty.Env -> Doc) -> ContT a Mon ()
+monTraceDoc :: (Pretty.Env -> Doc) -> Mon ()
 monTraceDoc f
-  = do env <- lift $ getPrettyEnv
-       lift $ monTrace (show (f env))
+  = do env <- getPrettyEnv
+       monTrace (show (f env))
 
 monTrace :: String -> Mon ()
 monTrace msg
@@ -109,9 +104,6 @@ monDefGroup :: DefGroup -> Mon DefGroup
 monDefGroup (DefRec defs)    = DefRec <$> mapM (monDef True) defs
 monDefGroup (DefNonRec def)  = DefNonRec <$> monDef False def
 
-shiftT :: (Monad m) => ((a -> m r) -> ContT r m r) -> ContT r m a
-shiftT f = ContT (evalContT . f)
-
 {--------------------------------------------------------------------------
   transform a definition
 --------------------------------------------------------------------------}
@@ -120,17 +112,15 @@ monDef recursive def =
   if not (isMonDef def)
     then return def
     else withCurrentDef def $ do
-      expr' <- evalContT (monExpr' True (defExpr def))
-      return def { defExpr = expr' }
+      expr' <- monExpr (defExpr def)
+      return def { defExpr = evalCont expr' }
 
 type TransX a b = (a -> b) -> b
 
-monExpr :: Expr -> ContT Expr Mon Expr
-monExpr expr = monExpr' False expr
 
 -- Refactored monExpr'
-monExpr' :: Bool -> Expr -> ContT Expr Mon Expr
-monExpr' topLevel expr =
+monExpr :: Expr -> Mon (Cont Expr Expr)
+monExpr expr =
   -- trace ("monExpr: " ++ show (prettyExpr defaultEnv expr)) $
   case expr of
   -- optimized open binding
@@ -139,25 +129,25 @@ monExpr' topLevel expr =
   -- contains handlers itself for example.
   App (App eopen@(TypeApp (Var open _) [effFrom, effTo, _, _]) [f]) args
     | getName open == nameEffectOpen && not (isMonExpr f) -> do
-        args' <- mapM monExpr args
-        return (App (App eopen [f]) args')
+        args' <- monTrans monExpr args
+        return $ ContT $ \k -> runContT args' $ \args' -> k (App (App eopen [f]) args') 
   App (TypeApp (App eopen@(TypeApp (Var open _) [effFrom, effTo, _, _]) [f]) targs) args
     | getName open == nameEffectOpen && not (isMonExpr f) -> do
-        args' <- mapM monExpr args
-        return (App (TypeApp (App eopen [f]) targs) args')
+        args' <- monTrans monExpr args
+        return $ ContT $ \k -> runContT args' $ \args' -> k (App (TypeApp (App eopen [f]) targs) args')
   --  lift _open_ applications
   App eopen@(TypeApp (Var open _) [effFrom, effTo, _, _]) [f]
     | getName open == nameEffectOpen -> do
         f' <- monExpr f
-        return (App eopen [f'])
+        return $ return $ App eopen [evalCont f']
   -- regular cases
   Lam args eff body -> do
     -- monTraceDoc $ \env -> text "not effectful lambda:" <+> niceType env eff
-    body' <- lift $ evalContT (monExpr body)
-    return (Lam args eff body')
+    body' <- monExpr body
+    return $ return (Lam args eff (evalCont body'))
   App f args -> do
     f' <- monExpr f
-    args' <- mapM monExpr args
+    args' <- monTrans monExpr args
     let ftp = typeOf f
     let (tvs, preds, rho) = splitPredType ftp
     feff <- case splitFunType rho of
@@ -167,13 +157,13 @@ monExpr' topLevel expr =
                     failure ("Core.Monadic.App: illegal application: " ++ show (ppType defaultEnv ftp))
     if (not (isMonType ftp || isAlwaysMon f)) || isNeverMon f
       then do monTraceDoc $ \env -> text "app non-mon: eff:" <+> pretty feff <+> text ", expr:" <+> prettyExpr env expr
-              return (App f' args')
+              return $ ContT $ \k -> runContT f' $ \f' -> runContT args' $ \args' -> k (App f' args')
       else do
         monTraceDoc $ \env -> text "app mon:" <+> prettyExpr env expr
-        nameY <- lift $ uniqueName "y"
+        nameY <- uniqueName "y"
         let resTp = typeOf expr
             tnameY = TName nameY resTp
-        ContT $ \k -> do
+        return $ ContT $ \k -> do
           contBody <- k (Var tnameY InfoNone)
           let cont = case contBody of
                     -- optimize (fun(y) { let x = y in .. })
@@ -182,31 +172,31 @@ monExpr' topLevel expr =
                       -> Lam [TName (defName def) (defType def)] feff body
                     -- TODO: optimize (fun (y) { lift(expr) } )?
                     body -> Lam [tnameY] feff body
-          return $ appBind resTp feff (typeOf contBody) f' args' cont
+          return $ runCont f' $ \ff -> runCont args' $ \args -> appBind resTp feff (typeOf contBody) ff args cont
   Let defgs body -> monLetGroups defgs body
   Case exprs bs -> do
-    exprs' <- mapM monExpr exprs
-    bs' <- lift $ mapM monBranch bs
+    exprs' <- monTrans monExpr exprs
+    bs' <- mapM monBranch bs
     if not (any isMonBranch bs)
-      then return (Case exprs' bs')
+      then return $ ContT $ \k -> runContT exprs' $ \exprs -> k (Case exprs bs')
       else do
-        nameC <- lift $ uniqueName "c"
+        nameC <- uniqueName "c"
         let resTp = typeOf expr
             tnameC = TName nameC resTp
-        ContT $ \k -> do
+        return $ ContT $ \k -> do
           contBody <- k (Var tnameC InfoNone)
           let effTp = typeTotal
               cont = Lam [tnameC] effTp contBody
-          return $ applyBind resTp effTp (typeOf contBody) (Case exprs' bs') cont
-  Var (TName name tp) info -> return (Var (TName name tp) info)
+          return $ runCont exprs' $ \xss -> applyBind resTp effTp (typeOf contBody) (Case xss bs') cont
+  Var (TName name tp) info -> return $ return (Var (TName name tp) info)
   -- type application and abstraction
   TypeLam tvars body -> do
-    body' <- monExpr' topLevel body
-    return $ TypeLam tvars body'
+    body' <- monExpr body
+    return $ return $ TypeLam tvars (evalCont body')
   TypeApp body tps -> do
-    body' <- monExpr' topLevel body
-    return $ TypeApp body' tps
-  _ -> return expr -- leave unchanged
+    body' <- monExpr body
+    return $ return $ TypeApp (evalCont body') tps
+  _ -> return $ return expr -- leave unchanged
 
 -- Refactored monBranch and monGuard
 monBranch :: Branch -> Mon Branch
@@ -217,34 +207,41 @@ monBranch (Branch pat guards) = do
 monGuard :: Guard -> Mon Guard
 monGuard (Guard guard body) = do
   -- guard' <- monExpr guard  -- guards are total!
-  body' <- evalContT (monExpr body)
-  return $ Guard guard body'
--- Refactored monLetGroups and monLetGroup
-monLetGroups :: DefGroups -> Expr -> ContT Expr Mon Expr
-monLetGroups [] body = monExpr body  -- Base case: just process the body
-monLetGroups (dg:dgs) body = ContT $ \k -> do
-  -- Process the inner expression first (original code works inside out)
-  innerExpr <- evalContT (monLetGroups dgs body)
-  -- Then process the current def group
-  case dg of
-    DefRec defs -> do
-      -- Process each definition
-      defs' <- mapM monLetDef defs
-      -- Create the Let expression with DefRec and apply the continuation
-      let defGroups = [DefRec [def'] | def' <- defs']
-      k (Let defGroups innerExpr)
-    
-    DefNonRec def -> do
-      -- Process the definition
-      def' <- monLetDef def
-      -- Create the Let expression with DefNonRec and apply the continuation
-      let defGroup = [DefNonRec def']
-      k (Let defGroup innerExpr)
+  body' <- monExpr body
+  return $ Guard guard (evalCont body')
 
-monLetDef :: Def -> Mon Def
-monLetDef def = do
-  expr' <- evalContT (withCurrentDefCont def $ monExpr' True (defExpr def))
-  return (def{ defExpr = expr' })
+monLetGroups :: DefGroups -> Expr -> Mon (Cont Expr Expr)
+monLetGroups [] body = monExpr body  
+monLetGroups (dg:dgs) body = do
+  dg' <- monLetGroup dg
+  expr' <- monLetGroups dgs body 
+  return $ ContT $ \k -> do
+    runContT dg' (\dg' -> do
+      e <- runContT expr' k
+      return $ Let dg' e)
+
+monLetGroup :: DefGroup -> Mon (Cont Expr [DefGroup])
+monLetGroup dg
+  = case dg of
+      DefRec defs -> do ldefs <- monTrans monLetDef defs
+                        return $ ContT $ \k -> runContT ldefs (\xss -> k (concat ([[DefRec xds] | xds <- xss])))
+      DefNonRec d -> do ldef <- monLetDef d
+                        return $ ContT $ \k -> runContT ldef (\xds -> k (map DefNonRec xds))
+
+
+monLetDef :: Def -> Mon (Cont Expr [Def])
+monLetDef def = 
+  withCurrentDef def $ do
+    expr' <- monExpr (defExpr def)
+    return $ ContT $ \k -> runContT expr' $ \e -> k [def{ defExpr = e }]
+
+monTrans :: (a -> Mon (Cont c b)) -> [a] -> Mon (Cont c [b])
+monTrans f xs
+  = case xs of
+      [] -> return $ ContT $ \k -> k []
+      (x:xx) -> do x'  <- f x
+                   xx' <- monTrans f xx
+                   return $ ContT $ \k -> runContT x' (\y -> runContT xx' (\ys -> k (y:ys)))
 
 appBind :: Type -> Effect -> Type -> Expr -> [Expr] -> Expr -> Expr
 appBind tpArg tpEff tpRes fun args cont =
