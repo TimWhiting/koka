@@ -1,3 +1,13 @@
+// import listspecific intlist/eq charlist/eq 
+// import listgeneral list/eq
+import listspecific show charlist/eq
+import qualified ls = listspecific
+import listgeneral show list/eq(?eq=int/eq) list/eq<int>
+import listgeneral 
+  scope simple = show list/eq<int> 
+  scope compare = show cmp/eq(?eq=list/cmpx(?eq=list/eq))
+
+eqcmp1/int/eq
 
 fun int/eq( x : int, y : int ) : bool
   (x == y)
@@ -18,7 +28,8 @@ fun contains( xs : list<a>, y : a, ?eq : (a,a) -> bool ) : bool
     Nil        -> False
 
 fun equal( x : a, y : a, ?eq : (a,a) -> bool ) : bool
-  eq(x,y)
+  with scope.simple
+  eq(x,scope.compare {y})
 
 fun test1()
   equal([1,2],[1,3]).println
@@ -46,13 +57,14 @@ fun list/cmpx<a>( xs : list<a>, ys : list<a>, ?cmpx : (a,a) -> order ) : order
 
 // If we add `cmpx/eq` we get ambiguities. e.g. `eq(1,2)`
 // can be resolved as `eq = int/eq` but also with `eq = cmpx/eq(int/cmpx)`
-// We cannot just prefer values, since `eq([1],[2])`
+// We cannot just prefer values, since `show([1])  show([2])`
 // can be resolved as `eq = list/eq(_,_,int/eq)` but also as `eq = cmpx/eq(_,_,list/cmpx(int/cmpx))`.
 // For implicits we instead prefer the _shortest chain_ (with the most locals). (A)
 // (before we preferred most locals first, and then the shortest chain (B))
-fun cmpx/eq( x : a, y : a, ?cmpx : (a,a) -> order ) : bool
+default fun cmpx/eq( x : a, y : a, ?cmpx : (a,a) -> order ) : bool
   cmpx(x,y) == Eq
 
+assert_equal cmpx/eq(?cmpx/int) == eq/int
 
 fun test3a( ?eq : (int,int) -> bool )
   equal(1,2)  // use `?eq` instead of `int/eq`  to prefer locals
