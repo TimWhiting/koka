@@ -1,13 +1,21 @@
-// import listspecific intlist/eq charlist/eq 
-// import listgeneral list/eq
-import listspecific show charlist/eq
+// import listspecific intlist/show charlist/show 
+// import listgeneral list/show
+import listspecific hide charlist/show
 import qualified ls = listspecific
-import listgeneral show list/eq(?eq=int/eq) list/eq<int>
-import listgeneral 
-  scope simple = show list/eq<int> 
+import listgeneral hide list/show<int> // ?show=list/show(int/show) 
+import listgeneral = show fallback cmpx/eq
+  scope simple = show list/show<int> 
   scope compare = show cmp/eq(?eq=list/cmpx(?eq=list/eq))
+import listspecific 
+  scope compare = hide charlist/show
 
-eqcmp1/int/eq
+scope compare
+  import **
+  import **
+
+fun main()
+  using scope<compare>
+  [1, 2, 3].show
 
 fun int/eq( x : int, y : int ) : bool
   (x == y)
@@ -61,7 +69,7 @@ fun list/cmpx<a>( xs : list<a>, ys : list<a>, ?cmpx : (a,a) -> order ) : order
 // can be resolved as `eq = list/eq(_,_,int/eq)` but also as `eq = cmpx/eq(_,_,list/cmpx(int/cmpx))`.
 // For implicits we instead prefer the _shortest chain_ (with the most locals). (A)
 // (before we preferred most locals first, and then the shortest chain (B))
-default fun cmpx/eq( x : a, y : a, ?cmpx : (a,a) -> order ) : bool
+fun cmpx/eq( x : a, y : a, ?cmpx : (a,a) -> order ) : bool
   cmpx(x,y) == Eq
 
 assert_equal cmpx/eq(?cmpx/int) == eq/int
