@@ -11,6 +11,7 @@ import * as vscode from "vscode"
 import * as semver from "semver"
 import { home, expandHome } from "./platform-paths"
 import { VersionManager } from "./version-manager"
+import { MainCodeLensProvider } from "./code-lens"
 
 
 // Configuration
@@ -21,7 +22,9 @@ export class KokaConfig {
     const extVersion = this.context.extension.packageJSON.version as string ?? "1.0.0"
     this.extensionVersion = semver.coerce(extVersion).format()
     this.versionManager = new VersionManager(this.context, this.vsConfig);
+    this.codeLensProvider = new KokaCodeLensProvider(this);
   }
+  codeLensProvider: KokaCodeLensProvider
   versionManager: VersionManager
   enableDebugExtension: boolean
   autoFocusTerminal: boolean        // focus on the terminal automatically on errors?

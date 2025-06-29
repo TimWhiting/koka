@@ -8,7 +8,7 @@ found in the LICENSE file at the root of this distribution.
 import * as vscode from "vscode"
 import { KokaConfig } from "./workspace-config";
 
-export class MainCodeLensProvider implements vscode.CodeLensProvider {
+export class KokaCodeLensProvider implements vscode.CodeLensProvider {
   private onDidChangeCodeLensesEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
 
   constructor(private readonly config: KokaConfig) { }

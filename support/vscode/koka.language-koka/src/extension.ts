@@ -13,8 +13,6 @@ import { KokaConfig } from './workspace-config'
 import { CancellationToken, DebugConfiguration, DebugConfigurationProvider, ProviderResult, WorkspaceFolder } from 'vscode'
 import { KokaDebugSession } from './debugger'
 import { KokaLanguageServer } from './lang-server'
-import { MainCodeLensProvider } from './code-lens'
-
 
 // global as we may stop the language server and restart with a fresh object
 let languageServer: KokaLanguageServer = null;
@@ -83,7 +81,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Code lens (run debug | optimized)
   context.subscriptions.push(
-    vscode.languages.registerCodeLensProvider({ language: "koka", scheme: "file" }, new MainCodeLensProvider(kokaConfig))
+    vscode.languages.registerCodeLensProvider({ language: "koka", scheme: "file" }, kokaConfig.codeLensProvider)
   )
 
   // Check if the compiler has updated
