@@ -1,16 +1,14 @@
 #
-# ** when increasing the version, increase the version below at the cpp-options as well! ***
+# ** when increasing the version run ./util/set-version.sh <new-version>! ***
 #
-# Other files that contain a version are:
-# - util/install.sh
-# - util/install.bat
-# - util/minbuild
-# - support/vscode/koka.language-koka/package.json
+# Then make sure to update the following files:
 # - whatsnew.md, readme.md
+#
+# Finally push to github with the new version tag
 
 
 name:       koka
-version:    3.1.3
+version:    3.1.3-alpha18
 github:     "koka-lang/koka"
 license:    Apache-2.0
 author:     Daan Leijen
@@ -58,7 +56,7 @@ library:
   cpp-options:
     - -DKOKA_MAIN="koka"
     - -DKOKA_VARIANT="release"
-    - -DKOKA_VERSION="3.1.3"
+    - -DKOKA_VERSION="3.1.3-alpha18"
     - -DREADLINE=0   # 1:getline, 2:readline, 3:haskeline, or 0:isocline
   when:
     - condition: os(windows)
