@@ -63,7 +63,7 @@ pub fun load-timezones( fname : path = path(""),
      fn(exn)
        trace("failed parse: " ++ exn.show)
        Nothing
-     })
+     )
 
   val xfname = (fname || appdir() ++ path("config/timezones.json"))
   val xurl   = (if url=="auto" then "https://raw.githubusercontent.com/moment/moment-timezone/develop/data/packed/latest.json" else url)

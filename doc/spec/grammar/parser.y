@@ -73,7 +73,7 @@ void printDeclEx( const char* sort, const char* name, bool verbose );
 %token LEX_WHITE LEX_COMMENT
 %token INSERTED_SEMI EXPR_SEMI
 %token LE ASSIGN DCOLON EXTEND
-%token RETURN CTX
+%token RETURN CTX CTX_HOLE
 
 %token HANDLER HANDLE NAMED MASK OVERRIDE
 %token CTL FINAL RAW
@@ -205,7 +205,7 @@ topdecl     : pub puredecl                             { printDecl("value",$2); 
 ----------------------------------------------------------*/
 
 externdecl  : inlinemod fipmod EXTERN qidentifier externtype externbody   { $$ = $4; }
-            /* | IMPORT EXTERN externimpbody                                 { $$ = "<extern import>"; } */
+            | IMPORT_EXTERN externimpbody                                 { $$ = "<extern import>"; }
             ;
 
 externtype  : ':' typescheme
@@ -326,14 +326,25 @@ con         : CON
             | /* empty */
             ;
 
-conparams   : '(' parameters1 ')'          /* deprecated */
+conparams   : '(' conparameters ')'          
             | '{' semis sconparams '}'
             | /* empty */
             ;
 
-sconparams  : sconparams parameter semis1
+sconparams  : sconparams conparameter semis1
             | /* empty */
             ;
+
+conparameters  : conparameters1
+            | /* empty */
+            ;
+
+conparameters1 : conparameters1 ',' conparameter
+            | conparameter
+            ;
+
+conparameter : pub parameter
+             ;              /* unlike normal parameters, these can have visibility modifiers */
 
 
 /* ---------------------------------------------------------
@@ -380,11 +391,11 @@ tailmod     : ID_TAIL
             | /* empty */
             ;
 
-fundecl     : identifier funbody            { $$ = $1; }
+fundecl     : qidentifier funbody            { $$ = $1; }
             ;
 
-binder      : identifier                    { $$ = $1; }
-            | identifier ':' type           { $$ = $1; }
+binder      : qidentifier                    { $$ = $1; }
+            | qidentifier ':' type           { $$ = $1; }
             ;
 
 funbody     : typeparams '(' pparameters ')' bodyexpr
@@ -542,7 +553,8 @@ behind      : ID_BEHIND
 ctxexpr     : CTX atom                    /* should contain a hole */
             ;
 
-ctxhole     : '_'
+ctxhole     : CTX_HOLE
+            | '_'
             ;
 
 /* arguments: separated by comma */
@@ -693,6 +705,7 @@ op          : OP
             | '>'       { $$ = ">";  }
             | '<'       { $$ = "<";  }
             | '|'       { $$ = "|";  }
+            | '^'       { $$ = "^";  }
             | ASSIGN    { $$ = ":="; }
             ;
 
@@ -730,8 +743,8 @@ apattern    : pattern annot                    /* annotated pattern */
 
 pattern     : identifier
             | identifier AS pattern              /* named pattern */
-            | conid
-            | conid '(' patargs ')'
+            | qconstructor
+            | qconstructor '(' patargs ')'
             | '(' apatterns ')'                  /* unit, parenthesized, and tuple pattern */
             | '[' apatterns ']'                  /* list pattern */
             | literal
@@ -910,6 +923,7 @@ tparams1    : tparams1 ',' tparam
             ;
 
 tparam      : identifier ':' anntype              /* named parameter */
+            | qimplicit ':' anntype               /* implicit parameter */
             | anntype
             ;
 

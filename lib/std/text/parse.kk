@@ -53,7 +53,7 @@ pub fun parse( input0 : sslice, p : () -> <parse|e> a ) : e parse-error<a>
     fun current-input()
       input
 
-    brk fail(msg)
+    final ctl fail(msg)
       ParseError(msg,input)
 
     fun satisfy(pred)

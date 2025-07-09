@@ -81,7 +81,7 @@ char escapeToChar( char esc, yyscan_t scanner )
   /* Character classes */
 
 Symbols         {Symbol}+|[/]
-Symbol          [\$\%\&\*\+\~!\\\^\#\=\.\:\-\|\<\>]
+Symbol          [\$\%\&\*\+\~\!\\\^\#\=\.\:\-\|\<\>]
 AngleBar        [\<\>\|]
 Angle           [\<\>]
 Sign            [\-]?
@@ -162,6 +162,7 @@ fn                        { return FN; }
 val                       { return VAL; }
 var                       { return VAR; }
 con                       { return CON; }
+hole                      { return CTX_HOLE; }
 
 if                        { return IF;}
 then                      { return THEN; }
@@ -1002,9 +1003,9 @@ bool wellformed( const char* s) {
 char* identifier( const char* s, yyscan_t scanner, bool wellformedCheck )
 {
   EnableMacros(scanner);
-  if (s[0]=='@' && !(yyextra->previous==FUN || yyextra->previous==EXTERN || yyextra->previous==VAL)) {
+  /* if (s[0]=='@' && !(yyextra->previous==FUN || yyextra->previous==EXTERN || yyextra->previous==VAL)) {
     yyerror(yylloc,scanner,"cannot use '@' identifiers outside of definitions");
-  }
+  } */
   if (wellformedCheck && !wellformed(s)) {
     yyerror(yylloc,scanner,"malformed identifier: a dash must be preceded and followed by a letter");
   }

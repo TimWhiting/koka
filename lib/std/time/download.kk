@@ -180,7 +180,7 @@ pub fun load-latest( fname  : path,
 
         // check file mod time to see if we tried downloading recently
         val fi = try-default(epoch){ fname.mod-time }
-        if (download-delay.is-pos && (fi ++ download-delay > unow))
+        if (download-delay.is-pos && (fi ++ download-delay > unow)) then
           warn("using cached file since it was recently updated.\n  " ++ fname.show)
           return recent  // expired, but use anyway since we recently updated the file
           // Just(recent)
