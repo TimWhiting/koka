@@ -73,7 +73,7 @@ void printDeclEx( const char* sort, const char* name, bool verbose );
 %token LEX_WHITE LEX_COMMENT
 %token INSERTED_SEMI EXPR_SEMI
 %token LE ASSIGN DCOLON EXTEND
-%token RETURN CTX
+%token RETURN CTX HOLE
 
 %token HANDLER HANDLE NAMED MASK OVERRIDE
 %token CTL FINAL RAW
@@ -326,7 +326,7 @@ con         : CON
             | /* empty */
             ;
 
-conparams   : '(' parameters1 ')'          /* deprecated */
+conparams   : '(' conparameters ')'          
             | '{' semis sconparams '}'
             | /* empty */
             ;
@@ -335,7 +335,16 @@ sconparams  : sconparams conparameter semis1
             | /* empty */
             ;
 
-conparameter : pub parameter;              /* unlike normal parameters, these can have visibility modifiers */
+conparameters  : conparameters1
+            | /* empty */
+            ;
+
+conparameters1 : conparameters1 ',' conparameter
+            | conparameter
+            ;
+
+conparameter : pub parameter
+             ;              /* unlike normal parameters, these can have visibility modifiers */
 
 
 /* ---------------------------------------------------------
@@ -544,7 +553,8 @@ behind      : ID_BEHIND
 ctxexpr     : CTX atom                    /* should contain a hole */
             ;
 
-ctxhole     : '_'
+ctxhole     : HOLE
+            | '_'
             ;
 
 /* arguments: separated by comma */

@@ -162,6 +162,7 @@ fn                        { return FN; }
 val                       { return VAL; }
 var                       { return VAR; }
 con                       { return CON; }
+hole                      { return HOLE; }
 
 if                        { return IF;}
 then                      { return THEN; }
