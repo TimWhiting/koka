@@ -205,7 +205,7 @@ topdecl     : pub puredecl                             { printDecl("value",$2); 
 ----------------------------------------------------------*/
 
 externdecl  : inlinemod fipmod EXTERN qidentifier externtype externbody   { $$ = $4; }
-            /* | IMPORT EXTERN externimpbody                                 { $$ = "<extern import>"; } */
+            | IMPORT_EXTERN externimpbody                                 { $$ = "<extern import>"; }
             ;
 
 externtype  : ':' typescheme
@@ -331,9 +331,11 @@ conparams   : '(' parameters1 ')'          /* deprecated */
             | /* empty */
             ;
 
-sconparams  : sconparams parameter semis1
+sconparams  : sconparams conparameter semis1
             | /* empty */
             ;
+
+conparameter : pub parameter;              /* unlike normal parameters, these can have visibility modifiers */
 
 
 /* ---------------------------------------------------------
@@ -380,11 +382,11 @@ tailmod     : ID_TAIL
             | /* empty */
             ;
 
-fundecl     : identifier funbody            { $$ = $1; }
+fundecl     : qidentifier funbody            { $$ = $1; }
             ;
 
-binder      : identifier                    { $$ = $1; }
-            | identifier ':' type           { $$ = $1; }
+binder      : qidentifier                    { $$ = $1; }
+            | qidentifier ':' type           { $$ = $1; }
             ;
 
 funbody     : typeparams '(' pparameters ')' bodyexpr
@@ -693,6 +695,7 @@ op          : OP
             | '>'       { $$ = ">";  }
             | '<'       { $$ = "<";  }
             | '|'       { $$ = "|";  }
+            | '^'       { $$ = "^";  }
             | ASSIGN    { $$ = ":="; }
             ;
 
@@ -730,8 +733,8 @@ apattern    : pattern annot                    /* annotated pattern */
 
 pattern     : identifier
             | identifier AS pattern              /* named pattern */
-            | conid
-            | conid '(' patargs ')'
+            | qconstructor
+            | qconstructor '(' patargs ')'
             | '(' apatterns ')'                  /* unit, parenthesized, and tuple pattern */
             | '[' apatterns ']'                  /* list pattern */
             | literal
@@ -910,6 +913,7 @@ tparams1    : tparams1 ',' tparam
             ;
 
 tparam      : identifier ':' anntype              /* named parameter */
+            | qimplicit ':' anntype               /* implicit parameter */
             | anntype
             ;
 

@@ -6,7 +6,11 @@ found in the LICENSE file at the root of this distribution.
 
 Compile and test the lexical and grammar specification in `doc/spec/grammar`.
 
+The following compiles the grammar to run manually on individual files
 > stack exec koka -- -e util/grammar.kk
+
+Running the test function builds the grammar and tests on all of `lib/std`
+> stack exec koka -- -e util/grammar.kk --main-entry=test
 
 Uses the `CC` environment variable to determine the C compiler.
 
@@ -15,6 +19,8 @@ Assumes `bison` and `flex` are installed.
   <https://sourceforge.net/projects/winflexbison>
 - Requires at least Bison 3+; you can get a version for windows from:
   <https://sourceforge.net/projects/winflexbison> (use the "latest" zip package)
+  For MacOS install it via brew: brew install bison, and then add it first in the PATH to override the system installed version
+  // e.g. `echo 'export PATH="/opt/homebrew/opt/bison/bin:$PATH"' >> ~/.zshrc`
 -----------------------------------------------------------------------------*/
 import std/os/path
 import std/os/file
@@ -54,3 +60,11 @@ fun run-echo(cmd : string) : io ()
   val exit-code = run-system(cmd)
   println( if exit-code==0 then "ok" else "error: " ++ exit-code.show )
 
+
+fun test(): io ()
+  build()
+  list-directory-recursive("lib/std".path).foreach fn(f)
+    if f.extname == "kk" then 
+      val exit-code = run-system((cwd() / ".koka" / "grammar" / "koka-parser").string ++ " " ++ f.string)
+      if exit-code != 0 then 
+        println("Error: " ++ f.show)
