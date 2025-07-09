@@ -554,7 +554,6 @@ ctxexpr     : CTX atom                    /* should contain a hole */
             ;
 
 ctxhole     : HOLE
-            | '_'
             ;
 
 /* arguments: separated by comma */
