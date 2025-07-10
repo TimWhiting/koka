@@ -44,6 +44,8 @@ data Lex    = LexInt     !Integer !String {- original number, used for documenta
             | LexChar    !Char
             | LexString   !String
             | LexId       !Name
+            | LexEtaId    !Name -- ^ identifier that was introduced by an eta-expansion (e.g. $x)
+            | LexEtaNum   !Integer -- ^ number that was introduced by an eta-expansion (e.g. $42) 
             | LexCons     !Name !String  {- can have a doc attached -}
             | LexOp       !Name
             | LexPrefix   !Name
@@ -99,6 +101,8 @@ instance Enum Lex where
         LexFloat _ _    -> 1
         LexChar _       -> 2
         LexString _     -> 3
+        LexEtaId _      -> 21
+        LexEtaNum _     -> 22
         LexId  _        -> 4
         LexOp    _      -> 5
         LexPrefix _     -> 19

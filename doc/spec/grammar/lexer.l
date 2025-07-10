@@ -283,6 +283,8 @@ c                         { return ID_C;       }
 
 {ConId}                   { yylval->Id = identifier(yytext,yyscanner,true); return CONID; }
 {Id}                      { yylval->Id = identifier(yytext,yyscanner,true); return ID; }
+\${Id}                    { yylval->Id = identifier(yytext,yyscanner,true); return ETAID; }
+\${Decimal}               { yylval->Id = identifier(yytext,yyscanner,true); return ETANUM; }
 \({Symbols}\)             { yylval->Id = identifier(yytext,yyscanner,false); return IDOP; }
 {Symbols}                 { yylval->Id = identifier(yytext,yyscanner,false); return OP; }
 _                         { return '_'; }

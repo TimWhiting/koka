@@ -25,6 +25,7 @@ module Common.Name
           , qualify, unqualify, isQualified, qualifier
           , nameModule, nameStem, nameLocal, nameLocalQual, isModuleName
 
+          , isEtaName, etaNameFromHidden, etaNumFromHidden, makeEtaName, makeEtaNumName
           , newPaddingName, isPaddingName, isCCtxName
           , newFieldName, isFieldName, isWildcard, unWildcard
           , typeQualifiedName, typeQualifiedNameOf, typeQualifiedGetTypeName
@@ -666,6 +667,32 @@ newPaddingName i
 
 isPaddingName name
   = hiddenNameStartsWith name "padding"
+
+isEtaName name = hiddenNameStartsWith name "eta" || hiddenNameStartsWith name "eta-num"
+
+etaFromHidden :: Name -> Name
+etaFromHidden name = nameMapStem name $ \stem ->
+  if stem `startsWith` "@eta-num-x"
+    then drop (length "@eta-num-x") stem
+  else if stem `startsWith` "@eta-"
+    then drop (length "@eta-") stem
+  else error ("Name.etaFromHidden: expecting hidden name prefixed with @eta- or @eta-num-x, but found: " ++ show name)
+
+etaNameFromHidden name =
+  let new = etaFromHidden name in
+  if all isDigit (nameStem new) then
+    nameMapStem new ("eta" ++)
+  else new
+
+etaNumFromHidden :: Name -> Maybe Int
+etaNumFromHidden name =
+  let new = etaFromHidden name in
+  if all isDigit (nameStem new) then
+    Just (read (nameStem new) :: Int)
+  else Nothing
+
+makeEtaName name = makeHiddenName "eta" name
+makeEtaNumName num = newHiddenNameEx "eta-num" (show num)
 
 newCCtxName s
   = newHiddenNameEx "cctx" s

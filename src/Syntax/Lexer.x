@@ -108,6 +108,9 @@ $charesc      = [nrt\\\'\"]    -- "
 @hexadecimal  = 0[xX] @hexdigits
 @integer      = @sign (@decimal | @hexadecimal)
 
+@etaid        = \$ @qidop | \$ @qvarid | \$ @lowerid
+@etanum       = \$ @decimal
+
 @exp          = (\-|\+)? $digit+
 @exp10        = [eE] @exp
 @exp2         = [pP] @exp
@@ -139,6 +142,11 @@ program :-
                                                else LexId (readQualifiedName s) }
 <0> @conid                { string $ \s -> LexCons (newName s) "" }
 <0> @wildcard             { string $ LexWildCard . newName }
+
+<0> @etanum               { string $ \s -> LexEtaNum (read (drop 1 s))}
+<0> @etaid                { string $ \s -> let id = drop 1 s 
+                                           in if isReserved s || isMalformed s then LexError messageMalformed 
+                                              else LexEtaId (readQualifiedName id)} -- TODO: Validate that dropping the '$' leads to a valid identifier
 
 -- specials
 <0> $special              { string $ LexSpecial }

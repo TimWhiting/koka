@@ -88,6 +88,7 @@ void printDeclEx( const char* sort, const char* name, bool verbose );
 %token ID_INITIALLY ID_FINALLY
 %token ID_FIP ID_FBIP ID_TAIL
 %token ID_LAZY
+%token ETAID ETANUM
 
 %type <Id>  varid conid qvarid qconid op
 %type <Id>  identifier qidentifier qoperator qconstructor
@@ -552,6 +553,8 @@ behind      : ID_BEHIND
             ;
 
 implicithole : '_'                       /* hole for missing (eta-expanded) parameters */
+             | ETAID
+             | ETANUM
             ;
 
 ctxexpr     : CTX atom                    /* should contain a hole */

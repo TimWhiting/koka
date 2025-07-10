@@ -65,6 +65,15 @@ fun test(): io ()
   build()
   list-directory-recursive("lib/std".path).foreach fn(f)
     if f.extname == "kk" then 
-      val exit-code = run-system((cwd() / ".koka" / "grammar" / "koka-parser").string ++ " " ++ f.string)
-      if exit-code != 0 then 
-        println("Error: " ++ f.show)
+      test-one(f)
+
+fun test-one(f: path): io ()
+  val exit-code = run-system((cwd() / ".koka" / "grammar" / "koka-parser").string ++ " " ++ f.string)
+  if exit-code != 0 then 
+    println("Error: " ++ f.show)
+  
+fun test-eta(): io ()
+  run-system("which bison")
+  build()
+  test-one("test/syntax/eta-expand.kk".path)
+  test-one("test/syntax/eta-dollar.kk".path)

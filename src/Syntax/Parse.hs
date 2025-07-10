@@ -35,7 +35,7 @@ module Syntax.Parse( parseProgramFromFile, parseProgramFromString
                    ) where
 
 import Lib.Trace
-import Data.List (intersperse,unzip4,sortBy)
+import Data.List (intersperse,unzip4,sortBy, nubBy)
 import Data.Maybe (isJust,isNothing,catMaybes)
 import Data.Either (partitionEithers)
 import Lib.PPrint hiding (string,parens,integer,semiBraces,lparen,comma,angles,rparen,rangle,langle)
@@ -68,6 +68,7 @@ import Common.ColorScheme (defaultColorScheme)
 import Syntax.Pretty (ppSyntaxDef, ppSyntaxExpr)
 import Type.Pretty (defaultEnv)
 import qualified Control.Monad.State as Mon
+import Data.Foldable
 
 -----------------------------------------------------------
 -- Parser on token stream
@@ -2070,29 +2071,54 @@ opexprx :: Bool -> LexParser UserExpr
 opexprx allowTrailingLam
   = do e1 <- prefixexpr allowTrailingLam
        (do ess <- many1 (do { op <- operatorVar; e2 <- prefixexpr allowTrailingLam; return [op,e2]; })
-           return (etaExpand (App (Var nameOpExpr True rangeNull)
-                    [(Nothing,e) | e <- e1 : concat ess] (combineRanged e1 (concat ess))))
+           etaExpand (App (Var nameOpExpr True rangeNull)
+                    [(Nothing,e) | e <- e1 : concat ess] (combineRanged e1 (concat ess)))
         <|>
-           return (etaExpand e1))
+           etaExpand e1)
 
-etaExpand :: UserExpr -> UserExpr
+
+isApp :: UserExpr -> Bool
+isApp (App _ _ _) = True
+isApp (Parens e _ _ _) = isApp e
+isApp _           = False
+
+etaExpand :: UserExpr -> LexParser UserExpr
 etaExpand expr = 
-  case expr of 
-    Var name _ rng | name == nameImplicitHole -> expr -- Don't expand holes until part of an application
-    _ -> 
-      let (expr', names) = Mon.runState (etaTransform expr) []
-      in if null names then expr
-        else 
-          let freshBinders = map (\name -> ValueBinder name Nothing Nothing (getRange expr) (getRange expr)) names
-              newDef = Lam freshBinders expr' False (getRange expr) 
-          in trace ("eta expanded: " ++ show (ppSyntaxExpr defaultEnv newDef)) newDef
-      
-etaTransform :: UserExpr -> Mon.State ([Name]) UserExpr
+  if not (isApp expr) then return expr -- Don't eta expand `_`
+  else
+    let (expr', binders) = Mon.runState (etaTransform expr) []
+    in if null binders then return expr
+      else do
+        let named = [ binder | (Right name, binder) <- binders ]
+            positional = [ (num, binder) | (Left num, binder) <- binders ]
+            orderedPositionalBinders = sortBy (\a b -> compare (fst a) (fst b)) positional
+        newBinders <- foldlM (\acc (position, binder) -> insertAt position binder acc (binderRange binder)) named orderedPositionalBinders
+        let newDef = Lam newBinders expr' False (getRange expr)
+        return $ trace ("eta expanded: " ++ show (ppSyntaxExpr defaultEnv newDef)) newDef
+  where 
+    insertAt num value list rng = 
+      if num < 0 || num > length list then do
+        pwarning "Eta-expanded parameter index out of bounds" rng
+        return (list ++ [value]) -- Append if out of bounds
+      else 
+        let (before, after) = splitAt num list
+        in return $ before ++ [value] ++ after
+
+etaTransform :: UserExpr -> Mon.State ([((Either Int Name), ValueBinder (Maybe UserType) (Maybe UserExpr))]) UserExpr
 etaTransform expr =
   case expr of
     Var name _ rng | name == nameImplicitHole -> do
       let newName = uniqueRngHiddenName rng "eta"
-      Mon.modify (\names -> newName : names)
+          newBinder = ValueBinder newName Nothing Nothing rng rng
+      Mon.modify (\binders -> (Right newName, newBinder) : binders)
+      return (Var newName False rng)
+    Var name _ rng | isEtaName name -> do
+      let newName = etaNameFromHidden name
+          etaNum = etaNumFromHidden name
+          unique = case etaNum of Just num -> Left num 
+                                  Nothing -> Right newName
+          newBinder = ValueBinder newName Nothing Nothing rng rng
+      Mon.modify (\binders -> nubBy (\a b -> fst a == fst b) ((unique, newBinder) : binders))
       return (Var newName False rng)
     App f args rng -> do 
       f' <- etaTransform f 
@@ -2102,8 +2128,15 @@ etaTransform expr =
     Var{} -> return expr
     Lit _ -> return expr
     Lam{} -> return expr
+    Parens e name pre rng -> do
+      e' <- etaTransform e
+      return (Parens e' name pre rng)
+    Ann e tp rng -> do
+      e' <- etaTransform e
+      return (Ann e' tp rng)
+    -- TODO: Consider adding binders to relevant case expressions?
     _ -> 
-      trace ("etaTransform: unexpected expression" ++ show (ppSyntaxExpr defaultEnv expr)) $
+      trace ("etaTransform: unexpected expression" ++ show (ppSyntaxExpr defaultEnv expr) ++ "\n" ++ show expr) $
       return expr
 
 operatorVar
@@ -2124,7 +2157,7 @@ appexpr :: Bool -> LexParser UserExpr
 appexpr allowTrailingLam
   = do e0 <- atom
        fs <- many (dotexpr <|> applier <|> indexer <|> funapps)
-       return $ foldl (\e f -> etaExpand (f e)) e0 fs
+       foldlM (\e f -> etaExpand (f e)) e0 fs
   where
 
     dotexpr, indexer, applier, funapps :: LexParser (UserExpr -> UserExpr)
@@ -2287,6 +2320,13 @@ cctxHole
 implicitHole :: LexParser UserExpr
 implicitHole
   = do { (_,r) <- wildcard; return (Var nameImplicitHole False r) }
+    <|> 
+    do (name, rng) <- etaId
+       return (Var (makeEtaName name) False rng) 
+    <|> 
+    do (num, rng) <- etaNum 
+       trace ("implicit hole: " ++ show num ++ show (makeEtaNumName num)) $
+         return (Var (makeEtaNumName num) False rng) 
 
 injectExpr :: LexParser UserExpr
 injectExpr
@@ -3165,6 +3205,18 @@ keyword s
   = do (Lexeme rng _) <- parseLex (LexKeyword s "")
        return rng
   <?> show (LexKeyword s "")
+
+etaId :: LexParser (Name, Range)
+etaId 
+  = do (Lexeme rng (LexEtaId name)) <- parseLex (LexEtaId nameNil)
+       return (name, rng)
+  <?> show (LexEtaId nameNil)
+
+etaNum :: LexParser (Integer, Range)
+etaNum
+  = do (Lexeme rng (LexEtaNum i)) <- parseLex (LexEtaNum 0)
+       return (i, rng)
+  <?> show (LexEtaNum 0)
 
 dockeyword :: String -> LexParser (Range,String)
 dockeyword s
