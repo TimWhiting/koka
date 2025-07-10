@@ -533,6 +533,7 @@ atom        : name
             | '[' cexprs ']'             /* list expression (elements may be terminated with comma instead of separated) */
             | ctxexpr                    /* ctx is an atom and not an expr so we can write `acc ++ ctx Cons(1,_)` */
             | ctxhole
+            | implicithole               /* hole for missing (eta-expanded) parameters */
             ;
 
 name        : qidentifier
@@ -548,6 +549,9 @@ mask        : MASK behind '<' tbasic '>'
 
 behind      : ID_BEHIND
             | /* empty */
+            ;
+
+implicithole : '_'                       /* hole for missing (eta-expanded) parameters */
             ;
 
 ctxexpr     : CTX atom                    /* should contain a hole */
