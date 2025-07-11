@@ -2070,10 +2070,10 @@ opexprx :: Bool -> LexParser UserExpr
 opexprx allowTrailingLam
   = do e1 <- prefixexpr allowTrailingLam
        (do ess <- many1 (do { op <- operatorVar; e2 <- prefixexpr allowTrailingLam; return [op,e2]; })
-           return (etaExpand (App (Var nameOpExpr True rangeNull)
-                    [(Nothing,e) | e <- e1 : concat ess] (combineRanged e1 (concat ess))))
+           return (App (Var nameOpExpr True rangeNull)
+                    [(Nothing,e) | e <- e1 : concat ess] (combineRanged e1 (concat ess)))
         <|>
-           return (etaExpand e1))
+           return e1)
 
 etaExpand :: UserExpr -> UserExpr
 etaExpand expr = 
@@ -2124,7 +2124,7 @@ appexpr :: Bool -> LexParser UserExpr
 appexpr allowTrailingLam
   = do e0 <- atom
        fs <- many (dotexpr <|> applier <|> indexer <|> funapps)
-       return $ foldl (\e f -> etaExpand (f e)) e0 fs
+       return $ foldl (\e f -> f e) e0 fs
   where
 
     dotexpr, indexer, applier, funapps :: LexParser (UserExpr -> UserExpr)
@@ -2188,10 +2188,12 @@ argument
        case exp of
          Var name _ rng -> do keyword "="
                               exp2 <- expr
-                              return (Just (name,rng),exp2)
+                              case exp2 of 
+                                Var{} -> return (Just (name,rng),exp2) -- Don't eta expand if the argument is a variable
+                                _ -> return (Just (name,rng),etaExpand exp2)
                            <|>
                               return (Nothing,exp)
-         _              -> return (Nothing,exp)
+         _              -> return (Nothing, etaExpand exp)
 
 {--------------------------------------------------------------------------
   Atomic expression
