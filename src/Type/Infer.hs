@@ -1231,6 +1231,10 @@ inferApp propagated expect fun nargs rng
            -- only add resolved implicits that were not already named
            let alreadyGiven = [name | ((name,_),_) <- named0]
                rimplicits   = [imp | imp@((name,_),_,_) <- implicits, not (name `elem` alreadyGiven)]
+               fixedExpected = case splitFunScheme (getType funExpr) of 
+                                Just (_,[],tpars,_,_) -> length tpars
+                                _ -> 0        
+               restImplicits = drop (length fixed - fixedExpected) rimplicits 
                named        = named0 ++ [((name,rangeNull) {-so no range info is emmitted when checking -}
                                           , expr) | ((name,_),expr,_) <- rimplicits]
 
@@ -1294,7 +1298,7 @@ inferApp propagated expect fun nargs rng
 
            -- match the type with a function type, wrap optional arguments, and order named arguments.
            -- traceDoc $ \env -> text "infer fun first, tp:" <+> ppType env ftp
-           (iargs,pars0,funEff0,funTp0,coreApp) <- matchFunTypeArgs rng funExpr ftp fresolved fixed named
+           (iargs,pars0,funEff0,funTp0,coreApp) <- matchFunTypeArgs rng funExpr ftp fresolved fixed named implicits
 
 
            -- match propagated type with the function result type
@@ -2298,14 +2302,14 @@ data ArgExpr
   | ArgCore FixedArg
   | ArgImplicit Name Range {- application range -} Range {- name range -}
 
-matchFunTypeArgs :: Range -> Expr Type -> Type -> [(Int,FixedArg)] -> [Expr Type] -> [((Name,Range),Expr Type)]
+matchFunTypeArgs :: Range -> Expr Type -> Type -> [(Int,FixedArg)] -> [Expr Type] -> [((Name,Range),Expr Type)] -> [((Name,Range),Expr Type, Bool -> Doc)]
                      -> Inf ([(Int,ArgExpr)], [(Name,Type)], Effect, Type, Core.Expr -> [Core.Expr] -> Core.Expr)
-matchFunTypeArgs context fun tp fresolved fixed named
+matchFunTypeArgs context fun tp fresolved fixed named implicits
   = case tp of
        TFun pars eff res   -> do iargs <- matchParameters pars fresolved fixed named
                                  -- trace ("matched parameters: " ++ show (pars,map fst args)) $
                                  return (iargs,pars,eff,res,Core.App)
-       TSyn _ _ t          -> matchFunTypeArgs context fun t fresolved fixed named
+       TSyn _ _ t          -> matchFunTypeArgs context fun t fresolved fixed named implicits
        TVar tv             -> do if (null named)  -- TODO: take fresolved into account
                                   then return ()
                                   else infError range (text "cannot used named arguments on an inferred function" <-> text " hint: annotate the parameters")
@@ -2320,7 +2324,7 @@ matchFunTypeArgs context fun tp fresolved fixed named
                 case matches of
                   [(qname,info)]
                     -> do (contp,_,coreInst) <- instantiateEx range (infoType info)
-                          (iargs,pars,eff,res,_) <- matchFunTypeArgs context fun contp fresolved (fun:fixed) named
+                          (iargs,pars,eff,res,_) <- matchFunTypeArgs context fun contp fresolved (fun:fixed) named implicits
                           let coreAddCopy core coreArgs
                                 = let coreVar = coreExprFromNameInfo qname info
                                   in (Core.App (coreInst coreVar) (seqqList coreArgs))

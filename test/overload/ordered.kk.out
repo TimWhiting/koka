@@ -1,0 +1,4 @@
+test/overload/ordered@kk(2,13): type error: function is applied to too many arguments
+ context : [1, 2, 3]@show(show)
+ term : show
+ inferred type: (xs : list<_a>, ?show : (_a) -> _e string) -> _e string
