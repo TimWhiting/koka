@@ -96,7 +96,7 @@ pub inline extern vector/join: (v : vector<string> ) -> string
   js inline "((#1).join(''))"
 
 // Concatenate a vector of strings with a separator `sep`
-pub inline extern vectorsep/join: (v : vector<string>, sep : string ) -> total string
+pub inline extern vectorsep/join(v : vector<string>, sep : string ): e string
   c  "kk_string_join_with"
   cs "Primitive.Concat"
   js inline "((#1).join(#2))"

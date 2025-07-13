@@ -278,7 +278,7 @@ pub fip fun (||)( x : bool, y : bool) : bool  // inlined in the compiler for sho
   if x then True else y
 
 // Logical negation
-pub fip fun bool/(!)( b : bool ) : bool
+pub fip fun bool/(!)( b : bool ) : e bool
   if b then False else True
 
 // Logical negation

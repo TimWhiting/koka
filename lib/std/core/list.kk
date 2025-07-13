@@ -410,7 +410,7 @@ pub fun intersperse( xs : list<a>, sep : a ) : list<a>
     Nil         -> Nil
 
 // Concatenate all strings in a list
-fun joinsep( xs : list<string>, sep : string ) : string
+fun joinsep( xs : list<string>, sep : string ) : e string
   match xs
     Nil                 -> ""
     Cons(x,Nil)         -> x
@@ -426,7 +426,7 @@ pub fun concat/join( xs : list<string> ) : string
     _                   -> xs.vector.join()
 
 // Concatenate all strings in a list using a specific separator
-pub fun joinsep/join( xs : list<string>, sep : string ) : string
+pub fun joinsep/join( xs : list<string>, sep : string ) : e string
   xs.joinsep(sep)
 
 // Concatenate all strings in a list in reverse order

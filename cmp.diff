@@ -1,0 +1,2892 @@
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core.kkc .koka/v3.1.4/clang-debug-473d8a/std_core.kkc
+67c67
+<       val x@0@10077 : a
+---
+>       val x@0@10078 : a
+73c73
+<            -> f(x@0@10077);
+---
+>            -> f(x@0@10078);
+95c95
+< fun @mlift-while@10071 : forall<e> (action : () -> <div|e> (), predicate : () -> <div|e> bool, wild_ : ()) -> <div|e> ()
+---
+> fun @mlift-while@10072 : forall<e> (action : () -> <div|e> (), predicate : () -> <div|e> bool, wild_ : ()) -> <div|e> ()
+100c100
+< fun @mlift-while@10072 : forall<e> (action : () -> <div|e> (), predicate : () -> <div|e> bool, @y-x10027 : bool) -> <div|e> ()
+---
+> fun @mlift-while@10073 : forall<e> (action : () -> <div|e> (), predicate : () -> <div|e> bool, @y-x10027 : bool) -> <div|e> ()
+104c104
+<          -> val x@10079 : ()
+---
+>          -> val x@10080 : ()
+109c109
+<               (std/core/@mlift-while@10071(action@0, predicate@0, wild_@0));
+---
+>               (std/core/@mlift-while@10072(action@0, predicate@0, wild_@0));
+112c112
+<              -> std/core/@mlift-while@10071(action@0, predicate@0, x@10079);
+---
+>              -> std/core/@mlift-while@10072(action@0, predicate@0, x@10080);
+121c121
+<     val x@0@10081 : bool
+---
+>     val x@0@10082 : bool
+126c126
+<           (std/core/@mlift-while@10072(action@1, predicate@1, @y-x10027@0));
+---
+>           (std/core/@mlift-while@10073(action@1, predicate@1, @y-x10027@0));
+129c129
+<          -> (match (x@0@10081) {
+---
+>          -> (match (x@0@10082) {
+131c131
+<              -> val x@1@10084 : ()
+---
+>              -> val x@1@10085 : ()
+136c136
+<                   (std/core/@mlift-while@10071(action@1, predicate@1, wild_@1));
+---
+>                   (std/core/@mlift-while@10072(action@1, predicate@1, wild_@1));
+174c174
+< fun range/@mlift-fold@10073 : forall<a,e> (end : int, f : (int, a) -> e a, start : int, x : a) -> e a
+---
+> fun range/@mlift-fold@10074 : forall<a,e> (end : int, f : (int, a) -> e a, start : int, x : a) -> e a
+185c185
+<          -> val x@0@10087 : a
+---
+>          -> val x@0@10088 : a
+190c190
+<               (std/core/range/@mlift-fold@10073(end@0, f@0, start@0, x@1));
+---
+>               (std/core/range/@mlift-fold@10074(end@0, f@0, start@0, x@1));
+193c193
+<              -> std/core/range/fold((std/core/int/int-add(start@0, 1)), end@0, x@0@10087, f@0);
+---
+>              -> std/core/range/fold((std/core/int/int-add(start@0, 1)), end@0, x@0@10088, f@0);
+203c203
+< fun range/@mlift-fold-while@10074 : forall<a,e> (end : int, f : (int, a) -> e maybe<a>, init : a, start : int, @y-x10035 : maybe<a>) -> e a
+---
+> fun range/@mlift-fold-while@10075 : forall<a,e> (end : int, f : (int, a) -> e maybe<a>, init : a, start : int, @y-x10035 : maybe<a>) -> e a
+219c219
+<          -> val x@0@10090 : maybe<a>
+---
+>          -> val x@0@10091 : maybe<a>
+224c224
+<               (std/core/range/@mlift-fold-while@10074(end@0, f@0, init@0, start@0, @y-x10035@0));
+---
+>               (std/core/range/@mlift-fold-while@10075(end@0, f@0, init@0, start@0, @y-x10035@0));
+227c227
+<              -> (match (x@0@10090) {
+---
+>              -> (match (x@0@10091) {
+257c257
+< fun range/@mlift-lift-for@1370@10075 : forall<e> (action : (int) -> e (), end : int, i : int, wild_ : ()) -> e ()
+---
+> fun range/@mlift-lift-for@1372@10076 : forall<e> (action : (int) -> e (), end : int, i : int, wild_ : ()) -> e ()
+261c261
+<     std/core/range/@lift-for@1370(action, end, i@0@10007);
+---
+>     std/core/range/@lift-for@1372(action, end, i@0@10007);
+264c264
+< fun range/@lift-for@1370 : forall<e> (action : (int) -> e (), end : int, i : int) -> e ()
+---
+> fun range/@lift-for@1372 : forall<e> (action : (int) -> e (), end : int, i : int) -> e ()
+268c268
+<          -> val x@10093 : ()
+---
+>          -> val x@10094 : ()
+273c273
+<               (std/core/range/@mlift-lift-for@1370@10075(action@0, end@0, i@0, wild_@0));
+---
+>               (std/core/range/@mlift-lift-for@1372@10076(action@0, end@0, i@0, wild_@0));
+278c278
+<             std/core/range/@lift-for@1370(action@0, end@0, i@0@10007@0);
+---
+>             std/core/range/@lift-for@1372(action@0, end@0, i@0@10007@0);
+288c288
+<     std/core/range/@lift-for@1370(action, end, start);
+---
+>     std/core/range/@lift-for@1372(action, end, start);
+296c296
+<     std/core/range/@lift-for@1370(action, end@10009, 0);
+---
+>     std/core/range/@lift-for@1372(action, end@10009, 0);
+303c303
+<     std/core/range/@lift-for@1370((fn<e>(i@0: int){
+---
+>     std/core/range/@lift-for@1372((fn<e>(i@0: int){
+308c308
+< fun range/@mlift-lift-for-while@1371@10076 : forall<a,e> (action : (int) -> e maybe<a>, end : int, i : int, @y-x10047 : maybe<a>) -> e maybe<a>
+---
+> fun range/@mlift-lift-for-while@1373@10077 : forall<a,e> (action : (int) -> e maybe<a>, end : int, i : int, @y-x10047 : maybe<a>) -> e maybe<a>
+314c314
+<         std/core/range/@lift-for-while@1371(action, end, i@0@10016);
+---
+>         std/core/range/@lift-for-while@1373(action, end, i@0@10016);
+320c320
+< fun range/@lift-for-while@1371 : forall<a,e> (action : (int) -> e maybe<a>, end : int, i : int) -> e maybe<a>
+---
+> fun range/@lift-for-while@1373 : forall<a,e> (action : (int) -> e maybe<a>, end : int, i : int) -> e maybe<a>
+324c324
+<          -> val x@0@10096 : maybe<a>
+---
+>          -> val x@0@10097 : maybe<a>
+329c329
+<               (std/core/range/@mlift-lift-for-while@1371@10076(action@0, end@0, i@0, @y-x10047@0));
+---
+>               (std/core/range/@mlift-lift-for-while@1373@10077(action@0, end@0, i@0, @y-x10047@0));
+332c332
+<              -> (match (x@0@10096) {
+---
+>              -> (match (x@0@10097) {
+336c336
+<                 std/core/range/@lift-for-while@1371(action@0, end@0, i@0@10016@0);
+---
+>                 std/core/range/@lift-for-while@1373(action@0, end@0, i@0@10016@0);
+350c350
+<     std/core/range/@lift-for-while@1371(action, end, start);
+---
+>     std/core/range/@lift-for-while@1373(action, end, start);
+359c359
+<     std/core/range/@lift-for-while@1371(action, end@10018, 0);
+---
+>     std/core/range/@lift-for-while@1373(action, end@10018, 0);
+378c378,380
+<               (std/core/console/printsln((std/core/exn/show(x))));
+---
+>               (std/core/hnd/@open-none2((fn<console/console>(x@0: exception, @implicit/show: (exception) -> string){
+>                   (std/core/console/printsln((?show(x@0))));
+>                 }), x, std/core/exn/show));
+414,415c416,417
+<         ((std/core/types/@Optional((@uniq-head@1339: a)) : ? a ) as @pat: ? a)
+<            -> @uniq-head@1339;
+---
+>         ((std/core/types/@Optional((@uniq-head@1341: a)) : ? a ) as @pat: ? a)
+>            -> @uniq-head@1341;
+422,423c424,425
+<         ((std/core/types/@Optional((@uniq-tail@1349: stream<a>)) : ? (stream<a>) ) as @pat@1@0: ? (stream<a>))
+<            -> @uniq-tail@1349;
+---
+>         ((std/core/types/@Optional((@uniq-tail@1351: stream<a>)) : ? (stream<a>) ) as @pat@1@0: ? (stream<a>))
+>            -> @uniq-tail@1351;
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_debug.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_debug.kkc
+91,92c91,92
+<           ((std/core/types/@Optional((@uniq-message@311: string)) : ? string ) as @pat: ? string)
+<              -> @uniq-message@311;
+---
+>           ((std/core/types/@Optional((@uniq-message@315: string)) : ? string ) as @pat: ? string)
+>              -> @uniq-message@315;
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_delayed.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_delayed.kkc
+83c83
+< fun force/@mlift-go@10013 : forall<a,e> (r : ref<global,computation<e,a>>, x@0 : a) -> <st<global>,div|e> a
+---
+> fun force/@mlift-go@10016 : forall<a,e> (r : ref<global,computation<e,a>>, x@0 : a) -> <st<global>,div|e> a
+91,94c91,98
+<     (match ((std/core/types/ref/(!)((match (delayed) {
+<       ((@skip std/core/delayed/XDelay((@x: ref<global,computation<e,a>>)) : delayed<e,a> ) as @pat: (delayed<e,a>))
+<          -> @x;
+<     })))) {
+---
+>     val r@0 : ref<global,computation<e,a>>
+>           = std/core/hnd/@open-none1((fn(delayed@0: delayed<e,a>){
+>               (match (delayed@0) {
+>                 ((@skip std/core/delayed/XDelay((@x: ref<global,computation<e,a>>)) : delayed<e,a> ) as @pat: (delayed<e,a>))
+>                    -> @x;
+>               });
+>             }), delayed);
+>     (match ((std/core/types/ref/(!)(r@0))) {
+101,105c105,106
+<               = std/core/types/set((match (delayed) {
+<                   ((@skip std/core/delayed/XDelay((@x@0: ref<global,computation<e,a>>)) : delayed<e,a> ) as @pat@2: (delayed<e,a>))
+<                      -> @x@0;
+<                 }), std/core/delayed/XBlocking);
+<             val x@1@10014 : a
+---
+>               = std/core/types/set(r@0, std/core/delayed/XBlocking);
+>             val x@1@10017 : a
+108c109
+<           ((std/core/types/True() : bool ) as @pat@2@0: bool)
+---
+>           ((std/core/types/True() : bool ) as @pat@2: bool)
+110,113c111
+<               (std/core/delayed/force/@mlift-go@10013((match (delayed) {
+<                   ((@skip std/core/delayed/XDelay((@x@1: ref<global,computation<e,a>>)) : delayed<e,a> ) as @pat@3: (delayed<e,a>))
+<                      -> @x@1;
+<                 }), x@0@0));
+---
+>               (std/core/delayed/force/@mlift-go@10016(r@0, x@0@0));
+117,121c115,116
+<                       = std/core/types/set((match (delayed) {
+<                           ((@skip std/core/delayed/XDelay((@x@2: ref<global,computation<e,a>>)) : delayed<e,a> ) as @pat@4: (delayed<e,a>))
+<                              -> @x@2;
+<                         }), (std/core/delayed/XDone(x@1@10014)));
+<             x@1@10014;
+---
+>                       = std/core/types/set(r@0, (std/core/delayed/XDone(x@1@10017)));
+>             x@1@10017;
+129c124,128
+<     std/core/delayed/force/go(delayed);
+---
+>     std/core/hnd/@open-none1((fn(action: () -> <alloc<global>,div,read<global>,write<global>|e> a){
+>         (action());
+>       }), (fn<<alloc<global>,div,read<global>,write<global>|e>>(){
+>         (std/core/delayed/force/go(delayed));
+>       }));
+144c143
+<                 = calc();
+---
+>                 = std/core/hnd/@open-none0(calc);
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_hnd.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_hnd.kkc
+570c570
+<     val b : bool
+---
+>     val b@10006 : bool
+572c572
+<     (match (b) {
+---
+>     (match (b@10006) {
+586c586
+<                  -> std/core/hnd/yield-extend((fn<e>(@_wildcard-x489_43: _4241){
+---
+>                  -> std/core/hnd/yield-extend((fn<e>(@_wildcard-x489_43: _4245){
+624c624
+<                               = std/core/hnd/yield-extend((fn<e>(@_wildcard-x530_35: _4429){
+---
+>                               = std/core/hnd/yield-extend((fn<e>(@_wildcard-x530_35: _4435){
+662,663c662,663
+<       ((std/core/types/@Optional((@uniq-k@4628: (resume-result<a,b>) -> e b)) : ? ((resume-result<a,b>) -> e b) ) as @pat: ? ((resume-result<a,b>) -> e b))
+<          -> @uniq-k@4628;
+---
+>       ((std/core/types/@Optional((@uniq-k@4634: (resume-result<a,b>) -> e b)) : ? ((resume-result<a,b>) -> e b) ) as @pat: ? ((resume-result<a,b>) -> e b))
+>          -> @uniq-k@4634;
+703,704c703,704
+<       ((std/core/types/@Optional((@uniq-clause@4973: (marker<e,d>, ev<c>, a) -> e b)) : ? ((marker<e,d>, ev<c>, a) -> e b) ) as @pat: ? ((marker<e,d>, ev<c>, a) -> e b))
+<          -> @uniq-clause@4973;
+---
+>       ((std/core/types/@Optional((@uniq-clause@4979: (marker<e,d>, ev<c>, a) -> e b)) : ? ((marker<e,d>, ev<c>, a) -> e b) ) as @pat: ? ((marker<e,d>, ev<c>, a) -> e b))
+>          -> @uniq-clause@4979;
+790c790
+<          -> val b : bool
+---
+>          -> val b@10009 : bool
+792c792
+<         (match (b) {
+---
+>         (match (b@10009) {
+806c806
+<                      -> std/core/hnd/yield-extend((fn<e>(@_wildcard-x620_43: _5677){
+---
+>                      -> std/core/hnd/yield-extend((fn<e>(@_wildcard-x620_43: _5688){
+892,893c892,893
+<       ((std/core/types/@Optional((@uniq-clause@6247: (marker<e,c>, ev<b>) -> e a)) : ? ((marker<e,c>, ev<b>) -> e a) ) as @pat: ? ((marker<e,c>, ev<b>) -> e a))
+<          -> @uniq-clause@6247;
+---
+>       ((std/core/types/@Optional((@uniq-clause@6258: (marker<e,c>, ev<b>) -> e a)) : ? ((marker<e,c>, ev<b>) -> e a) ) as @pat: ? ((marker<e,c>, ev<b>) -> e a))
+>          -> @uniq-clause@6258;
+1035,1036c1035,1036
+<       ((std/core/types/@Optional((@uniq-clause@7011: (marker<e,a1>, ev<d>, a, b) -> e c)) : ? ((marker<e,a1>, ev<d>, a, b) -> e c) ) as @pat: ? ((marker<e,a1>, ev<d>, a, b) -> e c))
+<          -> @uniq-clause@7011;
+---
+>       ((std/core/types/@Optional((@uniq-clause@7022: (marker<e,a1>, ev<d>, a, b) -> e c)) : ? ((marker<e,a1>, ev<d>, a, b) -> e c) ) as @pat: ? ((marker<e,a1>, ev<d>, a, b) -> e c))
+>          -> @uniq-clause@7022;
+1598c1598
+<          -> val b : bool
+---
+>          -> val b@10045 : bool
+1600c1600
+<         (match (b) {
+---
+>         (match (b@10045) {
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_int.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_int.kkc
+272,273c272,273
+<         ((std/core/types/@Optional((@uniq-hex@533: bool)) : ? bool ) as @pat: ? bool)
+<            -> @uniq-hex@533;
+---
+>         ((std/core/types/@Optional((@uniq-hex@537: bool)) : ? bool ) as @pat: ? bool)
+>            -> @uniq-hex@537;
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_list.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_list.kkc
+59c59
+< fun @lift-length@5423 : forall<a> (ys : list<a>, acc : int) -> int
+---
+> fun @lift-length@5465 : forall<a> (ys : list<a>, acc : int) -> int
+63c63
+<          -> std/core/list/@lift-length@5423(yy, (std/core/int/int-add(acc, 1)));
+---
+>          -> std/core/list/@lift-length@5465(yy, (std/core/int/int-add(acc, 1)));
+71c71
+<     std/core/list/@lift-length@5423(xs, 0);
+---
+>     std/core/list/@lift-length@5465(xs, 0);
+197c197
+< fun @mlift-foldl@10268 : forall<a,b,e> (f : (b, a) -> e b, xx : list<a>, @y-x10104 : b) -> e b
+---
+> fun @mlift-foldl@10272 : forall<a,b,e> (f : (b, a) -> e b, xx : list<a>, @y-x10104 : b) -> e b
+207c207
+<          -> val x@0@10300 : b
+---
+>          -> val x@0@10305 : b
+212c212
+<               (std/core/list/@mlift-foldl@10268(f@0, xx@0, @y-x10104@0));
+---
+>               (std/core/list/@mlift-foldl@10272(f@0, xx@0, @y-x10104@0));
+215c215
+<              -> std/core/list/foldl(xx@0, x@0@10300, f@0);
+---
+>              -> std/core/list/foldl(xx@0, x@0@10305, f@0);
+255c255
+< fun @mlift-drop-while@10269 : forall<a,e> (predicate : (a) -> e bool, xs : list<a>, xx : list<a>, @y-x10115 : bool) -> e list<a>
+---
+> fun @mlift-drop-while@10273 : forall<a,e> (predicate : (a) -> e bool, xs : list<a>, xx : list<a>, @y-x10115 : bool) -> e list<a>
+269c269
+<          -> val x@0@10305 : bool
+---
+>          -> val x@0@10310 : bool
+274c274
+<               (std/core/list/@mlift-drop-while@10269(predicate@0, xs@0, xx@0, @y-x10115@0));
+---
+>               (std/core/list/@mlift-drop-while@10273(predicate@0, xs@0, xx@0, @y-x10115@0));
+277c277
+<              -> (match (x@0@10305) {
+---
+>              -> (match (x@0@10310) {
+289c289
+< fun @mlift-trmc-filter@10270 : forall<a,e> (@acc : ctx<list<a>>, pred : (a) -> e bool, x : a, xx : list<a>, @y-x10119 : bool) -> e list<a>
+---
+> fun @mlift-trmc-filter@10274 : forall<a,e> (@acc : ctx<list<a>>, pred : (a) -> e bool, x : a, xx : list<a>, @y-x10119 : bool) -> e list<a>
+308c308
+<          -> val x@1@10308 : bool
+---
+>          -> val x@1@10313 : bool
+313c313
+<               (std/core/list/@mlift-trmc-filter@10270(@acc@0, pred@0, x@0, xx@0, @y-x10119@0));
+---
+>               (std/core/list/@mlift-trmc-filter@10274(@acc@0, pred@0, x@0, xx@0, @y-x10119@0));
+316c316
+<              -> (match (x@1@10308) {
+---
+>              -> (match (x@1@10313) {
+338c338
+< fun @mlift-trmc-filter-map@10271 : forall<a,b,e> (@acc : ctx<list<b>>, pred : (a) -> e maybe<b>, xx : list<a>, @y-x10125 : maybe<b>) -> e list<b>
+---
+> fun @mlift-trmc-filter-map@10275 : forall<a,b,e> (@acc : ctx<list<b>>, pred : (a) -> e maybe<b>, xx : list<a>, @y-x10125 : maybe<b>) -> e list<b>
+359c359
+<          -> val x@0@10311 : maybe<b>
+---
+>          -> val x@0@10316 : maybe<b>
+364c364
+<               (std/core/list/@mlift-trmc-filter-map@10271(@acc@0, pred@0, xx@0, @y-x10125@0));
+---
+>               (std/core/list/@mlift-trmc-filter-map@10275(@acc@0, pred@0, xx@0, @y-x10125@0));
+367c367
+<              -> (match (x@0@10311) {
+---
+>              -> (match (x@0@10316) {
+387c387
+< fun @mlift-foreach-while@10272 : forall<a,b,e> (action : (a) -> e maybe<b>, xx : list<a>, @y-x10131 : maybe<b>) -> e maybe<b>
+---
+> fun @mlift-foreach-while@10276 : forall<a,b,e> (action : (a) -> e maybe<b>, xx : list<a>, @y-x10131 : maybe<b>) -> e maybe<b>
+403c403
+<          -> val x@0@10314 : maybe<b>
+---
+>          -> val x@0@10319 : maybe<b>
+408c408
+<               (std/core/list/@mlift-foreach-while@10272(action@0, xx@0, @y-x10131@0));
+---
+>               (std/core/list/@mlift-foreach-while@10276(action@0, xx@0, @y-x10131@0));
+411c411
+<              -> (match (x@0@10314) {
+---
+>              -> (match (x@0@10319) {
+421c421
+< fun @mlift-find@10273 : forall<a,e> (x : a, @y-x10135 : bool) -> e maybe<a>
+---
+> fun @mlift-find@10277 : forall<a,e> (x : a, @y-x10135 : bool) -> e maybe<a>
+434c434
+<         val x@0@10317 : bool
+---
+>         val x@0@10322 : bool
+436c436
+<         val next@10318 : ((bool) -> e maybe<a>)
+---
+>         val next@10323 : ((bool) -> e maybe<a>)
+447c447
+<              -> std/core/hnd/yield-extend(next@10318);
+---
+>              -> std/core/hnd/yield-extend(next@10323);
+449c449
+<              -> next@10318(x@0@10317);
+---
+>              -> next@10323(x@0@10322);
+492c492
+< fun @mlift-trmc-map@10274 : forall<a,b,e> (@acc : ctx<list<b>>, f : (a) -> e b, xx : list<a>, @trmc-x10058 : b) -> e list<b>
+---
+> fun @mlift-trmc-map@10278 : forall<a,b,e> (@acc : ctx<list<b>>, f : (a) -> e b, xx : list<a>, @trmc-x10058 : b) -> e list<b>
+505c505
+<          -> val x@0@10321 : b
+---
+>          -> val x@0@10326 : b
+510c510
+<               (std/core/list/@mlift-trmc-map@10274(@acc@0, f@0, xx@0, @trmc-x10058@0));
+---
+>               (std/core/list/@mlift-trmc-map@10278(@acc@0, f@0, xx@0, @trmc-x10058@0));
+516c516
+<                   = std/core/types/Cons(x@0@10321, @trmc-x10059@0);
+---
+>                   = std/core/types/Cons(x@0@10326, @trmc-x10059@0);
+531c531
+<     val lo@0@10326 : int
+---
+>     val lo@0@10331 : int
+533c533
+<     val hi@0@10327 : int
+---
+>     val hi@0@10332 : int
+535,537c535,537
+<     val xs@10324 : list<int>
+<       = std/core/list/range/@trmc-list(lo@0@10326, hi@0@10327, (std/core/types/cctx/empty()));
+<     std/core/list/@trmc-map(xs@10324, std/core/char/int/char, (std/core/types/cctx/empty()));
+---
+>     val xs@10329 : list<int>
+>       = std/core/list/range/@trmc-list(lo@0@10331, hi@0@10332, (std/core/types/cctx/empty()));
+>     std/core/list/@trmc-map(xs@10329, std/core/char/int/char, (std/core/types/cctx/empty()));
+540c540
+< fun function/@mlift-trmc-list@10275 : forall<a,e> (@acc : ctx<list<a>>, f : (int) -> e a, hi : int, lo : int, @trmc-x10061 : a) -> e list<a>
+---
+> fun function/@mlift-trmc-list@10279 : forall<a,e> (@acc : ctx<list<a>>, f : (int) -> e a, hi : int, lo : int, @trmc-x10061 : a) -> e list<a>
+555c555
+<          -> val x@10328 : a
+---
+>          -> val x@10333 : a
+560c560
+<               (std/core/list/function/@mlift-trmc-list@10275(@acc@0, f@0, hi@0, lo@0, @trmc-x10061@0));
+---
+>               (std/core/list/function/@mlift-trmc-list@10279(@acc@0, f@0, hi@0, lo@0, @trmc-x10061@0));
+566c566
+<                   = std/core/types/Cons(x@10328, @trmc-x10062@0);
+---
+>                   = std/core/types/Cons(x@10333, @trmc-x10062@0);
+602c602
+< fun stridefunction/@mlift-trmc-list@10276 : forall<a,e> (@acc : ctx<list<a>>, f : (int) -> e a, hi : int, lo : int, stride : int, @trmc-x10066 : a) -> e list<a>
+---
+> fun stridefunction/@mlift-trmc-list@10280 : forall<a,e> (@acc : ctx<list<a>>, f : (int) -> e a, hi : int, lo : int, stride : int, @trmc-x10066 : a) -> e list<a>
+616c616
+<          -> val x@10331 : a
+---
+>          -> val x@10336 : a
+621c621
+<               (std/core/list/stridefunction/@mlift-trmc-list@10276(@acc@0, f@0, hi@0, lo@0, stride@0, @trmc-x10066@0));
+---
+>               (std/core/list/stridefunction/@mlift-trmc-list@10280(@acc@0, f@0, hi@0, lo@0, stride@0, @trmc-x10066@0));
+627c627
+<                   = std/core/types/Cons(x@10331, @trmc-x10067@0);
+---
+>                   = std/core/types/Cons(x@10336, @trmc-x10067@0);
+643c643
+<     val xs@10336 : list<char>
+---
+>     val xs@10341 : list<char>
+645,646c645,646
+<     val x@10334 : list<char>
+<       = std/core/list/@trmc-map(xs@10336, f, (std/core/types/cctx/empty()));
+---
+>     val x@10339 : list<char>
+>       = std/core/list/@trmc-map(xs@10341, f, (std/core/types/cctx/empty()));
+651c651
+<          -> std/core/string/listchar/string(x@10334);
+---
+>          -> std/core/string/listchar/string(x@10339);
+655c655
+< fun @mlift-trmc-lift-map-indexed@5424@10277 : forall<a,b,e> (@acc : ctx<list<b>>, f : (idx : int, value : a) -> e b, i@0@10018 : int, yy : list<a>, @trmc-x10069 : b) -> e list<b>
+---
+> fun @mlift-trmc-lift-map-indexed@5466@10281 : forall<a,b,e> (@acc : ctx<list<b>>, f : (idx : int, value : a) -> e b, i@0@10018 : int, yy : list<a>, @trmc-x10069 : b) -> e list<b>
+661c661
+<     std/core/list/@trmc-lift-map-indexed@5424(f, yy, i@0@10018, (std/core/types/@cctx-extend(@acc, @trmc-x10071, (std/core/types/@field-addr-of(@trmc-x10071, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>     std/core/list/@trmc-lift-map-indexed@5466(f, yy, i@0@10018, (std/core/types/@cctx-extend(@acc, @trmc-x10071, (std/core/types/@field-addr-of(@trmc-x10071, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+664c664
+< fun @trmc-lift-map-indexed@5424 : forall<a,b,e> (f : (idx : int, value : a) -> e b, ys : list<a>, i : int, @acc : ctx<list<b>>) -> e list<b>
+---
+> fun @trmc-lift-map-indexed@5466 : forall<a,b,e> (f : (idx : int, value : a) -> e b, ys : list<a>, i : int, @acc : ctx<list<b>>) -> e list<b>
+670c670
+<             val x@10338 : b
+---
+>             val x@10343 : b
+675c675
+<               (std/core/list/@mlift-trmc-lift-map-indexed@5424@10277(@acc@0, f@0, i@0@10018@0, yy@0, @trmc-x10069@0));
+---
+>               (std/core/list/@mlift-trmc-lift-map-indexed@5466@10281(@acc@0, f@0, i@0@10018@0, yy@0, @trmc-x10069@0));
+681,682c681,682
+<                   = std/core/types/Cons(x@10338, @trmc-x10070@0);
+<             std/core/list/@trmc-lift-map-indexed@5424(f@0, yy@0, i@0@10018@0, (std/core/types/@cctx-extend(@acc@0, @trmc-x10071@0, (std/core/types/@field-addr-of(@trmc-x10071@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>                   = std/core/types/Cons(x@10343, @trmc-x10070@0);
+>             std/core/list/@trmc-lift-map-indexed@5466(f@0, yy@0, i@0@10018@0, (std/core/types/@cctx-extend(@acc@0, @trmc-x10071@0, (std/core/types/@field-addr-of(@trmc-x10071@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+689c689
+< fun @lift-map-indexed@5424 : forall<a,b,e> (f : (idx : int, value : a) -> e b, ys : list<a>, i : int) -> e list<b>
+---
+> fun @lift-map-indexed@5466 : forall<a,b,e> (f : (idx : int, value : a) -> e b, ys : list<a>, i : int) -> e list<b>
+691c691
+<     std/core/list/@trmc-lift-map-indexed@5424(f@1, ys@0, i@0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-map-indexed@5466(f@1, ys@0, i@0, (std/core/types/cctx/empty()));
+697c697
+<     std/core/list/@trmc-lift-map-indexed@5424(f, xs, 0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-map-indexed@5466(f, xs, 0, (std/core/types/cctx/empty()));
+700c700
+< fun @mlift-trmc-lift-map-peek@5425@10278 : forall<a,b,e> (@acc : ctx<list<b>>, f : (value : a, rest : list<a>) -> e b, yy : list<a>, @trmc-x10072 : b) -> e list<b>
+---
+> fun @mlift-trmc-lift-map-peek@5467@10282 : forall<a,b,e> (@acc : ctx<list<b>>, f : (value : a, rest : list<a>) -> e b, yy : list<a>, @trmc-x10072 : b) -> e list<b>
+706c706
+<     std/core/list/@trmc-lift-map-peek@5425(f, yy, (std/core/types/@cctx-extend(@acc, @trmc-x10074, (std/core/types/@field-addr-of(@trmc-x10074, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>     std/core/list/@trmc-lift-map-peek@5467(f, yy, (std/core/types/@cctx-extend(@acc, @trmc-x10074, (std/core/types/@field-addr-of(@trmc-x10074, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+709c709
+< fun @trmc-lift-map-peek@5425 : forall<a,b,e> (f : (value : a, rest : list<a>) -> e b, ys : list<a>, @acc : ctx<list<b>>) -> e list<b>
+---
+> fun @trmc-lift-map-peek@5467 : forall<a,b,e> (f : (value : a, rest : list<a>) -> e b, ys : list<a>, @acc : ctx<list<b>>) -> e list<b>
+713c713
+<          -> val x@10344 : b
+---
+>          -> val x@10349 : b
+718c718
+<               (std/core/list/@mlift-trmc-lift-map-peek@5425@10278(@acc@0, f@0, yy@0, @trmc-x10072@0));
+---
+>               (std/core/list/@mlift-trmc-lift-map-peek@5467@10282(@acc@0, f@0, yy@0, @trmc-x10072@0));
+724,725c724,725
+<                   = std/core/types/Cons(x@10344, @trmc-x10073@0);
+<             std/core/list/@trmc-lift-map-peek@5425(f@0, yy@0, (std/core/types/@cctx-extend(@acc@0, @trmc-x10074@0, (std/core/types/@field-addr-of(@trmc-x10074@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>                   = std/core/types/Cons(x@10349, @trmc-x10073@0);
+>             std/core/list/@trmc-lift-map-peek@5467(f@0, yy@0, (std/core/types/@cctx-extend(@acc@0, @trmc-x10074@0, (std/core/types/@field-addr-of(@trmc-x10074@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+732c732
+< fun @lift-map-peek@5425 : forall<a,b,e> (f : (value : a, rest : list<a>) -> e b, ys : list<a>) -> e list<b>
+---
+> fun @lift-map-peek@5467 : forall<a,b,e> (f : (value : a, rest : list<a>) -> e b, ys : list<a>) -> e list<b>
+734c734
+<     std/core/list/@trmc-lift-map-peek@5425(f@1, ys@0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-map-peek@5467(f@1, ys@0, (std/core/types/cctx/empty()));
+740c740
+<     std/core/list/@trmc-lift-map-peek@5425(f, xs, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-map-peek@5467(f, xs, (std/core/types/cctx/empty()));
+743c743
+< fun @mlift-trmc-lift-map-indexed-peek@5426@10279 : forall<a,b,e> (@acc : ctx<list<b>>, f : (idx : int, value : a, rest : list<a>) -> e b, i@0@10021 : int, yy : list<a>, @trmc-x10075 : b) -> e list<b>
+---
+> fun @mlift-trmc-lift-map-indexed-peek@5468@10283 : forall<a,b,e> (@acc : ctx<list<b>>, f : (idx : int, value : a, rest : list<a>) -> e b, i@0@10021 : int, yy : list<a>, @trmc-x10075 : b) -> e list<b>
+749c749
+<     std/core/list/@trmc-lift-map-indexed-peek@5426(f, yy, i@0@10021, (std/core/types/@cctx-extend(@acc, @trmc-x10077, (std/core/types/@field-addr-of(@trmc-x10077, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>     std/core/list/@trmc-lift-map-indexed-peek@5468(f, yy, i@0@10021, (std/core/types/@cctx-extend(@acc, @trmc-x10077, (std/core/types/@field-addr-of(@trmc-x10077, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+752c752
+< fun @trmc-lift-map-indexed-peek@5426 : forall<a,b,e> (f : (idx : int, value : a, rest : list<a>) -> e b, ys : list<a>, i : int, @acc : ctx<list<b>>) -> e list<b>
+---
+> fun @trmc-lift-map-indexed-peek@5468 : forall<a,b,e> (f : (idx : int, value : a, rest : list<a>) -> e b, ys : list<a>, i : int, @acc : ctx<list<b>>) -> e list<b>
+758c758
+<             val x@10349 : b
+---
+>             val x@10354 : b
+763c763
+<               (std/core/list/@mlift-trmc-lift-map-indexed-peek@5426@10279(@acc@0, f@0, i@0@10021@0, yy@0, @trmc-x10075@0));
+---
+>               (std/core/list/@mlift-trmc-lift-map-indexed-peek@5468@10283(@acc@0, f@0, i@0@10021@0, yy@0, @trmc-x10075@0));
+769,770c769,770
+<                   = std/core/types/Cons(x@10349, @trmc-x10076@0);
+<             std/core/list/@trmc-lift-map-indexed-peek@5426(f@0, yy@0, i@0@10021@0, (std/core/types/@cctx-extend(@acc@0, @trmc-x10077@0, (std/core/types/@field-addr-of(@trmc-x10077@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>                   = std/core/types/Cons(x@10354, @trmc-x10076@0);
+>             std/core/list/@trmc-lift-map-indexed-peek@5468(f@0, yy@0, i@0@10021@0, (std/core/types/@cctx-extend(@acc@0, @trmc-x10077@0, (std/core/types/@field-addr-of(@trmc-x10077@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+777c777
+< fun @lift-map-indexed-peek@5426 : forall<a,b,e> (f : (idx : int, value : a, rest : list<a>) -> e b, ys : list<a>, i : int) -> e list<b>
+---
+> fun @lift-map-indexed-peek@5468 : forall<a,b,e> (f : (idx : int, value : a, rest : list<a>) -> e b, ys : list<a>, i : int) -> e list<b>
+779c779
+<     std/core/list/@trmc-lift-map-indexed-peek@5426(f@1, ys@0, i@0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-map-indexed-peek@5468(f@1, ys@0, i@0, (std/core/types/cctx/empty()));
+785c785
+<     std/core/list/@trmc-lift-map-indexed-peek@5426(f, xs, 0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-map-indexed-peek@5468(f, xs, 0, (std/core/types/cctx/empty()));
+807,809c807,809
+< fun @mlift-remove@10280 : forall<e> (@y-x10166 : bool) -> e bool
+<   = forall<e> fn<e>(@y-x10166: bool){
+<     (match (@y-x10166) {
+---
+> fun @mlift-remove@10284 : forall<e> (b@10023 : bool) -> e bool
+>   = forall<e> fn<e>(b@10023: bool){
+>     (match (b@10023) {
+821c821
+<         val x@0@10357 : bool
+---
+>         val x@0@10362 : bool
+825,826c825,826
+<              -> std/core/hnd/yield-extend((fn<e>(@y-x10166: bool){
+<               (match (@y-x10166) {
+---
+>              -> std/core/hnd/yield-extend((fn<e>(b@10023: bool){
+>               (match (b@10023) {
+834c834
+<              -> (match (x@0@10357) {
+---
+>              -> (match (x@0@10362) {
+844c844
+< fun @mlift-partition-acc@10281 : forall<a,e> (acc1 : ctx<list<a>>, acc2 : ctx<list<a>>, pred : (a) -> e bool, x : a, xx : list<a>, @y-x10168 : bool) -> e (list<a>, list<a>)
+---
+> fun @mlift-partition-acc@10285 : forall<a,e> (acc1 : ctx<list<a>>, acc2 : ctx<list<a>>, pred : (a) -> e bool, x : a, xx : list<a>, @y-x10168 : bool) -> e (list<a>, list<a>)
+848c848
+<          -> val @cctx-x2510 : list<a>
+---
+>          -> val @cctx-x2516 : list<a>
+850,852c850,852
+<             val @cctx-x2511 : @field-addr<list<a>>
+<               = std/core/types/@field-addr-of(@cctx-x2510, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<         std/core/list/partition-acc(xx, pred, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x2510, @cctx-x2511)))), acc2);
+---
+>             val @cctx-x2517 : @field-addr<list<a>>
+>               = std/core/types/@field-addr-of(@cctx-x2516, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>         std/core/list/partition-acc(xx, pred, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x2516, @cctx-x2517)))), acc2);
+854c854
+<          -> val @cctx-x2553 : list<a>
+---
+>          -> val @cctx-x2559 : list<a>
+856,858c856,858
+<             val @cctx-x2554 : @field-addr<list<a>>
+<               = std/core/types/@field-addr-of(@cctx-x2553, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<         std/core/list/partition-acc(xx, pred, acc1, (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x2553, @cctx-x2554)))));
+---
+>             val @cctx-x2560 : @field-addr<list<a>>
+>               = std/core/types/@field-addr-of(@cctx-x2559, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>         std/core/list/partition-acc(xx, pred, acc1, (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x2559, @cctx-x2560)))));
+867c867
+<          -> val x@1@10360 : bool
+---
+>          -> val x@1@10365 : bool
+872c872
+<               (std/core/list/@mlift-partition-acc@10281(acc1@0, acc2@0, pred@0, x@0, xx@0, @y-x10168@0));
+---
+>               (std/core/list/@mlift-partition-acc@10285(acc1@0, acc2@0, pred@0, x@0, xx@0, @y-x10168@0));
+875c875
+<              -> (match (x@1@10360) {
+---
+>              -> (match (x@1@10365) {
+877c877
+<                  -> val @cctx-x2510@0 : list<a>
+---
+>                  -> val @cctx-x2516@0 : list<a>
+879,881c879,881
+<                     val @cctx-x2511@0 : @field-addr<list<a>>
+<                       = std/core/types/@field-addr-of(@cctx-x2510@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<                 std/core/list/partition-acc(xx@0, pred@0, (std/core/types/cctx/(++)(acc1@0, (std/core/types/@cctx-create(@cctx-x2510@0, @cctx-x2511@0)))), acc2@0);
+---
+>                     val @cctx-x2517@0 : @field-addr<list<a>>
+>                       = std/core/types/@field-addr-of(@cctx-x2516@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>                 std/core/list/partition-acc(xx@0, pred@0, (std/core/types/cctx/(++)(acc1@0, (std/core/types/@cctx-create(@cctx-x2516@0, @cctx-x2517@0)))), acc2@0);
+883c883
+<                  -> val @cctx-x2553@0 : list<a>
+---
+>                  -> val @cctx-x2559@0 : list<a>
+885,887c885,887
+<                     val @cctx-x2554@0 : @field-addr<list<a>>
+<                       = std/core/types/@field-addr-of(@cctx-x2553@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<                 std/core/list/partition-acc(xx@0, pred@0, acc1@0, (std/core/types/cctx/(++)(acc2@0, (std/core/types/@cctx-create(@cctx-x2553@0, @cctx-x2554@0)))));
+---
+>                     val @cctx-x2560@0 : @field-addr<list<a>>
+>                       = std/core/types/@field-addr-of(@cctx-x2559@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>                 std/core/list/partition-acc(xx@0, pred@0, acc1@0, (std/core/types/cctx/(++)(acc2@0, (std/core/types/@cctx-create(@cctx-x2559@0, @cctx-x2560@0)))));
+900c900
+< fun @mlift-lookup@10282 : forall<a,b,e> (kv : (a, b), @y-x10174 : bool) -> e maybe<b>
+---
+> fun @mlift-lookup@10286 : forall<a,b,e> (kv : (a, b), @y-x10174 : bool) -> e maybe<b>
+904,907c904,909
+<          -> std/core/types/Just((match (kv) {
+<           ((@skip std/core/types/Tuple2((@pat@0@0: a), (@x@0: b)) : (a, b) ) as @pat@2: (a, b))
+<              -> @x@0;
+<         }));
+---
+>          -> std/core/types/Just((std/core/hnd/@open-none1((fn(tuple2@0: (a, b)){
+>             (match (tuple2@0) {
+>               ((@skip std/core/types/Tuple2((@pat@0@0: a), (@x@0: b)) : (a, b) ) as @pat@2: (a, b))
+>                  -> @x@0;
+>             });
+>           }), kv)));
+916,921c918,925
+<         val x@10363 : bool
+<           = (pred((match (kv) {
+<             ((@skip std/core/types/Tuple2((@x: a), (@pat@0@0: b)) : (a, b) ) as @pat@1: (a, b))
+<                -> @x;
+<           })));
+<         val next@10364 : ((bool) -> e maybe<b>)
+---
+>         val x@10368 : bool
+>           = (pred((std/core/hnd/@open-none1((fn(tuple2: (a, b)){
+>               (match (tuple2) {
+>                 ((@skip std/core/types/Tuple2((@x: a), (@pat@0@0: b)) : (a, b) ) as @pat@1: (a, b))
+>                    -> @x;
+>               });
+>             }), kv))));
+>         val next@10369 : ((bool) -> e maybe<b>)
+925,928c929,934
+<                  -> std/core/types/Just((match (kv) {
+<                   ((@skip std/core/types/Tuple2((@pat@0@0@0: a), (@x@0: b)) : (a, b) ) as @pat@2: (a, b))
+<                      -> @x@0;
+<                 }));
+---
+>                  -> std/core/types/Just((std/core/hnd/@open-none1((fn(tuple2@0: (a, b)){
+>                     (match (tuple2@0) {
+>                       ((@skip std/core/types/Tuple2((@pat@0@0@0: a), (@x@0: b)) : (a, b) ) as @pat@2: (a, b))
+>                          -> @x@0;
+>                     });
+>                   }), kv)));
+935c941
+<              -> std/core/hnd/yield-extend(next@10364);
+---
+>              -> std/core/hnd/yield-extend(next@10369);
+937c943
+<              -> next@10364(x@10363);
+---
+>              -> next@10369(x@10368);
+942c948
+< fun @mlift-index-of-acc@10283 : forall<a,e> (idx : int, pred : (a) -> e bool, xx : list<a>, @y-x10177 : bool) -> e int
+---
+> fun @mlift-index-of-acc@10287 : forall<a,e> (idx : int, pred : (a) -> e bool, xx : list<a>, @y-x10177 : bool) -> e int
+955c961
+<          -> val x@0@10367 : bool
+---
+>          -> val x@0@10372 : bool
+960c966
+<               (std/core/list/@mlift-index-of-acc@10283(idx@0, pred@0, xx@0, @y-x10177@0));
+---
+>               (std/core/list/@mlift-index-of-acc@10287(idx@0, pred@0, xx@0, @y-x10177@0));
+963c969
+<              -> (match (x@0@10367) {
+---
+>              -> (match (x@0@10372) {
+980c986
+< fun @mlift-foreach@10284 : forall<a,e> (action : (a) -> e (), xx : list<a>, wild_ : ()) -> e ()
+---
+> fun @mlift-foreach@10288 : forall<a,e> (action : (a) -> e (), xx : list<a>, wild_ : ()) -> e ()
+989c995
+<          -> val x@0@10370 : ()
+---
+>          -> val x@0@10375 : ()
+994c1000
+<               (std/core/list/@mlift-foreach@10284(action@0, xx@0, wild_@0));
+---
+>               (std/core/list/@mlift-foreach@10288(action@0, xx@0, wild_@0));
+1004c1010
+< fun @mlift-trmc-map-while@10285 : forall<a,b,e> (@acc : ctx<list<b>>, action : (a) -> e maybe<b>, xx : list<a>, @y-x10185 : maybe<b>) -> e list<b>
+---
+> fun @mlift-trmc-map-while@10289 : forall<a,b,e> (@acc : ctx<list<b>>, action : (a) -> e maybe<b>, xx : list<a>, @y-x10185 : maybe<b>) -> e list<b>
+1024c1030
+<          -> val x@0@10373 : maybe<b>
+---
+>          -> val x@0@10378 : maybe<b>
+1029c1035
+<               (std/core/list/@mlift-trmc-map-while@10285(@acc@0, action@0, xx@0, @y-x10185@0));
+---
+>               (std/core/list/@mlift-trmc-map-while@10289(@acc@0, action@0, xx@0, @y-x10185@0));
+1032c1038
+<              -> (match (x@0@10373) {
+---
+>              -> (match (x@0@10378) {
+1051c1057
+< fun @mlift-foreach-indexed@10286 : forall<h,e> (i : local-var<h,int>, @y-x10193 : int) -> <local<h>|e> ()
+---
+> fun @mlift-foreach-indexed@10290 : forall<h,e> (i : local-var<h,int>, @y-x10193 : int) -> <local<h>|e> ()
+1056c1062
+< fun @mlift-foreach-indexed@10287 : forall<h,e> (i : local-var<h,int>, wild_ : ()) -> <local<h>|e> ()
+---
+> fun @mlift-foreach-indexed@10291 : forall<h,e> (i : local-var<h,int>, wild_ : ()) -> <local<h>|e> ()
+1058c1064
+<     val x@10376 : int
+---
+>     val x@10381 : int
+1060c1066
+<     val next@10377 : (int) -> <local<h>|e> ()
+---
+>     val next@10382 : (int) -> <local<h>|e> ()
+1066c1072
+<          -> std/core/hnd/yield-extend(next@10377);
+---
+>          -> std/core/hnd/yield-extend(next@10382);
+1068c1074
+<          -> next@10377(x@10376);
+---
+>          -> next@10382(x@10381);
+1072c1078
+< fun @mlift-foreach-indexed@10288 : forall<h,a,e> (action : (int, a) -> e (), i : local-var<h,int>, x : a, j : int) -> <local<h>|e> ()
+---
+> fun @mlift-foreach-indexed@10292 : forall<h,a,e> (action : (int, a) -> e (), i : local-var<h,int>, x : a, j : int) -> <local<h>|e> ()
+1074c1080
+<     val x@0@10380 : ()
+---
+>     val x@0@10385 : ()
+1079c1085
+<           (std/core/list/@mlift-foreach-indexed@10287(i, wild_));
+---
+>           (std/core/list/@mlift-foreach-indexed@10291(i, wild_));
+1082c1088
+<          -> std/core/list/@mlift-foreach-indexed@10287(i, x@0@10380);
+---
+>          -> std/core/list/@mlift-foreach-indexed@10291(i, x@0@10385);
+1093c1099
+<             val x@0@10385 : int
+---
+>             val x@0@10390 : int
+1098c1104
+<                   (std/core/list/@mlift-foreach-indexed@10288(action, loc, x, j));
+---
+>                   (std/core/list/@mlift-foreach-indexed@10292(action, loc, x, j));
+1101c1107
+<                  -> std/core/list/@mlift-foreach-indexed@10288(action, loc, x, x@0@10385);
+---
+>                  -> std/core/list/@mlift-foreach-indexed@10292(action, loc, x, x@0@10390);
+1108c1114
+< fun @trmc-lift-intersperse@5427 : forall<a> (sep : a, ys : list<a>, @acc : ctx<list<a>>) -> list<a>
+---
+> fun @trmc-lift-intersperse@5469 : forall<a> (sep : a, ys : list<a>, @acc : ctx<list<a>>) -> list<a>
+1114c1120
+<         std/core/list/@trmc-lift-intersperse@5427(sep, yy, (std/core/types/@cctx-extend(@acc, (std/core/types/Cons(sep, @trmc-x10082)), (std/core/types/@field-addr-of(@trmc-x10082, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>         std/core/list/@trmc-lift-intersperse@5469(sep, yy, (std/core/types/@cctx-extend(@acc, (std/core/types/Cons(sep, @trmc-x10082)), (std/core/types/@field-addr-of(@trmc-x10082, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+1120c1126
+< fun @lift-intersperse@5427 : forall<a> (sep : a, ys : list<a>) -> list<a>
+---
+> fun @lift-intersperse@5469 : forall<a> (sep : a, ys : list<a>) -> list<a>
+1122c1128
+<     std/core/list/@trmc-lift-intersperse@5427(sep@0, ys@0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-intersperse@5469(sep@0, ys@0, (std/core/types/cctx/empty()));
+1129c1135
+<          -> std/core/types/Cons(x, (std/core/list/@trmc-lift-intersperse@5427(sep, xx, (std/core/types/cctx/empty()))));
+---
+>          -> std/core/types/Cons(x, (std/core/list/@trmc-lift-intersperse@5469(sep, xx, (std/core/types/cctx/empty()))));
+1135,1137c1141,1143
+< fun joinsep : (xs : list<string>, sep : string) -> string
+<   = fn(xs: list<string>, sep: string){
+<     match (xs) {
+---
+> fun joinsep : forall<e> (xs : list<string>, sep : string) -> e string
+>   = forall<e> fn<e>(xs: list<string>, sep: string){
+>     (match (xs) {
+1146c1152
+<     };
+---
+>     });
+1163,1164c1169,1170
+< pub fun joinsep/join : (xs : list<string>, sep : string) -> string
+<   = fn(xs: list<string>, sep: string){
+---
+> pub fun joinsep/join : forall<e> (xs : list<string>, sep : string) -> e string
+>   = forall<e> fn<e>(xs: list<string>, sep: string){
+1168,1179c1174,1176
+< fun @mlift-show@10289 : forall<e> (@y-x10198 : list<string>) -> e string
+<   = forall<e> fn<e>(@y-x10198: list<string>){
+<     std/core/types/(++)("[", (std/core/types/(++)((match (@y-x10198) {
+<           ((std/core/types/Nil() : list<string> ) as @pat: (list<string>))
+<              -> "";
+<           ((@skip std/core/types/Cons((x: string), ((std/core/types/Nil() : list<string> ) as @pat@1: list<string>)) : list<string> ) as @pat@0: (list<string>))
+<              -> x;
+<           ((std/core/types/Cons((x@0: string), ((std/core/types/Cons((y: string), ((std/core/types/Nil() : list<string> ) as @pat@4: list<string>)) : list<string> ) as @pat@3: list<string>)) : list<string> ) as @pat@2: (list<string>))
+<              | std/core/string/(==)(",", "") -> std/core/types/(++)(x@0, y);
+<           (@pat@5: (list<string>))
+<              -> std/core/string/vectorsep/join((std/core/vector/unvlist(@y-x10198)), ",");
+<         }), "]")));
+---
+> fun @mlift-show@10293 : forall<e> (@y-x10202 : string) -> e string
+>   = forall<e> fn<e>(@y-x10202: string){
+>     std/core/types/(++)("[", (std/core/types/(++)(@y-x10202, "]")));
+1180a1178,1202
+> // monadic lift
+> fun @mlift-show@10294 : forall<e> (xs@0@10029 : list<string>) -> e string
+>   = forall<e> fn<e>(xs@0@10029: list<string>){
+>     val x@10394 : string
+>       = (match (xs@0@10029) {
+>         ((std/core/types/Nil() : list<string> ) as @pat@1: (list<string>))
+>            -> "";
+>         ((@skip std/core/types/Cons((x@0: string), ((std/core/types/Nil() : list<string> ) as @pat@1@0: list<string>)) : list<string> ) as @pat@0@0: (list<string>))
+>            -> x@0;
+>         ((std/core/types/Cons((x@0@0: string), ((std/core/types/Cons((y: string), ((std/core/types/Nil() : list<string> ) as @pat@4: list<string>)) : list<string> ) as @pat@3: list<string>)) : list<string> ) as @pat@2: (list<string>))
+>            | std/core/string/(==)(",", "") -> std/core/types/(++)(x@0@0, y);
+>         (@pat@5: (list<string>))
+>            -> std/core/string/vectorsep/join((std/core/vector/unvlist(xs@0@10029)), ",");
+>       });
+>     val next@10395 : (string) -> e string
+>       = fn<e>(@y-x10202: string){
+>         std/core/types/(++)("[", (std/core/types/(++)(@y-x10202, "]")));
+>       };
+>     (match ((std/core/hnd/yielding())) {
+>       ((std/core/types/True() : bool ) as @pat: bool)
+>          -> std/core/hnd/yield-extend(next@10395);
+>       ((@skip std/core/types/False() : bool ) as @pat@0: bool)
+>          -> next@10395(x@10394);
+>     });
+>   };
+1184c1206
+<     val x@10389 : list<string>
+---
+>     val x@10399 : list<string>
+1188,1189c1210,1211
+<          -> std/core/hnd/yield-extend((fn<e>(@y-x10198: list<string>){
+<           (std/core/list/@mlift-show@10289(@y-x10198));
+---
+>          -> std/core/hnd/yield-extend((fn<e>(xs@0@10029: list<string>){
+>           (std/core/list/@mlift-show@10294(xs@0@10029));
+1192,1201c1214,1232
+<          -> std/core/types/(++)("[", (std/core/types/(++)((match (x@10389) {
+<               ((std/core/types/Nil() : list<string> ) as @pat@1: (list<string>))
+<                  -> "";
+<               ((@skip std/core/types/Cons((x@0: string), ((std/core/types/Nil() : list<string> ) as @pat@1@0: list<string>)) : list<string> ) as @pat@0@0: (list<string>))
+<                  -> x@0;
+<               ((std/core/types/Cons((x@0@0: string), ((std/core/types/Cons((y: string), ((std/core/types/Nil() : list<string> ) as @pat@4: list<string>)) : list<string> ) as @pat@3: list<string>)) : list<string> ) as @pat@2: (list<string>))
+<                  | std/core/string/(==)(",", "") -> std/core/types/(++)(x@0@0, y);
+<               (@pat@5: (list<string>))
+<                  -> std/core/string/vectorsep/join((std/core/vector/unvlist(x@10389)), ",");
+<             }), "]")));
+---
+>          -> val x@0@10404 : string
+>                   = (match (x@10399) {
+>                     ((std/core/types/Nil() : list<string> ) as @pat@2: (list<string>))
+>                        -> "";
+>                     ((@skip std/core/types/Cons((x@1: string), ((std/core/types/Nil() : list<string> ) as @pat@1@0: list<string>)) : list<string> ) as @pat@0@1: (list<string>))
+>                        -> x@1;
+>                     ((std/core/types/Cons((x@0@0: string), ((std/core/types/Cons((y: string), ((std/core/types/Nil() : list<string> ) as @pat@4: list<string>)) : list<string> ) as @pat@3: list<string>)) : list<string> ) as @pat@2@0: (list<string>))
+>                        | std/core/string/(==)(",", "") -> std/core/types/(++)(x@0@0, y);
+>                     (@pat@5: (list<string>))
+>                        -> std/core/string/vectorsep/join((std/core/vector/unvlist(x@10399)), ",");
+>                   });
+>         (match ((std/core/hnd/yielding())) {
+>           ((std/core/types/True() : bool ) as @pat@1: bool)
+>              -> std/core/hnd/yield-extend((fn<e>(@y-x10202: string){
+>               (std/core/types/(++)("[", (std/core/types/(++)(@y-x10202, "]"))));
+>             }));
+>           ((@skip std/core/types/False() : bool ) as @pat@0@0: bool)
+>              -> std/core/types/(++)("[", (std/core/types/(++)(x@0@10404, "]")));
+>         });
+1236c1267
+< fun @mlift-trmc-zipwith@10290 : forall<a,b,c,e> (@acc : ctx<list<c>>, f : (a, b) -> e c, xx : list<a>, yy : list<b>, @trmc-x10086 : c) -> e list<c>
+---
+> fun @mlift-trmc-zipwith@10295 : forall<a,b,c,e> (@acc : ctx<list<c>>, f : (a, b) -> e c, xx : list<a>, yy : list<b>, @trmc-x10086 : c) -> e list<c>
+1252c1283
+<              -> val x@0@10394 : c
+---
+>              -> val x@0@10410 : c
+1257c1288
+<                   (std/core/list/@mlift-trmc-zipwith@10290(@acc@0, f@0, xx@0, yy@0, @trmc-x10086@0));
+---
+>                   (std/core/list/@mlift-trmc-zipwith@10295(@acc@0, f@0, xx@0, yy@0, @trmc-x10086@0));
+1263c1294
+<                       = std/core/types/Cons(x@0@10394, @trmc-x10087@0);
+---
+>                       = std/core/types/Cons(x@0@10410, @trmc-x10087@0);
+1280c1311
+< fun @mlift-trmc-zipwith-iter@10291 : forall<a,b,c,d,e> (@acc : ctx<list<a>>, f : (int, b, c) -> e d, i : int, xx : list<b>, yy : list<c>, @trmc-x10089 : d) -> e list<d>
+---
+> fun @mlift-trmc-zipwith-iter@10296 : forall<a,b,c,d,e> (@acc : ctx<list<a>>, f : (int, b, c) -> e d, i : int, xx : list<b>, yy : list<c>, @trmc-x10089 : d) -> e list<d>
+1289c1320
+<   = forall<a,b,c,e> fn<e>(i@0: int, xs: list<a>, ys: list<b>, f@0: (int, a, b) -> e c, @acc@0: ctx<list<3612>>){
+---
+>   = forall<a,b,c,e> fn<e>(i@0: int, xs: list<a>, ys: list<b>, f@0: (int, a, b) -> e c, @acc@0: ctx<list<3645>>){
+1294c1325
+<              -> val x@0@10397 : c
+---
+>              -> val x@0@10413 : c
+1299c1330
+<                   (std/core/list/@mlift-trmc-zipwith-iter@10291(@acc@0, f@0, i@0, xx@0, yy@0, @trmc-x10089@0));
+---
+>                   (std/core/list/@mlift-trmc-zipwith-iter@10296(@acc@0, f@0, i@0, xx@0, yy@0, @trmc-x10089@0));
+1305c1336
+<                       = std/core/types/Cons(x@0@10397, @trmc-x10090@0);
+---
+>                       = std/core/types/Cons(x@0@10413, @trmc-x10090@0);
+1327c1358
+< fun @lift-unzip@5428 : forall<a,b,c,d> (ys : list<(a, b)>, acc1 : cctx<c,list<a>>, acc2 : cctx<d,list<b>>) -> (c, d)
+---
+> fun @lift-unzip@5470 : forall<a,b,c,d> (ys : list<(a, b)>, acc1 : cctx<c,list<a>>, acc2 : cctx<d,list<b>>) -> (c, d)
+1331c1362
+<          -> val @cctx-x3716 : list<a>
+---
+>          -> val @cctx-x3749 : list<a>
+1333,1335c1364,1366
+<             val @cctx-x3717 : @field-addr<list<a>>
+<               = std/core/types/@field-addr-of(@cctx-x3716, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val @cctx-x3756 : list<b>
+---
+>             val @cctx-x3750 : @field-addr<list<a>>
+>               = std/core/types/@field-addr-of(@cctx-x3749, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val @cctx-x3789 : list<b>
+1337,1339c1368,1370
+<             val @cctx-x3757 : @field-addr<list<b>>
+<               = std/core/types/@field-addr-of(@cctx-x3756, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<         std/core/list/@lift-unzip@5428(xx, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x3716, @cctx-x3717)))), (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x3756, @cctx-x3757)))));
+---
+>             val @cctx-x3790 : @field-addr<list<b>>
+>               = std/core/types/@field-addr-of(@cctx-x3789, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>         std/core/list/@lift-unzip@5470(xx, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x3749, @cctx-x3750)))), (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x3789, @cctx-x3790)))));
+1347c1378
+<     std/core/list/@lift-unzip@5428(xs, (std/core/types/cctx/empty()), (std/core/types/cctx/empty()));
+---
+>     std/core/list/@lift-unzip@5470(xs, (std/core/types/cctx/empty()), (std/core/types/cctx/empty()));
+1350c1381
+< fun @lift-unzip3@5429 : forall<a,b,c,d,a1,b1> (ys : list<(a, b, c)>, acc1 : cctx<d,list<a>>, acc2 : cctx<a1,list<b>>, acc3 : cctx<b1,list<c>>) -> (d, a1, b1)
+---
+> fun @lift-unzip3@5471 : forall<a,b,c,d,a1,b1> (ys : list<(a, b, c)>, acc1 : cctx<d,list<a>>, acc2 : cctx<a1,list<b>>, acc3 : cctx<b1,list<c>>) -> (d, a1, b1)
+1354c1385
+<          -> val @cctx-x3919 : list<a>
+---
+>          -> val @cctx-x3952 : list<a>
+1356,1358c1387,1389
+<             val @cctx-x3920 : @field-addr<list<a>>
+<               = std/core/types/@field-addr-of(@cctx-x3919, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val @cctx-x3959 : list<b>
+---
+>             val @cctx-x3953 : @field-addr<list<a>>
+>               = std/core/types/@field-addr-of(@cctx-x3952, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val @cctx-x3992 : list<b>
+1360,1362c1391,1393
+<             val @cctx-x3960 : @field-addr<list<b>>
+<               = std/core/types/@field-addr-of(@cctx-x3959, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val @cctx-x3999 : list<c>
+---
+>             val @cctx-x3993 : @field-addr<list<b>>
+>               = std/core/types/@field-addr-of(@cctx-x3992, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val @cctx-x4032 : list<c>
+1364,1366c1395,1397
+<             val @cctx-x4000 : @field-addr<list<c>>
+<               = std/core/types/@field-addr-of(@cctx-x3999, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<         std/core/list/@lift-unzip3@5429(xx, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x3919, @cctx-x3920)))), (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x3959, @cctx-x3960)))), (std/core/types/cctx/(++)(acc3, (std/core/types/@cctx-create(@cctx-x3999, @cctx-x4000)))));
+---
+>             val @cctx-x4033 : @field-addr<list<c>>
+>               = std/core/types/@field-addr-of(@cctx-x4032, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>         std/core/list/@lift-unzip3@5471(xx, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x3952, @cctx-x3953)))), (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x3992, @cctx-x3993)))), (std/core/types/cctx/(++)(acc3, (std/core/types/@cctx-create(@cctx-x4032, @cctx-x4033)))));
+1374c1405
+<     std/core/list/@lift-unzip3@5429(xs, (std/core/types/cctx/empty()), (std/core/types/cctx/empty()), (std/core/types/cctx/empty()));
+---
+>     std/core/list/@lift-unzip3@5471(xs, (std/core/types/cctx/empty()), (std/core/types/cctx/empty()), (std/core/types/cctx/empty()));
+1377c1408
+< fun @lift-unzip4@5430 : forall<a,b,c,d,a1,b1,c1,d1> (ys : list<(a, b, c, d)>, acc1 : cctx<a1,list<a>>, acc2 : cctx<b1,list<b>>, acc3 : cctx<c1,list<c>>, acc4 : cctx<d1,list<d>>) -> (a1, b1, c1, d1)
+---
+> fun @lift-unzip4@5472 : forall<a,b,c,d,a1,b1,c1,d1> (ys : list<(a, b, c, d)>, acc1 : cctx<a1,list<a>>, acc2 : cctx<b1,list<b>>, acc3 : cctx<c1,list<c>>, acc4 : cctx<d1,list<d>>) -> (a1, b1, c1, d1)
+1381c1412
+<          -> val @cctx-x4208 : list<a>
+---
+>          -> val @cctx-x4241 : list<a>
+1383,1385c1414,1416
+<             val @cctx-x4209 : @field-addr<list<a>>
+<               = std/core/types/@field-addr-of(@cctx-x4208, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val @cctx-x4248 : list<b>
+---
+>             val @cctx-x4242 : @field-addr<list<a>>
+>               = std/core/types/@field-addr-of(@cctx-x4241, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val @cctx-x4281 : list<b>
+1387,1389c1418,1420
+<             val @cctx-x4249 : @field-addr<list<b>>
+<               = std/core/types/@field-addr-of(@cctx-x4248, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val @cctx-x4288 : list<c>
+---
+>             val @cctx-x4282 : @field-addr<list<b>>
+>               = std/core/types/@field-addr-of(@cctx-x4281, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val @cctx-x4321 : list<c>
+1391,1393c1422,1424
+<             val @cctx-x4289 : @field-addr<list<c>>
+<               = std/core/types/@field-addr-of(@cctx-x4288, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val @cctx-x4328 : list<d>
+---
+>             val @cctx-x4322 : @field-addr<list<c>>
+>               = std/core/types/@field-addr-of(@cctx-x4321, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val @cctx-x4361 : list<d>
+1395,1397c1426,1428
+<             val @cctx-x4329 : @field-addr<list<d>>
+<               = std/core/types/@field-addr-of(@cctx-x4328, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<         std/core/list/@lift-unzip4@5430(xx, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x4208, @cctx-x4209)))), (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x4248, @cctx-x4249)))), (std/core/types/cctx/(++)(acc3, (std/core/types/@cctx-create(@cctx-x4288, @cctx-x4289)))), (std/core/types/cctx/(++)(acc4, (std/core/types/@cctx-create(@cctx-x4328, @cctx-x4329)))));
+---
+>             val @cctx-x4362 : @field-addr<list<d>>
+>               = std/core/types/@field-addr-of(@cctx-x4361, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>         std/core/list/@lift-unzip4@5472(xx, (std/core/types/cctx/(++)(acc1, (std/core/types/@cctx-create(@cctx-x4241, @cctx-x4242)))), (std/core/types/cctx/(++)(acc2, (std/core/types/@cctx-create(@cctx-x4281, @cctx-x4282)))), (std/core/types/cctx/(++)(acc3, (std/core/types/@cctx-create(@cctx-x4321, @cctx-x4322)))), (std/core/types/cctx/(++)(acc4, (std/core/types/@cctx-create(@cctx-x4361, @cctx-x4362)))));
+1405c1436
+<     std/core/list/@lift-unzip4@5430(xs, (std/core/types/cctx/empty()), (std/core/types/cctx/empty()), (std/core/types/cctx/empty()), (std/core/types/cctx/empty()));
+---
+>     std/core/list/@lift-unzip4@5472(xs, (std/core/types/cctx/empty()), (std/core/types/cctx/empty()), (std/core/types/cctx/empty()), (std/core/types/cctx/empty()));
+1408,1410c1439,1441
+< fun @mlift-lift-span@5431@10292 : forall<a,b,e> (acc : cctx<a,list<b>>, predicate : (b) -> e bool, y : b, ys : list<b>, yy : list<b>, @y-x10211 : bool) -> e (a, list<b>)
+<   = forall<a,b,e> fn<e>(acc: cctx<a,list<b>>, predicate: (b) -> e bool, y: b, ys: list<b>, yy: list<b>, @y-x10211: bool){
+<     (match (@y-x10211) {
+---
+> fun @mlift-lift-span@5473@10297 : forall<a,b,e> (acc : cctx<a,list<b>>, predicate : (b) -> e bool, y : b, ys : list<b>, yy : list<b>, @y-x10215 : bool) -> e (a, list<b>)
+>   = forall<a,b,e> fn<e>(acc: cctx<a,list<b>>, predicate: (b) -> e bool, y: b, ys: list<b>, yy: list<b>, @y-x10215: bool){
+>     (match (@y-x10215) {
+1412c1443
+<          -> val @cctx-x4568 : list<b>
+---
+>          -> val @cctx-x4601 : list<b>
+1414,1418c1445,1449
+<             val @cctx-x4569 : @field-addr<list<b>>
+<               = std/core/types/@field-addr-of(@cctx-x4568, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<             val acc@0@10030 : cctx<a,list<b>>
+<               = std/core/types/cctx/(++)(acc, (std/core/types/@cctx-create(@cctx-x4568, @cctx-x4569)));
+<         std/core/list/@lift-span@5431(predicate, yy, acc@0@10030);
+---
+>             val @cctx-x4602 : @field-addr<list<b>>
+>               = std/core/types/@field-addr-of(@cctx-x4601, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>             val acc@0@10032 : cctx<a,list<b>>
+>               = std/core/types/cctx/(++)(acc, (std/core/types/@cctx-create(@cctx-x4601, @cctx-x4602)));
+>         std/core/list/@lift-span@5473(predicate, yy, acc@0@10032);
+1424c1455
+< fun @lift-span@5431 : forall<a,e,b> (predicate : (a) -> e bool, ys : list<a>, acc : cctx<b,list<a>>) -> e (b, list<a>)
+---
+> fun @lift-span@5473 : forall<a,e,b> (predicate : (a) -> e bool, ys : list<a>, acc : cctx<b,list<a>>) -> e (b, list<a>)
+1428c1459
+<          -> val x@10404 : bool
+---
+>          -> val x@10420 : bool
+1432,1433c1463,1464
+<              -> std/core/hnd/yield-extend((fn<e>(@y-x10211@0: bool){
+<               (std/core/list/@mlift-lift-span@5431@10292(acc@0, predicate@0, y@0, ys@0, yy@0, @y-x10211@0));
+---
+>              -> std/core/hnd/yield-extend((fn<e>(@y-x10215@0: bool){
+>               (std/core/list/@mlift-lift-span@5473@10297(acc@0, predicate@0, y@0, ys@0, yy@0, @y-x10215@0));
+1436c1467
+<              -> (match (x@10404) {
+---
+>              -> (match (x@10420) {
+1438c1469
+<                  -> val @cctx-x4568@0 : list<a>
+---
+>                  -> val @cctx-x4601@0 : list<a>
+1440,1444c1471,1475
+<                     val @cctx-x4569@0 : @field-addr<list<a>>
+<                       = std/core/types/@field-addr-of(@cctx-x4568@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+<                     val acc@0@10030@0 : cctx<b,list<a>>
+<                       = std/core/types/cctx/(++)(acc@0, (std/core/types/@cctx-create(@cctx-x4568@0, @cctx-x4569@0)));
+<                 std/core/list/@lift-span@5431(predicate@0, yy@0, acc@0@10030@0);
+---
+>                     val @cctx-x4602@0 : @field-addr<list<a>>
+>                       = std/core/types/@field-addr-of(@cctx-x4601@0, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)");
+>                     val acc@0@10032@0 : cctx<b,list<a>>
+>                       = std/core/types/cctx/(++)(acc@0, (std/core/types/@cctx-create(@cctx-x4601@0, @cctx-x4602@0)));
+>                 std/core/list/@lift-span@5473(predicate@0, yy@0, acc@0@10032@0);
+1457c1488
+<     std/core/list/@lift-span@5431(predicate, xs, acc);
+---
+>     std/core/list/@lift-span@5473(predicate, xs, acc);
+1460,1462c1491,1493
+< fun @mlift-trmc-take-while@10293 : forall<a,e> (@acc : ctx<list<a>>, predicate : (a) -> e bool, x : a, xx : list<a>, @y-x10216 : bool) -> e list<a>
+<   = forall<a,e> fn<e>(@acc: ctx<list<a>>, predicate: (a) -> e bool, x: a, xx: list<a>, @y-x10216: bool){
+<     (match (@y-x10216) {
+---
+> fun @mlift-trmc-take-while@10298 : forall<a,e> (@acc : ctx<list<a>>, predicate : (a) -> e bool, x : a, xx : list<a>, @y-x10220 : bool) -> e list<a>
+>   = forall<a,e> fn<e>(@acc: ctx<list<a>>, predicate: (a) -> e bool, x: a, xx: list<a>, @y-x10220: bool){
+>     (match (@y-x10220) {
+1478c1509
+<          -> val x@1@10407 : bool
+---
+>          -> val x@1@10423 : bool
+1482,1483c1513,1514
+<              -> std/core/hnd/yield-extend((fn<e>(@y-x10216@0: bool){
+<               (std/core/list/@mlift-trmc-take-while@10293(@acc@0, predicate@0, x@0, xx@0, @y-x10216@0));
+---
+>              -> std/core/hnd/yield-extend((fn<e>(@y-x10220@0: bool){
+>               (std/core/list/@mlift-trmc-take-while@10298(@acc@0, predicate@0, x@0, xx@0, @y-x10220@0));
+1486c1517
+<              -> (match (x@1@10407) {
+---
+>              -> (match (x@1@10423) {
+1509c1540
+<     val xs@0@10031 : list<string>
+---
+>     val xs@0@10033 : list<string>
+1511c1542
+<     match (xs@0@10031) {
+---
+>     match (xs@0@10033) {
+1519c1550
+<          -> std/core/string/vector/join((std/core/vector/unvlist(xs@0@10031)));
+---
+>          -> std/core/string/vector/join((std/core/vector/unvlist(xs@0@10033)));
+1535c1566
+< fun @trmc-lift-concat@5432 : forall<a> (ys : list<a>, zss : list<list<a>>, @acc : ctx<list<a>>) -> list<a>
+---
+> fun @trmc-lift-concat@5474 : forall<a> (ys : list<a>, zss : list<list<a>>, @acc : ctx<list<a>>) -> list<a>
+1543c1574
+<         std/core/list/@trmc-lift-concat@5432(yy, zss, (std/core/types/@cctx-extend(@acc, @trmc-x10095, (std/core/types/@field-addr-of(@trmc-x10095, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>         std/core/list/@trmc-lift-concat@5474(yy, zss, (std/core/types/@cctx-extend(@acc, @trmc-x10095, (std/core/types/@field-addr-of(@trmc-x10095, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+1547c1578
+<              -> std/core/list/@trmc-lift-concat@5432(zs, zzs, @acc);
+---
+>              -> std/core/list/@trmc-lift-concat@5474(zs, zzs, @acc);
+1554c1585
+< fun @lift-concat@5432 : forall<a> (ys : list<a>, zss : list<list<a>>) -> list<a>
+---
+> fun @lift-concat@5474 : forall<a> (ys : list<a>, zss : list<list<a>>) -> list<a>
+1556c1587
+<     std/core/list/@trmc-lift-concat@5432(ys@0, zss@0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-concat@5474(ys@0, zss@0, (std/core/types/cctx/empty()));
+1561c1592
+<     std/core/list/@trmc-lift-concat@5432(std/core/types/Nil, xss, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-concat@5474(std/core/types/Nil, xss, (std/core/types/cctx/empty()));
+1564,1566c1595,1597
+< fun @mlift-trmc-lift-flatmap@5433@10294 : forall<a,b,e> (@acc : ctx<list<b>>, f : (a) -> e list<b>, zz : list<a>, ys@1@10038 : list<b>) -> e list<b>
+<   = forall<a,b,e> fn<e>(@acc: ctx<list<b>>, f: (a) -> e list<b>, zz: list<a>, ys@1@10038: list<b>){
+<     std/core/list/@trmc-lift-flatmap@5433(f, ys@1@10038, zz, @acc);
+---
+> fun @mlift-trmc-lift-flatmap@5475@10299 : forall<a,b,e> (@acc : ctx<list<b>>, f : (a) -> e list<b>, zz : list<a>, ys@1@10040 : list<b>) -> e list<b>
+>   = forall<a,b,e> fn<e>(@acc: ctx<list<b>>, f: (a) -> e list<b>, zz: list<a>, ys@1@10040: list<b>){
+>     std/core/list/@trmc-lift-flatmap@5475(f, ys@1@10040, zz, @acc);
+1569c1600
+< fun @trmc-lift-flatmap@5433 : forall<a,b,e> (f : (a) -> e list<b>, ys : list<b>, zs : list<a>, @acc : ctx<list<b>>) -> e list<b>
+---
+> fun @trmc-lift-flatmap@5475 : forall<a,b,e> (f : (a) -> e list<b>, ys : list<b>, zs : list<a>, @acc : ctx<list<b>>) -> e list<b>
+1577c1608
+<         std/core/list/@trmc-lift-flatmap@5433(f@0, yy, zs, (std/core/types/@cctx-extend(@acc@0, @trmc-x10097, (std/core/types/@field-addr-of(@trmc-x10097, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+---
+>         std/core/list/@trmc-lift-flatmap@5475(f@0, yy, zs, (std/core/types/@cctx-extend(@acc@0, @trmc-x10097, (std/core/types/@field-addr-of(@trmc-x10097, "(\x22std/core/types\x22,\x22\x22,\x22Cons\x22)", "(\x22\x22,\x22\x22,\x22tail\x22)")))));
+1581c1612
+<              -> val x@10412 : list<b>
+---
+>              -> val x@10428 : list<b>
+1585,1586c1616,1617
+<                  -> std/core/hnd/yield-extend((fn<e>(ys@1@10038@0: list<b>){
+<                   (std/core/list/@mlift-trmc-lift-flatmap@5433@10294(@acc@0, f@0, zz@0, ys@1@10038@0));
+---
+>                  -> std/core/hnd/yield-extend((fn<e>(ys@1@10040@0: list<b>){
+>                   (std/core/list/@mlift-trmc-lift-flatmap@5475@10299(@acc@0, f@0, zz@0, ys@1@10040@0));
+1589c1620
+<                  -> std/core/list/@trmc-lift-flatmap@5433(f@0, x@10412, zz@0, @acc@0);
+---
+>                  -> std/core/list/@trmc-lift-flatmap@5475(f@0, x@10428, zz@0, @acc@0);
+1597c1628
+< fun @lift-flatmap@5433 : forall<a,b,e> (f : (a) -> e list<b>, ys : list<b>, zs : list<a>) -> e list<b>
+---
+> fun @lift-flatmap@5475 : forall<a,b,e> (f : (a) -> e list<b>, ys : list<b>, zs : list<a>) -> e list<b>
+1599c1630
+<     std/core/list/@trmc-lift-flatmap@5433(f@1, ys@0, zs@0, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-flatmap@5475(f@1, ys@0, zs@0, (std/core/types/cctx/empty()));
+1604c1635
+<     std/core/list/@trmc-lift-flatmap@5433(f, std/core/types/Nil, xs, (std/core/types/cctx/empty()));
+---
+>     std/core/list/@trmc-lift-flatmap@5475(f, std/core/types/Nil, xs, (std/core/types/cctx/empty()));
+1607,1609c1638,1640
+< fun @mlift-trmc-flatmap-maybe@10295 : forall<a,b,e> (@acc : ctx<list<b>>, f : (a) -> e maybe<b>, xx : list<a>, @y-x10228 : maybe<b>) -> e list<b>
+<   = forall<a,b,e> fn<e>(@acc: ctx<list<b>>, f: (a) -> e maybe<b>, xx: list<a>, @y-x10228: maybe<b>){
+<     (match (@y-x10228) {
+---
+> fun @mlift-trmc-flatmap-maybe@10300 : forall<a,b,e> (@acc : ctx<list<b>>, f : (a) -> e maybe<b>, xx : list<a>, @y-x10232 : maybe<b>) -> e list<b>
+>   = forall<a,b,e> fn<e>(@acc: ctx<list<b>>, f: (a) -> e maybe<b>, xx: list<a>, @y-x10232: maybe<b>){
+>     (match (@y-x10232) {
+1625c1656
+<          -> val x@0@10418 : maybe<b>
+---
+>          -> val x@0@10434 : maybe<b>
+1629,1630c1660,1661
+<              -> std/core/hnd/yield-extend((fn<e>(@y-x10228@0: maybe<b>){
+<               (std/core/list/@mlift-trmc-flatmap-maybe@10295(@acc@0, f@0, xx@0, @y-x10228@0));
+---
+>              -> std/core/hnd/yield-extend((fn<e>(@y-x10232@0: maybe<b>){
+>               (std/core/list/@mlift-trmc-flatmap-maybe@10300(@acc@0, f@0, xx@0, @y-x10232@0));
+1633c1664
+<              -> (match (x@0@10418) {
+---
+>              -> (match (x@0@10434) {
+1731,1733c1762,1764
+< fun @mlift-all@10296 : forall<a,e> (predicate : (a) -> e bool, xx : list<a>, @y-x10234 : bool) -> e bool
+<   = forall<a,e> fn<e>(predicate: (a) -> e bool, xx: list<a>, @y-x10234: bool){
+<     (match (@y-x10234) {
+---
+> fun @mlift-all@10301 : forall<a,e> (predicate : (a) -> e bool, xx : list<a>, @y-x10238 : bool) -> e bool
+>   = forall<a,e> fn<e>(predicate: (a) -> e bool, xx: list<a>, @y-x10238: bool){
+>     (match (@y-x10238) {
+1745c1776
+<          -> val x@0@10421 : bool
+---
+>          -> val x@0@10437 : bool
+1749,1750c1780,1781
+<              -> std/core/hnd/yield-extend((fn<e>(@y-x10234@0: bool){
+<               (std/core/list/@mlift-all@10296(predicate@0, xx@0, @y-x10234@0));
+---
+>              -> std/core/hnd/yield-extend((fn<e>(@y-x10238@0: bool){
+>               (std/core/list/@mlift-all@10301(predicate@0, xx@0, @y-x10238@0));
+1753c1784
+<              -> (match (x@0@10421) {
+---
+>              -> (match (x@0@10437) {
+1765,1767c1796,1798
+< fun @mlift-any@10297 : forall<a,e> (predicate : (a) -> e bool, xx : list<a>, @y-x10238 : bool) -> e bool
+<   = forall<a,e> fn<e>(predicate: (a) -> e bool, xx: list<a>, @y-x10238: bool){
+<     (match (@y-x10238) {
+---
+> fun @mlift-any@10302 : forall<a,e> (predicate : (a) -> e bool, xx : list<a>, @y-x10242 : bool) -> e bool
+>   = forall<a,e> fn<e>(predicate: (a) -> e bool, xx: list<a>, @y-x10242: bool){
+>     (match (@y-x10242) {
+1779c1810
+<          -> val x@0@10424 : bool
+---
+>          -> val x@0@10440 : bool
+1783,1784c1814,1815
+<              -> std/core/hnd/yield-extend((fn<e>(@y-x10238@0: bool){
+<               (std/core/list/@mlift-any@10297(predicate@0, xx@0, @y-x10238@0));
+---
+>              -> std/core/hnd/yield-extend((fn<e>(@y-x10242@0: bool){
+>               (std/core/list/@mlift-any@10302(predicate@0, xx@0, @y-x10242@0));
+1787c1818
+<              -> (match (x@0@10424) {
+---
+>              -> (match (x@0@10440) {
+1809,1810c1840,1841
+<           ((std/core/types/@Optional((@uniq-default@5340: int)) : ? int ) as @pat: ? int)
+<              -> @uniq-default@5340;
+---
+>           ((std/core/types/@Optional((@uniq-default@5378: int)) : ? int ) as @pat: ? int)
+>              -> @uniq-default@5378;
+1824,1825c1855,1856
+<           ((std/core/types/@Optional((@uniq-default@5373: int)) : ? int ) as @pat: ? int)
+<              -> @uniq-default@5373;
+---
+>           ((std/core/types/@Optional((@uniq-default@5411: int)) : ? int ) as @pat: ? int)
+>              -> @uniq-default@5411;
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_sslice.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_sslice.kkc
+211,212c211,212
+<         ((std/core/types/@Optional((@uniq-n@386: int)) : ? int ) as @pat: ? int)
+<            -> @uniq-n@386;
+---
+>         ((std/core/types/@Optional((@uniq-n@390: int)) : ? int ) as @pat: ? int)
+>            -> @uniq-n@390;
+220,221c220,221
+<               ((std/core/types/@Optional((@uniq-n@386@0: int)) : ? int ) as @pat@3: ? int)
+<                  -> @uniq-n@386@0;
+---
+>               ((std/core/types/@Optional((@uniq-n@390@0: int)) : ? int ) as @pat@3: ? int)
+>                  -> @uniq-n@390@0;
+233,234c233,234
+<         ((std/core/types/@Optional((@uniq-n@418: int)) : ? int ) as @pat: ? int)
+<            -> @uniq-n@418;
+---
+>         ((std/core/types/@Optional((@uniq-n@422: int)) : ? int ) as @pat: ? int)
+>            -> @uniq-n@422;
+242,243c242,243
+<                 ((std/core/types/@Optional((@uniq-n@418@0: int)) : ? int ) as @pat@3: ? int)
+<                    -> @uniq-n@418@0;
+---
+>                 ((std/core/types/@Optional((@uniq-n@422@0: int)) : ? int ) as @pat@3: ? int)
+>                    -> @uniq-n@422@0;
+247,248c247,248
+<               ((std/core/types/@Optional((@uniq-n@418@1: int)) : ? int ) as @pat@4: ? int)
+<                  -> @uniq-n@418@1;
+---
+>               ((std/core/types/@Optional((@uniq-n@422@1: int)) : ? int ) as @pat@4: ? int)
+>                  -> @uniq-n@422@1;
+283,284c283,284
+<           ((std/core/types/@Optional((@uniq-n@386@0: int)) : ? int ) as @pat@4: ? int)
+<              -> @uniq-n@386@0;
+---
+>           ((std/core/types/@Optional((@uniq-n@390@0: int)) : ? int ) as @pat@4: ? int)
+>              -> @uniq-n@390@0;
+292,293c292,293
+<                 ((std/core/types/@Optional((@uniq-n@386@0@0: int)) : ? int ) as @pat@4@0: ? int)
+<                    -> @uniq-n@386@0@0;
+---
+>                 ((std/core/types/@Optional((@uniq-n@390@0@0: int)) : ? int ) as @pat@4@0: ? int)
+>                    -> @uniq-n@390@0@0;
+301,302c301,302
+<           ((std/core/types/@Optional((@uniq-n@386: int)) : ? int ) as @pat: ? int)
+<              -> @uniq-n@386;
+---
+>           ((std/core/types/@Optional((@uniq-n@390: int)) : ? int ) as @pat: ? int)
+>              -> @uniq-n@390;
+310,311c310,311
+<                 ((std/core/types/@Optional((@uniq-n@386@1: int)) : ? int ) as @pat@3: ? int)
+<                    -> @uniq-n@386@1;
+---
+>                 ((std/core/types/@Optional((@uniq-n@390@1: int)) : ? int ) as @pat@3: ? int)
+>                    -> @uniq-n@390@1;
+372,373c372,373
+<         ((std/core/types/@Optional((@uniq-n@386: int)) : ? int ) as @pat: ? int)
+<            -> @uniq-n@386;
+---
+>         ((std/core/types/@Optional((@uniq-n@390: int)) : ? int ) as @pat: ? int)
+>            -> @uniq-n@390;
+381,382c381,382
+<               ((std/core/types/@Optional((@uniq-n@386@0: int)) : ? int ) as @pat@3: ? int)
+<                  -> @uniq-n@386@0;
+---
+>               ((std/core/types/@Optional((@uniq-n@390@0: int)) : ? int ) as @pat@3: ? int)
+>                  -> @uniq-n@390@0;
+395,396c395,396
+<           ((std/core/types/@Optional((@uniq-n@386: int)) : ? int ) as @pat@0: ? int)
+<              -> @uniq-n@386;
+---
+>           ((std/core/types/@Optional((@uniq-n@390: int)) : ? int ) as @pat@0: ? int)
+>              -> @uniq-n@390;
+404,405c404,405
+<                 ((std/core/types/@Optional((@uniq-n@386@0: int)) : ? int ) as @pat@0@1: ? int)
+<                    -> @uniq-n@386@0;
+---
+>                 ((std/core/types/@Optional((@uniq-n@390@0: int)) : ? int ) as @pat@0@1: ? int)
+>                    -> @uniq-n@390@0;
+423,424c423,424
+<         ((std/core/types/@Optional((@uniq-upto@630: int)) : ? int ) as @pat: ? int)
+<            -> @uniq-upto@630;
+---
+>         ((std/core/types/@Optional((@uniq-upto@636: int)) : ? int ) as @pat: ? int)
+>            -> @uniq-upto@636;
+543,544c543,544
+<           ((std/core/types/@Optional((@uniq-n@386: int)) : ? int ) as @pat: ? int)
+<              -> @uniq-n@386;
+---
+>           ((std/core/types/@Optional((@uniq-n@390: int)) : ? int ) as @pat: ? int)
+>              -> @uniq-n@390;
+552,553c552,553
+<                 ((std/core/types/@Optional((@uniq-n@386@0: int)) : ? int ) as @pat@3: ? int)
+<                    -> @uniq-n@386@0;
+---
+>                 ((std/core/types/@Optional((@uniq-n@390@0: int)) : ? int ) as @pat@3: ? int)
+>                    -> @uniq-n@390@0;
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_string.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_string.kkc
+157,158c157,158
+<                 ((std/core/types/@Optional((@uniq-fill@337: char)) : ? char ) as @pat: ? char)
+<                    -> @uniq-fill@337;
+---
+>                 ((std/core/types/@Optional((@uniq-fill@339: char)) : ? char ) as @pat: ? char)
+>                    -> @uniq-fill@339;
+178,179c178,179
+<                 ((std/core/types/@Optional((@uniq-fill@378: char)) : ? char ) as @pat: ? char)
+<                    -> @uniq-fill@378;
+---
+>                 ((std/core/types/@Optional((@uniq-fill@380: char)) : ? char ) as @pat: ? char)
+>                    -> @uniq-fill@380;
+264c264
+< pub extern vectorsep/join : (v : vector<string>, sep : string) -> string {
+---
+> pub extern vectorsep/join : forall<e> (v : vector<string>, sep : string) -> e string {
+266c266
+<   cs inline "Primitive.Concat(#1,#2)";
+---
+>   cs inline "Primitive.Concat<##1>(#1,#2)";
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_tuple.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_tuple.kkc
+6c6
+< fun tuple2/@mlift-map@10029 : forall<a,e> (@y-x10000 : a, @y-x10001 : a) -> e (a, a)
+---
+> fun tuple2/@mlift-map@10043 : forall<a,e> (@y-x10000 : a, @y-x10001 : a) -> e (a, a)
+11c11
+< fun tuple2/@mlift-map@10030 : forall<a,b,e> (f : (a) -> e b, t : (a, a), @y-x10000 : b) -> e (b, b)
+---
+> fun tuple2/@mlift-map@10044 : forall<a,b,e> (f : (a) -> e b, t : (a, a), @y-x10000 : b) -> e (b, b)
+13,17c13,19
+<     val x@10043 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple2((@pat@0@0: a), (@x@0: a)) : (a, a) ) as @pat@1: (a, a))
+<                -> @x@0;
+<           }));
+---
+>     val x@10057 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple2@0: (a, a)){
+>               (match (tuple2@0) {
+>                 ((@skip std/core/types/Tuple2((@pat@0@0: a), (@x@0: a)) : (a, a) ) as @pat@1: (a, a))
+>                    -> @x@0;
+>               });
+>             }), t)));
+24c26
+<          -> std/core/types/Tuple2(@y-x10000, x@10043);
+---
+>          -> std/core/types/Tuple2(@y-x10000, x@10057);
+30,34c32,38
+<     val x@10047 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple2((@x: a), (@pat@0@0: a)) : (a, a) ) as @pat@1: (a, a))
+<                -> @x;
+<           }));
+---
+>     val x@10061 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple2: (a, a)){
+>               (match (tuple2) {
+>                 ((@skip std/core/types/Tuple2((@x: a), (@pat@0@0: a)) : (a, a) ) as @pat@1: (a, a))
+>                    -> @x;
+>               });
+>             }), t)));
+38c42
+<           (std/core/tuple/tuple2/@mlift-map@10030(f, t, @y-x10000));
+---
+>           (std/core/tuple/tuple2/@mlift-map@10044(f, t, @y-x10000));
+41,45c45,51
+<          -> val x@0@10050 : b
+<                   = f((match (t) {
+<                     ((@skip std/core/types/Tuple2((@pat@0@0@0: a), (@x@0: a)) : (a, a) ) as @pat@1@0: (a, a))
+<                        -> @x@0;
+<                   }));
+---
+>          -> val x@0@10064 : b
+>                   = f((std/core/hnd/@open-none1((fn(tuple2@0: (a, a)){
+>                       (match (tuple2@0) {
+>                         ((@skip std/core/types/Tuple2((@pat@0@0@0: a), (@x@0: a)) : (a, a) ) as @pat@1@0: (a, a))
+>                            -> @x@0;
+>                       });
+>                     }), t)));
+49c55
+<               (std/core/types/Tuple2(x@10047, @y-x10001));
+---
+>               (std/core/types/Tuple2(x@10061, @y-x10001));
+52c58
+<              -> std/core/types/Tuple2(x@10047, x@0@10050);
+---
+>              -> std/core/types/Tuple2(x@10061, x@0@10064);
+57c63
+< fun tuple3/@mlift-map@10031 : forall<a,e> (@y-x10002 : a, @y-x10003 : a, @y-x10004 : a) -> e (a, a, a)
+---
+> fun tuple3/@mlift-map@10045 : forall<a,e> (@y-x10002 : a, @y-x10003 : a, @y-x10004 : a) -> e (a, a, a)
+62c68
+< fun tuple3/@mlift-map@10032 : forall<a,b,e> (@y-x10002 : b, f : (a) -> e b, t : (a, a, a), @y-x10003 : b) -> e (b, b, b)
+---
+> fun tuple3/@mlift-map@10046 : forall<a,b,e> (@y-x10002 : b, f : (a) -> e b, t : (a, a, a), @y-x10003 : b) -> e (b, b, b)
+64,68c70,76
+<     val x@10055 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple3((@pat@0@1: a), (@pat@1@1: a), (@x@1: a)) : (a, a, a) ) as @pat@3: (a, a, a))
+<                -> @x@1;
+<           }));
+---
+>     val x@10069 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple3@1: (a, a, a)){
+>               (match (tuple3@1) {
+>                 ((@skip std/core/types/Tuple3((@pat@0@1: a), (@pat@1@1: a), (@x@1: a)) : (a, a, a) ) as @pat@3: (a, a, a))
+>                    -> @x@1;
+>               });
+>             }), t)));
+75c83
+<          -> std/core/types/Tuple3(@y-x10002, @y-x10003, x@10055);
+---
+>          -> std/core/types/Tuple3(@y-x10002, @y-x10003, x@10069);
+79c87
+< fun tuple3/@mlift-map@10033 : forall<a,b,e> (f : (a) -> e b, t : (a, a, a), @y-x10002 : b) -> e (b, b, b)
+---
+> fun tuple3/@mlift-map@10047 : forall<a,b,e> (f : (a) -> e b, t : (a, a, a), @y-x10002 : b) -> e (b, b, b)
+81,85c89,95
+<     val x@10060 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple3((@pat@0@0: a), (@x@0: a), (@pat@1@0: a)) : (a, a, a) ) as @pat@2: (a, a, a))
+<                -> @x@0;
+<           }));
+---
+>     val x@10074 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple3@0: (a, a, a)){
+>               (match (tuple3@0) {
+>                 ((@skip std/core/types/Tuple3((@pat@0@0: a), (@x@0: a), (@pat@1@0: a)) : (a, a, a) ) as @pat@2: (a, a, a))
+>                    -> @x@0;
+>               });
+>             }), t)));
+89c99
+<           (std/core/tuple/tuple3/@mlift-map@10032(@y-x10002, f, t, @y-x10003));
+---
+>           (std/core/tuple/tuple3/@mlift-map@10046(@y-x10002, f, t, @y-x10003));
+92c102
+<          -> std/core/tuple/tuple3/@mlift-map@10032(@y-x10002, f, t, x@10060);
+---
+>          -> std/core/tuple/tuple3/@mlift-map@10046(@y-x10002, f, t, x@10074);
+98,102c108,114
+<     val x@10062 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple3((@x: a), (@pat@0@0: a), (@pat@1@0: a)) : (a, a, a) ) as @pat@1: (a, a, a))
+<                -> @x;
+<           }));
+---
+>     val x@10076 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple3: (a, a, a)){
+>               (match (tuple3) {
+>                 ((@skip std/core/types/Tuple3((@x: a), (@pat@0@0: a), (@pat@1@0: a)) : (a, a, a) ) as @pat@1: (a, a, a))
+>                    -> @x;
+>               });
+>             }), t)));
+106c118
+<           (std/core/tuple/tuple3/@mlift-map@10033(f, t, @y-x10002));
+---
+>           (std/core/tuple/tuple3/@mlift-map@10047(f, t, @y-x10002));
+109,113c121,127
+<          -> val x@0@10065 : b
+<                   = f((match (t) {
+<                     ((@skip std/core/types/Tuple3((@pat@0@0@0: a), (@x@0: a), (@pat@1@0@0: a)) : (a, a, a) ) as @pat@2@0: (a, a, a))
+<                        -> @x@0;
+<                   }));
+---
+>          -> val x@0@10079 : b
+>                   = f((std/core/hnd/@open-none1((fn(tuple3@0: (a, a, a)){
+>                       (match (tuple3@0) {
+>                         ((@skip std/core/types/Tuple3((@pat@0@0@0: a), (@x@0: a), (@pat@1@0@0: a)) : (a, a, a) ) as @pat@2@0: (a, a, a))
+>                            -> @x@0;
+>                       });
+>                     }), t)));
+117c131
+<               (std/core/tuple/tuple3/@mlift-map@10032(x@10062, f, t, @y-x10003));
+---
+>               (std/core/tuple/tuple3/@mlift-map@10046(x@10076, f, t, @y-x10003));
+120,124c134,140
+<              -> val x@1@10068 : b
+<                       = f((match (t) {
+<                         ((@skip std/core/types/Tuple3((@pat@0@1@0: a), (@pat@1@1: a), (@x@1: a)) : (a, a, a) ) as @pat@3@0: (a, a, a))
+<                            -> @x@1;
+<                       }));
+---
+>              -> val x@1@10082 : b
+>                       = f((std/core/hnd/@open-none1((fn(tuple3@1: (a, a, a)){
+>                           (match (tuple3@1) {
+>                             ((@skip std/core/types/Tuple3((@pat@0@1@0: a), (@pat@1@1: a), (@x@1: a)) : (a, a, a) ) as @pat@3@0: (a, a, a))
+>                                -> @x@1;
+>                           });
+>                         }), t)));
+128c144
+<                   (std/core/types/Tuple3(x@10062, x@0@10065, @y-x10004));
+---
+>                   (std/core/types/Tuple3(x@10076, x@0@10079, @y-x10004));
+131c147
+<                  -> std/core/types/Tuple3(x@10062, x@0@10065, x@1@10068);
+---
+>                  -> std/core/types/Tuple3(x@10076, x@0@10079, x@1@10082);
+137c153
+< fun tuple4/@mlift-map@10034 : forall<a,e> (@y-x10005 : a, @y-x10006 : a, @y-x10007 : a, @y-x10008 : a) -> e (a, a, a, a)
+---
+> fun tuple4/@mlift-map@10048 : forall<a,e> (@y-x10005 : a, @y-x10006 : a, @y-x10007 : a, @y-x10008 : a) -> e (a, a, a, a)
+142c158
+< fun tuple4/@mlift-map@10035 : forall<a,b,e> (@y-x10005 : b, @y-x10006 : b, f : (a) -> e b, t : (a, a, a, a), @y-x10007 : b) -> e (b, b, b, b)
+---
+> fun tuple4/@mlift-map@10049 : forall<a,b,e> (@y-x10005 : b, @y-x10006 : b, f : (a) -> e b, t : (a, a, a, a), @y-x10007 : b) -> e (b, b, b, b)
+144,148c160,166
+<     val x@10074 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple4((@pat@0@2: a), (@pat@1@2: a), (@pat@2@2: a), (@x@2: a)) : (a, a, a, a) ) as @pat@5: (a, a, a, a))
+<                -> @x@2;
+<           }));
+---
+>     val x@10088 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple4@2: (a, a, a, a)){
+>               (match (tuple4@2) {
+>                 ((@skip std/core/types/Tuple4((@pat@0@2: a), (@pat@1@2: a), (@pat@2@2: a), (@x@2: a)) : (a, a, a, a) ) as @pat@5: (a, a, a, a))
+>                    -> @x@2;
+>               });
+>             }), t)));
+155c173
+<          -> std/core/types/Tuple4(@y-x10005, @y-x10006, @y-x10007, x@10074);
+---
+>          -> std/core/types/Tuple4(@y-x10005, @y-x10006, @y-x10007, x@10088);
+159c177
+< fun tuple4/@mlift-map@10036 : forall<a,b,e> (@y-x10005 : b, f : (a) -> e b, t : (a, a, a, a), @y-x10006 : b) -> e (b, b, b, b)
+---
+> fun tuple4/@mlift-map@10050 : forall<a,b,e> (@y-x10005 : b, f : (a) -> e b, t : (a, a, a, a), @y-x10006 : b) -> e (b, b, b, b)
+161,165c179,185
+<     val x@10080 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple4((@pat@0@1: a), (@pat@1@1: a), (@x@1: a), (@pat@2@1: a)) : (a, a, a, a) ) as @pat@4: (a, a, a, a))
+<                -> @x@1;
+<           }));
+---
+>     val x@10094 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple4@1: (a, a, a, a)){
+>               (match (tuple4@1) {
+>                 ((@skip std/core/types/Tuple4((@pat@0@1: a), (@pat@1@1: a), (@x@1: a), (@pat@2@1: a)) : (a, a, a, a) ) as @pat@4: (a, a, a, a))
+>                    -> @x@1;
+>               });
+>             }), t)));
+169c189
+<           (std/core/tuple/tuple4/@mlift-map@10035(@y-x10005, @y-x10006, f, t, @y-x10007));
+---
+>           (std/core/tuple/tuple4/@mlift-map@10049(@y-x10005, @y-x10006, f, t, @y-x10007));
+172c192
+<          -> std/core/tuple/tuple4/@mlift-map@10035(@y-x10005, @y-x10006, f, t, x@10080);
+---
+>          -> std/core/tuple/tuple4/@mlift-map@10049(@y-x10005, @y-x10006, f, t, x@10094);
+176c196
+< fun tuple4/@mlift-map@10037 : forall<a,b,e> (f : (a) -> e b, t : (a, a, a, a), @y-x10005 : b) -> e (b, b, b, b)
+---
+> fun tuple4/@mlift-map@10051 : forall<a,b,e> (f : (a) -> e b, t : (a, a, a, a), @y-x10005 : b) -> e (b, b, b, b)
+178,182c198,204
+<     val x@10082 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple4((@pat@0@0: a), (@x@0: a), (@pat@1@0: a), (@pat@2@0: a)) : (a, a, a, a) ) as @pat@3: (a, a, a, a))
+<                -> @x@0;
+<           }));
+---
+>     val x@10096 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple4@0: (a, a, a, a)){
+>               (match (tuple4@0) {
+>                 ((@skip std/core/types/Tuple4((@pat@0@0: a), (@x@0: a), (@pat@1@0: a), (@pat@2@0: a)) : (a, a, a, a) ) as @pat@3: (a, a, a, a))
+>                    -> @x@0;
+>               });
+>             }), t)));
+186c208
+<           (std/core/tuple/tuple4/@mlift-map@10036(@y-x10005, f, t, @y-x10006));
+---
+>           (std/core/tuple/tuple4/@mlift-map@10050(@y-x10005, f, t, @y-x10006));
+189c211
+<          -> std/core/tuple/tuple4/@mlift-map@10036(@y-x10005, f, t, x@10082);
+---
+>          -> std/core/tuple/tuple4/@mlift-map@10050(@y-x10005, f, t, x@10096);
+195,199c217,223
+<     val x@10084 : b
+<           = f((match (t) {
+<             ((@skip std/core/types/Tuple4((@x: a), (@pat@0@0: a), (@pat@1@0: a), (@pat@2: a)) : (a, a, a, a) ) as @pat@1: (a, a, a, a))
+<                -> @x;
+<           }));
+---
+>     val x@10098 : b
+>           = f((std/core/hnd/@open-none1((fn(tuple4: (a, a, a, a)){
+>               (match (tuple4) {
+>                 ((@skip std/core/types/Tuple4((@x: a), (@pat@0@0: a), (@pat@1@0: a), (@pat@2: a)) : (a, a, a, a) ) as @pat@1: (a, a, a, a))
+>                    -> @x;
+>               });
+>             }), t)));
+203c227
+<           (std/core/tuple/tuple4/@mlift-map@10037(f, t, @y-x10005));
+---
+>           (std/core/tuple/tuple4/@mlift-map@10051(f, t, @y-x10005));
+206,210c230,236
+<          -> val x@0@10087 : b
+<                   = f((match (t) {
+<                     ((@skip std/core/types/Tuple4((@pat@0@0@0: a), (@x@0: a), (@pat@1@0@0: a), (@pat@2@0: a)) : (a, a, a, a) ) as @pat@3@0: (a, a, a, a))
+<                        -> @x@0;
+<                   }));
+---
+>          -> val x@0@10101 : b
+>                   = f((std/core/hnd/@open-none1((fn(tuple4@0: (a, a, a, a)){
+>                       (match (tuple4@0) {
+>                         ((@skip std/core/types/Tuple4((@pat@0@0@0: a), (@x@0: a), (@pat@1@0@0: a), (@pat@2@0: a)) : (a, a, a, a) ) as @pat@3@0: (a, a, a, a))
+>                            -> @x@0;
+>                       });
+>                     }), t)));
+214c240
+<               (std/core/tuple/tuple4/@mlift-map@10036(x@10084, f, t, @y-x10006));
+---
+>               (std/core/tuple/tuple4/@mlift-map@10050(x@10098, f, t, @y-x10006));
+217,221c243,249
+<              -> val x@1@10090 : b
+<                       = f((match (t) {
+<                         ((@skip std/core/types/Tuple4((@pat@0@1@0: a), (@pat@1@1: a), (@x@1: a), (@pat@2@1: a)) : (a, a, a, a) ) as @pat@4@0: (a, a, a, a))
+<                            -> @x@1;
+<                       }));
+---
+>              -> val x@1@10104 : b
+>                       = f((std/core/hnd/@open-none1((fn(tuple4@1: (a, a, a, a)){
+>                           (match (tuple4@1) {
+>                             ((@skip std/core/types/Tuple4((@pat@0@1@0: a), (@pat@1@1: a), (@x@1: a), (@pat@2@1: a)) : (a, a, a, a) ) as @pat@4@0: (a, a, a, a))
+>                                -> @x@1;
+>                           });
+>                         }), t)));
+225c253
+<                   (std/core/tuple/tuple4/@mlift-map@10035(x@10084, x@0@10087, f, t, @y-x10007));
+---
+>                   (std/core/tuple/tuple4/@mlift-map@10049(x@10098, x@0@10101, f, t, @y-x10007));
+228,232c256,262
+<                  -> val x@2@10093 : b
+<                           = f((match (t) {
+<                             ((@skip std/core/types/Tuple4((@pat@0@2@0: a), (@pat@1@2: a), (@pat@2@2: a), (@x@2: a)) : (a, a, a, a) ) as @pat@5@0: (a, a, a, a))
+<                                -> @x@2;
+<                           }));
+---
+>                  -> val x@2@10107 : b
+>                           = f((std/core/hnd/@open-none1((fn(tuple4@2: (a, a, a, a)){
+>                               (match (tuple4@2) {
+>                                 ((@skip std/core/types/Tuple4((@pat@0@2@0: a), (@pat@1@2: a), (@pat@2@2: a), (@x@2: a)) : (a, a, a, a) ) as @pat@5@0: (a, a, a, a))
+>                                    -> @x@2;
+>                               });
+>                             }), t)));
+236c266
+<                       (std/core/types/Tuple4(x@10084, x@0@10087, x@1@10090, @y-x10008));
+---
+>                       (std/core/types/Tuple4(x@10098, x@0@10101, x@1@10104, @y-x10008));
+239c269
+<                      -> std/core/types/Tuple4(x@10084, x@0@10087, x@1@10090, x@2@10093);
+---
+>                      -> std/core/types/Tuple4(x@10098, x@0@10101, x@1@10104, x@2@10107);
+325c355
+< fun tuple2/@mlift-show@10038 : forall<e> (@y-x10009 : string, @y-x10010 : string) -> e string
+---
+> fun tuple2/@mlift-show@10052 : forall<e> (@y-x10009 : string, @y-x10010 : string) -> e string
+330c360
+< fun tuple2/@mlift-show@10039 : forall<a,b,e> (?snd/show : (b) -> e string, x : (a, b), @y-x10009 : string) -> e string
+---
+> fun tuple2/@mlift-show@10053 : forall<a,b,e> (?snd/show : (b) -> e string, x : (a, b), @y-x10009 : string) -> e string
+332,337c362,369
+<     val x@0@10100 : string
+<       = ?snd/show((match (x) {
+<         ((@skip std/core/types/Tuple2((@pat@0@0: a), (@x@0: b)) : (a, b) ) as @pat@1: (a, b))
+<            -> @x@0;
+<       }));
+<     val next@10101 : (string) -> e string
+---
+>     val x@0@10114 : string
+>       = ?snd/show((std/core/hnd/@open-none1((fn(tuple2@0: (a, b)){
+>           (match (tuple2@0) {
+>             ((@skip std/core/types/Tuple2((@pat@0@0: a), (@x@0: b)) : (a, b) ) as @pat@1: (a, b))
+>                -> @x@0;
+>           });
+>         }), x)));
+>     val next@10115 : (string) -> e string
+343c375
+<          -> std/core/hnd/yield-extend(next@10101);
+---
+>          -> std/core/hnd/yield-extend(next@10115);
+345c377
+<          -> next@10101(x@0@10100);
+---
+>          -> next@10115(x@0@10114);
+351,355c383,389
+<     val x@0@10104 : string
+<           = ?fst/show((match (x) {
+<             ((@skip std/core/types/Tuple2((@x: a), (@pat@0@0: b)) : (a, b) ) as @pat@1: (a, b))
+<                -> @x;
+<           }));
+---
+>     val x@0@10118 : string
+>           = ?fst/show((std/core/hnd/@open-none1((fn(tuple2: (a, b)){
+>               (match (tuple2) {
+>                 ((@skip std/core/types/Tuple2((@x: a), (@pat@0@0: b)) : (a, b) ) as @pat@1: (a, b))
+>                    -> @x;
+>               });
+>             }), x)));
+359c393
+<           (std/core/tuple/tuple2/@mlift-show@10039(?snd/show, x, @y-x10009));
+---
+>           (std/core/tuple/tuple2/@mlift-show@10053(?snd/show, x, @y-x10009));
+362,366c396,402
+<          -> val x@1@10107 : string
+<                   = ?snd/show((match (x) {
+<                     ((@skip std/core/types/Tuple2((@pat@0@0@0: a), (@x@0: b)) : (a, b) ) as @pat@1@0: (a, b))
+<                        -> @x@0;
+<                   }));
+---
+>          -> val x@1@10121 : string
+>                   = ?snd/show((std/core/hnd/@open-none1((fn(tuple2@0: (a, b)){
+>                       (match (tuple2@0) {
+>                         ((@skip std/core/types/Tuple2((@pat@0@0@0: a), (@x@0: b)) : (a, b) ) as @pat@1@0: (a, b))
+>                            -> @x@0;
+>                       });
+>                     }), x)));
+370c406
+<               (std/core/types/(++)("(", (std/core/types/(++)(x@0@10104, (std/core/types/(++)(",", (std/core/types/(++)(@y-x10010, ")"))))))));
+---
+>               (std/core/types/(++)("(", (std/core/types/(++)(x@0@10118, (std/core/types/(++)(",", (std/core/types/(++)(@y-x10010, ")"))))))));
+373c409
+<              -> std/core/types/(++)("(", (std/core/types/(++)(x@0@10104, (std/core/types/(++)(",", (std/core/types/(++)(x@1@10107, ")")))))));
+---
+>              -> std/core/types/(++)("(", (std/core/types/(++)(x@0@10118, (std/core/types/(++)(",", (std/core/types/(++)(x@1@10121, ")")))))));
+378c414
+< fun tuple3/@mlift-show@10040 : forall<e> (@y-x10011 : string, @y-x10012 : string, @y-x10013 : string) -> e string
+---
+> fun tuple3/@mlift-show@10054 : forall<e> (@y-x10011 : string, @y-x10012 : string, @y-x10013 : string) -> e string
+383c419
+< fun tuple3/@mlift-show@10041 : forall<a,b,c,e> (@y-x10011 : string, ?thd/show : (c) -> e string, x : (a, b, c), @y-x10012 : string) -> e string
+---
+> fun tuple3/@mlift-show@10055 : forall<a,b,c,e> (@y-x10011 : string, ?thd/show : (c) -> e string, x : (a, b, c), @y-x10012 : string) -> e string
+385,389c421,427
+<     val x@0@10112 : string
+<           = ?thd/show((match (x) {
+<             ((@skip std/core/types/Tuple3((@pat@0@1: a), (@pat@1@1: b), (@x@1: c)) : (a, b, c) ) as @pat@3: (a, b, c))
+<                -> @x@1;
+<           }));
+---
+>     val x@0@10126 : string
+>           = ?thd/show((std/core/hnd/@open-none1((fn(tuple3@1: (a, b, c)){
+>               (match (tuple3@1) {
+>                 ((@skip std/core/types/Tuple3((@pat@0@1: a), (@pat@1@1: b), (@x@1: c)) : (a, b, c) ) as @pat@3: (a, b, c))
+>                    -> @x@1;
+>               });
+>             }), x)));
+393c431
+<           (std/core/tuple/tuple3/@mlift-show@10040(@y-x10011, @y-x10012, @y-x10013));
+---
+>           (std/core/tuple/tuple3/@mlift-show@10054(@y-x10011, @y-x10012, @y-x10013));
+396c434
+<          -> std/core/tuple/tuple3/@mlift-show@10040(@y-x10011, @y-x10012, x@0@10112);
+---
+>          -> std/core/tuple/tuple3/@mlift-show@10054(@y-x10011, @y-x10012, x@0@10126);
+400c438
+< fun tuple3/@mlift-show@10042 : forall<a,b,c,e> (?snd/show : (b) -> e string, ?thd/show : (c) -> e string, x : (a, b, c), @y-x10011 : string) -> e string
+---
+> fun tuple3/@mlift-show@10056 : forall<a,b,c,e> (?snd/show : (b) -> e string, ?thd/show : (c) -> e string, x : (a, b, c), @y-x10011 : string) -> e string
+402,406c440,446
+<     val x@0@10114 : string
+<           = ?snd/show((match (x) {
+<             ((@skip std/core/types/Tuple3((@pat@0@0: a), (@x@0: b), (@pat@1@0: c)) : (a, b, c) ) as @pat@2: (a, b, c))
+<                -> @x@0;
+<           }));
+---
+>     val x@0@10128 : string
+>           = ?snd/show((std/core/hnd/@open-none1((fn(tuple3@0: (a, b, c)){
+>               (match (tuple3@0) {
+>                 ((@skip std/core/types/Tuple3((@pat@0@0: a), (@x@0: b), (@pat@1@0: c)) : (a, b, c) ) as @pat@2: (a, b, c))
+>                    -> @x@0;
+>               });
+>             }), x)));
+410c450
+<           (std/core/tuple/tuple3/@mlift-show@10041(@y-x10011, ?thd/show, x, @y-x10012));
+---
+>           (std/core/tuple/tuple3/@mlift-show@10055(@y-x10011, ?thd/show, x, @y-x10012));
+413c453
+<          -> std/core/tuple/tuple3/@mlift-show@10041(@y-x10011, ?thd/show, x, x@0@10114);
+---
+>          -> std/core/tuple/tuple3/@mlift-show@10055(@y-x10011, ?thd/show, x, x@0@10128);
+419,423c459,465
+<     val x@0@10116 : string
+<           = ?fst/show((match (x) {
+<             ((@skip std/core/types/Tuple3((@x: a), (@pat@0@0: b), (@pat@1@0: c)) : (a, b, c) ) as @pat@1: (a, b, c))
+<                -> @x;
+<           }));
+---
+>     val x@0@10130 : string
+>           = ?fst/show((std/core/hnd/@open-none1((fn(tuple3: (a, b, c)){
+>               (match (tuple3) {
+>                 ((@skip std/core/types/Tuple3((@x: a), (@pat@0@0: b), (@pat@1@0: c)) : (a, b, c) ) as @pat@1: (a, b, c))
+>                    -> @x;
+>               });
+>             }), x)));
+427c469
+<           (std/core/tuple/tuple3/@mlift-show@10042(?snd/show, ?thd/show, x, @y-x10011));
+---
+>           (std/core/tuple/tuple3/@mlift-show@10056(?snd/show, ?thd/show, x, @y-x10011));
+430,434c472,478
+<          -> val x@1@10119 : string
+<                   = ?snd/show((match (x) {
+<                     ((@skip std/core/types/Tuple3((@pat@0@0@0: a), (@x@0: b), (@pat@1@0@0: c)) : (a, b, c) ) as @pat@2@0: (a, b, c))
+<                        -> @x@0;
+<                   }));
+---
+>          -> val x@1@10133 : string
+>                   = ?snd/show((std/core/hnd/@open-none1((fn(tuple3@0: (a, b, c)){
+>                       (match (tuple3@0) {
+>                         ((@skip std/core/types/Tuple3((@pat@0@0@0: a), (@x@0: b), (@pat@1@0@0: c)) : (a, b, c) ) as @pat@2@0: (a, b, c))
+>                            -> @x@0;
+>                       });
+>                     }), x)));
+438c482
+<               (std/core/tuple/tuple3/@mlift-show@10041(x@0@10116, ?thd/show, x, @y-x10012));
+---
+>               (std/core/tuple/tuple3/@mlift-show@10055(x@0@10130, ?thd/show, x, @y-x10012));
+441,445c485,491
+<              -> val x@2@10122 : string
+<                       = ?thd/show((match (x) {
+<                         ((@skip std/core/types/Tuple3((@pat@0@1@0: a), (@pat@1@1: b), (@x@1: c)) : (a, b, c) ) as @pat@3@0: (a, b, c))
+<                            -> @x@1;
+<                       }));
+---
+>              -> val x@2@10136 : string
+>                       = ?thd/show((std/core/hnd/@open-none1((fn(tuple3@1: (a, b, c)){
+>                           (match (tuple3@1) {
+>                             ((@skip std/core/types/Tuple3((@pat@0@1@0: a), (@pat@1@1: b), (@x@1: c)) : (a, b, c) ) as @pat@3@0: (a, b, c))
+>                                -> @x@1;
+>                           });
+>                         }), x)));
+449c495
+<                   (std/core/tuple/tuple3/@mlift-show@10040(x@0@10116, x@1@10119, @y-x10013));
+---
+>                   (std/core/tuple/tuple3/@mlift-show@10054(x@0@10130, x@1@10133, @y-x10013));
+452c498
+<                  -> std/core/types/(++)("(", (std/core/types/(++)(x@0@10116, (std/core/types/(++)(",", (std/core/types/(++)(x@1@10119, (std/core/types/(++)(",", (std/core/types/(++)(x@2@10122, ")")))))))))));
+---
+>                  -> std/core/types/(++)("(", (std/core/types/(++)(x@0@10130, (std/core/types/(++)(",", (std/core/types/(++)(x@1@10133, (std/core/types/(++)(",", (std/core/types/(++)(x@2@10136, ")")))))))))));
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_types.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_types.kkc
+312,313c312,313
+<         ((std/core/types/@Optional((@uniq-fst@570: a)) : ? a ) as @pat: ? a)
+<            -> @uniq-fst@570;
+---
+>         ((std/core/types/@Optional((@uniq-fst@572: a)) : ? a ) as @pat: ? a)
+>            -> @uniq-fst@572;
+320,321c320,321
+<         ((std/core/types/@Optional((@uniq-snd@583: b)) : ? b ) as @pat@1@0: ? b)
+<            -> @uniq-snd@583;
+---
+>         ((std/core/types/@Optional((@uniq-snd@585: b)) : ? b ) as @pat@1@0: ? b)
+>            -> @uniq-snd@585;
+356,357c356,357
+<         ((std/core/types/@Optional((@uniq-fst@755: a)) : ? a ) as @pat: ? a)
+<            -> @uniq-fst@755;
+---
+>         ((std/core/types/@Optional((@uniq-fst@757: a)) : ? a ) as @pat: ? a)
+>            -> @uniq-fst@757;
+364,365c364,365
+<         ((std/core/types/@Optional((@uniq-snd@771: b)) : ? b ) as @pat@1@1: ? b)
+<            -> @uniq-snd@771;
+---
+>         ((std/core/types/@Optional((@uniq-snd@773: b)) : ? b ) as @pat@1@1: ? b)
+>            -> @uniq-snd@773;
+372,373c372,373
+<         ((std/core/types/@Optional((@uniq-thd@787: c)) : ? c ) as @pat@3@0: ? c)
+<            -> @uniq-thd@787;
+---
+>         ((std/core/types/@Optional((@uniq-thd@789: c)) : ? c ) as @pat@3@0: ? c)
+>            -> @uniq-thd@789;
+416,417c416,417
+<         ((std/core/types/@Optional((@uniq-fst@1060: a)) : ? a ) as @pat: ? a)
+<            -> @uniq-fst@1060;
+---
+>         ((std/core/types/@Optional((@uniq-fst@1062: a)) : ? a ) as @pat: ? a)
+>            -> @uniq-fst@1062;
+424,425c424,425
+<         ((std/core/types/@Optional((@uniq-snd@1079: b)) : ? b ) as @pat@1@1: ? b)
+<            -> @uniq-snd@1079;
+---
+>         ((std/core/types/@Optional((@uniq-snd@1081: b)) : ? b ) as @pat@1@1: ? b)
+>            -> @uniq-snd@1081;
+432,433c432,433
+<         ((std/core/types/@Optional((@uniq-thd@1098: c)) : ? c ) as @pat@3@0: ? c)
+<            -> @uniq-thd@1098;
+---
+>         ((std/core/types/@Optional((@uniq-thd@1100: c)) : ? c ) as @pat@3@0: ? c)
+>            -> @uniq-thd@1100;
+440,441c440,441
+<         ((std/core/types/@Optional((@uniq-field4@1117: d)) : ? d ) as @pat@5@0: ? d)
+<            -> @uniq-field4@1117;
+---
+>         ((std/core/types/@Optional((@uniq-field4@1119: d)) : ? d ) as @pat@5@0: ? d)
+>            -> @uniq-field4@1119;
+492,493c492,493
+<         ((std/core/types/@Optional((@uniq-fst@1513: a)) : ? a ) as @pat: ? a)
+<            -> @uniq-fst@1513;
+---
+>         ((std/core/types/@Optional((@uniq-fst@1515: a)) : ? a ) as @pat: ? a)
+>            -> @uniq-fst@1515;
+500,501c500,501
+<         ((std/core/types/@Optional((@uniq-snd@1535: b)) : ? b ) as @pat@1@1: ? b)
+<            -> @uniq-snd@1535;
+---
+>         ((std/core/types/@Optional((@uniq-snd@1537: b)) : ? b ) as @pat@1@1: ? b)
+>            -> @uniq-snd@1537;
+508,509c508,509
+<         ((std/core/types/@Optional((@uniq-thd@1557: c)) : ? c ) as @pat@3@1: ? c)
+<            -> @uniq-thd@1557;
+---
+>         ((std/core/types/@Optional((@uniq-thd@1559: c)) : ? c ) as @pat@3@1: ? c)
+>            -> @uniq-thd@1559;
+516,517c516,517
+<         ((std/core/types/@Optional((@uniq-field4@1579: d)) : ? d ) as @pat@5@0: ? d)
+<            -> @uniq-field4@1579;
+---
+>         ((std/core/types/@Optional((@uniq-field4@1581: d)) : ? d ) as @pat@5@0: ? d)
+>            -> @uniq-field4@1581;
+524,525c524,525
+<         ((std/core/types/@Optional((@uniq-field5@1601: a1)) : ? a1 ) as @pat@7@0: ? a1)
+<            -> @uniq-field5@1601;
+---
+>         ((std/core/types/@Optional((@uniq-field5@1603: a1)) : ? a1 ) as @pat@7@0: ? a1)
+>            -> @uniq-field5@1603;
+684,685c684,685
+<       ((std/core/types/@Optional((@uniq-unbox@1953: a)) : ? a ) as @pat: ? a)
+<          -> @uniq-unbox@1953;
+---
+>       ((std/core/types/@Optional((@uniq-unbox@1955: a)) : ? a ) as @pat: ? a)
+>          -> @uniq-unbox@1955;
+728,730c728,730
+< pub fip fun bool/(!) : (b : bool) -> bool
+<   = fn(b: bool){
+<     match (b) {
+---
+> pub fip fun bool/(!) : forall<e> (b : bool) -> e bool
+>   = forall<e> fn<e>(b: bool){
+>     (match (b) {
+735c735
+<     };
+---
+>     });
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_core_unsafe.kkc .koka/v3.1.4/clang-debug-473d8a/std_core_unsafe.kkc
+3a4
+> import std/core/hnd = std/core/hnd = "";
+32c33
+<     action();
+---
+>     std/core/hnd/@open-none0(action);
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_os_path.kkc .koka/v3.1.4/clang-debug-473d8a/std_os_path.kkc
+414,415c414,415
+<           ((std/core/types/@Optional((@uniq-dirs@797: list<string>)) : ? (list<string>) ) as @pat: ? (list<string>))
+<              -> @uniq-dirs@797;
+---
+>           ((std/core/types/@Optional((@uniq-dirs@807: list<string>)) : ? (list<string>) ) as @pat: ? (list<string>))
+>              -> @uniq-dirs@807;
+564,565c564,565
+<                       ((std/core/types/@Optional((@uniq-dirs@797: list<string>)) : ? (list<string>) ) as @pat@2: ? (list<string>))
+<                          -> @uniq-dirs@797;
+---
+>                       ((std/core/types/@Optional((@uniq-dirs@807: list<string>)) : ? (list<string>) ) as @pat@2: ? (list<string>))
+>                          -> @uniq-dirs@807;
+587,588c587,588
+<                       ((std/core/types/@Optional((@uniq-dirs@797@0: list<string>)) : ? (list<string>) ) as @pat@7: ? (list<string>))
+<                          -> @uniq-dirs@797@0;
+---
+>                       ((std/core/types/@Optional((@uniq-dirs@807@0: list<string>)) : ? (list<string>) ) as @pat@7: ? (list<string>))
+>                          -> @uniq-dirs@807@0;
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/std_text_parse.kkc .koka/v3.1.4/clang-debug-473d8a/std_text_parse.kkc
+69c69
+<     val ev@10203 : hnd/ev<parse>
+---
+>     val ev@10204 : hnd/ev<parse>
+71c71
+<     (match (ev@10203) {
+---
+>     (match (ev@10204) {
+77c77
+<                  -> f(m, ev@10203, pred);
+---
+>                  -> f(m, ev@10204, pred);
+101c101
+<     val ev@10206 : hnd/ev<parse>
+---
+>     val ev@10207 : hnd/ev<parse>
+103c103
+<     (match (ev@10206) {
+---
+>     (match (ev@10207) {
+109c109
+<                  -> f(m, ev@10206, msg);
+---
+>                  -> f(m, ev@10207, msg);
+133c133
+<     val ev@10209 : hnd/ev<parse>
+---
+>     val ev@10210 : hnd/ev<parse>
+135c135
+<     match (ev@10209) {
+---
+>     match (ev@10210) {
+141c141
+<                  -> f(m, ev@10209);
+---
+>                  -> f(m, ev@10210);
+165c165
+<     val ev@10211 : hnd/ev<parse>
+---
+>     val ev@10212 : hnd/ev<parse>
+167c167
+<     match (ev@10211) {
+---
+>     match (ev@10212) {
+173c173
+<                  -> f(m, ev@10211);
+---
+>                  -> f(m, ev@10212);
+227c227
+< fun @mlift-parse@10176 : forall<h,a,e> (msg : string, @y-x10075 : sslice/sslice) -> <local<h>|e> parse-error<a>
+---
+> fun @mlift-parse@10177 : forall<h,a,e> (msg : string, @y-x10075 : sslice/sslice) -> <local<h>|e> parse-error<a>
+232c232
+< fun @mlift-parse@10177 : forall<h,a,e> (err1 : parse-error<a>, @y-x10079 : parse-error<a>) -> <local<h>|e> parse-error<a>
+---
+> fun @mlift-parse@10178 : forall<h,a,e> (err1 : parse-error<a>, @y-x10079 : parse-error<a>) -> <local<h>|e> parse-error<a>
+242c242
+< fun @mlift-parse@10178 : forall<h,a,e> (err1 : parse-error<a>, resume : (bool) -> <local<h>|e> parse-error<a>, wild_ : ()) -> <local<h>|e> parse-error<a>
+---
+> fun @mlift-parse@10179 : forall<h,a,e> (err1 : parse-error<a>, resume : (bool) -> <local<h>|e> parse-error<a>, wild_ : ()) -> <local<h>|e> parse-error<a>
+244c244
+<     val x@10213 : parse-error<a>
+---
+>     val x@10214 : parse-error<a>
+246c246
+<     val next@10214 : (parse-error<a>) -> <local<h>|e> parse-error<a>
+---
+>     val next@10215 : (parse-error<a>) -> <local<h>|e> parse-error<a>
+257c257
+<          -> std/core/hnd/yield-extend(next@10214);
+---
+>          -> std/core/hnd/yield-extend(next@10215);
+259c259
+<          -> next@10214(x@10213);
+---
+>          -> next@10215(x@10214);
+263c263
+< fun @mlift-parse@10179 : forall<h,a,e> (input : local-var<h,sslice/sslice>, resume : (bool) -> <local<h>|e> parse-error<a>, save : sslice/sslice, @y-x10077 : parse-error<a>) -> <local<h>|e> parse-error<a>
+---
+> fun @mlift-parse@10180 : forall<h,a,e> (input : local-var<h,sslice/sslice>, resume : (bool) -> <local<h>|e> parse-error<a>, save : sslice/sslice, @y-x10077 : parse-error<a>) -> <local<h>|e> parse-error<a>
+269c269
+<          -> val x@10217 : ()
+---
+>          -> val x@10218 : ()
+274c274
+<               (std/text/parse/@mlift-parse@10178(err1, resume, wild_));
+---
+>               (std/text/parse/@mlift-parse@10179(err1, resume, wild_));
+277c277
+<              -> std/text/parse/@mlift-parse@10178(err1, resume, x@10217);
+---
+>              -> std/text/parse/@mlift-parse@10179(err1, resume, x@10218);
+282c282
+< fun @mlift-parse@10180 : forall<h,a,e> (input : local-var<h,sslice/sslice>, resume : (bool) -> <local<h>|e> parse-error<a>, save : sslice/sslice) -> <local<h>|e> parse-error<a>
+---
+> fun @mlift-parse@10181 : forall<h,a,e> (input : local-var<h,sslice/sslice>, resume : (bool) -> <local<h>|e> parse-error<a>, save : sslice/sslice) -> <local<h>|e> parse-error<a>
+284c284
+<     val x@10219 : parse-error<a>
+---
+>     val x@10220 : parse-error<a>
+289c289
+<           (std/text/parse/@mlift-parse@10179(input, resume, save, @y-x10077));
+---
+>           (std/text/parse/@mlift-parse@10180(input, resume, save, @y-x10077));
+292c292
+<          -> std/text/parse/@mlift-parse@10179(input, resume, save, x@10219);
+---
+>          -> std/text/parse/@mlift-parse@10180(input, resume, save, x@10220);
+296c296
+< fun @mlift-parse@10181 : forall<a,h,e> (x : a, wild_@0 : ()) -> <local<h>|e> maybe<a>
+---
+> fun @mlift-parse@10182 : forall<a,h,e> (x : a, wild_@0 : ()) -> <local<h>|e> maybe<a>
+301c301
+< fun @mlift-parse@10182 : forall<a,h,e> (input : local-var<h,sslice/sslice>, pred : (sslice/sslice) -> maybe<(a, sslice/sslice)>, inp : sslice/sslice) -> <local<h>|e> maybe<a>
+---
+> fun @mlift-parse@10183 : forall<a,h,e> (input : local-var<h,sslice/sslice>, pred : (sslice/sslice) -> maybe<(a, sslice/sslice)>, inp : sslice/sslice) -> <local<h>|e> maybe<a>
+303c303,305
+<     (match ((pred(inp))) {
+---
+>     (match ((std/core/hnd/@open-none0((fn(){
+>       (pred(inp));
+>     })))) {
+305c307
+<          -> val x@0@10221 : ()
+---
+>          -> val x@0@10222 : ()
+320c322
+< fun @mlift-parse@10183 : forall<h,a,e> (x@0 : a, @y-x10084 : sslice/sslice) -> <local<h>|e> parse-error<a>
+---
+> fun @mlift-parse@10184 : forall<h,a,e> (x@0 : a, @y-x10084 : sslice/sslice) -> <local<h>|e> parse-error<a>
+334c336
+<                   val x@0@10228 : sslice/sslice
+---
+>                   val x@0@10229 : sslice/sslice
+342c344
+<                        -> std/text/parse/ParseError(x, x@0@10228);
+---
+>                        -> std/text/parse/ParseError(x, x@0@10229);
+348c350
+<                       val x@1@10233 : sslice/sslice
+---
+>                       val x@1@10234 : sslice/sslice
+353c355
+<                             (std/text/parse/@mlift-parse@10180(loc, r, save));
+---
+>                             (std/text/parse/@mlift-parse@10181(loc, r, save));
+356c358
+<                            -> std/text/parse/@mlift-parse@10180(loc, r, x@1@10233);
+---
+>                            -> std/text/parse/@mlift-parse@10181(loc, r, x@1@10234);
+361c363
+<               val x@2@10235 : sslice/sslice
+---
+>               val x@2@10236 : sslice/sslice
+366c368
+<                     (std/text/parse/@mlift-parse@10182(loc, pred, inp));
+---
+>                     (std/text/parse/@mlift-parse@10183(loc, pred, inp));
+369c371
+<                    -> std/text/parse/@mlift-parse@10182(loc, pred, x@2@10235);
+---
+>                    -> std/text/parse/@mlift-parse@10183(loc, pred, x@2@10236);
+372c374
+<             val x@3@10237 : sslice/sslice
+---
+>             val x@3@10238 : sslice/sslice
+380c382
+<                  -> std/text/parse/ParseOk(x@0@0, x@3@10237);
+---
+>                  -> std/text/parse/ParseOk(x@0@0, x@3@10238);
+396c398
+< fun (@mlift-x@10184||) : forall<a,e> (p1 : parser<e,a>, p2 : parser<e,a>, @y-x10090 : bool) -> <parse|e> a
+---
+> fun (@mlift-x@10185||) : forall<a,e> (p1 : parser<e,a>, p2 : parser<e,a>, @y-x10090 : bool) -> <parse|e> a
+407c409
+<     val x@10242 : bool
+---
+>     val x@10243 : bool
+409c411
+<               val ev@10245 : (hnd/ev<parse>)
+---
+>               val ev@10246 : (hnd/ev<parse>)
+411c413
+<               (match (ev@10245) {
+---
+>               (match (ev@10246) {
+417c419
+<                            -> f(m, ev@10245);
+---
+>                            -> f(m, ev@10246);
+433c435
+<          -> (match (x@10242) {
+---
+>          -> (match (x@10243) {
+448c450
+< fun @mlift-choose@10185 : forall<a,e> (p@0 : parser<e,a>, pp : list<parser<e,a>>, @y-x10099 : bool) -> <parse|e> a
+---
+> fun @mlift-choose@10186 : forall<a,e> (p@0 : parser<e,a>, pp : list<parser<e,a>>, @y-x10099 : bool) -> <parse|e> a
+462c464
+<             val ev@10250 : (hnd/ev<parse>)
+---
+>             val ev@10251 : (hnd/ev<parse>)
+464c466
+<             (match (ev@10250) {
+---
+>             (match (ev@10251) {
+470c472
+<                          -> f(m, ev@10250, msg);
+---
+>                          -> f(m, ev@10251, msg);
+478c480
+<          -> val x@0@10253 : bool
+---
+>          -> val x@0@10254 : bool
+480c482
+<                       val ev@0@10256 : (hnd/ev<parse>)
+---
+>                       val ev@0@10257 : (hnd/ev<parse>)
+482c484
+<                       (match (ev@0@10256) {
+---
+>                       (match (ev@0@10257) {
+488c490
+<                                    -> f@0(m@0, ev@0@10256);
+---
+>                                    -> f@0(m@0, ev@0@10257);
+496c498
+<               (std/text/parse/@mlift-choose@10185(p@0@0, pp@0, @y-x10099@0));
+---
+>               (std/text/parse/@mlift-choose@10186(p@0@0, pp@0, @y-x10099@0));
+499c501
+<              -> (match (x@0@10253) {
+---
+>              -> (match (x@0@10254) {
+509c511
+< fun @mlift-satisfy-fail@10186 : forall<a> (msg : string, @y-x10104 : maybe<a>) -> parse a
+---
+> fun @mlift-satisfy-fail@10187 : forall<a> (msg : string, @y-x10104 : maybe<a>) -> parse a
+513c515
+<          -> val ev@10258 : hnd/ev<parse>
+---
+>          -> val ev@10259 : hnd/ev<parse>
+515c517
+<         (match (ev@10258) {
+---
+>         (match (ev@10259) {
+521c523
+<                      -> f(m, ev@10258, msg);
+---
+>                      -> f(m, ev@10259, msg);
+531c533
+<     val ev@10264 : hnd/ev<parse>
+---
+>     val ev@10265 : hnd/ev<parse>
+533,534c535,536
+<     val x@10261 : maybe<a>
+<       = (match (ev@10264) {
+---
+>     val x@10262 : maybe<a>
+>       = (match (ev@10265) {
+540c542
+<                    -> f(m, ev@10264, pred);
+---
+>                    -> f(m, ev@10265, pred);
+547c549
+<           (std/text/parse/@mlift-satisfy-fail@10186(msg, @y-x10104));
+---
+>           (std/text/parse/@mlift-satisfy-fail@10187(msg, @y-x10104));
+550c552
+<          -> (match (x@10261) {
+---
+>          -> (match (x@10262) {
+552c554
+<              -> val ev@0@10267 : hnd/ev<parse>
+---
+>              -> val ev@0@10268 : hnd/ev<parse>
+554c556
+<             (match (ev@0@10267) {
+---
+>             (match (ev@0@10268) {
+560c562
+<                          -> f@0(m@0, ev@0@10267, msg);
+---
+>                          -> f@0(m@0, ev@0@10268, msg);
+570c572
+< fun @mlift-eof@10187 : (@y-x10107 : maybe<()>) -> parse ()
+---
+> fun @mlift-eof@10188 : (@y-x10107 : maybe<()>) -> parse ()
+574c576
+<          -> val ev@10270 : hnd/ev<parse>
+---
+>          -> val ev@10271 : hnd/ev<parse>
+576c578
+<         (match (ev@10270) {
+---
+>         (match (ev@10271) {
+582c584
+<                      -> f(m, ev@10270, "expecting end-of-input");
+---
+>                      -> f(m, ev@10271, "expecting end-of-input");
+592c594
+<     val ev@10276 : hnd/ev<parse>
+---
+>     val ev@10277 : hnd/ev<parse>
+594,595c596,597
+<     val x@10273 : maybe<()>
+<       = match (ev@10276) {
+---
+>     val x@10274 : maybe<()>
+>       = match (ev@10277) {
+601c603
+<                    -> f(m, ev@10276, (fn(s: sslice/sslice){
+---
+>                    -> f(m, ev@10277, (fn(s: sslice/sslice){
+619c621
+<          -> std/core/hnd/yield-extend(std/text/parse/@mlift-eof@10187);
+---
+>          -> std/core/hnd/yield-extend(std/text/parse/@mlift-eof@10188);
+621c623
+<          -> (match (x@10273) {
+---
+>          -> (match (x@10274) {
+623c625
+<              -> val ev@0@10279 : hnd/ev<parse>
+---
+>              -> val ev@0@10280 : hnd/ev<parse>
+625c627
+<             (match (ev@0@10279) {
+---
+>             (match (ev@0@10280) {
+631c633
+<                          -> f@0(m@0, ev@0@10279, "expecting end-of-input");
+---
+>                          -> f@0(m@0, ev@0@10280, "expecting end-of-input");
+641c643
+< fun @mlift-parse-eof@10188 : forall<a,e> (x : a, wild_ : ()) -> <parse|e> a
+---
+> fun @mlift-parse-eof@10189 : forall<a,e> (x : a, wild_ : ()) -> <parse|e> a
+646c648
+< fun @mlift-parse-eof@10189 : forall<a,e> (x : a) -> <parse|e> a
+---
+> fun @mlift-parse-eof@10190 : forall<a,e> (x : a) -> <parse|e> a
+648c650
+<     val x@0@10282 : ()
+---
+>     val x@0@10283 : ()
+662c664
+<         val x@10286 : a
+---
+>         val x@10287 : a
+667c669
+<               (std/text/parse/@mlift-parse-eof@10189(x@0));
+---
+>               (std/text/parse/@mlift-parse-eof@10190(x@0));
+670c672
+<              -> std/text/parse/@mlift-parse-eof@10189(x@10286);
+---
+>              -> std/text/parse/@mlift-parse-eof@10190(x@10287);
+767c769
+< fun @mlift-digit@10190 : (c@0@0 : char) -> parse int
+---
+> fun @mlift-digit@10191 : (c@0@0 : char) -> parse int
+779c781
+<     val x@10288 : char
+---
+>     val x@10289 : char
+795c797
+<          -> std/core/hnd/yield-extend(std/text/parse/@mlift-digit@10190);
+---
+>          -> std/core/hnd/yield-extend(std/text/parse/@mlift-digit@10191);
+803c805
+<           }), x@10288, '0')));
+---
+>           }), x@10289, '0')));
+841c843
+<     val x@10291 : list<char>
+---
+>     val x@10292 : list<char>
+854c856
+<          -> std/core/string/listchar/string(x@10291);
+---
+>          -> std/core/string/listchar/string(x@10292);
+860c862
+<         val x@10293 : (list<char>)
+---
+>         val x@10294 : (list<char>)
+873c875
+<              -> std/core/string/listchar/string(x@10293);
+---
+>              -> std/core/string/listchar/string(x@10294);
+881c883
+<     val x@10295 : list<char>
+---
+>     val x@10296 : list<char>
+894c896
+<          -> std/core/string/listchar/string(x@10295);
+---
+>          -> std/core/string/listchar/string(x@10296);
+900c902
+<         val x@10297 : (list<char>)
+---
+>         val x@10298 : (list<char>)
+913c915
+<              -> std/core/string/listchar/string(x@10297);
+---
+>              -> std/core/string/listchar/string(x@10298);
+920c922
+< fun @mlift-pnat@10191 : (@y-x10128 : list<char>) -> parse int
+---
+> fun @mlift-pnat@10192 : (@y-x10128 : list<char>) -> parse int
+922c924
+<     val @x-x1@0@10174 : string
+---
+>     val @x-x1@0@10175 : string
+924c926
+<     val @x-x1@10172 : maybe<int>
+---
+>     val @x-x1@10173 : maybe<int>
+927,928c929,930
+<               ((std/core/types/@Optional((@uniq-hex@533: bool)) : ? bool ) as @pat@1: ? bool)
+<                  -> @uniq-hex@533;
+---
+>               ((std/core/types/@Optional((@uniq-hex@537: bool)) : ? bool ) as @pat@1: ? bool)
+>                  -> @uniq-hex@537;
+932c934
+<         }), @x-x1@0@10174, std/core/types/@None);
+---
+>         }), @x-x1@0@10175, std/core/types/@None);
+940c942
+<       }), @x-x1@10172, 0);
+---
+>       }), @x-x1@10173, 0);
+944c946
+<     val x@10299 : list<char>
+---
+>     val x@10300 : list<char>
+955c957
+<          -> std/core/hnd/yield-extend(std/text/parse/@mlift-pnat@10191);
+---
+>          -> std/core/hnd/yield-extend(std/text/parse/@mlift-pnat@10192);
+957,959c959,961
+<          -> val @x-x1@0@10174 : string
+<               = std/core/string/listchar/string(x@10299);
+<             val @x-x1@10172 : maybe<int>
+---
+>          -> val @x-x1@0@10175 : string
+>               = std/core/string/listchar/string(x@10300);
+>             val @x-x1@10173 : maybe<int>
+962,963c964,965
+<                       ((std/core/types/@Optional((@uniq-hex@533: bool)) : ? bool ) as @pat@1: ? bool)
+<                          -> @uniq-hex@533;
+---
+>                       ((std/core/types/@Optional((@uniq-hex@537: bool)) : ? bool ) as @pat@1: ? bool)
+>                          -> @uniq-hex@537;
+967c969
+<                 }), @x-x1@0@10174, std/core/types/@None);
+---
+>                 }), @x-x1@0@10175, std/core/types/@None);
+975c977
+<           }), @x-x1@10172, 0);
+---
+>           }), @x-x1@10173, 0);
+998c1000
+<     val x@10302 : list<char>
+---
+>     val x@10303 : list<char>
+1020c1022
+<          -> std/core/string/listchar/string(x@10302);
+---
+>          -> std/core/string/listchar/string(x@10303);
+1035c1037
+< fun @mlift-many-acc@10192 : forall<a,e> (acc : list<a>, p : parser<e,a>, x : a) -> <parse|e> list<a>
+---
+> fun @mlift-many-acc@10193 : forall<a,e> (acc : list<a>, p : parser<e,a>, x : a) -> <parse|e> list<a>
+1042c1044
+<         val x@0@10304 : a
+---
+>         val x@0@10305 : a
+1047c1049
+<               (std/text/parse/@mlift-many-acc@10192(acc@0, p@0, x@1));
+---
+>               (std/text/parse/@mlift-many-acc@10193(acc@0, p@0, x@1));
+1050c1052
+<              -> std/text/parse/@mlift-many-acc@10192(acc@0, p@0, x@0@10304);
+---
+>              -> std/text/parse/@mlift-many-acc@10193(acc@0, p@0, x@0@10305);
+1063c1065
+< fun @mlift-many1@10193 : forall<a,e> (@y-x10136 : a, @y-x10137 : list<a>) -> <parse|e> list<a>
+---
+> fun @mlift-many1@10194 : forall<a,e> (@y-x10136 : a, @y-x10137 : list<a>) -> <parse|e> list<a>
+1068c1070
+< fun @mlift-many1@10194 : forall<a,e> (p : parser<e,a>, @y-x10136 : a) -> <parse|e> list<a>
+---
+> fun @mlift-many1@10195 : forall<a,e> (p : parser<e,a>, @y-x10136 : a) -> <parse|e> list<a>
+1070c1072
+<     val x@10306 : list<a>
+---
+>     val x@10307 : list<a>
+1078c1080
+<          -> std/core/types/Cons(@y-x10136, x@10306);
+---
+>          -> std/core/types/Cons(@y-x10136, x@10307);
+1085c1087
+<     val x@10310 : a
+---
+>     val x@10311 : a
+1090c1092
+<           (std/text/parse/@mlift-many1@10194(p, @y-x10136));
+---
+>           (std/text/parse/@mlift-many1@10195(p, @y-x10136));
+1093c1095
+<          -> val x@0@10313 : list<a>
+---
+>          -> val x@0@10314 : list<a>
+1098c1100
+<               (std/core/types/Cons(x@10310, @y-x10137));
+---
+>               (std/core/types/Cons(x@10311, @y-x10137));
+1101c1103
+<              -> std/core/types/Cons(x@10310, x@0@10313);
+---
+>              -> std/core/types/Cons(x@10311, x@0@10314);
+1106c1108
+< fun @mlift-count-acc@10195 : forall<a,e> (acc : list<a>, n : int, p : parser<e,a>, x : a) -> <parse|e> list<a>
+---
+> fun @mlift-count-acc@10196 : forall<a,e> (acc : list<a>, n : int, p : parser<e,a>, x : a) -> <parse|e> list<a>
+1116c1118
+<          -> val x@0@10318 : a
+---
+>          -> val x@0@10319 : a
+1121c1123
+<               (std/text/parse/@mlift-count-acc@10195(acc@0, n@0, p@0, x@1));
+---
+>               (std/text/parse/@mlift-count-acc@10196(acc@0, n@0, p@0, x@1));
+1124c1126
+<              -> std/text/parse/count-acc((std/core/int/int-sub(n@0, 1)), (std/core/types/Cons(x@0@10318, acc@0)), p@0);
+---
+>              -> std/text/parse/count-acc((std/core/int/int-sub(n@0, 1)), (std/core/types/Cons(x@0@10319, acc@0)), p@0);
+1141c1143
+< fun @mlift-sign@10196 : (c@0 : char) -> parse bool
+---
+> fun @mlift-sign@10197 : (c@0 : char) -> parse bool
+1147c1149
+<     val x@10321 : char
+---
+>     val x@10322 : char
+1162c1164
+<          -> std/core/hnd/yield-extend(std/text/parse/@mlift-sign@10196);
+---
+>          -> std/core/hnd/yield-extend(std/text/parse/@mlift-sign@10197);
+1164c1166
+<          -> std/core/char/(==)(x@10321, '-');
+---
+>          -> std/core/char/(==)(x@10322, '-');
+1168c1170
+< fun @mlift-pint@10197 : (neg : bool, i : int) -> parse int
+---
+> fun @mlift-pint@10198 : (neg : bool, i : int) -> parse int
+1178c1180
+< fun @mlift-pint@10198 : (c@0 : char) -> parse int
+---
+> fun @mlift-pint@10199 : (c@0 : char) -> parse int
+1182c1184
+<     val x@10324 : int
+---
+>     val x@10325 : int
+1184c1186
+<     val next@10325 : (int) -> parse int
+---
+>     val next@10326 : (int) -> parse int
+1195c1197
+<          -> std/core/hnd/yield-extend(next@10325);
+---
+>          -> std/core/hnd/yield-extend(next@10326);
+1197c1199
+<          -> next@10325(x@10324);
+---
+>          -> next@10326(x@10325);
+1202c1204
+<     val x@10328 : char
+---
+>     val x@10329 : char
+1217c1219
+<          -> std/core/hnd/yield-extend(std/text/parse/@mlift-pint@10198);
+---
+>          -> std/core/hnd/yield-extend(std/text/parse/@mlift-pint@10199);
+1220,1221c1222,1223
+<               = std/core/char/(==)(x@10328, '-');
+<             val x@0@10331 : int
+---
+>               = std/core/char/(==)(x@10329, '-');
+>             val x@0@10332 : int
+1236c1238
+<                  -> std/core/int/(~)(x@0@10331);
+---
+>                  -> std/core/int/(~)(x@0@10332);
+1238c1240
+<                  -> x@0@10331;
+---
+>                  -> x@0@10332;
+1244c1246
+< fun @mlift-sep-by1@10199 : forall<a,b,e> (p : parser<e,a>, wild_ : b) -> <parse|e> a
+---
+> fun @mlift-sep-by1@10200 : forall<a,b,e> (p : parser<e,a>, wild_ : b) -> <parse|e> a
+1249c1251
+< fun @mlift-sep-by1@10200 : forall<a,e> (@y-x10150 : a, @y-x10153 : list<a>) -> <parse|e> list<a>
+---
+> fun @mlift-sep-by1@10201 : forall<a,e> (@y-x10150 : a, @y-x10153 : list<a>) -> <parse|e> list<a>
+1254c1256
+< fun @mlift-sep-by1@10201 : forall<a,b,e> (p : parser<e,a>, sep : parser<e,b>, @y-x10150 : a) -> <parse|e> list<a>
+---
+> fun @mlift-sep-by1@10202 : forall<a,b,e> (p : parser<e,a>, sep : parser<e,b>, @y-x10150 : a) -> <parse|e> list<a>
+1256c1258
+<     val x@10336 : list<a>
+---
+>     val x@10337 : list<a>
+1258c1260
+<               val x@0@10338 : b
+---
+>               val x@0@10339 : b
+1275c1277
+<          -> std/core/types/Cons(@y-x10150, x@10336);
+---
+>          -> std/core/types/Cons(@y-x10150, x@10337);
+1282c1284
+<     val x@10344 : a
+---
+>     val x@10345 : a
+1287c1289
+<           (std/text/parse/@mlift-sep-by1@10201(p, sep, @y-x10150));
+---
+>           (std/text/parse/@mlift-sep-by1@10202(p, sep, @y-x10150));
+1290c1292
+<          -> val x@0@10347 : list<a>
+---
+>          -> val x@0@10348 : list<a>
+1292c1294
+<                       val x@1@10350 : b
+---
+>                       val x@1@10351 : b
+1306c1308
+<               (std/core/types/Cons(x@10344, @y-x10153));
+---
+>               (std/core/types/Cons(x@10345, @y-x10153));
+1309c1311
+<              -> std/core/types/Cons(x@10344, x@0@10347);
+---
+>              -> std/core/types/Cons(x@10345, x@0@10348);
+1325c1327
+<     val x@10356 : list<char>
+---
+>     val x@10357 : list<char>
+1338c1340
+<          -> std/core/string/listchar/string(x@10356);
+---
+>          -> std/core/string/listchar/string(x@10357);
+diff -X exclude.txt .koka/v3.1.3/clang-debug-604ebf/test_cgen_open_dash_resolve.kkc .koka/v3.1.4/clang-debug-473d8a/test_cgen_open_dash_resolve.kkc
+57c57
+<     val ev@10021 : hnd/ev<package-root>
+---
+>     val ev@10024 : hnd/ev<package-root>
+59c59
+<     match (ev@10021) {
+---
+>     match (ev@10024) {
+65c65
+<                  -> f(m, ev@10021);
+---
+>                  -> f(m, ev@10024);
+84c84
+<           = std/os/path/pathstring/(/)(root, ".kokac");
+---
+>           = std/core/hnd/@open-none2(std/os/path/pathstring/(/), root, ".kokac");
+92c92
+< fun @mlift-main@10018 : (@y-x10003 : string) -> io ()
+---
+> fun @mlift-main@10021 : (@y-x10003 : string) -> io ()
+95c95
+<         val @x-x1@3@10016 : std/os/path/path
+---
+>         val @x-x1@3@10019 : std/os/path/path
+97c97
+<                   val ev@10023 : (hnd/ev<package-root>)
+---
+>                   val ev@10026 : (hnd/ev<package-root>)
+99c99
+<                   (match (ev@10023) {
+---
+>                   (match (ev@10026) {
+105c105
+<                                -> f(m, ev@10023);
+---
+>                                -> f(m, ev@10026);
+112c112
+<           }), @x-x1@3@10016, std/os/path/show));
+---
+>           }), @x-x1@3@10019, std/os/path/show));
+116c116
+< fun @mlift-main@10019 : (@y-x10002 : string) -> io ()
+---
+> fun @mlift-main@10022 : (@y-x10002 : string) -> io ()
+118c118
+<     val @x-x1@0@10012 : std/os/path/path
+---
+>     val @x-x1@0@10015 : std/os/path/path
+120,121c120,121
+<     val @x-x1@10011 : std/os/path/path
+<       = std/core/hnd/@open-none2(std/os/path/pathstring/(/), @x-x1@0@10012, ".kokac");
+---
+>     val @x-x1@10014 : std/os/path/path
+>       = std/core/hnd/@open-none2(std/os/path/pathstring/(/), @x-x1@0@10015, ".kokac");
+125,126c125,126
+<           }), @x-x1@10011)))));
+<     val x@10025 : string
+---
+>           }), @x-x1@10014)))));
+>     val x@10028 : string
+130c130
+<          -> std/core/hnd/yield-extend(test/cgen/open-resolve/@mlift-main@10018);
+---
+>          -> std/core/hnd/yield-extend(test/cgen/open-resolve/@mlift-main@10021);
+132c132
+<          -> test/cgen/open-resolve/@mlift-main@10018(x@10025);
+---
+>          -> test/cgen/open-resolve/@mlift-main@10021(x@10028);
+137c137
+<     val x@10027 : string
+---
+>     val x@10030 : string
+141c141
+<          -> std/core/hnd/yield-extend(test/cgen/open-resolve/@mlift-main@10019);
+---
+>          -> std/core/hnd/yield-extend(test/cgen/open-resolve/@mlift-main@10022);
+143,146c143,146
+<          -> val @x-x1@0@10012 : std/os/path/path
+<               = std/core/hnd/@open-none1(std/os/path/path, x@10027);
+<             val @x-x1@10011 : std/os/path/path
+<               = std/core/hnd/@open-none2(std/os/path/pathstring/(/), @x-x1@0@10012, ".kokac");
+---
+>          -> val @x-x1@0@10015 : std/os/path/path
+>               = std/core/hnd/@open-none1(std/os/path/path, x@10030);
+>             val @x-x1@10014 : std/os/path/path
+>               = std/core/hnd/@open-none2(std/os/path/pathstring/(/), @x-x1@0@10015, ".kokac");
+150,151c150,151
+<                   }), @x-x1@10011)))));
+<             val x@0@10030 : string
+---
+>                   }), @x-x1@10014)))));
+>             val x@0@10033 : string
+155c155
+<              -> std/core/hnd/yield-extend(test/cgen/open-resolve/@mlift-main@10018);
+---
+>              -> std/core/hnd/yield-extend(test/cgen/open-resolve/@mlift-main@10021);
+157,158c157,158
+<              -> test/cgen/open-resolve/set-package-root((std/core/hnd/@open-none1(std/os/path/path, x@0@10030)), (fn<<package-root,ndet,console/console,alloc<global>,div,exn,fsys,net,read<global>,ui,write<global>>>(){
+<                 val @x-x1@3@10016 : std/os/path/path
+---
+>              -> test/cgen/open-resolve/set-package-root((std/core/hnd/@open-none1(std/os/path/path, x@0@10033)), (fn<<package-root,ndet,console/console,alloc<global>,div,exn,fsys,net,read<global>,ui,write<global>>>(){
+>                 val @x-x1@3@10019 : std/os/path/path
+160c160
+<                           val ev@10033 : (hnd/ev<package-root>)
+---
+>                           val ev@10036 : (hnd/ev<package-root>)
+162c162
+<                           (match (ev@10033) {
+---
+>                           (match (ev@10036) {
+168c168
+<                                        -> f(m, ev@10033);
+---
+>                                        -> f(m, ev@10036);
+175c175
+<                   }), @x-x1@3@10016, std/os/path/show));
+---
+>                   }), @x-x1@3@10019, std/os/path/show));
+Binary files .koka/v3.1.3/clang-debug-604ebf/test_cgen_open_dash_resolve__main and .koka/v3.1.4/clang-debug-473d8a/test_cgen_open_dash_resolve__main differ

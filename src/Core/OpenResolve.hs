@@ -236,9 +236,9 @@ isHandlerFree expr
                   -> case handlerFreeFunType (typeOf vname) of
                        Nothing  -> True
                        Just ok  -> ok
-      -- Var vname _ -> case handlerFreeFunType (typeOf vname) of
-      --                  Nothing   -> True
-      --                  Just ok   -> ok && (isSystemCoreName (getName vname))
+      Var vname _ -> case handlerFreeFunType (typeOf vname) of
+                       Nothing   -> True
+                       Just ok   -> ok && (isSystemCoreName (getName vname))
       Con{} -> True
       Lit{} -> True
       _     -> False
