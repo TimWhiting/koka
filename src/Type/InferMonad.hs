@@ -1635,7 +1635,7 @@ resolveImplicitConstraints free ics
     resolve ic
       = do (evidence,tp) <- (icSolve ic) free ic
            solvedImplicitConstraint (icEvidence ic) tp
-           return $ Core.makeTDef (Core.TName (icEvidence ic) tp) evidence
+           return $ Core.makeTDef (Core.TName (icEvidence ic) tp Nothing) evidence
 
 
 tryResolveImplicitConstraints :: Bool -> Tvs -> Inf (Core.Expr -> Core.Expr)
@@ -1660,7 +1660,7 @@ tryResolveImplicitConstraints close free
            if determined || force || close
              then do (ev,tp) <- (icSolve ic) free ic
                      solvedImplicitConstraint (icEvidence ic) tp
-                     let def = Core.makeTDef (Core.TName (icEvidence ic) tp) ev
+                     let def = Core.makeTDef (Core.TName (icEvidence ic) tp Nothing) ev
                      tryResolve (def:defs, acc) ics
              else tryResolve (defs, ic:acc) ics
 
@@ -1767,7 +1767,7 @@ resolveHeapDivConstraint free ic
                   stp  <- subst tp
                   -- traceDefDoc $ \penv -> text "resolve @hdiv:" <+> Pretty.ppName penv (icEvidence ic) <.> colon <+> Pretty.ppType penv stp <+> text "as" <+> text (if maydiv then "divergent" else "non-divergent")
                   --                         <-> text "  , free: " <+> ppTvs penv free
-                  let ev = Core.TypeApp (coreExprFromNameInfo cname cinfo) [tpHeap,tpVal,seff]
+                  let ev = Core.TypeApp (coreExprFromNameInfo cname cinfo rangeNull) [tpHeap,tpVal,seff]
                   return (ev,stp)
 
 
