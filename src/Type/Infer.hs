@@ -397,6 +397,7 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
         let name = Core.defName coreDef
             csort = if (topLevel || CoreVar.isTopLevel coreDef) then Core.defSort coreDef else DefVal
             info = coreVarInfoFromNameInfo (createNameInfoX Public name sd csort (defRange def) resTp1 (defDoc def))
+            defRng = Just (Core.defNameRange coreDef)
         penv <- getPrettyEnv
         (resTp2,coreExpr)
               <- case (resCore1) of
