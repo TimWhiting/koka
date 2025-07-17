@@ -474,24 +474,25 @@ childrenOfExpr ctx expr =
       result <- makeGroups ctx defs
       -- trace ("Let " ++ show (map contextId defs)) $ return ()
       -- trace ("Let " ++ show (contextId result) ++ show result) $ return ()
-      return [result]
+      return result
       where
-        makeGroups :: ExprContext -> [DefGroup] -> FixDemandR x s e ExprContext
+        makeGroups :: ExprContext -> [DefGroup] -> FixDemandR x s e [ExprContext]
         makeGroups parentCtx [] = do
-          addContextId (\newId -> LetCBody newId parentCtx (map defTName (concatMap defsOf defs)) result)
+          ctx <- addContextId (\newId -> LetCBody newId parentCtx (map defTName (concatMap defsOf defs)) result)
+          return [ctx]
         makeGroups parentCtx (dg@(C.DefNonRec d):dgs) = do -- NonRec doesn't mean that the name isn't bound in the body, just that it's not mutually recursive with another definition.
           grp <- addContextId (\newId -> LetCDefGroup newId parentCtx [defTName d] dg)
           bind <- addContextId (\newId -> LetCDefNonRec newId grp (defTName d))
           body <- makeGroups grp dgs
-          addChildrenContexts (contextId grp) (body:[bind]) -- Bindings come second
-          return grp
+          addChildrenContexts (contextId grp) (body ++ [bind]) -- Bindings come second
+          return (body ++ [bind])
         makeGroups parentCtx (dg@(C.DefRec ds):dgs) = do
           let tnames = map defTName ds
           grp <- addContextId (\newId -> LetCDefGroup newId parentCtx tnames dg)
           bindings <- mapM (\(i, _) -> addContextId (\newId -> LetCDefRec newId grp i tnames)) (zip [0..] ds)
           body <- makeGroups grp dgs
-          addChildrenContexts (contextId grp) (body:bindings)
-          return grp
+          addChildrenContexts (contextId grp) (body ++ bindings)
+          return (body ++ bindings)
     Case exprs branches -> do
       match <- addContextId (\newId -> CaseCScrutinee newId ctx (head exprs))
       branches <- zipWithM (\i x -> addContextId (\newId -> CaseCBranch newId ctx (branchVars x) i x)) [0..] branches
