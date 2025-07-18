@@ -60,6 +60,7 @@ import Common.Failure (assertion)
 import Type.Unify (runUnifyEx, unify)
 import Data.Either (isLeft)
 import Control.Exception (assert)
+import Core.FlowAnalysis.Literals (patSubsumed)
 
 -- Refines a query given a more specific environment
 refineQuery :: Query -> EnvCtx -> Query
@@ -476,17 +477,6 @@ matchesPatternLit litc env pat =
     PatVar _ p -> matchesPatternLit litc env p
     PatWild -> True
     _ -> False
-
-patSubsumed :: Pattern -> LiteralChange -> Bool
-patSubsumed (PatLit (LitInt i)) (LiteralChangeInt (LChangeSingle x)) = i == x
-patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat (LChangeSingle x)) = i == x
-patSubsumed (PatLit (LitChar i)) (LiteralChangeChar (LChangeSingle x)) = i == x
-patSubsumed (PatLit (LitString i)) (LiteralChangeString (LChangeSingle x)) = i == x
-patSubsumed (PatLit (LitInt i)) (LiteralChangeInt LChangeTop) = True
-patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat LChangeTop) = True
-patSubsumed (PatLit (LitChar i)) (LiteralChangeChar LChangeTop) = True
-patSubsumed (PatLit (LitString i)) (LiteralChangeString LChangeTop) = True
-patSubsumed _ _ = False
 
 doExpr :: (ExprContext, EnvCtx) -> String -> FixDemandR x s e AChange
 doExpr (ctx,env) query = do

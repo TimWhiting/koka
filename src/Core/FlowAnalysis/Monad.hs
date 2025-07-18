@@ -385,7 +385,7 @@ visitEachChild ctx analyze = do
 
 externalModule :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 externalModule name = do
-  -- trace ("External module " ++ show name) $ return ()
+  trace ("External module " ++ show name) $ return ()
   let modName = newModuleName (nameModule (getName name))
   mmctx <- maybeLoadModuleCtx modName 
   case mmctx of

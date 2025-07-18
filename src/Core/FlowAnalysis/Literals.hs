@@ -4,6 +4,7 @@ import Data.List (intercalate)
 import Core.FlowAnalysis.FixpointMonad
 import qualified Core.FlowAnalysis.FixpointMonad as FM
 import qualified Data.Map.Strict as M
+import Core.Core
 
 data LiteralLattice =
     LiteralLattice{
@@ -72,3 +73,15 @@ joinLitLattice (LiteralLattice i0 f0 c0 s0) (LiteralLattice i1 f1 c1 s1) =
 
 litIsBottom :: LiteralLattice -> Bool
 litIsBottom (LiteralLattice i f c s) = isBottom i && isBottom f && isBottom c && isBottom s
+
+
+patSubsumed :: Pattern -> LiteralChange -> Bool
+patSubsumed (PatLit (LitInt i)) (LiteralChangeInt (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitChar i)) (LiteralChangeChar (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitString i)) (LiteralChangeString (LChangeSingle x)) = i == x
+patSubsumed (PatLit (LitInt i)) (LiteralChangeInt LChangeTop) = True
+patSubsumed (PatLit (LitFloat i)) (LiteralChangeFloat LChangeTop) = True
+patSubsumed (PatLit (LitChar i)) (LiteralChangeChar LChangeTop) = True
+patSubsumed (PatLit (LitString i)) (LiteralChangeString LChangeTop) = True
+patSubsumed _ _ = False
