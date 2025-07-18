@@ -77,6 +77,7 @@ instance Show Addr where
 
 data Frame =
   FScrut {
+      parent :: ExprContext,
       branches :: [ExprContext],
       env :: VEnv
     }

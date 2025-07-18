@@ -15,4 +15,4 @@ fun analyze()
   
   val z = y - (y + xaslkdfj)
   
-  ()
+  x1.sum
