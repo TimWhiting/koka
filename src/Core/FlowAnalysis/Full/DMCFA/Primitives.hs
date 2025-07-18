@@ -20,8 +20,10 @@ import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
 import Type.Unify (runUnifyEx, unify)
-import Common.Name (newLocallyQualified, newQualified, Name, newName)
+import Common.Name (newLocallyQualified, newQualified, Name (nameStem), newName)
 import Core.FlowAnalysis.Monad (FixAR)
+import Common.Name (qualifier)
+import Common.File
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -56,38 +58,42 @@ nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
 trueCon ::  AChange
-trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) M.empty
+trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) [] M.empty
 falseCon :: AChange
-falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) M.empty
+falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) [] M.empty
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
 anyBool :: (Ord i, Show c, Show (o c), Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
-changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) M.empty
+changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) [] M.empty
+
+isClauseName :: Name -> Bool
+isClauseName name = qualifier name == nameCoreHnd && nameStem name `startsWith` "clause"
+
+isNamePerform :: Name -> Bool
+isNamePerform n = qualifier n == nameCoreHnd && nameStem n `startsWith` "@perform"
 
 isPrimitive :: TName -> Bool
 isPrimitive tn =
-  getName tn `elem` [
-    nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
-    nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
-    nameIntOdd,
-    nameCoreIntShow,
-    nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
-    nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow,
-    nameCoreCharInt, nameNumInt32Int,
-    namePretendDecreasing, nameUnsafeTotalCast,
-    nameNumRandom,
-    nameCoreTrace,
-    nameCorePrint, nameCorePrintln,
-    nameHandle,
-    nameHTag,
-    nameEvvAt,
-    nameInternalSSizeT,
-    namePerform 0, namePerform 1, namePerform 2, namePerform 3, namePerform 4,
-    nameClause "tail" 0, nameClause "tail" 1, nameClause "tail" 2, nameClause "tail" 3, nameClause "tail" 4,
-    nameClause "control" 0, nameClause "control" 1, nameClause "control" 2, nameClause "control" 3, nameClause "control" 4
-    ]
+  let basics = getName tn `elem` [
+                      nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
+                      nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
+                      nameIntOdd,
+                      nameCoreIntShow,
+                      nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
+                      nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow,
+                      nameCoreCharInt, nameNumInt32Int,
+                      namePretendDecreasing, nameUnsafeTotalCast,
+                      nameNumRandom,
+                      nameCoreTrace,
+                      nameCorePrint, nameCorePrintln,
+                      nameHandle,
+                      nameHTag,
+                      nameEvvAt,
+                      nameInternalSSizeT
+                      ] 
+  in basics || isNamePerform (getName tn) || isClauseName (getName tn)
 
 intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAAMR x s e AChange
 intOp f [p1, p2] = do
@@ -142,8 +148,8 @@ doPrimitive nm achanges env = do
       _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
-      [AChangeConstr (ExprPrim _ e) _] | isExprTrue e -> return trueCon
-      [AChangeConstr (ExprPrim _ e) _] | isExprFalse e -> return falseCon
+      [AChangeConstr (ExprPrim _ e) _ _] | isExprTrue e -> return trueCon
+      [AChangeConstr (ExprPrim _ e) _ _] | isExprFalse e -> return falseCon
       _ -> doBottom
   else if nm == nameIntOdd then
     case achanges of
