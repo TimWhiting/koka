@@ -343,7 +343,7 @@ childrenContexts ctx = do
     let childIds = M.lookup parentCtxId children
     case childIds of
       Nothing -> do
-          -- trace ("No children for " ++ show ctx ++ " " ++ show (contextId ctx)) $ return ()
+          trace ("No children for " ++ show ctx ++ " " ++ show (contextId ctx)) $ return ()
           newCtxs <- case ctx of
                 DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 DefCNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
@@ -363,7 +363,7 @@ childrenContexts ctx = do
                   initialModuleContexts ctx
                 _ -> error ("No children for " ++ show ctx ++ " " ++ show (contextId ctx))
           addChildrenContexts parentCtxId newCtxs
-          -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs ++ " " ++ show (map contextId newCtxs)) $ return newCtxs
+          trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs ++ " " ++ show (map contextId newCtxs)) $ return newCtxs
           return newCtxs
       Just childIds -> do
         -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show childIds) $ return ()
