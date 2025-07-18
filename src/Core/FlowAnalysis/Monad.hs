@@ -154,11 +154,12 @@ getTopDefCtx ctx@(ModuleC{}) name = do
       findCtx [] = error $ "getTopDefCtx: " ++ show ctx ++ " " ++ show name
       findCtx (dctx:defs) = do
         case dctx of
-            DefCNonRec{} | defName (defOfCtx dctx) == name -> return dctx
-            DefCRec{} | defName (defOfCtx dctx) == name -> return dctx
+            DefCNonRec{} | defName (defOfCtx dctx) == name -> trace "NonRec" $ return dctx
+            DefCRec{} | defName (defOfCtx dctx) == name -> trace "Rec" $ return dctx
             DefCGroup _ _ tn _ ->
               case elemIndex name (map getName tn) of
                 Just i -> do
+                  trace "Group" $ return ()
                   focusChild i dctx
                   -- trace ("Found top def ctx " ++ showSimpleContext dctx) $ return ()
                   -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
@@ -259,6 +260,7 @@ addSpecialId ids f = do
 
 childrenOfExpr :: ExprContext -> Expr -> FixAR x s e i o c [ExprContext]
 childrenOfExpr ctx expr =
+  -- trace ("Getting children of expression " ++ showCtxExpr ctx ++ " " ++ show expr) $ do
   case expr of
     Lam names eff e -> addContextId (\newId -> LamCBody newId ctx names e) >>= single
     App f vs rng -> do
@@ -387,13 +389,13 @@ externalModule :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 externalModule name = do
   trace ("External module " ++ show name) $ return ()
   let modName = newModuleName (nameModule (getName name))
-  mmctx <- maybeLoadModuleCtx modName 
+  mmctx <- maybeLoadModuleCtx modName
   case mmctx of
     Just (mod', ctx) -> do
       if lookupDefGroups (coreProgDefs $ fromJust $ modCoreUnopt mod') name then return (Just ctx)
       else trace ("External variable binding not found " ++ show name) (return Nothing)
-    Nothing -> 
-      doBottom 
+    Nothing ->
+      doBottom
       -- error ("External module " ++ show (show modName) ++ " for " ++ show (nameStem (getName name)) ++ " not found")
 
 bindExternal :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)

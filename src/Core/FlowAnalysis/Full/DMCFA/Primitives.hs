@@ -80,7 +80,10 @@ isPrimitive tn =
     nameNumRandom,
     nameCoreTrace,
     nameCorePrint, nameCorePrintln,
-    nameHandle, 
+    nameHandle,
+    nameHTag,
+    nameEvvAt,
+    nameInternalSSizeT,
     namePerform 0, namePerform 1, namePerform 2, namePerform 3, namePerform 4,
     nameClause "tail" 0, nameClause "tail" 1, nameClause "tail" 2, nameClause "tail" 3, nameClause "tail" 4,
     nameClause "control" 0, nameClause "control" 1, nameClause "control" 2, nameClause "control" 3, nameClause "control" 4
@@ -110,7 +113,6 @@ opCmpInt f [p1, p2] = do
 
 doPrimitive :: Name -> [AChange] -> VEnv -> FixAAMR r s e AChange
 doPrimitive nm achanges env = do
-  -- trace ("Primitive: " ++ show nm ++ " " ++ show achanges) $ return ()
   if nm == nameIntEq then
     opCmpInt (==) achanges
   else if nm == nameIntLt then
@@ -131,6 +133,8 @@ doPrimitive nm achanges env = do
     intOp div achanges
   else if nm == nameIntMod then
     intOp mod achanges
+  else if nm == nameInternalSSizeT then
+    return $ head achanges
   else if nm == nameCoreIntShow then
     case achanges of
       [AChangeLit (LiteralChangeInt (LChangeSingle i))] -> return $ AChangeLit (LiteralChangeString (LChangeSingle (show i)))
@@ -163,4 +167,4 @@ doPrimitive nm achanges env = do
   else if (nm == nameCoreTrace) || (nm == nameCorePrint) || (nm == nameCorePrintln) then
     return changeUnit
   else
-    error $ "doPrimitive: " ++ show nm
+    error ("Primitive: " ++ show nm ++ " " ++ show achanges)
