@@ -17,7 +17,7 @@ import Core.Core
 import Data.Int (Int)
 import Common.Name
 import Debug.Trace (trace)
-import Common.NamePrim (nameOpen, nameEffectOpen, nameHandle, namePerform, nameClause)
+import Common.NamePrim (nameOpen, nameEffectOpen, nameHandle, namePerform, nameClause, nameCoreHnd, nameHTag, nameEvvAt)
 import Data.Maybe (fromJust, isJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
@@ -27,6 +27,7 @@ import GHC.Base (when)
 import Core.CoreVar (HasExpVar(fv), bv)
 import Type.Pretty (defaultEnv, ppType)
 import Lib.PPrint (hcat, tupled, vcat, text)
+import Common.File (startsWith)
 
 mLimit :: Int
 mLimit = 2
@@ -96,11 +97,18 @@ allocFrame frame kaddr ctx env u = do
 fvsl :: [ExprContext] -> S.Set TName
 fvsl exprs = S.unions $ map fvs exprs
 
+isClauseName :: Name -> Bool
+isClauseName name = qualifier name == nameCoreHnd && nameStem name `startsWith` "clause"
+
+isNamePerform :: Name -> Bool
+isNamePerform n = qualifier n == nameCoreHnd && nameStem n `startsWith` "@perform"
+
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
   trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
+      -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       eval f venv kaddr mkaddr ctx
     Con{} -> do
@@ -111,6 +119,8 @@ doEval expr venv kaddr mkaddr ctx =
       if isPrimitive name then do
         addr <- allocConst venv ctx expr (AChangePrim name expr venv)
         apply kaddr mkaddr addr (dynamic ctx)
+      else if qualifier (getName name) == nameCoreHnd then
+        error ("Unexpected handler library name in DMCFA: " ++ show name)
       else case lookupEnv name venv of
         Just addr -> apply kaddr mkaddr addr (dynamic ctx)
         Nothing -> do
@@ -202,10 +212,29 @@ doApply kaddr mkaddr addr dynctx = do
                     eval body (limitEnv newEnv (fvs body)) knext mkaddr newCtx
                   AChangePrim name _ venv -> do
                     args <- mapM store params
-                    res <- doPrimitive (getName name) args venv
                     let addr = BindImplicitAddr newctx venv (contextId u)
-                    extendStore addr res
-                    apply knext mkaddr addr dynctx
+                    let n = getName name
+                    if isClauseName n || n == nameHTag || n == nameEvvAt then do
+                      extendStore addr (AChangeObj name params)
+                      apply knext mkaddr addr dynctx
+                    else if isNamePerform n then do
+                      let [_, select, _] = args
+                      trace ("Performing: " ++ show n ++ " with " ++ show select) $ return ()
+                      doBottom
+                    else if n == nameHandle then do
+                      [AChangeObj _ [hNameAddr], AChangeObj op a, AChangeClos ret retenv, AChangeClos body bodyenv] <- mapM store params
+                      AChangeLit (LiteralChangeString (LChangeSingle hName)) <- store hNameAddr
+                      let newCtx = CombinedCtx [] ((contextId u, ctx):dynctx)
+                      bod <- focusBody body
+                      -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
+                      let mk' = ImplicitAddr newCtx venv (contextId u)
+                      extendMKStore mk' (MKHandle hName knext mkaddr (Handler ret body) venv newCtx)
+                      trace ("Applying handle: " ++ hName ++ " with " ++ show bod) $ return ()
+                      eval bod (limitEnv bodyenv (fvs body)) endKAddr mk' newCtx
+                    else do
+                      res <- doPrimitive n args venv
+                      extendStore addr res
+                      apply knext mkaddr addr dynctx
                   AChangeConstr con _ -> do
                     let name = case exprOfCtx con of
                           Con n _ _ -> n

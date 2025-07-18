@@ -240,6 +240,7 @@ data Flags
          , outputEntryName :: !String
          , mainEntryName :: !String
          , baseFlags        :: Maybe Flags
+         , analyze        :: !Bool -- perform full program analysis
          } deriving (Eq,Show)
 
 instance Hashable Flags where
@@ -391,6 +392,7 @@ flagsNull
           ""      -- main entry name (null for default for each target)
           ""      -- main target name (null for default)
           Nothing -- no base flags
+          False   -- do not analyze by default
 
 
 
@@ -494,6 +496,8 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["showc"]          (\b f -> f{showAsmC=b})          "show generated C"
  , flag   []    ["core"]           (\b f -> f{genCore=b})           "generate a core file"
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
+ , flag   []    ["analyze"]        (\b f -> f{analyze=b})           "full program analysis"
+ 
  , emptyline
 
  -- hidden

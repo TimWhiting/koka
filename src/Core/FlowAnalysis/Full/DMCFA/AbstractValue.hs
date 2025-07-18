@@ -131,9 +131,13 @@ data Kont =
   | KNext {frame :: Frame, kCtx :: StaticCtx, knext:: Addr}
   deriving (Eq, Ord, Show)
 
+data Handler =
+  Handler { ret :: ExprContext, body :: ExprContext }
+  deriving (Eq, Ord, Show)
+
 data MKont =
   MKEnd
-  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
+  | MKHandle { eff :: String, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: CombinedCtx }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
@@ -182,7 +186,7 @@ ctxOfClos res =
 instance Show AChange where
   show (AChangeClos expr env) = showNoEnvClosure (expr, env)
   show (AChangeConstr expr env) = showSimpleClosure (expr, env)
-  show (AChangeObj name args) = "AChangeObj: " ++ show name ++ " " ++ show args
+  show (AChangeObj name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr env) = show name
   show (AChangeKont k) = show k
   show (AChangeLit lit) = show lit
