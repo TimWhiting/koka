@@ -28,7 +28,7 @@ import Type.Pretty (defaultEnv, ppType)
 data Conf = 
   CEval ExprContext VEnv Addr Addr CombinedCtx
   | CApply Addr Addr Addr DynamicCtx
-  | CUnwind Name Int Addr Addr [Addr] CombinedCtx
+  | CUnwind Name ExprContext Addr Addr [Addr] CombinedCtx
   | CDone
   deriving (Eq, Ord, Show)
 
