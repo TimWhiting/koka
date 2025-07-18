@@ -18,7 +18,7 @@ import Data.Int (Int)
 import Common.Name
 import Debug.Trace (trace)
 import Common.NamePrim (nameOpen, nameEffectOpen, nameHandle, namePerform, nameClause)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
 import Type.Type (splitFunType, typeAny, splitFunScheme, Effect, typeTotal, effectExtend, extractEffectExtend)
@@ -98,7 +98,7 @@ fvsl exprs = S.unions $ map fvs exprs
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  trace ("Evaluating: " ++ show expr) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) args _ | nameEffectOpen == getName name -> do
       f <- focusChild 1 expr
@@ -128,7 +128,6 @@ doEval expr venv kaddr mkaddr ctx =
       apply kaddr mkaddr addr (dynamic ctx)
     Lam{} -> do
       addr <- allocConst venv ctx expr (AChangeClos expr venv)
-      trace ("Allocating closure: " ++ show addr ++ " " ++ show (dynamic ctx)) $ return ()
       apply kaddr mkaddr addr (dynamic ctx)
     App _ args _ -> do
       f <- focusFun expr
@@ -136,7 +135,6 @@ doEval expr venv kaddr mkaddr ctx =
       k' <- addFrame (FApp (length args) argExprs [] expr venv) (contextId f)
       eval f (limitEnv venv (fvs f)) k' mkaddr ctx
     Let dgs _ -> do
-      trace ("Let: " ++ show (length dgs)) $ return ()
       bind <- focusLetDefBinding 0 0 expr
       let defGroup = head dgs
       let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
@@ -144,14 +142,17 @@ doEval expr venv kaddr mkaddr ctx =
       k' <- addFrame (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) (contextId bind)
       eval bind (limitEnv venv (fvs bind)) k' mkaddr ctx
     -- TODO: Let and case
-    TypeApp{} -> do 
+    TypeApp{} -> do
       e <- focusChild 0 expr
       eval e venv kaddr mkaddr ctx
     TypeLam{} -> do
-      e <- focusChild 0 expr
-      eval e venv kaddr mkaddr ctx
-    Case scrutinee branches -> do
-      trace ("Case: " ++ show scrutinee) $ doBottom
+      addr <- allocConst venv ctx expr (AChangeClos expr venv)
+      apply kaddr mkaddr addr (dynamic ctx)
+    Case _ brs -> do
+      s <- focusScrutinee expr
+      branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
+      k' <- addFrame (FScrut expr branches venv) (contextId s)
+      eval s (limitEnv venv (fvs s)) k' mkaddr ctx
   where addFrame f u = allocFrame f kaddr ctx venv u
 
 doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
@@ -167,10 +168,9 @@ doApply kaddr mkaddr addr dynctx = do
             extendStore endVAddr endV
             return $ N CDone
           else do
-            trace ("Applying top value: " ++ show addr) $ return ()
             topV <- store addr
             let ImplicitAddr _ env _  = mkaddr
-            trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
+            -- trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
             let [(tname, ctx)] = M.toList env
             extendStore (BindingAddr ctx tname) topV
             return $ N CDone
@@ -182,10 +182,10 @@ doApply kaddr mkaddr addr dynctx = do
           addFrame f venv u = allocFrame f knext newctx venv u in
       case frame of
         FApp n args res u venv -> do
-          trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
           case args of
             [] -> case res ++ [addr] of
               f:params -> do
+                trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
                 -- trace ("Real params: " ++ show params) $ return ()
                 -- trace ("Applying function: " ++ show f) $ return ()
                 res <- store f
@@ -193,8 +193,9 @@ doApply kaddr mkaddr addr dynctx = do
                   AChangeClos cexpr cenv -> do
                     body <- focusBody cexpr
                     let args = lamNames cexpr
-                    let newCtx = CombinedCtx (CallApp (contextId u) : static newctx) (dynamic newctx)
+                    let newCtx = CombinedCtx (take mLimit $ CallApp (contextId u) : static newctx) (dynamic newctx)
                     let newEnv = foldl (\acc x -> M.insert x newCtx acc) cenv args
+                    trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                     zipWithM_ (\a p -> do
                       val <- store p
                       extendStore (fromJust $ lookupEnv a newEnv) val) args params
@@ -205,8 +206,8 @@ doApply kaddr mkaddr addr dynctx = do
                     let addr = BindImplicitAddr newctx venv (contextId u)
                     extendStore addr res
                     apply knext mkaddr addr dynctx
-                  AChangeConstr con _ -> do 
-                    let name = case exprOfCtx con of 
+                  AChangeConstr con _ -> do
+                    let name = case exprOfCtx con of
                           Con n _ _ -> n
                           _ -> error "Expected a constructor"
                     let addr = BindImplicitAddr newctx venv (contextId u)
@@ -219,6 +220,7 @@ doApply kaddr mkaddr addr dynctx = do
               eval next (limitEnv venv (fvs next)) k' mkaddr newctx
         FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
           val <- store addr
+          trace ("Binding " ++ show name ++ " to " ++ show val) $ return ()
           extendStore (fromJust $ lookupEnv name venv) val
           -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
           if isLetDefBindingFinished groupIdx bindingIdx u then do
@@ -229,8 +231,65 @@ doApply kaddr mkaddr addr dynctx = do
             let nextEnv = limitEnv venv (fvs next)
             k' <- addFrame (nextLetFrame frame newctx) nextEnv (contextId next)
             eval next nextEnv k' mkaddr newctx
-        _ ->
-          trace ("Apply not handled yet" ++ show k) $ doBottom
+        FScrut parent branches env -> do
+          let recur [] = doBottom
+              recur ((branch, expr):branches) = do
+                match <- branchMatch branch addr
+                case match of
+                  Just bindings -> do
+                    let newEnv = foldl (\acc tname -> M.insert tname newctx acc) env (M.keys bindings)
+                    mapM_ (\(tname, extend) ->
+                      extend (fromJust $ lookupEnv tname newEnv)
+                      ) (M.toList bindings)
+                    eval expr (limitEnv newEnv (fvs expr)) knext mkaddr newctx
+                  Nothing -> recur branches
+          case exprOfCtx parent of
+            Case _ pats -> recur (zip pats branches)
+
+branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
+branchMatch branch addr =
+  patMatch (head $ branchPatterns branch) addr
+
+type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
+
+rebind :: Addr -> Addr -> FixAAMR r s e ()
+rebind oldAddr newAddr = do
+  v <- store oldAddr
+  extendStore newAddr v
+
+patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
+patMatch (PatVar name rest) addr = do
+  match <- patMatch rest addr
+  case match of
+    Just bindings -> return $ Just $ M.insert name (\newAddr -> rebind addr newAddr) bindings
+    Nothing -> return Nothing
+patMatch PatWild addr = return $ Just M.empty
+patMatch plit@(PatLit _) addr = do
+  v <- store addr
+  case v of
+    AChangeLit litChange ->
+      if patSubsumed plit litChange then return $ Just M.empty
+      else return Nothing
+    _ -> return Nothing
+patMatch (PatCon nm pats _ _ _ _ _ _) addr = do
+  -- TODO: Early catch of wrong type
+  v <- store addr
+  case v of
+    AChangeObj name args ->
+      if name == nm then do
+        let patArgs = zip pats args
+        matches <- mapM (uncurry patMatch) patArgs
+        if all isJust matches then
+          return $ Just $ M.unions (map fromJust matches)
+        else return Nothing
+      else return Nothing
+    AChangeConstr con _ ->
+      case exprOfCtx con of
+        Con conName _ _ ->
+         if null pats && nm == conName then return (Just M.empty)
+         else return Nothing
+    _ -> return Nothing
+
 
 doUnwind :: HasCallStack => Name -> Int -> Addr -> Addr -> [Addr] -> CombinedCtx -> FixAAMR r s e FixChange
 doUnwind name n kaddr mkaddr addrs ctx = doBottom
