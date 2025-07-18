@@ -154,8 +154,6 @@ getTopDefCtx ctx@(ModuleC{}) name = do
       findCtx [] = error $ "getTopDefCtx: " ++ show ctx ++ " " ++ show name
       findCtx (dctx:defs) = do
         case dctx of
-            DefCNonRec{} | defName (defOfCtx dctx) == name -> trace "NonRec" $ return dctx
-            DefCRec{} | defName (defOfCtx dctx) == name -> trace "Rec" $ return dctx
             DefCGroup _ _ tn _ ->
               case elemIndex name (map getName tn) of
                 Just i -> do
