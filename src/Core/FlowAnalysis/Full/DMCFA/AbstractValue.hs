@@ -105,7 +105,14 @@ data Frame =
         resolved :: [Addr],
         parent :: ExprContext,
         env :: VEnv
-      } -- Binding group index, num binding groups, binding index, num bindings, addresses, parent, env
+      } 
+  | FHLink {
+      linkEff :: Name,
+      doCtx :: ExprContextId,
+      linkKnext :: Addr,
+      linkHnd :: Handler,
+      linkHEnv :: VEnv
+  }
   deriving (Eq, Ord, Show)
 letBindingName :: Int -> Int -> ExprContext -> TName
 letBindingName groupIdx bindingIdx parent =
@@ -132,12 +139,12 @@ data Kont =
   deriving (Eq, Ord, Show)
 
 data Handler =
-  Handler { ret :: ExprContext, body :: ExprContext }
+  Handler { ops :: Addr, ret :: ExprContext, body :: ExprContext }
   deriving (Eq, Ord, Show)
 
 data MKont =
   MKEnd
-  | MKHandle { eff :: String, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: CombinedCtx }
+  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: CombinedCtx }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
@@ -170,7 +177,7 @@ data AChange =
   | AChangeConstr ExprContext VEnv
   | AChangeObj TName [Addr]
   | AChangeLit LiteralChange
-  | AChangeKont Addr -- Where to return to and where to extend the return continuation
+  | AChangeKont Name Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
 
 envOfClos :: AChange -> VEnv
@@ -188,7 +195,7 @@ instance Show AChange where
   show (AChangeConstr expr env) = showSimpleClosure (expr, env)
   show (AChangeObj name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr env) = show name
-  show (AChangeKont k) = show k
+  show (AChangeKont name addr env handler) = "Kont" ++ show (name, addr, env, handler)
   show (AChangeLit lit) = show lit
 
 data AbValue =
@@ -197,7 +204,7 @@ data AbValue =
     acons:: !(Set (ExprContext, VEnv)),
     aprims :: !(Set (TName, ExprContext, VEnv)),
     aobjs :: !(Set (TName, [Addr])),
-    akonts:: !(Set Addr),
+    akonts:: !(Set (Name, Addr, VEnv, Handler)),
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
 
@@ -209,7 +216,7 @@ changes (AbValue clos constrs prims objs konts lits) =
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     primss = map (\(name, expr, env) -> AChangePrim name expr env) $ S.toList prims
     objss = map (\(name, addrs) -> AChangeObj name addrs) $ S.toList objs
-    kontss = map AChangeKont $ S.toList konts
+    kontss = map (\(name, addr, env, handler) -> AChangeKont name addr env handler) $ S.toList konts
     litss = changesLit lits
 
 changesLit :: LiteralLattice -> [AChange]
@@ -224,7 +231,7 @@ changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _ _) = S.member (ctx,env) clo
 changeIn (AChangeConstr ctx env) (AbValue _ constr _ _ _ _) = S.member (ctx,env) constr
 changeIn (AChangePrim name expr env) (AbValue _ _ prims _ _ _) = S.member (name, expr, env) prims
 changeIn (AChangeObj name args) (AbValue _ _ _ objs _ _) = S.member (name, args) objs
-changeIn (AChangeKont a) (AbValue _ _ _ _ konts _) = S.member a konts
+changeIn (AChangeKont name addr env handler) (AbValue _ _ _ _ konts _) = S.member (name, addr, env, handler) konts
 changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLattice ints floats chars strings)) =
   case lit of
     LiteralChangeInt i -> i `lte` ints
@@ -316,7 +323,7 @@ addChange ab@(AbValue cls cs prims objs konts lit) change =
     AChangePrim name expr venv -> (change, AbValue cls cs (S.insert (name, expr, venv) prims) objs konts lit)
     AChangeObj name addrs -> (change, AbValue cls cs prims (S.insert (name, addrs) objs) konts lit)
     AChangeConstr c env -> (change, AbValue cls (S.insert (c,env) cs) prims objs konts lit)
-    AChangeKont k -> (change, AbValue cls cs prims objs (S.insert k konts) lit)
+    AChangeKont name addr env handler -> (change, AbValue cls cs prims objs (S.insert (name, addr, env, handler) konts) lit)
     AChangeLit l ->
       let (change, newLattice) = joinLit l lit
       in (AChangeLit change, AbValue cls cs prims objs konts newLattice)
