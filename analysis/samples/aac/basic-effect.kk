@@ -2,6 +2,9 @@ effect val hi: int
 
 effect fun op1(i: int): string
 effect ctl op2(i: int): string
+effect op3
+  ctl op34(): string 
+  ctl op35(): string
 
 fun x0()
   with val hi = 0
@@ -71,7 +74,7 @@ fun x13()
 fun analyze()
   // x0()
   // x1()
-  // x2()
+  x2()
   // x3()
   // x4()
   // x5()
@@ -80,7 +83,7 @@ fun analyze()
   // x8()
   // x9()
   // x11()
-  x12()
+  // x12()
   // x13()
 
 fun main()
