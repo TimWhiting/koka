@@ -3,8 +3,7 @@ effect val hi: int
 effect fun op1(i: int): string
 effect ctl op2(i: int): string
 effect op3
-  ctl op34(): string 
-  ctl op35(): string
+  final ctl op3(i: int, b: int): a
 
 fun x0()
   with val hi = 0
@@ -71,10 +70,15 @@ fun x13()
   with ctl op2(i) resume("2" ++ i.show)
   op2(0)
 
+fun x14()
+  with final ctl op3(i, b) i.show ++ b.show
+  op3(1, 2)
+
 fun analyze()
   // x0()
   // x1()
-  x2()
+  // x2()
+  x14()
   // x3()
   // x4()
   // x5()

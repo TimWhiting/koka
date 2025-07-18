@@ -30,7 +30,7 @@ module Common.Name
           , typeQualifiedName, typeQualifiedNameOf, typeQualifiedGetTypeName
           , newHiddenExternalName, isHiddenExternalName
           , newHiddenName, isHiddenName, hiddenNameStartsWith
-          , makeHiddenName, makeFreshHiddenName, newHiddenNameEx
+          , makeHiddenName, makeFreshHiddenName, newHiddenNameEx, unmakeHidden
           , toUniqueName
           , newImplicitTypeVarName, isImplicitTypeVarName
           , newCreatorName, isCreatorName

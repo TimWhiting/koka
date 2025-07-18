@@ -124,7 +124,7 @@ getAbResult = do
           s = stringV res
           topTypes = S.fromList $ topTypesOf (i, f, c, s)
           vs = syntaxLitsOf (i, f, c, s)
-          cs = map fst $ concatMap (S.toList . acons) vals
+          cs = map (\(a,b,c) -> a) $ concatMap (S.toList . acons) vals
       consts <- mapM toSynConstr cs
       source <- mapM findSourceExpr lams
       let sourceLambdas = map (\(SourceExpr e _) -> e) $ filter (\s -> case s of {SourceExpr _ _ -> True; _ -> False}) source
