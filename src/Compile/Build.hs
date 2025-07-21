@@ -364,7 +364,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   when (analyze flags) $ do
                     liftIO $ evalMain bc (\bc mn -> 
                         runBuild term flags $ buildcTypeCheck [mn] bc
-                      ) mod 0
+                      ) mod (mSensitivity flags) (dSensitivity flags)
                     return ()
                   -- let h = flagsHash flags
                   --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
