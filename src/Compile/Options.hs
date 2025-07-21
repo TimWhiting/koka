@@ -241,6 +241,8 @@ data Flags
          , mainEntryName :: !String
          , baseFlags        :: Maybe Flags
          , analyze        :: !Bool -- perform full program analysis
+         , mSensitivity :: !Int -- sensitivity for demand analysis
+         , dSensitivity :: !Int -- sensitivity for demand analysis
          } deriving (Eq,Show)
 
 instance Hashable Flags where
@@ -400,6 +402,8 @@ flagsNull
           ""      -- main target name (null for default)
           Nothing -- no base flags
           False   -- do not analyze by default
+          2 
+          1
 
 isHelp Help = True
 isHelp _    = False
@@ -501,7 +505,9 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["core"]           (\b f -> f{genCore=b})           "generate a core file"
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
  , flag   []    ["analyze"]        (\b f -> f{analyze=b})           "full program analysis"
- 
+ , numOption 0 "n" [] ["ma"] (\i f -> f{mSensitivity=i}) "set sensitivity for demand analysis (default 2)"
+ , numOption 0 "n" [] ["da"] (\i f -> f{dSensitivity=i}) "set sensitivity for demand analysis (default 1)"
+
  , emptyline
 
  -- hidden

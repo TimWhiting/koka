@@ -178,9 +178,9 @@ fun example-ex51(): int
 
 fun example-ex52(): int
   trace("Example 52 - whole lot of effects two outer calls")
-  with ctl ex51(z) resume(z) + 1
+  with ctl ex51(z) resume(z + 1)
   with ctl ex52(a) resume(a.fst) + ex51(a.snd)
-  with ctl ex53(b) resume(b) + b
+  with ctl ex53(b) resume(b) + ex51(b)
   ex52((1, 2)) + ex53(1)
 
 effect get
@@ -283,7 +283,7 @@ fun analyze()
   // trace-show(example-ex22() == 12)
   // trace-show(example-ex23() == 28)
   // trace-show(example-ex3() == 2)
-  trace-show(example-ex30() == 2)
+  // trace-show(example-ex30() == 2)
   // trace-show(example-ex31() == 5)
   // trace-show(example-ex32() == 5)
   // trace-show(example-ex33() == 3)
@@ -305,4 +305,4 @@ fun analyze()
   // trace-show(example-sum2c() == 3)
   // trace-show(example-sum1d() == 1)
   // trace-show(example-sum2d() == 3)
-  // trace-show(example-get-set() == 0)
+  trace-show(example-get-set() == 0)

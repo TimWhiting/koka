@@ -47,12 +47,12 @@ findMainBody = do
 
 runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
-  -> Module -> Int
+  -> Module -> Int -> Int
   -> (ExprContext -> FixAAMR FixChange () () ())
   -> IO (M.Map FixInput (FixOutput FixChange), Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type), BuildContext)
-runQueryAtRange bc build mod m doQuery = do
+runQueryAtRange bc build mod m d doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m build False ()) (emptyBasicState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m d build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -67,7 +67,7 @@ runQueryAtRange bc build mod m doQuery = do
         return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
         do
-          runFixFinishC (emptyBasicEnv m build True ()) s' $ do
+          runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()
@@ -85,12 +85,12 @@ runQueryAtRange bc build mod m doQuery = do
   return (M.map (\(x, _, _, _) -> x) l, r, bc)
 
 evalMain :: BuildContext
-  -> TypeChecker -> Module -> Int
+  -> TypeChecker -> Module -> Int -> Int
   -> IO (Maybe ([S.UserExpr], [S.UserDef], [S.External], [S.Lit], [(String, Maybe Range)],
                                    Set Type), BuildContext)
-evalMain bc build mod m = do
-  (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
-    doStep (inject ctx) 
+evalMain bc build mod m d = do
+  (lattice, r, bc) <- runQueryAtRange bc build mod m d $ \ctx -> do
+    doStep (inject ctx)
     return ()
   return (r, bc)
 
