@@ -4,7 +4,7 @@ effect ex1
 
 fun example-e1(): int
   trace("Example 1 - exceptions")
-  with final ctl ex1(a) a
+  with ctl ex1(a) a
   ex1(1)
 
 fun example-e10(): int
@@ -272,7 +272,7 @@ fun example-sum2d()
   iterxx(2)
 
 fun analyze()
-  trace-show(example-e1() == 1)
+  // trace-show(example-e1() == 1)
   // trace-show(example-e10() == 1)
   // trace-show(example-e11() == 2)
   // trace-show(example-e12() == 2)
@@ -283,7 +283,7 @@ fun analyze()
   // trace-show(example-ex22() == 12)
   // trace-show(example-ex23() == 28)
   // trace-show(example-ex3() == 2)
-  // trace-show(example-ex30() == 2)
+  trace-show(example-ex30() == 2)
   // trace-show(example-ex31() == 5)
   // trace-show(example-ex32() == 5)
   // trace-show(example-ex33() == 3)

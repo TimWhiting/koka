@@ -54,6 +54,7 @@ namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
 nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
 nameNumRandom = newQualified "std/num/random" "random-int"
 nameCoreTrace = newQualified "std/core/debug" "trace"
+nameCoreTraceShow = newQualified "std/core/debug" "trace-show"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
@@ -86,7 +87,7 @@ isPrimitive tn =
                       nameCoreCharInt, nameNumInt32Int,
                       namePretendDecreasing, nameUnsafeTotalCast,
                       nameNumRandom,
-                      nameCoreTrace,
+                      nameCoreTrace, nameCoreTraceShow,
                       nameCorePrint, nameCorePrintln,
                       nameHandle,
                       nameHTag,
@@ -170,7 +171,8 @@ doPrimitive nm achanges env = do
     charCmpOp (>=) achanges
   else if nm == nameCoreCharEq then
     charCmpOp (==) achanges
-  else if (nm == nameCoreTrace) || (nm == nameCorePrint) || (nm == nameCorePrintln) then
+  else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint) || (nm == nameCorePrintln) then
+    trace ("Print / Trace " ++ show achanges)
     return changeUnit
   else
     error ("Primitive: " ++ show nm ++ " " ++ show achanges)
