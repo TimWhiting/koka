@@ -51,7 +51,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> IO (M.Map FixInput (FixOutput FixChange), Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type), BuildContext)
 runQueryAtRange bc build mod m doQuery = do
   (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m build False ()) (emptyBasicState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m 0 build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -66,7 +66,7 @@ runQueryAtRange bc build mod m doQuery = do
         return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
         do
-          runFixFinishC (emptyBasicEnv m build True ()) s' $ do
+          runFixFinishC (emptyBasicEnv m 0 build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
                             trace ("Context: " ++ show (contextId ctx)) $ return ()

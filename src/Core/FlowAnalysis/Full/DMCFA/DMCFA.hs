@@ -29,11 +29,11 @@ import Type.Pretty (defaultEnv, ppType)
 import Lib.PPrint (hcat, tupled, vcat, text)
 import Common.File (startsWith)
 
-mLimit :: Int
-mLimit = 2
+mLimit :: FixAAMR r s e Int
+mLimit = contextLength <$> getEnv
 
-dLimit :: Int
-dLimit = 2
+dLimit :: FixAAMR r s e Int
+dLimit = delimContextLength <$> getEnv
 
 drive :: FixAAMR r s e FixChange -> FixAAMR r s e FixChange
 drive m = do
@@ -63,12 +63,16 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
-extendKStore addr v = lift $ push (KStore addr) (KV v)
+extendKStore addr v = do 
+  -- trace ("Extending KStore: " ++ show addr ++ " with " ++ show v) $ return ()
+  lift $ push (KStore addr) (KV v)
 extendMKStore :: Addr -> MKont -> FixAAMR r e s ()
-extendMKStore addr v= lift $ push (MKStore addr) (MKV v)
+extendMKStore addr v = do
+  -- trace ("Extending MKStore: " ++ show addr ++ " with " ++ show v) $ return ()
+  lift $ push (MKStore addr) (MKV v)
 
 store addr = do
   SV res <- doStep (VStore addr)
@@ -99,7 +103,7 @@ fvsl exprs = S.unions $ map fvs exprs
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | nameEffectOpen == getName name -> do
       -- TODO: Adjust the dynamic context to only what is necessary
@@ -175,7 +179,9 @@ doEval expr venv kaddr mkaddr ctx =
 
 doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr mkaddr addr dynctx = do
+  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr) $ return ()
   k <- kStore kaddr
+  -- trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> do
       mk <- mkStore mkaddr
@@ -202,15 +208,16 @@ doApply kaddr mkaddr addr dynctx = do
           case args of
             [] -> case res ++ [addr] of
               f:arguments -> do
-                trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
+                -- trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
                 -- trace ("Real params: " ++ show params) $ return ()
-                -- trace ("Applying function: " ++ show f) $ return ()
                 res <- store f
+                -- trace ("Applying function: " ++ show f ++ " " ++ show res) $ return ()
                 case res of
                   AChangeClos cexpr cenv -> do
                     body <- focusBody cexpr
                     let args = lamNames cexpr
-                    let newCtx = CombinedCtx (take mLimit $ CallApp (contextId u) : static newctx) (dynamic newctx)
+                    m <- mLimit
+                    let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
                     let newEnv = foldl (\acc x -> M.insert x newCtx acc) cenv args
                     -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                     zipWithM_ (\a p -> do
@@ -241,7 +248,8 @@ doApply kaddr mkaddr addr dynctx = do
                       let [AChangeObj _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] = args
                       let label = case exprOfCtx u of
                             App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
-                      let newCtx = CombinedCtx [] ((contextId u, ctx):dynctx)
+                      d <- dLimit
+                      let newCtx = CombinedCtx [] (take d $ (contextId u, ctx):dynctx)
                       bod <- focusBody body
                       -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
                       let mk' = ImplicitAddr newCtx venv (contextId u)
@@ -260,8 +268,10 @@ doApply kaddr mkaddr addr dynctx = do
                     extendStore addr (AChangeObj name (zip params arguments))
                     apply knext mkaddr addr dynctx
                   AChangeKont label kx henv hnd -> do
-                    let newCtx = CombinedCtx (CallApp (contextId u) : static newctx) (dynamic newctx)
-                        newDynCtx = (contextId u, static newCtx):dynamic newctx
+                    m <- mLimit
+                    d <- dLimit
+                    let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
+                        newDynCtx = take d $ (contextId u, static newCtx):dynamic newctx
                         mk' = ImplicitAddr newCtx venv (contextId u)
                     extendMKStore mk' (MKHandle label knext mkaddr hnd henv newCtx)
                     apply kx mk' addr newDynCtx
@@ -334,7 +344,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext mkCtx
       else do
         let k' = ImplicitLAddr ctx henv (contextId performExpr)
-        extendKStore k' (KNext (FHLink eff (contextId performExpr) k' h henv) (static ctx) mkKNext)
+        extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h henv) (static ctx) mkKNext)
         unwind name opName performExpr k' mknext args mkCtx
 
 
