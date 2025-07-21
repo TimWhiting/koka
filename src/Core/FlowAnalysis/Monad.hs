@@ -157,7 +157,7 @@ getTopDefCtx ctx@(ModuleC{}) name = do
             DefCGroup _ _ tn _ ->
               case elemIndex name (map getName tn) of
                 Just i -> do
-                  trace "Group" $ return ()
+                  -- trace "Group" $ return ()
                   focusChild i dctx
                   -- trace ("Found top def ctx " ++ showSimpleContext dctx) $ return ()
                   -- lamctx <- focusChild dctx 0 -- Actually focus the lambda
@@ -343,7 +343,7 @@ childrenContexts ctx = do
     let childIds = M.lookup parentCtxId children
     case childIds of
       Nothing -> do
-          trace ("No children for " ++ show ctx ++ " " ++ show (contextId ctx)) $ return ()
+          -- trace ("No children for " ++ show ctx ++ " " ++ show (contextId ctx)) $ return ()
           newCtxs <- case ctx of
                 DefCRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 DefCNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
@@ -359,11 +359,11 @@ childrenContexts ctx = do
                   return $! concat x
                 ExprCBasic{} -> return []
                 ModuleC{} -> do
-                  analysisLog ("initial contexts for module " ++ show (contextId ctx))
+                  -- analysisLog ("initial contexts for module " ++ show (contextId ctx))
                   initialModuleContexts ctx
                 _ -> error ("No children for " ++ show ctx ++ " " ++ show (contextId ctx))
           addChildrenContexts parentCtxId newCtxs
-          trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs ++ " " ++ show (map contextId newCtxs)) $ return newCtxs
+          -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show newCtxs ++ " " ++ show (map contextId newCtxs)) $ return newCtxs
           return newCtxs
       Just childIds -> do
         -- trace ("Got children for " ++ showCtxExpr ctx ++ " " ++ show childIds) $ return ()
@@ -385,7 +385,7 @@ visitEachChild ctx analyze = do
 
 externalModule :: HasCallStack => TName -> FixAR r s e i o c (Maybe ExprContext)
 externalModule name = do
-  trace ("External module " ++ show name) $ return ()
+  -- trace ("External module " ++ show name) $ return ()
   let modName = newModuleName (nameModule (getName name))
   mmctx <- maybeLoadModuleCtx modName
   case mmctx of
