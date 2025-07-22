@@ -183,24 +183,6 @@ fun example-ex52(): int
   with ctl ex53(b) resume(b) + ex51(b)
   ex52((1, 2)) + ex53(1)
 
-effect get
-  ctl get(i: int): int
-effect set
-  ctl set(i: int): ()
-
-fun example-get-set(): div int
-  trace("Example get/set")
-  fun countdown(_)
-    val i = get(0)
-    if i == 0 then 0 else 
-      set(i - 1)
-      countdown(0)
-  val x = 2
-  with ctl get(_) resume(x)
-  with ctl set(a)
-    with override ctl get(b) resume(b)
-    resume(())
-  countdown(0)
 
 effect iter 
   ctl it(i: int): int
@@ -270,6 +252,25 @@ fun example-sum2d()
   trace("Example x_sum2d")
   with ctl it(a) resume(a) + a
   iterxx(2)
+
+effect get
+  ctl get(i: int): int
+effect set
+  ctl set(i: int): ()
+
+fun example-get-set(): div int
+  trace("Example get/set")
+  fun countdown(_)
+    val i = get(0)
+    if i == 0 then 0 else 
+      set(i - 1)
+      countdown(0)
+  val x = 2
+  with ctl get(_) resume(x)
+  with ctl set(a)
+    with override ctl get(b) resume(b)
+    resume(())
+  countdown(0)
 
 fun analyze()
   // trace-show(example-e1() == 1)

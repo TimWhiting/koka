@@ -17,7 +17,7 @@ import Core.Core
 import Data.Int (Int)
 import Common.Name
 import Debug.Trace (trace)
-import Common.NamePrim (nameOpen, nameEffectOpen, nameHandle, namePerform, nameClause, nameCoreHnd, nameHTag, nameEvvAt)
+import Common.NamePrim (nameOpen, nameEffectOpen, nameHandle, namePerform, nameClause, nameCoreHnd, nameHTag, nameEvvAt, nameMaskAt)
 import Data.Maybe (fromJust, isJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
@@ -66,7 +66,7 @@ extendStore addr v = do
   -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
-extendKStore addr v = do 
+extendKStore addr v = do
   -- trace ("Extending KStore: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (KStore addr) (KV v)
 extendMKStore :: Addr -> MKont -> FixAAMR r e s ()
@@ -103,34 +103,42 @@ fvsl exprs = S.unions $ map fvs exprs
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | nameEffectOpen == getName name -> do
       -- TODO: Adjust the dynamic context to only what is necessary
-      ch <- childrenContexts expr 
+      ch <- childrenContexts expr
       f <- focusChild 1 expr
+      eval f venv kaddr mkaddr ctx
+    App (TypeApp (Var name _) _) [_,_,f] _ | nameMaskAt == getName name -> do
+      -- TODO: Adjust the dynamic context to only what is necessary
+      ch <- childrenContexts expr
+      f <- focusChild 3 expr
+      trace ("Masking " ++ show f) $ return ()
       eval f venv kaddr mkaddr ctx
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
                       Nothing -> []
       -- trace ("Con: " ++ show tn ++ " with params: " ++ show params) $ return ()
-      let constr = AChangeConstr expr params venv
+      let constr = AChangeConstr expr params
       addr <- allocConst venv ctx expr constr
       apply kaddr mkaddr addr (dynamic ctx)
     Var name _ -> do
       if isPrimitive name then do
-        addr <- allocConst venv ctx expr (AChangePrim name expr venv)
+        addr <- allocConst venv ctx expr (AChangePrim name expr)
         apply kaddr mkaddr addr (dynamic ctx)
       else if qualifier (getName name) == nameCoreHnd then
         error ("Unexpected handler library name in DMCFA: " ++ show name)
       else case lookupEnv name venv of
-        Just addr -> apply kaddr mkaddr addr (dynamic ctx)
+        Just addr ->
+          trace ("Found variable: " ++ show name ++ " at " ++ show addr) $ do
+          apply kaddr mkaddr addr (dynamic ctx)
         Nothing -> do
+          trace ("Evaluating external: " ++ show name) $ return ()
           res <- bindExternal name
           case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
             Just expr -> do
-              -- trace ("Evaluating external: " ++ show name) $ return ()
               extendMKStore (endTopMKAddr name) MKEnd
               each [eval expr M.empty endKAddr (endTopMKAddr name) startCombinedCtx,
                     apply kaddr mkaddr (BindingAddr startCombinedCtx name) (dynamic ctx)]
@@ -176,6 +184,15 @@ doEval expr venv kaddr mkaddr ctx =
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           k' <- addFrame (FApp (length args) argExprs [] expr venv) (contextId f)
           eval f (limitEnv venv (fvs f)) k' mkaddr ctx
+
+mEnvOf :: AChange -> FixAAMR r s e VEnv
+mEnvOf (AChangeClos _ env) = return env
+mEnvOf (AChangeKont _ _ env _) = return env
+mEnvOf (AChangeObj _ args) = do
+  objs <- mapM (store . snd) args
+  envs <- mapM mEnvOf objs
+  return $ M.unions envs
+mEnvOf _ = return M.empty
 
 doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr mkaddr addr dynctx = do
@@ -227,7 +244,7 @@ doApply kaddr mkaddr addr dynctx = do
                     let ia = ImplicitAddr newCtx newEnv (contextId body)
                     extendKStore ia k'
                     eval body (limitEnv newEnv (fvs body)) ia mkaddr newCtx
-                  AChangePrim name pms venv -> do
+                  AChangePrim name pms -> do
                     args <- mapM store arguments
                     let addr = BindImplicitAddr newctx venv (contextId u)
                     let n = getName name
@@ -249,18 +266,20 @@ doApply kaddr mkaddr addr dynctx = do
                       let label = case exprOfCtx u of
                             App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
                       d <- dLimit
+                      henv <- mEnvOf hnd
+                      trace ("OPS " ++ show henv) $ return ()
                       let newCtx = CombinedCtx [] (take d $ (contextId u, ctx):dynctx)
                       bod <- focusBody body
                       -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
                       let mk' = ImplicitAddr newCtx venv (contextId u)
-                      extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) ret body) venv newCtx)
-                      trace ("Applying handle: " ++ show label) $ return ()
+                      extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) ret body) (M.unions [retenv, henv]) newCtx)
+                      trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
                       eval bod (limitEnv bodyenv (fvs body)) endKAddr mk' newCtx
                     else do
                       res <- doPrimitive n args venv
                       extendStore addr res
                       apply knext mkaddr addr dynctx
-                  AChangeConstr con params _ -> do
+                  AChangeConstr con params -> do
                     let name = case exprOfCtx con of
                           Con n _ _ -> n
                           _ -> error "Expected a constructor"
@@ -327,7 +346,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             unmakeHidden (_:rest) = unmakeHidden rest
         let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
         case lookup opName ops' of
-          Nothing -> 
+          Nothing ->
             trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
             doBottom
           Just op -> do
@@ -385,7 +404,7 @@ patMatch (PatCon nm pats _ _ _ _ _ _) addr = do
           return $ Just $ M.unions (map fromJust matches)
         else return Nothing
       else return Nothing
-    AChangeConstr con params _ ->
+    AChangeConstr con params ->
       case exprOfCtx con of
         Con conName _ _ ->
          if null pats && nm == conName then return (Just M.empty)

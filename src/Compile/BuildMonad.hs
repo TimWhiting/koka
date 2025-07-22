@@ -7,7 +7,7 @@
 -----------------------------------------------------------------------------
 module Compile.BuildMonad( 
   BuildContext(..), buildcLookupModule,
-  Build, VFS(..), noVFS, lookupVFS,
+  Build, VFS(..), noVFS, lookupVFS, vfsEmpty, vfsSingleton, vfsFromList, vfsToList, vfsFind, vfsCompose,
   runBuildMaybe, runBuildIO, runBuild
     , phase, phaseVerbose, phaseTimed
     , throwError, throwErrorKind
@@ -59,16 +59,36 @@ import Syntax.Lexer (readInput)
   Compilation monad
   carries flags and terminal and catches errors
 ---------------------------------------------------------------}
-data VFS = VFS { vfsFind :: FilePath -> Maybe (BString,FileTime) }
+data VFS = VFS { vfiles :: !(M.Map FilePath (BString,FileTime)) }
+
+vfsFind :: VFS -> FilePath -> Maybe (BString,FileTime)
+vfsFind (VFS vfiles) fpath
+  = M.lookup fpath vfiles
 
 noVFS :: VFS
-noVFS = VFS (\fpath -> Nothing)
+noVFS = vfsEmpty
 
-composeVFS :: VFS -> VFS -> VFS
-composeVFS (VFS find1) (VFS find2)
-  = VFS (\fpath -> case find2 fpath of
-                     Just res -> Just res
-                     Nothing  -> find1 fpath)
+vfsEmpty :: VFS
+vfsEmpty = VFS M.empty
+
+vfsSingleton :: FilePath -> BString -> FileTime -> VFS
+vfsSingleton fpath content ftime
+  = VFS (M.singleton fpath (content,ftime))
+
+vfsFromList :: [(FilePath,(BString,FileTime))] -> VFS
+vfsFromList xs
+  = VFS (M.fromList xs)
+
+vfsToList :: VFS -> [(FilePath,(BString,FileTime))]  
+vfsToList (VFS vfiles)
+  = M.toList vfiles
+
+instance Show VFS where
+  show (VFS vfiles) = show (map fst (M.toList vfiles))
+
+vfsCompose :: VFS -> VFS -> VFS
+vfsCompose (VFS find1) (VFS find2)
+  = VFS (M.union find2 find1)  -- left biased: find2 takes precedence
 
 
 -- Return a module by name
@@ -370,7 +390,7 @@ withEnv modify (Build action)
 
 withVFS :: VFS -> Build a -> Build a
 withVFS vfs build
-  = withEnv (\env -> env{ envVFS = composeVFS (envVFS env) vfs }) build
+  = withEnv (\env -> env{ envVFS = vfsCompose (envVFS env) vfs }) build
 
 lookupVFS :: FilePath -> Build (Maybe (BString,FileTime))
 lookupVFS fpath
@@ -405,6 +425,7 @@ hasBuildError :: Build (Maybe Range)
 hasBuildError
   = do env  <- getEnv
        errs <- liftIO $ readIORef (envErrors env)
+       -- trace ("errors: " ++ show (errors errs)) $ return ()
        case find (\err -> errSeverity err >= SevError) (errors errs) of
          Just err -> return (Just (errRange err))
          _        -> return Nothing
@@ -459,10 +480,10 @@ phase p mkdoc
          else phaseVerbose 1 p mkdoc
 
 phaseVerbose :: Int -> String -> (TP.Env -> Doc) -> Build ()
-phaseVerbose vlevel p doc
-  = do flags <- getFlags
-       when (verbose flags >= vlevel) $
-         phaseShow (verbose flags) p doc
+phaseVerbose verboseLevel phase mkDoc 
+  = do term <- getTerminal
+       flags <- getFlags
+       liftIO $ phaseVerboseIO term flags verboseLevel phase mkDoc
 
 phaseShow :: Int -> String -> (TP.Env -> Doc) -> Build ()
 phaseShow v p mkdoc
