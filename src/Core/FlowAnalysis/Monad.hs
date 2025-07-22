@@ -439,7 +439,7 @@ maybeLoadModuleR mn = do
               trace ("Loaded module " ++ show mn) $ return ()
               return $ buildcLookupModule mn bc'
 
-maybeLoadModule :: HasCallStack => HasCallStack => ModuleName -> FixAR x s e i o c (Maybe Module)
+maybeLoadModule :: HasCallStack => ModuleName -> FixAR x s e i o c (Maybe Module)
 maybeLoadModule mn = do
   state <- getState
   case M.lookup mn (moduleContexts state) of
