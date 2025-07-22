@@ -113,7 +113,7 @@ evalMain bc build mod m d = do
 getAbResult :: PostFixAAMR x s e ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type)
 getAbResult = do
   cache <- getCache
-  case M.lookup (VStore endVAddr) cache of 
+  case M.lookup (VStore endVAddr) cache of
     Nothing -> return ([], [], [], [], [], S.empty)
     Just (SValue res) -> do
       let vals = [res]
@@ -124,7 +124,7 @@ getAbResult = do
           s = stringV res
           topTypes = S.fromList $ topTypesOf (i, f, c, s)
           vs = syntaxLitsOf (i, f, c, s)
-          cs = map (\(a,b,c) -> a) $ concatMap (S.toList . acons) vals
+          cs = map fst $ concatMap (S.toList . acons) vals
       consts <- mapM toSynConstr cs
       source <- mapM findSourceExpr lams
       let sourceLambdas = map (\(SourceExpr e _) -> e) $ filter (\s -> case s of {SourceExpr _ _ -> True; _ -> False}) source

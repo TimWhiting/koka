@@ -59,15 +59,15 @@ nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 
 trueCon ::  AChange
-trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) [] M.empty
+trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
 falseCon :: AChange
-falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) [] M.empty
+falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
 anyBool :: (Ord i, Show c, Show (o c), Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
-changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) [] M.empty
+changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) []
 
 isClauseName :: Name -> Bool
 isClauseName name = qualifier name == nameCoreHnd && nameStem name `startsWith` "clause"
@@ -149,8 +149,8 @@ doPrimitive nm achanges env = do
       _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
-      [AChangeConstr (ExprPrim _ e) _ _] | isExprTrue e -> return trueCon
-      [AChangeConstr (ExprPrim _ e) _ _] | isExprFalse e -> return falseCon
+      [AChangeConstr (ExprPrim _ e) _] | isExprTrue e -> return trueCon
+      [AChangeConstr (ExprPrim _ e) _] | isExprFalse e -> return falseCon
       _ -> doBottom
   else if nm == nameIntOdd then
     case achanges of

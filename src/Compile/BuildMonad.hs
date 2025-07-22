@@ -459,10 +459,10 @@ phase p mkdoc
          else phaseVerbose 1 p mkdoc
 
 phaseVerbose :: Int -> String -> (TP.Env -> Doc) -> Build ()
-phaseVerbose vlevel p doc
-  = do flags <- getFlags
-       when (verbose flags >= vlevel) $
-         phaseShow (verbose flags) p doc
+phaseVerbose verboseLevel phase mkDoc 
+  = do term <- getTerminal
+       flags <- getFlags
+       liftIO $ phaseVerboseIO term flags verboseLevel phase mkDoc
 
 phaseShow :: Int -> String -> (TP.Env -> Doc) -> Build ()
 phaseShow v p mkdoc
