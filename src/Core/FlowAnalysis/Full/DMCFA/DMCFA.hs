@@ -115,7 +115,8 @@ doEval expr venv kaddr mkaddr ctx =
       ch <- childrenContexts expr
       f <- focusChild 3 expr
       trace ("Masking " ++ show f) $ return ()
-      eval f venv kaddr mkaddr ctx
+      k' <- addFrame FMask (contextId f)
+      doEval f venv k' mkaddr ctx
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -157,7 +158,7 @@ doEval expr venv kaddr mkaddr ctx =
       let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
       let defName = defTName (defOfCtx bind)
       k' <- addFrame (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) (contextId bind)
-      eval bind (limitEnv venv (fvs bind)) k' mkaddr ctx
+      eval bind (limitEnv newEnv (fvs bind)) k' mkaddr ctx
     -- TODO: Let and case
     TypeApp{} -> do
       e <- focusChild 0 expr
@@ -221,6 +222,12 @@ doApply kaddr mkaddr addr dynctx = do
       let newctx = CombinedCtx ctx dynctx
           addFrame f venv u = allocFrame f knext newctx venv u in
       case frame of
+        FMask -> do 
+          v <- store addr
+          case v of 
+            AChangeClos e env -> do
+              bod <- focusBody e
+              eval bod env knext mkaddr newctx
         FApp n args res u venv -> do
           case args of
             [] -> case res ++ [addr] of
