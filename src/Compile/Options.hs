@@ -508,7 +508,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["showc"]          (\b f -> f{showAsmC=b})          "show generated C"
  , flag   []    ["core"]           (\b f -> f{genCore=b})           "generate a core file"
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
- , flag   []    ["analyze"]        (\b f -> f{analyze=b})           "full program analysis"
+ , flag   []    ["analyze"]        (\b f -> f{analyze=b, rebuild=b})           "full program analysis"
  , numOption 0 "n" [] ["ma"] (\i f -> f{mSensitivity=i}) "set sensitivity for demand analysis (default 2)"
  , numOption 0 "n" [] ["da"] (\i f -> f{dSensitivity=i}) "set sensitivity for demand analysis (default 1)"
 

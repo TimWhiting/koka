@@ -37,7 +37,7 @@ import Platform.FileIO ( doesFileExist )
 import Lib.Scc( scc )
 import Lib.PPrint
 import Platform.Config        ( version, exeExtension, dllExtension, libPrefix, libExtension, pathSep, sourceExtension )
-import Common.Syntax          ( Target(..), isPublic, Visibility(..))
+import Common.Syntax          ( Target(..), isPublic, Visibility(..), CTarget (CDefault))
 import Common.Error
 import Common.Failure         ( assertion, HasCallStack, failure )
 import Common.File   hiding (getFileTime)
@@ -65,6 +65,8 @@ import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
+import Core.Pretty (prettyCore)
+import Type.Pretty (defaultEnv)
 
 
 {---------------------------------------------------------------
@@ -362,6 +364,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
+                    liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
                     liftIO $ evalMain bc (\bc mn -> 
                         runBuild term flags $ buildcTypeCheck [mn] bc
                       ) mod (mSensitivity flags) (dSensitivity flags)
