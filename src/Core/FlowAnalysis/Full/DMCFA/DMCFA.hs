@@ -371,7 +371,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isClause
   apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isNamePerform n = do
   let label = case exprOfCtx u of
-        App (TypeApp _ tps) _ _ -> labelName (tps !! (length tps - 2))
+        App (TypeApp _ tps) _ _ -> labelName (tps !! (length tps - 1))
         _ -> error $ "Expected a perform type application " ++ show (exprOfCtx u)
   let AChangeClos select senv = args !! 1
   let DefCNonRec _ _ opName = select
