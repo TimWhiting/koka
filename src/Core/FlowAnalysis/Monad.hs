@@ -267,7 +267,7 @@ childrenOfExpr ctx expr =
       rest <- zipWithM (\i x -> addContextId (\newId -> AppCParam newId ctx i x)) [0..] vs
       return $! x : rest
     Let defs result -> do
-      result <- makeGroups ctx defs
+      result <- makeGroups ctx (reverse defs)
       -- trace ("Let " ++ show (map contextId defs)) $ return ()
       -- trace ("Let " ++ show (contextId result) ++ show result) $ return ()
       return result

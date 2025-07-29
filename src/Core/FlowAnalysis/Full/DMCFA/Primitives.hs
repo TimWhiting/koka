@@ -52,11 +52,14 @@ nameCoreCharInt = newQualified "std/core/char" "int"
 nameNumInt32Int = newQualified "std/num/int32" "int"
 namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
 nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
+nameUnsafeNoLocalCast = newQualified  "std/core/types" "unsafe-no-local-cast"
 nameNumRandom = newQualified "std/num/random" "random-int"
 nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCoreTraceShow = newQualified "std/core/debug" "trace-show"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
+nameCorePrintsLn = newQualified "std/core/console" "printsln"
+
 
 trueCon ::  AChange
 trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
@@ -85,13 +88,12 @@ isPrimitive tn =
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
                       nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow,
                       nameCoreCharInt, nameNumInt32Int,
-                      namePretendDecreasing, nameUnsafeTotalCast,
+                      namePretendDecreasing, nameUnsafeTotalCast, nameUnsafeNoLocalCast,
                       nameNumRandom,
                       nameCoreTrace, nameCoreTraceShow,
-                      nameCorePrint, nameCorePrintln,
-                      nameHandle,
-                      nameHTag,
-                      nameEvvAt,
+                      nameCorePrint, nameCorePrintln, nameCorePrintsLn,
+                      nameLocalGet, nameLocalSet,
+                      nameHandle, nameHTag, nameEvvAt, nameLocalNew, nameLocalVar,
                       nameInternalSSizeT
                       ] 
   in basics || isNamePerform (getName tn) || isClauseName (getName tn)
@@ -171,8 +173,9 @@ doPrimitive nm achanges env = do
     charCmpOp (>=) achanges
   else if nm == nameCoreCharEq then
     charCmpOp (==) achanges
-  else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint) || (nm == nameCorePrintln) then
+  else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint) || (nm == nameCorePrintln) || (nm == nameCorePrintsLn)then
     trace ("Print / Trace " ++ show achanges)
     return changeUnit
+  else if nm == nameUnsafeNoLocalCast then return (head achanges)
   else
     error ("Primitive: " ++ show nm ++ " " ++ show achanges)
