@@ -20,9 +20,13 @@ import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
 import Type.Unify (runUnifyEx, unify)
-import Common.Name (newLocallyQualified, newQualified, Name (nameStem), newName)
+import Common.Name
+    ( newLocallyQualified,
+      newQualified,
+      Name(nameStem),
+      newName,
+      qualifier )
 import Core.FlowAnalysis.Monad (FixAR)
-import Common.Name (qualifier)
 import Common.File
 
 nameIntMul = coreIntName "*"
@@ -86,7 +90,8 @@ isPrimitive tn =
                       nameIntOdd,
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
-                      nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString, nameCoreTypesExternAppend, nameCoreIntExternShow,
+                      nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
+                      nameCoreTypesExternAppend, nameCoreIntExternShow,
                       nameCoreCharInt, nameNumInt32Int,
                       namePretendDecreasing, nameUnsafeTotalCast, nameUnsafeNoLocalCast,
                       nameNumRandom,
@@ -95,27 +100,31 @@ isPrimitive tn =
                       nameLocalGet, nameLocalSet,
                       nameHandle, nameHTag, nameEvvAt, nameLocalNew, nameLocalVar,
                       nameInternalSSizeT
-                      ] 
+                      ]
   in basics || isNamePerform (getName tn) || isClauseName (getName tn)
 
 intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAAMR x s e AChange
 intOp f [p1, p2] = do
   case (p1, p2) of
-    (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2)))
-    (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) -> return $ AChangeLit (LiteralChangeInt LChangeTop)
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) ->
+      return $! AChangeLit (LiteralChangeInt (LChangeSingle (f i1 i2)))
+    (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) ->
+      return $ AChangeLit (LiteralChangeInt LChangeTop)
     _ -> doBottom
 
 charCmpOp :: (Char -> Char -> Bool) -> [AChange] -> FixAAMR x s e AChange
 charCmpOp f [p1, p2] = do
   case (p1, p2) of
-    (AChangeLit (LiteralChangeChar (LChangeSingle c1)), AChangeLit (LiteralChangeChar (LChangeSingle c2))) -> return $! toChange (f c1 c2)
+    (AChangeLit (LiteralChangeChar (LChangeSingle c1)), AChangeLit (LiteralChangeChar (LChangeSingle c2))) ->
+      return $! toChange (f c1 c2)
     (AChangeLit (LiteralChangeChar _), AChangeLit (LiteralChangeChar _)) -> anyBool
     _ -> doBottom
 
 opCmpInt :: (Integer -> Integer -> Bool) -> [AChange] -> FixAAMR x s e AChange
 opCmpInt f [p1, p2] = do
   case (p1, p2) of
-    (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! toChange (f i1 i2)
+    (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) ->
+      return $! toChange (f i1 i2)
     (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) ->
       trace "opCmpInt: top" anyBool
     _ -> doBottom
@@ -146,8 +155,10 @@ doPrimitive nm achanges env = do
     return $ head achanges
   else if nm == nameCoreIntShow then
     case achanges of
-      [AChangeLit (LiteralChangeInt (LChangeSingle i))] -> return $ AChangeLit (LiteralChangeString (LChangeSingle (show i)))
-      [AChangeLit (LiteralChangeInt _)] -> return $ AChangeLit (LiteralChangeString LChangeTop)
+      [AChangeLit (LiteralChangeInt (LChangeSingle i))] ->
+        return $ AChangeLit (LiteralChangeString (LChangeSingle (show i)))
+      [AChangeLit (LiteralChangeInt _)] ->
+        return $ AChangeLit (LiteralChangeString LChangeTop)
       _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
@@ -160,8 +171,10 @@ doPrimitive nm achanges env = do
       [AChangeLit (LiteralChangeInt _)] -> anyBool
   else if nm == nameCoreTypesExternAppend then
     case achanges of
-      [AChangeLit (LiteralChangeString (LChangeSingle s1)), AChangeLit (LiteralChangeString (LChangeSingle s2))] -> return $ AChangeLit (LiteralChangeString (LChangeSingle (s1 ++ s2)))
-      [AChangeLit (LiteralChangeString _), AChangeLit (LiteralChangeString _)] -> return $ AChangeLit (LiteralChangeString LChangeTop)
+      [AChangeLit (LiteralChangeString (LChangeSingle s1)), AChangeLit (LiteralChangeString (LChangeSingle s2))] ->
+        return $ AChangeLit (LiteralChangeString (LChangeSingle (s1 ++ s2)))
+      [AChangeLit (LiteralChangeString _), AChangeLit (LiteralChangeString _)] ->
+        return $ AChangeLit (LiteralChangeString LChangeTop)
       _ -> doBottom
   else if nm == nameCoreCharLt then
     charCmpOp (<) achanges
@@ -173,7 +186,8 @@ doPrimitive nm achanges env = do
     charCmpOp (>=) achanges
   else if nm == nameCoreCharEq then
     charCmpOp (==) achanges
-  else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint) || (nm == nameCorePrintln) || (nm == nameCorePrintsLn)then
+  else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint)
+          || (nm == nameCorePrintln) || (nm == nameCorePrintsLn) then
     trace ("Print / Trace " ++ show achanges)
     return changeUnit
   else if nm == nameUnsafeNoLocalCast then return (head achanges)
