@@ -127,7 +127,7 @@ nextLetFrame
 
 data Kont =
   KEnd
-  | KNext {frame :: Frame, kCtx :: StaticCtx, knext:: Addr}
+  | KNext {frame :: Frame, knext:: Addr}
   deriving (Eq, Ord, Show)
 
 data Handler =
@@ -136,7 +136,7 @@ data Handler =
 
 data MKont =
   MKEnd
-  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: StaticCtx }
+  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
