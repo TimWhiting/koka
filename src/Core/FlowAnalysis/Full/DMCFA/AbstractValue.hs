@@ -113,7 +113,11 @@ data Frame =
       linkHnd :: Handler,
       linkHEnv :: VEnv
   }
+  | FStore {
+      vaddr :: Addr
+  }
   | FMask
+  | FCall
   deriving (Eq, Ord, Show)
 letBindingName :: Int -> Int -> ExprContext -> TName
 letBindingName groupIdx bindingIdx parent =
