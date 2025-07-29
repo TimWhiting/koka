@@ -360,7 +360,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
   n == nameHandle || isClauseName n || n == nameHTag
-  || n == nameEvvAt || n == nameMaskAt 
+  || n == nameEvvAt || n == nameMaskAt || isNamePerform n || isClauseName n
   || n == nameLocalVar || n == nameLocalGet || n == nameLocalSet
 
 doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> Addr -> Addr -> [Addr] -> [AChange] -> VEnv -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
