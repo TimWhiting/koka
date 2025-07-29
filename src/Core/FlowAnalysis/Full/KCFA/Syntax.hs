@@ -84,11 +84,11 @@ runQueryAtRange bc build mod m d doQuery = do
   -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
   return (M.map (\(x, _, _, _) -> x) l, r, bc)
 
-evalMain :: BuildContext
+evalMainKCFA :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
   -> IO (Maybe ([S.UserExpr], [S.UserDef], [S.External], [S.Lit], [(String, Maybe Range)],
                                    Set Type), BuildContext)
-evalMain bc build mod m d = do
+evalMainKCFA bc build mod m d = do
   (lattice, r, bc) <- runQueryAtRange bc build mod m d $ \ctx -> do
     doStep (inject ctx)
     return ()
