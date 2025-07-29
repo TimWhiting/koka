@@ -17,7 +17,7 @@ import Core.Core
 import Data.Int (Int)
 import Common.Name
 import Debug.Trace (trace)
-import Common.NamePrim (nameOpen, nameEffectOpen, nameHandle, namePerform, nameClause, nameCoreHnd, nameHTag, nameEvvAt, nameMaskAt, nameLocalNew, nameLocalVar, nameLocalGet, nameLocalSet)
+import Common.NamePrim
 import Data.Maybe (fromJust, isJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
@@ -113,13 +113,15 @@ doEval expr venv kaddr mkaddr ctx =
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       eval f venv kaddr mkaddr ctx
-    App (TypeApp (Var name _) _) [arg] _ | nameLocalNew == getName name -> do
-      a <- focusChild 1 expr
-      k' <- addFrame (FStore (BindImplicitAddr ctx (limitEnv venv (fvs expr)) (contextId a))) (contextId a)
-      eval a venv k' mkaddr ctx
-    App (TypeApp (Var name _) _) [_,_,f] _ | nameMaskAt == getName name -> do
+    App (TypeApp (Var name _) _) [_,_,f] _ | getName name == nameMaskAt -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 3 expr
+      trace ("Masking " ++ show f) $ return ()
+      k' <- addFrame FMask (contextId f)
+      eval f venv k' mkaddr ctx
+    App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
+      -- TODO: Adjust the dynamic context to only what is necessary
+      f <- focusChild 1 expr
       trace ("Masking " ++ show f) $ return ()
       k' <- addFrame FMask (contextId f)
       eval f venv k' mkaddr ctx
