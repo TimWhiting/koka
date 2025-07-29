@@ -38,21 +38,23 @@ showSimpleCtxId ctxId =
     ExprContextId id mod -> show id
 
 data Call =
-  CallApp ExprContextId
+  CallTop
+  |CallApp ExprContextId
   deriving (Eq, Ord)
 
 instance Show Call where
+  show CallTop = "top"
   show (CallApp ctxId) = "a" ++ showSimpleCtxId ctxId
 
 type StaticCtx = [Call]
 
-type VEnv = M.Map TName CombinedCtx
+type VEnv = M.Map TName StaticCtx
 
 data Addr =
-  BindingAddr CombinedCtx TName
-  | ImplicitAddr CombinedCtx VEnv ExprContextId
-  | ImplicitLAddr CombinedCtx VEnv ExprContextId
-  | BindImplicitAddr CombinedCtx VEnv ExprContextId
+  BindingAddr StaticCtx TName
+  | ImplicitAddr StaticCtx VEnv ExprContextId
+  | ImplicitLAddr StaticCtx VEnv ExprContextId
+  | BindImplicitAddr StaticCtx VEnv ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
@@ -109,7 +111,7 @@ letBindingName groupIdx bindingIdx parent =
   let bind = letDefBinding groupIdx bindingIdx parent in
   defTName bind
 
-nextLetFrame :: Frame -> CombinedCtx -> Frame
+nextLetFrame :: Frame -> StaticCtx -> Frame
 nextLetFrame
   (FLet groupIdx numGroups bindingIdx numBindings name resolved parent
         env) ctx
@@ -134,20 +136,17 @@ data Handler =
 
 data MKont =
   MKEnd
-  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: CombinedCtx }
+  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: StaticCtx }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
-startDelimCtx = [CallDelim]
-startDynCtx = []
-startCombinedCtx = CombinedCtx startStaticCtx startDynCtx
 startEnv = M.empty
 
-endVAddr = BindingAddr startCombinedCtx (TName (newName "endV") typeUnit Nothing)
-endKAddr = ImplicitAddr startCombinedCtx startEnv (ExprContextId (-10001) (newName "endK"))
-endMKAddr = ImplicitAddr startCombinedCtx startEnv (ExprContextId (-10002) (newName "endMK"))
+endVAddr = BindingAddr startStaticCtx (TName (newName "endV") typeUnit Nothing)
+endKAddr = ImplicitAddr startStaticCtx startEnv (ExprContextId (-10001) (newName "endK"))
+endMKAddr = ImplicitAddr startStaticCtx startEnv (ExprContextId (-10002) (newName "endMK"))
 endTopMKAddr :: TName -> Addr
-endTopMKAddr name = ImplicitAddr startCombinedCtx (M.singleton name startCombinedCtx) (ExprContextId ((-1) * hash (nameStem (C.getName name))) (C.getName name))
+endTopMKAddr name = ImplicitAddr startStaticCtx (M.singleton name startStaticCtx) (ExprContextId ((-1) * hash (nameStem (C.getName name))) (C.getName name))
 
 lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
 lookupEnv x env =

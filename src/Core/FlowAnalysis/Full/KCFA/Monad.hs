@@ -26,14 +26,14 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 data Conf = 
-  CEval ExprContext VEnv Addr Addr CombinedCtx
-  | CApply Addr Addr Addr DynamicCtx
-  | CUnwind Name Name ExprContext Addr Addr [Addr] CombinedCtx
+  CEval ExprContext VEnv Addr Addr StaticCtx
+  | CApply Addr Addr Addr StaticCtx
+  | CUnwind Name Name ExprContext Addr Addr [Addr] StaticCtx
   | CDone
   deriving (Eq, Ord, Show)
 
 inject :: ExprContext -> FixInput
-inject ctx = Step (CEval ctx M.empty endKAddr endMKAddr startCombinedCtx)
+inject ctx = Step (CEval ctx M.empty endKAddr endMKAddr startStaticCtx)
 
 data FixInput =
   Step Conf
