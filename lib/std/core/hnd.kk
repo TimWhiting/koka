@@ -575,7 +575,7 @@ inline extern cast-clause2( f : (marker<e1,r>,ev<h>,a1,a2) -> e1 b) : e ((marker
   inline "#1"
 
 
-pub inline fun @perform1<a,b,h>( ev : ev<h>, op : (forall<e1,r> h<e1,r> -> clause1<a,b,h,e1,r>), x : a ) : e b
+pub inline fun @perform1<e,a,b,h>( ev : ev<h>, op : (forall<e1,r> h<e1,r> -> clause1<a,b,h,e1,r>), x : a ) : e b
   match ev
     Ev(_tag,m,h,_w) -> match h.op
       Clause1(f) -> cast-clause1(f)(m,ev,x)
@@ -752,7 +752,7 @@ pub fun clause-tail2<e,r,h,a1,a2,b>(op : (a1,a2) -> e b) : clause2<a1,a2,b,h,e,r
 pub fun clause-tail-noop2<e,r,h,a1,a2,b>(op : (a1,a2) -> e b) : clause2<a1,a2,b,h,e,r>
   Clause2(fn(_m,_ev,x1,x2){ op(x1,x2) })
 
-pub inline fun @perform2( evx : ev<h>, op : (forall<e1,r> h<e1,r> -> clause2<a,b,c,h,e1,r>), x : a, y : b ) : e c
+pub inline fun @perform2<e,a,b,c,h>( evx : ev<h>, op : (forall<e1,r> h<e1,r> -> clause2<a,b,c,h,e1,r>), x : a, y : b ) : e c
   match evx
     Ev(_tag,m,h,_w) -> match h.op
       Clause2(f) -> cast-clause2(f)(m,evx,x,y)
@@ -787,7 +787,7 @@ pub fun clause-tail-noop3<e,r,h,a1,a2,a3,b>(op : (a1,a2,a3) -> e b) : clause1<(a
 pub fun clause-never3( op : (a1,a2,a3) -> e r ) : clause1<(a1,a2,a3),b,h,e,r>
   clause-never1(fn((x1,x2,x3)){ op(x1,x2,x3) } )
 
-pub fun @perform3( ev : ev<h>, op : (forall<e1,r> h<e1,r> -> clause1<(a1,a2,a3),b,h,e1,r>), x1 : a1, x2 : a2, x3 : a3 ) : e b
+pub fun @perform3<e,a1,a2,a3,b,h>( ev : ev<h>, op : (forall<e1,r> h<e1,r> -> clause1<(a1,a2,a3),b,h,e1,r>), x1 : a1, x2 : a2, x3 : a3 ) : e b
   xperform1(ev,op,(x1,x2,x3))
 
 fun under3( ev : ev<h>, op : (a1,a2,a3) -> e b, x1 : a1, x2 : a2, x3 : a3 ) : e b
@@ -811,7 +811,7 @@ pub fun clause-tail-noop4<e,r,h,a1,a2,a3,a4,b>(op : (a1,a2,a3,a4) -> e b) : clau
 pub fun clause-never4( op : (a1,a2,a3,a4) -> e r ) : clause1<(a1,a2,a3,a4),b,h,e,r>
   clause-never1(fn((x1,x2,x3,x4)){ op(x1,x2,x3,x4) } )
 
-pub fun @perform4( ev : ev<h>, op : (forall<e1,r> h<e1,r> -> clause1<(a1,a2,a3,a4),b,h,e1,r>), x1 : a1, x2 : a2, x3 : a3, x4 : a4 ) : e b
+pub fun @perform4<e,a1,a2,a3,a4,b,h>( ev : ev<h>, op : (forall<e1,r> h<e1,r> -> clause1<(a1,a2,a3,a4),b,h,e1,r>), x1 : a1, x2 : a2, x3 : a3, x4 : a4 ) : e b
   xperform1(ev,op,(x1,x2,x3,x4))
 
 fun under4( ev : ev<h>, op : (a1,a2,a3,a4) -> e b, x1 : a1, x2 : a2, x3 : a3, x4 : a4 ) : e b
