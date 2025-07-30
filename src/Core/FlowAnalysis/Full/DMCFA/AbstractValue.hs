@@ -144,7 +144,7 @@ data Kont =
   deriving (Eq, Ord, Show)
 
 data Handler =
-  Handler { ops :: Addr, ret :: ExprContext, body :: ExprContext }
+  Handler { ops :: Addr, ret :: Maybe ExprContext }
   deriving (Eq, Ord, Show)
 
 data MKont =
