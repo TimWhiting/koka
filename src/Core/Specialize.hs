@@ -155,7 +155,7 @@ specOneCall inlineDef@(InlineDef{ inlineName=specName, inlineExpr=specExpr, inli
         -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) $ Just typeArgs
       _ -> return e
 
-  where newArgs gArgs args = zipWith fromMaybe args gArgs
+  where newArgs gArgs args = zipWith3 (\g a i -> case g of Nothing -> (a, i); Just n -> (n, Own)) gArgs args (defFunParamInfos sort ++ repeat Own)
 
 -- specOneCall :: InlineDef -> Expr -> SpecM Expr
 -- specOneCall inlineDef@(InlineDef{ inlineName=specName, inlineExpr=specExpr, inlineParamSpecialize=specArgs }) e
@@ -301,7 +301,7 @@ comment = unlines . map ("// " ++) . lines
 -- 3. Only then, replace the recursive calls to f in the body (specInnerCalls)
 -- The important thing is that we don't try to get the type of the body at the same time as replacing the recursive calls
 -- since the type of the body depends on the type of the functions that it calls and vice versa
-replaceCall :: Name -> Expr -> DefSort -> [Bool] -> [Expr] -> Maybe [Type] -> SpecM Expr
+replaceCall :: Name -> Expr -> DefSort -> [Bool] -> [(Expr, ParamInfo)] -> Maybe [Type] -> SpecM Expr
 replaceCall name expr0 sort bools args mybeTypeArgs
   = do
       expr <- uniquefyExprU expr0
@@ -320,7 +320,7 @@ replaceCall name expr0 sort bools args mybeTypeArgs
                 Just typeArgs -> subNew (zip (fnTypeParams expr) typeArgs) |-> body)
               $ Lam newParams (fnEffect expr)  -- fn <newparams>
               $ Let [DefNonRec $ Def param typ arg Private DefVal InlineAuto rangeNull ""  -- bind specialized parameters
-                      | (TName param typ, arg) <- zip speccedParams speccedArgs]
+                      | (TName param typ, (arg, _)) <- zip speccedParams speccedArgs]
               $ fnBody expr
 
 
@@ -328,6 +328,7 @@ replaceCall name expr0 sort bools args mybeTypeArgs
       specName <- uniqueName "spec"
       let specType  = typeOf specBody0
           specTName = TName specName specType
+          specSort  = DefFun (map snd newArgs) (defFunFip sort)
           specBody  = case specBody0 of
                         Lam args eff (Let specArgs body)
                           -> -- uniquefyExpr $
@@ -340,11 +341,11 @@ replaceCall name expr0 sort bools args mybeTypeArgs
       sspecBody <- uniqueSimplify defaultEnv False False 1 10 specBody
       -- trace ("\n// ----start--------\n// specializing " <> show name <> " to parameters " <> show speccedParams <> " with args " <> comment (show speccedArgs) <> "\n// specTName: " <> show (getName specTName) <> ", specBody0: \n" <> show specBody <> "\n\n, sspecBody: \n" <> show sspecBody <> "\n// ---- start recurse---") $ return ()
 
-      let specDef = Def specName specType sspecBody Private sort InlineAuto rangeNull
+      let specDef = Def specName specType sspecBody Private specSort InlineAuto rangeNull
                      $ "// specialized: " <> show name <> ", on parameters " <> concat (intersperse ", " (map show speccedParams)) <> ", using:\n" <>
                        comment (unlines [show param <> " = " <> show arg | (param,arg) <- zip speccedParams speccedArgs])
 
-      return $ Let [DefRec [specDef]] (App (Var (defTName specDef) InfoNone) newArgs)
+      return $ Let [DefRec [specDef]] (App (Var (defTName specDef) InfoNone) (map fst newArgs))
 
 fnTypeParams :: Expr -> [TypeVar]
 fnTypeParams (TypeLam typeParams _) = typeParams

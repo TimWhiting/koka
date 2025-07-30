@@ -105,6 +105,7 @@ coreOptimize flags newtypes gamma inlines coreProgram
         -- backend optimizations
 
         -- tail-call-modulo-cons optimization
+        trace ("ctail: " ++ show (optctail flags)) $ return ()
         when (optctail flags) $
           ctailOptimize penv newtypes gamma (optctailCtxPath flags)
 
