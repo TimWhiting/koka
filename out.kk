@@ -1,33 +1,33 @@
 ]4;0;?\[6nparse   : .../std/core/types.kk
 parse   : .../std/core/undiv.kk
-parse   : .../std/core/unsafe.kk
 parse   : .../std/core/hnd.kk
-parse   : .../std/core/char.kk
-parse   : .../std/core/bool.kk
-parse   : .../std/core/int.kk
 parse   : .../std/core/exn.kk
-parse   : .../std/core/order.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/bool.kk
 parse   : .../std/core/vector.kk
-parse   : .../std/core/sslice.kk
-parse   : .../std/core/list.kk
 parse   : .../std/core/string.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/sslice.kk
 parse   : .../std/core/maybe.kk
-parse   : .../std/core/either.kk
+parse   : .../std/core/list.kk
 parse   : .../std/core/maybe2.kk
-parse   : .../std/core/tuple.kk
+parse   : .../std/core/lazy.kk
+parse   : .../std/core/either.kk
 parse   : .../std/core/show.kk
-check   : std/core/types
+parse   : .../std/core/delayed.kk
+parse   : .../std/core.kk
+parse   : .../analysis/aac/small-mut.kk
 parse   : .../std/core/console.kk
 parse   : .../std/core/debug.kk
-parse   : .../std/core/delayed.kk
-parse   : .../std/core/lazy.kk
-parse   : .../analysis/aac/small-mut.kk
-parse   : .../std/core.kk
-check   : std/core/int
-check   : std/core/unsafe
-check   : std/core/bool
+parse   : .../std/core/tuple.kk
+check   : std/core/types
 check   : std/core/lazy
 check   : std/core/undiv
+check   : std/core/bool
+check   : std/core/int
+check   : std/core/unsafe
 check   : std/core/hnd
 /* Primitive types and functions.
 
@@ -2189,13 +2189,15 @@ pub fip extern int/char : (i : int) -> char {
   cs inline "Primitive.IntToInt32(#1)";
 };
 check   : std/core/exn
+check   : std/core/delayed
 check   : std/core/either
 check   : std/core/tuple
-check   : std/core/delayed
 check   : std/core/maybe2
 check   : std/core/maybe
 check   : std/core/vector
 check   : std/core/string
+check   : std/core/list
+check   : std/core/sslice
 /* Internal effect handler primitives.
 
   Internal primitives to implement evidence based algebraic
@@ -3974,8 +3976,6 @@ extern cast-clause0 : forall<a,e,e1,b,c> (f : (hnd/marker<e1,c>, hnd/ev<b>) -> e
 extern cast-clause1 : forall<a,b,e,e1,c,d> (f : (hnd/marker<e1,d>, hnd/ev<c>, a) -> e1 b) -> e ((hnd/marker<e1,d>, hnd/ev<c>, a) -> e b) = inline "#1";
 extern cast-clause2 : forall<a,b,c,e,e1,d,a1> (f : (hnd/marker<e1,a1>, hnd/ev<d>, a, b) -> e1 c) -> e ((hnd/marker<e1,a1>, hnd/ev<d>, a, b) -> e c) = inline "#1";
 extern unsafe-st : forall<a,e> (f : () -> <st<global>|e> a) -> (() -> e a) = inline "#1";
-check   : std/core/sslice
-check   : std/core/list
 // Standard `:either` functions.
 module std/core/either
 import std/core/types = std/core/types = "";
@@ -10962,10 +10962,24 @@ pub fun main : () -> console/console ()
         = std/core/console/printsln((std/core/int/show(x@0@10001)));
       val _@0 : ()
         = std/core/types/local-set(loc, 100);
+      val loc@0 : local-var<h,int>
+        = std/core/types/local-new(200);
       val x@1@10003 : int
-        = std/core/types/local-get(loc, std/core/types/@Hnodiv);
-      val res : ()
+        = std/core/types/local-get(loc@0, std/core/types/@Hnodiv);
+      val _@1 : ()
         = std/core/console/printsln((std/core/int/show(x@1@10003)));
+      val _@2 : ()
+        = std/core/types/local-set(loc@0, 300);
+      val x@2@10005 : int
+        = std/core/types/local-get(loc@0, std/core/types/@Hnodiv);
+      val _@3 : ()
+        = std/core/console/printsln((std/core/int/show(x@2@10005)));
+      val x@3@10007 : int
+        = std/core/types/local-get(loc, std/core/types/@Hnodiv);
+      val res@0 : ()
+        = std/core/console/printsln((std/core/int/show(x@3@10007)));
+      val res : ()
+        = std/core/hnd/prompt-local-var(loc@0, res@0);
       std/core/hnd/prompt-local-var(loc, res);
     })();
   };
