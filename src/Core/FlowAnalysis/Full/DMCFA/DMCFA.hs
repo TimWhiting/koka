@@ -359,6 +359,38 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h henv) (static ctx) mkKNext)
         unwind name opName performExpr k' mknext args mkCtx
 
+
+unwindLookup :: HasCallStack => TName -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
+unwindLookup varName knext mkaddr u = do
+  mk <- mkStore mkaddr
+  case mk of 
+    MKHandle nm k' mknext h venv ctx | getName varName == nm -> do 
+      let Just varAddr = lookupEnv varName venv
+      apply knext mkaddr varAddr (dynamic ctx)
+    MKHandle nm k' mknext h venv ctx -> do 
+      let kx = ImplicitLAddr ctx venv (contextId u)
+      extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) (static ctx) k')
+      unwindLookup varName kx mknext u
+
+unwindSet :: HasCallStack => TName -> AChange -> Addr -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
+unwindSet varName val knext mkaddr addr u = do
+  mk <- mkStore mkaddr
+  case mk of 
+    MKHandle nm k' mknext h venv ctx | getName varName == nm -> do 
+      let env = M.delete varName venv
+      d <- dLimit
+      let newctx = CombinedCtx [] (take d $ (contextId u, static ctx):dynamic ctx)
+      let newEnv = M.insert varName newctx env
+      extendStore (fromJust $ lookupEnv varName newEnv) val
+      let mk' = ImplicitAddr newctx newEnv (contextId u)
+      extendMKStore mk' (MKHandle nm k' mknext h newEnv newctx)
+      extendStore addr changeUnit
+      apply knext mk' addr (dynamic newctx)
+    MKHandle nm k' mknext h venv ctx -> do
+      let kx = ImplicitLAddr ctx venv (contextId u)
+      extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) (static ctx) k')
+      unwindSet varName val kx mknext addr u
+
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
   n == nameHandle || isClauseName n || n == nameHTag
@@ -381,12 +413,8 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isNamePe
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalGet = do
   trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
-    mk <- mkStore mkaddr
-    case mk of 
-      MKHandle nm k' mknext h venv ctx -> do 
-        let [BindingAddr ctx varName, _] = arguments
-        let Just varAddr = lookupEnv varName venv
-        apply knext mkaddr varAddr (dynamic ctx)
+    let [varAddr@(BindingAddr ctx varName), _] = arguments
+    unwindLookup varName knext mkaddr u
   else do 
     apply knext mkaddr (head arguments) (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalSet = do
@@ -394,18 +422,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   let [varAddr@(BindingAddr ctx varName), _] = arguments
   trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
-    mk <- mkStore mkaddr
-    case mk of 
-      MKHandle nm k' mknext h _ ctx -> do 
-        let env = M.delete varName venv
-        d <- dLimit
-        let newctx = CombinedCtx [] (take d $ (contextId u, static ctx):dynamic ctx)
-        let newEnv = M.insert varName newctx env
-        extendStore (fromJust $ lookupEnv varName newEnv) val
-        let mk' = ImplicitAddr newctx newEnv (contextId u)
-        extendMKStore mk' (MKHandle nm k' mknext h newEnv newctx)
-        extendStore addr changeUnit
-        apply knext mk' addr (dynamic newctx)
+    unwindSet varName val knext mkaddr addr u
   else do
     extendStore varAddr val
     extendStore addr changeUnit
@@ -447,8 +464,6 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
         bod <- focusBody e
         extendStore (fromJust $ lookupEnv varName newEnv) (head args)
         eval bod newEnv knext mkaddr ctx
-
-
 localEff = True
 
 branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
