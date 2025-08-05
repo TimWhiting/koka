@@ -47,6 +47,7 @@ import Data.Foldable (foldlM)
 import GHC.IORef (newIORef)
 import Data.IORef (writeIORef)
 import System.Directory (createDirectoryIfMissing)
+import Common.Failure (HasCallStack)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
