@@ -153,9 +153,6 @@ startEnv = M.empty
 endVAddr = BindingAddr startCombinedCtx (TName (newName "endV") typeUnit Nothing)
 endKAddr = ImplicitAddr startCombinedCtx (ExprContextId (-10001) (newName "endK"))
 endMKAddr = ImplicitAddr startCombinedCtx (ExprContextId (-10002) (newName "endMK"))
-endTopMKAddr :: TName -> Addr
-endTopMKAddr name = TopAddr name
-
 showStore store = show $ pretty store
 
 instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where

@@ -145,8 +145,8 @@ doEval expr venv kaddr mkaddr ctx =
           res <- bindExternal name
           case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
             Just expr -> do
-              extendMKStore (endTopMKAddr name) MKEnd
-              each [eval expr M.empty endKAddr (endTopMKAddr name) startStaticCtx,
+              extendMKStore (TopAddr name) MKEnd
+              each [eval expr M.empty endKAddr (TopAddr name) startStaticCtx,
                     apply kaddr mkaddr (BindingAddr startStaticCtx name) ctx]
             Nothing -> do
               trace ("Variable not found: " ++ show name) doBottom
@@ -219,10 +219,9 @@ doApply kaddr mkaddr addr ctx = do
             return $ N CDone
           else do
             topV <- store addr
-            let ImplicitAddr _ env _  = mkaddr
+            let TopAddr name = mkaddr
             -- trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
-            let [(tname, ctx)] = M.toList env
-            extendStore (BindingAddr ctx tname) topV
+            extendStore (BindingAddr startStaticCtx name) topV
             return $ N CDone
         MKHandle _ knext mknext _ _ ->
           apply knext mknext addr ctx

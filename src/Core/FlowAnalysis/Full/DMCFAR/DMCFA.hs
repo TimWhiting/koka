@@ -144,8 +144,8 @@ doEval expr kaddr mkaddr ctx =
         res <- bindExternal name
         case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
           Just expr -> do
-            extendMKStore (endTopMKAddr name) MKEnd
-            each [eval expr endKAddr (endTopMKAddr name) startCombinedCtx,
+            extendMKStore (TopAddr name) MKEnd
+            each [eval expr endKAddr (TopAddr name) startCombinedCtx,
                   apply kaddr mkaddr (BindingAddr startCombinedCtx name) (dynamic ctx)]
           Nothing -> do
             trace ("Variable not found: " ++ show name) doBottom
