@@ -258,13 +258,14 @@ effect get
 effect set
   ctl set(i: int): ()
 
+fun countdown(_)
+  val i = get(0)
+  if i == 0 then 0 else 
+    set(i - 1)
+    countdown(0)
+
 fun example-get-set(): div int
   trace("Example get/set")
-  fun countdown(_)
-    val i = get(0)
-    if i == 0 then 0 else 
-      set(i - 1)
-      countdown(0)
   val x = 2
   with ctl get(_) resume(x)
   with ctl set(a)
@@ -303,7 +304,7 @@ fun analyze()
   // trace-show(example-sum1b() == 1)
   // trace-show(example-sum2b() == 3)
   // trace-show(example-sum1c() == 1)
+  // trace-show(example-sum2c() == 3)
   // trace-show(example-sum1d() == 1)
-  trace-show(example-sum2c() == 3)
   // trace-show(example-sum2d() == 3)
-  // trace-show(example-get-set() == 0)
+  trace-show(example-get-set() == 0)
