@@ -65,12 +65,14 @@ type VEnv = M.Map TName CombinedCtx
 
 data Addr =
   BindingAddr CombinedCtx TName
+  | TopAddr TName
   | ImplicitAddr CombinedCtx VEnv ExprContextId
   | ImplicitLAddr CombinedCtx VEnv ExprContextId
   | BindImplicitAddr CombinedCtx VEnv ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
+  show (TopAddr name) = "T@(" ++ show name ++ ")"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLAddr ctx env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
@@ -161,8 +163,7 @@ startEnv = M.empty
 endVAddr = BindingAddr startCombinedCtx (TName (newName "endV") typeUnit Nothing)
 endKAddr = ImplicitAddr startCombinedCtx startEnv (ExprContextId (-10001) (newName "endK"))
 endMKAddr = ImplicitAddr startCombinedCtx startEnv (ExprContextId (-10002) (newName "endMK"))
-endTopMKAddr :: TName -> Addr
-endTopMKAddr name = ImplicitAddr startCombinedCtx (M.singleton name startCombinedCtx) (ExprContextId ((-1) * hash (nameStem (C.getName name))) (C.getName name))
+
 
 lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
 lookupEnv x env =
