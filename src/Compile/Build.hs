@@ -66,6 +66,7 @@ import GHC.IORef (atomicSwapIORef)
 import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
 import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainKCFA)
+import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
 import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
 
@@ -366,7 +367,11 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
                     liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
-                    if kcfa flags then do 
+                    if rebinding flags then do 
+                      liftIO $ evalMainR bc (\bc mn -> 
+                          runBuild term flags $ buildcTypeCheck [mn] bc
+                        ) mod (mSensitivity flags) (dSensitivity flags)
+                    else if kcfa flags then do 
                       liftIO $ evalMainKCFA bc (\bc mn -> 
                           runBuild term flags $ buildcTypeCheck [mn] bc
                         ) mod (mSensitivity flags) (dSensitivity flags)
