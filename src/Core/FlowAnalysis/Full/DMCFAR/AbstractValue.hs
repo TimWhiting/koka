@@ -90,7 +90,7 @@ data Frame =
       totalArgs :: Int,
       leftArgs :: [ExprContext],
       resolvedArgs :: [Addr],
-      parent :: ExprContext 
+      parent :: ExprContext
     }
   | FLet {
         groupIdx :: Int,
@@ -136,7 +136,7 @@ data Kont =
   deriving (Eq, Ord, Show)
 
 data Handler =
-  Handler { ops :: Addr, ret :: Maybe ExprContext }
+  Handler { ops :: Addr, ret :: Maybe ExprContext, hfvs:: S.Set TName}
   deriving (Eq, Ord, Show)
 
 data MKont =
