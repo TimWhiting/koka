@@ -37,6 +37,9 @@ pub import std/core/show
 pub import std/core/debug
 pub import std/core/delayed
 pub import std/core/console
+pub import std/core/algebraic/groups
+pub import std/core/algebraic/additive
+pub import std/core/algebraic/multiplicative
 
 extern import
   c  file "core/inline/core"
