@@ -219,7 +219,7 @@ doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e F
 doApply kaddr mkaddr addr dynctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr) $ return ()
   k <- kStore kaddr
-  -- trace ("Applying: " ++ show k) $ return ()
+  trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> do
       mk <- mkStore mkaddr
@@ -253,7 +253,7 @@ doApply kaddr mkaddr addr dynctx = do
           case args of
             [] -> case res ++ [addr] of
               f:arguments -> do
-                -- trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
+                trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
                 -- trace ("Real params: " ++ show params) $ return ()
                 res <- store f
                 -- trace ("Applying function: " ++ show f ++ " " ++ show res) $ return ()
@@ -317,7 +317,8 @@ doApply kaddr mkaddr addr dynctx = do
           else do
             next <- focusLetDefBinding groupIdx bindingIdx u
             k' <- addFrame (nextLetFrame frame newctx) (contextId next)
-            rebindAll (fvs next) ctx newctx
+            let allNextFvs = letFvs groupIdx bindingIdx u
+            rebindAll allNextFvs ctx newctx
             eval next k' mkaddr newctx
         FScrut parent branches -> do
           let recur [] = doBottom
