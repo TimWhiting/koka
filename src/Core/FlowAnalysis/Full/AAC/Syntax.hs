@@ -30,6 +30,7 @@ import Common.NamePrim (nameMain)
 import Common.Name (Name(..))
 import Common.Range
 import Debug.Trace (trace)
+import Common.File (startsWith)
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAACR a b c d) -> FixAACR a b c d
 analyzeEach = analyzeEachChild
@@ -55,21 +56,24 @@ runQueryAtRange bc build mod m doQuery = do
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
-                      trace ("Context: " ++ show (contextId ctx)) $ return ()
+                      -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                       res <- analyzeEach ctx (const findMainBody)
                       addResult res
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
     case S.toList ctxs of
       [] ->
-        trace "No main context found" $
-        return (M.empty, s', (Nothing, bc))
+        if nameModule (modName mod) `startsWith` "std/core" then 
+          return (M.empty, s', (Nothing, bc))
+        else
+          trace "No main context found" $
+          return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
         do
           runFixFinishC (emptyBasicEnv m 0 build True ()) s' $ do
                           runFixCont $ do
                             (_,ctx) <- loadModule (modName mod)
-                            trace ("Context: " ++ show (contextId ctx)) $ return ()
+                            -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                             withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                           res <- S.toList <$> getResults
                           buildc' <- buildc <$> getStateR

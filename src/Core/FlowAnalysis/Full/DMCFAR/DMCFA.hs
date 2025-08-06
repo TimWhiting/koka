@@ -109,7 +109,13 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr kaddr mkaddr ctx =
-  trace ("Evaluating: " ++ show expr ++ " in " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  let logMessage = case exprOfCtx expr of
+        App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
+        _ -> False 
+      process x = if logMessage then trace ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) x
+                  else x 
+  in 
+  process $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
       -- TODO: Adjust the dynamic context to only what is necessary
@@ -142,18 +148,18 @@ doEval expr kaddr mkaddr ctx =
       else if qualifier (getName name) == nameCoreHnd then
         error ("Unexpected handler library name in DMCFA: " ++ show name)
       else if qualifier (getName name) == nameNil then do
-        trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
+        -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
         apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
       else do
         res <- bindExternal name
         case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
           Just expr -> do
-            trace ("Evaluating external: " ++ show name) $ return ()
+            -- trace ("Evaluating external: " ++ show name) $ return ()
             extendMKStore (TopAddr name) MKEnd
             each [eval expr endKAddr (TopAddr name) startCombinedCtx,
                   apply kaddr mkaddr (BindingAddr startCombinedCtx name) (dynamic ctx)]
           Nothing -> do
-            trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
+            -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
             apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
     Lit l -> do
       addr <- allocConst ctx expr (injLit l)
@@ -164,12 +170,12 @@ doEval expr kaddr mkaddr ctx =
     App _ args _ -> doApp args
     Let dgs _ -> do
       child <- childrenContexts expr
-      trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
+      -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
       bind <- focusLetDefBinding 0 0 expr
       let defGroup = head dgs
       -- let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
       let defName = defTName (defOfCtx bind)
-      trace ("Let binding: " ++ show defName ++ " in " ++ show ctx) $ return ()
+      -- trace ("Let binding: " ++ show defName ++ " in " ++ show ctx) $ return ()
       k' <- addFrame (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr) (contextId bind)
       eval bind k' mkaddr ctx
     -- TODO: Let and case
@@ -201,7 +207,7 @@ doEval expr kaddr mkaddr ctx =
 
 rebindAll :: HasCallStack => S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAMR r s e ()
 rebindAll fvs oldCtx newCtx = do
-  if oldCtx == newCtx then return ()
+  if oldCtx == newCtx || S.null fvs then return ()
   else do
     trace ("Rebinding: " ++ show fvs ++ " from " ++ show oldCtx ++ " to " ++ show newCtx) $ return ()
     let bindings = S.toList fvs
