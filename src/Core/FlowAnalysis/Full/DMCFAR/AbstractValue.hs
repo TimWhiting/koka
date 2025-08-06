@@ -24,7 +24,7 @@ import Common.Failure (assertion, HasCallStack)
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice, FixT, doBottom, each)
 import qualified Core.FlowAnalysis.FixpointMonad as FM
-import Core.CoreVar (bv)
+import Core.CoreVar (bv, fv)
 import Data.Foldable (find)
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
@@ -113,6 +113,14 @@ data Frame =
   | FMask
   | FCall
   deriving (Eq, Ord, Show)
+
+letFvs :: Int -> Int -> ExprContext -> S.Set TName
+letFvs groupIdx bindingIdx parent =
+  case exprOfCtx parent of
+    C.Let defs body ->
+      let (df:dfs) = Prelude.drop groupIdx defs
+      in S.unions $ fv body : map (fv . defExpr) (Prelude.drop bindingIdx (defsOf df) ++ concatMap defsOf dfs)
+
 letBindingName :: Int -> Int -> ExprContext -> TName
 letBindingName groupIdx bindingIdx parent =
   let bind = letDefBinding groupIdx bindingIdx parent in
