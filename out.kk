@@ -1,32 +1,32 @@
-]4;0;?\[6nparse   : .../std/core/types.kk
-parse   : .../std/core/undiv.kk
-parse   : .../std/core/unsafe.kk
-parse   : .../std/core/hnd.kk
+[6nparse   : .../std/core/types.kk
 parse   : .../std/core/exn.kk
-parse   : .../std/core/bool.kk
+parse   : .../std/core/undiv.kk
 parse   : .../std/core/char.kk
-parse   : .../std/core/int.kk
-parse   : .../std/core/vector.kk
-parse   : .../std/core/sslice.kk
+parse   : .../std/core/unsafe.kk
 parse   : .../std/core/order.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/hnd.kk
 parse   : .../std/core/string.kk
-parse   : .../std/core/maybe2.kk
-parse   : .../std/core/maybe.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/lazy.kk
+parse   : .../std/core/show.kk
+check   : std/core/types
+parse   : .../std/core/console.kk
+parse   : .../std/core/sslice.kk
 parse   : .../std/core/list.kk
 parse   : .../std/core/either.kk
-parse   : .../std/core/tuple.kk
-parse   : .../std/core/show.kk
-parse   : .../std/core/lazy.kk
-parse   : .../std/core/console.kk
-parse   : .../std/core/debug.kk
-check   : std/core/types
+parse   : .../std/core/maybe.kk
 parse   : .../std/core.kk
-parse   : .../std/core/delayed.kk
 parse   : .../analysis/aac/benchmarks.kk
-check   : std/core/int
-check   : std/core/unsafe
-check   : std/core/bool
+parse   : .../std/core/maybe2.kk
+parse   : .../std/core/debug.kk
+parse   : .../std/core/delayed.kk
 check   : std/core/lazy
+check   : std/core/int
+check   : std/core/bool
+check   : std/core/unsafe
 check   : std/core/undiv
 check   : std/core/hnd
 /* Primitive types and functions.
@@ -972,70 +972,6 @@ pub fip extern cctx/empty : forall<a> () -> cctx<a,a> {
   c inline "kk_cctx_empty(kk_context())";
   js inline "$std_core_types._cctx_empty()";
 };
-// Internal functions to support lazy constructors
-//
-module std/core/lazy
-import std/core/types = std/core/types = "";
-// internal: marker for lazy values that will be memoized (used to for correct reuse and reference counting)
-pub fip fun memoize-target : forall<a> (^ target : a, size : int, scan-size : int) -> ()
-  = forall<a> fn(target, size, scan-size){
-    std/core/lazy/@extern-memoize-target(target, size, scan-size);
-  };
-// internal: explicitly force update-in-place for lazy values
-pub fip fun memoize : forall<a> (target : a, x : a) -> a
-  = forall<a> fn(target, x){
-    std/core/lazy/@extern-memoize(target, x);
-  };
-val internal : int
-  = 42;
-// internal: marker for lazy values that will be memoized (used to for correct reuse and reference counting)
-fip extern @extern-memoize-target : forall<a> (^ target : a, size : int, scan-size : int) -> () = inline "/**/";
-// internal: explicitly force update-in-place for lazy values
-fip extern @extern-memoize : forall<a> (target : a, x : a) -> a = inline "#1";
-// internal: atomically set a lazy value to locked (or return `false` if already memoized)
-pub fip extern atomic-enter : forall<a> (^ target : a, lazy-tag : int32) -> bool {
-  c inline "kk_lazy_atomic_enter(#1,#2,kk_context())";
-};
-// internal: release an atomically memoized lazy value
-pub fip extern atomic-leave : forall<a> (target : a) -> () {
-  c inline "kk_lazy_atomic_leave(#1,kk_context())";
-};
-// internal: test if a lazy value is in whnf
-pub fip extern datatype-is-whnf : forall<a> (^ x : a, lazy-tag : int32) -> bool {
-  c inline "kk_datatype_is_whnf(#1,#2,kk_context())";
-};
-// internal: test if a heap allocated lazy value is in whnf
-pub fip extern datatype-ptr-is-whnf : forall<a> (^ x : a, lazy-tag : int32) -> bool {
-  c inline "kk_datatype_ptr_is_whnf(#1,#2,kk_context())";
-};
-// internal: test if a heap allocated data type is unique
-pub fip extern datatype-ptr-is-unique : forall<a> (^ x : a) -> bool {
-  c inline "kk_datatype_ptr_is_unique(#1,kk_context())";
-};
-// internal: test if a heap allocated data type is thread-shared
-pub fip extern datatype-ptr-is-thread-shared : forall<a> (^ x : a) -> bool {
-  c inline "kk_datatype_ptr_is_thread_shared(#1,kk_context())";
-};
-// internal: compress indirection chains
-pub fip extern indirect-compress : forall<a> (value : a, lazy-tag : int32) -> a {
-  c inline "kk_indirect_compress(#1,#2,kk_context())";
-};
-// Unsafe primitives to dismiss divergence.
-module std/core/undiv
-import std/core/types = std/core/types = "";
-// _Unsafe_. This function pretends that the given action is terminating.
-pub fun pretend-no-div : forall<a,e> (action : () -> <div|e> a) -> e a
-  = forall<a,e> fn(action){
-    action();
-  };
-// _Unsafe_. Mark a function parameter as decreasing to suppress the non-termination effect (`:div`).
-// The compiler has a very limited termination analysis, only recognizing direct recursion on
-// inductive datatypes. When it is clear a function has a decreasing parameter but it is not recognized
-// as such by the compiler, you can wrap the arguments in `pretend-decreasing` to inform the
-// termination analysis to consider that parameter decreasing on a recursive call. Use with care
-// to not accidentally allow actual divergence (without having that reflected in the effect type).
-pub fip extern pretend-decreasing : forall<a> (x : a) -> a = inline "#1";
-fip extern pretend-nodiv-cast : forall<e,a> (action : () -> <div|e> a) -> (() -> e a) = inline "#1";
 // Unsafe primitives to dismiss effects.
 module std/core/unsafe
 import std/core/types = std/core/types = "";
@@ -1079,6 +1015,22 @@ pub extern unsafe-ptr-eq : forall<a> (x : a, y : a) -> bool {
   cs inline "Object.ReferenceEquals(#1,#2)";
   js inline "Object.is(#1,#2)";
 };
+// Unsafe primitives to dismiss divergence.
+module std/core/undiv
+import std/core/types = std/core/types = "";
+// _Unsafe_. This function pretends that the given action is terminating.
+pub fun pretend-no-div : forall<a,e> (action : () -> <div|e> a) -> e a
+  = forall<a,e> fn(action){
+    action();
+  };
+// _Unsafe_. Mark a function parameter as decreasing to suppress the non-termination effect (`:div`).
+// The compiler has a very limited termination analysis, only recognizing direct recursion on
+// inductive datatypes. When it is clear a function has a decreasing parameter but it is not recognized
+// as such by the compiler, you can wrap the arguments in `pretend-decreasing` to inform the
+// termination analysis to consider that parameter decreasing on a recursive call. Use with care
+// to not accidentally allow actual divergence (without having that reflected in the effect type).
+pub fip extern pretend-decreasing : forall<a> (x : a) -> a = inline "#1";
+fip extern pretend-nodiv-cast : forall<e,a> (action : () -> <div|e> a) -> (() -> e a) = inline "#1";
 // Standard `:bool` functions.
 //
 // Booleans are either `True` or `False`.
@@ -1262,8 +1214,55 @@ pub fip fun int : (b : bool) -> int
          -> 0;
     };
   };
+// Internal functions to support lazy constructors
+//
+module std/core/lazy
+import std/core/types = std/core/types = "";
+// internal: marker for lazy values that will be memoized (used to for correct reuse and reference counting)
+pub fip fun memoize-target : forall<a> (^ target : a, size : int, scan-size : int) -> ()
+  = forall<a> fn(target, size, scan-size){
+    std/core/lazy/@extern-memoize-target(target, size, scan-size);
+  };
+// internal: explicitly force update-in-place for lazy values
+pub fip fun memoize : forall<a> (target : a, x : a) -> a
+  = forall<a> fn(target, x){
+    std/core/lazy/@extern-memoize(target, x);
+  };
+val internal : int
+  = 42;
+// internal: marker for lazy values that will be memoized (used to for correct reuse and reference counting)
+fip extern @extern-memoize-target : forall<a> (^ target : a, size : int, scan-size : int) -> () = inline "/**/";
+// internal: explicitly force update-in-place for lazy values
+fip extern @extern-memoize : forall<a> (target : a, x : a) -> a = inline "#1";
+// internal: atomically set a lazy value to locked (or return `false` if already memoized)
+pub fip extern atomic-enter : forall<a> (^ target : a, lazy-tag : int32) -> bool {
+  c inline "kk_lazy_atomic_enter(#1,#2,kk_context())";
+};
+// internal: release an atomically memoized lazy value
+pub fip extern atomic-leave : forall<a> (target : a) -> () {
+  c inline "kk_lazy_atomic_leave(#1,kk_context())";
+};
+// internal: test if a lazy value is in whnf
+pub fip extern datatype-is-whnf : forall<a> (^ x : a, lazy-tag : int32) -> bool {
+  c inline "kk_datatype_is_whnf(#1,#2,kk_context())";
+};
+// internal: test if a heap allocated lazy value is in whnf
+pub fip extern datatype-ptr-is-whnf : forall<a> (^ x : a, lazy-tag : int32) -> bool {
+  c inline "kk_datatype_ptr_is_whnf(#1,#2,kk_context())";
+};
+// internal: test if a heap allocated data type is unique
+pub fip extern datatype-ptr-is-unique : forall<a> (^ x : a) -> bool {
+  c inline "kk_datatype_ptr_is_unique(#1,kk_context())";
+};
+// internal: test if a heap allocated data type is thread-shared
+pub fip extern datatype-ptr-is-thread-shared : forall<a> (^ x : a) -> bool {
+  c inline "kk_datatype_ptr_is_thread_shared(#1,kk_context())";
+};
+// internal: compress indirection chains
+pub fip extern indirect-compress : forall<a> (value : a, lazy-tag : int32) -> a {
+  c inline "kk_indirect_compress(#1,#2,kk_context())";
+};
 check   : std/core/char
-check   : std/core/order
 // Standard integer `:int` functions.
 //
 // These are arbitrary precision signed integer with an efficient runtime representation.
@@ -1783,170 +1782,7 @@ pub fip extern ssize_t/int : (i : ssize_t) -> int {
   cs inline "(new BigInteger(#1))";
   js inline "$std_core_types._int_from_int32(#1)";
 };
-// Standard `:order` functions.
-module std/core/order
-import std/core/types = std/core/types = "";
-import std/core/int = std/core/int = "";
-import std/core/hnd = std/core/hnd inline = "";
-pub fip fun order/int : (x : order) -> int
-  = fn(x){
-    match (x) {
-      ((std/core/types/Lt() : order ) as @pat)
-         -> -1;
-      ((std/core/types/Eq() : order ) as @pat@0)
-         -> 0;
-      ((@skip std/core/types/Gt() : order ) as @pat@1)
-         -> 1;
-    };
-  };
-// Convert an `:order2` to an `:int` (`-1`, `0`, or `1`)
-pub fip fun order2/int : forall<a> (^ x : order2<a>) -> int
-  = forall<a> fn(x){
-    (match (x) {
-      ((std/core/types/Lt2((@pat@0), (@pat@1)) : order2<a> ) as @pat)
-         -> -1;
-      ((std/core/types/Eq2((@pat@3)) : order2<a> ) as @pat@2)
-         -> 0;
-      ((@skip std/core/types/Gt2((@pat@5), (@pat@6)) : order2<a> ) as @pat@4)
-         -> 1;
-    });
-  };
-pub fip fun (==) : (x : order, y : order) -> bool
-  = fn(x, y){
-    std/core/int/(==)((match (x) {
-        ((std/core/types/Lt() : order ) as @pat)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1)
-           -> 1;
-      }), (match (y) {
-        ((std/core/types/Lt() : order ) as @pat@2)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
-           -> 1;
-      }));
-  };
-pub fip fun (!=) : (x : order, y : order) -> bool
-  = fn(x, y){
-    std/core/int/(!=)((match (x) {
-        ((std/core/types/Lt() : order ) as @pat)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1)
-           -> 1;
-      }), (match (y) {
-        ((std/core/types/Lt() : order ) as @pat@2)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
-           -> 1;
-      }));
-  };
-pub fip fun (>=) : (x : order, y : order) -> bool
-  = fn(x, y){
-    std/core/int/(>=)((match (x) {
-        ((std/core/types/Lt() : order ) as @pat)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1)
-           -> 1;
-      }), (match (y) {
-        ((std/core/types/Lt() : order ) as @pat@2)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
-           -> 1;
-      }));
-  };
-pub fip fun (<=) : (x : order, y : order) -> bool
-  = fn(x, y){
-    std/core/int/(<=)((match (x) {
-        ((std/core/types/Lt() : order ) as @pat)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1)
-           -> 1;
-      }), (match (y) {
-        ((std/core/types/Lt() : order ) as @pat@2)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
-           -> 1;
-      }));
-  };
-pub fip fun (>) : (x : order, y : order) -> bool
-  = fn(x, y){
-    std/core/int/(>)((match (x) {
-        ((std/core/types/Lt() : order ) as @pat)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1)
-           -> 1;
-      }), (match (y) {
-        ((std/core/types/Lt() : order ) as @pat@2)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
-           -> 1;
-      }));
-  };
-pub fip fun (<) : (x : order, y : order) -> bool
-  = fn(x, y){
-    std/core/int/(<)((match (x) {
-        ((std/core/types/Lt() : order ) as @pat)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1)
-           -> 1;
-      }), (match (y) {
-        ((std/core/types/Lt() : order ) as @pat@2)
-           -> -1;
-        ((std/core/types/Eq() : order ) as @pat@0@0)
-           -> 0;
-        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
-           -> 1;
-      }));
-  };
-// monadic lift
-fun default/@mlift-order2@10013 : forall<a,e> (x : a, y : a, @y-x10012 : order) -> e order2<a>
-  = forall<a,e> fn(x, y, @y-x10012){
-    (match (@y-x10012) {
-      ((std/core/types/Eq() : order ) as @pat)
-         -> std/core/types/Eq2(x);
-      ((std/core/types/Lt() : order ) as @pat@0)
-         -> std/core/types/Lt2(x, y);
-      ((@skip std/core/types/Gt() : order ) as @pat@1)
-         -> std/core/types/Gt2(y, x);
-    });
-  };
-// Given a comparison function, we can order 2 elements.
-pub fun default/order2 : forall<a,e> (x : a, y : a, ^ ?cmp : (a, a) -> e order) -> e order2<a>
-  = forall<a,e> fn(x, y, @implicit/cmp){
-    std/core/hnd/yield-bind2((?cmp(x, y)), (fn(@y-x10012){
-        (std/core/order/default/@mlift-order2@10013(x, y, @y-x10012));
-      }), (fn(@y-x10012@0){
-        (match (@y-x10012@0) {
-          ((std/core/types/Eq() : order ) as @pat)
-             -> std/core/types/Eq2(x);
-          ((std/core/types/Lt() : order ) as @pat@0)
-             -> std/core/types/Lt2(x, y);
-          ((@skip std/core/types/Gt() : order ) as @pat@1)
-             -> std/core/types/Gt2(y, x);
-        });
-      }));
-  };
+check   : std/core/order
 // Standard `:char` functions.
 //
 // Characters are unicode _codepoint_\/s.
@@ -2188,13 +2024,177 @@ pub fip extern int/char : (i : int) -> char {
   c inline "kk_integer_clamp32(#1,kk_context())";
   cs inline "Primitive.IntToInt32(#1)";
 };
-check   : std/core/either
+// Standard `:order` functions.
+module std/core/order
+import std/core/types = std/core/types = "";
+import std/core/int = std/core/int = "";
+import std/core/hnd = std/core/hnd inline = "";
+pub fip fun order/int : (x : order) -> int
+  = fn(x){
+    match (x) {
+      ((std/core/types/Lt() : order ) as @pat)
+         -> -1;
+      ((std/core/types/Eq() : order ) as @pat@0)
+         -> 0;
+      ((@skip std/core/types/Gt() : order ) as @pat@1)
+         -> 1;
+    };
+  };
+// Convert an `:order2` to an `:int` (`-1`, `0`, or `1`)
+pub fip fun order2/int : forall<a> (^ x : order2<a>) -> int
+  = forall<a> fn(x){
+    (match (x) {
+      ((std/core/types/Lt2((@pat@0), (@pat@1)) : order2<a> ) as @pat)
+         -> -1;
+      ((std/core/types/Eq2((@pat@3)) : order2<a> ) as @pat@2)
+         -> 0;
+      ((@skip std/core/types/Gt2((@pat@5), (@pat@6)) : order2<a> ) as @pat@4)
+         -> 1;
+    });
+  };
+pub fip fun (==) : (x : order, y : order) -> bool
+  = fn(x, y){
+    std/core/int/(==)((match (x) {
+        ((std/core/types/Lt() : order ) as @pat)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1)
+           -> 1;
+      }), (match (y) {
+        ((std/core/types/Lt() : order ) as @pat@2)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
+           -> 1;
+      }));
+  };
+pub fip fun (!=) : (x : order, y : order) -> bool
+  = fn(x, y){
+    std/core/int/(!=)((match (x) {
+        ((std/core/types/Lt() : order ) as @pat)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1)
+           -> 1;
+      }), (match (y) {
+        ((std/core/types/Lt() : order ) as @pat@2)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
+           -> 1;
+      }));
+  };
+pub fip fun (>=) : (x : order, y : order) -> bool
+  = fn(x, y){
+    std/core/int/(>=)((match (x) {
+        ((std/core/types/Lt() : order ) as @pat)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1)
+           -> 1;
+      }), (match (y) {
+        ((std/core/types/Lt() : order ) as @pat@2)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
+           -> 1;
+      }));
+  };
+pub fip fun (<=) : (x : order, y : order) -> bool
+  = fn(x, y){
+    std/core/int/(<=)((match (x) {
+        ((std/core/types/Lt() : order ) as @pat)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1)
+           -> 1;
+      }), (match (y) {
+        ((std/core/types/Lt() : order ) as @pat@2)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
+           -> 1;
+      }));
+  };
+pub fip fun (>) : (x : order, y : order) -> bool
+  = fn(x, y){
+    std/core/int/(>)((match (x) {
+        ((std/core/types/Lt() : order ) as @pat)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1)
+           -> 1;
+      }), (match (y) {
+        ((std/core/types/Lt() : order ) as @pat@2)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
+           -> 1;
+      }));
+  };
+pub fip fun (<) : (x : order, y : order) -> bool
+  = fn(x, y){
+    std/core/int/(<)((match (x) {
+        ((std/core/types/Lt() : order ) as @pat)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1)
+           -> 1;
+      }), (match (y) {
+        ((std/core/types/Lt() : order ) as @pat@2)
+           -> -1;
+        ((std/core/types/Eq() : order ) as @pat@0@0)
+           -> 0;
+        ((@skip std/core/types/Gt() : order ) as @pat@1@0)
+           -> 1;
+      }));
+  };
+// monadic lift
+fun default/@mlift-order2@10013 : forall<a,e> (x : a, y : a, @y-x10012 : order) -> e order2<a>
+  = forall<a,e> fn(x, y, @y-x10012){
+    (match (@y-x10012) {
+      ((std/core/types/Eq() : order ) as @pat)
+         -> std/core/types/Eq2(x);
+      ((std/core/types/Lt() : order ) as @pat@0)
+         -> std/core/types/Lt2(x, y);
+      ((@skip std/core/types/Gt() : order ) as @pat@1)
+         -> std/core/types/Gt2(y, x);
+    });
+  };
+// Given a comparison function, we can order 2 elements.
+pub fun default/order2 : forall<a,e> (x : a, y : a, ^ ?cmp : (a, a) -> e order) -> e order2<a>
+  = forall<a,e> fn(x, y, @implicit/cmp){
+    std/core/hnd/yield-bind2((?cmp(x, y)), (fn(@y-x10012){
+        (std/core/order/default/@mlift-order2@10013(x, y, @y-x10012));
+      }), (fn(@y-x10012@0){
+        (match (@y-x10012@0) {
+          ((std/core/types/Eq() : order ) as @pat)
+             -> std/core/types/Eq2(x);
+          ((std/core/types/Lt() : order ) as @pat@0)
+             -> std/core/types/Lt2(x, y);
+          ((@skip std/core/types/Gt() : order ) as @pat@1)
+             -> std/core/types/Gt2(y, x);
+        });
+      }));
+  };
 check   : std/core/delayed
-check   : std/core/tuple
 check   : std/core/exn
+check   : std/core/either
+check   : std/core/tuple
 check   : std/core/maybe
-check   : std/core/vector
 check   : std/core/maybe2
+check   : std/core/vector
 check   : std/core/string
 /* Internal effect handler primitives.
 
@@ -3974,105 +3974,8 @@ extern cast-clause0 : forall<a,e,e1,b,c> (f : (hnd/marker<e1,c>, hnd/ev<b>) -> e
 extern cast-clause1 : forall<a,b,e,e1,c,d> (f : (hnd/marker<e1,d>, hnd/ev<c>, a) -> e1 b) -> e ((hnd/marker<e1,d>, hnd/ev<c>, a) -> e b) = inline "#1";
 extern cast-clause2 : forall<a,b,c,e,e1,d,a1> (f : (hnd/marker<e1,a1>, hnd/ev<d>, a, b) -> e1 c) -> e ((hnd/marker<e1,a1>, hnd/ev<d>, a, b) -> e c) = inline "#1";
 extern unsafe-st : forall<a,e> (f : () -> <st<global>|e> a) -> (() -> e a) = inline "#1";
-check   : std/core/sslice
 check   : std/core/list
-// Standard `:either` functions.
-module std/core/either
-import std/core/types = std/core/types = "";
-import std/core/hnd = std/core/hnd = "";
-// Convert a `:either` to a `:maybe` type discarding the value of the `Left` constructor
-// and using `Just` for the `Right` constructor.
-pub fun maybe : forall<a,b> (e : either<a,b>) -> maybe<b>
-  = forall<a,b> fn(e){
-    (match (e) {
-      ((std/core/types/Left((@pat@0)) : either<a,b> ) as @pat)
-         -> std/core/types/Nothing;
-      ((@skip std/core/types/Right((x)) : either<a,b> ) as @pat@1)
-         -> std/core/types/Just(x);
-    });
-  };
-// monadic lift
-fun @mlift-map@10010 : forall<a,b,e> (@y-x10000 : b) -> e either<a,b>
-  = forall<a,b,e> fn(@y-x10000){
-    std/core/types/Right(@y-x10000);
-  };
-// Map over the `Right` component of an `:either` type.
-pub fun map : forall<a,b,c,e> (e : either<a,b>, f : (b) -> e c) -> e either<a,c>
-  = forall<a,b,c,e> fn(e, f){
-    (match (e) {
-      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
-         -> val x@0@10013 : c
-                  = f(x);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@0)
-             -> std/core/hnd/yield-extend((fn(@y-x10000){
-              (std/core/types/Right(@y-x10000));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> std/core/types/Right(x@0@10013);
-        });
-      ((@skip std/core/types/Left((x@0@0)) : either<a,b> ) as @pat@0@1)
-         -> std/core/types/Left(x@0@0);
-    });
-  };
-// Equality on `:either` values
-pub fun (==) : forall<a,b,e> (e1 : either<a,b>, e2 : either<a,b>, ?left/(==) : (a, a) -> e bool, ?right/(==) : (b, b) -> e bool) -> e bool
-  = forall<a,b,e> fn(e1, e2, @implicit/left/(==), @implicit/right/(==)){
-    (match (e1) {
-      ((std/core/types/Left((l1)) : either<a,b> ) as @pat)
-         -> (match (e2) {
-          ((std/core/types/Left((l2)) : either<a,b> ) as @pat@0)
-             -> ?left/(==)(l1, l2);
-          (@pat@1)
-             -> std/core/types/False;
-        });
-      ((@skip std/core/types/Right((r1)) : either<a,b> ) as @pat@2)
-         -> (match (e2) {
-          ((std/core/types/Right((r2)) : either<a,b> ) as @pat@3)
-             -> ?right/(==)(r1, r2);
-          (@pat@4)
-             -> std/core/types/False;
-        });
-    });
-  };
-// monadic lift
-fun @mlift-show@10011 : forall<e> (@y-x10007 : string) -> e string
-  = forall<e> fn(@y-x10007){
-    std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")")));
-  };
-// monadic lift
-fun @mlift-show@10012 : forall<e> (@y-x10008 : string) -> e string
-  = forall<e> fn(@y-x10008){
-    std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")")));
-  };
-// Show an `:either` type
-pub fun show : forall<a,b,e> (e : either<a,b>, ?left/show : (a) -> e string, ?right/show : (b) -> e string) -> e string
-  = forall<a,b,e> fn(e, @implicit/left/show, @implicit/right/show){
-    (match (e) {
-      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
-         -> val x@0@10017 : string
-                  = ?right/show(x);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@0)
-             -> std/core/hnd/yield-extend((fn(@y-x10007){
-              (std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")"))));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> std/core/types/(++)("Right(", (std/core/types/(++)(x@0@10017, ")")));
-        });
-      ((@skip std/core/types/Left((y)) : either<a,b> ) as @pat@0@1)
-         -> val x@1@10021 : string
-                  = ?left/show(y);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@1)
-             -> std/core/hnd/yield-extend((fn(@y-x10008){
-              (std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")"))));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@2)
-             -> std/core/types/(++)("Left(", (std/core/types/(++)(x@1@10021, ")")));
-        });
-    });
-  };
+check   : std/core/sslice
 // Delayed computations.
 module std/core/delayed
 import std/core/types = std/core/types = "";
@@ -4222,6 +4125,103 @@ pub fun once : forall<a> (calc : () -> a) -> (() -> a)
           x@0;
       });
     };
+  };
+// Standard `:either` functions.
+module std/core/either
+import std/core/types = std/core/types = "";
+import std/core/hnd = std/core/hnd = "";
+// Convert a `:either` to a `:maybe` type discarding the value of the `Left` constructor
+// and using `Just` for the `Right` constructor.
+pub fun maybe : forall<a,b> (e : either<a,b>) -> maybe<b>
+  = forall<a,b> fn(e){
+    (match (e) {
+      ((std/core/types/Left((@pat@0)) : either<a,b> ) as @pat)
+         -> std/core/types/Nothing;
+      ((@skip std/core/types/Right((x)) : either<a,b> ) as @pat@1)
+         -> std/core/types/Just(x);
+    });
+  };
+// monadic lift
+fun @mlift-map@10010 : forall<a,b,e> (@y-x10000 : b) -> e either<a,b>
+  = forall<a,b,e> fn(@y-x10000){
+    std/core/types/Right(@y-x10000);
+  };
+// Map over the `Right` component of an `:either` type.
+pub fun map : forall<a,b,c,e> (e : either<a,b>, f : (b) -> e c) -> e either<a,c>
+  = forall<a,b,c,e> fn(e, f){
+    (match (e) {
+      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
+         -> val x@0@10013 : c
+                  = f(x);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@0)
+             -> std/core/hnd/yield-extend((fn(@y-x10000){
+              (std/core/types/Right(@y-x10000));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> std/core/types/Right(x@0@10013);
+        });
+      ((@skip std/core/types/Left((x@0@0)) : either<a,b> ) as @pat@0@1)
+         -> std/core/types/Left(x@0@0);
+    });
+  };
+// Equality on `:either` values
+pub fun (==) : forall<a,b,e> (e1 : either<a,b>, e2 : either<a,b>, ?left/(==) : (a, a) -> e bool, ?right/(==) : (b, b) -> e bool) -> e bool
+  = forall<a,b,e> fn(e1, e2, @implicit/left/(==), @implicit/right/(==)){
+    (match (e1) {
+      ((std/core/types/Left((l1)) : either<a,b> ) as @pat)
+         -> (match (e2) {
+          ((std/core/types/Left((l2)) : either<a,b> ) as @pat@0)
+             -> ?left/(==)(l1, l2);
+          (@pat@1)
+             -> std/core/types/False;
+        });
+      ((@skip std/core/types/Right((r1)) : either<a,b> ) as @pat@2)
+         -> (match (e2) {
+          ((std/core/types/Right((r2)) : either<a,b> ) as @pat@3)
+             -> ?right/(==)(r1, r2);
+          (@pat@4)
+             -> std/core/types/False;
+        });
+    });
+  };
+// monadic lift
+fun @mlift-show@10011 : forall<e> (@y-x10007 : string) -> e string
+  = forall<e> fn(@y-x10007){
+    std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")")));
+  };
+// monadic lift
+fun @mlift-show@10012 : forall<e> (@y-x10008 : string) -> e string
+  = forall<e> fn(@y-x10008){
+    std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")")));
+  };
+// Show an `:either` type
+pub fun show : forall<a,b,e> (e : either<a,b>, ?left/show : (a) -> e string, ?right/show : (b) -> e string) -> e string
+  = forall<a,b,e> fn(e, @implicit/left/show, @implicit/right/show){
+    (match (e) {
+      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
+         -> val x@0@10017 : string
+                  = ?right/show(x);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@0)
+             -> std/core/hnd/yield-extend((fn(@y-x10007){
+              (std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")"))));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> std/core/types/(++)("Right(", (std/core/types/(++)(x@0@10017, ")")));
+        });
+      ((@skip std/core/types/Left((y)) : either<a,b> ) as @pat@0@1)
+         -> val x@1@10021 : string
+                  = ?left/show(y);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@1)
+             -> std/core/hnd/yield-extend((fn(@y-x10008){
+              (std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")"))));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@2)
+             -> std/core/types/(++)("Left(", (std/core/types/(++)(x@1@10021, ")")));
+        });
+    });
   };
 // Standard exception (`:exn`) effect.
 module std/core/exn
@@ -13996,13 +13996,5 @@ pub fun analyze : () -> div ()
   = fn(){
     std/core/debug/trace-show((std/core/int/(==)((analysis/aac/benchmarks/example-get-set()), 0)), std/core/bool/show, (std/core/types/(++)("analysis/aac/benchmarks.kk", (std/core/types/(++)("(", (std/core/types/(++)("310", ")")))))));
   };
-analysis/aac/benchmarks(1, 1): internal error: Value not found in store: B@(x:[a4061]@[])
-CallStack (from HasCallStack):
-  error, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:55:9 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
-  doStep, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:82:13 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
-  store, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:215:12 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
-  rebindAll, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:465:3 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
-  doHandlerPrimitive, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:280:23 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
-  doApply, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:62:17 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
-  doStep, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:46:7 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+/@virtual/analysis/aac/benchmarks/@main.kk(1, 3): type error: identifier analysis/aac/benchmarks/main cannot be found
 

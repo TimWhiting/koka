@@ -53,11 +53,15 @@ type StaticCtx = [Call]
 type DynamicCtx = [(ExprContextId, StaticCtx)]
 
 data CombinedCtx = CombinedCtx {
+  kfvs :: S.Set TName,
   static :: StaticCtx,
   dynamic :: DynamicCtx
   } deriving (Eq, Ord)
+
+replaceFvs ctx@(CombinedCtx _ s d) fvs = CombinedCtx fvs s d
+
 instance Show CombinedCtx where
-  show (CombinedCtx static dynamic) =
+  show (CombinedCtx fvs static dynamic) =
     show static ++ "@" ++ show dynamic
 
 data Addr =
@@ -67,6 +71,7 @@ data Addr =
   | ImplicitLAddr CombinedCtx ExprContextId
   | BindImplicitAddr CombinedCtx ExprContextId
   deriving (Eq, Ord)
+
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
   show (TopAddr name) = "T@" ++ show name
@@ -155,7 +160,7 @@ data MKont =
 startStaticCtx = [CallTop]
 startDelimCtx = [CallDelim]
 startDynCtx = []
-startCombinedCtx = CombinedCtx startStaticCtx startDynCtx
+startCombinedCtx = CombinedCtx S.empty startStaticCtx startDynCtx
 startEnv = M.empty
 
 endVAddr = BindingAddr startCombinedCtx (TName (newName "endV") typeUnit Nothing)
@@ -164,8 +169,7 @@ endMKAddr = ImplicitAddr startCombinedCtx (ExprContextId (-10002) (newName "endM
 showStore store = show $ pretty store
 
 instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
-  pretty amap =
-      vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
+  pretty amap = vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
 
 data AChange =
   AChangeClos ExprContext CombinedCtx
@@ -238,6 +242,7 @@ changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLattice ints floats chars s
     LiteralChangeFloat f -> f `lte` floats
     LiteralChangeChar c -> c `lte` chars
     LiteralChangeString s -> s `lte` strings
+
 instance Semigroup AbValue where
   (<>) :: AbValue -> AbValue -> AbValue
   (<>) = joinAbValue
