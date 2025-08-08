@@ -21,14 +21,14 @@ type tree<a>
   Leaf
 
 
-fun tree/is-red(t : tree<a>) : bool
+fip fun tree/is-red(^t : tree<a>) : bool
   match t
     Node(Red) -> True
     _         -> False
 
 
-// balance with a new the left-side for a node `k`, `v`, `r`
-fun balance-left(l :tree<a>, k : int, v : a, r : tree<a>) : tree<a>
+// balance with a new left-side for a node `k`, `v`, `r`
+fbip(1) fun balance-left(l :tree<a>, k : int, v : a, r : tree<a>) : tree<a>
   match l
     Node(_, Node(Red, lx, kx, vx, rx), ky, vy, ry)
       -> Node(Red, Node(Black, lx, kx, vx, rx), ky, vy, Node(Black, ry, k, v, r))
@@ -40,7 +40,7 @@ fun balance-left(l :tree<a>, k : int, v : a, r : tree<a>) : tree<a>
 
 
 // balance with a new right-side for a node `l`, `k`, `v`
-fun balance-right(l : tree<a>, k : int, v : a, r : tree<a>) : tree<a>
+fbip(1) fun balance-right(l : tree<a>, k : int, v : a, r : tree<a>) : tree<a>
   match r
     Node(_, Node(Red, lx, kx, vx, rx), ky, vy, ry)
       -> Node(Red, Node(Black, l, k, v, lx), kx, vx, Node(Black, rx, ky, vy, ry))

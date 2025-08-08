@@ -1915,19 +1915,30 @@ describe loops in terms of regular function calls, reuse analysis lets us
 describe in-place mutating imperative algorithms in a purely functional
 way (and get persistence as well).
 
-~ Note
-FBIP is still active research. In particular we'd like to add ways to add
-annotations to ensure reuse is taking place.
-~
+Koka has a few keywords for guaranteeing that a function is optimized by the compiler.
+
+The `fip` keyword is the most restrictive and guarantees that a function uses does not allocate memory reusing all memory in place when given unique arguments. 
+Higher order functions, or other variables used multiple times in a `fip` function must be marked as borrowed using the `^` prefix on their name (eg. `^f`). 
+Borrowed parameters cannot be passed as owned parameters to functions or constructors, cannot be matched destructively, and cannot be returned without violating `fip`, however, they can be further passed as borrowed to `fip` functions. 
+
+The `tail` keyword guarantees that a function is tail-recursive. These functions will not use stack space.
+
+The `fbip` keyword is identical to `fip`. However, it allows for deallocation, and for non tail calls, which means these functions can use non-constant stack space.
+
+Both `fip` and `fbip` allow for a constant amount of allocation using `fip(n)` or `fbip(n)` where `n` is the number of constructor allocations allowed.
+`fip(1)` for example allows the function to add allocate one constructor and can be used for inserting an element into a datastructure.
+
+The following sections discuss more principles and benefits of FBIP in practice. 
+For more information about the restrictions for `fip` and the new keywords, see
+the recent papers: [@Lorenzen:fip;@Lorenzen:fip-tr]
 
 ### Tree Rebalancing
 
-As an example, we consider
-insertion into a red-black tree [@guibas1978dichromatic].
+As an example, consider insertion into a red-black tree [@guibas1978dichromatic].
 A polymorphic version of this example is part of the [``samples``][samples] directory when you have
 installed &koka; and can be loaded as ``:l`` [``samples/basic/rbtree``][rbtree].
 We define red-black trees as:
-```unchecked
+```koka
 type color
   Red
   Black
@@ -1942,14 +1953,14 @@ parent of red node. Together this ensures that the trees are always
 balanced. When inserting nodes, the invariants need to be maintained by
 rebalancing the nodes when needed. Okasaki's algorithm [@Okasaki:rbtree]
 implements this elegantly and functionally:
-```unchecked
-fun balance-left( l : tree, k : int, v : bool, r : tree ): tree
+```koka
+fbip(1) fun balance-left( l : tree, k : int, v : bool, r : tree ): tree
   match l
     Node(_, Node(Red, lx, kx, vx, rx), ky, vy, ry)
       -> Node(Red, Node(Black, lx, kx, vx, rx), ky, vy, Node(Black, ry, k, v, r))
     ...
 
-fun ins( t : tree, k : int, v : bool ): tree
+fbip(n) fun ins( t : tree, k : int, v : bool ): tree
   match t
     Leaf -> Node(Red, Leaf, k, v, Leaf)
     Node(Red, l, kx, vx, r)
@@ -1976,7 +1987,6 @@ _persistently_ [@Okasaki:purefun], and the tree is shared or has
 shared parts, the algorithm adapts to copying exactly the shared _spine_
 of the tree (and no more), while still rebalancing in place for any
 unshared parts.
-
 
 ### Morris Traversal
 
@@ -2078,7 +2088,7 @@ We start our traversal by going downward into the tree with an empty
 visitor, expressed as `tmap(f, t, Done, Down)`:
 
 ```
-fun tmap( f : int -> int, t : tree, visit : visitor, d : direction )
+fip fun tmap( f : int -> int, t : tree, visit : visitor, d : direction )
   match d
     Down -> match t     // going down a left spine
       Bin(l,x,r) -> tmap(f,l,BinR(r,x,visit),Down) // A
