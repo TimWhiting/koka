@@ -371,10 +371,12 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                       liftIO $ evalMainR bc (\bc mn -> 
                           runBuild term flags $ buildcTypeCheck [mn] bc
                         ) mod (mSensitivity flags) (dSensitivity flags)
+                      return ()
                     else if kcfa flags then do 
                       liftIO $ evalMainKCFA bc (\bc mn -> 
                           runBuild term flags $ buildcTypeCheck [mn] bc
                         ) mod (mSensitivity flags) (dSensitivity flags)
+                      return ()
                     else do
                       liftIO $ evalMain bc (\bc mn -> 
                           runBuild term flags $ buildcTypeCheck [mn] bc

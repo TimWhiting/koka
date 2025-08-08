@@ -20,7 +20,7 @@ import Compile.Options (Terminal, Flags)
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Literals
-import Core.FlowAnalysis.Syntax
+import Core.FlowAnalysis.Syntax hiding (findMainBody)
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Full.AAC.AAC
 import Core.FlowAnalysis.Full.AbstractValue
@@ -66,7 +66,7 @@ runQueryAtRange bc build mod m doQuery = do
         if nameModule (modName mod) `startsWith` "std/core" then 
           return (M.empty, s', (Nothing, bc))
         else
-          trace "No main context found" $
+          trace "No analysis context found" $
           return (M.empty, s', (Nothing, bc))
       [mainCtx] ->
         do
