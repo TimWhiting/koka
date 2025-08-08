@@ -13,7 +13,7 @@
 
 module Core.FlowAnalysis.Syntax where
 
-import Data.List (intercalate, find)
+import Data.List (intercalate, find, partition)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Maybe (catMaybes, mapMaybe, isJust, fromJust)
@@ -41,6 +41,44 @@ import Data.Foldable (minimumBy)
 import Common.Failure (HasCallStack)
 import Common.Error (Errors)
 import System.Directory (createDirectoryIfMissing)
+import Common.File (startsWith)
+
+data AnalysisCtx =
+  Analyze String TName ExprContext
+  | Result String TName ExprContext
+  deriving (Eq, Ord, Show)
+
+findMainBody :: FixAR x s e i o c AnalysisCtx
+findMainBody = do
+  ctx <- currentContext <$> getEnv
+  case ctx of
+    DefCNonRec{} -> do
+      let defName = defTName (defOfCtx ctx)
+          name = unqualify $ getName defName
+      if nameStem name `startsWith` "analyze-" then do
+        body <- focusDefBody ctx
+        return $ Analyze (drop 8 (nameStem name)) defName body
+      else if nameStem name `startsWith` "result-" then do
+        body <- focusDefBody ctx
+        return $ Result (drop 7 (nameStem name)) defName body
+      else doBottom
+    _ -> doBottom
+
+data AProgram = AProgram {
+  aName :: String,
+  aExpr :: ExprContext,
+  aResult :: ExprContext
+}
+
+collectPrograms :: [AnalysisCtx] -> [AProgram]
+collectPrograms l =
+  case l of
+    [] -> []
+    (Analyze n tn ctx):rst ->
+      -- trace ("Looking for " ++ n) $
+      case partition (\r -> case r of {Result n0 _ _ -> n == n0; _ -> False}) rst of
+        ([Result _ _ res], others) -> AProgram n ctx res : collectPrograms others
+        ([], others) -> error ("Couldn't find result context for " ++ show tn)
 
 findContext :: Range -> RangeInfo -> FixAR x s e i o c (ExprContext, Range)
 findContext r ri = do

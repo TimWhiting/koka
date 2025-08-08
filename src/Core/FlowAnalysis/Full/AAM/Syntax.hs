@@ -36,24 +36,14 @@ import Common.File (startsWith)
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
 analyzeEach = analyzeEachChild
 
-findMainBody :: FixAR x s e i o c ExprContext
-findMainBody = do
-  ctx <- currentContext <$> getEnv
-  case ctx of
-    DefCNonRec{} -> do
-      let name = unqualify $ getName $ defTName (defOfCtx ctx)
-      if "analyze" == nameStem name then do focusDefBody ctx
-      else doBottom
-    _ -> doBottom
-
 runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
-  -> Module -> Int
+  -> Module -> Int -> Int
   -> (ExprContext -> FixAAMR FixChange () () ())
-  -> IO (M.Map FixInput (FixOutput FixChange), Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type), BuildContext)
-runQueryAtRange bc build mod m doQuery = do
-  (l, s, (r, bc)) <- do
-    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m 0 build False ()) (emptyBasicState bc ()) $
+  -> IO ()
+runQueryAtRange bc build mod m d doQuery = do
+  do
+    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m d build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -62,42 +52,65 @@ runQueryAtRange bc build mod m doQuery = do
                       addResult res
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
-    case S.toList ctxs of
-      [] ->
-        if nameModule (modName mod) `startsWith` "std/core" then 
-          return (M.empty, s', (Nothing, bc))
-        else
-          trace "No main context found" $
-          return (M.empty, s', (Nothing, bc))
-      [mainCtx] ->
-        do
-          runFixFinishC (emptyBasicEnv m 0 build True ()) s' $ do
-                          runFixCont $ do
-                            (_,ctx) <- loadModule (modName mod)
-                            -- trace ("Context: " ++ show (contextId ctx)) $ return ()
-                            withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
-                          res <- S.toList <$> getResults
-                          buildc' <- buildc <$> getStateR
-                          let achanges = map (\(AC c) -> c) (filter (\c -> case c of {AC ac -> True; _ -> False}) res)
-                              (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
-                          ress' <- getAbResult resM
-                          trace ("ress': " ++ show ress') $ return ()
-                          return (Just ress', buildc')
+        values = collectPrograms (S.toList ctxs)
+        recur l =
+          case l of
+            [] -> if nameModule (modName mod) `startsWith` "std/core" then
+                return ()
+              else
+                trace ("No analysis context found in " ++ nameModule (modName mod)) $
+                return ()
+            (AProgram name mainCtx resCtx):rest ->
+              do
+                (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                runFixCont $ do
+                                  (_,ctx) <- loadModule (modName mod)
+                                  -- trace ("Context: " ++ show (contextId ctx)) $ return ()
+                                  withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
+                                res <- S.toList <$> getResults
+                                -- let achanges = map (\(AC c) -> c) (filter (\c -> case c of {SValue ac -> True; _ -> False}) res)
+                                --     (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
+                                ress' <- getAbResult
+                                trace ("ress': " ++ show ress') $ return ()
+                                return ress'
+                (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                runFixCont $ do
+                                  (_,ctx) <- loadModule (modName mod)
+                                  -- trace ("Context: " ++ show (contextId ctx)) $ return ()
+                                  withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
+                                -- let achanges = map (\(AC c) -> c) (filter (\c -> case c of {SValue ac -> True; _ -> False}) res)
+                                --     (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
+                                ress' <- getAbResult
+                                trace ("ress': " ++ show ress') $ return ()
+                                return ress'
+                compareResult name analysisResult expectedResult
+                recur rest
+    recur values
   -- trace ("l: " ++ show (length l)) $ return ()
-  writeDependencyGraph (moduleNameToPath (modName mod)) l
-  writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-  return (M.map (\(x, _, _, _) -> x) l, r, bc)
+  -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
+  return ()
+
+compareResult :: [Char] -> AbValue -> AbValue -> IO ()
+compareResult name analysisResult expectedResult = do
+  if alits analysisResult == alits expectedResult then
+    trace (name ++ " passed") $ return ()
+  else
+    trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) $ return ()
+
+getAbResult :: PostFixAAMR x s e AbValue
+getAbResult = do
+  res <- S.toList <$> getResults
+  return emptyAbValue
 
 evalMain :: BuildContext
-  -> TypeChecker -> Module -> Int
-  -> IO (Maybe ([S.UserExpr], [S.UserDef], [S.External], [S.Lit], [(String, Maybe Range)],
-                                   Set Type), BuildContext)
-evalMain bc build mod m = do
-  (lattice, r, bc) <- runQueryAtRange bc build mod m $ \ctx -> do
+  -> TypeChecker -> Module -> Int -> Int
+  -> IO ()
+evalMain bc build mod m d = do
+  runQueryAtRange bc build mod m d $ \ctx -> do
     let mkont = KAddr (ctx, M.empty, KTime Nothing (KContour []))
     q <- doStep (Eval ctx M.empty M.empty (kstoreExtend mkont [EndProgram] M.empty) [EndProgram] mkont (KTime Nothing (KContour [])))
     addResult q
-  return (r, bc)
+  return ()
 
 writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 writeSimpleDependencyGraph name cache = do
@@ -113,28 +126,6 @@ writeSimpleDependencyGraph name cache = do
             ++ "\n}"
   writeFile ("scratch/debug/graph_" ++ name ++ ".dot") dot
   return ()
-
-
-getAbResult :: AbValue -> PostFixAR x s e i o c ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type)
-getAbResult res = do
-  let vals = [res]
-      lams = map fst $ concatMap (S.toList . aclos) vals
-      i = intV res
-      f = floatV res
-      c = charV res
-      s = stringV res
-      topTypes = S.fromList $ topTypesOf (i, f, c, s)
-      vs = syntaxLitsOf (i, f, c, s)
-      cs = map fst $ concatMap (S.toList . acons) vals
-  consts <- mapM toSynConstr cs
-  source <- mapM findSourceExpr lams
-  let sourceLambdas = map (\(SourceExpr e _) -> e) $ filter (\s -> case s of {SourceExpr _ _ -> True; _ -> False}) source
-      sourceDefs = map (\(SourceDef e _) -> e) $ filter (\s -> case s of {SourceDef _ _ -> True; _ -> False}) source
-      sourceExterns = map (\(SourceExtern e _) -> e) $ filter (\s -> case s of {SourceExtern _ _ -> True; _ -> False}) source
-  return $ trace
-    ("eval " ++
-     "\nresult:\n----------------------\n" ++ showSimpleAbValue res ++ "\n----------------------\n")
-   (sourceLambdas, sourceDefs, sourceExterns, vs, consts, topTypes)
 
 showEscape :: Show a => a -> String
 showEscape = escape . show
