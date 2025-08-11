@@ -117,7 +117,7 @@ compareResult name analysisResult expectedResult = do
 getAbResult :: PostFixAAMR x s e AbValue
 getAbResult = do
   cache <- getCache
-  case M.lookup (VStore endVAddr) cache of
+  case M.lookup (VStore EndVAddr) cache of
     Just (SValue res) -> return res
     Nothing -> return emptyAbValue
 
@@ -126,7 +126,8 @@ evalMainKCFA :: BuildContext
   -> IO Bool
 evalMainKCFA bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
-    doStep (inject ctx)
+    ctx' <- inject ctx
+    doStep ctx'
     return ()
 
 showEscape :: Show a => a -> String
