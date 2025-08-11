@@ -126,7 +126,8 @@ opCmpInt f [p1, p2] = do
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) ->
       return $! toChange (f i1 i2)
     (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) ->
-      trace "opCmpInt: top" anyBool
+      -- trace "opCmpInt: top" 
+      anyBool
     _ -> doBottom
 
 doPrimitive :: Name -> [AChange] -> VEnv -> FixAAMR r s e AChange
@@ -188,7 +189,7 @@ doPrimitive nm achanges env = do
     charCmpOp (==) achanges
   else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint)
           || (nm == nameCorePrintln) || (nm == nameCorePrintsLn) then
-    trace ("Print / Trace " ++ show achanges)
+    -- trace ("Print / Trace " ++ show achanges)
     return changeUnit
   else if nm == nameUnsafeNoLocalCast then return (head achanges)
   else
