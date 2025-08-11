@@ -1,34 +1,32 @@
 [6nparse   : .../std/core/types.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/exn.kk
 parse   : .../std/core/undiv.kk
 parse   : .../std/core/hnd.kk
-parse   : .../std/core/unsafe.kk
-parse   : .../std/core/exn.kk
 parse   : .../std/core/int.kk
-parse   : .../std/core/bool.kk
-parse   : .../std/core/char.kk
-parse   : .../std/core/order.kk
 parse   : .../std/core/vector.kk
-parse   : .../std/core/list.kk
-parse   : .../std/core/sslice.kk
-parse   : .../std/core/maybe.kk
 parse   : .../std/core/string.kk
-parse   : .../std/core/maybe2.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/list.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/sslice.kk
 parse   : .../std/core/either.kk
+parse   : .../std/core/maybe2.kk
 parse   : .../std/core/tuple.kk
 parse   : .../std/core/lazy.kk
 parse   : .../std/core/show.kk
-parse   : .../std/core/console.kk
-parse   : .../std/core/delayed.kk
-parse   : .../std/core.kk
-parse   : .../analysis/aac/benchmarks.kk
 parse   : .../std/core/debug.kk
+parse   : .../std/core/delayed.kk
+parse   : .../analysis/aac/benchmarks.kk
+parse   : .../std/core.kk
+parse   : .../std/core/console.kk
 check   : std/core/types
-check   : std/core/lazy
+check   : std/core/int
 check   : std/core/unsafe
 check   : std/core/bool
-check   : std/core/int
-check   : std/core/undiv
-check   : std/core/hnd
+check   : std/core/lazy
 /* Primitive types and functions.
 
    This module is implicitly imported and all functions and types
@@ -972,8 +970,24 @@ pub fip extern cctx/empty : forall<a> () -> cctx<a,a> {
   c inline "kk_cctx_empty(kk_context())";
   js inline "$std_core_types._cctx_empty()";
 };
-check   : std/core/order
-check   : std/core/char
+check   : std/core/undiv
+check   : std/core/hnd
+// Unsafe primitives to dismiss divergence.
+module std/core/undiv
+import std/core/types = std/core/types = "";
+// _Unsafe_. This function pretends that the given action is terminating.
+pub fun pretend-no-div : forall<a,e> (action : () -> <div|e> a) -> e a
+  = forall<a,e> fn(action){
+    action();
+  };
+// _Unsafe_. Mark a function parameter as decreasing to suppress the non-termination effect (`:div`).
+// The compiler has a very limited termination analysis, only recognizing direct recursion on
+// inductive datatypes. When it is clear a function has a decreasing parameter but it is not recognized
+// as such by the compiler, you can wrap the arguments in `pretend-decreasing` to inform the
+// termination analysis to consider that parameter decreasing on a recursive call. Use with care
+// to not accidentally allow actual divergence (without having that reflected in the effect type).
+pub fip extern pretend-decreasing : forall<a> (x : a) -> a = inline "#1";
+fip extern pretend-nodiv-cast : forall<e,a> (action : () -> <div|e> a) -> (() -> e a) = inline "#1";
 // Internal functions to support lazy constructors
 //
 module std/core/lazy
@@ -1022,22 +1036,6 @@ pub fip extern datatype-ptr-is-thread-shared : forall<a> (^ x : a) -> bool {
 pub fip extern indirect-compress : forall<a> (value : a, lazy-tag : int32) -> a {
   c inline "kk_indirect_compress(#1,#2,kk_context())";
 };
-// Unsafe primitives to dismiss divergence.
-module std/core/undiv
-import std/core/types = std/core/types = "";
-// _Unsafe_. This function pretends that the given action is terminating.
-pub fun pretend-no-div : forall<a,e> (action : () -> <div|e> a) -> e a
-  = forall<a,e> fn(action){
-    action();
-  };
-// _Unsafe_. Mark a function parameter as decreasing to suppress the non-termination effect (`:div`).
-// The compiler has a very limited termination analysis, only recognizing direct recursion on
-// inductive datatypes. When it is clear a function has a decreasing parameter but it is not recognized
-// as such by the compiler, you can wrap the arguments in `pretend-decreasing` to inform the
-// termination analysis to consider that parameter decreasing on a recursive call. Use with care
-// to not accidentally allow actual divergence (without having that reflected in the effect type).
-pub fip extern pretend-decreasing : forall<a> (x : a) -> a = inline "#1";
-fip extern pretend-nodiv-cast : forall<e,a> (action : () -> <div|e> a) -> (() -> e a) = inline "#1";
 // Unsafe primitives to dismiss effects.
 module std/core/unsafe
 import std/core/types = std/core/types = "";
@@ -1264,6 +1262,8 @@ pub fip fun int : (b : bool) -> int
          -> 0;
     };
   };
+check   : std/core/order
+check   : std/core/char
 // Standard integer `:int` functions.
 //
 // These are arbitrary precision signed integer with an efficient runtime representation.
@@ -2188,12 +2188,12 @@ pub fip extern int/char : (i : int) -> char {
   c inline "kk_integer_clamp32(#1,kk_context())";
   cs inline "Primitive.IntToInt32(#1)";
 };
+check   : std/core/either
+check   : std/core/delayed
 check   : std/core/exn
 check   : std/core/tuple
-check   : std/core/delayed
-check   : std/core/either
-check   : std/core/maybe2
 check   : std/core/maybe
+check   : std/core/maybe2
 check   : std/core/vector
 check   : std/core/string
 /* Internal effect handler primitives.
@@ -3976,103 +3976,6 @@ extern cast-clause2 : forall<a,b,c,e,e1,d,a1> (f : (hnd/marker<e1,a1>, hnd/ev<d>
 extern unsafe-st : forall<a,e> (f : () -> <st<global>|e> a) -> (() -> e a) = inline "#1";
 check   : std/core/list
 check   : std/core/sslice
-// Standard `:either` functions.
-module std/core/either
-import std/core/types = std/core/types = "";
-import std/core/hnd = std/core/hnd = "";
-// Convert a `:either` to a `:maybe` type discarding the value of the `Left` constructor
-// and using `Just` for the `Right` constructor.
-pub fun maybe : forall<a,b> (e : either<a,b>) -> maybe<b>
-  = forall<a,b> fn(e){
-    (match (e) {
-      ((std/core/types/Left((@pat@0)) : either<a,b> ) as @pat)
-         -> std/core/types/Nothing;
-      ((@skip std/core/types/Right((x)) : either<a,b> ) as @pat@1)
-         -> std/core/types/Just(x);
-    });
-  };
-// monadic lift
-fun @mlift-map@10010 : forall<a,b,e> (@y-x10000 : b) -> e either<a,b>
-  = forall<a,b,e> fn(@y-x10000){
-    std/core/types/Right(@y-x10000);
-  };
-// Map over the `Right` component of an `:either` type.
-pub fun map : forall<a,b,c,e> (e : either<a,b>, f : (b) -> e c) -> e either<a,c>
-  = forall<a,b,c,e> fn(e, f){
-    (match (e) {
-      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
-         -> val x@0@10013 : c
-                  = f(x);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@0)
-             -> std/core/hnd/yield-extend((fn(@y-x10000){
-              (std/core/types/Right(@y-x10000));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> std/core/types/Right(x@0@10013);
-        });
-      ((@skip std/core/types/Left((x@0@0)) : either<a,b> ) as @pat@0@1)
-         -> std/core/types/Left(x@0@0);
-    });
-  };
-// Equality on `:either` values
-pub fun (==) : forall<a,b,e> (e1 : either<a,b>, e2 : either<a,b>, ?left/(==) : (a, a) -> e bool, ?right/(==) : (b, b) -> e bool) -> e bool
-  = forall<a,b,e> fn(e1, e2, @implicit/left/(==), @implicit/right/(==)){
-    (match (e1) {
-      ((std/core/types/Left((l1)) : either<a,b> ) as @pat)
-         -> (match (e2) {
-          ((std/core/types/Left((l2)) : either<a,b> ) as @pat@0)
-             -> ?left/(==)(l1, l2);
-          (@pat@1)
-             -> std/core/types/False;
-        });
-      ((@skip std/core/types/Right((r1)) : either<a,b> ) as @pat@2)
-         -> (match (e2) {
-          ((std/core/types/Right((r2)) : either<a,b> ) as @pat@3)
-             -> ?right/(==)(r1, r2);
-          (@pat@4)
-             -> std/core/types/False;
-        });
-    });
-  };
-// monadic lift
-fun @mlift-show@10011 : forall<e> (@y-x10007 : string) -> e string
-  = forall<e> fn(@y-x10007){
-    std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")")));
-  };
-// monadic lift
-fun @mlift-show@10012 : forall<e> (@y-x10008 : string) -> e string
-  = forall<e> fn(@y-x10008){
-    std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")")));
-  };
-// Show an `:either` type
-pub fun show : forall<a,b,e> (e : either<a,b>, ?left/show : (a) -> e string, ?right/show : (b) -> e string) -> e string
-  = forall<a,b,e> fn(e, @implicit/left/show, @implicit/right/show){
-    (match (e) {
-      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
-         -> val x@0@10017 : string
-                  = ?right/show(x);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@0)
-             -> std/core/hnd/yield-extend((fn(@y-x10007){
-              (std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")"))));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> std/core/types/(++)("Right(", (std/core/types/(++)(x@0@10017, ")")));
-        });
-      ((@skip std/core/types/Left((y)) : either<a,b> ) as @pat@0@1)
-         -> val x@1@10021 : string
-                  = ?left/show(y);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@1)
-             -> std/core/hnd/yield-extend((fn(@y-x10008){
-              (std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")"))));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@2)
-             -> std/core/types/(++)("Left(", (std/core/types/(++)(x@1@10021, ")")));
-        });
-    });
-  };
 // Delayed computations.
 module std/core/delayed
 import std/core/types = std/core/types = "";
@@ -4617,6 +4520,103 @@ pub fun exn-error-range : forall<a> () -> exn a
         });
     });
   };
+// Standard `:either` functions.
+module std/core/either
+import std/core/types = std/core/types = "";
+import std/core/hnd = std/core/hnd = "";
+// Convert a `:either` to a `:maybe` type discarding the value of the `Left` constructor
+// and using `Just` for the `Right` constructor.
+pub fun maybe : forall<a,b> (e : either<a,b>) -> maybe<b>
+  = forall<a,b> fn(e){
+    (match (e) {
+      ((std/core/types/Left((@pat@0)) : either<a,b> ) as @pat)
+         -> std/core/types/Nothing;
+      ((@skip std/core/types/Right((x)) : either<a,b> ) as @pat@1)
+         -> std/core/types/Just(x);
+    });
+  };
+// monadic lift
+fun @mlift-map@10010 : forall<a,b,e> (@y-x10000 : b) -> e either<a,b>
+  = forall<a,b,e> fn(@y-x10000){
+    std/core/types/Right(@y-x10000);
+  };
+// Map over the `Right` component of an `:either` type.
+pub fun map : forall<a,b,c,e> (e : either<a,b>, f : (b) -> e c) -> e either<a,c>
+  = forall<a,b,c,e> fn(e, f){
+    (match (e) {
+      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
+         -> val x@0@10013 : c
+                  = f(x);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@0)
+             -> std/core/hnd/yield-extend((fn(@y-x10000){
+              (std/core/types/Right(@y-x10000));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> std/core/types/Right(x@0@10013);
+        });
+      ((@skip std/core/types/Left((x@0@0)) : either<a,b> ) as @pat@0@1)
+         -> std/core/types/Left(x@0@0);
+    });
+  };
+// Equality on `:either` values
+pub fun (==) : forall<a,b,e> (e1 : either<a,b>, e2 : either<a,b>, ?left/(==) : (a, a) -> e bool, ?right/(==) : (b, b) -> e bool) -> e bool
+  = forall<a,b,e> fn(e1, e2, @implicit/left/(==), @implicit/right/(==)){
+    (match (e1) {
+      ((std/core/types/Left((l1)) : either<a,b> ) as @pat)
+         -> (match (e2) {
+          ((std/core/types/Left((l2)) : either<a,b> ) as @pat@0)
+             -> ?left/(==)(l1, l2);
+          (@pat@1)
+             -> std/core/types/False;
+        });
+      ((@skip std/core/types/Right((r1)) : either<a,b> ) as @pat@2)
+         -> (match (e2) {
+          ((std/core/types/Right((r2)) : either<a,b> ) as @pat@3)
+             -> ?right/(==)(r1, r2);
+          (@pat@4)
+             -> std/core/types/False;
+        });
+    });
+  };
+// monadic lift
+fun @mlift-show@10011 : forall<e> (@y-x10007 : string) -> e string
+  = forall<e> fn(@y-x10007){
+    std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")")));
+  };
+// monadic lift
+fun @mlift-show@10012 : forall<e> (@y-x10008 : string) -> e string
+  = forall<e> fn(@y-x10008){
+    std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")")));
+  };
+// Show an `:either` type
+pub fun show : forall<a,b,e> (e : either<a,b>, ?left/show : (a) -> e string, ?right/show : (b) -> e string) -> e string
+  = forall<a,b,e> fn(e, @implicit/left/show, @implicit/right/show){
+    (match (e) {
+      ((std/core/types/Right((x)) : either<a,b> ) as @pat)
+         -> val x@0@10017 : string
+                  = ?right/show(x);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@0)
+             -> std/core/hnd/yield-extend((fn(@y-x10007){
+              (std/core/types/(++)("Right(", (std/core/types/(++)(@y-x10007, ")"))));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> std/core/types/(++)("Right(", (std/core/types/(++)(x@0@10017, ")")));
+        });
+      ((@skip std/core/types/Left((y)) : either<a,b> ) as @pat@0@1)
+         -> val x@1@10021 : string
+                  = ?left/show(y);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@1)
+             -> std/core/hnd/yield-extend((fn(@y-x10008){
+              (std/core/types/(++)("Left(", (std/core/types/(++)(@y-x10008, ")"))));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@2)
+             -> std/core/types/(++)("Left(", (std/core/types/(++)(x@1@10021, ")")));
+        });
+    });
+  };
 // Standard `:maybe` functions.
 module std/core/maybe
 import std/core/types = std/core/types = "";
@@ -5054,6 +5054,403 @@ pub fun bool : forall<a,b> (mb : maybe2<a,b>) -> bool
          -> std/core/types/False;
     });
   };
+// Standard vector functions.
+module std/core/vector
+import std/core/types = std/core/types = "";
+import std/core/undiv = std/core/undiv = "";
+import std/core/hnd = std/core/hnd = "";
+import std/core/exn = std/core/exn = "";
+import std/core/int = std/core/int = "";
+pub fun @unsafe-vector : forall<a> (n : ssize_t) -> vector<a>
+  = forall<a> fn(n){
+    std/core/vector/@extern-unsafe-vector(n);
+  };
+// Create a new vector of length `n`  with initial elements `init`` .
+fun vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a>
+  = forall<a,e> fn(n, init){
+    std/core/vector/@extern-vector-alloc(n, init);
+  };
+// Create a new vector of length `n`  with initial elements given by a total function `f` .
+fun vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a>
+  = forall<a> fn(n, f){
+    std/core/vector/@extern-vector-alloc-total(n, f);
+  };
+// Return the element at position `index`  in vector `v`.
+// Raise an out of bounds exception if `index < 0`  or `index >= v.length`.
+pub fun @index : forall<a> (^ v : vector<a>, ^ index : int) -> exn a
+  = forall<a> fn(v, index){
+    val idx : ssize_t
+          = std/core/int/ssize_t(index);
+    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/vector/unsafe-idx(v, idx);
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> std/core/exn/throw("index out of bounds", (std/core/types/@Optional(std/core/exn/ExnRange)));
+    });
+  };
+// Return the element at position `index` in vector `v`, or `Nothing` if out of bounds
+pub fun at : forall<a> (^ v : vector<a>, ^ index : int) -> maybe<a>
+  = forall<a> fn(v, index){
+    val idx : ssize_t
+          = std/core/int/ssize_t(index);
+    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/types/Just((std/core/vector/unsafe-idx(v, idx)));
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> std/core/types/Nothing;
+    });
+  };
+// Return the length of a vector.
+pub fun length : forall<a> (^ v : vector<a>) -> int
+  = forall<a> fn(v){
+    std/core/int/ssize_t/int((std/core/vector/lengthz(v)));
+  };
+// Create a new vector of length `n`  with initial elements `default` .
+pub fun vector : forall<a> (^ n : int, default : a) -> vector<a>
+  = forall<a> fn(n, default){
+    std/core/vector/vector-alloc((std/core/int/ssize_t(n)), default);
+  };
+// Create a new vector of length `n`  with initial elements given by _total_ function `f`.
+// (can be more efficient than `vector-init`)
+pub fun vector-init-total : forall<a> (^ n : int, f : (int) -> a) -> vector<a>
+  = forall<a> fn(n, f){
+    std/core/vector/vector-alloc-total((std/core/int/ssize_t(n)), (fn(i){
+        (f((std/core/int/ssize_t/int(i))));
+      }));
+  };
+fip fun ssize_t/decr : (i : ssize_t) -> ssize_t
+  = fn(i){
+    std/core/vector/ssize_t/@extern-decr(i);
+  };
+fip fun ssize_t/incr : (i : ssize_t) -> ssize_t
+  = fn(i){
+    std/core/vector/ssize_t/@extern-incr(i);
+  };
+// monadic lift
+fun @mlift-lift-forz@1011@10045 : forall<e> (action : (ssize_t) -> e (), i : ssize_t, n : ssize_t, wild_ : ()) -> e ()
+  = forall<e> fn(action, i, n, wild_){
+    val i@0@10000 : ssize_t
+          = std/core/vector/ssize_t/incr(i);
+    std/core/vector/@lift-forz@1011(action, n, i@0@10000);
+  };
+// lifted local: forz, rep
+fun @lift-forz@1011 : forall<e> (action : (ssize_t) -> e (), n : ssize_t, i : ssize_t) -> e ()
+  = forall<e> fn(action@0, n@0, i@0){
+    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> val x@10051 : ()
+                  = action@0(i@0);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@0)
+             -> std/core/hnd/yield-extend((fn(wild_@0){
+              (std/core/vector/@mlift-lift-forz@1011@10045(action@0, i@0, n@0, wild_@0));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> val i@0@10000@0 : ssize_t
+                      = std/core/vector/ssize_t/incr(i@0);
+            std/core/vector/@lift-forz@1011(action@0, n@0, i@0@10000@0);
+        });
+      ((@skip std/core/types/False() : bool ) as @pat@0@1)
+         -> std/core/types/Unit;
+    });
+  };
+// Executes `action` `n` times for each integer between [`0`,`n`)  (excluding `n` ).
+// If `n <= 0`  the function returns without any call to `action` .
+fun forz : forall<e> (n : ssize_t, action : (ssize_t) -> e ()) -> e ()
+  = forall<e> fn(n, action){
+    val i : ssize_t
+          = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011(action, n, i);
+  };
+// monadic lift
+fun @mlift-vector-init@10046 : forall<a,e> (i@0 : ssize_t, v : vector<a>, @y-x10027 : a) -> e ()
+  = forall<a,e> fn(i@0, v, @y-x10027){
+    std/core/vector/unsafe-assign(v, i@0, @y-x10027);
+  };
+// monadic lift
+fun @mlift-vector-init@10047 : forall<a,e> (v : vector<a>, wild_ : ()) -> e vector<a>
+  = forall<a,e> fn(v, wild_){
+    v;
+  };
+// Create a new vector of length `n`  with initial elements given by function `f` which can have a control effect.
+pub fun vector-init : forall<a,e> (^ n : int, f : (int) -> e a) -> e vector<a>
+  = forall<a,e> fn(n, f){
+    val len : ssize_t
+      = std/core/int/ssize_t(n);
+    val v : vector<a>
+      = std/core/vector/unsafe-vector(len);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    val x@10054 : ()
+      = std/core/vector/@lift-forz@1011((fn(i@0){
+          val x@0@10057 : a
+                = (f((std/core/int/ssize_t/int(i@0))));
+          (match ((std/core/hnd/yielding())) {
+            ((std/core/types/True() : bool ) as @pat@1)
+               -> std/core/hnd/yield-extend((fn(@y-x10027){
+                (std/core/vector/unsafe-assign(v, i@0, @y-x10027));
+              }));
+            ((@skip std/core/types/False() : bool ) as @pat@0@0)
+               -> std/core/vector/unsafe-assign(v, i@0, x@0@10057);
+          });
+        }), len, i);
+    (match ((std/core/hnd/yielding())) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/hnd/yield-extend((fn(wild_){
+          v;
+        }));
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> v;
+    });
+  };
+fun foreach-indexedz : forall<a,e> (v : vector<a>, f : (ssize_t, a) -> e ()) -> e ()
+  = forall<a,e> fn(v, f){
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011((fn(i@0){
+        (f(i@0, (std/core/vector/unsafe-idx(v, i@0))));
+      }), n@10003, i);
+  };
+// Invoke a function `f` for each element in a vector `v`
+pub fun foreach : forall<a,e> (v : vector<a>, f : (a) -> e ()) -> e ()
+  = forall<a,e> fn(v, f){
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011((fn(i@0){
+        val x@10015 : a
+              = (std/core/vector/unsafe-idx(v, i@0));
+        (f(x@10015));
+      }), n@10003, i);
+  };
+// Invoke a function `f` for each element in a vector `v`
+pub fun foreach-indexed : forall<a,e> (v : vector<a>, f : (int, a) -> e ()) -> e ()
+  = forall<a,e> fn(v, f){
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011((fn(i@0){
+        val x@10017 : a
+              = (std/core/vector/unsafe-idx(v, i@0));
+        (f((std/core/int/ssize_t/int(i@0)), x@10017));
+      }), n@10003, i);
+  };
+// monadic lift
+fun @mlift-lift-for-whilez@1012@10048 : forall<a,e> (action : (ssize_t) -> e maybe<a>, i : ssize_t, n : ssize_t, @y-x10035 : maybe<a>) -> e maybe<a>
+  = forall<a,e> fn(action, i, n, @y-x10035){
+    (match (@y-x10035) {
+      ((std/core/types/Nothing() : maybe<a> ) as @pat@0)
+         -> val i@0@10005 : ssize_t
+                  = std/core/vector/ssize_t/incr(i);
+        std/core/vector/@lift-for-whilez@1012(action, n, i@0@10005);
+      ((@skip std/core/types/Just((x)) : maybe<a> ) as @pat@1)
+         -> std/core/types/Just(x);
+    });
+  };
+// lifted local: for-whilez, rep
+fun @lift-for-whilez@1012 : forall<a,e> (action : (ssize_t) -> e maybe<a>, n : ssize_t, i : ssize_t) -> e maybe<a>
+  = forall<a,e> fn(action@0, n@0, i@0){
+    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> val x@0@10064 : maybe<a>
+                  = action@0(i@0);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@2)
+             -> std/core/hnd/yield-extend((fn(@y-x10035@0){
+              (std/core/vector/@mlift-lift-for-whilez@1012@10048(action@0, i@0, n@0, @y-x10035@0));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> (match (x@0@10064) {
+              ((std/core/types/Nothing() : maybe<a> ) as @pat@0@1)
+                 -> val i@0@10005@0 : ssize_t
+                          = std/core/vector/ssize_t/incr(i@0);
+                std/core/vector/@lift-for-whilez@1012(action@0, n@0, i@0@10005@0);
+              ((@skip std/core/types/Just((x@1)) : maybe<a> ) as @pat@1@0)
+                 -> std/core/types/Just(x@1);
+            });
+        });
+      ((@skip std/core/types/False() : bool ) as @pat@2@0)
+         -> std/core/types/Nothing;
+    });
+  };
+// Executes `action` at most `n` times for each integer between `0`  upto `n`  (excluding `n` ).
+// If `n <= 0`  the function returns without any call to `action` .
+// If `action` returns `Just`, the iteration is stopped and the result returned
+fun for-whilez : forall<a,e> (n : ssize_t, action : (ssize_t) -> e maybe<a>) -> e maybe<a>
+  = forall<a,e> fn(n, action){
+    val i : ssize_t
+          = std/core/int/ssize_t(0);
+    std/core/vector/@lift-for-whilez@1012(action, n, i);
+  };
+// Invoke a function `f` for each element in a vector `v`.
+// If `f` returns `Just`, the iteration is stopped early and the result is returned.
+pub fun foreach-while : forall<a,b,e> (v : vector<a>, f : (a) -> e maybe<b>) -> e maybe<b>
+  = forall<a,b,e> fn(v, f){
+    val n@10006 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-for-whilez@1012((fn(i@0){
+        (f((std/core/vector/unsafe-idx(v, i@0))));
+      }), n@10006, i);
+  };
+// monadic lift
+fun @mlift-map@10049 : forall<a,e> (i@0 : ssize_t, w : vector<a>, @y-x10042 : a) -> e ()
+  = forall<a,e> fn(i@0, w, @y-x10042){
+    std/core/vector/unsafe-assign(w, i@0, @y-x10042);
+  };
+// monadic lift
+fun @mlift-map@10050 : forall<a,e> (w : vector<a>, wild_ : ()) -> e vector<a>
+  = forall<a,e> fn(w, wild_){
+    w;
+  };
+// Apply a function `f` to each element in a vector `v`
+pub fun map : forall<a,b,e> (v : vector<a>, f : (a) -> e b) -> e vector<b>
+  = forall<a,b,e> fn(v, f){
+    val w : vector<b>
+      = std/core/vector/unsafe-vector((std/core/int/ssize_t((std/core/int/ssize_t/int((std/core/vector/lengthz(v)))))));
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    val x@10067 : ()
+      = std/core/vector/@lift-forz@1011((fn(i@0){
+          val x@10019 : a
+            = (std/core/vector/unsafe-idx(v, i@0));
+          val x@0@10070 : b
+            = (f(x@10019));
+          (match ((std/core/hnd/yielding())) {
+            ((std/core/types/True() : bool ) as @pat@1)
+               -> std/core/hnd/yield-extend((fn(@y-x10042){
+                (std/core/vector/unsafe-assign(w, i@0, @y-x10042));
+              }));
+            ((@skip std/core/types/False() : bool ) as @pat@0@0)
+               -> std/core/vector/unsafe-assign(w, i@0, x@0@10070);
+          });
+        }), n@10003, i);
+    (match ((std/core/hnd/yielding())) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/hnd/yield-extend((fn(wild_){
+          w;
+        }));
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> w;
+    });
+  };
+// Convert a vector to a list with an optional tail.
+pub fun vlist : forall<a> (v : vector<a>, tail : ? (list<a>)) -> list<a>
+  = forall<a> fn(v, tail){
+    std/core/vector/@extern-vlist(v, (match (tail) {
+        ((std/core/types/@Optional((@uniq-tail@919)) : ? (list<a>) ) as @pat)
+           -> @uniq-tail@919;
+        ((@skip std/core/types/@None() : ? (list<a>) ) as @pat@0)
+           -> std/core/types/Nil;
+      }));
+  };
+// Convert a vector to a list.
+pub fun list : forall<a> (v : vector<a>) -> list<a>
+  = forall<a> fn(v){
+    std/core/vector/vlist(v, std/core/types/@None);
+  };
+fun unvlist : forall<a> (xs : list<a>) -> vector<a>
+  = forall<a> fn(xs){
+    std/core/vector/@extern-unvlist(xs);
+  };
+// Convert a list to a vector.
+pub fun list/vector : forall<a> (xs : list<a>) -> vector<a>
+  = forall<a> fn(xs){
+    std/core/vector/unvlist(xs);
+  };
+fip fun ssize_t/is-zero : (i : ssize_t) -> bool
+  = fn(i){
+    std/core/vector/ssize_t/@extern-is-zero(i);
+  };
+// Return the element at position `index`  in vector `v`  without bounds check!
+extern unsafe-idx : forall<a> (^ v : vector<a>, index : ssize_t) -> a {
+  c inline "kk_vector_at_borrow(#1,#2,kk_context())";
+  cs inline "(#1)[#2]";
+  js inline "(#1)[#2]";
+};
+extern unsafe-assign : forall<a> (v : vector<a>, i : ssize_t, x : a) -> () {
+  c inline "kk_vector_unsafe_assign(#1,#2,#3,kk_context())";
+  cs inline "(#1)[#2] = #3";
+  js inline "(#1)[#2] = #3";
+};
+extern unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
+  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
+  cs inline "(new ##1[#1])";
+  js inline "Array(#1)";
+};
+extern @extern-unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
+  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
+  cs inline "(new ##1[#1])";
+  js inline "Array(#1)";
+};
+// Assign to an entry in a local `:vector` variable.
+pub extern assign/@index : forall<a,e,h> (^ self : local-var<h,vector<a>>, ^ index : int, assigned : a) -> <local<h>,exn|e> () {
+  c inline "kk_ref_vector_assign_borrow(#1,#2,#3,kk_context())";
+  cs inline "(#1)[(int)#2] = #3";
+  js inline "(#1).value[#2] = #3";
+};
+// Length of a vector.
+extern lengthz : forall<a> (^ v : vector<a>) -> ssize_t {
+  c inline "kk_vector_len_borrow(#1,kk_context())";
+  cs inline "((#1).Length)";
+  js inline "((#1).length)";
+};
+// Create a new vector of length `n`  with initial elements `init`` .
+extern @extern-vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a> {
+  c inline "kk_vector_alloc(#1,#2,kk_context())";
+  cs inline "Primitive.NewArray<##1>(#1,#2)";
+  js inline "_vector_initz(#1,#2)";
+};
+// Create a new vector of length `n`  with initial elements given by a total function `f` .
+extern @extern-vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a> {
+  c inline "kk_vector_init_total(#1,#2,kk_context())";
+  cs inline "Primitive.NewArray<##1>(#1,#2)";
+  js inline "_vector_initf(#1,#2)";
+};
+// Create an empty vector.
+pub extern unit/vector : forall<a> () -> vector<a> {
+  c inline "kk_vector_empty()";
+  cs inline "new ##1[0]";
+  js inline "[]";
+};
+// Convert a vector to a list with an optional tail.
+extern @extern-vlist : forall<a> (v : vector<a>, tail : list<a>) -> list<a> {
+  c inline "kk_vector_to_list(#1,#2,kk_context())";
+  cs inline "Primitive.VList<##1>(#1,#2)";
+  js inline "_vlist(#1,#2)";
+};
+extern @extern-unvlist : forall<a> (xs : list<a>) -> vector<a> {
+  c inline "kk_list_to_vector(#1,kk_context())";
+  cs inline "Primitive.UnVList<##1>(#1)";
+  js inline "_unvlist(#1)";
+};
+// Minimal set of operations that we need in `std/core`.
+fip extern ssize_t/(<=) : (ssize_t, ssize_t) -> bool = inline "(#1 <= #2)";
+fip extern ssize_t/(>=) : (ssize_t, ssize_t) -> bool = inline "(#1 >= #2)";
+fip extern ssize_t/(<) : (ssize_t, ssize_t) -> bool = inline "(#1 < #2)";
+fip extern ssize_t/(+) : (ssize_t, ssize_t) -> ssize_t {
+  inline "(#1 + #2)";
+  js inline "((#1 + #2)|0)";
+};
+fip extern ssize_t/(-) : (ssize_t, ssize_t) -> ssize_t {
+  inline "(#1 - #2)";
+  js inline "((#1 - #2)|0)";
+};
+fip extern ssize_t/is-pos : (i : ssize_t) -> bool = inline "(#1 > 0)";
+fip extern ssize_t/is-neg : (i : ssize_t) -> bool = inline "(#1 < 0)";
+fip extern ssize_t/@extern-is-zero : (i : ssize_t) -> bool {
+  inline "(#1 == 0)";
+  js inline "(#1 === 0)";
+};
+fip extern ssize_t/@extern-decr : (i : ssize_t) -> ssize_t = inline "(#1 - 1)";
+fip extern ssize_t/@extern-incr : (i : ssize_t) -> ssize_t = inline "(#1 + 1)";
 // Standard tuple functions.
 module std/core/tuple
 import std/core/types = std/core/types = "";
@@ -6599,405 +6996,6 @@ pub fun show-tuple : forall<a,b,e> (x : (a, b), showfst : (a) -> e string, shows
   = forall<a,b,e> fn(x, showfst, showsnd){
     std/core/tuple/tuple2/show(x, showfst, showsnd);
   };
-// Standard vector functions.
-module std/core/vector
-import std/core/types = std/core/types = "";
-import std/core/undiv = std/core/undiv = "";
-import std/core/hnd = std/core/hnd = "";
-import std/core/exn = std/core/exn = "";
-import std/core/int = std/core/int = "";
-pub fun @unsafe-vector : forall<a> (n : ssize_t) -> vector<a>
-  = forall<a> fn(n){
-    std/core/vector/@extern-unsafe-vector(n);
-  };
-// Create a new vector of length `n`  with initial elements `init`` .
-fun vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a>
-  = forall<a,e> fn(n, init){
-    std/core/vector/@extern-vector-alloc(n, init);
-  };
-// Create a new vector of length `n`  with initial elements given by a total function `f` .
-fun vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a>
-  = forall<a> fn(n, f){
-    std/core/vector/@extern-vector-alloc-total(n, f);
-  };
-// Return the element at position `index`  in vector `v`.
-// Raise an out of bounds exception if `index < 0`  or `index >= v.length`.
-pub fun @index : forall<a> (^ v : vector<a>, ^ index : int) -> exn a
-  = forall<a> fn(v, index){
-    val idx : ssize_t
-          = std/core/int/ssize_t(index);
-    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/vector/unsafe-idx(v, idx);
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/exn/throw("index out of bounds", (std/core/types/@Optional(std/core/exn/ExnRange)));
-    });
-  };
-// Return the element at position `index` in vector `v`, or `Nothing` if out of bounds
-pub fun at : forall<a> (^ v : vector<a>, ^ index : int) -> maybe<a>
-  = forall<a> fn(v, index){
-    val idx : ssize_t
-          = std/core/int/ssize_t(index);
-    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/types/Just((std/core/vector/unsafe-idx(v, idx)));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/types/Nothing;
-    });
-  };
-// Return the length of a vector.
-pub fun length : forall<a> (^ v : vector<a>) -> int
-  = forall<a> fn(v){
-    std/core/int/ssize_t/int((std/core/vector/lengthz(v)));
-  };
-// Create a new vector of length `n`  with initial elements `default` .
-pub fun vector : forall<a> (^ n : int, default : a) -> vector<a>
-  = forall<a> fn(n, default){
-    std/core/vector/vector-alloc((std/core/int/ssize_t(n)), default);
-  };
-// Create a new vector of length `n`  with initial elements given by _total_ function `f`.
-// (can be more efficient than `vector-init`)
-pub fun vector-init-total : forall<a> (^ n : int, f : (int) -> a) -> vector<a>
-  = forall<a> fn(n, f){
-    std/core/vector/vector-alloc-total((std/core/int/ssize_t(n)), (fn(i){
-        (f((std/core/int/ssize_t/int(i))));
-      }));
-  };
-fip fun ssize_t/decr : (i : ssize_t) -> ssize_t
-  = fn(i){
-    std/core/vector/ssize_t/@extern-decr(i);
-  };
-fip fun ssize_t/incr : (i : ssize_t) -> ssize_t
-  = fn(i){
-    std/core/vector/ssize_t/@extern-incr(i);
-  };
-// monadic lift
-fun @mlift-lift-forz@1011@10045 : forall<e> (action : (ssize_t) -> e (), i : ssize_t, n : ssize_t, wild_ : ()) -> e ()
-  = forall<e> fn(action, i, n, wild_){
-    val i@0@10000 : ssize_t
-          = std/core/vector/ssize_t/incr(i);
-    std/core/vector/@lift-forz@1011(action, n, i@0@10000);
-  };
-// lifted local: forz, rep
-fun @lift-forz@1011 : forall<e> (action : (ssize_t) -> e (), n : ssize_t, i : ssize_t) -> e ()
-  = forall<e> fn(action@0, n@0, i@0){
-    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> val x@10051 : ()
-                  = action@0(i@0);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@0)
-             -> std/core/hnd/yield-extend((fn(wild_@0){
-              (std/core/vector/@mlift-lift-forz@1011@10045(action@0, i@0, n@0, wild_@0));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> val i@0@10000@0 : ssize_t
-                      = std/core/vector/ssize_t/incr(i@0);
-            std/core/vector/@lift-forz@1011(action@0, n@0, i@0@10000@0);
-        });
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/types/Unit;
-    });
-  };
-// Executes `action` `n` times for each integer between [`0`,`n`)  (excluding `n` ).
-// If `n <= 0`  the function returns without any call to `action` .
-fun forz : forall<e> (n : ssize_t, action : (ssize_t) -> e ()) -> e ()
-  = forall<e> fn(n, action){
-    val i : ssize_t
-          = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011(action, n, i);
-  };
-// monadic lift
-fun @mlift-vector-init@10046 : forall<a,e> (i@0 : ssize_t, v : vector<a>, @y-x10027 : a) -> e ()
-  = forall<a,e> fn(i@0, v, @y-x10027){
-    std/core/vector/unsafe-assign(v, i@0, @y-x10027);
-  };
-// monadic lift
-fun @mlift-vector-init@10047 : forall<a,e> (v : vector<a>, wild_ : ()) -> e vector<a>
-  = forall<a,e> fn(v, wild_){
-    v;
-  };
-// Create a new vector of length `n`  with initial elements given by function `f` which can have a control effect.
-pub fun vector-init : forall<a,e> (^ n : int, f : (int) -> e a) -> e vector<a>
-  = forall<a,e> fn(n, f){
-    val len : ssize_t
-      = std/core/int/ssize_t(n);
-    val v : vector<a>
-      = std/core/vector/unsafe-vector(len);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    val x@10054 : ()
-      = std/core/vector/@lift-forz@1011((fn(i@0){
-          val x@0@10057 : a
-                = (f((std/core/int/ssize_t/int(i@0))));
-          (match ((std/core/hnd/yielding())) {
-            ((std/core/types/True() : bool ) as @pat@1)
-               -> std/core/hnd/yield-extend((fn(@y-x10027){
-                (std/core/vector/unsafe-assign(v, i@0, @y-x10027));
-              }));
-            ((@skip std/core/types/False() : bool ) as @pat@0@0)
-               -> std/core/vector/unsafe-assign(v, i@0, x@0@10057);
-          });
-        }), len, i);
-    (match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/hnd/yield-extend((fn(wild_){
-          v;
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> v;
-    });
-  };
-fun foreach-indexedz : forall<a,e> (v : vector<a>, f : (ssize_t, a) -> e ()) -> e ()
-  = forall<a,e> fn(v, f){
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011((fn(i@0){
-        (f(i@0, (std/core/vector/unsafe-idx(v, i@0))));
-      }), n@10003, i);
-  };
-// Invoke a function `f` for each element in a vector `v`
-pub fun foreach : forall<a,e> (v : vector<a>, f : (a) -> e ()) -> e ()
-  = forall<a,e> fn(v, f){
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011((fn(i@0){
-        val x@10015 : a
-              = (std/core/vector/unsafe-idx(v, i@0));
-        (f(x@10015));
-      }), n@10003, i);
-  };
-// Invoke a function `f` for each element in a vector `v`
-pub fun foreach-indexed : forall<a,e> (v : vector<a>, f : (int, a) -> e ()) -> e ()
-  = forall<a,e> fn(v, f){
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011((fn(i@0){
-        val x@10017 : a
-              = (std/core/vector/unsafe-idx(v, i@0));
-        (f((std/core/int/ssize_t/int(i@0)), x@10017));
-      }), n@10003, i);
-  };
-// monadic lift
-fun @mlift-lift-for-whilez@1012@10048 : forall<a,e> (action : (ssize_t) -> e maybe<a>, i : ssize_t, n : ssize_t, @y-x10035 : maybe<a>) -> e maybe<a>
-  = forall<a,e> fn(action, i, n, @y-x10035){
-    (match (@y-x10035) {
-      ((std/core/types/Nothing() : maybe<a> ) as @pat@0)
-         -> val i@0@10005 : ssize_t
-                  = std/core/vector/ssize_t/incr(i);
-        std/core/vector/@lift-for-whilez@1012(action, n, i@0@10005);
-      ((@skip std/core/types/Just((x)) : maybe<a> ) as @pat@1)
-         -> std/core/types/Just(x);
-    });
-  };
-// lifted local: for-whilez, rep
-fun @lift-for-whilez@1012 : forall<a,e> (action : (ssize_t) -> e maybe<a>, n : ssize_t, i : ssize_t) -> e maybe<a>
-  = forall<a,e> fn(action@0, n@0, i@0){
-    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> val x@0@10064 : maybe<a>
-                  = action@0(i@0);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@2)
-             -> std/core/hnd/yield-extend((fn(@y-x10035@0){
-              (std/core/vector/@mlift-lift-for-whilez@1012@10048(action@0, i@0, n@0, @y-x10035@0));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> (match (x@0@10064) {
-              ((std/core/types/Nothing() : maybe<a> ) as @pat@0@1)
-                 -> val i@0@10005@0 : ssize_t
-                          = std/core/vector/ssize_t/incr(i@0);
-                std/core/vector/@lift-for-whilez@1012(action@0, n@0, i@0@10005@0);
-              ((@skip std/core/types/Just((x@1)) : maybe<a> ) as @pat@1@0)
-                 -> std/core/types/Just(x@1);
-            });
-        });
-      ((@skip std/core/types/False() : bool ) as @pat@2@0)
-         -> std/core/types/Nothing;
-    });
-  };
-// Executes `action` at most `n` times for each integer between `0`  upto `n`  (excluding `n` ).
-// If `n <= 0`  the function returns without any call to `action` .
-// If `action` returns `Just`, the iteration is stopped and the result returned
-fun for-whilez : forall<a,e> (n : ssize_t, action : (ssize_t) -> e maybe<a>) -> e maybe<a>
-  = forall<a,e> fn(n, action){
-    val i : ssize_t
-          = std/core/int/ssize_t(0);
-    std/core/vector/@lift-for-whilez@1012(action, n, i);
-  };
-// Invoke a function `f` for each element in a vector `v`.
-// If `f` returns `Just`, the iteration is stopped early and the result is returned.
-pub fun foreach-while : forall<a,b,e> (v : vector<a>, f : (a) -> e maybe<b>) -> e maybe<b>
-  = forall<a,b,e> fn(v, f){
-    val n@10006 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-for-whilez@1012((fn(i@0){
-        (f((std/core/vector/unsafe-idx(v, i@0))));
-      }), n@10006, i);
-  };
-// monadic lift
-fun @mlift-map@10049 : forall<a,e> (i@0 : ssize_t, w : vector<a>, @y-x10042 : a) -> e ()
-  = forall<a,e> fn(i@0, w, @y-x10042){
-    std/core/vector/unsafe-assign(w, i@0, @y-x10042);
-  };
-// monadic lift
-fun @mlift-map@10050 : forall<a,e> (w : vector<a>, wild_ : ()) -> e vector<a>
-  = forall<a,e> fn(w, wild_){
-    w;
-  };
-// Apply a function `f` to each element in a vector `v`
-pub fun map : forall<a,b,e> (v : vector<a>, f : (a) -> e b) -> e vector<b>
-  = forall<a,b,e> fn(v, f){
-    val w : vector<b>
-      = std/core/vector/unsafe-vector((std/core/int/ssize_t((std/core/int/ssize_t/int((std/core/vector/lengthz(v)))))));
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    val x@10067 : ()
-      = std/core/vector/@lift-forz@1011((fn(i@0){
-          val x@10019 : a
-            = (std/core/vector/unsafe-idx(v, i@0));
-          val x@0@10070 : b
-            = (f(x@10019));
-          (match ((std/core/hnd/yielding())) {
-            ((std/core/types/True() : bool ) as @pat@1)
-               -> std/core/hnd/yield-extend((fn(@y-x10042){
-                (std/core/vector/unsafe-assign(w, i@0, @y-x10042));
-              }));
-            ((@skip std/core/types/False() : bool ) as @pat@0@0)
-               -> std/core/vector/unsafe-assign(w, i@0, x@0@10070);
-          });
-        }), n@10003, i);
-    (match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/hnd/yield-extend((fn(wild_){
-          w;
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> w;
-    });
-  };
-// Convert a vector to a list with an optional tail.
-pub fun vlist : forall<a> (v : vector<a>, tail : ? (list<a>)) -> list<a>
-  = forall<a> fn(v, tail){
-    std/core/vector/@extern-vlist(v, (match (tail) {
-        ((std/core/types/@Optional((@uniq-tail@919)) : ? (list<a>) ) as @pat)
-           -> @uniq-tail@919;
-        ((@skip std/core/types/@None() : ? (list<a>) ) as @pat@0)
-           -> std/core/types/Nil;
-      }));
-  };
-// Convert a vector to a list.
-pub fun list : forall<a> (v : vector<a>) -> list<a>
-  = forall<a> fn(v){
-    std/core/vector/vlist(v, std/core/types/@None);
-  };
-fun unvlist : forall<a> (xs : list<a>) -> vector<a>
-  = forall<a> fn(xs){
-    std/core/vector/@extern-unvlist(xs);
-  };
-// Convert a list to a vector.
-pub fun list/vector : forall<a> (xs : list<a>) -> vector<a>
-  = forall<a> fn(xs){
-    std/core/vector/unvlist(xs);
-  };
-fip fun ssize_t/is-zero : (i : ssize_t) -> bool
-  = fn(i){
-    std/core/vector/ssize_t/@extern-is-zero(i);
-  };
-// Return the element at position `index`  in vector `v`  without bounds check!
-extern unsafe-idx : forall<a> (^ v : vector<a>, index : ssize_t) -> a {
-  c inline "kk_vector_at_borrow(#1,#2,kk_context())";
-  cs inline "(#1)[#2]";
-  js inline "(#1)[#2]";
-};
-extern unsafe-assign : forall<a> (v : vector<a>, i : ssize_t, x : a) -> () {
-  c inline "kk_vector_unsafe_assign(#1,#2,#3,kk_context())";
-  cs inline "(#1)[#2] = #3";
-  js inline "(#1)[#2] = #3";
-};
-extern unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
-  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
-  cs inline "(new ##1[#1])";
-  js inline "Array(#1)";
-};
-extern @extern-unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
-  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
-  cs inline "(new ##1[#1])";
-  js inline "Array(#1)";
-};
-// Assign to an entry in a local `:vector` variable.
-pub extern assign/@index : forall<a,e,h> (^ self : local-var<h,vector<a>>, ^ index : int, assigned : a) -> <local<h>,exn|e> () {
-  c inline "kk_ref_vector_assign_borrow(#1,#2,#3,kk_context())";
-  cs inline "(#1)[(int)#2] = #3";
-  js inline "(#1).value[#2] = #3";
-};
-// Length of a vector.
-extern lengthz : forall<a> (^ v : vector<a>) -> ssize_t {
-  c inline "kk_vector_len_borrow(#1,kk_context())";
-  cs inline "((#1).Length)";
-  js inline "((#1).length)";
-};
-// Create a new vector of length `n`  with initial elements `init`` .
-extern @extern-vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a> {
-  c inline "kk_vector_alloc(#1,#2,kk_context())";
-  cs inline "Primitive.NewArray<##1>(#1,#2)";
-  js inline "_vector_initz(#1,#2)";
-};
-// Create a new vector of length `n`  with initial elements given by a total function `f` .
-extern @extern-vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a> {
-  c inline "kk_vector_init_total(#1,#2,kk_context())";
-  cs inline "Primitive.NewArray<##1>(#1,#2)";
-  js inline "_vector_initf(#1,#2)";
-};
-// Create an empty vector.
-pub extern unit/vector : forall<a> () -> vector<a> {
-  c inline "kk_vector_empty()";
-  cs inline "new ##1[0]";
-  js inline "[]";
-};
-// Convert a vector to a list with an optional tail.
-extern @extern-vlist : forall<a> (v : vector<a>, tail : list<a>) -> list<a> {
-  c inline "kk_vector_to_list(#1,#2,kk_context())";
-  cs inline "Primitive.VList<##1>(#1,#2)";
-  js inline "_vlist(#1,#2)";
-};
-extern @extern-unvlist : forall<a> (xs : list<a>) -> vector<a> {
-  c inline "kk_list_to_vector(#1,kk_context())";
-  cs inline "Primitive.UnVList<##1>(#1)";
-  js inline "_unvlist(#1)";
-};
-// Minimal set of operations that we need in `std/core`.
-fip extern ssize_t/(<=) : (ssize_t, ssize_t) -> bool = inline "(#1 <= #2)";
-fip extern ssize_t/(>=) : (ssize_t, ssize_t) -> bool = inline "(#1 >= #2)";
-fip extern ssize_t/(<) : (ssize_t, ssize_t) -> bool = inline "(#1 < #2)";
-fip extern ssize_t/(+) : (ssize_t, ssize_t) -> ssize_t {
-  inline "(#1 + #2)";
-  js inline "((#1 + #2)|0)";
-};
-fip extern ssize_t/(-) : (ssize_t, ssize_t) -> ssize_t {
-  inline "(#1 - #2)";
-  js inline "((#1 - #2)|0)";
-};
-fip extern ssize_t/is-pos : (i : ssize_t) -> bool = inline "(#1 > 0)";
-fip extern ssize_t/is-neg : (i : ssize_t) -> bool = inline "(#1 < 0)";
-fip extern ssize_t/@extern-is-zero : (i : ssize_t) -> bool {
-  inline "(#1 == 0)";
-  js inline "(#1 === 0)";
-};
-fip extern ssize_t/@extern-decr : (i : ssize_t) -> ssize_t = inline "(#1 - 1)";
-fip extern ssize_t/@extern-incr : (i : ssize_t) -> ssize_t = inline "(#1 + 1)";
-check   : std/core/show
-check   : std/core/console
 // Standard `:string` functions.
 module std/core/string
 import std/core/types = std/core/types = "";
@@ -7329,8 +7327,6 @@ extern listchar/@extern-string : (cs : list<char>) -> string {
   cs inline "Primitive.ListToString(#1)";
   js inline "_list_to_string(#1)";
 };
-check   : std/core/debug
-check   : std/core
 // Efficient views on strings.
 module std/core/sslice
 import std/core/types = std/core/types = "";
@@ -8179,7 +8175,10 @@ extern @extern-xends-with : (s : string, post : string) -> bool {
   cs inline "#1.EndsWith(#2)";
   js inline "((#1).indexOf(#2, (#1).length - (#2).length) !== -1)";
 };
-check   : analysis/aac/benchmarks
+check   : std/core/show
+check   : std/core/console
+check   : std/core/debug
+check   : std/core
 // Standard `:list` functions.
 module std/core/list
 import std/core/types = std/core/types = "";
@@ -10071,6 +10070,7 @@ pub fun unlines : (xs : list<string>) -> string
          -> std/core/string/vectorsep/join((std/core/vector/unvlist(xs)), "\x0A");
     };
   };
+check   : analysis/aac/benchmarks
 // Standard show functions.
 module std/core/show
 import std/core/types = std/core/types = "";
@@ -10953,2941 +10953,12 @@ import std/core/console = std/core/console pub = "";
 import std/core = std/core = "";
 // Index into an evidence vector
 local alias hnd/ev-index = ssize_t = 1;
-pub recursive effect type analysis/aac/benchmarks/ex1[2,1,3,22] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex1[2,1,2,10](@cfc: int, @ctl-ex1: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex1 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex1 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex1 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex2[35,1,36,29] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex2[35,1,35,10](@cfc: int, @ctl-ex2: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex2 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex2 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex2 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex31[78,1,79,23] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex31[78,1,78,11](@cfc: int, @ctl-ex31: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex31 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex31 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex31 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex32[81,1,82,23] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex32[81,1,81,11](@cfc: int, @ctl-ex32: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex32 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex32 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex32 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex33[84,1,85,29] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex33[84,1,84,11](@cfc: int, @ctl-ex33: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex33 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex33 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex33 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex41[131,1,132,23] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex41[131,1,131,11](@cfc: int, @ctl-ex41: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex41 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex41 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex41 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex42[134,1,135,23] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex42[134,1,134,11](@cfc: int, @ctl-ex42: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex42 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex42 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex42 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex43[137,1,138,29] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex43[137,1,137,11](@cfc: int, @ctl-ex43: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex43 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex43 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex43 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex51[175,1,176,23] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex51[175,1,175,11](@cfc: int, @ctl-ex51: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex51 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex51 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex51 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex52[178,1,179,29] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex52[178,1,178,11](@cfc: int, @ctl-ex52: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex52 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<(int, int),int,(analysis/aac/benchmarks/ex52 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex52 :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/ex53[181,1,182,23] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-ex53[181,1,181,11](@cfc: int, @ctl-ex53: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex53 :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/ex53 :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/ex53 :: (E, V) -> V)<(e :: E),a> = 1;
-};
 pub recursive effect type analysis/aac/benchmarks/get[288,1,289,22] <(e :: E),a> :: (E, V) -> V {
   pub con analysis/aac/benchmarks/@Hnd-get[288,1,288,10](@cfc: int, @ctl-get: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/get :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/get :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/get :: (E, V) -> V)<(e :: E),a> = 1;
-};
-pub recursive effect type analysis/aac/benchmarks/iter[210,1,211,21] <(e :: E),a> :: (E, V) -> V {
-  pub con analysis/aac/benchmarks/@Hnd-iter[210,1,210,11](@cfc: int, @ctl-it: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/iter :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,int,(analysis/aac/benchmarks/iter :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/iter :: (E, V) -> V)<(e :: E),a> = 1;
 };
 pub recursive effect type analysis/aac/benchmarks/set[290,1,291,21] <(e :: E),a> :: (E, V) -> V {
   pub con analysis/aac/benchmarks/@Hnd-set[290,1,290,10](@cfc: int, @ctl-set: (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,(),(analysis/aac/benchmarks/set :: (E, V) -> V),(e :: E),a>){0,2,8} : forall<(e :: E),a> (int, (hnd/clause1 :: (V, V, (E, V) -> V, E, V) -> V)<int,(),(analysis/aac/benchmarks/set :: (E, V) -> V),(e :: E),a>) -> (analysis/aac/benchmarks/set :: (E, V) -> V)<(e :: E),a> = 1;
 };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex1` type.
-fun ex1/@cfc : forall<e,a> (^ ex1 : analysis/aac/benchmarks/ex1<e,a>) -> int
-  = forall<e,a> fn(ex1@0){
-    (match (ex1@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex1((@x), (@pat@0)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex1`
-pub val ex1/@tag : hnd/htag<analysis/aac/benchmarks/ex1>
-  = std/core/hnd/Htag("ex1@benchmarks");
-// handler for the effect `:ex1`
-pub fun ex1/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex1<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex1|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex1/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex1` constructor field of the `:ex1` type.
-fun ex1/@ctl-ex1 : forall<e,a> (^ ex1 : analysis/aac/benchmarks/ex1<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a>
-  = forall<e,a> fn(ex1@0){
-    (match (ex1@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@x)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex1` operation out of effect `:ex1`
-pub fun ex1/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex1<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-         -> @ctl-ex1;
-    });
-  };
-// Call the `ctl ex1` operation of the effect `:ex1`
-pub fun ex1 : (i : int) -> analysis/aac/benchmarks/ex1 int
-  = fn(i){
-    val ev@10468 : hnd/ev<analysis/aac/benchmarks/ex1>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10468) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat@2)
-             -> (match (@ctl-ex1) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10468, i);
-            });
-        });
-    };
-  };
-pub fun analyze-ex1 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 1 - exceptions");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  a;
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        val ev@10472 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-              = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        (match (ev@10472) {
-          ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m@0), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat)
-             -> (match (h) {
-              ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat@2)
-                 -> (match (@ctl-ex1) {
-                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2@0)
-                     -> f(m@0, ev@10472, 1);
-                });
-            });
-        });
-      }));
-  };
-pub fun result-ex1 : () -> int
-  = fn(){
-    1;
-  };
-pub fun analyze-ex10 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 10 - simple");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  (resume((std/core/int/int-add(a, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        val ev@10476 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-              = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        (match (ev@10476) {
-          ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m@0), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat)
-             -> (match (h) {
-              ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat@2)
-                 -> (match (@ctl-ex1) {
-                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2@0)
-                     -> f(m@0, ev@10476, 0);
-                });
-            });
-        });
-      }));
-  };
-pub fun result-ex10 : () -> int
-  = fn(){
-    1;
-  };
-// monadic lift
-fun @mlift-analyze-ex11@10416 : (@y-x10103 : int) -> analysis/aac/benchmarks/ex1 int
-  = fn(@y-x10103){
-    std/core/int/int-add(@y-x10103, 1);
-  };
-pub fun analyze-ex11 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 121 - simple cont");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  (resume((std/core/int/int-add(a, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        val ev@10482 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-          = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        val x@0@10480 : int
-          = (match (ev@10482) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-                   -> (match (@ctl-ex1) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2)
-                       -> f(m@0, ev@10482, 0);
-                  });
-              });
-          });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@3)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex11@10416);
-          ((@skip std/core/types/False() : bool ) as @pat@0@1)
-             -> std/core/int/int-add(x@0@10480, 1);
-        });
-      }));
-  };
-pub fun result-ex11 : () -> int
-  = fn(){
-    2;
-  };
-pub fun analyze-ex12 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 122 - simple cont");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10007 : int
-                        = (resume((std/core/int/int-add(a, 1))));
-                  (std/core/int/int-add(x@10007, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        val ev@10486 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-              = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        (match (ev@10486) {
-          ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m@0), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat)
-             -> (match (h) {
-              ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat@2)
-                 -> (match (@ctl-ex1) {
-                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2@0)
-                     -> f(m@0, ev@10486, 0);
-                });
-            });
-        });
-      }));
-  };
-pub fun result-ex12 : () -> int
-  = fn(){
-    2;
-  };
-// monadic lift
-fun @mlift-analyze-ex13@10417 : (@y-x10105 : int) -> analysis/aac/benchmarks/ex1 int
-  = fn(@y-x10105){
-    std/core/int/int-add(@y-x10105, 1);
-  };
-pub fun analyze-ex13 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 123 - simple cont2");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10012 : int
-                        = (resume((std/core/int/int-add(a, 1))));
-                  (std/core/int/int-add(x@10012, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        val ev@10492 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-          = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        val x@0@10490 : int
-          = (match (ev@10492) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-                   -> (match (@ctl-ex1) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2)
-                       -> f(m@0, ev@10492, 0);
-                  });
-              });
-          });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@3)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex13@10417);
-          ((@skip std/core/types/False() : bool ) as @pat@0@1)
-             -> std/core/int/int-add(x@0@10490, 1);
-        });
-      }));
-  };
-pub fun result-ex13 : () -> int
-  = fn(){
-    3;
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex2` type.
-fun ex2/@cfc : forall<e,a> (^ ex2 : analysis/aac/benchmarks/ex2<e,a>) -> int
-  = forall<e,a> fn(ex2@0){
-    (match (ex2@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex2((@x), (@pat@0)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex2`
-pub val ex2/@tag : hnd/htag<analysis/aac/benchmarks/ex2>
-  = std/core/hnd/Htag("ex2@benchmarks");
-// handler for the effect `:ex2`
-pub fun ex2/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex2<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex2|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex2/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex2` constructor field of the `:ex2` type.
-fun ex2/@ctl-ex2 : forall<e,a> (^ ex2 : analysis/aac/benchmarks/ex2<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a>
-  = forall<e,a> fn(ex2@0){
-    (match (ex2@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0), (@x)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex2` operation out of effect `:ex2`
-pub fun ex2/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex2<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0), (@ctl-ex2)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat)
-         -> @ctl-ex2;
-    });
-  };
-// Call the `ctl ex2` operation of the effect `:ex2`
-pub fun ex2 : (a : (int, int)) -> analysis/aac/benchmarks/ex2 int
-  = fn(a){
-    val ev@10496 : hnd/ev<analysis/aac/benchmarks/ex2>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10496) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex2> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0@0), (@ctl-ex2)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat@2)
-             -> (match (@ctl-ex2) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10496, a);
-            });
-        });
-    };
-  };
-pub fun analyze-ex2 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 20 - nondeterminism");
-    analysis/aac/benchmarks/ex2/@handle((analysis/aac/benchmarks/@Hnd-ex2(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10017 : int
-                    = (resume((match (a) {
-                      ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                         -> @x;
-                    })));
-                  val y@10018 : int
-                    = (resume((match (a) {
-                      ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                         -> @x@0;
-                    })));
-                  (std/core/int/int-add(x@10017, y@10018));
-                }), k));
-            })));
-        }))))), (fn(x@0){
-        x@0;
-      }), (fn(){
-        val ev@10500 : (hnd/ev<analysis/aac/benchmarks/ex2>)
-              = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        (match (ev@10500) {
-          ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex2> ) as @pat@2)
-             -> (match (h) {
-              ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0@2), (@ctl-ex2)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat@3)
-                 -> (match (@ctl-ex2) {
-                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a> ) as @pat@2@0)
-                     -> f(m@0, ev@10500, (std/core/types/Tuple2(1, 2)));
-                });
-            });
-        });
-      }));
-  };
-pub fun result-ex2 : () -> int
-  = fn(){
-    3;
-  };
-// monadic lift
-fun @mlift-analyze-ex201@10418 : (@y-x10109 : int) -> analysis/aac/benchmarks/ex1 int
-  = fn(@y-x10109){
-    std/core/int/int-add(@y-x10109, 1);
-  };
-pub fun analyze-ex201 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 20-1 - nondeterminism");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10022 : int
-                    = (resume(2));
-                  val y@10023 : int
-                    = (resume(3));
-                  (std/core/int/int-add(x@10022, y@10023));
-                }), k));
-            })));
-        }))))), (fn(x@0){
-        x@0;
-      }), (fn(){
-        val ev@10506 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-          = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        val x@1@10504 : int
-          = (match (ev@10506) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-                   -> (match (@ctl-ex1) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2)
-                       -> f(m@0, ev@10506, 1);
-                  });
-              });
-          });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@3)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex201@10418);
-          ((@skip std/core/types/False() : bool ) as @pat@0@1)
-             -> std/core/int/int-add(x@1@10504, 1);
-        });
-      }));
-  };
-pub fun result-ex201 : () -> int
-  = fn(){
-    7;
-  };
-// monadic lift
-fun @mlift-analyze-ex21@10419 : (@y-x10110 : int) -> analysis/aac/benchmarks/ex2 int
-  = fn(@y-x10110){
-    std/core/int/int-add(@y-x10110, 1);
-  };
-pub fun analyze-ex21 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 21 - nondeterminism");
-    analysis/aac/benchmarks/ex2/@handle((analysis/aac/benchmarks/@Hnd-ex2(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10025 : int
-                    = (resume((match (a) {
-                      ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                         -> @x;
-                    })));
-                  val y@10026 : int
-                    = (resume((match (a) {
-                      ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                         -> @x@0;
-                    })));
-                  (std/core/int/int-add(x@10025, y@10026));
-                }), k));
-            })));
-        }))))), (fn(x@0){
-        x@0;
-      }), (fn(){
-        val ev@10512 : (hnd/ev<analysis/aac/benchmarks/ex2>)
-          = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        val x@1@10510 : int
-          = (match (ev@10512) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@2), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex2> ) as @pat@3)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0@1), (@ctl-ex2)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat@2)
-                   -> (match (@ctl-ex2) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a> ) as @pat@2@0)
-                       -> f(m@0, ev@10512, (std/core/types/Tuple2(1, 2)));
-                  });
-              });
-          });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@2@1)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex21@10419);
-          ((@skip std/core/types/False() : bool ) as @pat@0@1@0)
-             -> std/core/int/int-add(x@1@10510, 1);
-        });
-      }));
-  };
-pub fun result-ex21 : () -> int
-  = fn(){
-    5;
-  };
-// monadic lift
-fun @mlift-analyze-ex22@10420 : (@y-x10111 : int, @y-x10112 : int) -> analysis/aac/benchmarks/ex2 int
-  = fn(@y-x10111, @y-x10112){
-    std/core/int/int-add(@y-x10111, @y-x10112);
-  };
-// monadic lift
-fun @mlift-analyze-ex22@10421 : (@y-x10111 : int) -> analysis/aac/benchmarks/ex2 int
-  = fn(@y-x10111){
-    val ev@10517 : hnd/ev<analysis/aac/benchmarks/ex2>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10515 : int
-      = match (ev@10517) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex2> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0), (@ctl-ex2)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat)
-               -> (match (@ctl-ex2) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a> ) as @pat@2)
-                   -> f(m, ev@10517, (std/core/types/Tuple2(1, 2)));
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10112){
-          (std/core/int/int-add(@y-x10111, @y-x10112));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10111, x@10515);
-    };
-  };
-pub fun analyze-ex22 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 22 - nondeterminism twice");
-    analysis/aac/benchmarks/ex2/@handle((analysis/aac/benchmarks/@Hnd-ex2(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10030 : int
-                    = (resume((match (a) {
-                      ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                         -> @x;
-                    })));
-                  val y@10031 : int
-                    = (resume((match (a) {
-                      ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                         -> @x@0;
-                    })));
-                  (std/core/int/int-add(x@10030, y@10031));
-                }), k));
-            })));
-        }))))), (fn(x@0){
-        x@0;
-      }), (fn(){
-        val ev@10525 : (hnd/ev<analysis/aac/benchmarks/ex2>)
-          = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        val x@1@10523 : int
-          = (match (ev@10525) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@2), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex2> ) as @pat@3)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex2((@pat@0@1), (@ctl-ex2)) : analysis/aac/benchmarks/ex2<e,a> ) as @pat@2)
-                   -> (match (@ctl-ex2) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex2,e,a> ) as @pat@2@0)
-                       -> f(m@0, ev@10525, (std/core/types/Tuple2(1, 2)));
-                  });
-              });
-          });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@2@1)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex22@10421);
-          ((@skip std/core/types/False() : bool ) as @pat@0@1@0)
-             -> analysis/aac/benchmarks/@mlift-analyze-ex22@10421(x@1@10523);
-        });
-      }));
-  };
-pub fun result-ex22 : () -> int
-  = fn(){
-    12;
-  };
-// monadic lift
-fun @mlift-analyze-ex23@10422 : (@y-x10113 : int, @y-x10114 : int) -> analysis/aac/benchmarks/ex1 int
-  = fn(@y-x10113, @y-x10114){
-    std/core/int/int-add(@y-x10113, @y-x10114);
-  };
-// monadic lift
-fun @mlift-analyze-ex23@10423 : (@y-x10113 : int) -> analysis/aac/benchmarks/ex1 int
-  = fn(@y-x10113){
-    val ev@10530 : hnd/ev<analysis/aac/benchmarks/ex1>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10528 : int
-      = match (ev@10530) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-               -> (match (@ctl-ex1) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2)
-                   -> f(m, ev@10530, 2);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10114){
-          (std/core/int/int-add(@y-x10113, @y-x10114));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10113, x@10528);
-    };
-  };
-pub fun analyze-ex23 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 23 - nondeterminism twice");
-    analysis/aac/benchmarks/ex1/@handle((analysis/aac/benchmarks/@Hnd-ex1(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10036 : int
-                    = (resume(3));
-                  val y@10037 : int
-                    = (resume(4));
-                  (std/core/int/int-add(x@10036, y@10037));
-                }), k));
-            })));
-        }))))), (fn(x@0){
-        x@0;
-      }), (fn(){
-        val ev@10538 : (hnd/ev<analysis/aac/benchmarks/ex1>)
-          = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-        val x@1@10536 : int
-          = (match (ev@10538) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@0), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex1> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex1((@pat@0), (@ctl-ex1)) : analysis/aac/benchmarks/ex1<e,a> ) as @pat)
-                   -> (match (@ctl-ex1) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex1,e,a> ) as @pat@2)
-                       -> f(m@0, ev@10538, 1);
-                  });
-              });
-          });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@3)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex23@10423);
-          ((@skip std/core/types/False() : bool ) as @pat@0@1)
-             -> analysis/aac/benchmarks/@mlift-analyze-ex23@10423(x@1@10536);
-        });
-      }));
-  };
-pub fun result-ex23 : () -> int
-  = fn(){
-    28;
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex31` type.
-fun ex31/@cfc : forall<e,a> (^ ex31 : analysis/aac/benchmarks/ex31<e,a>) -> int
-  = forall<e,a> fn(ex31@0){
-    (match (ex31@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex31((@x), (@pat@0)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex31`
-pub val ex31/@tag : hnd/htag<analysis/aac/benchmarks/ex31>
-  = std/core/hnd/Htag("ex31@benchmarks");
-// handler for the effect `:ex31`
-pub fun ex31/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex31<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex31|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex31/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex31` constructor field of the `:ex31` type.
-fun ex31/@ctl-ex31 : forall<e,a> (^ ex31 : analysis/aac/benchmarks/ex31<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a>
-  = forall<e,a> fn(ex31@0){
-    (match (ex31@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0), (@x)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex31` operation out of effect `:ex31`
-pub fun ex31/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex31<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-         -> @ctl-ex31;
-    });
-  };
-// Call the `ctl ex31` operation of the effect `:ex31`
-pub fun ex31 : (a : int) -> analysis/aac/benchmarks/ex31 int
-  = fn(a){
-    val ev@10542 : hnd/ev<analysis/aac/benchmarks/ex31>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10542) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat@2)
-             -> (match (@ctl-ex31) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10542, a);
-            });
-        });
-    };
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex32` type.
-fun ex32/@cfc : forall<e,a> (^ ex32 : analysis/aac/benchmarks/ex32<e,a>) -> int
-  = forall<e,a> fn(ex32@0){
-    (match (ex32@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex32((@x), (@pat@0)) : analysis/aac/benchmarks/ex32<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex32`
-pub val ex32/@tag : hnd/htag<analysis/aac/benchmarks/ex32>
-  = std/core/hnd/Htag("ex32@benchmarks");
-// handler for the effect `:ex32`
-pub fun ex32/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex32<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex32|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex32/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex32` constructor field of the `:ex32` type.
-fun ex32/@ctl-ex32 : forall<e,a> (^ ex32 : analysis/aac/benchmarks/ex32<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex32,e,a>
-  = forall<e,a> fn(ex32@0){
-    (match (ex32@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex32((@pat@0), (@x)) : analysis/aac/benchmarks/ex32<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex32` operation out of effect `:ex32`
-pub fun ex32/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex32<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex32,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex32((@pat@0), (@ctl-ex32)) : analysis/aac/benchmarks/ex32<e,a> ) as @pat)
-         -> @ctl-ex32;
-    });
-  };
-// Call the `ctl ex32` operation of the effect `:ex32`
-pub fun ex32 : (a : int) -> analysis/aac/benchmarks/ex32 int
-  = fn(a){
-    val ev@10546 : hnd/ev<analysis/aac/benchmarks/ex32>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10546) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex32> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex32((@pat@0@0), (@ctl-ex32)) : analysis/aac/benchmarks/ex32<e,a> ) as @pat@2)
-             -> (match (@ctl-ex32) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex32,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10546, a);
-            });
-        });
-    };
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex33` type.
-fun ex33/@cfc : forall<e,a> (^ ex33 : analysis/aac/benchmarks/ex33<e,a>) -> int
-  = forall<e,a> fn(ex33@0){
-    (match (ex33@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex33((@x), (@pat@0)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex33`
-pub val ex33/@tag : hnd/htag<analysis/aac/benchmarks/ex33>
-  = std/core/hnd/Htag("ex33@benchmarks");
-// handler for the effect `:ex33`
-pub fun ex33/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex33<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex33|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex33/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex33` constructor field of the `:ex33` type.
-fun ex33/@ctl-ex33 : forall<e,a> (^ ex33 : analysis/aac/benchmarks/ex33<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a>
-  = forall<e,a> fn(ex33@0){
-    (match (ex33@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0), (@x)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex33` operation out of effect `:ex33`
-pub fun ex33/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex33<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0), (@ctl-ex33)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat)
-         -> @ctl-ex33;
-    });
-  };
-// Call the `ctl ex33` operation of the effect `:ex33`
-pub fun ex33 : (a : (int, int)) -> analysis/aac/benchmarks/ex33 int
-  = fn(a){
-    val ev@10550 : hnd/ev<analysis/aac/benchmarks/ex33>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10550) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex33> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0@0), (@ctl-ex33)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat@2)
-             -> (match (@ctl-ex33) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10550, a);
-            });
-        });
-    };
-  };
-pub fun analyze-ex3 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 3 nested effects");
-    analysis/aac/benchmarks/ex31/@handle((analysis/aac/benchmarks/@Hnd-ex31(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10040 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10040, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex32/@handle((analysis/aac/benchmarks/@Hnd-ex32(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(y@0, resume@0){
-                      val ev@10557 : (hnd/ev<analysis/aac/benchmarks/ex31>)
-                        = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      val x@1@10555 : int
-                        = (match (ev@10557) {
-                          ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@1)
-                             -> (match (h) {
-                              ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-                                 -> (match (@ctl-ex31) {
-                                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2)
-                                     -> f(m@1, ev@10557, y@0);
-                                });
-                            });
-                        });
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat@3)
-                           -> std/core/hnd/yield-extend(resume@0);
-                        ((@skip std/core/types/False() : bool ) as @pat@0@1)
-                           -> resume@0(x@1@10555);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@0){
-                val ev@0@10560 : (hnd/ev<analysis/aac/benchmarks/ex32>)
-                      = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                (match (ev@0@10560) {
-                  ((@skip std/core/hnd/Ev<e,a>((@pat@0@1@0), (m@2), (h@0), (@pat@1@1)) : hnd/ev<analysis/aac/benchmarks/ex32> ) as @pat@3@0)
-                     -> (match (h@0) {
-                      ((@skip analysis/aac/benchmarks/@Hnd-ex32((@pat@0@2), (@ctl-ex32)) : analysis/aac/benchmarks/ex32<e,a> ) as @pat@4)
-                         -> (match (@ctl-ex32) {
-                          ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex32,e,a> ) as @pat@2@0)
-                             -> f@0(m@2, ev@0@10560, a@0);
-                        });
-                    });
-                });
-              }), 1));
-          })));
-      }));
-  };
-pub fun result-ex3 : () -> int
-  = fn(){
-    2;
-  };
-pub fun analyze-ex30 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 30 nested effects");
-    analysis/aac/benchmarks/ex31/@handle((analysis/aac/benchmarks/@Hnd-ex31(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10043 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10043, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex32/@handle((analysis/aac/benchmarks/@Hnd-ex32(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(y@0, resume@0){
-                      val ev@10567 : (hnd/ev<analysis/aac/benchmarks/ex31>)
-                        = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      val x@1@10565 : int
-                        = (match (ev@10567) {
-                          ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@1)
-                             -> (match (h) {
-                              ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-                                 -> (match (@ctl-ex31) {
-                                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2)
-                                     -> f(m@1, ev@10567, y@0);
-                                });
-                            });
-                        });
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat@3)
-                           -> std/core/hnd/yield-extend(resume@0);
-                        ((@skip std/core/types/False() : bool ) as @pat@0@1)
-                           -> resume@0(x@1@10565);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(a@0){
-                val ev@0@10570 : (hnd/ev<analysis/aac/benchmarks/ex31>)
-                      = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                (match (ev@0@10570) {
-                  ((@skip std/core/hnd/Ev<e,a>((@pat@0@1@0), (m@2), (h@0), (@pat@1@1)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@3@0)
-                     -> (match (h@0) {
-                      ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0@2), (@ctl-ex31@0)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat@4)
-                         -> (match (@ctl-ex31@0) {
-                          ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2@0)
-                             -> f@0(m@2, ev@0@10570, a@0);
-                        });
-                    });
-                });
-              }), 1));
-          })));
-      }));
-  };
-pub fun result-ex30 : () -> int
-  = fn(){
-    2;
-  };
-// monadic lift
-fun @mlift-analyze-ex31@10424 : (@y-x10131 : int, @y-x10132 : int) -> analysis/aac/benchmarks/ex31 int
-  = fn(@y-x10131, @y-x10132){
-    std/core/int/int-add(@y-x10131, @y-x10132);
-  };
-// monadic lift
-fun @mlift-analyze-ex31@10425 : (a@0@10048 : int, @y-x10131 : int) -> analysis/aac/benchmarks/ex31 int
-  = fn(a@0@10048, @y-x10131){
-    val ev@10575 : hnd/ev<analysis/aac/benchmarks/ex31>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10573 : int
-      = match (ev@10575) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-               -> (match (@ctl-ex31) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2)
-                   -> f(m, ev@10575, a@0@10048);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10132){
-          (std/core/int/int-add(@y-x10131, @y-x10132));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10131, x@10573);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex31@10426 : (@y-x10134 : int) -> <analysis/aac/benchmarks/ex33,analysis/aac/benchmarks/ex31> int
-  = fn(@y-x10134){
-    std/core/int/int-add(1, @y-x10134);
-  };
-pub fun analyze-ex31 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 31 - mixed effects op in handler after resume");
-    analysis/aac/benchmarks/ex31/@handle((analysis/aac/benchmarks/@Hnd-ex31(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10046 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10046, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex33/@handle((analysis/aac/benchmarks/@Hnd-ex33(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10048 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2@0){
-                            (match (tuple2@0) {
-                              ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                                 -> @x@0;
-                            });
-                          }), a));
-                      val x@1@10582 : int
-                        = (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0@1)) : (int, int) ) as @pat@2)
-                                 -> @x;
-                            });
-                          }), a))));
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat)
-                           -> std/core/hnd/yield-extend((fn(@y-x10131){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex31@10425(a@0@10048, @y-x10131));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex31@10425(a@0@10048, x@1@10582);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@2@10584 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-                      val ev@10586 : (hnd/ev<analysis/aac/benchmarks/ex33>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@10586) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@3), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex33> ) as @pat@4)
-                           -> (match (h) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0@2), (@ctl-ex33)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat@3)
-                               -> (match (@ctl-ex33) {
-                                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a> ) as @pat@2@0)
-                                   -> f(m@1, ev@10586, a@1);
-                              });
-                          });
-                      });
-                    }), (std/core/types/Tuple2(1, 2))));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@3@0)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex31@10426);
-              ((@skip std/core/types/False() : bool ) as @pat@0@2@0)
-                 -> std/core/int/int-add(1, x@2@10584);
-            });
-          })));
-      }));
-  };
-pub fun result-ex31 : () -> int
-  = fn(){
-    5;
-  };
-// monadic lift
-fun @mlift-analyze-ex32@10427 : (@y-x10136 : int, @y-x10137 : int) -> analysis/aac/benchmarks/ex31 int
-  = fn(@y-x10136, @y-x10137){
-    std/core/int/int-add(@y-x10136, @y-x10137);
-  };
-// monadic lift
-fun @mlift-analyze-ex32@10428 : (a : (int, int), resume@0 : (int) -> analysis/aac/benchmarks/ex31 int, @y-x10136 : int) -> analysis/aac/benchmarks/ex31 int
-  = fn(a, resume@0, @y-x10136){
-    val x@10589 : int
-          = resume@0((std/core/hnd/@open-none1((fn(tuple2@0){
-              (match (tuple2@0) {
-                ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                   -> @x@0;
-              });
-            }), a)));
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/hnd/yield-extend((fn(@y-x10137){
-          (std/core/int/int-add(@y-x10136, @y-x10137));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/int/int-add(@y-x10136, x@10589);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex32@10429 : (@y-x10139 : int) -> <analysis/aac/benchmarks/ex33,analysis/aac/benchmarks/ex31> int
-  = fn(@y-x10139){
-    std/core/int/int-add(1, @y-x10139);
-  };
-pub fun analyze-ex32 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 32 - mixed effects op in handler before resume");
-    analysis/aac/benchmarks/ex31/@handle((analysis/aac/benchmarks/@Hnd-ex31(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10049 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10049, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex33/@handle((analysis/aac/benchmarks/@Hnd-ex33(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10051 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                                 -> @x;
-                            });
-                          }), a));
-                      val ev@10597 : (hnd/ev<analysis/aac/benchmarks/ex31>)
-                        = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      val x@1@10595 : int
-                        = (match (ev@10597) {
-                          ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@2)
-                             -> (match (h) {
-                              ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat@1)
-                                 -> (match (@ctl-ex31) {
-                                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2@0)
-                                     -> f(m@1, ev@10597, a@0@10051);
-                                });
-                            });
-                        });
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat@1@1)
-                           -> std/core/hnd/yield-extend((fn(@y-x10136){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex32@10428(a, resume@0, @y-x10136));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex32@10428(a, resume@0, x@1@10595);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@3@10600 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-                      val ev@0@10602 : (hnd/ev<analysis/aac/benchmarks/ex33>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@0@10602) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@3), (m@2), (h@0), (@pat@1@1@0)) : hnd/ev<analysis/aac/benchmarks/ex33> ) as @pat@4)
-                           -> (match (h@0) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0@2), (@ctl-ex33)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat@3)
-                               -> (match (@ctl-ex33) {
-                                ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a> ) as @pat@2@1)
-                                   -> f@0(m@2, ev@0@10602, a@1);
-                              });
-                          });
-                      });
-                    }), (std/core/types/Tuple2(1, 2))));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@3@0)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex32@10429);
-              ((@skip std/core/types/False() : bool ) as @pat@0@2@0)
-                 -> std/core/int/int-add(1, x@3@10600);
-            });
-          })));
-      }));
-  };
-pub fun result-ex32 : () -> int
-  = fn(){
-    5;
-  };
-// monadic lift
-fun @mlift-analyze-ex33@10430 : (@y-x10143 : int, @y-x10145 : int) -> <analysis/aac/benchmarks/ex31,analysis/aac/benchmarks/ex33> int
-  = fn(@y-x10143, @y-x10145){
-    val x@0@10289 : int
-          = std/core/int/int-add(1, @y-x10143);
-    std/core/int/int-add(x@0@10289, @y-x10145);
-  };
-// monadic lift
-fun @mlift-analyze-ex33@10431 : (@y-x10143 : int) -> <analysis/aac/benchmarks/ex33,analysis/aac/benchmarks/ex31> int
-  = fn(@y-x10143){
-    val x@10605 : int
-      = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(a@1){
-          val ev@10607 : (hnd/ev<analysis/aac/benchmarks/ex31>)
-                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-          (match (ev@10607) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat)
-                   -> (match (@ctl-ex31) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2)
-                       -> f(m, ev@10607, a@1);
-                  });
-              });
-          });
-        }), 0);
-    val next@10606 : (int) -> <analysis/aac/benchmarks/ex31,analysis/aac/benchmarks/ex33> int
-      = fn(@y-x10145){
-        val x@0@10289 : int
-              = std/core/int/int-add(1, @y-x10143);
-        std/core/int/int-add(x@0@10289, @y-x10145);
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend(next@10606);
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> next@10606(x@10605);
-    };
-  };
-pub fun analyze-ex33 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 33 - mixed effects under both handlers - inner first");
-    analysis/aac/benchmarks/ex31/@handle((analysis/aac/benchmarks/@Hnd-ex31(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10052 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10052, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex33/@handle((analysis/aac/benchmarks/@Hnd-ex33(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                          (match (tuple2) {
-                            ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                               -> @x;
-                          });
-                        }), a))));
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@1@10614 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@0){
-                      val ev@10616 : (hnd/ev<analysis/aac/benchmarks/ex33>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@10616) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex33> ) as @pat@2)
-                           -> (match (h) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0@0), (@ctl-ex33)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat@1)
-                               -> (match (@ctl-ex33) {
-                                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a> ) as @pat@2@0)
-                                   -> f(m@1, ev@10616, a@0);
-                              });
-                          });
-                      });
-                    }), (std/core/types/Tuple2(1, 2))));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@1@1)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex33@10431);
-              ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-                 -> analysis/aac/benchmarks/@mlift-analyze-ex33@10431(x@1@10614);
-            });
-          })));
-      }));
-  };
-// inner first
-pub fun result-ex33 : () -> int
-  = fn(){
-    3;
-  };
-// monadic lift
-fun @mlift-analyze-ex34@10432 : (@y-x10149 : int, @y-x10151 : int) -> <analysis/aac/benchmarks/ex33,analysis/aac/benchmarks/ex31> int
-  = fn(@y-x10149, @y-x10151){
-    val x@0@10296 : int
-          = std/core/int/int-add(@y-x10149, 1);
-    std/core/int/int-add(x@0@10296, @y-x10151);
-  };
-// monadic lift
-fun @mlift-analyze-ex34@10433 : (@y-x10149 : int) -> <analysis/aac/benchmarks/ex31,analysis/aac/benchmarks/ex33> int
-  = fn(@y-x10149){
-    val x@10619 : int
-      = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-          val ev@10621 : (hnd/ev<analysis/aac/benchmarks/ex33>)
-                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-          (match (ev@10621) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex33> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex33((@pat@0), (@ctl-ex33)) : analysis/aac/benchmarks/ex33<e,a> ) as @pat)
-                   -> (match (@ctl-ex33) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex33,e,a> ) as @pat@2)
-                       -> f(m, ev@10621, a@1);
-                  });
-              });
-          });
-        }), (std/core/types/Tuple2(1, 2)));
-    val next@10620 : (int) -> <analysis/aac/benchmarks/ex33,analysis/aac/benchmarks/ex31> int
-      = fn(@y-x10151){
-        val x@0@10296 : int
-              = std/core/int/int-add(@y-x10149, 1);
-        std/core/int/int-add(x@0@10296, @y-x10151);
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend(next@10620);
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> next@10620(x@10619);
-    };
-  };
-pub fun analyze-ex34 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 34 - mixed effects under both handlers - outer first");
-    analysis/aac/benchmarks/ex31/@handle((analysis/aac/benchmarks/@Hnd-ex31(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10054 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10054, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex33/@handle((analysis/aac/benchmarks/@Hnd-ex33(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                          (match (tuple2) {
-                            ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                               -> @x;
-                          });
-                        }), a))));
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@1@10628 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(a@0){
-                      val ev@10630 : (hnd/ev<analysis/aac/benchmarks/ex31>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@10630) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex31> ) as @pat@2)
-                           -> (match (h) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex31((@pat@0@0), (@ctl-ex31)) : analysis/aac/benchmarks/ex31<e,a> ) as @pat@1)
-                               -> (match (@ctl-ex31) {
-                                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex31,e,a> ) as @pat@2@0)
-                                   -> f(m@1, ev@10630, a@0);
-                              });
-                          });
-                      });
-                    }), 0));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@1@1)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex34@10433);
-              ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-                 -> analysis/aac/benchmarks/@mlift-analyze-ex34@10433(x@1@10628);
-            });
-          })));
-      }));
-  };
-// outer first
-pub fun result-ex34 : () -> int
-  = fn(){
-    3;
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex41` type.
-fun ex41/@cfc : forall<e,a> (^ ex41 : analysis/aac/benchmarks/ex41<e,a>) -> int
-  = forall<e,a> fn(ex41@0){
-    (match (ex41@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex41((@x), (@pat@0)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex41`
-pub val ex41/@tag : hnd/htag<analysis/aac/benchmarks/ex41>
-  = std/core/hnd/Htag("ex41@benchmarks");
-// handler for the effect `:ex41`
-pub fun ex41/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex41<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex41|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex41/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex41` constructor field of the `:ex41` type.
-fun ex41/@ctl-ex41 : forall<e,a> (^ ex41 : analysis/aac/benchmarks/ex41<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a>
-  = forall<e,a> fn(ex41@0){
-    (match (ex41@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0), (@x)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex41` operation out of effect `:ex41`
-pub fun ex41/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex41<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat)
-         -> @ctl-ex41;
-    });
-  };
-// Call the `ctl ex41` operation of the effect `:ex41`
-pub fun ex41 : (a : int) -> analysis/aac/benchmarks/ex41 int
-  = fn(a){
-    val ev@10634 : hnd/ev<analysis/aac/benchmarks/ex41>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10634) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex41> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat@2)
-             -> (match (@ctl-ex41) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10634, a);
-            });
-        });
-    };
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex42` type.
-fun ex42/@cfc : forall<e,a> (^ ex42 : analysis/aac/benchmarks/ex42<e,a>) -> int
-  = forall<e,a> fn(ex42@0){
-    (match (ex42@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex42((@x), (@pat@0)) : analysis/aac/benchmarks/ex42<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex42`
-pub val ex42/@tag : hnd/htag<analysis/aac/benchmarks/ex42>
-  = std/core/hnd/Htag("ex42@benchmarks");
-// handler for the effect `:ex42`
-pub fun ex42/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex42<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex42|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex42/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex42` constructor field of the `:ex42` type.
-fun ex42/@ctl-ex42 : forall<e,a> (^ ex42 : analysis/aac/benchmarks/ex42<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex42,e,a>
-  = forall<e,a> fn(ex42@0){
-    (match (ex42@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex42((@pat@0), (@x)) : analysis/aac/benchmarks/ex42<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex42` operation out of effect `:ex42`
-pub fun ex42/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex42<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex42,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex42((@pat@0), (@ctl-ex42)) : analysis/aac/benchmarks/ex42<e,a> ) as @pat)
-         -> @ctl-ex42;
-    });
-  };
-// Call the `ctl ex42` operation of the effect `:ex42`
-pub fun ex42 : (a : int) -> analysis/aac/benchmarks/ex42 int
-  = fn(a){
-    val ev@10638 : hnd/ev<analysis/aac/benchmarks/ex42>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10638) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex42> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex42((@pat@0@0), (@ctl-ex42)) : analysis/aac/benchmarks/ex42<e,a> ) as @pat@2)
-             -> (match (@ctl-ex42) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex42,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10638, a);
-            });
-        });
-    };
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex43` type.
-fun ex43/@cfc : forall<e,a> (^ ex43 : analysis/aac/benchmarks/ex43<e,a>) -> int
-  = forall<e,a> fn(ex43@0){
-    (match (ex43@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex43((@x), (@pat@0)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex43`
-pub val ex43/@tag : hnd/htag<analysis/aac/benchmarks/ex43>
-  = std/core/hnd/Htag("ex43@benchmarks");
-// handler for the effect `:ex43`
-pub fun ex43/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex43<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex43|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex43/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex43` constructor field of the `:ex43` type.
-fun ex43/@ctl-ex43 : forall<e,a> (^ ex43 : analysis/aac/benchmarks/ex43<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a>
-  = forall<e,a> fn(ex43@0){
-    (match (ex43@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0), (@x)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex43` operation out of effect `:ex43`
-pub fun ex43/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex43<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0), (@ctl-ex43)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat)
-         -> @ctl-ex43;
-    });
-  };
-// Call the `ctl ex43` operation of the effect `:ex43`
-pub fun ex43 : (a : (int, int)) -> analysis/aac/benchmarks/ex43 int
-  = fn(a){
-    val ev@10642 : hnd/ev<analysis/aac/benchmarks/ex43>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10642) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex43> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0@0), (@ctl-ex43)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat@2)
-             -> (match (@ctl-ex43) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10642, a);
-            });
-        });
-    };
-  };
-pub fun analyze-ex4 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 4 nested effects (tail resume outer)");
-    analysis/aac/benchmarks/ex41/@handle((analysis/aac/benchmarks/@Hnd-ex41(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  (resume((std/core/int/int-add(z, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex42/@handle((analysis/aac/benchmarks/@Hnd-ex42(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(y@0, resume@0){
-                      val ev@10649 : (hnd/ev<analysis/aac/benchmarks/ex41>)
-                        = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      val x@1@10647 : int
-                        = (match (ev@10649) {
-                          ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex41> ) as @pat@1)
-                             -> (match (h) {
-                              ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat)
-                                 -> (match (@ctl-ex41) {
-                                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a> ) as @pat@2)
-                                     -> f(m@1, ev@10649, y@0);
-                                });
-                            });
-                        });
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat@3)
-                           -> std/core/hnd/yield-extend(resume@0);
-                        ((@skip std/core/types/False() : bool ) as @pat@0@1)
-                           -> resume@0(x@1@10647);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@0){
-                val ev@0@10652 : (hnd/ev<analysis/aac/benchmarks/ex42>)
-                      = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                (match (ev@0@10652) {
-                  ((@skip std/core/hnd/Ev<e,a>((@pat@0@1@0), (m@2), (h@0), (@pat@1@1)) : hnd/ev<analysis/aac/benchmarks/ex42> ) as @pat@3@0)
-                     -> (match (h@0) {
-                      ((@skip analysis/aac/benchmarks/@Hnd-ex42((@pat@0@2), (@ctl-ex42)) : analysis/aac/benchmarks/ex42<e,a> ) as @pat@4)
-                         -> (match (@ctl-ex42) {
-                          ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex42,e,a> ) as @pat@2@0)
-                             -> f@0(m@2, ev@0@10652, a@0);
-                        });
-                    });
-                });
-              }), 1));
-          })));
-      }));
-  };
-pub fun result-ex4 : () -> int
-  = fn(){
-    2;
-  };
-// monadic lift
-fun @mlift-analyze-ex41@10434 : (@y-x10164 : int, @y-x10165 : int) -> analysis/aac/benchmarks/ex41 int
-  = fn(@y-x10164, @y-x10165){
-    std/core/int/int-add(@y-x10164, @y-x10165);
-  };
-// monadic lift
-fun @mlift-analyze-ex41@10435 : (a@0@10061 : int, @y-x10164 : int) -> analysis/aac/benchmarks/ex41 int
-  = fn(a@0@10061, @y-x10164){
-    val ev@10657 : hnd/ev<analysis/aac/benchmarks/ex41>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10655 : int
-      = match (ev@10657) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex41> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat)
-               -> (match (@ctl-ex41) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a> ) as @pat@2)
-                   -> f(m, ev@10657, a@0@10061);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10165){
-          (std/core/int/int-add(@y-x10164, @y-x10165));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10164, x@10655);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex41@10436 : (@y-x10167 : int) -> <analysis/aac/benchmarks/ex43,analysis/aac/benchmarks/ex41> int
-  = fn(@y-x10167){
-    std/core/int/int-add(1, @y-x10167);
-  };
-pub fun analyze-ex41 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 41 - mixed effects op in handler after resume (tail resume outer)");
-    analysis/aac/benchmarks/ex41/@handle((analysis/aac/benchmarks/@Hnd-ex41(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  (resume((std/core/int/int-add(z, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex43/@handle((analysis/aac/benchmarks/@Hnd-ex43(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10061 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2@0){
-                            (match (tuple2@0) {
-                              ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                                 -> @x@0;
-                            });
-                          }), a));
-                      val x@1@10664 : int
-                        = (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0@1)) : (int, int) ) as @pat@2)
-                                 -> @x;
-                            });
-                          }), a))));
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat)
-                           -> std/core/hnd/yield-extend((fn(@y-x10164){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex41@10435(a@0@10061, @y-x10164));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex41@10435(a@0@10061, x@1@10664);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@2@10666 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-                      val ev@10668 : (hnd/ev<analysis/aac/benchmarks/ex43>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@10668) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@3), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex43> ) as @pat@4)
-                           -> (match (h) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0@2), (@ctl-ex43)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat@3)
-                               -> (match (@ctl-ex43) {
-                                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a> ) as @pat@2@0)
-                                   -> f(m@1, ev@10668, a@1);
-                              });
-                          });
-                      });
-                    }), (std/core/types/Tuple2(1, 2))));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@3@0)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex41@10436);
-              ((@skip std/core/types/False() : bool ) as @pat@0@2@0)
-                 -> std/core/int/int-add(1, x@2@10666);
-            });
-          })));
-      }));
-  };
-pub fun result-ex41 : () -> int
-  = fn(){
-    5;
-  };
-// monadic lift
-fun @mlift-analyze-ex42@10437 : (@y-x10169 : int, @y-x10170 : int) -> analysis/aac/benchmarks/ex41 int
-  = fn(@y-x10169, @y-x10170){
-    std/core/int/int-add(@y-x10169, @y-x10170);
-  };
-// monadic lift
-fun @mlift-analyze-ex42@10438 : (a : (int, int), resume@0 : (int) -> analysis/aac/benchmarks/ex41 int, @y-x10169 : int) -> analysis/aac/benchmarks/ex41 int
-  = fn(a, resume@0, @y-x10169){
-    val x@10671 : int
-          = resume@0((std/core/hnd/@open-none1((fn(tuple2@0){
-              (match (tuple2@0) {
-                ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                   -> @x@0;
-              });
-            }), a)));
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/hnd/yield-extend((fn(@y-x10170){
-          (std/core/int/int-add(@y-x10169, @y-x10170));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/int/int-add(@y-x10169, x@10671);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex42@10439 : (@y-x10172 : int) -> <analysis/aac/benchmarks/ex43,analysis/aac/benchmarks/ex41> int
-  = fn(@y-x10172){
-    std/core/int/int-add(1, @y-x10172);
-  };
-pub fun analyze-ex42 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 42 - mixed effects op in handler before resume (tail resume outer)");
-    analysis/aac/benchmarks/ex41/@handle((analysis/aac/benchmarks/@Hnd-ex41(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  (resume((std/core/int/int-add(z, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex43/@handle((analysis/aac/benchmarks/@Hnd-ex43(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10064 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                                 -> @x;
-                            });
-                          }), a));
-                      val ev@10679 : (hnd/ev<analysis/aac/benchmarks/ex41>)
-                        = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      val x@1@10677 : int
-                        = (match (ev@10679) {
-                          ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex41> ) as @pat@2)
-                             -> (match (h) {
-                              ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat@1)
-                                 -> (match (@ctl-ex41) {
-                                  ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a> ) as @pat@2@0)
-                                     -> f(m@1, ev@10679, a@0@10064);
-                                });
-                            });
-                        });
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat@1@1)
-                           -> std/core/hnd/yield-extend((fn(@y-x10169){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex42@10438(a, resume@0, @y-x10169));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex42@10438(a, resume@0, x@1@10677);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@3@10682 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-                      val ev@0@10684 : (hnd/ev<analysis/aac/benchmarks/ex43>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@0@10684) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@3), (m@2), (h@0), (@pat@1@1@0)) : hnd/ev<analysis/aac/benchmarks/ex43> ) as @pat@4)
-                           -> (match (h@0) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0@2), (@ctl-ex43)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat@3)
-                               -> (match (@ctl-ex43) {
-                                ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a> ) as @pat@2@1)
-                                   -> f@0(m@2, ev@0@10684, a@1);
-                              });
-                          });
-                      });
-                    }), (std/core/types/Tuple2(1, 2))));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@3@0)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex42@10439);
-              ((@skip std/core/types/False() : bool ) as @pat@0@2@0)
-                 -> std/core/int/int-add(1, x@3@10682);
-            });
-          })));
-      }));
-  };
-pub fun result-ex42 : () -> int
-  = fn(){
-    5;
-  };
-// monadic lift
-fun @mlift-analyze-ex43@10440 : (@y-x10176 : int, @y-x10178 : int) -> <analysis/aac/benchmarks/ex41,analysis/aac/benchmarks/ex43> int
-  = fn(@y-x10176, @y-x10178){
-    val x@0@10318 : int
-          = std/core/int/int-add(1, @y-x10176);
-    std/core/int/int-add(x@0@10318, @y-x10178);
-  };
-// monadic lift
-fun @mlift-analyze-ex43@10441 : (@y-x10176 : int) -> <analysis/aac/benchmarks/ex43,analysis/aac/benchmarks/ex41> int
-  = fn(@y-x10176){
-    val x@10687 : int
-      = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(a@1){
-          val ev@10689 : (hnd/ev<analysis/aac/benchmarks/ex41>)
-                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-          (match (ev@10689) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex41> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat)
-                   -> (match (@ctl-ex41) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a> ) as @pat@2)
-                       -> f(m, ev@10689, a@1);
-                  });
-              });
-          });
-        }), 0);
-    val next@10688 : (int) -> <analysis/aac/benchmarks/ex41,analysis/aac/benchmarks/ex43> int
-      = fn(@y-x10178){
-        val x@0@10318 : int
-              = std/core/int/int-add(1, @y-x10176);
-        std/core/int/int-add(x@0@10318, @y-x10178);
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend(next@10688);
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> next@10688(x@10687);
-    };
-  };
-pub fun analyze-ex43 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 43 - mixed effects under both handlers - inner first (tail resume outer)");
-    analysis/aac/benchmarks/ex41/@handle((analysis/aac/benchmarks/@Hnd-ex41(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  (resume((std/core/int/int-add(z, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex43/@handle((analysis/aac/benchmarks/@Hnd-ex43(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                          (match (tuple2) {
-                            ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                               -> @x;
-                          });
-                        }), a))));
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@1@10696 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@0){
-                      val ev@10698 : (hnd/ev<analysis/aac/benchmarks/ex43>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@10698) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex43> ) as @pat@2)
-                           -> (match (h) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0@0), (@ctl-ex43)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat@1)
-                               -> (match (@ctl-ex43) {
-                                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a> ) as @pat@2@0)
-                                   -> f(m@1, ev@10698, a@0);
-                              });
-                          });
-                      });
-                    }), (std/core/types/Tuple2(1, 2))));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@1@1)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex43@10441);
-              ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-                 -> analysis/aac/benchmarks/@mlift-analyze-ex43@10441(x@1@10696);
-            });
-          })));
-      }));
-  };
-// inner first
-pub fun result-ex43 : () -> int
-  = fn(){
-    3;
-  };
-// monadic lift
-fun @mlift-analyze-ex44@10442 : (@y-x10182 : int, @y-x10184 : int) -> <analysis/aac/benchmarks/ex43,analysis/aac/benchmarks/ex41> int
-  = fn(@y-x10182, @y-x10184){
-    val x@0@10325 : int
-          = std/core/int/int-add(@y-x10182, 1);
-    std/core/int/int-add(x@0@10325, @y-x10184);
-  };
-// monadic lift
-fun @mlift-analyze-ex44@10443 : (@y-x10182 : int) -> <analysis/aac/benchmarks/ex41,analysis/aac/benchmarks/ex43> int
-  = fn(@y-x10182){
-    val x@10701 : int
-      = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-          val ev@10703 : (hnd/ev<analysis/aac/benchmarks/ex43>)
-                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-          (match (ev@10703) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex43> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex43((@pat@0), (@ctl-ex43)) : analysis/aac/benchmarks/ex43<e,a> ) as @pat)
-                   -> (match (@ctl-ex43) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex43,e,a> ) as @pat@2)
-                       -> f(m, ev@10703, a@1);
-                  });
-              });
-          });
-        }), (std/core/types/Tuple2(1, 2)));
-    val next@10702 : (int) -> <analysis/aac/benchmarks/ex43,analysis/aac/benchmarks/ex41> int
-      = fn(@y-x10184){
-        val x@0@10325 : int
-              = std/core/int/int-add(@y-x10182, 1);
-        std/core/int/int-add(x@0@10325, @y-x10184);
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend(next@10702);
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> next@10702(x@10701);
-    };
-  };
-pub fun analyze-ex44 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 44 - mixed effects under both handlers - outer first (tail resume outer)");
-    analysis/aac/benchmarks/ex41/@handle((analysis/aac/benchmarks/@Hnd-ex41(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  (resume((std/core/int/int-add(z, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex43/@handle((analysis/aac/benchmarks/@Hnd-ex43(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                          (match (tuple2) {
-                            ((@skip std/core/types/Tuple2((@x), (@pat@0)) : (int, int) ) as @pat)
-                               -> @x;
-                          });
-                        }), a))));
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            val x@1@10710 : int
-                  = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(a@0){
-                      val ev@10712 : (hnd/ev<analysis/aac/benchmarks/ex41>)
-                            = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@10712) {
-                        ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m@1), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex41> ) as @pat@2)
-                           -> (match (h) {
-                            ((@skip analysis/aac/benchmarks/@Hnd-ex41((@pat@0@0), (@ctl-ex41)) : analysis/aac/benchmarks/ex41<e,a> ) as @pat@1)
-                               -> (match (@ctl-ex41) {
-                                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex41,e,a> ) as @pat@2@0)
-                                   -> f(m@1, ev@10712, a@0);
-                              });
-                          });
-                      });
-                    }), 0));
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@1@1)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex44@10443);
-              ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-                 -> analysis/aac/benchmarks/@mlift-analyze-ex44@10443(x@1@10710);
-            });
-          })));
-      }));
-  };
-// outer first
-pub fun result-ex44 : () -> int
-  = fn(){
-    3;
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex51` type.
-fun ex51/@cfc : forall<e,a> (^ ex51 : analysis/aac/benchmarks/ex51<e,a>) -> int
-  = forall<e,a> fn(ex51@0){
-    (match (ex51@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex51((@x), (@pat@0)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex51`
-pub val ex51/@tag : hnd/htag<analysis/aac/benchmarks/ex51>
-  = std/core/hnd/Htag("ex51@benchmarks");
-// handler for the effect `:ex51`
-pub fun ex51/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex51<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex51|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex51/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex51` constructor field of the `:ex51` type.
-fun ex51/@ctl-ex51 : forall<e,a> (^ ex51 : analysis/aac/benchmarks/ex51<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a>
-  = forall<e,a> fn(ex51@0){
-    (match (ex51@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0), (@x)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex51` operation out of effect `:ex51`
-pub fun ex51/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex51<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0), (@ctl-ex51)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-         -> @ctl-ex51;
-    });
-  };
-// Call the `ctl ex51` operation of the effect `:ex51`
-pub fun ex51 : (a : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(a){
-    val ev@10716 : hnd/ev<analysis/aac/benchmarks/ex51>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10716) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex51> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0@0), (@ctl-ex51)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat@2)
-             -> (match (@ctl-ex51) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10716, a);
-            });
-        });
-    };
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex52` type.
-fun ex52/@cfc : forall<e,a> (^ ex52 : analysis/aac/benchmarks/ex52<e,a>) -> int
-  = forall<e,a> fn(ex52@0){
-    (match (ex52@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex52((@x), (@pat@0)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex52`
-pub val ex52/@tag : hnd/htag<analysis/aac/benchmarks/ex52>
-  = std/core/hnd/Htag("ex52@benchmarks");
-// handler for the effect `:ex52`
-pub fun ex52/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex52<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex52|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex52/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex52` constructor field of the `:ex52` type.
-fun ex52/@ctl-ex52 : forall<e,a> (^ ex52 : analysis/aac/benchmarks/ex52<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex52,e,a>
-  = forall<e,a> fn(ex52@0){
-    (match (ex52@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex52((@pat@0), (@x)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex52` operation out of effect `:ex52`
-pub fun ex52/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex52<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex52,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex52((@pat@0), (@ctl-ex52)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat)
-         -> @ctl-ex52;
-    });
-  };
-// Call the `ctl ex52` operation of the effect `:ex52`
-pub fun ex52 : (a : (int, int)) -> analysis/aac/benchmarks/ex52 int
-  = fn(a){
-    val ev@10720 : hnd/ev<analysis/aac/benchmarks/ex52>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10720) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex52> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex52((@pat@0@0), (@ctl-ex52)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat@2)
-             -> (match (@ctl-ex52) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex52,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10720, a);
-            });
-        });
-    };
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:ex53` type.
-fun ex53/@cfc : forall<e,a> (^ ex53 : analysis/aac/benchmarks/ex53<e,a>) -> int
-  = forall<e,a> fn(ex53@0){
-    (match (ex53@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex53((@x), (@pat@0)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:ex53`
-pub val ex53/@tag : hnd/htag<analysis/aac/benchmarks/ex53>
-  = std/core/hnd/Htag("ex53@benchmarks");
-// handler for the effect `:ex53`
-pub fun ex53/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/ex53<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/ex53|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/ex53/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-ex53` constructor field of the `:ex53` type.
-fun ex53/@ctl-ex53 : forall<e,a> (^ ex53 : analysis/aac/benchmarks/ex53<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex53,e,a>
-  = forall<e,a> fn(ex53@0){
-    (match (ex53@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex53((@pat@0), (@x)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `ex53` operation out of effect `:ex53`
-pub fun ex53/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/ex53<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/ex53,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-ex53((@pat@0), (@ctl-ex53)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat)
-         -> @ctl-ex53;
-    });
-  };
-// Call the `ctl ex53` operation of the effect `:ex53`
-pub fun ex53 : (a : int) -> analysis/aac/benchmarks/ex53 int
-  = fn(a){
-    val ev@10724 : hnd/ev<analysis/aac/benchmarks/ex53>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10724) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/ex53> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-ex53((@pat@0@0), (@ctl-ex53)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat@2)
-             -> (match (@ctl-ex53) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex53,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10724, a);
-            });
-        });
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex5@10444 : (@y-x10192 : int, @y-x10193 : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(@y-x10192, @y-x10193){
-    std/core/int/int-add(@y-x10192, @y-x10193);
-  };
-// monadic lift
-fun @mlift-analyze-ex5@10445 : (a@0@10071 : int, @y-x10192 : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(a@0@10071, @y-x10192){
-    val ev@10729 : hnd/ev<analysis/aac/benchmarks/ex51>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10727 : int
-      = match (ev@10729) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex51> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0), (@ctl-ex51)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-               -> (match (@ctl-ex51) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a> ) as @pat@2)
-                   -> f(m, ev@10729, a@0@10071);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10193){
-          (std/core/int/int-add(@y-x10192, @y-x10193));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10192, x@10727);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex5@10446 : (b : int, @y-x10194 : int) -> <analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex51> int
-  = fn(b, @y-x10194){
-    std/core/int/int-add(@y-x10194, b);
-  };
-// monadic lift
-fun @mlift-analyze-ex5@10447 : (@y-x10196 : int, @y-x10198 : int) -> <analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex51> int
-  = fn(@y-x10196, @y-x10198){
-    val x@2@10337 : int
-          = std/core/int/int-add(1, @y-x10196);
-    std/core/int/int-add(x@2@10337, @y-x10198);
-  };
-// monadic lift
-fun @mlift-analyze-ex5@10448 : (@y-x10196 : int) -> <analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex51> int
-  = fn(@y-x10196){
-    val x@10734 : int
-      = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(2)), (fn(a@2){
-          val ev@10736 : (hnd/ev<analysis/aac/benchmarks/ex53>)
-                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-          (match (ev@10736) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex53> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex53((@pat@0), (@ctl-ex53)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat)
-                   -> (match (@ctl-ex53) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex53,e,a> ) as @pat@2)
-                       -> f(m, ev@10736, a@2);
-                  });
-              });
-          });
-        }), 1);
-    val next@10735 : (int) -> <analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex51> int
-      = fn(@y-x10198){
-        val x@2@10337 : int
-              = std/core/int/int-add(1, @y-x10196);
-        std/core/int/int-add(x@2@10337, @y-x10198);
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend(next@10735);
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> next@10735(x@10734);
-    };
-  };
-pub fun analyze-ex5 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 50 - whole lot of effects");
-    analysis/aac/benchmarks/ex51/@handle((analysis/aac/benchmarks/@Hnd-ex51(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10069 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10069, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex52/@handle((analysis/aac/benchmarks/@Hnd-ex52(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10071 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2@0){
-                            (match (tuple2@0) {
-                              ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                                 -> @x@0;
-                            });
-                          }), a));
-                      val x@1@10743 : int
-                        = (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0@1)) : (int, int) ) as @pat@2)
-                                 -> @x;
-                            });
-                          }), a))));
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat)
-                           -> std/core/hnd/yield-extend((fn(@y-x10192){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex5@10445(a@0@10071, @y-x10192));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex5@10445(a@0@10071, x@1@10743);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            (analysis/aac/benchmarks/ex53/@handle((analysis/aac/benchmarks/@Hnd-ex53(3, (std/core/hnd/Clause1((fn(m@1, @_wildcard-x638_16@1, x@2){
-                  (std/core/hnd/yield-to(m@1, (fn(k@1){
-                      (std/core/hnd/protect(x@2, (fn(b, resume@1){
-                          val x@3@10746 : int
-                                = (resume@1(b));
-                          (match ((std/core/hnd/yielding())) {
-                            ((std/core/types/True() : bool ) as @pat@3)
-                               -> std/core/hnd/yield-extend((fn(@y-x10194){
-                                (std/core/int/int-add(@y-x10194, b));
-                              }));
-                            ((@skip std/core/types/False() : bool ) as @pat@0@2)
-                               -> std/core/int/int-add(x@3@10746, b);
-                          });
-                        }), k@1));
-                    })));
-                }))))), (fn(@res@1){
-                @res@1;
-              }), (fn(){
-                val x@4@10750 : int
-                      = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@1){
-                          val ev@10752 : (hnd/ev<analysis/aac/benchmarks/ex52>)
-                                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                          (match (ev@10752) {
-                            ((@skip std/core/hnd/Ev<e,a>((@pat@0@4), (m@2), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex52> ) as @pat@5)
-                               -> (match (h) {
-                                ((@skip analysis/aac/benchmarks/@Hnd-ex52((@pat@0@3), (@ctl-ex52)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat@4)
-                                   -> (match (@ctl-ex52) {
-                                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex52,e,a> ) as @pat@2@0)
-                                       -> f(m@2, ev@10752, a@1);
-                                  });
-                              });
-                          });
-                        }), (std/core/types/Tuple2(1, 2))));
-                (match ((std/core/hnd/yielding())) {
-                  ((std/core/types/True() : bool ) as @pat@4@0)
-                     -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex5@10448);
-                  ((@skip std/core/types/False() : bool ) as @pat@0@3@0)
-                     -> analysis/aac/benchmarks/@mlift-analyze-ex5@10448(x@4@10750);
-                });
-              })));
-          })));
-      }));
-  };
-pub fun result-ex5 : () -> int
-  = fn(){
-    7;
-  };
-// monadic lift
-fun @mlift-analyze-ex51@10449 : (@y-x10201 : int, @y-x10202 : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(@y-x10201, @y-x10202){
-    std/core/int/int-add(@y-x10201, @y-x10202);
-  };
-// monadic lift
-fun @mlift-analyze-ex51@10450 : (a@0@10074 : int, @y-x10201 : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(a@0@10074, @y-x10201){
-    val ev@10757 : hnd/ev<analysis/aac/benchmarks/ex51>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10755 : int
-      = match (ev@10757) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex51> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0), (@ctl-ex51)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-               -> (match (@ctl-ex51) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a> ) as @pat@2)
-                   -> f(m, ev@10757, a@0@10074);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10202){
-          (std/core/int/int-add(@y-x10201, @y-x10202));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10201, x@10755);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex51@10451 : (b : int, @y-x10203 : int) -> <analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex51> int
-  = fn(b, @y-x10203){
-    std/core/int/int-add(@y-x10203, b);
-  };
-// monadic lift
-fun @mlift-analyze-ex51@10452 : (@y-x10205 : int, @y-x10207 : int) -> <analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex51> int
-  = fn(@y-x10205, @y-x10207){
-    val x@2@10349 : int
-          = std/core/int/int-add(@y-x10205, @y-x10207);
-    std/core/int/int-add(x@2@10349, 1);
-  };
-// monadic lift
-fun @mlift-analyze-ex51@10453 : (@y-x10205 : int) -> <analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex51> int
-  = fn(@y-x10205){
-    val x@10762 : int
-      = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@2){
-          val ev@10764 : (hnd/ev<analysis/aac/benchmarks/ex52>)
-                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-          (match (ev@10764) {
-            ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex52> ) as @pat@1)
-               -> (match (h) {
-                ((@skip analysis/aac/benchmarks/@Hnd-ex52((@pat@0), (@ctl-ex52)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat)
-                   -> (match (@ctl-ex52) {
-                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex52,e,a> ) as @pat@2)
-                       -> f(m, ev@10764, a@2);
-                  });
-              });
-          });
-        }), (std/core/types/Tuple2(1, 2)));
-    val next@10763 : (int) -> <analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex51> int
-      = fn(@y-x10207){
-        val x@2@10349 : int
-              = std/core/int/int-add(@y-x10205, @y-x10207);
-        std/core/int/int-add(x@2@10349, 1);
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend(next@10763);
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> next@10763(x@10762);
-    };
-  };
-pub fun analyze-ex51 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 51 - whole lot of effects inner first");
-    analysis/aac/benchmarks/ex51/@handle((analysis/aac/benchmarks/@Hnd-ex51(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  val x@10072 : int
-                        = (resume(z));
-                  (std/core/int/int-add(x@10072, 1));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex52/@handle((analysis/aac/benchmarks/@Hnd-ex52(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10074 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2@0){
-                            (match (tuple2@0) {
-                              ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                                 -> @x@0;
-                            });
-                          }), a));
-                      val x@1@10771 : int
-                        = (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0@1)) : (int, int) ) as @pat@2)
-                                 -> @x;
-                            });
-                          }), a))));
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat)
-                           -> std/core/hnd/yield-extend((fn(@y-x10201){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex51@10450(a@0@10074, @y-x10201));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex51@10450(a@0@10074, x@1@10771);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            (analysis/aac/benchmarks/ex53/@handle((analysis/aac/benchmarks/@Hnd-ex53(3, (std/core/hnd/Clause1((fn(m@1, @_wildcard-x638_16@1, x@2){
-                  (std/core/hnd/yield-to(m@1, (fn(k@1){
-                      (std/core/hnd/protect(x@2, (fn(b, resume@1){
-                          val x@3@10774 : int
-                                = (resume@1(b));
-                          (match ((std/core/hnd/yielding())) {
-                            ((std/core/types/True() : bool ) as @pat@3)
-                               -> std/core/hnd/yield-extend((fn(@y-x10203){
-                                (std/core/int/int-add(@y-x10203, b));
-                              }));
-                            ((@skip std/core/types/False() : bool ) as @pat@0@2)
-                               -> std/core/int/int-add(x@3@10774, b);
-                          });
-                        }), k@1));
-                    })));
-                }))))), (fn(@res@1){
-                @res@1;
-              }), (fn(){
-                val x@4@10778 : int
-                      = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(2)), (fn(a@1){
-                          val ev@10780 : (hnd/ev<analysis/aac/benchmarks/ex53>)
-                                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                          (match (ev@10780) {
-                            ((@skip std/core/hnd/Ev<e,a>((@pat@0@4), (m@2), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex53> ) as @pat@5)
-                               -> (match (h) {
-                                ((@skip analysis/aac/benchmarks/@Hnd-ex53((@pat@0@3), (@ctl-ex53)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat@4)
-                                   -> (match (@ctl-ex53) {
-                                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex53,e,a> ) as @pat@2@0)
-                                       -> f(m@2, ev@10780, a@1);
-                                  });
-                              });
-                          });
-                        }), 1));
-                (match ((std/core/hnd/yielding())) {
-                  ((std/core/types/True() : bool ) as @pat@4@0)
-                     -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex51@10453);
-                  ((@skip std/core/types/False() : bool ) as @pat@0@3@0)
-                     -> analysis/aac/benchmarks/@mlift-analyze-ex51@10453(x@4@10778);
-                });
-              })));
-          })));
-      }));
-  };
-pub fun result-ex51 : () -> int
-  = fn(){
-    7;
-  };
-// monadic lift
-fun @mlift-analyze-ex52@10454 : (@y-x10210 : int, @y-x10211 : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(@y-x10210, @y-x10211){
-    std/core/int/int-add(@y-x10210, @y-x10211);
-  };
-// monadic lift
-fun @mlift-analyze-ex52@10455 : (a@0@10077 : int, @y-x10210 : int) -> analysis/aac/benchmarks/ex51 int
-  = fn(a@0@10077, @y-x10210){
-    val ev@10785 : hnd/ev<analysis/aac/benchmarks/ex51>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10783 : int
-      = match (ev@10785) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex51> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0), (@ctl-ex51)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-               -> (match (@ctl-ex51) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a> ) as @pat@2)
-                   -> f(m, ev@10785, a@0@10077);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10211){
-          (std/core/int/int-add(@y-x10210, @y-x10211));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10210, x@10783);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex52@10456 : (@y-x10212 : int, @y-x10214 : int) -> <analysis/aac/benchmarks/ex51,analysis/aac/benchmarks/ex52> int
-  = fn(@y-x10212, @y-x10214){
-    std/core/int/int-add(@y-x10212, @y-x10214);
-  };
-// monadic lift
-fun @mlift-analyze-ex52@10457 : (b : int, @y-x10212 : int) -> <analysis/aac/benchmarks/ex51,analysis/aac/benchmarks/ex52> int
-  = fn(b, @y-x10212){
-    val x@10790 : int
-          = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(a@1){
-              val ev@10792 : (hnd/ev<analysis/aac/benchmarks/ex51>)
-                    = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-              (match (ev@10792) {
-                ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex51> ) as @pat@1)
-                   -> (match (h) {
-                    ((@skip analysis/aac/benchmarks/@Hnd-ex51((@pat@0), (@ctl-ex51)) : analysis/aac/benchmarks/ex51<e,a> ) as @pat)
-                       -> (match (@ctl-ex51) {
-                        ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex51,e,a> ) as @pat@2)
-                           -> f(m, ev@10792, a@1);
-                      });
-                  });
-              });
-            }), b);
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10214){
-          (std/core/int/int-add(@y-x10212, @y-x10214));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10212, x@10790);
-    };
-  };
-// monadic lift
-fun @mlift-analyze-ex52@10458 : (@y-x10216 : int, @y-x10218 : int) -> <analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex51> int
-  = fn(@y-x10216, @y-x10218){
-    std/core/int/int-add(@y-x10216, @y-x10218);
-  };
-// monadic lift
-fun @mlift-analyze-ex52@10459 : (@y-x10216 : int) -> <analysis/aac/benchmarks/ex52,analysis/aac/benchmarks/ex53,analysis/aac/benchmarks/ex51> int
-  = fn(@y-x10216){
-    val x@10797 : int
-          = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(2)), (fn(a@3){
-              val ev@10799 : (hnd/ev<analysis/aac/benchmarks/ex53>)
-                    = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-              (match (ev@10799) {
-                ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex53> ) as @pat@1)
-                   -> (match (h) {
-                    ((@skip analysis/aac/benchmarks/@Hnd-ex53((@pat@0), (@ctl-ex53)) : analysis/aac/benchmarks/ex53<e,a> ) as @pat)
-                       -> (match (@ctl-ex53) {
-                        ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/ex53,e,a> ) as @pat@2)
-                           -> f(m, ev@10799, a@3);
-                      });
-                  });
-              });
-            }), 1);
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(@y-x10218){
-          (std/core/int/int-add(@y-x10216, @y-x10218));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/int/int-add(@y-x10216, x@10797);
-    };
-  };
-pub fun analyze-ex52 : () -> int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example 52 - whole lot of effects two outer calls");
-    analysis/aac/benchmarks/ex51/@handle((analysis/aac/benchmarks/@Hnd-ex51(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(z, resume){
-                  (resume((std/core/int/int-add(z, 1))));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/ex52/@handle((analysis/aac/benchmarks/@Hnd-ex52(3, (std/core/hnd/Clause1((fn(m@0, @_wildcard-x638_16@0, x@0){
-              (std/core/hnd/yield-to(m@0, (fn(k@0){
-                  (std/core/hnd/protect(x@0, (fn(a, resume@0){
-                      val a@0@10077 : int
-                        = (std/core/hnd/@open-none1((fn(tuple2@0){
-                            (match (tuple2@0) {
-                              ((@skip std/core/types/Tuple2((@pat@0@0), (@x@0)) : (int, int) ) as @pat@1)
-                                 -> @x@0;
-                            });
-                          }), a));
-                      val x@1@10806 : int
-                        = (resume@0((std/core/hnd/@open-none1((fn(tuple2){
-                            (match (tuple2) {
-                              ((@skip std/core/types/Tuple2((@x), (@pat@0@1)) : (int, int) ) as @pat@2)
-                                 -> @x;
-                            });
-                          }), a))));
-                      (match ((std/core/hnd/yielding())) {
-                        ((std/core/types/True() : bool ) as @pat)
-                           -> std/core/hnd/yield-extend((fn(@y-x10210){
-                            (analysis/aac/benchmarks/@mlift-analyze-ex52@10455(a@0@10077, @y-x10210));
-                          }));
-                        ((@skip std/core/types/False() : bool ) as @pat@0)
-                           -> analysis/aac/benchmarks/@mlift-analyze-ex52@10455(a@0@10077, x@1@10806);
-                      });
-                    }), k@0));
-                })));
-            }))))), (fn(@res@0){
-            @res@0;
-          }), (fn(){
-            (analysis/aac/benchmarks/ex53/@handle((analysis/aac/benchmarks/@Hnd-ex53(3, (std/core/hnd/Clause1((fn(m@1, @_wildcard-x638_16@1, x@2){
-                  (std/core/hnd/yield-to(m@1, (fn(k@1){
-                      (std/core/hnd/protect(x@2, (fn(b, resume@1){
-                          val x@3@10809 : int
-                                = (resume@1(b));
-                          (match ((std/core/hnd/yielding())) {
-                            ((std/core/types/True() : bool ) as @pat@3)
-                               -> std/core/hnd/yield-extend((fn(@y-x10212){
-                                (analysis/aac/benchmarks/@mlift-analyze-ex52@10457(b, @y-x10212));
-                              }));
-                            ((@skip std/core/types/False() : bool ) as @pat@0@2)
-                               -> analysis/aac/benchmarks/@mlift-analyze-ex52@10457(b, x@3@10809);
-                          });
-                        }), k@1));
-                    })));
-                }))))), (fn(@res@1){
-                @res@1;
-              }), (fn(){
-                val x@4@10811 : int
-                      = (std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(a@2){
-                          val ev@10813 : (hnd/ev<analysis/aac/benchmarks/ex52>)
-                                = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                          (match (ev@10813) {
-                            ((@skip std/core/hnd/Ev<e,a>((@pat@0@4), (m@2), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/ex52> ) as @pat@5)
-                               -> (match (h) {
-                                ((@skip analysis/aac/benchmarks/@Hnd-ex52((@pat@0@3), (@ctl-ex52)) : analysis/aac/benchmarks/ex52<e,a> ) as @pat@4)
-                                   -> (match (@ctl-ex52) {
-                                    ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<(int, int),int,analysis/aac/benchmarks/ex52,e,a> ) as @pat@2@0)
-                                       -> f(m@2, ev@10813, a@2);
-                                  });
-                              });
-                          });
-                        }), (std/core/types/Tuple2(1, 2))));
-                (match ((std/core/hnd/yielding())) {
-                  ((std/core/types/True() : bool ) as @pat@4@0)
-                     -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-analyze-ex52@10459);
-                  ((@skip std/core/types/False() : bool ) as @pat@0@3@0)
-                     -> analysis/aac/benchmarks/@mlift-analyze-ex52@10459(x@4@10811);
-                });
-              })));
-          })));
-      }));
-  };
-pub fun result-ex52 : () -> int
-  = fn(){
-    7;
-  };
-// Automatically generated. Retrieves the `@cfc` constructor field of the `:iter` type.
-fun iter/@cfc : forall<e,a> (^ iter : analysis/aac/benchmarks/iter<e,a>) -> int
-  = forall<e,a> fn(iter@0){
-    (match (iter@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-iter((@x), (@pat@0)) : analysis/aac/benchmarks/iter<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// runtime tag for the effect `:iter`
-pub val iter/@tag : hnd/htag<analysis/aac/benchmarks/iter>
-  = std/core/hnd/Htag("iter@benchmarks");
-// handler for the effect `:iter`
-pub fun iter/@handle : forall<a,e,b> (hnd : analysis/aac/benchmarks/iter<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/benchmarks/iter|e> a) -> e b
-  = forall<a,e,b> fn(hnd, ret, action){
-    std/core/hnd/@hhandle(analysis/aac/benchmarks/iter/@tag, hnd, ret, action);
-  };
-// Automatically generated. Retrieves the `@ctl-it` constructor field of the `:iter` type.
-fun iter/@ctl-it : forall<e,a> (^ iter : analysis/aac/benchmarks/iter<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a>
-  = forall<e,a> fn(iter@0){
-    (match (iter@0) {
-      ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0), (@x)) : analysis/aac/benchmarks/iter<e,a> ) as @pat)
-         -> @x;
-    });
-  };
-// select `it` operation out of effect `:iter`
-pub fun it/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/iter<e,a>) -> hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a>
-  = forall<e,a> fn(hnd){
-    (match (hnd) {
-      ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0), (@ctl-it)) : analysis/aac/benchmarks/iter<e,a> ) as @pat)
-         -> @ctl-it;
-    });
-  };
-// Call the `ctl it` operation of the effect `:iter`
-pub fun it : (i : int) -> analysis/aac/benchmarks/iter int
-  = fn(i){
-    val ev@10817 : hnd/ev<analysis/aac/benchmarks/iter>
-          = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10817) {
-      ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/iter> ) as @pat)
-         -> (match (h) {
-          ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0@0), (@ctl-it)) : analysis/aac/benchmarks/iter<e,a> ) as @pat@2)
-             -> (match (@ctl-it) {
-              ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10817, i);
-            });
-        });
-    };
-  };
-// monadic lift
-fun @mlift-iterxx@10460 : (n0 : int, wild_ : int) -> analysis/aac/benchmarks/iter int
-  = fn(n0, wild_){
-    n0;
-  };
-// monadic lift
-fun @mlift-iterxx@10461 : (n : int, n0 : int) -> <div,analysis/aac/benchmarks/iter> int
-  = fn(n, n0@0){
-    val ev@10822 : hnd/ev<analysis/aac/benchmarks/iter>
-      = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    val x@10820 : int
-      = match (ev@10822) {
-        ((@skip std/core/hnd/Ev<e,a>((@pat@0@0), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/iter> ) as @pat@1)
-           -> (match (h) {
-            ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0), (@ctl-it)) : analysis/aac/benchmarks/iter<e,a> ) as @pat)
-               -> (match (@ctl-it) {
-                ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a> ) as @pat@2)
-                   -> f(m, ev@10822, n);
-              });
-          });
-      };
-    match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat@3)
-         -> std/core/hnd/yield-extend((fn(wild_@0){
-          (analysis/aac/benchmarks/@mlift-iterxx@10460(n0@0, wild_@0));
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> analysis/aac/benchmarks/@mlift-iterxx@10460(n0@0, x@10820);
-    };
-  };
-pub fun iterxx : (n : int) -> <div,analysis/aac/benchmarks/iter> int
-  = fn(n@0){
-    match ((std/core/int/(==)(n@0, 0))) {
-      ((std/core/types/True() : bool ) as @pat@3@0)
-         -> 0;
-      ((@skip std/core/types/False() : bool ) as @pat@0@1@0)
-         -> val x@1@10825 : int
-                  = analysis/aac/benchmarks/iterxx((std/core/int/int-sub(n@0, 1)));
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@4)
-             -> std/core/hnd/yield-extend((fn(n0@1){
-              (analysis/aac/benchmarks/@mlift-iterxx@10461(n@0, n0@1));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@2)
-             -> val ev@0@10831 : hnd/ev<analysis/aac/benchmarks/iter>
-                  = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-                val x@2@10828 : int
-                  = (match (ev@0@10831) {
-                    ((@skip std/core/hnd/Ev<e,a>((@pat@0@4), (m@0), (h@0), (@pat@1@1)) : hnd/ev<analysis/aac/benchmarks/iter> ) as @pat@6)
-                       -> (match (h@0) {
-                        ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0@3), (@ctl-it@0)) : analysis/aac/benchmarks/iter<e,a> ) as @pat@5)
-                           -> (match (@ctl-it@0) {
-                            ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a> ) as @pat@2@0)
-                               -> f@0(m@0, ev@0@10831, n@0);
-                          });
-                      });
-                  });
-            (match ((std/core/hnd/yielding())) {
-              ((std/core/types/True() : bool ) as @pat@5@0)
-                 -> std/core/hnd/yield-extend((fn(wild_@1){
-                  (analysis/aac/benchmarks/@mlift-iterxx@10460(x@1@10825, wild_@1));
-                }));
-              ((@skip std/core/types/False() : bool ) as @pat@0@3@0)
-                 -> x@1@10825;
-            });
-        });
-    };
-  };
-// monadic lift
-fun @mlift-iterx@10462 : (n : int, wild_ : int) -> analysis/aac/benchmarks/iter int
-  = fn(n, wild_){
-    analysis/aac/benchmarks/iterx((std/core/int/int-sub(n, 1)));
-  };
-pub fun iterx : (n : int) -> <div,analysis/aac/benchmarks/iter> int
-  = fn(n@0){
-    match ((std/core/int/(==)(n@0, 0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> -1;
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> val ev@10837 : hnd/ev<analysis/aac/benchmarks/iter>
-              = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-            val x@10834 : int
-              = (match (ev@10837) {
-                ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/iter> ) as @pat@2)
-                   -> (match (h) {
-                    ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0@0), (@ctl-it)) : analysis/aac/benchmarks/iter<e,a> ) as @pat@1)
-                       -> (match (@ctl-it) {
-                        ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a> ) as @pat@2@0)
-                           -> f(m, ev@10837, n@0);
-                      });
-                  });
-              });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@1@1)
-             -> std/core/hnd/yield-extend((fn(wild_@0){
-              (analysis/aac/benchmarks/@mlift-iterx@10462(n@0, wild_@0));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-             -> analysis/aac/benchmarks/iterx((std/core/int/int-sub(n@0, 1)));
-        });
-    };
-  };
-// monadic lift
-fun @mlift-iter@10463 : (n : int, wild_ : int) -> analysis/aac/benchmarks/iter int
-  = fn(n, wild_){
-    analysis/aac/benchmarks/iter((std/core/int/int-sub(n, 1)));
-  };
-pub fun iter : (n : int) -> <div,analysis/aac/benchmarks/iter> int
-  = fn(n@0){
-    match ((std/core/int/(==)(n@0, 0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> 0;
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> val ev@10843 : hnd/ev<analysis/aac/benchmarks/iter>
-              = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-            val x@10840 : int
-              = (match (ev@10843) {
-                ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/iter> ) as @pat@2)
-                   -> (match (h) {
-                    ((@skip analysis/aac/benchmarks/@Hnd-iter((@pat@0@0), (@ctl-it)) : analysis/aac/benchmarks/iter<e,a> ) as @pat@1)
-                       -> (match (@ctl-it) {
-                        ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/iter,e,a> ) as @pat@2@0)
-                           -> f(m, ev@10843, n@0);
-                      });
-                  });
-              });
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@1@1)
-             -> std/core/hnd/yield-extend((fn(wild_@0){
-              (analysis/aac/benchmarks/@mlift-iter@10463(n@0, wild_@0));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-             -> analysis/aac/benchmarks/iter((std/core/int/int-sub(n@0, 1)));
-        });
-    };
-  };
-pub fun analyze-sum1 : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_suma");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val y@10082 : int
-                        = (resume(a));
-                  (std/core/int/int-add(a, y@10082));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iter(1));
-      }));
-  };
-pub fun result-sum1 : () -> int
-  = fn(){
-    1;
-  };
-pub fun analyze-sum1x : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_suma");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val y@10084 : int
-                        = (resume(a));
-                  (std/core/int/int-add(a, y@10084));
-                }), k));
-            })));
-        }))))), (fn(x@0){
-        0;
-      }), (fn(){
-        (analysis/aac/benchmarks/iter(1));
-      }));
-  };
-pub fun result-sum1x : () -> int
-  = fn(){
-    1;
-  };
-pub fun analyze-sum2 : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sum2a");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val y@10086 : int
-                        = (resume(a));
-                  (std/core/int/int-add(a, y@10086));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iter(2));
-      }));
-  };
-pub fun result-sum2 : () -> int
-  = fn(){
-    3;
-  };
-pub fun analyze-sum1b : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sum1b");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10087 : int
-                        = (resume(a));
-                  (std/core/int/int-add(x@10087, a));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iter(1));
-      }));
-  };
-pub fun result-sum1b : () -> int
-  = fn(){
-    1;
-  };
-pub fun analyze-sum2b : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sum2b");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10089 : int
-                        = (resume(a));
-                  (std/core/int/int-add(x@10089, a));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iter(2));
-      }));
-  };
-pub fun result-sum2b : () -> int
-  = fn(){
-    3;
-  };
-pub fun analyze-sum1c : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sumc");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val y@10092 : int
-                        = (resume(a));
-                  (std/core/int/int-add(a, y@10092));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iterxx(1));
-      }));
-  };
-pub fun result-sum1c : () -> int
-  = fn(){
-    1;
-  };
-pub fun analyze-sum2c : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sum2c");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val y@10094 : int
-                        = (resume(a));
-                  (std/core/int/int-add(a, y@10094));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iterxx(2));
-      }));
-  };
-pub fun result-sum2c : () -> int
-  = fn(){
-    3;
-  };
-pub fun analyze-sum1d : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sum1d");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10095 : int
-                        = (resume(a));
-                  (std/core/int/int-add(x@10095, a));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iterxx(1));
-      }));
-  };
-pub fun result-sum1d : () -> int
-  = fn(){
-    1;
-  };
-pub fun analyze-sum2d : () -> div int
-  = fn(){
-    val _ : ()
-          = std/core/debug/trace("Example x_sum2d");
-    analysis/aac/benchmarks/iter/@handle((analysis/aac/benchmarks/@Hnd-iter(3, (std/core/hnd/Clause1((fn(m, @_wildcard-x638_16, x){
-          (std/core/hnd/yield-to(m, (fn(k){
-              (std/core/hnd/protect(x, (fn(a, resume){
-                  val x@10097 : int
-                        = (resume(a));
-                  (std/core/int/int-add(x@10097, a));
-                }), k));
-            })));
-        }))))), (fn(@res){
-        @res;
-      }), (fn(){
-        (analysis/aac/benchmarks/iterxx(2));
-      }));
-  };
-pub fun result-sum2d : () -> int
-  = fn(){
-    3;
-  };
 // Automatically generated. Retrieves the `@cfc` constructor field of the `:get` type.
 fun get/@cfc : forall<e,a> (^ get : analysis/aac/benchmarks/get<e,a>) -> int
   = forall<e,a> fn(get@0){
@@ -13923,15 +10994,15 @@ pub fun get/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/get<e,a>) -> 
 // Call the `ctl get` operation of the effect `:get`
 pub fun get : (i : int) -> analysis/aac/benchmarks/get int
   = fn(i){
-    val ev@10856 : hnd/ev<analysis/aac/benchmarks/get>
+    val ev@10027 : hnd/ev<analysis/aac/benchmarks/get>
           = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10856) {
+    match (ev@10027) {
       ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/get> ) as @pat)
          -> (match (h) {
           ((@skip analysis/aac/benchmarks/@Hnd-get((@pat@0@0), (@ctl-get)) : analysis/aac/benchmarks/get<e,a> ) as @pat@2)
              -> (match (@ctl-get) {
               ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,int,analysis/aac/benchmarks/get,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10856, i);
+                 -> f(m, ev@10027, i);
             });
         });
     };
@@ -13971,101 +11042,101 @@ pub fun set/@select : forall<e,a> (^ hnd : analysis/aac/benchmarks/set<e,a>) -> 
 // Call the `ctl set` operation of the effect `:set`
 pub fun set : (i : int) -> analysis/aac/benchmarks/set ()
   = fn(i){
-    val ev@10860 : hnd/ev<analysis/aac/benchmarks/set>
+    val ev@10031 : hnd/ev<analysis/aac/benchmarks/set>
           = std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0)));
-    match (ev@10860) {
+    match (ev@10031) {
       ((@skip std/core/hnd/Ev<e,a>((@pat@0), (m), (h), (@pat@1)) : hnd/ev<analysis/aac/benchmarks/set> ) as @pat)
          -> (match (h) {
           ((@skip analysis/aac/benchmarks/@Hnd-set((@pat@0@0), (@ctl-set)) : analysis/aac/benchmarks/set<e,a> ) as @pat@2)
              -> (match (@ctl-set) {
               ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,(),analysis/aac/benchmarks/set,e,a> ) as @pat@2@0)
-                 -> f(m, ev@10860, i);
+                 -> f(m, ev@10031, i);
             });
         });
     };
   };
 // monadic lift
-fun @mlift-countdown@10464 : (wild_ : ()) -> <analysis/aac/benchmarks/set,analysis/aac/benchmarks/get,div> int
+fun @mlift-countdown@10023 : (wild_ : ()) -> <analysis/aac/benchmarks/set,analysis/aac/benchmarks/get,div> int
   = fn(wild_){
     analysis/aac/benchmarks/countdown(0);
   };
 // monadic lift
-fun @mlift-countdown@10465 : (i@0 : int) -> <analysis/aac/benchmarks/get,analysis/aac/benchmarks/set,div> int
+fun @mlift-countdown@10024 : (i@0 : int) -> <analysis/aac/benchmarks/get,analysis/aac/benchmarks/set,div> int
   = fn(i@0){
     match ((std/core/int/(==)(i@0, 0))) {
       ((std/core/types/True() : bool ) as @pat)
          -> 0;
       ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> val @x-x1@0@10415 : int
+         -> val @x-x1@0@10022 : int
               = std/core/int/int-sub(i@0, 1);
-            val x@10863 : ()
+            val x@10034 : ()
               = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(i@1){
-                  val ev@10865 : (hnd/ev<analysis/aac/benchmarks/set>)
+                  val ev@10036 : (hnd/ev<analysis/aac/benchmarks/set>)
                         = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                  (match (ev@10865) {
+                  (match (ev@10036) {
                     ((@skip std/core/hnd/Ev<e,a>((@pat@0@1), (m), (h), (@pat@1@0)) : hnd/ev<analysis/aac/benchmarks/set> ) as @pat@2)
                        -> (match (h) {
                         ((@skip analysis/aac/benchmarks/@Hnd-set((@pat@0@0), (@ctl-set)) : analysis/aac/benchmarks/set<e,a> ) as @pat@1)
                            -> (match (@ctl-set) {
                             ((@skip std/core/hnd/Clause1((f)) : hnd/clause1<int,(),analysis/aac/benchmarks/set,e,a> ) as @pat@2@0)
-                               -> f(m, ev@10865, i@1);
+                               -> f(m, ev@10036, i@1);
                           });
                       });
                   });
-                }), @x-x1@0@10415);
+                }), @x-x1@0@10022);
         (match ((std/core/hnd/yielding())) {
           ((std/core/types/True() : bool ) as @pat@1@1)
-             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-countdown@10464);
+             -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-countdown@10023);
           ((@skip std/core/types/False() : bool ) as @pat@0@0@0)
-             -> analysis/aac/benchmarks/@mlift-countdown@10464(x@10863);
+             -> analysis/aac/benchmarks/@mlift-countdown@10023(x@10034);
         });
     };
   };
 pub fun countdown : (@_wildcard-x293_15 : int) -> <div,analysis/aac/benchmarks/get,analysis/aac/benchmarks/set> int
   = fn(@_wildcard-x293_15){
-    val x@1@10868 : int
+    val x@1@10039 : int
           = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(0)), (fn(i){
-              val ev@0@10871 : (hnd/ev<analysis/aac/benchmarks/get>)
+              val ev@0@10042 : (hnd/ev<analysis/aac/benchmarks/get>)
                     = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-              (match (ev@0@10871) {
+              (match (ev@0@10042) {
                 ((@skip std/core/hnd/Ev<e,a>((@pat@0@3), (m@0), (h@0), (@pat@1@1@0)) : hnd/ev<analysis/aac/benchmarks/get> ) as @pat@4)
                    -> (match (h@0) {
                     ((@skip analysis/aac/benchmarks/@Hnd-get((@pat@0@2), (@ctl-get)) : analysis/aac/benchmarks/get<e,a> ) as @pat@3)
                        -> (match (@ctl-get) {
                         ((@skip std/core/hnd/Clause1((f@0)) : hnd/clause1<int,int,analysis/aac/benchmarks/get,e,a> ) as @pat@2@1)
-                           -> f@0(m@0, ev@0@10871, i);
+                           -> f@0(m@0, ev@0@10042, i);
                       });
                   });
               });
             }), 0);
     match ((std/core/hnd/yielding())) {
       ((std/core/types/True() : bool ) as @pat@3@0)
-         -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-countdown@10465);
+         -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-countdown@10024);
       ((@skip std/core/types/False() : bool ) as @pat@0@2@0)
-         -> (match ((std/core/int/(==)(x@1@10868, 0))) {
+         -> (match ((std/core/int/(==)(x@1@10039, 0))) {
           ((std/core/types/True() : bool ) as @pat@5)
              -> 0;
           ((@skip std/core/types/False() : bool ) as @pat@0@4)
-             -> val @x-x1@0@10415@0 : int
-                  = std/core/int/int-sub(x@1@10868, 1);
-                val x@3@10874 : ()
+             -> val @x-x1@0@10022@0 : int
+                  = std/core/int/int-sub(x@1@10039, 1);
+                val x@3@10045 : ()
                   = std/core/hnd/@open-at1((std/core/types/@make-ssize_t(1)), (fn(i@1@0){
-                      val ev@1@10877 : (hnd/ev<analysis/aac/benchmarks/set>)
+                      val ev@1@10048 : (hnd/ev<analysis/aac/benchmarks/set>)
                             = (std/core/hnd/@evv-at((std/core/types/@make-ssize_t(0))));
-                      (match (ev@1@10877) {
+                      (match (ev@1@10048) {
                         ((@skip std/core/hnd/Ev<e,a>((@pat@0@6), (m@1), (h@1), (@pat@1@2)) : hnd/ev<analysis/aac/benchmarks/set> ) as @pat@7)
                            -> (match (h@1) {
                             ((@skip analysis/aac/benchmarks/@Hnd-set((@pat@0@5), (@ctl-set@0)) : analysis/aac/benchmarks/set<e,a> ) as @pat@6)
                                -> (match (@ctl-set@0) {
                                 ((@skip std/core/hnd/Clause1((f@1)) : hnd/clause1<int,(),analysis/aac/benchmarks/set,e,a> ) as @pat@2@2)
-                                   -> f@1(m@1, ev@1@10877, i@1@0);
+                                   -> f@1(m@1, ev@1@10048, i@1@0);
                               });
                           });
                       });
-                    }), @x-x1@0@10415@0);
+                    }), @x-x1@0@10022@0);
             (match ((std/core/hnd/yielding())) {
               ((std/core/types/True() : bool ) as @pat@6@0)
-                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-countdown@10464);
+                 -> std/core/hnd/yield-extend(analysis/aac/benchmarks/@mlift-countdown@10023);
               ((@skip std/core/types/False() : bool ) as @pat@0@5@0)
                  -> analysis/aac/benchmarks/countdown(0);
             });
@@ -14073,9 +11144,9 @@ pub fun countdown : (@_wildcard-x293_15 : int) -> <div,analysis/aac/benchmarks/g
     };
   };
 // monadic lift
-fun @mlift-analyze-get-set@10466 : (resume@0 : (()) -> <analysis/aac/benchmarks/get,div> int, @y-x10252 : hnd/ev-index) -> <analysis/aac/benchmarks/get,analysis/aac/benchmarks/get,div> int
-  = fn(resume@0, @y-x10252){
-    std/core/hnd/@mask-at(@y-x10252, std/core/types/True, (fn(){
+fun @mlift-analyze-get-set@10025 : (resume@0 : (()) -> <analysis/aac/benchmarks/get,div> int, @y-x10011 : hnd/ev-index) -> <analysis/aac/benchmarks/get,analysis/aac/benchmarks/get,div> int
+  = fn(resume@0, @y-x10011){
+    std/core/hnd/@mask-at(@y-x10011, std/core/types/True, (fn(){
         (resume@0(std/core/types/Unit));
       }));
   };
@@ -14104,19 +11175,19 @@ pub fun analyze-get-set : () -> div int
                           }))))), (fn(@res@0){
                           @res@0;
                         }), (fn(){
-                          val x@2@10883 : hnd/ev-index
+                          val x@2@10054 : hnd/ev-index
                             = (std/core/hnd/@evv-index(analysis/aac/benchmarks/get/@tag));
-                          val next@10884 : ((hnd/ev-index) -> <analysis/aac/benchmarks/get,analysis/aac/benchmarks/get,div> int)
-                            = (fn(@y-x10252){
-                              (std/core/hnd/@mask-at(@y-x10252, std/core/types/True, (fn(){
+                          val next@10055 : ((hnd/ev-index) -> <analysis/aac/benchmarks/get,analysis/aac/benchmarks/get,div> int)
+                            = (fn(@y-x10011){
+                              (std/core/hnd/@mask-at(@y-x10011, std/core/types/True, (fn(){
                                   (resume@0(std/core/types/Unit));
                                 })));
                             });
                           (match ((std/core/hnd/yielding())) {
                             ((std/core/types/True() : bool ) as @pat)
-                               -> std/core/hnd/yield-extend(next@10884);
+                               -> std/core/hnd/yield-extend(next@10055);
                             ((@skip std/core/types/False() : bool ) as @pat@0)
-                               -> next@10884(x@2@10883);
+                               -> next@10055(x@2@10054);
                           });
                         })));
                     }), k@0));
@@ -14132,3 +11203,50 @@ pub fun result-get-set : () -> int
   = fn(){
     0;
   };
+load    : std/core/types
+load    : std/core/bool
+load    : std/core/exn
+load    : std/core/unsafe
+load    : std/core/char
+load    : std/core/order
+load    : std/core/undiv
+load    : std/core/int
+load    : std/core/vector
+load    : std/core/string
+load    : std/core/maybe
+load    : std/core/maybe2
+load    : std/core/lazy
+load    : std/core/either
+load    : std/core/delayed
+parse   : .../std/core/hnd.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/list.kk
+parse   : .../std/core/exn.kk
+parse   : .../std/core/string.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/maybe2.kk
+parse   : .../std/core/either.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/show.kk
+parse   : .../std/core/console.kk
+parse   : .../std/core/debug.kk
+parse   : .../std/core/delayed.kk
+parse   : .../std/core.kk
+parse   : .../analysis/aac/benchmarks.kk
+check   : std/core/hnd
+check   : std/core/delayed
+check   : std/core/tuple
+check   : std/core/exn
+check   : std/core/either
+check   : std/core/vector
+check   : std/core/maybe
+check   : std/core/maybe2
+check   : std/core/string
+check   : std/core/list
+check   : std/core/sslice
+check   : std/core/show
+check   : std/core/console
+check   : std/core/debug
+check   : std/core
+check   : analysis/aac/benchmarks

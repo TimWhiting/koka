@@ -403,7 +403,7 @@ flagsNull
           False   -- do not analyze by default
           False   -- do not do rebinding by default
           False   -- do not do k-cfa by default
-          2       -- call sensitivity
+          1       -- call sensitivity
           1       -- delimiter sensitivity
 
 isHelp Help = True
