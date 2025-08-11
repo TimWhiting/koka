@@ -17,7 +17,7 @@ import Core.Core
 import Data.Int (Int)
 import Common.Name
 import Debug.Trace (trace)
-import Common.NamePrim 
+import Common.NamePrim
 import Data.Maybe (fromJust, isJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
@@ -59,7 +59,7 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -101,13 +101,13 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       eval f venv kaddr mkaddr ctx
-    App (TypeApp (Var name _) _) [_,_,f] _ | nameMaskAt == getName name -> do
+    App (TypeApp (Var name _) _) [_,_,f] _ | getName name == nameMaskAt -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
@@ -152,6 +152,7 @@ doEval expr venv kaddr mkaddr ctx =
       addr <- allocConst venv ctx expr (injLit l)
       apply kaddr mkaddr addr ctx
     Lam{} -> do
+      -- trace ("Allocating closure " ++ show expr ++ " " ++ show venv) $ return ()
       addr <- allocConst venv ctx expr (AChangeClos expr venv)
       apply kaddr mkaddr addr ctx
     App _ args _ -> doApp args
@@ -227,11 +228,12 @@ doApply kaddr mkaddr addr ctx = do
     KNext frame knext ->
       let addFrame f venv u = allocFrame f knext ctx venv u in
       case frame of
-        f | f == FCall || f == FMask -> do 
+        f | f == FCall || f == FMask -> do
           v <- store addr
-          case v of 
+          case v of
             AChangeClos e env -> do
               bod <- focusBody e
+              -- trace ("Applying FMask " ++ show env) $ return()
               eval bod env knext mkaddr ctx
         FApp n args res u venv -> do
           case args of
@@ -277,7 +279,7 @@ doApply kaddr mkaddr addr ctx = do
                     k <- kLimit
                     let newCtx = take k $ CallApp (contextId u) : ctx
                         mk' = ImplicitAddr ctx venv (contextId u)
-                    extendMKStore mk' (MKHandle label knext mkaddr hnd henv)
+                    extendMKStore mk' (MKHandle label knext mkaddr hnd (M.union venv henv))
                     apply kx mk' addr newCtx
                   _ -> do
                     trace ("Applying non function: " ++ show res) doBottom
@@ -322,7 +324,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
   mk <- mkStore mkaddr
   case mk of
     MKEnd -> doBottom -- error ("Unwind: No MKont found for " ++ show name ++ " " ++ show performExpr)
-    MKHandle eff mkKNext mknext h@(Handler hnd ret body) henv -> do
+    MKHandle eff mkKNext mknext h@(Handler hnd ret) henv -> do
       if eff == name then do
         AChangeObj tname hndargs@(_:ops) <- store hnd
         hargs <- mapM (store . snd) hndargs
@@ -338,10 +340,10 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             o <- store op
             -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
             AChangeObj _ [opAddr] <- store op
-            AChangeClos op _ <- store (snd opAddr)
+            AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
-            let newEnv = foldl (\acc x -> M.insert x ctx acc) henv params
+            let newEnv = foldl (\acc x -> M.insert x ctx acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr ctx) params)
             extendStore (BindingAddr ctx (last params)) (AChangeKont name kaddr henv h)
@@ -350,6 +352,38 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         let k' = ImplicitLAddr ctx henv (contextId performExpr)
         extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h henv) mkKNext)
         unwind name opName performExpr k' mknext args ctx
+
+
+unwindLookup :: HasCallStack => TName -> Addr -> Addr -> ExprContext -> StaticCtx -> FixAAMR r s e FixChange
+unwindLookup varName knext mkaddr u ctx = do
+  mk <- mkStore mkaddr
+  case mk of
+    MKHandle nm k' mknext h venv | getName varName == nm -> do
+      let Just varAddr = lookupEnv varName venv
+      apply knext mkaddr varAddr ctx
+    MKHandle nm k' mknext h venv -> do
+      let kx = ImplicitLAddr ctx venv (contextId u)
+      extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) k')
+      unwindLookup varName kx mknext u ctx
+
+unwindSet :: HasCallStack => TName -> AChange -> Addr -> Addr -> Addr -> ExprContext -> StaticCtx -> FixAAMR r s e FixChange
+unwindSet varName val knext mkaddr addr u ctx = do
+  mk <- mkStore mkaddr
+  case mk of
+    MKHandle nm k' mknext h venv | getName varName == nm -> do
+      let env = M.delete varName venv
+      k <- kLimit
+      let newctx = take k $ CallApp (contextId u) : ctx
+      let newEnv = M.insert varName newctx env
+      extendStore (fromJust $ lookupEnv varName newEnv) val
+      let mk' = ImplicitAddr newctx newEnv (contextId u)
+      extendMKStore mk' (MKHandle nm k' mknext h newEnv)
+      extendStore addr changeUnit
+      apply knext mk' addr newctx
+    MKHandle nm k' mknext h venv -> do
+      let kx = ImplicitLAddr ctx venv (contextId u)
+      extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) k')
+      unwindSet varName val kx mknext addr u ctx
 
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
@@ -370,24 +404,23 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isNamePe
   let opN = newName $ nameLocalQual (getName opName)
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
   doUnwind label opN u knext mkaddr (drop 2 arguments) ctx
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalVar = do
-  -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
-  case args !! 1 of 
-    AChangeClos e env -> do
-      bod <- focusBody e
-      let newEnv = foldl (\acc x -> M.insert x ctx acc) env (lamNames e)
-      extendStore (fromJust $ lookupEnv (head $ lamNames e) newEnv) (args !! 0)
-      eval bod newEnv knext mkaddr ctx
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalGet = do
-  -- trace ("LocalGet: " ++ show name ++ " " ++ show n) $ return ()
-  apply knext mkaddr (head arguments) ctx
+  -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
+  if localEff then do
+    let [varAddr@(BindingAddr ctx varName), _] = arguments
+    unwindLookup varName knext mkaddr u ctx
+  else do
+    apply knext mkaddr (head arguments) ctx
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalSet = do
-  -- trace ("LocalSet: " ++ show name ++ " " ++ show n) $ return ()
   let [_, val] = args
-  let [varAddr, _] = arguments
-  extendStore varAddr val
-  extendStore addr changeUnit
-  apply knext mkaddr addr ctx
+  let [varAddr@(BindingAddr ctx varName), _] = arguments
+  -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
+  if localEff then do
+    unwindSet varName val knext mkaddr addr u ctx
+  else do
+    extendStore varAddr val
+    extendStore addr changeUnit
+    apply knext mkaddr addr ctx
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameHandle = do
   args <- mapM store arguments
   let [AChangeObj _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] = args
@@ -395,15 +428,37 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   k <- kLimit
   henv <- mEnvOf hnd
-  trace ("OPS " ++ show label ++ " " ++ show henv) $ return ()
+  -- trace ("OPS " ++ show henv) $ return ()
   let newctx = take k $ CallApp (contextId u) : ctx
   bod <- focusBody body
-  -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: StaticCtx }
+  -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
   let mk' = ImplicitAddr newctx venv (contextId u)
-  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) ret body) (M.unions [retenv, henv]))
+  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]))
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
   eval bod (limitEnv bodyenv (fvs body)) EndKAddr mk' newctx
-
+doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalVar = do
+  -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
+  if localEff then do
+    case args !! 1 of
+      AChangeClos e env -> do
+        let varName = head (lamNames e)
+        let newEnv = M.insert varName ctx env
+        bod <- focusBody e
+        extendStore (fromJust $ lookupEnv varName newEnv) (head args)
+        k <- kLimit
+        let newctx = take k $ CallApp (contextId u): ctx
+        let mk' = ImplicitAddr newctx venv (contextId u)
+        extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing) newEnv)
+        eval bod newEnv EndKAddr mk' newctx
+  else do
+    case args !! 1 of
+      AChangeClos e env -> do
+        let varName = head (lamNames e)
+        let newEnv = M.insert varName ctx env
+        bod <- focusBody e
+        extendStore (fromJust $ lookupEnv varName newEnv) (head args)
+        eval bod newEnv knext mkaddr ctx
+localEff = True
 
 branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 branchMatch branch addr =

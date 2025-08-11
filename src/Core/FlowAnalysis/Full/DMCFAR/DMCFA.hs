@@ -104,9 +104,11 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 doEval :: HasCallStack => ExprContext -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr kaddr mkaddr ctx =
   let open = case exprOfCtx expr of
-        App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> False
+        App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False 
-      process x = if not open then trace ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) x
+      process x = if not open then do 
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) 
+                    x
                   else x 
   in 
   process $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
@@ -360,7 +362,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             o <- store op
             -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
             AChangeObj _ [opAddr] <- store op
-            AChangeClos op _ <- store (snd opAddr)
+            AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()

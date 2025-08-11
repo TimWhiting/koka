@@ -39,7 +39,7 @@ showSimpleCtxId ctxId =
 
 data Call =
   CallTop
-  |CallApp ExprContextId
+  | CallApp ExprContextId
   deriving (Eq, Ord)
 
 instance Show Call where
@@ -139,7 +139,7 @@ data Kont =
   deriving (Eq, Ord, Show)
 
 data Handler =
-  Handler { ops :: Addr, ret :: ExprContext, body :: ExprContext }
+  Handler { ops :: Addr, ret :: Maybe ExprContext }
   deriving (Eq, Ord, Show)
 
 data MKont =
