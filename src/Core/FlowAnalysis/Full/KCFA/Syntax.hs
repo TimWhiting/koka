@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE BangPatterns #-}
 module Core.FlowAnalysis.Full.KCFA.Syntax where
 
 import Data.List (intercalate, find, minimumBy)
@@ -16,7 +17,7 @@ import Core.Core
 import Type.Type
 import Lib.PPrint
 import Compile.BuildMonad (BuildContext, Build)
-import Compile.Options (Terminal, Flags)
+import Compile.Options (Terminal, Flags (mSensitivity))
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Literals
@@ -31,6 +32,7 @@ import Common.Name (Name(..))
 import Common.Range
 import Debug.Trace (trace)
 import Common.File (startsWith)
+import Control.Monad (unless)
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -40,8 +42,8 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
   -> Module -> Int -> Int
   -> (ExprContext -> FixAAMR FixChange () () ())
-  -> IO ()
-runQueryAtRange bc build mod m d doQuery = do
+  -> IO Bool
+runQueryAtRange bc build mod m d doQuery =
   do
     (_, s, ctxs) <- runFixFinish (emptyBasicEnv m d build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
@@ -53,13 +55,14 @@ runQueryAtRange bc build mod m d doQuery = do
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
         values = collectPrograms (S.toList ctxs)
+        recur :: [AProgram] -> IO Int
         recur l =
           case l of
             [] -> if nameModule (modName mod) `startsWith` "std/core" then
-                return ()
+                return 0
               else
-                trace ("No analysis context found in " ++ nameModule (modName mod)) $
-                return ()
+                -- trace ("No analysis context found in " ++ nameModule (modName mod)) $
+                return 0
             (AProgram name mainCtx resCtx):rest ->
               do
                 (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -71,7 +74,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                 -- let achanges = map (\(AC c) -> c) (filter (\c -> case c of {SValue ac -> True; _ -> False}) res)
                                 --     (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
                                 ress' <- getAbResult
-                                trace ("ress': " ++ show ress') $ return ()
+                                -- trace ("ress': " ++ show ress') $ return ()
                                 return ress'
                 (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                 runFixCont $ do
@@ -82,36 +85,49 @@ runQueryAtRange bc build mod m d doQuery = do
                                 -- let achanges = map (\(AC c) -> c) (filter (\c -> case c of {SValue ac -> True; _ -> False}) res)
                                 --     (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
                                 ress' <- getAbResult
-                                trace ("ress': " ++ show ress') $ return ()
+                                -- trace ("ress': " ++ show ress') $ return ()
                                 return ress'
-                compareResult name analysisResult expectedResult
-                recur rest
-    recur values
-  -- trace ("l: " ++ show (length l)) $ return ()
-  -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-  return ()
+                let !result = (if compareResult name analysisResult expectedResult then 1 else 0)
+                total <- recur rest
+                return $ result + total
+    r <- recur values
+    let x :: Double
+        x = fromIntegral r / fromIntegral (length values)
+    unless (null values) $ do
+      trace ("k=" ++ show m) $ return ()
+      trace ("Result " ++ show r ++ " / " ++ show (length values)) $ return ()
+      trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%") $ return ()
+    -- trace ("l: " ++ show (length l)) $ return ()
+    -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
+    return $ not (null values)
 
-compareResult :: [Char] -> AbValue -> AbValue -> IO ()
+truncate' :: Double -> Int -> Double
+truncate' x n = fromIntegral (floor (x * t)) / t
+    where t = 10^n
+
+compareResult :: [Char] -> AbValue -> AbValue -> Bool
 compareResult name analysisResult expectedResult = do
   if alits analysisResult == alits expectedResult then
-    trace (name ++ " passed") $ return ()
+    -- trace (name ++ " passed") 
+    True
   else
-    trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) $ return ()
+    -- trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) 
+    False
 
 getAbResult :: PostFixAAMR x s e AbValue
 getAbResult = do
   cache <- getCache
   case M.lookup (VStore endVAddr) cache of
     Just (SValue res) -> return res
+    Nothing -> return emptyAbValue
 
 evalMainKCFA :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
-  -> IO ()
+  -> IO Bool
 evalMainKCFA bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     doStep (inject ctx)
     return ()
-  return ()
 
 showEscape :: Show a => a -> String
 showEscape = escape . show

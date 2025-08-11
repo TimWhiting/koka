@@ -1,33 +1,33 @@
 [6nparse   : .../std/core/types.kk
 parse   : .../std/core/undiv.kk
-parse   : .../std/core/char.kk
-parse   : .../std/core/vector.kk
-parse   : .../std/core/exn.kk
-parse   : .../std/core/unsafe.kk
 parse   : .../std/core/hnd.kk
-parse   : .../std/core/bool.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/exn.kk
 parse   : .../std/core/int.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/char.kk
 parse   : .../std/core/order.kk
-check   : std/core/types
-parse   : .../std/core/sslice.kk
-parse   : .../std/core/tuple.kk
-parse   : .../std/core/maybe.kk
-parse   : .../std/core/maybe2.kk
-parse   : .../std/core/string.kk
+parse   : .../std/core/vector.kk
 parse   : .../std/core/list.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/string.kk
+parse   : .../std/core/maybe2.kk
 parse   : .../std/core/either.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/lazy.kk
 parse   : .../std/core/show.kk
 parse   : .../std/core/console.kk
-parse   : .../std/core/lazy.kk
-parse   : .../std/core/debug.kk
 parse   : .../std/core/delayed.kk
 parse   : .../std/core.kk
 parse   : .../analysis/aac/benchmarks.kk
+parse   : .../std/core/debug.kk
+check   : std/core/types
 check   : std/core/lazy
-check   : std/core/int
 check   : std/core/unsafe
-check   : std/core/undiv
 check   : std/core/bool
+check   : std/core/int
+check   : std/core/undiv
 check   : std/core/hnd
 /* Primitive types and functions.
 
@@ -972,6 +972,8 @@ pub fip extern cctx/empty : forall<a> () -> cctx<a,a> {
   c inline "kk_cctx_empty(kk_context())";
   js inline "$std_core_types._cctx_empty()";
 };
+check   : std/core/order
+check   : std/core/char
 // Internal functions to support lazy constructors
 //
 module std/core/lazy
@@ -1262,8 +1264,6 @@ pub fip fun int : (b : bool) -> int
          -> 0;
     };
   };
-check   : std/core/char
-check   : std/core/order
 // Standard integer `:int` functions.
 //
 // These are arbitrary precision signed integer with an efficient runtime representation.
@@ -2189,12 +2189,12 @@ pub fip extern int/char : (i : int) -> char {
   cs inline "Primitive.IntToInt32(#1)";
 };
 check   : std/core/exn
-check   : std/core/either
 check   : std/core/tuple
 check   : std/core/delayed
-check   : std/core/vector
-check   : std/core/maybe
+check   : std/core/either
 check   : std/core/maybe2
+check   : std/core/maybe
+check   : std/core/vector
 check   : std/core/string
 /* Internal effect handler primitives.
 
@@ -3974,8 +3974,8 @@ extern cast-clause0 : forall<a,e,e1,b,c> (f : (hnd/marker<e1,c>, hnd/ev<b>) -> e
 extern cast-clause1 : forall<a,b,e,e1,c,d> (f : (hnd/marker<e1,d>, hnd/ev<c>, a) -> e1 b) -> e ((hnd/marker<e1,d>, hnd/ev<c>, a) -> e b) = inline "#1";
 extern cast-clause2 : forall<a,b,c,e,e1,d,a1> (f : (hnd/marker<e1,a1>, hnd/ev<d>, a, b) -> e1 c) -> e ((hnd/marker<e1,a1>, hnd/ev<d>, a, b) -> e c) = inline "#1";
 extern unsafe-st : forall<a,e> (f : () -> <st<global>|e> a) -> (() -> e a) = inline "#1";
-check   : std/core/sslice
 check   : std/core/list
+check   : std/core/sslice
 // Standard `:either` functions.
 module std/core/either
 import std/core/types = std/core/types = "";
@@ -4811,403 +4811,6 @@ pub fun bool : forall<a> (mb : maybe<a>) -> bool
          -> std/core/types/False;
     });
   };
-// Standard vector functions.
-module std/core/vector
-import std/core/types = std/core/types = "";
-import std/core/undiv = std/core/undiv = "";
-import std/core/hnd = std/core/hnd = "";
-import std/core/exn = std/core/exn = "";
-import std/core/int = std/core/int = "";
-pub fun @unsafe-vector : forall<a> (n : ssize_t) -> vector<a>
-  = forall<a> fn(n){
-    std/core/vector/@extern-unsafe-vector(n);
-  };
-// Create a new vector of length `n`  with initial elements `init`` .
-fun vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a>
-  = forall<a,e> fn(n, init){
-    std/core/vector/@extern-vector-alloc(n, init);
-  };
-// Create a new vector of length `n`  with initial elements given by a total function `f` .
-fun vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a>
-  = forall<a> fn(n, f){
-    std/core/vector/@extern-vector-alloc-total(n, f);
-  };
-// Return the element at position `index`  in vector `v`.
-// Raise an out of bounds exception if `index < 0`  or `index >= v.length`.
-pub fun @index : forall<a> (^ v : vector<a>, ^ index : int) -> exn a
-  = forall<a> fn(v, index){
-    val idx : ssize_t
-          = std/core/int/ssize_t(index);
-    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/vector/unsafe-idx(v, idx);
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/exn/throw("index out of bounds", (std/core/types/@Optional(std/core/exn/ExnRange)));
-    });
-  };
-// Return the element at position `index` in vector `v`, or `Nothing` if out of bounds
-pub fun at : forall<a> (^ v : vector<a>, ^ index : int) -> maybe<a>
-  = forall<a> fn(v, index){
-    val idx : ssize_t
-          = std/core/int/ssize_t(index);
-    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/types/Just((std/core/vector/unsafe-idx(v, idx)));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/types/Nothing;
-    });
-  };
-// Return the length of a vector.
-pub fun length : forall<a> (^ v : vector<a>) -> int
-  = forall<a> fn(v){
-    std/core/int/ssize_t/int((std/core/vector/lengthz(v)));
-  };
-// Create a new vector of length `n`  with initial elements `default` .
-pub fun vector : forall<a> (^ n : int, default : a) -> vector<a>
-  = forall<a> fn(n, default){
-    std/core/vector/vector-alloc((std/core/int/ssize_t(n)), default);
-  };
-// Create a new vector of length `n`  with initial elements given by _total_ function `f`.
-// (can be more efficient than `vector-init`)
-pub fun vector-init-total : forall<a> (^ n : int, f : (int) -> a) -> vector<a>
-  = forall<a> fn(n, f){
-    std/core/vector/vector-alloc-total((std/core/int/ssize_t(n)), (fn(i){
-        (f((std/core/int/ssize_t/int(i))));
-      }));
-  };
-fip fun ssize_t/decr : (i : ssize_t) -> ssize_t
-  = fn(i){
-    std/core/vector/ssize_t/@extern-decr(i);
-  };
-fip fun ssize_t/incr : (i : ssize_t) -> ssize_t
-  = fn(i){
-    std/core/vector/ssize_t/@extern-incr(i);
-  };
-// monadic lift
-fun @mlift-lift-forz@1011@10045 : forall<e> (action : (ssize_t) -> e (), i : ssize_t, n : ssize_t, wild_ : ()) -> e ()
-  = forall<e> fn(action, i, n, wild_){
-    val i@0@10000 : ssize_t
-          = std/core/vector/ssize_t/incr(i);
-    std/core/vector/@lift-forz@1011(action, n, i@0@10000);
-  };
-// lifted local: forz, rep
-fun @lift-forz@1011 : forall<e> (action : (ssize_t) -> e (), n : ssize_t, i : ssize_t) -> e ()
-  = forall<e> fn(action@0, n@0, i@0){
-    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> val x@10051 : ()
-                  = action@0(i@0);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@0)
-             -> std/core/hnd/yield-extend((fn(wild_@0){
-              (std/core/vector/@mlift-lift-forz@1011@10045(action@0, i@0, n@0, wild_@0));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> val i@0@10000@0 : ssize_t
-                      = std/core/vector/ssize_t/incr(i@0);
-            std/core/vector/@lift-forz@1011(action@0, n@0, i@0@10000@0);
-        });
-      ((@skip std/core/types/False() : bool ) as @pat@0@1)
-         -> std/core/types/Unit;
-    });
-  };
-// Executes `action` `n` times for each integer between [`0`,`n`)  (excluding `n` ).
-// If `n <= 0`  the function returns without any call to `action` .
-fun forz : forall<e> (n : ssize_t, action : (ssize_t) -> e ()) -> e ()
-  = forall<e> fn(n, action){
-    val i : ssize_t
-          = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011(action, n, i);
-  };
-// monadic lift
-fun @mlift-vector-init@10046 : forall<a,e> (i@0 : ssize_t, v : vector<a>, @y-x10027 : a) -> e ()
-  = forall<a,e> fn(i@0, v, @y-x10027){
-    std/core/vector/unsafe-assign(v, i@0, @y-x10027);
-  };
-// monadic lift
-fun @mlift-vector-init@10047 : forall<a,e> (v : vector<a>, wild_ : ()) -> e vector<a>
-  = forall<a,e> fn(v, wild_){
-    v;
-  };
-// Create a new vector of length `n`  with initial elements given by function `f` which can have a control effect.
-pub fun vector-init : forall<a,e> (^ n : int, f : (int) -> e a) -> e vector<a>
-  = forall<a,e> fn(n, f){
-    val len : ssize_t
-      = std/core/int/ssize_t(n);
-    val v : vector<a>
-      = std/core/vector/unsafe-vector(len);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    val x@10054 : ()
-      = std/core/vector/@lift-forz@1011((fn(i@0){
-          val x@0@10057 : a
-                = (f((std/core/int/ssize_t/int(i@0))));
-          (match ((std/core/hnd/yielding())) {
-            ((std/core/types/True() : bool ) as @pat@1)
-               -> std/core/hnd/yield-extend((fn(@y-x10027){
-                (std/core/vector/unsafe-assign(v, i@0, @y-x10027));
-              }));
-            ((@skip std/core/types/False() : bool ) as @pat@0@0)
-               -> std/core/vector/unsafe-assign(v, i@0, x@0@10057);
-          });
-        }), len, i);
-    (match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/hnd/yield-extend((fn(wild_){
-          v;
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> v;
-    });
-  };
-fun foreach-indexedz : forall<a,e> (v : vector<a>, f : (ssize_t, a) -> e ()) -> e ()
-  = forall<a,e> fn(v, f){
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011((fn(i@0){
-        (f(i@0, (std/core/vector/unsafe-idx(v, i@0))));
-      }), n@10003, i);
-  };
-// Invoke a function `f` for each element in a vector `v`
-pub fun foreach : forall<a,e> (v : vector<a>, f : (a) -> e ()) -> e ()
-  = forall<a,e> fn(v, f){
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011((fn(i@0){
-        val x@10015 : a
-              = (std/core/vector/unsafe-idx(v, i@0));
-        (f(x@10015));
-      }), n@10003, i);
-  };
-// Invoke a function `f` for each element in a vector `v`
-pub fun foreach-indexed : forall<a,e> (v : vector<a>, f : (int, a) -> e ()) -> e ()
-  = forall<a,e> fn(v, f){
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-forz@1011((fn(i@0){
-        val x@10017 : a
-              = (std/core/vector/unsafe-idx(v, i@0));
-        (f((std/core/int/ssize_t/int(i@0)), x@10017));
-      }), n@10003, i);
-  };
-// monadic lift
-fun @mlift-lift-for-whilez@1012@10048 : forall<a,e> (action : (ssize_t) -> e maybe<a>, i : ssize_t, n : ssize_t, @y-x10035 : maybe<a>) -> e maybe<a>
-  = forall<a,e> fn(action, i, n, @y-x10035){
-    (match (@y-x10035) {
-      ((std/core/types/Nothing() : maybe<a> ) as @pat@0)
-         -> val i@0@10005 : ssize_t
-                  = std/core/vector/ssize_t/incr(i);
-        std/core/vector/@lift-for-whilez@1012(action, n, i@0@10005);
-      ((@skip std/core/types/Just((x)) : maybe<a> ) as @pat@1)
-         -> std/core/types/Just(x);
-    });
-  };
-// lifted local: for-whilez, rep
-fun @lift-for-whilez@1012 : forall<a,e> (action : (ssize_t) -> e maybe<a>, n : ssize_t, i : ssize_t) -> e maybe<a>
-  = forall<a,e> fn(action@0, n@0, i@0){
-    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> val x@0@10064 : maybe<a>
-                  = action@0(i@0);
-        (match ((std/core/hnd/yielding())) {
-          ((std/core/types/True() : bool ) as @pat@2)
-             -> std/core/hnd/yield-extend((fn(@y-x10035@0){
-              (std/core/vector/@mlift-lift-for-whilez@1012@10048(action@0, i@0, n@0, @y-x10035@0));
-            }));
-          ((@skip std/core/types/False() : bool ) as @pat@0@0)
-             -> (match (x@0@10064) {
-              ((std/core/types/Nothing() : maybe<a> ) as @pat@0@1)
-                 -> val i@0@10005@0 : ssize_t
-                          = std/core/vector/ssize_t/incr(i@0);
-                std/core/vector/@lift-for-whilez@1012(action@0, n@0, i@0@10005@0);
-              ((@skip std/core/types/Just((x@1)) : maybe<a> ) as @pat@1@0)
-                 -> std/core/types/Just(x@1);
-            });
-        });
-      ((@skip std/core/types/False() : bool ) as @pat@2@0)
-         -> std/core/types/Nothing;
-    });
-  };
-// Executes `action` at most `n` times for each integer between `0`  upto `n`  (excluding `n` ).
-// If `n <= 0`  the function returns without any call to `action` .
-// If `action` returns `Just`, the iteration is stopped and the result returned
-fun for-whilez : forall<a,e> (n : ssize_t, action : (ssize_t) -> e maybe<a>) -> e maybe<a>
-  = forall<a,e> fn(n, action){
-    val i : ssize_t
-          = std/core/int/ssize_t(0);
-    std/core/vector/@lift-for-whilez@1012(action, n, i);
-  };
-// Invoke a function `f` for each element in a vector `v`.
-// If `f` returns `Just`, the iteration is stopped early and the result is returned.
-pub fun foreach-while : forall<a,b,e> (v : vector<a>, f : (a) -> e maybe<b>) -> e maybe<b>
-  = forall<a,b,e> fn(v, f){
-    val n@10006 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    std/core/vector/@lift-for-whilez@1012((fn(i@0){
-        (f((std/core/vector/unsafe-idx(v, i@0))));
-      }), n@10006, i);
-  };
-// monadic lift
-fun @mlift-map@10049 : forall<a,e> (i@0 : ssize_t, w : vector<a>, @y-x10042 : a) -> e ()
-  = forall<a,e> fn(i@0, w, @y-x10042){
-    std/core/vector/unsafe-assign(w, i@0, @y-x10042);
-  };
-// monadic lift
-fun @mlift-map@10050 : forall<a,e> (w : vector<a>, wild_ : ()) -> e vector<a>
-  = forall<a,e> fn(w, wild_){
-    w;
-  };
-// Apply a function `f` to each element in a vector `v`
-pub fun map : forall<a,b,e> (v : vector<a>, f : (a) -> e b) -> e vector<b>
-  = forall<a,b,e> fn(v, f){
-    val w : vector<b>
-      = std/core/vector/unsafe-vector((std/core/int/ssize_t((std/core/int/ssize_t/int((std/core/vector/lengthz(v)))))));
-    val n@10003 : ssize_t
-      = std/core/vector/lengthz(v);
-    val i : ssize_t
-      = std/core/int/ssize_t(0);
-    val x@10067 : ()
-      = std/core/vector/@lift-forz@1011((fn(i@0){
-          val x@10019 : a
-            = (std/core/vector/unsafe-idx(v, i@0));
-          val x@0@10070 : b
-            = (f(x@10019));
-          (match ((std/core/hnd/yielding())) {
-            ((std/core/types/True() : bool ) as @pat@1)
-               -> std/core/hnd/yield-extend((fn(@y-x10042){
-                (std/core/vector/unsafe-assign(w, i@0, @y-x10042));
-              }));
-            ((@skip std/core/types/False() : bool ) as @pat@0@0)
-               -> std/core/vector/unsafe-assign(w, i@0, x@0@10070);
-          });
-        }), n@10003, i);
-    (match ((std/core/hnd/yielding())) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/hnd/yield-extend((fn(wild_){
-          w;
-        }));
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> w;
-    });
-  };
-// Convert a vector to a list with an optional tail.
-pub fun vlist : forall<a> (v : vector<a>, tail : ? (list<a>)) -> list<a>
-  = forall<a> fn(v, tail){
-    std/core/vector/@extern-vlist(v, (match (tail) {
-        ((std/core/types/@Optional((@uniq-tail@919)) : ? (list<a>) ) as @pat)
-           -> @uniq-tail@919;
-        ((@skip std/core/types/@None() : ? (list<a>) ) as @pat@0)
-           -> std/core/types/Nil;
-      }));
-  };
-// Convert a vector to a list.
-pub fun list : forall<a> (v : vector<a>) -> list<a>
-  = forall<a> fn(v){
-    std/core/vector/vlist(v, std/core/types/@None);
-  };
-fun unvlist : forall<a> (xs : list<a>) -> vector<a>
-  = forall<a> fn(xs){
-    std/core/vector/@extern-unvlist(xs);
-  };
-// Convert a list to a vector.
-pub fun list/vector : forall<a> (xs : list<a>) -> vector<a>
-  = forall<a> fn(xs){
-    std/core/vector/unvlist(xs);
-  };
-fip fun ssize_t/is-zero : (i : ssize_t) -> bool
-  = fn(i){
-    std/core/vector/ssize_t/@extern-is-zero(i);
-  };
-// Return the element at position `index`  in vector `v`  without bounds check!
-extern unsafe-idx : forall<a> (^ v : vector<a>, index : ssize_t) -> a {
-  c inline "kk_vector_at_borrow(#1,#2,kk_context())";
-  cs inline "(#1)[#2]";
-  js inline "(#1)[#2]";
-};
-extern unsafe-assign : forall<a> (v : vector<a>, i : ssize_t, x : a) -> () {
-  c inline "kk_vector_unsafe_assign(#1,#2,#3,kk_context())";
-  cs inline "(#1)[#2] = #3";
-  js inline "(#1)[#2] = #3";
-};
-extern unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
-  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
-  cs inline "(new ##1[#1])";
-  js inline "Array(#1)";
-};
-extern @extern-unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
-  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
-  cs inline "(new ##1[#1])";
-  js inline "Array(#1)";
-};
-// Assign to an entry in a local `:vector` variable.
-pub extern assign/@index : forall<a,e,h> (^ self : local-var<h,vector<a>>, ^ index : int, assigned : a) -> <local<h>,exn|e> () {
-  c inline "kk_ref_vector_assign_borrow(#1,#2,#3,kk_context())";
-  cs inline "(#1)[(int)#2] = #3";
-  js inline "(#1).value[#2] = #3";
-};
-// Length of a vector.
-extern lengthz : forall<a> (^ v : vector<a>) -> ssize_t {
-  c inline "kk_vector_len_borrow(#1,kk_context())";
-  cs inline "((#1).Length)";
-  js inline "((#1).length)";
-};
-// Create a new vector of length `n`  with initial elements `init`` .
-extern @extern-vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a> {
-  c inline "kk_vector_alloc(#1,#2,kk_context())";
-  cs inline "Primitive.NewArray<##1>(#1,#2)";
-  js inline "_vector_initz(#1,#2)";
-};
-// Create a new vector of length `n`  with initial elements given by a total function `f` .
-extern @extern-vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a> {
-  c inline "kk_vector_init_total(#1,#2,kk_context())";
-  cs inline "Primitive.NewArray<##1>(#1,#2)";
-  js inline "_vector_initf(#1,#2)";
-};
-// Create an empty vector.
-pub extern unit/vector : forall<a> () -> vector<a> {
-  c inline "kk_vector_empty()";
-  cs inline "new ##1[0]";
-  js inline "[]";
-};
-// Convert a vector to a list with an optional tail.
-extern @extern-vlist : forall<a> (v : vector<a>, tail : list<a>) -> list<a> {
-  c inline "kk_vector_to_list(#1,#2,kk_context())";
-  cs inline "Primitive.VList<##1>(#1,#2)";
-  js inline "_vlist(#1,#2)";
-};
-extern @extern-unvlist : forall<a> (xs : list<a>) -> vector<a> {
-  c inline "kk_list_to_vector(#1,kk_context())";
-  cs inline "Primitive.UnVList<##1>(#1)";
-  js inline "_unvlist(#1)";
-};
-// Minimal set of operations that we need in `std/core`.
-fip extern ssize_t/(<=) : (ssize_t, ssize_t) -> bool = inline "(#1 <= #2)";
-fip extern ssize_t/(>=) : (ssize_t, ssize_t) -> bool = inline "(#1 >= #2)";
-fip extern ssize_t/(<) : (ssize_t, ssize_t) -> bool = inline "(#1 < #2)";
-fip extern ssize_t/(+) : (ssize_t, ssize_t) -> ssize_t {
-  inline "(#1 + #2)";
-  js inline "((#1 + #2)|0)";
-};
-fip extern ssize_t/(-) : (ssize_t, ssize_t) -> ssize_t {
-  inline "(#1 - #2)";
-  js inline "((#1 - #2)|0)";
-};
-fip extern ssize_t/is-pos : (i : ssize_t) -> bool = inline "(#1 > 0)";
-fip extern ssize_t/is-neg : (i : ssize_t) -> bool = inline "(#1 < 0)";
-fip extern ssize_t/@extern-is-zero : (i : ssize_t) -> bool {
-  inline "(#1 == 0)";
-  js inline "(#1 === 0)";
-};
-fip extern ssize_t/@extern-decr : (i : ssize_t) -> ssize_t = inline "(#1 - 1)";
-fip extern ssize_t/@extern-incr : (i : ssize_t) -> ssize_t = inline "(#1 + 1)";
 // Standard `:maybe2` functions which, unlike `:maybe`, can contain 2 values to avoid boxing allocations.
 module std/core/maybe2
 import std/core/types = std/core/types = "";
@@ -5451,337 +5054,6 @@ pub fun bool : forall<a,b> (mb : maybe2<a,b>) -> bool
          -> std/core/types/False;
     });
   };
-// Standard `:string` functions.
-module std/core/string
-import std/core/types = std/core/types = "";
-import std/core/hnd = std/core/hnd = "";
-import std/core/int = std/core/int = "";
-import std/core/order = std/core/order = "";
-import std/core/vector = std/core/vector = "";
-// Convert a character to a string
-pub fun char/string : (c : char) -> string
-  = fn(c){
-    std/core/string/char/@extern-string(c);
-  };
-// Convert a vector of characters to a string.
-pub fun vector/string : (vector<char>) -> string
-  = fn(@arg-x1){
-    std/core/string/vector/@extern-string(@arg-x1);
-  };
-// Convert a string to a vector of characters.
-pub fun vector : (s : string) -> vector<char>
-  = fn(s){
-    std/core/string/@extern-vector(s);
-  };
-fip fun string-cmp : (^ x : string, ^ y : string) -> int
-  = fn(x, y){
-    std/core/string/@extern-string-cmp(x, y);
-  };
-// Compare two strings.
-// Uses the character codes directly for comparison
-pub fip fun cmp : (^ x : string, ^ y : string) -> order
-  = fn(x, y){
-    val i@10000 : int
-          = std/core/string/string-cmp(x, y);
-    match ((std/core/int/(<)(i@10000, 0))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/types/Lt;
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> (match ((std/core/int/(>)(i@10000, 0))) {
-          ((std/core/types/True() : bool ) as @pat@1)
-             -> std/core/types/Gt;
-          ((@skip std/core/types/False() : bool ) as @pat@2)
-             -> std/core/types/Eq;
-        });
-    };
-  };
-pub fbip fun order2 : (x : string, y : string) -> order2<string>
-  = fn(x, y){
-    match ((std/core/string/cmp(x, y))) {
-      ((std/core/types/Lt() : order ) as @pat)
-         -> std/core/types/Lt2(x, y);
-      ((std/core/types/Gt() : order ) as @pat@0)
-         -> std/core/types/Gt2(y, x);
-      ((@skip std/core/types/Eq() : order ) as @pat@1)
-         -> std/core/types/Eq2(x);
-    };
-  };
-pub fip fun (<) : (^ x : string, ^ y : string) -> bool
-  = fn(x, y){
-    std/core/order/(==)((std/core/string/cmp(x, y)), std/core/types/Lt);
-  };
-pub fip fun (<=) : (^ x : string, ^ y : string) -> bool
-  = fn(x, y){
-    std/core/order/(<)((std/core/string/cmp(x, y)), std/core/types/Gt);
-  };
-pub fip fun (>) : (^ x : string, ^ y : string) -> bool
-  = fn(x, y){
-    std/core/order/(==)((std/core/string/cmp(x, y)), std/core/types/Gt);
-  };
-pub fip fun (>=) : (^ x : string, ^ y : string) -> bool
-  = fn(x, y){
-    std/core/order/(>)((std/core/string/cmp(x, y)), std/core/types/Lt);
-  };
-// O(n). Return the number of characters in a string.
-pub fun chars/count : (s : string) -> int
-  = fn(s){
-    std/core/string/chars/@extern-count(s);
-  };
-fun repeatz : (s : string, n : ssize_t) -> string
-  = fn(s, n){
-    std/core/string/@extern-repeatz(s, n);
-  };
-// Repeat a string `n` times
-pub fun repeat : (s : string, ^ n : int) -> string
-  = fn(s, n){
-    std/core/string/repeatz(s, (std/core/int/ssize_t(n)));
-  };
-// Convert a `:maybe` string to a string using the empty sting for `Nothing`
-pub fun maybe/string : (ms : maybe<string>) -> string
-  = fn(ms){
-    match (ms) {
-      ((std/core/types/Nothing() : maybe<string> ) as @pat)
-         -> "";
-      ((@skip std/core/types/Just((s)) : maybe<string> ) as @pat@0)
-         -> s;
-    };
-  };
-// Is a string empty?
-pub fun is-empty : (s : string) -> bool
-  = fn(s){
-    std/core/string/(==)(s, "");
-  };
-// Choose a non-empty string
-pub fun (||) : (x : string, y : string) -> string
-  = fn(x, y){
-    match ((std/core/string/(==)(x, ""))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> y;
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> x;
-    };
-  };
-// Is a string not empty?
-pub fun is-notempty : (s : string) -> bool
-  = fn(s){
-    std/core/string/(!=)(s, "");
-  };
-// Transform a string to a maybe type, using `Nothing` for an empty string
-pub fun maybe : (s : string) -> maybe<string>
-  = fn(s){
-    match ((std/core/string/(==)(s, ""))) {
-      ((std/core/types/True() : bool ) as @pat)
-         -> std/core/types/Nothing;
-      ((@skip std/core/types/False() : bool ) as @pat@0)
-         -> std/core/types/Just(s);
-    };
-  };
-// Convert a string to upper-case
-pub fun to-upper : (s : string) -> string
-  = fn(s){
-    std/core/string/@extern-to-upper(s);
-  };
-// Convert a string to lower-case
-pub fun to-lower : (s : string) -> string
-  = fn(s){
-    std/core/string/@extern-to-lower(s);
-  };
-// Convert a string to a list of characters
-pub fun list : (s : string) -> list<char>
-  = fn(s){
-    std/core/string/@extern-list(s);
-  };
-// Convert a list of characters to a string
-pub fun listchar/string : (cs : list<char>) -> string
-  = fn(cs){
-    std/core/string/listchar/@extern-string(cs);
-  };
-// Right-align a string to width `width`  using `fill`  (default is a space) to fill from the left.
-pub fun pad-left : (s : string, ^ width : int, fill : ? char) -> string
-  = fn(s, width, fill){
-    val n : int
-          = std/core/string/chars/count(s);
-    match ((std/core/int/(<=)(width, n))) {
-      ((std/core/types/True() : bool ) as @pat@1)
-         -> s;
-      ((@skip std/core/types/False() : bool ) as @pat@2)
-         -> val s@0@10003 : string
-              = std/core/string/char/string((match (fill) {
-                ((std/core/types/@Optional((@uniq-fill@368)) : ? char ) as @pat)
-                   -> @uniq-fill@368;
-                ((@skip std/core/types/@None() : ? char ) as @pat@0)
-                   -> ' ';
-              }));
-            val n@0@10004 : int
-              = std/core/int/int-sub(width, n);
-        std/core/types/(++)((std/core/string/repeatz(s@0@10003, (std/core/int/ssize_t(n@0@10004)))), s);
-    };
-  };
-// Left-align a string to width `width`  using `fill`  (default is a space) to fill on the right.
-pub fun pad-right : (s : string, ^ width : int, fill : ? char) -> string
-  = fn(s, width, fill){
-    val n : int
-          = std/core/string/chars/count(s);
-    match ((std/core/int/(<=)(width, n))) {
-      ((std/core/types/True() : bool ) as @pat@1)
-         -> s;
-      ((@skip std/core/types/False() : bool ) as @pat@2)
-         -> val s@0@10007 : string
-              = std/core/string/char/string((match (fill) {
-                ((std/core/types/@Optional((@uniq-fill@415)) : ? char ) as @pat)
-                   -> @uniq-fill@415;
-                ((@skip std/core/types/@None() : ? char ) as @pat@0)
-                   -> ' ';
-              }));
-            val n@0@10008 : int
-              = std/core/int/int-sub(width, n);
-        std/core/types/(++)(s, (std/core/string/repeatz(s@0@10007, (std/core/int/ssize_t(n@0@10008)))));
-    };
-  };
-// Trim whitespace on the left and right side of a string
-pub fun trim : (s : string) -> string
-  = fn(s){
-    std/core/string/trim-right((std/core/string/trim-left(s)));
-  };
-// Split a string into parts that were delimited by `sep`. The delimiters are not included in the results.
-// For example: `split("1,,2",",") == ["1","","2"]`
-pub fun sep/split : (s : string, sep : string) -> list<string>
-  = fn(s, sep){
-    val v@10011 : vector<string>
-          = std/core/string/splitv(s, sep);
-    std/core/vector/vlist(v@10011, std/core/types/@None);
-  };
-// Split a string into at most `n` parts that were delimited by a string `sep`. The delimiters are not included in the results (except for possibly the final part).
-// For example: `split("1,2,3",",",2) == ["1","2,3"]`
-pub fun splitn/split : (s : string, sep : string, ^ n : int) -> list<string>
-  = fn(s, sep, n){
-    val v@10012 : vector<string>
-          = std/core/string/splitvn(s, sep, (std/core/int/ssize_t(n)));
-    std/core/vector/vlist(v@10012, std/core/types/@None);
-  };
-// Convert a character to a string
-extern char/@extern-string : (c : char) -> string {
-  c inline "kk_string_from_char(#1,kk_context())";
-  cs inline "Primitive.CharToString(#1)";
-  js inline "_char_to_string(#1)";
-};
-// Convert a vector of characters to a string.
-extern vector/@extern-string : (vector<char>) -> string {
-  c inline "kk_string_from_chars(#1,kk_context())";
-  cs inline "Primitive.CharsToString(#1)";
-  js inline "_chars_to_string(#1)";
-};
-// Convert a string to a vector of characters.
-extern @extern-vector : (s : string) -> vector<char> {
-  c inline "kk_string_to_chars(#1,kk_context())";
-  cs inline "Primitive.StringToChars(#1)";
-  js inline "_string_to_chars(#1)";
-};
-// Are two strings equal?
-// Uses exact equality between character codes.
-pub extern (==) : (string, string) -> bool {
-  c inline "kk_string_is_eq(#1,#2,kk_context())";
-  cs inline "(#1 == #2)";
-  js inline "(#1 === #2)";
-};
-// Are two strings not equal?
-pub extern (!=) : (string, string) -> bool {
-  c inline "kk_string_is_neq(#1,#2,kk_context())";
-  inline "(#1 != #2)";
-  js inline "(#1 !== #2)";
-};
-fip extern @extern-string-cmp : (^ x : string, ^ y : string) -> int {
-  c inline "kk_string_cmp_int_borrow(#1,#2,kk_context())";
-  cs inline "String.Compare(#1,#2)";
-  js inline "(#1===#2 ? 0 : (#1 > #2 ? 1 : -1))";
-};
-// O(n). Return the number of characters in a string.
-extern chars/@extern-count : (s : string) -> int {
-  c inline "kk_string_count_int(#1,kk_context())";
-  cs inline "Primitive.StringCount(#1)";
-  js inline "_string_count(#1)";
-};
-// Does string `s` contain the string `sub`?
-pub extern contains : (s : string, sub : string) -> bool {
-  c inline "kk_string_contains(#1,#2,kk_context())";
-  cs inline "((#1).Contains(#2))";
-  js inline "((#1).indexOf(#2) >= 0)";
-};
-// Concatenate a vector of strings
-pub extern vector/join : (v : vector<string>) -> string {
-  c inline "kk_string_join(#1,kk_context())";
-  cs inline "String.Concat(#1)";
-  js inline "((#1).join(\x27\x27))";
-};
-// Concatenate a vector of strings with a separator `sep`
-pub extern vectorsep/join : (v : vector<string>, sep : string) -> string {
-  c inline "kk_string_join_with(#1,#2,kk_context())";
-  cs inline "Primitive.Concat(#1,#2)";
-  js inline "((#1).join(#2))";
-};
-extern @extern-repeatz : (s : string, n : ssize_t) -> string {
-  c inline "kk_string_repeat(#1,#2,kk_context())";
-  cs inline "Primitive.Repeat(#1,#2)";
-  js inline "_string_repeat(#1,#2)";
-};
-// Replace every occurrence of `pattern` to `repl` in a string.
-pub extern replace-all : (s : string, pattern : string, repl : string) -> string {
-  c inline "kk_string_replace_all(#1,#2,#3,kk_context())";
-  cs inline "(#1).Replace(#2,#3)";
-  js inline "(#1).replace(new RegExp((#2).replace(/[\x5C\x5C\x5C$\x5C^*+\x5C-{}?().]/g,\x27\x5C\x5C$&\x27),\x27g\x27),#3)";
-};
-// Count occurrences of `pattern` in a string.
-pub extern stringpat/count : (s : string, pattern : string) -> int {
-  c inline "kk_string_count_pattern(#1,#2,kk_context())";
-  cs inline "Primitive.Count(#1,#2)";
-  js inline "((#2) ? ((#1).match(new RegExp((#2).replace(/[\x5C\x5C\x5C$\x5C^*+\x5C-{}?().]/g,\x27\x5C\x5C$&\x27),\x27g\x27))||[]).length : 0)";
-};
-// Convert a string to upper-case
-extern @extern-to-upper : (s : string) -> string {
-  c inline "kk_string_to_upper(#1,kk_context())";
-  cs inline "(#1).ToUpper()";
-  js inline "(#1).toUpperCase()";
-};
-// Convert a string to lower-case
-extern @extern-to-lower : (s : string) -> string {
-  c inline "kk_string_to_lower(#1,kk_context())";
-  cs inline "(#1).ToLower()";
-  js inline "(#1).toLowerCase()";
-};
-// Trim the starting white space of a string
-pub extern trim-left : (s : string) -> string {
-  c inline "kk_string_trim_left(#1,kk_context())";
-  cs inline "(#1).TrimStart()";
-  js inline "((#1).replace(/^\x5Cs\x5Cs*/,\x27\x27))";
-};
-// Trim the ending white space of a string.
-pub extern trim-right : (s : string) -> string {
-  c inline "kk_string_trim_right(#1,kk_context())";
-  cs inline "(#1).TrimEnd()";
-  js inline "((#1).replace(/\x5Cs+$/,\x27\x27))";
-};
-extern splitv : (s : string, sep : string) -> vector<string> {
-  c inline "kk_string_splitv(#1,#2,kk_context())";
-  cs inline "(#1.Split(new String[]{#2}, StringSplitOptions.None))";
-  js inline "((#1).split(#2))";
-};
-extern splitvn : (s : string, sep : string, n : ssize_t) -> vector<string> {
-  c inline "kk_string_splitv_atmost(#1,#2,#3,kk_context())";
-  cs inline "#1.Split(new String[]{#2},#3, StringSplitOptions.None)";
-  js inline "(#1).split(#2, #3)";
-};
-// Convert a string to a list of characters
-extern @extern-list : (s : string) -> list<char> {
-  c inline "kk_string_to_list(#1,kk_context())";
-  cs inline "Primitive.StringToList(#1)";
-  js inline "_string_to_list(#1)";
-};
-// Convert a list of characters to a string
-extern listchar/@extern-string : (cs : list<char>) -> string {
-  c inline "kk_string_from_list(#1,kk_context())";
-  cs inline "Primitive.ListToString(#1)";
-  js inline "_list_to_string(#1)";
-};
 // Standard tuple functions.
 module std/core/tuple
 import std/core/types = std/core/types = "";
@@ -7327,6 +6599,738 @@ pub fun show-tuple : forall<a,b,e> (x : (a, b), showfst : (a) -> e string, shows
   = forall<a,b,e> fn(x, showfst, showsnd){
     std/core/tuple/tuple2/show(x, showfst, showsnd);
   };
+// Standard vector functions.
+module std/core/vector
+import std/core/types = std/core/types = "";
+import std/core/undiv = std/core/undiv = "";
+import std/core/hnd = std/core/hnd = "";
+import std/core/exn = std/core/exn = "";
+import std/core/int = std/core/int = "";
+pub fun @unsafe-vector : forall<a> (n : ssize_t) -> vector<a>
+  = forall<a> fn(n){
+    std/core/vector/@extern-unsafe-vector(n);
+  };
+// Create a new vector of length `n`  with initial elements `init`` .
+fun vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a>
+  = forall<a,e> fn(n, init){
+    std/core/vector/@extern-vector-alloc(n, init);
+  };
+// Create a new vector of length `n`  with initial elements given by a total function `f` .
+fun vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a>
+  = forall<a> fn(n, f){
+    std/core/vector/@extern-vector-alloc-total(n, f);
+  };
+// Return the element at position `index`  in vector `v`.
+// Raise an out of bounds exception if `index < 0`  or `index >= v.length`.
+pub fun @index : forall<a> (^ v : vector<a>, ^ index : int) -> exn a
+  = forall<a> fn(v, index){
+    val idx : ssize_t
+          = std/core/int/ssize_t(index);
+    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/vector/unsafe-idx(v, idx);
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> std/core/exn/throw("index out of bounds", (std/core/types/@Optional(std/core/exn/ExnRange)));
+    });
+  };
+// Return the element at position `index` in vector `v`, or `Nothing` if out of bounds
+pub fun at : forall<a> (^ v : vector<a>, ^ index : int) -> maybe<a>
+  = forall<a> fn(v, index){
+    val idx : ssize_t
+          = std/core/int/ssize_t(index);
+    (match ((std/core/vector/ssize_t/(<)(idx, (std/core/vector/lengthz(v))))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/types/Just((std/core/vector/unsafe-idx(v, idx)));
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> std/core/types/Nothing;
+    });
+  };
+// Return the length of a vector.
+pub fun length : forall<a> (^ v : vector<a>) -> int
+  = forall<a> fn(v){
+    std/core/int/ssize_t/int((std/core/vector/lengthz(v)));
+  };
+// Create a new vector of length `n`  with initial elements `default` .
+pub fun vector : forall<a> (^ n : int, default : a) -> vector<a>
+  = forall<a> fn(n, default){
+    std/core/vector/vector-alloc((std/core/int/ssize_t(n)), default);
+  };
+// Create a new vector of length `n`  with initial elements given by _total_ function `f`.
+// (can be more efficient than `vector-init`)
+pub fun vector-init-total : forall<a> (^ n : int, f : (int) -> a) -> vector<a>
+  = forall<a> fn(n, f){
+    std/core/vector/vector-alloc-total((std/core/int/ssize_t(n)), (fn(i){
+        (f((std/core/int/ssize_t/int(i))));
+      }));
+  };
+fip fun ssize_t/decr : (i : ssize_t) -> ssize_t
+  = fn(i){
+    std/core/vector/ssize_t/@extern-decr(i);
+  };
+fip fun ssize_t/incr : (i : ssize_t) -> ssize_t
+  = fn(i){
+    std/core/vector/ssize_t/@extern-incr(i);
+  };
+// monadic lift
+fun @mlift-lift-forz@1011@10045 : forall<e> (action : (ssize_t) -> e (), i : ssize_t, n : ssize_t, wild_ : ()) -> e ()
+  = forall<e> fn(action, i, n, wild_){
+    val i@0@10000 : ssize_t
+          = std/core/vector/ssize_t/incr(i);
+    std/core/vector/@lift-forz@1011(action, n, i@0@10000);
+  };
+// lifted local: forz, rep
+fun @lift-forz@1011 : forall<e> (action : (ssize_t) -> e (), n : ssize_t, i : ssize_t) -> e ()
+  = forall<e> fn(action@0, n@0, i@0){
+    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> val x@10051 : ()
+                  = action@0(i@0);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@0)
+             -> std/core/hnd/yield-extend((fn(wild_@0){
+              (std/core/vector/@mlift-lift-forz@1011@10045(action@0, i@0, n@0, wild_@0));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> val i@0@10000@0 : ssize_t
+                      = std/core/vector/ssize_t/incr(i@0);
+            std/core/vector/@lift-forz@1011(action@0, n@0, i@0@10000@0);
+        });
+      ((@skip std/core/types/False() : bool ) as @pat@0@1)
+         -> std/core/types/Unit;
+    });
+  };
+// Executes `action` `n` times for each integer between [`0`,`n`)  (excluding `n` ).
+// If `n <= 0`  the function returns without any call to `action` .
+fun forz : forall<e> (n : ssize_t, action : (ssize_t) -> e ()) -> e ()
+  = forall<e> fn(n, action){
+    val i : ssize_t
+          = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011(action, n, i);
+  };
+// monadic lift
+fun @mlift-vector-init@10046 : forall<a,e> (i@0 : ssize_t, v : vector<a>, @y-x10027 : a) -> e ()
+  = forall<a,e> fn(i@0, v, @y-x10027){
+    std/core/vector/unsafe-assign(v, i@0, @y-x10027);
+  };
+// monadic lift
+fun @mlift-vector-init@10047 : forall<a,e> (v : vector<a>, wild_ : ()) -> e vector<a>
+  = forall<a,e> fn(v, wild_){
+    v;
+  };
+// Create a new vector of length `n`  with initial elements given by function `f` which can have a control effect.
+pub fun vector-init : forall<a,e> (^ n : int, f : (int) -> e a) -> e vector<a>
+  = forall<a,e> fn(n, f){
+    val len : ssize_t
+      = std/core/int/ssize_t(n);
+    val v : vector<a>
+      = std/core/vector/unsafe-vector(len);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    val x@10054 : ()
+      = std/core/vector/@lift-forz@1011((fn(i@0){
+          val x@0@10057 : a
+                = (f((std/core/int/ssize_t/int(i@0))));
+          (match ((std/core/hnd/yielding())) {
+            ((std/core/types/True() : bool ) as @pat@1)
+               -> std/core/hnd/yield-extend((fn(@y-x10027){
+                (std/core/vector/unsafe-assign(v, i@0, @y-x10027));
+              }));
+            ((@skip std/core/types/False() : bool ) as @pat@0@0)
+               -> std/core/vector/unsafe-assign(v, i@0, x@0@10057);
+          });
+        }), len, i);
+    (match ((std/core/hnd/yielding())) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/hnd/yield-extend((fn(wild_){
+          v;
+        }));
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> v;
+    });
+  };
+fun foreach-indexedz : forall<a,e> (v : vector<a>, f : (ssize_t, a) -> e ()) -> e ()
+  = forall<a,e> fn(v, f){
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011((fn(i@0){
+        (f(i@0, (std/core/vector/unsafe-idx(v, i@0))));
+      }), n@10003, i);
+  };
+// Invoke a function `f` for each element in a vector `v`
+pub fun foreach : forall<a,e> (v : vector<a>, f : (a) -> e ()) -> e ()
+  = forall<a,e> fn(v, f){
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011((fn(i@0){
+        val x@10015 : a
+              = (std/core/vector/unsafe-idx(v, i@0));
+        (f(x@10015));
+      }), n@10003, i);
+  };
+// Invoke a function `f` for each element in a vector `v`
+pub fun foreach-indexed : forall<a,e> (v : vector<a>, f : (int, a) -> e ()) -> e ()
+  = forall<a,e> fn(v, f){
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-forz@1011((fn(i@0){
+        val x@10017 : a
+              = (std/core/vector/unsafe-idx(v, i@0));
+        (f((std/core/int/ssize_t/int(i@0)), x@10017));
+      }), n@10003, i);
+  };
+// monadic lift
+fun @mlift-lift-for-whilez@1012@10048 : forall<a,e> (action : (ssize_t) -> e maybe<a>, i : ssize_t, n : ssize_t, @y-x10035 : maybe<a>) -> e maybe<a>
+  = forall<a,e> fn(action, i, n, @y-x10035){
+    (match (@y-x10035) {
+      ((std/core/types/Nothing() : maybe<a> ) as @pat@0)
+         -> val i@0@10005 : ssize_t
+                  = std/core/vector/ssize_t/incr(i);
+        std/core/vector/@lift-for-whilez@1012(action, n, i@0@10005);
+      ((@skip std/core/types/Just((x)) : maybe<a> ) as @pat@1)
+         -> std/core/types/Just(x);
+    });
+  };
+// lifted local: for-whilez, rep
+fun @lift-for-whilez@1012 : forall<a,e> (action : (ssize_t) -> e maybe<a>, n : ssize_t, i : ssize_t) -> e maybe<a>
+  = forall<a,e> fn(action@0, n@0, i@0){
+    (match ((std/core/vector/ssize_t/(<)(i@0, n@0))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> val x@0@10064 : maybe<a>
+                  = action@0(i@0);
+        (match ((std/core/hnd/yielding())) {
+          ((std/core/types/True() : bool ) as @pat@2)
+             -> std/core/hnd/yield-extend((fn(@y-x10035@0){
+              (std/core/vector/@mlift-lift-for-whilez@1012@10048(action@0, i@0, n@0, @y-x10035@0));
+            }));
+          ((@skip std/core/types/False() : bool ) as @pat@0@0)
+             -> (match (x@0@10064) {
+              ((std/core/types/Nothing() : maybe<a> ) as @pat@0@1)
+                 -> val i@0@10005@0 : ssize_t
+                          = std/core/vector/ssize_t/incr(i@0);
+                std/core/vector/@lift-for-whilez@1012(action@0, n@0, i@0@10005@0);
+              ((@skip std/core/types/Just((x@1)) : maybe<a> ) as @pat@1@0)
+                 -> std/core/types/Just(x@1);
+            });
+        });
+      ((@skip std/core/types/False() : bool ) as @pat@2@0)
+         -> std/core/types/Nothing;
+    });
+  };
+// Executes `action` at most `n` times for each integer between `0`  upto `n`  (excluding `n` ).
+// If `n <= 0`  the function returns without any call to `action` .
+// If `action` returns `Just`, the iteration is stopped and the result returned
+fun for-whilez : forall<a,e> (n : ssize_t, action : (ssize_t) -> e maybe<a>) -> e maybe<a>
+  = forall<a,e> fn(n, action){
+    val i : ssize_t
+          = std/core/int/ssize_t(0);
+    std/core/vector/@lift-for-whilez@1012(action, n, i);
+  };
+// Invoke a function `f` for each element in a vector `v`.
+// If `f` returns `Just`, the iteration is stopped early and the result is returned.
+pub fun foreach-while : forall<a,b,e> (v : vector<a>, f : (a) -> e maybe<b>) -> e maybe<b>
+  = forall<a,b,e> fn(v, f){
+    val n@10006 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    std/core/vector/@lift-for-whilez@1012((fn(i@0){
+        (f((std/core/vector/unsafe-idx(v, i@0))));
+      }), n@10006, i);
+  };
+// monadic lift
+fun @mlift-map@10049 : forall<a,e> (i@0 : ssize_t, w : vector<a>, @y-x10042 : a) -> e ()
+  = forall<a,e> fn(i@0, w, @y-x10042){
+    std/core/vector/unsafe-assign(w, i@0, @y-x10042);
+  };
+// monadic lift
+fun @mlift-map@10050 : forall<a,e> (w : vector<a>, wild_ : ()) -> e vector<a>
+  = forall<a,e> fn(w, wild_){
+    w;
+  };
+// Apply a function `f` to each element in a vector `v`
+pub fun map : forall<a,b,e> (v : vector<a>, f : (a) -> e b) -> e vector<b>
+  = forall<a,b,e> fn(v, f){
+    val w : vector<b>
+      = std/core/vector/unsafe-vector((std/core/int/ssize_t((std/core/int/ssize_t/int((std/core/vector/lengthz(v)))))));
+    val n@10003 : ssize_t
+      = std/core/vector/lengthz(v);
+    val i : ssize_t
+      = std/core/int/ssize_t(0);
+    val x@10067 : ()
+      = std/core/vector/@lift-forz@1011((fn(i@0){
+          val x@10019 : a
+            = (std/core/vector/unsafe-idx(v, i@0));
+          val x@0@10070 : b
+            = (f(x@10019));
+          (match ((std/core/hnd/yielding())) {
+            ((std/core/types/True() : bool ) as @pat@1)
+               -> std/core/hnd/yield-extend((fn(@y-x10042){
+                (std/core/vector/unsafe-assign(w, i@0, @y-x10042));
+              }));
+            ((@skip std/core/types/False() : bool ) as @pat@0@0)
+               -> std/core/vector/unsafe-assign(w, i@0, x@0@10070);
+          });
+        }), n@10003, i);
+    (match ((std/core/hnd/yielding())) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/hnd/yield-extend((fn(wild_){
+          w;
+        }));
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> w;
+    });
+  };
+// Convert a vector to a list with an optional tail.
+pub fun vlist : forall<a> (v : vector<a>, tail : ? (list<a>)) -> list<a>
+  = forall<a> fn(v, tail){
+    std/core/vector/@extern-vlist(v, (match (tail) {
+        ((std/core/types/@Optional((@uniq-tail@919)) : ? (list<a>) ) as @pat)
+           -> @uniq-tail@919;
+        ((@skip std/core/types/@None() : ? (list<a>) ) as @pat@0)
+           -> std/core/types/Nil;
+      }));
+  };
+// Convert a vector to a list.
+pub fun list : forall<a> (v : vector<a>) -> list<a>
+  = forall<a> fn(v){
+    std/core/vector/vlist(v, std/core/types/@None);
+  };
+fun unvlist : forall<a> (xs : list<a>) -> vector<a>
+  = forall<a> fn(xs){
+    std/core/vector/@extern-unvlist(xs);
+  };
+// Convert a list to a vector.
+pub fun list/vector : forall<a> (xs : list<a>) -> vector<a>
+  = forall<a> fn(xs){
+    std/core/vector/unvlist(xs);
+  };
+fip fun ssize_t/is-zero : (i : ssize_t) -> bool
+  = fn(i){
+    std/core/vector/ssize_t/@extern-is-zero(i);
+  };
+// Return the element at position `index`  in vector `v`  without bounds check!
+extern unsafe-idx : forall<a> (^ v : vector<a>, index : ssize_t) -> a {
+  c inline "kk_vector_at_borrow(#1,#2,kk_context())";
+  cs inline "(#1)[#2]";
+  js inline "(#1)[#2]";
+};
+extern unsafe-assign : forall<a> (v : vector<a>, i : ssize_t, x : a) -> () {
+  c inline "kk_vector_unsafe_assign(#1,#2,#3,kk_context())";
+  cs inline "(#1)[#2] = #3";
+  js inline "(#1)[#2] = #3";
+};
+extern unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
+  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
+  cs inline "(new ##1[#1])";
+  js inline "Array(#1)";
+};
+extern @extern-unsafe-vector : forall<a> (n : ssize_t) -> vector<a> {
+  c inline "kk_vector_alloc(#1,kk_box_null(),kk_context())";
+  cs inline "(new ##1[#1])";
+  js inline "Array(#1)";
+};
+// Assign to an entry in a local `:vector` variable.
+pub extern assign/@index : forall<a,e,h> (^ self : local-var<h,vector<a>>, ^ index : int, assigned : a) -> <local<h>,exn|e> () {
+  c inline "kk_ref_vector_assign_borrow(#1,#2,#3,kk_context())";
+  cs inline "(#1)[(int)#2] = #3";
+  js inline "(#1).value[#2] = #3";
+};
+// Length of a vector.
+extern lengthz : forall<a> (^ v : vector<a>) -> ssize_t {
+  c inline "kk_vector_len_borrow(#1,kk_context())";
+  cs inline "((#1).Length)";
+  js inline "((#1).length)";
+};
+// Create a new vector of length `n`  with initial elements `init`` .
+extern @extern-vector-alloc : forall<a,e> (n : ssize_t, init : a) -> e vector<a> {
+  c inline "kk_vector_alloc(#1,#2,kk_context())";
+  cs inline "Primitive.NewArray<##1>(#1,#2)";
+  js inline "_vector_initz(#1,#2)";
+};
+// Create a new vector of length `n`  with initial elements given by a total function `f` .
+extern @extern-vector-alloc-total : forall<a> (n : ssize_t, f : (ssize_t) -> a) -> vector<a> {
+  c inline "kk_vector_init_total(#1,#2,kk_context())";
+  cs inline "Primitive.NewArray<##1>(#1,#2)";
+  js inline "_vector_initf(#1,#2)";
+};
+// Create an empty vector.
+pub extern unit/vector : forall<a> () -> vector<a> {
+  c inline "kk_vector_empty()";
+  cs inline "new ##1[0]";
+  js inline "[]";
+};
+// Convert a vector to a list with an optional tail.
+extern @extern-vlist : forall<a> (v : vector<a>, tail : list<a>) -> list<a> {
+  c inline "kk_vector_to_list(#1,#2,kk_context())";
+  cs inline "Primitive.VList<##1>(#1,#2)";
+  js inline "_vlist(#1,#2)";
+};
+extern @extern-unvlist : forall<a> (xs : list<a>) -> vector<a> {
+  c inline "kk_list_to_vector(#1,kk_context())";
+  cs inline "Primitive.UnVList<##1>(#1)";
+  js inline "_unvlist(#1)";
+};
+// Minimal set of operations that we need in `std/core`.
+fip extern ssize_t/(<=) : (ssize_t, ssize_t) -> bool = inline "(#1 <= #2)";
+fip extern ssize_t/(>=) : (ssize_t, ssize_t) -> bool = inline "(#1 >= #2)";
+fip extern ssize_t/(<) : (ssize_t, ssize_t) -> bool = inline "(#1 < #2)";
+fip extern ssize_t/(+) : (ssize_t, ssize_t) -> ssize_t {
+  inline "(#1 + #2)";
+  js inline "((#1 + #2)|0)";
+};
+fip extern ssize_t/(-) : (ssize_t, ssize_t) -> ssize_t {
+  inline "(#1 - #2)";
+  js inline "((#1 - #2)|0)";
+};
+fip extern ssize_t/is-pos : (i : ssize_t) -> bool = inline "(#1 > 0)";
+fip extern ssize_t/is-neg : (i : ssize_t) -> bool = inline "(#1 < 0)";
+fip extern ssize_t/@extern-is-zero : (i : ssize_t) -> bool {
+  inline "(#1 == 0)";
+  js inline "(#1 === 0)";
+};
+fip extern ssize_t/@extern-decr : (i : ssize_t) -> ssize_t = inline "(#1 - 1)";
+fip extern ssize_t/@extern-incr : (i : ssize_t) -> ssize_t = inline "(#1 + 1)";
+check   : std/core/show
+check   : std/core/console
+// Standard `:string` functions.
+module std/core/string
+import std/core/types = std/core/types = "";
+import std/core/hnd = std/core/hnd = "";
+import std/core/int = std/core/int = "";
+import std/core/order = std/core/order = "";
+import std/core/vector = std/core/vector = "";
+// Convert a character to a string
+pub fun char/string : (c : char) -> string
+  = fn(c){
+    std/core/string/char/@extern-string(c);
+  };
+// Convert a vector of characters to a string.
+pub fun vector/string : (vector<char>) -> string
+  = fn(@arg-x1){
+    std/core/string/vector/@extern-string(@arg-x1);
+  };
+// Convert a string to a vector of characters.
+pub fun vector : (s : string) -> vector<char>
+  = fn(s){
+    std/core/string/@extern-vector(s);
+  };
+fip fun string-cmp : (^ x : string, ^ y : string) -> int
+  = fn(x, y){
+    std/core/string/@extern-string-cmp(x, y);
+  };
+// Compare two strings.
+// Uses the character codes directly for comparison
+pub fip fun cmp : (^ x : string, ^ y : string) -> order
+  = fn(x, y){
+    val i@10000 : int
+          = std/core/string/string-cmp(x, y);
+    match ((std/core/int/(<)(i@10000, 0))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/types/Lt;
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> (match ((std/core/int/(>)(i@10000, 0))) {
+          ((std/core/types/True() : bool ) as @pat@1)
+             -> std/core/types/Gt;
+          ((@skip std/core/types/False() : bool ) as @pat@2)
+             -> std/core/types/Eq;
+        });
+    };
+  };
+pub fbip fun order2 : (x : string, y : string) -> order2<string>
+  = fn(x, y){
+    match ((std/core/string/cmp(x, y))) {
+      ((std/core/types/Lt() : order ) as @pat)
+         -> std/core/types/Lt2(x, y);
+      ((std/core/types/Gt() : order ) as @pat@0)
+         -> std/core/types/Gt2(y, x);
+      ((@skip std/core/types/Eq() : order ) as @pat@1)
+         -> std/core/types/Eq2(x);
+    };
+  };
+pub fip fun (<) : (^ x : string, ^ y : string) -> bool
+  = fn(x, y){
+    std/core/order/(==)((std/core/string/cmp(x, y)), std/core/types/Lt);
+  };
+pub fip fun (<=) : (^ x : string, ^ y : string) -> bool
+  = fn(x, y){
+    std/core/order/(<)((std/core/string/cmp(x, y)), std/core/types/Gt);
+  };
+pub fip fun (>) : (^ x : string, ^ y : string) -> bool
+  = fn(x, y){
+    std/core/order/(==)((std/core/string/cmp(x, y)), std/core/types/Gt);
+  };
+pub fip fun (>=) : (^ x : string, ^ y : string) -> bool
+  = fn(x, y){
+    std/core/order/(>)((std/core/string/cmp(x, y)), std/core/types/Lt);
+  };
+// O(n). Return the number of characters in a string.
+pub fun chars/count : (s : string) -> int
+  = fn(s){
+    std/core/string/chars/@extern-count(s);
+  };
+fun repeatz : (s : string, n : ssize_t) -> string
+  = fn(s, n){
+    std/core/string/@extern-repeatz(s, n);
+  };
+// Repeat a string `n` times
+pub fun repeat : (s : string, ^ n : int) -> string
+  = fn(s, n){
+    std/core/string/repeatz(s, (std/core/int/ssize_t(n)));
+  };
+// Convert a `:maybe` string to a string using the empty sting for `Nothing`
+pub fun maybe/string : (ms : maybe<string>) -> string
+  = fn(ms){
+    match (ms) {
+      ((std/core/types/Nothing() : maybe<string> ) as @pat)
+         -> "";
+      ((@skip std/core/types/Just((s)) : maybe<string> ) as @pat@0)
+         -> s;
+    };
+  };
+// Is a string empty?
+pub fun is-empty : (s : string) -> bool
+  = fn(s){
+    std/core/string/(==)(s, "");
+  };
+// Choose a non-empty string
+pub fun (||) : (x : string, y : string) -> string
+  = fn(x, y){
+    match ((std/core/string/(==)(x, ""))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> y;
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> x;
+    };
+  };
+// Is a string not empty?
+pub fun is-notempty : (s : string) -> bool
+  = fn(s){
+    std/core/string/(!=)(s, "");
+  };
+// Transform a string to a maybe type, using `Nothing` for an empty string
+pub fun maybe : (s : string) -> maybe<string>
+  = fn(s){
+    match ((std/core/string/(==)(s, ""))) {
+      ((std/core/types/True() : bool ) as @pat)
+         -> std/core/types/Nothing;
+      ((@skip std/core/types/False() : bool ) as @pat@0)
+         -> std/core/types/Just(s);
+    };
+  };
+// Convert a string to upper-case
+pub fun to-upper : (s : string) -> string
+  = fn(s){
+    std/core/string/@extern-to-upper(s);
+  };
+// Convert a string to lower-case
+pub fun to-lower : (s : string) -> string
+  = fn(s){
+    std/core/string/@extern-to-lower(s);
+  };
+// Convert a string to a list of characters
+pub fun list : (s : string) -> list<char>
+  = fn(s){
+    std/core/string/@extern-list(s);
+  };
+// Convert a list of characters to a string
+pub fun listchar/string : (cs : list<char>) -> string
+  = fn(cs){
+    std/core/string/listchar/@extern-string(cs);
+  };
+// Right-align a string to width `width`  using `fill`  (default is a space) to fill from the left.
+pub fun pad-left : (s : string, ^ width : int, fill : ? char) -> string
+  = fn(s, width, fill){
+    val n : int
+          = std/core/string/chars/count(s);
+    match ((std/core/int/(<=)(width, n))) {
+      ((std/core/types/True() : bool ) as @pat@1)
+         -> s;
+      ((@skip std/core/types/False() : bool ) as @pat@2)
+         -> val s@0@10003 : string
+              = std/core/string/char/string((match (fill) {
+                ((std/core/types/@Optional((@uniq-fill@368)) : ? char ) as @pat)
+                   -> @uniq-fill@368;
+                ((@skip std/core/types/@None() : ? char ) as @pat@0)
+                   -> ' ';
+              }));
+            val n@0@10004 : int
+              = std/core/int/int-sub(width, n);
+        std/core/types/(++)((std/core/string/repeatz(s@0@10003, (std/core/int/ssize_t(n@0@10004)))), s);
+    };
+  };
+// Left-align a string to width `width`  using `fill`  (default is a space) to fill on the right.
+pub fun pad-right : (s : string, ^ width : int, fill : ? char) -> string
+  = fn(s, width, fill){
+    val n : int
+          = std/core/string/chars/count(s);
+    match ((std/core/int/(<=)(width, n))) {
+      ((std/core/types/True() : bool ) as @pat@1)
+         -> s;
+      ((@skip std/core/types/False() : bool ) as @pat@2)
+         -> val s@0@10007 : string
+              = std/core/string/char/string((match (fill) {
+                ((std/core/types/@Optional((@uniq-fill@415)) : ? char ) as @pat)
+                   -> @uniq-fill@415;
+                ((@skip std/core/types/@None() : ? char ) as @pat@0)
+                   -> ' ';
+              }));
+            val n@0@10008 : int
+              = std/core/int/int-sub(width, n);
+        std/core/types/(++)(s, (std/core/string/repeatz(s@0@10007, (std/core/int/ssize_t(n@0@10008)))));
+    };
+  };
+// Trim whitespace on the left and right side of a string
+pub fun trim : (s : string) -> string
+  = fn(s){
+    std/core/string/trim-right((std/core/string/trim-left(s)));
+  };
+// Split a string into parts that were delimited by `sep`. The delimiters are not included in the results.
+// For example: `split("1,,2",",") == ["1","","2"]`
+pub fun sep/split : (s : string, sep : string) -> list<string>
+  = fn(s, sep){
+    val v@10011 : vector<string>
+          = std/core/string/splitv(s, sep);
+    std/core/vector/vlist(v@10011, std/core/types/@None);
+  };
+// Split a string into at most `n` parts that were delimited by a string `sep`. The delimiters are not included in the results (except for possibly the final part).
+// For example: `split("1,2,3",",",2) == ["1","2,3"]`
+pub fun splitn/split : (s : string, sep : string, ^ n : int) -> list<string>
+  = fn(s, sep, n){
+    val v@10012 : vector<string>
+          = std/core/string/splitvn(s, sep, (std/core/int/ssize_t(n)));
+    std/core/vector/vlist(v@10012, std/core/types/@None);
+  };
+// Convert a character to a string
+extern char/@extern-string : (c : char) -> string {
+  c inline "kk_string_from_char(#1,kk_context())";
+  cs inline "Primitive.CharToString(#1)";
+  js inline "_char_to_string(#1)";
+};
+// Convert a vector of characters to a string.
+extern vector/@extern-string : (vector<char>) -> string {
+  c inline "kk_string_from_chars(#1,kk_context())";
+  cs inline "Primitive.CharsToString(#1)";
+  js inline "_chars_to_string(#1)";
+};
+// Convert a string to a vector of characters.
+extern @extern-vector : (s : string) -> vector<char> {
+  c inline "kk_string_to_chars(#1,kk_context())";
+  cs inline "Primitive.StringToChars(#1)";
+  js inline "_string_to_chars(#1)";
+};
+// Are two strings equal?
+// Uses exact equality between character codes.
+pub extern (==) : (string, string) -> bool {
+  c inline "kk_string_is_eq(#1,#2,kk_context())";
+  cs inline "(#1 == #2)";
+  js inline "(#1 === #2)";
+};
+// Are two strings not equal?
+pub extern (!=) : (string, string) -> bool {
+  c inline "kk_string_is_neq(#1,#2,kk_context())";
+  inline "(#1 != #2)";
+  js inline "(#1 !== #2)";
+};
+fip extern @extern-string-cmp : (^ x : string, ^ y : string) -> int {
+  c inline "kk_string_cmp_int_borrow(#1,#2,kk_context())";
+  cs inline "String.Compare(#1,#2)";
+  js inline "(#1===#2 ? 0 : (#1 > #2 ? 1 : -1))";
+};
+// O(n). Return the number of characters in a string.
+extern chars/@extern-count : (s : string) -> int {
+  c inline "kk_string_count_int(#1,kk_context())";
+  cs inline "Primitive.StringCount(#1)";
+  js inline "_string_count(#1)";
+};
+// Does string `s` contain the string `sub`?
+pub extern contains : (s : string, sub : string) -> bool {
+  c inline "kk_string_contains(#1,#2,kk_context())";
+  cs inline "((#1).Contains(#2))";
+  js inline "((#1).indexOf(#2) >= 0)";
+};
+// Concatenate a vector of strings
+pub extern vector/join : (v : vector<string>) -> string {
+  c inline "kk_string_join(#1,kk_context())";
+  cs inline "String.Concat(#1)";
+  js inline "((#1).join(\x27\x27))";
+};
+// Concatenate a vector of strings with a separator `sep`
+pub extern vectorsep/join : (v : vector<string>, sep : string) -> string {
+  c inline "kk_string_join_with(#1,#2,kk_context())";
+  cs inline "Primitive.Concat(#1,#2)";
+  js inline "((#1).join(#2))";
+};
+extern @extern-repeatz : (s : string, n : ssize_t) -> string {
+  c inline "kk_string_repeat(#1,#2,kk_context())";
+  cs inline "Primitive.Repeat(#1,#2)";
+  js inline "_string_repeat(#1,#2)";
+};
+// Replace every occurrence of `pattern` to `repl` in a string.
+pub extern replace-all : (s : string, pattern : string, repl : string) -> string {
+  c inline "kk_string_replace_all(#1,#2,#3,kk_context())";
+  cs inline "(#1).Replace(#2,#3)";
+  js inline "(#1).replace(new RegExp((#2).replace(/[\x5C\x5C\x5C$\x5C^*+\x5C-{}?().]/g,\x27\x5C\x5C$&\x27),\x27g\x27),#3)";
+};
+// Count occurrences of `pattern` in a string.
+pub extern stringpat/count : (s : string, pattern : string) -> int {
+  c inline "kk_string_count_pattern(#1,#2,kk_context())";
+  cs inline "Primitive.Count(#1,#2)";
+  js inline "((#2) ? ((#1).match(new RegExp((#2).replace(/[\x5C\x5C\x5C$\x5C^*+\x5C-{}?().]/g,\x27\x5C\x5C$&\x27),\x27g\x27))||[]).length : 0)";
+};
+// Convert a string to upper-case
+extern @extern-to-upper : (s : string) -> string {
+  c inline "kk_string_to_upper(#1,kk_context())";
+  cs inline "(#1).ToUpper()";
+  js inline "(#1).toUpperCase()";
+};
+// Convert a string to lower-case
+extern @extern-to-lower : (s : string) -> string {
+  c inline "kk_string_to_lower(#1,kk_context())";
+  cs inline "(#1).ToLower()";
+  js inline "(#1).toLowerCase()";
+};
+// Trim the starting white space of a string
+pub extern trim-left : (s : string) -> string {
+  c inline "kk_string_trim_left(#1,kk_context())";
+  cs inline "(#1).TrimStart()";
+  js inline "((#1).replace(/^\x5Cs\x5Cs*/,\x27\x27))";
+};
+// Trim the ending white space of a string.
+pub extern trim-right : (s : string) -> string {
+  c inline "kk_string_trim_right(#1,kk_context())";
+  cs inline "(#1).TrimEnd()";
+  js inline "((#1).replace(/\x5Cs+$/,\x27\x27))";
+};
+extern splitv : (s : string, sep : string) -> vector<string> {
+  c inline "kk_string_splitv(#1,#2,kk_context())";
+  cs inline "(#1.Split(new String[]{#2}, StringSplitOptions.None))";
+  js inline "((#1).split(#2))";
+};
+extern splitvn : (s : string, sep : string, n : ssize_t) -> vector<string> {
+  c inline "kk_string_splitv_atmost(#1,#2,#3,kk_context())";
+  cs inline "#1.Split(new String[]{#2},#3, StringSplitOptions.None)";
+  js inline "(#1).split(#2, #3)";
+};
+// Convert a string to a list of characters
+extern @extern-list : (s : string) -> list<char> {
+  c inline "kk_string_to_list(#1,kk_context())";
+  cs inline "Primitive.StringToList(#1)";
+  js inline "_string_to_list(#1)";
+};
+// Convert a list of characters to a string
+extern listchar/@extern-string : (cs : list<char>) -> string {
+  c inline "kk_string_from_list(#1,kk_context())";
+  cs inline "Primitive.ListToString(#1)";
+  js inline "_list_to_string(#1)";
+};
+check   : std/core/debug
+check   : std/core
 // Efficient views on strings.
 module std/core/sslice
 import std/core/types = std/core/types = "";
@@ -8175,10 +8179,7 @@ extern @extern-xends-with : (s : string, post : string) -> bool {
   cs inline "#1.EndsWith(#2)";
   js inline "((#1).indexOf(#2, (#1).length - (#2).length) !== -1)";
 };
-check   : std/core/show
-check   : std/core/console
-check   : std/core/debug
-check   : std/core
+check   : analysis/aac/benchmarks
 // Standard `:list` functions.
 module std/core/list
 import std/core/types = std/core/types = "";
@@ -10070,7 +10071,6 @@ pub fun unlines : (xs : list<string>) -> string
          -> std/core/string/vectorsep/join((std/core/vector/unvlist(xs)), "\x0A");
     };
   };
-check   : analysis/aac/benchmarks
 // Standard show functions.
 module std/core/show
 import std/core/types = std/core/types = "";

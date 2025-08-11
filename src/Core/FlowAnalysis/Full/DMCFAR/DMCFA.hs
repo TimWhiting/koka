@@ -52,7 +52,7 @@ doStep i =
     case i of
       VStore addr ->
         -- trace ("Value not found in store :" ++ show addr)
-        error ("Value not found in store: " ++ show addr)
+        -- error ("Value not found in store: " ++ show addr)
         doBottom
       KStore addr -> if addr == endKAddr then return $ KV KEnd else doBottom
       MKStore addr -> if addr == endMKAddr then return $ MKV MKEnd else doBottom
@@ -66,7 +66,7 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -110,9 +110,9 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 doEval :: HasCallStack => ExprContext -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr kaddr mkaddr ctx =
   let logMessage = case exprOfCtx expr of
-        App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
+        App (TypeApp (Var name _) _) [arg] _ | getName name /= nameEffectOpen -> True
         _ -> False 
-      process x = if logMessage then trace ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) x
+      process x = if logMessage then x -- trace ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) x
                   else x 
   in 
   process $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
@@ -124,13 +124,13 @@ doEval expr kaddr mkaddr ctx =
     App (TypeApp (Var name _) _) [_,_,f] _ | getName name == nameMaskAt -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 3 expr
-      trace ("Masking " ++ show f) $ return ()
+      -- trace ("Masking " ++ show f) $ return ()
       k' <- addFrame FMask (contextId f)
       eval f k' mkaddr ctx
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
-      trace ("Masking " ++ show f) $ return ()
+      -- trace ("Masking " ++ show f) $ return ()
       k' <- addFrame FMask (contextId f)
       eval f k' mkaddr ctx
     Con tn _ _ -> do
@@ -209,7 +209,7 @@ rebindAll :: HasCallStack => S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAM
 rebindAll fvs oldCtx newCtx = do
   if oldCtx == newCtx || S.null fvs then return ()
   else do
-    trace ("Rebinding: " ++ show fvs ++ " from " ++ show oldCtx ++ " to " ++ show newCtx) $ return ()
+    -- trace ("Rebinding: " ++ show fvs ++ " from " ++ show oldCtx ++ " to " ++ show newCtx) $ return ()
     let bindings = S.toList fvs
     mapM_ (\tname -> do
       v <- store (BindingAddr oldCtx tname)
@@ -219,7 +219,7 @@ doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e F
 doApply kaddr mkaddr addr dynctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr) $ return ()
   k <- kStore kaddr
-  trace ("Applying: " ++ show k) $ return ()
+  -- trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> do
       mk <- mkStore mkaddr
@@ -254,7 +254,7 @@ doApply kaddr mkaddr addr dynctx = do
           case args of
             [] -> case res ++ [addr] of
               f:arguments -> do
-                trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
+                -- trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
                 -- trace ("Real params: " ++ show params) $ return ()
                 res <- store f
                 -- trace ("Applying function: " ++ show f ++ " " ++ show res) $ return ()
@@ -306,9 +306,9 @@ doApply kaddr mkaddr addr dynctx = do
               rebindAll (kfvs ctx) ctx newctx
               eval next k' mkaddr newctx
         FLet groupIdx numGroups bindingIdx numBindings name resolved u -> do
-          trace "Applying Let" $ return ()
+          -- trace "Applying Let" $ return ()
           val <- store addr
-          trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show newctx ) $ return ()
+          -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show newctx ) $ return ()
           extendStore (BindingAddr newctx name) val
           let newFvs = S.insert name (kfvs ctx)
           let newCtx = replaceFvs newctx newFvs
@@ -347,27 +347,27 @@ doUnwind :: HasCallStack => Name -> Name -> ExprContext -> Addr -> Addr -> [Addr
 doUnwind name opName performExpr kaddr mkaddr args ctx = do
   mk <- mkStore mkaddr
   case mk of
-    MKEnd -> error ("Unwind: No MKont found for " ++ show name ++ " " ++ show performExpr)
+    MKEnd -> doBottom -- error ("Unwind: No MKont found for " ++ show name ++ " " ++ show performExpr)
     MKHandle eff mkKNext mknext h@(Handler hnd ret hfvs) mkCtx -> do
       if eff == name then do
         AChangeObj tname hndargs@(_:ops) <- store hnd
         hargs <- mapM (store . snd) hndargs
-        trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
+        -- trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
         let unmakeHidden ('-':rest) = newName rest
             unmakeHidden (_:rest) = unmakeHidden rest
         let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
         case lookup opName ops' of
           Nothing ->
-            trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
+            -- trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
             doBottom
           Just op -> do
             o <- store op
-            trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
+            -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
             AChangeObj _ [opAddr] <- store op
             AChangeClos op _ <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
-            trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
+            -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
             extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr mkCtx h)
             eval bod mkKNext mknext mkCtx
@@ -430,10 +430,10 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | isName
   let AChangeClos select senv = args !! 1
   let DefCNonRec _ _ opName = select
   let opN = newName $ nameLocalQual (getName opName)
-  trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
+  -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
   doUnwind label opN u knext mkaddr (drop 2 arguments) ctx
 doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == nameLocalGet = do
-  trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
+  -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
     let [varAddr@(BindingAddr ctx varName), _] = arguments
     unwindLookup varName knext mkaddr u
@@ -442,7 +442,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == n
 doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == nameLocalSet = do
   let [_, val] = args
   let [varAddr@(BindingAddr ctx varName), _] = arguments
-  trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
+  -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
     unwindSet varName val knext mkaddr addr u
   else do
@@ -455,16 +455,16 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == n
   let label = case exprOfCtx u of
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   d <- dLimit
-  trace ("OPS " ++ show ctx) $ return ()
+  -- trace ("OPS " ++ show ctx) $ return ()
   let newctx = CombinedCtx (kfvs ctx) [] (take d $ (contextId u, static ctx):dynamic ctx)
   bod <- focusBody body
   let mk' = ImplicitAddr newctx (contextId u)
   rebindAll (kfvs ctxOld) ctxOld newctx
   extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret) (kfvs ctxOld)) newctx)
-  trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
+  -- trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
   eval bod endKAddr mk' newctx
 doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == nameLocalVar = do
-  trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
+  -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
     case args !! 1 of
       AChangeClos e env -> do

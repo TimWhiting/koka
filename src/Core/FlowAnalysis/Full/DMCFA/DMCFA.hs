@@ -328,7 +328,7 @@ doUnwind :: HasCallStack => Name -> Name -> ExprContext -> Addr -> Addr -> [Addr
 doUnwind name opName performExpr kaddr mkaddr args ctx = do
   mk <- mkStore mkaddr
   case mk of
-    MKEnd -> error ("Unwind: No MKont found for " ++ show name ++ " " ++ show performExpr)
+    MKEnd -> doBottom -- error ("Unwind: No MKont found for " ++ show name ++ " " ++ show performExpr)
     MKHandle eff mkKNext mknext h@(Handler hnd ret) henv mkCtx -> do
       if eff == name then do
         AChangeObj tname hndargs@(_:ops) <- store hnd
