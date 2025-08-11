@@ -31,12 +31,6 @@ import Common.File (startsWith)
 import Syntax.Syntax (ValueBinder(binderName))
 import Data.List (intercalate)
 
-mLimit :: FixAAMR r s e Int
-mLimit = contextLength <$> getEnv
-
-dLimit :: FixAAMR r s e Int
-dLimit = delimContextLength <$> getEnv
-
 drive :: FixAAMR r s e FixChange -> FixAAMR r s e FixChange
 drive m = do
   N res <- m
@@ -52,10 +46,10 @@ doStep i =
     case i of
       VStore addr ->
         -- trace ("Value not found in store :" ++ show addr)
-        -- error ("Value not found in store: " ++ show addr)
+        error ("Value not found in store: " ++ show addr)
         doBottom
-      KStore addr -> if addr == endKAddr then return $ KV KEnd else doBottom
-      MKStore addr -> if addr == endMKAddr then return $ MKV MKEnd else doBottom
+      KStore addr -> if addr == EndKAddr then return $ KV KEnd else doBottom
+      MKStore addr -> if addr == EndMKAddr then return $ MKV MKEnd else doBottom
       Step (CEval expr kaddr mkaddr ctx) -> do
         drive $ doEval expr kaddr mkaddr ctx
       Step (CApply kaddr mkaddr addr ctx) -> do
@@ -109,10 +103,10 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr kaddr mkaddr ctx =
-  let logMessage = case exprOfCtx expr of
-        App (TypeApp (Var name _) _) [arg] _ | getName name /= nameEffectOpen -> True
+  let open = case exprOfCtx expr of
+        App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> False
         _ -> False 
-      process x = if logMessage then x -- trace ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) x
+      process x = if not open then trace ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) x
                   else x 
   in 
   process $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
@@ -156,8 +150,9 @@ doEval expr kaddr mkaddr ctx =
           Just expr -> do
             -- trace ("Evaluating external: " ++ show name) $ return ()
             extendMKStore (TopAddr name) MKEnd
-            each [eval expr endKAddr (TopAddr name) startCombinedCtx,
-                  apply kaddr mkaddr (BindingAddr startCombinedCtx name) (dynamic ctx)]
+            c <- startCombinedCtx
+            each [eval expr EndKAddr (TopAddr name) c,
+                  apply kaddr mkaddr (BindingAddr c name) (dynamic ctx)]
           Nothing -> do
             -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
             apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
@@ -225,16 +220,17 @@ doApply kaddr mkaddr addr dynctx = do
       mk <- mkStore mkaddr
       case mk of
         MKEnd -> do
-          if mkaddr == endMKAddr then do
+          if mkaddr == EndMKAddr then do
             endV <- store addr
-            extendStore endVAddr endV
+            extendStore EndVAddr endV
             return $ N CDone
           else do
             topV <- store addr
             let TopAddr tname = mkaddr
             -- trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
             -- let [(tname, ctx)] = M.toList env
-            extendStore (BindingAddr startCombinedCtx tname) topV
+            c <- startCombinedCtx
+            extendStore (BindingAddr c tname) topV
             return $ N CDone
         MKHandle _ knext mknext _ dynctx ->
           apply knext mknext addr (dynamic dynctx)
@@ -394,7 +390,8 @@ unwindSet varName val knext mkaddr addr u = do
   case mk of
     MKHandle nm k' mknext h ctx | getName varName == nm -> do
       d <- dLimit
-      let newctx = CombinedCtx (kfvs ctx) [] (take d $ (contextId u, static ctx):dynamic ctx)
+      m <- mLimit
+      let newctx = CombinedCtx (kfvs ctx) (take m [CallDelim]) (take d $ (contextId u, static ctx):dynamic ctx)
       extendStore (BindingAddr newctx varName) val
       let mk' = ImplicitAddr newctx (contextId u)
       extendMKStore mk' (MKHandle nm k' mknext h newctx)
@@ -455,14 +452,15 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == n
   let label = case exprOfCtx u of
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   d <- dLimit
+  m <- mLimit
   -- trace ("OPS " ++ show ctx) $ return ()
-  let newctx = CombinedCtx (kfvs ctx) [] (take d $ (contextId u, static ctx):dynamic ctx)
+  let newctx = CombinedCtx (kfvs ctx) (take m [CallDelim]) (take d $ (contextId u, static ctx):dynamic ctx)
   bod <- focusBody body
   let mk' = ImplicitAddr newctx (contextId u)
   rebindAll (kfvs ctxOld) ctxOld newctx
   extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret) (kfvs ctxOld)) newctx)
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
-  eval bod endKAddr mk' newctx
+  eval bod EndKAddr mk' newctx
 doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == nameLocalVar = do
   -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
@@ -473,10 +471,11 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == n
         bod <- focusBody e
         extendStore (BindingAddr ctx varName) (head args)
         d <- dLimit
-        let newctx = CombinedCtx (kfvs ctx) [] (take d $ (contextId u, static ctx):dynamic ctx)
+        m <- mLimit
+        let newctx = CombinedCtx (kfvs ctx) (take m [CallDelim]) (take d $ (contextId u, static ctx):dynamic ctx)
         let mk' = ImplicitAddr newctx (contextId u)
         extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing (S.singleton varName)) newctx)
-        eval bod endKAddr mk' newctx
+        eval bod EndKAddr mk' newctx
   else do
     case args !! 1 of
       AChangeClos e env -> do

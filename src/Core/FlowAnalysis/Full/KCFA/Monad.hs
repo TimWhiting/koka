@@ -32,8 +32,17 @@ data Conf =
   | CDone
   deriving (Eq, Ord, Show)
 
-inject :: ExprContext -> FixInput
-inject ctx = Step (CEval ctx M.empty endKAddr endMKAddr startStaticCtx)
+kLimit :: FixAAMR r s e Int
+kLimit = contextLength <$> getEnv
+
+startStaticCtx = do 
+  k <- kLimit 
+  return (take k [CallTop])
+
+inject :: ExprContext -> FixAAMR r s e FixInput
+inject ctx = do 
+  c <- startStaticCtx
+  return $ Step (CEval ctx M.empty EndKAddr EndMKAddr c)
 
 data FixInput =
   Step Conf

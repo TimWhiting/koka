@@ -18,7 +18,7 @@ import Common.NamePrim (nameOpen, nameEffectOpen)
 import Data.Maybe (fromJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
-import Type.Type (splitFunType, typeAny, Effect)
+import Type.Type (splitFunType, typeAny, Effect, typeUnit)
 import Control.Monad (foldM)
 import GHC.Base (when, VecCount)
 import Core.CoreVar (HasExpVar(fv), bv)
@@ -32,8 +32,21 @@ data Conf =
   | CDone
   deriving (Eq, Ord, Show)
 
-inject :: ExprContext -> FixInput
-inject ctx = Step (CEval ctx endKAddr endMKAddr startCombinedCtx)
+mLimit :: FixAAMR r s e Int
+mLimit = contextLength <$> getEnv
+
+dLimit :: FixAAMR r s e Int
+dLimit = delimContextLength <$> getEnv
+
+startCombinedCtx = do 
+  m <- mLimit
+  d <- dLimit 
+  return $ CombinedCtx S.empty (take m startStaticCtx) (take d startDynCtx)
+
+inject :: ExprContext -> FixAAMR r s e FixInput
+inject ctx = do
+  c <- startCombinedCtx
+  return $ Step (CEval ctx EndKAddr EndMKAddr c)
 
 data FixInput =
   Step Conf

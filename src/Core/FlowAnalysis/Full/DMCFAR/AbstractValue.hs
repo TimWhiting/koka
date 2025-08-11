@@ -67,6 +67,9 @@ instance Show CombinedCtx where
 data Addr =
   BindingAddr CombinedCtx TName
   | TopAddr TName
+  | EndVAddr
+  | EndKAddr
+  | EndMKAddr
   | ImplicitAddr CombinedCtx ExprContextId
   | ImplicitLAddr CombinedCtx ExprContextId
   | BindImplicitAddr CombinedCtx ExprContextId
@@ -75,6 +78,9 @@ data Addr =
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
   show (TopAddr name) = "T@" ++ show name
+  show EndVAddr = "EndVAddr"
+  show EndKAddr = "EndKAddr"
+  show EndMKAddr = "EndMKAddr"
   show (ImplicitAddr ctx ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLAddr ctx ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
@@ -160,12 +166,8 @@ data MKont =
 startStaticCtx = [CallTop]
 startDelimCtx = [CallDelim]
 startDynCtx = []
-startCombinedCtx = CombinedCtx S.empty startStaticCtx startDynCtx
 startEnv = M.empty
 
-endVAddr = BindingAddr startCombinedCtx (TName (newName "endV") typeUnit Nothing)
-endKAddr = ImplicitAddr startCombinedCtx (ExprContextId (-10001) (newName "endK"))
-endMKAddr = ImplicitAddr startCombinedCtx (ExprContextId (-10002) (newName "endMK"))
 showStore store = show $ pretty store
 
 instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
@@ -196,7 +198,7 @@ ctxOfClos res =
 
 instance Show AChange where
   show (AChangeClos expr ctx) = showNoEnvClosure (expr, ctx)
-  show (AChangeConstr expr params) = showSimpleClosure (expr, startCombinedCtx)
+  show (AChangeConstr expr params) = showCtxExpr expr
   show (AChangeObj name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr) = show name
   show (AChangeKont name addr ctx handler) = "Kont" ++ show (name, addr, ctx, handler)

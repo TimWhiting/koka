@@ -31,12 +31,6 @@ import Common.File (startsWith)
 import Syntax.Syntax (ValueBinder(binderName))
 import Data.List (intercalate)
 
-mLimit :: FixAAMR r s e Int
-mLimit = contextLength <$> getEnv
-
-dLimit :: FixAAMR r s e Int
-dLimit = delimContextLength <$> getEnv
-
 drive :: FixAAMR r s e FixChange -> FixAAMR r s e FixChange
 drive m = do
   N res <- m
@@ -53,8 +47,8 @@ doStep i =
       VStore addr ->
         trace ("Value not found in store :" ++ show addr)
         doBottom
-      KStore addr -> if addr == endKAddr then return $ KV KEnd else doBottom
-      MKStore addr -> if addr == endMKAddr then return $ MKV MKEnd else doBottom
+      KStore addr -> if addr == EndKAddr then return $ KV KEnd else doBottom
+      MKStore addr -> if addr == EndMKAddr then return $ MKV MKEnd else doBottom
       Step (CEval expr venv kaddr mkaddr ctx) -> do
         drive $ doEval expr venv kaddr mkaddr ctx
       Step (CApply kaddr mkaddr addr ctx) -> do
@@ -149,8 +143,9 @@ doEval expr venv kaddr mkaddr ctx =
           case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
             Just expr -> do
               extendMKStore (TopAddr name) MKEnd
-              each [eval expr M.empty endKAddr (TopAddr name) startCombinedCtx,
-                    apply kaddr mkaddr (BindingAddr startCombinedCtx name) (dynamic ctx)]
+              c <- startCombinedCtx
+              each [eval expr M.empty EndKAddr (TopAddr name) c,
+                    apply kaddr mkaddr (BindingAddr c name) (dynamic ctx)]
             Nothing -> do
               trace ("Variable not found: " ++ show name) doBottom
     Lit l -> do
@@ -216,15 +211,16 @@ doApply kaddr mkaddr addr dynctx = do
       mk <- mkStore mkaddr
       case mk of
         MKEnd -> do
-          if mkaddr == endMKAddr then do
+          if mkaddr == EndMKAddr then do
             endV <- store addr
-            extendStore endVAddr endV
+            extendStore EndVAddr endV
             return $ N CDone
           else do
             topV <- store addr
             let TopAddr name  = mkaddr
+            c <- startCombinedCtx
             -- trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
-            extendStore (BindingAddr startCombinedCtx name) topV
+            extendStore (BindingAddr c name) topV
             return $ N CDone
         MKHandle _ knext mknext _ _ dynctx ->
           apply knext mknext addr (dynamic dynctx)
@@ -440,7 +436,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   let mk' = ImplicitAddr newctx venv (contextId u)
   extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]) newctx)
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
-  eval bod (limitEnv bodyenv (fvs body)) endKAddr mk' newctx
+  eval bod (limitEnv bodyenv (fvs body)) EndKAddr mk' newctx
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalVar = do
   -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
@@ -454,7 +450,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
         let newctx = CombinedCtx [] (take d $ (contextId u, static ctx):dynamic ctx)
         let mk' = ImplicitAddr newctx venv (contextId u)
         extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing) newEnv newctx)
-        eval bod newEnv endKAddr mk' newctx
+        eval bod newEnv EndKAddr mk' newctx
   else do
     case args !! 1 of
       AChangeClos e env -> do
