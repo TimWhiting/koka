@@ -31,9 +31,6 @@ import Common.File (startsWith)
 import Syntax.Syntax (ValueBinder(binderName))
 import Data.List (intercalate)
 
-kLimit :: FixAAMR r s e Int
-kLimit = contextLength <$> getEnv
-
 drive :: FixAAMR r s e FixChange -> FixAAMR r s e FixChange
 drive m = do
   N res <- m
@@ -50,8 +47,8 @@ doStep i =
       VStore addr ->
         trace ("Value not found in store :" ++ show addr)
         doBottom
-      KStore addr -> if addr == endKAddr then return $ KV KEnd else doBottom
-      MKStore addr -> if addr == endMKAddr then return $ MKV MKEnd else doBottom
+      KStore addr -> if addr == EndKAddr then return $ KV KEnd else doBottom
+      MKStore addr -> if addr == EndMKAddr then return $ MKV MKEnd else doBottom
       Step (CEval expr venv kaddr mkaddr ctx) -> do
         drive $ doEval expr venv kaddr mkaddr ctx
       Step (CApply kaddr mkaddr addr ctx) -> do
@@ -62,7 +59,7 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -104,7 +101,7 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
       -- TODO: Adjust the dynamic context to only what is necessary
@@ -146,8 +143,9 @@ doEval expr venv kaddr mkaddr ctx =
           case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
             Just expr -> do
               extendMKStore (TopAddr name) MKEnd
-              each [eval expr M.empty endKAddr (TopAddr name) startStaticCtx,
-                    apply kaddr mkaddr (BindingAddr startStaticCtx name) ctx]
+              c <- startStaticCtx
+              each [eval expr M.empty EndKAddr (TopAddr name) c,
+                    apply kaddr mkaddr (BindingAddr c name) ctx]
             Nothing -> do
               trace ("Variable not found: " ++ show name) doBottom
     Lit l -> do
@@ -213,15 +211,16 @@ doApply kaddr mkaddr addr ctx = do
       mk <- mkStore mkaddr
       case mk of
         MKEnd -> do
-          if mkaddr == endMKAddr then do
+          if mkaddr == EndMKAddr then do
             endV <- store addr
-            extendStore endVAddr endV
+            extendStore EndVAddr endV
             return $ N CDone
           else do
             topV <- store addr
             let TopAddr name = mkaddr
+            c <- startStaticCtx
             -- trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
-            extendStore (BindingAddr startStaticCtx name) topV
+            extendStore (BindingAddr c name) topV
             return $ N CDone
         MKHandle _ knext mknext _ _ ->
           apply knext mknext addr ctx
@@ -396,14 +395,14 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   k <- kLimit
   henv <- mEnvOf hnd
-  -- trace ("OPS " ++ show henv) $ return ()
+  trace ("OPS " ++ show label ++ " " ++ show henv) $ return ()
   let newctx = take k $ CallApp (contextId u) : ctx
   bod <- focusBody body
   -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: StaticCtx }
   let mk' = ImplicitAddr newctx venv (contextId u)
   extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) ret body) (M.unions [retenv, henv]))
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
-  eval bod (limitEnv bodyenv (fvs body)) endKAddr mk' newctx
+  eval bod (limitEnv bodyenv (fvs body)) EndKAddr mk' newctx
 
 
 branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
