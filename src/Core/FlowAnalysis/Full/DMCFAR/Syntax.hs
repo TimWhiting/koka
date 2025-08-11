@@ -33,6 +33,7 @@ import Common.Range
 import Debug.Trace (trace)
 import Common.File (startsWith)
 import Control.Monad (unless)
+import Data.Time (getCurrentTime, diffUTCTime)
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -70,9 +71,6 @@ runQueryAtRange bc build mod m d doQuery = do
                                   (_,ctx) <- loadModule (modName mod)
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
-                                res <- S.toList <$> getResults
-                                -- let achanges = map (\(AC c) -> c) (filter (\c -> case c of {SValue ac -> True; _ -> False}) res)
-                                --     (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
                                 ress' <- getAbResult
                                 -- trace ("ress': " ++ show ress') $ return ()
                                 return ress'
@@ -81,22 +79,21 @@ runQueryAtRange bc build mod m d doQuery = do
                                   (_,ctx) <- loadModule (modName mod)
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
-                                res <- S.toList <$> getResults
-                                -- let achanges = map (\(AC c) -> c) (filter (\c -> case c of {SValue ac -> True; _ -> False}) res)
-                                --     (_, resM) = foldl (addChange . snd) (error "", emptyAbValue) achanges
                                 ress' <- getAbResult
                                 -- trace ("ress': " ++ show ress') $ return ()
                                 return ress'
                 let !result = (if compareResult name analysisResult expectedResult then 1 else 0)
                 total <- recur rest
                 return $ result + total
+    tstart <- getCurrentTime
     r <- recur values
+    tend <- getCurrentTime
     let x :: Double
         x = fromIntegral r / fromIntegral (length values)
     unless (null values) $ do
       trace ("d=" ++ show d ++ ",m=" ++ show m) $ return ()
       trace ("Result " ++ show r ++ " / " ++ show (length values)) $ return ()
-      trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%") $ return ()
+      trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%, time: " ++ show (diffUTCTime tend tstart)) $ return ()
     -- trace ("l: " ++ show (length l)) $ return ()
     -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
     return $ not (null values)
@@ -119,14 +116,14 @@ getAbResult = do
   cache <- getCache
   case M.lookup (VStore EndVAddr) cache of
     Just (SValue res) -> return res
-    Nothing -> return emptyAbValue
 
 evalMainR :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
   -> IO Bool
 evalMainR bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
-    doStep <$> inject ctx
+    c <- inject ctx
+    doStep c
     return ()
 
 -- writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()

@@ -363,7 +363,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
-                    liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
+                    -- liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
 
                     let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
                         sweepDM mT d m i = do

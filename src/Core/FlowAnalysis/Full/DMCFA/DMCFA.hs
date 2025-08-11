@@ -335,16 +335,16 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
         case lookup opName ops' of
           Nothing ->
-            trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
+            -- trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
             doBottom
           Just op -> do
             o <- store op
             -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
             AChangeObj _ [opAddr] <- store op
-            AChangeClos op _ <- store (snd opAddr)
+            AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
-            let newEnv = foldl (\acc x -> M.insert x mkCtx acc) henv params
+            let newEnv = foldl (\acc x -> M.insert x mkCtx acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
             extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr henv h)
