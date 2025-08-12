@@ -68,7 +68,10 @@ extendKStore addr v = do
   lift $ push (KStore addr) (KV v)
 extendMKStore :: Addr -> MKont -> FixAAMR r e s ()
 extendMKStore addr v = do
-  -- trace ("Extending MKStore: " ++ show addr ++ " with " ++ show v) $ return ()
+  -- case v of 
+  --   MKHandle{} ->
+  --     trace ("Extending MKStore: " ++ show addr ++ " with " ++ show v) $ return ()
+  --   _ -> return ()
   lift $ push (MKStore addr) (MKV v)
 
 store :: HasCallStack => Addr -> FixAAMR r s e AChange
@@ -214,7 +217,7 @@ rebindAll fvs oldCtx newCtx = do
 
 doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr mkaddr addr dynctx = do
-  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr) $ return ()
+  trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr ++ ":" ++ show dynctx ) $ return ()
   k <- kStore kaddr
   -- trace ("Applying: " ++ show k) $ return ()
   case k of
@@ -224,6 +227,7 @@ doApply kaddr mkaddr addr dynctx = do
         MKEnd -> do
           if mkaddr == EndMKAddr then do
             endV <- store addr
+            -- trace ("Done! " ++ show mkaddr) $ return ()
             extendStore EndVAddr endV
             return $ N CDone
           else do
@@ -264,7 +268,7 @@ doApply kaddr mkaddr addr dynctx = do
                     m <- mLimit
                     let env' = BEnv $ fvs body
                     let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
-                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args ++ ":" ++ show newCtx) $ return ()
+                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show env' ++ ":" ++ show newCtx) $ return ()
                     zipWithM_ (\a p -> do
                       val <- store p
                       extendStore (BindingAddr newCtx a) val) args arguments
@@ -336,6 +340,7 @@ doApply kaddr mkaddr addr dynctx = do
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
         FHLink eff perform k' h -> do
+          -- trace ("Link") $ return ()
           let ia = ImplicitAddr newctx perform
           extendMKStore ia (MKHandle eff knext mkaddr h newctx)
           apply k' ia addr dynctx
@@ -362,19 +367,19 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             o <- store op
             -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
             AChangeObj _ [opAddr] <- store op
-            AChangeClos op opCtx <- store (snd opAddr)
+            AChangeClos op _ <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
             let opEnv = BEnv $ fvs bod
             -- let opCtx = mkCtx -- {kfvs = S.union (S.fromList params) (kfvs mkCtx)}
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
-            zipWithM_ rebind args (map (BindingAddr opCtx) params)
+            zipWithM_ rebind args (map (BindingAddr mkCtx) params)
             -- rebindAll (fvs op) mkCtx opCtx
-            extendStore (BindingAddr opCtx (last params)) (AChangeKont name kaddr mkCtx h)
-            eval bod opEnv mkKNext mknext opCtx
+            extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr mkCtx h)
+            eval bod opEnv mkKNext mknext mkCtx
       else do
         let k' = ImplicitLAddr ctx (contextId performExpr)
-        extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h) ctx henv mkKNext)
+        extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h) mkCtx henv mkKNext)
         unwind name opName performExpr k' mknext args mkCtx
 
 
@@ -458,9 +463,9 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameHand
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   d <- dLimit
   m <- mLimit
-  fvss <- fvsVal hnd -- TODO: Why are these free variables not available anymore
+  fvss <- fvsVal hnd 
   let henv = BEnv $ S.unions (map fst fvss) 
-  -- trace ("OPS " ++ show label ++ " fvs: " ++ show henv) $ return ()
+  trace ("OPS " ++ show label ++ " fvs: " ++ show henv ++ ":" ++ show ctx) $ return ()
   let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
   mapM_ (\(fvs, oldCtx) -> 
     rebindAll fvs oldCtx newctx

@@ -1,63 +1,52 @@
 d=2,m=6
-Result 1 / 1
-Result 100.0%, time: 0.010371476s
+Result 34 / 34
+Result 100.0%, time: 0.167110154s
 d=2,m=5
-Result 1 / 1
-Result 100.0%, time: 0.010706861s
+Result 34 / 34
+Result 100.0%, time: 0.151653487s
 d=2,m=4
-Result 1 / 1
-Result 100.0%, time: 0.009184039s
+Result 34 / 34
+Result 100.0%, time: 0.155905951s
 d=2,m=3
-Result 1 / 1
-Result 100.0%, time: 0.01076507s
+Result 34 / 34
+Result 100.0%, time: 0.151132856s
 d=2,m=2
-Result 1 / 1
-Result 100.0%, time: 0.00818763s
+Result 34 / 34
+Result 100.0%, time: 0.15021264s
 d=2,m=1
-Result 1 / 1
-Result 100.0%, time: 0.006516001s
+Result 27 / 34
+Result 79.41%, time: 0.138316184s
 d=2,m=0
-Result 1 / 1
-Result 100.0%, time: 0.004953464s
+Result 17 / 34
+Result 50.0%, time: 0.097908476s
 d=1,m=6
-Result 1 / 1
-Result 100.0%, time: 0.007724897s
+Result 34 / 34
+Result 100.0%, time: 0.138126149s
 d=1,m=5
-Result 1 / 1
-Result 100.0%, time: 0.00782864s
+Result 34 / 34
+Result 100.0%, time: 0.143963981s
 d=1,m=4
-Result 1 / 1
-Result 100.0%, time: 0.007514704s
+Result 34 / 34
+Result 100.0%, time: 0.130275232s
 d=1,m=3
-Result 1 / 1
-Result 100.0%, time: 0.0070625s
+Result 34 / 34
+Result 100.0%, time: 0.127495476s
 d=1,m=2
-Result 1 / 1
-Result 100.0%, time: 0.006603804s
+Result 34 / 34
+Result 100.0%, time: 0.132296073s
 d=1,m=1
-Result 1 / 1
-Result 100.0%, time: 0.005820142s
+Result 27 / 34
+Result 79.41%, time: 0.136359213s
 d=1,m=0
-Result 1 / 1
-Result 100.0%, time: 0.010220053s
+Result 17 / 34
+Result 50.0%, time: 0.091806312s
 d=0,m=6
-Result 1 / 1
-Result 100.0%, time: 0.103199616s
+Result 22 / 34
+Result 64.7%, time: 7.45446944s
 d=0,m=5
-Result 1 / 1
-Result 100.0%, time: 0.051211783s
+Result 22 / 34
+Result 64.7%, time: 5.953569644s
 d=0,m=4
-Result 1 / 1
-Result 100.0%, time: 0.024660232s
-d=0,m=3
-Result 1 / 1
-Result 100.0%, time: 0.013572038s
-d=0,m=2
-Result 1 / 1
-Result 100.0%, time: 0.008853543s
-d=0,m=1
-Result 1 / 1
-Result 100.0%, time: 0.00585664s
-d=0,m=0
-Result 1 / 1
-Result 100.0%, time: 0.264808337s
+Result 22 / 34
+Result 64.7%, time: 4.554131808s
+user interrupt
