@@ -53,16 +53,13 @@ type StaticCtx = [Call]
 type DynamicCtx = [(ExprContextId, StaticCtx)]
 
 data CombinedCtx = CombinedCtx {
-  kfvs :: S.Set TName,
   static :: StaticCtx,
   dynamic :: DynamicCtx
   } deriving (Eq, Ord)
 
-replaceFvs ctx@(CombinedCtx _ s d) fvs = CombinedCtx fvs s d
-
 instance Show CombinedCtx where
-  show (CombinedCtx fvs static dynamic) =
-    show static ++ "@" ++ show dynamic ++ ":" ++ show fvs
+  show (CombinedCtx static dynamic) =
+    show static ++ "@" ++ show dynamic
 
 data Addr =
   BindingAddr CombinedCtx TName
@@ -151,11 +148,15 @@ nextLetFrame
 
 data Kont =
   KEnd
-  | KNext {frame :: Frame, kCtx :: CombinedCtx, knext:: Addr}
+  | KNext {frame :: Frame, kCtx :: CombinedCtx, env :: BEnv, knext:: Addr}
   deriving (Eq, Ord, Show)
 
+newtype BEnv = BEnv (S.Set TName) deriving (Eq, Ord, Show)
+
+bvars (BEnv v) = v
+
 data Handler =
-  Handler { ops :: Addr, ret :: Maybe ExprContext, hfvs:: S.Set TName}
+  Handler { ops :: Addr, ret :: Maybe ExprContext, henv:: BEnv}
   deriving (Eq, Ord, Show)
 
 data MKont =

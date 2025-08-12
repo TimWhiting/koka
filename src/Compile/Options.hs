@@ -246,6 +246,7 @@ data Flags
          , analyze        :: !Bool -- perform full program analysis
          , rebinding      :: !Bool -- perform full program analysis with rebinding
          , kcfa           :: !Bool -- perform k-cfa analysis
+         , sweep          :: !Bool -- do a sweep of analysis sensitivities
          , mSensitivity   :: !Int -- sensitivity for demand analysis
          , dSensitivity   :: !Int -- sensitivity for demand analysis
          } deriving (Eq,Show)
@@ -408,6 +409,7 @@ flagsNull
           False   -- do not analyze by default
           False   -- do not do rebinding by default
           False   -- do not do k-cfa by default
+          False   -- no sweep by default
           1       -- call sensitivity
           1       -- delimiter sensitivity
 
@@ -517,7 +519,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , numOption 2 "n" [] ["ma"]       (\i f -> f{mSensitivity=i})                 "set call sensitivity for analysis (default 2)"
  , numOption 1 "n" [] ["da"]       (\i f -> f{dSensitivity=i})                 "set delimiter sensitivity for analysis (default 1)"
  , flag   []    ["kcfa"]           (\b f -> f{analyze=b, kcfa=b, rebuild=b})              "enable k-cfa analysis"
-
+ , flag   []    ["sweep"]           (\b f -> f{sweep=b})              "analysis sweep"
  , emptyline
 
  -- hidden
