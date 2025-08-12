@@ -62,7 +62,7 @@ replaceFvs ctx@(CombinedCtx _ s d) fvs = CombinedCtx fvs s d
 
 instance Show CombinedCtx where
   show (CombinedCtx fvs static dynamic) =
-    show static ++ "@" ++ show dynamic
+    show static ++ "@" ++ show dynamic ++ ":" ++ show fvs
 
 data Addr =
   BindingAddr CombinedCtx TName

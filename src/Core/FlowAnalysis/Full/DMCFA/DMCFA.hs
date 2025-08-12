@@ -373,8 +373,9 @@ unwindSet varName val knext mkaddr addr u = do
   case mk of 
     MKHandle nm k' mknext h venv ctx | getName varName == nm -> do 
       let env = M.delete varName venv
+      m <- mLimit
       d <- dLimit
-      let newctx = CombinedCtx [] (take d $ (contextId u, static ctx):dynamic ctx)
+      let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
       let newEnv = M.insert varName newctx env
       extendStore (fromJust $ lookupEnv varName newEnv) val
       let mk' = ImplicitAddr newctx newEnv (contextId u)
@@ -428,9 +429,10 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   let label = case exprOfCtx u of
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   d <- dLimit
+  m <- mLimit
   henv <- mEnvOf hnd
   -- trace ("OPS " ++ show henv) $ return ()
-  let newctx = CombinedCtx [] (take d $ (contextId u, static ctx):dynamic ctx)
+  let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
   bod <- focusBody body
   -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
   let mk' = ImplicitAddr newctx venv (contextId u)
@@ -447,7 +449,8 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
         bod <- focusBody e
         extendStore (fromJust $ lookupEnv varName newEnv) (head args)
         d <- dLimit
-        let newctx = CombinedCtx [] (take d $ (contextId u, static ctx):dynamic ctx)
+        m <- mLimit
+        let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
         let mk' = ImplicitAddr newctx venv (contextId u)
         extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing) newEnv newctx)
         eval bod newEnv EndKAddr mk' newctx
