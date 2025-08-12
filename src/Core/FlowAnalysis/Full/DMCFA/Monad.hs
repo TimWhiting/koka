@@ -25,7 +25,7 @@ import Core.CoreVar (HasExpVar(fv), bv)
 import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
-data Conf = 
+data Conf =
   CEval ExprContext VEnv Addr Addr CombinedCtx
   | CApply Addr Addr Addr DynamicCtx
   | CUnwind Name Name ExprContext Addr Addr [Addr] CombinedCtx
@@ -39,10 +39,12 @@ mLimit = contextLength <$> getEnv
 dLimit :: FixAAMR r s e Int
 dLimit = delimContextLength <$> getEnv
 
-startCombinedCtx = do 
+startCombinedCtx = do
   m <- mLimit
-  d <- dLimit 
+  d <- dLimit
   return $ CombinedCtx (take m startStaticCtx) (take d startDynCtx)
+
+delimCtx m ctx = take m (static ctx) -- take m [CallDelim]
 
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
@@ -68,7 +70,7 @@ data FixChange =
   N Conf
   | SV AChange
   | KV Kont
-  | MKV MKont 
+  | MKV MKont
   | ChangeBottom
   deriving (Eq, Ord, Show)
 
