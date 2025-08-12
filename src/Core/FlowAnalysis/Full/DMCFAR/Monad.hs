@@ -48,6 +48,8 @@ inject ctx = do
   c <- startCombinedCtx
   return $ Step (CEval ctx EndKAddr EndMKAddr c)
 
+delimCtx m ctx = take m (static ctx) -- take m [CallDelim]
+
 data FixInput =
   Step Conf
   | VStore Addr

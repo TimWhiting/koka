@@ -58,9 +58,12 @@ doStep i =
         drive $ doUnwind name opName perform kaddr mkaddr addrs ctx
       Step CDone -> return $ N CDone
 
-extendStore :: Addr -> AChange -> FixAAMR r e s ()
+extendStore :: HasCallStack => Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  case addr of 
+    BindingAddr (CombinedCtx tvs _ _) tname | not (tname `S.member` tvs) -> error (show tvs)
+    _ -> return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -107,7 +110,7 @@ doEval expr kaddr mkaddr ctx =
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False 
       process x = if not open then do 
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) 
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show ctx) 
                     x
                   else x 
   in 
@@ -154,7 +157,7 @@ doEval expr kaddr mkaddr ctx =
             extendMKStore (TopAddr name) MKEnd
             c <- startCombinedCtx
             each [eval expr EndKAddr (TopAddr name) c,
-                  apply kaddr mkaddr (BindingAddr c name) (dynamic ctx)]
+                  apply kaddr mkaddr (TopAddr name) (dynamic ctx)]
           Nothing -> do
             -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
             apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
@@ -206,7 +209,7 @@ rebindAll :: HasCallStack => S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAM
 rebindAll fvs oldCtx newCtx = do
   if oldCtx == newCtx || S.null fvs then return ()
   else do
-    -- trace ("Rebinding: " ++ show fvs ++ " from " ++ show oldCtx ++ " to " ++ show newCtx) $ return ()
+    trace ("Rebinding: " ++ show fvs ++ " from " ++ show oldCtx ++ " to " ++ show newCtx) $ return ()
     let bindings = S.toList fvs
     mapM_ (\tname -> do
       v <- store (BindingAddr oldCtx tname)
@@ -232,7 +235,7 @@ doApply kaddr mkaddr addr dynctx = do
             -- trace ("Applying top value: " ++ show addr ++ " with " ++ show topV) $ return ()
             -- let [(tname, ctx)] = M.toList env
             c <- startCombinedCtx
-            extendStore (BindingAddr c tname) topV
+            extendStore (TopAddr tname) topV
             return $ N CDone
         MKHandle _ knext mknext _ dynctx ->
           apply knext mknext addr (dynamic dynctx)
@@ -261,8 +264,9 @@ doApply kaddr mkaddr addr dynctx = do
                     body <- focusBody cexpr
                     let args = lamNames cexpr
                     m <- mLimit
-                    let newCtx = CombinedCtx (fvs cexpr) (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
-                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
+                    let fvss = S.union (S.fromList args) (fvs body)
+                    let newCtx = CombinedCtx fvss (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
+                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args ++ " " ++ show fvss) $ return ()
                     zipWithM_ (\a p -> do
                       val <- store p
                       extendStore (BindingAddr newCtx a) val) args arguments
@@ -306,18 +310,18 @@ doApply kaddr mkaddr addr dynctx = do
         FLet groupIdx numGroups bindingIdx numBindings name resolved u -> do
           -- trace "Applying Let" $ return ()
           val <- store addr
-          -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show newctx ) $ return ()
-          extendStore (BindingAddr newctx name) val
           let newFvs = S.insert name (kfvs ctx)
           let newCtx = replaceFvs newctx newFvs
+          -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show newCtx ++ " old: " ++ show ctx ) $ return ()
+          extendStore (BindingAddr newCtx name) val
           -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
           if isLetDefBindingFinished groupIdx bindingIdx u then do
             body <- focusLetBod u
             rebindAll (kfvs ctx) ctx newCtx
-            eval body knext mkaddr newctx
+            eval body knext mkaddr newCtx
           else do
             next <- focusLetDefBinding groupIdx bindingIdx u
-            k' <- addFrame (nextLetFrame frame newctx) (contextId next)
+            k' <- addFrame (nextLetFrame frame newCtx) (contextId next)
             let allNextFvs = letFvs groupIdx bindingIdx u
             rebindAll (kfvs ctx) ctx newCtx
             eval next k' mkaddr newCtx
@@ -327,11 +331,12 @@ doApply kaddr mkaddr addr dynctx = do
                 match <- branchMatch branch addr
                 case match of
                   Just bindings -> do
+                    let newCtx = newctx{kfvs = S.union (kfvs ctx) (bv branch)}
                     mapM_ (\(tname, extend) ->
-                      extend (BindingAddr newctx tname)
+                      extend (BindingAddr newCtx tname)
                       ) (M.toList bindings)
-                    rebindAll (kfvs ctx) ctx newctx
-                    eval expr knext mkaddr newctx
+                    rebindAll (kfvs ctx) ctx newCtx
+                    eval expr knext mkaddr newCtx
                   Nothing -> recur branches
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
@@ -365,10 +370,11 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
+            let opCtx = mkCtx{kfvs = S.union (S.fromList params) (kfvs mkCtx)}
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
-            zipWithM_ rebind args (map (BindingAddr mkCtx) params)
-            extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr mkCtx h)
-            eval bod mkKNext mknext mkCtx
+            zipWithM_ rebind args (map (BindingAddr opCtx) params)
+            extendStore (BindingAddr opCtx (last params)) (AChangeKont name kaddr mkCtx h)
+            eval bod mkKNext mknext opCtx
       else do
         let k' = ImplicitLAddr ctx (contextId performExpr)
         extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h) ctx mkKNext)
@@ -393,7 +399,7 @@ unwindSet varName val knext mkaddr addr u = do
     MKHandle nm k' mknext h ctx | getName varName == nm -> do
       d <- dLimit
       m <- mLimit
-      let newctx = CombinedCtx (kfvs ctx) (take m [CallDelim]) (take d $ (contextId u, static ctx):dynamic ctx)
+      let newctx = CombinedCtx (kfvs ctx) (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
       extendStore (BindingAddr newctx varName) val
       let mk' = ImplicitAddr newctx (contextId u)
       extendMKStore mk' (MKHandle nm k' mknext h newctx)
@@ -455,12 +461,14 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == n
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   d <- dLimit
   m <- mLimit
-  -- trace ("OPS " ++ show ctx) $ return ()
-  let newctx = CombinedCtx (kfvs ctx) (take m [CallDelim]) (take d $ (contextId u, static ctx):dynamic ctx)
+  fvss <- fvsVal hnd -- TODO: Why are these free variables not available anymore
+  let fvs' = S.union fvss (kfvs ctx)
+  trace ("OPS " ++ show label ++ " fvs: " ++ show fvs') $ return ()
+  let newctx = CombinedCtx fvs' (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
   bod <- focusBody body
   let mk' = ImplicitAddr newctx (contextId u)
-  rebindAll (kfvs ctxOld) ctxOld newctx
-  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret) (kfvs ctxOld)) newctx)
+  rebindAll (kfvs ctx) ctxOld newctx
+  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret) fvs') newctx)
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
   eval bod EndKAddr mk' newctx
 doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == nameLocalVar = do
@@ -474,7 +482,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctxOld ctx u | n == n
         extendStore (BindingAddr ctx varName) (head args)
         d <- dLimit
         m <- mLimit
-        let newctx = CombinedCtx (kfvs ctx) (take m [CallDelim]) (take d $ (contextId u, static ctx):dynamic ctx)
+        let newctx = CombinedCtx (kfvs ctx) (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
         let mk' = ImplicitAddr newctx (contextId u)
         extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing (S.singleton varName)) newctx)
         eval bod EndKAddr mk' newctx
@@ -493,7 +501,7 @@ branchMatch branch addr =
 
 type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
 
-rebind :: Addr -> Addr -> FixAAMR r s e ()
+rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr = do
   v <- store oldAddr
   extendStore newAddr v
