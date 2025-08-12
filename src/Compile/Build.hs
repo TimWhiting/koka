@@ -364,17 +364,19 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
                     -- liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
-
+                    let doSweep = sweep flags
                     let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
                         sweepDM mT d m i = do
-                          if d == 0 && m == 0 then return ()
-                          else if d == 0 then do
-                            sweepDM mT d (m - 1) i
-                          else if m == 0 then do 
-                            sweepDM mT (d - 1) mT i
-                          else do
-                            sweepDM mT d (m - 1) i 
                           i flags{mSensitivity = m, dSensitivity = d}
+                          when doSweep $ do
+                            if d == 0 && m == 0 then return ()
+                            else if d == 0 then do
+                              sweepDM mT d (m - 1) i
+                            else if m == 0 then do 
+                              sweepDM mT (d - 1) mT i
+                            else do
+                              sweepDM mT d (m - 1) i 
+                          
 
                     if rebinding flags then do 
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
@@ -383,7 +385,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
                     else if kcfa flags then do 
-                      sweepDM 0 (mSensitivity flags) (mSensitivity flags) $ \flags -> do
+                      sweepDM (mSensitivity flags) 0 (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMainKCFA bc (\bc mn -> 
                             runBuild term flags $ buildcTypeCheck [mn] bc
                           ) mod (mSensitivity flags) (dSensitivity flags)
