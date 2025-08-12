@@ -26,7 +26,7 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 data Conf = 
-  CEval ExprContext Addr Addr CombinedCtx
+  CEval ExprContext BEnv Addr Addr CombinedCtx
   | CApply Addr Addr Addr DynamicCtx
   | CUnwind Name Name ExprContext Addr Addr [Addr] CombinedCtx
   | CDone
@@ -41,14 +41,14 @@ dLimit = delimContextLength <$> getEnv
 startCombinedCtx = do 
   m <- mLimit
   d <- dLimit 
-  return $ CombinedCtx S.empty (take m startStaticCtx) (take d startDynCtx)
+  return $ CombinedCtx (take m startStaticCtx) (take d startDynCtx)
 
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
   c <- startCombinedCtx
-  return $ Step (CEval ctx EndKAddr EndMKAddr c)
+  return $ Step (CEval ctx (BEnv S.empty) EndKAddr EndMKAddr c)
 
-delimCtx m ctx = take m (static ctx) -- take m [CallDelim]
+delimCtx m ctx = take m [CallDelim] --take m (static ctx) -- take m [CallDelim]
 
 data FixInput =
   Step Conf
