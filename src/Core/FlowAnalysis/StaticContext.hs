@@ -97,7 +97,12 @@ data ExprContextId = ExprContextId{
 
 instance Show ExprContextId where
   show id =
-    showFullyExplicit (moduleName id) ++ ":" ++ show (exprId id)
+    fileName (moduleName id) ++ ":" ++ show (exprId id)
+
+fileName :: Name -> String
+fileName name =
+  let mod = nameModule name
+  in T.unpack $ last $ T.split (== '/') (T.pack mod)
 
 instance Eq ExprContext where
   ctx1 == ctx2 = contextId ctx1 == contextId ctx2
@@ -199,8 +204,8 @@ lamVar :: Int -> ExprContext -> TName
 lamVar index ctx =
   case maybeExprOfCtx ctx of
     Just x -> lamVarName index x
-    Nothing -> 
-      trace ("DemandAnalysis.lamVar: not a lambda " ++ show ctx) 
+    Nothing ->
+      trace ("DemandAnalysis.lamVar: not a lambda " ++ show ctx)
       error "Not a lambda"
 
 lamVarName :: Int -> C.Expr -> TName
@@ -224,7 +229,7 @@ isLetDefBindingFinished :: Int -> Int -> ExprContext -> Bool
 isLetDefBindingFinished defGroupIndex bindingIndex e = do
   case exprOfCtx e of
     C.Let defs _ ->
-      length defs == defGroupIndex + 1 && 
+      length defs == defGroupIndex + 1 &&
         let dfs = defs !! defGroupIndex
         in length (defsOf dfs) == bindingIndex + 1
 
@@ -240,7 +245,7 @@ letDefBindingIndex defGroupIndex bindingIndex e = do
   case exprOfCtx e of
     C.Let defs _ ->
       let dfs = sum $ map (length . defsOf) $ Prelude.take defGroupIndex defs
-      in dfs + bindingIndex      
+      in dfs + bindingIndex
 
 dgsTNames :: C.DefGroups -> [TName]
 dgsTNames = concatMap (\dg -> dfsTNames (defsOf dg))
@@ -545,7 +550,7 @@ findFromRange prog rng extractDef extractExpr =
     getBest ls =
       case ls of
         [] -> Nothing
-        [x] -> 
+        [x] ->
           -- trace ("One result " ++ showCompactRange rng) $ 
           Just x
         x1:x2:xs -> -- trace ("getBest: goal: " ++ showCompactRange rng ++ " got: " ++ showCompactRange (getRange x1) ++ " and: " ++ showCompactRange (getRange x2)) $

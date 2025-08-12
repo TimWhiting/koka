@@ -457,7 +457,6 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameLoca
     extendStore addr changeUnit
     apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameHandle = do
-  args <- mapM store arguments
   let [AChangeObj _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyctx] = args
   let label = case exprOfCtx u of
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
