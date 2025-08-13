@@ -28,23 +28,19 @@ named effect variable<s::S> in subst<s>    // named under umbrella effect `:subs
   fun resolve( tp : utype<s> ) : ()        // `:(ev<variable<s,a>>,utype<s>) -> <subst<s>,pure> ()`
 
 
-// private (named) handler instance for creating a unification variable
-fun with-var(action)
-  var mtp := Nothing
-  with v <- named handler
-    fun get() mtp
-    fun resolve(tp)
-      match mtp
-        Nothing ->
-          // if occurs(v,tp) then throw("recursive type")
-          mtp := Just(tp)
-        Just    -> throw("cannot resolve a unification variable more than once")
-  action(v)
-
-
 // umbrella handler for substitution
 fun subst(action : forall<s> () -> <subst<s>,pure|e> a) : <pure|e> a   // required rank-2 signature
-  with ctl fresh() with-var(resume)
+  with ctl fresh()
+    var mtp := Nothing
+    with v <- named handler
+      fun get() mtp
+      fun resolve(tp)
+        match mtp
+          Nothing ->
+            // if occurs(v,tp) then throw("recursive type")
+            mtp := Just(tp)
+          Just    -> throw("cannot resolve a unification variable more than once")
+    resume(v)
   action()
 
 
@@ -54,7 +50,7 @@ fun resolve-all( tp : utype<s> ) : <subst<s>,pure> ntype
     UCon(tag)     -> Con(tag)
     UApp(tp1,tp2) -> App( resolve-all(tp1), resolve-all(tp2) )
     UVar(v) ->
-      match get(v)
+      match v.get
         Nothing   -> throw( "unresolved variable" )
         Just(tpv) -> resolve-all(tpv)
 
@@ -65,14 +61,14 @@ fun unify( tp1 : utype<s>, tp2 : utype<s> ) : <subst<s>,div,exn> utype<s>
     (UCon(tag1), UCon(tag2)) | tag1 == tag2 -> tp1
     (UVar(v1), UVar(v2))     | v1 == v2     -> tp1
     (UApp(tp11,tp12),UApp(tp21,tp22))       -> UApp( unify(tp11,tp21), unify(tp12,tp22) )
-    (UVar(v1),_) -> match get(v1)
+    (UVar(v1),_) -> match v1.get
       Nothing ->
-        resolve(v1,tp2)
+        v1.resolve(tp2)
         tp2
       Just(tpv1) -> match tp2
-        UVar(v2) -> match get(v2)
+        UVar(v2) -> match v2.get
           Nothing ->
-            resolve(v2,tpv1)
+            v2.resolve(tpv1)
             tpv1
           Just(tpv2)
             -> unify(tpv1,tpv2)
@@ -104,8 +100,8 @@ pub fun example()
   with subst
   val a = fresh()
   val b = fresh()
-  val tp1 = to( UVar(a), UVar(a) )
-  val tp2 = to( UVar(b), list(inttp()) )
+  val tp1 = UVar(a).to(UVar(a))
+  val tp2 = UVar(b).to(list(inttp()))
   unify(tp1,tp2).resolve-all
 
 pub fun main()
