@@ -34,7 +34,7 @@ module Common.Name
           , toUniqueName
           , newImplicitTypeVarName, isImplicitTypeVarName
           , newCreatorName, isCreatorName
-          , toHandlerName, fromHandlerName, isHandlerName, isHandlerConName
+          , toHandlerName, fromHandlerName, isHandlerName
           , toOpSelectorName, fromOpSelectorName, isOpSelectorName
           , toOperationsName, fromOperationsName, isOperationsName
           , toEffectTagName
@@ -571,14 +571,6 @@ toVarName name
       = case s of
           (c:cs) | isUpper c -> toLower c : toLowers cs
           _      -> s
-
-toHandlerConName :: Name -> Name
-toHandlerConName name
-  = makeHiddenName "Hnd" name
-
-isHandlerConName :: Name -> Bool
-isHandlerConName name
-  = hiddenNameStartsWith name "Hnd"
 
 nameStartsWith :: Name -> String -> Bool
 nameStartsWith name pre
