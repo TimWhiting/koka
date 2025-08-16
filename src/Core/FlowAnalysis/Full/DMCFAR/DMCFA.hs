@@ -110,7 +110,7 @@ doEval expr env kaddr mkaddr ctx =
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       process x = if not open then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show env ++ ":" ++ show ctx)
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show env ++ ":" ++ show ctx)
                     x
                   else x
   in
@@ -217,8 +217,9 @@ rebindAll fvs oldCtx newCtx = do
 
 doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr mkaddr addr dynctx = do
-  trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr ++ ":" ++ show dynctx ) $ return ()
   k <- kStore kaddr
+  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr ++ ":" ++ show dynctx ++ "\n" ++ show k ) $ return ()
+
   -- trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> do
@@ -300,6 +301,8 @@ doApply kaddr mkaddr addr dynctx = do
                     let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
                         newDynCtx = take d $ (contextId u, static newCtx):dynamic newctx
                         mk' = ImplicitAddr newCtx (contextId u)
+                    trace ("Applying continuation " ++ show (contextId u) ++ " rebinding " ++ show henv ++ "for\n" ++ 
+                           show res ++ "\n" ++ show kaddr ++ "\n" ++ show mkaddr ++ "\n" ++ show addr ++ "\n" ++ show dynctx) $ return ()
                     rebindAll (bvars henv) hctx newCtx
                     extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
                     apply kx mk' addr newDynCtx
@@ -340,7 +343,7 @@ doApply kaddr mkaddr addr dynctx = do
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
         FHLink eff perform k' h -> do
-          -- trace ("Link") $ return ()
+          -- trace ("Link " ++ show dynctx) $ return ()
           let ia = ImplicitAddr newctx perform
           extendMKStore ia (MKHandle eff knext mkaddr h newctx)
           apply k' ia addr dynctx
