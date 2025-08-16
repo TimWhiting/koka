@@ -58,18 +58,18 @@ data FixInput =
   deriving (Eq, Ord, Show)
 
 data FixOutput a =
-  Next (S.Set Conf)
-  | SValue AbValue
-  | KValue (S.Set Kont)
-  | MKValue (S.Set MKont)
+  Next !(S.Set Conf)
+  | SValue !AbValue
+  | KValue !(S.Set Kont)
+  | MKValue !(S.Set MKont)
   | Bottom
   deriving (Eq, Ord, Show)
 
 data FixChange =
-  N Conf
-  | SV AChange
-  | KV Kont
-  | MKV MKont 
+  N !Conf
+  | SV !AChange
+  | KV !Kont
+  | MKV !MKont 
   | ChangeBottom
   deriving (Eq, Ord, Show)
 

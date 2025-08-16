@@ -231,7 +231,7 @@ memo key f = do
         -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         put (M.insert key (xss, tid, [cont], []) cache, state, if tid == newId then newId + 1 else newId, invalid)
         if isBottom xss then do 
-          mapM_ c (elems xss)
+          -- trace ("Running " ++ show key) $ return ()
           runContT (localCtxT (Just key) tid f) (\x -> do
               -- For all results push them into the cache
               -- trace ("Got new result for " ++ show key ++ " " ++ show x) $ return ()
