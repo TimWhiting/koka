@@ -40,7 +40,7 @@ showSimpleCtxId ctxId =
 data Call =
   CallTop
   | CallDelim
-  | CallApp ExprContextId
+  | CallApp !ExprContextId
   deriving (Eq, Ord)
 
 instance Show Call where
@@ -53,8 +53,8 @@ type StaticCtx = [Call]
 type DynamicCtx = [(ExprContextId, StaticCtx)]
 
 data CombinedCtx = CombinedCtx {
-  static :: StaticCtx,
-  dynamic :: DynamicCtx
+  static :: !StaticCtx,
+  dynamic :: !DynamicCtx
   } deriving (Eq, Ord)
 
 instance Show CombinedCtx where
@@ -62,14 +62,14 @@ instance Show CombinedCtx where
     show static ++ "@" ++ show dynamic
 
 data Addr =
-  BindingAddr CombinedCtx TName
-  | TopAddr TName
+  BindingAddr !CombinedCtx !TName
+  | TopAddr !TName
   | EndVAddr
   | EndKAddr
   | EndMKAddr
-  | ImplicitAddr CombinedCtx ExprContextId
-  | ImplicitLAddr CombinedCtx ExprContextId
-  | BindImplicitAddr CombinedCtx ExprContextId
+  | ImplicitAddr !CombinedCtx !ExprContextId
+  | ImplicitLAddr !CombinedCtx !ExprContextId
+  | BindImplicitAddr !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 
 instance Show Addr where
@@ -84,39 +84,39 @@ instance Show Addr where
 
 data Frame =
   FScrut {
-      parent :: ExprContext,
-      branches :: [ExprContext]
+      parent :: !ExprContext,
+      branches :: ![ExprContext]
     }
   | FOp {
-      effName :: Name,
-      totalArgs :: Int,
-      leftArgs :: [ExprContext],
-      resolvedArgs :: [Addr],
-      parent :: ExprContext
+      effName :: !Name,
+      totalArgs :: !Int,
+      leftArgs :: ![ExprContext],
+      resolvedArgs :: ![Addr],
+      parent :: !ExprContext
     }
   | FApp {
-      totalArgs :: Int,
-      leftArgs :: [ExprContext],
-      resolvedArgs :: [Addr],
-      parent :: ExprContext
+      totalArgs :: !Int,
+      leftArgs :: ![ExprContext],
+      resolvedArgs :: ![Addr],
+      parent :: !ExprContext
     }
   | FLet {
-        groupIdx :: Int,
-        numGroups :: Int,
-        bindingIdx :: Int,
-        numBindings :: Int,
-        name :: TName,
-        resolved :: [Addr],
-        parent :: ExprContext
+        groupIdx :: !Int,
+        numGroups :: !Int,
+        bindingIdx :: !Int,
+        numBindings :: !Int,
+        name :: !TName,
+        resolved :: ![Addr],
+        parent :: !ExprContext
     }
   | FHLink {
-      linkEff :: Name,
-      doCtx :: ExprContextId,
-      linkKnext :: Addr,
-      linkHnd :: Handler
+      linkEff :: !Name,
+      doCtx :: !ExprContextId,
+      linkKnext :: !Addr,
+      linkHnd :: !Handler
   }
   | FStore {
-      vaddr :: Addr
+      vaddr :: !Addr
   }
   | FMask
   | FCall
@@ -148,20 +148,20 @@ nextLetFrame
 
 data Kont =
   KEnd
-  | KNext {frame :: Frame, kCtx :: CombinedCtx, env :: BEnv, knext:: Addr}
+  | KNext {frame :: !Frame, kCtx :: !CombinedCtx, env :: !BEnv, knext:: !Addr}
   deriving (Eq, Ord, Show)
 
-newtype BEnv = BEnv (S.Set TName) deriving (Eq, Ord, Show)
+data BEnv = BEnv (S.Set TName) deriving (Eq, Ord, Show)
 
 bvars (BEnv v) = v
 
 data Handler =
-  Handler { ops :: Addr, ret :: Maybe ExprContext, henv:: BEnv}
+  Handler { ops :: !Addr, ret :: !(Maybe ExprContext), henv:: !BEnv}
   deriving (Eq, Ord, Show)
 
 data MKont =
   MKEnd
-  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, mkCtx:: CombinedCtx }
+  | MKHandle { eff :: !Name, mkKNext:: !Addr, mknext:: !Addr, hnd :: !Handler, mkCtx:: !CombinedCtx }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
@@ -256,10 +256,10 @@ instance Monoid AbValue where
 
 instance Show AbValue where
   show (AbValue cls cntrs prims objs konts lit) =
-    (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-    (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
+    (if S.null cls then "" else "closures: " ++ intercalate "\n" (map showSimpleClosure (S.toList cls))) ++
+    (if S.null cntrs then "" else " constrs: " ++ intercalate "\n" (map show (S.toList cntrs))) ++
     (if S.null prims then "" else " prims: " ++ show (map show (S.toList prims))) ++
-    (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
+    (if S.null konts then "" else " konts: " ++ intercalate "\n" (map show (S.toList konts))) ++
     (" lit: " ++ show lit)
 
 instance Contains AbValue where

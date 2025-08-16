@@ -391,7 +391,7 @@ instance Show ExprContext where
       DefCGroup id _ tn _ -> "DefGroup " ++ show tn
       LamCBody id _ tn e -> "LamBody " ++ show tn ++ " " ++ showExpr e
       AppCLambda id _ f -> "AppLambda " ++ showExpr f
-      AppCParam id _ i p -> "AppParam " ++ show i ++ " " ++ showExpr p
+      AppCParam id _ i p -> "AppParam " ++ show id ++ " " ++ show i ++ " " ++ showExpr p
       LetCDefNonRec id _ _ -> "LetDef " ++ showDef (defOfCtx e)
       LetCDefRec id _ _ _ -> "LetDef " ++ showDef (defOfCtx e)
       LetCDefGroup id _ tn _ -> "LetDefGroup " ++ show tn
