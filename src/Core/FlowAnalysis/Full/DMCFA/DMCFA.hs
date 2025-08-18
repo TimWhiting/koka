@@ -317,7 +317,7 @@ doApply kaddr mkaddr addr dynctx = do
         FHLink eff perform k' h henv -> do
           let ia = ImplicitAddr newctx henv perform
           extendMKStore ia (MKHandle eff knext mkaddr h henv newctx)
-          apply k' ia addr dynctx
+          apply k' ia addr ((perform, ctx): dynctx)
         _ -> trace ("Applying unknown frame: " ++ show frame) doBottom
 
 doUnwind :: HasCallStack => Name -> Name -> ExprContext -> Addr -> Addr -> [Addr] -> CombinedCtx -> FixAAMR r s e FixChange
@@ -436,7 +436,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   bod <- focusBody body
   -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
   let mk' = ImplicitAddr newctx venv (contextId u)
-  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]) newctx)
+  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]) ctx)
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
   eval bod (limitEnv bodyenv (fvs body)) EndKAddr mk' newctx
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalVar = do
