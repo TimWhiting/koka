@@ -648,7 +648,8 @@ kk_decl_export int kk_os_run_system(kk_string_t cmd, kk_context_t* ctx) {
   }
   #else
   kk_with_string_as_qutf8_borrow(cmd, ccmd, ctx) {
-    exitcode = system(ccmd);
+    int exit = system(ccmd);
+    exitcode = exit == -1 ? -1 : WEXITSTATUS(exit);
   }
   #endif
   kk_string_drop(cmd, ctx);
