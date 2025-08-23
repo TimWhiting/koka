@@ -372,10 +372,10 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                         sweepDM mT d m i = do
                           i flags{mSensitivity = m, dSensitivity = d}
                           when doSweep $ do
-                            if d == 0 && m == 0 then return ()
+                            if d == 0 && m == 1 then return ()
                             else if d == 0 then do
                               sweepDM mT d (m - 1) i
-                            else if m == 0 then do 
+                            else if m == 1 then do 
                               sweepDM mT (d - 1) mT i
                             else do
                               sweepDM mT d (m - 1) i 
