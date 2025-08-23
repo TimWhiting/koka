@@ -1,52 +1,54 @@
 d=2,m=6
 Result 34 / 34
-Result 100.0%, time: 0.167110154s
+Result 100.0%, time: 0.21019s
 d=2,m=5
 Result 34 / 34
-Result 100.0%, time: 0.151653487s
+Result 100.0%, time: 0.204054s
 d=2,m=4
 Result 34 / 34
-Result 100.0%, time: 0.155905951s
+Result 100.0%, time: 0.202168s
 d=2,m=3
 Result 34 / 34
-Result 100.0%, time: 0.151132856s
+Result 100.0%, time: 0.200848s
 d=2,m=2
 Result 34 / 34
-Result 100.0%, time: 0.15021264s
+Result 100.0%, time: 0.193401s
 d=2,m=1
 Result 27 / 34
-Result 79.41%, time: 0.138316184s
-d=2,m=0
-Result 17 / 34
-Result 50.0%, time: 0.097908476s
+Result 79.41%, time: 0.155928s
 d=1,m=6
 Result 34 / 34
-Result 100.0%, time: 0.138126149s
+Result 100.0%, time: 0.189251s
 d=1,m=5
 Result 34 / 34
-Result 100.0%, time: 0.143963981s
+Result 100.0%, time: 0.189236s
 d=1,m=4
 Result 34 / 34
-Result 100.0%, time: 0.130275232s
+Result 100.0%, time: 0.174986s
 d=1,m=3
 Result 34 / 34
-Result 100.0%, time: 0.127495476s
+Result 100.0%, time: 0.185223s
 d=1,m=2
 Result 34 / 34
-Result 100.0%, time: 0.132296073s
+Result 100.0%, time: 0.170671s
 d=1,m=1
 Result 27 / 34
-Result 79.41%, time: 0.136359213s
-d=1,m=0
-Result 17 / 34
-Result 50.0%, time: 0.091806312s
+Result 79.41%, time: 0.144811s
 d=0,m=6
-Result 22 / 34
-Result 64.7%, time: 7.45446944s
+Result 29 / 34
+Result 85.29%, time: 0.252949s
 d=0,m=5
-Result 22 / 34
-Result 64.7%, time: 5.953569644s
+Result 29 / 34
+Result 85.29%, time: 0.18813s
 d=0,m=4
-Result 22 / 34
-Result 64.7%, time: 4.554131808s
-user interrupt
+Result 29 / 34
+Result 85.29%, time: 0.170071s
+d=0,m=3
+Result 29 / 34
+Result 85.29%, time: 0.149857s
+d=0,m=2
+Result 29 / 34
+Result 85.29%, time: 0.139672s
+d=0,m=1
+Result 24 / 34
+Result 70.58%, time: 0.128547s

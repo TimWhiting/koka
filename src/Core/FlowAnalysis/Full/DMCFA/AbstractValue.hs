@@ -60,6 +60,9 @@ instance Show CombinedCtx where
   show (CombinedCtx static dynamic) =
     show static ++ "@" ++ show dynamic
 
+ctxHnd :: CombinedCtx -> ExprContextId
+ctxHnd (CombinedCtx _ ((id, _): rst)) = id
+ctxHnd (CombinedCtx _ []) = ExprContextId (-5000) (newName "hnd")
 
 type VEnv = M.Map TName CombinedCtx
 
@@ -117,6 +120,7 @@ data Frame =
   | FHLink {
       linkEff :: Name,
       doCtx :: ExprContextId,
+      hCtx :: ExprContextId,
       linkKnext :: Addr,
       linkHnd :: Handler,
       linkHEnv :: VEnv

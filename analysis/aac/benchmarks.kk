@@ -292,7 +292,7 @@ effect set
 
 fun countdown(_)
   val i = get(0)
-  if i == 0 then 0 else 
+  if i == 0 then i else 
     set(i - 1)
     countdown(0)
 
