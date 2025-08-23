@@ -314,10 +314,10 @@ doApply kaddr mkaddr addr dynctx = do
                   Nothing -> recur branches
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
-        FHLink eff perform k' h henv -> do
+        FHLink eff perform hctx k' h henv -> do
           let ia = ImplicitAddr newctx henv perform
           extendMKStore ia (MKHandle eff knext mkaddr h henv newctx)
-          apply k' ia addr ((perform, ctx): dynctx)
+          apply k' ia addr ((hctx, ctx): dynctx)
         _ -> trace ("Applying unknown frame: " ++ show frame) doBottom
 
 doUnwind :: HasCallStack => Name -> Name -> ExprContext -> Addr -> Addr -> [Addr] -> CombinedCtx -> FixAAMR r s e FixChange
@@ -351,7 +351,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext mkCtx
       else do
         let k' = ImplicitLAddr ctx henv (contextId performExpr)
-        extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h henv) (static ctx) mkKNext)
+        extendKStore k' (KNext (FHLink eff (ctxHnd ctx) (contextId performExpr) kaddr h henv) (static ctx) mkKNext)
         unwind name opName performExpr k' mknext args mkCtx
 
 
@@ -364,7 +364,7 @@ unwindLookup varName knext mkaddr u = do
       apply knext mkaddr varAddr (dynamic ctx)
     MKHandle nm k' mknext h venv ctx -> do 
       let kx = ImplicitLAddr ctx venv (contextId u)
-      extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) (static ctx) k')
+      extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h venv) (static ctx) k')
       unwindLookup varName kx mknext u
 
 unwindSet :: HasCallStack => TName -> AChange -> Addr -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
@@ -384,7 +384,7 @@ unwindSet varName val knext mkaddr addr u = do
       apply knext mk' addr (dynamic newctx)
     MKHandle nm k' mknext h venv ctx -> do
       let kx = ImplicitLAddr ctx venv (contextId u)
-      extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) (static ctx) k')
+      extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h venv) (static ctx) k')
       unwindSet varName val kx mknext addr u
 
 isHandlerPrimitive :: Name -> Bool

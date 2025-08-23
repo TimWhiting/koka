@@ -250,7 +250,7 @@ doApply kaddr mkaddr addr dynctx = do
             AChangeClos e cctx -> do
               bod <- focusBody e
               let env' = BEnv $ fvs e
-              -- trace ("FMask " ++ show env' ++ " ctx " ++ show ctx ++ " cctx " ++ show cctx ++ " newctx " ++ show newctx) $ return ()
+              trace ("FMask " ++ show env' ++ " ctx " ++ show ctx ++ " cctx " ++ show cctx ++ " newctx " ++ show newctx) $ return ()
               rebindAll (bvars env') cctx newctx
               eval bod env' knext mkaddr newctx
         FApp n args res u -> do
@@ -341,13 +341,13 @@ doApply kaddr mkaddr addr dynctx = do
                   Nothing -> recur branches
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
-        FHLink eff perform k' h -> do
+        FHLink eff hctx perform k' h -> do
           trace ("Link restore " ++ show kaddr ++ " " ++ show newctx) $ return ()
           trace ("Link restore " ++ show kaddr ++ " " ++ show ctx) $ return ()
           let ia = ImplicitAddr newctx perform
           d <- dLimit
           extendMKStore ia (MKHandle eff knext mkaddr h newctx)
-          apply k' ia addr (take d ((perform, static ctx):dynctx))
+          apply k' ia addr (take d ((hctx, static ctx):dynctx))
         _ -> trace ("Applying unknown frame: " ++ show frame) doBottom
 
 doUnwind :: HasCallStack => Name -> Name -> ExprContext -> Addr -> Addr -> [Addr] -> CombinedCtx -> FixAAMR r s e FixChange
@@ -386,7 +386,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         let k' = ImplicitLAddr ctx opName (contextId performExpr)
         trace ("Link create " ++ show k' ++ " " ++ show ctx) $ return ()
         trace ("Link create " ++ show k' ++ " " ++ show mkCtx) $ return ()
-        extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h) ctx henv mkKNext)
+        extendKStore k' (KNext (FHLink eff (contextId performExpr) (ctxHnd ctx) kaddr h) ctx henv mkKNext)
         unwind name opName performExpr k' mknext args mkCtx
 
 
@@ -398,7 +398,7 @@ unwindLookup varName knext mkaddr u = do
       apply knext mkaddr (BindingAddr ctx varName) (dynamic ctx)
     MKHandle nm k' mknext h@(Handler _ _ henv) ctx -> do
       let kx = ImplicitLAddr ctx (getName varName) (contextId u)
-      extendKStore kx (KNext (FHLink nm (contextId u) knext h) ctx henv k')
+      extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h) ctx henv k')
       unwindLookup varName kx mknext u
 
 unwindSet :: HasCallStack => TName -> AChange -> Addr -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
@@ -416,7 +416,7 @@ unwindSet varName val knext mkaddr addr u = do
       apply knext mk' addr (dynamic newctx)
     MKHandle nm k' mknext h@(Handler _ _ henv) ctx -> do
       let kx = ImplicitLAddr ctx (getName varName) (contextId u)
-      extendKStore kx (KNext (FHLink nm (contextId u) knext h) ctx henv k')
+      extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h) ctx henv k')
       unwindSet varName val kx mknext addr u
 
 isHandlerPrimitive :: Name -> Bool
@@ -471,7 +471,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameHand
   m <- mLimit
   fvss <- fvsVal hnd
   let henv = BEnv $ S.unions (map fst fvss)
-  trace ("OPS " ++ show label ++ " fvs: " ++ show henv ++ ":" ++ show ctx) $ return ()
+  trace ("OPS " ++ show label ++ " fvs: " ++ show henv ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
   mapM_ (\(fvs, oldCtx) ->
     rebindAll fvs oldCtx ctx
     ) fvss

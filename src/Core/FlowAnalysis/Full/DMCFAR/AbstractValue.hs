@@ -57,6 +57,10 @@ data CombinedCtx = CombinedCtx {
   dynamic :: !DynamicCtx
   } deriving (Eq, Ord)
 
+ctxHnd :: CombinedCtx -> ExprContextId
+ctxHnd (CombinedCtx _ ((id, _): rst)) = id
+ctxHnd (CombinedCtx _ []) = ExprContextId (-5000) (newName "hnd")
+
 instance Show CombinedCtx where
   show (CombinedCtx static dynamic) =
     show static ++ "@" ++ show dynamic
@@ -112,6 +116,7 @@ data Frame =
   | FHLink {
       linkEff :: !Name,
       doCtx :: !ExprContextId,
+      hCtx :: !ExprContextId,
       linkKnext :: !Addr,
       linkHnd :: !Handler
   }
