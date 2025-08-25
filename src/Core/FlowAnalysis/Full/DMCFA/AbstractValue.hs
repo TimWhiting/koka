@@ -125,6 +125,16 @@ data Frame =
       linkHnd :: Handler,
       linkHEnv :: VEnv
   }
+  | FDollar {
+      vaddr :: Addr
+  }
+  | FResume {
+      label :: Name,
+      vaddr :: Addr,
+      venv :: VEnv,
+      rHnd :: Handler,
+      rCtx :: ExprContextId
+  }
   | FStore {
       vaddr :: Addr
   }
@@ -223,6 +233,9 @@ data AbValue =
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
 
+addrs :: AbValue -> [Addr]
+addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, args) -> map snd args) objs
+
 changes :: AbValue -> [AChange]
 changes (AbValue clos constrs prims objs konts lits) =
   closs ++ constrss ++ primss ++ objss ++ kontss ++ litss
@@ -265,6 +278,7 @@ instance Show AbValue where
   show (AbValue cls cntrs prims objs konts lit) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
+    (if S.null objs then "" else " objs: " ++ show (map show (S.toList objs))) ++
     (if S.null prims then "" else " prims: " ++ show (map show (S.toList prims))) ++
     (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
     (" lit: " ++ show lit)

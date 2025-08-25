@@ -29,7 +29,11 @@ fun echo( s : string ) : bio ()
 fun bio( action : () -> <bio|e> a) : e (a,string)
   var buf := ""
   with fun write(fd,s) buf := buf ++ s
-  (action(),buf)
+  (action(),buf.print-return)
+
+fun print-return(s: string): string
+  s.trace
+  s
 
 // we can also write the previous `bio` using a `with return`
 fun bio2( action : () -> <bio|e> a) : e (a,string)
@@ -38,12 +42,12 @@ fun bio2( action : () -> <bio|e> a) : e (a,string)
   with fun write(fd,s) buf := buf ++ s
   action()
 
-
-pub fun example1()
+pub fun analyze-example1()
   with bio
   echo("hi ")
   echo("unix world")
-
+pub fun result-example1()
+  ((), "hi unix world")
 
 // -----------------------------------------
 // Exit
