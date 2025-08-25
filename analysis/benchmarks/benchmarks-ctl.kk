@@ -13,6 +13,6 @@ effect ex2
 fun analyze-ex2(): int
   trace("Example 2 - simple")
   with fun ex2(a) a + 1
-  ex2(0)
-fun result-ex2() 1
+  ex2(0) + 1
+fun result-ex2() 2
 

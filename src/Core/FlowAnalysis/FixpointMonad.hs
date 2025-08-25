@@ -87,9 +87,9 @@ joinSimple x LBottom = x
 joinSimple (LSingle a) (LSingle b) = if a == b then LSingle a else LTop
 
 instance Show a => Show (SimpleLattice a d) where
-  show LBottom = "LBottom"
-  show (LSingle a) = "LSingle " ++ show a
-  show LTop = "LTop"
+  show LBottom = "⊥"
+  show (LSingle a) = show a
+  show LTop = "⊤"
 
 instance Label a => Label (SimpleLattice a d) where
   label LBottom = "⊥"

@@ -9,9 +9,10 @@ fun traverse( xs : list<a> ) : yield<a> ()
     Nil        -> ()
 
 // bind the yield operation dynamically
-pub fun main() : console ()
+pub fun analyze-main() : console ()
   with fun yield( i : int)
          println("yielded " ++ i.show)
   [1,2,3].traverse
   println("done")
-
+pub fun result-main()
+  ()

@@ -26,11 +26,12 @@ fun vec(action : forall<s> () -> <vec<s>|e> a ) : e a   // rank-2 signature requ
       xs[ix.index].default("")   // index is always valid!
 
 
-pub fun main()
+pub fun analyze-main()
   with vec
   val ix = push("hello")
   println( lookup(ix) ++ " world" )
-
+pub fun result-main()
+  ()
 
 /*
 // rejected by the type checker as the index escapes the scope of vec
