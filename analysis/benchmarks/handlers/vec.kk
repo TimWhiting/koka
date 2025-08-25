@@ -10,23 +10,23 @@ abstract type ix<s::S>
 
 // A vector of strings  (with a parameter of kind "scope")
 effect vec<s::S>
-  ctl push( s : string ) : ix<s>
-  ctl lookup( ix : ix<s> ) : string
+  fun push( s : string ) : ix<s>
+  fun lookup( ix : ix<s> ) : string
 
 
 // Create a `vec` handler that safely only handles its own indices (parameterized by `:s`)
 fun vec(action : forall<s> () -> <vec<s>|e> a ) : e a   // rank-2 signature required
   var xs : list<string> := []
   handle(action)
-    ctl push(s)
+    fun push(s)
       val i = xs.length
       xs := xs ++ [s]
-      resume(Ix(i))
-    ctl lookup(ix)
-      resume(xs[ix.index].default(""))  // index is always valid!
+      Ix(i)
+    fun lookup(ix)
+      xs[ix.index].default("")   // index is always valid!
 
 
-pub fun analyze()
+pub fun main()
   with vec
   val ix = push("hello")
   println( lookup(ix) ++ " world" )

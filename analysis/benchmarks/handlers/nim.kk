@@ -54,7 +54,7 @@ fun game(n)
 // Perfect strategy
 // --------------------------------------------------------
 
-val perfect = handler ctl move(_p,n){ resume(max(1,n%4)) }
+val perfect = handler fun move(_p,n){ max(1,n%4) }
 
 pub fun example-perfect1()
   with perfect
@@ -114,10 +114,10 @@ pub fun example-gtree()
 // Cheating
 // --------------------------------------------------------
 
-effect ctl cheat(player:player) : a
+effect fun cheat(player:player) : a
 
 val cheat-report = handler
-  ctl cheat(p)
+  fun cheat(p)
     throw(p.show ++ " cheated!")
 
 val check = handler
@@ -144,10 +144,10 @@ pub fun example-use()
 // --------------------------------------------------------
 
 val pc = handler
-  ctl move(p,n)
+  fun move(p,n)
     match p
-      Alice -> resume(max(1,n%4))
-      Bob   -> resume(n)
+      Alice -> max(1,n%4)
+      Bob   -> n
 
 
 pub fun example-pc1()
@@ -191,7 +191,7 @@ pub fun example-choose()
 
 
 val coin = handler
-  ctl choose() resume(srandom-float64() > 0.5)
+  fun choose() srandom-float64() > 0.5
 
 pub fun example-coin()
   with coin
@@ -205,15 +205,15 @@ pub fun example-coin()
 // --------------------------------------------------------
 
 effect state<s>
-  ctl get() : s;
-  ctl put(x : s) : ()
+  fun get() : s;
+  fun put(x : s) : ()
 
 
 fun state(init,action)
   var s := init
   handle(action)
-    ctl get()  resume(s)
-    ctl put(x) resume(s := x)
+    fun get()  s
+    fun put(x) s := x
 
 
 // The current state of the game as a list of moves.
@@ -278,5 +278,3 @@ pub fun main()
     example-pc1().show.println // raises exception
   } fn(exn){ println(exn.show) }
 
-fun analyze()
-  example-perfect1()

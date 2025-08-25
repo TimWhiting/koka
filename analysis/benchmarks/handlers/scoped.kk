@@ -36,16 +36,16 @@ pub fun example1()
 // --------------------------------------------------------------
 
 effect state<s>
-  ctl get()    : s
-  ctl put(i:s) : ()
+  fun get()    : s
+  fun put(i:s) : ()
 
 
 fun state(init,action)
   var s := init
   handle action
     return(x)  (s,x)
-    ctl get()  resume(s)
-    ctl put(i) resume(s := i)
+    fun get()  s
+    fun put(i) s := i
 
 
 fun incr(i : int = 1) : state<int> ()
@@ -66,9 +66,9 @@ fun global(s,action)
 
 val choices = handler
   ctl fail() fail()
-  ctl flip()
+  fun flip()
     incr()
-    resume(flip())
+    flip()
 
 
 fun state-show(x : (int,a), ?show : a -> string ) : string
@@ -141,17 +141,17 @@ pub fun example4()
 // Grammars
 // --------------------------------------------------------------
 
-effect ctl symbol(s : string) : string
+effect fun symbol(s : string) : string
 
 fun parse(input : string, action : () -> <nondet,symbol|e> a) : <nondet|e> a
   var cs := input
   handle action
     return(x)
       if cs.is-empty then x else fail()
-    ctl symbol(s)
+    fun symbol(s)
       match cs.starts-with(s)
         Nothing    -> fail()
-        Just(rest) -> { cs := rest.string; resume(s) }
+        Just(rest) -> { cs := rest.string; s }
 
 
 val digits = list(0,9).map(show)
@@ -221,6 +221,3 @@ pub fun main()
   example4().show.println
   example5().show.println
 
-
-pub fun analyze()
-  example1().show.println
