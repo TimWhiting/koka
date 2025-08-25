@@ -17,7 +17,7 @@ import std/num/random
 // Declare an effect `:input` with a single operation `ask`.
 // We use `fun` instead of general `ctl` to ensure that all handlers
 // will always resume (at most once) with the result.
-effect ctl ask() : string
+effect fun ask() : string
 
 fun hello()
   val name = ask()
@@ -25,7 +25,7 @@ fun hello()
 
 
 pub fun example2()
-  with ctl ask() resume("there")    // a `fun` operation resumes implicitly with its result
+  with fun ask() "there"    // a `fun` operation resumes implicitly with its result
   hello()
 
 
@@ -58,7 +58,7 @@ fun zerodiv(x,y)
 
 // reify the exception effect back to a `:maybe` value
 fun to-maybe(action)
-  with ctl raise(s) Nothing   // a control clause marked as `final` cannot resume; this can be more efficient as it runs finalizers eagerly and does not capture a resumption.
+  with final ctl raise(s) Nothing   // a control clause marked as `final` cannot resume; this can be more efficient as it runs finalizers eagerly and does not capture a resumption.
   Just(action())
 
 
@@ -72,8 +72,8 @@ pub fun example1()
 // --------------------------------------------------------
 
 effect state<s>
-  ctl get() : s
-  ctl put( x : s ) : ()
+  fun get() : s
+  fun put( x : s ) : ()
 
 
 fun counter()
@@ -89,8 +89,8 @@ fun state(init : s, action : () -> <state<s>,div|e> a) : <div|e> (a,s)
   var s := init        // use a local mutable variable
   handle action
     return(x)  (x,s)
-    ctl get()  resume(s)
-    ctl put(x) resume(s := x)
+    fun get()  s
+    fun put(x) s := x
 
 
 pub fun example3()
@@ -192,5 +192,3 @@ pub fun main()
   example6()
   42
 
-fun analyze()
-  example1()
