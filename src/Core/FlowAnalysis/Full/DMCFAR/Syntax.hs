@@ -72,7 +72,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                 ress' <- getAbResult
-                                -- trace ("ress': " ++ show ress') $ return ()
+                                trace ("result': " ++ show ress') $ return ()
                                 return ress'
                 (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                 runFixCont $ do
@@ -80,7 +80,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
                                 ress' <- getAbResult
-                                -- trace ("ress': " ++ show ress') $ return ()
+                                trace ("expected': " ++ show ress') $ return ()
                                 return ress'
                 let !result = (if compareResult analysisResult expectedResult then 1 else 0)
                 total <- recur rest
@@ -108,13 +108,13 @@ compareResult (result, rMap) (expected, eMap) = do
       objMatch (name, args) (name2, args2) = 
          let argsMatch = zipWith (\(n, a) (n2, a2) -> 
                   let arg1 = fromJust $ M.lookup a rMap
-                      arg2 = fromJust $ M.lookup a2 rMap in
+                      arg2 = fromJust $ M.lookup a2 eMap in
                   n == n2 && compareResult (arg1, rMap) (arg2, eMap)) args args2
          in name == name2 && all id argsMatch
   if alits result == alits expected then
     let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
     in
-      trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
+      -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
       matches
   else
     -- trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) 
