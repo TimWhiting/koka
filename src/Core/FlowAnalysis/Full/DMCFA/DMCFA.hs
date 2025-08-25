@@ -101,7 +101,7 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
       -- TODO: Adjust the dynamic context to only what is necessary
@@ -203,7 +203,7 @@ mEnvOf _ = return M.empty
 
 doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr mkaddr addr dynctx = do
-  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr) $ return ()
+  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr ++ " " ++ show dynctx) $ return ()
   k <- kStore kaddr
   -- trace ("Applying: " ++ show k) $ return ()
   case k of
@@ -280,6 +280,7 @@ doApply kaddr mkaddr addr dynctx = do
                     let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
                         newDynCtx = take d $ (contextId u, static newCtx):dynamic newctx
                         mk' = ImplicitAddr newCtx venv (contextId u)
+                    -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
                     extendMKStore mk' (MKHandle label knext mkaddr hnd venv newCtx)
                     apply kx mk' addr newDynCtx
                   _ -> do
@@ -288,10 +289,10 @@ doApply kaddr mkaddr addr dynctx = do
               k' <- addFrame (FApp n rest (res ++ [addr]) u (limitEnv venv (fvsl rest))) venv (contextId next)
               eval next (limitEnv venv (fvs next)) k' mkaddr newctx
         FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
-          -- trace ("Applying Let") $ return ()
+          -- trace ("Applying Let " ++ show newctx) $ return ()
           val <- store addr
-          -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
           extendStore (fromJust $ lookupEnv name venv) val
+          -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
           -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
           if isLetDefBindingFinished groupIdx bindingIdx u then do
             body <- focusLetBod u
@@ -316,8 +317,10 @@ doApply kaddr mkaddr addr dynctx = do
             Case _ pats -> recur (zip pats branches)
         FHLink eff perform hctx k' h henv -> do
           let ia = ImplicitAddr newctx henv perform
+          d <- dLimit
           extendMKStore ia (MKHandle eff knext mkaddr h henv newctx)
-          apply k' ia addr ((hctx, ctx): dynctx)
+          let newDCtx = take d ((hctx, ctx): dynctx)
+          apply k' ia addr newDCtx
         _ -> trace ("Applying unknown frame: " ++ show frame) doBottom
 
 doUnwind :: HasCallStack => Name -> Name -> ExprContext -> Addr -> Addr -> [Addr] -> CombinedCtx -> FixAAMR r s e FixChange
@@ -351,7 +354,9 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext mkCtx
       else do
         let k' = ImplicitLAddr ctx henv (contextId performExpr)
-        extendKStore k' (KNext (FHLink eff (ctxHnd ctx) (contextId performExpr) kaddr h henv) (static ctx) mkKNext)
+        -- trace ("Link create " ++ show k' ++ " " ++ show ctx) $ return ()
+        -- trace ("Link create " ++ show k' ++ " " ++ show mkCtx) $ return ()
+        extendKStore k' (KNext (FHLink eff (contextId performExpr) (ctxHnd ctx) kaddr h henv) (static mkCtx) mkKNext)
         unwind name opName performExpr k' mknext args mkCtx
 
 
