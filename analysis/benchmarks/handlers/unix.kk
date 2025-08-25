@@ -17,7 +17,7 @@
 // basic I/O
 effect bio
   // Write a string to a file descriptor
-  ctl write( fd : filedesc, s : string ) : ()
+  fun write( fd : filedesc, s : string ) : ()
 
 alias filedesc = int
 
@@ -28,18 +28,18 @@ fun echo( s : string ) : bio ()
 
 fun bio( action : () -> <bio|e> a) : e (a,string)
   var buf := ""
-  with ctl write(fd,s) resume(buf := buf ++ s)
+  with fun write(fd,s) buf := buf ++ s
   (action(),buf)
 
 // we can also write the previous `bio` using a `with return`
 fun bio2( action : () -> <bio|e> a) : e (a,string)
   var buf := ""
   with return(x) (x,buf)
-  with ctl write(fd,s) resume(buf := buf ++ s)
+  with fun write(fd,s) buf := buf ++ s
   action()
 
 
-pub fun analyze1()
+pub fun example1()
   with bio
   echo("hi ")
   echo("unix world")
@@ -53,11 +53,11 @@ effect exit
   ctl exit( exitcode : int ) : a
 
 fun status( action : () -> <exit|e> a ) : e int
-  with ctl exit(code) code                    // use `final` since we never resume
+  with final ctl exit(code) code                    // use `final` since we never resume
   action()
   0
 
-pub fun analyze() : (int,string)
+pub fun example2() : (int,string)
   with bio
   with status
   echo("hi ")
@@ -81,12 +81,12 @@ fun user/show( user : user ) : string
     Bob   -> "bob"
 
 effect whoami
-  ctl whoami() : string
+  fun whoami() : string
 
 
 
 fun env( user : user, action : () -> <whoami|e> a ) : e a
-  with ctl whoami() resume(show(user))
+  with fun whoami() show(user)
   action()
 
 pub fun example3()
@@ -117,7 +117,7 @@ fun session-manager1( initial-user : user, action : () -> <su,whoami|e> a ) : e 
   action()
 
 fun session-manager2( initial-user : user, action : () -> <su,whoami|e> a ) : e a
-  with ctl whoami() resume(show(initial-user))
+  with fun whoami() show(initial-user)
   with ctl su( u : user )
          with override fun whoami() show(u)
          resume(())
@@ -125,8 +125,8 @@ fun session-manager2( initial-user : user, action : () -> <su,whoami|e> a ) : e 
 
 fun session-manager3( initial-user : user, action : () -> <su,whoami|e> a ) : e a
   var user := initial-user
-  with ctl whoami() resume(show(user))
-  with ctl su(u) resume(user := u)
+  with fun whoami() show(user)
+  with fun su(u) user := u
   action()
 
 
