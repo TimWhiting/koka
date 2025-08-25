@@ -1,3 +1,6 @@
 [submodule "kklib/mimalloc"]
 	path = kklib/mimalloc
 	url = https://github.com/microsoft/mimalloc
+[submodule "analysis/benchmarks/rosetta"]
+	path = analysis/benchmarks/rosetta
+	url = git@github.com:TimWhiting/rosetta.git
