@@ -2,7 +2,7 @@
 {-# LANGUAGE BangPatterns #-}
 module Core.FlowAnalysis.Full.DMCFA.Syntax where
 
-import Data.List (intercalate, find, minimumBy, groupBy, sort, partition, permutations)
+import Data.List (intercalate, find, minimumBy, groupBy, sort, permutations)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Maybe (catMaybes, mapMaybe, isJust, fromJust)
@@ -109,13 +109,13 @@ compareResult (result, rMap) (expected, eMap) = do
       objMatch (name, args) (name2, args2) = 
          let argsMatch = zipWith (\(n, a) (n2, a2) -> 
                   let arg1 = fromJust $ M.lookup a rMap
-                      arg2 = fromJust $ M.lookup a2 rMap in
+                      arg2 = fromJust $ M.lookup a2 eMap in
                   n == n2 && compareResult (arg1, rMap) (arg2, eMap)) args args2
          in name == name2 && all id argsMatch
   if alits result == alits expected then
     let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
     in
-      trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
+      -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
       matches
   else
     -- trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) 

@@ -74,6 +74,7 @@ data Addr =
   | ImplicitAddr !CombinedCtx !ExprContextId
   | ImplicitLAddr !CombinedCtx !Name !ExprContextId
   | BindImplicitAddr !CombinedCtx !ExprContextId
+  | ConImplicitAddr Name CombinedCtx !ExprContextId 
   deriving (Eq, Ord)
 
 instance Show Addr where
@@ -85,6 +86,7 @@ instance Show Addr where
   show (ImplicitAddr ctx ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLAddr ctx nm ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show nm ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
 data Frame =
   FScrut {
