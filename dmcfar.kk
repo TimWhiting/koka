@@ -1,18 +1,54 @@
-koka-3.2.2: unregistering (local file changes: src/Core/FlowAnalysis/Full/DMCFAR/Syntax.hs)
-koka> build (lib + exe) with ghc-9.6.6
-Preprocessing library for koka-3.2.2..
-Building library for koka-3.2.2..
-[126 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.Syntax [Source file changed]
-[140 of 143] Compiling Compile.Build [Core.FlowAnalysis.Full.DMCFAR.Syntax changed]
-Warning: The following header files listed in the main library's c-sources
-will not be used: src/Platform/cpp/Platform/cconsole.h.
-Header files should be in the 'include' or 'install-include' stanza.
-See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes
-Preprocessing executable 'koka' for koka-3.2.2..
-Building executable 'koka' for koka-3.2.2..
-[18 of 18] Linking .stack-work/dist/x86_64-linux/ghc-9.6.6/build/koka/koka [Library changed]
-koka> copy/register
-Installing library in /home/tim/koka/.stack-work/install/x86_64-linux/caa2c2a0c9eec164a22324b7d83105503be009c866f84849897f47c50a8aa47d/9.6.6/lib/x86_64-linux-ghc-9.6.6/koka-3.2.2-8GBEfjISoFBMgz1sr3wgW
-Installing executable koka in /home/tim/koka/.stack-work/install/x86_64-linux/caa2c2a0c9eec164a22324b7d83105503be009c866f84849897f47c50a8aa47d/9.6.6/bin
-Registering library for koka-3.2.2..
-Failed to compile analysis/benchmarks/benchmarks.kk
+d=0,m=1
+Result 23 / 34
+Result 67.64%, time: 0.283391762s
+d=0,m=2
+Result 28 / 34
+Result 82.35%, time: 0.312864609s
+d=0,m=3
+Result 28 / 34
+Result 82.35%, time: 0.325444457s
+d=0,m=4
+Result 28 / 34
+Result 82.35%, time: 0.335412175s
+d=0,m=5
+Result 28 / 34
+Result 82.35%, time: 0.3689044s
+d=0,m=6
+Result 28 / 34
+Result 82.35%, time: 0.390248631s
+d=1,m=1
+Result 26 / 34
+Result 76.47%, time: 0.37150653s
+d=1,m=2
+Result 33 / 34
+Result 97.05%, time: 0.40630804s
+d=1,m=3
+Result 33 / 34
+Result 97.05%, time: 0.437003645s
+d=1,m=4
+Result 34 / 34
+Result 100.0%, time: 0.517345265s
+d=1,m=5
+Result 34 / 34
+Result 100.0%, time: 0.416647604s
+d=1,m=6
+Result 34 / 34
+Result 100.0%, time: 0.415731415s
+d=2,m=1
+Result 26 / 34
+Result 76.47%, time: 0.44759323s
+d=2,m=2
+Result 33 / 34
+Result 97.05%, time: 0.477795663s
+d=2,m=3
+Result 34 / 34
+Result 100.0%, time: 0.447777763s
+d=2,m=4
+Result 34 / 34
+Result 100.0%, time: 0.460826182s
+d=2,m=5
+Result 34 / 34
+Result 100.0%, time: 0.471762514s
+d=2,m=6
+Result 34 / 34
+Result 100.0%, time: 0.460673973s

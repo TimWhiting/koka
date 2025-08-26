@@ -281,7 +281,7 @@ doApply kaddr mkaddr addr dynctx = do
                     v <- store addr
                     rebindAll (fvs cexpr) cctx newctx
                     extendStore (BindingAddr newctx arg) v
-                    eval body env' knext mkaddr newctx
+                    eval body env' knext mknext newctx
         FResume label kont opEnv rVars hnd u -> do
           m <- mLimit
           d <- dLimit
