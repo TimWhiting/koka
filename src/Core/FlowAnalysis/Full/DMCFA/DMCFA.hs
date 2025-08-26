@@ -40,6 +40,13 @@ drive m = do
       doStep (Step res)
       doBottom]
 
+evalRes :: FixAAMR r s e FixChange -> FixAAMR r s e () 
+evalRes m = do
+  N res <- m
+  case res of 
+    CDone -> return ()
+    c -> evalRes $ doStep (Step c)
+
 doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
   memo i $ do
@@ -101,8 +108,15 @@ primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
-  -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
-  case exprOfCtx expr of
+  
+  let open = case exprOfCtx expr of
+        App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
+        _ -> False
+      process x = if not open then do
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx)
+                    x
+                  else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
+  in process $ case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
@@ -144,8 +158,12 @@ doEval expr venv kaddr mkaddr ctx =
             Just expr -> do
               extendMKStore (TopAddr name) MKEnd
               c <- startCombinedCtx
-              each [eval expr M.empty EndKAddr (TopAddr name) c,
-                    apply kaddr mkaddr (BindingAddr c name) (dynamic ctx)]
+              each [
+                  eval expr M.empty EndKAddr (TopAddr name) c,
+                  apply kaddr mkaddr (BindingAddr c name) (dynamic ctx)
+                ]
+              -- evalRes (eval expr M.empty EndKAddr (TopAddr name) c)
+              -- apply kaddr mkaddr (BindingAddr c name) (dynamic ctx)
             Nothing -> do
               trace ("Variable not found: " ++ show name) doBottom
     Lit l -> do
