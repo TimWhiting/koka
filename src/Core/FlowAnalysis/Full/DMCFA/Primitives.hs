@@ -189,7 +189,7 @@ doPrimitive nm achanges env = do
     charCmpOp (==) achanges
   else if (nm == nameCoreTrace) || (nm == nameCoreTraceShow) || (nm == nameCorePrint)
           || (nm == nameCorePrintln) || (nm == nameCorePrintsLn) then
-    trace ("Print / Trace " ++ show achanges)
+    -- trace ("Print / Trace " ++ show achanges)
     return changeUnit
   else if nm == nameUnsafeNoLocalCast then return (head achanges)
   else
