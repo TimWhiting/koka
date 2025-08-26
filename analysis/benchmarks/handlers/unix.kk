@@ -29,11 +29,7 @@ fun echo( s : string ) : bio ()
 fun bio( action : () -> <bio|e> a) : e (a,string)
   var buf := ""
   with fun write(fd,s) buf := buf ++ s
-  (action(),buf.print-return)
-
-fun print-return(s2: string): string
-  s2.trace
-  s2
+  (action(),buf)
 
 // we can also write the previous `bio` using a `with return`
 fun bio2( action : () -> <bio|e> a) : e (a,string)
@@ -49,6 +45,12 @@ pub fun analyze-example1()
 pub fun result-example1()
   ((), "hi unix world")
 
+pub fun analyze-example1_2()
+  with bio2
+  echo("hi ")
+  echo("unix world")
+pub fun result-example1_2()
+  ((), "hi unix world")
 // -----------------------------------------
 // Exit
 // Show non-linear control by exiting a computation. (exception monad)
@@ -61,13 +63,15 @@ fun status( action : () -> <exit|e> a ) : e int
   action()
   0
 
-pub fun example2() : (int,string)
+pub fun analyze-example2() : (int,string)
   with bio
   with status
   echo("hi ")
   exit(1)
   echo("unix world")
 
+pub fun result-example2() : (int,string)
+  (1, "hi ")
 
 // -----------------------------------------
 // User environment
@@ -93,12 +97,15 @@ fun env( user : user, action : () -> <whoami|e> a ) : e a
   with fun whoami() show(user)
   action()
 
-pub fun example3()
+pub fun analyze-example3()
   with bio
   with status
   with env(Alice)
   echo("hi ")
   echo(whoami())
+
+fun result-example3() : (int,string)
+  (0, "hi alice")
 
 
 fun intstr/show( (i,s) : (int,string) ) : string

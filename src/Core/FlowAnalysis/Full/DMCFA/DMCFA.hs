@@ -62,6 +62,10 @@ doStep i =
         drive $ doApply kaddr mkaddr addr ctx
       Step (CUnwind name opName perform kaddr mkaddr addrs ctx) -> do
         drive $ doUnwind name opName perform kaddr mkaddr addrs ctx
+      Step (CUnwindLookup varName knext mkaddr u) -> do
+        drive $ unwindLookup varName knext mkaddr u
+      Step (CUnwindSet varName val knext mkaddr addr u) -> do
+        drive $ unwindSet varName val knext mkaddr addr u
       Step CDone -> return $ N CDone
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
@@ -89,6 +93,8 @@ mkStore addr = do
 eval expr venv kaddr mkaddr ctx = return $ N (CEval expr venv kaddr mkaddr ctx)
 apply kaddr mkaddr addr ctx = return $ N (CApply kaddr mkaddr addr ctx)
 unwind name opName perform kaddr mkaddr addrs ctx = return $ N (CUnwind name opName perform kaddr mkaddr addrs ctx)
+unwind_lookup varName knext mkaddr u = return $ N (CUnwindLookup varName knext mkaddr u)
+unwind_set varName val knext mkaddr addr u = return $ N (CUnwindSet varName val knext mkaddr addr u)
 
 allocConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e Addr
 allocConst env ctx expr v = do
@@ -421,9 +427,11 @@ unwindLookup varName knext mkaddr u = do
     MKHandle nm k' mknext h venv ctx -> do 
       let kx = ImplicitLAddr ctx venv (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h venv) (static ctx) k')
-      unwindLookup varName kx mknext u
+      unwind_lookup varName kx mknext u    
+    _ -> doBottom
 
-unwindSet :: HasCallStack => TName -> AChange -> Addr -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
+
+unwindSet :: HasCallStack => TName -> Addr -> Addr -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
 unwindSet varName val knext mkaddr addr u = do
   mk <- mkStore mkaddr
   case mk of 
@@ -433,7 +441,7 @@ unwindSet varName val knext mkaddr addr u = do
       d <- dLimit
       let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
       let newEnv = M.insert varName newctx env
-      extendStore (fromJust $ lookupEnv varName newEnv) val
+      rebind val (fromJust $ lookupEnv varName newEnv) 
       let mk' = ImplicitAddr newctx newEnv (contextId u)
       extendMKStore mk' (MKHandle nm k' mknext h newEnv newctx)
       extendStore addr changeUnit
@@ -441,7 +449,8 @@ unwindSet varName val knext mkaddr addr u = do
     MKHandle nm k' mknext h venv ctx -> do
       let kx = ImplicitLAddr ctx venv (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h venv) (static ctx) k')
-      unwindSet varName val kx mknext addr u
+      unwind_set varName val kx mknext addr u
+    _ -> doBottom
 
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
@@ -470,13 +479,13 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   else do 
     apply knext mkaddr (head arguments) (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalSet = do
-  let [_, val] = args
-  let [varAddr@(BindingAddr ctx varName), _] = arguments
+  let [_, _] = args
+  let [varAddr@(BindingAddr ctx varName), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
     unwindSet varName val knext mkaddr addr u
   else do
-    extendStore varAddr val
+    rebind val varAddr 
     extendStore addr changeUnit
     apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameHandle = do
