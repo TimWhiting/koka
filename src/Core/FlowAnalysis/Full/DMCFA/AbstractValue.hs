@@ -159,6 +159,7 @@ nextLetFrame
           newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
+ 
 
 data Kont =
   KEnd

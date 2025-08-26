@@ -117,6 +117,11 @@ focusLetDefBinding defGroupIndex bindingIndex e = do
   let index = letDefBindingIndex defGroupIndex bindingIndex e
   focusChild (index + 1) e
 
+focusNextLetDefBinding :: Int -> Int -> ExprContext -> FixAR x s e i o c ExprContext
+focusNextLetDefBinding defGroupIndex bindingIndex e = do
+  let index = letDefBindingIndex defGroupIndex bindingIndex e
+  focusChild (index + 2) e
+
 focusChild :: Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusChild index e = do
   children <- childrenContexts e
