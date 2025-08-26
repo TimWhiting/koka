@@ -29,6 +29,8 @@ data Conf =
   CEval ExprContext VEnv Addr Addr StaticCtx
   | CApply Addr Addr Addr StaticCtx
   | CUnwind Name Name ExprContext Addr Addr [Addr] StaticCtx
+  | CUnwindLookup TName Addr Addr ExprContext StaticCtx
+  | CUnwindSet TName Addr Addr Addr Addr ExprContext StaticCtx
   | CDone
   deriving (Eq, Ord, Show)
 
