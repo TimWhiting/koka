@@ -376,6 +376,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                               sweepDM mT (d - 1) mT i
                             else do
                               sweepDM mT d (m - 1) i 
+                          -- trace ("Evaluating " ++ show m ++ show d) $ return ()
                           i flags{mSensitivity = m, dSensitivity = d}
                           
 
