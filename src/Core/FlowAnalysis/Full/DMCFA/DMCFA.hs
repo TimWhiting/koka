@@ -265,10 +265,10 @@ doApply kaddr mkaddr addr dynctx = do
                     let [arg] = lamNames cexpr
                     m <- mLimit
                     let newEnv = M.insert arg dynctx cenv
-                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
+                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show arg) $ return ()
                     v <- store addr
                     extendStore (fromJust $ lookupEnv arg newEnv) v
-                    eval body (limitEnv newEnv (fvs body)) knext mkaddr dynctx
+                    eval body (limitEnv newEnv (fvs body)) knext mknext dynctx
         FResume label kont venv hnd u -> do
           m <- mLimit
           d <- dLimit
@@ -342,7 +342,7 @@ doApply kaddr mkaddr addr dynctx = do
             body <- focusLetBod u
             eval body (limitEnv venv (fvs body)) knext mkaddr newctx
           else do
-            next <- focusLetDefBinding groupIdx bindingIdx u
+            next <- focusNextLetDefBinding groupIdx bindingIdx u
             k' <- addFrame (nextLetFrame frame newctx) venv (contextId next)
             eval next venv k' mkaddr newctx
         FScrut parent branches env -> do
@@ -491,7 +491,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
   bod <- focusBody body
   -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
-  let kmkaddr = ImplicitAddr ctx venv (contextId u)
+  let kmkaddr = ImplicitAddr ctx venv (contextId bod)
   extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) (static ctx) EndKAddr)
   extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]) ctx)
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
