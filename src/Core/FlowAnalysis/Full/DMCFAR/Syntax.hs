@@ -66,6 +66,7 @@ runQueryAtRange bc build mod m d doQuery = do
                 return 0
             (AProgram name mainCtx resCtx):rest ->
               do
+                trace (" Analyzing " ++ show name) $ return ()
                 (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                 runFixCont $ do
                                   (_,ctx) <- loadModule (modName mod)
@@ -131,6 +132,7 @@ getAbResult = do
                             in M.insert addr v (M.union acc map')
                          ) M.empty (addrs res)
             in (res, env)
+          Nothing -> error ("Address not found " ++ show addr)
   return $ getValue EndVAddr
 
 evalMainR :: BuildContext

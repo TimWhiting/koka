@@ -67,7 +67,7 @@ data FixInput =
 data FixOutput d =
   A AbValue
   | E (S.Set EnvCtx)
-  | N deriving (Show, Eq)
+  | N deriving (Show, Ord, Eq)
 
 data AFixChange =
   FA AChange

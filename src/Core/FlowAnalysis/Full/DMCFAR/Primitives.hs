@@ -132,6 +132,7 @@ opCmpInt f [p1, p2] = do
 
 doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
 doPrimitive nm achanges = do
+  -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameIntEq then
     opCmpInt (==) achanges
   else if nm == nameIntLt then
@@ -174,7 +175,8 @@ doPrimitive nm achanges = do
     case achanges of
       [AChangeLit (LiteralChangeString (LChangeSingle s1)), AChangeLit (LiteralChangeString (LChangeSingle s2))] ->
         return $ AChangeLit (LiteralChangeString (LChangeSingle (s1 ++ s2)))
-      [AChangeLit (LiteralChangeString _), AChangeLit (LiteralChangeString _)] ->
+      [AChangeLit (LiteralChangeString _), AChangeLit (LiteralChangeString _)] -> do
+        -- trace ("AChanges " ++ show achanges) $ return ()
         return $ AChangeLit (LiteralChangeString LChangeTop)
       _ -> doBottom
   else if nm == nameCoreCharLt then

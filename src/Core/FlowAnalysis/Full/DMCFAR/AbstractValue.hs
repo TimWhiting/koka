@@ -74,7 +74,7 @@ data Addr =
   | ImplicitAddr !CombinedCtx !ExprContextId
   | ImplicitLAddr !CombinedCtx !Name !ExprContextId
   | BindImplicitAddr !CombinedCtx !ExprContextId
-  | ConImplicitAddr Name CombinedCtx !ExprContextId 
+  | ConImplicitAddr Name CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 
 instance Show Addr where
@@ -129,6 +129,7 @@ data Frame =
       label :: Name,
       vaddr :: Addr,
       venv :: BEnv,
+      opVars :: BEnv,
       rHnd :: Handler,
       rCtx :: ExprContextId
   }
@@ -144,7 +145,10 @@ letFvs groupIdx bindingIdx parent =
   case exprOfCtx parent of
     C.Let defs body ->
       let (df:dfs) = Prelude.drop groupIdx defs
-      in S.unions $ fv body : map (fv . defExpr) (Prelude.drop bindingIdx (defsOf df) ++ concatMap defsOf dfs)
+          tnames = S.fromList (map defTName (Prelude.take bindingIdx (defsOf df)))
+          restBindings = S.unions $ S.fromList (map defTName (Prelude.drop bindingIdx (defsOf df))) : map (\dg -> S.fromList $ map defTName $ defsOf dg) dfs
+      in S.difference (S.unions $ tnames : fv body : map (fv . defExpr) (Prelude.drop bindingIdx (defsOf df) ++ concatMap defsOf dfs))
+            restBindings
 
 letBindingName :: Int -> Int -> ExprContext -> TName
 letBindingName groupIdx bindingIdx parent =

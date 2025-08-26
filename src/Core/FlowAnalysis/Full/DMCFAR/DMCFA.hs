@@ -40,6 +40,13 @@ drive m = do
       doStep (Step res)
       doBottom]
 
+evalRes :: FixAAMR r s e FixChange -> FixAAMR r s e () 
+evalRes m = do
+  N res <- m
+  case res of 
+    CDone -> return ()
+    c -> evalRes $ doStep (Step c)
+
 doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
   memo i $ do
@@ -110,7 +117,7 @@ doEval expr env kaddr mkaddr ctx =
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       process x = if not open then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " in " ++ show env ++ ":" ++ show ctx)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx)
                     x
                   else x
   in
@@ -156,8 +163,12 @@ doEval expr env kaddr mkaddr ctx =
             -- trace ("Evaluating external: " ++ show name) $ return ()
             extendMKStore (TopAddr name) MKEnd
             c <- startCombinedCtx
-            each [eval expr (BEnv S.empty) EndKAddr (TopAddr name) c,
-                  apply kaddr mkaddr (TopAddr name) (dynamic ctx)]
+            each [
+                eval expr (BEnv S.empty) EndKAddr (TopAddr name) c,
+                apply kaddr mkaddr (TopAddr name) (dynamic ctx)
+              ]
+            -- evalRes (eval expr (BEnv S.empty) EndKAddr (TopAddr name) c)
+            -- apply kaddr mkaddr (TopAddr name) (dynamic ctx)
           Nothing -> do
             -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
             apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
@@ -243,7 +254,7 @@ doApply kaddr mkaddr addr dynctx = do
     KNext frame ctx env knext ->
       let newctx = CombinedCtx (static ctx) dynctx
           addFrame f u = allocFrame f knext newctx u in
-      trace ("Applying " ++ show frame) $ 
+      -- trace ("Applying " ++ show frame) $ 
       case frame of
         f | f == FCall || f == FMask -> do
           v <- store addr
@@ -271,14 +282,14 @@ doApply kaddr mkaddr addr dynctx = do
                     rebindAll (fvs cexpr) cctx newctx
                     extendStore (BindingAddr newctx arg) v
                     eval body env' knext mkaddr newctx
-        FResume label kont opEnv hnd u -> do
+        FResume label kont opEnv rVars hnd u -> do
           m <- mLimit
           d <- dLimit
           let newCtx = CombinedCtx (take m $ CallApp u : static newctx) (dynamic newctx)
               newDynCtx = take d $ (u, static newCtx):dynamic newctx
               mk' = ImplicitAddr newCtx u
-          trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
-          rebindAll (bvars opEnv) ctx newCtx
+          -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
+          rebindAll (S.difference (bvars opEnv) (bvars rVars)) ctx newCtx
           extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
           apply kont mk' addr newDynCtx
         FApp n args res u -> do
@@ -299,6 +310,7 @@ doApply kaddr mkaddr addr dynctx = do
                     -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show env' ++ ":" ++ show newCtx) $ return ()
                     zipWithM_ (\a p -> do
                       val <- store p
+                      -- trace (show val ++ " from " ++ show p ++ " rebinding to " ++ show (BindingAddr newCtx a)) $ return ()
                       extendStore (BindingAddr newCtx a) val) args arguments
                     k' <- kStore knext
                     let ia = ImplicitAddr newCtx (contextId body)
@@ -330,7 +342,7 @@ doApply kaddr mkaddr addr dynctx = do
                     let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
                         newDynCtx = take d $ (contextId u, static newCtx):dynamic newctx
                         mk' = ImplicitAddr newCtx (contextId u)
-                    trace ("Applying continuation " ++ show (contextId u) ++ " rebinding " ++ show henv ) $ return () -- ++ "for\n" ++ 
+                    -- trace ("Applying continuation " ++ show (contextId u) ++ " rebinding " ++ show henv ) $ return () -- ++ "for\n" ++ 
                     --        show res ++ "\n" ++ show kaddr ++ "\n" ++ show mkaddr ++ "\n" ++ show addr ++ "\n" ++ show dynctx) $ return ()
                     rebindAll (bvars henv) hctx newCtx
                     extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
@@ -342,18 +354,19 @@ doApply kaddr mkaddr addr dynctx = do
               rebindAll (bvars env) ctx newctx
               eval next env k' mkaddr newctx
         FLet groupIdx numGroups bindingIdx numBindings name resolved u -> do
-          -- trace "Applying Let" $ return ()
-          rebindAll (bvars env) ctx newctx
+          -- trace ("Applying Let " ++ show env) $ return ()
           val <- store addr
           extendStore (BindingAddr newctx name) val
-          let env' = BEnv $ S.insert name (bvars env)
+          rebindAll (bvars env) ctx newctx
+          let env' = BEnv $ S.intersection (S.insert name (letFvs groupIdx bindingIdx u)) (S.insert name (bvars env))
+          -- trace (show u ++ " has free vars " ++ show env') $ return ()
           -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show newctx ++ " old: " ++ show ctx ) $ return ()
           -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
           if isLetDefBindingFinished groupIdx bindingIdx u then do
             body <- focusLetBod u
             eval body env' knext mkaddr newctx
           else do
-            next <- focusLetDefBinding groupIdx bindingIdx u
+            next <- focusNextLetDefBinding groupIdx bindingIdx u
             k' <- addFrame (nextLetFrame frame newctx) env' (contextId next)
             eval next env' k' mkaddr newctx
         FScrut parent branches -> do
@@ -412,7 +425,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
             if nameStem (getName opConName) `startsWith` "clause-tail" then do
               let k' = ImplicitAddr mkCtx (contextId bod)
-              extendKStore k' (KNext (FResume eff kaddr opEnv h (contextId bod)) mkCtx opEnv mkKNext)
+              extendKStore k' (KNext (FResume eff kaddr opEnv (BEnv $ S.fromList params) h (contextId bod)) mkCtx opEnv mkKNext)
               eval bod opEnv k' mknext mkCtx
             else if nameStem (getName opConName) `startsWith` "clause-never" then do 
               eval bod opEnv mkKNext mknext mkCtx
@@ -484,7 +497,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | isNamePerform
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
   doUnwind label opN u knext mkaddr (drop 2 arguments) ctx
 doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameLocalGet = do
-  trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
+  -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
     let [varAddr@(BindingAddr ctx varName), _] = arguments
     unwindLookup varName knext mkaddr u
@@ -493,7 +506,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameLoca
 doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameLocalSet = do
   let [_, val] = args
   let [varAddr@(BindingAddr ctx varName), _] = arguments
-  trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
+  -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
     unwindSet varName val knext mkaddr addr u
   else do
@@ -508,14 +521,14 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameHand
   m <- mLimit
   fvss <- fvsVal hnd
   let henv = BEnv $ S.unions (map fst fvss)
-  trace ("OPS " ++ show label ++ " fvs: " ++ show henv ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
+  -- trace ("OPS " ++ show label ++ " fvs: " ++ show henv ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
   mapM_ (\(fvs, oldCtx) ->
     rebindAll fvs oldCtx ctx
     ) fvss
-  let kmkaddr = ImplicitAddr ctx (contextId u)
+  bod <- focusBody body
+  let kmkaddr = ImplicitAddr ctx (contextId bod)
   extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) ctx (BEnv $ fvs ret) EndKAddr)
   extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret) henv) ctx)
-  bod <- focusBody body
   let benv = BEnv $ fvs body
   rebindAll (fvs ret) retenv ctx
   --trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
@@ -524,7 +537,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameHand
 
   eval bod benv kmkaddr kmkaddr newctx
 doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameLocalVar = do
-  trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
+  -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
     case args !! 1 of
       AChangeClos e _ -> do

@@ -38,7 +38,7 @@ import Control.Monad.Reader (lift, ReaderT (runReaderT), ask, local)
 import Control.Monad.State (StateT (..), MonadState (..), liftIO, get, put)
 import Control.Monad.Identity (IdentityT, Identity (..))
 import Data.List (intercalate)
-import Control.Monad (foldM, ap)
+import Control.Monad (foldM, ap, when)
 import qualified Control.Monad.Fail as Fail
 import Control.Monad.Trans
 import Control.Monad.Trans.Cont (ContT (..))
@@ -219,7 +219,7 @@ localCtxT :: Maybe i -> Integer -> FixT e s i l d a -> FixT e s i l d a
 localCtxT i id = local (\(e,_,_) -> (e,i,id))
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
-memo :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d d -> FixT e s i l d d
+memo :: (Ord (l d), Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d d -> FixT e s i l d d
 memo key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
@@ -246,7 +246,7 @@ memo key f = do
       )
 
 
-memoFull :: (Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d (l d) -> FixT e s i l d (l d)
+memoFull :: (Ord (l d), Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d (l d) -> FixT e s i l d (l d)
 memoFull key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
@@ -281,7 +281,7 @@ each xs =
     mapM_ (\comp -> runContT comp (\result -> c result)) xs
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
-push :: (Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
+push :: (Ord (l d), Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state, newId, invalid) <- get
@@ -294,8 +294,9 @@ push key value = do
   else do
     -- Otherwise, insert the value into the cache and call all continuations in the cache
     -- that depend on changes to this key
-    -- trace ("New result " ++ show value ++ " is not already in " ++ show values) $ return ()
     let (value', added) = value `insert` values
+    -- when (values /= bottom) $ 
+    --   trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
     if keyId == newId then
       put (M.insert key (added, keyId, conts, fconts) cache, state, newId + 1, invalid)
     else
