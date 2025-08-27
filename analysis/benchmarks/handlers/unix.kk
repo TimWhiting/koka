@@ -26,31 +26,31 @@ val stdout = 0
 fun echo( s : string ) : bio ()
   write(stdout,s)
 
-fun bio( action : () -> <bio|e> a) : e (a,string)
+fun bio( action1 : () -> <bio|e> a) : e (a,string)
   var buf := ""
   with fun write(fd,s) buf := buf ++ s
-  (action(),buf)
+  (action1(),buf)
 
 // we can also write the previous `bio` using a `with return`
-fun bio2( action : () -> <bio|e> a) : e (a,string)
+fun bio2( action2 : () -> <bio|e> a) : e (a,string)
   var buf := ""
   with return(x) (x,buf)
   with fun write(fd,s) buf := buf ++ s
-  action()
+  action2()
 
-pub fun analyze-example1()
-  with bio
-  echo("hi ")
-  echo("unix world")
-pub fun result-example1()
-  ((), "hi unix world")
+// pub fun analyze-example1()
+//   with bio
+//   echo("hi ")
+//   echo("unix world")
+// pub fun result-example1()
+//   ((), "hi unix world")
 
-pub fun analyze-example1_2()
-  with bio2
-  echo("hi ")
-  echo("unix world")
-pub fun result-example1_2()
-  ((), "hi unix world")
+// pub fun analyze-example1_2()
+//   with bio2
+//   echo("hi ")
+//   echo("unix world")
+// pub fun result-example1_2()
+//   ((), "hi unix world")
 // -----------------------------------------
 // Exit
 // Show non-linear control by exiting a computation. (exception monad)
@@ -58,19 +58,19 @@ pub fun result-example1_2()
 effect exit
   ctl exit( exitcode : int ) : a
 
-fun status( action : () -> <exit|e> a ) : e int
+fun status( action3 : () -> <exit|e> a ) : e int
   with final ctl exit(code) code                    // use `final` since we never resume
-  action()
+  action3()
   0
 
-pub fun analyze-example2() : (int,string)
-  with bio
-  with status
-  echo("hi ")
-  exit(1)
-  echo("unix world")
-pub fun result-example2() : (int,string)
-  (1, "hi ")
+// pub fun analyze-example2() : (int,string)
+//   with bio
+//   with status
+//   echo("hi ")
+//   exit(1)
+//   echo("unix world")
+// pub fun result-example2() : (int,string)
+//   (1, "hi ")
 
 // -----------------------------------------
 // User environment
@@ -96,14 +96,14 @@ fun env( user : user, action : () -> <whoami|e> a ) : e a
   with fun whoami() show(user)
   action()
 
-pub fun analyze-example3()
-  with bio
-  with status
-  with env(Alice)
-  echo("hi ")
-  echo(whoami())
-fun result-example3() : (int,string)
-  (0, "hi alice")
+// pub fun analyze-example3()
+//   with bio
+//   with status
+//   with env(Alice)
+//   echo("hi ")
+//   echo(whoami())
+// fun result-example3() : (int,string)
+//   (0, "hi alice")
 
 
 fun intstr/show( (i,s) : (int,string) ) : string
@@ -117,36 +117,36 @@ fun intstr/show( (i,s) : (int,string) ) : string
 effect su
   ctl su( u : user ) : ()
 
-fun session-manager1( initial-user : user, action : () -> <su,whoami|e> a ) : e a
+fun session-manager1( initial-user : user, action4 : () -> <su,whoami|e> a ) : e a
   with env(initial-user)
   with ctl su( u : user )
          mask<whoami>
            with env(u)
            resume(())
-  action()
+  action4()
 
-fun session-manager2( initial-user : user, action : () -> <su,whoami|e> a ) : e a
+fun session-manager2( initial-user : user, action5 : () -> <su,whoami|e> a ) : e a
   with fun whoami() show(initial-user)
   with ctl su( u : user )
          with override fun whoami() show(u)
          resume(())
-  action()
+  action5()
 
-fun session-manager3( initial-user : user, action : () -> <su,whoami|e> a ) : e a
+fun session-manager3( initial-user : user, action6 : () -> <su,whoami|e> a ) : e a
   var user := initial-user
   with fun whoami() show(user)
   with fun su(u) user := u
-  action()
+  action6()
 
 
 pub fun analyze-example4()
   with bio
-  with status
+  // with status
   with session-manager3(Root)
-  echo("hi ")
-  echo(whoami())
+  // echo("hi ")
+  // echo(whoami())
   su(Alice)
-  echo(", and hi ")
+  // echo(", and hi ")
   echo(whoami())
 fun result-example4() : (int,string)
   (0, "hi root, and hi alice")
