@@ -130,6 +130,7 @@ getAbResult = do
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of
           Just (SValue res) ->
+            -- trace ("Result value includes " ++ show res) $
             let !env = foldl (\acc addr ->
                             if S.member addr addrsx then
                               acc
@@ -138,6 +139,7 @@ getAbResult = do
                               in M.insert addr v (M.union acc map')
                          ) M.empty (addrs res)
             in (res, env)
+          -- Nothing -> trace ("Didn't find value when looking for " ++ show addr) (emptyAbValue, M.empty)
   return $ getValue EndVAddr S.empty
 
 evalMain :: BuildContext

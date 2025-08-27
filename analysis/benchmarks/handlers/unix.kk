@@ -139,7 +139,7 @@ fun session-manager3( initial-user : user, action : () -> <su,whoami|e> a ) : e 
   action()
 
 
-pub fun example4()
+pub fun analyze-example4()
   with bio
   with status
   with session-manager3(Root)
@@ -148,7 +148,8 @@ pub fun example4()
   su(Alice)
   echo(", and hi ")
   echo(whoami())
-
+fun result-example4() : (int,string)
+  (0, "hi root, and hi alice")
 
 // -----------------------------------------
 // Multitasking
