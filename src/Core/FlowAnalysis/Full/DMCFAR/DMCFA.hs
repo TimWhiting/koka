@@ -123,7 +123,7 @@ doEval expr env kaddr mkaddr ctx =
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       process x = if not open then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " " ++ show (contextId expr) ++ ":" ++ show ctx)
                     x
                   else x
   in
@@ -288,14 +288,14 @@ doApply kaddr mkaddr addr dynctx = do
                     rebindAll (fvs cexpr) cctx newctx
                     extendStore (BindingAddr newctx arg) v
                     eval body env' knext mknext newctx
-        FResume label kont opEnv rVars hnd u -> do
+        FResume label kont hnd u -> do
           m <- mLimit
           d <- dLimit
           let newCtx = addCall m newctx u
               newDynCtx = addDelim d newCtx u
               mk' = ImplicitAddr newCtx u
           -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
-          rebindAll (S.difference (bvars opEnv) (bvars rVars)) ctx newCtx
+          rebindAll (hvars hnd) ctx newCtx
           extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
           apply kont mk' addr newDynCtx
         FApp n args res u -> do
@@ -395,6 +395,7 @@ doApply kaddr mkaddr addr dynctx = do
           -- trace ("Link restore " ++ show kaddr ++ " " ++ show ctx) $ return ()
           let ia = ImplicitAddr newctx perform
           d <- dLimit
+          rebindAll (hvars h) ctx newctx 
           extendMKStore ia (MKHandle eff knext mkaddr h newctx)
           let newDCtx = take d ((hctx, static ctx): dynctx)
           apply k' ia addr newDCtx
@@ -431,7 +432,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
             if nameStem (getName opConName) `startsWith` "clause-tail" then do
               let k' = ImplicitAddr mkCtx (contextId bod)
-              extendKStore k' (KNext (FResume eff kaddr opEnv (BEnv $ S.fromList params) h (contextId bod)) mkCtx opEnv mkKNext)
+              extendKStore k' (KNext (FResume eff kaddr h (contextId bod)) mkCtx opEnv mkKNext)
               eval bod opEnv k' mknext mkCtx
             else if nameStem (getName opConName) `startsWith` "clause-never" then do 
               eval bod opEnv mkKNext mknext mkCtx
@@ -576,8 +577,10 @@ type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
 
 rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr = do
-  v <- store oldAddr
-  extendStore newAddr v
+  if oldAddr == newAddr then return ()
+  else do 
+    v <- store oldAddr
+    extendStore newAddr v
 
 patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 patMatch (PatVar name rest) addr = do
