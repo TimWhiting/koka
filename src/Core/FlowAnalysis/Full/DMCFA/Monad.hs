@@ -46,8 +46,6 @@ startCombinedCtx = do
   d <- dLimit
   return $ CombinedCtx (take m startStaticCtx) (take d startDynCtx)
 
-delimCtx m ctx = take m [CallDelim] -- take m (static ctx) -- take m [CallDelim]
-
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
   c <- startCombinedCtx

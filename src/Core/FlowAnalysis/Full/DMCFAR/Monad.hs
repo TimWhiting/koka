@@ -50,7 +50,6 @@ inject ctx = do
   c <- startCombinedCtx
   return $ Step (CEval ctx (BEnv S.empty) EndKAddr EndMKAddr c)
 
-delimCtx m ctx = take m [CallDelim] --take m (static ctx) -- take m [CallDelim]
 
 data FixInput =
   Step Conf
