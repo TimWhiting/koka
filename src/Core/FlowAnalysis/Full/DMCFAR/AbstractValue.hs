@@ -13,7 +13,7 @@ import Type.Type
 import Data.Set hiding (take, foldl, map, map)
 import qualified Data.Set as S hiding (take)
 import Core.Core as C
-import Syntax.Syntax as S
+import Syntax.Syntax as S hiding (Handler)
 import Data.List (elemIndex, intercalate)
 import Compile.Module
 import Debug.Trace (trace)
@@ -67,7 +67,7 @@ addCall m (CombinedCtx static dyn) call = CombinedCtx (take m $ CallApp call : s
 addDelim :: Int -> CombinedCtx -> ExprContextId -> DynamicCtx
 addDelim d (CombinedCtx static dyn) delim = take d $ (delim, static) : dyn
 
-delimCtx m ctx = take m [CallDelim] -- take m (static ctx) -- take m [CallDelim]
+delimCtx m ctx = take m [CallDelim] -- take m ctx -- take m [CallDelim]
 
 newDelim d m (CombinedCtx static dyn) delim = CombinedCtx (delimCtx m static) $ take d $ (delim, static) : dyn
 
@@ -138,8 +138,6 @@ data Frame =
   | FResume {
       label :: Name,
       vaddr :: Addr,
-      venv :: BEnv,
-      opVars :: BEnv,
       rHnd :: Handler,
       rCtx :: ExprContextId
   }
@@ -185,10 +183,11 @@ data Kont =
 data BEnv = BEnv (S.Set TName) deriving (Eq, Ord, Show)
 
 bvars (BEnv v) = v
-
 data Handler =
   Handler { ops :: !Addr, ret :: !(Maybe ExprContext), henv:: !BEnv}
   deriving (Eq, Ord, Show)
+
+hvars (Handler _ _ v) = bvars v
 
 data MKont =
   MKEnd

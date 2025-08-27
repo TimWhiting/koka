@@ -423,7 +423,7 @@ unwindLookup varName knext mkaddr mkaddrX dynctx u = do
   case mk of 
     MKHandle nm k' mknext h venv ctx | getName varName == nm -> do 
       let Just varAddr = lookupEnv varName venv
-      apply knext mkaddr (BindingAddr ctx varName) dynctx
+      apply knext mkaddr varAddr dynctx
     MKHandle nm k' mknext h venv ctx -> do 
       unwind_lookup varName knext mkaddr mknext dynctx u
     _ -> doBottom
