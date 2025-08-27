@@ -203,6 +203,9 @@ data AbValue =
     alits:: !LiteralLattice
   } deriving (Eq, Ord)
 
+addrs :: AbValue -> [Addr]
+addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, args) -> map snd args) objs
+
 changes :: AbValue -> [AChange]
 changes (AbValue clos constrs prims objs konts lits) =
   closs ++ constrss ++ primss ++ objss ++ kontss ++ litss

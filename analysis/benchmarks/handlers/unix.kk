@@ -38,12 +38,12 @@ fun bio2( action : () -> <bio|e> a) : e (a,string)
   with fun write(fd,s) buf := buf ++ s
   action()
 
-// pub fun analyze-example1()
-//   with bio
-//   echo("hi ")
-//   echo("unix world")
-// pub fun result-example1()
-//   ((), "hi unix world")
+pub fun analyze-example1()
+  with bio
+  echo("hi ")
+  echo("unix world")
+pub fun result-example1()
+  ((), "hi unix world")
 
 // pub fun analyze-example1_2()
 //   with bio2
@@ -97,15 +97,15 @@ fun env( user : user, action : () -> <whoami|e> a ) : e a
   with fun whoami() show(user)
   action()
 
-pub fun analyze-example3()
-  with bio
-  with status
-  with env(Alice)
-  echo("hi ")
-  echo(whoami())
+// pub fun analyze-example3()
+//   with bio
+//   with status
+//   with env(Alice)
+//   echo("hi ")
+//   echo(whoami())
 
-fun result-example3() : (int,string)
-  (0, "hi alice")
+// fun result-example3() : (int,string)
+//   (0, "hi alice")
 
 
 fun intstr/show( (i,s) : (int,string) ) : string
