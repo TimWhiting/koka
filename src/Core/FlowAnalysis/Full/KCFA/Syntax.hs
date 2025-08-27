@@ -72,7 +72,7 @@ runQueryAtRange bc build mod m d doQuery =
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                 ress' <- getAbResult
-                                -- trace ("ress': " ++ show ress') $ return ()
+                                -- trace ("result': " ++ show ress') $ return ()
                                 return ress'
                 (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                 runFixCont $ do
@@ -80,9 +80,9 @@ runQueryAtRange bc build mod m d doQuery =
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
                                 ress' <- getAbResult
-                                -- trace ("ress': " ++ show ress') $ return ()
+                                -- trace ("expected': " ++ show ress') $ return ()
                                 return ress'
-                let !result = (if compareResult name analysisResult expectedResult then 1 else 0)
+                let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
                 total <- recur rest
                 return $ result + total
     tstart <- getCurrentTime
@@ -102,20 +102,42 @@ truncate' :: Double -> Int -> Double
 truncate' x n = fromIntegral (floor (x * t)) / t
     where t = 10^n
 
-compareResult :: [Char] -> AbValue -> AbValue -> Bool
-compareResult name analysisResult expectedResult = do
-  if alits analysisResult == alits expectedResult then
-    -- trace (name ++ " passed") 
+
+compareResult :: (AbValue, M.Map Addr AbValue) -> (AbValue, M.Map Addr AbValue) -> S.Set (AbValue, AbValue) -> Bool
+compareResult (result, rMap) (expected, eMap) checked = do
+  let objMatch :: (TName, [(Name, Addr)]) -> (TName, [(Name, Addr)]) -> Bool
+      objMatch (name, args) (name2, args2) =
+         let argsMatch = zipWith (\(n, a) (n2, a2) ->
+                  let arg1 = fromJust $ M.lookup a rMap
+                      arg2 = fromJust $ M.lookup a2 eMap in
+                  n == n2 && compareResult (arg1, rMap) (arg2, eMap) (S.insert (result, expected) checked)) args args2
+         in name == name2 && all id argsMatch
+  if S.member (result, expected) checked then 
     True
+  else if alits result == alits expected then
+    let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
+    in
+      -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
+      matches
   else
     -- trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) 
     False
-
-getAbResult :: PostFixAAMR x s e AbValue
+ 
+getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue)
 getAbResult = do
   cache <- getCache
-  case M.lookup (VStore EndVAddr) cache of
-    Just (SValue res) -> return res
+  let getValue addr addrsx =
+        case M.lookup (VStore addr) cache of
+          Just (SValue res) ->
+            let !env = foldl (\acc addr ->
+                            if S.member addr addrsx then
+                              acc
+                            else
+                              let (v, map') = getValue addr (S.insert addr addrsx)
+                              in M.insert addr v (M.union acc map')
+                         ) M.empty (addrs res)
+            in (res, env)
+  return $ getValue EndVAddr S.empty
 
 evalMainKCFA :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
