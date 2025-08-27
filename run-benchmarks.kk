@@ -63,6 +63,6 @@ fun format-results(results: list<(analysis, string, list<(int, int, int, int, fl
     r.map(tuple5/show).join("\n").println
 
 fun main()
-  run-benchmarks().format-results
-  // run-benchmarks(["handlers/unix"]).format-results 
+  // run-benchmarks().format-results
+  run-benchmarks(["handlers/unix"]).format-results 
   // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP]).format-results

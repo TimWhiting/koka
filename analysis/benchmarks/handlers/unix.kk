@@ -45,12 +45,12 @@ pub fun analyze-example1()
 pub fun result-example1()
   ((), "hi unix world")
 
-// pub fun analyze-example1_2()
-//   with bio2
-//   echo("hi ")
-//   echo("unix world")
-// pub fun result-example1_2()
-//   ((), "hi unix world")
+pub fun analyze-example1_2()
+  with bio2
+  echo("hi ")
+  echo("unix world")
+pub fun result-example1_2()
+  ((), "hi unix world")
 // -----------------------------------------
 // Exit
 // Show non-linear control by exiting a computation. (exception monad)
@@ -63,15 +63,14 @@ fun status( action : () -> <exit|e> a ) : e int
   action()
   0
 
-// pub fun analyze-example2() : (int,string)
-//   with bio
-//   with status
-//   echo("hi ")
-//   exit(1)
-//   echo("unix world")
-
-// pub fun result-example2() : (int,string)
-//   (1, "hi ")
+pub fun analyze-example2() : (int,string)
+  with bio
+  with status
+  echo("hi ")
+  exit(1)
+  echo("unix world")
+pub fun result-example2() : (int,string)
+  (1, "hi ")
 
 // -----------------------------------------
 // User environment
@@ -97,15 +96,14 @@ fun env( user : user, action : () -> <whoami|e> a ) : e a
   with fun whoami() show(user)
   action()
 
-// pub fun analyze-example3()
-//   with bio
-//   with status
-//   with env(Alice)
-//   echo("hi ")
-//   echo(whoami())
-
-// fun result-example3() : (int,string)
-//   (0, "hi alice")
+pub fun analyze-example3()
+  with bio
+  with status
+  with env(Alice)
+  echo("hi ")
+  echo(whoami())
+fun result-example3() : (int,string)
+  (0, "hi alice")
 
 
 fun intstr/show( (i,s) : (int,string) ) : string

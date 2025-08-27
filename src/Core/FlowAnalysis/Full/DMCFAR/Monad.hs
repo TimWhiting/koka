@@ -29,7 +29,7 @@ data Conf =
   CEval ExprContext BEnv Addr Addr CombinedCtx
   | CApply Addr Addr Addr DynamicCtx
   | CUnwind Name Name ExprContext Addr Addr [Addr] CombinedCtx
-  | CUnwindLookup TName Addr Addr ExprContext
+  | CUnwindLookup TName Addr Addr Addr DynamicCtx ExprContext
   | CUnwindSet TName Addr Addr Addr Addr ExprContext
   | CDone
   deriving (Eq, Ord, Show)
