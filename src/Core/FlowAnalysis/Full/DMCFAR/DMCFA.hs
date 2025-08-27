@@ -291,8 +291,8 @@ doApply kaddr mkaddr addr dynctx = do
         FResume label kont opEnv rVars hnd u -> do
           m <- mLimit
           d <- dLimit
-          let newCtx = CombinedCtx (take m $ CallApp u : static newctx) (dynamic newctx)
-              newDynCtx = take d $ (u, static newCtx):dynamic newctx
+          let newCtx = addCall m newctx u
+              newDynCtx = addDelim d newCtx u
               mk' = ImplicitAddr newCtx u
           -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
           rebindAll (S.difference (bvars opEnv) (bvars rVars)) ctx newCtx
@@ -312,7 +312,7 @@ doApply kaddr mkaddr addr dynctx = do
                     let args = lamNames cexpr
                     m <- mLimit
                     let env' = BEnv $ fvs body
-                    let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
+                    let newCtx = addCall m newctx (contextId u)
                     -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show env' ++ ":" ++ show newCtx) $ return ()
                     zipWithM_ (\a p -> do
                       val <- store p
@@ -345,8 +345,8 @@ doApply kaddr mkaddr addr dynctx = do
                   AChangeKont label kx hctx hnd@(Handler _ _ henv) -> do
                     m <- mLimit
                     d <- dLimit
-                    let newCtx = CombinedCtx (take m $ CallApp (contextId u) : static newctx) (dynamic newctx)
-                        newDynCtx = take d $ (contextId u, static newCtx):dynamic newctx
+                    let newCtx = addCall m newctx (contextId u)
+                        newDynCtx = addDelim d newCtx (contextId u)
                         mk' = ImplicitAddr newCtx (contextId u)
                     -- trace ("Applying continuation " ++ show (contextId u) ++ " rebinding " ++ show henv ) $ return () -- ++ "for\n" ++ 
                     --        show res ++ "\n" ++ show kaddr ++ "\n" ++ show mkaddr ++ "\n" ++ show addr ++ "\n" ++ show dynctx) $ return ()
@@ -451,7 +451,8 @@ unwindLookup varName knext mkaddr u = do
   mk <- mkStore mkaddr
   case mk of
     MKHandle nm k' mknext h ctx | getName varName == nm -> do
-      apply knext mkaddr (BindingAddr ctx varName) (dynamic ctx)
+      d <- dLimit
+      apply knext mkaddr (BindingAddr ctx varName) (addDelim d ctx (contextId u)) -- TODO Store and retrieve
     MKHandle nm k' mknext h@(Handler _ _ henv) ctx -> do
       let kx = ImplicitLAddr ctx (getName varName) (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h) ctx henv k')
@@ -465,12 +466,12 @@ unwindSet varName val knext mkaddr addr u = do
     MKHandle nm k' mknext h ctx | getName varName == nm -> do
       d <- dLimit
       m <- mLimit
-      let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
+      let newctx = addCall m ctx (contextId u)
       rebind val (BindingAddr newctx varName) 
       let mk' = ImplicitAddr newctx (contextId u)
       extendMKStore mk' (MKHandle nm k' mknext h newctx)
       extendStore addr changeUnit
-      apply knext mk' addr (dynamic newctx)
+      apply knext mk' addr (addDelim d newctx (contextId u))
     MKHandle nm k' mknext h@(Handler _ _ henv) ctx -> do
       let kx = ImplicitLAddr ctx (getName varName) (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h) ctx henv k')
@@ -540,7 +541,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameHand
   let benv = BEnv $ fvs body
   rebindAll (fvs ret) retenv ctx
   --trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
-  let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
+  let newctx = newDelim d m ctx (contextId u)
   rebindAll (bvars benv) bodyctx newctx
 
   eval bod benv kmkaddr kmkaddr newctx
@@ -556,7 +557,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args ctx u | n == nameLoca
         d <- dLimit
         m <- mLimit
         let env = BEnv (fvs bod)
-        let newctx = CombinedCtx (delimCtx m ctx) (take d $ (contextId u, static ctx):dynamic ctx)
+        let newctx = newDelim d m ctx (contextId u)
         let mk' = ImplicitAddr newctx (contextId u)
         rebindAll (fvs bod) ctx newctx
         extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing env) newctx)

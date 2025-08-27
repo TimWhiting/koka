@@ -7,11 +7,11 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 module Core.FlowAnalysis.Full.DMCFA.AbstractValue where
-import Data.Map.Strict as M hiding (foldl, map)
+import Data.Map.Strict as M hiding (take, foldl, map)
 import Common.Name
 import Type.Type
-import Data.Set hiding (foldl, map, map)
-import qualified Data.Set as S
+import Data.Set hiding (take, foldl, map, map)
+import qualified Data.Set as S hiding (take)
 import Core.Core as C
 import Syntax.Syntax as S
 import Data.List (elemIndex, intercalate)
@@ -63,6 +63,16 @@ instance Show CombinedCtx where
 ctxHnd :: CombinedCtx -> ExprContextId
 ctxHnd (CombinedCtx _ ((id, _): rst)) = id
 ctxHnd (CombinedCtx _ []) = ExprContextId (-5000) (newName "hnd")
+
+addCall :: Int -> CombinedCtx -> ExprContextId -> CombinedCtx
+addCall m (CombinedCtx static dyn) call = CombinedCtx (take m $ CallApp call : static) dyn
+
+addDelim :: Int -> CombinedCtx -> ExprContextId -> DynamicCtx
+addDelim d (CombinedCtx static dyn) delim = take d $ (delim, static) : dyn
+
+delimCtx m ctx = take m [CallDelim] -- take m (static ctx) -- take m [CallDelim]
+
+newDelim d m (CombinedCtx static dyn) delim = CombinedCtx (delimCtx m static) $ take d $ (delim, static) : dyn
 
 type VEnv = M.Map TName CombinedCtx
 
@@ -159,7 +169,7 @@ nextLetFrame
           newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
- 
+
 
 data Kont =
   KEnd
