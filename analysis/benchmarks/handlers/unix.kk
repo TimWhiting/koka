@@ -38,19 +38,19 @@ fun bio2( action : () -> <bio|e> a) : e (a,string)
   with fun write(fd,s) buf := buf ++ s
   action()
 
-pub fun analyze-example1()
-  with bio
-  echo("hi ")
-  echo("unix world")
-pub fun result-example1()
-  ((), "hi unix world")
+// pub fun analyze-example1()
+//   with bio
+//   echo("hi ")
+//   echo("unix world")
+// pub fun result-example1()
+//   ((), "hi unix world")
 
-pub fun analyze-example1_2()
-  with bio2
-  echo("hi ")
-  echo("unix world")
-pub fun result-example1_2()
-  ((), "hi unix world")
+// pub fun analyze-example1_2()
+//   with bio2
+//   echo("hi ")
+//   echo("unix world")
+// pub fun result-example1_2()
+//   ((), "hi unix world")
 // -----------------------------------------
 // Exit
 // Show non-linear control by exiting a computation. (exception monad)
@@ -63,15 +63,15 @@ fun status( action : () -> <exit|e> a ) : e int
   action()
   0
 
-pub fun analyze-example2() : (int,string)
-  with bio
-  with status
-  echo("hi ")
-  exit(1)
-  echo("unix world")
+// pub fun analyze-example2() : (int,string)
+//   with bio
+//   with status
+//   echo("hi ")
+//   exit(1)
+//   echo("unix world")
 
-pub fun result-example2() : (int,string)
-  (1, "hi ")
+// pub fun result-example2() : (int,string)
+//   (1, "hi ")
 
 // -----------------------------------------
 // User environment
