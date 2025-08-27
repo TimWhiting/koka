@@ -62,8 +62,8 @@ doStep i =
         drive $ doApply kaddr mkaddr addr ctx
       Step (CUnwind name opName perform kaddr mkaddr addrs ctx) -> do
         drive $ doUnwind name opName perform kaddr mkaddr addrs ctx
-      Step (CUnwindLookup varName knext mkaddr u) -> do
-        drive $ unwindLookup varName knext mkaddr u
+      Step (CUnwindLookup varName knext mkaddr mkaddrX dynctx u) -> do
+        drive $ unwindLookup varName knext mkaddr mkaddrX dynctx u
       Step (CUnwindSet varName val knext mkaddr addr u) -> do
         drive $ unwindSet varName val knext mkaddr addr u
       Step CDone -> return $ N CDone
@@ -93,7 +93,7 @@ mkStore addr = do
 eval expr venv kaddr mkaddr ctx = return $ N (CEval expr venv kaddr mkaddr ctx)
 apply kaddr mkaddr addr ctx = return $ N (CApply kaddr mkaddr addr ctx)
 unwind name opName perform kaddr mkaddr addrs ctx = return $ N (CUnwind name opName perform kaddr mkaddr addrs ctx)
-unwind_lookup varName knext mkaddr u = return $ N (CUnwindLookup varName knext mkaddr u)
+unwind_lookup varName knext mkaddr mkaddrX dynctx u = return $ N (CUnwindLookup varName knext mkaddr mkaddrX dynctx u)
 unwind_set varName val knext mkaddr addr u = return $ N (CUnwindSet varName val knext mkaddr addr u)
 
 allocConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e Addr
@@ -417,18 +417,15 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         unwind name opName performExpr k' mknext args mkCtx
 
 
-unwindLookup :: HasCallStack => TName -> Addr -> Addr -> ExprContext -> FixAAMR r s e FixChange
-unwindLookup varName knext mkaddr u = do
-  mk <- mkStore mkaddr
+unwindLookup :: HasCallStack => TName -> Addr -> Addr -> Addr -> DynamicCtx -> ExprContext -> FixAAMR r s e FixChange
+unwindLookup varName knext mkaddr mkaddrX dynctx u = do
+  mk <- mkStore mkaddrX
   case mk of 
     MKHandle nm k' mknext h venv ctx | getName varName == nm -> do 
       let Just varAddr = lookupEnv varName venv
-      d <- dLimit
-      apply knext mkaddr varAddr (addDelim d ctx (contextId u))
+      apply knext mkaddr (BindingAddr ctx varName) dynctx
     MKHandle nm k' mknext h venv ctx -> do 
-      let kx = ImplicitLAddr ctx venv (contextId u)
-      extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h venv) (static ctx) k')
-      unwind_lookup varName kx mknext u
+      unwind_lookup varName knext mkaddr mknext dynctx u
     _ -> doBottom
 
 
@@ -476,7 +473,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
     let [varAddr@(BindingAddr ctx varName), _] = arguments
-    unwindLookup varName knext mkaddr u
+    unwindLookup varName knext mkaddr mkaddr (dynamic ctx) u
   else do 
     apply knext mkaddr (head arguments) (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalSet = do
