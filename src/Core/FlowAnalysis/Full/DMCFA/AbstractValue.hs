@@ -70,7 +70,7 @@ addCall m (CombinedCtx static dyn) call = CombinedCtx (take m $ CallApp call : s
 addDelim :: Int -> CombinedCtx -> ExprContextId -> DynamicCtx
 addDelim d (CombinedCtx static dyn) delim = take d $ (delim, static) : dyn
 
-delimCtx m ctx = take m [CallDelim] -- take m (static ctx) -- take m [CallDelim]
+delimCtx m ctx = take m [CallDelim] -- take m ctx -- 
 
 newDelim d m (CombinedCtx static dyn) delim = CombinedCtx (delimCtx m static) $ take d $ (delim, static) : dyn
 
