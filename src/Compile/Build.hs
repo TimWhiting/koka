@@ -367,37 +367,38 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
                     let bottomM = 1
+                    let bottomD = if rebinding flags then 1 else 0
                     -- liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
                     let doSweep = sweep flags
                     let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
                         sweepDM mT d m i = do
                           when doSweep $ do
-                            if d == 0 && m == bottomM then return ()
-                            else if d == 0 then do
+                            if d == bottomD && m == bottomM then return ()
+                            else if d == bottomD then do
                               sweepDM mT d (m - 1) i
-                            else if m == bottomM then do 
+                            else if m == bottomM then do
                               sweepDM mT (d - 1) mT i
                             else do
-                              sweepDM mT d (m - 1) i 
+                              sweepDM mT d (m - 1) i
                           -- trace ("Evaluating " ++ show m ++ show d) $ return ()
                           i flags{mSensitivity = m, dSensitivity = d}
-                          
 
-                    if rebinding flags then do 
+
+                    if rebinding flags then do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMainR bc (\bc mn -> 
+                        liftIO $ evalMainR bc (\bc mn ->
                             runBuild term flags $ buildcTypeCheck [mn] bc
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
-                    else if kcfa flags then do 
+                    else if kcfa flags then do
                       sweepDM (mSensitivity flags) 0 (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMainKCFA bc (\bc mn -> 
+                        liftIO $ evalMainKCFA bc (\bc mn ->
                             runBuild term flags $ buildcTypeCheck [mn] bc
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
                     else do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMain bc (\bc mn -> 
+                        liftIO $ evalMain bc (\bc mn ->
                             runBuild term flags $ buildcTypeCheck [mn] bc
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
