@@ -170,8 +170,27 @@ localFv expr
 fvs :: HasCallStack => ExprContext -> S.Set TName
 fvs ctx =
   case maybeExprOfCtx ctx of
-    Just expr -> localFv expr
+    Just expr -> S.intersection (bvs ctx) (fv expr)
 
+bvs :: HasCallStack => ExprContext -> S.Set TName
+bvs ctx =
+  let andParent bv = S.union bv $ maybe S.empty bvs (contextOf ctx)
+  in case ctx of 
+    ModuleC{} -> S.empty
+    DefCRec{} -> S.empty
+    DefCNonRec{} -> S.empty
+    DefCGroup _ c _ dg -> S.empty
+    LamCBody _ _ names _ -> andParent $ S.fromList names
+    LetCBody _ _ names _ -> andParent $ S.fromList names
+    LetCDefGroup _ _ names _ _ -> andParent $ S.fromList names
+    LetCDefNonRec _ _ nm -> andParent $ S.singleton nm
+    LetCDefRec _ _ _ names -> andParent $ S.fromList names
+    AppCLambda{} -> andParent S.empty
+    AppCParam{} -> andParent S.empty
+    CaseCScrutinee{} -> andParent S.empty
+    CaseCBranch _ _ vars _ _ -> andParent $ S.fromList vars
+    ExprCBasic{} -> andParent S.empty 
+    ExprPrim{} -> S.empty
 enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
   case ctx of
