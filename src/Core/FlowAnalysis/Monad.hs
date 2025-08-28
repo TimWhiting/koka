@@ -272,26 +272,26 @@ childrenOfExpr ctx expr =
       rest <- zipWithM (\i x -> addContextId (\newId -> AppCParam newId ctx i x)) [0..] vs
       return $! x : rest
     Let defs result -> do
-      result <- makeGroups ctx (reverse defs)
+      result <- makeGroups ctx (length defs) (reverse defs)
       -- trace ("Let " ++ show (map contextId defs)) $ return ()
       -- trace ("Let " ++ show (contextId result) ++ show result) $ return ()
       return result
       where
-        makeGroups :: ExprContext -> [DefGroup] -> FixAR x s e i o c [ExprContext]
-        makeGroups parentCtx [] = do
+        makeGroups :: ExprContext -> Int -> [DefGroup] -> FixAR x s e i o c [ExprContext]
+        makeGroups parentCtx i [] = do
           ctx <- addContextId (\newId -> LetCBody newId parentCtx (map defTName (concatMap defsOf defs)) result)
           return [ctx]
-        makeGroups parentCtx (dg@(C.DefNonRec d):dgs) = do -- NonRec doesn't mean that the name isn't bound in the body, just that it's not mutually recursive with another definition.
-          grp <- addContextId (\newId -> LetCDefGroup newId parentCtx [defTName d] dg)
+        makeGroups parentCtx i (dg@(C.DefNonRec d):dgs) = do -- NonRec doesn't mean that the name isn't bound in the body, just that it's not mutually recursive with another definition.
+          grp <- addContextId (\newId -> LetCDefGroup newId parentCtx [defTName d] i dg)
           bind <- addContextId (\newId -> LetCDefNonRec newId grp (defTName d))
-          body <- makeGroups grp dgs
+          body <- makeGroups grp (i - 1) dgs
           addChildrenContexts (contextId grp) (body ++ [bind]) -- Bindings come second
           return (body ++ [bind])
-        makeGroups parentCtx (dg@(C.DefRec ds):dgs) = do
+        makeGroups parentCtx i (dg@(C.DefRec ds):dgs) = do
           let tnames = map defTName ds
-          grp <- addContextId (\newId -> LetCDefGroup newId parentCtx tnames dg)
+          grp <- addContextId (\newId -> LetCDefGroup newId parentCtx tnames i dg)
           bindings <- mapM (\(i, _) -> addContextId (\newId -> LetCDefRec newId grp i tnames)) (zip [0..] ds)
-          body <- makeGroups grp dgs
+          body <- makeGroups grp (i - 1) dgs
           addChildrenContexts (contextId grp) (body ++ bindings)
           return (body ++ bindings)
     Case exprs branches -> do

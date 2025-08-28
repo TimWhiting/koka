@@ -151,10 +151,7 @@ data Frame =
   | FMask
   | FCall
   deriving (Eq, Ord, Show)
-letBindingName :: Int -> Int -> ExprContext -> TName
-letBindingName groupIdx bindingIdx parent =
-  let bind = letDefBinding groupIdx bindingIdx parent in
-  defTName bind
+
 
 nextLetFrame :: Frame -> CombinedCtx -> Frame
 nextLetFrame

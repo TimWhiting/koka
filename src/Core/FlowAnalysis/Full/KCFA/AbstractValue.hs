@@ -114,10 +114,7 @@ data Frame =
   | FMask
   | FCall
   deriving (Eq, Ord, Show)
-letBindingName :: Int -> Int -> ExprContext -> TName
-letBindingName groupIdx bindingIdx parent =
-  let bind = letDefBinding groupIdx bindingIdx parent in
-  defTName bind
+
 
 nextLetFrame :: Frame -> StaticCtx -> Frame
 nextLetFrame
@@ -126,7 +123,7 @@ nextLetFrame
   | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent env
   | groupIdx < numGroups - 1 =
       let C.Let dgs _ = exprOfCtx parent
-          gidx = groupIdx + 1
+          gidx = groupIdx +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             1
           idx = 0
           defs = defsOf (dgs !! gidx)
           newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
