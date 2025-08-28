@@ -200,7 +200,7 @@ findUsage tname@TName{getName = name} ctx env = do
           doBottom
       LetCDefNonRec _ _ tn -> childrenNoShadow [tn]
       LetCDefRec _ _ _ tn -> childrenNoShadow tn
-      LetCDefGroup _ _ tn _ -> childrenNoShadow tn
+      LetCDefGroup _ _ tn _ _ -> childrenNoShadow tn
       LetCBody _ _ tn _ -> childrenNoShadow tn
       LamCBody _ _ tn _ -> 
         -- No usages if the name is shadowed
