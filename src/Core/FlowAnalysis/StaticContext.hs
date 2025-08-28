@@ -24,6 +24,7 @@ module Core.FlowAnalysis.StaticContext(
                           showSimpleContext,isLetDefBindingFinished,
                           letDefBinding,letDefBindingIndex,letDefsOf,
                           isMain,
+                          letBindingName, nextFvs,
                           fvs, dfsTNames, dgsTNames, dgTNames, localFv
                         ) where
 import Core.Core as C
@@ -34,7 +35,7 @@ import Type.Pretty
 import Syntax.Syntax as S
 import qualified Data.Set as S
 import Common.Range
-import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList)
+import Data.Maybe (mapMaybe, catMaybes, fromMaybe, maybeToList, fromJust)
 import Core.CoreVar (bv, fv)
 import Core.Pretty
 import Debug.Trace (trace)
@@ -62,7 +63,7 @@ data ExprContext =
   -- Child: Bound ExprC
   | LetCDefNonRec !ExprContextId !ExprContext TName -- In a let definition context working on a particular def with tnames defined in the group
   -- Children: (LetCBody | LetCDefGroup) + ([LetCDefRec] | LetCDefNonRec) 
-  | LetCDefGroup !ExprContextId !ExprContext ![TName] !C.DefGroup -- In a let definition context working on a particular defgroup 
+  | LetCDefGroup !ExprContextId !ExprContext ![TName] Int !C.DefGroup -- In a let definition context working on a particular defgroup 
   -- Child: ExprC
   | LetCBody !ExprContextId !ExprContext ![TName] !C.Expr -- In a let body expression
   -- Child: ExprC
@@ -82,6 +83,47 @@ data ExprContext =
 
 isMain :: ExprContext -> Bool
 isMain ctx = nameStem (C.defName (defOfCtx ctx)) == "main"
+
+letBindingName :: Int -> Int -> ExprContext -> TName
+letBindingName groupIdx bindingIdx parent =
+  let bind = letDefBinding groupIdx bindingIdx parent in
+  defTName bind
+
+nextFvs :: ExprContext -> S.Set TName
+nextFvs expr =
+  let andParent fvs = S.union fvs $ maybe S.empty nextFvs (contextOf expr)
+      parentExpr = exprOfCtx <$> contextOf expr
+  in case expr of
+    ExprPrim _ e -> andParent (fv e)
+    ExprCBasic _ _ e -> andParent (fv e)
+    CaseCBranch{} -> andParent S.empty
+    CaseCScrutinee{} -> andParent S.empty
+    AppCParam _ _ param app -> andParent $ S.unions (map fv $ drop param $ args (fromJust parentExpr))
+    AppCLambda _ _ f -> andParent $ S.unions (map fv $ args (fromJust parentExpr))
+    LetCBody{} -> andParent S.empty
+    LetCDefGroup _ _ _ i _ -> andParent $ S.unions (map dgFvs $ drop i $ letDgs (fromJust parentExpr))
+    LetCDefNonRec{} -> andParent S.empty
+    LetCDefRec{} -> andParent S.empty
+    _ -> S.empty
+
+args expr =
+  case expr of
+    C.App _ ags _ -> ags
+letDgs expr = 
+  case expr of
+    C.Let defs _ -> defs
+dgFvs (C.DefNonRec def) = fv def
+dgFvs (C.DefRec dfs) = S.unions (map fv dfs)
+
+letFvs :: Int -> Int -> ExprContext -> S.Set TName
+letFvs groupIdx bindingIdx parent =
+  case exprOfCtx parent of
+    C.Let defs body ->
+      let (df:dfs) = drop groupIdx defs
+          tnames = S.fromList (map defTName (take bindingIdx (defsOf df)))
+          restBindings = S.unions $ S.fromList (map defTName (drop bindingIdx (defsOf df))) : map (\dg -> S.fromList $ map defTName $ defsOf dg) dfs
+      in S.difference (S.unions $ tnames : fv body : map (fv . defExpr) (drop bindingIdx (defsOf df) ++ concatMap defsOf dfs))
+            restBindings
 
 lamNames :: ExprContext -> [TName]
 lamNames ctx =
@@ -140,7 +182,7 @@ ctxDefGroup :: ExprContext -> C.DefGroup
 ctxDefGroup ctx =
   case ctx of
     DefCGroup _ _ _ dg -> dg
-    LetCDefGroup _ _ _ dg -> dg
+    LetCDefGroup _ _ _ _ dg -> dg
     _ -> error "No def group"
 
 enclosingDef :: ExprContext -> C.Def
@@ -194,7 +236,7 @@ ppContextPath ctx =
     LetCDefNonRec _ c _ -> ppContextPath c <+> text "->" <+> text ("LtD " ++ show (defTName $ defOfCtx ctx))
     LetCDefRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("LtDR " ++ show (defTName $ defOfCtx ctx))
     LetCBody _ c names _ -> ppContextPath c <+> text "->" <+> text ("LtB" ++ show names)
-    LetCDefGroup _ c _ dg -> ppContextPath c
+    LetCDefGroup _ c _ _ dg -> ppContextPath c
     CaseCScrutinee _ c _ -> ppContextPath c <+> text "->" <+> text "CaseM"
     CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseB"
     ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
@@ -354,7 +396,7 @@ showSimpleContext ctx =
     AppCParam{} -> "AppParam(" ++ showSimple (exprOfCtx ctx) ++ ")"
     LetCDefNonRec{} -> "LetDef(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
     LetCDefRec{} -> "LetDefR(" ++ showSimple (defTName (defOfCtx ctx)) ++ ")"
-    LetCDefGroup _ _ tn _ -> "LetDefGroup(" ++ showSimple tn ++ ")"
+    LetCDefGroup _ _ tn _ _ -> "LetDefGroup(" ++ showSimple tn ++ ")"
     LetCBody{} -> "LetBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCScrutinee{} -> "CaseMatch(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
@@ -394,7 +436,7 @@ instance Show ExprContext where
       AppCParam id _ i p -> "AppParam " ++ show id ++ " " ++ show i ++ " " ++ showExpr p
       LetCDefNonRec id _ _ -> "LetDef " ++ showDef (defOfCtx e)
       LetCDefRec id _ _ _ -> "LetDef " ++ showDef (defOfCtx e)
-      LetCDefGroup id _ tn _ -> "LetDefGroup " ++ show tn
+      LetCDefGroup id _ tn _ _ -> "LetDefGroup " ++ show tn
       LetCBody id _ _ e -> "LetBody " ++ showExpr e
       CaseCScrutinee id _ e -> "CaseMatch " ++ showExpr e
       CaseCBranch id _ _ i b -> "CaseBranch " ++ show i ++ " " ++ show b
@@ -466,7 +508,7 @@ contextId ctx =
     AppCParam c _ _ _ -> c
     LetCDefNonRec c _ _ -> c
     LetCDefRec c _ _ _ -> c
-    LetCDefGroup c _ _ _ -> c
+    LetCDefGroup c _ _ _ _ -> c
     LetCBody c _ _ _ -> c
     CaseCScrutinee c _ _ -> c
     CaseCBranch c _ _ _ _ -> c
@@ -485,7 +527,7 @@ contextOf ctx =
     AppCParam _ c _ _ -> Just c
     LetCDefNonRec _ c _ -> Just c
     LetCDefRec _ c _ _ -> Just c
-    LetCDefGroup _ c _ _ -> Just c
+    LetCDefGroup _ c _ _ _ -> Just c
     LetCBody _ c _ _ -> Just c
     CaseCScrutinee _ c _ -> Just c
     CaseCBranch _ c _ _ _ -> Just c
@@ -504,7 +546,7 @@ modCtx ctx =
     AppCParam _ c _ _ -> modCtx c
     LetCDefNonRec _ c _ -> modCtx c
     LetCDefRec _ c _ _ -> modCtx c
-    LetCDefGroup _ c _ _ -> modCtx c
+    LetCDefGroup _ c _ _ _ -> modCtx c
     LetCBody _ c _ _ -> modCtx c
     CaseCScrutinee _ c _ -> modCtx c
     CaseCBranch _ c _ _ _ -> modCtx c

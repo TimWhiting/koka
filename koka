@@ -1,3 +1,4 @@
 #!/bin/sh
-stack build koka --fast
-stack exec koka -- $@
+# stack build koka --fast
+# stack exec koka -- $@
+stack run koka -- $@

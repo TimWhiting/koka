@@ -148,20 +148,6 @@ data Frame =
   | FCall
   deriving (Eq, Ord, Show)
 
-letFvs :: Int -> Int -> ExprContext -> S.Set TName
-letFvs groupIdx bindingIdx parent =
-  case exprOfCtx parent of
-    C.Let defs body ->
-      let (df:dfs) = Prelude.drop groupIdx defs
-          tnames = S.fromList (map defTName (Prelude.take bindingIdx (defsOf df)))
-          restBindings = S.unions $ S.fromList (map defTName (Prelude.drop bindingIdx (defsOf df))) : map (\dg -> S.fromList $ map defTName $ defsOf dg) dfs
-      in S.difference (S.unions $ tnames : fv body : map (fv . defExpr) (Prelude.drop bindingIdx (defsOf df) ++ concatMap defsOf dfs))
-            restBindings
-
-letBindingName :: Int -> Int -> ExprContext -> TName
-letBindingName groupIdx bindingIdx parent =
-  let bind = letDefBinding groupIdx bindingIdx parent in
-  defTName bind
 
 nextLetFrame :: Frame -> CombinedCtx -> Frame
 nextLetFrame
@@ -177,7 +163,7 @@ nextLetFrame
 
 data Kont =
   KEnd
-  | KNext {frame :: !Frame, kCtx :: !CombinedCtx, env :: !BEnv, knext:: !Addr}
+  | KNext {frame :: !Frame, kCtx :: !CombinedCtx, knext:: !Addr}
   deriving (Eq, Ord, Show)
 
 data BEnv = BEnv (S.Set TName) deriving (Eq, Ord, Show)

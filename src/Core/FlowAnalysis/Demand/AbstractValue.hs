@@ -244,7 +244,7 @@ bind ctx var@(C.Var tname vInfo) env =
     AppCParam _ ctx' _ _ -> bind ctx' var env
     LetCDefRec _ ctx' i tn -> lookupName1 BoundLetDef tn ctx' ctx'
     LetCDefNonRec _ ctx' tn -> lookupName1 BoundLetDef [tn] ctx' ctx'
-    LetCDefGroup _ ctx' tn _ -> lookupName1 BoundLetDef tn ctx' ctx -- Already the parent
+    LetCDefGroup _ ctx' tn _ _ -> lookupName1 BoundLetDef tn ctx' ctx -- Already the parent
     LetCBody _ ctx' tn _ -> bind ctx' var env
     CaseCScrutinee _ ctx' _ -> bind ctx' var env
     CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
@@ -326,7 +326,7 @@ indeterminateStaticCtx m ctx =
     AppCParam _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     LetCDefRec _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     LetCDefNonRec _ ctx' _ -> indeterminateStaticCtx m ctx'
-    LetCDefGroup _ ctx' _ _ -> indeterminateStaticCtx m ctx'
+    LetCDefGroup _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
     LetCBody _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     CaseCScrutinee _ ctx' _ -> indeterminateStaticCtx m ctx'
     CaseCBranch _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
