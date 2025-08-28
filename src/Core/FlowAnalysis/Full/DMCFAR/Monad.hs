@@ -30,7 +30,7 @@ data Conf =
   | CApply Addr Addr Addr DynamicCtx
   | CUnwind Name Name ExprContext Addr Addr [Addr] CombinedCtx
   | CUnwindLookup TName Addr Addr Addr DynamicCtx ExprContext
-  | CUnwindSet TName Addr Addr Addr Addr ExprContext
+  | CUnwindSet TName Addr Addr Addr Addr CombinedCtx ExprContext
   | CDone
   deriving (Eq, Ord, Show)
 
