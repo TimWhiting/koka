@@ -25,7 +25,7 @@ module Core.FlowAnalysis.StaticContext(
                           letDefBinding,letDefBindingIndex,letDefsOf,
                           isMain,
                           letBindingName, nextFvs,
-                          fvs, dfsTNames, dgsTNames, dgTNames, localFv
+                          fvs, fvvs, dfsTNames, dgsTNames, dgTNames, localFv
                         ) where
 import Core.Core as C
 import Common.Name
@@ -40,7 +40,7 @@ import Core.CoreVar (bv, fv)
 import Core.Pretty
 import Debug.Trace (trace)
 import Data.List (intercalate, intersperse, minimumBy)
-import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue)
+import Common.NamePrim (nameOpExpr, isNameTuple, nameTrue, nameLocalVar)
 import qualified Data.Text as T
 import Lib.PPrint
 import Common.Failure (HasCallStack)
@@ -92,16 +92,17 @@ letBindingName groupIdx bindingIdx parent =
 nextFvs :: ExprContext -> S.Set TName
 nextFvs expr =
   let andParent fvs = S.union fvs $ maybe S.empty nextFvs (contextOf expr)
+      bound = bvs False (fromJust $ contextOf expr)
       parentExpr = exprOfCtx <$> contextOf expr
   in case expr of
-    ExprPrim _ e -> andParent (fv e)
-    ExprCBasic _ _ e -> andParent (fv e)
+    ExprPrim _ e -> andParent (fvvs expr)
+    ExprCBasic _ _ e -> andParent (fvvs expr)
     CaseCBranch{} -> andParent S.empty
     CaseCScrutinee{} -> andParent S.empty
-    AppCParam _ _ param app -> andParent $ S.unions (map fv $ drop param $ args (fromJust parentExpr))
-    AppCLambda _ _ f -> andParent $ S.unions (map fv $ args (fromJust parentExpr))
+    AppCParam _ _ param app -> andParent $ S.intersection bound $ S.unions (map fv $ drop param $ args (fromJust parentExpr))
+    AppCLambda _ _ f -> andParent $ S.intersection bound $ S.unions (map fv $ args (fromJust parentExpr))
     LetCBody{} -> andParent S.empty
-    LetCDefGroup _ _ _ i _ -> andParent $ S.unions (map dgFvs $ drop i $ letDgs (fromJust parentExpr))
+    LetCDefGroup _ _ _ i _ -> andParent $ S.intersection bound $ S.unions (map dgFvs $ drop i $ letDgs (fromJust parentExpr))
     LetCDefNonRec{} -> andParent S.empty
     LetCDefRec{} -> andParent S.empty
     _ -> S.empty
@@ -114,16 +115,6 @@ letDgs expr =
     C.Let defs _ -> defs
 dgFvs (C.DefNonRec def) = fv def
 dgFvs (C.DefRec dfs) = S.unions (map fv dfs)
-
-letFvs :: Int -> Int -> ExprContext -> S.Set TName
-letFvs groupIdx bindingIdx parent =
-  case exprOfCtx parent of
-    C.Let defs body ->
-      let (df:dfs) = drop groupIdx defs
-          tnames = S.fromList (map defTName (take bindingIdx (defsOf df)))
-          restBindings = S.unions $ S.fromList (map defTName (drop bindingIdx (defsOf df))) : map (\dg -> S.fromList $ map defTName $ defsOf dg) dfs
-      in S.difference (S.unions $ tnames : fv body : map (fv . defExpr) (drop bindingIdx (defsOf df) ++ concatMap defsOf dfs))
-            restBindings
 
 lamNames :: ExprContext -> [TName]
 lamNames ctx =
@@ -170,17 +161,27 @@ localFv expr
 fvs :: HasCallStack => ExprContext -> S.Set TName
 fvs ctx =
   case maybeExprOfCtx ctx of
-    Just expr -> S.intersection (bvs ctx) (fv expr)
+    Just expr -> S.intersection (bvs True ctx) (fv expr)
 
-bvs :: HasCallStack => ExprContext -> S.Set TName
-bvs ctx =
-  let andParent bv = S.union bv $ maybe S.empty bvs (contextOf ctx)
+fvvs :: HasCallStack => ExprContext -> S.Set TName
+fvvs ctx =
+  case maybeExprOfCtx ctx of
+    Just expr -> S.intersection (bvs False ctx) (fv expr)
+
+bvs :: HasCallStack => Bool -> ExprContext -> S.Set TName
+bvs includeVars ctx =
+  let andParent bv = S.union bv $ maybe S.empty (bvs includeVars) (contextOf ctx)
+      grandparentExpr = maybeExprOfCtx =<< (contextOf =<< contextOf ctx)
   in case ctx of 
     ModuleC{} -> S.empty
     DefCRec{} -> S.empty
     DefCNonRec{} -> S.empty
     DefCGroup _ c _ dg -> S.empty
-    LamCBody _ _ names _ -> andParent $ S.fromList names
+    LamCBody _ _ names _ -> 
+      if includeVars then andParent $ S.fromList names
+      else case grandparentExpr of
+        (Just (C.App (C.TypeApp (C.Var name _) _) _ _)) | nameLocalVar == C.getName name -> andParent S.empty
+        _ -> andParent $ S.fromList names
     LetCBody _ _ names _ -> andParent $ S.fromList names
     LetCDefGroup _ _ names _ _ -> andParent $ S.fromList names
     LetCDefNonRec _ _ nm -> andParent $ S.singleton nm
@@ -191,6 +192,7 @@ bvs ctx =
     CaseCBranch _ _ vars _ _ -> andParent $ S.fromList vars
     ExprCBasic{} -> andParent S.empty 
     ExprPrim{} -> S.empty
+
 enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
   case ctx of

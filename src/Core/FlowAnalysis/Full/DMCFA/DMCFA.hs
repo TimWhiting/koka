@@ -308,12 +308,12 @@ doApply kaddr mkaddr addr dynctx = do
                     extendKStore ia k'
                     eval body (limitEnv newEnv (fvs body)) ia mkaddr newCtx
                   AChangePrim name pms -> do
-                    args <- mapM store arguments
                     let addr = BindImplicitAddr newctx venv (contextId u)
                     let n = getName name
                     if isHandlerPrimitive n then
-                      doHandlerPrimitive name n addr knext mkaddr arguments args venv newctx u
+                      doHandlerPrimitive name n addr knext mkaddr arguments venv newctx u
                     else do
+                      args <- mapM store arguments
                       res <- doPrimitive n args venv
                       extendStore addr res
                       apply knext mkaddr addr dynctx
@@ -456,11 +456,12 @@ isHandlerPrimitive n =
   || n == nameEvvAt || n == nameMaskAt || isNamePerform n || isClauseName n
   || n == nameLocalVar || n == nameLocalGet || n == nameLocalSet
 
-doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> Addr -> Addr -> [Addr] -> [AChange] -> VEnv -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isClauseName n || n == nameHTag || n == nameEvvAt = do
+doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> Addr -> Addr -> [Addr] -> VEnv -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
+doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | isClauseName n || n == nameHTag || n == nameEvvAt = do
   extendStore addr (AChangeObj name (zip (repeat nameNil) arguments))
   apply knext mkaddr addr (dynamic ctx)
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isNamePerform n = do
+doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | isNamePerform n = do
+  args <- mapM store arguments
   let label = case exprOfCtx u of
         App (TypeApp _ tps) _ _ -> labelName (tps !! (length tps - 1))
         _ -> error $ "Expected a perform type application " ++ show (exprOfCtx u)
@@ -469,16 +470,15 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | isNamePe
   let opN = newName $ nameLocalQual (getName opName)
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
   doUnwind label opN u knext mkaddr (drop 2 arguments) ctx
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalGet = do
+doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameLocalGet = do
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
-    let [varAddr@(BindingAddr ctx varName), _] = arguments
+    let [varAddr@(BindingAddr _ varName), _] = arguments
     unwindLookup varName knext mkaddr mkaddr (dynamic ctx) u
   else do 
     apply knext mkaddr (head arguments) (dynamic ctx)
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalSet = do
-  let [_, _] = args
-  let [varAddr@(BindingAddr ctx varName), val] = arguments
+doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameLocalSet = do
+  let [varAddr@(BindingAddr _ varName), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
     unwindSet varName val knext mkaddr addr u
@@ -486,7 +486,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
     rebind val varAddr 
     extendStore addr changeUnit
     apply knext mkaddr addr (dynamic ctx)
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameHandle = do
+doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameHandle = do
   args <- mapM store arguments
   let [AChangeObj _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] = args
   let label = case exprOfCtx u of
@@ -504,7 +504,8 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
   
   let newctx = newDelim d m ctx (contextId u)
   eval bod (limitEnv bodyenv (fvs body)) kmkaddr kmkaddr newctx
-doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nameLocalVar = do
+doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameLocalVar = do
+  args <- mapM store arguments
   -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
     case args !! 1 of
@@ -517,7 +518,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments args venv ctx u | n == nam
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u)
         let mk' = ImplicitAddr newctx venv (contextId u)
-        extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing) newEnv newctx)
+        extendMKStore mk' (MKHandle (getName varName) knext mkaddr (Handler (arguments !! 1) Nothing) newEnv ctx)
         eval bod newEnv EndKAddr mk' newctx
   else do
     case args !! 1 of
