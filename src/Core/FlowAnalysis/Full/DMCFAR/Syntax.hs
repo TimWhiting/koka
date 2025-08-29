@@ -73,7 +73,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                 ress' <- getAbResult
-                                -- trace ("result': " ++ show ress') $ return ()
+                                trace ("result': " ++ show ress') $ return ()
                                 return ress'
                 (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                 runFixCont $ do
@@ -81,7 +81,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
                                 ress' <- getAbResult
-                                -- trace ("expected': " ++ show ress') $ return ()
+                                trace ("expected': " ++ show ress') $ return ()
                                 return ress'
                 let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
                 total <- recur rest
@@ -137,6 +137,7 @@ getAbResult = do
                               in M.insert addr v (M.union acc map')
                          ) M.empty (addrs res)
             in (res, env)
+          Nothing -> error ("Couldn't find " ++ show addr ++ " in cache")
   return $ getValue EndVAddr S.empty
 
 evalMainR :: BuildContext
