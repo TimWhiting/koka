@@ -43,7 +43,7 @@ dLimit = delimContextLength <$> getEnv
 startCombinedCtx = do 
   m <- mLimit
   d <- dLimit 
-  return $ CombinedCtx (take m startStaticCtx) (take d startDynCtx)
+  return $ CombinedCtx (TKTop $ take m startStaticCtx) (take d startDynCtx)
 
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
