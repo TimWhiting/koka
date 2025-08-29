@@ -38,19 +38,20 @@ fun bio2( action2 : () -> <bio|e> a) : e (a,string)
   with fun write(fd,s) buf := buf ++ s
   action2()
 
-// pub fun analyze-example1()
-//   with bio
-//   echo("hi ")
-//   echo("unix world")
-// pub fun result-example1()
-//   ((), "hi unix world")
+pub fun analyze-example1()
+  with bio
+  echo("hi ")
+  echo("unix world")
+pub fun result-example1()
+  ((), "hi unix world")
 
-// pub fun analyze-example1_2()
-//   with bio2
-//   echo("hi ")
-//   echo("unix world")
-// pub fun result-example1_2()
-//   ((), "hi unix world")
+pub fun analyze-example1_2()
+  with bio2
+  echo("hi ")
+  echo("unix world")
+pub fun result-example1_2()
+  ((), "hi unix world")
+
 // -----------------------------------------
 // Exit
 // Show non-linear control by exiting a computation. (exception monad)
@@ -63,14 +64,14 @@ fun status( action3 : () -> <exit|e> a ) : e int
   action3()
   0
 
-// pub fun analyze-example2() : (int,string)
-//   with bio
-//   with status
-//   echo("hi ")
-//   exit(1)
-//   echo("unix world")
-// pub fun result-example2() : (int,string)
-//   (1, "hi ")
+pub fun analyze-example2() : (int,string)
+  with bio
+  with status
+  echo("hi ")
+  exit(1)
+  echo("unix world")
+pub fun result-example2() : (int,string)
+  (1, "hi ")
 
 // -----------------------------------------
 // User environment
@@ -96,14 +97,14 @@ fun env( user : user, action : () -> <whoami|e> a ) : e a
   with fun whoami() show(user)
   action()
 
-// pub fun analyze-example3()
-//   with bio
-//   with status
-//   with env(Alice)
-//   echo("hi ")
-//   echo(whoami())
-// fun result-example3() : (int,string)
-//   (0, "hi alice")
+pub fun analyze-example3()
+  with bio
+  with status
+  with env(Alice)
+  echo("hi ")
+  echo(whoami())
+fun result-example3() : (int,string)
+  (0, "hi alice")
 
 
 fun intstr/show( (i,s) : (int,string) ) : string
@@ -141,12 +142,12 @@ fun session-manager3( initial-user : user, action6 : () -> <su,whoami|e> a ) : e
 
 pub fun analyze-example4()
   with bio
-  // with status
+  with status
   with session-manager3(Root)
-  // echo("hi ")
-  // echo(whoami())
+  echo("hi ")
+  echo(whoami())
   su(Alice)
-  // echo(", and hi ")
+  echo(", and hi ")
   echo(whoami())
 fun result-example4() : (int,string)
   (0, "hi root, and hi alice")
@@ -203,37 +204,49 @@ fun hamlet() : <bio|e> ()
   echo("that is the question:\n")
   echo("Whether 'tis nobler in the mind to suffer\n")
 
-pub fun example5()
-  with return(x:(list<int>,string)) x.snd.println
+pub fun analyze-example5()
+  with return(x:(list<()>, string)) x.snd
   with bio
-  with timeshare
-  with status
+  // with timeshare
+  with forking
   with session-manager3(Root)
+  // with status
   if fork() then
-    su(Alice)
+    // su(Alice)
     ritchie()
   else
-    su(Bob)
+    // su(Bob)
     hamlet()
-
+pub fun example5()
+  analyze-example5().println
+fun result-example5()
+  r"UNIX is basically a simple operating system, but you have to be a genius to understand the simplicity.
+To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer"
 
 fun interrupt-write( action : () -> <bio,interrupt|e> a ) : <bio,interrupt|e> a
   with override fun write(fd,s) { interrupt(); write(fd,s) }
   action()
 
-pub fun example6()
-  with return(x:(list<int>,string)) x.snd.println
-  with bio
-  with timeshare
-  with interrupt-write
-  with status
-  with session-manager3(Root)
-  if fork() then
-    su(Alice)
-    ritchie()
-  else
-    su(Bob)
-    hamlet()
+// pub fun analyze-example6()
+//   with return(x:(list<int>,string)) x.snd
+//   with bio
+//   with timeshare
+//   with interrupt-write
+//   with status
+//   with session-manager3(Root)
+//   if fork() then
+//     su(Alice)
+//     ritchie()
+//   else
+//     su(Bob)
+//     hamlet()
+// pub fun example6()
+//   analyze-example6().println
+// fun result-example6()
+//   r"UNIX is basically To be, or not to be, a simple operating system, that is the question:
+// but Whether 'tis nobler in the mind to suffer
+// you have to be a genius to understand the simplicity."
 
 pub fun main()
   example5()
