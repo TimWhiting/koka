@@ -57,7 +57,7 @@ doStep i =
     case i of
       VStore addr ->
         -- trace ("Value not found in store :" ++ show addr)
-        error ("Value not found in store: " ++ show addr)
+        -- error ("Value not found in store: " ++ show addr)
         doBottom
       KStore addr -> if addr == EndKAddr then return $ KV KEnd else doBottom
       MKStore addr -> if addr == EndMKAddr then return $ MKV MKEnd else doBottom
@@ -280,15 +280,15 @@ doApply kaddr mkaddr addr dynctx = do
               res <- store va
               case res of
                 AChangeClos cexpr cctx -> do
-                    body <- focusBody cexpr
-                    let [arg] = lamNames cexpr
-                    m <- mLimit
-                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
-                    v <- store addr
-                    rebindAll (fvs cexpr) cctx dynctx
-                    rebindAll (bvars henv) lastCtx dynctx
-                    extendStore (BindingAddr dynctx arg) v
-                    eval body knext mknext dynctx
+                  body <- focusBody cexpr
+                  let [arg] = lamNames cexpr
+                  m <- mLimit
+                  -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
+                  v <- store addr
+                  rebindAll (fvs cexpr) cctx dynctx
+                  rebindAll (bvars henv) lastCtx dynctx
+                  extendStore (BindingAddr dynctx arg) v
+                  eval body knext mknext dynctx
         FResume label kont hnd u -> do
           m <- mLimit
           d <- dLimit
@@ -548,11 +548,11 @@ doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameHandle = 
   rebindAll bvars bodyenv ctx
   rebindAll rvars retenv ctx
 
-  let kmkaddr = ImplicitAddr ctx (contextId bod)
-  extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) ctx EndKAddr)
+  let newctx = newDelim d m ctx (contextId u)
+  let kmkaddr = ImplicitAddr newctx (contextId bod)
+  extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) newctx EndKAddr)
   extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret) henv) ctx ctx)
   --trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
-  let newctx = newDelim d m ctx (contextId u)
   rebindAll bvars bodyenv newctx
   eval bod kmkaddr kmkaddr newctx
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameLocalVar = do
