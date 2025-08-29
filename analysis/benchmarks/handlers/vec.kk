@@ -15,16 +15,16 @@ effect vec<s::S>
 
 
 // Create a `vec` handler that safely only handles its own indices (parameterized by `:s`)
-fun vec(action : forall<s> () -> <vec<s>|e> a ) : e a   // rank-2 signature required
+fun vec(action1 : forall<s> () -> <vec<s>|e> a ) : e a   // rank-2 signature required
   var xs : list<string> := []
-  handle(action)
+  with handler
     fun push(s)
       val i = xs.length
       xs := xs ++ [s]
       Ix(i)
     fun lookup(ix)
       xs[ix.index].default("")   // index is always valid!
-
+  action1()
 
 pub fun analyze-main()
   with vec
