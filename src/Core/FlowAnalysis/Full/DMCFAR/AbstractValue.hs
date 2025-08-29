@@ -130,6 +130,7 @@ data Frame =
       doCtx :: !ExprContextId,
       hCtx :: !ExprContextId,
       linkKnext :: !Addr,
+      llastCtx :: !CombinedCtx,
       linkHnd :: !Handler
   }
   | FDollar {
