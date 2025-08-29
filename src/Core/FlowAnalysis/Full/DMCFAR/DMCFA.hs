@@ -74,7 +74,7 @@ doStep i =
 
 extendStore :: HasCallStack => Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  -- trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -324,6 +324,7 @@ doApply kaddr mkaddr addr dynctx = do
                   AChangePrim name pms -> do
                     let addr = BindImplicitAddr newctx (contextId u)
                     let n = getName name
+                    -- trace ("Applying primitive " ++ show name) $ return ()
                     -- rebindAll (bvars env) ctx newctx
                     if isHandlerPrimitive n then
                       doHandlerPrimitive name n addr knext mkaddr arguments newctx u
@@ -408,6 +409,8 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
     MKEnd -> doBottom -- error ("Unwind: No MKont found for " ++ show name ++ " " ++ show performExpr)
     MKHandle eff mkKNext mknext h@(Handler hnd ret henv) mkCtx -> do
       if eff == name then do
+        m <- mLimit
+        let newCtx = addCall m mkCtx (contextId performExpr)
         -- trace ("Matched " ++ show mkCtx) $ return ()
         AChangeObj tname hndargs@(_:ops) <- store hnd
         hargs <- mapM (store . snd) hndargs
@@ -428,16 +431,17 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             bod <- focusBody op
             -- let opCtx = mkCtx -- {kfvs = S.union (S.fromList params) (kfvs mkCtx)}
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
-            zipWithM_ rebind args (map (BindingAddr mkCtx) params)
+            zipWithM_ rebind args (map (BindingAddr newCtx) params)
+            rebindAll (S.difference (bvars henv) (S.fromList params)) mkCtx newCtx
             if nameStem (getName opConName) `startsWith` "clause-tail" then do
-              let k' = ImplicitAddr mkCtx (contextId bod)
-              extendKStore k' (KNext (FResume eff kaddr h (contextId bod)) mkCtx mkKNext)
-              eval bod k' mknext mkCtx
-            else if nameStem (getName opConName) `startsWith` "clause-never" then do 
-              eval bod mkKNext mknext mkCtx
+              let k' = ImplicitAddr newCtx (contextId bod)
+              extendKStore k' (KNext (FResume eff kaddr h (contextId bod)) newCtx mkKNext)
+              eval bod k' mknext newCtx
+            else if nameStem (getName opConName) `startsWith` "clause-never" then do
+              eval bod mkKNext mknext newCtx
             else do
-              extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr mkCtx h)
-              eval bod mkKNext mknext mkCtx
+              extendStore (BindingAddr newCtx (last params)) (AChangeKont name kaddr newCtx h)
+              eval bod mkKNext mknext newCtx
       else do
         let k' = ImplicitLAddr ctx opName (contextId performExpr)
         -- trace ("Link create " ++ show k' ++ " " ++ show ctx) $ return ()
@@ -492,7 +496,9 @@ fvsVal _ = return []
 
 doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> Addr -> Addr -> [Addr] -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | isClauseName n || n == nameHTag || n == nameEvvAt = do
-  extendStore addr (AChangeObj name (zip (repeat nameNil) arguments))
+  let conParams = zipWith (\_ i -> ConImplicitAddr (newFieldName i) ctx (contextId u)) arguments [1..]
+  zipWithM_ rebind arguments conParams
+  extendStore addr (AChangeObj name (zip (repeat nameNil) conParams))
   apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | isNamePerform n = do
   args <- mapM store arguments
