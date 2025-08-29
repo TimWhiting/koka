@@ -1,40 +1,8 @@
-koka-3.2.2: unregistering (local file changes: src/Core/FlowAnalysis/FixpointMonad.hs)
+koka-3.2.2: unregistering (local file changes: src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs)
 koka> build (lib + exe) with ghc-9.6.6
 Preprocessing library for koka-3.2.2..
 Building library for koka-3.2.2..
-[ 15 of 143] Compiling Core.FlowAnalysis.FixpointMonad [Source file changed]
-[ 63 of 143] Compiling Core.FlowAnalysis.Literals [Core.FlowAnalysis.FixpointMonad changed]
-[ 90 of 143] Compiling Core.FlowAnalysis.Demand.AbstractValue [Core.FlowAnalysis.FixpointMonad changed]
-[ 92 of 143] Compiling Core.FlowAnalysis.Monad [Core.FlowAnalysis.FixpointMonad changed]
-[ 93 of 143] Compiling Core.FlowAnalysis.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[ 94 of 143] Compiling Core.FlowAnalysis.Full.KCFA.AbstractValue [Core.FlowAnalysis.FixpointMonad changed]
-[ 95 of 143] Compiling Core.FlowAnalysis.Full.KCFA.Monad [Core.FlowAnalysis.FixpointMonad changed]
-[ 96 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.AbstractValue [Core.FlowAnalysis.FixpointMonad changed]
-[ 97 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.Monad [Core.FlowAnalysis.FixpointMonad changed]
-[ 98 of 143] Compiling Core.FlowAnalysis.Full.DMCFA.AbstractValue [Core.FlowAnalysis.FixpointMonad changed]
-[ 99 of 143] Compiling Core.FlowAnalysis.Full.DMCFA.Monad [Core.FlowAnalysis.FixpointMonad changed]
-[100 of 143] Compiling Core.FlowAnalysis.Full.AbstractValue [Core.FlowAnalysis.FixpointMonad changed]
-[101 of 143] Compiling Core.FlowAnalysis.Full.AAM.Monad [Core.FlowAnalysis.FixpointMonad changed]
-[102 of 143] Compiling Core.FlowAnalysis.Full.AAC.Monad [Core.FlowAnalysis.FixpointMonad changed]
-[103 of 143] Compiling Core.FlowAnalysis.Demand.DemandMonad [Core.FlowAnalysis.FixpointMonad changed]
-[116 of 143] Compiling Core.FlowAnalysis.Full.Primitives [Core.FlowAnalysis.FixpointMonad changed]
-[117 of 143] Compiling Core.FlowAnalysis.Full.AAM.AAM [Core.FlowAnalysis.FixpointMonad changed]
-[118 of 143] Compiling Core.FlowAnalysis.Full.AAM.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[119 of 143] Compiling Core.FlowAnalysis.Full.AAC.AAC [Core.FlowAnalysis.FixpointMonad changed]
-[120 of 143] Compiling Core.FlowAnalysis.Full.AAC.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[121 of 143] Compiling Core.FlowAnalysis.Full.KCFA.Primitives [Core.FlowAnalysis.FixpointMonad changed]
-[122 of 143] Compiling Core.FlowAnalysis.Full.KCFA.KCFA [Core.FlowAnalysis.FixpointMonad changed]
-[123 of 143] Compiling Core.FlowAnalysis.Full.KCFA.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[124 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.Primitives [Core.FlowAnalysis.FixpointMonad changed]
-[125 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.DMCFA [Core.FlowAnalysis.FixpointMonad changed]
-[126 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[127 of 143] Compiling Core.FlowAnalysis.Full.DMCFA.Primitives [Core.FlowAnalysis.FixpointMonad changed]
-[128 of 143] Compiling Core.FlowAnalysis.Full.DMCFA.DMCFA [Core.FlowAnalysis.FixpointMonad changed]
-[129 of 143] Compiling Core.FlowAnalysis.Full.DMCFA.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[130 of 143] Compiling Core.FlowAnalysis.Demand.DemandAnalysis [Core.FlowAnalysis.FixpointMonad changed]
-[131 of 143] Compiling Core.FlowAnalysis.Demand.Primitives [Core.FlowAnalysis.FixpointMonad changed]
-[132 of 143] Compiling Core.FlowAnalysis.Demand.Syntax [Core.FlowAnalysis.FixpointMonad changed]
-[133 of 143] Compiling Core.FlowAnalysis.Demand.ConstantProp [Core.FlowAnalysis.FixpointMonad changed]
+[125 of 143] Compiling Core.FlowAnalysis.Full.DMCFAR.DMCFA [Source file changed]
 Warning: The following header files listed in the main library's c-sources
 will not be used: src/Platform/cpp/Platform/cconsole.h.
 Header files should be in the 'include' or 'install-include' stanza.
@@ -46,1352 +14,994 @@ koka> copy/register
 Installing library in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/50e7567ab93459510bfd412b9898f4e9df3111e36f9d2dfd4eb8cba51d1770ee/9.6.6/lib/aarch64-osx-ghc-9.6.6/koka-3.2.2-8GBEfjISoFBMgz1sr3wgW
 Installing executable koka in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/50e7567ab93459510bfd412b9898f4e9df3111e36f9d2dfd4eb8cba51d1770ee/9.6.6/bin
 Registering library for koka-3.2.2..
-New result at Step (CEval ExprBasic bio AI@(472:[a460,a455,top]@[]) EndMKAddr [a460,a455,top]@[])
-N (CApply AI@(472:[a460,a455,top]@[]) EndMKAddr T@analysis/aac/unix-simple/bio [])
-Not in:
-Next (fromList [CEval DefNonRec pub fun bio : forall<a,e> (action1 : () -> <analysis/aac/unix-simple/bio|e> a) -> e (a, string); EndKAddr T@analysis/aac/unix-simple/bio [top]@[]])
-New:
-N (CApply AI@(472:[a460,a455,top]@[]) EndMKAddr T@analysis/aac/unix-simple/bio [])
-New result at Step (CEval ExprBasic local-scope AI@(126:[a471,a460,a455,top]@[]) EndMKAddr [a471,a460,a455,top]@[])
-N (CApply AI@(126:[a471,a460,a455,top]@[]) EndMKAddr T@std/core/types/local-scope [])
-Not in:
-Next (fromList [CEval DefNonRec // _Internal_: if local mutation is unobservable, the `:local` effect can be erased by using the `local-scope` function.
-// See also: _State in Haskell, by Simon Peyton Jones and John Launchbury_.
-pub fun local-scope : forall<a,e> (action : forall<h> () -> <local<h>|e> a) -> e a; EndKAddr T@std/core/types/local-scope [top]@[]])
-New:
-N (CApply AI@(126:[a471,a460,a455,top]@[]) EndMKAddr T@std/core/types/local-scope [])
-New result at Step (CEval ExprBasic bio/@handle AI@(144:[a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(144:[a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#bio/@handle [(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // handler for the effect `:bio`
-pub fun bio/@handle : forall<a,e,b> (hnd : analysis/aac/unix-simple/bio<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/unix-simple/bio|e> a) -> e b; EndKAddr T@analysis/aac/unix-simple/#bio/@handle [top]@[]])
-New:
-N (CApply AI@(144:[a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#bio/@handle [(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:72 0 bio/@tag AI@(72:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(72:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#bio/@tag [(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // runtime tag for the effect `:bio`
-pub val bio/@tag : hnd/htag<analysis/aac/unix-simple/bio>; EndKAddr T@analysis/aac/unix-simple/#bio/@tag [top]@[]])
-New:
-N (CApply AI@(72:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#bio/@tag [(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic forking AI@(476:[a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(476:[a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/forking [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun forking : forall<a,e> (action : () -> <analysis/aac/unix-simple/fork|e> a) -> e list<a>; EndKAddr T@analysis/aac/unix-simple/forking [top]@[]])
-New:
-N (CApply AI@(476:[a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/forking [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic fork/@handle AI@(346:[a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(346:[a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@handle [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // handler for the effect `:fork`
-pub fun fork/@handle : forall<a,e,b> (hnd : analysis/aac/unix-simple/fork<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/unix-simple/fork|e> a) -> e b; EndKAddr T@analysis/aac/unix-simple/#fork/@handle [top]@[]])
-New:
-N (CApply AI@(346:[a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@handle [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:304 0 fork/@tag AI@(304:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(304:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@tag [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // runtime tag for the effect `:fork`
-pub val fork/@tag : hnd/htag<analysis/aac/unix-simple/fork>; EndKAddr T@analysis/aac/unix-simple/#fork/@tag [top]@[]])
-New:
-N (CApply AI@(304:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@tag [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at VStore B@(action:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
+Evaluating: val _ : ()
+      = @open(trace)("Example 22 - nondeterminism twice");
+(fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+})((fn(){
+  (@open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2))))));
+})) basic-bench:138:[top]@[]
+Evaluating: @open(trace)("Example 22 - nondeterminism twice") basic-bench:140:[top]@[]
+Evaluating: trace basic-bench:227:[top]@[]
+Extending store: BI@(227:[top]@[]) with std/core/debug/trace
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:225 0 "Example 22 - nondeterminism twice"], resolvedArgs = [], parent = LetDef val _ : ();}
+Evaluating: "Example 22 - nondeterminism twice" basic-bench:225:[top]@[]
+Extending store: BI@(225:[top]@[]) with string -> "Example 22 - nondeterminism twice"
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(227:[top]@[])], parent = LetDef val _ : ();}
+Applying: [] [BI@(227:[top]@[]),BI@(225:[top]@[])]
+Applying function: BI@(227:[top]@[]) std/core/debug/trace
+Applying primitive std/core/debug/trace
+Extending store: BI@(140:[top]@[]) with Unit
+Applying FLet {groupIdx = 0, numGroups = 1, bindingIdx = 0, numBindings = 1, name = _, resolved = [], parent = LamBody [] val _ : ()
+      = @open(trace)("Example 22 - nondeterminism twice");
+(fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+})((fn(){
+  (@open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2))))));
+}))}
+Extending store: B@(_:[top]@[]) with Unit
+Evaluating: (fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+})((fn(){
+  (@open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2))))));
+})) basic-bench:141:[top]@[]
+Evaluating: fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+} basic-bench:142:[top]@[]
+Extending store: BI@(142:[top]@[]) with AppLambda(fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
 })
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:143 0 fn(){
+  @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))));
+}], resolvedArgs = [], parent = LetBody (fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+})((fn(){
+  (@open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2))))));
+}))}
+Evaluating: fn(){
+  @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))));
+} basic-bench:143:[top]@[]
+Extending store: BI@(143:[top]@[]) with AppParam(fn(){
+  @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))));
 })
-New result at Step (CEval AppParam unix-simple:485 0 fork AI@(483:[delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(483:[delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/fork [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(142:[top]@[])], parent = LetBody (fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+})((fn(){
+  (@open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2))))));
+}))}
+Applying: [] [BI@(142:[top]@[]),BI@(143:[top]@[])]
+Applying function: BI@(142:[top]@[]) AppLambda(fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+})
+Applying closure: AppLambda fn(@action){
+  ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+        (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+      }))))), (fn(x){
+      x;
+    }), @action);
+}:[a141,top]@[] fvvs: fromList [] args [@action]
+Extending store: B@(@action:[a141,top]@[]) with AppParam(fn(){
+  @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))));
+})
+Evaluating: ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+      (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+    }))))), (fn(x){
+    x;
+  }), @action) basic-bench:144:[a141,top]@[]
+Evaluating: ex2/@handle basic-bench:145:[a141,top]@[]
+Evaluating: ex2/@handle basic-bench:149:[a141,top]@[]
+Evaluating: forall<a,e,b> fn(hnd, ret, action){
+  @hhandle(ex2/@tag, hnd, ret, action);
+} basic-bench:19:[top]@[]
+Extending store: BI@(19:[top]@[]) with DefNonRec(ex2/@handle)
+Extending store: T@analysis/aac/basic-bench/#ex2/@handle with DefNonRec(ex2/@handle)
+New result at Step (CEval ExprBasic ex2/@handle AI@(145:[a141,top]@[]) EndMKAddr [a141,top]@[])
+N (CApply AI@(145:[a141,top]@[]) EndMKAddr T@analysis/aac/basic-bench/#ex2/@handle [])
 Not in:
-Next (fromList [CEval DefNonRec // Call the `ctl fork` operation of the effect `:fork`
-pub fun fork : () -> analysis/aac/unix-simple/fork bool; EndKAddr T@analysis/aac/unix-simple/fork [top]@[]])
+Next (fromList [CEval DefNonRec // handler for the effect `:ex2`
+pub fun ex2/@handle : forall<a,e,b> (hnd : analysis/aac/basic-bench/ex2<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/basic-bench/ex2|e> a) -> e b; EndKAddr T@analysis/aac/basic-bench/#ex2/@handle [top]@[]])
 New:
-N (CApply AI@(483:[delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/fork [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic fork/@select AI@(326:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(326:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@select [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(145:[a141,top]@[]) EndMKAddr T@analysis/aac/basic-bench/#ex2/@handle [])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:146 0 @Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+    (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+  })))),AppParam basic-bench:147 1 fn(x){
+  x;
+},AppParam basic-bench:148 2 @action], resolvedArgs = [], parent = LamBody [@action] ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+      (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+    }))))), (fn(x){
+    x;
+  }), @action)}
+Evaluating: @Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+    (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+  })))) basic-bench:146:[a141,top]@[]
+Evaluating: @Hnd-ex2 basic-bench:150:[a141,top]@[]
+Evaluating: @Hnd-ex2 basic-bench:153:[a141,top]@[]
+Extending store: BI@(153:[a141,top]@[]) with @Hnd-ex2
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:151 0 3,AppParam basic-bench:152 1 @open(clause-control1)((fn(a, resume){
+  (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+}))], resolvedArgs = [], parent = AppParam basic-bench:146 0 @Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+    (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+  }))))}
+Evaluating: 3 basic-bench:151:[a141,top]@[]
+Extending store: BI@(151:[a141,top]@[]) with int -> 3
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:152 1 @open(clause-control1)((fn(a, resume){
+  (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+}))], resolvedArgs = [BI@(153:[a141,top]@[])], parent = AppParam basic-bench:146 0 @Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+    (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+  }))))}
+Evaluating: @open(clause-control1)((fn(a, resume){
+  (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+})) basic-bench:152:[a141,top]@[]
+Evaluating: clause-control1 basic-bench:158:[a141,top]@[]
+Evaluating: clause-control1 basic-bench:160:[a141,top]@[]
+Extending store: BI@(160:[a141,top]@[]) with std/core/hnd/clause-control1
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:156 0 fn(a, resume){
+  @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))));
+}], resolvedArgs = [], parent = AppParam basic-bench:152 1 @open(clause-control1)((fn(a, resume){
+  (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+}))}
+Evaluating: fn(a, resume){
+  @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))));
+} basic-bench:156:[a141,top]@[]
+Extending store: BI@(156:[a141,top]@[]) with AppParam(fn(a, resume){
+  @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))));
+})
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(160:[a141,top]@[])], parent = AppParam basic-bench:152 1 @open(clause-control1)((fn(a, resume){
+  (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+}))}
+Applying: [] [BI@(160:[a141,top]@[]),BI@(156:[a141,top]@[])]
+Applying function: BI@(160:[a141,top]@[]) std/core/hnd/clause-control1
+Applying primitive std/core/hnd/clause-control1
+Extending store: CI@(@field-x1 152:[a141,top]@[]) with AppParam(fn(a, resume){
+  @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))));
+})
+Extending store: BI@(152:[a141,top]@[]) with std/core/hnd/clause-control1([(,CI@(@field-x1 152:[a141,top]@[]))])
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(153:[a141,top]@[]),BI@(151:[a141,top]@[])], parent = AppParam basic-bench:146 0 @Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+    (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+  }))))}
+Applying: [] [BI@(153:[a141,top]@[]),BI@(151:[a141,top]@[]),BI@(152:[a141,top]@[])]
+Applying function: BI@(153:[a141,top]@[]) @Hnd-ex2
+Extending store: CI@(@cfc 146:[a141,top]@[]) with int -> 3
+Extending store: CI@(@ctl-ex2 146:[a141,top]@[]) with std/core/hnd/clause-control1([(,CI@(@field-x1 152:[a141,top]@[]))])
+Extending store: BI@(146:[a141,top]@[]) with analysis/aac/basic-bench/@Hnd-ex2([(@cfc,CI@(@cfc 146:[a141,top]@[])),(@ctl-ex2,CI@(@ctl-ex2 146:[a141,top]@[]))])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:147 1 fn(x){
+  x;
+},AppParam basic-bench:148 2 @action], resolvedArgs = [T@analysis/aac/basic-bench/#ex2/@handle], parent = LamBody [@action] ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+      (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+    }))))), (fn(x){
+    x;
+  }), @action)}
+Evaluating: fn(x){
+  x;
+} basic-bench:147:[a141,top]@[]
+Extending store: BI@(147:[a141,top]@[]) with AppParam(fn(x){
+  x;
+})
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:148 2 @action], resolvedArgs = [T@analysis/aac/basic-bench/#ex2/@handle,BI@(146:[a141,top]@[])], parent = LamBody [@action] ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+      (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+    }))))), (fn(x){
+    x;
+  }), @action)}
+Evaluating: @action basic-bench:148:[a141,top]@[]
+Applying FApp {totalArgs = 3, leftArgs = [], resolvedArgs = [T@analysis/aac/basic-bench/#ex2/@handle,BI@(146:[a141,top]@[]),BI@(147:[a141,top]@[])], parent = LamBody [@action] ex2/@handle((@Hnd-ex2(3, (@open(clause-control1)((fn(a, resume){
+      (@open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))));
+    }))))), (fn(x){
+    x;
+  }), @action)}
+Applying: [] [T@analysis/aac/basic-bench/#ex2/@handle,BI@(146:[a141,top]@[]),BI@(147:[a141,top]@[]),B@(@action:[a141,top]@[])]
+Applying function: T@analysis/aac/basic-bench/#ex2/@handle DefNonRec(ex2/@handle)
+Applying closure: DefNonRec // handler for the effect `:ex2`
+pub fun ex2/@handle : forall<a,e,b> (hnd : analysis/aac/basic-bench/ex2<e,b>, ret : (res : a) -> e b, action : () -> <analysis/aac/basic-bench/ex2|e> a) -> e b;:[a144,a141,top]@[] fvvs: fromList [] args [hnd,ret,action]
+Extending store: B@(hnd:[a144,a141,top]@[]) with analysis/aac/basic-bench/@Hnd-ex2([(@cfc,CI@(@cfc 146:[a141,top]@[])),(@ctl-ex2,CI@(@ctl-ex2 146:[a141,top]@[]))])
+Extending store: B@(ret:[a144,a141,top]@[]) with AppParam(fn(x){
+  x;
+})
+Extending store: B@(action:[a144,a141,top]@[]) with AppParam(fn(){
+  @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))));
+})
+Evaluating: @hhandle(ex2/@tag, hnd, ret, action) basic-bench:96:[a144,a141,top]@[]
+Evaluating: @hhandle basic-bench:97:[a144,a141,top]@[]
+Evaluating: @hhandle basic-bench:102:[a144,a141,top]@[]
+Extending store: BI@(102:[a144,a141,top]@[]) with std/core/hnd/@hhandle
+Applying FApp {totalArgs = 4, leftArgs = [AppParam basic-bench:98 0 ex2/@tag,AppParam basic-bench:99 1 hnd,AppParam basic-bench:100 2 ret,AppParam basic-bench:101 3 action], resolvedArgs = [], parent = LamBody [hnd,ret,action] @hhandle(ex2/@tag, hnd, ret, action)}
+Evaluating: ex2/@tag basic-bench:98:[a144,a141,top]@[]
+Evaluating: @open(@new-htag)("ex2@basic-bench") basic-bench:17:[top]@[]
+Evaluating: @new-htag basic-bench:92:[top]@[]
+Evaluating: @new-htag basic-bench:94:[top]@[]
+Extending store: BI@(94:[top]@[]) with std/core/hnd/@new-htag
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:90 0 "ex2@basic-bench"], resolvedArgs = [], parent = DefNonRec // runtime tag for the effect `:ex2`
+pub val ex2/@tag : hnd/htag<analysis/aac/basic-bench/ex2>;}
+Evaluating: "ex2@basic-bench" basic-bench:90:[top]@[]
+Extending store: BI@(90:[top]@[]) with string -> "ex2@basic-bench"
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(94:[top]@[])], parent = DefNonRec // runtime tag for the effect `:ex2`
+pub val ex2/@tag : hnd/htag<analysis/aac/basic-bench/ex2>;}
+Applying: [] [BI@(94:[top]@[]),BI@(90:[top]@[])]
+Applying function: BI@(94:[top]@[]) std/core/hnd/@new-htag
+Applying primitive std/core/hnd/@new-htag
+Extending store: CI@(@field-x1 17:[top]@[]) with string -> "ex2@basic-bench"
+Extending store: BI@(17:[top]@[]) with std/core/hnd/@new-htag([(,CI@(@field-x1 17:[top]@[]))])
+Extending store: T@analysis/aac/basic-bench/#ex2/@tag with std/core/hnd/@new-htag([(,CI@(@field-x1 17:[top]@[]))])
+New result at Step (CEval AppParam basic-bench:98 0 ex2/@tag AI@(98:[a144,a141,top]@[]) EndMKAddr [a144,a141,top]@[])
+N (CApply AI@(98:[a144,a141,top]@[]) EndMKAddr T@analysis/aac/basic-bench/#ex2/@tag [])
 Not in:
-Next (fromList [CEval DefNonRec // select `fork` operation out of effect `:fork`
-pub fun fork/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/fork<e,a>) -> hnd/clause0<bool,analysis/aac/unix-simple/fork,e,a>; EndKAddr T@analysis/aac/unix-simple/#fork/@select [top]@[]])
+Next (fromList [CEval DefNonRec // runtime tag for the effect `:ex2`
+pub val ex2/@tag : hnd/htag<analysis/aac/basic-bench/ex2>; EndKAddr T@analysis/aac/basic-bench/#ex2/@tag [top]@[]])
 New:
-N (CApply AI@(326:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@select [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic (++) AI@(363:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(363:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@std/core/list/(++) [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(98:[a144,a141,top]@[]) EndMKAddr T@analysis/aac/basic-bench/#ex2/@tag [])
+Applying FApp {totalArgs = 4, leftArgs = [AppParam basic-bench:99 1 hnd,AppParam basic-bench:100 2 ret,AppParam basic-bench:101 3 action], resolvedArgs = [BI@(102:[a144,a141,top]@[])], parent = LamBody [hnd,ret,action] @hhandle(ex2/@tag, hnd, ret, action)}
+Evaluating: hnd basic-bench:99:[a144,a141,top]@[]
+Applying FApp {totalArgs = 4, leftArgs = [AppParam basic-bench:100 2 ret,AppParam basic-bench:101 3 action], resolvedArgs = [BI@(102:[a144,a141,top]@[]),T@analysis/aac/basic-bench/#ex2/@tag], parent = LamBody [hnd,ret,action] @hhandle(ex2/@tag, hnd, ret, action)}
+Evaluating: ret basic-bench:100:[a144,a141,top]@[]
+Applying FApp {totalArgs = 4, leftArgs = [AppParam basic-bench:101 3 action], resolvedArgs = [BI@(102:[a144,a141,top]@[]),T@analysis/aac/basic-bench/#ex2/@tag,B@(hnd:[a144,a141,top]@[])], parent = LamBody [hnd,ret,action] @hhandle(ex2/@tag, hnd, ret, action)}
+Evaluating: action basic-bench:101:[a144,a141,top]@[]
+Applying FApp {totalArgs = 4, leftArgs = [], resolvedArgs = [BI@(102:[a144,a141,top]@[]),T@analysis/aac/basic-bench/#ex2/@tag,B@(hnd:[a144,a141,top]@[]),B@(ret:[a144,a141,top]@[])], parent = LamBody [hnd,ret,action] @hhandle(ex2/@tag, hnd, ret, action)}
+Applying: [] [BI@(102:[a144,a141,top]@[]),T@analysis/aac/basic-bench/#ex2/@tag,B@(hnd:[a144,a141,top]@[]),B@(ret:[a144,a141,top]@[]),B@(action:[a144,a141,top]@[])]
+Applying function: BI@(102:[a144,a141,top]@[]) std/core/hnd/@hhandle
+Applying primitive std/core/hnd/@hhandle
+Evaluating: @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2))))) basic-bench:192:[delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: (+) basic-bench:197:[delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: fn(x, y){
+  @open(int-add)(x, y);
+} int:241:[top]@[]
+Extending store: BI@(241:[top]@[]) with DefNonRec((+))
+Extending store: T@std/core/int/(+) with DefNonRec((+))
+New result at Step (CEval AppParam basic-bench:197 0 (+) AI@(193:[delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) [delim]@[(basic-bench:96,[a144,a141,top])])
+N (CApply AI@(193:[delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) T@std/core/int/(+) [(basic-bench:96,[a144,a141,top])])
 Not in:
-Next (fromList [CEval DefNonRec // Append two lists.
-pub fip fun (++) : forall<a> (xs : list<a>, ys : list<a>) -> list<a>; EndKAddr T@std/core/list/(++) [top]@[]])
+Next (fromList [CEval DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int; EndKAddr T@std/core/int/(+) [top]@[]])
 New:
-N (CApply AI@(363:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@std/core/list/(++) [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic ritchie AI@(488:[delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(488:[delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/ritchie [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(193:[delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) T@std/core/int/(+) [(basic-bench:96,[a144,a141,top])])
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:194 0 @open(ex2)((Tuple2(1, 2))),AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))], resolvedArgs = [], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Evaluating: @open(ex2)((Tuple2(1, 2))) basic-bench:194:[delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: ex2 basic-bench:203:[delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: fn(a){
+  @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a);
+} basic-bench:25:[top]@[]
+Extending store: BI@(25:[top]@[]) with DefNonRec(ex2)
+Extending store: T@analysis/aac/basic-bench/ex2 with DefNonRec(ex2)
+New result at Step (CEval AppParam basic-bench:203 0 ex2 AI@(200:[delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) [delim]@[(basic-bench:96,[a144,a141,top])])
+N (CApply AI@(200:[delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) T@analysis/aac/basic-bench/ex2 [(basic-bench:96,[a144,a141,top])])
 Not in:
-Next (fromList [CEval DefNonRec pub fun ritchie : forall<e> () -> <analysis/aac/unix-simple/bio|e> (); EndKAddr T@analysis/aac/unix-simple/ritchie [top]@[]])
+Next (fromList [CEval DefNonRec // Call the `ctl ex2` operation of the effect `:ex2`
+pub fun ex2 : (a : (int, int)) -> analysis/aac/basic-bench/ex2 int; EndKAddr T@analysis/aac/basic-bench/ex2 [top]@[]])
 New:
-N (CApply AI@(488:[delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/ritchie [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:423 0 echo AI@(420:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(420:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(200:[delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) T@analysis/aac/basic-bench/ex2 [(basic-bench:96,[a144,a141,top])])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:201 0 Tuple2(1, 2)], resolvedArgs = [], parent = AppParam basic-bench:194 0 @open(ex2)((Tuple2(1, 2)))}
+Evaluating: Tuple2(1, 2) basic-bench:201:[delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: Tuple2 basic-bench:206:[delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: Tuple2 basic-bench:209:[delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(209:[delim]@[(basic-bench:96,[a144,a141,top])]) with Tuple2
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:207 0 1,AppParam basic-bench:208 1 2], resolvedArgs = [], parent = AppParam basic-bench:201 0 Tuple2(1, 2)}
+Evaluating: 1 basic-bench:207:[delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(207:[delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 1
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:208 1 2], resolvedArgs = [BI@(209:[delim]@[(basic-bench:96,[a144,a141,top])])], parent = AppParam basic-bench:201 0 Tuple2(1, 2)}
+Evaluating: 2 basic-bench:208:[delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(208:[delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 2
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(209:[delim]@[(basic-bench:96,[a144,a141,top])]),BI@(207:[delim]@[(basic-bench:96,[a144,a141,top])])], parent = AppParam basic-bench:201 0 Tuple2(1, 2)}
+Applying: [] [BI@(209:[delim]@[(basic-bench:96,[a144,a141,top])]),BI@(207:[delim]@[(basic-bench:96,[a144,a141,top])]),BI@(208:[delim]@[(basic-bench:96,[a144,a141,top])])]
+Applying function: BI@(209:[delim]@[(basic-bench:96,[a144,a141,top])]) Tuple2
+Extending store: CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 1
+Extending store: CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 2
+Extending store: BI@(201:[delim]@[(basic-bench:96,[a144,a141,top])]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@analysis/aac/basic-bench/ex2], parent = AppParam basic-bench:194 0 @open(ex2)((Tuple2(1, 2)))}
+Applying: [] [T@analysis/aac/basic-bench/ex2,BI@(201:[delim]@[(basic-bench:96,[a144,a141,top])])]
+Applying function: T@analysis/aac/basic-bench/ex2 DefNonRec(ex2)
+Applying closure: DefNonRec // Call the `ctl ex2` operation of the effect `:ex2`
+pub fun ex2 : (a : (int, int)) -> analysis/aac/basic-bench/ex2 int;:[a194,delim]@[(basic-bench:96,[a144,a141,top])] fvvs: fromList [] args [a]
+Extending store: B@(a:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Evaluating: @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a) basic-bench:117:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: @perform1 basic-bench:118:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: @perform1 basic-bench:122:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(122:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with std/core/hnd/@perform1
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0))),AppParam basic-bench:120 1 forall<e,a> ex2/@select,AppParam basic-bench:121 2 a], resolvedArgs = [], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: @open(@evv-at)((@open(@make-ssize_t)(0))) basic-bench:119:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: @evv-at basic-bench:126:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: @evv-at basic-bench:128:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(128:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with std/core/hnd/@evv-at
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:124 0 @open(@make-ssize_t)(0)], resolvedArgs = [], parent = AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0)))}
+Evaluating: @open(@make-ssize_t)(0) basic-bench:124:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: @make-ssize_t basic-bench:132:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(132:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with std/core/types/@make-ssize_t
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:130 0 0], resolvedArgs = [], parent = AppParam basic-bench:124 0 @open(@make-ssize_t)(0)}
+Evaluating: 0 basic-bench:130:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Extending store: BI@(130:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 0
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(132:[a194,delim]@[(basic-bench:96,[a144,a141,top])])], parent = AppParam basic-bench:124 0 @open(@make-ssize_t)(0)}
+Applying: [] [BI@(132:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),BI@(130:[a194,delim]@[(basic-bench:96,[a144,a141,top])])]
+Applying function: BI@(132:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) std/core/types/@make-ssize_t
+Applying primitive std/core/types/@make-ssize_t
+Extending store: BI@(124:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 0
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(128:[a194,delim]@[(basic-bench:96,[a144,a141,top])])], parent = AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0)))}
+Applying: [] [BI@(128:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),BI@(124:[a194,delim]@[(basic-bench:96,[a144,a141,top])])]
+Applying function: BI@(128:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) std/core/hnd/@evv-at
+Applying primitive std/core/hnd/@evv-at
+Extending store: CI@(@field-x1 119:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with int -> 0
+Extending store: BI@(119:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) with std/core/hnd/@evv-at([(,CI@(@field-x1 119:[a194,delim]@[(basic-bench:96,[a144,a141,top])]))])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:120 1 forall<e,a> ex2/@select,AppParam basic-bench:121 2 a], resolvedArgs = [BI@(122:[a194,delim]@[(basic-bench:96,[a144,a141,top])])], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: forall<e,a> ex2/@select basic-bench:120:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: ex2/@select basic-bench:136:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Evaluating: forall<e,a> fn(hnd){
+  (match (hnd) {
+    (@skip @Hnd-ex2(_, (@ctl-ex2)) : analysis/aac/basic-bench/ex2<e,a> )
+       -> @ctl-ex2;
+  });
+} basic-bench:23:[top]@[]
+Extending store: BI@(23:[top]@[]) with DefNonRec(ex2/@select)
+Extending store: T@analysis/aac/basic-bench/#ex2/@select with DefNonRec(ex2/@select)
+New result at Step (CEval ExprBasic ex2/@select AI@(120:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) [a194,delim]@[(basic-bench:96,[a144,a141,top])])
+N (CApply AI@(120:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) T@analysis/aac/basic-bench/#ex2/@select [(basic-bench:96,[a144,a141,top])])
 Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
+Next (fromList [CEval DefNonRec // select `ex2` operation out of effect `:ex2`
+pub fun ex2/@select : forall<e,a> (^ hnd : analysis/aac/basic-bench/ex2<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/basic-bench/ex2,e,a>; EndKAddr T@analysis/aac/basic-bench/#ex2/@select [top]@[]])
 New:
-N (CApply AI@(420:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(120:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) AI@(192:[a144,a141,top]@[]) T@analysis/aac/basic-bench/#ex2/@select [(basic-bench:96,[a144,a141,top])])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:121 2 a], resolvedArgs = [BI@(122:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),BI@(119:[a194,delim]@[(basic-bench:96,[a144,a141,top])])], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: a basic-bench:121:[a194,delim]@[(basic-bench:96,[a144,a141,top])]
+Applying FApp {totalArgs = 3, leftArgs = [], resolvedArgs = [BI@(122:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),BI@(119:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),T@analysis/aac/basic-bench/#ex2/@select], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Applying: [] [BI@(122:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),BI@(119:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),T@analysis/aac/basic-bench/#ex2/@select,B@(a:[a194,delim]@[(basic-bench:96,[a144,a141,top])])]
+Applying function: BI@(122:[a194,delim]@[(basic-bench:96,[a144,a141,top])]) std/core/hnd/@perform1
+Applying primitive std/core/hnd/@perform1
+Matched [a144,a141,top]@[]
+Extending store: B@(a:[a117,a144,a141]@[]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Extending store: B@(resume:[a117,a144,a141]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),[a117,a144,a141]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [])})
+Evaluating: @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))) basic-bench:161:[a117,a144,a141]@[]
+Evaluating: (+) basic-bench:166:[a117,a144,a141]@[]
+New result at Step (CEval AppParam basic-bench:166 0 (+) AI@(162:[a117,a144,a141]@[]) EndMKAddr [a117,a144,a141]@[])
+N (CApply AI@(162:[a117,a144,a141]@[]) EndMKAddr T@std/core/int/(+) [])
 Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
+Next (fromList [CEval DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int; EndKAddr T@std/core/int/(+) [top]@[]])
 New:
-N (CApply AI@(116:[a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(162:[a117,a144,a141]@[]) EndMKAddr T@std/core/int/(+) [])
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a))),AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))], resolvedArgs = [], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Evaluating: resume((@open(tuple2/fst)(a))) basic-bench:163:[a117,a144,a141]@[]
+Evaluating: resume basic-bench:169:[a117,a144,a141]@[]
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:170 0 @open(tuple2/fst)(a)], resolvedArgs = [], parent = AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a)))}
+Evaluating: @open(tuple2/fst)(a) basic-bench:170:[a117,a144,a141]@[]
+Evaluating: tuple2/fst basic-bench:175:[a117,a144,a141]@[]
+Evaluating: tuple2/fst basic-bench:177:[a117,a144,a141]@[]
+Evaluating: forall<a,b> fn(tuple2){
+  (match (tuple2) {
+    (@skip Tuple2((@x), _) : (a, b) )
+       -> @x;
+  });
+} types:316:[top]@[]
+Extending store: BI@(316:[top]@[]) with DefNonRec(tuple2/fst)
+Extending store: T@std/core/types/#tuple2/fst with DefNonRec(tuple2/fst)
+New result at Step (CEval ExprBasic tuple2/fst AI@(172:[a117,a144,a141]@[]) EndMKAddr [a117,a144,a141]@[])
+N (CApply AI@(172:[a117,a144,a141]@[]) EndMKAddr T@std/core/types/#tuple2/fst [])
 Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
+Next (fromList [CEval DefNonRec // Automatically generated. Retrieves the `fst` constructor field of the `:tuple2` type.
+pub fun tuple2/fst : forall<a,b> (^ tuple2 : (a, b)) -> a; EndKAddr T@std/core/types/#tuple2/fst [top]@[]])
 New:
-N (CApply AI@(117:[a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(172:[a117,a144,a141]@[]) EndMKAddr T@std/core/types/#tuple2/fst [])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:173 0 a], resolvedArgs = [], parent = AppParam basic-bench:170 0 @open(tuple2/fst)(a)}
+Evaluating: a basic-bench:173:[a117,a144,a141]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@std/core/types/#tuple2/fst], parent = AppParam basic-bench:170 0 @open(tuple2/fst)(a)}
+Applying: [] [T@std/core/types/#tuple2/fst,B@(a:[a117,a144,a141]@[])]
+Applying function: T@std/core/types/#tuple2/fst DefNonRec(tuple2/fst)
+Applying closure: DefNonRec // Automatically generated. Retrieves the `fst` constructor field of the `:tuple2` type.
+pub fun tuple2/fst : forall<a,b> (^ tuple2 : (a, b)) -> a;:[a170,a117,a144]@[] fvvs: fromList [] args [tuple2]
+Extending store: B@(tuple2:[a170,a117,a144]@[]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Evaluating: match (tuple2) {
+  (@skip Tuple2((@x), _) : (a, b) )
+     -> @x;
+} types:413:[a170,a117,a144]@[]
+Evaluating: tuple2 types:414:[a170,a117,a144]@[]
+Applying FScrut {parent = LamBody [tuple2] match (tuple2) {
+  (@skip Tuple2((@x), _) : (a, b) )
+     -> @x;
+}, branches = [CaseBranch 0 (@skip std/core/types/Tuple2((@x), _) : (a, b) )
+   -> @x;]}
+Extending store: B@(@x:[a170,a117,a144]@[]) with int -> 1
+Evaluating: @x types:415:[a170,a117,a144]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [B@(resume:[a117,a144,a141]@[])], parent = AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a)))}
+Applying: [] [B@(resume:[a117,a144,a141]@[]),B@(@x:[a170,a117,a144]@[])]
+Applying function: B@(resume:[a117,a144,a141]@[]) Kont(analysis/aac/basic-bench/ex2,AI@(117:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),[a117,a144,a141]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [])})
+Applying continuation basic-bench:163 rebinding fromList [a,resume]
+Rebinding: fromList [a,resume] from [a117,a144,a141]@[] to [a163,a117,a144]@[]
+Extending store: B@(a:[a163,a117,a144]@[]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Extending store: B@(resume:[a163,a117,a144]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),[a117,a144,a141]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [])})
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))], resolvedArgs = [T@std/core/int/(+)], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Evaluating: @open(ex2)((Tuple2(1, 2))) basic-bench:195:[delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: ex2 basic-bench:215:[delim]@[(basic-bench:163,[a163,a117,a144])]
+New result at Step (CEval AppParam basic-bench:215 0 ex2 AI@(212:[delim]@[(basic-bench:163,[a163,a117,a144])]) AI@(163:[a163,a117,a144]@[]) [delim]@[(basic-bench:163,[a163,a117,a144])])
+N (CApply AI@(212:[delim]@[(basic-bench:163,[a163,a117,a144])]) AI@(163:[a163,a117,a144]@[]) T@analysis/aac/basic-bench/ex2 [(basic-bench:163,[a163,a117,a144])])
 Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
+Next (fromList [CEval DefNonRec // Call the `ctl ex2` operation of the effect `:ex2`
+pub fun ex2 : (a : (int, int)) -> analysis/aac/basic-bench/ex2 int; EndKAddr T@analysis/aac/basic-bench/ex2 [top]@[]])
 New:
-N (CApply AI@(94:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@std/core/types/(++) [(unix-simple:134,[a613,a125,a471,a460,a455,top])])
+N (CApply AI@(212:[delim]@[(basic-bench:163,[a163,a117,a144])]) AI@(163:[a163,a117,a144]@[]) T@analysis/aac/basic-bench/ex2 [(basic-bench:163,[a163,a117,a144])])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:213 0 Tuple2(1, 2)], resolvedArgs = [], parent = AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))}
+Evaluating: Tuple2(1, 2) basic-bench:213:[delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: Tuple2 basic-bench:218:[delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: Tuple2 basic-bench:221:[delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(221:[delim]@[(basic-bench:163,[a163,a117,a144])]) with Tuple2
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:219 0 1,AppParam basic-bench:220 1 2], resolvedArgs = [], parent = AppParam basic-bench:213 0 Tuple2(1, 2)}
+Evaluating: 1 basic-bench:219:[delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(219:[delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 1
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:220 1 2], resolvedArgs = [BI@(221:[delim]@[(basic-bench:163,[a163,a117,a144])])], parent = AppParam basic-bench:213 0 Tuple2(1, 2)}
+Evaluating: 2 basic-bench:220:[delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(220:[delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 2
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(221:[delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(219:[delim]@[(basic-bench:163,[a163,a117,a144])])], parent = AppParam basic-bench:213 0 Tuple2(1, 2)}
+Applying: [] [BI@(221:[delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(219:[delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(220:[delim]@[(basic-bench:163,[a163,a117,a144])])]
+Applying function: BI@(221:[delim]@[(basic-bench:163,[a163,a117,a144])]) Tuple2
+Extending store: CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 1
+Extending store: CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 2
+Extending store: BI@(213:[delim]@[(basic-bench:163,[a163,a117,a144])]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@analysis/aac/basic-bench/ex2], parent = AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))}
+Applying: [] [T@analysis/aac/basic-bench/ex2,BI@(213:[delim]@[(basic-bench:163,[a163,a117,a144])])]
+Applying function: T@analysis/aac/basic-bench/ex2 DefNonRec(ex2)
+Applying closure: DefNonRec // Call the `ctl ex2` operation of the effect `:ex2`
+pub fun ex2 : (a : (int, int)) -> analysis/aac/basic-bench/ex2 int;:[a195,delim]@[(basic-bench:163,[a163,a117,a144])] fvvs: fromList [] args [a]
+Extending store: B@(a:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Evaluating: @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a) basic-bench:117:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: @perform1 basic-bench:118:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: @perform1 basic-bench:122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with std/core/hnd/@perform1
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0))),AppParam basic-bench:120 1 forall<e,a> ex2/@select,AppParam basic-bench:121 2 a], resolvedArgs = [], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: @open(@evv-at)((@open(@make-ssize_t)(0))) basic-bench:119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: @evv-at basic-bench:126:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: @evv-at basic-bench:128:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(128:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with std/core/hnd/@evv-at
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:124 0 @open(@make-ssize_t)(0)], resolvedArgs = [], parent = AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0)))}
+Evaluating: @open(@make-ssize_t)(0) basic-bench:124:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: @make-ssize_t basic-bench:132:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(132:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with std/core/types/@make-ssize_t
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:130 0 0], resolvedArgs = [], parent = AppParam basic-bench:124 0 @open(@make-ssize_t)(0)}
+Evaluating: 0 basic-bench:130:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Extending store: BI@(130:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 0
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(132:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])], parent = AppParam basic-bench:124 0 @open(@make-ssize_t)(0)}
+Applying: [] [BI@(132:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(130:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])]
+Applying function: BI@(132:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) std/core/types/@make-ssize_t
+Applying primitive std/core/types/@make-ssize_t
+Extending store: BI@(124:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 0
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(128:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])], parent = AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0)))}
+Applying: [] [BI@(128:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(124:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])]
+Applying function: BI@(128:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) std/core/hnd/@evv-at
+Applying primitive std/core/hnd/@evv-at
+Extending store: CI@(@field-x1 119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with int -> 0
+Extending store: BI@(119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) with std/core/hnd/@evv-at([(,CI@(@field-x1 119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:120 1 forall<e,a> ex2/@select,AppParam basic-bench:121 2 a], resolvedArgs = [BI@(122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: forall<e,a> ex2/@select basic-bench:120:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Evaluating: ex2/@select basic-bench:136:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+New result at Step (CEval ExprBasic ex2/@select AI@(120:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) AI@(163:[a163,a117,a144]@[]) [a195,delim]@[(basic-bench:163,[a163,a117,a144])])
+N (CApply AI@(120:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) AI@(163:[a163,a117,a144]@[]) T@analysis/aac/basic-bench/#ex2/@select [(basic-bench:163,[a163,a117,a144])])
 Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
+Next (fromList [CEval DefNonRec // select `ex2` operation out of effect `:ex2`
+pub fun ex2/@select : forall<e,a> (^ hnd : analysis/aac/basic-bench/ex2<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/basic-bench/ex2,e,a>; EndKAddr T@analysis/aac/basic-bench/#ex2/@select [top]@[]])
 New:
-N (CApply AI@(166:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(134:[delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@std/core/types/(++) [(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:416 0 echo AI@(413:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(413:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
+N (CApply AI@(120:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) AI@(163:[a163,a117,a144]@[]) T@analysis/aac/basic-bench/#ex2/@select [(basic-bench:163,[a163,a117,a144])])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:121 2 a], resolvedArgs = [BI@(122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: a basic-bench:121:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]
+Applying FApp {totalArgs = 3, leftArgs = [], resolvedArgs = [BI@(122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),T@analysis/aac/basic-bench/#ex2/@select], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Applying: [] [BI@(122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),BI@(119:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),T@analysis/aac/basic-bench/#ex2/@select,B@(a:[a195,delim]@[(basic-bench:163,[a163,a117,a144])])]
+Applying function: BI@(122:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]) std/core/hnd/@perform1
+Applying primitive std/core/hnd/@perform1
+Matched [a163,a117,a144]@[]
+Extending store: B@(a:[a117,a163,a117]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Extending store: B@(resume:[a117,a163,a117]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),[a117,a163,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Evaluating: @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))) basic-bench:161:[a117,a163,a117]@[]
+Evaluating: (+) basic-bench:166:[a117,a163,a117]@[]
+New result at Step (CEval AppParam basic-bench:166 0 (+) AI@(162:[a117,a163,a117]@[]) EndMKAddr [a117,a163,a117]@[])
+N (CApply AI@(162:[a117,a163,a117]@[]) EndMKAddr T@std/core/int/(+) [])
 Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
+Next (fromList [CEval DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int; EndKAddr T@std/core/int/(+) [top]@[]])
 New:
-N (CApply AI@(413:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
+N (CApply AI@(162:[a117,a163,a117]@[]) EndMKAddr T@std/core/int/(+) [])
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a))),AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))], resolvedArgs = [], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Evaluating: resume((@open(tuple2/fst)(a))) basic-bench:163:[a117,a163,a117]@[]
+Evaluating: resume basic-bench:169:[a117,a163,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:170 0 @open(tuple2/fst)(a)], resolvedArgs = [], parent = AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a)))}
+Evaluating: @open(tuple2/fst)(a) basic-bench:170:[a117,a163,a117]@[]
+Evaluating: tuple2/fst basic-bench:175:[a117,a163,a117]@[]
+Evaluating: tuple2/fst basic-bench:177:[a117,a163,a117]@[]
+New result at Step (CEval ExprBasic tuple2/fst AI@(172:[a117,a163,a117]@[]) EndMKAddr [a117,a163,a117]@[])
+N (CApply AI@(172:[a117,a163,a117]@[]) EndMKAddr T@std/core/types/#tuple2/fst [])
 Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
+Next (fromList [CEval DefNonRec // Automatically generated. Retrieves the `fst` constructor field of the `:tuple2` type.
+pub fun tuple2/fst : forall<a,b> (^ tuple2 : (a, b)) -> a; EndKAddr T@std/core/types/#tuple2/fst [top]@[]])
 New:
-N (CApply AI@(116:[a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a613,a125,a471,a460,a455,top]@[]) [a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
-New:
-N (CApply AI@(166:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:409 0 echo AI@(406:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(406:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(406:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a613,a125,a471,a460,a455,top]@[]) [a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
-New:
-N (CApply AI@(166:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:402 0 echo AI@(399:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(399:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(399:[a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) [a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
-New:
-N (CApply AI@(166:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic hamlet AI@(490:[delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(490:[delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/hamlet [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun hamlet : forall<e> () -> <analysis/aac/unix-simple/bio|e> (); EndKAddr T@analysis/aac/unix-simple/hamlet [top]@[]])
-New:
-N (CApply AI@(490:[delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/hamlet [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:451 0 echo AI@(448:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(448:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(448:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) [a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
-New:
-N (CApply AI@(166:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:444 0 echo AI@(441:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(441:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(441:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) [a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
-New:
-N (CApply AI@(166:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:437 0 echo AI@(434:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(434:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(434:[a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:170 0 (++) AI@(166:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) [a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(166:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Append two strings
-pub fun (++) : (x : string, y : string) -> string; EndKAddr T@std/core/types/(++) [top]@[]])
-New:
-N (CApply AI@(166:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) T@std/core/types/(++) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic append AI@(787:[a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(787:[a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@std/core/list/append [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefRec // Append two lists.
-pub fip fun append : forall<a> (xs : list<a>, ys : list<a>) -> list<a>; EndKAddr T@std/core/list/append [top]@[]])
-New:
-N (CApply AI@(787:[a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@std/core/list/append [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic append AI@(801:[a786,a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a786,a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(801:[a786,a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@std/core/list/append [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefRec // Append two lists.
-pub fip fun append : forall<a> (xs : list<a>, ys : list<a>) -> list<a>; EndKAddr T@std/core/list/append [top]@[]])
-New:
-N (CApply AI@(801:[a786,a362,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@std/core/list/append [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic tuple2/snd AI@(462:[a458,a455,top]@[]) EndMKAddr [a458,a455,top]@[])
-N (CApply AI@(462:[a458,a455,top]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
+N (CApply AI@(172:[a117,a163,a117]@[]) EndMKAddr T@std/core/types/#tuple2/fst [])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:173 0 a], resolvedArgs = [], parent = AppParam basic-bench:170 0 @open(tuple2/fst)(a)}
+Evaluating: a basic-bench:173:[a117,a163,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@std/core/types/#tuple2/fst], parent = AppParam basic-bench:170 0 @open(tuple2/fst)(a)}
+Applying: [] [T@std/core/types/#tuple2/fst,B@(a:[a117,a163,a117]@[])]
+Applying function: T@std/core/types/#tuple2/fst DefNonRec(tuple2/fst)
+Applying closure: DefNonRec // Automatically generated. Retrieves the `fst` constructor field of the `:tuple2` type.
+pub fun tuple2/fst : forall<a,b> (^ tuple2 : (a, b)) -> a;:[a170,a117,a163]@[] fvvs: fromList [] args [tuple2]
+Extending store: B@(tuple2:[a170,a117,a163]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Evaluating: match (tuple2) {
+  (@skip Tuple2((@x), _) : (a, b) )
+     -> @x;
+} types:413:[a170,a117,a163]@[]
+Evaluating: tuple2 types:414:[a170,a117,a163]@[]
+Applying FScrut {parent = LamBody [tuple2] match (tuple2) {
+  (@skip Tuple2((@x), _) : (a, b) )
+     -> @x;
+}, branches = [CaseBranch 0 (@skip std/core/types/Tuple2((@x), _) : (a, b) )
+   -> @x;]}
+Extending store: B@(@x:[a170,a117,a163]@[]) with int -> 1
+Evaluating: @x types:415:[a170,a117,a163]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [B@(resume:[a117,a163,a117]@[])], parent = AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a)))}
+Applying: [] [B@(resume:[a117,a163,a117]@[]),B@(@x:[a170,a117,a163]@[])]
+Applying function: B@(resume:[a117,a163,a117]@[]) Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),[a117,a163,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying continuation basic-bench:163 rebinding fromList [a,resume]
+Rebinding: fromList [a,resume] from [a117,a163,a117]@[] to [a163,a117,a163]@[]
+Extending store: B@(a:[a163,a117,a163]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Extending store: B@(resume:[a163,a117,a163]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),[a117,a163,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),B@(@x:[a170,a117,a144]@[])], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Applying: [] [T@std/core/int/(+),B@(@x:[a170,a117,a144]@[]),B@(@x:[a170,a117,a163]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a192,delim]@[(basic-bench:163,[a163,a117,a163])] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]) with int -> 1
+Extending store: B@(y:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]) with int -> 1
+Evaluating: @open(int-add)(x, y) int:416:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]
+Evaluating: int-add int:421:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]
+Extending store: BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a163])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]),B@(x:[a192,delim]@[(basic-bench:163,[a163,a117,a163])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]),B@(x:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]),B@(y:[a192,delim]@[(basic-bench:163,[a163,a117,a163])])]
+Applying function: BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a192,delim]@[(basic-bench:163,[a163,a117,a163])]) with int -> 2
+Applying FDollar {vaddr = B@(ret:[a144,a141,top]@[])}
+Extending store: B@(x:[a163,a117,a163]@[]) with int -> 2
+Evaluating: x basic-bench:189:[a163,a117,a163]@[]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))], resolvedArgs = [T@std/core/int/(+)], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Evaluating: resume((@open(tuple2/snd)(a))) basic-bench:164:[a117,a163,a117]@[]
+Evaluating: resume basic-bench:179:[a117,a163,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:180 0 @open(tuple2/snd)(a)], resolvedArgs = [], parent = AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))}
+Evaluating: @open(tuple2/snd)(a) basic-bench:180:[a117,a163,a117]@[]
+Evaluating: tuple2/snd basic-bench:185:[a117,a163,a117]@[]
+Evaluating: tuple2/snd basic-bench:187:[a117,a163,a117]@[]
+Evaluating: forall<a,b> fn(tuple2){
+  (match (tuple2) {
+    (@skip Tuple2(_, (@x)) : (a, b) )
+       -> @x;
+  });
+} types:318:[top]@[]
+Extending store: BI@(318:[top]@[]) with DefNonRec(tuple2/snd)
+Extending store: T@std/core/types/#tuple2/snd with DefNonRec(tuple2/snd)
+New result at Step (CEval ExprBasic tuple2/snd AI@(182:[a117,a163,a117]@[]) EndMKAddr [a117,a163,a117]@[])
+N (CApply AI@(182:[a117,a163,a117]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
 Not in:
 Next (fromList [CEval DefNonRec // Automatically generated. Retrieves the `snd` constructor field of the `:tuple2` type.
 pub fun tuple2/snd : forall<a,b> (^ tuple2 : (a, b)) -> b; EndKAddr T@std/core/types/#tuple2/snd [top]@[]])
 New:
-N (CApply AI@(462:[a458,a455,top]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
-New result at Step (CApply AI@(307:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) B@(action:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CEval LamBody [] action() AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval LamBody [] match ((@open(fork)())) {
-  (True() : bool )
-     -> ritchie();
-  (@skip False() : bool )
-     -> hamlet();
-} AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(479:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]])
-New:
-N (CEval LamBody [] action() AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:485 0 fork AI@(483:[a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(483:[a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/fork [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Call the `ctl fork` operation of the effect `:fork`
-pub fun fork : () -> analysis/aac/unix-simple/fork bool; EndKAddr T@analysis/aac/unix-simple/fork [top]@[]])
-New:
-N (CApply AI@(483:[a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/fork [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic fork/@select AI@(326:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(326:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@select [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `fork` operation out of effect `:fork`
-pub fun fork/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/fork<e,a>) -> hnd/clause0<bool,analysis/aac/unix-simple/fork,e,a>; EndKAddr T@analysis/aac/unix-simple/#fork/@select [top]@[]])
-New:
-N (CApply AI@(326:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(386:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#fork/@select [(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at VStore B@(resume:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at MKStore AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at Step (CApply AI@(375:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(375:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(375:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(375:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(375:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic hamlet AI@(490:[a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(490:[a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/hamlet [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun hamlet : forall<e> () -> <analysis/aac/unix-simple/bio|e> (); EndKAddr T@analysis/aac/unix-simple/hamlet [top]@[]])
-New:
-N (CApply AI@(490:[a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/hamlet [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:451 0 echo AI@(448:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(448:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(448:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(365:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a429,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:444 0 echo AI@(441:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(441:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(441:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a432,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:437 0 echo AI@(434:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(434:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(434:[a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a433,a482,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore IL@(91:write:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a433,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-New result at KStore IL@(91:write:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a432,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-New result at KStore IL@(91:write:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:365, linkKnext = AI@(91:[a115,a429,a482,a386,delim]@[(unix-simple:365,[a365,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(365:[a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])})
-New result at VStore B@(action:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a365,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(resume:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at VStore B@(resume:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-Not in:
-SValue  konts: (analysis/aac/unix-simple/fork,AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [])}) lit: ⊥,⊥,⊥,⊥
-New:
-SV Kont(analysis/aac/unix-simple/fork,AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]),[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])],Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action])})
-New result at MKStore AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at KStore IL@(91:write:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at MKStore AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-Not in:
-MKValue (fromList [MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]}])
-New:
-MKV (MKHandle {eff = analysis/aac/unix-simple/fork, mkKNext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), mknext = AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]), hnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}, mkCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]})
-New result at Step (CApply AI@(371:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(183:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) BI@(371:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) BI@(371:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply AI@(323:[a480,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) BI@(371:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply AI@(323:[a480,a386,delim]@[(unix-simple:302,[a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) BI@(371:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic ritchie AI@(488:[a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(488:[a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/ritchie [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun ritchie : forall<e> () -> <analysis/aac/unix-simple/bio|e> (); EndKAddr T@analysis/aac/unix-simple/ritchie [top]@[]])
-New:
-N (CApply AI@(488:[a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/ritchie [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:423 0 echo AI@(420:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(420:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(420:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(364:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a391,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:416 0 echo AI@(413:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(413:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(413:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a394,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a143,a140,delim]@[(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:409 0 echo AI@(406:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(406:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(406:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a397,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:402 0 echo AI@(399:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(399:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub fun echo : (s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/echo [top]@[]])
-New:
-N (CApply AI@(399:[a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/echo [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:120 0 write AI@(116:[a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(116:[a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // Write a string to a file descriptor
-
-// Call the `fun write` operation of the effect `:bio`
-pub fun write : (fd : analysis/aac/unix-simple/filedesc, s : string) -> analysis/aac/unix-simple/bio (); EndKAddr T@analysis/aac/unix-simple/write [top]@[]])
-New:
-N (CApply AI@(116:[a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/write [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval AppParam unix-simple:117 0 stdout AI@(117:[a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(117:[a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec pub val stdout : int; EndKAddr T@analysis/aac/unix-simple/stdout [top]@[]])
-New:
-N (CApply AI@(117:[a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/stdout [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at Step (CEval ExprBasic write/@select AI@(94:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply AI@(94:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CEval DefNonRec // select `write` operation out of effect `:bio`
-pub fun write/@select : forall<e,a> (^ hnd : analysis/aac/unix-simple/bio<e,a>) -> hnd/clause2<analysis/aac/unix-simple/filedesc,string,(),analysis/aac/unix-simple/bio,e,a>; EndKAddr T@analysis/aac/unix-simple/#write/@select [top]@[]])
-New:
-N (CApply AI@(94:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(91:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) T@analysis/aac/unix-simple/#write/@select [(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FResume {label = analysis/aac/unix-simple/bio, vaddr = IL@(91:write:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), rHnd = Handler {ops = B@(hnd:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:146 1 fn(@res){
-  @res;
-}, henv = BEnv (fromList [action1,buf,iev@462,iev@511])}, rCtx = unix-simple:160}, kCtx = [a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(70:[a143,a140,delim]@[(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at Step (CApply AI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a613,a125,a471,a460,a455,top]@[]) BI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-N (CApply IL@(91:write:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-Not in:
-Next (fromList [CApply IL@(91:write:[a115,a398,a481,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]])
-New:
-N (CApply IL@(91:write:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) AI@(160:[a160,a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])]) BI@(160:[a160,a160,a160,a143,a140,delim]@[(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]) [(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-New result at KStore IL@(91:write:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a398,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at KStore IL@(91:write:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a397,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at KStore IL@(91:write:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a394,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at KStore IL@(91:write:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-Not in:
-KValue (fromList [KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [action,resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])}])
-New:
-KV (KNext {frame = FHLink {linkEff = analysis/aac/unix-simple/fork, doCtx = unix-simple:91, hCtx = unix-simple:364, linkKnext = AI@(91:[a115,a391,a481,a386,delim]@[(unix-simple:364,[a364,a345,a342,a475,a193,a185,delim]),(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), linkHnd = Handler {ops = B@(hnd:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]), ret = Just AppParam unix-simple:348 1 fn(x){
-  Cons(x, Nil);
-}, henv = BEnv (fromList [resume])}}, kCtx = [a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])], knext = AI@(364:[a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])})
-New result at VStore B@(action:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a143,a140,delim]),(unix-simple:160,[a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-New result at VStore B@(action:[a364,a345,a342,a475,a193,a185,delim]@[(unix-simple:160,[a160,a160,a160,a160,a143,a140,delim]),(unix-simple:160,[a160,a160,a160,a160,a613,a125,a471,a460,a455,top])])
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-Not in:
-SValue closures: AppParam(fn(){
-  action();
-}) in <<[a475,a193,a185,delim]@[(unix-simple:70,[a143,a140,delim]),(unix-simple:134,[a613,a125,a471,a460,a455,top])]>> lit: ⊥,⊥,⊥,⊥
-New:
-SV AppParam(fn(){
-  match ((@open(fork)())) {
-    (True() : bool )
-       -> ritchie();
-    (@skip False() : bool )
-       -> hamlet();
-  };
-})
-d=100,m=100
-Result 0 / 1
-Result 0.0%, time: 0.139881s
+N (CApply AI@(182:[a117,a163,a117]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:183 0 a], resolvedArgs = [], parent = AppParam basic-bench:180 0 @open(tuple2/snd)(a)}
+Evaluating: a basic-bench:183:[a117,a163,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@std/core/types/#tuple2/snd], parent = AppParam basic-bench:180 0 @open(tuple2/snd)(a)}
+Applying: [] [T@std/core/types/#tuple2/snd,B@(a:[a117,a163,a117]@[])]
+Applying function: T@std/core/types/#tuple2/snd DefNonRec(tuple2/snd)
+Applying closure: DefNonRec // Automatically generated. Retrieves the `snd` constructor field of the `:tuple2` type.
+pub fun tuple2/snd : forall<a,b> (^ tuple2 : (a, b)) -> b;:[a180,a117,a163]@[] fvvs: fromList [] args [tuple2]
+Extending store: B@(tuple2:[a180,a117,a163]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Evaluating: match (tuple2) {
+  (@skip Tuple2(_, (@x)) : (a, b) )
+     -> @x;
+} types:422:[a180,a117,a163]@[]
+Evaluating: tuple2 types:423:[a180,a117,a163]@[]
+Applying FScrut {parent = LamBody [tuple2] match (tuple2) {
+  (@skip Tuple2(_, (@x)) : (a, b) )
+     -> @x;
+}, branches = [CaseBranch 0 (@skip std/core/types/Tuple2(_, (@x)) : (a, b) )
+   -> @x;]}
+Extending store: B@(@x:[a180,a117,a163]@[]) with int -> 2
+Evaluating: @x types:424:[a180,a117,a163]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [B@(resume:[a117,a163,a117]@[])], parent = AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))}
+Applying: [] [B@(resume:[a117,a163,a117]@[]),B@(@x:[a180,a117,a163]@[])]
+Applying function: B@(resume:[a117,a163,a117]@[]) Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),[a117,a163,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying continuation basic-bench:164 rebinding fromList [a,resume]
+Rebinding: fromList [a,resume] from [a117,a163,a117]@[] to [a164,a117,a163]@[]
+Extending store: B@(a:[a164,a117,a163]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:163,[a163,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:163,[a163,a117,a144])]))])
+Extending store: B@(resume:[a164,a117,a163]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:163,[a163,a117,a144])]),[a117,a163,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),B@(@x:[a170,a117,a144]@[])], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Applying: [] [T@std/core/int/(+),B@(@x:[a170,a117,a144]@[]),B@(@x:[a180,a117,a163]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a192,delim]@[(basic-bench:164,[a164,a117,a163])] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]) with int -> 1
+Extending store: B@(y:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]) with int -> 2
+Evaluating: @open(int-add)(x, y) int:416:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]
+Evaluating: int-add int:421:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]
+Extending store: BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a163])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]),B@(x:[a192,delim]@[(basic-bench:164,[a164,a117,a163])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]),B@(x:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]),B@(y:[a192,delim]@[(basic-bench:164,[a164,a117,a163])])]
+Applying function: BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a192,delim]@[(basic-bench:164,[a164,a117,a163])]) with int -> 3
+Applying FDollar {vaddr = B@(ret:[a144,a141,top]@[])}
+Extending store: B@(x:[a164,a117,a163]@[]) with int -> 3
+Evaluating: x basic-bench:189:[a164,a117,a163]@[]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),B@(x:[a163,a117,a163]@[])], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Applying: [] [T@std/core/int/(+),B@(x:[a163,a117,a163]@[]),B@(x:[a164,a117,a163]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a161,a117,a163]@[] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a161,a117,a163]@[]) with int -> 2
+Extending store: B@(y:[a161,a117,a163]@[]) with int -> 3
+Evaluating: @open(int-add)(x, y) int:416:[a161,a117,a163]@[]
+Evaluating: int-add int:421:[a161,a117,a163]@[]
+Extending store: BI@(421:[a161,a117,a163]@[]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a161,a117,a163]@[]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a161,a117,a163]@[])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a161,a117,a163]@[]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a161,a117,a163]@[]),B@(x:[a161,a117,a163]@[])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a161,a117,a163]@[]),B@(x:[a161,a117,a163]@[]),B@(y:[a161,a117,a163]@[])]
+Applying function: BI@(421:[a161,a117,a163]@[]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a161,a117,a163]@[]) with int -> 5
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))], resolvedArgs = [T@std/core/int/(+)], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Evaluating: resume((@open(tuple2/snd)(a))) basic-bench:164:[a117,a144,a141]@[]
+Evaluating: resume basic-bench:179:[a117,a144,a141]@[]
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:180 0 @open(tuple2/snd)(a)], resolvedArgs = [], parent = AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))}
+Evaluating: @open(tuple2/snd)(a) basic-bench:180:[a117,a144,a141]@[]
+Evaluating: tuple2/snd basic-bench:185:[a117,a144,a141]@[]
+Evaluating: tuple2/snd basic-bench:187:[a117,a144,a141]@[]
+New result at Step (CEval ExprBasic tuple2/snd AI@(182:[a117,a144,a141]@[]) EndMKAddr [a117,a144,a141]@[])
+N (CApply AI@(182:[a117,a144,a141]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
+Not in:
+Next (fromList [CEval DefNonRec // Automatically generated. Retrieves the `snd` constructor field of the `:tuple2` type.
+pub fun tuple2/snd : forall<a,b> (^ tuple2 : (a, b)) -> b; EndKAddr T@std/core/types/#tuple2/snd [top]@[]])
+New:
+N (CApply AI@(182:[a117,a144,a141]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:183 0 a], resolvedArgs = [], parent = AppParam basic-bench:180 0 @open(tuple2/snd)(a)}
+Evaluating: a basic-bench:183:[a117,a144,a141]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@std/core/types/#tuple2/snd], parent = AppParam basic-bench:180 0 @open(tuple2/snd)(a)}
+Applying: [] [T@std/core/types/#tuple2/snd,B@(a:[a117,a144,a141]@[])]
+Applying function: T@std/core/types/#tuple2/snd DefNonRec(tuple2/snd)
+Applying closure: DefNonRec // Automatically generated. Retrieves the `snd` constructor field of the `:tuple2` type.
+pub fun tuple2/snd : forall<a,b> (^ tuple2 : (a, b)) -> b;:[a180,a117,a144]@[] fvvs: fromList [] args [tuple2]
+Extending store: B@(tuple2:[a180,a117,a144]@[]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Evaluating: match (tuple2) {
+  (@skip Tuple2(_, (@x)) : (a, b) )
+     -> @x;
+} types:422:[a180,a117,a144]@[]
+Evaluating: tuple2 types:423:[a180,a117,a144]@[]
+Applying FScrut {parent = LamBody [tuple2] match (tuple2) {
+  (@skip Tuple2(_, (@x)) : (a, b) )
+     -> @x;
+}, branches = [CaseBranch 0 (@skip std/core/types/Tuple2(_, (@x)) : (a, b) )
+   -> @x;]}
+Extending store: B@(@x:[a180,a117,a144]@[]) with int -> 2
+Evaluating: @x types:424:[a180,a117,a144]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [B@(resume:[a117,a144,a141]@[])], parent = AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))}
+Applying: [] [B@(resume:[a117,a144,a141]@[]),B@(@x:[a180,a117,a144]@[])]
+Applying function: B@(resume:[a117,a144,a141]@[]) Kont(analysis/aac/basic-bench/ex2,AI@(117:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),[a117,a144,a141]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [])})
+Applying continuation basic-bench:164 rebinding fromList [a,resume]
+Rebinding: fromList [a,resume] from [a117,a144,a141]@[] to [a164,a117,a144]@[]
+Extending store: B@(a:[a164,a117,a144]@[]) with std/core/types/Tuple2([(fst,CI@(fst 201:[delim]@[(basic-bench:96,[a144,a141,top])])),(snd,CI@(snd 201:[delim]@[(basic-bench:96,[a144,a141,top])]))])
+Extending store: B@(resume:[a164,a117,a144]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a194,delim]@[(basic-bench:96,[a144,a141,top])]),[a117,a144,a141]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [])})
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))], resolvedArgs = [T@std/core/int/(+)], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Evaluating: @open(ex2)((Tuple2(1, 2))) basic-bench:195:[delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: ex2 basic-bench:215:[delim]@[(basic-bench:164,[a164,a117,a144])]
+New result at Step (CEval AppParam basic-bench:215 0 ex2 AI@(212:[delim]@[(basic-bench:164,[a164,a117,a144])]) AI@(164:[a164,a117,a144]@[]) [delim]@[(basic-bench:164,[a164,a117,a144])])
+N (CApply AI@(212:[delim]@[(basic-bench:164,[a164,a117,a144])]) AI@(164:[a164,a117,a144]@[]) T@analysis/aac/basic-bench/ex2 [(basic-bench:164,[a164,a117,a144])])
+Not in:
+Next (fromList [CEval DefNonRec // Call the `ctl ex2` operation of the effect `:ex2`
+pub fun ex2 : (a : (int, int)) -> analysis/aac/basic-bench/ex2 int; EndKAddr T@analysis/aac/basic-bench/ex2 [top]@[]])
+New:
+N (CApply AI@(212:[delim]@[(basic-bench:164,[a164,a117,a144])]) AI@(164:[a164,a117,a144]@[]) T@analysis/aac/basic-bench/ex2 [(basic-bench:164,[a164,a117,a144])])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:213 0 Tuple2(1, 2)], resolvedArgs = [], parent = AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))}
+Evaluating: Tuple2(1, 2) basic-bench:213:[delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: Tuple2 basic-bench:218:[delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: Tuple2 basic-bench:221:[delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(221:[delim]@[(basic-bench:164,[a164,a117,a144])]) with Tuple2
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:219 0 1,AppParam basic-bench:220 1 2], resolvedArgs = [], parent = AppParam basic-bench:213 0 Tuple2(1, 2)}
+Evaluating: 1 basic-bench:219:[delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(219:[delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 1
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:220 1 2], resolvedArgs = [BI@(221:[delim]@[(basic-bench:164,[a164,a117,a144])])], parent = AppParam basic-bench:213 0 Tuple2(1, 2)}
+Evaluating: 2 basic-bench:220:[delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(220:[delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 2
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(221:[delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(219:[delim]@[(basic-bench:164,[a164,a117,a144])])], parent = AppParam basic-bench:213 0 Tuple2(1, 2)}
+Applying: [] [BI@(221:[delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(219:[delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(220:[delim]@[(basic-bench:164,[a164,a117,a144])])]
+Applying function: BI@(221:[delim]@[(basic-bench:164,[a164,a117,a144])]) Tuple2
+Extending store: CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 1
+Extending store: CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 2
+Extending store: BI@(213:[delim]@[(basic-bench:164,[a164,a117,a144])]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@analysis/aac/basic-bench/ex2], parent = AppParam basic-bench:195 1 @open(ex2)((Tuple2(1, 2)))}
+Applying: [] [T@analysis/aac/basic-bench/ex2,BI@(213:[delim]@[(basic-bench:164,[a164,a117,a144])])]
+Applying function: T@analysis/aac/basic-bench/ex2 DefNonRec(ex2)
+Applying closure: DefNonRec // Call the `ctl ex2` operation of the effect `:ex2`
+pub fun ex2 : (a : (int, int)) -> analysis/aac/basic-bench/ex2 int;:[a195,delim]@[(basic-bench:164,[a164,a117,a144])] fvvs: fromList [] args [a]
+Extending store: B@(a:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Evaluating: @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a) basic-bench:117:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: @perform1 basic-bench:118:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: @perform1 basic-bench:122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with std/core/hnd/@perform1
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0))),AppParam basic-bench:120 1 forall<e,a> ex2/@select,AppParam basic-bench:121 2 a], resolvedArgs = [], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: @open(@evv-at)((@open(@make-ssize_t)(0))) basic-bench:119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: @evv-at basic-bench:126:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: @evv-at basic-bench:128:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(128:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with std/core/hnd/@evv-at
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:124 0 @open(@make-ssize_t)(0)], resolvedArgs = [], parent = AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0)))}
+Evaluating: @open(@make-ssize_t)(0) basic-bench:124:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: @make-ssize_t basic-bench:132:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(132:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with std/core/types/@make-ssize_t
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:130 0 0], resolvedArgs = [], parent = AppParam basic-bench:124 0 @open(@make-ssize_t)(0)}
+Evaluating: 0 basic-bench:130:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Extending store: BI@(130:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 0
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(132:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])], parent = AppParam basic-bench:124 0 @open(@make-ssize_t)(0)}
+Applying: [] [BI@(132:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(130:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])]
+Applying function: BI@(132:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) std/core/types/@make-ssize_t
+Applying primitive std/core/types/@make-ssize_t
+Extending store: BI@(124:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 0
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [BI@(128:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])], parent = AppParam basic-bench:119 0 @open(@evv-at)((@open(@make-ssize_t)(0)))}
+Applying: [] [BI@(128:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(124:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])]
+Applying function: BI@(128:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) std/core/hnd/@evv-at
+Applying primitive std/core/hnd/@evv-at
+Extending store: CI@(@field-x1 119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with int -> 0
+Extending store: BI@(119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) with std/core/hnd/@evv-at([(,CI@(@field-x1 119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:120 1 forall<e,a> ex2/@select,AppParam basic-bench:121 2 a], resolvedArgs = [BI@(122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: forall<e,a> ex2/@select basic-bench:120:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Evaluating: ex2/@select basic-bench:136:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+New result at Step (CEval ExprBasic ex2/@select AI@(120:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) AI@(164:[a164,a117,a144]@[]) [a195,delim]@[(basic-bench:164,[a164,a117,a144])])
+N (CApply AI@(120:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) AI@(164:[a164,a117,a144]@[]) T@analysis/aac/basic-bench/#ex2/@select [(basic-bench:164,[a164,a117,a144])])
+Not in:
+Next (fromList [CEval DefNonRec // select `ex2` operation out of effect `:ex2`
+pub fun ex2/@select : forall<e,a> (^ hnd : analysis/aac/basic-bench/ex2<e,a>) -> hnd/clause1<(int, int),int,analysis/aac/basic-bench/ex2,e,a>; EndKAddr T@analysis/aac/basic-bench/#ex2/@select [top]@[]])
+New:
+N (CApply AI@(120:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) AI@(164:[a164,a117,a144]@[]) T@analysis/aac/basic-bench/#ex2/@select [(basic-bench:164,[a164,a117,a144])])
+Applying FApp {totalArgs = 3, leftArgs = [AppParam basic-bench:121 2 a], resolvedArgs = [BI@(122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Evaluating: a basic-bench:121:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]
+Applying FApp {totalArgs = 3, leftArgs = [], resolvedArgs = [BI@(122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),T@analysis/aac/basic-bench/#ex2/@select], parent = LamBody [a] @perform1((@open(@evv-at)((@open(@make-ssize_t)(0)))), (forall<e,a> ex2/@select), a)}
+Applying: [] [BI@(122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),BI@(119:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),T@analysis/aac/basic-bench/#ex2/@select,B@(a:[a195,delim]@[(basic-bench:164,[a164,a117,a144])])]
+Applying function: BI@(122:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]) std/core/hnd/@perform1
+Applying primitive std/core/hnd/@perform1
+Matched [a164,a117,a144]@[]
+Extending store: B@(a:[a117,a164,a117]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Extending store: B@(resume:[a117,a164,a117]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),[a117,a164,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Evaluating: @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a))))) basic-bench:161:[a117,a164,a117]@[]
+Evaluating: (+) basic-bench:166:[a117,a164,a117]@[]
+New result at Step (CEval AppParam basic-bench:166 0 (+) AI@(162:[a117,a164,a117]@[]) EndMKAddr [a117,a164,a117]@[])
+N (CApply AI@(162:[a117,a164,a117]@[]) EndMKAddr T@std/core/int/(+) [])
+Not in:
+Next (fromList [CEval DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int; EndKAddr T@std/core/int/(+) [top]@[]])
+New:
+N (CApply AI@(162:[a117,a164,a117]@[]) EndMKAddr T@std/core/int/(+) [])
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a))),AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))], resolvedArgs = [], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Evaluating: resume((@open(tuple2/fst)(a))) basic-bench:163:[a117,a164,a117]@[]
+Evaluating: resume basic-bench:169:[a117,a164,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:170 0 @open(tuple2/fst)(a)], resolvedArgs = [], parent = AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a)))}
+Evaluating: @open(tuple2/fst)(a) basic-bench:170:[a117,a164,a117]@[]
+Evaluating: tuple2/fst basic-bench:175:[a117,a164,a117]@[]
+Evaluating: tuple2/fst basic-bench:177:[a117,a164,a117]@[]
+New result at Step (CEval ExprBasic tuple2/fst AI@(172:[a117,a164,a117]@[]) EndMKAddr [a117,a164,a117]@[])
+N (CApply AI@(172:[a117,a164,a117]@[]) EndMKAddr T@std/core/types/#tuple2/fst [])
+Not in:
+Next (fromList [CEval DefNonRec // Automatically generated. Retrieves the `fst` constructor field of the `:tuple2` type.
+pub fun tuple2/fst : forall<a,b> (^ tuple2 : (a, b)) -> a; EndKAddr T@std/core/types/#tuple2/fst [top]@[]])
+New:
+N (CApply AI@(172:[a117,a164,a117]@[]) EndMKAddr T@std/core/types/#tuple2/fst [])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:173 0 a], resolvedArgs = [], parent = AppParam basic-bench:170 0 @open(tuple2/fst)(a)}
+Evaluating: a basic-bench:173:[a117,a164,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@std/core/types/#tuple2/fst], parent = AppParam basic-bench:170 0 @open(tuple2/fst)(a)}
+Applying: [] [T@std/core/types/#tuple2/fst,B@(a:[a117,a164,a117]@[])]
+Applying function: T@std/core/types/#tuple2/fst DefNonRec(tuple2/fst)
+Applying closure: DefNonRec // Automatically generated. Retrieves the `fst` constructor field of the `:tuple2` type.
+pub fun tuple2/fst : forall<a,b> (^ tuple2 : (a, b)) -> a;:[a170,a117,a164]@[] fvvs: fromList [] args [tuple2]
+Extending store: B@(tuple2:[a170,a117,a164]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Evaluating: match (tuple2) {
+  (@skip Tuple2((@x), _) : (a, b) )
+     -> @x;
+} types:413:[a170,a117,a164]@[]
+Evaluating: tuple2 types:414:[a170,a117,a164]@[]
+Applying FScrut {parent = LamBody [tuple2] match (tuple2) {
+  (@skip Tuple2((@x), _) : (a, b) )
+     -> @x;
+}, branches = [CaseBranch 0 (@skip std/core/types/Tuple2((@x), _) : (a, b) )
+   -> @x;]}
+Extending store: B@(@x:[a170,a117,a164]@[]) with int -> 1
+Evaluating: @x types:415:[a170,a117,a164]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [B@(resume:[a117,a164,a117]@[])], parent = AppParam basic-bench:163 0 resume((@open(tuple2/fst)(a)))}
+Applying: [] [B@(resume:[a117,a164,a117]@[]),B@(@x:[a170,a117,a164]@[])]
+Applying function: B@(resume:[a117,a164,a117]@[]) Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),[a117,a164,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying continuation basic-bench:163 rebinding fromList [a,resume]
+Rebinding: fromList [a,resume] from [a117,a164,a117]@[] to [a163,a117,a164]@[]
+Extending store: B@(a:[a163,a117,a164]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Extending store: B@(resume:[a163,a117,a164]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),[a117,a164,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),B@(@x:[a180,a117,a144]@[])], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Applying: [] [T@std/core/int/(+),B@(@x:[a180,a117,a144]@[]),B@(@x:[a170,a117,a164]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a192,delim]@[(basic-bench:163,[a163,a117,a164])] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]) with int -> 2
+Extending store: B@(y:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]) with int -> 1
+Evaluating: @open(int-add)(x, y) int:416:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]
+Evaluating: int-add int:421:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]
+Extending store: BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a164])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]),B@(x:[a192,delim]@[(basic-bench:163,[a163,a117,a164])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]),B@(x:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]),B@(y:[a192,delim]@[(basic-bench:163,[a163,a117,a164])])]
+Applying function: BI@(421:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a192,delim]@[(basic-bench:163,[a163,a117,a164])]) with int -> 3
+Applying FDollar {vaddr = B@(ret:[a144,a141,top]@[])}
+Extending store: B@(x:[a163,a117,a164]@[]) with int -> 3
+Evaluating: x basic-bench:189:[a163,a117,a164]@[]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))], resolvedArgs = [T@std/core/int/(+)], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Evaluating: resume((@open(tuple2/snd)(a))) basic-bench:164:[a117,a164,a117]@[]
+Evaluating: resume basic-bench:179:[a117,a164,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:180 0 @open(tuple2/snd)(a)], resolvedArgs = [], parent = AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))}
+Evaluating: @open(tuple2/snd)(a) basic-bench:180:[a117,a164,a117]@[]
+Evaluating: tuple2/snd basic-bench:185:[a117,a164,a117]@[]
+Evaluating: tuple2/snd basic-bench:187:[a117,a164,a117]@[]
+New result at Step (CEval ExprBasic tuple2/snd AI@(182:[a117,a164,a117]@[]) EndMKAddr [a117,a164,a117]@[])
+N (CApply AI@(182:[a117,a164,a117]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
+Not in:
+Next (fromList [CEval DefNonRec // Automatically generated. Retrieves the `snd` constructor field of the `:tuple2` type.
+pub fun tuple2/snd : forall<a,b> (^ tuple2 : (a, b)) -> b; EndKAddr T@std/core/types/#tuple2/snd [top]@[]])
+New:
+N (CApply AI@(182:[a117,a164,a117]@[]) EndMKAddr T@std/core/types/#tuple2/snd [])
+Applying FApp {totalArgs = 1, leftArgs = [AppParam basic-bench:183 0 a], resolvedArgs = [], parent = AppParam basic-bench:180 0 @open(tuple2/snd)(a)}
+Evaluating: a basic-bench:183:[a117,a164,a117]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [T@std/core/types/#tuple2/snd], parent = AppParam basic-bench:180 0 @open(tuple2/snd)(a)}
+Applying: [] [T@std/core/types/#tuple2/snd,B@(a:[a117,a164,a117]@[])]
+Applying function: T@std/core/types/#tuple2/snd DefNonRec(tuple2/snd)
+Applying closure: DefNonRec // Automatically generated. Retrieves the `snd` constructor field of the `:tuple2` type.
+pub fun tuple2/snd : forall<a,b> (^ tuple2 : (a, b)) -> b;:[a180,a117,a164]@[] fvvs: fromList [] args [tuple2]
+Extending store: B@(tuple2:[a180,a117,a164]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Evaluating: match (tuple2) {
+  (@skip Tuple2(_, (@x)) : (a, b) )
+     -> @x;
+} types:422:[a180,a117,a164]@[]
+Evaluating: tuple2 types:423:[a180,a117,a164]@[]
+Applying FScrut {parent = LamBody [tuple2] match (tuple2) {
+  (@skip Tuple2(_, (@x)) : (a, b) )
+     -> @x;
+}, branches = [CaseBranch 0 (@skip std/core/types/Tuple2(_, (@x)) : (a, b) )
+   -> @x;]}
+Extending store: B@(@x:[a180,a117,a164]@[]) with int -> 2
+Evaluating: @x types:424:[a180,a117,a164]@[]
+Applying FApp {totalArgs = 1, leftArgs = [], resolvedArgs = [B@(resume:[a117,a164,a117]@[])], parent = AppParam basic-bench:164 1 resume((@open(tuple2/snd)(a)))}
+Applying: [] [B@(resume:[a117,a164,a117]@[]),B@(@x:[a180,a117,a164]@[])]
+Applying function: B@(resume:[a117,a164,a117]@[]) Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),[a117,a164,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying continuation basic-bench:164 rebinding fromList [a,resume]
+Rebinding: fromList [a,resume] from [a117,a164,a117]@[] to [a164,a117,a164]@[]
+Extending store: B@(a:[a164,a117,a164]@[]) with std/core/types/Tuple2([(fst,CI@(fst 213:[delim]@[(basic-bench:164,[a164,a117,a144])])),(snd,CI@(snd 213:[delim]@[(basic-bench:164,[a164,a117,a144])]))])
+Extending store: B@(resume:[a164,a117,a164]@[]) with Kont(analysis/aac/basic-bench/ex2,AI@(117:[a195,delim]@[(basic-bench:164,[a164,a117,a144])]),[a117,a164,a117]@[],Handler {ops = B@(hnd:[a144,a141,top]@[]), ret = Just AppParam basic-bench:147 1 fn(x){
+  x;
+}, henv = BEnv (fromList [a,resume])})
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),B@(@x:[a180,a117,a144]@[])], parent = LamBody [] @open((+))((@open(ex2)((Tuple2(1, 2)))), (@open(ex2)((Tuple2(1, 2)))))}
+Applying: [] [T@std/core/int/(+),B@(@x:[a180,a117,a144]@[]),B@(@x:[a180,a117,a164]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a192,delim]@[(basic-bench:164,[a164,a117,a164])] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]) with int -> 2
+Extending store: B@(y:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]) with int -> 2
+Evaluating: @open(int-add)(x, y) int:416:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]
+Evaluating: int-add int:421:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]
+Extending store: BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a164])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]),B@(x:[a192,delim]@[(basic-bench:164,[a164,a117,a164])])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]),B@(x:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]),B@(y:[a192,delim]@[(basic-bench:164,[a164,a117,a164])])]
+Applying function: BI@(421:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a192,delim]@[(basic-bench:164,[a164,a117,a164])]) with int -> 4
+Applying FDollar {vaddr = B@(ret:[a144,a141,top]@[])}
+Extending store: B@(x:[a164,a117,a164]@[]) with int -> 4
+Evaluating: x basic-bench:189:[a164,a117,a164]@[]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),B@(x:[a163,a117,a164]@[])], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Applying: [] [T@std/core/int/(+),B@(x:[a163,a117,a164]@[]),B@(x:[a164,a117,a164]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a161,a117,a164]@[] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a161,a117,a164]@[]) with int -> 3
+Extending store: B@(y:[a161,a117,a164]@[]) with int -> 4
+Evaluating: @open(int-add)(x, y) int:416:[a161,a117,a164]@[]
+Evaluating: int-add int:421:[a161,a117,a164]@[]
+Extending store: BI@(421:[a161,a117,a164]@[]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a161,a117,a164]@[]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a161,a117,a164]@[])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a161,a117,a164]@[]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a161,a117,a164]@[]),B@(x:[a161,a117,a164]@[])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a161,a117,a164]@[]),B@(x:[a161,a117,a164]@[]),B@(y:[a161,a117,a164]@[])]
+Applying function: BI@(421:[a161,a117,a164]@[]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a161,a117,a164]@[]) with int -> 7
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [T@std/core/int/(+),BI@(416:[a161,a117,a163]@[])], parent = LamBody [a,resume] @open((+))((resume((@open(tuple2/fst)(a)))), (resume((@open(tuple2/snd)(a)))))}
+Applying: [] [T@std/core/int/(+),BI@(416:[a161,a117,a163]@[]),BI@(416:[a161,a117,a164]@[])]
+Applying function: T@std/core/int/(+) DefNonRec((+))
+Applying closure: DefNonRec // Add two integers.
+pub fip fun (+) : (x : int, y : int) -> int;:[a161,a117,a144]@[] fvvs: fromList [] args [x,y]
+Extending store: B@(x:[a161,a117,a144]@[]) with int -> 5
+Extending store: B@(y:[a161,a117,a144]@[]) with int -> 7
+Evaluating: @open(int-add)(x, y) int:416:[a161,a117,a144]@[]
+Evaluating: int-add int:421:[a161,a117,a144]@[]
+Extending store: BI@(421:[a161,a117,a144]@[]) with std/core/int/int-add
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:418 0 x,AppParam int:419 1 y], resolvedArgs = [], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: x int:418:[a161,a117,a144]@[]
+Applying FApp {totalArgs = 2, leftArgs = [AppParam int:419 1 y], resolvedArgs = [BI@(421:[a161,a117,a144]@[])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Evaluating: y int:419:[a161,a117,a144]@[]
+Applying FApp {totalArgs = 2, leftArgs = [], resolvedArgs = [BI@(421:[a161,a117,a144]@[]),B@(x:[a161,a117,a144]@[])], parent = LamBody [x,y] @open(int-add)(x, y)}
+Applying: [] [BI@(421:[a161,a117,a144]@[]),B@(x:[a161,a117,a144]@[]),B@(y:[a161,a117,a144]@[])]
+Applying function: BI@(421:[a161,a117,a144]@[]) std/core/int/int-add
+Applying primitive std/core/int/int-add
+Extending store: BI@(416:[a161,a117,a144]@[]) with int -> 12
+Extending store: EndVAddr with int -> 12
+Evaluating: 12 basic-bench:231:[top]@[]
+Extending store: BI@(231:[top]@[]) with int -> 12
+Extending store: EndVAddr with int -> 12
+d=2,m=3
+Result 1 / 1
+Result 100.0%, time: 0.022613s
