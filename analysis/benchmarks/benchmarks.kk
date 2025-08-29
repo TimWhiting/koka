@@ -1,4 +1,3 @@
-
 effect ex1
   ctl ex1(i: int): int 
 
@@ -286,22 +285,22 @@ fun analyze-sum2d()
 fun result-sum2d() 3
 
 effect get
-  ctl get(i: int): int
+  ctl get(): int
 effect set
   ctl set(i: int): ()
 
-fun countdown(_)
-  val i = get(0)
+fun countdown()
+  val i = get()
   if i == 0 then i else 
     set(i - 1)
-    countdown(0)
+    countdown()
 
 fun analyze-get-set(): div int
   trace("Example get/set")
   val x = 2
-  with ctl get(_) resume(x)
+  with ctl get() resume(x)
   with ctl set(a)
-    with override ctl get(b) resume(a)
+    with override ctl get() resume(a)
     resume(())
-  countdown(0)
+  countdown()
 fun result-get-set() 0
