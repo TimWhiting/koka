@@ -140,17 +140,17 @@ fun session-manager3( initial-user : user, action6 : () -> <su,whoami|e> a ) : e
   action6()
 
 
-pub fun analyze-example4()
-  with bio
-  with status
-  with session-manager3(Root)
-  echo("hi ")
-  echo(whoami())
-  su(Alice)
-  echo(", and hi ")
-  echo(whoami())
-fun result-example4() : (int,string)
-  (0, "hi root, and hi alice")
+// pub fun analyze-example4()
+//   with bio
+//   with status
+//   with session-manager3(Root)
+//   echo("hi ")
+//   echo(whoami())
+//   su(Alice)
+//   echo(", and hi ")
+//   echo(whoami())
+// fun result-example4() : (int,string)
+//   (0, "hi root, and hi alice")
 
 // -----------------------------------------
 // Multitasking
@@ -205,17 +205,16 @@ fun hamlet() : <bio|e> ()
   echo("Whether 'tis nobler in the mind to suffer\n")
 
 pub fun analyze-example5()
-  with return(x:(list<()>, string)) x.snd
+  with return(x:(list<int>,string)) x.snd
   with bio
-  // with timeshare
-  with forking
+  with timeshare
+  with status
   with session-manager3(Root)
-  // with status
   if fork() then
-    // su(Alice)
+    su(Alice)
     ritchie()
   else
-    // su(Bob)
+    su(Bob)
     hamlet()
 pub fun example5()
   analyze-example5().println
@@ -248,5 +247,5 @@ fun interrupt-write( action : () -> <bio,interrupt|e> a ) : <bio,interrupt|e> a
 // but Whether 'tis nobler in the mind to suffer
 // you have to be a genius to understand the simplicity."
 
-pub fun main()
-  example5()
+// pub fun main()
+//   example5()

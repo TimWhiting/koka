@@ -137,7 +137,6 @@ data Frame =
       doCtx :: !ExprContextId,
       hCtx :: !ExprContextId,
       linkKnext :: !Addr,
-      llastCtx :: !CombinedCtx,
       linkHnd :: !Handler
   }
   | FDollar {
@@ -185,7 +184,7 @@ hvars (Handler _ _ v) = bvars v
 
 data MKont =
   MKEnd
-  | MKHandle { eff :: !Name, mkKNext:: !Addr, mknext:: !Addr, hnd :: !Handler, lastMkCtx :: !CombinedCtx, mkCtx:: !CombinedCtx }
+  | MKHandle { eff :: !Name, mkKNext:: !Addr, mknext:: !Addr, hnd :: !Handler, mkCtx:: !CombinedCtx }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
