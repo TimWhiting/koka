@@ -241,6 +241,29 @@ doApply kaddr mkaddr addr ctx = do
               bod <- focusBody e
               -- trace ("Applying FMask " ++ show env) $ return()
               eval bod env knext mkaddr ctx
+        FDollar va -> do 
+          mk <- mkStore mkaddr
+          case mk of
+            MKEnd -> doBottom
+            MKHandle _ knext mknext _ dynctx -> do
+              res <- store va
+              case res of 
+                AChangeClos cexpr cenv -> do
+                    body <- focusBody cexpr
+                    let [arg] = lamNames cexpr
+                    k <- kLimit
+                    let newEnv = M.insert arg ctx cenv
+                    -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show arg) $ return ()
+                    v <- store addr
+                    extendStore (fromJust $ lookupEnv arg newEnv) v
+                    eval body (limitEnv newEnv (fvs body)) knext mknext ctx
+        FResume label kont venv hnd u -> do
+          k <- kLimit
+          let newCtx = take k $ CallApp u : ctx
+              mk' = ImplicitAddr newCtx venv u
+          -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
+          extendMKStore mk' (MKHandle label knext mkaddr hnd venv)
+          apply kont mk' addr ctx
         FApp n args res u venv -> do
           case args of
             [] -> case res ++ [addr] of
@@ -344,16 +367,27 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             doBottom
           Just op -> do
             o <- store op
+            k <- kLimit
+            let newCtx = take k $ CallApp (contextId performExpr) : ctx
             -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
-            AChangeObj _ [opAddr] <- store op
+            AChangeObj opConName [opAddr] <- store op
             AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
-            let newEnv = foldl (\acc x -> M.insert x ctx acc) openv params
+            let newEnv = foldl (\acc x -> M.insert x newCtx acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
-            zipWithM_ rebind args (map (BindingAddr ctx) params)
-            extendStore (BindingAddr ctx (last params)) (AChangeKont name kaddr henv h)
-            eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext ctx
+            zipWithM_ rebind args (map (BindingAddr newCtx) params)
+            -- extendStore (BindingAddr ctx (last params)) (AChangeKont name kaddr henv h)
+            -- eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext ctx
+            if nameStem (getName opConName) `startsWith` "clause-tail" then do
+              let k' = ImplicitAddr newCtx henv (contextId bod)
+              extendKStore k' (KNext (FResume eff kaddr henv h (contextId bod)) mkKNext)
+              eval bod (limitEnv newEnv (fvs bod)) k' mknext newCtx
+            else if nameStem (getName opConName) `startsWith` "clause-never" then do 
+              eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext newCtx
+            else do
+              extendStore (BindingAddr newCtx (last params)) (AChangeKont name kaddr henv h)
+              eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext newCtx
       else do
         let k' = ImplicitLAddr ctx henv (contextId performExpr)
         extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h henv) mkKNext)
@@ -441,10 +475,11 @@ doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameHand
   let newctx = take k $ CallApp (contextId u) : ctx
   bod <- focusBody body
   -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
-  let mk' = ImplicitAddr newctx venv (contextId u)
-  extendMKStore mk' (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]))
+  let kmkaddr = ImplicitAddr ctx venv (contextId bod)
+  extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) EndKAddr)
+  extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]))
   -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
-  eval bod (limitEnv bodyenv (fvs body)) EndKAddr mk' newctx
+  eval bod (limitEnv bodyenv (fvs body)) kmkaddr kmkaddr newctx
 doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameLocalVar = do
   -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   args <- mapM store arguments

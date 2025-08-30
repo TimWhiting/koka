@@ -108,6 +108,16 @@ data Frame =
       linkHnd :: Handler,
       linkHEnv :: VEnv
   }
+  | FDollar {
+      vaddr :: Addr
+  }
+  | FResume {
+      label :: Name,
+      vaddr :: Addr,
+      venv :: VEnv,
+      rHnd :: Handler,
+      rCtx :: ExprContextId
+  }
   | FStore {
       vaddr :: Addr
   }
