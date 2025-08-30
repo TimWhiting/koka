@@ -177,10 +177,8 @@ data BEnv = BEnv (S.Set TName) deriving (Eq, Ord, Show)
 
 bvars (BEnv v) = v
 data Handler =
-  Handler { ops :: !Addr, ret :: !(Maybe ExprContext), henv:: !BEnv}
+  Handler { ops :: !Addr, ret :: !(Maybe ExprContext)}
   deriving (Eq, Ord, Show)
-
-hvars (Handler _ _ v) = bvars v
 
 data MKont =
   MKEnd
