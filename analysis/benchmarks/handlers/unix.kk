@@ -221,7 +221,8 @@ pub fun example5()
 fun result-example5()
   r"UNIX is basically a simple operating system, but you have to be a genius to understand the simplicity.
 To be, or not to be, that is the question:
-Whether 'tis nobler in the mind to suffer"
+Whether 'tis nobler in the mind to suffer
+"
 
 fun interrupt-write( action : () -> <bio,interrupt|e> a ) : <bio,interrupt|e> a
   with override fun write(fd,s) { interrupt(); write(fd,s) }
