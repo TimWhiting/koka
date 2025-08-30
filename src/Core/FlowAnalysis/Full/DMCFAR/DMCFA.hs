@@ -180,7 +180,7 @@ doEval expr kaddr mkaddr ctx =
             -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
             apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
     Lit l -> do
-      addr <- allocConst ctx expr (injLit l)
+      addr <- allocConst ctx expr (injLit (contextId expr) l)
       apply kaddr mkaddr addr (dynamic ctx)
     Lam{} -> do
       addr <- allocConst ctx expr (AChangeClos expr ctx)
@@ -341,7 +341,7 @@ doApply kaddr mkaddr addr dynctx = do
                     let addr = BindImplicitAddr newctx (contextId u)
                     let conParams = map (\nm -> ConImplicitAddr nm newctx (contextId u)) params
                     zipWithM_ rebind arguments conParams
-                    extendStore addr (AChangeObj name (zip params conParams))
+                    extendStore addr (AChangeObj con name (zip params conParams))
                     apply knext mkaddr addr dynctx
                   AChangeKont label kx hctx hnd@(Handler _ _) -> do
                     m <- mLimit
@@ -410,7 +410,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         m <- mLimit
         -- let newCtx = mkCtx -- addCall m mkCtx (contextId performExpr)
         -- trace ("Matched " ++ show mkCtx) $ return ()
-        AChangeObj tname hndargs@(_:ops) <- store hnd
+        AChangeObj _ tname hndargs@(_:ops) <- store hnd
         hargs <- mapM (store . snd) hndargs
         -- trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
         let unmakeHidden ('-':rest) = newName rest
@@ -423,7 +423,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
           Just op -> do
             o <- store op
             -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
-            AChangeObj opConName [opAddr] <- store op
+            AChangeObj _ opConName [opAddr] <- store op
             AChangeClos op opCtx <- store (snd opAddr)
             let params = lamNames op
             bod <- focusBody op
@@ -465,14 +465,16 @@ unwindSet varName val knext mkaddr addr ctx u = do
     MKHandle nm k' mknext h mkCtx | getName varName == nm -> do
       d <- dLimit
       m <- mLimit
-      let newctx = addCall m mkCtx (contextId u)
+      v <- store val
+      let u = vcontextId v
+      let newctx = addCall m mkCtx u
       let newAddr = BindingAddr newctx varName
       rebind val newAddr
       -- rebindAll (S.delete varName (bvars (henv h))) mkCtx newctx
-      let mk' = ImplicitAddr newctx (contextId u)
+      let mk' = ImplicitAddr newctx u
       extendMKStore mk' (MKHandle nm k' mknext h{ops = newAddr} newctx)
       extendStore addr changeUnit
-      let newDelimCtx = addDelim d newctx (contextId u)
+      let newDelimCtx = addDelim d newctx u
       -- trace ("Extended time " ++ show newDelimCtx) $ return ()
       apply knext mk' addr newDelimCtx
     MKHandle nm k' mknext h@(Handler _ _) mkCtx -> do
@@ -489,7 +491,7 @@ isHandlerPrimitive n =
 
 fvsVal :: AChange -> FixAAMR r s e [(S.Set TName, CombinedCtx)]
 fvsVal (AChangeClos e ctx) = return [(fvvs e, ctx)]
-fvsVal (AChangeObj _ args) = do
+fvsVal (AChangeObj _ _ args) = do
   args' <- mapM (store . snd) args
   fvss <- mapM fvsVal args'
   return $ concat fvss
@@ -497,9 +499,9 @@ fvsVal _ = return []
 
 doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> Addr -> Addr -> [Addr] -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | isClauseName n || n == nameHTag || n == nameEvvAt = do
-  let conParams = zipWith (\_ i -> ConImplicitAddr (newFieldName i) ctx (contextId u)) arguments [1..]
+  let conParams = zipWith (\_ i -> ConImplicitAddr (newName $ nameStem n ++ show i) ctx (contextId u)) arguments [1..]
   zipWithM_ rebind arguments conParams
-  extendStore addr (AChangeObj name (zip (repeat nameNil) conParams))
+  extendStore addr (AChangeObj u name (zip (repeat nameNil) conParams))
   apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | isNamePerform n = do
   args <- mapM store arguments
@@ -529,7 +531,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameLocalSet 
     apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameHandle = do
   args <- mapM store arguments
-  let [AChangeObj _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] = args
+  let [AChangeObj _ _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] = args
   let label = case exprOfCtx u of
         App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
   d <- dLimit
@@ -596,14 +598,14 @@ patMatch plit@(PatLit _) addr = do
   v <- store addr
   case v of
     AChangeLit litChange ->
-      if patSubsumed plit litChange then return $ Just M.empty
+      if patSubsumedX plit litChange then return $ Just M.empty
       else return Nothing
     _ -> return Nothing
 patMatch (PatCon nm pats _ _ _ _ _ _) addr = do
   -- TODO: Early catch of wrong type
   v <- store addr
   case v of
-    AChangeObj name args ->
+    AChangeObj _ name args ->
       if name == nm then do
         let patArgs = zip pats (map snd args)
         matches <- mapM (uncurry patMatch) patArgs
