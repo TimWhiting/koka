@@ -531,22 +531,24 @@ doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameLocalSet 
     apply knext mkaddr addr (dynamic ctx)
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameHandle = do
   args <- mapM store arguments
-  let [AChangeObj _ _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] = args
-  let label = case exprOfCtx u of
-        App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
-  d <- dLimit
-  m <- mLimit
-  fvss <- fvsVal hnd
-  bod <- focusBody body
-  let bvars = fvvs body
-  -- trace ("OPS " ++ show label ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
-  let newctx = newDelim d m ctx (contextId u)
-  let kmkaddr = ImplicitAddr newctx (contextId bod)
-  extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) newctx EndKAddr)
-  extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) ctx)
-  --trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
-  rebindAll bvars bodyenv newctx
-  eval bod kmkaddr kmkaddr newctx
+  case args of 
+    [AChangeObj _ _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] -> do
+      let label = case exprOfCtx u of
+            App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
+      d <- dLimit
+      m <- mLimit
+      fvss <- fvsVal hnd
+      bod <- focusBody body
+      let bvars = fvvs body
+      -- trace ("OPS " ++ show label ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
+      let newctx = newDelim d m ctx (contextId u)
+      let kmkaddr = ImplicitAddr newctx (contextId bod)
+      extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) newctx EndKAddr)
+      extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) ctx)
+      --trace ("Applying handle: " ++ show label ++ " with env " ++ show newctx) $ return ()
+      rebindAll bvars bodyenv newctx
+      eval bod kmkaddr kmkaddr newctx
+    _ -> doBottom
 doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameLocalVar = do
   -- trace ("LocalVar " ++ show u) $ return ()
   args <- mapM store arguments
