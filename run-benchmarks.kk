@@ -2,7 +2,7 @@ import std/os/process
 import std/text/regex
 import std/num/float64
 
-val files = ["benchmarks", "handlers/yield", "handlers/vec"] // , "handlers/unix"]
+val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix"]
 
 type analysis
   DMCFA
