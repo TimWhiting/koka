@@ -105,8 +105,8 @@ truncate' x n = fromIntegral (floor (x * t)) / t
 
 compareResult :: (AbValue, M.Map Addr AbValue) -> (AbValue, M.Map Addr AbValue) -> S.Set (AbValue, AbValue) -> Bool
 compareResult (result, rMap) (expected, eMap) checked = do
-  let objMatch :: (TName, [(Name, Addr)]) -> (TName, [(Name, Addr)]) -> Bool
-      objMatch (name, args) (name2, args2) =
+  let objMatch :: (ExprContext, TName, [(Name, Addr)]) -> (ExprContext, TName, [(Name, Addr)]) -> Bool
+      objMatch (_, name, args) (_, name2, args2) =
          let argsMatch = zipWith (\(n, a) (n2, a2) ->
                   let arg1 = fromJust $ M.lookup a rMap
                       arg2 = fromJust $ M.lookup a2 eMap in
@@ -114,7 +114,7 @@ compareResult (result, rMap) (expected, eMap) checked = do
          in name == name2 && all id argsMatch
   if S.member (result, expected) checked then 
     True
-  else if alits result == alits expected then
+  else if alits result `litXEquiv` alits expected then
     let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
     in
       -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
