@@ -17,9 +17,9 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> (2, 6)
-    DMCFA-EXP -> (2, 6)
-    KCFA -> (0, 6)
+    DMCFA -> (2, 4)
+    DMCFA-EXP -> (2, 4)
+    KCFA -> (0, 4)
 
 fun show(a: analysis)
   match a

@@ -13,7 +13,7 @@ import Type.Type
 import Data.Set hiding (foldl, map, map)
 import qualified Data.Set as S
 import Core.Core as C
-import Syntax.Syntax as S
+import Syntax.Syntax as S hiding (Handler)
 import Data.List (elemIndex, intercalate)
 import Compile.Module
 import Debug.Trace (trace)
@@ -172,10 +172,19 @@ data AChange =
   AChangeClos ExprContext VEnv
   | AChangePrim TName ExprContext
   | AChangeConstr ExprContext [Name]
-  | AChangeObj TName [(Name,Addr)]
-  | AChangeLit LiteralChange
+  | AChangeObj ExprContext TName [(Name,Addr)]
+  | AChangeLit LiteralChangeX
   | AChangeKont Name Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
+  
+vcontextId change = 
+  case change of 
+    AChangeClos e _ -> contextId e 
+    AChangePrim _ e -> contextId e
+    AChangeConstr e _ -> contextId e
+    AChangeObj e _ _ -> contextId e
+    AChangeLit e -> litEx e
+    AChangeKont _ _ _ h@(Handler _ e) -> contextId $ fromJust e
 
 envOf :: AChange -> VEnv
 envOf (AChangeClos _ env) = env
@@ -195,7 +204,7 @@ ctxOfClos res =
 instance Show AChange where
   show (AChangeClos expr env) = showNoEnvClosure (expr, env)
   show (AChangeConstr expr params) = showSimpleClosure (expr, startEnv)
-  show (AChangeObj name args) = show name ++ "(" ++ show args ++ ")"
+  show (AChangeObj e name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr) = show name
   show (AChangeKont name addr env handler) = "Kont" ++ show (name, addr, env, handler)
   show (AChangeLit lit) = show lit
@@ -205,13 +214,13 @@ data AbValue =
     aclos:: !(Set (ExprContext, VEnv)),
     acons:: !(Set (ExprContext, [Name])),
     aprims :: !(Set (TName, ExprContext)),
-    aobjs :: !(Set (TName, [(Name,Addr)])),
+    aobjs :: !(Set (ExprContext, TName, [(Name,Addr)])),
     akonts:: !(Set (Name, Addr, VEnv, Handler)),
-    alits:: !LiteralLattice
+    alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
 addrs :: AbValue -> [Addr]
-addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, args) -> map snd args) objs
+addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, _, args) -> map snd args) objs
 
 changes :: AbValue -> [AChange]
 changes (AbValue clos constrs prims objs konts lits) =
@@ -220,29 +229,29 @@ changes (AbValue clos constrs prims objs konts lits) =
     closs = map (uncurry AChangeClos) $ S.toList clos
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     primss = map (uncurry AChangePrim) $ S.toList prims
-    objss = map (uncurry AChangeObj) $ S.toList objs
+    objss = map (\(e, n, a) -> AChangeObj e n a) $ S.toList objs
     kontss = map (\(name, addr, env, handler) -> AChangeKont name addr env handler) $ S.toList konts
     litss = changesLit lits
 
-changesLit :: LiteralLattice -> [AChange]
-changesLit (LiteralLattice sint sfloat schar strings) =
-  [AChangeLit (LiteralChangeInt int) | int <- FM.elems sint] ++
-  [AChangeLit (LiteralChangeFloat float) | float <- FM.elems sfloat] ++
-  [AChangeLit (LiteralChangeChar char) | char <- FM.elems schar] ++
-  [AChangeLit (LiteralChangeString string) | string <- FM.elems strings]
+changesLit :: LiteralLatticeX -> [AChange]
+changesLit (LiteralLatticeX sint sfloat schar strings) =
+  [AChangeLit (LiteralChangeIntX int) | int <- FM.elems sint] ++
+  [AChangeLit (LiteralChangeFloatX float) | float <- FM.elems sfloat] ++
+  [AChangeLit (LiteralChangeCharX char) | char <- FM.elems schar] ++
+  [AChangeLit (LiteralChangeStringX string) | string <- FM.elems strings]
 
 changeIn :: AChange -> AbValue -> Bool
 changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _ _) = S.member (ctx,env) clos
 changeIn (AChangeConstr ctx params) (AbValue _ constr _ _ _ _) = S.member (ctx,params) constr
 changeIn (AChangePrim name expr) (AbValue _ _ prims _ _ _) = S.member (name, expr) prims
-changeIn (AChangeObj name args) (AbValue _ _ _ objs _ _) = S.member (name, args) objs
+changeIn (AChangeObj exp name args) (AbValue _ _ _ objs _ _) = S.member (exp, name, args) objs
 changeIn (AChangeKont name addr env handler) (AbValue _ _ _ _ konts _) = S.member (name, addr, env, handler) konts
-changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLattice ints floats chars strings)) =
+changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLatticeX ints floats chars strings)) =
   case lit of
-    LiteralChangeInt i -> i `lte` ints
-    LiteralChangeFloat f -> f `lte` floats
-    LiteralChangeChar c -> c `lte` chars
-    LiteralChangeString s -> s `lte` strings
+    LiteralChangeIntX i -> i `lteX` ints
+    LiteralChangeFloatX f -> f `lteX` floats
+    LiteralChangeCharX c -> c `lteX` chars
+    LiteralChangeStringX s -> s `lteX` strings
 instance Semigroup AbValue where
   (<>) :: AbValue -> AbValue -> AbValue
   (<>) = joinAbValue
@@ -280,7 +289,7 @@ showSimpleAbValue (AbValue cls cntrs prims objs konts lit) =
   (if S.null prims then "" else " prims: [" ++ intercalate "," (map (showSimpleContext . snd) (S.toList prims)) ++ "]") ++
   (if S.null objs then "" else " objs: [" ++ intercalate "," (map show (S.toList objs)) ++ "]") ++
   (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
-  (if litIsBottom lit then "" else " lits: " ++ show lit)
+  (if litIsBottomX lit then "" else " lits: " ++ show lit)
 
 showNoEnvAbValue :: AbValue -> String
 showNoEnvAbValue (AbValue cls cntrs prims objs konts lit) =
@@ -289,7 +298,7 @@ showNoEnvAbValue (AbValue cls cntrs prims objs konts lit) =
   (if S.null prims then "" else " prims: [" ++ intercalate "," (map (showSimpleContext . snd) (S.toList prims)) ++ "]") ++
   (if S.null objs then "" else " objs: [" ++ intercalate "," (map show (S.toList objs)) ++ "]") ++
   (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
-  (if litIsBottom lit then "" else " lits: " ++ show lit)
+  (if litIsBottomX lit then "" else " lits: " ++ show lit)
 
 -- Basic creating of abstract values
 showSimpleClosure :: (ExprContext, VEnv) -> String
@@ -307,15 +316,15 @@ showSimpleAbValueCtx (env, ab) =
   showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
 
 emptyAbValue :: AbValue
-emptyAbValue = AbValue S.empty S.empty S.empty S.empty S.empty litBottom
+emptyAbValue = AbValue S.empty S.empty S.empty S.empty S.empty litBottomX
 
-injLit :: C.Lit -> AChange
-injLit x =
+injLit :: ExprContextId -> C.Lit -> AChange
+injLit e x =
   case x of
-    C.LitInt i -> AChangeLit $ LiteralChangeInt $ LChangeSingle i
-    C.LitFloat f -> AChangeLit $ LiteralChangeFloat $ LChangeSingle f
-    C.LitChar c -> AChangeLit $ LiteralChangeChar $ LChangeSingle c
-    C.LitString s -> AChangeLit $ LiteralChangeString $ LChangeSingle s
+    C.LitInt i -> AChangeLit $ LiteralChangeIntX $ LChangeSingle (e, i)
+    C.LitFloat f -> AChangeLit $ LiteralChangeFloatX $ LChangeSingle (e, f)
+    C.LitChar c -> AChangeLit $ LiteralChangeCharX $ LChangeSingle (e, c)
+    C.LitString s -> AChangeLit $ LiteralChangeStringX $ LChangeSingle (e, s)
 
 --- JOINING
 -- joinML :: Ord x => M.Map VEnv (SLattice x) -> M.Map VEnv (SLattice x) -> M.Map VEnv (SLattice x)
@@ -326,25 +335,25 @@ addChange ab@(AbValue cls cs prims objs konts lit) change =
   case change of
     AChangeClos lam env -> (change, AbValue (S.insert (lam,env) cls) cs prims objs konts lit)
     AChangePrim name expr -> (change, AbValue cls cs (S.insert (name, expr) prims) objs konts lit)
-    AChangeObj name addrs -> (change, AbValue cls cs prims (S.insert (name, addrs) objs) konts lit)
+    AChangeObj e name addrs -> (change, AbValue cls cs prims (S.insert (e, name, addrs) objs) konts lit)
     AChangeConstr c params -> (change, AbValue cls (S.insert (c,params) cs) prims objs konts lit)
     AChangeKont name addr env handler -> (change, AbValue cls cs prims objs (S.insert (name, addr, env, handler) konts) lit)
     AChangeLit l ->
-      let (change, newLattice) = joinLit l lit
+      let (change, newLattice) = joinLitX l lit
       in (AChangeLit change, AbValue cls cs prims objs konts newLattice)
 
 joinAbValue :: AbValue -> AbValue -> AbValue
 joinAbValue (AbValue cls0 cs0 prims0 objs0 konts0 lit0) (AbValue cls1 cs1 prims1 objs1 konts1 lit1) =
-  AbValue (S.union cls0 cls1) (S.union cs0 cs1) (S.union prims0 prims1) (S.union objs0 objs1) (S.union konts0 konts1) (joinLitLattice lit0 lit1)
+  AbValue (S.union cls0 cls1) (S.union cs0 cs1) (S.union prims0 prims1) (S.union objs0 objs1) (S.union konts0 konts1) (joinLitLatticeX lit0 lit1)
 
 intV :: AbValue -> SLattice Integer
-intV a = intVL (alits a)
+intV a = lat $ intVLX (alits a)
 
 floatV :: AbValue -> SLattice Double
-floatV a = floatVL (alits a)
+floatV a = lat $ floatVLX (alits a)
 
 charV :: AbValue -> SLattice Char
-charV a = charVL (alits a)
+charV a = lat $ charVLX (alits a)
 
 stringV :: AbValue -> SLattice String
-stringV a = stringVL (alits a)
+stringV a = lat $ stringVLX (alits a)
