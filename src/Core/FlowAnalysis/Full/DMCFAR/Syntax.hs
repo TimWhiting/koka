@@ -114,7 +114,7 @@ compareResult (result, rMap) (expected, eMap) checked = do
          in name == name2 && all id argsMatch
   if S.member (result, expected) checked then 
     True
-  else if litXEquiv (alits result) (alits expected) then
+  else if alits result `litXEquiv` alits expected then
     let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
     in
       -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
