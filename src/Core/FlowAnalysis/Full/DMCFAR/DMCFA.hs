@@ -393,7 +393,7 @@ doApply kaddr mkaddr addr dynctx = do
             Case _ pats -> recur (zip pats branches)
         FHLink eff perform hctx k' h -> do
           -- trace ("Link restore " ++ show kaddr ++ " " ++ show newctx ++ "\n" ++ show ctx ++ "\n" ++ show hctx) $ return ()
-          let ia = ImplicitAddr newctx perform
+          let ia = ImplicitLRAddr newctx eff perform
           d <- dLimit
           extendMKStore ia (MKHandle eff knext mkaddr h newctx)
           let newDCtx = take d ((hctx, static ctx): dynctx)

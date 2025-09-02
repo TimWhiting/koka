@@ -371,7 +371,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                     let doSweep = sweep flags
                     let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
                         sweepDM mT d m i = do
-                          let bottomM = if not (kcfa flags) then (if d == bottomD then 0 else 1) else 0
+                          let bottomM = if not (kcfa flags) then (if d == bottomD then 1 else 1) else 1
                           when doSweep $ do
                             if d == bottomD && m == bottomM then return ()
                             else if d == bottomD then do
