@@ -90,7 +90,8 @@ data Addr =
   | EndKAddr
   | EndMKAddr
   | ImplicitAddr CombinedCtx VEnv ExprContextId
-  | ImplicitLAddr CombinedCtx VEnv ExprContextId
+  | ImplicitLAddr CombinedCtx Name VEnv ExprContextId
+  | ImplicitLRAddr CombinedCtx Name VEnv ExprContextId
   | BindImplicitAddr CombinedCtx VEnv ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
@@ -100,7 +101,8 @@ instance Show Addr where
   show EndKAddr = "EndKAddr"
   show EndMKAddr = "EndMKAddr"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr ctx env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitLAddr ctx nm env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitLRAddr ctx nm env ctxId) = "ILR@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
 data Frame =

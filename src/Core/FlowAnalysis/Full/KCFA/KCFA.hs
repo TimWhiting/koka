@@ -343,7 +343,7 @@ doApply kaddr mkaddr addr ctx = do
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
         FHLink eff perform k' h henv -> do
-          let ia = ImplicitAddr ctx henv perform
+          let ia = ImplicitLRAddr ctx eff henv perform
           extendMKStore ia (MKHandle eff knext mkaddr h henv)
           apply k' ia addr ctx
         _ -> trace ("Applying unknown frame: " ++ show frame) doBottom
@@ -389,7 +389,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
               extendStore (BindingAddr newCtx (last params)) (AChangeKont name kaddr henv h)
               eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext newCtx
       else do
-        let k' = ImplicitLAddr ctx henv (contextId performExpr)
+        let k' = ImplicitLAddr ctx eff henv (contextId performExpr)
         extendKStore k' (KNext (FHLink eff (contextId performExpr) kaddr h henv) mkKNext)
         unwind name opName performExpr k' mknext args ctx
 
@@ -402,7 +402,7 @@ unwindLookup varName knext mkaddr u ctx = do
       let Just varAddr = lookupEnv varName venv
       apply knext mkaddr varAddr ctx
     MKHandle nm k' mknext h venv -> do
-      let kx = ImplicitLAddr ctx venv (contextId u)
+      let kx = ImplicitLAddr ctx nm venv (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) k')
       unwind_lookup varName kx mknext u ctx   
     _ -> doBottom
@@ -425,7 +425,7 @@ unwindSet varName val knext mkaddr addr u ctx = do
       extendStore addr changeUnit
       apply knext mk' addr newctx
     MKHandle nm k' mknext h venv -> do
-      let kx = ImplicitLAddr ctx venv (contextId u)
+      let kx = ImplicitLAddr ctx nm venv (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) knext h venv) k')
       unwind_set varName val kx mknext addr u ctx
     _ -> doBottom

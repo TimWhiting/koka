@@ -246,7 +246,8 @@ fun interrupt-write( action : () -> <bio,interrupt|e> a ) : <bio,interrupt|e> a
 // fun result-example6()
 //   r"UNIX is basically To be, or not to be, a simple operating system, that is the question:
 // but Whether 'tis nobler in the mind to suffer
-// you have to be a genius to understand the simplicity."
+// you have to be a genius to understand the simplicity.
+// "
 
 // pub fun main()
 //   example5()

@@ -1,0 +1,59 @@
+]4;0;?\[6nload    : std/core
+load    : std/os/process
+load    : std/text/regex
+load    : std/num/float64
+load    : std/core/types
+load    : std/core/undiv
+load    : std/core/unsafe
+load    : std/core/hnd
+load    : std/core/char
+load    : std/core/exn
+load    : std/core/order
+load    : std/core/bool
+load    : std/core/vector
+load    : std/core/string
+load    : std/core/int
+load    : std/core/sslice
+load    : std/core/list
+load    : std/core/maybe2
+load    : std/core/tuple
+load    : std/core/lazy
+load    : std/core/maybe
+load    : std/core/either
+load    : std/core/debug
+load    : std/core/delayed
+load    : std/core/console
+load    : std/num/int32
+load    : std/text/parse
+load    : std/num/int64
+load    : std/os/path
+load    : std/core/show
+parse   : .../std/os/process.kk
+parse   : .../run-benchmarks.kk
+check   : std/os/process
+check   : run-benchmarks
+linking : run-benchmarks/@main
+created : .koka/v3.2.2/clang-debug-473d8a/run_dash_benchmarks__main
+Running command: stack run koka -- -l --kcfa analysis/benchmarks/handlers/unix.kk --sweep --ma=20 --da=0 2>&1
+Analysis results (correct/total) [time in seconds]
+kcfa handlers/unix
+(0,1,1,5,0.065252000000000004)
+(0,2,1,5,0.108833)
+(0,3,1,5,0.10679)
+(0,4,4,5,0.104754)
+(0,5,4,5,0.12513199999999999)
+(0,6,4,5,0.13205800000000001)
+(0,7,4,5,0.14430599999999999)
+(0,8,4,5,0.16150200000000001)
+(0,9,4,5,0.16392300000000001)
+(0,10,4,5,0.17239399999999999)
+(0,11,4,5,0.177534)
+(0,12,4,5,0.19172900000000001)
+(0,13,4,5,0.19719400000000001)
+(0,14,4,5,0.20693700000000001)
+(0,15,4,5,0.21823400000000001)
+(0,16,4,5,0.22547500000000001)
+(0,17,4,5,0.23477500000000001)
+(0,18,4,5,0.242816)
+(0,19,4,5,0.247363)
+(0,20,4,5,0.25658700000000001)
