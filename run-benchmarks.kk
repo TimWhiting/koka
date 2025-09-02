@@ -2,7 +2,7 @@ import std/os/process
 import std/text/regex
 import std/num/float64
 
-val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix"]
+val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/scoped"]
 
 type analysis
   DMCFA
@@ -17,9 +17,9 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> (2, 4)
-    DMCFA-EXP -> (2, 4)
-    KCFA -> (0, 4)
+    DMCFA -> (6, 8)
+    DMCFA-EXP -> (6, 8)
+    KCFA -> (0, 20)
 
 fun show(a: analysis)
   match a
@@ -48,7 +48,7 @@ fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
     Ok(res) -> 
       match a
         KCFA -> 
-          val results = r"k=(\d)\nResult ([\d]+) / ([\d]+)\nResult [\d\.\%]+, time: ([\d\.]+)s".regex.exec-all(res).filter-matches
+          val results = r"k=([\d]+)\nResult ([\d]+) / ([\d]+)\nResult [\d\.\%]+, time: ([\d\.]+)s".regex.exec-all(res).filter-matches
           results.map(fn([_, k, correct, all, time]) (0, k.int, correct.int, all.int, time.string.parse-float64.unjust))
         _ -> 
           val results = r"d=(\d),m=(\d)\nResult ([\d]+) / ([\d]+)\nResult [\d\.\%]+, time: ([\d\.]+)s".regex.exec-all(res).filter-matches
@@ -63,6 +63,6 @@ fun format-results(results: list<(analysis, string, list<(int, int, int, int, fl
     r.map(tuple5/show).join("\n").println
 
 fun main()
-  run-benchmarks().format-results
-  // run-benchmarks(["handlers/unix"]).format-results 
+  // run-benchmarks().format-results
+  run-benchmarks(["handlers/unix"], [KCFA]).format-results 
   // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP]).format-results

@@ -366,7 +366,7 @@ doApply kaddr mkaddr addr dynctx = do
           case exprOfCtx parent of
             Case _ pats -> recur (zip pats branches)
         FHLink eff perform hctx k' h henv -> do
-          let ia = ImplicitAddr newctx henv perform
+          let ia = ImplicitLRAddr newctx eff henv perform
           d <- dLimit
           extendMKStore ia (MKHandle eff knext mkaddr h henv newctx)
           let newDCtx = take d ((hctx, ctx): dynctx)
@@ -410,7 +410,7 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
               extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr henv h)
               eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext mkCtx
       else do
-        let k' = ImplicitLAddr ctx henv (contextId performExpr)
+        let k' = ImplicitLAddr ctx eff henv (contextId performExpr)
         -- trace ("Link create " ++ show k' ++ " " ++ show ctx) $ return ()
         -- trace ("Link create " ++ show k' ++ " " ++ show mkCtx) $ return ()
         extendKStore k' (KNext (FHLink eff (contextId performExpr) (ctxHnd ctx) kaddr h henv) (static mkCtx) mkKNext)
@@ -447,7 +447,7 @@ unwindSet varName val knext mkaddr addr u = do
       extendStore addr changeUnit
       apply knext mk' addr (addDelim d newctx u)
     MKHandle nm k' mknext h venv ctx -> do
-      let kx = ImplicitLAddr ctx venv (contextId u)
+      let kx = ImplicitLAddr ctx nm venv (contextId u)
       extendKStore kx (KNext (FHLink nm (contextId u) (ctxHnd ctx) knext h venv) (static ctx) k')
       unwind_set varName val kx mknext addr u
     _ -> doBottom
