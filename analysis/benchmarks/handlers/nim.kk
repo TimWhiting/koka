@@ -59,18 +59,18 @@ val perfect = handler fun move(_p,n){ max(1,n%4) }
 pub fun example-perfect1()
   with perfect
   game(7)        // alice
-// pub fun analyze-example-perfect1()
-//   example-perfect1()
-// pub fun result-example-perfect1()
-//   Alice
+pub fun analyze-example-perfect1()
+  example-perfect1()
+pub fun result-example-perfect1()
+  Alice
 
 pub fun example-perfect2()
   with perfect
   game(12)  // bob
-// pub fun analyze-example-perfect2()
-//   example-perfect2()
-// pub fun result-example-perfect2()
-//   Bob
+pub fun analyze-example-perfect2()
+  example-perfect2()
+pub fun result-example-perfect2()
+  Bob
 
 // --------------------------------------------------------
 // Game trees
@@ -112,17 +112,17 @@ fun show-gtree(gt :gtree, indent:int) : _ string
 pub fun example-gtree()
   with gametree
   game(3)   // figure 1 in the paper
-// pub fun analyze-example-gtree()
-//   example-gtree()
-// pub fun result-example-gtree()
-//   Take(Alice, [
-//     (1, Take(Bob, [
-//       (1, Take(Alice, [
-//         (1, Winner(Alice))])), 
-//       (2, Winner(Bob))])), 
-//     (2, Take(Bob, [
-//       (1, Winner(Bob))])), 
-//     (3, Winner(Alice))])
+pub fun analyze-example-gtree()
+  example-gtree()
+pub fun result-example-gtree()
+  Take(Alice, [
+    (1, Take(Bob, [
+      (1, Take(Alice, [
+        (1, Winner(Alice))])), 
+      (2, Winner(Bob))])), 
+    (2, Take(Bob, [
+      (1, Winner(Bob))])), 
+    (3, Winner(Alice))])
 
 // --------------------------------------------------------
 // Cheating
@@ -147,11 +147,11 @@ pub fun example-check()
   with cheat-report
   with check
   game(7)  // alice
-// pub fun analyze-example-check()
-//   try
-//     example-check()
-// pub fun result-example-check()
-//   Ok(Alice)
+pub fun analyze-example-check()
+  try
+    example-check()
+pub fun result-example-check()
+  Ok(Alice)
 
 // --------------------------------------------------------
 // Cheating strategy
@@ -169,11 +169,11 @@ pub fun example-pc1()
   with cheat-report
   with check
   game(12)
-// pub fun analyze-example-pc1()
-//   try
-//     example-pc1()
-// pub fun result-example-pc1()
-//   Error(Exception("bob cheated!", ExnError))
+pub fun analyze-example-pc1()
+  try
+    example-pc1()
+pub fun result-example-pc1()
+  Error(Exception("bob cheated!", ExnError))
 
 
 pub fun example-pc2()
@@ -184,10 +184,10 @@ pub fun example-pc2()
   with check
   with pc
   game(12)
-// pub fun analyze-example-pc2()
-//   example-pc2()
-// pub fun result-example-pc2()
-//   Bob
+pub fun analyze-example-pc2()
+  example-pc2()
+pub fun result-example-pc2()
+  Bob
 
 
 // --------------------------------------------------------
@@ -265,7 +265,10 @@ pub fun example-print1()
   with bob-chooses
   with score-updater
   game(7)
-
+// fun analyze-example-print1()
+//   example-print1()
+// fun result-example-print1()
+//   Bob
 
 fun replay(n : int, action : () -> <div|e> a) : <div|e> a
   with return(x) if n <= 1 then x else replay(n - 1, action )
@@ -280,7 +283,10 @@ pub fun example-print2()
   with bob-chooses
   with score-updater
   game(7)
-
+// fun analyze-example-print2()
+//   example-print2()
+// fun result-example-print2()
+//   Bob
 
 
 // pub fun main()
