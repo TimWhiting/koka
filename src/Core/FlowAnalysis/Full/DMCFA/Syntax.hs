@@ -102,7 +102,6 @@ runQueryAtRange bc build mod m d doQuery =
                     return (total, timeouts + 1)
     -- tstart <- getCurrentTime
     (r, timeouts) <- recur values
-    r <- recur values
     -- tend <- getCurrentTime
     -- let x :: Double
     --     x = fromIntegral r / fromIntegral (length values)
