@@ -135,6 +135,7 @@ doEval expr venv kaddr mkaddr ctx =
       apply kaddr mkaddr addr ctx
     Var name _ -> do
       if isPrimitive name then do
+        -- trace ("Primitive " ++ show name) $ return ()
         addr <- allocConst venv ctx expr (AChangePrim name expr)
         apply kaddr mkaddr addr ctx
       else if qualifier (getName name) == nameCoreHnd then
@@ -232,6 +233,7 @@ doApply kaddr mkaddr addr ctx = do
         MKHandle _ knext mknext _ _ ->
           apply knext mknext addr ctx
     KNext frame knext ->
+      -- trace ("Applying " ++ show frame) $ 
       let addFrame f venv u = allocFrame f knext ctx venv u in
       case frame of
         f | f == FCall || f == FMask -> do
@@ -241,7 +243,7 @@ doApply kaddr mkaddr addr ctx = do
               bod <- focusBody e
               -- trace ("Applying FMask " ++ show env) $ return()
               eval bod env knext mkaddr ctx
-        FDollar va -> do 
+        FDollar va dollarH -> do 
           mk <- mkStore mkaddr
           case mk of
             MKEnd -> doBottom
@@ -252,11 +254,12 @@ doApply kaddr mkaddr addr ctx = do
                     body <- focusBody cexpr
                     let [arg] = lamNames cexpr
                     k <- kLimit
-                    let newEnv = M.insert arg ctx cenv
+                    let newCtx = take k $ CallApp dollarH : ctx
+                    let newEnv = M.insert arg newCtx cenv
                     -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show arg) $ return ()
                     v <- store addr
                     extendStore (fromJust $ lookupEnv arg newEnv) v
-                    eval body (limitEnv newEnv (fvs body)) knext mknext ctx
+                    eval body (limitEnv newEnv (fvs body)) knext mknext newCtx
         FResume label kont venv hnd u -> do
           k <- kLimit
           let newCtx = take k $ CallApp u : ctx
@@ -358,7 +361,8 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
         hargs <- mapM (store . snd) hndargs
         -- trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
-        let unmakeHidden ('-':rest) = newName rest
+        let unmakeHidden ('@':'v':'a':'l':'-':op) = opName
+            unmakeHidden ('-':rest) = newName rest
             unmakeHidden (_:rest) = unmakeHidden rest
         let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
         case lookup opName ops' of
@@ -479,7 +483,7 @@ doHandlerPrimitive name n addr knext mkaddr arguments venv ctx u | n == nameHand
       bod <- focusBody body
       -- MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: ExprContext, henv :: VEnv, mkCtx:: CombinedCtx }
       let kmkaddr = ImplicitAddr ctx venv (contextId bod)
-      extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) EndKAddr)
+      extendKStore kmkaddr (KNext (FDollar (arguments !! 2) (contextId u)) EndKAddr)
       extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) (M.unions [retenv, henv]))
       -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
       eval bod (limitEnv bodyenv (fvs body)) kmkaddr kmkaddr newctx

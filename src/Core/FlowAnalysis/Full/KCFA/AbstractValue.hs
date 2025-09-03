@@ -111,7 +111,8 @@ data Frame =
       linkHEnv :: VEnv
   }
   | FDollar {
-      vaddr :: Addr
+      vaddr :: Addr,
+      dollarH :: ExprContextId
   }
   | FResume {
       label :: Name,

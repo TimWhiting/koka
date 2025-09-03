@@ -58,7 +58,7 @@ nameCoreCharEq = newQualified "std/core/char" "=="
 nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-string"
 nameCoreStringListChar = newQualified "std/core/string" "list"
 nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
-
+nameStringEq = newQualified "std/core/string" "=="
 nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
 nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
 nameCoreCharInt = newQualified "std/core/char" "int"
@@ -102,6 +102,7 @@ isPrimitive tn =
                       nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
+                      nameStringEq,
                       nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
                       nameCoreTypesExternAppend, nameCoreIntExternShow,
                       nameCoreCharInt, nameNumInt32Int,
@@ -158,6 +159,15 @@ opCmpFloat f [p1, p2] = do
       return $! toChange (f i1 i2)
     (AChangeLit (LiteralChangeFloatX _), AChangeLit (LiteralChangeFloatX _)) ->
       -- trace "opCmpFloat: top"
+      anyBool
+    _ -> doBottom
+
+opCmpString :: (String -> String -> Bool) -> [AChange] -> FixAAMR x s e AChange
+opCmpString f [p1, p2] = do
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeStringX (LChangeSingle (_, s1))), AChangeLit (LiteralChangeStringX (LChangeSingle (_, s2)))) ->
+      return $! toChange (f s1 s2)
+    (AChangeLit (LiteralChangeStringX _), AChangeLit (LiteralChangeStringX _)) ->
       anyBool
     _ -> doBottom
 
@@ -224,6 +234,8 @@ doPrimitive nm achanges = do
     case achanges of
       [AChangeLit (LiteralChangeIntX (LChangeSingle (_, i)))] -> return $ toChange (odd i)
       [AChangeLit (LiteralChangeIntX _)] -> anyBool
+  else if nm == nameStringEq then
+    opCmpString (==) achanges
   else if nm == nameCoreTypesExternAppend then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (_, s1))), AChangeLit (LiteralChangeStringX (LChangeSingle (u2, s2)))] ->
