@@ -33,6 +33,7 @@ nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
 nameIntMod = coreIntName "%"
 nameIntEq  = coreIntName "=="
+nameIntNEq  = coreIntName "!="
 nameIntLt  = coreIntName "<"
 nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
@@ -96,7 +97,7 @@ isPrimitive :: TName -> Bool
 isPrimitive tn =
   let basics = getName tn `elem` [
                       nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
-                      nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
+                      nameIntEq, nameIntNEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
                       nameIntOdd,
                       nameFloatAdd, nameFloatMul, nameFloatDiv, nameFloatSub,
                       nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
@@ -176,6 +177,8 @@ doPrimitive nm achanges = do
   -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameIntEq then
     opCmpInt (==) achanges
+  else if nm == nameIntNEq then
+    opCmpInt (/=) achanges
   else if nm == nameIntLt then
     opCmpInt (<) achanges
   else if nm == nameIntLe then
@@ -258,6 +261,6 @@ doPrimitive nm achanges = do
           || (nm == nameCorePrintln) || (nm == nameCorePrintsLn) then
     -- trace ("Print / Trace " ++ show achanges)
     return changeUnit
-  else if nm == nameUnsafeNoLocalCast then return (head achanges)
+  else if nm == nameUnsafeNoLocalCast || nm == namePretendDecreasing then return (head achanges)
   else
     error ("Primitive: " ++ show nm ++ " " ++ show achanges)

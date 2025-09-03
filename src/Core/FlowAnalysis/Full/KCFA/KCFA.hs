@@ -109,7 +109,7 @@ doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> StaticCtx -> Fi
 doEval expr venv kaddr mkaddr ctx =
   -- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv)) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
-    App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
+    App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen || getName name == namePretendDecreasing -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       eval f venv kaddr mkaddr ctx
