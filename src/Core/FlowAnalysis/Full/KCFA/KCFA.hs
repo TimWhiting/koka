@@ -314,7 +314,8 @@ doApply kaddr mkaddr addr ctx = do
                     extendMKStore mk' (MKHandle label knext mkaddr hnd (M.union venv henv))
                     apply kx mk' addr newCtx
                   _ -> do
-                    trace ("Applying non function: " ++ show res) doBottom
+                    -- trace ("Applying non function: " ++ show res) 
+                    doBottom
             next:rest -> do
               k' <- addFrame (FApp n rest (res ++ [addr]) u (limitEnv venv (fvsl rest))) venv (contextId next)
               eval next (limitEnv venv (fvs next)) k' mkaddr ctx
