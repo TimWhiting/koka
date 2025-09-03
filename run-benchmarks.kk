@@ -5,7 +5,7 @@ import std/os/file
 import std/os/path
 import std/os/dir
 
-val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/nim", "handlers/ambient"]
+val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/nim", "handlers/ambient", "rosetta/rosetta/0-nums/pr4rings"]
 
 effect out
   fun write(s: string): ()
@@ -23,7 +23,7 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> (4, 6)
+    DMCFA -> (4, 8)
     DMCFA-EXP -> (4, 6)
     KCFA -> (0, 10)
 
@@ -58,7 +58,7 @@ fun int(s: sslice): exn int
 
 fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
   val full-cmd = cmd ++ "--sweep --ma=" ++ mf.show ++ " --da=" ++ df.show ++ " 2>&1"
-  println("Running command: " ++ full-cmd)
+  println("Debug command:\n" ++ cmd ++ " --ma=" ++ mf.show ++ " --da=" ++ df.show ++ " 2>out.kk")
   write("Analysis, File/Example, D, M(K), Precise, Time")
   match run-system-read(full-cmd)
     Ok(res) -> write(a.show ++ "," ++ res.split(a.show ++ ",").tail.filter(fn(l) l.split(",").length >= 5).join(a.show ++ ","))

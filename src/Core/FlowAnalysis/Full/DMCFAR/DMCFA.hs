@@ -130,7 +130,7 @@ doEval expr kaddr mkaddr ctx =
   in
   process $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   case exprOfCtx expr of
-    App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> do
+    App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen || getName name == namePretendDecreasing -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       eval f kaddr mkaddr ctx
