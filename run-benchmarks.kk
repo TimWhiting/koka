@@ -2,7 +2,7 @@ import std/os/process
 import std/text/regex
 import std/num/float64
 
-val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/scoped"]
+val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/nim"]
 
 type analysis
   DMCFA
@@ -17,8 +17,8 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> (6, 8)
-    DMCFA-EXP -> (6, 8)
+    DMCFA -> (4, 6)
+    DMCFA-EXP -> (4, 6)
     KCFA -> (0, 20)
 
 fun show(a: analysis)
@@ -64,5 +64,5 @@ fun format-results(results: list<(analysis, string, list<(int, int, int, int, fl
 
 fun main()
   // run-benchmarks().format-results
-  run-benchmarks(["handlers/unix"], [KCFA]).format-results 
+  run-benchmarks(["handlers/nim"], [DMCFA]).format-results 
   // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP]).format-results

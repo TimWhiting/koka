@@ -59,13 +59,18 @@ val perfect = handler fun move(_p,n){ max(1,n%4) }
 pub fun example-perfect1()
   with perfect
   game(7)        // alice
-
+// pub fun analyze-example-perfect1()
+//   example-perfect1()
+// pub fun result-example-perfect1()
+//   Alice
 
 pub fun example-perfect2()
   with perfect
   game(12)  // bob
-
-
+// pub fun analyze-example-perfect2()
+//   example-perfect2()
+// pub fun result-example-perfect2()
+//   Bob
 
 // --------------------------------------------------------
 // Game trees
@@ -107,8 +112,17 @@ fun show-gtree(gt :gtree, indent:int) : _ string
 pub fun example-gtree()
   with gametree
   game(3)   // figure 1 in the paper
-
-
+// pub fun analyze-example-gtree()
+//   example-gtree()
+// pub fun result-example-gtree()
+//   Take(Alice, [
+//     (1, Take(Bob, [
+//       (1, Take(Alice, [
+//         (1, Winner(Alice))])), 
+//       (2, Winner(Bob))])), 
+//     (2, Take(Bob, [
+//       (1, Winner(Bob))])), 
+//     (3, Winner(Alice))])
 
 // --------------------------------------------------------
 // Cheating
@@ -123,7 +137,8 @@ val cheat-report = handler
 val check = handler
   ctl move(p,n)
     val m = move(p,n)
-    if (valid-moves(n).find(fn(i) i == m).bool)
+    val z = (valid-moves(n).find(fn(i) i == m).bool)
+    if z
       then resume(m)
       else cheat(p)
 
@@ -133,11 +148,11 @@ pub fun example-check()
   with cheat-report
   with check
   game(7)  // alice
-
-
-pub fun example-use()
-  with x = map([1,2,3])
-  x+2
+pub fun analyze-example-check()
+  try
+    example-check()
+pub fun result-example-check()
+  Ok(Alice)
 
 // --------------------------------------------------------
 // Cheating strategy
@@ -150,11 +165,16 @@ val pc = handler
       Bob   -> n
 
 
-pub fun example-pc1()
-  with pc
-  with cheat-report
-  with check
-  game(12)
+// pub fun example-pc1()
+//   with pc
+//   with cheat-report
+//   with check
+//   game(12)
+// pub fun analyze-example-pc1()
+//   try
+//     example-pc1()
+// pub fun result-example-pc1()
+//   Error(Exception("bob cheated!", ExnError))
 
 
 pub fun example-pc2()
@@ -260,21 +280,21 @@ pub fun example-print2()
 
 
 
-pub fun main()
-  [""
-  ,example-perfect1().show
-  ,example-perfect2().show
-  ,example-gtree().show
-  ,example-check().show
-  ,example-pc2().show
-  ,example-choose().show
-  // the following three are non deterministic
-  // ,example-coin().show
-  // ,example-print1().show
-  // ,example-print2().show
-  ,""
-  ].join("\n-----------\n").print
-  try {
-    example-pc1().show.println // raises exception
-  } fn(exn){ println(exn.show) }
+// pub fun main()
+//   [""
+//   ,example-perfect1().show
+//   ,example-perfect2().show
+//   ,example-gtree().show
+//   ,example-check().show
+//   ,example-pc2().show
+//   ,example-choose().show
+//   // the following three are non deterministic
+//   // ,example-coin().show
+//   // ,example-print1().show
+//   // ,example-print2().show
+//   ,""
+//   ].join("\n-----------\n").print
+//   try {
+//     example-pc1().show.println // raises exception
+//   } fn(exn){ println(exn.show) }
 
