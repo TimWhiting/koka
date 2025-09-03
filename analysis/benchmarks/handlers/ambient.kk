@@ -13,14 +13,23 @@ fun f()
   // with val width = 78   // done in `main`
   val g = with val width = 80 in (fn() width + 1)
   val h = fn() (with val width = 80 in width + 1)
-  g().println   // 79
-  h().println   // 81
+  (g(), h())   //79, 81
 
+
+fun analyze-example0()
+  with val width = 78 
+  f()
+fun result-example0()
+  (79, 81)
 
 fun half(action)
   with val width = width / 2
   action()
-
+// fun analyze-example01()
+//   with val width = 78
+//   half(f)
+// fun result-example01()
+//   (40, 81)
 
 effect val emitx : ((s:string) -> io ())
 
@@ -111,6 +120,10 @@ fun is-home()
 pub fun example1()
   with val cwd = "/"
   is-home()
+// pub fun analyze-example1()
+//   example1()
+// pub fun result-example1()
+//   False
 
 fun gchildren( g : graph, v : vertex ) : list<vertex>
   []
