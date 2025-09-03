@@ -24,7 +24,7 @@ module Core.FlowAnalysis.StaticContext(
                           showSimpleContext,isLetDefBindingFinished,
                           letDefBinding,letDefBindingIndex,letDefsOf,
                           isMain,
-                          letBindingName, nextFvs,
+                          letBindingName, nextFvs, eConName,
                           fvs, fvvs, dfsTNames, dgsTNames, dgTNames, localFv
                         ) where
 import Core.Core as C
@@ -192,6 +192,12 @@ bvs includeVars ctx =
     CaseCBranch _ _ vars _ _ -> andParent $ S.fromList vars
     ExprCBasic{} -> andParent S.empty 
     ExprPrim{} -> S.empty
+
+eConName :: ExprContext -> Maybe TName
+eConName con =
+  case maybeExprOfCtx con of
+    Just (Con conName _ _) -> Just conName
+    _ -> Nothing
 
 enclosingLambda :: ExprContext -> Maybe ExprContext
 enclosingLambda ctx =
