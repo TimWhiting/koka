@@ -61,7 +61,7 @@ fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
   println("Running command: " ++ full-cmd)
   write("Analysis, File/Example, D, M(K), Precise, Time")
   match run-system-read(full-cmd)
-    Ok(res) -> write(a.show ++ "," ++ res.split(a.show ++ ",").tail.join(a.show ++ ","))
+    Ok(res) -> write(a.show ++ "," ++ res.split(a.show ++ ",").tail.filter(fn(l) l.split(",").length >= 5).join(a.show ++ ","))
     Error(err) -> throw-exn(err)
 
 fun format-results(results: list<(analysis, string, list<(int, int, int, int, float64)>)>): out ()

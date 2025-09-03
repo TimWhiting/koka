@@ -1,0 +1,12 @@
+Analysis, File/Example, D, M(K), Precise, Time
+kcfa,analysis/benchmarks/handlers/yield/main,0,1,1,0.005158
+kcfa,analysis/benchmarks/handlers/yield/main,0,2,1,0.006385
+kcfa,analysis/benchmarks/handlers/yield/main,0,3,1,0.007687
+kcfa,analysis/benchmarks/handlers/yield/main,0,4,1,0.007098
+kcfa,analysis/benchmarks/handlers/yield/main,0,5,1,0.010221
+kcfa,analysis/benchmarks/handlers/yield/main,0,6,1,0.011856
+kcfa,analysis/benchmarks/handlers/yield/main,0,7,1,0.013454
+kcfa,analysis/benchmarks/handlers/yield/main,0,8,1,0.014476
+kcfa,analysis/benchmarks/handlers/yield/main,0,9,1,0.015644
+kcfa,analysis/benchmarks/handlers/yield/main,0,10,1,0.016257
+
