@@ -59,18 +59,18 @@ val perfect = handler fun move(_p,n){ max(1,n%4) }
 pub fun example-perfect1()
   with perfect
   game(7)        // alice
-// pub fun analyze-example-perfect1()
-//   example-perfect1()
-// pub fun result-example-perfect1()
-//   Alice
+pub fun analyze-example-perfect1()
+  example-perfect1()
+pub fun result-example-perfect1()
+  Alice
 
 pub fun example-perfect2()
   with perfect
   game(12)  // bob
-// pub fun analyze-example-perfect2()
-//   example-perfect2()
-// pub fun result-example-perfect2()
-//   Bob
+pub fun analyze-example-perfect2()
+  example-perfect2()
+pub fun result-example-perfect2()
+  Bob
 
 // --------------------------------------------------------
 // Game trees
@@ -165,16 +165,16 @@ val pc = handler
       Bob   -> n
 
 
-// pub fun example-pc1()
-//   with pc
-//   with cheat-report
-//   with check
-//   game(12)
-// pub fun analyze-example-pc1()
-//   try
-//     example-pc1()
-// pub fun result-example-pc1()
-//   Error(Exception("bob cheated!", ExnError))
+pub fun example-pc1()
+  with pc
+  with cheat-report
+  with check
+  game(12)
+pub fun analyze-example-pc1()
+  try
+    example-pc1()
+pub fun result-example-pc1()
+  Error(Exception("bob cheated!", ExnError))
 
 
 pub fun example-pc2()
@@ -185,8 +185,10 @@ pub fun example-pc2()
   with check
   with pc
   game(12)
-
-
+pub fun analyze-example-pc2()
+  example-pc2()
+pub fun result-example-pc2()
+  Bob
 
 
 // --------------------------------------------------------
@@ -217,8 +219,10 @@ pub fun example-coin()
   with coin
   with bob-chooses
   game(7)
-
-
+pub fun analyze-example-coin()
+  example-coin()
+pub fun result-example-coin()
+  if srandom-float64() then Alice else Bob
 
 // --------------------------------------------------------
 // Scoreboard
