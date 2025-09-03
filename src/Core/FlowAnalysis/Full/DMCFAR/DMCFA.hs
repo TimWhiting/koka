@@ -386,7 +386,7 @@ doApply kaddr mkaddr addr dynctx = do
                     mapM_ (\(tname, extend) ->
                       extend (BindingAddr newctx tname)
                       ) (M.toList bindings)
-                    rebindAll (nextFvs expr) ctx newctx
+                    rebindAll (S.union (fvvs expr) (nextFvs expr)) ctx newctx
                     eval expr knext mkaddr newctx
                   Nothing -> recur branches
           case exprOfCtx parent of
