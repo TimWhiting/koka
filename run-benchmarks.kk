@@ -5,7 +5,7 @@ import std/os/file
 import std/os/path
 import std/os/dir
 
-val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/nim"]
+val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/nim", "handlers/ambient"]
 
 effect out
   fun write(s: string): ()

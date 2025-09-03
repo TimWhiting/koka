@@ -413,7 +413,8 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
         hargs <- mapM (store . snd) hndargs
         -- trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
-        let unmakeHidden ('-':rest) = newName rest
+        let unmakeHidden ('@':'v':'a':'l':'-':op) = opName
+            unmakeHidden ('-':rest) = newName rest
             unmakeHidden (_:rest) = unmakeHidden rest
         let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
         case lookup opName ops' of
