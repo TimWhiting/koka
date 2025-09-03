@@ -73,7 +73,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                 ress' <- getAbResult
-                                -- trace ("result': " ++ show ress') $ return ()
+                                trace ("result': " ++ show ress') $ return ()
                                 return ress'
                 (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                 runFixCont $ do
@@ -81,7 +81,7 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                   withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
                                 ress' <- getAbResult
-                                -- trace ("expected': " ++ show ress') $ return ()
+                                trace ("expected': " ++ show ress') $ return ()
                                 return ress'
                 let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
                 total <- recur rest
@@ -112,15 +112,16 @@ compareResult (result, rMap) (expected, eMap) checked = do
                       arg2 = fromJust $ M.lookup a2 eMap in
                   n == n2 && compareResult (arg1, rMap) (arg2, eMap) (S.insert (result, expected) checked)) args args2
          in name == name2 && all id argsMatch
+      conMatch (name, args) (name2, args2) = name == name2
   if S.member (result, expected) checked then 
     True
   else if alits result `litXEquiv` alits expected then
-    let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
-    in
-      -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
-      matches
+        -- Make sure that all the result values are in the expected, no more.
+    let matches = all (\obj -> any id $ zipWith objMatch (repeat obj) (S.toList $ aobjs expected)) (S.toList $ aobjs result)
+        matchesx = matches && all (\con -> any id $ zipWith conMatch (repeat con) (S.toList $ acons expected)) (S.toList $ acons result)
+     in trace ("passed: " ++ show matchesx ++ "\n" ++ show result ++ "\n" ++ show expected) $ matchesx
   else
-    -- trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) 
+    trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
     False
 
 getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue)
