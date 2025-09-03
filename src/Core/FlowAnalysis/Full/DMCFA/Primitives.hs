@@ -38,6 +38,15 @@ nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
 nameIntGe  = coreIntName ">="
 nameIntOdd = coreIntName "is-odd"
+nameFloatGt = newQualified "std/num/float64" ">"
+nameFloatGe = newQualified "std/num/float64" ">="
+nameFloatLt = newQualified "std/num/float64" "<"
+nameFloatLe = newQualified "std/num/float64" "<="
+nameFloatEq = newQualified "std/num/float64" "=="
+nameFloatMul = newQualified "std/num/float64" "*"
+nameFloatDiv = newQualified "std/num/float64" "/"
+nameFloatAdd = newQualified "std/num/float64" "+"
+nameFloatSub = newQualified "std/num/float64" "-"
 nameBoolNegate = newLocallyQualified "std/core/types" "bool" "!"
 
 nameCoreCharLt = newQualified "std/core/char" "<"
@@ -58,7 +67,7 @@ namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
 nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
 nameUnsafeNoLocalCast = newQualified  "std/core/types" "unsafe-no-local-cast"
 nameNumRandom = newQualified "std/num/random" "random-int"
-nameNumSRandomFloat64 = newQualified "std/num/random" "srandom-float64"
+nameNumSRandomFloat64 = newQualified "std/num/random" "@extern-srandom-float64"
 nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCoreTraceShow = newQualified "std/core/debug" "trace-show"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
@@ -90,13 +99,15 @@ isPrimitive tn =
                       nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
                       nameIntEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
                       nameIntOdd,
+                      nameFloatAdd, nameFloatMul, nameFloatDiv, nameFloatSub,
+                      nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
                       nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
                       nameCoreTypesExternAppend, nameCoreIntExternShow,
                       nameCoreCharInt, nameNumInt32Int,
                       namePretendDecreasing, nameUnsafeTotalCast, nameUnsafeNoLocalCast,
-                      nameNumRandom,
+                      nameNumRandom, nameNumSRandomFloat64,
                       nameCoreTrace, nameCoreTraceShow,
                       nameCorePrint, nameCorePrintln, nameCorePrintsLn,
                       nameLocalGet, nameLocalSet,
@@ -114,6 +125,15 @@ intOp f [p1, p2] = do
       return $ AChangeLit (LiteralChangeIntX LChangeTop)
     _ -> doBottom
 
+floatOp :: (Double -> Double -> Double) -> [AChange] -> FixAAMR x s e AChange
+floatOp f [p1, p2] = do
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeFloatX (LChangeSingle (e1, i1))), AChangeLit (LiteralChangeFloatX (LChangeSingle (e2, i2)))) ->
+      return $! AChangeLit (LiteralChangeFloatX (LChangeSingle (e2, f i1 i2)))
+    (AChangeLit (LiteralChangeFloatX _), AChangeLit (LiteralChangeFloatX _)) ->
+      return $ AChangeLit (LiteralChangeFloatX LChangeTop)
+    _ -> doBottom
+
 charCmpOp :: (Char -> Char -> Bool) -> [AChange] -> FixAAMR x s e AChange
 charCmpOp f [p1, p2] = do
   case (p1, p2) of
@@ -129,6 +149,16 @@ opCmpInt f [p1, p2] = do
       return $! toChange (f i1 i2)
     (AChangeLit (LiteralChangeIntX _), AChangeLit (LiteralChangeIntX _)) ->
       -- trace "opCmpInt: top" 
+      anyBool
+    _ -> doBottom
+
+opCmpFloat :: (Double -> Double -> Bool) -> [AChange] -> FixAAMR x s e AChange
+opCmpFloat f [p1, p2] = do
+  case (p1, p2) of
+    (AChangeLit (LiteralChangeFloatX (LChangeSingle (_, i1))), AChangeLit (LiteralChangeFloatX (LChangeSingle (_, i2)))) ->
+      return $! toChange (f i1 i2)
+    (AChangeLit (LiteralChangeFloatX _), AChangeLit (LiteralChangeFloatX _)) ->
+      -- trace "opCmpFloat: top"
       anyBool
     _ -> doBottom
 
@@ -155,6 +185,24 @@ doPrimitive nm achanges = do
     intOp div achanges
   else if nm == nameIntMod then
     intOp mod achanges
+  else if nm == nameFloatAdd then
+    floatOp (+) achanges
+  else if nm == nameFloatMul then
+    floatOp (*) achanges
+  else if nm == nameFloatSub then
+    floatOp (-) achanges
+  else if nm == nameFloatDiv then
+    floatOp (/) achanges
+  else if nm == nameFloatEq then
+    opCmpFloat (==) achanges
+  else if nm == nameFloatLt then
+    opCmpFloat (<) achanges
+  else if nm == nameFloatLe then
+    opCmpFloat (<=) achanges
+  else if nm == nameFloatGt then
+    opCmpFloat (>) achanges
+  else if nm == nameFloatGe then
+    opCmpFloat (>=) achanges
   else if nm == nameInternalSSizeT then
     return $ head achanges
   else if nm == nameNumSRandomFloat64 then

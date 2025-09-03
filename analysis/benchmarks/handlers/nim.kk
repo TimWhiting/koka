@@ -59,18 +59,18 @@ val perfect = handler fun move(_p,n){ max(1,n%4) }
 pub fun example-perfect1()
   with perfect
   game(7)        // alice
-pub fun analyze-example-perfect1()
-  example-perfect1()
-pub fun result-example-perfect1()
-  Alice
+// pub fun analyze-example-perfect1()
+//   example-perfect1()
+// pub fun result-example-perfect1()
+//   Alice
 
 pub fun example-perfect2()
   with perfect
   game(12)  // bob
-pub fun analyze-example-perfect2()
-  example-perfect2()
-pub fun result-example-perfect2()
-  Bob
+// pub fun analyze-example-perfect2()
+//   example-perfect2()
+// pub fun result-example-perfect2()
+//   Bob
 
 // --------------------------------------------------------
 // Game trees
@@ -137,8 +137,7 @@ val cheat-report = handler
 val check = handler
   ctl move(p,n)
     val m = move(p,n)
-    val z = (valid-moves(n).find(fn(i) i == m).bool)
-    if z
+    if (valid-moves(n).find(fn(i) i == m).bool)
       then resume(m)
       else cheat(p)
 
@@ -148,11 +147,11 @@ pub fun example-check()
   with cheat-report
   with check
   game(7)  // alice
-pub fun analyze-example-check()
-  try
-    example-check()
-pub fun result-example-check()
-  Ok(Alice)
+// pub fun analyze-example-check()
+//   try
+//     example-check()
+// pub fun result-example-check()
+//   Ok(Alice)
 
 // --------------------------------------------------------
 // Cheating strategy
@@ -170,11 +169,11 @@ pub fun example-pc1()
   with cheat-report
   with check
   game(12)
-pub fun analyze-example-pc1()
-  try
-    example-pc1()
-pub fun result-example-pc1()
-  Error(Exception("bob cheated!", ExnError))
+// pub fun analyze-example-pc1()
+//   try
+//     example-pc1()
+// pub fun result-example-pc1()
+//   Error(Exception("bob cheated!", ExnError))
 
 
 pub fun example-pc2()
@@ -185,10 +184,10 @@ pub fun example-pc2()
   with check
   with pc
   game(12)
-pub fun analyze-example-pc2()
-  example-pc2()
-pub fun result-example-pc2()
-  Bob
+// pub fun analyze-example-pc2()
+//   example-pc2()
+// pub fun result-example-pc2()
+//   Bob
 
 
 // --------------------------------------------------------
@@ -222,7 +221,7 @@ pub fun example-coin()
 pub fun analyze-example-coin()
   example-coin()
 pub fun result-example-coin()
-  if srandom-float64() then Alice else Bob
+  if srandom-float64() > 0.5 then Alice else Bob
 
 // --------------------------------------------------------
 // Scoreboard
