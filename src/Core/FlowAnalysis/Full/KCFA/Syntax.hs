@@ -112,15 +112,18 @@ compareResult (result, rMap) (expected, eMap) checked = do
                       arg2 = fromJust $ M.lookup a2 eMap in
                   n == n2 && compareResult (arg1, rMap) (arg2, eMap) (S.insert (result, expected) checked)) args args2
          in name == name2 && all id argsMatch
+      conMatch :: (ExprContext, [Name]) -> (ExprContext, [Name]) -> Bool
+      conMatch (name, args) (name2, args2) = eConName name == eConName name2
   if S.member (result, expected) checked then 
     True
   else if alits result `litXEquiv` alits expected then
-    let matches = all (\obj -> any id $ zipWith objMatch (S.toList $ aobjs result) (repeat obj)) (S.toList $ aobjs expected)
-    in
-      -- trace ("passed\n" ++ show result ++ "\n" ++ show expected) 
-      matches
+        -- Make sure that all the result values are in the expected, no more.
+    let matches = all (\obj -> any id $ zipWith objMatch (repeat obj) (S.toList $ aobjs expected)) (S.toList $ aobjs result)
+        matchesx = matches && all (\con -> any id $ zipWith conMatch (repeat con) (S.toList $ acons expected)) (S.toList $ acons result)
+    --  in trace ("passed: " ++ show matchesx ++ "\n" ++ show result ++ "\n" ++ show expected) $ 
+     in matchesx
   else
-    -- trace (name ++ " FAILED:\nGot: " ++ show analysisResult ++ "\nExpected:\n" ++ show expectedResult) 
+    -- trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
     False
  
 getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue)

@@ -58,6 +58,7 @@ namePretendDecreasing = newQualified "std/core/undiv" "pretend-decreasing"
 nameUnsafeTotalCast = newQualified "std/core/unsafe" "unsafe-total-cast"
 nameUnsafeNoLocalCast = newQualified  "std/core/types" "unsafe-no-local-cast"
 nameNumRandom = newQualified "std/num/random" "random-int"
+nameNumSRandomFloat64 = newQualified "std/num/random" "srandom-float64"
 nameCoreTrace = newQualified "std/core/debug" "trace"
 nameCoreTraceShow = newQualified "std/core/debug" "trace-show"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
@@ -137,9 +138,9 @@ doPrimitive nm achanges = do
   if nm == nameIntEq then
     opCmpInt (==) achanges
   else if nm == nameIntLt then
-    opCmpInt (<=) achanges
-  else if nm == nameIntLe then
     opCmpInt (<) achanges
+  else if nm == nameIntLe then
+    opCmpInt (<=) achanges
   else if nm == nameIntGt then
     opCmpInt (>) achanges
   else if nm == nameIntGe then
@@ -156,6 +157,10 @@ doPrimitive nm achanges = do
     intOp mod achanges
   else if nm == nameInternalSSizeT then
     return $ head achanges
+  else if nm == nameNumSRandomFloat64 then
+    return $ AChangeLit (LiteralChangeFloatX LChangeTop)
+  else if nm == nameNumRandom then 
+    return $ AChangeLit (LiteralChangeIntX LChangeTop)
   else if nm == nameCoreIntShow then
     case achanges of
       [AChangeLit (LiteralChangeIntX (LChangeSingle (e2, i)))] ->
@@ -165,8 +170,8 @@ doPrimitive nm achanges = do
       _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
-      [AChangeConstr (ExprPrim _ e) _] | isExprTrue e -> return trueCon
-      [AChangeConstr (ExprPrim _ e) _] | isExprFalse e -> return falseCon
+      [AChangeConstr (ExprPrim _ e) _] | isExprTrue e -> return falseCon
+      [AChangeConstr (ExprPrim _ e) _] | isExprFalse e -> return trueCon
       _ -> doBottom
   else if nm == nameIntOdd then
     case achanges of
