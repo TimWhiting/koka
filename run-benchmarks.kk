@@ -25,7 +25,7 @@ fun sensitivities(a: analysis)
   match a
     DMCFA -> (4, 6)
     DMCFA-EXP -> (4, 6)
-    KCFA -> (0, 5)
+    KCFA -> (0, 10)
 
 fun show(a: analysis)
   match a
@@ -34,9 +34,10 @@ fun show(a: analysis)
     KCFA -> "kcfa"
 
 fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFA, DMCFA-EXP, KCFA])
-  analyses.map fn(a)
-    files.map fn(f)
-      val file = "benchmarks/results".path / f / (a.show ++ ".csv")
+  analyses.foreach fn(a)
+    files.foreach fn(f)
+      val sens = a.sensitivities
+      val file = "benchmarks/results".path / f / (a.show ++ "-" ++ sens.fst.show ++ "-" ++ sens.snd.show ++ ".csv")
       if file.is-file then return ()
       var result := ""
       with handler
@@ -44,8 +45,8 @@ fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCF
           result := result ++ s ++ "\n"
         return(x)
           write-text-file(file, result, create-dir=True)
-      [(a, f, run-file(a, "stack run koka -- -l " ++ a.flag ++ " analysis/benchmarks/" ++ f ++ ".kk ", a.sensitivities))].format-results
-  .concat
+      run-file(a, "stack run koka -- -l " ++ a.flag ++ " analysis/benchmarks/" ++ f ++ ".kk ", sens)
+
 
 fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
   match xs
@@ -60,7 +61,7 @@ fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
   println("Running command: " ++ full-cmd)
   write("Analysis, File/Example, D, M(K), Precise, Time")
   match run-system-read(full-cmd)
-    Ok(res) -> write(res)
+    Ok(res) -> write(a.show ++ "," ++ res.split(a.show ++ ",").tail.join(a.show ++ ","))
     Error(err) -> throw-exn(err)
 
 fun format-results(results: list<(analysis, string, list<(int, int, int, int, float64)>)>): out ()

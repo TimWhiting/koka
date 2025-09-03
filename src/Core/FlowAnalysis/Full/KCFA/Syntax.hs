@@ -33,8 +33,9 @@ import Common.Range
 import Debug.Trace (trace)
 import Common.File (startsWith)
 import Control.Monad (unless)
-import Data.Time (getCurrentTime, diffUTCTime)
+import Data.Time (getCurrentTime, diffUTCTime, nominalDiffTimeToSeconds)
 import System.Timeout (timeout)
+import Data.Fixed (showFixed)
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -88,13 +89,13 @@ runQueryAtRange bc build mod m d doQuery =
                                   -- trace ("expected': " ++ show ress') $ return ()
                                   return ress'
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                  trace ("kcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ ",0," ++ show m ++ "," ++ show result ++ "," ++ show (diffUTCTime tend tstart)) $ return result
+                  trace ("kcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ ",0," ++ show m ++ "," ++ show result ++ "," ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return result
                 case result of 
                   Nothing -> trace ("kcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ ",0," ++ show m ++ ",0," ++ "timeout") $ return ()
                   Just _ -> return ()
                 (total, timeouts) <- recur rest
                 case result of 
-                  Just res -> return $ (res + total, timeouts)
+                  Just res -> return (res + total, timeouts)
                   _ -> 
                     return (total, timeouts + 1)
     -- tstart <- getCurrentTime
