@@ -34,6 +34,7 @@ import Debug.Trace (trace)
 import Common.File (startsWith)
 import Control.Monad (unless)
 import Data.Time (getCurrentTime, diffUTCTime)
+import System.Timeout (timeout)
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -56,45 +57,55 @@ runQueryAtRange bc build mod m d doQuery = do
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
         values = collectPrograms (S.toList ctxs)
-        recur :: [AProgram] -> IO Int
+        recur :: [AProgram] -> IO (Int, Int)
         recur l =
           case l of
             [] -> if nameModule (modName mod) `startsWith` "std/core" then
-                return 0
+                return (0, 0)
               else
                 -- trace ("No analysis context found in " ++ nameModule (modName mod)) $
-                return 0
+                return (0, 0)
             (AProgram name mainCtx resCtx):rest ->
               do
-                -- trace (" Analyzing " ++ show name) $ return ()
-                (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
-                                runFixCont $ do
-                                  (_,ctx) <- loadModule (modName mod)
-                                  -- trace ("Context: " ++ show (contextId ctx)) $ return ()
-                                  withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
-                                ress' <- getAbResult
-                                -- trace ("result': " ++ show ress') $ return ()
-                                return ress'
-                (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
-                                runFixCont $ do
-                                  (_,ctx) <- loadModule (modName mod)
-                                  -- trace ("Context: " ++ show (contextId ctx)) $ return ()
-                                  withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
-                                ress' <- getAbResult
-                                -- trace ("expected': " ++ show ress') $ return ()
-                                return ress'
-                let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                total <- recur rest
-                return $ result + total
-    tstart <- getCurrentTime
-    r <- recur values
-    tend <- getCurrentTime
-    let x :: Double
-        x = fromIntegral r / fromIntegral (length values)
-    unless (null values) $ do
-      trace ("d=" ++ show d ++ ",m=" ++ show m) $ return ()
-      trace ("Result " ++ show r ++ " / " ++ show (length values)) $ return ()
-      trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%, time: " ++ show (diffUTCTime tend tstart)) $ return ()
+                result <- timeout 50000000 $ do
+                  tstart <- getCurrentTime
+                  -- trace (" Analyzing " ++ show name) $ return ()
+                  (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                  runFixCont $ do
+                                    (_,ctx) <- loadModule (modName mod)
+                                    -- trace ("Context: " ++ show (contextId ctx)) $ return ()
+                                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
+                                  ress' <- getAbResult
+                                  -- trace ("result': " ++ show ress') $ return ()
+                                  return ress'
+                  tend <- getCurrentTime
+                  (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                  runFixCont $ do
+                                    (_,ctx) <- loadModule (modName mod)
+                                    -- trace ("Context: " ++ show (contextId ctx)) $ return ()
+                                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
+                                  ress' <- getAbResult
+                                  -- trace ("expected': " ++ show ress') $ return ()
+                                  return ress'
+                  let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
+                  trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++ show result ++ "," ++ show (diffUTCTime tend tstart)) $ return result
+                case result of
+                  Nothing -> trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0," ++ "timeout") $ return ()
+                  Just _ -> return ()
+                (total, timeouts) <- recur rest
+                case result of 
+                  Just res -> return $ (res + total, timeouts)
+                  _ -> 
+                    return (total, timeouts + 1)
+    -- tstart <- getCurrentTime
+    (r, timeouts) <- recur values
+    -- tend <- getCurrentTime
+    -- let x :: Double
+    --     x = fromIntegral r / fromIntegral (length values)
+    -- unless (null values) $ do
+    --   trace ("d=" ++ show d ++ ",m=" ++ show m) $ return ()
+    --   trace ("Result " ++ show r ++ " / " ++ show (length values)) $ return ()
+    --   trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%, time: " ++ show (diffUTCTime tend tstart)) $ return ()
     -- trace ("l: " ++ show (length l)) $ return ()
     -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
     return $ not (null values)
