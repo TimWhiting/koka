@@ -1,0 +1,12 @@
+Analysis, File/Example, D, M(K), Precise, Time
+kcfa,analysis/benchmarks/handlers/vec/main,0,1,1,0.009621
+kcfa,analysis/benchmarks/handlers/vec/main,0,2,1,0.011699
+kcfa,analysis/benchmarks/handlers/vec/main,0,3,1,0.011237
+kcfa,analysis/benchmarks/handlers/vec/main,0,4,1,0.012358
+kcfa,analysis/benchmarks/handlers/vec/main,0,5,1,0.014175
+kcfa,analysis/benchmarks/handlers/vec/main,0,6,1,0.015378
+kcfa,analysis/benchmarks/handlers/vec/main,0,7,1,0.016367
+kcfa,analysis/benchmarks/handlers/vec/main,0,8,1,0.020086
+kcfa,analysis/benchmarks/handlers/vec/main,0,9,1,0.018467
+kcfa,analysis/benchmarks/handlers/vec/main,0,10,1,0.019379
+
