@@ -5,7 +5,8 @@ import std/os/file
 import std/os/path
 import std/os/dir
 
-val files = ["benchmarks", "handlers/yield", "handlers/vec", "handlers/unix", "handlers/nim", "handlers/ambient", "rosetta/rosetta/0-nums/pr4rings"]
+val files = ["benchmarks"] ++ ["yield", "vec", "unix", "nim", "ambient"].map(fn(f) "handlers/" ++ f) ++
+            ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"].map(fn(f) "rosetta/rosetta/" ++ f)
 
 effect out
   fun write(s: string): ()

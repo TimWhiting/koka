@@ -13,6 +13,7 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.DMCFAR.AbstractValue
 import Core.FlowAnalysis.Full.DMCFAR.Monad
 import Core.FlowAnalysis.Full.DMCFAR.Primitives
+import Core.FlowAnalysis.Full.PrimComm
 import Core.Core
 import Data.Int (Int)
 import Common.Name
@@ -115,8 +116,6 @@ allocFrame frame kaddr ctx u = do
   let addr = ImplicitAddr ctx u
   extendKStore addr (KNext frame ctx kaddr)
   return addr
-
-primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> Addr -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doEval expr kaddr mkaddr ctx =

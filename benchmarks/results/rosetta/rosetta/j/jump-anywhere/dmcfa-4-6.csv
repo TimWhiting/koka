@@ -1,0 +1,13 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
+dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.1149425287356323,0.002222167
+analysis/benchmarks/rosetta/rosetta/j/jump-anywhere(1, 1): internal error: Value not found in store: B@(body:d_[a248]@[])
+CallStack (from HasCallStack):
+  error, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:60:9 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+  doStep, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:94:13 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+  store, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:233:12 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+  rebindAll, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:323:21 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+  doApply, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:67:17 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+  doStep, called at src/Core/FlowAnalysis/Full/DMCFAR/DMCFA.hs:44:7 in koka-3.2.2-8GBEfjISoFBMgz1sr3wgW:Core.FlowAnalysis.Full.DMCFAR.DMCFA
+
+Failed to compile analysis/benchmarks/rosetta/rosetta/j/jump-anywhere.kk
+
