@@ -89,12 +89,14 @@ runQueryAtRange bc build mod m d doQuery = do
                                   -- trace ("expected': " ++ show ress') $ return ()
                                   return ress'
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                  let (_, _, (mkSizes, kSizes, sSizes)) = analysisResult
+                  let (_, _, (evals, confs, mkSizes, kSizes, sSizes)) = analysisResult
                   trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++ 
-                          show result ++ "," ++ show (average mkSizes) ++ "," ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
+                          show result ++ "," ++ show (length evals) ++ "," ++ show (length confs) ++ ","
+                          ++ show (average evals) ++ "," ++ show (average confs) ++ ","
+                          ++ show (average mkSizes) ++ "," ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
                           ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return result
                 case result of
-                  Nothing -> trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,timeout") $ return ()
+                  Nothing -> trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,0,timeout") $ return ()
                   Just _ -> return ()
                 (total, timeouts) <- recur rest
                 case result of 
@@ -121,7 +123,7 @@ truncate' x n = fromIntegral (floor (x * t)) / t
 average :: [Int] -> Double
 average xs = fromIntegral (sum xs) / fromIntegral (length xs)
 
-type CacheInfo = ([Int], [Int], [Int])
+type CacheInfo = ([Int], [Int], [Int], [Int], [Int])
 
 compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo) -> (AbValue, M.Map Addr AbValue, CacheInfo) -> S.Set (AbValue, AbValue) -> Bool
 compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
@@ -146,22 +148,24 @@ compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
     -- trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
     False
 
-getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, ([Int], [Int], [Int]))
+getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, CacheInfo)
 getAbResult = do
   cache <- getCache
-  let cacheInfo = M.foldlWithKey (\acc@(mksizes, ksizes, ssizes) k v -> case k of
-                        VStore (BindingAddr{}) -> case v of SValue res -> (mksizes, ksizes, sizeOf res : ssizes)
-                        VStore (BindImplicitAddr{}) -> case v of SValue res -> (mksizes, ksizes, sizeOf res : ssizes)
-                        VStore (ConImplicitAddr{}) -> case v of SValue res -> (mksizes, ksizes, sizeOf res : ssizes)
-                        VStore EndVAddr -> case v of SValue res -> (mksizes, ksizes, sizeOf res : ssizes)
-                        VStore (TopAddr{}) -> case v of SValue res -> (mksizes, ksizes, sizeOf res : ssizes)
-                        KStore (ImplicitAddr{}) -> case v of KValue res -> (mksizes, length res : ksizes, ssizes)
-                        KStore EndKAddr -> case v of KValue res -> (mksizes, length res : ksizes, ssizes)
-                        KStore (ImplicitLAddr{}) -> case v of KValue res -> (mksizes, length res : ksizes, ssizes)
-                        KStore (ImplicitLRAddr{}) -> case v of KValue res -> (mksizes, length res : ksizes, ssizes)
-                        MKStore (ImplicitAddr{}) -> case v of MKValue res -> (length res : mksizes, ksizes, ssizes)
-                        MKStore EndMKAddr -> case v of MKValue res -> (length res : mksizes, ksizes, ssizes)
-                        _ -> acc) ([], [], []) cache
+  let cacheInfo = M.foldlWithKey (\acc@(evals, applies, mksizes, ksizes, ssizes) k v -> case k of
+                        VStore (BindingAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore (BindImplicitAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore (ConImplicitAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore EndVAddr -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore (TopAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        KStore EndKAddr -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        KStore (ImplicitLRAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        MKStore (ImplicitAddr{}) -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
+                        MKStore EndMKAddr -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
+                        Step (CEval{}) -> case v of Next confs -> (length confs : evals, applies, mksizes, ksizes, ssizes)
+                        Step (CApply{}) -> case v of Next confs -> (length confs : evals, length confs : applies, mksizes, ksizes, ssizes)
+                        _ -> acc) ([], [], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of
           Just (SValue res) ->
