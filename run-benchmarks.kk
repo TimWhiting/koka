@@ -59,7 +59,7 @@ fun int(s: sslice): exn int
 fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
   val full-cmd = cmd ++ "--sweep --ma=" ++ mf.show ++ " --da=" ++ df.show ++ " 2>&1"
   println("Debug command:\n" ++ cmd ++ " --ma=" ++ mf.show ++ " --da=" ++ df.show ++ " 2>out.kk")
-  write("Analysis, File/Example, D, M(K), Precise, Time")
+  write("Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time")
   match run-system-read(full-cmd)
     Ok(res) -> write(a.show ++ "," ++ res.split(a.show ++ ",").tail.filter(fn(l) l.split(",").length >= 5).join(a.show ++ ","))
     Error(err) -> throw-exn(err)
