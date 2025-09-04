@@ -222,6 +222,19 @@ data AbValue =
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
+sizeOf :: AbValue -> Int
+sizeOf (AbValue cls cntrs prims objs konts lit) =
+  length cls + length cntrs + length prims + length objs + length konts + sizeLitX lit
+
+sizeLitX :: LiteralLatticeX -> Int
+sizeLitX (LiteralLatticeX sint sfloat schar strings) =
+  sizeLit sint + sizeLit sfloat + sizeLit schar + sizeLit strings
+
+sizeLit :: SLattice a -> Int
+sizeLit LBottom = 0
+sizeLit LTop = 2
+sizeLit LSingle{} = 1
+
 addrs :: AbValue -> [Addr]
 addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, _, args) -> map snd args) objs
 
