@@ -13,6 +13,7 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.KCFA.AbstractValue
 import Core.FlowAnalysis.Full.KCFA.Monad
 import Core.FlowAnalysis.Full.KCFA.Primitives
+import Core.FlowAnalysis.Full.PrimComm
 import Core.Core
 import Data.Int (Int)
 import Common.Name
@@ -102,8 +103,6 @@ allocFrame frame kaddr ctx env u = do
 
 fvsl :: [ExprContext] -> S.Set TName
 fvsl exprs = S.unions $ map fvs exprs
-
-primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
 doEval :: HasCallStack => ExprContext -> VEnv -> Addr -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doEval expr venv kaddr mkaddr ctx =
