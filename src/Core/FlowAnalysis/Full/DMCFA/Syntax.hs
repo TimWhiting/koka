@@ -91,9 +91,14 @@ runQueryAtRange bc build mod m d doQuery =
                                   -- trace ("expected': " ++ show ress') $ return ()
                                   return ress'
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                  trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++ show result ++ "," ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return result
+                  let (_, _, (evals, confs, mkSizes, kSizes, sSizes)) = analysisResult
+                  trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++ 
+                          show result ++ "," ++ show (length evals) ++ "," ++ show (length confs) ++ ","
+                          ++ show (average evals) ++ "," ++ show (average confs) ++ ","
+                          ++ show (average mkSizes) ++ "," ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
+                          ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return result
                 case result of
-                  Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0," ++ "timeout") $ return ()
+                  Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,0,timeout") $ return ()
                   Just _ -> return ()
                 (total, timeouts) <- recur rest
                 case result of 
@@ -117,14 +122,19 @@ truncate' :: Double -> Int -> Double
 truncate' x n = fromIntegral (floor (x * t)) / t
     where t = 10^n
 
-compareResult :: (AbValue, M.Map Addr AbValue) -> (AbValue, M.Map Addr AbValue) -> S.Set (AbValue, AbValue) -> Bool
-compareResult (result, rMap) (expected, eMap) checked = do
+average :: [Int] -> Double
+average xs = fromIntegral (sum xs) / fromIntegral (length xs)
+
+type CacheInfo = ([Int], [Int], [Int], [Int], [Int])
+
+compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo) -> (AbValue, M.Map Addr AbValue, CacheInfo) -> S.Set (AbValue, AbValue) -> Bool
+compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
   let objMatch :: (ExprContext, TName, [(Name, Addr)]) -> (ExprContext, TName, [(Name, Addr)]) -> Bool
       objMatch (_, name, args) (_, name2, args2) =
          let argsMatch = zipWith (\(n, a) (n2, a2) ->
                   let arg1 = fromJust $ M.lookup a rMap
                       arg2 = fromJust $ M.lookup a2 eMap in
-                  n == n2 && compareResult (arg1, rMap) (arg2, eMap) (S.insert (result, expected) checked)) args args2
+                  n == n2 && compareResult (arg1, rMap, aci) (arg2, eMap, bci) (S.insert (result, expected) checked)) args args2
          in name == name2 && all id argsMatch
       conMatch :: (ExprContext, [Name]) -> (ExprContext, [Name]) -> Bool
       conMatch (name, args) (name2, args2) = eConName name == eConName name2
@@ -139,13 +149,26 @@ compareResult (result, rMap) (expected, eMap) checked = do
     -- trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
     False
 
-getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue)
+getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, CacheInfo)
 getAbResult = do
   cache <- getCache
+  let cacheInfo = M.foldlWithKey (\acc@(evals, applies, mksizes, ksizes, ssizes) k v -> case k of
+                        VStore (BindingAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore (BindImplicitAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore EndVAddr -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        VStore (TopAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
+                        KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        KStore EndKAddr -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        KStore (ImplicitLRAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
+                        MKStore (ImplicitAddr{}) -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
+                        MKStore EndMKAddr -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
+                        Step (CEval{}) -> case v of Next confs -> (length confs : evals, applies, mksizes, ksizes, ssizes)
+                        Step (CApply{}) -> case v of Next confs -> (length confs : evals, length confs : applies, mksizes, ksizes, ssizes)
+                        _ -> acc) ([], [], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of
           Just (SValue res) ->
-            -- trace ("Result value includes " ++ show res) $
             let !env = foldl (\acc addr ->
                             if S.member addr addrsx then
                               acc
@@ -154,9 +177,9 @@ getAbResult = do
                               in M.insert addr v (M.union acc map')
                          ) M.empty (addrs res)
             in (res, env)
-          -- Nothing -> trace ("Didn't find value when looking for " ++ show addr) (emptyAbValue, M.empty)
-  return $ getValue EndVAddr S.empty
-
+          Nothing -> error ("Couldn't find " ++ show addr ++ " in cache")
+  let (finalRes, finalEnv) = getValue EndVAddr S.empty
+  return (finalRes, finalEnv, cacheInfo)
 evalMain :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
   -> IO Bool
