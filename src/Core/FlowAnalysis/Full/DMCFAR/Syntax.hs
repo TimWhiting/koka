@@ -36,6 +36,7 @@ import Control.Monad (unless)
 import Data.Time (getCurrentTime, diffUTCTime, nominalDiffTimeToSeconds)
 import System.Timeout (timeout)
 import Data.Fixed (showFixed)
+import Core.FlowAnalysis.Full.PrimComm (showMap)
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -77,7 +78,8 @@ runQueryAtRange bc build mod m d doQuery = do
                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                   ress' <- getAbResult
-                                  -- trace ("result': " ++ show ress') $ return ()
+                                  let (res, st, _) = ress'
+                                  -- trace ("result': " ++ show res ++ "\n" ++ showMap st) $ return ()
                                   return ress'
                   tend <- getCurrentTime
                   (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -86,7 +88,8 @@ runQueryAtRange bc build mod m d doQuery = do
                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
                                   ress' <- getAbResult
-                                  -- trace ("expected': " ++ show ress') $ return ()
+                                  let (res, st, _) = ress'
+                                  -- trace ("expected': " ++ show res ++ "\n" ++ showMap st) $ return ()
                                   return ress'
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
                   let (_, _, (evals, confs, mkSizes, kSizes, sSizes)) = analysisResult
@@ -165,6 +168,7 @@ getAbResult = do
                         MKStore EndMKAddr -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
                         Step (CEval{}) -> case v of Next confs -> (length confs : evals, applies, mksizes, ksizes, ssizes)
                         Step (CApply{}) -> case v of Next confs -> (length confs : evals, length confs : applies, mksizes, ksizes, ssizes)
+                                                     Bottom -> acc
                         _ -> acc) ([], [], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of

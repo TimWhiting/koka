@@ -4,6 +4,9 @@ import Core.Core
 import Common.Name
 import Common.NamePrim
 import Common.File (startsWith)
+import qualified Data.Map.Strict as M
+import Numeric (showFFloat, showEFloat)
+import Data.List (dropWhileEnd)
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -26,6 +29,8 @@ nameFloatAdd = newQualified "std/num/float64" "+"
 nameFloatSub = newQualified "std/num/float64" "-"
 nameFloatAbs = newQualified "std/num/float64" "abs"
 nameFloatSqrt = newQualified "std/num/float64" "sqrt"
+nameFloatShowFixed = newQualified "std/num/float64" "@extern-show-fixedx"
+nameFloatShowExpX = newQualified "std/num/float64" "@extern-show-expx"
 nameBoolNegate = newLocallyQualified "std/core/types" "bool" "!"
 
 nameCoreCharLt = newQualified "std/core/char" "<"
@@ -59,12 +64,46 @@ nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 nameCorePrintsLn = newQualified "std/core/console" "printsln"
 
-
+showMap st = M.foldlWithKey (\acc k v -> acc ++ show k ++ ": " ++ show v ++ "\n") "" st
 primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
+
+showFFloatNoZeros :: Int -> Double -> String
+showFFloatNoZeros numDigits f =
+    let sigDigits = length $ show $ truncate f
+        decimalDigits = if numDigits > 0 then numDigits else abs numDigits - sigDigits
+        formatted = showFFloat (Just decimalDigits) f ""
+    in removeTrailingZeros formatted
+
+showEFloatNoZeros :: Int -> Double -> String
+showEFloatNoZeros numDigits f =
+    let sigDigits = length $ show $ truncate f
+        decimalDigits = if numDigits > 0 then numDigits else abs numDigits - sigDigits
+        formatted = showEFloat (Just decimalDigits) f ""
+    in removeETrailingZeros formatted
+
+removeETrailingZeros :: String -> String
+removeETrailingZeros s =
+    let (whole, frac) = break (== 'e') s
+        (fracPart, expPart) = break (== 'E') frac
+        fracCleaned = removeTrailingZeros fracPart
+    in case expPart of
+        [] -> whole ++ fracCleaned
+        _  -> whole ++ fracCleaned ++ expPart
+
+removeTrailingZeros :: String -> String
+removeTrailingZeros s =
+    let (whole, frac) = break (== '.') s
+    in case frac of
+        [] -> whole
+        '.' : rest ->
+            let trimmedFrac = dropWhileEnd (== '0') rest
+            in if null trimmedFrac
+                then whole
+                else whole ++ "." ++ trimmedFrac
 
 isClauseName :: Name -> Bool
 isClauseName name = qualifier name == nameCoreHnd && nameStem name `startsWith` "clause"
- 
+
 isNamePerform :: Name -> Bool
 isNamePerform n = qualifier n == nameCoreHnd && nameStem n `startsWith` "@perform"
 
@@ -75,8 +114,9 @@ isPrimitive tn =
                       nameIntEq, nameIntNEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
                       nameIntOdd,
                       nameFloatAdd, nameFloatMul, nameFloatDiv, nameFloatSub, nameFloatAbs, nameFloatSqrt,
+                      nameFloatShowFixed, nameFloatShowExpX,
                       nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
-                      nameCoreIntShow, 
+                      nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
                       nameStringEq, nameCoreStringToUpper, nameCoreStringCount, nameCoreStringExternRepeatZ,
                       nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
