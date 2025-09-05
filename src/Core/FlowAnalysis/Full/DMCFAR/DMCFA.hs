@@ -12,6 +12,13 @@ import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.DMCFAR.AbstractValue
 import Core.FlowAnalysis.Full.DMCFAR.Monad
+    ( FixAAMR,
+      FixChange(N, SV, KV, MKV),
+      FixInput(..),
+      Conf(CDone, CEval, CApply, CUnwind, CUnwindLookup, CUnwindSet),
+      mLimit,
+      dLimit,
+      startCombinedCtx )
 import Core.FlowAnalysis.Full.DMCFAR.Primitives
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core
@@ -284,8 +291,6 @@ doApply kaddr mkaddr addr dynctx = do
                   m <- mLimit
                   -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                   v <- store addr
-                  -- rebindAll (fvs cexpr) cctx dynctx
-                  -- rebindAll (bvars henv) ctx dynctx
                   extendStore (BindingAddr dynctx arg) v
                   eval body knext mknext dynctx
         FResume label kont hnd u -> do
@@ -431,7 +436,6 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             -- let opCtx = mkCtx -- {kfvs = S.union (S.fromList params) (kfvs mkCtx)}
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
-            -- rebindAll (S.difference (bvars henv) (S.fromList params)) lastCtx mkCtx
             if nameStem (getName opConName) `startsWith` "clause-tail" then do
               let k' = ImplicitAddr mkCtx (contextId bod)
               extendKStore k' (KNext (FResume eff kaddr h (contextId bod)) mkCtx mkKNext)
@@ -470,7 +474,6 @@ unwindSet varName val knext mkaddr addr ctx u = do
       let newctx = addCall m mkCtx u
       let newAddr = BindingAddr newctx varName
       rebind val newAddr
-      -- rebindAll (S.delete varName (bvars (henv h))) mkCtx newctx
       let mk' = ImplicitAddr newctx u
       extendMKStore mk' (MKHandle nm k' mknext h{ops = newAddr} newctx)
       extendStore addr changeUnit
