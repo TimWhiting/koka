@@ -18,6 +18,12 @@ nameIntLe  = coreIntName "<="
 nameIntGt  = coreIntName ">"
 nameIntGe  = coreIntName ">="
 nameIntOdd = coreIntName "is-odd"
+nameInt32Gt = newQualified "std/num/int32" ">"
+nameInt32Ge = newQualified "std/num/int32" ">="
+nameInt32Lt = newQualified "std/num/int32" "<"
+nameInt32Le = newQualified "std/num/int32" "<="
+nameInt32Eq = newQualified "std/num/int32" "=="
+nameInt32NEq = newQualified "std/num/int32" "!="
 nameFloatGt = newQualified "std/num/float64" ">"
 nameFloatGe = newQualified "std/num/float64" ">="
 nameFloatLt = newQualified "std/num/float64" "<"
@@ -64,7 +70,8 @@ nameCoreTraceShow = newQualified "std/core/debug" "trace-show"
 nameCorePrint = newLocallyQualified "std/core/console" "string" "print"
 nameCorePrintln = newLocallyQualified "std/core/console" "string" "println"
 nameCorePrintsLn = newQualified "std/core/console" "printsln"
-
+nameCoreXParse = newQualified "std/core/int" "@extern-xparse"
+nameCoreMInt = newQualified "std/num/random" "mrandom-int"
 showMap st = M.foldlWithKey (\acc k v -> acc ++ show k ++ ": " ++ show v ++ "\n") "" st
 primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
@@ -114,6 +121,7 @@ isPrimitive tn =
                       nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
                       nameIntEq, nameIntNEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
                       nameIntOdd,
+                      nameInt32Gt, nameInt32Ge, nameInt32Lt, nameInt32Le, nameInt32Eq, nameInt32NEq,
                       nameFloatAdd, nameFloatMul, nameFloatDiv, nameFloatSub, nameFloatAbs, nameFloatSqrt,
                       nameFloatShowFixed, nameFloatShowExpX,
                       nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
@@ -129,8 +137,8 @@ isPrimitive tn =
                       nameCorePrint, nameCorePrintln, nameCorePrintsLn,
                       nameLocalGet, nameLocalSet,
                       nameHandle, nameHTag, nameEvvAt, nameLocalNew, nameLocalVar,
-                      nameInternalSSizeT, 
-                      nameOSReadline
+                      nameInternalSSizeT,
+                      nameOSReadline, nameCoreXParse, nameCoreMInt
                       ]
   in basics || isNamePerform (getName tn) || isClauseName (getName tn)
 
@@ -138,7 +146,7 @@ isPrimitive tn =
 unmakeOpHidden :: Name -> [Char] -> Name
 unmakeOpHidden opName ('@':'v':'a':'l':'-':op) = opName
 unmakeOpHidden opName ('-':rest) = newName rest
-unmakeOpHidden opName (_:rest) = unmakeOpHidden opName rest 
+unmakeOpHidden opName (_:rest) = unmakeOpHidden opName rest
 
 isTailOpOrVal :: [Char] -> Bool
 isTailOpOrVal ('@':'v':'a':'l':'-':op) = True
@@ -153,3 +161,10 @@ isTailOpT tn = isTailOp (getName tn)
 
 isNeverOp :: TName -> Bool
 isNeverOp tn = nameStem (getName tn) `startsWith` "clause-never"
+
+isTrickyPrimitive :: TName -> Bool
+isTrickyPrimitive n = getName n `elem` [nameCoreXParse]
+
+equalPrimitive :: TName -> TName
+equalPrimitive name | getName name == nameCoreXParse = name{getName = nameCoreMInt}
+equalPrimitive name = name
