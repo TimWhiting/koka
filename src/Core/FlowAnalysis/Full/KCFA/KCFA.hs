@@ -270,7 +270,7 @@ doApply kaddr mkaddr addr ctx = do
           case args of
             [] -> case res ++ [addr] of
               f:arguments -> do
-                -- trace ("Applying: " ++ show args ++ " " ++ show (res ++ [addr])) $ return ()
+                -- trace ("Applying: " ++ show arguments) $ return ()
                 -- trace ("Real params: " ++ show params) $ return ()
                 res <- store f
                 -- trace ("Applying function: " ++ show f ++ " " ++ show res) $ return ()
@@ -328,7 +328,7 @@ doApply kaddr mkaddr addr ctx = do
             body <- focusLetBod u
             eval body (limitEnv venv (fvs body)) knext mkaddr ctx
           else do
-            next <- focusLetDefBinding groupIdx bindingIdx u
+            next <- focusNextLetDefBinding groupIdx bindingIdx u
             k' <- addFrame (nextLetFrame frame ctx) venv (contextId next)
             eval next venv k' mkaddr ctx
         FScrut parent branches env -> do

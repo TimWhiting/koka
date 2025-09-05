@@ -165,6 +165,7 @@ getAbResult = do
                         MKStore EndMKAddr -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
                         Step (CEval{}) -> case v of Next confs -> (length confs : evals, applies, mksizes, ksizes, ssizes)
                         Step (CApply{}) -> case v of Next confs -> (length confs : evals, length confs : applies, mksizes, ksizes, ssizes)
+                                                     Bottom -> acc
                         _ -> acc) ([], [], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of

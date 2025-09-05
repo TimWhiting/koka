@@ -30,6 +30,8 @@ import Common.Name
 import Core.FlowAnalysis.Monad (FixAR)
 import Common.File
 import Data.Char (toUpper)
+import Data.Fixed (showFixed)
+import Numeric (showFFloat, showEFloat)
 
 
 trueCon ::  AChange
@@ -165,6 +167,20 @@ doPrimitive nm achanges = do
       [AChangeLit (LiteralChangeIntX (LChangeSingle (e2, i)))] ->
         return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, show i)))
       [AChangeLit (LiteralChangeIntX _)] ->
+        return $ AChangeLit (LiteralChangeStringX LChangeTop)
+      _ -> doBottom
+  else if nm == nameFloatShowFixed then
+    case achanges of
+      [AChangeLit (LiteralChangeFloatX (LChangeSingle (e1, f))), AChangeLit (LiteralChangeIntX (LChangeSingle (e2, i)))] ->
+        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, showFFloatNoZeros (fromIntegral i) f)))
+      [AChangeLit (LiteralChangeFloatX _), AChangeLit (LiteralChangeIntX _)] ->
+        return $ AChangeLit (LiteralChangeStringX LChangeTop)
+      _ -> doBottom
+  else if nm == nameFloatShowExpX then
+    case achanges of
+      [AChangeLit (LiteralChangeFloatX (LChangeSingle (e1, f))), AChangeLit (LiteralChangeIntX (LChangeSingle (e2, i)))] ->
+        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, showEFloatNoZeros (fromIntegral i) f)))
+      [AChangeLit (LiteralChangeFloatX _), AChangeLit (LiteralChangeIntX _)] ->
         return $ AChangeLit (LiteralChangeStringX LChangeTop)
       _ -> doBottom
   else if nm == nameBoolNegate then
