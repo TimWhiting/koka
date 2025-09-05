@@ -111,17 +111,17 @@ opCmpString f [p1, p2] = do
 doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
 doPrimitive nm achanges = do
   -- trace (" Primitive " ++ show nm ++ " " ++ show achanges) $ return ()
-  if nm == nameIntEq then
+  if nm == nameIntEq || nm == nameInt32Eq then
     opCmpInt (==) achanges
-  else if nm == nameIntNEq then
+  else if nm == nameIntNEq || nm == nameInt32NEq then
     opCmpInt (/=) achanges
-  else if nm == nameIntLt then
+  else if nm == nameIntLt || nm == nameInt32Lt then
     opCmpInt (<) achanges
-  else if nm == nameIntLe then
+  else if nm == nameIntLe || nm == nameInt32Le then
     opCmpInt (<=) achanges
-  else if nm == nameIntGt then
+  else if nm == nameIntGt || nm == nameInt32Gt then
     opCmpInt (>) achanges
-  else if nm == nameIntGe then
+  else if nm == nameIntGe || nm == nameInt32Ge then
     opCmpInt (>=) achanges
   else if nm == nameIntAdd then
     intOp (+) achanges

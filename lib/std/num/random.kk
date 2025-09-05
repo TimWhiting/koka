@@ -82,6 +82,12 @@ pub fun pseudo-random( seed : int, action : () -> <random|e> a) : e a
 pub fun random-bool() : random bool
   (random-int32() >= 0.int32)
 
+pub fun mrandom-int(_): random maybe<int>
+  if random-int() >= 0 then
+    Just(random-int())
+  else
+    Nothing
+
 // Return a random integer in the range [-2^31^, 2^31^).
 pub fun random-int() : random int
   random-int32().int

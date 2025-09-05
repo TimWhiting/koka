@@ -473,7 +473,8 @@ maybeLoadModule mn = do
               trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
               return Nothing
             Right (bc', e) -> do
-              trace ("Loaded module " ++ show mn) $ return ()
+              let loaded = map modName (buildcModules bc')
+              trace ("Loaded module " ++ show mn ++ " " ++ show loaded) $ return ()
               let Just mod' = buildcLookupModule mn bc'
               let modCtx = ModuleC ctxId mod' mn
               updateState (\state ->
