@@ -1,53 +1,62 @@
 Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
-dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.131578947368421,0.00352538
-load    : std/core/types
-load    : std/core/unsafe
-load    : std/core/undiv
-load    : std/core/exn
-load    : std/core/char
-load    : std/core/order
-load    : std/core/bool
-load    : std/core/int
-load    : std/core/vector
-load    : std/core/string
-load    : std/core/maybe
-load    : std/core/maybe2
-load    : std/core/lazy
-load    : std/core/either
-load    : std/core/delayed
-parse   : .../std/core/hnd.kk
-parse   : .../std/core/exn.kk
-parse   : .../std/core/vector.kk
-parse   : .../std/core/string.kk
-parse   : .../std/core/list.kk
-parse   : .../std/core/sslice.kk
-parse   : .../std/core/maybe.kk
-parse   : .../std/core/either.kk
-parse   : .../std/core/tuple.kk
-parse   : .../std/core/maybe2.kk
-parse   : .../std/core/show.kk
-parse   : .../std/core/console.kk
-parse   : .../std/core/debug.kk
-parse   : .../std/core/delayed.kk
-parse   : .../std/core.kk
-parse   : .../analysis/benchmarks/rosetta/rosetta/j/jump-anywhere.kk
-check   : std/core/hnd
-check   : std/core/either
-check   : std/core/delayed
-check   : std/core/tuple
-check   : std/core/exn
-check   : std/core/maybe2
-check   : std/core/maybe
-check   : std/core/vector
-check   : std/core/string
-check   : std/core/sslice
-check   : std/core/list
-check   : std/core/show
-check   : std/core/console
-check   : std/core/debug
-check   : std/core
-check   : analysis/benchmarks/rosetta/rosetta/j/jump-anywhere
-Loaded module 
-src/Core/FlowAnalysis/Monad.hs:477:19-55: Non-exhaustive patterns in Just mod'
-
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.131578947368421,0.003519406
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,0,1,0,1770,718,1.2033898305084745,1.4011142061281336,3.25,1.121212121212121,1.2777777777777777,0.107329993
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,2,0,264,101,1.0643939393939394,1.0594059405940595,1.0,1.0467289719626167,1.1444444444444444,0.004380853
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,0,2,0,4110,1698,1.2111922141119222,1.3633686690223792,4.0,1.1476014760147601,1.265536723163842,0.387249663
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,3,0,324,124,1.058641975308642,1.0483870967741935,1.0,1.037313432835821,1.1214953271028036,0.006050919
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,0,3,0,7920,3262,1.3181818181818181,1.6468424279583078,5.888888888888889,1.2985074626865671,1.4273858921161826,1.258908549
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,4,0,384,147,1.0546875,1.0408163265306123,1.0,1.031055900621118,1.1048387096774193,0.007530079
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,0,4,0,15255,6245,1.2584070796460176,1.4502802241793435,6.545454545454546,1.2532894736842106,1.3687707641196014,2.622377507
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,5,0,444,170,1.0518018018018018,1.035294117647059,1.0,1.0265957446808511,1.0921985815602837,0.00963214
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,0,5,0,31752,13026,1.4310594608213656,1.8896821741133119,10.166666666666666,1.404809619238477,1.6687631027253669,8.964561087
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,0,6,0,504,193,1.0496031746031746,1.0310880829015545,1.0,1.0232558139534884,1.0822784810126582,0.012400365
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,0,6,0,66403,26825,1.3014472237700103,1.5287232059645852,10.970588235294118,1.3016826923076923,1.5581787521079258,18.9049289
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,1,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.131578947368421,0.005040895
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,1,1,0,7518,2900,1.2853152434158022,1.6106896551724137,2.0625,1.343213728549142,1.60546875,0.626763084
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,1,2,0,264,101,1.0643939393939394,1.0594059405940595,1.0,1.0467289719626167,1.1444444444444444,0.00836145
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,1,2,0,16610,6407,1.266646598434678,1.511940065553301,2.5,1.2146501457725947,1.621903520208605,2.278990528
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,1,3,0,324,124,1.058641975308642,1.0483870967741935,1.0,1.037313432835821,1.1214953271028036,0.013363853
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,1,3,0,33972,13321,1.3469327681620158,1.724570227460401,4.534883720930233,1.3045254556882464,1.7827648114901258,8.136198881
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,1,4,0,384,147,1.0546875,1.0408163265306123,1.0,1.031055900621118,1.1048387096774193,0.016679549
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,1,4,0,99222,38549,1.2764810223539134,1.4905445018029002,5.933333333333334,1.187214611872146,1.7330237957051655,29.185464325
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,1,5,0,444,170,1.0518018018018018,1.035294117647059,1.0,1.0265957446808511,1.0921985815602837,0.019801033
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,1,5,0,0,0,0,0,0,0,0,timeout
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,1,6,0,504,193,1.0496031746031746,1.0310880829015545,1.0,1.0232558139534884,1.0822784810126582,0.023694598
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,1,6,0,0,0,0,0,0,0,0,timeout
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.131578947368421,0.0051183
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,1,0,5880,2332,1.1328231292517006,1.2238421955403087,1.8333333333333333,1.066542288557214,1.244311377245509,0.393242802
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,2,0,264,101,1.0643939393939394,1.0594059405940595,1.0,1.0467289719626167,1.1444444444444444,0.008700844
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,2,0,10458,4112,1.1399885255306943,1.2198443579766538,1.8571428571428572,1.0601719197707737,1.247068676716918,1.237021261
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,3,0,324,124,1.058641975308642,1.0483870967741935,1.0,1.037313432835821,1.1214953271028036,0.013278644
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,3,0,25380,10094,1.185618597320725,1.350604319397662,2.433333333333333,1.1274095832568387,1.3213141025641026,4.963661911
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,4,0,384,147,1.0546875,1.0408163265306123,1.0,1.031055900621118,1.1048387096774193,0.016520483
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,4,0,49118,19404,1.1838837086200578,1.317511853226139,2.7349397590361444,1.08290298782737,1.3188295165394401,12.342367825
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,5,0,444,170,1.0518018018018018,1.035294117647059,1.0,1.0265957446808511,1.0921985815602837,0.019993943
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,5,0,99822,40408,1.2655025946184209,1.528162740051475,3.8,1.1659906954550876,1.4453639846743296,38.584021376
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,6,0,504,193,1.0496031746031746,1.0310880829015545,1.0,1.0232558139534884,1.0822784810126582,0.024228353
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,6,0,0,0,0,0,0,0,0,timeout
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.131578947368421,0.004916803
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,1,0,5708,2270,1.1154519971969166,1.1823788546255507,1.8333333333333333,1.0358009708737863,1.2251131221719458,0.379289758
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,2,0,264,101,1.0643939393939394,1.0594059405940595,1.0,1.0467289719626167,1.1444444444444444,0.008855392
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,2,0,9381,3711,1.1165120989233557,1.1703045001347345,1.8571428571428572,1.0205089251804025,1.216006216006216,1.048111721
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,3,0,324,124,1.058641975308642,1.0483870967741935,1.0,1.037313432835821,1.1214953271028036,0.013238089
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,3,0,23329,9354,1.1497278065926528,1.2669446226213386,2.433333333333333,1.068698160836639,1.2629173989455185,5.742769395
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,4,0,384,147,1.0546875,1.0408163265306123,1.0,1.031055900621118,1.1048387096774193,0.017122246
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,4,0,41075,16446,1.1394522215459526,1.2251611334062995,2.7349397590361444,1.0354559347936831,1.2337578243039067,11.917675637
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,5,0,444,170,1.0518018018018018,1.035294117647059,1.0,1.0265957446808511,1.0921985815602837,0.021171952
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,5,0,83068,34306,1.181730630326961,1.3369672943508424,3.8,1.082962782481574,1.2678378053182529,33.140576343
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,6,0,504,193,1.0496031746031746,1.0310880829015545,1.0,1.0232558139534884,1.0822784810126582,0.026575152
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,6,0,0,0,0,0,0,0,0,timeout
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,4,1,0,211,81,1.061611374407583,1.0493827160493827,1.0,1.0476190476190477,1.131578947368421,0.005365611
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,4,1,0,5708,2270,1.1154519971969166,1.1823788546255507,1.8333333333333333,1.0358009708737863,1.2251131221719458,0.407469361
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,4,2,0,264,101,1.0643939393939394,1.0594059405940595,1.0,1.0467289719626167,1.1444444444444444,0.008701655
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,4,2,0,9381,3711,1.1165120989233557,1.1703045001347345,1.8571428571428572,1.0205089251804025,1.216006216006216,1.096581902
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,4,3,0,324,124,1.058641975308642,1.0483870967741935,1.0,1.037313432835821,1.1214953271028036,0.013682879
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,4,3,0,23329,9354,1.1497278065926528,1.2669446226213386,2.433333333333333,1.068698160836639,1.2629173989455185,4.340489196
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,4,4,0,384,147,1.0546875,1.0408163265306123,1.0,1.031055900621118,1.1048387096774193,0.017125151
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,4,4,0,41075,16446,1.1394522215459526,1.2251611334062995,2.7349397590361444,1.0354559347936831,1.2337578243039067,9.436665696
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,4,5,0,444,170,1.0518018018018018,1.035294117647059,1.0,1.0265957446808511,1.0921985815602837,0.020406223
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,4,5,0,83068,34306,1.181730630326961,1.3369672943508424,3.8,1.082962782481574,1.2678378053182529,32.04157231
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,4,6,0,504,193,1.0496031746031746,1.0310880829015545,1.0,1.0232558139534884,1.0822784810126582,0.02564652
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,4,6,0,0,0,0,0,0,0,0,timeout
 

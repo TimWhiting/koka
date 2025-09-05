@@ -162,6 +162,8 @@ doPrimitive nm achanges = do
     return $ AChangeLit (LiteralChangeFloatX LChangeTop)
   else if nm == nameNumRandom then 
     return $ AChangeLit (LiteralChangeIntX LChangeTop)
+  else if nm == nameOSReadline then
+    return $ AChangeLit (LiteralChangeStringX LChangeTop)
   else if nm == nameCoreIntShow then
     case achanges of
       [AChangeLit (LiteralChangeIntX (LChangeSingle (e2, i)))] ->

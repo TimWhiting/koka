@@ -382,12 +382,8 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
     MKHandle eff mkKNext mknext h@(Handler hnd ret) henv mkCtx -> do
       if eff == name then do
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
-        hargs <- mapM (store . snd) hndargs
         -- trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
-        let unmakeHidden ('@':'v':'a':'l':'-':op) = opName
-            unmakeHidden ('-':rest) = newName rest
-            unmakeHidden (_:rest) = unmakeHidden rest
-        let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
+        let ops' = map (\(n, a) -> (unmakeOpHidden opName $ nameStem n, a)) ops
         case lookup opName ops' of
           Nothing ->
             -- trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
@@ -402,11 +398,11 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             let newEnv = foldl (\acc x -> M.insert x mkCtx acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
-            if nameStem (getName opConName) `startsWith` "clause-tail" then do
+            if isTailOpT opConName then do
               let k' = ImplicitAddr mkCtx henv (contextId bod)
               extendKStore k' (KNext (FResume eff kaddr henv h (contextId bod)) (static mkCtx) mkKNext)
               eval bod (limitEnv newEnv (fvs bod)) k' mknext mkCtx
-            else if nameStem (getName opConName) `startsWith` "clause-never" then do 
+            else if isNeverOp opConName then do
               eval bod (limitEnv newEnv (fvs bod)) mkKNext mknext mkCtx
             else do
               extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr henv h)
