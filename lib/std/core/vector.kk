@@ -24,12 +24,12 @@ extern import
 // ----------------------------------------------------------------------------
 
 // Return the element at position `index`  in vector `v`  without bounds check!
-inline extern unsafe-idx( ^v : vector<a>, index : ssize_t ) : total a
+pub inline extern unsafe-idx( ^v : vector<a>, index : ssize_t ) : total a
   c  "kk_vector_at_borrow"
   cs inline "(#1)[#2]"
   js inline "(#1)[#2]"
 
-inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
+pub inline extern unsafe-assign : forall<a> ( v : vector<a>, i : ssize_t, x : a ) -> total ()
   c "kk_vector_unsafe_assign"
   cs inline "(#1)[#2] = #3"
   js inline "(#1)[#2] = #3"
