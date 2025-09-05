@@ -161,7 +161,7 @@ doEval expr kaddr mkaddr ctx =
       addr <- allocConst ctx expr constr
       apply kaddr mkaddr addr (dynamic ctx)
     Var name _ -> do
-      if isPrimitive name then do
+      if isPrimitive name && not (isTrickyPrimitive name) then do
         addr <- allocConst ctx expr (AChangePrim name expr)
         apply kaddr mkaddr addr (dynamic ctx)
       else if qualifier (getName name) == nameCoreHnd then
@@ -170,15 +170,16 @@ doEval expr kaddr mkaddr ctx =
         -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
         apply kaddr mkaddr (BindingAddr ctx name) (dynamic ctx)
       else do
-        res <- bindExternal name
+        let nm = equalPrimitive name
+        res <- bindExternal nm
         case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
           Just expr -> do
             -- trace ("Evaluating external: " ++ show name) $ return ()
-            extendMKStore (TopAddr name) MKEnd
+            extendMKStore (TopAddr nm) MKEnd
             c <- startCombinedCtx
             each [
-                eval expr EndKAddr (TopAddr name) c,
-                apply kaddr mkaddr (TopAddr name) (dynamic ctx)
+                eval expr EndKAddr (TopAddr nm) c,
+                apply kaddr mkaddr (TopAddr nm) (dynamic ctx)
               ]
             -- evalRes (eval expr (BEnv S.empty) EndKAddr (TopAddr name) c)
             -- apply kaddr mkaddr (TopAddr name) (dynamic ctx)
