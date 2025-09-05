@@ -295,19 +295,20 @@ doApply kaddr mkaddr addr dynctx = do
                   extendStore (BindingAddr dynctx arg) v
                   eval body knext mknext dynctx
         FResume label kont hnd u -> do
-          -- m <- mLimit
-          -- d <- dLimit
-          -- let newCtx = addCall m newctx u
-          --     newDynCtx = addDelim d newCtx u
-          --     mk' = ImplicitAddr newCtx u
-          -- -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
-          -- extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
-          -- apply kont mk' addr newDynCtx
+          m <- mLimit
           d <- dLimit
-          let mk' = ImplicitAddr newctx u
+          let newCtx = addCall m newctx u
+              newDynCtx = addDelim d newCtx u
+              mk' = ImplicitAddr newCtx u
           -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
-          extendMKStore mk' (MKHandle label knext mkaddr hnd newctx)
-          apply kont mk' addr (dynamic newctx)
+          extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
+          apply kont mk' addr newDynCtx
+          -- d <- dLimit
+          -- let newDynCtx = addDelim d newctx u
+          -- let mk' = ImplicitAddr newctx u
+          -- -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
+          -- extendMKStore mk' (MKHandle label knext mkaddr hnd newctx)
+          -- apply kont mk' addr (dynamic newctx)
         FApp n args res u -> do
           case args of
             [] -> case res ++ [addr] of
@@ -545,8 +546,8 @@ doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameHandle = 
       fvss <- fvsVal hnd
       bod <- focusBody body
       let bvars = fvvs body
-      let AChangeObj _ tname hndargs@(_:ops) = hnd
-      let addCtx = not $ all (\(n, a) -> isTailOpOrVal (nameStem n)) ops
+      -- let AChangeObj _ tname hndargs@(_:ops) = hnd
+      let addCtx = True -- not $ all (\(n, a) -> isTailOpOrVal (nameStem n)) ops
       -- trace ("OPS " ++ show label ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
       let newctx = if addCtx then newDelim d m ctx (contextId u) else ctx
       let kmkaddr = ImplicitAddr newctx (contextId bod)
