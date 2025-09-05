@@ -45,6 +45,7 @@ nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
 nameCoreStringToUpper = newQualified "std/core/string" "@extern-to-upper"
 nameCoreStringExternRepeatZ = newQualified "std/core/string" "@extern-repeatz"
 nameCoreStringCount = newLocallyQualified "std/core/string" "chars" "@extern-count"
+nameOSReadline = newQualified "std/os/readline" "readline"
 nameStringEq = newQualified "std/core/string" "=="
 
 nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
@@ -128,6 +129,27 @@ isPrimitive tn =
                       nameCorePrint, nameCorePrintln, nameCorePrintsLn,
                       nameLocalGet, nameLocalSet,
                       nameHandle, nameHTag, nameEvvAt, nameLocalNew, nameLocalVar,
-                      nameInternalSSizeT
+                      nameInternalSSizeT, 
+                      nameOSReadline
                       ]
   in basics || isNamePerform (getName tn) || isClauseName (getName tn)
+
+
+unmakeOpHidden :: Name -> [Char] -> Name
+unmakeOpHidden opName ('@':'v':'a':'l':'-':op) = opName
+unmakeOpHidden opName ('-':rest) = newName rest
+unmakeOpHidden opName (_:rest) = unmakeOpHidden opName rest 
+
+isTailOpOrVal :: [Char] -> Bool
+isTailOpOrVal ('@':'v':'a':'l':'-':op) = True
+isTailOpOrVal ('-':rest) = isTailOp $ newName rest
+isTailOpOrVal (_:rest) = isTailOpOrVal rest
+
+isTailOp :: Name -> Bool
+isTailOp tn = nameStem tn `startsWith` "clause-tail"
+
+isTailOpT :: TName -> Bool
+isTailOpT tn = isTailOp (getName tn)
+
+isNeverOp :: TName -> Bool
+isNeverOp tn = nameStem (getName tn) `startsWith` "clause-never"

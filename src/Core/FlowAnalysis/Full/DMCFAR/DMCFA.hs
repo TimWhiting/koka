@@ -291,17 +291,23 @@ doApply kaddr mkaddr addr dynctx = do
                   m <- mLimit
                   -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                   v <- store addr
+                  rebindAll (fvvs cexpr) cctx dynctx
                   extendStore (BindingAddr dynctx arg) v
                   eval body knext mknext dynctx
         FResume label kont hnd u -> do
-          m <- mLimit
+          -- m <- mLimit
+          -- d <- dLimit
+          -- let newCtx = addCall m newctx u
+          --     newDynCtx = addDelim d newCtx u
+          --     mk' = ImplicitAddr newCtx u
+          -- -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
+          -- extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
+          -- apply kont mk' addr newDynCtx
           d <- dLimit
-          let newCtx = addCall m newctx u
-              newDynCtx = addDelim d newCtx u
-              mk' = ImplicitAddr newCtx u
+          let mk' = ImplicitAddr newctx u
           -- trace ("Applying resume continuation " ++ show u ++ " " ++ show label ) $ return () -- ++ "for\n" ++ 
-          extendMKStore mk' (MKHandle label knext mkaddr hnd newCtx)
-          apply kont mk' addr newDynCtx
+          extendMKStore mk' (MKHandle label knext mkaddr hnd newctx)
+          apply kont mk' addr (dynamic newctx)
         FApp n args res u -> do
           case args of
             [] -> case res ++ [addr] of
@@ -415,12 +421,8 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
         -- let newCtx = mkCtx -- addCall m mkCtx (contextId performExpr)
         -- trace ("Matched " ++ show mkCtx) $ return ()
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
-        hargs <- mapM (store . snd) hndargs
         -- trace ("Unwinding: " ++ show (map fst ops) ++ " " ++ show opName ++ " " ++ show hargs) $ return ()
-        let unmakeHidden ('@':'v':'a':'l':'-':op) = opName
-            unmakeHidden ('-':rest) = newName rest
-            unmakeHidden (_:rest) = unmakeHidden rest
-        let ops' = map (\(n, a) -> (unmakeHidden $ nameStem n, a)) ops
+        let ops' = map (\(n, a) -> (unmakeOpHidden opName $ nameStem n, a)) ops
         case lookup opName ops' of
           Nothing ->
             -- trace ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
@@ -436,11 +438,11 @@ doUnwind name opName performExpr kaddr mkaddr args ctx = do
             -- let opCtx = mkCtx -- {kfvs = S.union (S.fromList params) (kfvs mkCtx)}
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr mkCtx) params)
-            if nameStem (getName opConName) `startsWith` "clause-tail" then do
+            if isTailOpT opConName then do
               let k' = ImplicitAddr mkCtx (contextId bod)
               extendKStore k' (KNext (FResume eff kaddr h (contextId bod)) mkCtx mkKNext)
               eval bod k' mknext mkCtx
-            else if nameStem (getName opConName) `startsWith` "clause-never" then do
+            else if isNeverOp opConName then do
               eval bod mkKNext mknext mkCtx
             else do
               extendStore (BindingAddr mkCtx (last params)) (AChangeKont name kaddr mkCtx h)
@@ -543,8 +545,10 @@ doHandlerPrimitive name n addr knext mkaddr arguments ctx u | n == nameHandle = 
       fvss <- fvsVal hnd
       bod <- focusBody body
       let bvars = fvvs body
+      let AChangeObj _ tname hndargs@(_:ops) = hnd
+      let addCtx = not $ all (\(n, a) -> isTailOpOrVal (nameStem n)) ops
       -- trace ("OPS " ++ show label ++ ":" ++ show ctx ++ " " ++ show (contextId u)) $ return ()
-      let newctx = newDelim d m ctx (contextId u)
+      let newctx = if addCtx then newDelim d m ctx (contextId u) else ctx
       let kmkaddr = ImplicitAddr newctx (contextId bod)
       extendKStore kmkaddr (KNext (FDollar (arguments !! 2)) newctx EndKAddr)
       extendMKStore kmkaddr (MKHandle label knext mkaddr (Handler (arguments !! 1) (Just ret)) ctx)
