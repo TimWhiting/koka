@@ -65,14 +65,6 @@ fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
     Ok(res) -> write(a.show ++ "," ++ res.split(a.show ++ ",").tail.filter(fn(l) l.split(",").length >= 5).join(a.show ++ ","))
     Error(err) -> throw-exn(err)
 
-fun format-results(results: list<(analysis, string, list<(int, int, int, int, float64)>)>): out ()
-  // println("Analysis results (correct/total) [time in seconds]")
-  
-  results.foreach fn(res: (analysis, string, list<(int, int, int, int, float64)>))
-    val r : list<(int, int, int, int, float64)> = res.thd
-    r.foreach fn((i, j, c, t, time))
-      write([res.fst.show, res.snd, i.show, j.show, c.show, t.show, time.show].join(","))
-
 fun main()
   run-benchmarks()
   // run-benchmarks(["handlers/nim"], [DMCFA])
