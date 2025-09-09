@@ -129,10 +129,10 @@ findAllUsage :: TName -> ExprContext -> FixDemandR x s e (ExprContext, EnvCtx)
 findAllUsage tname@TName{getName = name} ctx = do
   case ctx of
     ModuleC{} -> do
-      if nameStem name == "main" then return (ctx, EnvTail TopCtx) else do
+      if nameStem name == "main" then return (ctx, EnvTail (DTop TopCtx)) else do
         mods <- importedBy (newModuleName (nameModule name))
         each $ map (\m -> do
-            withEnv (\e -> e{currentModContext=m, currentContext= m}) $ findUsages tname m (EnvTail TopCtx)
+            withEnv (\e -> e{currentModContext=m, currentContext= m}) $ findUsages tname m (EnvTail (DTop TopCtx))
           ) mods
 
 -- Which modules import the given module
@@ -210,8 +210,9 @@ findUsage tname@TName{getName = name} ctx env = do
           visitEachChild ctx $ do
             childCtx <- currentContext <$> getEnv
             m <- contextLength <$> getEnv
+            d <- delimContextLength <$> getEnv
             -- trace ("m" ++ show m) $ return ()
-            findUsage tname childCtx (limitmenv (EnvCtx (IndetCtx tn) env) m)
+            findUsage tname childCtx (limitdmenv (EnvCtx (DUnknown (IndetCtx tn)) env) d m)
       _ -> childrenUsages
 
 addPrimitive :: Name -> ((ExprContext,EnvCtx) -> FixDemandR x s e AChange) -> FixDemandR x s e ()
@@ -306,7 +307,7 @@ doEval (ctx, env) query = do
                 -- For a name bound in the top level of the current module we evaluate to the lambda of the definition
                 lamctx <- getTopDefCtx modulectx (getName tn)
                 -- Evaluates just to the lambda
-                qeval (lamctx, EnvTail TopCtx)
+                qeval (lamctx, EnvTail (DTop TopCtx))
               BoundGlobal nm _ -> do
                 if newModuleName (nameModule (getName nm)) == nameCoreHnd then
                   error ("Hnd: missing primitive " ++ showSimpleContext ctx)
@@ -319,7 +320,7 @@ doEval (ctx, env) query = do
                       withModuleCtx modulectx $ do
                         lamctx <- getTopDefCtx modulectx (getName tn)
                         -- trace (query ++ "REF: External module " ++ showSimpleContext lamctx) $ return ()
-                        qeval (lamctx, EnvTail TopCtx) -- Evaluates just to the lambda
+                        qeval (lamctx, EnvTail (DTop TopCtx)) -- Evaluates just to the lambda
                     _ -> error $ "REF: can't find what the following refers to " ++ showSimpleContext ctx ++ "\n\n Unhandled Primitive?"
         App (TypeApp (Con nm repr _) _) args rng -> do
           -- trace (query ++ "APPCon: " ++ show ctx) $ return []
@@ -340,7 +341,7 @@ doEval (ctx, env) query = do
           else do
             -- trace (query ++ "APP: Lambda is " ++ show lam ++ showSimpleEnv lamenv) $ return ()
             (bd, bdenv) <- enterBod lam lamenv ctx env
-            instantiate query bdenv (EnvCtx (IndetCtx (lamNames lam)) lamenv)
+            instantiate query bdenv (EnvCtx (DUnknown (IndetCtx (lamNames lam))) lamenv)
             qeval (bd, bdenv)
         TypeApp{} ->
           -- trace (query ++ "TYPEAPP: " ++ show ctx) $
@@ -496,7 +497,7 @@ doExpr (ctx,env) query = do
       else do
         -- trace (query ++ "OPERAND: Closure is: " ++ showCtxExpr lam) $ return []
         (bd, bdenv) <- enterBod lam lamenv c env
-        instantiate query bdenv (EnvCtx (IndetCtx (lamNames lam)) lamenv)
+        instantiate query bdenv (EnvCtx (DUnknown (IndetCtx (lamNames lam))) lamenv)
         m <- contextLength <$> getEnv
         call <- findUsages (lamVar index lam) bd bdenv
         -- trace (query ++ "RAND: Usages are " ++ show ctxs) $ return []
@@ -505,14 +506,14 @@ doExpr (ctx,env) query = do
       -- trace (query ++ "BODY: Looking for locations the returned closure is called " ++ show ctx) $ return []
       AChangeClos lamctx lamenv <- qcall (ctx, env)
       qexpr (lamctx, lamenv)
-    DefCNonRec _ c index -> if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else do
+    DefCNonRec _ c index -> if isMain ctx then return $ AChangeClos ctx (EnvTail (DTop TopCtx)) else do
       -- trace (query ++ "DEF NonRec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
       call <- findAllUsage (defTName df) (modCtx c)
       -- trace (query ++ "DEF: Usage is " ++ show call) $ return []
       -- Find the actual call point, this could just be a val x = topLevelFunction with no application
       qexpr call
-    DefCRec _ c _ _ -> if isMain ctx then return $ AChangeClos ctx (EnvTail TopCtx) else do
+    DefCRec _ c _ _ -> if isMain ctx then return $ AChangeClos ctx (EnvTail (DTop TopCtx)) else do
       -- trace (query ++ "DEF Rec: Env is " ++ show env) $ return []
       let df = defOfCtx ctx
       call <- findAllUsage (defTName df) (modCtx c)
@@ -556,14 +557,14 @@ doCall (ctx, env) query =
                 evalctx = ctxOfClos res
                 callenv = envOfClos res
             assert (case exprOfCtx callctx of {C.App{} -> True; _ -> False}) $ return ()
-            assert (case cc0 of {BCallCtx ctx _ -> case exprOfCtx ctx of {C.App{} -> True; _ -> False}; _ -> True}) $ return ()
+            -- assert (case cc0 of {BCallCtx ctx _ -> case exprOfCtx ctx of {C.App{} -> True; _ -> False}; _ -> True}) $ return ()
             m <- contextLength <$> getEnv
             cc1 <- succAEnv callctx callenv
             if cc1 == cc0 then do
-              analysisLog (query ++ "KNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+              analysisLog (query ++ "KNOWN CALL: " ++ showSimpleDCtx cc1 ++ " " ++ showSimpleDCtx cc0)
               return $! AChangeClos evalctx callenv
-            else if cc0 `subsumesCtx` cc1 then do -- cc1 is more refined
-              analysisLog (query ++ "UNKNOWN CALL: " ++ showSimpleCtx cc1 ++ " " ++ showSimpleCtx cc0)
+            else if cc0 `subsumesDCtx` cc1 then do -- cc1 is more refined
+              analysisLog (query ++ "UNKNOWN CALL: " ++ showSimpleDCtx cc1 ++ " " ++ showSimpleDCtx cc0)
               instantiate query (EnvCtx cc1 p) env
               doBottom
             else do

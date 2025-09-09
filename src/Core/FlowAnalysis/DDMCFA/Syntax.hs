@@ -129,23 +129,47 @@ sourceEnv env = do
     Nothing -> return "<>"
 
 sourceEnvX :: EnvCtx -> PostFixR x s e (Maybe String)
-sourceEnvX (EnvCtx env tail) = do
-  envc <- sourceEnvCtx env
+sourceEnvX (EnvCtx dctx tail) = do
+  envc <- sourceDCtx dctx
   envt <- sourceEnvX tail
   case envt of
     Just envt -> return $ Just $ envc ++ ":::" ++ envt
     Nothing -> return $ Just envc
 sourceEnvX (EnvTail env) = return Nothing
 
-sourceEnvCtx :: Ctx -> PostFixR x s e String
-sourceEnvCtx ctx = do
-  env <- sourceEnvCtxX ctx
+sourceDCtx :: DCtx -> PostFixR x s e String
+sourceDCtx ctx = do
+  env <- sourceDCtxX ctx
   case env of
     Just e -> return $ "[" ++ e ++ "]"
     Nothing -> return "[]"
 
-sourceEnvCtxX :: Ctx -> PostFixR x s e (Maybe String)
-sourceEnvCtxX ctx =
+sourceDCtxX :: DCtx -> PostFixR x s e (Maybe String)
+sourceDCtxX ctx =
+  case ctx of
+    DUnknown ctx -> do
+      s <- sourceSCtx ctx      
+      return $ Just $ "?(" ++ s ++ ")"
+    DTop ctx -> do 
+      s <- sourceSCtx ctx 
+      return $ Just $ "t(" ++ s ++ ")"
+    DDelim e ctx ddctx -> do 
+      s <- sourceSCtx ctx
+      tail <- sourceDCtxX ddctx
+      SourceExpr se rng <- findForApp e (appRng e)
+      case tail of 
+        Nothing -> return $ Just $ "d(" ++ show se ++ ", " ++ s ++ ")" 
+        Just t -> return $ Just $ "d(" ++ show se ++ ", " ++ s ++ "):" ++ t
+
+sourceSCtx :: SCtx -> PostFixR x s e String
+sourceSCtx ctx = do
+  env <- sourceSCtxX ctx
+  case env of
+    Just e -> return $ "[" ++ e ++ "]"
+    Nothing -> return "[]"
+
+sourceSCtxX :: SCtx -> PostFixR x s e (Maybe String)
+sourceSCtxX ctx =
   case ctx of
     IndetCtx tn -> return $ Just $ "?(" ++ intercalate "," (map show tn) ++ ")"
     TopCtx -> return $ Just "(top)"
@@ -158,7 +182,7 @@ sourceEnvCtxX ctx =
                 SourceDef de rng -> show (linkText (ppSyntaxDef simpleEnv de) (getRange de))
                 SourceExtern ex rng -> show (linkText (ppSyntaxExtern simpleEnv ex) (S.extRange ex))
                 SourceNotFound -> "Not found"
-      tail <- sourceEnvCtxX cc
+      tail <- sourceSCtxX cc
       case tail of 
         Just t -> return $ Just $ head <> "::" ++ t
         Nothing -> return $ Just head
