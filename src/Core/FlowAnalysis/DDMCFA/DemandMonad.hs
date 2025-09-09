@@ -297,12 +297,13 @@ getDemandEnv :: FixAR x s (DemandEnv e) i o c (DemandEnv e)
 getDemandEnv = additionalEnv <$> getEnv
 
 -- Environment helper
-succAEnv :: ExprContext -> EnvCtx -> FixAR x s (DemandEnv e) i o c Ctx
+succAEnv :: ExprContext -> EnvCtx -> FixAR x s (DemandEnv e) i o c DCtx
 succAEnv newctx p' = do
   length <- contextLength <$> getEnv
+  d <- delimContextLength <$> getEnv
   kind <- analysisKind <$> getDemandEnv
   case kind of
-    BasicEnvs -> return $ limitm (BCallCtx newctx (envhead p')) length
+    BasicEnvs -> return $ limitdm (addCall newctx (envhead p')) d length
 
 enterBod :: ExprContext -> EnvCtx -> ExprContext -> EnvCtx -> FixDemandR x s e (ExprContext, EnvCtx)
 enterBod lam lamenv callctx callenv = do

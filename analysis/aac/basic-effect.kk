@@ -11,7 +11,8 @@ fun x0()
 
 fun x1()
   with fun op1(i) i.show
-  op1(0)
+  val s = op1(0)
+  s
 
 fun x2()
   with ctl op2(i) resume(i.show)

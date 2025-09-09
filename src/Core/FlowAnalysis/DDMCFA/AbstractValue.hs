@@ -7,7 +7,8 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 module Core.FlowAnalysis.DDMCFA.AbstractValue(
-                          Ctx(..),
+                          SCtx(..),
+                          DCtx(..),
                           EnvCtx(..),
                           LiteralLattice(..),
                           LiteralChange(..),
@@ -21,13 +22,13 @@ module Core.FlowAnalysis.DDMCFA.AbstractValue(
                           showNoEnvClosure, showNoEnvAbValue,
                           emptyAbValue,
                           joinAbValue,
-                          subsumes,subsumesCtx,
+                          subsumes,subsumesCtx,showSimpleDCtx,subsumesDCtx,
                           bind,
                           indeterminateStaticCtx,maybeModOfEnv,maybeModOfCtx,
                           refineCtx,
-                          limitm,limitmenv,
+                          limitm,limitdm,limitdmenv,addCall,
                           isFullyDetermined, ccDetermined,
-                          envtail,envhead
+                          envtail,envhead,ctxhead
                         ) where
 import Data.Map.Strict as M hiding (map)
 import Common.Name
@@ -150,8 +151,13 @@ showSimpleEnv c =
 
 showSimpleEnv_ :: EnvCtx -> String
 showSimpleEnv_ (EnvCtx ctx tail) =
-  showSimpleCtx ctx ++ ":::" ++ showSimpleEnv_ tail
-showSimpleEnv_ (EnvTail ctx) = showSimpleCtx ctx
+  showSimpleDCtx ctx ++ ":::" ++ showSimpleEnv_ tail
+showSimpleEnv_ (EnvTail ctx) = showSimpleDCtx ctx
+
+showSimpleDCtx :: DCtx -> String
+showSimpleDCtx (DTop sc) = showSimpleCtx sc
+showSimpleDCtx (DDelim expr sc rest) = "d(" ++ showSimpleContext expr ++ "," ++ showSimpleCtx sc ++ "," ++ showSimpleDCtx rest ++ ")"
+showSimpleDCtx (DUnknown sc) = "?(" ++ showSimpleCtx sc ++ ")"
 
 showSimpleAbValueCtx :: (EnvCtx, AbValue) -> String
 showSimpleAbValueCtx (env, ab) =
@@ -277,8 +283,8 @@ bind ctx var@(C.Var tname vInfo) env =
         of Just x -> mk ctx env (x + 1)
            _ -> bind ctx' var env
 
-data EnvCtx = EnvCtx Ctx EnvCtx
-            | EnvTail Ctx
+data EnvCtx = EnvCtx DCtx EnvCtx
+            | EnvTail DCtx
   deriving (Eq, Ord)
 
 instance Show EnvCtx where
@@ -288,15 +294,35 @@ showEnvCtx :: EnvCtx -> String
 showEnvCtx (EnvCtx ctx tail) = show ctx ++ ":::" ++ showEnvCtx tail
 showEnvCtx (EnvTail ctx) = show ctx
 
+showDCtx :: DCtx -> String
+showDCtx (DTop sc) = show sc
+showDCtx (DDelim expr sc rest) = "d(" ++ showSimpleContext expr ++ "," ++ show sc ++ "," ++ show rest ++ ")"
+showDCtx (DUnknown sc) = "?(" ++ show sc ++ ")"
+
+instance Show DCtx where
+  show = showDCtx
+
 ---------------- Environment Based Ctx -------------------
-data Ctx =
+data DCtx = 
+  DTop SCtx -- Top level context
+  | DDelim !ExprContext !SCtx !DCtx -- Delimiter Context
+  | DUnknown !SCtx -- Indeterminate Context
+  deriving (Eq, Ord)
+
+addCall :: ExprContext -> DCtx -> DCtx
+addCall newctx (DTop ctx) = DTop (BCallCtx newctx ctx)
+addCall newctx (DDelim expr ctx rest) = DDelim expr (BCallCtx newctx ctx) rest
+addCall newctx (DUnknown ctx) = DUnknown (BCallCtx newctx ctx)
+
+data SCtx =
   IndetCtx [TName]
-  | BCallCtx !ExprContext !Ctx
+  | BCallCtx !ExprContext !SCtx -- TODO: Add names
+  | DelimCtx !ExprContext
   | TopCtx
   | CtxEnd
   deriving (Eq, Ord)
 
-instance Show Ctx where
+instance Show SCtx where
   show ctx =
     case ctx of
       IndetCtx tn -> "?(" ++ show tn ++ ")"
@@ -304,7 +330,7 @@ instance Show Ctx where
       TopCtx -> "Top"
       CtxEnd -> "."
 
-showSimpleCtx :: Ctx -> String
+showSimpleCtx :: SCtx -> String
 showSimpleCtx ctx =
   case ctx of
     IndetCtx tn -> show tn
@@ -315,13 +341,13 @@ showSimpleCtx ctx =
 indeterminateStaticCtx :: Int -> ExprContext -> EnvCtx
 indeterminateStaticCtx m ctx =
   case ctx of
-    ModuleC _ mod _ -> EnvTail TopCtx
-    DefCRec _ ctx' _ _ -> EnvTail TopCtx
-    DefCNonRec _ ctx' _ -> EnvTail TopCtx
-    DefCGroup _ ctx' tn _ -> EnvTail TopCtx
+    ModuleC _ mod _ -> EnvTail (DTop TopCtx)
+    DefCRec _ ctx' _ _ -> EnvTail (DTop TopCtx)
+    DefCNonRec _ ctx' _ -> EnvTail (DTop TopCtx)
+    DefCGroup _ ctx' tn _ -> EnvTail (DTop TopCtx)
     LamCBody _ ctx' tn _ ->
       let parent = indeterminateStaticCtx m ctx'
-      in if m == 0 then EnvCtx CtxEnd parent else EnvCtx (IndetCtx tn) parent
+      in if m == 0 then EnvCtx (DUnknown CtxEnd) parent else EnvCtx (DUnknown (IndetCtx tn)) parent
     AppCLambda _ ctx' _ -> indeterminateStaticCtx m ctx'
     AppCParam _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     LetCDefRec _ ctx' _ _ -> indeterminateStaticCtx m ctx'
@@ -333,9 +359,9 @@ indeterminateStaticCtx m ctx =
     ExprCBasic _ ctx' _ -> indeterminateStaticCtx m ctx'
 
 maybeModOfEnv :: EnvCtx -> Maybe ExprContext
-maybeModOfEnv env = maybeModOfCtx $ envhead env
+maybeModOfEnv env = maybeModOfCtx $ ctxhead $ envhead env
 
-maybeModOfCtx :: Ctx -> Maybe ExprContext
+maybeModOfCtx :: SCtx -> Maybe ExprContext
 maybeModOfCtx ctx =
   case ctx of
     BCallCtx ctx cc -> maybeModOfCtx cc -- Could also potentially use indeterminate contexts
@@ -345,16 +371,21 @@ envtail :: EnvCtx -> EnvCtx
 envtail (EnvCtx cc tail) = tail
 envtail (EnvTail x) = error "envtail on EnvTail"
 
-envhead :: EnvCtx -> Ctx
+envhead :: EnvCtx -> DCtx
 envhead (EnvCtx cc tail) = cc
 envhead (EnvTail cc) = cc
 
-limitmenv :: EnvCtx -> Int -> EnvCtx
-limitmenv (EnvCtx e tail) m =
-  EnvCtx (limitm e m) (limitmenv tail m)
-limitmenv (EnvTail e) m = EnvTail (limitm e m)
+ctxhead :: DCtx -> SCtx
+ctxhead (DTop cc) = cc
+ctxhead (DDelim _ cc _) = cc
+ctxhead (DUnknown cc) = cc
 
-limitm :: Ctx -> Int -> Ctx
+limitdmenv :: EnvCtx -> Int -> Int -> EnvCtx
+limitdmenv (EnvCtx e tail) d m =
+  EnvCtx (limitdm e d m) (limitdmenv tail d m)
+limitdmenv (EnvTail e) d m = EnvTail (limitdm e d m)
+
+limitm :: SCtx -> Int -> SCtx
 limitm ctx m =
   if m == 0 then
     case ctx of
@@ -367,16 +398,37 @@ limitm ctx m =
       BCallCtx c e -> BCallCtx c (limitm e (m - 1))
       _ -> ctx
 
+limitdm ctx d m = 
+  if d == 0 then
+    case ctx of
+      DDelim _ c _ -> DUnknown c 
+      DTop{} -> DTop TopCtx
+      DUnknown{} -> ctx
+  else
+    case ctx of
+      DDelim e c rest -> DDelim e (limitm c m) (limitdm rest (d - 1) m)
+      _ -> ctx
+
 -- Environment Subsumption
 -- If the first subsumes the second, then the first is more general than the second, and thus any value in the second should also be in the first
 subsumes :: EnvCtx -> EnvCtx -> Bool
 subsumes p1 p2 =
   case (p1, p2) of
-    (EnvCtx ctx1 tail1, EnvCtx ctx2 tail2) -> ctx1 `subsumesCtx` ctx2 && tail1 `subsumes` tail2
-    (EnvTail ctx1, EnvTail ctx2) -> ctx1 `subsumesCtx` ctx2
+    (EnvCtx ctx1 tail1, EnvCtx ctx2 tail2) -> ctx1 `subsumesDCtx` ctx2 && tail1 `subsumes` tail2
+    (EnvTail ctx1, EnvTail ctx2) -> ctx1 `subsumesDCtx` ctx2
     _ -> False
 
-subsumesCtx :: Ctx -> Ctx -> Bool
+subsumesDCtx :: DCtx -> DCtx -> Bool
+subsumesDCtx c1 c2 =
+  case (c1, c2) of
+    (DTop sc1, DTop sc2) -> sc1 `subsumesCtx` sc2
+    (DDelim expr1 sc1 rest1, DDelim expr2 sc2 rest2) -> expr1 == expr2 && sc1 `subsumesCtx` sc2 && rest1 `subsumesDCtx` rest2
+    (DUnknown sc1, DUnknown sc2) -> sc1 `subsumesCtx` sc2
+    (DUnknown{}, DTop{}) -> True
+    (DUnknown{}, DDelim{}) -> True
+    _ -> False
+
+subsumesCtx :: SCtx -> SCtx -> Bool
 subsumesCtx c1 c2 =
   case (c1, c2) of
     (TopCtx, TopCtx) -> True
@@ -400,10 +452,17 @@ refineCtx (c1, c0) c =
 isFullyDetermined :: EnvCtx -> Bool
 isFullyDetermined env =
   case env of
-    EnvCtx cc tail -> ccDetermined cc && isFullyDetermined tail
-    EnvTail cc -> ccDetermined cc
+    EnvCtx cc tail -> ccDDetermined cc && isFullyDetermined tail
+    EnvTail cc -> ccDDetermined cc
 
-ccDetermined :: Ctx -> Bool
+ccDDetermined :: DCtx -> Bool
+ccDDetermined ctx =
+  case ctx of
+    DTop sc -> ccDetermined sc
+    DDelim _ sc rest -> ccDetermined sc && ccDDetermined rest
+    DUnknown _ -> False
+
+ccDetermined :: SCtx -> Bool
 ccDetermined ctx =
   case ctx of
     CtxEnd -> True
