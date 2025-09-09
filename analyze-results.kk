@@ -82,18 +82,31 @@ fun int/average(l: list<int>): maybe<float64>
   if l.is-empty then Nothing
   else Just(l.sum.float64 / l.length.float64)
 
+fun full-analysis(set, name)
+  ("\n\n\n\n" ++ name ++ " time\n\n\n\n").println
+  set.analyze(_.flatmap-maybe(fn(a) a.time).average).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " timeouts\n\n\n\n").println
+  set.analyze(_.filter(fn(a) a.time.is-nothing).length).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " precision\n\n\n\n").println
+  set.analyze(_.map(precise).sum).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " precision\n\n\n\n").println
+  set.analyze(_.map(precise).average).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " avg mk\n\n\n\n").println
+  set.analyze(_.map(avg-mk).average).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " avg k\n\n\n\n").println
+  set.analyze(_.map(avg-k).average).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " avg s\n\n\n\n").println
+  set.analyze(_.map(avg-s).average).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " num e\n\n\n\n").println
+  set.analyze(_.map(num-eval).sum).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " num a\n\n\n\n").println
+  set.analyze(_.map(num-apply).sum).map(tuple4/show).join("\n").println
+  ("\n\n\n\n" ++ name ++ " imprecision").println
+  set.analyze(_.filter(fn(e) e.num-apply != 0).map(fn(e) ((e.avg-mk - 1.0) + (e.avg-k - 1.0) + (e.avg-s - 1.0))).average).map(tuple4/show).join("\n").println
+
+
 fun main()
   val koka = files.remove(_ == "benchmarks")
   val bench = files.filter(_ == "benchmarks")
-  "\n\n\n\nBenchmark results\n\n\n\n".println
-  bench.analyze(_.flatmap-maybe(time).average).map(tuple4/show).join("\n").println
-  "\n\n\n\nBenchmark precision\n\n\n\n".println
-  bench.analyze(_.map(precise).sum).map(tuple4/show).join("\n").println
-
-
-  "\n\n\n\nKoka result\n\n\n\n".println
-  koka.analyze(_.map(fn(a) a.time.default(100.0)).average).map(tuple4/show).join("\n").println
-  "\n\n\n\nKoka precision\n\n\n\n".println
-  koka.analyze(_.map(precise).sum).map(tuple4/show).join("\n").println
-  "\n\n\n\nKoka precision\n\n\n\n".println
-  koka.analyze(_.map(precise).average).map(tuple4/show).join("\n").println
+  full-analysis(koka, "Koka")
+  // full-analysis(bench, "Benchmarks")
