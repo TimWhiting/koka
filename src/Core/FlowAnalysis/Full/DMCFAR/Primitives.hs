@@ -40,7 +40,7 @@ falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
-anyBool :: (Ord i, Show c, Show (o c), Lattice o c) => FixAR x s e i o c AChange
+anyBool :: (Ord i, Show c, Show o, Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
 changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) []

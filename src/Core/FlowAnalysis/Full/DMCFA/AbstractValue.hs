@@ -327,7 +327,7 @@ instance Contains AbValue where
   contains (AbValue cls0 cntrs0 prims0 objs0 konts0 lit0) (AbValue cls1 cntrs1 prims1 objs1 konts1 lit1) =
     S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && prims1 `S.isSubsetOf` prims0 && objs1 `S.isSubsetOf` objs0 && konts1 `S.isSubsetOf` konts0 && lit0 < lit1
 
-eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
+eachValue :: (Ord i, Show d, Show l, Lattice l d) => AbValue -> FixT e s i l d AChange
 eachValue ab = each $ map return (changes ab)
 
 tnamesCons :: Int -> [TName]

@@ -32,7 +32,7 @@ data FixInput =
   | CStoreGet MetaKont
   deriving (Eq, Ord)
 
-data FixOutput a =
+data FixOutput =
   A AbValue
   | K (S.Set (LocalKont, Kont))
   | C (S.Set (LocalKont, Kont, MetaKont))
@@ -51,9 +51,9 @@ data FixChange =
   deriving (Eq, Ord)
 
 type FixAACR r s e a = FixAR r s e FixInput FixOutput FixChange a
-type FixAAC r s e = FixAACR r s e (FixOutput FixChange)
+type FixAAC r s e = FixAACR r s e FixOutput
 type PostFixAACR r s e a = PostFixAR r s e FixInput FixOutput FixChange a
-type PostFixAAC r s e = PostFixAACR r s e (FixOutput FixChange)
+type PostFixAAC r s e = PostFixAACR r s e FixOutput
 
 data Frame =
   EndProgram
@@ -248,7 +248,7 @@ gc (Cont l kont meta achange store kclos time) = do
   return $ Cont l kont meta achange store' kclos time
 
 
-instance Show (FixOutput a) where
+instance Show (FixOutput) where
   show (A x) = show x
   show (K x) = show x
   show (KK x) = show x

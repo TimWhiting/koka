@@ -159,7 +159,7 @@ instance Contains AbValue where
   contains (AbValue cls0 cntrs0 konts0 lit0) (AbValue cls1 cntrs1 konts1 lit1) =
     S.isSubsetOf cls1 cls0 && cntrs1 `S.isSubsetOf` cntrs0 && konts1 `S.isSubsetOf` konts0 && lit0 < lit1
 
-storeLookup :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => TName -> VEnv -> VStore -> FixAR r s e i o c AChange
+storeLookup :: (Ord i, Show c, Show o, Lattice o c, HasCallStack) => TName -> VEnv -> VStore -> FixAR r s e i o c AChange
 storeLookup x env store = do
   case M.lookup x env of
     Just addr -> do
@@ -174,13 +174,13 @@ storeLookup x env store = do
         Just lam -> do
           return $ AChangeClos lam M.empty
 
-storeGet :: (Ord i, Show c, Show (o c), Lattice o c, HasCallStack) => VStore -> Addr -> FixAR r s e i o c AChange
+storeGet :: (Ord i, Show c, Show o, Lattice o c, HasCallStack) => VStore -> Addr -> FixAR r s e i o c AChange
 storeGet store addr = do
   case M.lookup addr store of
     Just value -> eachValue value
     Nothing -> error $ "storeGet: " ++ show addr ++ " not found"
 
-eachValue :: (Ord i, Show d, Show (l d), Lattice l d) => AbValue -> FixT e s i l d AChange
+eachValue :: (Ord i, Show d, Show l, Lattice l d) => AbValue -> FixT e s i l d AChange
 eachValue ab = each $ map return (changes ab)
 
 tnamesCons :: Int -> [TName]

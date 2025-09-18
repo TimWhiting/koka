@@ -216,7 +216,7 @@ escape :: String -> String
 escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
 escape [] = []
 
-instance Label (FixOutput m) where
+instance Label FixOutput where
   label o = escape $ show o
 
 instance Label FixInput where

@@ -53,7 +53,7 @@ data FixInput =
   | MKStore Addr
   deriving (Eq, Ord, Show)
 
-data FixOutput a =
+data FixOutput =
   Next (S.Set Conf)
   | SValue AbValue
   | KValue (S.Set Kont)
@@ -70,9 +70,9 @@ data FixChange =
   deriving (Eq, Ord, Show)
 
 type FixAAMR r s e a = FixAR r s e FixInput FixOutput FixChange a
-type FixAAM r s e = FixAAMR r s e (FixOutput FixChange)
+type FixAAM r s e = FixAAMR r s e FixOutput
 type PostFixAAMR r s e a = PostFixAR r s e FixInput FixOutput FixChange a
-type PostFixAAM r s e = PostFixAAMR r s e (FixOutput FixChange)
+type PostFixAAM r s e = PostFixAAMR r s e FixOutput
 
 mapChange :: (c, n) -> (c -> d) -> (n -> m) -> (d, m)
 mapChange (c, n) f g = (f c, g n)

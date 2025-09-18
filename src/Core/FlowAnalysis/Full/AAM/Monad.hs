@@ -32,7 +32,7 @@ data FixInput =
   | Cont AChange VStore KStore [Frame] KAddr Time
   deriving (Eq, Ord)
 
-data FixOutput a =
+data FixOutput =
   A AbValue
   | Bottom
   deriving (Eq, Ord)
@@ -43,9 +43,9 @@ data FixChange =
   deriving (Eq, Ord)
 
 type FixAAMR r s e a = FixAR r s e FixInput FixOutput FixChange a
-type FixAAM r s e = FixAAMR r s e (FixOutput FixChange)
+type FixAAM r s e = FixAAMR r s e FixOutput
 type PostFixAAMR r s e a = PostFixAR r s e FixInput FixOutput FixChange a
-type PostFixAAM r s e = PostFixAAMR r s e (FixOutput FixChange)
+type PostFixAAM r s e = PostFixAAMR r s e FixOutput
 
 kstoreExtend :: KAddr -> [Frame] -> KStore -> KStore
 kstoreExtend k frames store =
@@ -175,7 +175,7 @@ gc (Cont achange store kstore lkont mkont ktime) = do
   -- trace ("GC Store:\n" ++ show (pretty store) ++ "\n=>\n" ++ show (pretty store') ++ "\n") $ return ()
   return $ Cont achange store' kstore' lkont mkont ktime
 
-instance Show (FixOutput a) where
+instance Show (FixOutput) where
   show (A x) = show x
   show Bottom = "Bottom"
 
