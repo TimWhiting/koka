@@ -49,7 +49,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
   -> Module -> Int
   -> (ExprContext -> FixAACR FixChange () () ())
-  -> IO (M.Map FixInput (FixOutput FixChange), Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type), BuildContext)
+  -> IO (M.Map FixInput FixOutput, Maybe ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type), BuildContext)
 runQueryAtRange bc build mod m doQuery = do
   (l, s, (r, bc)) <- do
     (_, s, ctxs) <- runFixFinish (emptyBasicEnv m 0 build False ()) (emptyBasicState bc ()) $
@@ -97,7 +97,7 @@ evalMain bc build mod m = do
     addResult q
   return (r, bc)
 
-writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
+writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 writeSimpleDependencyGraph name cache = do
   let cache' = M.filterWithKey (\k v -> case k of {Eval {} -> True; Cont {} -> True;  _ -> False}) cache
   -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
@@ -140,7 +140,7 @@ escape :: String -> String
 escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
 escape [] = []
 
-instance Label (FixOutput m) where
+instance Label (FixOutput) where
   label (A a) = escape $ showSimpleAbValue a
   label (K a) = escape $ show $ vcat [text "K" , hcat $ map (\(l, k) -> vcat $ showC (l, k)) (S.toList a)]
   label (KK a) = escape $ show $ vcat [text "KK" , hcat $ map (\(l, k, _) -> vcat $ showC (l, k)) (S.toList a)]

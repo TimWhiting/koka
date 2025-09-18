@@ -66,7 +66,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker -> (Range, RangeInfo)
   -> Module -> AnalysisKind -> Int -> Bool -> Int
   -> (ExprContext -> FixDemandR Query () () ())
-  -> IO (M.Map FixInput (FixOutput AFixChange), [(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))], BuildContext)
+  -> IO (M.Map FixInput FixOutput, [(String, ([S.UserExpr], [S.UserDef], [S.External], [Syn.Lit], [(String, Maybe Range)], Set Type))], BuildContext)
 runQueryAtRange bc build (r, ri) mod kind m debug gas doQuery = do
   (l, s, (r, bc)) <- do
     (_, s, ctxs) <- runFixFinish (emptyEnv m kind build False ()) (emptyState bc (-1) ()) $

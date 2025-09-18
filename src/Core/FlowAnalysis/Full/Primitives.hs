@@ -60,7 +60,7 @@ falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) M.empty
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
-anyBool :: (Ord i, Show c, Show (o c), Lattice o c) => FixAR x s e i o c AChange
+anyBool :: (Ord i, Show c, Show o, Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
 changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) M.empty
@@ -92,14 +92,14 @@ intOp f [p1, p2] = do
     (AChangeLit (LiteralChangeInt _), AChangeLit (LiteralChangeInt _)) -> return $ AChangeLit (LiteralChangeInt LChangeTop)
     _ -> doBottom
 
-charCmpOp :: (Ord i, Show c, Show (o c), Lattice o c) => (Char -> Char -> Bool) -> [AChange] -> FixAR x s e i o c AChange
+charCmpOp :: (Ord i, Show c, Show o, Lattice o c) => (Char -> Char -> Bool) -> [AChange] -> FixAR x s e i o c AChange
 charCmpOp f [p1, p2] = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeChar (LChangeSingle c1)), AChangeLit (LiteralChangeChar (LChangeSingle c2))) -> return $! toChange (f c1 c2)
     (AChangeLit (LiteralChangeChar _), AChangeLit (LiteralChangeChar _)) -> anyBool
     _ -> doBottom
 
-opCmpInt ::(Ord i, Show c, Show (o c), Lattice o c) =>  (Integer -> Integer -> Bool) -> [AChange] -> FixAR x s e i o c AChange
+opCmpInt ::(Ord i, Show c, Show o, Lattice o c) =>  (Integer -> Integer -> Bool) -> [AChange] -> FixAR x s e i o c AChange
 opCmpInt f [p1, p2] = do
   case (p1, p2) of
     (AChangeLit (LiteralChangeInt (LChangeSingle i1)), AChangeLit (LiteralChangeInt (LChangeSingle i2))) -> return $! toChange (f i1 i2)
@@ -107,7 +107,7 @@ opCmpInt f [p1, p2] = do
       trace "opCmpInt: top" anyBool
     _ -> doBottom
 
-doPrimitive :: (Ord i, Show c, Show (o c), Lattice o c) => Name -> [Addr] -> VEnv -> VStore -> FixAR r s e i o c AChange
+doPrimitive :: (Ord i, Show c, Show o, Lattice o c) => Name -> [Addr] -> VEnv -> VStore -> FixAR r s e i o c AChange
 doPrimitive nm addrs env store = do
   achanges <- mapM (\a -> storeGet store a) addrs
   -- trace ("Primitive: " ++ show nm ++ " " ++ show achanges) $ return ()
