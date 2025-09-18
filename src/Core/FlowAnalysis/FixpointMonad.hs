@@ -14,6 +14,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Core.FlowAnalysis.FixpointMonad(
   FixTS, FixT, FixIn,
@@ -51,12 +52,12 @@ import Common.Failure (HasCallStack)
 
 -- A type class for lattices
 -- A lattice has a bottom value, a join operation, and a lte relation
-class Lattice l d where
-  bottom :: l d
-  isBottom :: l d -> Bool
-  insert :: d -> l d -> (d, l d)
-  lte :: d -> l d -> Bool
-  elems :: l d -> [d]
+class Lattice l d | l -> d where
+  bottom :: l
+  isBottom :: l -> Bool
+  insert :: d -> l -> (d, l)
+  lte :: d -> l -> Bool
+  elems :: l -> [d]
 
 class Label a where
   label :: a -> String
@@ -66,11 +67,11 @@ class Label a where
 -- lte is just equality and joining just goes to top if the values are different
 -- 
 -- The underlying type a just needs to implement Ord for this to work
-data SimpleLattice a d = LBottom
+data SimpleLattice a = LBottom
   | LSingle a
   | LTop deriving (Eq, Ord)
 
-type SLattice a = SimpleLattice a (SimpleChange a)
+type SLattice a = SimpleLattice a
 
 data SimpleChange a = LChangeTop | LChangeSingle a deriving (Show,Eq)
 
@@ -79,19 +80,19 @@ instance (Ord a) => Ord (SimpleChange a) where
   _ `compare` LChangeTop = LT
   LChangeSingle a `compare` LChangeSingle b = a `compare` b
 
-joinSimple :: Ord a => SimpleLattice a d -> SimpleLattice a d -> SimpleLattice a d
+joinSimple :: Ord a => SimpleLattice a -> SimpleLattice a -> SimpleLattice a
 joinSimple LTop _ = LTop
 joinSimple _ LTop = LTop
 joinSimple LBottom x = x
 joinSimple x LBottom = x
 joinSimple (LSingle a) (LSingle b) = if a == b then LSingle a else LTop
 
-instance Show a => Show (SimpleLattice a d) where
+instance Show a => Show (SimpleLattice a) where
   show LBottom = "⊥"
   show (LSingle a) = show a
   show LTop = "⊤"
 
-instance Label a => Label (SimpleLattice a d) where
+instance Label a => Label (SimpleLattice a) where
   label LBottom = "⊥"
   label (LSingle a) = label a
   label LTop = "⊤"
@@ -121,7 +122,7 @@ instance (Ord a) => Lattice (SimpleLattice a) (SimpleChange a) where
 class Contains a where
   contains :: a -> a -> Bool
 
-data ChangeSet a d = ChangeSet (S.Set a)
+data ChangeSet a = ChangeSet (S.Set a)
 
 -- Simple implementation of a set lattice
 instance Ord a => Lattice (ChangeSet a) a where
@@ -138,7 +139,7 @@ data ContX e s i l d = ContX {
                             fromId :: Integer
                           }
 data ContF e s i l d = ContF {
-                            contFV :: l d -> FixIn e s i l d (), -- The continuation to call when the cache changes
+                            contFV :: l -> FixIn e s i l d (), -- The continuation to call when the cache changes
                             fromF :: Maybe i,
                             fromFId :: Integer
                           } 
@@ -148,7 +149,7 @@ instance Show (ContF e s i l d) where
   show _ = "ContF"
 
 type FixT e s i l d = ContT () (FixIn e s i l d)
-type FixIn e s i l d = (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l d, Integer, [ContX e s i l d], [ContF e s i l d]), s, Integer, Bool) IO))
+type FixIn e s i l d = (ReaderT (e,Maybe i,Integer) (StateT (M.Map i (l, Integer, [ContX e s i l d], [ContF e s i l d]), s, Integer, Bool) IO))
 
 withEnv :: (e -> e) -> FixT e s i l d a -> FixT e s i l d a
 withEnv f = local (\(e, i, id) -> (f e, i, id))
@@ -178,12 +179,12 @@ setState x = do
   (f, s, t, invalid) <- get
   put (f, x, t, invalid)
 
-getCache :: FixIn e s i l d (M.Map i (l d))
+getCache :: FixIn e s i l d (M.Map i l)
 getCache = do
   (res, _, _, _) <- get
   return $ M.map (\(f,_,_,_) -> f) res
 
-cacheLookup :: Ord i => i -> FixIn e s i l d (Maybe (l d))
+cacheLookup :: Ord i => i -> FixIn e s i l d (Maybe l)
 cacheLookup i = do
   M.lookup i <$> getCache
 
@@ -219,7 +220,7 @@ localCtxT :: Maybe i -> Integer -> FixT e s i l d a -> FixT e s i l d a
 localCtxT i id = local (\(e,_,_) -> (e,i,id))
 
 -- Memoization function, memoizes a fixpoint computation by using a cache of previous results and continuations that depend on those results
-memo :: (Ord (l d), Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d d -> FixT e s i l d d
+memo :: (Ord l, Show d, Show l, Show i, Ord i, Lattice l d) => i -> FixT e s i l d d -> FixT e s i l d d
 memo key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
@@ -246,7 +247,7 @@ memo key f = do
       )
 
 
-memoFull :: (Ord (l d), Show d, Show (l d), Show i, Ord i, Lattice l d) => i -> FixT e s i l d (l d) -> FixT e s i l d (l d)
+memoFull :: (Ord l, Show d, Show l, Show i, Ord i, Lattice l d) => i -> FixT e s i l d l -> FixT e s i l d l
 memoFull key f = do
   (env, from, fromId) <- ask
   ContT (\c -> do
@@ -274,14 +275,14 @@ memoFull key f = do
         c xss
     )
 
-each :: (Show d, Show b, Ord i, Show (l d), Lattice l d) => [FixT e s i l d b] -> FixT e s i l d b
+each :: (Show d, Show b, Ord i, Show l, Lattice l d) => [FixT e s i l d b] -> FixT e s i l d b
 each xs =
   ContT $ \c -> -- Get the continuation
     -- For each monadic fixpoint, run the continuation piece, and call our continuation with each result
     mapM_ (\comp -> runContT comp (\result -> c result)) xs
 
 -- Adds a new result to the cache and calls all continuations that depend on that result
-push :: (Ord (l d), Show i, Show d, Show (l d), Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
+push :: (Ord l, Show i, Show d, Show l, Ord i, Lattice l d) => i -> d -> FixIn e s i l d ()
 push key value = do
   -- trace ("Pushing new result for " ++ show key ++ " : " ++ show value) $ return ()
   (cache, state, newId, invalid) <- get
@@ -311,7 +312,7 @@ push key value = do
       c added) fconts
     -- trace ("Finished calling continuations for " ++ show key) $ return ()
 
-writeDependencyGraph :: (Label i, Show d, Label (l d), Ord i) => String -> M.Map i (l d, Integer, [ContX e s i l d], [ContF e s i l d]) -> IO ()
+writeDependencyGraph :: (Label i, Show d, Label l, Ord i) => String -> M.Map i (l, Integer, [ContX e s i l d], [ContF e s i l d]) -> IO ()
 writeDependencyGraph modName cache = do
   let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts ++ fmap (\(ContF _ from fromId) -> (v, from, fromId, toId)) fconts) [] cache
   let nodes = M.foldlWithKey (\acc k (v, toId, conts, fconts) -> (toId,k,v):acc) [] cache
@@ -326,23 +327,23 @@ writeDependencyGraph modName cache = do
   return ()
 
 -- Runs a fixpoint computation with an environment and state
-runFix :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixT e s i l d x -> IO (M.Map i (l d), s)
+runFix :: (Show i, Show d, Show l, Label i, Label l, Ord i) => e -> s -> FixT e s i l d x -> IO (M.Map i l, s)
 runFix e s f = do
   (_, (cache, state, _, _)) <- runStateT (runReaderT (runContT f (\x -> return ())) (e,Nothing,0)) (M.empty, s, 1, False)
   -- writeDependencyGraph cache
   return (fmap (\(f, _, _, _) -> f) cache, state)
 
 -- Runs a fixpoint computation with an environment and state
-runFixCont :: (Show i, Show d, Show (l d), Ord i) => FixT e s i l d x -> FixIn e s i l d ()
+runFixCont :: (Show i, Show d, Show l, Ord i) => FixT e s i l d x -> FixIn e s i l d ()
 runFixCont f =
   runContT f (\x -> return ())
 
-runFixFinish :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d), s, x)
+runFixFinish :: (Show i, Show d, Show l, Label i, Label l, Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i l, s, x)
 runFixFinish e s f = do
   (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
   return (fmap (\(f, _, _, _) -> f) cache, state, x)
 
-runFixFinishC :: (Show i, Show d, Show (l d), Label i, Label (l d), Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l d, Integer, [ContX e s i l d], [ContF e s i l d]), s, x)
+runFixFinishC :: (Show i, Show d, Show l, Label i, Label l, Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l, Integer, [ContX e s i l d], [ContF e s i l d]), s, x)
 runFixFinishC e s f = do
   (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
   return (cache, state, x)

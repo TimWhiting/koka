@@ -154,7 +154,7 @@ litLatticeX lit =
     LiteralChangeCharX ch -> LiteralLatticeX LBottom LBottom (snd $ ch `insertX` LBottom) LBottom
     LiteralChangeStringX ch -> LiteralLatticeX LBottom LBottom LBottom (snd $ ch `insertX` LBottom)
 
-insertX :: Eq x => SimpleChange (ExprContextId, x) -> SimpleLattice (ExprContextId, x) (SimpleChange (ExprContextId, x)) -> (SimpleChange (ExprContextId, x), SimpleLattice (ExprContextId, x) (SimpleChange (ExprContextId, x)))
+insertX :: Eq x => SimpleChange (ExprContextId, x) -> SimpleLattice (ExprContextId, x) -> (SimpleChange (ExprContextId, x), SimpleLattice (ExprContextId, x))
 insertX _ LTop = (LChangeTop, LTop)
 insertX LChangeTop _ = (LChangeTop, LTop)
 insertX (LChangeSingle x) LBottom = (LChangeSingle x, LSingle x)
@@ -162,13 +162,13 @@ insertX (LChangeSingle (s, x)) (LSingle (s2, x2)) =
   if x == x2 then (LChangeSingle (s, x), LSingle (s, x)) -- Take the first expression, could end up the second being first in a different path, so we do technically have duplication
   else (LChangeTop, LTop)
 
-lteX :: Eq x => SimpleChange (ExprContextId, x) -> SimpleLattice (ExprContextId, x) (SimpleChange (ExprContextId, x)) -> Bool
+lteX :: Eq x => SimpleChange (ExprContextId, x) -> SimpleLattice (ExprContextId, x) -> Bool
 lteX _ LTop = True
 lteX _ LBottom = False
 lteX (LChangeSingle (s, x)) (LSingle (s2, y)) = x == y
 lteX LChangeTop _ = False
 
-joinSimpleX :: Eq x => SimpleLattice (ExprContextId, x) (SimpleChange (ExprContextId, x)) -> SimpleLattice (ExprContextId, x) (SimpleChange (ExprContextId, x)) -> SimpleLattice (ExprContextId, x) (SimpleChange (ExprContextId, x))
+joinSimpleX :: Eq x => SimpleLattice (ExprContextId, x) -> SimpleLattice (ExprContextId, x) -> SimpleLattice (ExprContextId, x)
 joinSimpleX LTop _ = LTop
 joinSimpleX _ LTop = LTop
 joinSimpleX LBottom x = x

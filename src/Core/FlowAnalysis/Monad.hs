@@ -24,9 +24,9 @@ import Common.Error (Errors)
 import Debug.Trace (trace)
 
 type FixAR r s e i o c a = FixT (AnalysisEnv e) (BasicState r s) i o c a
-type FixA r s e i o c = FixAR r s (AnalysisEnv e) i o c (o c)
+type FixA r s e i o c = FixAR r s (AnalysisEnv e) i o c o
 type PostFixAR r s e i o c a = FixIn (AnalysisEnv e) (BasicState r s) i o c a
-type PostFixA r s e i o c = PostFixAR r s (AnalysisEnv e) i o c (o c)
+type PostFixA r s e i o c = PostFixAR r s (AnalysisEnv e) i o c o
 
 data BasicState r s = BasicState{
   buildc :: BuildContext,
@@ -49,7 +49,7 @@ data AnalysisEnv x = AnalysisEnv{
   additionalEnv :: x
 }
 
-analyzeEachChild ::  (Show a, Show c, Show (o c), Lattice o c, Ord i) => ExprContext -> (ExprContext -> FixAR x s e i o c a) -> FixAR x s e i o c a
+analyzeEachChild ::  (Show a, Show c, Show o, Lattice o c, Ord i) => ExprContext -> (ExprContext -> FixAR x s e i o c a) -> FixAR x s e i o c a
 analyzeEachChild ctx analyze = do
   let self = analyze ctx
       children = do
@@ -383,7 +383,7 @@ visitChildrenCtxs combine ctx analyze = do
   res <- mapM (\child -> withEnv (\e -> e{currentContext = child}) analyze) children
   return $! combine res
 
-visitEachChild :: (Show a, Show c, Show (o c), Lattice o c, Ord i) => ExprContext -> FixAR x s e i o c a -> FixAR x s e i o c a
+visitEachChild :: (Show a, Show c, Show o, Lattice o c, Ord i) => ExprContext -> FixAR x s e i o c a -> FixAR x s e i o c a
 visitEachChild ctx analyze = do
   children <- childrenContexts ctx
   -- trace ("Got children of ctx " ++ show ctx ++ " " ++ show children) $ return ()

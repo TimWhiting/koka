@@ -54,9 +54,9 @@ import Type.Type (Type)
 import Data.Foldable (foldlM)
 
 type FixDemandR r s e a = FixT (DEnv e) (State r e s) FixInput FixOutput AFixChange a
-type FixDemand r s e = FixDemandR r s e (FixOutput AFixChange)
+type FixDemand r s e = FixDemandR r s e FixOutput
 type PostFixR r s e a = FixIn (DEnv e) (State r e s) FixInput FixOutput AFixChange a
-type PostFix r s e = PostFixR r s e (FixOutput AFixChange)
+type PostFix r s e = PostFixR r s e FixOutput
 -- The fixpoint input is either a query to get an abstract value result, or an environment to get a set of refined environments
 data FixInput =
   QueryInput Query
@@ -64,7 +64,7 @@ data FixInput =
 
 -- The output of the fixpoint is either a value, or set of environments 
 -- (depending on whether the input is a query or wanting the refined environments for a particular environment)
-data FixOutput d =
+data FixOutput =
   A AbValue
   | E (S.Set EnvCtx)
   | N deriving (Show, Ord, Eq)
@@ -255,20 +255,20 @@ instance Lattice FixOutput AFixChange where
 
 
 -- Implement the needed operations for the output to be a lattice
-instance Semigroup (FixOutput d) where
+instance Semigroup FixOutput where
   (<>) (A a) (A b) = A (a <> b)
   (<>) (E e) (E e1) = E (e <> e1)
   (<>) N x = x
   (<>) x N = x
   (<>) x y = error $ "Unexpected semigroup combination " ++ show x ++ " " ++ show y
 
-instance Contains (FixOutput d) where
+instance Contains FixOutput where
   contains (A a) (A b) = a `contains` b
   contains (E e) (E e1) = e1 `S.isSubsetOf` e
   contains _ N = True
   contains _ _ = False
 
-instance Monoid (FixOutput d) where
+instance Monoid FixOutput where
   mempty = N
 
 
