@@ -374,12 +374,15 @@ extern resume-final() : a
   js "_throw_resume_final"
 
 fun prompt( w0 : evv<e0>,  w1 : evv<e0>, ev : ev<h>, m : marker<e0,r>, ret: a -> e0 r, result : a ) : e0 r
+  prompt'(w0, w1, ev, m, ret, result)()
+
+fun prompt'( w0 : evv<e0>,  w1 : evv<e0>, ev : ev<h>, m : marker<e0,r>, ret: a -> e0 r, result : a ) : e0 (() -> e0 r)
   guard(w1)
   evv-set(w0)  // restore the previous evidence vector
   match yield-prompt(m)
     Pure ->
       // returning
-      ret(result)
+      fn() ret(result)
     YieldingFinal ->
       // yielding final (exception), keep yielding
       keep-yielding-final()
@@ -390,7 +393,7 @@ fun prompt( w0 : evv<e0>,  w1 : evv<e0>, ev : ev<h>, m : marker<e0,r>, ret: a ->
         val w0' = evv-get()  // if not using scoped resumptions, w0' may be different from w0
         val w1' = if (evv-eq(w0,w0')) then w1 else evv-insert(w0',ev)
         evv-set(w1')
-        prompt(w0',w1',ev,pretend-decreasing(m),ret,cont(res));
+        prompt'(w0',w1',ev,pretend-decreasing(m),ret,cont(res));
     Yield(clause,cont) ->
       // yielded to the operation `clause` in our handler
       fun resume(r)
@@ -399,15 +402,18 @@ fun prompt( w0 : evv<e0>,  w1 : evv<e0>, ev : ev<h>, m : marker<e0,r>, ret: a ->
             val w0' = evv-get()  // if not using scoped resumptions, w0' may be different from w0
             val w1' = if evv-eq(w0,w0') then w1 else evv-insert(w0',ev)
             evv-set(w1')
-            prompt(w0',w1',ev,pretend-decreasing(m),ret,cont({x}))
+            prompt'(w0',w1',ev,pretend-decreasing(m),ret,cont({x}))
           Shallow(x) ->
-            yield-bind( cont({x}), fn(y) ret(y) )
+            fn() cont({x}).unsafe-cast
           Finalize(x) ->
             val w0' = evv-get()  // if not using scoped resumptions, w0' may be different from w0
             val w1' = if evv-eq(w0,w0') then w1 else evv-insert(w0',ev)
             evv-set(w1')
-            prompt(w0',w1',ev,pretend-decreasing(m),ret,cont({ yield-to-final(m, fn(_k) x) }))
-      clause(resume) // TODO: we should exit prompt first, and then execute clause to use constant stack space when resuming
+            prompt'(w0',w1',ev,pretend-decreasing(m),ret,cont({ yield-to-final(m, fn(_k) x) }))
+      fn() clause(fn(r) resume(r)()) // TODO: we should exit prompt first, and then execute clause to use constant stack space when resuming
+
+extern unsafe-cast(a : a): b
+  c inline "#1"
 
 pub noinline fun @hhandle( tag:htag<h>, h : h<e,r>, ret: a -> e r, action : () -> e1 a ) : e r
   // insert new evidence for our handler
