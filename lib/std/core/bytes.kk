@@ -6,7 +6,25 @@
   found in the LICENSE file at the root of this distribution.
 ---------------------------------------------------------------------------*/
 
-// Byte arrays
+/*
+  Byte arrays
+
+  **Null Termination**:
+
+  The functions in this module maintain the following invariant for `bytes` values,
+  in order to efficiently convert between `string` and `bytes`:
+
+  - The physical buffer is at least one byte larger than the logical length
+  - The memory address directly after the end of the logical length is set to the null byte.
+
+  Code using the functions in this module does not need to worry about this invariant,
+  however low-level C code performing direct memory access may need to be careful to
+  maintain it.
+
+  Violating this invariant could lead to memory-safty issues, for example the `string`
+  function could potentially read past the end of a buffer with no terminating null byte.
+*/
+
 module std/core/bytes
 import std/core/types
 import std/core/exn
@@ -26,7 +44,7 @@ pub extern alloc( n : ssize_t ) : bytes
   c  inline "kk_bytes_alloc_buf(#1, NULL, kk_context())"
   js inline "new Uint8Array(#1).fill(0)"
 
-// Converts an array of bytes to a string. (Unsafe, ensure that the bytes have a zero terminated string)
+// Converts an array of bytes to a string.
 pub extern string( bytes : bytes ) : string
   c  "kk_string_convert_from_qutf8"
   js inline "String.fromCharCode.apply(null, #1)"
