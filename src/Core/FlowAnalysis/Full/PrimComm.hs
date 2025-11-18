@@ -7,6 +7,7 @@ import Common.File (startsWith)
 import qualified Data.Map.Strict as M
 import Numeric (showFFloat, showEFloat)
 import Data.List (dropWhileEnd)
+import Debug.Trace
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -138,9 +139,11 @@ isPrimitive tn =
                       nameLocalGet, nameLocalSet,
                       nameHandle, nameHTag, nameEvvAt, nameLocalNew, nameLocalVar,
                       nameInternalSSizeT,
+                      nameCCtxEmpty, nameCCtxExtend, nameCCtxCompose, nameCCtxComposeExtend, nameCCtxApply,
                       nameOSReadline, nameCoreXParse, nameCoreMInt
                       ]
-  in basics || isNamePerform (getName tn) || isClauseName (getName tn)
+  in trace (show tn ++ " isPrimitive: " ++ show nameCCtxCompose) $
+       basics || isNamePerform (getName tn) || isClauseName (getName tn)
 
 
 unmakeOpHidden :: Name -> [Char] -> Name
