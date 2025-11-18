@@ -10,7 +10,7 @@ module Core.FlowAnalysis.Full.KCFA.AbstractValue where
 import Data.Map.Strict as M hiding (foldl, map)
 import Common.Name
 import Type.Type
-import Data.Set hiding (foldl, map, map)
+import Data.Set hiding (foldl, map)
 import qualified Data.Set as S
 import Core.Core as C
 import Syntax.Syntax as S hiding (Handler)
@@ -51,15 +51,16 @@ type StaticCtx = [Call]
 type VEnv = M.Map TName StaticCtx
 
 data Addr =
-  BindingAddr StaticCtx TName
-  | TopAddr TName
+  BindingAddr !StaticCtx !TName
+  | TopAddr !TName
   | EndVAddr
   | EndKAddr
   | EndMKAddr
-  | ImplicitAddr StaticCtx VEnv ExprContextId
-  | ImplicitLAddr StaticCtx Name VEnv ExprContextId
-  | ImplicitLRAddr StaticCtx Name VEnv ExprContextId
-  | BindImplicitAddr StaticCtx VEnv ExprContextId
+  | ImplicitAddr StaticCtx !VEnv !ExprContextId
+  | ImplicitLAddr StaticCtx !Name !VEnv !ExprContextId
+  | ImplicitLRAddr StaticCtx !Name !VEnv !ExprContextId
+  | BindImplicitAddr StaticCtx !VEnv !ExprContextId
+  | ConImplicitAddr !Name !StaticCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
@@ -71,6 +72,7 @@ instance Show Addr where
   show (ImplicitLAddr ctx nm env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLRAddr ctx nm env ctxId) = "ILR@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
 data Frame =
   FScrut {

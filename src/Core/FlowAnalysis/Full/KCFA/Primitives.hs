@@ -36,6 +36,8 @@ trueCon ::  AChange
 trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
 falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
+hole :: AChange 
+hole = AChangeConstr (ExprPrim (ExprContextId (-2000) (newName "hole")) C.exprUnit) []
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
 anyBool :: (Ord i, Show c, Show o, Lattice o c) => FixAR x s e i o c AChange
@@ -111,7 +113,9 @@ opCmpString f [p1, p2] = do
 doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
 doPrimitive nm achanges = do
   -- trace (" Primitive " ++ show nm ++ " " ++ show achanges) $ return ()
-  if nm == nameIntEq || nm == nameInt32Eq then
+  if nm == nameCCtxEmpty then 
+    return hole
+  else if nm == nameIntEq || nm == nameInt32Eq then
     opCmpInt (==) achanges
   else if nm == nameIntNEq || nm == nameInt32NEq then
     opCmpInt (/=) achanges

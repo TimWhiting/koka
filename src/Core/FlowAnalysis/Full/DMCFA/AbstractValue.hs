@@ -84,15 +84,16 @@ newDelim d m (CombinedCtx static dyn) delim = CombinedCtx (delimCtx m static) $ 
 type VEnv = M.Map TName CombinedCtx
 
 data Addr =
-  BindingAddr CombinedCtx TName
-  | TopAddr TName
+  BindingAddr !CombinedCtx !TName
+  | TopAddr !TName
   | EndVAddr
   | EndKAddr
   | EndMKAddr
-  | ImplicitAddr CombinedCtx VEnv ExprContextId
-  | ImplicitLAddr CombinedCtx Name VEnv ExprContextId
-  | ImplicitLRAddr CombinedCtx Name VEnv ExprContextId
-  | BindImplicitAddr CombinedCtx VEnv ExprContextId
+  | ImplicitAddr !CombinedCtx !VEnv !ExprContextId
+  | ImplicitLAddr !CombinedCtx !Name !VEnv !ExprContextId
+  | ImplicitLRAddr !CombinedCtx !Name !VEnv !ExprContextId
+  | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
+  | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
@@ -104,6 +105,7 @@ instance Show Addr where
   show (ImplicitLAddr ctx nm env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLRAddr ctx nm env ctxId) = "ILR@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
 data Frame =
   FScrut {

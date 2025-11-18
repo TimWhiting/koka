@@ -324,7 +324,10 @@ doApply kaddr mkaddr addr dynctx = do
                           Con n _ _ -> n
                           _ -> error "Expected a constructor"
                     let addr = BindImplicitAddr newctx venv (contextId u)
-                    extendStore addr (AChangeObj con name (zip params arguments))
+                    let conParams = map (\nm -> ConImplicitAddr nm newctx (contextId u)) params
+                    zipWithM_ rebind arguments conParams
+                    extendStore addr (AChangeObj con name (zip params conParams))
+                    -- extendStore addr (AChangeObj con name (zip params arguments))
                     apply knext mkaddr addr dynctx
                   AChangeKont label kx henv hnd -> do
                     m <- mLimit

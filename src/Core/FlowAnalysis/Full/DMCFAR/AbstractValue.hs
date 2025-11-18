@@ -92,7 +92,7 @@ data Addr =
   | ImplicitLAddr !CombinedCtx !Name !ExprContextId
   | ImplicitLRAddr !CombinedCtx !Name !ExprContextId
   | BindImplicitAddr !CombinedCtx !ExprContextId
-  | ConImplicitAddr Name CombinedCtx !ExprContextId
+  | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 
 instance Show Addr where
