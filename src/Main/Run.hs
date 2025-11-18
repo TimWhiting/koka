@@ -40,6 +40,8 @@ import Type.Pretty            ( ppScheme, Env(context,importsMap,colors), ppName
 import Compile.Options
 import Compile.BuildContext
 import qualified Platform.GetOptions
+import GHC.IO.Encoding (setLocaleEncoding, utf8)
+import System.IO.CodePage (withCP65001)
 
 -- Main entry point for the command line compiler
 runPlain :: IO ()
@@ -64,22 +66,24 @@ plainLS p flags files
 -- Parse the arguments given a potential language server
 runWithLSArgs :: (ColorPrinter -> Flags -> [FilePath] -> IO ()) -> String -> IO ()
 runWithLSArgs runLanguageServer args
-  = do (flags,mode) <- getOptions args
-       let with = if (not (null (redirectOutput flags)))
-                   then withFileNoColorPrinter (redirectOutput flags)
-                   else if (console flags == "html")
-                    then withHtmlColorPrinter
-                   else if (console flags == "ansi")
-                    then withColorPrinter
-                    else withNoColorPrinter (if (languageServerStdio flags) then stderr else stdout)
-       with (mainMode runLanguageServer flags mode)
-    `catchIO` \err ->
-    do if ("ExitFailure" `isPrefix` err)
-        then return ()
-        else hPutStrLn stderr err
-       exitFailure
-  where
-    isPrefix s t  = (s == take (length s) t)
+  = do System.IO.CodePage.withCP65001 $ do -- utf8 on windows
+          setLocaleEncoding utf8 -- utf8 on other platforms
+          (flags,mode) <- getOptions args
+          let with = if (not (null (redirectOutput flags)))
+                      then withFileNoColorPrinter (redirectOutput flags)
+                      else if (console flags == "html")
+                        then withHtmlColorPrinter
+                      else if (console flags == "ansi")
+                        then withColorPrinter
+                        else withNoColorPrinter (if (languageServerStdio flags) then stderr else stdout)
+          with (mainMode runLanguageServer flags mode)
+        `catchIO` \err ->
+            do if ("ExitFailure" `isPrefix` err)
+                then return ()
+                else hPutStrLn stderr err
+               exitFailure
+      where
+        isPrefix s t  = (s == take (length s) t)
 
 -- The main mode determines what the compiler should be doing
 mainMode :: (ColorPrinter -> Flags -> [FilePath] -> IO ()) -> Flags -> Mode -> ColorPrinter -> IO ()

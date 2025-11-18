@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -153,6 +153,7 @@ library
     , async
     , base >=4.9
     , bytestring
+    , code-page >=0.2.1
     , containers
     , directory
     , hashable >=1.4
@@ -198,6 +199,7 @@ executable koka
     , base >=4.9
     , bytestring
     , co-log-core
+    , code-page >=0.2.1
     , containers
     , directory
     , hashable >=1.4
@@ -229,6 +231,7 @@ executable koka-plain
     , async
     , base >=4.9
     , bytestring
+    , code-page >=0.2.1
     , containers
     , directory
     , hashable >=1.4
@@ -255,6 +258,7 @@ test-suite koka-test
     , async
     , base >=4.9
     , bytestring
+    , code-page >=0.2.1
     , containers
     , directory
     , extra
