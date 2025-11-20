@@ -194,7 +194,7 @@ doEval expr kaddr mkaddr ctx =
       apply kaddr mkaddr addr (dynamic ctx)
     App _ args _ -> doApp args
     Let dgs _ -> do
-      child <- childrenContexts expr
+      -- child <- childrenContexts expr
       -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
       bind <- focusLetDefBinding 0 0 expr
       let defGroup = head dgs

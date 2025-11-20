@@ -119,7 +119,7 @@ doEval expr venv kaddr mkaddr ctx =
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       process x = if not open then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   in process $ case exprOfCtx expr of
@@ -159,7 +159,7 @@ doEval expr venv kaddr mkaddr ctx =
           -- trace ("Found variable: " ++ show name ++ " at " ++ show addr) $ do
           apply kaddr mkaddr addr (dynamic ctx)
         Nothing -> do
-          trace ("Evaluating external: " ++ show name) $ return ()
+          -- trace ("Evaluating external: " ++ show name) $ return ()
           let nm = equalPrimitive name
           res <- bindExternal nm
           case res of -- TODO: Evaluate top bindings and store them somewhere, don't re-evaluate based on kaddrs
@@ -183,12 +183,12 @@ doEval expr venv kaddr mkaddr ctx =
     App _ args _ -> doApp args
     Let dgs _ -> do
       child <- childrenContexts expr
-      trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
+      -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
       bind <- focusLetDefBinding 0 0 expr
       let defGroup = head dgs
       let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
       let defName = defTName (defOfCtx bind)
-      trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
+      -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
       k' <- addFrame (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) (contextId bind)
       eval bind (limitEnv newEnv (S.insert defName (fvs bind)) ) k' mkaddr ctx
     -- TODO: Let and case
@@ -215,7 +215,7 @@ doEval expr venv kaddr mkaddr ctx =
         doApp args = do
           f <- focusFun expr
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
-          trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
+          -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
           k' <- addFrame (FApp (length args) argExprs [] expr venv) (contextId f)
           eval f (limitEnv venv (fvs f)) k' mkaddr ctx
 
@@ -232,7 +232,7 @@ doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e F
 doApply kaddr mkaddr addr dynctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr ++ " " ++ show dynctx) $ return ()
   k <- kStore kaddr
-  -- trace ("Applying: " ++ show k) $ return ()
+  trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> do
       mk <- mkStore mkaddr
@@ -346,15 +346,17 @@ doApply kaddr mkaddr addr dynctx = do
               -- trace ("Next " ++ show next) $ return ()
               eval next (limitEnv venv (fvs next)) k' mkaddr newctx
         FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
-          trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
+          -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
           val <- store addr
           extendStore (fromJust $ lookupEnv name venv) val
-          trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
+          -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
           -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
           if isLetDefBindingFinished groupIdx bindingIdx u then do
+            trace ("Let group finished: " ++ show groupIdx ++ " of " ++ show numGroups) $ return ()
             body <- focusLetBod u
             eval body (limitEnv venv (fvs body)) knext mkaddr newctx
           else do
+            trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
             next <- focusNextLetDefBinding groupIdx bindingIdx u
             k' <- addFrame (nextLetFrame frame newctx) venv (contextId next)
             eval next venv k' mkaddr newctx

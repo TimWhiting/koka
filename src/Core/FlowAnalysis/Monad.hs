@@ -97,7 +97,19 @@ focusBody e = do
     Just x -> return x
     Nothing -> error ("Children looking for body " ++ show children)
 
-focusLetBod = focusChild 0 -- Lets have their return expression as first child
+focusLetBod :: ExprContext -> FixAR x s e i o c ExprContext
+focusLetBod context = do 
+  child <- focusChild 0 context
+  focusLetBodyRec child
+
+focusLetBodyRec :: ExprContext -> FixAR x s e i o c ExprContext
+focusLetBodyRec context = 
+  -- trace ("Focusing let body of " ++ showSimpleContext context) $ do
+  case maybeExprOfCtx context of
+    Nothing -> do 
+      bod <- focusChild 0 context
+      focusLetBodyRec bod
+    _ -> return context -- Lets have their return expression as first child
 
 focusFun :: ExprContext -> FixAR x s e i o c ExprContext
 focusFun = focusChild 0
@@ -114,13 +126,21 @@ focusDefBody e = do
 
 focusLetDefBinding :: Int -> Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusLetDefBinding defGroupIndex bindingIndex e = do
-  let index = letDefBindingIndex defGroupIndex bindingIndex e
-  focusChild (index + 1) e
+  fstGrp <- focusChild 0 e
+  focusLetDefBindingInternal defGroupIndex bindingIndex fstGrp
+focusLetDefBindingInternal :: Int -> Int -> ExprContext -> FixAR x s e i o c ExprContext
+focusLetDefBindingInternal 0 bindingIndex e = do
+  focusChild (bindingIndex + 1) e
+focusLetDefBindingInternal defGroupIndex bindingIndex e = do
+  nextGroup <- focusChild 0 e
+  focusLetDefBindingInternal (defGroupIndex - 1) bindingIndex nextGroup
 
 focusNextLetDefBinding :: Int -> Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusNextLetDefBinding defGroupIndex bindingIndex e = do
-  let index = letDefBindingIndex defGroupIndex bindingIndex e
-  focusChild (index + 2) e
+  -- trace ("Focus Next Let Def Binding: " ++ show defGroupIndex ++ " " ++ show bindingIndex) $ return ()
+  let (newGroupIndex, newBindingIndex) = nextLetDefIndex defGroupIndex bindingIndex e
+  -- trace ("Next Let Def Binding: " ++ show newGroupIndex ++ " " ++ show newBindingIndex) $ return ()
+  focusLetDefBinding newGroupIndex newBindingIndex e
 
 focusChild :: Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusChild index e = do
