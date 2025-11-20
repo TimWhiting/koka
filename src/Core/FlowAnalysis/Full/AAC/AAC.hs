@@ -10,7 +10,7 @@ import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.AbstractValue
 import Core.FlowAnalysis.Full.AAC.Monad
-import Core.FlowAnalysis.Full.Primitives
+import Core.FlowAnalysis.Full.PrimitivesOld
 import Core.Core
 import Data.Int (Int)
 import Common.Name

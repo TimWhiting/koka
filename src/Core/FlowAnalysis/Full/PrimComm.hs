@@ -140,9 +140,10 @@ isPrimitive tn =
                       nameHandle, nameHTag, nameEvvAt, nameLocalNew, nameLocalVar,
                       nameInternalSSizeT,
                       nameCCtxEmpty, nameCCtxExtend, nameCCtxCompose, nameCCtxComposeExtend, nameCCtxApply,
+                      nameCCtxHoleCreate, nameFieldAddrOf,
                       nameOSReadline, nameCoreXParse, nameCoreMInt
                       ]
-  in trace (show tn ++ " isPrimitive: " ++ show nameCCtxCompose) $
+  in -- trace (show tn ++ " isPrimitive: " ++ show nameCCtxCompose) $
        basics || isNamePerform (getName tn) || isClauseName (getName tn)
 
 
