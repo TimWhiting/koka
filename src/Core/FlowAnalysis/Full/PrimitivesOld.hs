@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use uncurry" #-}
-module Core.FlowAnalysis.Full.Primitives where
+module Core.FlowAnalysis.Full.PrimitivesOld where
 
 import Data.Maybe(fromJust)
 import Debug.Trace(trace)

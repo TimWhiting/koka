@@ -161,7 +161,9 @@ localFv expr
 fvs :: HasCallStack => ExprContext -> S.Set TName
 fvs ctx =
   case maybeExprOfCtx ctx of
-    Just expr -> S.intersection (bvs True ctx) (fv expr)
+    Just expr -> 
+      -- trace ("fvs of " ++ showSimpleExpr expr ++ " in " ++ showSimpleContext ctx ++ " = bvs " ++ show (bvs True ctx) ++ " fvs " ++ show (fv expr)) $
+      S.intersection (bvs True ctx) (fv expr)
 
 fvvs :: HasCallStack => ExprContext -> S.Set TName
 fvvs ctx =
@@ -170,6 +172,7 @@ fvvs ctx =
 
 bvs :: HasCallStack => Bool -> ExprContext -> S.Set TName
 bvs includeVars ctx =
+  -- trace (showSimpleContext ctx ++ " bvs includeVars=" ++ show includeVars) $
   let andParent bv = S.union bv $ maybe S.empty (bvs includeVars) (contextOf ctx)
       grandparentExpr = maybeExprOfCtx =<< (contextOf =<< contextOf ctx)
   in case ctx of 
@@ -462,7 +465,7 @@ instance Show ExprContext where
       AppCLambda id _ f -> "AppLambda " ++ showExpr f
       AppCParam id _ i p -> "AppParam " ++ show id ++ " " ++ show i ++ " " ++ showExpr p
       LetCDefNonRec id _ _ -> "LetDef " ++ showDef (defOfCtx e)
-      LetCDefRec id _ _ _ -> "LetDef " ++ showDef (defOfCtx e)
+      LetCDefRec id _ _ _ -> "LetDefR " ++ showDef (defOfCtx e)
       LetCDefGroup id _ tn _ _ -> "LetDefGroup " ++ show tn
       LetCBody id _ _ e -> "LetBody " ++ showExpr e
       CaseCScrutinee id _ e -> "CaseMatch " ++ showExpr e
