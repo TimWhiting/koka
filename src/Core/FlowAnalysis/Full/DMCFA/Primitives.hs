@@ -36,6 +36,8 @@ trueCon ::  AChange
 trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
 falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
+emptyCtx :: AChange 
+emptyCtx = AChangeConstr (ExprPrim (ExprContextId (-2001) (newName "emptyCtx")) C.exprUnit) []
 hole :: AChange 
 hole = AChangeConstr (ExprPrim (ExprContextId (-2000) (newName "hole")) C.exprUnit) []
 toChange :: Bool  -> AChange
@@ -115,6 +117,8 @@ doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
 doPrimitive nm achanges = do
   -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameCCtxEmpty then 
+    return emptyCtx
+  else if nm == nameCCtxHoleCreate then 
     return hole
   else if nm == nameIntEq || nm == nameInt32Eq then
     opCmpInt (==) achanges

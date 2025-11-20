@@ -271,29 +271,30 @@ childrenOfExpr ctx expr =
       x <- addContextId (\newId -> AppCLambda newId ctx f )
       rest <- zipWithM (\i x -> addContextId (\newId -> AppCParam newId ctx i x)) [0..] vs
       return $! x : rest
-    Let defs result -> do
-      result <- makeGroups ctx (length defs) (reverse defs)
+    Let dgs result -> do
+      grp <- makeGroups ctx (length dgs) dgs -- was (reverse defs)
+      -- trace ("Let " ++ show expr ++ " " ++ show (length dgs)) $ return ()
       -- trace ("Let " ++ show (map contextId defs)) $ return ()
       -- trace ("Let " ++ show (contextId result) ++ show result) $ return ()
-      return result
+      return [grp]
       where
-        makeGroups :: ExprContext -> Int -> [DefGroup] -> FixAR x s e i o c [ExprContext]
+        makeGroups :: ExprContext -> Int -> [DefGroup] -> FixAR x s e i o c ExprContext
         makeGroups parentCtx i [] = do
-          ctx <- addContextId (\newId -> LetCBody newId parentCtx (map defTName (concatMap defsOf defs)) result)
-          return [ctx]
+          addContextId (\newId -> LetCBody newId parentCtx (map defTName (concatMap defsOf dgs)) result)
         makeGroups parentCtx i (dg@(C.DefNonRec d):dgs) = do -- NonRec doesn't mean that the name isn't bound in the body, just that it's not mutually recursive with another definition.
           grp <- addContextId (\newId -> LetCDefGroup newId parentCtx [defTName d] i dg)
+          -- trace ("NonRec group " ++ showSimpleContext grp ++ " child of " ++ showSimpleContext parentCtx) $ return ()
           bind <- addContextId (\newId -> LetCDefNonRec newId grp (defTName d))
-          body <- makeGroups grp (i - 1) dgs
-          addChildrenContexts (contextId grp) (body ++ [bind]) -- Bindings come second
-          return (body ++ [bind])
+          subGrpOrBody <- makeGroups grp (i - 1) dgs
+          addChildrenContexts (contextId grp) (subGrpOrBody : [bind]) -- Bindings come second
+          return grp
         makeGroups parentCtx i (dg@(C.DefRec ds):dgs) = do
           let tnames = map defTName ds
           grp <- addContextId (\newId -> LetCDefGroup newId parentCtx tnames i dg)
           bindings <- mapM (\(i, _) -> addContextId (\newId -> LetCDefRec newId grp i tnames)) (zip [0..] ds)
-          body <- makeGroups grp (i - 1) dgs
-          addChildrenContexts (contextId grp) (body ++ bindings)
-          return (body ++ bindings)
+          subGrpOrBody <- makeGroups grp (i - 1) dgs
+          addChildrenContexts (contextId grp) (subGrpOrBody : bindings)
+          return grp
     Case exprs branches -> do
       match <- addContextId (\newId -> CaseCScrutinee newId ctx (head exprs))
       branches <- zipWithM (\i x -> addContextId (\newId -> CaseCBranch newId ctx (branchVars x) i x)) [0..] branches
@@ -446,6 +447,7 @@ maybeLoadModuleR mn = do
 
 maybeLoadModule :: HasCallStack => ModuleName -> FixAR x s e i o c (Maybe Module)
 maybeLoadModule mn = do
+  when (nameIsNil mn) $ error "Trying to load \"\" module"
   -- trace ("Loading module " ++ show mn) $ return ()
   state <- getState
   case M.lookup mn (moduleContexts state) of
@@ -475,14 +477,16 @@ maybeLoadModule mn = do
             Right (bc', e) -> do
               let loaded = map modName (buildcModules bc')
               trace ("Loaded module " ++ show mn ++ " " ++ show loaded) $ return ()
-              let Just mod' = buildcLookupModule mn bc'
-              let modCtx = ModuleC ctxId mod' mn
-              updateState (\state ->
-                state{
-                  buildc = bc',
-                  moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
-                })
-              return $ Just mod'
+              case buildcLookupModule mn bc' of
+                Nothing -> error ("Module not found after loading " ++ show mn)
+                Just mod' -> do
+                  let modCtx = ModuleC ctxId mod' mn
+                  updateState (\state ->
+                    state{
+                      buildc = bc',
+                      moduleContexts = M.insert mn (ModuleC ctxId mod' mn) (moduleContexts state)
+                    })
+                  return $ Just mod'
 
 loadModule :: HasCallStack => ModuleName -> FixAR x s e i o c (Module, ExprContext)
 loadModule mn = do
