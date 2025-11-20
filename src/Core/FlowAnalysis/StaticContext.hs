@@ -6,6 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE BangPatterns #-}
 module Core.FlowAnalysis.StaticContext(
                           ExprContext(..),
                           ExprContextId(..),
@@ -21,8 +22,8 @@ module Core.FlowAnalysis.StaticContext(
                           findApplicationFromRange,findLambdaFromRange,findDefFromRange,
                           basicExprOf,defOf,defsOf,defOfCtx,
                           lookupDefGroup,lookupDefGroups,lookupDef,
-                          showSimpleContext,isLetDefBindingFinished,
-                          letDefBinding,letDefBindingIndex,letDefsOf,
+                          showSimpleContext,isLetDefBindingFinished,nextLetDefIndex,
+                          letDefBinding,letDefsOf,
                           isMain,
                           letBindingName, nextFvs, eConName,
                           fvs, fvvs, dfsTNames, dgsTNames, dgTNames, localFv
@@ -305,19 +306,24 @@ isLetDefBindingFinished defGroupIndex bindingIndex e = do
         let dfs = defs !! defGroupIndex
         in length (defsOf dfs) == bindingIndex + 1
 
+nextLetDefIndex :: Int -> Int -> ExprContext -> (Int,Int)
+nextLetDefIndex !defGroupIndex !bindingIndex e = do
+  case exprOfCtx e of
+    C.Let defs _ ->
+      let numDefGroups = length defs in  
+      let dfs = defs !! defGroupIndex in 
+      let numBindings = length (defsOf dfs) in
+      if bindingIndex + 1 < numBindings then
+        (defGroupIndex, bindingIndex + 1)
+      else
+        (defGroupIndex + 1, 0)
+
 letDefBinding :: Int -> Int -> ExprContext -> C.Def
 letDefBinding defGroupIndex bindingIndex e = do
   case exprOfCtx e of
     C.Let defs _ ->
       let dfs = defs !! defGroupIndex
       in defsOf dfs !! bindingIndex
-
-letDefBindingIndex :: Int -> Int -> ExprContext -> Int
-letDefBindingIndex defGroupIndex bindingIndex e = do
-  case exprOfCtx e of
-    C.Let defs _ ->
-      let dfs = sum $ map (length . defsOf) $ Prelude.take defGroupIndex defs
-      in dfs + bindingIndex
 
 dgsTNames :: C.DefGroups -> [TName]
 dgsTNames = concatMap (\dg -> dfsTNames (defsOf dg))
@@ -482,7 +488,7 @@ defOfCtx ctx =
     LetCDefRec _ c i _ -> defOf (ctxDefGroup c) i
     _ -> error "Query should never be queried for definition"
 
-exprOfCtx :: ExprContext -> C.Expr
+exprOfCtx :: HasCallStack => ExprContext -> C.Expr
 exprOfCtx ctx =
   case ctx of
     ModuleC {} -> error "ModuleC is a multi Expression Context"
