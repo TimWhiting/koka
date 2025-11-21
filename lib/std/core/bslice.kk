@@ -15,6 +15,7 @@ import std/core/exn
 
 extern import 
   c file "inline/bslice" 
+  js file "inline/bslice.js"
 
 // A byte slice
 pub value struct bslice 
@@ -30,8 +31,9 @@ pub fun slice(b: bytes): bslice
 
 extern external/bytes(b: bslice): bytes
   c "kk_bslice_bytes"
+  js "kk_bslice_bytes"
 
-// Get the bytes referenced by the slice
+// Get the bytes referenced by the current slice (not the full backing bytes buffer)
 pub fun get/bytes(b: bslice): bytes
   external/bytes(b)
 
@@ -128,5 +130,7 @@ pub fun assign( b : bytes, i : int, new-value : bslice ) : exn bytes
   else
     assign(b, i.ssize_t, new-value)
 
+// Assign immutably (returns a copy if not unique), guaranteed to be in range
 extern slice/assign(b : bytes, i : ssize_t, new-value : bslice ): bytes
   c "kk_bslice_assign"
+  js "kk_bslice_assign"

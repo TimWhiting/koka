@@ -31,6 +31,17 @@ pub extern string( bytes : bytes ) : string
   c  "kk_string_convert_from_qutf8"
   js inline "String.fromCharCode.apply(null, #1)"
 
+pub fun segment/bytes(bytes: bytes, start: int, segment-length: int): exn bytes
+  val len = bytes.length.int
+  if start < 0 || start >= len || start + segment-length >= len 
+    throw("bytes out of range")
+  else 
+    bytes.unsafe-segment(start.ssize_t, segment-length.ssize_t)
+
+pub extern unsafe-segment(bytes: bytes, start: ssize_t, length: ssize_t): bytes
+  c inline "kk_bytes_alloc_dupn(#3, kk_bytes_buf_borrow(#1, NULL, kk_context()) + #2, kk_context())"
+  js inline "#1.slice(#2, #2 + #3)"
+
 // Gets a view of the string as raw bytes
 pub extern string/bytes( s : string ) : bytes
   c  inline "#1.bytes"
@@ -48,6 +59,7 @@ pub extern adjust-length(b: bytes, len: ssize_t): bytes
 
 extern extern-append(b1: bytes, b2: bytes): bytes
   c "kk_bytes_cat"
+  js "kk_bytes_cat"
     
 // Concatenates two byte arrays
 pub fun (++)(b1 : bytes, b2: bytes): bytes
