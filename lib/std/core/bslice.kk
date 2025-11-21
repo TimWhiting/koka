@@ -20,6 +20,7 @@ import std/core/list
 
 extern import 
   c file "inline/bslice" 
+  js file "inline/bslice.js"
 
 // A byte slice represents a range of bytes in a `:bytes` type.
 abstract value struct bslice 
@@ -131,6 +132,7 @@ pub fun assign( b : bytes, i : int, new-value : bslice ) : exn bytes
   else
     assign(b, i.ssize_t, new-value)
 
+// Assign immutably (returns a copy if not unique), guaranteed to be in range
 extern slice/assign(b : bytes, i : ssize_t, new-value : bslice ): bytes
   c "kk_bslice_assign"
-*/  
+*/
