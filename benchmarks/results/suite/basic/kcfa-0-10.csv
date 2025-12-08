@@ -1,0 +1,100 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,1,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001435
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,1,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002462
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,1,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002366
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,1,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002171
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,1,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.002207
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,2,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001941
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,2,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002675
+parse   : .../std/core/types.kk
+parse   : .../std/core/undiv.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/hnd.kk
+parse   : .../std/core/exn.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/string.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/list.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/either.kk
+parse   : .../std/core/maybe2.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/lazy.kk
+parse   : .../std/core/show.kk
+parse   : .../std/core/console.kk
+parse   : .../std/core/debug.kk
+parse   : .../std/core/delayed.kk
+check   : std/core/types
+parse   : .../analysis/benchmarks/suite/basic.kk
+parse   : .../std/core.kk
+check   : std/core/unsafe
+check   : std/core/int
+check   : std/core/undiv
+check   : std/core/lazy
+check   : std/core/bool
+check   : std/core/hnd
+check   : std/core/order
+check   : std/core/char
+check   : std/core/delayed
+check   : std/core/either
+check   : std/core/exn
+check   : std/core/tuple
+check   : std/core/maybe2
+check   : std/core/vector
+check   : std/core/maybe
+check   : std/core/string
+check   : std/core/list
+check   : std/core/sslice
+check   : std/core/show
+check   : std/core/console
+check   : std/core/debug
+check   : std/core
+check   : analysis/benchmarks/suite/basic
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,2,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002743
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,2,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.00272
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,2,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.002844
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,3,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001377
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,3,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.00229
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,3,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002582
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,3,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002273
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,3,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.002962
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,4,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001495
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,4,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002156
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,4,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002908
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,4,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002545
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,4,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.003146
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,5,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001844
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,5,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002154
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,5,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002961
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,5,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002769
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,5,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.003231
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,6,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001873
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,6,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002232
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,6,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003142
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,6,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003174
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,6,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.003492
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,7,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001852
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,7,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002277
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,7,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002858
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,7,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003269
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,7,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.003557
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,8,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001492
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,8,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.00292
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,8,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002924
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,8,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003394
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,8,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.00395
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,9,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001507
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,9,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002795
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,9,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.002888
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,9,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003284
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,9,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.00404
+kcfa,analysis/benchmarks/suite/basic/basic-exception,0,10,1,92,36,1.0434782608695652,1.0,1.0,1.0,1.0,0.001518
+kcfa,analysis/benchmarks/suite/basic/basic-resume,0,10,1,115,46,1.0434782608695652,1.0,1.0,1.0,1.0,0.002715
+kcfa,analysis/benchmarks/suite/basic/basic-resume-context,0,10,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003308
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op,0,10,1,130,52,1.0461538461538462,1.0,1.0,1.0,1.0,0.003081
+kcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,0,10,1,145,58,1.0482758620689656,1.0,1.0,1.0,1.0,0.003956
+

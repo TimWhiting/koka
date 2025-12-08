@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""
+Analyze and aggregate benchmark results from the suite.
+"""
+
+import os
+import csv
+import json
+from pathlib import Path
+from collections import defaultdict
+from statistics import mean, stdev, median
+from typing import Dict, List, Tuple, Tuple
+
+# Configuration
+RESULTS_DIR = Path("benchmarks/results/suite")
+OUTPUT_DIR = Path("benchmarks/analysis")
+
+# Suite benchmark names
+SUITE_FILES = [
+    "basic",
+    "nondet", 
+    "nested",
+    "multi-effect",
+    "recursion",
+    "state-handler",
+    "complex-flow",
+    "nested-nondet"
+]
+
+ANALYSIS_TYPES = {
+    "dmcfa": "DMCFA",
+    "dmcfae": "DMCFA-Exp",
+    "kcfa": "KCFA"
+}
+
+def load_csv_results(filepath: Path) -> List[Dict]:
+    """Load results from a CSV file."""
+    results = []
+    try:
+        with open(filepath, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                results.append(row)
+    except FileNotFoundError:
+        print(f"Warning: {filepath} not found")
+    return results
+
+def parse_metrics(row: Dict) -> Dict:
+    """Parse a result row and convert numeric fields."""
+    parsed = dict(row)
+    numeric_fields = [
+        'D', 'M(K)', 'Precise', 'NEval', 'NApply', 
+        'AvgEval', 'AvgApply', 'AvgMK', 'AvgK', 'AvgS', 'Time'
+    ]
+    
+    for field in numeric_fields:
+        if field in parsed and parsed[field]:
+            try:
+                parsed[field] = float(parsed[field])
+            except ValueError:
+                pass
+    
+    return parsed
+
+def extract_sensitivity_params(results: List[Dict]) -> Tuple[set, set]:
+    """Extract unique D and M(K) values from results."""
+    d_values = set()
+    m_values = set()
+    
+    for row in results:
+        if 'D' in row and row['D']:
+            try:
+                d_values.add(int(float(row['D'])))
+            except (ValueError, TypeError):
+                pass
+        if 'M(K)' in row and row['M(K)']:
+            try:
+                m_values.add(int(float(row['M(K)'])))
+            except (ValueError, TypeError):
+                pass
+    
+    return d_values, m_values
+
+def aggregate_by_analysis(results: List[Dict]) -> Dict[str, List[Dict]]:
+    """Group results by analysis type."""
+    by_analysis = defaultdict(list)
+    for row in results:
+        # Extract analysis type from filename or use a key
+        for analysis_key in ANALYSIS_TYPES.keys():
+            if analysis_key in row.get('File/Example', ''):
+                by_analysis[analysis_key].append(row)
+                break
+    return by_analysis
+
+def compute_statistics(values: List[float]) -> Dict:
+    """Compute statistics for a list of values."""
+    if not values:
+        return {}
+    
+    valid_values = [v for v in values if isinstance(v, (int, float))]
+    if not valid_values:
+        return {}
+    
+    return {
+        'count': len(valid_values),
+        'min': min(valid_values),
+        'max': max(valid_values),
+        'mean': mean(valid_values),
+        'median': median(valid_values),
+        'stdev': stdev(valid_values) if len(valid_values) > 1 else 0
+    }
+
+def analyze_suite_benchmark(benchmark_name: str) -> Dict:
+    """Analyze a single suite benchmark across all analyses and sensitivity parameters."""
+    benchmark_dir = RESULTS_DIR / benchmark_name
+    analysis_results = {}
+    
+    if not benchmark_dir.exists():
+        print(f"Warning: {benchmark_dir} not found")
+        return {}
+    
+    for analysis_key, analysis_name in ANALYSIS_TYPES.items():
+        # Find CSV files for this analysis
+        pattern = f"{analysis_key}-*-*.csv"
+        csv_files = list(benchmark_dir.glob(pattern))
+        
+        if not csv_files:
+            continue
+        
+        all_results = []
+        for csv_file in csv_files:
+            all_results.extend(load_csv_results(csv_file))
+        
+        if not all_results:
+            continue
+        
+        # Parse and analyze
+        parsed_results = [parse_metrics(r) for r in all_results]
+        
+        # Extract sensitivity parameters
+        d_values, m_values = extract_sensitivity_params(parsed_results)
+        
+        # Organize results by D and M(K) independently
+        by_d = defaultdict(list)
+        by_m = defaultdict(list)
+        by_d_m = defaultdict(lambda: defaultdict(list))
+        
+        for result in parsed_results:
+            try:
+                d_val = result.get('D')
+                m_val = result.get('M(K)')
+                d = int(float(d_val)) if d_val is not None else 0
+                m = int(float(m_val)) if m_val is not None else 0
+            except (ValueError, TypeError):
+                continue
+            by_d[d].append(result)
+            by_m[m].append(result)
+            by_d_m[d][m].append(result)
+        
+        # Extract metrics for overall analysis
+        times = [r.get('Time') for r in parsed_results if isinstance(r.get('Time'), (int, float))]
+        nevals = [r.get('NEval') for r in parsed_results if isinstance(r.get('NEval'), (int, float))]
+        napplies = [r.get('NApply') for r in parsed_results if isinstance(r.get('NApply'), (int, float))]
+        precisions = [r.get('Precise') for r in parsed_results if isinstance(r.get('Precise'), (int, float))]
+        
+        # Analyze trends across D values
+        d_trends = {}
+        for d in sorted(d_values):
+            d_results = by_d[d]
+            d_times = [r.get('Time') for r in d_results if isinstance(r.get('Time'), (int, float))]
+            d_trends[d] = compute_statistics(d_times)
+        
+        # Analyze trends across M(K) values
+        m_trends = {}
+        for m in sorted(m_values):
+            m_results = by_m[m]
+            m_times = [r.get('Time') for r in m_results if isinstance(r.get('Time'), (int, float))]
+            m_trends[m] = compute_statistics(m_times)
+        
+        # Analyze trends across both D and M(K) (2D breakdown)
+        d_m_trends = {}
+        for d in sorted(d_values):
+            d_m_trends[d] = {}
+            for m in sorted(m_values):
+                d_m_results = by_d_m[d][m]
+                d_m_times = [r.get('Time') for r in d_m_results if isinstance(r.get('Time'), (int, float))]
+                d_m_trends[d][m] = compute_statistics(d_m_times)
+        
+        analysis_results[analysis_key] = {
+            'name': analysis_name,
+            'num_examples': len(parsed_results),
+            'd_values': sorted(d_values),
+            'm_values': sorted(m_values),
+            'time': compute_statistics(times),
+            'nevals': compute_statistics(nevals),
+            'napplies': compute_statistics(napplies),
+            'precision': compute_statistics(precisions),
+            'd_trends': d_trends,
+            'm_trends': m_trends,
+            'd_m_trends': d_m_trends,
+            'raw_results': parsed_results
+        }
+    
+    return analysis_results
+
+def generate_summary_report() -> Dict:
+    """Generate a summary report for all suite benchmarks."""
+    summary = {}
+    
+    for benchmark in SUITE_FILES:
+        print(f"Analyzing {benchmark}...")
+        analysis = analyze_suite_benchmark(benchmark)
+        if analysis:
+            summary[benchmark] = analysis
+    
+    return summary
+
+def print_summary_table(summary: Dict):
+    """Print a nicely formatted summary table."""
+    print("\n" + "="*100)
+    print("BENCHMARK SUITE ANALYSIS SUMMARY")
+    print("="*100 + "\n")
+    
+    for benchmark, analyses in summary.items():
+        print(f"\n{benchmark.upper()}")
+        print("-" * 80)
+        
+        for analysis_key, data in analyses.items():
+            print(f"\n  {data['name']}:")
+            print(f"    Examples: {data['num_examples']}")
+            print(f"    D values: {data.get('d_values', [])}")
+            print(f"    M(K) values: {data.get('m_values', [])}")
+            
+            if data['time']:
+                t = data['time']
+                print(f"    Overall Time (s):    min={t['min']:.4f}, max={t['max']:.4f}, mean={t['mean']:.4f}, median={t['median']:.4f}")
+            
+            # Show D trends
+            if data.get('d_trends'):
+                print(f"    Time by D value:")
+                for d in sorted(data['d_trends'].keys()):
+                    d_stats = data['d_trends'][d]
+                    if d_stats:
+                        print(f"      D={d}: {d_stats['mean']:.4f}s (n={d_stats['count']})")
+            
+            # Show M(K) trends
+            if data.get('m_trends'):
+                print(f"    Time by M(K) value:")
+                for m in sorted(data['m_trends'].keys()):
+                    m_stats = data['m_trends'][m]
+                    if m_stats:
+                        print(f"      M(K)={m}: {m_stats['mean']:.4f}s (n={m_stats['count']})")
+            
+            if data['nevals']:
+                n = data['nevals']
+                print(f"    NEval:       min={n['min']:.0f}, max={n['max']:.0f}, mean={n['mean']:.1f}")
+            
+            if data['napplies']:
+                na = data['napplies']
+                print(f"    NApply:      min={na['min']:.0f}, max={na['max']:.0f}, mean={na['mean']:.1f}")
+            
+            if data['precision']:
+                p = data['precision']
+                print(f"    Precision:   count={p['count']}, mean={p['mean']:.3f}")
+
+def save_json_report(summary: Dict, output_file: Path):
+    """Save the summary as a JSON file."""
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Convert for JSON serialization
+    json_data = {}
+    for benchmark, analyses in summary.items():
+        json_data[benchmark] = {}
+        for analysis_key, data in analyses.items():
+            # Convert d_m_trends to use string keys for JSON
+            d_m_trends = {}
+            if 'd_m_trends' in data:
+                for d_key, m_dict in data['d_m_trends'].items():
+                    d_m_trends[str(d_key)] = {str(m_key): v for m_key, v in m_dict.items()}
+            
+            json_data[benchmark][analysis_key] = {
+                'name': data['name'],
+                'num_examples': data['num_examples'],
+                'd_values': data.get('d_values', []),
+                'm_values': data.get('m_values', []),
+                'time': data['time'],
+                'nevals': data['nevals'],
+                'napplies': data['napplies'],
+                'precision': data['precision'],
+                'd_trends': {str(k): v for k, v in data.get('d_trends', {}).items()},
+                'm_trends': {str(k): v for k, v in data.get('m_trends', {}).items()},
+                'd_m_trends': d_m_trends
+            }
+    
+    with open(output_file, 'w') as f:
+        json.dump(json_data, f, indent=2)
+    
+    print(f"\nJSON report saved to {output_file}")
+
+def compare_analyses(summary: Dict):
+    """Compare different analysis types."""
+    print("\n" + "="*100)
+    print("ANALYSIS COMPARISON")
+    print("="*100 + "\n")
+    
+    # Compare execution times across all benchmarks
+    times_by_analysis = defaultdict(list)
+    
+    for benchmark, analyses in summary.items():
+        for analysis_key, data in analyses.items():
+            if data.get('time'):
+                times_by_analysis[analysis_key].append(data['time']['mean'])
+    
+    print("\nAverage Time per Benchmark (seconds):")
+    print("-" * 60)
+    for analysis_key in sorted(times_by_analysis.keys()):
+        times = times_by_analysis[analysis_key]
+        if times:
+            avg_time = mean(times)
+            print(f"  {ANALYSIS_TYPES[analysis_key]:15s}: {avg_time:10.4f}s (across {len(times)} benchmarks)")
+
+def main():
+    """Main entry point."""
+    print("Starting benchmark result analysis...")
+    
+    if not RESULTS_DIR.exists():
+        print(f"Error: Results directory {RESULTS_DIR} not found")
+        return
+    
+    # Generate summary
+    summary = generate_summary_report()
+    
+    # Print reports
+    print_summary_table(summary)
+    compare_analyses(summary)
+    
+    # Save JSON report
+    output_dir = OUTPUT_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+    json_file = output_dir / "suite-analysis.json"
+    save_json_report(summary, json_file)
+    
+    print("\n" + "="*100)
+    print("Analysis complete!")
+    print("="*100)
+
+if __name__ == "__main__":
+    main()
