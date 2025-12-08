@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Analyze and aggregate benchmark results from the suite.
+Analyze and aggregate benchmark results from the suite, handlers, and rosetta.
 """
 
 import os
@@ -12,20 +12,36 @@ from statistics import mean, stdev, median
 from typing import Dict, List, Tuple, Tuple
 
 # Configuration
-RESULTS_DIR = Path("benchmarks/results/suite")
+RESULTS_BASE = Path("benchmarks/results")
+RESULTS_DIRS = [RESULTS_BASE / "suite", RESULTS_BASE / "handlers", RESULTS_BASE / "rosetta"]
 OUTPUT_DIR = Path("benchmarks/analysis")
 
-# Suite benchmark names
-SUITE_FILES = [
-    "basic",
-    "nondet", 
-    "nested",
-    "multi-effect",
-    "recursion",
-    "state-handler",
-    "complex-flow",
-    "nested-nondet"
-]
+def load_benchmark_names() -> List[str]:
+    """Load benchmark names from suite, handlers, and rosetta directories."""
+    benchmarks = set()
+    
+    # Get benchmarks from suite
+    suite_dir = RESULTS_BASE / "suite"
+    if suite_dir.exists():
+        benchmarks.update(d.name for d in suite_dir.iterdir() if d.is_dir())
+    
+    # Get benchmarks from handlers
+    handlers_dir = RESULTS_BASE / "handlers"
+    if handlers_dir.exists():
+        benchmarks.update(d.name for d in handlers_dir.iterdir() if d.is_dir())
+    
+    # Get benchmarks from rosetta (recursively)
+    rosetta_dir = RESULTS_BASE / "rosetta"
+    if rosetta_dir.exists():
+        # Look for directories that contain CSV files
+        for p in rosetta_dir.rglob("*.csv"):
+            # Extract benchmark name from parent directory
+            parent_dir = p.parent
+            benchmarks.add(parent_dir.name)
+    
+    return sorted(benchmarks)
+
+SUITE_FILES = load_benchmark_names()
 
 ANALYSIS_TYPES = {
     "dmcfa": "DMCFA",
@@ -92,6 +108,30 @@ def aggregate_by_analysis(results: List[Dict]) -> Dict[str, List[Dict]]:
                 break
     return by_analysis
 
+def find_benchmark_dir(benchmark: str) -> Path:
+    """Find the directory containing results for a benchmark.
+    Searches recursively in suite, handlers, and rosetta directories.
+    """
+    # First try suite (most common)
+    suite_dir = RESULTS_BASE / "suite" / benchmark
+    if suite_dir.exists():
+        return suite_dir
+    
+    # Then try handlers subdirectories
+    handlers_dir = RESULTS_BASE / "handlers" / benchmark
+    if handlers_dir.exists():
+        return handlers_dir
+    
+    # Then search recursively in rosetta
+    rosetta_base = RESULTS_BASE / "rosetta"
+    if rosetta_base.exists():
+        for p in rosetta_base.rglob(benchmark):
+            if p.is_dir():
+                return p
+    
+    # Fallback: return the suite location (will be empty)
+    return suite_dir
+
 def compute_statistics(values: List[float]) -> Dict:
     """Compute statistics for a list of values."""
     if not values:
@@ -112,7 +152,7 @@ def compute_statistics(values: List[float]) -> Dict:
 
 def analyze_suite_benchmark(benchmark_name: str) -> Dict:
     """Analyze a single suite benchmark across all analyses and sensitivity parameters."""
-    benchmark_dir = RESULTS_DIR / benchmark_name
+    benchmark_dir = find_benchmark_dir(benchmark_name)
     analysis_results = {}
     
     if not benchmark_dir.exists():
@@ -323,8 +363,8 @@ def main():
     """Main entry point."""
     print("Starting benchmark result analysis...")
     
-    if not RESULTS_DIR.exists():
-        print(f"Error: Results directory {RESULTS_DIR} not found")
+    if not RESULTS_BASE.exists():
+        print(f"Error: Results directory {RESULTS_BASE} not found")
         return
     
     # Generate summary
