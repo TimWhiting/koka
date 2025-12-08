@@ -129,6 +129,17 @@ def get_benchmark_output_dir(benchmark: str) -> Path:
     group = get_benchmark_group(benchmark)
     return EXPORT_DIR / group
 
+def get_aggregate_output_dir(set_name: str) -> Path:
+    """Get the output directory for aggregate graphs for a benchmark set.
+    
+    Args:
+        set_name: 'suite', 'handlers', 'rosetta', or 'all' for all-aggregate
+    """
+    if set_name == "all":
+        return EXPORT_DIR / "aggregated"
+    else:
+        return EXPORT_DIR / f"aggregated_{set_name}"
+
 def plot_d_comparison(benchmark: str, analysis: Dict):
     """Plot D cost comparison across DMCFA analyses."""
     d_trends = extract_d_trends(analysis)
@@ -598,8 +609,8 @@ def plot_aggregate_d_cost():
     
     print(f"Generated: {output_file}")
 
-def plot_aggregate_mk_cost():
-    """Plot M(K)/K cost across all benchmarks with confidence intervals."""
+def plot_aggregate_mk_cost_for_set(benchmarks: List[str], set_name: str):
+    """Plot M(K)/K cost across specified benchmarks with confidence intervals."""
     analysis = load_json_analysis()
     
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
@@ -615,7 +626,7 @@ def plot_aggregate_mk_cost():
         bench_data = defaultdict(dict)
         bench_stats = defaultdict(dict)
         
-        for benchmark in SUITE_FILES:
+        for benchmark in benchmarks:
             if benchmark in analysis and analysis_key in analysis[benchmark]:
                 m_trends = analysis[benchmark][analysis_key].get('m_trends', {})
                 for m_str, stats in m_trends.items():
@@ -633,12 +644,12 @@ def plot_aggregate_mk_cost():
         ci_upper = []
         
         for m in m_vals:
-            times = [bench_data[m].get(b, 0) for b in SUITE_FILES]
+            times = [bench_data[m].get(b, 0) for b in benchmarks]
             avg = sum(times) / len(times) if times else 0
             avg_by_m.append(avg)
             
             variances = []
-            for b in SUITE_FILES:
+            for b in benchmarks:
                 if b in bench_stats[m]:
                     stdev = bench_stats[m][b]['stdev']
                     variances.append(stdev ** 2)
@@ -648,7 +659,7 @@ def plot_aggregate_mk_cost():
             total_var = pooled_var + mean_var
             total_stdev = total_var ** 0.5
             
-            margin = 1.96 * (total_stdev / (len(SUITE_FILES) ** 0.5))
+            margin = 1.96 * (total_stdev / (len(benchmarks) ** 0.5))
             ci_lower.append(max(0, avg - margin))
             ci_upper.append(avg + margin)
         
@@ -843,6 +854,9 @@ def plot_aggregate_mk_overlay_dmcfa_kcfa():
 
 def main():
     """Main entry point."""
+    # Check for --aggregate-only flag
+    aggregate_only = "--aggregate-only" in sys.argv
+    
     print("Generating comparison graphs...\n")
     
     analysis = load_json_analysis()
@@ -850,19 +864,32 @@ def main():
         print("Error: Could not load analysis data")
         return
     
-    # Per-benchmark comparisons
-    print("\nGenerating per-benchmark graphs:")
-    for benchmark in SUITE_FILES:
-        if benchmark in analysis:
-            print(f"\n  {benchmark}:")
-            plot_d_comparison(benchmark, analysis[benchmark])
-            plot_d_comparison_by_mk(benchmark, analysis[benchmark])
-            plot_m_k_comparison(benchmark, analysis[benchmark])
-            plot_mk_overlay_dmcfa_kcfa(benchmark, analysis[benchmark])
-            plot_precision_vs_cost(benchmark, analysis[benchmark])
+    # Generate per-benchmark graphs unless --aggregate-only
+    if not aggregate_only:
+        print("\nGenerating per-benchmark graphs:")
+        for benchmark in SUITE_FILES:
+            if benchmark in analysis:
+                print(f"\n  {benchmark}:")
+                plot_d_comparison(benchmark, analysis[benchmark])
+                plot_d_comparison_by_mk(benchmark, analysis[benchmark])
+                plot_m_k_comparison(benchmark, analysis[benchmark])
+                plot_mk_overlay_dmcfa_kcfa(benchmark, analysis[benchmark])
+                plot_precision_vs_cost(benchmark, analysis[benchmark])
     
-    # Aggregate comparisons
+    # Aggregate comparisons: per-set and all-aggregate
     print("\nGenerating aggregate summary graphs:")
+    
+    # Generate per-set aggregates
+    for set_name, benchmarks in BENCHMARK_SETS.items():
+        print(f"\n  {set_name}:")
+        # Create aggregate set graphs
+        plot_aggregate_d_cost()
+        plot_aggregate_mk_cost()
+        plot_aggregate_mk_by_d()
+        plot_aggregate_mk_overlay_dmcfa_kcfa()
+    
+    # Generate all-aggregate (all benchmarks together)
+    print(f"\n  all:")
     plot_aggregate_d_cost()
     plot_aggregate_mk_cost()
     plot_aggregate_mk_by_d()
