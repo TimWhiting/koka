@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Benchmark Suite Comparison</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        h1, h2 { color: #333; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #4CAF50; color: white; }
+        tr:hover { background-color: #f5f5f5; }
+        .fast { color: #2ecc71; font-weight: bold; }
+        .slow { color: #e74c3c; font-weight: bold; }
+        .perfect { color: #27ae60; }
+        .imperfect { color: #e67e22; }
+        .section { background-color: white; padding: 20px; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Benchmark Suite Comparison Report</h1>
+<div class='section'>
+<h2>Summary Statistics</h2>
+
+    <table>
+        <tr>
+            <th>Benchmark</th>
+            <th>Examples</th>
+            <th>Avg Time (s)</th>
+            <th>Precision</th>
+            <th>Avg NEval</th>
+            <th>Avg NApply</th>
+        </tr>
+    <tr>
+        <td><strong>basic</strong></td>
+        <td>150</td>
+        <td class="fast">0.0018</td>
+        <td class="perfect">100.0%</td>
+        <td>122.4</td>
+        <td>48.8</td>
+    </tr>
+    <tr>
+        <td><strong>nondet</strong></td>
+        <td>120</td>
+        <td class="fast">0.0036</td>
+        <td class="imperfect">86.7%</td>
+        <td>204.0</td>
+        <td>80.1</td>
+    </tr>
+    <tr>
+        <td><strong>nested</strong></td>
+        <td>390</td>
+        <td class="fast">0.0052</td>
+        <td class="perfect">100.0%</td>
+        <td>250.5</td>
+        <td>99.4</td>
+    </tr>
+    <tr>
+        <td><strong>multi-effect</strong></td>
+        <td>90</td>
+        <td class="">0.0111</td>
+        <td class="">94.4%</td>
+        <td>393.5</td>
+        <td>156.1</td>
+    </tr>
+    <tr>
+        <td><strong>recursion</strong></td>
+        <td>270</td>
+        <td class="fast">0.0040</td>
+        <td class="">92.6%</td>
+        <td>205.7</td>
+        <td>80.8</td>
+    </tr>
+    <tr>
+        <td><strong>state-handler</strong></td>
+        <td>30</td>
+        <td class="">0.0235</td>
+        <td class="imperfect">63.3%</td>
+        <td>518.3</td>
+        <td>203.0</td>
+    </tr>
+    <tr>
+        <td><strong>complex-flow</strong></td>
+        <td>210</td>
+        <td class="slow">0.1007</td>
+        <td class="">90.5%</td>
+        <td>807.9</td>
+        <td>303.4</td>
+    </tr>
+    <tr>
+        <td><strong>nested-nondet</strong></td>
+        <td>240</td>
+        <td class="">0.0402</td>
+        <td class="imperfect">62.5%</td>
+        <td>771.0</td>
+        <td>292.9</td>
+    </tr>
+    </table>
+</div>
+</body>
+</html>

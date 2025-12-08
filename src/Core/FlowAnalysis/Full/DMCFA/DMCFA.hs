@@ -119,7 +119,7 @@ doEval expr venv kaddr mkaddr ctx =
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       process x = if not open then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
   in process $ case exprOfCtx expr of
@@ -232,7 +232,7 @@ doApply :: HasCallStack => Addr -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e F
 doApply kaddr mkaddr addr dynctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show mkaddr ++ " " ++ show dynctx) $ return ()
   k <- kStore kaddr
-  trace ("Applying: " ++ show k) $ return ()
+  -- trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> do
       mk <- mkStore mkaddr
@@ -352,11 +352,11 @@ doApply kaddr mkaddr addr dynctx = do
           -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
           -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
           if isLetDefBindingFinished groupIdx bindingIdx u then do
-            trace ("Let group finished: " ++ show groupIdx ++ " of " ++ show numGroups) $ return ()
+            -- trace ("Let group finished: " ++ show groupIdx ++ " of " ++ show numGroups) $ return ()
             body <- focusLetBod u
             eval body (limitEnv venv (fvs body)) knext mkaddr newctx
           else do
-            trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
+            -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
             next <- focusNextLetDefBinding groupIdx bindingIdx u
             k' <- addFrame (nextLetFrame frame newctx) venv (contextId next)
             eval next venv k' mkaddr newctx
