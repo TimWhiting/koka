@@ -1,0 +1,478 @@
+==========================================================================================
+PARAMETER SENSITIVITY ANALYSIS - PRECISION vs COST
+==========================================================================================
+
+This analysis shows how individual examples' precision changes as context
+sensitivity parameters (D, M(K), K) increase, and the associated cost.
+
+
+==========================================================================================
+BENCHMARK: BASIC
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (5 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (100.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.17x
+  Min:      0.89x
+  Max:      1.47x
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (5 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (100.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.17x
+  Min:      0.63x
+  Max:      1.55x
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (5 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (100.0%)
+
+Cost Multiplier (K min to max):
+  Mean:     1.35x
+  Min:      1.06x
+  Max:      1.79x
+
+==========================================================================================
+BENCHMARK: NONDET
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (4 examples):
+  Improved: 2 (50.0%)
+  Worsened: 2 (50.0%)
+  Stable:   2 (50.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.18x
+  Min:      0.86x
+  Max:      1.61x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/nondet/nondet-context    0.00 → 1.00 (Δ+1.00) [0.86x cost]
+  analysis/benchmarks/suite/nondet/nondet-nested     0.00 → 1.00 (Δ+1.00) [1.24x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/nondet/nondet-context    0.00 → 1.00 (Δ1.00) [0.86x cost]
+  analysis/benchmarks/suite/nondet/nondet-nested     0.00 → 1.00 (Δ1.00) [1.24x cost]
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (4 examples):
+  Improved: 2 (50.0%)
+  Worsened: 2 (50.0%)
+  Stable:   2 (50.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.18x
+  Min:      0.67x
+  Max:      1.73x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/nondet/nondet-context    0.00 → 1.00 (Δ+1.00) [0.67x cost]
+  analysis/benchmarks/suite/nondet/nondet-nested     0.00 → 1.00 (Δ+1.00) [1.73x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/nondet/nondet-context    0.00 → 1.00 (Δ1.00) [0.67x cost]
+  analysis/benchmarks/suite/nondet/nondet-nested     0.00 → 1.00 (Δ1.00) [1.73x cost]
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (4 examples):
+  Improved: 3 (75.0%)
+  Worsened: 0 (0.0%)
+  Stable:   1 (25.0%)
+
+Cost Multiplier (K min to max):
+  Mean:     1.57x
+  Min:      1.08x
+  Max:      2.14x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/nondet/nondet-context    0.00 → 1.00 (Δ+1.00) [1.38x cost]
+  analysis/benchmarks/suite/nondet/nondet-discard    0.00 → 1.00 (Δ+1.00) [1.08x cost]
+  analysis/benchmarks/suite/nondet/nondet-simple     0.00 → 1.00 (Δ+1.00) [1.69x cost]
+
+High Cost, No Improvement (precision already limited):
+  analysis/benchmarks/suite/nondet/nondet-nested     precision=0.00 [2.14x cost]
+
+==========================================================================================
+BENCHMARK: NESTED
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (13 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   13 (100.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.81x
+  Min:      1.52x
+  Max:      2.17x
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (13 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   13 (100.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     2.03x
+  Min:      1.60x
+  Max:      2.44x
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (13 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   13 (100.0%)
+
+Cost Multiplier (K min to max):
+  Mean:     2.19x
+  Min:      1.75x
+  Max:      2.53x
+
+==========================================================================================
+BENCHMARK: MULTI-EFFECT
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (3 examples):
+  Improved: 1 (33.3%)
+  Worsened: 0 (0.0%)
+  Stable:   2 (66.7%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     2.26x
+  Min:      2.12x
+  Max:      2.33x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/multi-effect/multi-two-outer 0.00 → 1.00 (Δ+1.00) [2.33x cost]
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (3 examples):
+  Improved: 1 (33.3%)
+  Worsened: 0 (0.0%)
+  Stable:   2 (66.7%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     2.62x
+  Min:      2.56x
+  Max:      2.66x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/multi-effect/multi-two-outer 0.00 → 1.00 (Δ+1.00) [2.56x cost]
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (3 examples):
+  Improved: 1 (33.3%)
+  Worsened: 0 (0.0%)
+  Stable:   2 (66.7%)
+
+Cost Multiplier (K min to max):
+  Mean:     2.81x
+  Min:      2.40x
+  Max:      3.37x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/multi-effect/multi-two-outer 0.00 → 1.00 (Δ+1.00) [3.37x cost]
+
+==========================================================================================
+BENCHMARK: RECURSION
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (9 examples):
+  Improved: 4 (44.4%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (55.6%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.66x
+  Min:      1.36x
+  Max:      1.90x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/recursion/iter-sum-two   0.00 → 1.00 (Δ+1.00) [1.83x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-b 0.00 → 1.00 (Δ+1.00) [1.75x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-c 0.00 → 1.00 (Δ+1.00) [1.68x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-d 0.00 → 1.00 (Δ+1.00) [1.45x cost]
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (9 examples):
+  Improved: 4 (44.4%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (55.6%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.47x
+  Min:      1.20x
+  Max:      1.85x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/recursion/iter-sum-two   0.00 → 1.00 (Δ+1.00) [1.20x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-b 0.00 → 1.00 (Δ+1.00) [1.20x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-c 0.00 → 1.00 (Δ+1.00) [1.37x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-d 0.00 → 1.00 (Δ+1.00) [1.32x cost]
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (9 examples):
+  Improved: 4 (44.4%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (55.6%)
+
+Cost Multiplier (K min to max):
+  Mean:     1.98x
+  Min:      1.13x
+  Max:      2.85x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/recursion/iter-sum-two   0.00 → 1.00 (Δ+1.00) [2.55x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-b 0.00 → 1.00 (Δ+1.00) [2.57x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-c 0.00 → 1.00 (Δ+1.00) [2.52x cost]
+  analysis/benchmarks/suite/recursion/iter-sum-two-d 0.00 → 1.00 (Δ+1.00) [2.85x cost]
+
+==========================================================================================
+BENCHMARK: STATE-HANDLER
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (1 examples):
+  Improved: 1 (100.0%)
+  Worsened: 1 (100.0%)
+  Stable:   0 (0.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     2.30x
+  Min:      2.30x
+  Max:      2.30x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/state-handler/state-countdown 0.00 → 1.00 (Δ+1.00) [2.30x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/state-handler/state-countdown 0.00 → 1.00 (Δ1.00) [2.30x cost]
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (1 examples):
+  Improved: 1 (100.0%)
+  Worsened: 1 (100.0%)
+  Stable:   0 (0.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.44x
+  Min:      1.44x
+  Max:      1.44x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/state-handler/state-countdown 0.00 → 1.00 (Δ+1.00) [1.44x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/state-handler/state-countdown 0.00 → 1.00 (Δ1.00) [1.44x cost]
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (1 examples):
+  Improved: 0 (0.0%)
+  Worsened: 0 (0.0%)
+  Stable:   1 (100.0%)
+
+Cost Multiplier (K min to max):
+  Mean:     4.26x
+  Min:      4.26x
+  Max:      4.26x
+
+High Cost, No Improvement (precision already limited):
+  analysis/benchmarks/suite/state-handler/state-countdown precision=0.00 [4.26x cost]
+
+==========================================================================================
+BENCHMARK: COMPLEX-FLOW
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (7 examples):
+  Improved: 2 (28.6%)
+  Worsened: 1 (14.3%)
+  Stable:   5 (71.4%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.59x
+  Min:      1.11x
+  Max:      2.91x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/complex-flow/complex-layers 0.00 → 1.00 (Δ+1.00) [1.11x cost]
+  analysis/benchmarks/suite/complex-flow/complex-recursive 0.00 → 1.00 (Δ+1.00) [2.91x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/complex-flow/complex-layers 0.00 → 1.00 (Δ1.00) [1.11x cost]
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (7 examples):
+  Improved: 2 (28.6%)
+  Worsened: 1 (14.3%)
+  Stable:   5 (71.4%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     1.49x
+  Min:      0.93x
+  Max:      1.99x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/complex-flow/complex-layers 0.00 → 1.00 (Δ+1.00) [0.93x cost]
+  analysis/benchmarks/suite/complex-flow/complex-recursive 0.00 → 1.00 (Δ+1.00) [1.72x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/complex-flow/complex-layers 0.00 → 1.00 (Δ1.00) [0.93x cost]
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (7 examples):
+  Improved: 2 (28.6%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (71.4%)
+
+Cost Multiplier (K min to max):
+  Mean:     2.05x
+  Min:      1.08x
+  Max:      4.33x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/complex-flow/complex-layers 0.00 → 1.00 (Δ+1.00) [1.08x cost]
+  analysis/benchmarks/suite/complex-flow/complex-recursive 0.00 → 1.00 (Δ+1.00) [4.33x cost]
+
+==========================================================================================
+BENCHMARK: NESTED-NONDET
+==========================================================================================
+
+DMCFA - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (8 examples):
+  Improved: 6 (75.0%)
+  Worsened: 6 (75.0%)
+  Stable:   2 (25.0%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     2.86x
+  Min:      0.46x
+  Max:      6.10x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/nested-nondet/nondet-alternating 0.00 → 1.00 (Δ+1.00) [3.34x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-both-contexts 0.00 → 1.00 (Δ+1.00) [3.87x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-guarded 0.00 → 1.00 (Δ+1.00) [0.46x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-simple 0.00 → 1.00 (Δ+1.00) [3.82x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-tail 0.00 → 1.00 (Δ+1.00) [1.96x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-three-levels 0.00 → 1.00 (Δ+1.00) [6.10x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/nested-nondet/nondet-alternating 0.00 → 1.00 (Δ1.00) [3.34x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-both-contexts 0.00 → 1.00 (Δ1.00) [3.87x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-guarded 0.00 → 1.00 (Δ1.00) [0.46x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-simple 0.00 → 1.00 (Δ1.00) [3.82x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-tail 0.00 → 1.00 (Δ1.00) [1.96x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-three-levels 0.00 → 1.00 (Δ1.00) [6.10x cost]
+
+DMCFAE - M(K) Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (8 examples):
+  Improved: 5 (62.5%)
+  Worsened: 5 (62.5%)
+  Stable:   3 (37.5%)
+
+Cost Multiplier (M(K) min to max):
+  Mean:     2.63x
+  Min:      0.76x
+  Max:      7.23x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/nested-nondet/nondet-alternating 0.00 → 1.00 (Δ+1.00) [2.98x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-both-contexts 0.00 → 1.00 (Δ+1.00) [1.97x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-guarded 0.00 → 1.00 (Δ+1.00) [0.76x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-simple 0.00 → 1.00 (Δ+1.00) [2.06x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-tail 0.00 → 1.00 (Δ+1.00) [2.39x cost]
+
+Examples with Precision Loss:
+  analysis/benchmarks/suite/nested-nondet/nondet-alternating 0.00 → 1.00 (Δ1.00) [2.98x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-both-contexts 0.00 → 1.00 (Δ1.00) [1.97x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-guarded 0.00 → 1.00 (Δ1.00) [0.76x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-simple 0.00 → 1.00 (Δ1.00) [2.06x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-tail 0.00 → 1.00 (Δ1.00) [2.39x cost]
+
+High Cost, No Improvement (precision already limited):
+  analysis/benchmarks/suite/nested-nondet/nondet-three-levels precision=0.00 [7.23x cost]
+
+KCFA - K Parameter Sensitivity
+------------------------------------------------------------------------------------------
+
+Precision Changes (8 examples):
+  Improved: 3 (37.5%)
+  Worsened: 0 (0.0%)
+  Stable:   5 (62.5%)
+
+Cost Multiplier (K min to max):
+  Mean:     2.51x
+  Min:      1.12x
+  Max:      3.67x
+
+Examples with Precision Improvement:
+  analysis/benchmarks/suite/nested-nondet/nondet-guarded 0.00 → 1.00 (Δ+1.00) [1.12x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-tail 0.00 → 1.00 (Δ+1.00) [1.98x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-variable-branches 0.00 → 1.00 (Δ+1.00) [2.23x cost]
+
+High Cost, No Improvement (precision already limited):
+  analysis/benchmarks/suite/nested-nondet/nondet-both-contexts precision=0.00 [3.67x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-three-levels precision=0.00 [3.40x cost]
+  analysis/benchmarks/suite/nested-nondet/nondet-nested-simple precision=0.00 [3.33x cost]

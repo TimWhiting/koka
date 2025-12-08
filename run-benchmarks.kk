@@ -5,8 +5,11 @@ import std/os/file
 import std/os/path
 import std/os/dir
 
-val files = ["benchmarks"] ++ ["yield", "vec", "unix", "nim", "ambient"].map(fn(f) "handlers/" ++ f) ++
-            ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer", "n/nim"].map(fn(f) "rosetta/rosetta/" ++ f)
+val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"]
+val handler-files = ["yield", "vec", "unix", "nim", "ambient"]
+val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer", "n/nim"]
+val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
+            rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f)
 
 effect out
   fun write(s: string): ()

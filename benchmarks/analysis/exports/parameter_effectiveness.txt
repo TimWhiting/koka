@@ -1,0 +1,119 @@
+==========================================================================================
+PARAMETER EFFECTIVENESS - D vs M(K) Impact
+==========================================================================================
+
+For DMCFA and DMCFAE, compares the impact of D (demand) vs M(K) (context).
+Shows which parameter drives precision improvement.
+
+
+------------------------------------------------------------------------------------------
+BASIC
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 0/5
+  Average cost multiplier: 1.17x
+
+M(K) Parameter:
+  Examples with precision improvement: 0/5
+  Average cost multiplier: 1.17x
+
+→ Neither parameter improves precision (precision-limited benchmark)
+
+------------------------------------------------------------------------------------------
+NONDET
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 2/4
+  Average cost multiplier: 1.18x
+
+M(K) Parameter:
+  Examples with precision improvement: 2/4
+  Average cost multiplier: 1.18x
+
+→ Both parameters equally effective
+
+------------------------------------------------------------------------------------------
+NESTED
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 0/13
+  Average cost multiplier: 1.81x
+
+M(K) Parameter:
+  Examples with precision improvement: 0/13
+  Average cost multiplier: 1.81x
+
+→ Neither parameter improves precision (precision-limited benchmark)
+
+------------------------------------------------------------------------------------------
+MULTI-EFFECT
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 1/3
+  Average cost multiplier: 2.26x
+
+M(K) Parameter:
+  Examples with precision improvement: 1/3
+  Average cost multiplier: 2.26x
+
+→ Both parameters equally effective
+
+------------------------------------------------------------------------------------------
+RECURSION
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 4/9
+  Average cost multiplier: 1.66x
+
+M(K) Parameter:
+  Examples with precision improvement: 4/9
+  Average cost multiplier: 1.66x
+
+→ Both parameters equally effective
+
+------------------------------------------------------------------------------------------
+STATE-HANDLER
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 1/1
+  Average cost multiplier: 2.30x
+
+M(K) Parameter:
+  Examples with precision improvement: 1/1
+  Average cost multiplier: 2.30x
+
+→ Both parameters equally effective
+
+------------------------------------------------------------------------------------------
+COMPLEX-FLOW
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 2/7
+  Average cost multiplier: 1.59x
+
+M(K) Parameter:
+  Examples with precision improvement: 2/7
+  Average cost multiplier: 1.59x
+
+→ Both parameters equally effective
+
+------------------------------------------------------------------------------------------
+NESTED-NONDET
+------------------------------------------------------------------------------------------
+
+D Parameter:
+  Examples with precision improvement: 6/8
+  Average cost multiplier: 2.86x
+
+M(K) Parameter:
+  Examples with precision improvement: 6/8
+  Average cost multiplier: 2.86x
+
+→ Both parameters equally effective
