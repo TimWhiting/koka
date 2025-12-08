@@ -1,28 +1,65 @@
 #!/usr/bin/env python3
 """
 Generate comparison graphs for sensitivity parameter costs across analyses.
+Supports per-benchmark-set aggregates and all-aggregate graphs.
 """
 
 import json
+import sys
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 from collections import defaultdict
 
 ANALYSIS_JSON = Path("benchmarks/analysis/suite-analysis.json")
+RESULTS_BASE = Path("benchmarks/results")
 EXPORT_DIR = Path("benchmarks/analysis/graphs")
 
-SUITE_FILES = [
-    "basic",
-    "nondet", 
-    "nested",
-    "multi-effect",
-    "recursion",
-    "state-handler",
-    "complex-flow",
-    "nested-nondet"
-]
+# Define benchmark sets
+BENCHMARK_SETS = {
+    "suite": ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"],
+    "handlers": ["ambient", "nim", "unix", "vec", "yield"],
+    "rosetta": ["jump-anywhere", "monads-writer", "pr4rings"]
+}
+
+def load_suite_files() -> List[str]:
+    """Load benchmark names from suite, handlers, and rosetta directories."""
+    benchmarks = set()
+    
+    # Get benchmarks from suite
+    suite_dir = RESULTS_BASE / "suite"
+    if suite_dir.exists():
+        benchmarks.update(d.name for d in suite_dir.iterdir() if d.is_dir())
+    
+    # Get benchmarks from handlers
+    handlers_dir = RESULTS_BASE / "handlers"
+    if handlers_dir.exists():
+        benchmarks.update(d.name for d in handlers_dir.iterdir() if d.is_dir())
+    
+    # Get benchmarks from rosetta (recursively)
+    rosetta_dir = RESULTS_BASE / "rosetta"
+    if rosetta_dir.exists():
+        # Look for directories that contain CSV files
+        for p in rosetta_dir.rglob("*.csv"):
+            # Extract benchmark name from parent directory
+            parent_dir = p.parent
+            benchmarks.add(parent_dir.name)
+    
+    return sorted(benchmarks)
+
+SUITE_FILES = load_suite_files()
+
+def get_benchmark_set(benchmark: str) -> str:
+    """Determine which set a benchmark belongs to."""
+    for set_name, benchmarks in BENCHMARK_SETS.items():
+        if benchmark in benchmarks:
+            return set_name
+    return "unknown"
+
+def get_benchmarks_for_set(set_name: str) -> List[str]:
+    """Get benchmarks for a specific set."""
+    return BENCHMARK_SETS.get(set_name, [])
 
 # Benchmark grouping
 BENCHMARK_GROUPS = {}  # Empty - each benchmark gets its own folder
