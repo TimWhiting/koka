@@ -104,7 +104,7 @@ isDivFun name pars body
 
 newtype Div a = Div (Env -> (a,[Call]))
 
-data Env   = Env { envRel :: Rel, envDefs :: M.Map Name Def }
+data Env   = Env { envRel :: Rel, envDefs :: M.Map Name Def, envInlining :: S.NameSet }
 data Rel   = Rel Name [S.NameSet] [S.NameSet]  -- set of equal and smaller variables per argument
 type Call  = [Size]       -- arguments sizes of a recursive call
 data Size  = Lt | Eq | Unknown
@@ -119,7 +119,7 @@ instance Show Size where
 runDiv :: Name -> [TName] -> Div a -> (a,[Call])
 runDiv defName args (Div d)
   = let rel = Rel defName (map (S.singleton . getName) args) (replicate (length args) S.empty)
-        env = Env rel M.empty
+        env = Env rel M.empty S.empty
     in d env
 
 instance Functor Div where
@@ -227,14 +227,26 @@ bindParams names args action = do
                                ) act updates
   applyUpdates action
 
+getInlining :: Div S.NameSet
+getInlining
+  = Div (\env -> (envInlining env, []))
+
+withInlining :: Name -> Div a -> Div a
+withInlining name (Div d)
+  = Div (\env -> d (env{ envInlining = S.insert name (envInlining env) }))
+
 inlineDef :: Def -> [Expr] -> Div ()
 inlineDef def args = do
-  let body = defExpr def
-  case body of
-    Lam pars _ expr -> do
-      -- trace ("inlining " ++ show (defName def)) $
-      bindParams (map getName pars) args (divExpr expr)
-    _ -> return ()
+  inlining <- getInlining
+  if S.member (defName def) inlining
+    then return ()
+    else withInlining (defName def) $ do
+      let body = defExpr def
+      case body of
+        Lam pars _ expr -> do
+          -- trace ("inlining " ++ show (defName def)) $
+          bindParams (map getName pars) args (divExpr expr)
+        _ -> return ()
 
 
 
