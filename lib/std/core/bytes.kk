@@ -33,7 +33,7 @@ pub extern string( bytes : bytes ) : string
 
 pub fun segment/bytes(bytes: bytes, start: int, segment-length: int): exn bytes
   val len = bytes.length.int
-  if start < 0 || start >= len || start + segment-length >= len 
+  if start < 0 || start >= len || start + segment-length >= len then
     throw("bytes out of range")
   else 
     bytes.unsafe-segment(start.ssize_t, segment-length.ssize_t)
