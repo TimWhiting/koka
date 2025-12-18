@@ -26,21 +26,16 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
-  CEval ExprContext VEnv Addr Addr CombinedCtx
-  | CApply Addr Addr Addr DynamicCtx
-  | CUnwind Name Name ExprContext Addr Addr [Addr] CombinedCtx
-  | CUnwindLookup TName Addr Addr Addr DynamicCtx ExprContext
-  | CUnwindSet TName Addr Addr Addr Addr ExprContext
+  CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
+  | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
   | CDone
   deriving (Eq, Ord, Show)
-
 
 mLimit :: FixAAMR r s e Int
 mLimit = contextLength <$> getEnv
 
 dLimit :: FixAAMR r s e Int
 dLimit = delimContextLength <$> getEnv
-
 startCombinedCtx = do
   m <- mLimit
   d <- dLimit
@@ -49,28 +44,30 @@ startCombinedCtx = do
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
   c <- startCombinedCtx
-  return $ Step (CEval ctx M.empty EndKAddr EndMKAddr c)
+  return $ Step (CEval ctx M.empty c)
 
 data FixInput =
   Step Conf
   | VStore Addr
   | KStore Addr
-  | MKStore Addr
+  deriving (Eq, Ord, Show)
+
+data RValue = 
+  RVAddr Addr 
+  | ROp 
   deriving (Eq, Ord, Show)
 
 data FixOutput =
-  Next (S.Set Conf)
+  RValue (S.Set RValue)
   | SValue AbValue
   | KValue (S.Set Kont)
-  | MKValue (S.Set MKont)
   | Bottom
   deriving (Eq, Ord, Show)
 
 data FixChange =
-  N Conf
+  RV RValue
   | SV AChange
   | KV Kont
-  | MKV MKont
   | ChangeBottom
   deriving (Eq, Ord, Show)
 
@@ -87,23 +84,19 @@ instance Lattice FixOutput FixChange where
   isBottom Bottom = True
   isBottom _ = False
   insert ChangeBottom a = (ChangeBottom, a)
-  insert (N conf) Bottom = (N conf, Next $ S.singleton conf)
-  insert (N conf) (Next confs) = (N conf, Next $ S.insert conf confs)
+  insert (RV v) Bottom = (RV v, RValue (S.singleton v))
+  insert (RV v) (RValue vs) = (RV v, RValue (S.insert v vs))
   insert (SV change) Bottom = mapChange (addChange emptyAbValue change) SV SValue
-  insert (SV change) (SValue av) = mapChange (addChange av change) SV SValue
+  insert (SV change) (SValue sv) = mapChange (addChange sv change) SV SValue
   insert (KV kont) Bottom = (KV kont, KValue $ S.singleton kont)
   insert (KV kont) (KValue konts) = (KV kont, KValue $ S.insert kont konts)
-  insert (MKV mKont) Bottom = (MKV mKont, MKValue $ S.singleton mKont)
-  insert (MKV mKont) (MKValue mKonts) = (MKV mKont, MKValue $ S.insert mKont mKonts)
   insert v a = error ("insert: unexpected case " ++ show v ++ " " ++ show a)
   lte ChangeBottom _ = True
   lte _ Bottom = False
-  lte (N conf) (Next confs) = S.member conf confs
-  lte (SV change) (SValue av) = change `changeIn` av
+  lte (RV v) (RValue vs) = S.member v vs
+  lte (SV change) (SValue sv) = change `changeIn` sv
   lte (KV kont) (KValue konts) = S.member kont konts
-  lte (MKV mKont) (MKValue mKonts) = S.member mKont mKonts
   elems (SValue a) = map SV $ changes a
   elems (KValue ks) = map KV $ S.toList ks
-  elems (MKValue mks) = map MKV $ S.toList mks
-  elems (Next confs) = map N $ S.toList confs
+  elems (RValue rs) = map RV $ S.toList rs
   elems Bottom = []
