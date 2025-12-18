@@ -88,7 +88,6 @@ data Addr =
   | TopAddr !TName
   | EndVAddr
   | EndKAddr
-  | EndMKAddr
   | ImplicitAddr !CombinedCtx !VEnv !ExprContextId
   | ImplicitLAddr !CombinedCtx !Name !VEnv !ExprContextId
   | ImplicitLRAddr !CombinedCtx !Name !VEnv !ExprContextId
@@ -100,7 +99,6 @@ instance Show Addr where
   show (TopAddr name) = "T@(" ++ show name ++ ")"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
-  show EndMKAddr = "EndMKAddr"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLAddr ctx nm env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLRAddr ctx nm env ctxId) = "ILR@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
@@ -147,7 +145,7 @@ data Frame =
       linkHEnv :: VEnv
   }
   | FDollar {
-      vaddr :: Addr
+      vaddr :: Addr -- Precise closure address
   }
   | FResume {
       label :: Name,
@@ -181,16 +179,12 @@ nextLetFrame
 
 data Kont =
   KEnd
-  | KNext {frame :: Frame, kCtx :: StaticCtx, knext:: Addr}
+  | KNext { frame :: Frame, kCtx :: StaticCtx, knext:: Addr }
+  | MKNext { h :: Handler , knext :: Addr }
   deriving (Eq, Ord, Show)
 
 data Handler =
   Handler { ops :: Addr, ret :: Maybe ExprContext }
-  deriving (Eq, Ord, Show)
-
-data MKont =
-  MKEnd
-  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv, mkCtx:: CombinedCtx }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
