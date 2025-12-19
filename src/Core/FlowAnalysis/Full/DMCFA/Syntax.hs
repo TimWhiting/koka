@@ -165,6 +165,7 @@ getAbResult = do
                         KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore (ImplicitLRAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         Step (CEval{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                        Step (CContinue{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                         Step (CApply{}) -> case v of RValue vals -> (length vals : evals, length vals : applies, ksizes, ssizes)
                                                      Bottom -> acc
                         _ -> acc) ([], [], [], []) cache
@@ -179,7 +180,7 @@ getAbResult = do
                               in M.insert addr v (M.union acc map')
                          ) M.empty (addrs res)
             in (res, env)
-          Nothing -> error ("Couldn't find " ++ show addr ++ " in cache")
+          Nothing -> error ("Couldn't find " ++ show addr ++ " in cache " ++ show (filter (\k -> case k of {VStore{} -> True; _ -> False}) (M.keys cache)))
   let (finalRes, finalEnv) = getValue EndVAddr S.empty
   return (finalRes, finalEnv, cacheInfo)
 evalMain :: BuildContext
@@ -189,8 +190,8 @@ evalMain bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx
     RV (RVAddr addr) <- doStep c
-    v <- store addr
-    extendStore EndVAddr v
+    res <- store addr
+    rebind addr EndVAddr
     return ()
 -- writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 -- writeSimpleDependencyGraph name cache = do
