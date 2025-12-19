@@ -1,5 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE BangPatterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant return" #-}
+{-# HLINT ignore "Redundant if" #-}
 module Core.FlowAnalysis.Full.DMCFA.Syntax where
 
 import Data.List (intercalate, find, minimumBy, groupBy, sort, permutations)
@@ -91,19 +94,19 @@ runQueryAtRange bc build mod m d doQuery =
                                   -- trace ("expected': " ++ show ress') $ return ()
                                   return ress'
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                  let (_, _, (evals, confs, mkSizes, kSizes, sSizes)) = analysisResult
-                  trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++ 
-                          show result ++ "," ++ show (length evals) ++ "," ++ show (length confs) ++ ","
-                          ++ show (average evals) ++ "," ++ show (average confs) ++ ","
-                          ++ show (average mkSizes) ++ "," ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
+                  let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
+                  trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                          show result ++ "," ++ show (length evals) ++ "," ++ show (length applies) ++ ","
+                          ++ show (average evals) ++ "," ++ show (average applies) ++ ","
+                          ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
                           ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return result
                 case result of
-                  Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,0,timeout") $ return ()
+                  Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,timeout") $ return ()
                   Just _ -> return ()
                 (total, timeouts) <- recur rest
-                case result of 
-                  Just res -> return $ (res + total, timeouts)
-                  _ -> 
+                case result of
+                  Just res -> return (res + total, timeouts)
+                  _ ->
                     return (total, timeouts + 1)
     -- tstart <- getCurrentTime
     (r, timeouts) <- recur values
@@ -123,9 +126,9 @@ truncate' x n = fromIntegral (floor (x * t)) / t
     where t = 10^n
 
 average :: [Int] -> Double
-average xs = fromIntegral (sum xs) / fromIntegral (length xs)
+average xs = if null xs then 0 else fromIntegral (sum xs) / fromIntegral (length xs)
 
-type CacheInfo = ([Int], [Int], [Int], [Int], [Int])
+type CacheInfo = ([Int], [Int], [Int], [Int])
 
 compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo) -> (AbValue, M.Map Addr AbValue, CacheInfo) -> S.Set (AbValue, AbValue) -> Bool
 compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
@@ -135,15 +138,15 @@ compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
                   let arg1 = fromJust $ M.lookup a rMap
                       arg2 = fromJust $ M.lookup a2 eMap in
                   n == n2 && compareResult (arg1, rMap, aci) (arg2, eMap, bci) (S.insert (result, expected) checked)) args args2
-         in name == name2 && all id argsMatch
+         in name == name2 && and argsMatch
       conMatch :: (ExprContext, [Name]) -> (ExprContext, [Name]) -> Bool
       conMatch (name, args) (name2, args2) = eConName name == eConName name2
-  if S.member (result, expected) checked then 
+  if S.member (result, expected) checked then
     True
   else if alits result `litXEquiv` alits expected then
         -- Make sure that all the result values are in the expected, no more.
-    let matches = all (\obj -> any id $ zipWith objMatch (repeat obj) (S.toList $ aobjs expected)) (S.toList $ aobjs result)
-        matchesx = matches && all (\con -> any id $ zipWith conMatch (repeat con) (S.toList $ acons expected)) (S.toList $ acons result)
+    let matches = all (\obj -> any (objMatch obj) (S.toList $ aobjs expected)) (S.toList $ aobjs result)
+        matchesx = matches && all (\con -> any (conMatch con) (S.toList $ acons expected)) (S.toList $ acons result)
      in matchesx -- trace ("passed: " ++ show matchesx ++ "\n" ++ show result ++ "\n" ++ show expected) $ matchesx
   else
     -- trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
@@ -152,21 +155,19 @@ compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
 getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, CacheInfo)
 getAbResult = do
   cache <- getCache
-  let cacheInfo = M.foldlWithKey (\acc@(evals, applies, mksizes, ksizes, ssizes) k v -> case k of
-                        VStore (BindingAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
-                        VStore (BindImplicitAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
-                        VStore EndVAddr -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
-                        VStore (TopAddr{}) -> case v of SValue res -> (evals, applies, mksizes, ksizes, sizeOf res : ssizes)
-                        KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
-                        KStore EndKAddr -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
-                        KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
-                        KStore (ImplicitLRAddr{}) -> case v of KValue res -> (evals, applies, mksizes, length res : ksizes, ssizes)
-                        MKStore (ImplicitAddr{}) -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
-                        MKStore EndMKAddr -> case v of MKValue res -> (evals, applies, length res : mksizes, ksizes, ssizes)
-                        Step (CEval{}) -> case v of Next confs -> (length confs : evals, applies, mksizes, ksizes, ssizes)
-                        Step (CApply{}) -> case v of Next confs -> (length confs : evals, length confs : applies, mksizes, ksizes, ssizes)
+  let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
+                        VStore (BindingAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore (BindImplicitAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore (TopAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                        KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                        KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                        KStore (ImplicitLRAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                        Step (CEval{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                        Step (CApply{}) -> case v of RValue vals -> (length vals : evals, length vals : applies, ksizes, ssizes)
                                                      Bottom -> acc
-                        _ -> acc) ([], [], [], [], []) cache
+                        _ -> acc) ([], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of
           Just (SValue res) ->
@@ -187,7 +188,9 @@ evalMain :: BuildContext
 evalMain bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx
-    doStep c
+    RV (RVAddr addr) <- doStep c
+    v <- store addr
+    extendStore EndVAddr v
     return ()
 -- writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 -- writeSimpleDependencyGraph name cache = do
@@ -212,7 +215,7 @@ escape :: String -> String
 escape (s:xs) = if s == '\"' then "\\" ++ s:escape xs else s : escape xs
 escape [] = []
 
-instance Label (FixOutput) where
+instance Label FixOutput where
   label o = escape $ show o
 
 instance Label FixInput where
