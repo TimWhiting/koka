@@ -105,6 +105,16 @@ instance Show Addr where
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
+kaddrEnv :: Addr -> VEnv 
+kaddrEnv (ImplicitAddr _ env _) = env
+kaddrEnv (ImplicitLAddr _ _ env _) = env
+kaddrEnv (ImplicitLRAddr _ _ env _) = env
+
+kaddrId :: Addr -> ExprContextId
+kaddrId (ImplicitAddr _ _ ctxId) = ctxId
+kaddrId (ImplicitLAddr _ _ _ ctxId) = ctxId
+kaddrId (ImplicitLRAddr _ _ _ ctxId) = ctxId
+
 data Frame =
   FScrut {
       parent :: ExprContext,
