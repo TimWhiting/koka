@@ -147,22 +147,27 @@ data Frame =
         env :: VEnv
       }
   | FHLink {
-      linkEff :: Name,
-      doCtx :: ExprContextId,
-      hCtx :: ExprContextId,
-      linkKnext :: Addr,
-      linkHnd :: Handler,
-      linkHEnv :: VEnv
+      linkHEnv :: VEnv,
+      linkRetCtx :: CombinedCtx,
+      linkNewCtx :: CombinedCtx,
+      linkBodId :: ExprContextId,
+      linkHnd :: Handler
   }
   | FDollar {
       vaddr :: Addr -- Precise closure address
   }
   | FResume {
-      label :: Name,
       vaddr :: Addr,
       venv :: VEnv,
       rHnd :: Handler,
       rCtx :: ExprContextId
+  }
+  | FLocal {
+      lKnext :: Addr,
+      lVenv :: VEnv, 
+      lBodId :: ExprContextId,
+      lVarName :: Name,
+      lValAddr :: Addr
   }
   | FStore {
       vaddr :: Addr
@@ -194,7 +199,7 @@ data Kont =
   deriving (Eq, Ord, Show)
 
 data Handler =
-  Handler { ops :: Addr, ret :: Maybe ExprContext }
+  Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
@@ -230,7 +235,7 @@ vcontextId change =
     AChangeConstr e _ -> contextId e
     AChangeObj e _ _ -> contextId e
     AChangeLit e -> litEx e
-    AChangeKont _ _ _ h@(Handler _ e) -> contextId $ fromJust e
+    AChangeKont _ _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
 
 envOf :: AChange -> VEnv
 envOf (AChangeClos _ env) = env
