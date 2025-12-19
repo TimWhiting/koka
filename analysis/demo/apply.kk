@@ -13,3 +13,9 @@ fun add1(a: int): int
 
 fun sub1(s: int): int
   s - 1
+
+fun analyze-apply()
+  val res = apply(add1)(42) + apply(sub1)(35)
+  res
+fun result-apply()
+  42 + 35

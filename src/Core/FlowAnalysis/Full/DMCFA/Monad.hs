@@ -52,9 +52,18 @@ data FixInput =
   | KStore Addr
   deriving (Eq, Ord, Show)
 
+data DelimitedVal = 
+  DVal {
+      dLabel :: Name,
+      dOpName :: Name,
+      dExpr :: ExprContext,
+      dArgs :: [Addr],
+      dCtx :: CombinedCtx
+  } deriving (Eq, Ord, Show)
+
 data RValue = 
   RVAddr Addr 
-  | ROp 
+  | ROp Addr DelimitedVal
   deriving (Eq, Ord, Show)
 
 data FixOutput =
