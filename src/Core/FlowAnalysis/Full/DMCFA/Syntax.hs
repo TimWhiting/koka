@@ -75,7 +75,7 @@ runQueryAtRange bc build mod m d doQuery =
               do
                 result <- timeout 50000000 $ do
                   tstart <- getCurrentTime
-                  -- trace (" Analyzing " ++ show name) $ return ()
+                  trace (" Analyzing " ++ show name) $ return ()
                   (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                   runFixCont $ do
                                     (_,ctx) <- loadModule (modName mod)
@@ -189,9 +189,12 @@ evalMain :: BuildContext
 evalMain bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx
-    RV (RVAddr addr) <- doStep c
-    res <- store addr
-    rebind addr EndVAddr
+    res <- doStep c
+    case res of 
+      RV (RVAddr addr) -> do
+        rebind addr EndVAddr
+        return ()
+      RV _ -> doBottom
     return ()
 -- writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 -- writeSimpleDependencyGraph name cache = do

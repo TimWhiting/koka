@@ -146,13 +146,6 @@ data Frame =
         parent :: ExprContext,
         env :: VEnv
       }
-  | FHLink {
-      linkHEnv :: VEnv,
-      linkRetCtx :: CombinedCtx,
-      linkNewCtx :: CombinedCtx,
-      linkBodId :: ExprContextId,
-      linkHnd :: Handler
-  }
   | FDollar {
       vaddr :: Addr -- Precise closure address
   }
@@ -161,13 +154,6 @@ data Frame =
       venv :: VEnv,
       rHnd :: Handler,
       rCtx :: ExprContextId
-  }
-  | FLocal {
-      lKnext :: Addr,
-      lVenv :: VEnv, 
-      lBodId :: ExprContextId,
-      lVarName :: Name,
-      lValAddr :: Addr
   }
   | FStore {
       vaddr :: Addr
@@ -195,7 +181,23 @@ nextLetFrame
 data Kont =
   KEnd
   | KNext { frame :: Frame, kCtx :: StaticCtx, knext:: Addr }
-  | MKNext { h :: Handler , knext :: Addr }
+  | KLocal {
+      lKnext :: Addr,
+      lVenv :: VEnv, 
+      lBodId :: ExprContextId,
+      lVarName :: Name,
+      lValAddr :: Addr,
+      lCtx :: StaticCtx,
+      lDelimCtx :: CombinedCtx
+  }
+  | KLink {
+      lkNext :: Addr,
+      linkVenv :: VEnv,
+      linkRetCtx :: CombinedCtx,
+      linkNewCtx :: CombinedCtx,
+      linkBodId :: ExprContextId,
+      linkHnd :: Handler
+  }
   deriving (Eq, Ord, Show)
 
 data Handler =
