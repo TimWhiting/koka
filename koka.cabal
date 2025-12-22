@@ -68,12 +68,6 @@ library
       Core.CoreVar
       Core.CTail
       Core.Divergent
-      Core.FlowAnalysis.DDMCFA.AbstractValue
-      Core.FlowAnalysis.DDMCFA.ConstantProp
-      Core.FlowAnalysis.DDMCFA.DemandAnalysis
-      Core.FlowAnalysis.DDMCFA.DemandMonad
-      Core.FlowAnalysis.DDMCFA.Primitives
-      Core.FlowAnalysis.DDMCFA.Syntax
       Core.FlowAnalysis.Demand.AbstractValue
       Core.FlowAnalysis.Demand.ConstantProp
       Core.FlowAnalysis.Demand.DemandAnalysis
@@ -84,9 +78,6 @@ library
       Core.FlowAnalysis.Full.AAC.AAC
       Core.FlowAnalysis.Full.AAC.Monad
       Core.FlowAnalysis.Full.AAC.Syntax
-      Core.FlowAnalysis.Full.AAM.AAM
-      Core.FlowAnalysis.Full.AAM.Monad
-      Core.FlowAnalysis.Full.AAM.Syntax
       Core.FlowAnalysis.Full.AbstractValue
       Core.FlowAnalysis.Full.DMCFA.AbstractValue
       Core.FlowAnalysis.Full.DMCFA.DMCFA
