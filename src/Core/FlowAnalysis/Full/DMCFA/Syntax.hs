@@ -76,7 +76,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- timeout 50000000 $ do
                   tstart <- getCurrentTime
                   trace (" Analyzing " ++ show name) $ return ()
-                  (_, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                  (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                   runFixCont $ do
                                     (_,ctx) <- loadModule (modName mod)
                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
@@ -95,11 +95,13 @@ runQueryAtRange bc build mod m d doQuery =
                                   return ress'
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
                   let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
+                  -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
                   trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
                           show result ++ "," ++ show (length evals) ++ "," ++ show (length applies) ++ ","
                           ++ show (average evals) ++ "," ++ show (average applies) ++ ","
                           ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
-                          ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return result
+                          ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return ()
+                  return result
                 case result of
                   Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,timeout") $ return ()
                   Just _ -> return ()
@@ -108,6 +110,8 @@ runQueryAtRange bc build mod m d doQuery =
                   Just res -> return (res + total, timeouts)
                   _ ->
                     return (total, timeouts + 1)
+            
+                
     -- tstart <- getCurrentTime
     (r, timeouts) <- recur values
     -- tend <- getCurrentTime
@@ -118,7 +122,6 @@ runQueryAtRange bc build mod m d doQuery =
     --   trace ("Result " ++ show r ++ " / " ++ show (length values)) $ return ()
     --   trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%, time: " ++ show (diffUTCTime tend tstart)) $ return ()
     -- trace ("l: " ++ show (length l)) $ return ()
-    -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
     return $ not (null values)
 
 truncate' :: Double -> Int -> Double
@@ -163,10 +166,9 @@ getAbResult = do
                         KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
-                        KStore (ImplicitLRAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         Step (CEval{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                         Step (CContinue{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                        Step (CApply{}) -> case v of RValue vals -> (length vals : evals, length vals : applies, ksizes, ssizes)
+                        Step (CApply{}) -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                                                      Bottom -> acc
                         _ -> acc) ([], [], [], []) cache
   let getValue addr addrsx =
@@ -196,20 +198,25 @@ evalMain bc build mod m d = do
         return ()
       RV _ -> doBottom
     return ()
--- writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput FixChange, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
--- writeSimpleDependencyGraph name cache = do
---   let cache' = M.filterWithKey (\k v -> case k of {Eval {} -> True; Cont {} -> True}) cache
---   -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
---   let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
---   let nodes = M.foldlWithKey (\acc k (v, toId, conts, fconts) -> (toId,k,v):acc) [] cache'
---   let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
---   let dot = "digraph G {\n"
---             ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
---             ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes)
---             ++ "\n 0 [label=\"Start\"]\n"
---             ++ "\n}"
---   writeFile ("scratch/debug/graph_" ++ name ++ ".dot") dot
---   return ()
+
+writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
+writeSimpleDependencyGraph name cache = do
+  let cache' = M.filterWithKey (\k v -> case k of {
+      Step (CEval {}) -> True; 
+      Step (CApply {}) -> True; 
+      Step (CContinue {}) -> True;
+      _ -> False}) cache
+  -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
+  let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
+  let nodes = M.foldlWithKey (\acc k (v, toId, conts, fconts) -> (toId,k,v):acc) [] cache'
+  let edges = S.toList $ S.fromList $ fmap (\(v, f, fi, ti) -> (fi, ti)) values
+  let dot = "digraph G {\n"
+            ++ intercalate "\n" (fmap (\(a, b) -> show a ++ " -> " ++ show b) edges) ++ "\n"
+            ++ intercalate "\n" (fmap (\(fi, k, v) -> show fi ++ " [label=\"" ++ label k ++ "\n\n" ++ label v ++ "\"]") nodes)
+            ++ "\n 0 [label=\"Start\"]\n"
+            ++ "\n}"
+  writeFile ("scratch/debug/graph_" ++ name ++ ".dot") dot
+  return ()
 
 
 showEscape :: Show a => a -> String

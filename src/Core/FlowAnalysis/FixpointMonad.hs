@@ -296,8 +296,8 @@ push key value = do
     -- Otherwise, insert the value into the cache and call all continuations in the cache
     -- that depend on changes to this key
     let (value', added) = value `insert` values
-    -- when (values /= bottom) $ 
-    --   trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
+    when (values /= bottom) $ 
+      trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
     if keyId == newId then
       put (M.insert key (added, keyId, conts, fconts) cache, state, newId + 1, invalid)
     else
@@ -346,6 +346,7 @@ runFixFinish e s f = do
 runFixFinishC :: (Show i, Show d, Show l, Label i, Label l, Ord i) => e -> s -> FixIn e s i l d x -> IO (M.Map i (l, Integer, [ContX e s i l d], [ContF e s i l d]), s, x)
 runFixFinishC e s f = do
   (x, (cache, state, _, _)) <- runStateT (runReaderT f (e,Nothing,0)) (M.empty, s, 1, False)
+  -- writeDependencyGraph cache
   return (cache, state, x)
 
 ------------------------------ EXAMPLE USAGE ---------------------------------
