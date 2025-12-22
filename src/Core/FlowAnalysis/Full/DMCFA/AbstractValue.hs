@@ -89,8 +89,7 @@ data Addr =
   | EndVAddr
   | EndKAddr
   | ImplicitAddr !CombinedCtx !VEnv !ExprContextId
-  | ImplicitLAddr !CombinedCtx !Name !VEnv !ExprContextId
-  | ImplicitLRAddr !CombinedCtx !Name !VEnv !ExprContextId
+  | ImplicitLAddr !CombinedCtx !CombinedCtx !Name !Name !VEnv !ExprContextId
   | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
@@ -100,20 +99,15 @@ instance Show Addr where
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr ctx nm env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLRAddr ctx nm env ctxId) = "ILR@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitLAddr _ ctx nm _ env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
 kaddrEnv :: Addr -> VEnv 
 kaddrEnv (ImplicitAddr _ env _) = env
-kaddrEnv (ImplicitLAddr _ _ env _) = env
-kaddrEnv (ImplicitLRAddr _ _ env _) = env
 
 kaddrId :: Addr -> ExprContextId
 kaddrId (ImplicitAddr _ _ ctxId) = ctxId
-kaddrId (ImplicitLAddr _ _ _ ctxId) = ctxId
-kaddrId (ImplicitLRAddr _ _ _ ctxId) = ctxId
 
 data Frame =
   FScrut {
