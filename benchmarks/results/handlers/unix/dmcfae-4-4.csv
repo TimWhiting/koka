@@ -1,0 +1,122 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
+dmcfae,analysis/benchmarks/handlers/unix/example1,0,1,0,175,12,1.0,1.3333333333333333,1.4285714285714286,1.123076923076923,0.002967
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,0,1,0,184,15,1.0,1.2666666666666666,1.1428571428571428,1.1126760563380282,0.002987
+dmcfae,analysis/benchmarks/handlers/unix/example2,0,1,0,258,20,1.0,1.8,1.4545454545454546,1.09,0.004042
+dmcfae,analysis/benchmarks/handlers/unix/example3,0,1,0,313,24,1.0,1.4166666666666667,1.2307692307692308,1.08130081300813,0.005055
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,0,1,0,695,24,1.037410071942446,1.0,1.0588235294117647,1.0551470588235294,0.010997
+dmcfae,analysis/benchmarks/handlers/unix/example1,0,2,0,196,12,1.0,1.3333333333333333,1.4285714285714286,1.0547945205479452,0.0036
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,0,2,0,205,15,1.0,1.2666666666666666,1.1428571428571428,1.0506329113924051,0.003878
+dmcfae,analysis/benchmarks/handlers/unix/example2,0,2,0,284,22,1.0,1.9090909090909092,1.6666666666666667,1.0454545454545454,0.005678
+dmcfae,analysis/benchmarks/handlers/unix/example3,0,2,0,337,26,1.0,1.4615384615384615,1.3571428571428572,1.0454545454545454,0.006701
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,0,2,0,718,24,1.0,1.0,1.0588235294117647,1.0035211267605635,0.012158
+dmcfae,analysis/benchmarks/handlers/unix/example1,0,3,0,196,12,1.0,1.3333333333333333,1.4285714285714286,1.0547945205479452,0.004164
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,0,3,0,205,15,1.0,1.2666666666666666,1.1428571428571428,1.0506329113924051,0.004458
+dmcfae,analysis/benchmarks/handlers/unix/example2,0,3,0,289,24,1.0,2.0,1.8461538461538463,1.0446428571428572,0.007607
+dmcfae,analysis/benchmarks/handlers/unix/example3,0,3,0,340,28,1.0,1.5,1.4666666666666666,1.0451127819548873,0.007942
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,0,3,0,718,24,1.0,1.0,1.0588235294117647,1.0035211267605635,0.013832
+dmcfae,analysis/benchmarks/handlers/unix/example1,0,4,0,196,12,1.0,1.3333333333333333,1.4285714285714286,1.0547945205479452,0.004393
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,0,4,0,205,15,1.0,1.2666666666666666,1.1428571428571428,1.0506329113924051,0.004825
+dmcfae,analysis/benchmarks/handlers/unix/example2,0,4,0,294,26,1.0,2.076923076923077,2.0,1.043859649122807,0.009179
+dmcfae,analysis/benchmarks/handlers/unix/example3,0,4,0,343,30,1.0,1.5333333333333334,1.5625,1.044776119402985,0.009013
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,0,4,0,718,24,1.0,1.0,1.0588235294117647,1.0035211267605635,0.015237
+dmcfae,analysis/benchmarks/handlers/unix/example1,1,1,0,185,9,1.0,1.0,1.0,1.0,0.006279
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,1,1,0,203,12,1.0,1.0,1.0,1.0,0.008414
+dmcfae,analysis/benchmarks/handlers/unix/example2,1,1,0,240,11,1.0,1.0,1.0,1.0,0.005426
+dmcfae,analysis/benchmarks/handlers/unix/example3,1,1,0,318,14,1.0,1.0,1.0,1.0,0.012072
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,1,1,0,697,25,1.0373027259684362,1.0,1.0588235294117647,1.054945054945055,0.0171
+dmcfae,analysis/benchmarks/handlers/unix/example1,1,2,0,185,9,1.0,1.0,1.0,1.0,0.003981
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,1,2,0,203,12,1.0,1.0,1.0,1.0,0.004554
+dmcfae,analysis/benchmarks/handlers/unix/example2,1,2,0,240,11,1.0,1.0,1.0,1.0,0.004829
+dmcfae,analysis/benchmarks/handlers/unix/example3,1,2,0,318,14,1.0,1.0,1.0,1.0,0.007152
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,1,2,0,720,25,1.0,1.0,1.0588235294117647,1.0035087719298246,0.019244
+dmcfae,analysis/benchmarks/handlers/unix/example1,1,3,0,185,9,1.0,1.0,1.0,1.0,0.004431
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,1,3,0,203,12,1.0,1.0,1.0,1.0,0.004587
+dmcfae,analysis/benchmarks/handlers/unix/example2,1,3,0,240,11,1.0,1.0,1.0,1.0,0.006174
+dmcfae,analysis/benchmarks/handlers/unix/example3,1,3,0,318,14,1.0,1.0,1.0,1.0,0.008324
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,1,3,0,720,25,1.0,1.0,1.0588235294117647,1.0035087719298246,0.021641
+dmcfae,analysis/benchmarks/handlers/unix/example1,1,4,0,185,9,1.0,1.0,1.0,1.0,0.00456
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,1,4,0,203,12,1.0,1.0,1.0,1.0,0.005495
+dmcfae,analysis/benchmarks/handlers/unix/example2,1,4,0,240,11,1.0,1.0,1.0,1.0,0.005835
+dmcfae,analysis/benchmarks/handlers/unix/example3,1,4,0,318,14,1.0,1.0,1.0,1.0,0.008812
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,1,4,0,720,25,1.0,1.0,1.0588235294117647,1.0035087719298246,0.023626
+dmcfae,analysis/benchmarks/handlers/unix/example1,2,1,0,185,9,1.0,1.0,1.0,1.0,0.003207
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,2,1,0,203,12,1.0,1.0,1.0,1.0,0.003228
+dmcfae,analysis/benchmarks/handlers/unix/example2,2,1,0,240,11,1.0,1.0,1.0,1.0,0.004659
+dmcfae,analysis/benchmarks/handlers/unix/example3,2,1,0,318,14,1.0,1.0,1.0,1.0,0.00709
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,2,1,0,699,25,1.0371959942775393,1.0,1.0588235294117647,1.0545454545454545,0.021534
+dmcfae,analysis/benchmarks/handlers/unix/example1,2,2,0,185,9,1.0,1.0,1.0,1.0,0.004383
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,2,2,0,203,12,1.0,1.0,1.0,1.0,0.004147
+dmcfae,analysis/benchmarks/handlers/unix/example2,2,2,0,240,11,1.0,1.0,1.0,1.0,0.005522
+dmcfae,analysis/benchmarks/handlers/unix/example3,2,2,0,318,14,1.0,1.0,1.0,1.0,0.008584
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,2,2,0,722,25,1.0,1.0,1.0588235294117647,1.0034843205574913,0.025468
+dmcfae,analysis/benchmarks/handlers/unix/example1,2,3,0,185,9,1.0,1.0,1.0,1.0,0.0048
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,2,3,0,203,12,1.0,1.0,1.0,1.0,0.005019
+dmcfae,analysis/benchmarks/handlers/unix/example2,2,3,0,240,11,1.0,1.0,1.0,1.0,0.006772
+dmcfae,analysis/benchmarks/handlers/unix/example3,2,3,0,318,14,1.0,1.0,1.0,1.0,0.010471
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,2,3,0,722,25,1.0,1.0,1.0588235294117647,1.0034843205574913,0.028326
+dmcfae,analysis/benchmarks/handlers/unix/example1,2,4,0,185,9,1.0,1.0,1.0,1.0,0.004525
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,2,4,0,203,12,1.0,1.0,1.0,1.0,0.005308
+dmcfae,analysis/benchmarks/handlers/unix/example2,2,4,0,240,11,1.0,1.0,1.0,1.0,0.0066
+dmcfae,analysis/benchmarks/handlers/unix/example3,2,4,0,318,14,1.0,1.0,1.0,1.0,0.010551
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,2,4,0,722,25,1.0,1.0,1.0588235294117647,1.0034843205574913,0.031771
+dmcfae,analysis/benchmarks/handlers/unix/example1,3,1,0,185,9,1.0,1.0,1.0,1.0,0.00326
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,3,1,0,203,12,1.0,1.0,1.0,1.0,0.003271
+dmcfae,analysis/benchmarks/handlers/unix/example2,3,1,0,240,11,1.0,1.0,1.0,1.0,0.004547
+dmcfae,analysis/benchmarks/handlers/unix/example3,3,1,0,318,14,1.0,1.0,1.0,1.0,0.007792
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,3,1,0,703,31,1.0369843527738265,1.0,1.0588235294117647,1.0539568345323742,0.027097
+dmcfae,analysis/benchmarks/handlers/unix/example1,3,2,0,185,9,1.0,1.0,1.0,1.0,0.005381
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,3,2,0,203,12,1.0,1.0,1.0,1.0,0.004234
+dmcfae,analysis/benchmarks/handlers/unix/example2,3,2,0,240,11,1.0,1.0,1.0,1.0,0.005899
+dmcfae,analysis/benchmarks/handlers/unix/example3,3,2,0,318,14,1.0,1.0,1.0,1.0,0.009084
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,3,2,0,726,31,1.0,1.0,1.0588235294117647,1.0034482758620689,0.030477
+dmcfae,analysis/benchmarks/handlers/unix/example1,3,3,0,185,9,1.0,1.0,1.0,1.0,0.004665
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,3,3,0,203,12,1.0,1.0,1.0,1.0,0.005262
+dmcfae,analysis/benchmarks/handlers/unix/example2,3,3,0,240,11,1.0,1.0,1.0,1.0,0.006802
+dmcfae,analysis/benchmarks/handlers/unix/example3,3,3,0,318,14,1.0,1.0,1.0,1.0,0.010883
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,3,3,0,726,31,1.0,1.0,1.0588235294117647,1.0034482758620689,0.03503
+dmcfae,analysis/benchmarks/handlers/unix/example1,3,4,0,185,9,1.0,1.0,1.0,1.0,0.004714
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,3,4,0,203,12,1.0,1.0,1.0,1.0,0.00521
+dmcfae,analysis/benchmarks/handlers/unix/example2,3,4,0,240,11,1.0,1.0,1.0,1.0,0.007028
+dmcfae,analysis/benchmarks/handlers/unix/example3,3,4,0,318,14,1.0,1.0,1.0,1.0,0.012135
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,3,4,0,726,31,1.0,1.0,1.0588235294117647,1.0034482758620689,0.039022
+dmcfae,analysis/benchmarks/handlers/unix/example1,4,1,0,185,9,1.0,1.0,1.0,1.0,0.003163
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,4,1,0,203,12,1.0,1.0,1.0,1.0,0.003693
+dmcfae,analysis/benchmarks/handlers/unix/example2,4,1,0,240,11,1.0,1.0,1.0,1.0,0.004875
+dmcfae,analysis/benchmarks/handlers/unix/example3,4,1,0,318,14,1.0,1.0,1.0,1.0,0.007738
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,4,1,0,704,31,1.0369318181818181,1.0,1.0555555555555556,1.053763440860215,0.027735
+dmcfae,analysis/benchmarks/handlers/unix/example1,4,2,0,185,9,1.0,1.0,1.0,1.0,0.00442
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,4,2,0,203,12,1.0,1.0,1.0,1.0,0.004047
+dmcfae,analysis/benchmarks/handlers/unix/example2,4,2,0,240,11,1.0,1.0,1.0,1.0,0.005554
+dmcfae,analysis/benchmarks/handlers/unix/example3,4,2,0,318,14,1.0,1.0,1.0,1.0,0.009272
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,4,2,0,727,31,1.0,1.0,1.0555555555555556,1.0034364261168385,0.033164
+dmcfae,analysis/benchmarks/handlers/unix/example1,4,3,0,185,9,1.0,1.0,1.0,1.0,0.004629
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,4,3,0,203,12,1.0,1.0,1.0,1.0,0.005131
+dmcfae,analysis/benchmarks/handlers/unix/example2,4,3,0,240,11,1.0,1.0,1.0,1.0,0.006456
+dmcfae,analysis/benchmarks/handlers/unix/example3,4,3,0,318,14,1.0,1.0,1.0,1.0,0.010936
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,4,3,0,727,31,1.0,1.0,1.0555555555555556,1.0034364261168385,0.039504
+dmcfae,analysis/benchmarks/handlers/unix/example1,4,4,0,185,9,1.0,1.0,1.0,1.0,0.005009
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,4,4,0,203,12,1.0,1.0,1.0,1.0,0.005431
+dmcfae,analysis/benchmarks/handlers/unix/example2,4,4,0,240,11,1.0,1.0,1.0,1.0,0.006845
+dmcfae,analysis/benchmarks/handlers/unix/example3,4,4,0,318,14,1.0,1.0,1.0,1.0,0.011513
+Passing along local operation: fork at local user searching for analysis/benchmarks/handlers/unix/fork
+dmcfae,analysis/benchmarks/handlers/unix/example5,4,4,0,727,31,1.0,1.0,1.0555555555555556,1.0034364261168385,0.043734
+
