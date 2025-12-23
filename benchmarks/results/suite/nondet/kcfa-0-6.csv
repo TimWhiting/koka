@@ -1,0 +1,74 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
+kcfa,analysis/benchmarks/suite/nondet/nondet-context,0,1,0,178,71,1.0449438202247192,1.0,1.0,1.0,1.1111111111111112,0.004005
+kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,1,0,138,54,1.0434782608695652,1.0,1.0,1.0,1.0392156862745099,0.002684
+kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,1,0,261,101,1.0727969348659003,1.0594059405940595,1.25,1.288888888888889,1.2105263157894737,0.007863
+kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,1,0,152,60,1.0460526315789473,1.0,1.0,1.0,1.087719298245614,0.002828
+kcfa,analysis/benchmarks/suite/nondet/nondet-context,0,2,0,178,71,1.0449438202247192,1.0,1.0,1.0,1.0746268656716418,0.005065
+kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,2,1,138,54,1.0434782608695652,1.0,1.0,1.0,1.0,0.0031
+kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,2,0,392,150,1.1096938775510203,1.1466666666666667,2.0,1.8444444444444446,1.2105263157894737,0.02499
+kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,2,1,152,60,1.0460526315789473,1.0,1.0,1.0,1.0,0.002582
+kcfa,analysis/benchmarks/suite/nondet/nondet-context,0,3,1,178,71,1.0449438202247192,1.0,1.0,1.0,1.0,0.003996
+kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,3,1,138,54,1.0434782608695652,1.0,1.0,1.0,1.0,0.002784
+parse   : .../std/core/types.kk
+parse   : .../std/core/undiv.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/hnd.kk
+parse   : .../std/core/exn.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/string.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/list.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/either.kk
+parse   : .../std/core/maybe2.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/lazy.kk
+parse   : .../std/core/console.kk
+parse   : .../std/core/debug.kk
+parse   : .../std/core/show.kk
+parse   : .../std/core/delayed.kk
+parse   : .../std/core.kk
+check   : std/core/types
+parse   : .../analysis/benchmarks/suite/nondet.kk
+check   : std/core/undiv
+check   : std/core/int
+check   : std/core/unsafe
+check   : std/core/lazy
+check   : std/core/hnd
+check   : std/core/bool
+check   : std/core/char
+check   : std/core/order
+check   : std/core/exn
+check   : std/core/tuple
+check   : std/core/either
+check   : std/core/delayed
+check   : std/core/maybe2
+check   : std/core/maybe
+check   : std/core/vector
+check   : std/core/string
+check   : std/core/list
+check   : std/core/sslice
+check   : std/core/show
+check   : std/core/console
+check   : std/core/debug
+check   : std/core
+check   : analysis/benchmarks/suite/nondet
+kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,3,0,319,123,1.0721003134796239,1.0406504065040652,1.3333333333333333,1.0234375,1.15,0.009044
+kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,3,1,152,60,1.0460526315789473,1.0,1.0,1.0,1.0,0.002913
+kcfa,analysis/benchmarks/suite/nondet/nondet-context,0,4,1,178,71,1.0449438202247192,1.0,1.0,1.0,1.0,0.004265
+kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,4,1,138,54,1.0434782608695652,1.0,1.0,1.0,1.0,0.003059
+kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,4,0,333,129,1.063063063063063,1.0232558139534884,1.1428571428571428,1.0153846153846153,1.1372549019607843,0.010654
+kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,4,1,152,60,1.0460526315789473,1.0,1.0,1.0,1.0,0.00307
+kcfa,analysis/benchmarks/suite/nondet/nondet-context,0,5,1,178,71,1.0449438202247192,1.0,1.0,1.0,1.0,0.00486
+kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,5,1,138,54,1.0434782608695652,1.0,1.0,1.0,1.0,0.003325
+kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,5,0,333,129,1.063063063063063,1.0232558139534884,1.1428571428571428,1.0153846153846153,1.1372549019607843,0.012249
+kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,5,1,152,60,1.0460526315789473,1.0,1.0,1.0,1.0,0.003823
+kcfa,analysis/benchmarks/suite/nondet/nondet-context,0,6,1,178,71,1.0449438202247192,1.0,1.0,1.0,1.0,0.005286
+kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,6,1,138,54,1.0434782608695652,1.0,1.0,1.0,1.0,0.002923
+kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,6,0,333,129,1.063063063063063,1.0232558139534884,1.1428571428571428,1.0149253731343284,1.1132075471698113,0.014234
+kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,6,1,152,60,1.0460526315789473,1.0,1.0,1.0,1.0,0.004334
+
