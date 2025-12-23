@@ -56,7 +56,7 @@ instance Show StaticCtx where
   show (TKTop calls) = "t_" ++ show calls
   show (TKDelim calls) = "d_" ++ show calls
 
-type DynamicCtx = [(ExprContextId, StaticCtx)]
+type DynamicCtx = [((ExprContextId, Name), StaticCtx)]
 
 data CombinedCtx = CombinedCtx {
   static :: StaticCtx,
@@ -66,20 +66,20 @@ instance Show CombinedCtx where
   show (CombinedCtx static dynamic) =
     show static ++ "@" ++ show dynamic
 
-ctxHnd :: CombinedCtx -> ExprContextId
-ctxHnd (CombinedCtx _ ((id, _): rst)) = id
-ctxHnd (CombinedCtx _ []) = ExprContextId (-5000) (newName "hnd")
+ctxHnd :: CombinedCtx -> (ExprContextId, Name)
+ctxHnd (CombinedCtx _ (((id, nm), _): rst)) = (id, nm)
+ctxHnd (CombinedCtx _ []) = (ExprContextId (-5000) (newName "hnd"), newName "hnd")
 
 addCall :: Int -> CombinedCtx -> ExprContextId -> CombinedCtx
 addCall m (CombinedCtx (TKDelim static) dyn) call = CombinedCtx (TKDelim $ take m $ CallApp call : static) dyn
 addCall m (CombinedCtx (TKTop static) dyn) call = CombinedCtx (TKTop $ take m $ CallApp call : static) dyn
 
-addDelim :: Int -> CombinedCtx -> ExprContextId -> DynamicCtx
-addDelim d (CombinedCtx static dyn) delim = take d $ (delim, static) : dyn
+addDelim :: Int -> CombinedCtx -> ExprContextId -> Name -> DynamicCtx
+addDelim d (CombinedCtx static dyn) delim name = take d $ ((delim, name), static) : dyn
 
 delimCtx m ctx = TKDelim $ take m [CallDelim] -- take m ctx -- take m [CallDelim]
 
-newDelim d m (CombinedCtx static dyn) delim = CombinedCtx (delimCtx m static) $ take d $ (delim, static) : dyn
+newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx m static) $ take d $ ((delim, name), static) : dyn
 
 type VEnv = M.Map TName CombinedCtx
 

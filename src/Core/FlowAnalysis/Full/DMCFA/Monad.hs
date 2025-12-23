@@ -29,6 +29,8 @@ data Conf =
   CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
   | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
   | CContinue FixChange Frame VEnv CombinedCtx ExprContextId
+  | CHandleEffects FixChange VEnv CombinedCtx CombinedCtx ExprContextId Handler
+  | CHandleLocal FixChange VEnv CombinedCtx CombinedCtx ExprContextId Name Addr
   | CDone
   deriving (Eq, Ord, Show)
 
