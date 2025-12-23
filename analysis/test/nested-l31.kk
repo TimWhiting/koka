@@ -31,9 +31,9 @@ fun analyze-nondet-three-levels(): int
     val r2' : int = resume(a.snd)
     trace("r2' " ++ r2'.show) // (2+3)5, (2+4)6, (2+3)5, (2+4)6
     r1' +* r2'
-  val r1'' = choice2((1, 2)) // 1, 2, 2
+  val r1'' = choice1((1, 2)) // 1, 2, 2
   trace("r1'' = " ++ r1''.show)
-  val r2'' = choice1((3, 4)) // 3, 4, 4, 3, 4
+  val r2'' = choice2((3, 4)) // 3, 4, 4, 3, 4
   trace("r2'' = " ++ r2''.show)
   r1'' +* r2''
 fun main()
