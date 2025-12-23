@@ -7,7 +7,7 @@ import std/os/dir
 
 val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"]
 val handler-files = ["yield", "vec", "unix", "nim", "ambient"]
-val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer", "n/nim"]
+val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
             rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f)
 
@@ -27,9 +27,9 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> (4, 6)
-    DMCFA-EXP -> (4, 6)
-    KCFA -> (0, 10)
+    DMCFA -> (4, 4)
+    DMCFA-EXP -> (4, 4)
+    KCFA -> (0, 6)
 
 fun show(a: analysis)
   match a

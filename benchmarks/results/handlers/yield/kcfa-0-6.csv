@@ -1,0 +1,56 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
+kcfa,analysis/benchmarks/handlers/yield/main,0,1,1,208,78,1.0576923076923077,1.0256410256410255,1.0,1.0140845070422535,1.1285714285714286,0.00655
+kcfa,analysis/benchmarks/handlers/yield/main,0,2,1,209,79,1.0574162679425838,1.0253164556962024,1.0,1.0125,1.1168831168831168,0.008134
+kcfa,analysis/benchmarks/handlers/yield/main,0,3,1,227,86,1.0572687224669604,1.0232558139534884,1.0,1.0113636363636365,1.1097560975609757,0.008805
+kcfa,analysis/benchmarks/handlers/yield/main,0,4,1,236,90,1.0508474576271187,1.011111111111111,1.0,1.0,1.103448275862069,0.010439
+kcfa,analysis/benchmarks/handlers/yield/main,0,5,1,276,103,1.0579710144927537,1.0194174757281553,1.0,1.0101010101010102,1.065934065934066,0.011325
+kcfa,analysis/benchmarks/handlers/yield/main,0,6,1,277,104,1.0577617328519855,1.0192307692307692,1.0,1.0092592592592593,1.0510204081632653,0.011046
+parse   : .../std/core/types.kk
+parse   : .../std/core/undiv.kk
+parse   : .../std/core/unsafe.kk
+parse   : .../std/core/hnd.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/exn.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/string.kk
+parse   : .../std/core/maybe.kk
+parse   : .../std/core/maybe2.kk
+parse   : .../std/core/list.kk
+parse   : .../std/core/either.kk
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/console.kk
+parse   : .../std/core/show.kk
+parse   : .../std/core/debug.kk
+parse   : .../std/core/lazy.kk
+check   : std/core/types
+parse   : .../std/core.kk
+parse   : .../analysis/benchmarks/handlers/yield.kk
+parse   : .../std/core/delayed.kk
+check   : std/core/int
+check   : std/core/unsafe
+check   : std/core/undiv
+check   : std/core/bool
+check   : std/core/hnd
+check   : std/core/lazy
+check   : std/core/char
+check   : std/core/order
+check   : std/core/either
+check   : std/core/tuple
+check   : std/core/exn
+check   : std/core/delayed
+check   : std/core/maybe
+check   : std/core/maybe2
+check   : std/core/vector
+check   : std/core/string
+check   : std/core/list
+check   : std/core/sslice
+check   : std/core/show
+check   : std/core/console
+check   : std/core/debug
+check   : std/core
+check   : analysis/benchmarks/handlers/yield
+
