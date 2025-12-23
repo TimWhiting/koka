@@ -196,7 +196,9 @@ evalMain bc build mod m d = do
       RV (RVAddr addr) -> do
         rebind addr EndVAddr
         return ()
-      RV _ -> doBottom
+      RV _ -> 
+        trace("Expected main to evaluate to an address" ++ show res)
+        doBottom
     return ()
 
 writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()

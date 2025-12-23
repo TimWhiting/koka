@@ -114,11 +114,6 @@ extern import
 // Internal types
 // -------------------------------------------
 
-fip extern xtrace : ( message : string ) -> ()
-  c  "kk_trace"
-  cs "Primitive.Trace"
-  js "$std_core_console._trace"
-
 // The tag of a handler identifies the type at runtime (e.g. `"exn/core/std"`).
 abstract value type htag<h::(E,V)->V>
   Htag(tagname:string)
@@ -386,20 +381,17 @@ extern resume-final() : a
   js "_throw_resume_final"
 
 fun prompt( w0 : evv<e0>,  w1 : evv<e0>, ev : ev<h>, m : marker<e0,r>, ret: a -> e0 r, result : a ) : e0 r
-  // xtrace("Prompting for " ++ ev.htag.show)
   guard(w1)
   evv-set(w0)  // restore the previous evidence vector
   match yield-prompt(m)
     Pure ->
       // returning
-      // ("Returning " ++ ev.htag.show).xtrace
       ret(result)
     YieldingFinal ->
       // yielding final (exception), keep yielding
       keep-yielding-final()
     Yielding ->
       // regular yield, install a continuation
-      // ("Yielding " ++ ev.htag.show).xtrace
       yield-cont fn(cont,res)
         // we resume, continue under a fresh a prompt again
         val w0' = evv-get()  // if not using scoped resumptions, w0' may be different from w0
@@ -407,22 +399,17 @@ fun prompt( w0 : evv<e0>,  w1 : evv<e0>, ev : ev<h>, m : marker<e0,r>, ret: a ->
         evv-set(w1')
         prompt(w0',w1',ev,pretend-decreasing(m),ret,cont(res));
     Yield(clause,cont) ->
-      // ("Yielded to " ++ ev.htag.show).xtrace
       // yielded to the operation `clause` in our handler
       fun resume(r)
-        // ("Resuming from " ++ ev.htag.show).xtrace
         match(r)
           Deep(x) ->
-            // ("Deep resume from " ++ ev.htag.show).xtrace
             val w0' = evv-get()  // if not using scoped resumptions, w0' may be different from w0
             val w1' = if evv-eq(w0,w0') then w1 else evv-insert(w0',ev)
             evv-set(w1')
             prompt(w0',w1',ev,pretend-decreasing(m),ret,cont({x}))
           Shallow(x) ->
-            // ("Shallow resume from " ++ ev.htag.show).xtrace
             yield-bind( cont({x}), fn(y) ret(y) )
           Finalize(x) ->
-            // ("Finalizing from " ++ ev.htag.show).xtrace
             val w0' = evv-get()  // if not using scoped resumptions, w0' may be different from w0
             val w1' = if evv-eq(w0,w0') then w1 else evv-insert(w0',ev)
             evv-set(w1')
@@ -561,7 +548,6 @@ fun initially-prompt( init : (int) -> e (), res : a ) : e a
 abstract value struct resume-context<b,e::E,e0::E,r>( k : resume-result<b,r> -> e r )
 
 pub fun resume( r : resume-context<b,e,e0,r>, x : b ) : e r
-  // xtrace("Resuming Deep")
   (r.k)(Deep(x))
 
 pub fun resume-shallow( r : resume-context<b,e,e0,r>, x : b ) : e0 r
