@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# HLINT ignore "Use map with tuple-section" #-}
-module Core.FlowAnalysis.Full.DMCFAR.DMCFA where
+module Core.FlowAnalysis.Full.DMCFAROld.DMCFA where
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Control.Monad.Reader (lift)
@@ -10,8 +10,8 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.Literals
-import Core.FlowAnalysis.Full.DMCFAR.AbstractValue
-import Core.FlowAnalysis.Full.DMCFAR.Monad
+import Core.FlowAnalysis.Full.DMCFAROld.AbstractValue
+import Core.FlowAnalysis.Full.DMCFAROld.Monad
     ( FixAAMR,
       FixChange(N, SV, KV, MKV),
       FixInput(..),
@@ -19,7 +19,7 @@ import Core.FlowAnalysis.Full.DMCFAR.Monad
       mLimit,
       dLimit,
       startCombinedCtx )
-import Core.FlowAnalysis.Full.DMCFAR.Primitives
+import Core.FlowAnalysis.Full.DMCFAROld.Primitives
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core
 import Data.Int (Int)
