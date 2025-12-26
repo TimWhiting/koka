@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use uncurry" #-}
-module Core.FlowAnalysis.Full.DMCFAR.Primitives where
+module Core.FlowAnalysis.Full.DMCFAROld.Primitives where
 
 import Data.Maybe(fromJust)
 import Debug.Trace(trace)
@@ -10,8 +10,8 @@ import Common.Failure
 import Compile.Module
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.StaticContext
-import Core.FlowAnalysis.Full.DMCFAR.AbstractValue
-import Core.FlowAnalysis.Full.DMCFAR.Monad
+import Core.FlowAnalysis.Full.DMCFAROld.AbstractValue
+import Core.FlowAnalysis.Full.DMCFAROld.Monad
 import Core.FlowAnalysis.Full.PrimComm
 import Core.FlowAnalysis.Literals
 import Core.Core as C

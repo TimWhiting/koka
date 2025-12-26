@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE BangPatterns #-}
-module Core.FlowAnalysis.Full.DMCFAR.Syntax where
+module Core.FlowAnalysis.Full.DMCFAROld.Syntax where
 
 import Data.List (intercalate, find, minimumBy)
 import qualified Data.Map.Strict as M
@@ -23,9 +23,9 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Syntax
 import Core.FlowAnalysis.Monad
-import Core.FlowAnalysis.Full.DMCFAR.DMCFA
-import Core.FlowAnalysis.Full.DMCFAR.AbstractValue
-import Core.FlowAnalysis.Full.DMCFAR.Monad
+import Core.FlowAnalysis.Full.DMCFAROld.DMCFA
+import Core.FlowAnalysis.Full.DMCFAROld.AbstractValue
+import Core.FlowAnalysis.Full.DMCFAROld.Monad
 import Common.Failure (HasCallStack)
 import Common.NamePrim (nameMain)
 import Common.Name (Name(..))

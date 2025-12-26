@@ -185,10 +185,10 @@ getAbResult = do
           Nothing -> error ("Couldn't find " ++ show addr ++ " in cache " ++ show (filter (\k -> case k of {VStore{} -> True; _ -> False}) (M.keys cache)))
   let (finalRes, finalEnv) = getValue EndVAddr S.empty
   return (finalRes, finalEnv, cacheInfo)
-evalMain :: BuildContext
+evalMainR :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
   -> IO Bool
-evalMain bc build mod m d = do
+evalMainR bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx
     res <- doStep c

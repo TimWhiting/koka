@@ -233,11 +233,6 @@ vcontextId change =
     AChangeLit e -> litEx e
     AChangeKont _ _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
 
-envOf :: AChange -> VEnv
-envOf (AChangeClos _ env) = env
-envOf (AChangeKont _ _ env _) = env
-envOf _ = M.empty
-
 envOfClos :: AChange -> VEnv
 envOfClos res =
   case res of
