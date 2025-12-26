@@ -484,12 +484,14 @@ branchMatch branch addr =
 type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
 
 rebind :: Addr -> Addr -> FixAAMR r s e ()
-rebind oldAddr newAddr = do
-  each [do
-          v <- store oldAddr
-          extendStore newAddr v
-          doBottom ,
-        return ()]
+rebind oldAddr newAddr =
+  if oldAddr == newAddr then return ()
+  else
+    each [do
+            v <- store oldAddr
+            extendStore newAddr v
+            doBottom ,
+          return ()]
 
 patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 patMatch (PatVar name rest) addr = do

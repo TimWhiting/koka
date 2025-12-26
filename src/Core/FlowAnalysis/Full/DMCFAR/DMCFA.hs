@@ -100,7 +100,7 @@ doEval expr ctx = do
         App e _ _ -> isSimpleExpr e
         _ -> False
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -212,9 +212,9 @@ doContinue res frame ctx targetId =
                       let args = lamNames cexpr
                       m <- mLimit
                       let newCtx = addCall m ctx uApp
-                      -- let newEnv = foldl (\acc x -> M.insert x newCtx acc) args
                       -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                       zipWithM_ (\a p -> rebind p (BindingAddr newCtx a)) args arguments
+                      rebindAll (fvs body) ctx newCtx
                       eval body newCtx
                     AChangePrim name pms -> do
                       let addr = BindImplicitAddr ctx uApp
@@ -250,7 +250,7 @@ doContinue res frame ctx targetId =
                 ret <- eval next ctx
                 continue ret (FApp n rest (res ++ [addr]) eApp) ctx (contextId next)
           FLet groupIdx numGroups bindingIdx numBindings name resolved u -> do
-            -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
+            -- trace ("Applying Let " ++ show addr ++ " " ++ show (BindingAddr ctx name)) $ return ()
              -- We need to override the old name binding (in case it was in a different context)
             rebind addr (BindingAddr ctx name)
             -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
@@ -269,7 +269,7 @@ doContinue res frame ctx targetId =
                 recur ((branch, expr):branches) = do
                   match <- branchMatch branch addr
                   case match of
-                    Just bindings -> do                      
+                    Just bindings -> do
                       mapM_ (\(tname, extend) ->
                         extend (BindingAddr ctx tname)
                         ) (M.toList bindings)
@@ -293,7 +293,7 @@ doContinue res frame ctx targetId =
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx u (hLabel hnd)
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            apply kont addr newDelimCtx 
+            apply kont addr newDelimCtx
             handleEffects res newRetCtx (CombinedCtx (TKDelim startDelimCtx) newDelimCtx) u hnd
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
@@ -312,7 +312,7 @@ doApply kaddr addr dynctx = do
     KLocal knext bodyId varName varAddr ctx dCtx -> do
       let newctx = CombinedCtx ctx dynctx
       d <- dLimit
-      m <- mLimit 
+      m <- mLimit
       let newRetCtx = addCall m newctx bodyId
       let (id, nm) = ctxHnd dCtx
       let newDelimCtx = newDelim d m newRetCtx id nm
@@ -321,7 +321,7 @@ doApply kaddr addr dynctx = do
     KLink knext retCtx dCtx bodId h -> do -- TODO: Dynamic context adjustments...
       let newctx = CombinedCtx (static retCtx) dynctx
       d <- dLimit
-      m <- mLimit 
+      m <- mLimit
       let newRetCtx = addCall m newctx bodId
       let (id, nm) = ctxHnd dCtx
       let newDelimCtx = newDelim d m newRetCtx id nm
@@ -375,6 +375,7 @@ doHandlerPrimitive name n addr arguments ctx u | n == nameHandle = do
       -- trace ("OPS " ++ show henv) $ return ()
       bod <- focusBody body
       let newctx = newDelim d m ctx (contextId u) label
+      rebindAll (fvs body) ctx newctx
       res <- eval bod newctx
       let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
       handleEffects res ctx newctx (contextId bod) h
@@ -480,11 +481,18 @@ branchMatch branch addr =
 type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
 
 rebind :: Addr -> Addr -> FixAAMR r s e ()
-rebind oldAddr newAddr = do
-  each [do
-          rebind oldAddr newAddr
-          doBottom ,
-        return ()]
+rebind oldAddr newAddr =
+  if oldAddr == newAddr then return ()
+  else
+    each [do
+            v <- store oldAddr
+            extendStore newAddr v
+            doBottom ,
+          return ()]
+
+rebindAll :: S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAMR r s e ()
+rebindAll free oldCtx newCtx = do
+  mapM_ (\fv -> rebind (BindingAddr oldCtx fv) (BindingAddr newCtx fv)) free
 
 patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 patMatch (PatVar name rest) addr = do
