@@ -180,15 +180,6 @@ doEval expr venv ctx = do
           res <- eval f (limitEnv venv (fvs f)) ctx
           doContinue res (FApp (length args) argExprs [] expr venv) venv ctx (contextId f)
 
-mEnvOf :: AChange -> FixAAMR r s e VEnv
-mEnvOf (AChangeClos _ env) = return env
-mEnvOf (AChangeKont _ _ env _) = return env
-mEnvOf (AChangeObj _ _ args) = do
-  objs <- mapM (store . snd) args
-  envs <- mapM mEnvOf objs
-  return $ M.unions envs
-mEnvOf _ = return M.empty
-
 doContinue :: HasCallStack => FixChange -> Frame -> VEnv -> CombinedCtx -> ExprContextId -> FixAAMR r s e FixChange
 doContinue res frame targetEnv ctx targetId =
   -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $
@@ -384,7 +375,6 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameHandle = do
             App (TypeApp _ [_, _, _, h, _]) _ _ -> labelName h
       d <- dLimit
       m <- mLimit
-      henv <- mEnvOf hnd
       -- trace ("OPS " ++ show henv) $ return ()
       bod <- focusBody body
       -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()

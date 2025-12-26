@@ -26,11 +26,11 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
-  CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
+  CEval ExprContext CombinedCtx -- expr, env, ctx
   | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
-  | CContinue FixChange Frame VEnv CombinedCtx ExprContextId
-  | CHandleEffects FixChange VEnv CombinedCtx CombinedCtx ExprContextId Handler
-  | CHandleLocal FixChange VEnv CombinedCtx CombinedCtx ExprContextId Name Addr
+  | CContinue FixChange Frame CombinedCtx ExprContextId
+  | CHandleEffects FixChange CombinedCtx CombinedCtx ExprContextId Handler
+  | CHandleLocal FixChange CombinedCtx CombinedCtx ExprContextId Name Addr
   | CDone
   deriving (Eq, Ord, Show)
 
@@ -47,7 +47,7 @@ startCombinedCtx = do
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
   c <- startCombinedCtx
-  return $ Step (CEval ctx M.empty c)
+  return $ Step (CEval ctx c)
 
 data FixInput =
   Step Conf

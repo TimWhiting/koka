@@ -81,16 +81,14 @@ delimCtx m ctx = TKDelim $ take m [CallDelim] -- take m ctx -- take m [CallDelim
 
 newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx m static) $ take d $ ((delim, name), static) : dyn
 
-type VEnv = M.Map TName CombinedCtx
-
 data Addr =
   BindingAddr !CombinedCtx !TName
   | TopAddr !TName
   | EndVAddr
   | EndKAddr
-  | ImplicitAddr !CombinedCtx !VEnv !ExprContextId
-  | ImplicitLAddr !CombinedCtx !CombinedCtx !Name !Name !VEnv !ExprContextId
-  | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
+  | ImplicitAddr !CombinedCtx !ExprContextId
+  | ImplicitLAddr !CombinedCtx !CombinedCtx !Name !Name !ExprContextId
+  | BindImplicitAddr !CombinedCtx !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
@@ -98,37 +96,34 @@ instance Show Addr where
   show (TopAddr name) = "T@(" ++ show name ++ ")"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
-  show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr _ ctx nm _ env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitAddr ctx ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitLAddr _ ctx nm _ ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (BindImplicitAddr ctx ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
-kaddrEnv :: Addr -> VEnv 
-kaddrEnv (ImplicitAddr _ env _) = env
+kaddrCtx :: Addr -> CombinedCtx 
+kaddrCtx (ImplicitAddr ctx _) = ctx
 
 kaddrId :: Addr -> ExprContextId
-kaddrId (ImplicitAddr _ _ ctxId) = ctxId
+kaddrId (ImplicitAddr _ ctxId) = ctxId
 
 data Frame =
   FScrut {
       parent :: ExprContext,
-      branches :: [ExprContext],
-      env :: VEnv
+      branches :: [ExprContext]
     }
   | FOp {
       effName :: Name,
       totalArgs :: Int,
       leftArgs :: [ExprContext],
       resolvedArgs :: [Addr],
-      parent :: ExprContext,
-      env :: VEnv
+      parent :: ExprContext
     }
   | FApp {
       totalArgs :: Int,
       leftArgs :: [ExprContext],
       resolvedArgs :: [Addr],
-      parent :: ExprContext,
-      env :: VEnv
+      parent :: ExprContext
     }
   | FLet {
         groupIdx :: Int,
@@ -137,15 +132,13 @@ data Frame =
         numBindings :: Int,
         name :: TName,
         resolved :: [Addr],
-        parent :: ExprContext,
-        env :: VEnv
+        parent :: ExprContext
       }
   | FDollar {
       vaddr :: Addr -- Precise closure address
   }
   | FResume {
       vaddr :: Addr,
-      venv :: VEnv,
       rHnd :: Handler,
       rCtx :: ExprContextId
   }
@@ -159,17 +152,15 @@ data Frame =
 
 nextLetFrame :: Frame -> CombinedCtx -> Frame
 nextLetFrame
-  (FLet groupIdx numGroups bindingIdx numBindings name resolved parent
-        env) ctx
-  | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent env
+  (FLet groupIdx numGroups bindingIdx numBindings name resolved parent) ctx
+  | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent
   | groupIdx < numGroups - 1 =
       let C.Let dgs _ = exprOfCtx parent
           gidx = groupIdx + 1
           idx = 0
-          defs = defsOf (dgs !! gidx)
-          newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
-      FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
-  | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
+          defs = defsOf (dgs !! gidx) in
+      FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent
+  | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent))
 
 
 data Kont =
@@ -177,7 +168,6 @@ data Kont =
   | KNext { frame :: Frame, kCtx :: StaticCtx, knext:: Addr }
   | KLocal {
       lKnext :: Addr,
-      lVenv :: VEnv, 
       lBodId :: ExprContextId,
       lVarName :: Name,
       lValAddr :: Addr,
@@ -186,7 +176,6 @@ data Kont =
   }
   | KLink {
       lkNext :: Addr,
-      linkVenv :: VEnv,
       linkRetCtx :: CombinedCtx,
       linkNewCtx :: CombinedCtx,
       linkBodId :: ExprContextId,
@@ -201,13 +190,6 @@ data Handler =
 startStaticCtx = [CallTop]
 startDelimCtx = [CallDelim]
 startDynCtx = []
-startEnv = M.empty
-
-lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
-lookupEnv x env =
-  case M.lookup x env of
-    Just ctx -> Just $ BindingAddr ctx x
-    Nothing -> Nothing
 
 showStore store = show $ pretty store
 
@@ -216,12 +198,12 @@ instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
       vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
 
 data AChange =
-  AChangeClos ExprContext VEnv
+  AChangeClos ExprContext CombinedCtx
   | AChangePrim TName ExprContext
   | AChangeConstr ExprContext [Name]
   | AChangeObj ExprContext TName [(Name,Addr)]
   | AChangeLit LiteralChangeX
-  | AChangeKont Name Addr VEnv Handler -- Where to return to and where to extend the return continuation
+  | AChangeKont Name Addr CombinedCtx Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
   
 vcontextId change = 
@@ -233,16 +215,6 @@ vcontextId change =
     AChangeLit e -> litEx e
     AChangeKont _ _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
 
-envOf :: AChange -> VEnv
-envOf (AChangeClos _ env) = env
-envOf (AChangeKont _ _ env _) = env
-envOf _ = M.empty
-
-envOfClos :: AChange -> VEnv
-envOfClos res =
-  case res of
-    AChangeClos c e -> e
-
 ctxOfClos :: AChange -> ExprContext
 ctxOfClos res =
   case res of
@@ -250,7 +222,7 @@ ctxOfClos res =
 
 instance Show AChange where
   show (AChangeClos expr env) = showNoEnvClosure (expr, env)
-  show (AChangeConstr expr params) = showSimpleClosure (expr, startEnv)
+  show (AChangeConstr expr params) = showCtxExpr expr
   show (AChangeObj e name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr) = show name
   show (AChangeKont name addr env handler) = "Kont" ++ show (name, addr, env, handler)
@@ -258,11 +230,11 @@ instance Show AChange where
 
 data AbValue =
   AbValue{
-    aclos:: !(Set (ExprContext, VEnv)),
+    aclos:: !(Set (ExprContext, CombinedCtx)),
     acons:: !(Set (ExprContext, [Name])),
     aprims :: !(Set (TName, ExprContext)),
     aobjs :: !(Set (ExprContext, TName, [(Name,Addr)])),
-    akonts:: !(Set (Name, Addr, VEnv, Handler)),
+    akonts:: !(Set (Name, Addr, CombinedCtx, Handler)),
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
@@ -340,9 +312,6 @@ eachValue ab = each $ map return (changes ab)
 tnamesCons :: Int -> [TName]
 tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
 
-limitEnv :: VEnv -> S.Set TName -> VEnv
-limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
-
 showSimpleAbValue :: AbValue -> String
 showSimpleAbValue (AbValue cls cntrs prims objs konts lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
@@ -362,17 +331,17 @@ showNoEnvAbValue (AbValue cls cntrs prims objs konts lit) =
   (if litIsBottomX lit then "" else " lits: " ++ show lit)
 
 -- Basic creating of abstract values
-showSimpleClosure :: (ExprContext, VEnv) -> String
+showSimpleClosure :: (ExprContext, CombinedCtx) -> String
 showSimpleClosure (ctx, env) = showSimpleContext ctx ++ " in " ++ showSimpleEnv env
 
-showNoEnvClosure :: (ExprContext, VEnv) -> String
+showNoEnvClosure :: (ExprContext, CombinedCtx) -> String
 showNoEnvClosure (ctx, env) = showSimpleContext ctx
 
-showSimpleEnv :: VEnv -> String
+showSimpleEnv :: CombinedCtx -> String
 showSimpleEnv c =
-  "<<" ++ show (M.toList c) ++ ">>"
+  "<<" ++ show c ++ ">>"
 
-showSimpleAbValueCtx :: (VEnv, AbValue) -> String
+showSimpleAbValueCtx :: (CombinedCtx, AbValue) -> String
 showSimpleAbValueCtx (env, ab) =
   showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
 
