@@ -32,6 +32,7 @@ import Lib.PPrint (Pretty (..), hcat, text, vcat, (<.>))
 import Type.Pretty (ppType, defaultEnv)
 import Core.Core (Expr)
 import Data.Hashable
+import qualified Core.FlowAnalysis.StaticContext as SC
 
 showSimpleCtxId ctxId =
   case ctxId of
@@ -107,23 +108,28 @@ kaddrCtx (ImplicitAddr ctx _) = ctx
 kaddrId :: Addr -> ExprContextId
 kaddrId (ImplicitAddr _ ctxId) = ctxId
 
+nextAndFvs e = S.union (fvvs e) (SC.nextFvs e)
+
 data Frame =
   FScrut {
       parent :: ExprContext,
-      branches :: [ExprContext]
+      branches :: [ExprContext],
+      scrutCtx :: CombinedCtx
     }
   | FOp {
       effName :: Name,
       totalArgs :: Int,
       leftArgs :: [ExprContext],
       resolvedArgs :: [Addr],
-      parent :: ExprContext
+      parent :: ExprContext,
+      opCtx :: CombinedCtx
     }
   | FApp {
       totalArgs :: Int,
       leftArgs :: [ExprContext],
       resolvedArgs :: [Addr],
-      parent :: ExprContext
+      parent :: ExprContext,
+      appCtx :: CombinedCtx
     }
   | FLet {
         groupIdx :: Int,
@@ -132,34 +138,41 @@ data Frame =
         numBindings :: Int,
         name :: TName,
         resolved :: [Addr],
-        parent :: ExprContext
+        parent :: ExprContext,
+        letCtx :: CombinedCtx
       }
   | FDollar {
-      vaddr :: Addr -- Precise closure address
+      vaddr :: Addr -- Precise closure address,
   }
   | FResume {
       vaddr :: Addr,
       rHnd :: Handler,
-      rCtx :: ExprContextId
+      rCtx :: ExprContextId,
+      resumeCtx :: CombinedCtx
   }
   | FStore {
-      vaddr :: Addr
+      vaddr :: Addr,
+      storeCtx :: CombinedCtx
   }
-  | FMask
-  | FCall
+  | FMask {
+      maskCtx :: CombinedCtx
+  }
+  | FCall {
+      callCtx :: CombinedCtx
+  }
   deriving (Eq, Ord, Show)
 
 
 nextLetFrame :: Frame -> CombinedCtx -> Frame
 nextLetFrame
-  (FLet groupIdx numGroups bindingIdx numBindings name resolved parent) ctx
-  | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent
+  (FLet groupIdx numGroups bindingIdx numBindings name resolved parent oldCtx) ctx
+  | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent ctx
   | groupIdx < numGroups - 1 =
       let C.Let dgs _ = exprOfCtx parent
           gidx = groupIdx + 1
           idx = 0
           defs = defsOf (dgs !! gidx) in
-      FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent
+      FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent ctx
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent))
 
 

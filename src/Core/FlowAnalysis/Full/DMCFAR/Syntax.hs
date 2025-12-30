@@ -75,7 +75,7 @@ runQueryAtRange bc build mod m d doQuery =
               do
                 result <- timeout 50000000 $ do
                   tstart <- getCurrentTime
-                  -- trace (" Analyzing " ++ show name) $ return ()
+                  trace (" Analyzing " ++ show name) $ return ()
                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                   runFixCont $ do
                                     (_,ctx) <- loadModule (modName mod)
