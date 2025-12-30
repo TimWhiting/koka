@@ -37,3 +37,4 @@ scratch/
 kklib/libuv/
 libuv
 alex/
+__pycache__

@@ -117,14 +117,14 @@ doEval expr ctx = do
         Lit{} -> True
         Con{} -> True
         Lam{} -> True
-        -- TypeApp e _ -> isSimpleExpr e
-        -- TypeLam _ e -> isSimpleExpr e
+        TypeApp e _ -> isSimpleExpr e
+        TypeLam _ e -> isSimpleExpr e
         -- App e _ _ -> isSimpleExpr e
-        _ -> False
+        _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx)
+                    -- analysisLog ("Evaluating: " ++ show (ppContextPath expr) ++ "\n" ++ showCtxExpr expr ++ "\n:" ++ show ctx)
                     res <- x
-                    -- analysisLog (" Result: " ++ show res)
+                    -- analysisLog (" Result: " ++ show (ppContextPath expr) ++ "\n" ++ show res)
                     return res
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -137,13 +137,13 @@ doEval expr ctx = do
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f ctx
-      doContinue res (FMask ctx) ctx (contextId f)
+      doContinue res FMask ctx (contextId f)
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f ctx
-      doContinue res (FMask ctx) ctx (contextId f)
+      doContinue res FMask ctx (contextId f)
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -215,19 +215,12 @@ doContinue res frame ctx targetId =
       returnOp k' dval
     RV (RVAddr addr) -> do
       case frame of
-          FCall oldCtx -> do
+          f | f == FCall || f == FMask -> do -- TODO: Implement proper masking
             v <- store addr
             case v of
               AChangeClos e env -> do
                 bod <- focusBody e
-                rebindAll (nextAndFvs bod) oldCtx ctx
-                eval bod ctx
-          FMask oldCtx -> do -- TODO: Implement proper masking
-            v <- store addr
-            case v of
-              AChangeClos e env -> do
-                bod <- focusBody e
-                rebindAll (nextAndFvs bod) oldCtx ctx
+                rebindAll (fvvs e) env ctx
                 eval bod ctx
           FApp n args res eApp oldCtx -> do
             let uApp = contextId eApp
@@ -243,7 +236,7 @@ doContinue res frame ctx targetId =
                       let newCtx = addCall m ctx uApp
                       -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                       zipWithM_ (\p a -> rebind a (BindingAddr newCtx p)) params arguments
-                      rebindAll (nextAndFvs cexpr) oldCtx newCtx
+                      rebindAll (fvvs cexpr) oldCtx newCtx
                       eval body newCtx
                     AChangePrim name pms -> do
                       let addr = BindImplicitAddr ctx uApp
@@ -287,13 +280,13 @@ doContinue res frame ctx targetId =
             -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
             if isLetDefBindingFinished groupIdx bindingIdx u then do
               -- trace ("Let group finished: " ++ show groupIdx ++ " of " ++ show numGroups) $ return ()
-              body <- focusLetBod u             
-              rebindAll (nextAndFvs body) oldCtx ctx
+              body <- focusLetBod u
+              rebindAll (S.delete name $ fvvs body) oldCtx ctx
               eval body ctx
             else do
               -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
-              rebindAll (nextAndFvs next) oldCtx ctx
+              rebindAll (S.delete name $ nextFvs next) oldCtx ctx
               ret <- eval next ctx
               continue ret (nextLetFrame frame ctx) ctx (contextId next)
           FScrut parent branches oldCtx -> do
@@ -305,7 +298,7 @@ doContinue res frame ctx targetId =
                       mapM_ (\(tname, extend) ->
                         extend (BindingAddr ctx tname)
                         ) (M.toList bindings)
-                      rebindAll (nextAndFvs expr) oldCtx ctx
+                      rebindAll (S.union (fvvs expr) (nextFvs expr)) oldCtx ctx
                       eval expr ctx
                     Nothing -> recur branches
             case exprOfCtx parent of
@@ -319,7 +312,7 @@ doContinue res frame ctx targetId =
                   m <- mLimit
                   -- let newEnv = M.insert arg ctx cenv
                   rebind addr (BindingAddr ctx arg)
-                  rebindAll (nextAndFvs cexpr) cenv ctx
+                  rebindAll (fvvs cexpr) cenv ctx
                   eval body ctx
           FResume kont hnd u oldCtx -> do
             m <- mLimit
@@ -408,7 +401,9 @@ doHandlerPrimitive name n addr arguments ctx u | n == nameHandle = do
       -- trace ("OPS " ++ show henv) $ return ()
       bod <- focusBody body
       let newctx = newDelim d m ctx (contextId u) label
-      rebindAll (fvs body) ctx newctx
+      -- trace ("Handling: " ++ show label ++ " in " ++ show ctx ++ " " ++ show newctx) $ return ()
+      -- trace ("New handler context:\n" ++ showCtxExpr bod ++ "\n") $ return ()
+      rebindAll (fvvs body) bodyenv newctx
       res <- eval bod newctx
       let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
       handleEffects res ctx newctx (contextId bod) h
@@ -425,6 +420,8 @@ doHandlerPrimitive name n addr arguments ctx u | n == nameLocalVar = do
         d <- dLimit
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u) (getName varName)
+        -- trace ("New local context:\n" ++ show newctx ++ "\n") $ return ()
+        rebindAll (fvvs bod) ctx newctx
         res <- eval bod newctx
         handleLocal res ctx newctx (contextId bod) (getName varName) (head arguments)
   else do
@@ -443,15 +440,17 @@ doHandleLocal res retCtx newctx bodId varName valAddr = do
     RV (ROp knext dval) -> do
       case dval of
         DVal hName opName oExpr args oCtx | hName == varName && opName == nameLocalGet -> do
+          -- trace ("Getting local variable: " ++ show varName ++ " of " ++ show valAddr) $ return ()
           res <- apply knext valAddr (dynamic retCtx)
           handleLocal res retCtx newctx bodId varName valAddr
         DVal hName opName oExpr [newAddr] oCtx | hName == varName && opName == nameLocalSet -> do
+          -- trace ("Setting local variable: " ++ show varName ++ " to " ++ show newAddr) $ return ()
           let addr = ImplicitAddr retCtx (contextId oExpr)
           extendStore addr changeUnit
           res <- apply knext addr (dynamic retCtx)
           handleLocal res retCtx newctx bodId varName newAddr
         DVal hName opName opExpr args oCtx -> do
-          trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
+          -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
           let k' = ImplicitLAddr retCtx newctx varName opName (contextId opExpr)
           extendKStore k' (KLocal knext bodId varName valAddr (static newctx) newctx)
           returnOp k' dval
@@ -474,6 +473,7 @@ doHandleEffects res retCtx delimCtx bodId h@(Handler label hnd mbRet mbFrame) = 
             AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             opBod <- focusBody op
+            rebindAll (fvvs op) openv retCtx
             -- let newEnv = foldl (\acc x -> M.insert x retCtx acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr retCtx) params)
@@ -525,7 +525,8 @@ rebind oldAddr newAddr =
 
 rebindAll :: HasCallStack => S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAMR r s e ()
 rebindAll free oldCtx newCtx = do
-  mapM_ (\fv -> rebind (BindingAddr oldCtx fv) (BindingAddr newCtx fv)) free
+  if oldCtx == newCtx then return ()
+  else mapM_ (\fv -> rebind (BindingAddr oldCtx fv) (BindingAddr newCtx fv)) free
 
 patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 patMatch (PatVar name rest) addr = do

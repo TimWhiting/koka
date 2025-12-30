@@ -75,7 +75,7 @@ runQueryAtRange bc build mod m d doQuery =
               do
                 result <- timeout 50000000 $ do
                   tstart <- getCurrentTime
-                  trace (" Analyzing " ++ show name) $ return ()
+                  -- trace (" Analyzing " ++ show name) $ return ()
                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                   runFixCont $ do
                                     (_,ctx) <- loadModule (modName mod)
@@ -96,14 +96,14 @@ runQueryAtRange bc build mod m d doQuery =
                   let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
                   let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
                   -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-                  trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                  trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
                           show result ++ "," ++ show (length evals) ++ "," ++ show (length applies) ++ ","
                           ++ show (average evals) ++ "," ++ show (average applies) ++ ","
                           ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
                           ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return ()
                   return result
                 case result of
-                  Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,timeout") $ return ()
+                  Nothing -> trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,timeout") $ return ()
                   Just _ -> return ()
                 (total, timeouts) <- recur rest
                 case result of
