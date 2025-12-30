@@ -7,11 +7,11 @@
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
 module Core.FlowAnalysis.Full.KCFA.AbstractValue where
-import Data.Map.Strict as M hiding (foldl, map)
+import Data.Map.Strict as M hiding (take, foldl, map)
 import Common.Name
 import Type.Type
-import Data.Set hiding (foldl, map)
-import qualified Data.Set as S
+import Data.Set hiding (take, foldl, map, map)
+import qualified Data.Set as S hiding (take)
 import Core.Core as C
 import Syntax.Syntax as S hiding (Handler)
 import Data.List (elemIndex, intercalate)
@@ -39,14 +39,19 @@ showSimpleCtxId ctxId =
 
 data Call =
   CallTop
+  | CallDelim
   | CallApp ExprContextId
   deriving (Eq, Ord)
 
 instance Show Call where
   show CallTop = "top"
+  show CallDelim = "delim"
   show (CallApp ctxId) = "a" ++ showSimpleCtxId ctxId
 
 type StaticCtx = [Call]
+
+addCall :: Int -> StaticCtx -> ExprContextId -> StaticCtx
+addCall m calls call = take m $ CallApp call : calls
 
 type VEnv = M.Map TName StaticCtx
 
@@ -55,11 +60,9 @@ data Addr =
   | TopAddr !TName
   | EndVAddr
   | EndKAddr
-  | EndMKAddr
-  | ImplicitAddr StaticCtx !VEnv !ExprContextId
-  | ImplicitLAddr StaticCtx !Name !VEnv !ExprContextId
-  | ImplicitLRAddr StaticCtx !Name !VEnv !ExprContextId
-  | BindImplicitAddr StaticCtx !VEnv !ExprContextId
+  | ImplicitAddr !StaticCtx !VEnv !ExprContextId
+  | ImplicitLAddr !StaticCtx !StaticCtx !Name !Name !VEnv !ExprContextId
+  | BindImplicitAddr !StaticCtx !VEnv !ExprContextId
   | ConImplicitAddr !Name !StaticCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
@@ -67,12 +70,16 @@ instance Show Addr where
   show (TopAddr name) = "T@(" ++ show name ++ ")"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
-  show EndMKAddr = "EndMKAddr"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr ctx nm env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLRAddr ctx nm env ctxId) = "ILR@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitLAddr _ ctx nm _ env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+
+kaddrEnv :: Addr -> VEnv
+kaddrEnv (ImplicitAddr _ env _) = env
+
+kaddrId :: Addr -> ExprContextId
+kaddrId (ImplicitAddr _ _ ctxId) = ctxId
 
 data Frame =
   FScrut {
@@ -105,19 +112,10 @@ data Frame =
         parent :: ExprContext,
         env :: VEnv
       }
-  | FHLink {
-      linkEff :: Name,
-      doCtx :: ExprContextId,
-      linkKnext :: Addr,
-      linkHnd :: Handler,
-      linkHEnv :: VEnv
-  }
   | FDollar {
-      vaddr :: Addr,
-      dollarH :: ExprContextId
+      vaddr :: Addr -- Precise closure address
   }
   | FResume {
-      label :: Name,
       vaddr :: Addr,
       venv :: VEnv,
       rHnd :: Handler,
@@ -138,27 +136,39 @@ nextLetFrame
   | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent env
   | groupIdx < numGroups - 1 =
       let C.Let dgs _ = exprOfCtx parent
-          gidx = groupIdx +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             1
+          gidx = groupIdx + 1
           idx = 0
           defs = defsOf (dgs !! gidx)
           newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
 
+
 data Kont =
   KEnd
-  | KNext {frame :: Frame, knext:: Addr}
+  | KNext { frame :: Frame, kCtx :: StaticCtx, knext:: Addr }
+  | KLocal {
+      lKnext :: Addr,
+      lVenv :: VEnv,
+      lBodId :: ExprContextId,
+      lVarName :: Name,
+      lValAddr :: Addr,
+      lCtx :: StaticCtx
+  }
+  | KLink {
+      lkNext :: Addr,
+      linkVenv :: VEnv,
+      linkBodId :: ExprContextId,
+      linkHnd :: Handler,
+      linkRetCtx :: StaticCtx
+  }
   deriving (Eq, Ord, Show)
 
 data Handler =
-  Handler { ops :: Addr, ret :: Maybe ExprContext }
+  Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
   deriving (Eq, Ord, Show)
 
-data MKont =
-  MKEnd
-  | MKHandle { eff :: Name, mkKNext:: Addr, mknext:: Addr, hnd :: Handler, henv :: VEnv }
-  deriving (Eq, Ord, Show)
-
+startStaticCtx = [CallTop]
 startEnv = M.empty
 
 lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
@@ -181,20 +191,15 @@ data AChange =
   | AChangeLit LiteralChangeX
   | AChangeKont Name Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
-  
-vcontextId change = 
-  case change of 
-    AChangeClos e _ -> contextId e 
+
+vcontextId change =
+  case change of
+    AChangeClos e _ -> contextId e
     AChangePrim _ e -> contextId e
     AChangeConstr e _ -> contextId e
     AChangeObj e _ _ -> contextId e
     AChangeLit e -> litEx e
-    AChangeKont _ _ _ h@(Handler _ e) -> contextId $ fromJust e
-
-envOf :: AChange -> VEnv
-envOf (AChangeClos _ env) = env
-envOf (AChangeKont _ _ env _) = env
-envOf _ = M.empty
+    AChangeKont _ _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
 
 envOfClos :: AChange -> VEnv
 envOfClos res =
@@ -282,6 +287,7 @@ instance Show AbValue where
   show (AbValue cls cntrs prims objs konts lit) =
     (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
     (if S.null cntrs then "" else " constrs: " ++ show (map show (S.toList cntrs))) ++
+    (if S.null objs then "" else " objs: " ++ show (map show (S.toList objs))) ++
     (if S.null prims then "" else " prims: " ++ show (map show (S.toList prims))) ++
     (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
     (" lit: " ++ show lit)
@@ -353,7 +359,7 @@ addChange ab@(AbValue cls cs prims objs konts lit) change =
   case change of
     AChangeClos lam env -> (change, AbValue (S.insert (lam,env) cls) cs prims objs konts lit)
     AChangePrim name expr -> (change, AbValue cls cs (S.insert (name, expr) prims) objs konts lit)
-    AChangeObj e name addrs -> (change, AbValue cls cs prims (S.insert (e, name, addrs) objs) konts lit)
+    AChangeObj exp name addrs -> (change, AbValue cls cs prims (S.insert (exp, name, addrs) objs) konts lit)
     AChangeConstr c params -> (change, AbValue cls (S.insert (c,params) cs) prims objs konts lit)
     AChangeKont name addr env handler -> (change, AbValue cls cs prims objs (S.insert (name, addr, env, handler) konts) lit)
     AChangeLit l ->

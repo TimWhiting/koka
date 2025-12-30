@@ -18,54 +18,60 @@ import Common.NamePrim (nameOpen, nameEffectOpen)
 import Data.Maybe (fromJust)
 import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
-import Type.Type (splitFunType, typeAny, Effect)
+import Type.Type (splitFunType, typeAny, Effect, typeUnit)
 import Control.Monad (foldM)
 import GHC.Base (when, VecCount)
 import Core.CoreVar (HasExpVar(fv), bv)
 import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
-data Conf = 
-  CEval ExprContext VEnv Addr Addr StaticCtx
-  | CApply Addr Addr Addr StaticCtx
-  | CUnwind Name Name ExprContext Addr Addr [Addr] StaticCtx
-  | CUnwindLookup TName Addr Addr ExprContext StaticCtx
-  | CUnwindSet TName Addr Addr Addr Addr ExprContext StaticCtx
+data Conf =
+  CEval ExprContext VEnv StaticCtx -- expr, env, ctx
+  | CApply Addr Addr StaticCtx -- kont, vaddr, dynctx
+  | CContinue FixChange Frame VEnv StaticCtx ExprContextId
+  | CHandleEffects FixChange VEnv ExprContextId Handler StaticCtx 
+  | CHandleLocal FixChange VEnv ExprContextId Name Addr StaticCtx 
   | CDone
   deriving (Eq, Ord, Show)
 
-kLimit :: FixAAMR r s e Int
-kLimit = contextLength <$> getEnv
-
-startStaticCtx = do 
-  k <- kLimit 
-  return (take k [CallTop])
+mLimit :: FixAAMR r s e Int
+mLimit = contextLength <$> getEnv
 
 inject :: ExprContext -> FixAAMR r s e FixInput
-inject ctx = do 
-  c <- startStaticCtx
-  return $ Step (CEval ctx M.empty EndKAddr EndMKAddr c)
+inject ctx = do
+  return $ Step (CEval ctx M.empty startStaticCtx)
 
 data FixInput =
   Step Conf
   | VStore Addr
   | KStore Addr
-  | MKStore Addr
+  deriving (Eq, Ord, Show)
+
+data DelimitedVal = 
+  DVal {
+      dLabel :: Name,
+      dOpName :: Name,
+      dExpr :: ExprContext,
+      dArgs :: [Addr],
+      dCtx :: StaticCtx
+  } deriving (Eq, Ord, Show)
+
+data RValue = 
+  RVAddr Addr 
+  | ROp Addr DelimitedVal
   deriving (Eq, Ord, Show)
 
 data FixOutput =
-  Next (S.Set Conf)
+  RValue (S.Set RValue)
   | SValue AbValue
   | KValue (S.Set Kont)
-  | MKValue (S.Set MKont)
   | Bottom
   deriving (Eq, Ord, Show)
 
 data FixChange =
-  N Conf
+  RV RValue
   | SV AChange
   | KV Kont
-  | MKV MKont 
   | ChangeBottom
   deriving (Eq, Ord, Show)
 
@@ -82,23 +88,19 @@ instance Lattice FixOutput FixChange where
   isBottom Bottom = True
   isBottom _ = False
   insert ChangeBottom a = (ChangeBottom, a)
-  insert (N conf) Bottom = (N conf, Next $ S.singleton conf)
-  insert (N conf) (Next confs) = (N conf, Next $ S.insert conf confs)
+  insert (RV v) Bottom = (RV v, RValue (S.singleton v))
+  insert (RV v) (RValue vs) = (RV v, RValue (S.insert v vs))
   insert (SV change) Bottom = mapChange (addChange emptyAbValue change) SV SValue
-  insert (SV change) (SValue av) = mapChange (addChange av change) SV SValue
+  insert (SV change) (SValue sv) = mapChange (addChange sv change) SV SValue
   insert (KV kont) Bottom = (KV kont, KValue $ S.singleton kont)
   insert (KV kont) (KValue konts) = (KV kont, KValue $ S.insert kont konts)
-  insert (MKV mKont) Bottom = (MKV mKont, MKValue $ S.singleton mKont)
-  insert (MKV mKont) (MKValue mKonts) = (MKV mKont, MKValue $ S.insert mKont mKonts)
   insert v a = error ("insert: unexpected case " ++ show v ++ " " ++ show a)
   lte ChangeBottom _ = True
   lte _ Bottom = False
-  lte (N conf) (Next confs) = S.member conf confs
-  lte (SV change) (SValue av) = change `changeIn` av
+  lte (RV v) (RValue vs) = S.member v vs
+  lte (SV change) (SValue sv) = change `changeIn` sv
   lte (KV kont) (KValue konts) = S.member kont konts
-  lte (MKV mKont) (MKValue mKonts) = S.member mKont mKonts
   elems (SValue a) = map SV $ changes a
   elems (KValue ks) = map KV $ S.toList ks
-  elems (MKValue mks) = map MKV $ S.toList mks
-  elems (Next confs) = map N $ S.toList confs
+  elems (RValue rs) = map RV $ S.toList rs
   elems Bottom = []

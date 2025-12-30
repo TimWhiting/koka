@@ -89,11 +89,6 @@ library
       Core.FlowAnalysis.Full.DMCFAR.Monad
       Core.FlowAnalysis.Full.DMCFAR.Primitives
       Core.FlowAnalysis.Full.DMCFAR.Syntax
-      Core.FlowAnalysis.Full.DMCFAROld.AbstractValue
-      Core.FlowAnalysis.Full.DMCFAROld.DMCFA
-      Core.FlowAnalysis.Full.DMCFAROld.Monad
-      Core.FlowAnalysis.Full.DMCFAROld.Primitives
-      Core.FlowAnalysis.Full.DMCFAROld.Syntax
       Core.FlowAnalysis.Full.KCFA.AbstractValue
       Core.FlowAnalysis.Full.KCFA.KCFA
       Core.FlowAnalysis.Full.KCFA.Monad
