@@ -108,6 +108,7 @@ kaddrCtx (ImplicitAddr ctx _) = ctx
 kaddrId :: Addr -> ExprContextId
 kaddrId (ImplicitAddr _ ctxId) = ctxId
 
+nextAndFvs :: HasCallStack => ExprContext -> Set TName
 nextAndFvs e = S.union (fvvs e) (SC.nextFvs e)
 
 data Frame =
@@ -154,12 +155,8 @@ data Frame =
       vaddr :: Addr,
       storeCtx :: CombinedCtx
   }
-  | FMask {
-      maskCtx :: CombinedCtx
-  }
-  | FCall {
-      callCtx :: CombinedCtx
-  }
+  | FMask 
+  | FCall
   deriving (Eq, Ord, Show)
 
 

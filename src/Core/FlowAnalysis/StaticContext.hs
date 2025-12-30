@@ -90,28 +90,57 @@ letBindingName groupIdx bindingIdx parent =
   let bind = letDefBinding groupIdx bindingIdx parent in
   defTName bind
 
-nextFvs :: ExprContext -> S.Set TName
+parentLetExpr :: ExprContext -> ExprContext
+parentLetExpr expr =
+  case maybeExprOfCtx expr of
+    Just (C.Let _ _) -> expr
+    _ -> case contextOf expr of
+      Just c -> parentLetExpr c
+      Nothing -> error "No parent let expression"
+
+nextFvs :: HasCallStack => ExprContext -> S.Set TName
 nextFvs expr =
-  let andParent fvs = S.union fvs $ maybe S.empty nextFvs (contextOf expr)
+  let andParent fvs =
+        let res = maybe S.empty nextFvs (contextOf expr)
+        -- in trace ("nextFvs of " ++ showSimpleContext expr ++ " = " ++ show (S.toList fvs) ++ " with parent " ++ show (S.toList res)) $
+           in S.union fvs res
       bound = bvs False (fromJust $ contextOf expr)
       parentExpr = exprOfCtx <$> contextOf expr
-  in case expr of
-    ExprPrim _ e -> andParent (fvvs expr)
-    ExprCBasic _ _ e -> andParent (fvvs expr)
-    CaseCBranch{} -> andParent S.empty
-    CaseCScrutinee{} -> andParent S.empty
-    AppCParam _ _ param app -> andParent $ S.intersection bound $ S.unions (map fv $ drop param $ args (fromJust parentExpr))
-    AppCLambda _ _ f -> andParent $ S.intersection bound $ S.unions (map fv $ args (fromJust parentExpr))
-    LetCBody{} -> andParent S.empty
-    LetCDefGroup _ _ _ i _ -> andParent $ S.intersection bound $ S.unions (map dgFvs $ drop i $ letDgs (fromJust parentExpr))
-    LetCDefNonRec{} -> andParent S.empty
-    LetCDefRec{} -> andParent S.empty
-    _ -> S.empty
+      parentLetExprFvs i =
+         let letCtx = parentLetExpr expr
+          in case maybeExprOfCtx letCtx of
+                Just (C.Let dgs e) ->
+                  let parentFvs = nextFvs letCtx in
+                    let letFvs = S.unions $ fv e:map dgFvs (drop i dgs)
+                      in -- trace ("LetExprFvs " ++ showSimpleContext letCtx ++ " i=" ++ show i ++
+                        -- " parentFvs=" ++ show (S.toList parentFvs) ++
+                        -- " letFvs=" ++ show (S.toList letFvs)) 
+                        --  $
+                         S.union parentFvs $ S.intersection bound letFvs
+  in let result = case expr of
+          ExprPrim _ e -> andParent (fvvs expr)
+          ExprCBasic _ _ e -> andParent (fvvs expr)
+          CaseCBranch{} -> andParent S.empty
+          CaseCScrutinee{} -> andParent S.empty
+          AppCParam _ _ param app -> andParent $ S.intersection bound $ S.unions (map fv $ drop param $ args (fromJust parentExpr))
+          AppCLambda _ _ f -> andParent $ S.intersection bound $ S.unions (map fv $ args (fromJust parentExpr))
+          LetCBody{} -> andParent S.empty
+          LetCDefGroup _ _ _ i g -> parentLetExprFvs i
+          LetCDefNonRec{} -> andParent S.empty
+          LetCDefRec{} -> andParent S.empty
+          _ -> S.empty
+      in -- trace ("Ctx:\n" ++ show (ppContextPath expr) ++
+            -- "\n" ++ maybe "" showSimpleExpr (maybeExprOfCtx expr) ++
+            -- "\n" ++ show expr ++
+            -- "\n" ++ show (S.toList bound) ++
+            -- "\n" ++ show (S.toList (fvs expr)) ++
+            -- "\n" ++ show (S.toList result)) $
+       result
 
 args expr =
   case expr of
     C.App _ ags _ -> ags
-letDgs expr = 
+letDgs expr =
   case expr of
     C.Let defs _ -> defs
 dgFvs (C.DefNonRec def) = fv def
@@ -162,9 +191,10 @@ localFv expr
 fvs :: HasCallStack => ExprContext -> S.Set TName
 fvs ctx =
   case maybeExprOfCtx ctx of
-    Just expr -> 
-      -- trace ("fvs of " ++ showSimpleExpr expr ++ " in " ++ showSimpleContext ctx ++ " = bvs " ++ show (bvs True ctx) ++ " fvs " ++ show (fv expr)) $
+    Just expr ->
+      trace ("fvs of " ++ showSimpleExpr expr ++ " in " ++ show (ppContextPath ctx) ++ " = bvs " ++ show (bvs True ctx) ++ " fvs " ++ show (fv expr)) $
       S.intersection (bvs True ctx) (fv expr)
+    Nothing -> S.empty
 
 fvvs :: HasCallStack => ExprContext -> S.Set TName
 fvvs ctx =
@@ -176,12 +206,12 @@ bvs includeVars ctx =
   -- trace (showSimpleContext ctx ++ " bvs includeVars=" ++ show includeVars) $
   let andParent bv = S.union bv $ maybe S.empty (bvs includeVars) (contextOf ctx)
       grandparentExpr = maybeExprOfCtx =<< (contextOf =<< contextOf ctx)
-  in case ctx of 
+  in case ctx of
     ModuleC{} -> S.empty
     DefCRec{} -> S.empty
     DefCNonRec{} -> S.empty
     DefCGroup _ c _ dg -> S.empty
-    LamCBody _ _ names _ -> 
+    LamCBody _ _ names _ ->
       if includeVars then andParent $ S.fromList names
       else case grandparentExpr of
         (Just (C.App (C.TypeApp (C.Var name _) _) _ _)) | nameLocalVar == C.getName name -> andParent S.empty
@@ -194,7 +224,7 @@ bvs includeVars ctx =
     AppCParam{} -> andParent S.empty
     CaseCScrutinee{} -> andParent S.empty
     CaseCBranch _ _ vars _ _ -> andParent $ S.fromList vars
-    ExprCBasic{} -> andParent S.empty 
+    ExprCBasic{} -> andParent S.empty
     ExprPrim{} -> S.empty
 
 eConName :: ExprContext -> Maybe TName
@@ -310,8 +340,8 @@ nextLetDefIndex :: Int -> Int -> ExprContext -> (Int,Int)
 nextLetDefIndex !defGroupIndex !bindingIndex e = do
   case exprOfCtx e of
     C.Let defs _ ->
-      let numDefGroups = length defs in  
-      let dfs = defs !! defGroupIndex in 
+      let numDefGroups = length defs in
+      let dfs = defs !! defGroupIndex in
       let numBindings = length (defsOf dfs) in
       if bindingIndex + 1 < numBindings then
         (defGroupIndex, bindingIndex + 1)
