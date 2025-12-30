@@ -65,7 +65,7 @@ import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
-import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainKCFA)
+import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainK)
 import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
 import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
@@ -389,9 +389,9 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                         return ()
                     else if kcfa flags then do
                       sweepDM (mSensitivity flags) 0 (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMainKCFA bc (\bc mn ->
+                        liftIO $ evalMainK bc (\bc mn ->
                             runBuild term flags $ buildcTypeCheck [mn] bc
-                          ) mod (mSensitivity flags) (dSensitivity flags)
+                          ) mod (mSensitivity flags)
                         return ()
                     else do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
