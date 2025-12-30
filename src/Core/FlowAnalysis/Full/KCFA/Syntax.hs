@@ -193,11 +193,11 @@ evalMainK bc build mod m = do
     c <- inject ctx
     res <- doStep c
     case res of 
-      RV (RVAddr addr) -> do
+      RV (RVAddr addr, _) -> do
         rebind addr EndVAddr
         return ()
       RV _ -> 
-        trace("Expected main to evaluate to an address" ++ show res)
+        -- trace("Expected main to evaluate to an address" ++ show res)
         doBottom
     return ()
 

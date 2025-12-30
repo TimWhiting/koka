@@ -1,0 +1,8 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
+kcfa,analysis/benchmarks/handlers/vec/main,0,1,0,279,12,1.0,1.0833333333333333,1.0909090909090908,1.0,0.020920738
+kcfa,analysis/benchmarks/handlers/vec/main,0,2,0,279,12,1.0,1.0833333333333333,1.0909090909090908,1.0,0.014208892
+kcfa,analysis/benchmarks/handlers/vec/main,0,3,0,279,12,1.0,1.0833333333333333,1.0909090909090908,1.0,0.189448967
+kcfa,analysis/benchmarks/handlers/vec/main,0,4,0,279,12,1.0,1.0833333333333333,1.0909090909090908,1.0,0.015729021
+kcfa,analysis/benchmarks/handlers/vec/main,0,5,0,279,12,1.0,1.0833333333333333,1.0909090909090908,1.0,0.010739205
+kcfa,analysis/benchmarks/handlers/vec/main,0,6,0,279,12,1.0,1.0833333333333333,1.0909090909090908,1.0,0.009846226
+

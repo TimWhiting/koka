@@ -61,7 +61,7 @@ data Addr =
   | EndVAddr
   | EndKAddr
   | ImplicitAddr !StaticCtx !VEnv !ExprContextId
-  | ImplicitLAddr !StaticCtx !StaticCtx !Name !Name !VEnv !ExprContextId
+  | ImplicitLAddr !StaticCtx !Name !Name !VEnv !ExprContextId
   | BindImplicitAddr !StaticCtx !VEnv !ExprContextId
   | ConImplicitAddr !Name !StaticCtx !ExprContextId
   deriving (Eq, Ord)
@@ -71,7 +71,7 @@ instance Show Addr where
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr _ ctx nm _ env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ImplicitLAddr ctx nm _ env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
@@ -146,21 +146,19 @@ nextLetFrame
 
 data Kont =
   KEnd
-  | KNext { frame :: Frame, kCtx :: StaticCtx, knext:: Addr }
+  | KNext { frame :: Frame, knext:: Addr }
   | KLocal {
       lKnext :: Addr,
       lVenv :: VEnv,
       lBodId :: ExprContextId,
       lVarName :: Name,
-      lValAddr :: Addr,
-      lCtx :: StaticCtx
+      lValAddr :: Addr
   }
   | KLink {
       lkNext :: Addr,
       linkVenv :: VEnv,
       linkBodId :: ExprContextId,
-      linkHnd :: Handler,
-      linkRetCtx :: StaticCtx
+      linkHnd :: Handler
   }
   deriving (Eq, Ord, Show)
 
