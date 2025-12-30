@@ -28,9 +28,9 @@ import Type.Pretty (defaultEnv, ppType)
 data Conf =
   CEval ExprContext VEnv StaticCtx -- expr, env, ctx
   | CApply Addr Addr StaticCtx -- kont, vaddr, dynctx
-  | CContinue FixChange Frame VEnv StaticCtx ExprContextId
-  | CHandleEffects FixChange VEnv ExprContextId Handler StaticCtx 
-  | CHandleLocal FixChange VEnv ExprContextId Name Addr StaticCtx 
+  | CContinue RValue Frame VEnv StaticCtx ExprContextId
+  | CHandleEffects RValue VEnv ExprContextId Handler StaticCtx 
+  | CHandleLocal RValue VEnv ExprContextId Name Addr StaticCtx 
   | CDone
   deriving (Eq, Ord, Show)
 
@@ -52,8 +52,7 @@ data DelimitedVal =
       dLabel :: Name,
       dOpName :: Name,
       dExpr :: ExprContext,
-      dArgs :: [Addr],
-      dCtx :: StaticCtx
+      dArgs :: [Addr]
   } deriving (Eq, Ord, Show)
 
 data RValue = 
@@ -62,14 +61,14 @@ data RValue =
   deriving (Eq, Ord, Show)
 
 data FixOutput =
-  RValue (S.Set RValue)
+  RValue (S.Set (RValue, StaticCtx))
   | SValue AbValue
   | KValue (S.Set Kont)
   | Bottom
   deriving (Eq, Ord, Show)
 
 data FixChange =
-  RV RValue
+  RV (RValue, StaticCtx)
   | SV AChange
   | KV Kont
   | ChangeBottom

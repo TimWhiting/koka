@@ -320,7 +320,7 @@ doContinue res frame ctx targetId =
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx u (hLabel hnd)
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            apply kont addr newDelimCtx
+            doApply kont addr newDelimCtx
             handleEffects res u hnd newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
@@ -465,8 +465,6 @@ doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
         case lookup opName ops' of
           Nothing -> error ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
           Just op -> do
-            o <- store op
-            -- trace ("Unwinding operation: " ++ show opName ++ " with " ++ show o) $ return ()
             AChangeObj _ opConName [opAddr] <- store op
             AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
