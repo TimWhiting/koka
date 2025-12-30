@@ -181,16 +181,14 @@ data Kont =
       lBodId :: ExprContextId,
       lVarName :: Name,
       lValAddr :: Addr,
-      lCtx :: StaticCtx,
-      lDelimCtx :: CombinedCtx
+      lCtx :: CombinedCtx
   }
   | KLink {
       lkNext :: Addr,
       linkVenv :: VEnv,
-      linkRetCtx :: CombinedCtx,
-      linkNewCtx :: CombinedCtx,
       linkBodId :: ExprContextId,
-      linkHnd :: Handler
+      linkHnd :: Handler,
+      linkRetCtx :: CombinedCtx
   }
   deriving (Eq, Ord, Show)
 

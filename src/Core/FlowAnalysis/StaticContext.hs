@@ -192,7 +192,7 @@ fvs :: HasCallStack => ExprContext -> S.Set TName
 fvs ctx =
   case maybeExprOfCtx ctx of
     Just expr ->
-      trace ("fvs of " ++ showSimpleExpr expr ++ " in " ++ show (ppContextPath ctx) ++ " = bvs " ++ show (bvs True ctx) ++ " fvs " ++ show (fv expr)) $
+      -- trace ("fvs of " ++ showSimpleExpr expr ++ " in " ++ show (ppContextPath ctx) ++ " = bvs " ++ show (bvs True ctx) ++ " fvs " ++ show (fv expr)) $
       S.intersection (bvs True ctx) (fv expr)
     Nothing -> S.empty
 

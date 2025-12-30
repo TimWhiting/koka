@@ -12,8 +12,8 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.Full.KCFA.AbstractValue
 import Core.FlowAnalysis.Full.KCFA.Monad
-import Core.FlowAnalysis.Full.PrimComm
 import Core.FlowAnalysis.Literals
+import Core.FlowAnalysis.Full.PrimComm
 import Core.Core as C
 import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
 import Data.List (findIndex)
@@ -36,6 +36,8 @@ trueCon ::  AChange
 trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
 falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
+emptyCtx :: AChange 
+emptyCtx = AChangeConstr (ExprPrim (ExprContextId (-2001) (newName "emptyCtx")) C.exprUnit) []
 hole :: AChange 
 hole = AChangeConstr (ExprPrim (ExprContextId (-2000) (newName "hole")) C.exprUnit) []
 toChange :: Bool  -> AChange
@@ -99,6 +101,7 @@ opCmpFloat f [p1, p2] = do
       -- trace "opCmpFloat: top"
       anyBool
     _ -> 
+      -- trace ("opCmpFloat: bottom " ++ show (p1, p2)) $ 
       doBottom
 
 opCmpString :: (String -> String -> Bool) -> [AChange] -> FixAAMR x s e AChange
@@ -112,8 +115,10 @@ opCmpString f [p1, p2] = do
 
 doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
 doPrimitive nm achanges = do
-  -- trace (" Primitive " ++ show nm ++ " " ++ show achanges) $ return ()
+  -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameCCtxEmpty then 
+    return emptyCtx
+  else if nm == nameCCtxHoleCreate then 
     return hole
   else if nm == nameIntEq || nm == nameInt32Eq then
     opCmpInt (==) achanges
@@ -213,19 +218,19 @@ doPrimitive nm achanges = do
       [AChangeLit (LiteralChangeCharX _)] ->
         return $ AChangeLit (LiteralChangeStringX LChangeTop)
       _ -> doBottom
-  else if nm == nameCoreStringToUpper then
-    case achanges of
-      [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] ->
-        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, map toUpper s)))
-      [AChangeLit (LiteralChangeStringX _)] ->
-        return $ AChangeLit (LiteralChangeStringX LChangeTop)
-      _ -> doBottom
   else if nm == nameCoreStringCount then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] ->
         return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e2, fromIntegral (length s))))
       [AChangeLit (LiteralChangeStringX _)] ->
         return $ AChangeLit (LiteralChangeIntX LChangeTop)
+      _ -> doBottom
+  else if nm == nameCoreStringToUpper then
+    case achanges of
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] ->
+        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, map toUpper s)))
+      [AChangeLit (LiteralChangeStringX _)] ->
+        return $ AChangeLit (LiteralChangeStringX LChangeTop)
       _ -> doBottom
   else if nm == nameCoreTypesExternAppend then
     case achanges of
