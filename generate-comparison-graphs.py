@@ -152,7 +152,7 @@ def plot_d_comparison(benchmark: str, analysis: Dict):
     colors = {'dmcfa': '#2E86AB', 'dmcfae': '#A23B72'}
     
     for analysis_key in DMCFA_ANALYSES:
-        if analysis_key in d_trends:
+        if analysis_key in d_trends and d_trends[analysis_key]:
             d_vals, times = zip(*d_trends[analysis_key])
             ax.plot(d_vals, times, marker='o', label=analysis_key.upper(),
                    color=colors.get(analysis_key, '#000000'), linewidth=2, markersize=8)
@@ -292,7 +292,7 @@ def plot_m_k_comparison(benchmark: str, analysis: Dict):
     
     # Plot DMCFA analyses with M(K)
     for analysis_key in DMCFA_ANALYSES:
-        if analysis_key in m_trends:
+        if analysis_key in m_trends and m_trends[analysis_key]:
             m_vals, times = zip(*m_trends[analysis_key])
             ax.plot(m_vals, times, marker='o', label=f'{analysis_key.upper()} M(K)',
                    color=colors.get(analysis_key, '#000000'), linewidth=2, markersize=8)
@@ -301,9 +301,11 @@ def plot_m_k_comparison(benchmark: str, analysis: Dict):
     if 'kcfa' in analysis:
         kcfa_data = analysis['kcfa']
         if 'm_trends' in kcfa_data:
-            k_vals, times = zip(*extract_m_trends({'kcfa': kcfa_data})['kcfa'])
-            ax.plot(k_vals, times, marker='s', label='KCFA K',
-                   color=colors['kcfa'], linewidth=2, markersize=8, linestyle='--')
+            k_trends = extract_m_trends({'kcfa': kcfa_data})['kcfa']
+            if k_trends:
+                k_vals, times = zip(*k_trends)
+                ax.plot(k_vals, times, marker='s', label='KCFA K',
+                       color=colors['kcfa'], linewidth=2, markersize=8, linestyle='--')
     
     ax.set_xlabel('M(K) / K (Context Sensitivity)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Time (seconds)', fontsize=12, fontweight='bold')
@@ -333,7 +335,7 @@ def plot_mk_overlay_dmcfa_kcfa(benchmark: str, analysis: Dict):
     dmcfa_data = analysis['dmcfa']
     if 'm_trends' in dmcfa_data:
         m_trends = extract_m_trends({'dmcfa': dmcfa_data})
-        if 'dmcfa' in m_trends:
+        if 'dmcfa' in m_trends and m_trends['dmcfa']:
             m_vals, times = zip(*m_trends['dmcfa'])
             ax.plot(m_vals, times, marker='o', label='DMCFA M(K)',
                    color=colors['dmcfa'], linewidth=2.5, markersize=8)
@@ -342,7 +344,7 @@ def plot_mk_overlay_dmcfa_kcfa(benchmark: str, analysis: Dict):
     kcfa_data = analysis['kcfa']
     if 'm_trends' in kcfa_data:
         k_trends = extract_m_trends({'kcfa': kcfa_data})
-        if 'kcfa' in k_trends:
+        if 'kcfa' in k_trends and k_trends['kcfa']:
             k_vals, times = zip(*k_trends['kcfa'])
             ax.plot(k_vals, times, marker='s', label='KCFA K',
                    color=colors['kcfa'], linewidth=2.5, markersize=8, linestyle='--')
@@ -375,9 +377,10 @@ def plot_precision_vs_cost(benchmark: str, analysis: Dict):
     colors = {'dmcfa': '#2E86AB', 'dmcfae': '#A23B72', 'kcfa': '#F18F01'}
     
     for analysis_key in sorted(m_trends.keys()):
-        m_vals, times = zip(*m_trends[analysis_key])
-        ax.plot(m_vals, times, marker='o', label=analysis_key.upper(),
-               color=colors.get(analysis_key, '#000000'), linewidth=2.5, markersize=9)
+        if m_trends[analysis_key]:
+            m_vals, times = zip(*m_trends[analysis_key])
+            ax.plot(m_vals, times, marker='o', label=analysis_key.upper(),
+                   color=colors.get(analysis_key, '#000000'), linewidth=2.5, markersize=9)
     
     ax.set_xlabel('Context Sensitivity Parameter (M(K) or K)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Execution Time (seconds)', fontsize=12, fontweight='bold')
@@ -884,14 +887,14 @@ def main():
         print(f"\n  {set_name}:")
         # Create aggregate set graphs
         plot_aggregate_d_cost()
-        plot_aggregate_mk_cost()
+        plot_aggregate_mk_cost_for_set(benchmarks, set_name)
         plot_aggregate_mk_by_d()
         plot_aggregate_mk_overlay_dmcfa_kcfa()
     
     # Generate all-aggregate (all benchmarks together)
     print(f"\n  all:")
     plot_aggregate_d_cost()
-    plot_aggregate_mk_cost()
+    plot_aggregate_mk_cost_for_set(SUITE_FILES, "all")
     plot_aggregate_mk_by_d()
     plot_aggregate_mk_overlay_dmcfa_kcfa()
     
