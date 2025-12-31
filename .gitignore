@@ -38,3 +38,4 @@ kklib/libuv/
 libuv
 alex/
 __pycache__
+.venv

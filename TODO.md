@@ -1,0 +1,3 @@
+- [ ] Figure out vec loss of precision (after not adding newCtx - threading through handler?)
+- [ ] Figure out state issue with KCFA - maybe similar to above
+- [ ] Redo analysis....
