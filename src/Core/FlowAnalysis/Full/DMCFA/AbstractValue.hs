@@ -85,7 +85,6 @@ type VEnv = M.Map TName CombinedCtx
 
 data Addr =
   BindingAddr !CombinedCtx !TName
-  | TopAddr !TName
   | EndVAddr
   | EndKAddr
   | ImplicitAddr !CombinedCtx !VEnv !ExprContextId
@@ -95,7 +94,6 @@ data Addr =
   deriving (Eq, Ord)
 instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
-  show (TopAddr name) = "T@(" ++ show name ++ ")"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
   show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
