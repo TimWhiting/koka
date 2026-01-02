@@ -31,7 +31,6 @@ data Conf =
   | CContinue RValue Frame VEnv StaticCtx ExprContextId
   | CHandleEffects RValue VEnv ExprContextId Handler StaticCtx 
   | CHandleLocal RValue VEnv ExprContextId Name Addr StaticCtx 
-  | CDone
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int

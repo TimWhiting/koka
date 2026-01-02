@@ -31,7 +31,6 @@ data Conf =
   | CContinue FixChange Frame VEnv CombinedCtx ExprContextId
   | CHandleEffects FixChange VEnv ExprContextId Handler CombinedCtx
   | CHandleLocal FixChange VEnv ExprContextId Name Addr CombinedCtx
-  | CDone
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int
