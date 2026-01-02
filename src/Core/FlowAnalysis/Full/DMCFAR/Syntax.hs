@@ -159,17 +159,27 @@ getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, CacheInfo)
 getAbResult = do
   cache <- getCache
   let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
-                        VStore (BindingAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
-                        VStore (BindImplicitAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
-                        VStore (TopAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
-                        KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                        KStore ImplicitAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
-                        KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
-                        Step (CEval{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                        Step (CContinue{}) -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                        Step (CApply{}) -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
-                                                     Bottom -> acc
+                        KStore ImplicitLAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                        Step CEval{} -> case v of 
+                            RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                            Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CContinue{} -> case v of 
+                            RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                            Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CApply{} -> case v of 
+                            RValue vals -> (evals, length vals : applies, ksizes, ssizes)
+                            Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CHandleLocal{} -> case v of 
+                            RValue vals -> (evals, length vals : applies, ksizes, ssizes)
+                            Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CHandleEffects{} -> case v of 
+                            RValue vals -> (evals, length vals : applies, ksizes, ssizes)
+                            Bottom -> (evals, applies, ksizes, ssizes)
                         _ -> acc) ([], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of

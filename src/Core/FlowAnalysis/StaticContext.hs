@@ -284,23 +284,47 @@ maybeHandlerName ctx =
       case contextOf ctx of
         Just c -> maybeHandlerName c
 
+showExprKind :: C.Expr -> String
+showExprKind e =
+  case e of
+    C.Var{} -> "Var"
+    C.App{} -> "App"
+    C.Lam{} -> "Lam"
+    C.Let{} -> "Let"
+    C.Case{} -> "Case"
+    C.TypeLam{} -> "TypeLam"
+    C.TypeApp{} -> "TypeApp"
+    C.Con{} -> "Con"
+
 ppContextPath :: ExprContext -> Doc
 ppContextPath ctx =
+  case ctx of 
+    LamCBody _ c tn e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    AppCLambda _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    AppCParam _ c i e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    LetCBody _ c names e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    CaseCScrutinee _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    CaseCBranch _ c _ _ b -> ppContextPathRec ctx <+> parens (text (showExprKind (C.guardExpr $ head $ C.branchGuards b)))
+    ExprCBasic _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    _ -> ppContextPathRec ctx
+
+ppContextPathRec :: ExprContext -> Doc
+ppContextPathRec ctx =
   case ctx of
     ModuleC _ _ n -> text "Module " <+> text (show n)
-    DefCRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("DRec " ++ show (defTName $ defOfCtx ctx))
-    DefCNonRec _ c _ -> ppContextPath c <+> text "->" <+> text ("DNonRec " ++ show (defTName $ defOfCtx ctx))
-    DefCGroup _ c _ dg -> ppContextPath c
-    LamCBody _ c tn _ -> ppContextPath c <+> text "->" <+> text ("LamB(" ++ show tn ++ ")")
-    AppCLambda _ c _ -> ppContextPath c <+> text "->" <+> text "AppL"
-    AppCParam _ c i _ -> ppContextPath c <+> text "->" <+> text ("AppP" ++ show i)
-    LetCDefNonRec _ c _ -> ppContextPath c <+> text "->" <+> text ("LtD " ++ show (defTName $ defOfCtx ctx))
-    LetCDefRec _ c _ _ -> ppContextPath c <+> text "->" <+> text ("LtDR " ++ show (defTName $ defOfCtx ctx))
-    LetCBody _ c names _ -> ppContextPath c <+> text "->" <+> text ("LtB" ++ show names)
-    LetCDefGroup _ c _ _ dg -> ppContextPath c
-    CaseCScrutinee _ c _ -> ppContextPath c <+> text "->" <+> text "CaseM"
-    CaseCBranch _ c _ _ _ -> ppContextPath c <+> text "->" <+> text "CaseB"
-    ExprCBasic _ c _ -> ppContextPath c <+> text "->" <+> text (show ctx)
+    DefCRec _ c _ _ -> ppContextPathRec c <+> text "->" <+> text ("DRec " ++ show (defTName $ defOfCtx ctx))
+    DefCNonRec _ c _ -> ppContextPathRec c <+> text "->" <+> text ("DNonRec " ++ show (defTName $ defOfCtx ctx))
+    DefCGroup _ c _ dg -> ppContextPathRec c
+    LamCBody _ c tn e -> ppContextPathRec c <+> text "->" <+> text ("LamB(" ++ show tn ++ ")")
+    AppCLambda _ c e -> ppContextPathRec c <+> text "->" <+> text "AppL"
+    AppCParam _ c i e -> ppContextPathRec c <+> text "->" <+> text ("AppP" ++ show i)
+    LetCDefNonRec _ c _ -> ppContextPathRec c <+> text "->" <+> text ("LtD " ++ show (defTName $ defOfCtx ctx))
+    LetCDefRec _ c _ _ -> ppContextPathRec c <+> text "->" <+> text ("LtDR " ++ show (defTName $ defOfCtx ctx))
+    LetCBody _ c names e -> ppContextPathRec c <+> text "->" <+> text ("LtB" ++ show names)
+    LetCDefGroup _ c _ _ dg -> ppContextPathRec c
+    CaseCScrutinee _ c e -> ppContextPathRec c <+> text "->" <+> text "CaseM"
+    CaseCBranch _ c _ _ b -> ppContextPathRec c <+> text "->" <+> text "CaseB"
+    ExprCBasic _ c e -> ppContextPathRec c <+> text "->" <+> text (show ctx)
     ExprPrim{} -> text "Primitive"
 
 lamVar :: Int -> ExprContext -> TName

@@ -300,7 +300,7 @@ doContinue res frame targetEnv ctx targetId =
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx u (hLabel hnd)
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            doApply kont addr newDelimCtx 
+            res <- apply kont addr newDelimCtx 
             handleEffects res venv u hnd newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
@@ -309,7 +309,7 @@ doApply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr addr dynctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show dynctx) $ return ()
   k <- kStore kaddr
-  -- trace ("Applying: " ++ show k) $ return ()
+  trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> returnAddr addr
     KNext frame ctx knext -> do
@@ -419,8 +419,12 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
         DVal hName opName oExpr [newAddr] oCtx | hName == varName && opName == nameLocalSet -> do
           let addr = ImplicitAddr retCtx venv (contextId oExpr)
           extendStore addr changeUnit
-          res <- apply knext addr (dynamic retCtx)
-          handleLocal res venv bodId varName newAddr retCtx
+          d <- dLimit
+          m <- mLimit
+          let newRetCtx = addCall m retCtx bodId
+          let newDelimCtx = newDelim d m newRetCtx bodId varName
+          res <- apply knext addr (dynamic newDelimCtx)
+          handleLocal res venv bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
           let k' = ImplicitLAddr retCtx oCtx varName opName venv (contextId opExpr)

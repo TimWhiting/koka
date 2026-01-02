@@ -296,8 +296,8 @@ doContinue res frame targetEnv ctx targetId =
             m <- mLimit
             let newRetCtx = addCall m ctx u
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            apply kont addr newRetCtx 
-            handleEffects res venv u hnd newRetCtx
+            RV (res, ctx) <- apply kont addr newRetCtx 
+            handleEffects res venv u hnd ctx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
@@ -399,7 +399,9 @@ doHandleLocal res venv bodId varName valAddr ctx = do
         DVal hName opName oExpr [newAddr] | hName == varName && opName == nameLocalSet -> do
           let addr = ImplicitAddr ctx venv (contextId oExpr)
           extendStore addr changeUnit
-          RV (res, newCtx) <- apply knext addr ctx
+          m <- mLimit
+          let xctx = addCall m ctx (contextId oExpr)
+          RV (res, newCtx) <- apply knext addr xctx
           handleLocal res venv bodId varName newAddr newCtx
         DVal hName opName opExpr args -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
