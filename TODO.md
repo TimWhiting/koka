@@ -1,3 +1,4 @@
 - [ ] Figure out vec loss of precision (after not adding newCtx - threading through handler?)
 - [ ] Figure out state issue with KCFA - maybe similar to above
+- [ ] Ensure that we consider overlapping matching branches in a sound and precise manner.
 - [ ] Redo analysis....
