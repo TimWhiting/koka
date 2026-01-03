@@ -55,10 +55,10 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  -- case addr of
-  --   BindImplicitAddr{} -> return ()
-  --   ConImplicitAddr{} -> return ()
-  --   _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  case addr of
+    BindImplicitAddr{} -> return ()
+    ConImplicitAddr{} -> return ()
+    _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Kont -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -197,7 +197,9 @@ doEval expr ctx = do
     Case _ brs -> do
       s <- focusScrutinee expr
       branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
+      -- trace (show branches) $ return ()
       res <- eval s ctx
+      trace (show res) $ return ()
       doContinue res (FScrut expr branches ctx) ctx (contextId s)
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
@@ -211,7 +213,7 @@ doEval expr ctx = do
 
 doContinue :: HasCallStack => FixChange -> Frame -> CombinedCtx -> ExprContextId -> FixAAMR r s e FixChange
 doContinue res frame ctx targetId =
-  -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $
+  -- trace ("Continuing with\nFrame:" ++ show frame ++ "\nResult:\n"  ++ show res ++  "\n:" ++ show ctx) $
   case res of
     RV (ROp knext dval) -> do
       k' <- allocFrame frame knext ctx targetId
@@ -298,12 +300,20 @@ doContinue res frame ctx targetId =
                   match <- branchMatch branch addr
                   case match of
                     Just bindings -> do
+                      -- trace ("Match " ++ show (M.keys bindings)) $ return ()
                       mapM_ (\(tname, extend) ->
                         extend (BindingAddr ctx tname)
                         ) (M.toList bindings)
                       rebindAll (S.union (fvvs expr) (nextFvs expr)) oldCtx ctx
-                      eval expr ctx
-                    Nothing -> recur branches
+                      eval expr ctx -- TODO: Ensure that we consider future matches if there is overlap
+                    Nothing -> do
+                      each [
+                        do 
+                          r <- store addr
+                          -- trace ("No match\n" ++ show branch ++ "\n:" ++ show r) $ return ()
+                          doBottom,
+                        recur branches
+                        ]
             case exprOfCtx parent of
               Case _ pats -> recur (zip pats branches)
           FDollar va -> do
@@ -322,7 +332,7 @@ doContinue res frame ctx targetId =
             d <- dLimit
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx u (hLabel hnd)
-            trace ("Applying continuation " ++ show u ++ " " ++ show (hLabel hnd)) $ return () 
+            trace ("Applying continuation " ++ show u ++ " " ++ show (hLabel hnd)) $ return ()
             res <- apply kont addr newDelimCtx
             handleEffects res u hnd newRetCtx
           _ -> do
@@ -445,8 +455,10 @@ doHandleLocal res bodId varName valAddr retCtx = do
           res <- apply knext valAddr (dynamic retCtx)
           handleLocal res bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == varName && opName == nameLocalSet -> do
-          trace ("Setting local variable: " ++ show varName ++ " to " ++ show newAddr) $ return ()
+          v <- store newAddr
+          trace ("Setting local variable: " ++ show varName ++ " to " ++ show newAddr ++ " " ++ show v) $ return ()
           let addr = ImplicitAddr retCtx (contextId oExpr)
+          trace ("Unit addr " ++ show addr) $ return ()
           extendStore addr changeUnit
           d <- dLimit
           m <- mLimit
@@ -533,7 +545,7 @@ rebind oldAddr newAddr =
 rebindAll :: HasCallStack => S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAMR r s e ()
 rebindAll free oldCtx newCtx = do
   if oldCtx == newCtx then return ()
-  else 
+  else
     -- trace ("Rebinding all from " ++ show oldCtx ++ " to " ++ show newCtx ++ " for " ++ show (S.toList free)) $
     mapM_ (\fv -> rebind (BindingAddr oldCtx fv) (BindingAddr newCtx fv)) free
 
