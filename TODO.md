@@ -1,4 +1,6 @@
-- [ ] Figure out vec loss of precision (after not adding newCtx - threading through handler?)
+- [x] Figure out vec loss of precision (it was due to local application after local-get not applying a precise continuation maybe, adding context to local-get prevented confusing continuations)
+- [ ] Better address space 
+- [ ] See if vec doesn't need d=1,m=2
 - [ ] Figure out state issue with KCFA - maybe similar to above
 - [ ] Ensure that we consider overlapping matching branches in a sound and precise manner.
 - [ ] Redo analysis....
