@@ -85,6 +85,7 @@ runQueryAtRange bc build mod m d doQuery =
                                   -- trace ("result': " ++ show ress') $ return ()
                                   return ress'
                   tend <- getCurrentTime
+                  -- trace (" Expected " ++ show name) $ return ()
                   (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                   runFixCont $ do
                                     (_,ctx) <- loadModule (modName mod)
@@ -162,6 +163,7 @@ getAbResult = do
                         VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore UnitAddr -> (evals, applies, ksizes, ssizes)
                         KStore ImplicitAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore ImplicitLAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
@@ -201,6 +203,7 @@ evalMainR :: BuildContext
 evalMainR bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx
+    -- trace (show (modCtx ctx)) $ return ()
     res <- doStep c
     case res of 
       RV (RVAddr addr) -> do

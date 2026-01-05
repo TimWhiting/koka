@@ -84,6 +84,7 @@ newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx m stati
 
 data Addr =
   BindingAddr !CombinedCtx !TName
+  | UnitAddr
   | EndVAddr
   | EndKAddr
   | ImplicitAddr !CombinedCtx !ExprContextId
@@ -95,6 +96,7 @@ instance Show Addr where
   show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
+  show UnitAddr = "UnitAddr"
   show (ImplicitAddr ctx ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ImplicitLAddr _ ctx nm _ ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
@@ -177,7 +179,7 @@ data Kont =
   | KLocal {
       lKnext :: Addr,
       lBodId :: ExprContextId,
-      lVarName :: Name,
+      lVarName :: TName,
       lValAddr :: Addr,
       lCtx :: CombinedCtx
   }

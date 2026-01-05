@@ -162,6 +162,7 @@ getAbResult = do
                         VStore (BindingAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore (BindImplicitAddr{}) -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore UnitAddr -> (evals, applies, ksizes, ssizes)
                         KStore (ImplicitAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore (ImplicitLAddr{}) -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)

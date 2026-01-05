@@ -394,7 +394,7 @@ simpleEnv = defaultEnv{showKinds=False,fullNames=False,noFullNames=True,expandSy
 showExpr :: C.Expr -> String
 showExpr e = show $ prettyExpr simpleEnv e
 
-showDg d = show $ prettyDefGroup simpleEnv d
+showDg d = show $ prettyDefGroup simpleEnv{coreShowDef=True} d
 
 showDef d = show $ prettyDef simpleEnv d
 
@@ -517,7 +517,7 @@ instance SimpleShow C.Expr where
 instance Show ExprContext where
   show e =
     case e of
-      ModuleC id _ nm -> "Module " ++ show nm
+      ModuleC id md nm -> "Module " ++ intercalate "\n" (map showDg (coreProgDefs (fromJust $ modCore md)))
       DefCRec id _ _ _ -> "DefRec "  ++ showDef (defOfCtx e)
       DefCNonRec id _ _ -> "DefNonRec " ++ showDef (defOfCtx e)
       DefCGroup id _ tn _ -> "DefGroup " ++ show tn

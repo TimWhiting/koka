@@ -222,24 +222,24 @@ doContinue res frame targetEnv ctx targetId =
                         extendStore (fromJust $ lookupEnv a newEnv) val) args arguments
                       eval body (limitEnv newEnv (fvs body)) newCtx
                     AChangePrim name pms -> do
-                      let addr = BindImplicitAddr ctx venv uApp
+                      let retAddr = BindImplicitAddr ctx venv uApp
                       let n = getName name
                       if not (isHandlerPrimitive n) then do
                         args <- mapM store arguments
                         res <- doPrimitive n args
-                        extendStore addr res
-                        returnAddr addr ctx
-                      else doHandlerPrimitive name n addr arguments venv ctx eApp
+                        extendStore retAddr res
+                        returnAddr retAddr ctx
+                      else doHandlerPrimitive name n retAddr arguments venv ctx eApp
                     AChangeConstr con params -> do
                       let name = case exprOfCtx con of
                             Con n _ _ -> n
                             _ -> error "Expected a constructor"
-                      let addr = BindImplicitAddr ctx venv uApp
+                      let retAddr = BindImplicitAddr ctx venv uApp
                       let conParams = map (\nm -> ConImplicitAddr nm ctx uApp) params
                       zipWithM_ rebind arguments conParams
-                      extendStore addr (AChangeObj con name (zip params conParams))
-                      -- extendStore addr (AChangeObj con name (zip params arguments))
-                      returnAddr addr ctx
+                      extendStore retAddr (AChangeObj con name (zip params conParams))
+                      -- extendStore retAddr (AChangeObj con name (zip params arguments))
+                      returnAddr retAddr ctx
                     AChangeKont label kx henv hnd -> do
                       m <- mLimit
                       let newCtx = addCall m ctx uApp
@@ -292,6 +292,7 @@ doContinue res frame targetEnv ctx targetId =
                   v <- store addr
                   extendStore (fromJust $ lookupEnv arg newEnv) v
                   eval body (limitEnv newEnv (fvs body)) ctx
+              _ -> doBottom
           FResume kont venv hnd u -> do
             m <- mLimit
             let newRetCtx = addCall m ctx u
@@ -377,7 +378,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         let newEnv = M.insert varName ctx env
         bod <- focusBody e
         RV (res, newCtx) <- eval bod newEnv ctx
-        handleLocal res venv (contextId bod) (getName varName) (head arguments) newCtx
+        handleLocal res venv (contextId bod) varName (head arguments) newCtx
   else do
     case args !! 1 of
       AChangeClos e env -> do
@@ -388,15 +389,15 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         eval bod newEnv ctx
 localEff = True
 
-doHandleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> Name -> Addr -> StaticCtx -> FixAAMR r s e FixChange
+doHandleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doHandleLocal res venv bodId varName valAddr ctx = do
   case res of
     ROp knext dval -> do
       case dval of
-        DVal hName opName oExpr args | hName == varName && opName == nameLocalGet -> do
+        DVal hName opName oExpr args | hName == getName varName && opName == nameLocalGet -> do
           RV (res, newCtx) <- apply knext valAddr ctx
           handleLocal res venv bodId varName valAddr newCtx
-        DVal hName opName oExpr [newAddr] | hName == varName && opName == nameLocalSet -> do
+        DVal hName opName oExpr [newAddr] | hName == getName varName && opName == nameLocalSet -> do
           let addr = ImplicitAddr ctx venv (contextId oExpr)
           extendStore addr changeUnit
           m <- mLimit
@@ -405,7 +406,7 @@ doHandleLocal res venv bodId varName valAddr ctx = do
           handleLocal res venv bodId varName newAddr newCtx
         DVal hName opName opExpr args -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let k' = ImplicitLAddr ctx varName opName venv (contextId opExpr)
+          let k' = ImplicitLAddr ctx (getName varName) opName venv (contextId opExpr)
           extendKStore k' (KLocal knext venv bodId varName valAddr)
           returnOp k' ctx dval
     RVAddr addr -> returnAddr addr ctx
