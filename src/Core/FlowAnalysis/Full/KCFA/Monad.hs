@@ -30,7 +30,7 @@ data Conf =
   | CApply Addr Addr StaticCtx -- kont, vaddr, dynctx
   | CContinue RValue Frame VEnv StaticCtx ExprContextId
   | CHandleEffects RValue VEnv ExprContextId Handler StaticCtx 
-  | CHandleLocal RValue VEnv ExprContextId Name Addr StaticCtx 
+  | CHandleLocal RValue VEnv ExprContextId TName Addr StaticCtx 
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int

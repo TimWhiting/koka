@@ -36,6 +36,7 @@ doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
   memo i $ do
     case i of
+      VStore UnitAddr -> return $ SV changeUnit
       VStore addr ->
         trace ("Value not found in store :" ++ show addr)
         doBottom
@@ -222,24 +223,24 @@ doContinue res frame targetEnv ctx targetId =
                         extendStore (fromJust $ lookupEnv a newEnv) val) args arguments
                       eval body (limitEnv newEnv (fvs body)) newCtx
                     AChangePrim name pms -> do
-                      let addr = BindImplicitAddr ctx venv uApp
+                      let retAddr = BindImplicitAddr ctx venv uApp
                       let n = getName name
                       if not (isHandlerPrimitive n) then do
                         args <- mapM store arguments
                         res <- doPrimitive n args
-                        extendStore addr res
-                        returnAddr addr
-                      else doHandlerPrimitive name n addr arguments venv ctx eApp
+                        extendStore retAddr res
+                        returnAddr retAddr
+                      else doHandlerPrimitive name n retAddr arguments venv ctx eApp
                     AChangeConstr con params -> do
                       let name = case exprOfCtx con of
                             Con n _ _ -> n
                             _ -> error "Expected a constructor"
-                      let addr = BindImplicitAddr ctx venv uApp
+                      let retAddr = BindImplicitAddr ctx venv uApp
                       let conParams = map (\nm -> ConImplicitAddr nm ctx uApp) params
                       zipWithM_ rebind arguments conParams
-                      extendStore addr (AChangeObj con name (zip params conParams))
+                      extendStore retAddr (AChangeObj con name (zip params conParams))
                       -- extendStore addr (AChangeObj con name (zip params arguments))
-                      returnAddr addr
+                      returnAddr retAddr
                     AChangeKont label kx henv hnd -> do
                       m <- mLimit
                       d <- dLimit
@@ -309,7 +310,7 @@ doApply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr addr dynctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show dynctx) $ return ()
   k <- kStore kaddr
-  trace ("Applying: " ++ show k) $ return ()
+  -- trace ("Applying: " ++ show k) $ return ()
   case k of
     KEnd -> returnAddr addr
     KNext frame ctx knext -> do
@@ -321,7 +322,7 @@ doApply kaddr addr dynctx = do
       d <- dLimit
       m <- mLimit 
       let newRetCtx = addCall m newctx bodId
-      let newDelimCtx = newDelim d m newRetCtx bodId varName
+      let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
       res <- apply knext addr (dynamic newDelimCtx)
       handleLocal res venv bodId varName varAddr newRetCtx
     KLink knext venv bodId h retCtx -> do -- TODO: Dynamic context adjustments...
@@ -397,7 +398,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u) (getName varName)
         res <- eval bod newEnv newctx
-        handleLocal res venv (contextId bod) (getName varName) (head arguments) ctx
+        handleLocal res venv (contextId bod) varName (head arguments) ctx
   else do
     case args !! 1 of
       AChangeClos e env -> do
@@ -408,26 +409,30 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         eval bod newEnv ctx
 localEff = True
 
-doHandleLocal :: HasCallStack => FixChange -> VEnv -> ExprContextId -> Name -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
+doHandleLocal :: HasCallStack => FixChange -> VEnv -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doHandleLocal res venv bodId varName valAddr retCtx = do
   case res of
     RV (ROp knext dval) -> do
       case dval of
-        DVal hName opName oExpr args oCtx | hName == varName && opName == nameLocalGet -> do
-          res <- apply knext valAddr (dynamic retCtx)
-          handleLocal res venv bodId varName valAddr retCtx
-        DVal hName opName oExpr [newAddr] oCtx | hName == varName && opName == nameLocalSet -> do
+        DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
+          d <- dLimit
+          m <- mLimit
+          let newRetCtx = addCall m retCtx bodId
+          let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
+          res <- apply knext valAddr (dynamic newDelimCtx)
+          handleLocal res venv bodId varName valAddr newRetCtx
+        DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           let addr = ImplicitAddr retCtx venv (contextId oExpr)
           extendStore addr changeUnit
           d <- dLimit
           m <- mLimit
           let newRetCtx = addCall m retCtx bodId
-          let newDelimCtx = newDelim d m newRetCtx bodId varName
+          let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
           res <- apply knext addr (dynamic newDelimCtx)
           handleLocal res venv bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let k' = ImplicitLAddr retCtx oCtx varName opName venv (contextId opExpr)
+          let k' = ImplicitLAddr retCtx oCtx (getName varName) opName venv (contextId opExpr)
           extendKStore k' (KLocal knext venv bodId varName valAddr retCtx)
           returnOp k' dval
     RV (RVAddr addr) -> returnAddr addr
