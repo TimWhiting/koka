@@ -27,7 +27,7 @@ import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
   CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
-  | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
+  | CApply Frame Addr Addr CombinedCtx -- kont, vaddr, dynctx
   | CContinue FixChange Frame VEnv CombinedCtx ExprContextId
   | CHandleEffects FixChange VEnv ExprContextId Handler CombinedCtx
   | CHandleLocal FixChange VEnv ExprContextId TName Addr CombinedCtx
@@ -54,19 +54,6 @@ data FixInput =
   | KStore Addr
   deriving (Eq, Ord, Show)
 
-data DelimitedVal = 
-  DVal {
-      dLabel :: Name,
-      dOpName :: Name,
-      dExpr :: ExprContext,
-      dArgs :: [Addr],
-      dCtx :: CombinedCtx
-  } deriving (Eq, Ord, Show)
-
-data RValue = 
-  RVAddr Addr 
-  | ROp Addr DelimitedVal
-  deriving (Eq, Ord, Show)
 
 data FixOutput =
   RValue (S.Set RValue)
