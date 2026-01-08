@@ -39,10 +39,10 @@ doStep i =
       VStore addr ->
         trace ("Value not found in store :" ++ show addr)
         doBottom
-      KStore addr -> if addr == EndKAddr then return $ KV KEnd else doBottom
+      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
       Step (CEval expr venv ctx) -> doEval expr venv ctx
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
-      Step (CContinue res frame targetEnv ctx targetId) -> doContinue res frame targetEnv ctx targetId
+      Step (CContinue res frame targetEnv ctx targetId) -> doContinue res frame ctx
       Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx
       Step (CHandleLocal res venv bodId varName valAddr retCtx) -> doHandleLocal res venv bodId varName valAddr retCtx
 
@@ -53,7 +53,7 @@ extendStore addr v = do
   --   ConImplicitAddr{} -> return ()
   --   _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
-extendKStore :: Addr -> Kont -> FixAAMR r e s ()
+extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
   -- trace ("Extending KStore: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (KStore addr) (KV v)
@@ -74,8 +74,10 @@ returnConst :: VEnv -> StaticCtx -> ExprContext -> AChange -> FixAAMR r s e FixC
 returnConst env ctx expr v = do 
   addr <- allocConst env ctx expr v
   return $ RV (RVAddr addr, ctx)
-returnOp :: Addr -> StaticCtx -> DelimitedVal -> FixAAMR r s e FixChange
-returnOp kaddr ctx dval = return $ RV (ROp kaddr dval, ctx)
+
+returnOp :: DelimitedVal -> StaticCtx -> Frame ->  DelimitedFrame -> Addr -> FixAAMR r s e FixChange
+returnOp dval ctx frame dframe kaddr = return $ RV $ (ROp dval ctx frame dframe kaddr, ctx)
+
 returnAddr :: Addr -> StaticCtx -> FixAAMR r s e FixChange
 returnAddr addr ctx = return $ RV (RVAddr addr, ctx)
 
@@ -84,12 +86,6 @@ allocConst :: VEnv -> StaticCtx -> ExprContext -> AChange -> FixAAMR r s e Addr
 allocConst env ctx expr v = do
   let addr = BindImplicitAddr ctx (limitEnv env (fvs expr)) (contextId expr)
   extendStore addr v
-  return addr
-
-allocFrame :: HasCallStack => Frame -> Addr -> StaticCtx -> VEnv -> ExprContextId -> FixAAMR r s e Addr
-allocFrame frame kaddr ctx env u = do
-  let addr = ImplicitAddr ctx env u
-  extendKStore addr (KNext frame kaddr)
   return addr
 
 fvsl :: [ExprContext] -> S.Set TName
@@ -188,16 +184,17 @@ doEval expr venv ctx = do
           RV (res, newCtx) <- eval f (limitEnv venv (fvs f)) ctx
           continue res (FApp (length args) argExprs [] expr venv) venv newCtx (contextId f)
 
-doContinue :: HasCallStack => RValue -> Frame -> VEnv -> StaticCtx -> ExprContextId -> FixAAMR r s e FixChange
-doContinue res frame targetEnv ctx targetId =
+doContinue :: HasCallStack => RValue -> Frame -> StaticCtx -> FixAAMR r s e FixChange
+doContinue res frame ctx =
   -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $
   case res of
-    ROp knext dval -> do
-      k' <- allocFrame frame knext ctx targetEnv targetId
-      returnOp k' ctx dval 
+    ROp dval ctx' frame' dframe knext -> do
+      let k' = KAddr frame' ctx' dframe dval
+      extendKStore k' knext
+      returnOp dval ctx frame dframe k'
     RVAddr addr -> do
       case frame of
-          f | f == FCall || f == FMask -> do
+          f | f == FMask -> do
             v <- store addr
             case v of
               AChangeClos e env -> do
@@ -240,7 +237,7 @@ doContinue res frame targetEnv ctx targetId =
                       extendStore retAddr (AChangeObj con name (zip params conParams))
                       -- extendStore retAddr (AChangeObj con name (zip params arguments))
                       returnAddr retAddr ctx
-                    AChangeKont label kx henv hnd -> do
+                    AChangeKont kx henv hnd -> do
                       m <- mLimit
                       let newCtx = addCall m ctx uApp
                       -- trace ("Applying continuation\n" ++ show uApp ++ "\n" ++ show newCtx) $ return () -- ++ "for\n" ++
@@ -305,20 +302,23 @@ doContinue res frame targetEnv ctx targetId =
 doApply :: HasCallStack => Addr -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doApply kaddr addr ctx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show dynctx) $ return ()
-  k <- kStore kaddr
   -- trace ("Applying: " ++ show k) $ return ()
-  case k of
-    KEnd -> returnAddr addr ctx
-    KNext frame knext -> do
+  case kaddr of
+    EndKAddr -> returnAddr addr ctx
+    KAddr (FRestoreDelim (DFrameLocal venv bodId varName varAddr)) ctx _ _ -> do
+      knext <- kStore kaddr
       RV (res, newctx) <- apply knext addr ctx
-      continue res frame (kaddrEnv kaddr) newctx (kaddrId kaddr)
-    KLocal knext venv bodyId varName varAddr -> do
-      RV (res, newctx) <- apply knext addr ctx
-      handleLocal res venv bodyId varName varAddr newctx
-    KLink knext venv bodId h -> do -- TODO: Dynamic context adjustments...
+      handleLocal res venv bodId varName varAddr newctx
+    KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do
+      knext <- kStore kaddr
       RV (res, newctx) <- apply knext addr ctx
       -- trace ("Restoring handler context for " ++ show h ++ " with\n" ++ show newRetCtx ++ "\n" ++ show newDelimCtx ++ "\n") $ return () 
       handleEffects res venv bodId h newctx
+    KAddr frame _ _ _ -> do
+      knext <- kStore kaddr
+      RV (res, newctx) <- apply knext addr ctx
+      doContinue res frame newctx
+
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
   n == nameHandle || isClauseName n || n == nameHTag
@@ -337,19 +337,19 @@ doHandlerPrimitive name n addr arguments venv ctx u | isNamePerform n = do
   let DefCNonRec _ _ opName = select
   let opN = newName $ nameLocalQual (getName opName)
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
-  returnOp EndKAddr ctx $ DVal label opN u (drop 2 arguments)
+  returnOp (DVal label opN u (drop 2 arguments)) ctx FrameDone DFrameDone EndKAddr
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalGet = do
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
     let [varAddr@(BindingAddr _ varName), _] = arguments
-    returnOp EndKAddr ctx $ DVal (getName varName) nameLocalGet u (drop 2 arguments)
+    returnOp (DVal (getName varName) nameLocalGet u []) ctx FrameDone DFrameDone EndKAddr
   else do
     returnAddr (head arguments) ctx
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalSet = do
   let [varAddr@(BindingAddr _ varName), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
-    returnOp EndKAddr ctx $ DVal (getName varName) nameLocalSet u [val]
+    returnOp (DVal (getName varName) nameLocalSet u [val]) ctx FrameDone DFrameDone EndKAddr
   else do
     rebind val varAddr
     extendStore addr changeUnit
@@ -392,30 +392,34 @@ localEff = True
 doHandleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doHandleLocal res venv bodId varName valAddr ctx = do
   case res of
-    ROp knext dval -> do
+    ROp dval ctx' frame' dframe' knext -> do
       case dval of
         DVal hName opName oExpr args | hName == getName varName && opName == nameLocalGet -> do
           RV (res, newCtx) <- apply knext valAddr ctx
-          handleLocal res venv bodId varName valAddr newCtx
+          RV (res', newCtx') <- doContinue res frame' newCtx
+          handleLocal res' venv bodId varName valAddr newCtx'
         DVal hName opName oExpr [newAddr] | hName == getName varName && opName == nameLocalSet -> do
-          let addr = ImplicitAddr ctx venv (contextId oExpr)
-          extendStore addr changeUnit
+          extendStore UnitAddr changeUnit
           m <- mLimit
           let xctx = addCall m ctx (contextId oExpr)
-          RV (res, newCtx) <- apply knext addr xctx
-          handleLocal res venv bodId varName newAddr newCtx
+          RV (res, newCtx) <- apply knext newAddr xctx
+          RV (res', newCtx') <- doContinue res frame' newCtx
+          handleLocal res' venv bodId varName newAddr newCtx
         DVal hName opName opExpr args -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let k' = ImplicitLAddr ctx (getName varName) opName venv (contextId opExpr)
-          extendKStore k' (KLocal knext venv bodId varName valAddr)
-          returnOp k' ctx dval
+          let k' = KAddr frame' ctx' dframe' dval
+          extendKStore k' knext
+          let dframe = DFrameLocal venv bodId varName valAddr
+          returnOp dval ctx (FRestoreDelim dframe) dframe k'
     RVAddr addr -> returnAddr addr ctx
 
 doHandleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> StaticCtx -> FixAAMR r s e FixChange
 doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
   case res of
-    ROp kOp (DVal hName opName opExpr args) -> do
+    ROp  dval@(DVal hName opName opExpr args) ctx' frame' dframe' knext  -> do
       if hName == label then do
+        let kOp = KAddr frame' ctx' dframe' dval
+        extendKStore kOp knext
         -- trace ("Evaluating operation: " ++ show opName ++ " at handler " ++ show label) $ return ()
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
         let ops' = map (\(n, a) -> (unmakeOpHidden opName $ nameStem n, a)) ops
@@ -432,26 +436,19 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (BindingAddr newCtx) params)
             if isTailOpT opConName then do -- TODO: Add operation call context?
-              RV (res, retCtx) <- eval opBod (limitEnv newEnv (fvs opBod)) newCtx
-              case res of -- Extract as continueApply?
-                RVAddr addr -> do
-                  RV (res, newCtx) <- apply kOp addr retCtx
-                  m <- mLimit
-                  let newRetCtx = addCall m newCtx (contextId opBod)
-                  handleEffects res venv bodId h newRetCtx
-                ROp knext dval -> do
-                  k' <- allocFrame (FResume kOp venv h (contextId opBod)) knext retCtx venv (contextId opBod)
-                  returnOp k' retCtx dval
+              RV (res', retCtx') <- eval opBod (limitEnv newEnv (fvs opBod)) newCtx
+              doContinue res' (FResume kOp venv h (contextId opBod)) retCtx'
             else if isNeverOp opConName then do
               eval opBod (limitEnv newEnv (fvs opBod)) newCtx
             else do
-              extendStore (BindingAddr newCtx (last params)) (AChangeKont hName kOp venv h)
+              extendStore (BindingAddr newCtx (last params)) (AChangeKont kOp venv h)
               eval opBod (limitEnv newEnv (fvs opBod)) newCtx
       else do
         -- trace ("Allocating new return\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n" ++ show label ++ "," ++ show opName ++ "\n") $ return ()
-        let k' = ImplicitLAddr ctx label opName venv (contextId opExpr)
-        extendKStore k' (KLink kOp venv bodId h)
-        returnOp k' ctx (DVal hName opName opExpr args)
+        let k' = KAddr frame' ctx' dframe' dval
+        extendKStore k' knext
+        let dframe = DFrame venv bodId h
+        returnOp dval ctx (FRestoreDelim dframe) dframe k'
     res ->
       case mbFrame of
         Just frame -> do

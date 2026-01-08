@@ -28,9 +28,9 @@ import Type.Pretty (defaultEnv, ppType)
 data Conf =
   CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
   | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
-  | CContinue FixChange Frame CombinedCtx
-  | CHandleEffects FixChange VEnv ExprContextId Handler CombinedCtx
-  | CHandleLocal FixChange VEnv ExprContextId TName Addr CombinedCtx
+  | CContinue RValue Frame CombinedCtx
+  | CHandleEffects RValue VEnv ExprContextId Handler CombinedCtx
+  | CHandleLocal RValue VEnv ExprContextId TName Addr CombinedCtx
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int
@@ -53,7 +53,6 @@ data FixInput =
   | VStore Addr
   | KStore Addr
   deriving (Eq, Ord, Show)
-
 
 data FixOutput =
   RValue (S.Set RValue)

@@ -46,30 +46,17 @@ data FixInput =
   | KStore Addr
   deriving (Eq, Ord, Show)
 
-data DelimitedVal = 
-  DVal {
-      dLabel :: Name,
-      dOpName :: Name,
-      dExpr :: ExprContext,
-      dArgs :: [Addr]
-  } deriving (Eq, Ord, Show)
-
-data RValue = 
-  RVAddr Addr 
-  | ROp Addr DelimitedVal
-  deriving (Eq, Ord, Show)
-
 data FixOutput =
   RValue (S.Set (RValue, StaticCtx))
   | SValue AbValue
-  | KValue (S.Set Kont)
+  | KValue (S.Set Addr)
   | Bottom
   deriving (Eq, Ord, Show)
 
 data FixChange =
   RV (RValue, StaticCtx)
   | SV AChange
-  | KV Kont
+  | KV Addr
   | ChangeBottom
   deriving (Eq, Ord, Show)
 

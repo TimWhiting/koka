@@ -102,7 +102,7 @@ data DelimitedFrame =
       dflVarName :: TName,
       dflValAddr :: Addr
   } | DFrameDone 
-  | DFrameNone -- Don't use DelimFrames
+  | DFrameNone -- TODO: Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
 data Addr =
@@ -110,8 +110,7 @@ data Addr =
   | UnitAddr
   | EndVAddr
   | EndKAddr
-  | ImplicitAddr !CombinedCtx !ExprContextId
-  | ImplicitLAddr !CombinedCtx !CombinedCtx !Name !Name !ExprContextId
+  | KAddr !Frame !StaticCtx !DelimitedFrame !DelimitedVal
   | BindImplicitAddr !CombinedCtx !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
@@ -120,33 +119,24 @@ instance Show Addr where
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
   show UnitAddr = "UnitAddr"
-  show (ImplicitAddr ctx ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr _ ctx nm _ ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (KAddr frame ctx dframe dval) = "K@(" ++ show frame ++ "," ++ show ctx ++ "," ++ show dframe ++ "," ++ show dval ++ ")"
   show (BindImplicitAddr ctx ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-
-kaddrCtx :: Addr -> CombinedCtx 
-kaddrCtx (ImplicitAddr ctx _) = ctx
-
-kaddrId :: Addr -> ExprContextId
-kaddrId (ImplicitAddr _ ctxId) = ctxId
 
 nextAndFvs :: HasCallStack => ExprContext -> Set TName
 nextAndFvs e = S.union (fvvs e) (SC.nextFvs e)
 
+data RValue = 
+  RVAddr Addr 
+  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr 
+  deriving (Eq, Ord, Show)
+
 data Frame =
-  FScrut {
+  FrameDone
+  | FScrut {
       parent :: ExprContext,
       branches :: [ExprContext],
       scrutCtx :: CombinedCtx
-    }
-  | FOp {
-      effName :: Name,
-      totalArgs :: Int,
-      leftArgs :: [ExprContext],
-      resolvedArgs :: [Addr],
-      parent :: ExprContext,
-      opCtx :: CombinedCtx
     }
   | FApp {
       totalArgs :: Int,
@@ -169,17 +159,15 @@ data Frame =
       vaddr :: Addr -- Precise closure address,
   }
   | FResume {
+      rretCtx :: StaticCtx,
       vaddr :: Addr,
       rHnd :: Handler,
-      rCtx :: ExprContextId,
-      resumeCtx :: CombinedCtx
+      rCtx :: ExprContextId
   }
-  | FStore {
-      vaddr :: Addr,
-      storeCtx :: CombinedCtx
+  | FRestoreDelim {
+     dframe :: DelimitedFrame
   }
   | FMask 
-  | FCall
   deriving (Eq, Ord, Show)
 
 
@@ -194,25 +182,6 @@ nextLetFrame
           defs = defsOf (dgs !! gidx) in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent ctx
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent))
-
-
-data Kont =
-  KEnd
-  | KNext { frame :: Frame, kCtx :: StaticCtx, knext:: Addr }
-  | KLocal {
-      lKnext :: Addr,
-      lBodId :: ExprContextId,
-      lVarName :: TName,
-      lValAddr :: Addr,
-      lCtx :: CombinedCtx
-  }
-  | KLink {
-      lkNext :: Addr,
-      linkBodId :: ExprContextId,
-      linkHnd :: Handler,
-      linkRetCtx :: CombinedCtx
-  }
-  deriving (Eq, Ord, Show)
 
 data Handler =
   Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
@@ -234,7 +203,7 @@ data AChange =
   | AChangeConstr ExprContext [Name]
   | AChangeObj ExprContext TName [(Name,Addr)]
   | AChangeLit LiteralChangeX
-  | AChangeKont Name Addr CombinedCtx Handler -- Where to return to and where to extend the return continuation
+  | AChangeKont Addr CombinedCtx Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
   
 vcontextId change = 
@@ -244,7 +213,7 @@ vcontextId change =
     AChangeConstr e _ -> contextId e
     AChangeObj e _ _ -> contextId e
     AChangeLit e -> litEx e
-    AChangeKont _ _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
+    AChangeKont _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
 
 ctxOfClos :: AChange -> ExprContext
 ctxOfClos res =
@@ -256,7 +225,7 @@ instance Show AChange where
   show (AChangeConstr expr params) = showCtxExpr expr
   show (AChangeObj e name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr) = show name
-  show (AChangeKont name addr env handler) = "Kont" ++ show (name, addr, env, handler)
+  show (AChangeKont addr env handler) = "Kont" ++ show (addr, env, handler)
   show (AChangeLit lit) = show lit
 
 data AbValue =
@@ -265,7 +234,7 @@ data AbValue =
     acons:: !(Set (ExprContext, [Name])),
     aprims :: !(Set (TName, ExprContext)),
     aobjs :: !(Set (ExprContext, TName, [(Name,Addr)])),
-    akonts:: !(Set (Name, Addr, CombinedCtx, Handler)),
+    akonts:: !(Set (Addr, CombinedCtx, Handler)),
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
@@ -293,7 +262,7 @@ changes (AbValue clos constrs prims objs konts lits) =
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     primss = map (uncurry AChangePrim) $ S.toList prims
     objss = map (\(e, n, a) -> AChangeObj e n a) $ S.toList objs
-    kontss = map (\(name, addr, env, handler) -> AChangeKont name addr env handler) $ S.toList konts
+    kontss = map (\(addr, env, handler) -> AChangeKont addr env handler) $ S.toList konts
     litss = changesLit lits
 
 changesLit :: LiteralLatticeX -> [AChange]
@@ -308,7 +277,7 @@ changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _ _) = S.member (ctx,env) clo
 changeIn (AChangeConstr ctx params) (AbValue _ constr _ _ _ _) = S.member (ctx,params) constr
 changeIn (AChangePrim name expr) (AbValue _ _ prims _ _ _) = S.member (name, expr) prims
 changeIn (AChangeObj exp name args) (AbValue _ _ _ objs _ _) = S.member (exp, name, args) objs
-changeIn (AChangeKont name addr env handler) (AbValue _ _ _ _ konts _) = S.member (name, addr, env, handler) konts
+changeIn (AChangeKont addr env handler) (AbValue _ _ _ _ konts _) = S.member (addr, env, handler) konts
 changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLatticeX ints floats chars strings)) =
   case lit of
     LiteralChangeIntX i -> i `lteX` ints
@@ -398,7 +367,7 @@ addChange ab@(AbValue cls cs prims objs konts lit) change =
     AChangePrim name expr -> (change, AbValue cls cs (S.insert (name, expr) prims) objs konts lit)
     AChangeObj exp name addrs -> (change, AbValue cls cs prims (S.insert (exp, name, addrs) objs) konts lit)
     AChangeConstr c params -> (change, AbValue cls (S.insert (c,params) cs) prims objs konts lit)
-    AChangeKont name addr env handler -> (change, AbValue cls cs prims objs (S.insert (name, addr, env, handler) konts) lit)
+    AChangeKont addr env handler -> (change, AbValue cls cs prims objs (S.insert (addr, env, handler) konts) lit)
     AChangeLit l ->
       let (change, newLattice) = joinLitX l lit
       in (AChangeLit change, AbValue cls cs prims objs konts newLattice)
