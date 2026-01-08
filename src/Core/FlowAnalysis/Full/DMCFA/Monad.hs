@@ -27,7 +27,7 @@ import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
   CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
-  | CApply Frame Addr Addr CombinedCtx -- kont, vaddr, dynctx
+  | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
   | CContinue FixChange Frame VEnv CombinedCtx ExprContextId
   | CHandleEffects FixChange VEnv ExprContextId Handler CombinedCtx
   | CHandleLocal FixChange VEnv ExprContextId TName Addr CombinedCtx
