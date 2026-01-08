@@ -82,6 +82,29 @@ delimCtx m ctx = TKDelim $ take m [CallDelim] -- take m ctx -- take m [CallDelim
 
 newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx m static) $ take d $ ((delim, name), static) : dyn
 
+data DelimitedVal = 
+  DVal {
+      dLabel :: Name,
+      dOpName :: Name,
+      dExpr :: ExprContext,
+      dArgs :: [Addr],
+      dCtx :: CombinedCtx
+  } deriving (Eq, Ord, Show)
+
+data DelimitedFrame =
+  DFrame {
+      dframeCtx :: CombinedCtx,
+      dframeBodId :: ExprContextId,
+      dframeHnd :: Handler
+  } | DFrameLocal {
+      dflCtx :: CombinedCtx,
+      dflBodId :: ExprContextId,
+      dflVarName :: TName,
+      dflValAddr :: Addr
+  } | DFrameDone 
+  | DFrameNone -- Don't use DelimFrames
+  deriving (Eq, Ord, Show)
+
 data Addr =
   BindingAddr !CombinedCtx !TName
   | UnitAddr

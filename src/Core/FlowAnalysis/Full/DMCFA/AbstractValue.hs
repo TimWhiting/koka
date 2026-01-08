@@ -112,8 +112,6 @@ data Addr =
   | EndVAddr
   | EndKAddr
   | KAddr !Frame !StaticCtx !DelimitedFrame !DelimitedVal
-  | ImplicitAddr !CombinedCtx !VEnv !ExprContextId
-  | ImplicitLAddr !CombinedCtx !CombinedCtx !Name !Name !VEnv !ExprContextId
   | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
@@ -123,8 +121,6 @@ instance Show Addr where
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
   show (KAddr frame ctx dframe dval) = "K@(" ++ show frame ++ "," ++ show ctx ++ "," ++ show dframe ++ "," ++ show dval ++ ")"
-  show (ImplicitAddr ctx env ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
-  show (ImplicitLAddr _ ctx nm _ env ctxId) = "IL@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
@@ -132,12 +128,6 @@ data RValue =
   RVAddr Addr 
   | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr 
   deriving (Eq, Ord, Show)
-
-kaddrEnv :: Addr -> VEnv 
-kaddrEnv (ImplicitAddr _ env _) = env
-
-kaddrId :: Addr -> ExprContextId
-kaddrId (ImplicitAddr _ _ ctxId) = ctxId
 
 data Frame =
   FrameDone
@@ -175,7 +165,6 @@ data Frame =
       vaddr :: Addr -- Precise closure address
   }
   | FResume {
-      rframe :: Frame,
       rretCtx :: StaticCtx,
       vaddr :: Addr,
       venv :: VEnv,
@@ -208,13 +197,6 @@ nextLetFrame
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
 
 
-data Kont =
-  KEnd
-  | KNext { knext :: Addr }
-  | KLocal { kLocalNext :: Addr }
-  | KLink { kLinkNext :: Addr }
-  deriving (Eq, Ord, Show)
-
 data Handler =
   Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
   deriving (Eq, Ord, Show)
@@ -242,7 +224,7 @@ data AChange =
   | AChangeConstr ExprContext [Name]
   | AChangeObj ExprContext TName [(Name,Addr)]
   | AChangeLit LiteralChangeX
-  | AChangeKont StaticCtx Frame Name Addr VEnv Handler -- Where to return to and where to extend the return continuation
+  | AChangeKont Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
   
 vcontextId change = 
@@ -252,7 +234,7 @@ vcontextId change =
     AChangeConstr e _ -> contextId e
     AChangeObj e _ _ -> contextId e
     AChangeLit e -> litEx e
-    AChangeKont _ _ _ _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
+    AChangeKont _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
 
 envOfClos :: AChange -> VEnv
 envOfClos res =
@@ -269,7 +251,7 @@ instance Show AChange where
   show (AChangeConstr expr params) = showSimpleClosure (expr, startEnv)
   show (AChangeObj e name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr) = show name
-  show (AChangeKont ctx frame name addr env handler) = "Kont" ++ show (ctx, frame, name, addr, env, handler)
+  show (AChangeKont addr env handler) = "Kont" ++ show (addr, env, handler)
   show (AChangeLit lit) = show lit
 
 data AbValue =
@@ -278,7 +260,7 @@ data AbValue =
     acons:: !(Set (ExprContext, [Name])),
     aprims :: !(Set (TName, ExprContext)),
     aobjs :: !(Set (ExprContext, TName, [(Name,Addr)])),
-    akonts:: !(Set (StaticCtx, Frame, Name, Addr, VEnv, Handler)),
+    akonts:: !(Set (Addr, VEnv, Handler)),
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
@@ -306,7 +288,7 @@ changes (AbValue clos constrs prims objs konts lits) =
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
     primss = map (uncurry AChangePrim) $ S.toList prims
     objss = map (\(e, n, a) -> AChangeObj e n a) $ S.toList objs
-    kontss = map (\(ctx, frame, name, addr, env, handler) -> AChangeKont ctx frame name addr env handler) $ S.toList konts
+    kontss = map (\(addr, env, handler) -> AChangeKont addr env handler) $ S.toList konts
     litss = changesLit lits
 
 changesLit :: LiteralLatticeX -> [AChange]
@@ -321,7 +303,7 @@ changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _ _) = S.member (ctx,env) clo
 changeIn (AChangeConstr ctx params) (AbValue _ constr _ _ _ _) = S.member (ctx,params) constr
 changeIn (AChangePrim name expr) (AbValue _ _ prims _ _ _) = S.member (name, expr) prims
 changeIn (AChangeObj exp name args) (AbValue _ _ _ objs _ _) = S.member (exp, name, args) objs
-changeIn (AChangeKont ctx frame name addr env handler) (AbValue _ _ _ _ konts _) = S.member (ctx, frame, name, addr, env, handler) konts
+changeIn (AChangeKont addr env handler) (AbValue _ _ _ _ konts _) = S.member (addr, env, handler) konts
 changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLatticeX ints floats chars strings)) =
   case lit of
     LiteralChangeIntX i -> i `lteX` ints
@@ -414,7 +396,7 @@ addChange ab@(AbValue cls cs prims objs konts lit) change =
     AChangePrim name expr -> (change, AbValue cls cs (S.insert (name, expr) prims) objs konts lit)
     AChangeObj exp name addrs -> (change, AbValue cls cs prims (S.insert (exp, name, addrs) objs) konts lit)
     AChangeConstr c params -> (change, AbValue cls (S.insert (c,params) cs) prims objs konts lit)
-    AChangeKont ctx frame name addr env handler -> (change, AbValue cls cs prims objs (S.insert (ctx, frame, name, addr, env, handler) konts) lit)
+    AChangeKont addr env handler -> (change, AbValue cls cs prims objs (S.insert (addr, env, handler) konts) lit)
     AChangeLit l ->
       let (change, newLattice) = joinLitX l lit
       in (AChangeLit change, AbValue cls cs prims objs konts newLattice)
