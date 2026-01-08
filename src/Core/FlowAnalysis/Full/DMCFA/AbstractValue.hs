@@ -103,6 +103,7 @@ data DelimitedFrame =
       dflVarName :: TName,
       dflValAddr :: Addr
   } | DFrameDone 
+  | DFrameNone -- Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
 data Addr =
@@ -129,7 +130,7 @@ instance Show Addr where
 
 data RValue = 
   RVAddr Addr 
-  | ROp Addr
+  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr 
   deriving (Eq, Ord, Show)
 
 kaddrEnv :: Addr -> VEnv 
@@ -183,6 +184,9 @@ data Frame =
   }
   | FStore {
       vaddr :: Addr
+  }
+  | FRestoreDelim {
+     dframe :: DelimitedFrame
   }
   | FMask
   | FCall
