@@ -103,7 +103,7 @@ data DelimitedFrame =
       dflVarName :: TName,
       dflValAddr :: Addr
   } | DFrameDone 
-  | DFrameNone -- Don't use DelimFrames
+  | DFrameNone -- TODO: Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
 data Addr =
@@ -136,14 +136,6 @@ data Frame =
       branches :: [ExprContext],
       env :: VEnv
     }
-  | FOp {
-      effName :: Name,
-      totalArgs :: Int,
-      leftArgs :: [ExprContext],
-      resolvedArgs :: [Addr],
-      parent :: ExprContext,
-      env :: VEnv
-    }
   | FApp {
       totalArgs :: Int,
       leftArgs :: [ExprContext],
@@ -171,14 +163,10 @@ data Frame =
       rHnd :: Handler,
       rCtx :: ExprContextId
   }
-  | FStore {
-      vaddr :: Addr
-  }
   | FRestoreDelim {
      dframe :: DelimitedFrame
   }
   | FMask
-  | FCall
   deriving (Eq, Ord, Show)
 
 
