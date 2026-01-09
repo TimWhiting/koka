@@ -184,7 +184,6 @@ getAbResult = do
                         KStore KAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                        Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                         Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                         Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)) 
@@ -224,7 +223,6 @@ writeSimpleDependencyGraph name cache = do
   let cache' = M.filterWithKey (\k v -> case k of {
       Step (CEval {}) -> True; 
       Step (CApply {}) -> True; 
-      Step (CContinue {}) -> True;
       _ -> False}) cache
   -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
   let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'
