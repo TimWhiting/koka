@@ -194,6 +194,7 @@ doContinue res frame ctx =
       returnOp dval ctx frame dframe k'
     RVAddr addr -> do
       case frame of
+          FrameDone -> returnAddr addr ctx
           f | f == FMask -> do
             v <- store addr
             case v of

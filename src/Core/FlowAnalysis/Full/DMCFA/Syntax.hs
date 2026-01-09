@@ -73,44 +73,57 @@ runQueryAtRange bc build mod m d doQuery =
                 return (0, 0)
             (AProgram name mainCtx resCtx):rest ->
               do
-                result <- timeout 50000000 $ do
-                  tstart <- getCurrentTime
-                  -- trace (" Analyzing " ++ show name) $ return ()
-                  (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
-                                  runFixCont $ do
-                                    (_,ctx) <- loadModule (modName mod)
-                                    -- trace ("Context: " ++ show (contextId ctx)) $ return ()
-                                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
-                                  ress' <- getAbResult
-                                  -- trace ("result': " ++ show ress') $ return ()
-                                  return ress'
-                  tend <- getCurrentTime
-                  (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
-                                  runFixCont $ do
-                                    (_,ctx) <- loadModule (modName mod)
-                                    -- trace ("Context: " ++ show (contextId ctx)) $ return ()
-                                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
-                                  ress' <- getAbResult
-                                  -- trace ("expected': " ++ show ress') $ return ()
-                                  return ress'
-                  let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                  let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
-                  -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-                  trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
-                          show result ++ "," ++ show (length evals) ++ "," ++ show (length applies) ++ ","
-                          ++ show (average evals) ++ "," ++ show (average applies) ++ ","
-                          ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
-                          ++ showFixed True (nominalDiffTimeToSeconds $ diffUTCTime tend tstart)) $ return ()
-                  return result
-                case result of
-                  Nothing -> trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ ",0,0,0,0,0,0,0,timeout") $ return ()
-                  Just _ -> return ()
+                result <- do
+                  mbRes <- do
+                        let once = do
+                              timeout 50000000 $ do
+                                  tstart <- getCurrentTime
+                                  -- trace (" Analyzing " ++ show name) $ return ()
+                                  (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                                  runFixCont $ do
+                                                    (_,ctx) <- loadModule (modName mod)
+                                                    -- trace ("Context: " ++ show (contextId ctx)) $ return ()
+                                                    withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
+                                                  ress' <- getAbResult
+                                                  -- trace ("result': " ++ show ress') $ return ()
+                                                  return ress'
+                                  tend <- getCurrentTime
+                                  return (l, analysisResult, nominalDiffTimeToSeconds $ diffUTCTime tend tstart)
+                        first <- once
+                        case first of 
+                          Just (l, res, time1) -> do
+                            Just (_, _, time2) <- once
+                            Just (_, _, time3) <- once
+                            return $ Just (l, res, time1, time2, time3)
+                          Nothing -> return Nothing
+                  case mbRes of
+                    Just (l, analysisResult, time1, time2, time3) -> do
+                      (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                      runFixCont $ do
+                                        (_,ctx) <- loadModule (modName mod)
+                                        -- trace ("Context: " ++ show (contextId ctx)) $ return ()
+                                        withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
+                                      ress' <- getAbResult
+                                      -- trace ("expected': " ++ show ress') $ return ()
+                                      return ress'
+                      
+                      let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
+                      let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
+                      -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
+                      trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                              show result ++ "," ++ show (length evals) ++ "," ++ show (length applies) ++ ","
+                              ++ show (average evals) ++ "," ++ show (average applies) ++ ","
+                              ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
+                              ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
+                      return $ Just result
+                    Nothing -> 
+                      trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
+                               ",timeout,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
+                      return Nothing
                 (total, timeouts) <- recur rest
                 case result of
                   Just res -> return (res + total, timeouts)
-                  _ ->
-                    return (total, timeouts + 1)
-            
+                  Nothing -> return (total, timeouts + 1)
                 
     -- tstart <- getCurrentTime
     (r, timeouts) <- recur values
@@ -168,10 +181,10 @@ getAbResult = do
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                         Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                        Step (CApply{}) -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
-                                                     Bottom -> acc
-                        Step _ -> acc
-                        _ -> error("Address " ++ show k)) ([], [], [], []) cache
+                        Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
+                        Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
+                        Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)) 
+                        ([], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of
           Just (SValue res) ->
