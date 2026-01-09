@@ -337,18 +337,6 @@ doContinue res frame ctx =
             -- trace ("Applying continuation " ++ show u ++ " " ++ show (hLabel hnd)) $ return ()
             res <- apply kont addr newDelimCtx
             returnV $ handleEffects res u hnd newRetCtx
-          FRestoreDelim (DFrameLocal venv bodId varName varAddr) -> do
-            d <- dLimit
-            m <- mLimit
-            let newRetCtx = addCall m ctx bodId
-            let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-            returnV $ handleLocal res bodId varName varAddr newRetCtx
-          FRestoreDelim (DFrame venv bodId h)  -> do 
-            d <- dLimit
-            m <- mLimit
-            let newRetCtx = addCall m ctx bodId
-            let newDelimCtx = newDelim d m newRetCtx bodId (hLabel h)
-            returnV $ handleEffects res bodId h newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
@@ -464,27 +452,25 @@ doHandleLocal :: HasCallStack => RValue -> ExprContextId -> TName -> Addr -> Com
 doHandleLocal res bodId varName valAddr retCtx = do
   case res of
     ROp dval ctx' frame' dframe' knext -> do
+      let kOp = KAddr frame' ctx' dframe' dval
+      extendKStore kOp knext
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
           -- trace ("Getting local variable: " ++ show varName ++ " of " ++ show valAddr) $ return ()
-          res <- apply knext valAddr (dynamic retCtx)
-          cont <- continue res frame' retCtx
-          returnV $ handleLocal cont bodId varName valAddr retCtx
+          res <- apply kOp valAddr (dynamic retCtx)
+          returnV $ handleLocal res bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
           d <- dLimit
           m <- mLimit
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply knext newAddr (dynamic newDelimCtx)
-          cont <- continue res frame' newRetCtx
-          returnV $ handleLocal cont bodId varName newAddr newRetCtx
+          res <- apply kOp newAddr (dynamic newDelimCtx)
+          returnV $ handleLocal res bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let k' = KAddr frame' ctx' dframe' dval
-          extendKStore k' knext
           let dframe = DFrameLocal retCtx bodId varName valAddr
-          returnOp dval (static retCtx) (FRestoreDelim dframe) dframe k'
+          returnOp dval (static retCtx) (FRestoreDelim dframe) dframe kOp
     RVAddr addr -> returnAddr addr
 
 doHandleEffects :: HasCallStack => RValue -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e FixChange

@@ -107,13 +107,13 @@ doEval expr venv ctx = do
         Lam{} -> True
         TypeApp e _ -> isSimpleExpr e
         TypeLam _ e -> isSimpleExpr e
-        App (Var nm _) _ _ | isConstructorName (getName nm) || getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
+        App (Var nm _) _ _ |  getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (TypeApp (Var nm _) _) _ _ | isConstructorName (getName nm) || getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (App (TypeApp (Var nm _) _) [e] _) _ _ -> getName nm == nameEffectOpen
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -202,7 +202,7 @@ doContinue res frame ctx =
       extendKStore k' knext
       returnOp dval (static ctx) frame dframe k'
     RVAddr addr -> 
-      trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
+      -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
       case frame of
           FrameDone -> returnAddr addr
           f | f == FMask -> do
@@ -313,20 +313,6 @@ doContinue res frame ctx =
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
             res <- apply kont addr newDelimCtx
             returnV $ handleEffects res venv u hnd newRetCtx
-          FRestoreDelim (DFrameLocal venv bodId varName varAddr) -> do
-            d <- dLimit
-            m <- mLimit
-            let newRetCtx = addCall m ctx bodId
-            let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-            error ("DFrameLocal")
-            returnV $ handleLocal res venv bodId varName varAddr newRetCtx
-          FRestoreDelim (DFrame venv bodId h)  -> do 
-            d <- dLimit
-            m <- mLimit
-            let newRetCtx = addCall m ctx bodId
-            let newDelimCtx = newDelim d m newRetCtx bodId (hLabel h)
-            error ("DFrameEffect")
-            returnV $ handleEffects res venv bodId h newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
@@ -413,7 +399,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameHandle = do
     _ -> doBottom
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
   args <- mapM store arguments
-  trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
+  -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
     case args !! 1 of
       AChangeClos e env -> do
@@ -439,32 +425,28 @@ doHandleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Add
 doHandleLocal res venv bodId varName valAddr retCtx = do
   case res of
     ROp dval ctx' frame' dframe' knext -> do
+      let kOp = KAddr frame' ctx' dframe' dval
+      extendKStore kOp knext
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do    
-          trace ("HandleGetLocal" ) $ return()  
           d <- dLimit
           m <- mLimit
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply knext valAddr (dynamic newDelimCtx)
-          cont <- continue res frame' (CombinedCtx ctx' (dynamic newDelimCtx)) 
-          returnV $ handleLocal cont venv bodId varName valAddr newRetCtx
+          res <- apply kOp valAddr (dynamic newDelimCtx)
+          returnV $ handleLocal res venv bodId varName valAddr newRetCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
           d <- dLimit
           m <- mLimit
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply knext newAddr (dynamic newDelimCtx)
-          cont <- continue res frame' (CombinedCtx ctx' (dynamic newDelimCtx)) 
-          trace ("HandleSetLocal" ) $ return()
-          returnV $ handleLocal cont venv bodId varName newAddr newRetCtx
+          res <- apply kOp newAddr (dynamic newDelimCtx)
+          returnV $ handleLocal res venv bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let k' = KAddr frame' ctx' dframe' dval
-          extendKStore k' knext
           let dframe = DFrameLocal venv bodId varName valAddr
-          returnOp dval (static retCtx) (FRestoreDelim dframe) dframe k'
+          returnOp dval (static retCtx) (FRestoreDelim dframe) dframe kOp
     RVAddr addr -> returnAddr addr
 
 doHandleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e FixChange
@@ -504,7 +486,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
     res ->
       case mbFrame of
         Just frame -> do
-          -- trace ("Continuing after handling effects\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n") $ return ()
+          -- trace ("Continuing after handling effects\n" ++ show retCtx ++ "\n") $ return ()
           returnV $ continue res frame retCtx
         Nothing -> return $ RV res
 

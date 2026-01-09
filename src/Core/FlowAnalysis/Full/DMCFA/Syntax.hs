@@ -45,6 +45,7 @@ import Data.Time.Clock (nominalDiffTimeToSeconds)
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
 analyzeEach = analyzeEachChild
 
+debug = True
 
 runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
@@ -92,9 +93,11 @@ runQueryAtRange bc build mod m d doQuery =
                         first <- once
                         case first of 
                           Just (l, res, time1) -> do
-                            Just (_, _, time2) <- once
-                            Just (_, _, time3) <- once
-                            return $ Just (l, res, time1, time2, time3)
+                            if debug then return $ Just (l, res, time1, time1, time1)
+                            else do
+                              Just (_, _, time2) <- once
+                              Just (_, _, time3) <- once
+                              return $ Just (l, res, time1, time2, time3)
                           Nothing -> return Nothing
                   case mbRes of
                     Just (l, analysisResult, time1, time2, time3) -> do
@@ -183,7 +186,8 @@ getAbResult = do
                         Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                         Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
-                        Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)) 
+                        Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
+                        )
                         ([], [], [], []) cache
   let getValue addr addrsx =
         case M.lookup (VStore addr) cache of
@@ -220,7 +224,6 @@ writeSimpleDependencyGraph name cache = do
   let cache' = M.filterWithKey (\k v -> case k of {
       Step (CEval {}) -> True; 
       Step (CApply {}) -> True; 
-      Step (CContinue {}) -> True;
       _ -> False}) cache
   -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
   let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'

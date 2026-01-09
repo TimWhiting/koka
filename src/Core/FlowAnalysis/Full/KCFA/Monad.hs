@@ -28,7 +28,7 @@ import Type.Pretty (defaultEnv, ppType)
 data Conf =
   CEval ExprContext VEnv StaticCtx -- expr, env, ctx
   | CApply Addr Addr StaticCtx -- kont, vaddr, dynctx
-  | CContinue RValue Frame VEnv StaticCtx ExprContextId
+  | CContinue RValue Frame StaticCtx
   | CHandleEffects RValue VEnv ExprContextId Handler StaticCtx 
   | CHandleLocal RValue VEnv ExprContextId TName Addr StaticCtx 
   deriving (Eq, Ord, Show)
