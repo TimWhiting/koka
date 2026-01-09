@@ -85,8 +85,6 @@ eval :: HasCallStack => ExprContext -> CombinedCtx -> FixAAMR r s e RValue
 eval expr ctx = unreturnV $ doStep $ Step (CEval expr ctx)
 apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
-continue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e RValue
-continue res frame ctx = unreturnV $ doContinue res frame ctx
 handleEffects :: HasCallStack => RValue -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res bodId hnd retCtx = unreturnV $ doStep $ Step (CHandleEffects res bodId hnd retCtx)
 handleLocal :: HasCallStack => RValue -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
@@ -140,13 +138,13 @@ doEval expr ctx = do
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f ctx
-      returnV $ continue res FMask ctx
+      doContinue res FMask ctx
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f ctx
-      returnV $ continue res FMask ctx
+      doContinue res FMask ctx
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -183,7 +181,7 @@ doEval expr ctx = do
       let defName = defTName (defOfCtx bind)
       -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
       res <- eval bind ctx
-      returnV $ continue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
+      doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
     TypeApp{} -> do
       e <- focusChild 0 expr
       returnV $ eval e ctx
@@ -199,7 +197,7 @@ doEval expr ctx = do
       branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
       -- trace (show branches) $ return ()
       res <- eval s ctx
-      returnV $ continue res (FScrut expr branches ctx) ctx
+      doContinue res (FScrut expr branches ctx) ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where doApp args = do
@@ -207,7 +205,7 @@ doEval expr ctx = do
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
           res <- eval f ctx
-          returnV $ continue res (FApp (length args) argExprs [] expr ctx) ctx
+          doContinue res (FApp (length args) argExprs [] expr ctx) ctx
 
 
 doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
@@ -277,7 +275,7 @@ doContinue res frame ctx =
                 -- trace ("Adding addr " ++ show addr ++ " next " ++ show next) $ return ()
                 rebindAll (nextAndFvs next) oldCtx ctx
                 ret <- eval next ctx
-                returnV $ continue ret (FApp n rest (res ++ [addr]) eApp ctx) ctx
+                doContinue ret (FApp n rest (res ++ [addr]) eApp ctx) ctx
           FLet groupIdx numGroups bindingIdx numBindings name resolved u oldCtx -> do
             -- trace ("Applying Let " ++ show addr ++ " " ++ show (BindingAddr ctx name)) $ return ()
              -- We need to override the old name binding (in case it was in a different context)
@@ -294,7 +292,7 @@ doContinue res frame ctx =
               next <- focusNextLetDefBinding groupIdx bindingIdx u
               rebindAll (S.delete name $ nextFvs next) oldCtx ctx
               ret <- eval next ctx
-              returnV $ continue ret (nextLetFrame frame ctx) ctx
+              doContinue ret (nextLetFrame frame ctx) ctx
           FScrut parent branches oldCtx -> do
             let recur [] = doBottom
                 recur ((branch, expr):branches) = do
@@ -367,7 +365,7 @@ doApply kaddr addr dynctx = do
       knext <- kStore kaddr
       res <- apply knext addr dynctx
       let newctx = CombinedCtx ctx dynctx
-      returnV $ continue res frame newctx
+      doContinue res frame newctx
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
   n == nameHandle || isClauseName n || n == nameHTag
@@ -495,7 +493,7 @@ doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
             zipWithM_ rebind args (map (BindingAddr retCtx) params)
             if isTailOpT opConName then do -- TODO: TIM
               res <- eval opBod retCtx
-              returnV $ continue res (FResume ctx' kOp h (contextId opBod)) retCtx
+              doContinue res (FResume ctx' kOp h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
               returnV $ eval opBod retCtx
             else do
@@ -511,7 +509,7 @@ doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
       case mbFrame of
         Just frame -> do
           -- trace ("Continuing after handling effects\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n") $ return ()
-          returnV $ continue res frame retCtx
+          doContinue res frame retCtx
         Nothing -> return $ RV res
 
 branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))

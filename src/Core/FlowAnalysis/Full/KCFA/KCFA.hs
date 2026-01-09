@@ -65,7 +65,6 @@ kStore addr = do
   return res
 eval expr venv ctx = doStep $ Step (CEval expr venv ctx)
 apply kaddr addr ctx = doStep $ Step (CApply kaddr addr ctx)
-continue res frame ctx = doContinue res frame ctx
 handleEffects res venv bodId hnd retCtx = doStep $ Step (CHandleEffects res venv bodId hnd retCtx)
 handleLocal res venv bodId varName valAddr retCtx = doStep $ Step (CHandleLocal res venv bodId varName valAddr retCtx)
 
@@ -118,13 +117,13 @@ doEval expr venv ctx = do
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
       RV (res, newCtx) <- eval f venv ctx
-      continue res FMask newCtx
+      doContinue res FMask newCtx
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
       RV (res, newCtx) <- eval f venv ctx
-      continue res FMask newCtx
+      doContinue res FMask newCtx
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -158,7 +157,7 @@ doEval expr venv ctx = do
       let defName = defTName (defOfCtx bind)
       -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
       RV (res, newCtx) <- eval bind (limitEnv newEnv (S.insert defName (fvs bind))) ctx
-      continue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) newCtx 
+      doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) newCtx 
     TypeApp{} -> do
       e <- focusChild 0 expr
       eval e venv ctx
@@ -173,7 +172,7 @@ doEval expr venv ctx = do
       s <- focusScrutinee expr
       branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
       RV (res, newCtx) <- eval s (limitEnv venv (fvs s)) ctx
-      continue res (FScrut expr branches venv) newCtx
+      doContinue res (FScrut expr branches venv) newCtx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where doApp args = do
@@ -181,7 +180,7 @@ doEval expr venv ctx = do
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
           RV (res, newCtx) <- eval f (limitEnv venv (fvs f)) ctx
-          continue res (FApp (length args) argExprs [] expr venv) newCtx
+          doContinue res (FApp (length args) argExprs [] expr venv) newCtx
 
 doContinue :: HasCallStack => RValue -> Frame -> StaticCtx -> FixAAMR r s e FixChange
 doContinue res frame ctx =
@@ -248,7 +247,7 @@ doContinue res frame ctx =
               next:rest -> do
                 -- trace ("Next " ++ show next) $ return ()
                 RV (ret, newCtx) <- eval next (limitEnv venv (fvs next)) ctx
-                continue ret (FApp n rest (res ++ [addr]) eApp venv) newCtx
+                doContinue ret (FApp n rest (res ++ [addr]) eApp venv) newCtx
           FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
             val <- store addr
@@ -264,7 +263,7 @@ doContinue res frame ctx =
               -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
               RV (ret, newCtx) <- eval next env' ctx
-              continue ret (nextLetFrame frame newCtx) newCtx
+              doContinue ret (nextLetFrame frame newCtx) newCtx
           FScrut parent branches env -> do
             let recur [] = doBottom
                 recur ((branch, expr):branches) = do
@@ -317,7 +316,7 @@ doApply kaddr addr ctx = do
     KAddr frame _ _ _ -> do
       knext <- kStore kaddr
       RV (res, newctx) <- apply knext addr ctx
-      continue res frame newctx
+      doContinue res frame newctx
 
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
@@ -435,7 +434,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
             zipWithM_ rebind args (map (BindingAddr newCtx) params)
             if isTailOpT opConName then do -- TODO: Add operation call context?
               RV (res', retCtx') <- eval opBod (limitEnv newEnv (fvs opBod)) newCtx
-              continue res' (FResume kOp venv h (contextId opBod)) retCtx'
+              doContinue res' (FResume kOp venv h (contextId opBod)) retCtx'
             else if isNeverOp opConName then do
               eval opBod (limitEnv newEnv (fvs opBod)) newCtx
             else do
@@ -451,7 +450,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
       case mbFrame of
         Just frame -> do
           -- trace ("Continuing after handling effects\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n") $ return ()
-          continue res frame ctx
+          doContinue res frame ctx
         Nothing -> return $ RV (res, ctx)
 
 branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
