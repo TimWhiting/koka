@@ -183,7 +183,6 @@ getAbResult = do
                         KStore KAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
                         Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                        Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                         Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                         Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)

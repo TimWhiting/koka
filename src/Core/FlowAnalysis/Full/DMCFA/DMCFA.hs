@@ -43,7 +43,6 @@ doStep i =
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
       Step (CEval expr venv ctx) -> doEval expr venv ctx
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
-      Step (CContinue res frame ctx) -> doContinue res frame ctx
       Step (CHandleEffects res venv bodId hnd retCtx) -> doHandleEffects res venv bodId hnd retCtx
       Step (CHandleLocal res venv bodId varName valAddr retCtx) -> doHandleLocal res venv bodId varName valAddr retCtx
 
@@ -74,7 +73,7 @@ returnV :: FixAAMR r s e RValue -> FixAAMR r s e FixChange
 returnV f = RV <$> f
 eval expr venv ctx = unreturnV $ doStep $ Step (CEval expr venv ctx)
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
-continue res frame ctx = unreturnV $ doStep $ Step (CContinue res frame ctx)
+continue res frame ctx = unreturnV $ doContinue res frame ctx
 handleEffects res venv bodId hnd retCtx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd retCtx)
 handleLocal res venv bodId varName valAddr retCtx = unreturnV $ doStep $ Step (CHandleLocal res venv bodId varName valAddr retCtx)
 
