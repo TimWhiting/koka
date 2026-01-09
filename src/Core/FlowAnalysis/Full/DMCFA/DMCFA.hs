@@ -429,12 +429,8 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
       extendKStore kOp knext
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do    
-          d <- dLimit
-          m <- mLimit
-          let newRetCtx = addCall m retCtx bodId
-          let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply kOp valAddr (dynamic newDelimCtx)
-          returnV $ handleLocal res venv bodId varName valAddr newRetCtx
+          res <- apply kOp valAddr (dynamic retCtx)
+          returnV $ handleLocal res venv bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
           d <- dLimit
