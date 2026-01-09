@@ -76,7 +76,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- do
                   mbRes <- do
                         let once = do
-                              timeout 50000000 $ do
+                              timeout 5000000 $ do
                                   tstart <- getCurrentTime
                                   -- trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -213,7 +213,7 @@ evalMainR bc build mod m d = do
         rebind addr EndVAddr
         return ()
       RV _ -> 
-        trace("Expected main to evaluate to an address" ++ show res)
+        -- trace("Expected main to evaluate to an address" ++ show res)
         doBottom
     return ()
 
