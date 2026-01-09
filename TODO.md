@@ -1,6 +1,5 @@
-- [x] Figure out vec loss of precision (it was due to local application after local-get not applying a precise continuation maybe, adding context to local-get prevented confusing continuations)
-- [ ] Better address space 
-- [ ] See if vec doesn't need d=1,m=2
-- [ ] Figure out state issue with KCFA - maybe similar to above
-- [ ] Ensure that we consider overlapping matching branches in a sound and precise manner.
+- [ ] Figure out why new pattern matching is not working on unix.
+- [ ] Add better matching to DMCFA and KCFA
+- [ ] Figure out which samples never are precise and if we are okay with that
+- [ ] Add back in local set information
 - [ ] Redo analysis....
