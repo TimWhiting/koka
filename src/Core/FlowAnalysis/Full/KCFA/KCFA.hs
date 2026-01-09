@@ -297,6 +297,10 @@ doContinue res frame ctx =
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
             RV (res, ctx) <- apply kont addr newRetCtx 
             handleEffects res venv u hnd ctx
+          FRestoreDelim (DFrameLocal venv bodId varName varAddr) -> do
+            handleLocal res venv bodId varName varAddr ctx
+          FRestoreDelim (DFrame venv bodId h) -> do
+            handleEffects res venv bodId h ctx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
@@ -306,11 +310,11 @@ doApply kaddr addr ctx = do
   -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr ctx
-    KAddr (FRestoreDelim (DFrameLocal venv bodId varName varAddr)) ctx _ _ -> do
+    KAddr (FRestoreDelim (DFrameLocal venv bodId varName varAddr)) _ _ _ -> do
       knext <- kStore kaddr
       RV (res, newctx) <- apply knext addr ctx
       handleLocal res venv bodId varName varAddr newctx
-    KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do
+    KAddr (FRestoreDelim (DFrame venv bodId h)) _ _ _ -> do
       knext <- kStore kaddr
       RV (res, newctx) <- apply knext addr ctx
       -- trace ("Restoring handler context for " ++ show h ++ " with\n" ++ show newRetCtx ++ "\n" ++ show newDelimCtx ++ "\n") $ return () 
