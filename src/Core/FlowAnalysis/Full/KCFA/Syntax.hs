@@ -45,6 +45,7 @@ import Data.Time.Clock (nominalDiffTimeToSeconds)
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
 analyzeEach = analyzeEachChild
 
+debug = True
 
 runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
@@ -92,9 +93,11 @@ runQueryAtRange bc build mod m doQuery =
                         first <- once
                         case first of 
                           Just (l, res, time1) -> do
-                            Just (_, _, time2) <- once
-                            Just (_, _, time3) <- once
-                            return $ Just (l, res, time1, time2, time3)
+                            if debug then return $ Just (l, res, time1, time1, time1)
+                            else do
+                              Just (_, _, time2) <- once
+                              Just (_, _, time3) <- once
+                              return $ Just (l, res, time1, time2, time3)
                           Nothing -> return Nothing
                   case mbRes of
                     Just (l, analysisResult, time1, time2, time3) -> do
