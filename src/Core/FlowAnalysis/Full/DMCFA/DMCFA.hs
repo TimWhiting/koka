@@ -309,6 +309,18 @@ doContinue res frame ctx =
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
             res <- apply kont addr newDelimCtx
             returnV $ handleEffects res venv u hnd newRetCtx
+          FRestoreDelim (DFrameLocal venv bodId varName varAddr) -> do
+            d <- dLimit
+            m <- mLimit
+            let newRetCtx = addCall m ctx bodId
+            let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
+            returnV $ handleLocal res venv bodId varName varAddr newRetCtx
+          FRestoreDelim (DFrame venv bodId h)  -> do 
+            d <- dLimit
+            m <- mLimit
+            let newRetCtx = addCall m ctx bodId
+            let newDelimCtx = newDelim d m newRetCtx bodId (hLabel h)
+            returnV $ handleEffects res venv bodId h newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 

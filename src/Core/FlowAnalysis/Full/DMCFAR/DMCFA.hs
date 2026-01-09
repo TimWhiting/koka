@@ -337,6 +337,18 @@ doContinue res frame ctx =
             -- trace ("Applying continuation " ++ show u ++ " " ++ show (hLabel hnd)) $ return ()
             res <- apply kont addr newDelimCtx
             returnV $ handleEffects res u hnd newRetCtx
+          FRestoreDelim (DFrameLocal venv bodId varName varAddr) -> do
+            d <- dLimit
+            m <- mLimit
+            let newRetCtx = addCall m ctx bodId
+            let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
+            returnV $ handleLocal res bodId varName varAddr newRetCtx
+          FRestoreDelim (DFrame venv bodId h)  -> do 
+            d <- dLimit
+            m <- mLimit
+            let newRetCtx = addCall m ctx bodId
+            let newDelimCtx = newDelim d m newRetCtx bodId (hLabel h)
+            returnV $ handleEffects res bodId h newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
@@ -354,7 +366,7 @@ doApply kaddr addr dynctx = do
       knext <- kStore kaddr
       res <- apply knext addr (dynamic newDelimCtx)
       returnV $ handleLocal res bodId varName varAddr newRetCtx
-    KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do -- TODO: Dynamic context adjustments...
+    KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do 
       let newctx = CombinedCtx ctx dynctx
       d <- dLimit
       m <- mLimit
