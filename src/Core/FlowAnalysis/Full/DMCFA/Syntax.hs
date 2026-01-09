@@ -45,7 +45,7 @@ import Data.Time.Clock (nominalDiffTimeToSeconds)
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
 analyzeEach = analyzeEachChild
 
-debug = True
+debug = False
 
 runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
