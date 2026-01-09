@@ -50,7 +50,6 @@ doStep i =
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
       Step (CEval expr ctx) -> doEval expr ctx
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
-      Step (CContinue res frame ctxNew) -> doContinue res frame ctxNew
       Step (CHandleEffects res bodId hnd retCtx) -> doHandleEffects res bodId hnd retCtx
       Step (CHandleLocal res bodId varName valAddr retCtx) -> doHandleLocal res bodId varName valAddr retCtx
 
@@ -87,7 +86,7 @@ eval expr ctx = unreturnV $ doStep $ Step (CEval expr ctx)
 apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
 continue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e RValue
-continue res frame ctx = unreturnV $ doStep $ Step (CContinue res frame ctx)
+continue res frame ctx = unreturnV $ doContinue res frame ctx
 handleEffects :: HasCallStack => RValue -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res bodId hnd retCtx = unreturnV $ doStep $ Step (CHandleEffects res bodId hnd retCtx)
 handleLocal :: HasCallStack => RValue -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
