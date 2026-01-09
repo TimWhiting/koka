@@ -141,13 +141,13 @@ doEval expr ctx = do
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f ctx
-      doContinue res FMask ctx
+      returnV $ continue res FMask ctx
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f ctx
-      doContinue res FMask ctx
+      returnV $ continue res FMask ctx
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -184,7 +184,7 @@ doEval expr ctx = do
       let defName = defTName (defOfCtx bind)
       -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
       res <- eval bind ctx
-      doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
+      returnV $ continue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
     TypeApp{} -> do
       e <- focusChild 0 expr
       returnV $ eval e ctx
@@ -200,7 +200,7 @@ doEval expr ctx = do
       branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
       -- trace (show branches) $ return ()
       res <- eval s ctx
-      doContinue res (FScrut expr branches ctx) ctx
+      returnV $ continue res (FScrut expr branches ctx) ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where doApp args = do
@@ -208,7 +208,7 @@ doEval expr ctx = do
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
           res <- eval f ctx
-          doContinue res (FApp (length args) argExprs [] expr ctx) ctx
+          returnV $ continue res (FApp (length args) argExprs [] expr ctx) ctx
 
 
 doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
@@ -368,7 +368,7 @@ doApply kaddr addr dynctx = do
       knext <- kStore kaddr
       res <- apply knext addr dynctx
       let newctx = CombinedCtx ctx dynctx
-      doContinue res frame newctx
+      returnV $ continue res frame newctx
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
   n == nameHandle || isClauseName n || n == nameHTag
@@ -456,7 +456,7 @@ doHandleLocal res bodId varName valAddr retCtx = do
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
           -- trace ("Getting local variable: " ++ show varName ++ " of " ++ show valAddr) $ return ()
           res <- apply knext valAddr (dynamic retCtx)
-          RV cont <- doContinue res frame' retCtx
+          cont <- continue res frame' retCtx
           returnV $ handleLocal cont bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
@@ -465,7 +465,7 @@ doHandleLocal res bodId varName valAddr retCtx = do
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
           res <- apply knext newAddr (dynamic newDelimCtx)
-          RV cont <- doContinue res frame' newRetCtx
+          cont <- continue res frame' newRetCtx
           returnV $ handleLocal cont bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
@@ -498,7 +498,7 @@ doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
             zipWithM_ rebind args (map (BindingAddr retCtx) params)
             if isTailOpT opConName then do -- TODO: TIM
               res <- eval opBod retCtx
-              doContinue res (FResume ctx' kOp h (contextId opBod)) retCtx
+              returnV $ continue res (FResume ctx' kOp h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
               returnV $ eval opBod retCtx
             else do

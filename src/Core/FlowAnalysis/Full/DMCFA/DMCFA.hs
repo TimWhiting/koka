@@ -49,10 +49,10 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  case addr of
-    BindImplicitAddr{} -> return ()
-    ConImplicitAddr{} -> return ()
-    _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  -- case addr of
+  --   BindImplicitAddr{} -> return ()
+  --   ConImplicitAddr{} -> return ()
+  --   _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -113,7 +113,7 @@ doEval expr venv ctx = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -126,13 +126,13 @@ doEval expr venv ctx = do
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f venv ctx
-      doContinue res FMask ctx
+      returnV $ continue res FMask ctx
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f venv ctx
-      doContinue res FMask ctx
+      returnV $ continue res FMask ctx
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -168,7 +168,7 @@ doEval expr venv ctx = do
       let defName = defTName (defOfCtx bind)
       -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
       res <- eval bind (limitEnv newEnv (S.insert defName (fvs bind))) ctx
-      doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) ctx
+      returnV $ continue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) ctx
     TypeApp{} -> do
       e <- focusChild 0 expr
       returnV $ eval e venv ctx
@@ -183,7 +183,7 @@ doEval expr venv ctx = do
       s <- focusScrutinee expr
       branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
       res <- eval s (limitEnv venv (fvs s)) ctx
-      doContinue res (FScrut expr branches venv) ctx
+      returnV $ continue res (FScrut expr branches venv) ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where doApp args = do
@@ -191,11 +191,11 @@ doEval expr venv ctx = do
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
           res <- eval f (limitEnv venv (fvs f)) ctx
-          doContinue res (FApp (length args) argExprs [] expr venv) ctx
+          returnV $ continue res (FApp (length args) argExprs [] expr venv) ctx
 
 doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
 doContinue res frame ctx =
-  trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $
+  -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $
   case res of
     ROp dval ctx' frame' dframe knext -> do
       let k' = KAddr frame' ctx' dframe dval
@@ -282,7 +282,7 @@ doContinue res frame ctx =
                 recur ((branch, expr):branches) = do
                   match <- branchMatch branch addr
                   case match of
-                    Just bindings -> do
+                    Just (bindings, matchTree) -> do
                       let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
@@ -341,7 +341,7 @@ doApply kaddr addr delimCtx = do
       knext <- kStore kaddr
       res <- apply knext addr delimCtx
       let newctx = CombinedCtx ctx delimCtx
-      doContinue res frame newctx
+      returnV $ continue res frame newctx
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
   n == nameHandle || isClauseName n || n == nameHTag
@@ -424,7 +424,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do      
           res <- apply knext valAddr (dynamic retCtx)
-          RV cont <- doContinue res frame' retCtx
+          cont <- continue res frame' retCtx
           returnV $ handleLocal cont venv bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
@@ -433,7 +433,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
           res <- apply knext newAddr (dynamic newDelimCtx)
-          RV cont <- doContinue res frame' newRetCtx
+          cont <- continue res frame' newRetCtx
           returnV $ handleLocal cont venv bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
@@ -465,13 +465,12 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
             zipWithM_ rebind args (map (BindingAddr retCtx) params)
             if isTailOpT opConName then do
               res <- eval opBod (limitEnv newEnv (fvs opBod)) retCtx
-              doContinue res (FResume ctx' kOp venv h (contextId opBod)) retCtx
+              returnV $ continue res (FResume ctx' kOp venv h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
               returnV $ eval opBod (limitEnv newEnv (fvs opBod)) retCtx
             else do
               extendStore (BindingAddr retCtx (last params)) (AChangeKont kOp venv h)
-              r <- eval opBod (limitEnv newEnv (fvs opBod)) retCtx
-              return $ RV r
+              returnV $ eval opBod (limitEnv newEnv (fvs opBod)) retCtx
       else do
         -- trace ("Allocating new return\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n" ++ show label ++ "," ++ show opName ++ "\n") $ return ()
         let k' = KAddr frame' ctx' dframe' dval
@@ -489,7 +488,12 @@ branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 branchMatch branch addr =
   patMatch (head $ branchPatterns branch) addr
 
-type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
+type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
+
+data AChangeTree = 
+  TChangeV Addr
+  | TChangeLit LiteralChangeX
+  | TChangeCon (M.Map Name AChangeTree) 
 
 rebind :: Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
@@ -505,14 +509,14 @@ patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
 patMatch (PatVar name rest) addr = do
   match <- patMatch rest addr
   case match of
-    Just bindings -> return $ Just $ M.insert name (\newAddr -> rebind addr newAddr) bindings
+    Just (rebinds, values) -> return $ Just (M.insert name (\newAddr -> rebind addr newAddr) rebinds, values)
     Nothing -> return Nothing
-patMatch PatWild addr = return $ Just M.empty
+patMatch PatWild addr = return $ Just (M.empty, TChangeV addr)
 patMatch plit@(PatLit _) addr = do
   v <- store addr
   case v of
     AChangeLit litChange ->
-      if patSubsumedX plit litChange then return $ Just M.empty
+      if patSubsumedX plit litChange then return $ Just (M.empty, TChangeLit litChange)
       else return Nothing
     _ -> return Nothing
 patMatch (PatCon nm pats _ _ _ _ _ _) addr = do
@@ -524,12 +528,12 @@ patMatch (PatCon nm pats _ _ _ _ _ _) addr = do
         let patArgs = zip pats (map snd args)
         matches <- mapM (uncurry patMatch) patArgs
         if all isJust matches then
-          return $ Just $ M.unions (map fromJust matches)
+          return $ Just (M.unions (map (fst . fromJust) matches), TChangeCon (M.fromList (zip (map fst args) (map (snd . fromJust) matches))))
         else return Nothing
       else return Nothing
     AChangeConstr con params ->
       case exprOfCtx con of
         Con conName _ _ ->
-         if null pats && nm == conName then return (Just M.empty)
+         if null pats && nm == conName then return (Just (M.empty, TChangeCon M.empty))
          else return Nothing
     _ -> return Nothing

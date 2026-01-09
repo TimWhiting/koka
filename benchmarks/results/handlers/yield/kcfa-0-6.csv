@@ -1,8 +1,7 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgMK,AvgK,AvgS,Time
-kcfa,analysis/benchmarks/handlers/yield/main,0,1,1,180,4,1.0555555555555556,1.75,1.25,1.1428571428571428,0.01454997
-kcfa,analysis/benchmarks/handlers/yield/main,0,2,1,197,8,1.0609137055837563,1.75,1.25,1.164179104477612,0.009425069
-kcfa,analysis/benchmarks/handlers/yield/main,0,3,1,197,8,1.0609137055837563,1.75,1.25,1.164179104477612,0.009117491
-kcfa,analysis/benchmarks/handlers/yield/main,0,4,1,197,8,1.0609137055837563,1.75,1.25,1.164179104477612,0.007189265
-kcfa,analysis/benchmarks/handlers/yield/main,0,5,1,197,8,1.0609137055837563,1.75,1.25,1.164179104477612,0.12773925
-kcfa,analysis/benchmarks/handlers/yield/main,0,6,1,197,8,1.0609137055837563,1.75,1.25,1.164179104477612,0.007549363
-
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+kcfa,analysis/benchmarks/handlers/yield/main,0,1,1,176,8,1.0454545454545454,1.375,1.25,1.1267605633802817,0.003176,0.003159,0.003352
+kcfa,analysis/benchmarks/handlers/yield/main,0,2,1,176,8,1.0454545454545454,1.375,1.25,1.1267605633802817,0.002709,0.003023,0.002795
+kcfa,analysis/benchmarks/handlers/yield/main,0,3,1,176,8,1.0454545454545454,1.375,1.25,1.1267605633802817,0.002817,0.002791,0.002672
+kcfa,analysis/benchmarks/handlers/yield/main,0,4,1,176,8,1.0454545454545454,1.375,1.25,1.1267605633802817,0.002577,0.002827,0.002624
+kcfa,analysis/benchmarks/handlers/yield/main,0,5,1,176,8,1.0454545454545454,1.375,1.25,1.1267605633802817,0.002299,0.002207,0.002008
+kcfa,analysis/benchmarks/handlers/yield/main,0,6,1,176,8,1.0454545454545454,1.375,1.25,1.1267605633802817,0.002147,0.002295,0.002061
