@@ -66,7 +66,7 @@ fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
   write("Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3")
   match run-system-read(full-cmd)
     Ok(res) -> 
-      write(res.split("\n").filter(_.contains(a.show ++ ",")).filter(fn(l) l.split(",").length >= 5).map(_.split(a.show).tail.join(a.show)).join("\n"))
+      write(res.split("\n").filter(_.contains(a.show ++ ",")).filter(fn(l) l.split(",").length >= 5).map(a.show ++ _.split(a.show).tail.join(a.show)).join("\n"))
     Error(err) -> throw-exn(err)
 
 fun main()
