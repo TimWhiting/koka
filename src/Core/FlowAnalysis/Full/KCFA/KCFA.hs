@@ -144,7 +144,9 @@ doEval expr venv ctx = do
           -- trace ("Evaluating external: " ++ show name) $ return ()
           res <- bindExternal (equalPrimitive name)
           case res of
-            Just expr -> eval expr M.empty startStaticCtx
+            Just expr -> do
+              RV (res, ctx_) <- eval expr M.empty startStaticCtx
+              return $ RV (res, ctx)
             Nothing -> trace ("Variable not found: " ++ show name) doBottom
     Lit l -> returnConst venv ctx expr (injLit (contextId expr) l)
     Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
@@ -342,6 +344,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | isNamePerform n = do
   AChangeClos select senv <- store (arguments !! 1)
   let DefCNonRec _ _ opName = select
   let opN = newName $ nameLocalQual (getName opName)
+  m <- mLimit
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
   returnOp (DVal label opN u (drop 2 arguments)) ctx FrameDone DFrameDone EndKAddr
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalGet = do
