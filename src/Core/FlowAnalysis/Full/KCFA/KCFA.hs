@@ -51,7 +51,7 @@ extendStore addr v = do
   -- case addr of
   --   BindImplicitAddr{} -> return ()
   --   ConImplicitAddr{} -> return ()
-  --   _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+    -- _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -185,13 +185,13 @@ doEval expr venv ctx = do
 
 doContinue :: HasCallStack => RValue -> Frame -> StaticCtx -> FixAAMR r s e FixChange
 doContinue res frame ctx =
-  -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $
   case res of
     ROp dval ctx' frame' dframe knext -> do
       let k' = KAddr frame' ctx' dframe dval
       extendKStore k' knext
       returnOp dval ctx frame dframe k'
     RVAddr addr -> do
+      -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ return ()
       case frame of
           FrameDone -> returnAddr addr ctx
           f | f == FMask -> do
@@ -289,17 +289,19 @@ doContinue res frame ctx =
               AChangeClos cexpr cenv -> do
                   body <- focusBody cexpr
                   let [arg] = lamNames cexpr
-                  let newEnv = M.insert arg ctx cenv
+                  m <- mLimit
+                  let newCtx = addCall m ctx (contextId cexpr)
+                  let newEnv = M.insert arg newCtx cenv
                   v <- store addr
                   extendStore (fromJust $ lookupEnv arg newEnv) v
-                  eval body (limitEnv newEnv (fvs body)) ctx
+                  eval body (limitEnv newEnv (fvs body)) newCtx
               _ -> doBottom
           FResume kont venv hnd u -> do
             m <- mLimit
             let newRetCtx = addCall m ctx u
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            RV (res, ctx) <- apply kont addr newRetCtx 
-            handleEffects res venv u hnd ctx
+            RV (res, newCtx) <- apply kont addr newRetCtx 
+            handleEffects res venv u hnd newCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
@@ -418,7 +420,7 @@ doHandleLocal res venv bodId varName valAddr ctx = do
 doHandleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> StaticCtx -> FixAAMR r s e FixChange
 doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
   case res of
-    ROp  dval@(DVal hName opName opExpr args) ctx' frame' dframe' knext  -> do
+    ROp dval@(DVal hName opName opExpr args) ctx' frame' dframe' knext  -> do
       if hName == label then do
         let kOp = KAddr frame' ctx' dframe' dval
         extendKStore kOp knext
