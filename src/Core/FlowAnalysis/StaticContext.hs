@@ -350,32 +350,30 @@ letDefsOf :: HasCallStack => ExprContext -> C.DefGroups
 letDefsOf ctx =
   case exprOfCtx ctx of
     C.Let defs _ -> defs
+    C.TypeLam _ (C.Let defs _) -> defs
     _ -> error "Not a let expression"
 
 isLetDefBindingFinished :: Int -> Int -> ExprContext -> Bool
 isLetDefBindingFinished defGroupIndex bindingIndex e = do
-  case exprOfCtx e of
-    C.Let defs _ ->
-      length defs == defGroupIndex + 1 &&
+  let defs = letDefsOf e in 
+   length defs == defGroupIndex + 1 &&
         let dfs = defs !! defGroupIndex
         in length (defsOf dfs) == bindingIndex + 1
 
 nextLetDefIndex :: Int -> Int -> ExprContext -> (Int,Int)
 nextLetDefIndex !defGroupIndex !bindingIndex e = do
-  case exprOfCtx e of
-    C.Let defs _ ->
-      let numDefGroups = length defs in
-      let dfs = defs !! defGroupIndex in
-      let numBindings = length (defsOf dfs) in
-      if bindingIndex + 1 < numBindings then
-        (defGroupIndex, bindingIndex + 1)
-      else
-        (defGroupIndex + 1, 0)
+  let defs = letDefsOf e in
+   let numDefGroups = length defs in
+   let dfs = defs !! defGroupIndex in
+   let numBindings = length (defsOf dfs) in
+   if bindingIndex + 1 < numBindings then
+     (defGroupIndex, bindingIndex + 1)
+   else
+     (defGroupIndex + 1, 0)
 
 letDefBinding :: Int -> Int -> ExprContext -> C.Def
 letDefBinding defGroupIndex bindingIndex e = do
-  case exprOfCtx e of
-    C.Let defs _ ->
+  let defs = letDefsOf e in
       let dfs = defs !! defGroupIndex
       in defsOf dfs !! bindingIndex
 
@@ -554,7 +552,7 @@ exprOfCtx ctx =
     AppCParam _ _ _ param -> param
     LetCDefNonRec {} -> defExpr $ defOfCtx ctx
     LetCDefRec{} -> defExpr $ defOfCtx ctx
-    LetCDefGroup{} -> error "LetCDefGroup is a multi Expression Context"
+    LetCDefGroup{} -> error $ "LetCDefGroup is a multi Expression Context" ++ show ctx
     LetCBody _ _ _ e -> e
     CaseCScrutinee _ _ e -> e
     CaseCBranch _ _ _ _ b -> C.guardExpr (head (C.branchGuards b))

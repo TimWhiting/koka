@@ -180,21 +180,13 @@ doEval expr ctx = do
     Lit l -> returnConst ctx expr (injLit (contextId expr) l)
     Lam{} -> returnConst ctx expr (AChangeClos expr ctx)
     App _ args _ -> doApp args
-    Let dgs _ -> do
-      child <- childrenContexts expr
-      -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
-      bind <- focusLetDefBinding 0 0 expr
-      let defGroup = head dgs
-      -- let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) (defsOf defGroup)
-      let defName = defTName (defOfCtx bind)
-      -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
-      res <- eval bind ctx
-      doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
+    Let dgs _ -> doLet dgs
     TypeApp{} -> do
       e <- focusChild 0 expr
       returnV $ eval e ctx
     TypeLam _ Lam{} -> returnConst ctx expr (AChangeClos expr ctx)
     TypeLam _ (App _ args _) -> doApp args
+    TypeLam _ (Let dgs _) -> doLet dgs
     TypeLam _ _ -> do --(TypeApp Var{} _)
       childs <- childrenContexts expr
       -- trace ("TypeLam: " ++ show (map contextId childs)) $ return ()
@@ -208,7 +200,18 @@ doEval expr ctx = do
       doContinue res (FScrut expr branches ctx) ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
-  where doApp args = do
+  where 
+    doLet dgs = do
+          child <- childrenContexts expr
+          -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
+          bind <- focusLetDefBinding 0 0 expr
+          let defGroup = head dgs
+          -- let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) (defsOf defGroup)
+          let defName = defTName (defOfCtx bind)
+          -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
+          res <- eval bind ctx
+          doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
+    doApp args = do
           f <- focusFun expr
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
@@ -540,7 +543,7 @@ definitelyMatched (TChangeLit _ _) = True
 definitelyMatched (TChangeCon _ _ m) = all definitelyMatched (M.elems m)
 definitelyMatched (TChangePartialCon _ _) = True
 
-rebind :: Addr -> Addr -> FixAAMR r s e ()
+rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
   if oldAddr == newAddr then return ()
   else
