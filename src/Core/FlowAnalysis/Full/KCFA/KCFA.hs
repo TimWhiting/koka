@@ -31,6 +31,7 @@ import Lib.PPrint (hcat, tupled, vcat, text)
 import Common.File (startsWith, endsWith)
 import Syntax.Syntax (ValueBinder(binderName))
 import Data.List (intercalate)
+import Data.Either (isRight)
 
 doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
@@ -265,19 +266,23 @@ doContinue res frame ctx =
               RV (ret, newCtx) <- eval next env' ctx
               doContinue ret (nextLetFrame frame newCtx) newCtx
           FScrut parent branches env -> do
-            let recur [] = doBottom
-                recur ((branch, expr):branches) = do
-                  match <- branchMatch branch addr
+            let recur [] tree = doBottom
+                recur ((branch, expr):branches) tree = do
+                  match <- branchMatch branch tree
                   case match of
-                    Just bindings -> do
+                    Right (bindings, matchTree) -> do
                       let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
                         ) (M.toList bindings)
-                      eval expr (limitEnv newEnv (fvs expr)) ctx
-                    Nothing -> recur branches
+                      each [
+                          eval expr (limitEnv newEnv (fvs expr)) ctx,
+                          if definitelyMatched matchTree then doBottom
+                          else recur branches matchTree
+                       ]
+                    Left newTree -> recur branches newTree
             case exprOfCtx parent of
-              Case _ pats -> recur (zip pats branches)
+              Case _ pats -> recur (zip pats branches) (TChangeV addr)
           FDollar va -> do
             res <- store va
             case res of
@@ -453,11 +458,28 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
           doContinue res frame ctx
         Nothing -> return $ RV (res, ctx)
 
-branchMatch :: Branch -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
+branchMatch :: Branch -> AChangeTree -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
 branchMatch branch addr =
   patMatch (head $ branchPatterns branch) addr
 
-type Bindings r s e = M.Map TName (Addr -> FixAAMR r s e ())
+type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
+
+data AChangeTree = 
+  TChangeV Addr
+  | TChangeLit Addr LiteralChangeX
+  | TChangeCon Addr AChange (M.Map Name AChangeTree) 
+  | TChangePartialCon Addr AChange
+
+-- Assuming that the tree is from the Bindings then it definitely matches this pattern, i.e., all literals are fully matched
+definitelyMatched :: AChangeTree -> Bool
+definitelyMatched (TChangeV _) = True
+definitelyMatched (TChangeLit _ (LiteralChangeCharX LChangeTop)) = False
+definitelyMatched (TChangeLit _ (LiteralChangeIntX LChangeTop)) = False
+definitelyMatched (TChangeLit _ (LiteralChangeFloatX LChangeTop)) = False
+definitelyMatched (TChangeLit _ (LiteralChangeStringX LChangeTop)) = False
+definitelyMatched (TChangeLit _ _) = True
+definitelyMatched (TChangeCon _ _ m) = all definitelyMatched (M.elems m)
+definitelyMatched (TChangePartialCon _ _) = True
 
 rebind :: Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
@@ -469,35 +491,66 @@ rebind oldAddr newAddr =
             doBottom ,
           return ()]
 
-patMatch :: Pattern -> Addr -> FixAAMR r s e (Maybe (Bindings r s e))
-patMatch (PatVar name rest) addr = do
-  match <- patMatch rest addr
-  case match of
-    Just bindings -> return $ Just $ M.insert name (\newAddr -> rebind addr newAddr) bindings
-    Nothing -> return Nothing
-patMatch PatWild addr = return $ Just M.empty
-patMatch plit@(PatLit _) addr = do
-  v <- store addr
+addrOfTree :: AChangeTree -> Addr
+addrOfTree (TChangeV addr) = addr
+addrOfTree (TChangeLit addr _) = addr
+addrOfTree (TChangeCon addr _ _) = addr
+addrOfTree (TChangePartialCon addr _) = addr
+
+changeOfTree :: AChangeTree -> FixAAMR r s e AChange
+changeOfTree (TChangeV addr) = store addr
+changeOfTree (TChangeLit _ litChange) = return $ AChangeLit litChange
+changeOfTree (TChangeCon _ con _) = return con
+changeOfTree (TChangePartialCon _ con) = return con
+argsOfChange :: AChangeTree -> [AChangeTree]
+argsOfChange (TChangeCon _ _ args) = M.elems args
+argsOfChange _ = []
+treeUnion :: AChangeTree -> AChangeTree -> AChangeTree
+treeUnion (TChangeV addr) tree2 = tree2 -- Left terminates, take right
+treeUnion tree1 (TChangeV addr) = tree1 -- Right terminates, take left
+treeUnion (TChangeCon addr con args) TChangePartialCon{} = TChangeCon addr con args -- Prefer the more specific tree
+treeUnion TChangePartialCon{} (TChangeCon addr con args) = TChangeCon addr con args -- Prefer the more specific tree
+treeUnion (TChangeCon addr1 con1 args1) (TChangeCon addr2 con2 args2) = -- Merge the arguments
+  TChangeCon addr1 con1 (M.unionWith treeUnion args1 args2)
+treeUnion t1 t2 = t1 -- Prefer the first tree (doesn't matter for literals)
+
+getTree :: Either AChangeTree (Bindings r s e) -> AChangeTree
+getTree (Left tree) = tree
+getTree (Right (_, tree)) = tree
+
+patMatch :: Pattern -> AChangeTree -> FixAAMR r s e (Either AChangeTree (Bindings r s e))
+patMatch (PatVar name rest) tree = do
+  match <- patMatch rest tree
+  case match of -- TODO: We should reallocate / rebind only the parts of the address that match the tree
+    Right (rebinds, values) -> return $ Right (M.insert name (\newAddr -> rebind (addrOfTree tree) newAddr) rebinds, values)
+    Left tree -> return $ Left tree
+patMatch PatWild tree = return $ Right (M.empty, tree)
+patMatch plit@(PatLit _) tree = do
+  v <- changeOfTree tree
   case v of
     AChangeLit litChange ->
-      if patSubsumedX plit litChange then return $ Just M.empty
-      else return Nothing
-    _ -> return Nothing
-patMatch (PatCon nm pats _ _ _ _ _ _) addr = do
+      if patSubsumedX plit litChange then return $ Right (M.empty, TChangeLit (addrOfTree tree) litChange)
+      else return (Left tree)
+    _ -> return (Left tree)
+patMatch (PatCon nm pats _ _ _ _ _ _) (TChangeLit addr l) = return $ Left (TChangeLit addr l)
+patMatch (PatCon nm pats _ _ _ _ _ _) tree = do
+  let newArgs args [] = map (TChangeV . snd) args -- take the rest as is
+      newArgs (_:args) (n:rest) = n : newArgs args rest -- prefer known tree elements
   -- TODO: Early catch of wrong type
-  v <- store addr
+  v <- changeOfTree tree
   case v of
     AChangeObj _ name args ->
       if name == nm then do
-        let patArgs = zip pats (map snd args)
+        let patArgs = zip pats (newArgs args (argsOfChange tree))
         matches <- mapM (uncurry patMatch) patArgs
-        if all isJust matches then
-          return $ Just $ M.unions (map fromJust matches)
-        else return Nothing
-      else return Nothing
+        let newTree = treeUnion tree $ TChangeCon (addrOfTree tree) v (M.fromList (zip (map fst args) (map getTree matches)))
+        if all isRight matches then
+          return $ Right (M.unions (map (\(Right match) -> fst match) matches), newTree)
+        else return $ Left newTree
+      else return $ Left tree
     AChangeConstr con params ->
       case exprOfCtx con of
         Con conName _ _ ->
-         if null pats && nm == conName then return (Just M.empty)
-         else return Nothing
-    _ -> return Nothing
+         if null pats && nm == conName then return (Right (M.empty, TChangePartialCon (addrOfTree tree) v))
+         else return $ Left tree
+    _ -> return $ Left tree

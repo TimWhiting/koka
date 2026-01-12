@@ -197,10 +197,10 @@ doContinue res frame ctx =
   case res of
     ROp dval ctx' frame' dframe knext -> do
       -- trace ("Capturing frame: " ++ show frame) $ do
-      let k' = KAddr frame' ctx' dframe dval 
+      let k' = KAddr frame' ctx' dframe dval
       extendKStore k' knext
       returnOp dval (static ctx) frame dframe k'
-    RVAddr addr -> 
+    RVAddr addr ->
       -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
       case frame of
           FrameDone -> returnAddr addr
@@ -289,7 +289,7 @@ doContinue res frame ctx =
                         ) (M.toList bindings)
                       each [
                         returnV $ eval expr (limitEnv newEnv (fvs expr)) ctx,
-                          if (definitelyMatched matchTree) then doBottom
+                          if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
                        ]
                     Left newTree -> recur branches newTree
@@ -428,7 +428,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
       let kOp = KAddr frame' ctx' dframe' dval
       extendKStore kOp knext
       case dval of
-        DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do    
+        DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
           res <- apply kOp valAddr (dynamic retCtx)
           returnV $ handleLocal res venv bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
@@ -492,10 +492,10 @@ branchMatch branch addr =
 
 type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
 
-data AChangeTree = 
+data AChangeTree =
   TChangeV Addr
   | TChangeLit Addr LiteralChangeX
-  | TChangeCon Addr AChange (M.Map Name AChangeTree) 
+  | TChangeCon Addr AChange (M.Map Name AChangeTree)
   | TChangePartialCon Addr AChange
 
 -- Assuming that the tree is from the Bindings then it definitely matches this pattern, i.e., all literals are fully matched
@@ -560,8 +560,6 @@ patMatch plit@(PatLit _) tree = do
       if patSubsumedX plit litChange then return $ Right (M.empty, TChangeLit (addrOfTree tree) litChange)
       else return (Left tree)
     _ -> return (Left tree)
-patMatch (PatCon nm pats _ _ _ _ _ _) (TChangePartialCon _ change) = doBottom
-patMatch (PatCon nm pats _ _ _ _ _ _) (TChangeCon _ change args) = doBottom
 patMatch (PatCon nm pats _ _ _ _ _ _) (TChangeLit addr l) = return $ Left (TChangeLit addr l)
 patMatch (PatCon nm pats _ _ _ _ _ _) tree = do
   let newArgs args [] = map (TChangeV . snd) args -- take the rest as is

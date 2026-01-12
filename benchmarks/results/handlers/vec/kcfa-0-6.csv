@@ -1,7 +1,7 @@
 Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-kcfa,analysis/benchmarks/handlers/vec/main,0,1,1,230,33,1.0,1.0,1.0,1.0,0.005227,0.005227,0.005227
-kcfa,analysis/benchmarks/handlers/vec/main,0,2,1,230,33,1.0,1.0,1.0,1.0,0.004822,0.004822,0.004822
-kcfa,analysis/benchmarks/handlers/vec/main,0,3,1,230,33,1.0,1.0,1.0,1.0,0.005001,0.005001,0.005001
-kcfa,analysis/benchmarks/handlers/vec/main,0,4,1,230,33,1.0,1.0,1.0,1.0,0.004854,0.004854,0.004854
-kcfa,analysis/benchmarks/handlers/vec/main,0,5,1,230,33,1.0,1.0,1.0,1.0,0.00501,0.00501,0.00501
-kcfa,analysis/benchmarks/handlers/vec/main,0,6,1,230,33,1.0,1.0,1.0,1.0,0.004984,0.004984,0.004984
+kcfa,analysis/benchmarks/handlers/vec/main,0,1,1,230,33,1.0,1.0,1.0,1.0,0.004695,0.004929,0.004073
+kcfa,analysis/benchmarks/handlers/vec/main,0,2,1,230,33,1.0,1.0,1.0,1.0,0.004933,0.004562,0.005222
+kcfa,analysis/benchmarks/handlers/vec/main,0,3,1,230,33,1.0,1.0,1.0,1.0,0.004652,0.003676,0.00364
+kcfa,analysis/benchmarks/handlers/vec/main,0,4,1,230,33,1.0,1.0,1.0,1.0,0.003653,0.004244,0.003685
+kcfa,analysis/benchmarks/handlers/vec/main,0,5,1,230,33,1.0,1.0,1.0,1.0,0.003868,0.004285,0.003534
+kcfa,analysis/benchmarks/handlers/vec/main,0,6,1,230,33,1.0,1.0,1.0,1.0,0.003491,0.004082,0.003533

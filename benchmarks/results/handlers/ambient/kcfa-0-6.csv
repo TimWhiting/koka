@@ -1,7 +1,7 @@
 Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-kcfa,analysis/benchmarks/handlers/ambient/example0,0,1,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.003118,0.003118,0.003118
-kcfa,analysis/benchmarks/handlers/ambient/example0,0,2,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002263,0.002263,0.002263
-kcfa,analysis/benchmarks/handlers/ambient/example0,0,3,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002313,0.002313,0.002313
-kcfa,analysis/benchmarks/handlers/ambient/example0,0,4,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002912,0.002912,0.002912
-kcfa,analysis/benchmarks/handlers/ambient/example0,0,5,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002751,0.002751,0.002751
-kcfa,analysis/benchmarks/handlers/ambient/example0,0,6,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002181,0.002181,0.002181
+kcfa,analysis/benchmarks/handlers/ambient/example0,0,1,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002266,0.001968,0.001947
+kcfa,analysis/benchmarks/handlers/ambient/example0,0,2,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002285,0.002198,0.001951
+kcfa,analysis/benchmarks/handlers/ambient/example0,0,3,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002087,0.00205,0.00212
+kcfa,analysis/benchmarks/handlers/ambient/example0,0,4,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002195,0.002426,0.002142
+kcfa,analysis/benchmarks/handlers/ambient/example0,0,5,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002274,0.002141,0.001989
+kcfa,analysis/benchmarks/handlers/ambient/example0,0,6,0,158,12,1.0,1.0,1.0,1.0315789473684212,0.002346,0.002208,0.002094
