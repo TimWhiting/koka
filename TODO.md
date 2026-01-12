@@ -1,5 +1,4 @@
-- [ ] Figure out why new pattern matching is not working on unix.
-- [ ] Add better matching to DMCFA and KCFA
-- [ ] Figure out which samples never are precise and if we are okay with that
+- [ ] Figure out why KCFA doesn't work on state handler / nondet-context, nondet-nested, most of nested-nondet, complex-recursive, monads-writer, jump-anywhere, ambient, nim
+- [ ] Figure out issue for all analyses on unix/example1 / 1_2. 
 - [ ] Add back in local set information
 - [ ] Redo analysis....
