@@ -1,55 +1,29 @@
-]4;0;?\[6nkcfa,analysis/benchmarks/suite/nondet/nondet-context,0,50,1,107,9,1.0,1.0,1.0,1.0,0.003456,0.003036,0.002328
-kcfa,analysis/benchmarks/suite/nondet/nondet-discard,0,50,1,84,7,1.0,1.0,1.0,1.0,0.001732,0.001412,0.001565
-kcfa,analysis/benchmarks/suite/nondet/nondet-nested,0,50,1,217,25,1.0,1.0,1.0,1.0,0.011295,0.011535,0.010394
-kcfa,analysis/benchmarks/suite/nondet/nondet-simple,0,50,1,92,7,1.0,1.0,1.0,1.0,0.001294,0.00166,0.001229
-parse   : .../std/core/types.kk
-parse   : .../std/core/order.kk
-parse   : .../std/core/undiv.kk
-parse   : .../std/core/unsafe.kk
-parse   : .../std/core/hnd.kk
-parse   : .../std/core/exn.kk
-parse   : .../std/core/bool.kk
-parse   : .../std/core/int.kk
-parse   : .../std/core/char.kk
-parse   : .../std/core/maybe.kk
-parse   : .../std/core/string.kk
-check   : std/core/types
-parse   : .../std/core/vector.kk
-parse   : .../std/core/sslice.kk
-parse   : .../std/core/list.kk
-parse   : .../std/core/maybe2.kk
-parse   : .../std/core/either.kk
-parse   : .../std/core/tuple.kk
-parse   : .../std/core/lazy.kk
-parse   : .../std/core/show.kk
-parse   : .../std/core/console.kk
-parse   : .../std/core/debug.kk
-parse   : .../std/core/delayed.kk
-parse   : .../std/core.kk
-parse   : .../analysis/benchmarks/suite/nondet.kk
-check   : std/core/lazy
-check   : std/core/int
-check   : std/core/unsafe
-check   : std/core/bool
-check   : std/core/undiv
-check   : std/core/hnd
-check   : std/core/char
-check   : std/core/order
-check   : std/core/tuple
-check   : std/core/delayed
-check   : std/core/exn
-check   : std/core/either
-check   : std/core/vector
-check   : std/core/maybe2
-check   : std/core/maybe
-check   : std/core/string
-check   : std/core/sslice
-check   : std/core/list
-check   : std/core/show
-check   : std/core/console
-check   : std/core/debug
-check   : std/core
-check   : analysis/benchmarks/suite/nondet
-linking : analysis/benchmarks/suite/nondet/@main
-compile : kklib from: /Users/timwhiting/koka/kklib
-created : .koka/v3.2.3/clang-debug-1e5359/analysis_benchmarks_suite_nondet__main
+koka-3.2.3: unregistering (local file changes: src/Core/FlowAnalysis/Full/KCFA/KCFA.hs)
+koka> build (lib + exe) with ghc-9.6.6
+Preprocessing library for koka-3.2.3..
+Building library for koka-3.2.3..
+[120 of 141] Compiling Core.FlowAnalysis.Full.KCFA.KCFA [Source file changed]
+[121 of 141] Compiling Core.FlowAnalysis.Full.KCFA.Syntax [Core.FlowAnalysis.Full.KCFA.KCFA changed]
+[138 of 141] Compiling Compile.Build [Core.FlowAnalysis.Full.KCFA.Syntax changed]
+Warning: The following header files listed in the main library's c-sources
+will not be used: src/Platform/cpp/Platform/cconsole.h.
+Header files should be in the 'include' or 'install-include' stanza.
+See https://cabal.readthedocs.io/en/3.10/cabal-package.html#pkg-field-includes
+Preprocessing executable 'koka' for koka-3.2.3..
+Building executable 'koka' for koka-3.2.3..
+[18 of 18] Linking .stack-work/dist/aarch64-osx/ghc-9.6.6/build/koka/koka [Library changed]
+koka> copy/register
+Installing library in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/50e7567ab93459510bfd412b9898f4e9df3111e36f9d2dfd4eb8cba51d1770ee/9.6.6/lib/aarch64-osx-ghc-9.6.6/koka-3.2.3-JKPkVdIR1OY3NjAC7CLiJ8
+Installing executable koka in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/50e7567ab93459510bfd412b9898f4e9df3111e36f9d2dfd4eb8cba51d1770ee/9.6.6/bin
+Registering library for koka-3.2.3..
+dmcfae,analysis/benchmarks/handlers/scoped/example1,4,4,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/handlers/scoped/example2,4,4,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/handlers/scoped/example3,4,4,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/handlers/scoped/example4,4,4,1,431,64,1.0,1.0,1.0,1.0,0.024275,0.025002,0.023808
+External variable binding not found std/core/sslice/xstarts-with
+Variable not found: std/core/sslice/xstarts-with
+External variable binding not found std/core/sslice/xstarts-with
+Variable not found: std/core/sslice/xstarts-with
+External variable binding not found std/core/sslice/xstarts-with
+Variable not found: std/core/sslice/xstarts-with
+Failed to compile analysis/benchmarks/handlers/scoped.kk

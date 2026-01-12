@@ -151,21 +151,13 @@ doEval expr venv ctx = do
     Lit l -> returnConst venv ctx expr (injLit (contextId expr) l)
     Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     App _ args _ -> doApp args
-    Let dgs _ -> do
-      child <- childrenContexts expr
-      -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
-      bind <- focusLetDefBinding 0 0 expr
-      let defGroup = head dgs
-      let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
-      let defName = defTName (defOfCtx bind)
-      -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
-      RV (res, newCtx) <- eval bind (limitEnv newEnv (S.insert defName (fvs bind))) ctx
-      doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) newCtx 
+    Let dgs _ -> doLet dgs
     TypeApp{} -> do
       e <- focusChild 0 expr
       eval e venv ctx
     TypeLam _ Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     TypeLam _ (App _ args _) -> doApp args
+    TypeLam _ (Let dgs _) -> doLet dgs
     TypeLam _ _ -> do --(TypeApp Var{} _)
       childs <- childrenContexts expr
       -- trace ("TypeLam: " ++ show (map contextId childs)) $ return ()
@@ -178,7 +170,18 @@ doEval expr venv ctx = do
       doContinue res (FScrut expr branches venv) newCtx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
-  where doApp args = do
+  where 
+    doLet dgs = do 
+          child <- childrenContexts expr
+          -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
+          bind <- focusLetDefBinding 0 0 expr
+          let defGroup = head dgs
+          let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
+          let defName = defTName (defOfCtx bind)
+          -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
+          RV (res, newCtx) <- eval bind (limitEnv newEnv (S.insert defName (fvs bind))) ctx
+          doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) newCtx 
+    doApp args = do
           f <- focusFun expr
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()

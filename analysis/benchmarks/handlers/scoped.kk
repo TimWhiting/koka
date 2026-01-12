@@ -29,7 +29,10 @@ val solutions = handler
 pub fun example1()
   with solutions
   knapsack(3,[3,2,1])
-
+pub fun analyze-example1()
+  example1()
+pub fun result-example1()
+  [[3], [2, 1], [1, 2], [1, 1, 1]]
 
 // --------------------------------------------------------------
 // with local and global state
@@ -79,11 +82,19 @@ pub fun example2()
   with global(0)
   with choices
   knapsack(3,[3,2,1])
+pub fun analyze-example2()
+  example2()
+pub fun result-example2()
+  (12, [[3], [2, 1], [1, 2], [1, 1, 1]])
 
 pub fun example3()
   with local(0)
   with choices
   knapsack(3,[3,2,1])
+pub fun analyze-example3()
+  example3()
+pub fun result-example3()
+  [(1, [3]), (5, [2, 1]), (5, [1, 2]), (9, [1, 1, 1])]
 
 
 // --------------------------------------------------------------
@@ -135,7 +146,10 @@ pub fun example4()
   with solutions
   with once
   knapsack(3,[3,2,1])
-
+pub fun analyze-example4()
+  example4()
+pub fun result-example4()
+  [[3]]
 
 // --------------------------------------------------------------
 // Grammars
@@ -208,6 +222,10 @@ fun factor()
 pub fun example5()
   with solutions
   parse("2+8*5"){ expr() }
+pub fun analyze-example5()
+  example5()
+pub fun result-example5()
+  [42]
 
 
 // --------------------------------------------------------------
@@ -220,4 +238,3 @@ pub fun main()
   example3().list/show(?show=state-show).println
   example4().show.println
   example5().show.println
-
