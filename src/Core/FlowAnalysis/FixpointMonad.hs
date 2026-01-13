@@ -297,7 +297,7 @@ push key value = do
     -- that depend on changes to this key
     let (value', added) = value `insert` values
     -- when (values /= bottom) $ 
-      -- trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
+    --   trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
     if keyId == newId then
       put (M.insert key (added, keyId, conts, fconts) cache, state, newId + 1, invalid)
     else

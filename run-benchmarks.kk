@@ -49,7 +49,7 @@ fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCF
           result := result ++ s ++ "\n"
         return(x)
           write-text-file(file, result, create-dir=True)
-      run-file(a, "stack run koka -- -l analysis/benchmarks/" ++ f ++ ".kk " ++ a.flag, sens)
+      run-file(a, "stack run koka -- -l analysis/benchmarks/" ++ f ++ ".kk " ++ a.flag ++ " ", sens)
 
 
 fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
