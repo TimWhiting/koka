@@ -49,9 +49,12 @@ nameCoreCharEq = newQualified "std/core/char" "=="
 nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-string"
 nameCoreStringListChar = newQualified "std/core/string" "list"
 nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
+nameCoreSliceXStartsWith = newQualified "std/core/sslice" "xstarts-with"
+nameCoreSliceLength = newQualified "std/core/sslice" "length"
 nameCoreStringToUpper = newQualified "std/core/string" "@extern-to-upper"
 nameCoreStringExternRepeatZ = newQualified "std/core/string" "@extern-repeatz"
 nameCoreStringCount = newLocallyQualified "std/core/string" "chars" "@extern-count"
+nameCoreStringVectorJoin = newLocallyQualified "std/core/string" "vector" "join"
 nameOSReadline = newQualified "std/os/readline" "readline"
 nameStringEq = newQualified "std/core/string" "=="
 
@@ -129,7 +132,8 @@ isPrimitive tn =
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
                       nameStringEq, nameCoreStringToUpper, nameCoreStringCount, nameCoreStringExternRepeatZ,
-                      nameCoreCharToString, nameCoreStringListChar, nameCoreSliceString,
+                      nameCoreCharToString, nameCoreStringListChar, nameCoreStringVectorJoin,
+                      nameCoreSliceString, nameCoreSliceXStartsWith, nameCoreSliceLength,
                       nameCoreTypesExternAppend, nameCoreIntExternShow,
                       nameCoreCharInt, nameNumInt32Int, nameCoreIntExternSSizeT, nameNumInt32Int32,
                       namePretendDecreasing, nameUnsafeTotalCast, nameUnsafeNoLocalCast,

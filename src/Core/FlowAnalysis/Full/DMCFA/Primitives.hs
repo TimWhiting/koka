@@ -16,7 +16,7 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core as C
 import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
-import Data.List (findIndex)
+import Data.List (findIndex, isPrefixOf, intercalate)
 import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
@@ -36,9 +36,9 @@ trueCon ::  AChange
 trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
 falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
-emptyCtx :: AChange 
+emptyCtx :: AChange
 emptyCtx = AChangeConstr (ExprPrim (ExprContextId (-2001) (newName "emptyCtx")) C.exprUnit) []
-hole :: AChange 
+hole :: AChange
 hole = AChangeConstr (ExprPrim (ExprContextId (-2000) (newName "hole")) C.exprUnit) []
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
@@ -100,7 +100,7 @@ opCmpFloat f [p1, p2] = do
     (AChangeLit (LiteralChangeFloatX _), AChangeLit (LiteralChangeFloatX _)) ->
       -- trace "opCmpFloat: top"
       anyBool
-    _ -> 
+    _ ->
       -- trace ("opCmpFloat: bottom " ++ show (p1, p2)) $ 
       doBottom
 
@@ -113,12 +113,12 @@ opCmpString f [p1, p2] = do
       anyBool
     _ -> doBottom
 
-doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
-doPrimitive nm achanges = do
+doPrimitive :: Name -> [AChange] -> (Addr -> FixAAMR r s e AChange) -> FixAAMR r s e AChange
+doPrimitive nm achanges store = do
   -- trace (" Primitive " ++ show achanges) $ return ()
-  if nm == nameCCtxEmpty then 
+  if nm == nameCCtxEmpty then
     return emptyCtx
-  else if nm == nameCCtxHoleCreate then 
+  else if nm == nameCCtxHoleCreate then
     return hole
   else if nm == nameIntEq || nm == nameInt32Eq then
     opCmpInt (==) achanges
@@ -150,7 +150,7 @@ doPrimitive nm achanges = do
     floatOp (-) achanges
   else if nm == nameFloatDiv then
     floatOp (/) achanges
-  else if nm == nameFloatAbs then 
+  else if nm == nameFloatAbs then
     float1Op abs achanges
   else if nm == nameFloatSqrt then
     float1Op sqrt achanges
@@ -168,7 +168,7 @@ doPrimitive nm achanges = do
     return $ head achanges
   else if nm == nameNumSRandomFloat64 then
     return $ AChangeLit (LiteralChangeFloatX LChangeTop)
-  else if nm == nameNumRandom then 
+  else if nm == nameNumRandom then
     return $ AChangeLit (LiteralChangeIntX LChangeTop)
   else if nm == nameOSReadline then
     return $ AChangeLit (LiteralChangeStringX LChangeTop)
@@ -204,6 +204,34 @@ doPrimitive nm achanges = do
       [AChangeLit (LiteralChangeIntX _)] -> anyBool
   else if nm == nameStringEq then
     opCmpString (==) achanges
+  else if nm == nameCoreSliceXStartsWith then
+    opCmpString (\s1 s2 -> s2 `isPrefixOf` s1) achanges
+  else if nm == nameCoreSliceLength then
+    case achanges of
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] -> return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e2, fromIntegral $ length s)))
+      [AChangeLit (LiteralChangeStringX LChangeTop)] -> return $ AChangeLit (LiteralChangeIntX LChangeTop)
+      _ -> doBottom
+  else if nm == nameCoreSliceString then
+    case achanges of
+      [AChangeObj _ _ [(_, str), (_, start), (_, len)]] -> do
+        rString <- store str
+        rStart <- store start
+        rLen <- store len
+        case (rString, rStart, rLen) of
+          (AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))),
+           AChangeLit (LiteralChangeIntX (LChangeSingle (e2, st))),
+           AChangeLit (LiteralChangeIntX (LChangeSingle (e3, ln)))) ->
+            return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, take (fromInteger ln) (drop (fromInteger st) s))))
+          _ -> return $ AChangeLit (LiteralChangeStringX LChangeTop)
+  else if nm == nameCoreStringVectorJoin then
+    case achanges of
+      [AChangeObj _ _ args] -> do
+        vals <- mapM (store . snd) args
+        if all (\v -> case v of AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))) -> True; _ -> False) vals then do
+          let vals2 = map (\(AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s)))) -> s) vals
+          let change = (\(AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))) -> e2) (last vals)
+          return $ AChangeLit (LiteralChangeStringX (LChangeSingle (change, intercalate "" vals2)))
+        else return $ AChangeLit (LiteralChangeStringX LChangeTop)
   else if nm == nameCoreStringExternRepeatZ then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s))), AChangeLit (LiteralChangeIntX (LChangeSingle (_, n)))] | n >= 0 ->
@@ -211,7 +239,7 @@ doPrimitive nm achanges = do
       [AChangeLit (LiteralChangeStringX _), AChangeLit (LiteralChangeIntX _)] ->
         return $ AChangeLit (LiteralChangeStringX LChangeTop)
       _ -> doBottom
-  else if nm == nameCoreCharToString then 
+  else if nm == nameCoreCharToString then
     case achanges of
       [AChangeLit (LiteralChangeCharX (LChangeSingle (e2, c)))] ->
         return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, [c])))
