@@ -16,7 +16,7 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core as C
 import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
-import Data.List (findIndex)
+import Data.List (findIndex, isPrefixOf, intercalate)
 import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
@@ -113,8 +113,8 @@ opCmpString f [p1, p2] = do
       anyBool
     _ -> doBottom
 
-doPrimitive :: Name -> [AChange]  -> FixAAMR r s e AChange
-doPrimitive nm achanges = do
+doPrimitive :: Name -> [AChange] -> (Addr -> FixAAMR r s e AChange) -> FixAAMR r s e AChange
+doPrimitive nm achanges store = do
   -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameCCtxEmpty then 
     return emptyCtx
@@ -204,6 +204,34 @@ doPrimitive nm achanges = do
       [AChangeLit (LiteralChangeIntX _)] -> anyBool
   else if nm == nameStringEq then
     opCmpString (==) achanges
+  else if nm == nameCoreSliceXStartsWith then
+    opCmpString (\s1 s2 -> s2 `isPrefixOf` s1) achanges
+  else if nm == nameCoreSliceLength then 
+    case achanges of
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] -> return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e2, fromIntegral $ length s)))
+      [AChangeLit (LiteralChangeStringX LChangeTop)] -> return $ AChangeLit (LiteralChangeIntX LChangeTop)
+      _ -> doBottom
+  else if nm == nameCoreSliceString then 
+    case achanges of 
+      [AChangeObj _ _ [(_, str), (_, start), (_, len)]] -> do
+        rString <- store str
+        rStart <- store start
+        rLen <- store len
+        case (rString, rStart, rLen) of 
+          (AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))), 
+           AChangeLit (LiteralChangeIntX (LChangeSingle (e2, st))),
+           AChangeLit (LiteralChangeIntX (LChangeSingle (e3, ln)))) -> 
+            return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, take (fromInteger ln) (drop (fromInteger st) s))))
+          _ -> return $ AChangeLit (LiteralChangeStringX LChangeTop)
+  else if nm == nameCoreStringVectorJoin then
+    case achanges of
+      [AChangeObj _ _ args] -> do
+        vals <- mapM (store . snd) args
+        if all (\v -> case v of AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))) -> True; _ -> False) vals then do
+          let vals2 = map (\(AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s)))) -> s) vals
+          let change = (\(AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))) -> e2) (last vals)
+          return $ AChangeLit (LiteralChangeStringX (LChangeSingle (change, intercalate "" vals2)))
+        else return $ AChangeLit (LiteralChangeStringX LChangeTop)
   else if nm == nameCoreStringExternRepeatZ then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s))), AChangeLit (LiteralChangeIntX (LChangeSingle (_, n)))] | n >= 0 ->

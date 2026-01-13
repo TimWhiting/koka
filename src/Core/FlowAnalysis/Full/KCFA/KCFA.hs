@@ -228,7 +228,7 @@ doContinue res frame ctx =
                       let n = getName name
                       if not (isHandlerPrimitive n) then do
                         args <- mapM store arguments
-                        res <- doPrimitive n args
+                        res <- doPrimitive n args store
                         extendStore retAddr res
                         returnAddr retAddr ctx
                       else doHandlerPrimitive name n retAddr arguments venv ctx eApp
