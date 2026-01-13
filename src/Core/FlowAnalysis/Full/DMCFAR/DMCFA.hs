@@ -317,7 +317,7 @@ doContinue res frame ctx =
                         extend (BindingAddr ctx tname)
                         ) (M.toList bindings)
                       body <- focusBranchExpr br
-                      rebindAll (S.union (fvvs body) (nextFvs body)) oldCtx ctx
+                      rebindAll (S.difference (S.union (fvvs body) (nextFvs body)) (S.fromList $ M.keys bindings)) oldCtx ctx
                       each [
                         returnV $ eval body ctx,
                           if definitelyMatched matchTree then doBottom

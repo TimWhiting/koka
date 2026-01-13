@@ -363,12 +363,13 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
-                    let bottomD = 0 -- if rebinding flags then 0 else 0
+                    let bottomD = -1 -- if rebinding flags then 0 else 0
                     -- liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
                     let doSweep = sweep flags
                     let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
                         sweepDM mT d m i = do
-                          let bottomM = if not (kcfa flags) then (if d == bottomD then 1 else 1) else 1
+                          let bottomM = 0
+                          -- let bottomM = if not (kcfa flags) then (if d == bottomD then 1 else 1) else 1
                           when doSweep $ do
                             if d == bottomD && m == bottomM then return ()
                             else if d == bottomD then do

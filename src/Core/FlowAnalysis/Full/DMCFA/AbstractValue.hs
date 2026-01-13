@@ -77,9 +77,11 @@ addCall m (CombinedCtx (TKTop static) dyn) call = CombinedCtx (TKTop $ take m $ 
 addDelim :: Int -> CombinedCtx -> ExprContextId -> Name -> DynamicCtx
 addDelim d (CombinedCtx static dyn) delim name = take d $ ((delim, name), static) : dyn
 
-delimCtx m ctx = TKDelim $ take m [CallDelim] -- take m ctx -- take m [CallDelim]
+delimCtx (-1) m (TKDelim ctx) = TKDelim $ take m ctx
+delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx 
+delimCtx d m ctx = TKDelim $ take m [CallDelim]
 
-newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx m static) $ take d $ ((delim, name), static) : dyn
+newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx d m static) $ take d $ ((delim, name), static) : dyn
 
 type VEnv = M.Map TName CombinedCtx
 
