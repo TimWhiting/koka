@@ -101,6 +101,7 @@ runQueryAtRange bc build mod m d doQuery =
                           Nothing -> return Nothing
                   case mbRes of
                     Just (l, analysisResult, time1, time2, time3) -> do
+                      -- trace ("Evaluating expected result for " ++ show name) $ return ()
                       (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                       runFixCont $ do
                                         (_,ctx) <- loadModule (modName mod)
