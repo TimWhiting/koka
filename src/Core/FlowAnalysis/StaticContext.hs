@@ -75,8 +75,12 @@ data ExprContext =
   | AppCParam !ExprContextId !ExprContext !Int !C.Expr -- Application context inside param context
   -- Child: ExprC
   | CaseCScrutinee !ExprContextId !ExprContext !C.Expr -- In a case match context working on the match expression (assumes only one)
-  -- Child: ExprC 
+  -- Child: [GuardC, BodyC] 
   | CaseCBranch !ExprContextId !ExprContext ![TName] !Int !C.Branch -- Which branch currently inspecting, as well as the Case context
+  -- Child: ExprC 
+  | CaseCGuard !ExprContextId !ExprContext ![TName] !Int !C.Branch !C.Expr -- Which branch currently inspecting, as well as the Case context
+  -- Child: ExprC 
+  | CaseCBody !ExprContextId !ExprContext ![TName] !Int !C.Branch !C.Expr -- Which branch currently inspecting, as well as the Case context
   -- Children: None
   | ExprCBasic !ExprContextId !ExprContext !C.Expr -- A basic expression context that has no sub expressions
   -- Children: None
@@ -122,6 +126,8 @@ nextFvs expr =
           ExprCBasic _ _ e -> andParent (fvvs expr)
           CaseCBranch{} -> andParent S.empty
           CaseCScrutinee{} -> andParent S.empty
+          CaseCGuard{} -> andParent S.empty
+          CaseCBody{} -> andParent S.empty
           AppCParam _ _ param app -> andParent $ S.intersection bound $ S.unions (map fv $ drop param $ args (fromJust parentExpr))
           AppCLambda _ _ f -> andParent $ S.intersection bound $ S.unions (map fv $ args (fromJust parentExpr))
           LetCBody{} -> andParent S.empty
@@ -194,7 +200,7 @@ fvs ctx =
     Just expr ->
       -- trace ("fvs of " ++ showSimpleExpr expr ++ " in " ++ show (ppContextPath ctx) ++ " = bvs " ++ show (bvs True ctx) ++ " fvs " ++ show (fv expr)) $
       S.intersection (bvs True ctx) (fv expr)
-    Nothing -> S.empty
+    Nothing -> S.empty -- TODO: Error out on calling this in non-expression context?
 
 fvvs :: HasCallStack => ExprContext -> S.Set TName
 fvvs ctx =
@@ -223,6 +229,8 @@ bvs includeVars ctx =
     AppCLambda{} -> andParent S.empty
     AppCParam{} -> andParent S.empty
     CaseCScrutinee{} -> andParent S.empty
+    CaseCBody _ _ vars _ _ _ -> andParent $ S.fromList vars
+    CaseCGuard _ _ vars _ _ _ -> andParent $ S.fromList vars
     CaseCBranch _ _ vars _ _ -> andParent $ S.fromList vars
     ExprCBasic{} -> andParent S.empty
     ExprPrim{} -> S.empty
@@ -287,6 +295,7 @@ maybeHandlerName ctx =
 showExprKind :: C.Expr -> String
 showExprKind e =
   case e of
+    C.Lit{} -> "Lit"
     C.Var{} -> "Var"
     C.App{} -> "App"
     C.Lam{} -> "Lam"
@@ -304,8 +313,11 @@ ppContextPath ctx =
     AppCParam _ c i e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     LetCBody _ c names e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     CaseCScrutinee _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    CaseCGuard _ _ _ _ _ e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    CaseCBody _ _ _ _ _ e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     CaseCBranch _ c _ _ b -> ppContextPathRec ctx <+> parens (text (showExprKind (C.guardExpr $ head $ C.branchGuards b)))
     ExprCBasic _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
+    
     _ -> ppContextPathRec ctx
 
 ppContextPathRec :: ExprContext -> Doc
@@ -324,6 +336,8 @@ ppContextPathRec ctx =
     LetCDefGroup _ c _ _ dg -> ppContextPathRec c
     CaseCScrutinee _ c e -> ppContextPathRec c <+> text "->" <+> text "CaseM"
     CaseCBranch _ c _ _ b -> ppContextPathRec c <+> text "->" <+> text "CaseB"
+    CaseCBody _ c _ _ _ _ -> ppContextPathRec c <+> text "->" <+> text "CaseBod"
+    CaseCGuard _ c _ _ _ _ -> ppContextPathRec c <+> text "->" <+> text "CaseGuard"
     ExprCBasic _ c e -> ppContextPathRec c <+> text "->" <+> text (show ctx)
     ExprPrim{} -> text "Primitive"
 
@@ -413,6 +427,8 @@ closestRange ctx =
     LetCDefNonRec{} -> C.defNameRange (defOfCtx ctx)
     LetCDefRec{} -> C.defNameRange (defOfCtx ctx)
     LetCBody _ c _ _ -> closestRange c
+    CaseCGuard _ c _ _ _ _ -> closestRange c
+    CaseCBody _ c _ _ _ _ -> closestRange c
     CaseCScrutinee _ c _ -> closestRange c
     CaseCBranch _ c tn _ _ ->
       case tn of
@@ -488,8 +504,11 @@ showSimpleContext ctx =
     LetCBody{} -> "LetBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCScrutinee{} -> "CaseMatch(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
+    CaseCBody{} -> "CaseBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
+    CaseCGuard{} -> "CaseGuard(" ++ showSimple (exprOfCtx ctx) ++ ")"
     ExprCBasic{} -> "ExprBasic(" ++ showSimple (exprOfCtx ctx) ++ ")"
     ExprPrim _ e -> "Primitive(" ++ showSimple e ++ ")"
+
 
 rmNl :: String -> String
 rmNl s = T.unpack $ T.replace "\n" "  " (T.pack s)
@@ -528,6 +547,8 @@ instance Show ExprContext where
       LetCBody id _ _ e -> "LetBody " ++ showExpr e
       CaseCScrutinee id _ e -> "CaseMatch " ++ showExpr e
       CaseCBranch id _ _ i b -> "CaseBranch " ++ show i ++ " " ++ show b
+      CaseCGuard id _ _ _ _ e -> "CaseGuard " ++ showExpr e
+      CaseCBody id _ _ _ _ e -> "CaseBody " ++ showExpr e
       ExprCBasic id _ e -> "ExprBasic " ++ showExpr e
       ExprPrim _ e -> "Primitive " ++ show e
 
@@ -555,7 +576,9 @@ exprOfCtx ctx =
     LetCDefGroup{} -> error $ "LetCDefGroup is a multi Expression Context" ++ show ctx
     LetCBody _ _ _ e -> e
     CaseCScrutinee _ _ e -> e
-    CaseCBranch _ _ _ _ b -> C.guardExpr (head (C.branchGuards b))
+    CaseCBody _ _ _ _ _ e -> e
+    CaseCGuard _ _ _ _ _ e -> e
+    CaseCBranch _ _ _ _ b -> error $ "Branch is a multi Expression Context" ++ show ctx
     ExprCBasic _ _ e -> e
     ExprPrim _ e -> e
 
@@ -571,7 +594,9 @@ maybeExprOfCtx ctx =
     LetCDefRec{} -> Just (defExpr $ defOfCtx ctx)
     LetCBody _ _ _ e -> Just e
     CaseCScrutinee _ _ e -> Just e
-    CaseCBranch _ _ _ _ b -> Just $ C.guardExpr (head (C.branchGuards b))
+    CaseCBody _ _ _ _ _ e -> Just e
+    CaseCGuard _ _ _ _ _ e -> Just e
+    CaseCBranch _ _ _ _ b -> Nothing
     ExprCBasic _ _ e -> Just e
     ExprPrim _ e -> Just e
     ModuleC{} -> Nothing
@@ -600,6 +625,8 @@ contextId ctx =
     LetCBody c _ _ _ -> c
     CaseCScrutinee c _ _ -> c
     CaseCBranch c _ _ _ _ -> c
+    CaseCGuard c _ _ _ _ _ -> c
+    CaseCBody c _ _ _ _ _ -> c
     ExprCBasic c _ _ -> c
     ExprPrim c _ -> c
 
@@ -618,7 +645,9 @@ contextOf ctx =
     LetCDefGroup _ c _ _ _ -> Just c
     LetCBody _ c _ _ -> Just c
     CaseCScrutinee _ c _ -> Just c
-    CaseCBranch _ c _ _ _ -> Just c
+    CaseCBranch _ c _ _ _ -> Just c 
+    CaseCGuard _ c _ _ _ _ -> Just c
+    CaseCBody _ c _ _ _ _ -> Just c
     ExprCBasic _ c _ -> Just c
     ExprPrim _ _ -> Nothing
 
@@ -638,6 +667,8 @@ modCtx ctx =
     LetCBody _ c _ _ -> modCtx c
     CaseCScrutinee _ c _ -> modCtx c
     CaseCBranch _ c _ _ _ -> modCtx c
+    CaseCBody _ c _ _ _ _ -> modCtx c
+    CaseCGuard _ c _ _ _ _ -> modCtx c
     ExprCBasic _ c _ -> modCtx c
     ExprPrim _ _ -> error "Primitive context has no module context"
 

@@ -167,6 +167,8 @@ findUsages tname ctx env =
        LetCDefGroup{} -> recur -- Let bindings and bodies 
        LamCBody{} -> searchChildren -- Lambda bodies
        CaseCBranch{} -> searchChildren -- Branch binding
+       CaseCBody{} -> searchChildren -- Branch body
+       CaseCGuard{} -> searchChildren -- Branch guard
        LetCDefRec{} -> searchChildren -- Mutually recursive let bindings
        LetCDefNonRec{} -> searchChildren -- Non recursive let bindings
        DefCRec{} -> searchChildren -- Recursive top level definitions
@@ -411,7 +413,8 @@ evalBranches ch ctx env branches =
       matches <- matchesPattern ch p
       if matches then do
         -- trace ("Found matching branch " ++ show p ++ " " ++ show (map guardExpr g)) $ return ()
-        e <- focusBranch i ctx
+        b <- focusBranch i ctx
+        e <- focusBranchExpr b
         qeval (e, env)
       else evalBranches ch ctx env xs
 
