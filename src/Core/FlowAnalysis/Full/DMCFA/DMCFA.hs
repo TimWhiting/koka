@@ -50,9 +50,9 @@ doStep i =
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
   -- case addr of
-  --   BindImplicitAddr{} -> return ()
-  --   ConImplicitAddr{} -> return ()
-  --   _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+    -- BindImplicitAddr{} -> return ()
+    -- ConImplicitAddr{} -> return ()
+    -- _ -> trace ("Extending store: " ++ show addr ++  " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -161,25 +161,27 @@ doEval expr venv ctx = do
     Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     App _ args _ -> doApp args
     Let dgs _ -> doLet dgs
+    Case _ brs -> doCase brs
     TypeApp{} -> do
       e <- focusChild 0 expr
       returnV $ eval e venv ctx
     TypeLam _ Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     TypeLam _ (App _ args _) -> doApp args
     TypeLam _ (Let args _) -> doLet args
+    TypeLam _ (Case _ brs) -> doCase brs
     TypeLam _ _ -> do --(TypeApp Var{} _)
       childs <- childrenContexts expr
       -- trace ("TypeLam: " ++ show (map contextId childs)) $ return ()
       e <- focusChild 0 expr
       returnV $ eval e venv ctx
-    Case _ brs -> do
-      s <- focusScrutinee expr
-      branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
-      res <- eval s (limitEnv venv (fvs s)) ctx
-      doContinue res (FScrut expr branches venv) ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where 
+    doCase brs = do
+          s <- focusScrutinee expr
+          branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
+          res <- eval s (limitEnv venv (fvs s)) ctx
+          doContinue res (FScrut expr branches venv) ctx
     doLet dgs = do
           child <- childrenContexts expr
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
@@ -444,7 +446,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
           m <- mLimit
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply kOp newAddr (dynamic newDelimCtx)
+          res <- apply kOp UnitAddr (dynamic newDelimCtx)
           returnV $ handleLocal res venv bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()

@@ -152,25 +152,27 @@ doEval expr venv ctx = do
     Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     App _ args _ -> doApp args
     Let dgs _ -> doLet dgs
+    Case _ brs -> doCase brs
     TypeApp{} -> do
       e <- focusChild 0 expr
       eval e venv ctx
     TypeLam _ Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     TypeLam _ (App _ args _) -> doApp args
     TypeLam _ (Let dgs _) -> doLet dgs
+    TypeLam _ (Case _ brs) -> doCase brs
     TypeLam _ _ -> do --(TypeApp Var{} _)
       childs <- childrenContexts expr
       -- trace ("TypeLam: " ++ show (map contextId childs)) $ return ()
       e <- focusChild 0 expr
       eval e venv ctx
-    Case _ brs -> do
-      s <- focusScrutinee expr
-      branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
-      RV (res, newCtx) <- eval s (limitEnv venv (fvs s)) ctx
-      doContinue res (FScrut expr branches venv) newCtx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where 
+    doCase brs = do
+          s <- focusScrutinee expr
+          branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
+          RV (res, newCtx) <- eval s (limitEnv venv (fvs s)) ctx
+          doContinue res (FScrut expr branches venv) newCtx
     doLet dgs = do 
           child <- childrenContexts expr
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
@@ -417,7 +419,7 @@ doHandleLocal res venv bodId varName valAddr ctx = do
           extendStore UnitAddr changeUnit
           m <- mLimit
           let xctx = addCall m ctx (contextId oExpr)
-          RV (res, newCtx) <- apply kOp newAddr xctx
+          RV (res, newCtx) <- apply kOp UnitAddr xctx
           handleLocal res venv bodId varName newAddr newCtx
         DVal hName opName opExpr args -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()

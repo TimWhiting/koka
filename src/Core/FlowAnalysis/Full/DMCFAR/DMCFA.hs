@@ -181,26 +181,28 @@ doEval expr ctx = do
     Lam{} -> returnConst ctx expr (AChangeClos expr ctx)
     App _ args _ -> doApp args
     Let dgs _ -> doLet dgs
+    Case _ brs -> doCase brs
     TypeApp{} -> do
       e <- focusChild 0 expr
       returnV $ eval e ctx
     TypeLam _ Lam{} -> returnConst ctx expr (AChangeClos expr ctx)
     TypeLam _ (App _ args _) -> doApp args
     TypeLam _ (Let dgs _) -> doLet dgs
+    TypeLam _ (Case _ brs) -> doCase brs
     TypeLam _ _ -> do --(TypeApp Var{} _)
       childs <- childrenContexts expr
       -- trace ("TypeLam: " ++ show (map contextId childs)) $ return ()
       e <- focusChild 0 expr
       returnV $ eval e ctx
-    Case _ brs -> do
-      s <- focusScrutinee expr
-      branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
-      -- trace (show branches) $ return ()
-      res <- eval s ctx
-      doContinue res (FScrut expr branches ctx) ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where 
+    doCase brs = do
+          s <- focusScrutinee expr
+          branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
+          -- trace (show branches) $ return ()
+          res <- eval s ctx
+          doContinue res (FScrut expr branches ctx) ctx
     doLet dgs = do
           child <- childrenContexts expr
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
@@ -318,7 +320,6 @@ doContinue res frame ctx =
                       rebindAll (S.union (fvvs body) (nextFvs body)) oldCtx ctx
                       each [
                         returnV $ eval body ctx,
-                        returnV $ eval br ctx,
                           if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
                        ]
@@ -472,7 +473,7 @@ doHandleLocal res bodId varName valAddr retCtx = do
           m <- mLimit
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply kOp newAddr (dynamic newDelimCtx)
+          res <- apply kOp UnitAddr (dynamic newDelimCtx)
           returnV $ handleLocal res bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
