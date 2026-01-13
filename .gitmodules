@@ -4,3 +4,6 @@
 [submodule "analysis/benchmarks/rosetta"]
 	path = analysis/benchmarks/rosetta
 	url = git@github.com:TimWhiting/rosetta.git
+[submodule "analysis/benchmarks/koka-gen"]
+	path = analysis/benchmarks/koka-gen
+	url = git@github.com:TimWhiting/koka-gen
