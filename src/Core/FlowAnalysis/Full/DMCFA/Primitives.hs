@@ -232,6 +232,8 @@ doPrimitive nm achanges store = do
           let change = (\(AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))) -> e2) (last vals)
           return $ AChangeLit (LiteralChangeStringX (LChangeSingle (change, intercalate "" vals2)))
         else return $ AChangeLit (LiteralChangeStringX LChangeTop)
+  else if nm == nameCoreVectorUnvlist then 
+    error ("Unsupported")
   else if nm == nameCoreStringExternRepeatZ then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s))), AChangeLit (LiteralChangeIntX (LChangeSingle (_, n)))] | n >= 0 ->

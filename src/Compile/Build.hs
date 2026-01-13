@@ -387,19 +387,28 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                     if rebinding flags then do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMainR bc (\bc mn ->
-                            runBuild term flags $ buildcTypeCheck [mn] bc
+                            trace ("Loading new module " ++ show mn)
+                            runBuild term flags $ do
+                              bc' <- buildcFreshFromRoots bc
+                              buildcTypeCheck (mn:buildcRoots bc') bc'
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
                     else if kcfa flags then do
                       sweepDM (mSensitivity flags) 0 (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMainK bc (\bc mn ->
-                            runBuild term flags $ buildcTypeCheck [mn] bc
+                            trace ("Loading new module " ++ show mn)
+                            runBuild term flags $ do
+                              bc' <- buildcFreshFromRoots bc
+                              buildcTypeCheck (mn:buildcRoots bc') bc'
                           ) mod (mSensitivity flags)
                         return ()
                     else do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMain bc (\bc mn ->
-                            runBuild term flags $ buildcTypeCheck [mn] bc
+                            trace ("Loading new module " ++ show mn)
+                            runBuild term flags $ do
+                              bc' <- buildcFreshFromRoots bc
+                              buildcTypeCheck (mn:buildcRoots bc') bc'
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
                       return ()

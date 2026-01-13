@@ -248,6 +248,8 @@ bind ctx var@(C.Var tname vInfo) env =
     LetCBody _ ctx' tn _ -> bind ctx' var env
     CaseCScrutinee _ ctx' _ -> bind ctx' var env
     CaseCBranch _ ctx' names i b -> caseBinding ctx' names i b
+    CaseCGuard _ ctx' _ i b _ -> bind ctx' var env
+    CaseCBody _ ctx' _ i b _ -> bind ctx' var env
     ExprCBasic _ ctx' _ -> bind ctx' var env
   where
     caseBinding ctx' names i b =
@@ -330,6 +332,8 @@ indeterminateStaticCtx m ctx =
     LetCBody _ ctx' _ _ -> indeterminateStaticCtx m ctx'
     CaseCScrutinee _ ctx' _ -> indeterminateStaticCtx m ctx'
     CaseCBranch _ ctx' _ _ _ -> indeterminateStaticCtx m ctx'
+    CaseCBody _ ctx' _ _ _ _ -> indeterminateStaticCtx m ctx'
+    CaseCGuard _ ctx' _ _ _ _ -> indeterminateStaticCtx m ctx'
     ExprCBasic _ ctx' _ -> indeterminateStaticCtx m ctx'
 
 maybeModOfEnv :: EnvCtx -> Maybe ExprContext

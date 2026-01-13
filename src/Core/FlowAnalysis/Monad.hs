@@ -87,6 +87,12 @@ focusScrutinee = focusChild 0
 focusBranch :: Int -> ExprContext -> FixAR x s e i o c ExprContext
 focusBranch i = focusChild (i + 1) -- Skip scrutinee
 
+focusBranchExpr :: ExprContext -> FixAR x s e i o c ExprContext
+focusBranchExpr = focusChild 1
+
+focusGuardExpr :: ExprContext -> FixAR x s e i o c ExprContext
+focusGuardExpr = focusChild 0
+
 focusBody :: ExprContext -> FixAR x s e i o c ExprContext
 focusBody e = do
   children <- childrenContexts e
@@ -380,10 +386,13 @@ childrenContexts ctx = do
                 LetCDefRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 LetCDefNonRec{} -> childrenOfExpr ctx (exprOfCtx ctx)
                 LetCBody _ _ _ e -> childrenOfExpr ctx e
+                CaseCBody _ _ _ _ _ e -> childrenOfExpr ctx e
+                CaseCGuard _ _ _ _ _ e -> childrenOfExpr ctx e
                 CaseCScrutinee _ _ e -> childrenOfExpr ctx e
-                CaseCBranch _ _ _ _ b -> do
-                  x <- mapM (childrenOfExpr ctx . guardExpr) $ branchGuards b -- TODO Better context for branch guards
-                  return $! concat x
+                CaseCBranch _ _ tn i b -> do
+                  guardCtx <- addContextId (\guardId -> CaseCGuard guardId ctx tn i b (guardTest $ head $ branchGuards b)) 
+                  bodyCtx <- addContextId (\bodyId -> CaseCBody bodyId ctx tn i b (guardExpr $ head $ branchGuards b))
+                  return [guardCtx, bodyCtx]
                 ExprCBasic{} -> return []
                 ModuleC{} -> do
                   -- analysisLog ("initial contexts for module " ++ show (contextId ctx))
@@ -489,12 +498,13 @@ maybeLoadModule mn = do
           return $ Just mod
         _ -> do
           let build = builder env
-          buildc' <- liftIO $ build bc mn
+          buildc' <- liftIO $ build bc{buildcRoots = mn : buildcRoots bc} mn
           case buildc' of
             Left err -> do
               trace ("Error loading module " ++ show mn ++ " " ++ show err) $ return ()
               return Nothing
             Right (bc', e) -> do
+              trace (show e) $ return ()
               let loaded = map modName (buildcModules bc')
               trace ("Loaded module " ++ show mn ++ " " ++ show loaded) $ return ()
               case buildcLookupModule mn bc' of

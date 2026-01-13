@@ -306,17 +306,19 @@ doContinue res frame ctx =
               doContinue ret (nextLetFrame frame ctx) ctx
           FScrut parent branches oldCtx -> do
             let recur [] tree = doBottom
-                recur ((branch, expr):branches) tree = do
-                  match <- branchMatch branch tree
+                recur ((branch, br):branches) tree = do
+                  match <- branchMatch br branch tree ctx
                   case match of
                     Right (bindings, matchTree) -> do
                       -- trace ("Match " ++ show (M.keys bindings)) $ return ()
                       mapM_ (\(tname, extend) ->
                         extend (BindingAddr ctx tname)
                         ) (M.toList bindings)
-                      rebindAll (S.union (fvvs expr) (nextFvs expr)) oldCtx ctx
+                      body <- focusBranchExpr br
+                      rebindAll (S.union (fvvs body) (nextFvs body)) oldCtx ctx
                       each [
-                        returnV $ eval expr ctx,
+                        returnV $ eval body ctx,
+                        returnV $ eval br ctx,
                           if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
                        ]
@@ -520,9 +522,27 @@ doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
           doContinue res frame retCtx
         Nothing -> return $ RV res
 
-branchMatch :: Branch -> AChangeTree -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
-branchMatch branch addr =
-  patMatch (head $ branchPatterns branch) addr
+branchMatch :: ExprContext -> Branch -> AChangeTree -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
+branchMatch branchCtx branch addr ctx = do
+  match <- patMatch (head $ branchPatterns branch) addr
+  case match of 
+    Left tree -> return $ Left tree
+    Right (bindings, tree) -> 
+      if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
+      else do
+        mapM_ (\(tname, extend) ->
+          extend (BindingAddr ctx tname)
+          ) (M.toList bindings)
+        guard <- focusGuardExpr branchCtx
+        RVAddr a <- eval guard ctx
+        v <- store a
+        case v of 
+          AChangeConstr con _ -> 
+            case exprOfCtx con of
+              Con conName _ _ | getName conName == nameTrue ->
+                return $ Right (bindings, tree)  
+              _ -> return $ Left tree
+          _ -> return $ Left tree
 
 type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
 

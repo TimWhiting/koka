@@ -57,6 +57,11 @@ nameCoreStringCount = newLocallyQualified "std/core/string" "chars" "@extern-cou
 nameCoreStringVectorJoin = newLocallyQualified "std/core/string" "vector" "join"
 nameOSReadline = newQualified "std/os/readline" "readline"
 nameStringEq = newQualified "std/core/string" "=="
+nameCoreVectorUnvlist = newQualified "std/core/vector" "@extern-unvlist"
+nameCoreStringJoinSep = newQualified "std/core/list" "joinsep"
+nameCoreStringJoinSep2 = newQualified "std/core/list" "joinsep2"
+nameCoreStringJoin = newLocallyQualified "std/core/list" "concat" "join"
+nameCoreStringJoin2 = newLocallyQualified "std/core/list" "concat" "join2"
 
 nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
 nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
@@ -132,8 +137,9 @@ isPrimitive tn =
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
                       nameStringEq, nameCoreStringToUpper, nameCoreStringCount, nameCoreStringExternRepeatZ,
-                      nameCoreCharToString, nameCoreStringListChar, nameCoreStringVectorJoin,
+                      nameCoreCharToString, nameCoreStringListChar, nameCoreStringVectorJoin, nameCoreVectorUnvlist,
                       nameCoreSliceString, nameCoreSliceXStartsWith, nameCoreSliceLength,
+                      nameCoreStringJoinSep, nameCoreStringJoin,
                       nameCoreTypesExternAppend, nameCoreIntExternShow,
                       nameCoreCharInt, nameNumInt32Int, nameCoreIntExternSSizeT, nameNumInt32Int32,
                       namePretendDecreasing, nameUnsafeTotalCast, nameUnsafeNoLocalCast,
@@ -171,8 +177,10 @@ isNeverOp :: TName -> Bool
 isNeverOp tn = nameStem (getName tn) `startsWith` "clause-never"
 
 isTrickyPrimitive :: TName -> Bool
-isTrickyPrimitive n = getName n `elem` [nameCoreXParse]
+isTrickyPrimitive n = getName n `elem` [nameCoreXParse, nameCoreStringJoin, nameCoreStringJoinSep]
 
 equalPrimitive :: TName -> TName
 equalPrimitive name | getName name == nameCoreXParse = name{getName = nameCoreMInt}
+equalPrimitive name | getName name == nameCoreStringJoin = name{getName = nameCoreStringJoin2}
+equalPrimitive name | getName name == nameCoreStringJoinSep = name{getName = nameCoreStringJoinSep2}
 equalPrimitive name = name
