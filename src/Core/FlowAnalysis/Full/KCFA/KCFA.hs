@@ -272,8 +272,8 @@ doContinue res frame ctx =
               doContinue ret (nextLetFrame frame newCtx) newCtx
           FScrut parent branches env -> do
             let recur [] tree = doBottom
-                recur ((branch, expr):branches) tree = do
-                  match <- branchMatch branch tree
+                recur ((branch, br):branches) tree = do
+                  match <- branchMatch br branch tree env ctx
                   case match of
                     Right (bindings, matchTree) -> do
                       let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
@@ -281,7 +281,9 @@ doContinue res frame ctx =
                         extend (fromJust $ lookupEnv tname newEnv)
                         ) (M.toList bindings)
                       each [
-                          eval expr (limitEnv newEnv (fvs expr)) ctx,
+                          do
+                            body <- focusBranchExpr br
+                            eval body (limitEnv newEnv (fvs body)) ctx,
                           if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
                        ]
@@ -466,9 +468,28 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
           doContinue res frame ctx
         Nothing -> return $ RV (res, ctx)
 
-branchMatch :: Branch -> AChangeTree -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
-branchMatch branch addr =
-  patMatch (head $ branchPatterns branch) addr
+branchMatch :: ExprContext -> Branch -> AChangeTree -> VEnv -> StaticCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e))
+branchMatch branchCtx branch addr env ctx = do
+  match <- patMatch (head $ branchPatterns branch) addr
+  case match of 
+    Left tree -> return $ Left tree
+    Right (bindings, tree) -> 
+      if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
+      else do
+        let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
+        mapM_ (\(tname, extend) ->
+          extend (fromJust $ lookupEnv tname newEnv)
+          ) (M.toList bindings)
+        guard <- focusGuardExpr branchCtx
+        RV (RVAddr a, ctx') <- eval guard newEnv ctx -- TODO: Pass back the ctx'
+        v <- store a
+        case v of 
+          AChangeConstr con _ -> 
+            case exprOfCtx con of
+              Con conName _ _ | getName conName == nameTrue ->
+                return $ Right (bindings, tree)  
+              _ -> return $ Left tree
+          _ -> return $ Left tree
 
 type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
 

@@ -2,6 +2,7 @@
    by Nicolas Wu, Tom Schrijvers, and Ralf Hinze
    <https://www.cs.ox.ac.uk/people/nicolas.wu/papers/Scope.pdf>
 */
+import std/num/random
 
 effect nondet
   ctl flip() : bool

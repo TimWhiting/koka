@@ -113,7 +113,9 @@ doEval expr venv ctx = do
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
                     -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
-                    x
+                    v <- x
+                    -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
+                    return v
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen || getName name == namePretendDecreasing -> do
@@ -282,16 +284,18 @@ doContinue res frame ctx =
               doContinue ret (nextLetFrame frame ctx) ctx
           FScrut parent branches env -> do
             let recur [] _ = doBottom
-                recur ((branch, expr):branches) tree = do
-                  match <- branchMatch branch tree
+                recur ((branch, br):branches) tree = do
+                  match <- branchMatch br branch tree env ctx
                   case match of
                     Right (bindings, matchTree) -> do
                       let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
                         ) (M.toList bindings)
-                      each [
-                        returnV $ eval expr (limitEnv newEnv (fvs expr)) ctx,
+                      each [ 
+                          do
+                            body <- focusBranchExpr br
+                            returnV $ eval body (limitEnv newEnv (fvs body)) ctx,
                           if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
                        ]
@@ -489,9 +493,28 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
           doContinue res frame retCtx
         Nothing -> return $ RV res
 
-branchMatch :: Branch -> AChangeTree -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
-branchMatch branch addr =
-  patMatch (head $ branchPatterns branch) addr
+branchMatch :: ExprContext -> Branch -> AChangeTree -> VEnv -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
+branchMatch branchCtx branch addr env ctx = do
+  match <- patMatch (head $ branchPatterns branch) addr
+  case match of 
+    Left tree -> return $ Left tree
+    Right (bindings, tree) -> 
+      if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
+      else do
+        let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
+        mapM_ (\(tname, extend) ->
+          extend (fromJust $ lookupEnv tname newEnv)
+          ) (M.toList bindings)
+        guard <- focusGuardExpr branchCtx
+        RVAddr a <- eval guard newEnv ctx
+        v <- store a
+        case v of 
+          AChangeConstr con _ -> 
+            case exprOfCtx con of
+              Con conName _ _ | getName conName == nameTrue ->
+                return $ Right (bindings, tree)  
+              _ -> return $ Left tree
+          _ -> return $ Left tree
 
 type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
 

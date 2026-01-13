@@ -434,6 +434,13 @@ fun joinsep( xs : list<string>, sep : string ) : string
     Cons(x,Nil)         -> x
     Cons(x,Cons(y,Nil)) | sep.is-empty -> x ++ y
     _                   -> xs.vector.join(sep)
+fun joinsep2( xs : list<string>, sep : string ) : string
+  match xs
+    Nil                 -> ""
+    Cons(x,Nil)         -> x
+    Cons(x,Cons(y,Nil)) | sep.is-empty -> x ++ y
+    Cons(x,Cons(y,Nil)) -> x ++ sep ++ y
+    Cons(x,Cons(y,rst)) -> x ++ sep ++ y ++ sep ++ joinsep2(rst, sep)
 
 // Concatenate all strings in a list
 pub fun concat/join( xs : list<string> ) : string
@@ -442,6 +449,11 @@ pub fun concat/join( xs : list<string> ) : string
     Cons(x,Nil)         -> x
     Cons(x,Cons(y,Nil)) -> x ++ y
     _                   -> xs.vector.join()
+pub fun concat/join2( xs : list<string> ) : string
+  match xs
+    Nil                 -> ""
+    Cons(x,Nil)         -> x
+    Cons(x,Cons(y,rst)) -> x ++ y ++ join2(rst)
 
 // Concatenate all strings in a list using a specific separator
 pub fun joinsep/join( xs : list<string>, sep : string ) : string
