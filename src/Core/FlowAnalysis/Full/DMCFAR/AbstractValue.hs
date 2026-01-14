@@ -116,6 +116,7 @@ data Addr =
   | EndKAddr
   | KAddr !Frame !StaticCtx !DelimitedFrame !DelimitedVal
   | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
+  | ArgImplicitAddr !CombinedCtx !VEnv !Int !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
@@ -125,6 +126,7 @@ instance Show Addr where
   show EndKAddr = "EndKAddr"
   show (KAddr frame ctx dframe dval) = "K@(" ++ show frame ++ "," ++ show ctx ++ "," ++ show dframe ++ "," ++ show dval ++ ")"
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (ArgImplicitAddr ctx env i ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show i ++ " " ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
 data RValue =
