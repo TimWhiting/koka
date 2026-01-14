@@ -32,7 +32,6 @@ import Lib.PPrint (Pretty (..), hcat, text, vcat, (<.>))
 import Type.Pretty (ppType, defaultEnv)
 import Core.Core (Expr)
 import Data.Hashable
-import qualified Core.FlowAnalysis.StaticContext as SC
 
 showSimpleCtxId ctxId =
   case ctxId of
@@ -49,7 +48,7 @@ instance Show Call where
   show CallDelim = "delim"
   show (CallApp ctxId) = "a" ++ showSimpleCtxId ctxId
 
-data StaticCtx = 
+data StaticCtx =
   TKTop [Call]
   | TKDelim [Call]
   deriving (Eq, Ord)
@@ -79,12 +78,15 @@ addDelim :: Int -> CombinedCtx -> ExprContextId -> Name -> DynamicCtx
 addDelim d (CombinedCtx static dyn) delim name = take d $ ((delim, name), static) : dyn
 
 delimCtx (-1) m (TKDelim ctx) = TKDelim $ take m ctx
-delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx 
+delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx
 delimCtx d m ctx = TKDelim $ take m [CallDelim]
 
 newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx d m static) $ take d $ ((delim, name), static) : dyn
 
-data DelimitedVal = 
+type VEnv = (CombinedCtx, M.Map TName ExprContextId)
+envCtx (ctx, _) = ctx
+
+data DelimitedVal =
   DVal {
       dLabel :: Name,
       dOpName :: Name,
@@ -95,42 +97,39 @@ data DelimitedVal =
 
 data DelimitedFrame =
   DFrame {
-      dframeCtx :: CombinedCtx,
+      dframeVEnv :: VEnv,
       dframeBodId :: ExprContextId,
       dframeHnd :: Handler
   } | DFrameLocal {
-      dflCtx :: CombinedCtx,
+      dflVEnv :: VEnv,
       dflBodId :: ExprContextId,
       dflVarName :: TName,
       dflValAddr :: Addr
-  } | DFrameDone 
+  } | DFrameDone
   | DFrameNone -- TODO: Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
 data Addr =
-  BindingAddr !CombinedCtx !TName
+  BindingAddr !CombinedCtx !TName !ExprContextId
   | UnitAddr
   | EndVAddr
   | EndKAddr
   | KAddr !Frame !StaticCtx !DelimitedFrame !DelimitedVal
-  | BindImplicitAddr !CombinedCtx !ExprContextId
+  | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
-  show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
+  show (BindingAddr ctx name ectx) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
+  show UnitAddr = "UnitAddr"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
-  show UnitAddr = "UnitAddr"
   show (KAddr frame ctx dframe dval) = "K@(" ++ show frame ++ "," ++ show ctx ++ "," ++ show dframe ++ "," ++ show dval ++ ")"
-  show (BindImplicitAddr ctx ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
+  show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
-nextAndFvs :: HasCallStack => ExprContext -> Set TName
-nextAndFvs e = S.union (fvvs e) (SC.nextFvs e)
-
-data RValue = 
-  RVAddr Addr 
-  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr 
+data RValue =
+  RVAddr Addr
+  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr
   deriving (Eq, Ord, Show)
 
 data Frame =
@@ -138,14 +137,14 @@ data Frame =
   | FScrut {
       parent :: ExprContext,
       branches :: [ExprContext],
-      scrutCtx :: CombinedCtx
+      env :: VEnv
     }
   | FApp {
       totalArgs :: Int,
       leftArgs :: [ExprContext],
       resolvedArgs :: [Addr],
       parent :: ExprContext,
-      appCtx :: CombinedCtx
+      env :: VEnv
     }
   | FLet {
         groupIdx :: Int,
@@ -155,35 +154,54 @@ data Frame =
         name :: TName,
         resolved :: [Addr],
         parent :: ExprContext,
-        letCtx :: CombinedCtx
+        env :: VEnv
       }
   | FDollar {
-      vaddr :: Addr -- Precise closure address,
+      vaddr :: Addr -- Precise closure address
   }
   | FResume {
       rretCtx :: StaticCtx,
       vaddr :: Addr,
+      venv :: VEnv,
       rHnd :: Handler,
       rCtx :: ExprContextId
   }
   | FRestoreDelim {
      dframe :: DelimitedFrame
   }
-  | FMask 
-  deriving (Eq, Ord, Show)
+  | FMask
+  deriving (Eq, Ord)
+instance Show Frame where
+  show FrameDone = "FrameDone"
+  show (FScrut parent branches env) = "FScrut(" ++ showSimpleContext parent ++ ", " ++ show (map showSimpleContext branches) ++ ")"
+  show (FApp totalArgs leftArgs resolvedArgs parent env) =
+    "FApp(" ++ show totalArgs ++ ", " ++ show (map showSimpleContext leftArgs) ++ ", " ++ show resolvedArgs ++ ", " ++ showSimpleContext parent ++ ")"
+  show (FLet groupIdx numGroups bindingIdx numBindings name resolved parent env) =
+    "FLet(" ++ show (groupIdx, numGroups, bindingIdx, numBindings, name) ++ ", " ++ show resolved ++ ", " ++ showSimpleContext parent ++ ")"
+  show (FDollar vaddr) = "FDollar(" ++ show vaddr ++ ")"
+  show (FResume rretCtx vaddr venv rHnd rCtx) =
+    "FResume(" ++ show rretCtx ++ ", " ++ show vaddr ++ ", " ++ showSimpleCtxId rCtx ++ ")"
+  show (FRestoreDelim dframe) = "FRestoreDelim(" ++ show dframe ++ ")"
+  show FMask = "FMask"
 
 
 nextLetFrame :: Frame -> CombinedCtx -> Frame
 nextLetFrame
-  (FLet groupIdx numGroups bindingIdx numBindings name resolved parent oldCtx) ctx
-  | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent ctx
+  (FLet groupIdx numGroups bindingIdx numBindings name resolved parent
+        env) ctx
+  | bindingIdx < numBindings - 1 = FLet groupIdx numGroups (bindingIdx + 1) numBindings (letBindingName groupIdx bindingIdx parent) resolved parent env
   | groupIdx < numGroups - 1 =
       let C.Let dgs _ = exprOfCtx parent
           gidx = groupIdx + 1
           idx = 0
-          defs = defsOf (dgs !! gidx) in
-      FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent ctx
-  | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent))
+          defs = defsOf (dgs !! gidx)
+          newEnv = foldl (\acc x -> extendEnv acc (contextId parent) (defTName x)) env defs in
+      FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
+  | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
+
+extendEnv :: VEnv -> ExprContextId -> TName -> VEnv
+extendEnv (ctx, m) id nm =
+  (ctx, M.insert nm id m)  
 
 data Handler =
   Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
@@ -193,6 +211,12 @@ startStaticCtx = [CallTop]
 startDelimCtx = [CallDelim]
 startDynCtx = []
 
+lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
+lookupEnv x (ctx, env) =
+  case M.lookup x env of
+    Just ectx -> Just $ BindingAddr ctx x ectx
+    Nothing -> Nothing
+
 showStore store = show $ pretty store
 
 instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
@@ -200,22 +224,27 @@ instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
       vcat $ map (\(k,v) -> hcat [pretty k, text " -> ", pretty v]) $ M.toList amap
 
 data AChange =
-  AChangeClos ExprContext CombinedCtx
+  AChangeClos ExprContext VEnv
   | AChangePrim TName ExprContext
   | AChangeConstr ExprContext [Name]
   | AChangeObj ExprContext TName [(Name,Addr)]
   | AChangeLit LiteralChangeX
-  | AChangeKont Addr CombinedCtx Handler -- Where to return to and where to extend the return continuation
+  | AChangeKont Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
-  
-vcontextId change = 
-  case change of 
-    AChangeClos e _ -> contextId e 
+
+vcontextId change =
+  case change of
+    AChangeClos e _ -> contextId e
     AChangePrim _ e -> contextId e
     AChangeConstr e _ -> contextId e
     AChangeObj e _ _ -> contextId e
     AChangeLit e -> litEx e
     AChangeKont _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
+
+envOfClos :: AChange -> VEnv
+envOfClos res =
+  case res of
+    AChangeClos c e -> e
 
 ctxOfClos :: AChange -> ExprContext
 ctxOfClos res =
@@ -224,7 +253,7 @@ ctxOfClos res =
 
 instance Show AChange where
   show (AChangeClos expr env) = showNoEnvClosure (expr, env)
-  show (AChangeConstr expr params) = showCtxExpr expr
+  show (AChangeConstr expr params) = showSimpleContext expr
   show (AChangeObj e name args) = show name ++ "(" ++ show args ++ ")"
   show (AChangePrim name expr) = show name
   show (AChangeKont addr env handler) = "Kont" ++ show (addr, env, handler)
@@ -232,11 +261,11 @@ instance Show AChange where
 
 data AbValue =
   AbValue{
-    aclos:: !(Set (ExprContext, CombinedCtx)),
+    aclos:: !(Set (ExprContext, VEnv)),
     acons:: !(Set (ExprContext, [Name])),
     aprims :: !(Set (TName, ExprContext)),
     aobjs :: !(Set (ExprContext, TName, [(Name,Addr)])),
-    akonts:: !(Set (Addr, CombinedCtx, Handler)),
+    akonts:: !(Set (Addr, VEnv, Handler)),
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
@@ -314,6 +343,9 @@ eachValue ab = each $ map return (changes ab)
 tnamesCons :: Int -> [TName]
 tnamesCons n = map (\i -> TName (newName ("con" ++ show i)) typeAny Nothing) [0..n]
 
+limitEnv :: VEnv -> S.Set TName -> VEnv
+limitEnv (ctx, env) fvs = (ctx, M.filterWithKey (\k _ -> k `S.member` fvs) env)
+
 showSimpleAbValue :: AbValue -> String
 showSimpleAbValue (AbValue cls cntrs prims objs konts lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
@@ -333,17 +365,17 @@ showNoEnvAbValue (AbValue cls cntrs prims objs konts lit) =
   (if litIsBottomX lit then "" else " lits: " ++ show lit)
 
 -- Basic creating of abstract values
-showSimpleClosure :: (ExprContext, CombinedCtx) -> String
+showSimpleClosure :: (ExprContext, VEnv) -> String
 showSimpleClosure (ctx, env) = showSimpleContext ctx ++ " in " ++ showSimpleEnv env
 
-showNoEnvClosure :: (ExprContext, CombinedCtx) -> String
-showNoEnvClosure (ctx, env) = showSimpleContext ctx
+showNoEnvClosure :: (ExprContext, VEnv) -> String
+showNoEnvClosure (ctx, (_, env)) = showSimpleContext ctx
 
-showSimpleEnv :: CombinedCtx -> String
-showSimpleEnv c =
-  "<<" ++ show c ++ ">>"
+showSimpleEnv :: VEnv -> String
+showSimpleEnv (_, c) =
+  "<<" ++ show (M.toList c) ++ ">>"
 
-showSimpleAbValueCtx :: (CombinedCtx, AbValue) -> String
+showSimpleAbValueCtx :: (VEnv, AbValue) -> String
 showSimpleAbValueCtx (env, ab) =
   showSimpleEnv env ++ ": " ++ showSimpleAbValue ab ++ "\n"
 
