@@ -48,7 +48,7 @@ instance Show Call where
   show CallDelim = "delim"
   show (CallApp ctxId) = "a" ++ showSimpleCtxId ctxId
 
-data StaticCtx = 
+data StaticCtx =
   TKTop [Call]
   | TKDelim [Call]
   deriving (Eq, Ord)
@@ -78,14 +78,14 @@ addDelim :: Int -> CombinedCtx -> ExprContextId -> Name -> DynamicCtx
 addDelim d (CombinedCtx static dyn) delim name = take d $ ((delim, name), static) : dyn
 
 delimCtx (-1) m (TKDelim ctx) = TKDelim $ take m ctx
-delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx 
+delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx
 delimCtx d m ctx = TKDelim $ take m [CallDelim]
 
 newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx d m static) $ take d $ ((delim, name), static) : dyn
 
-type VEnv = M.Map TName CombinedCtx
+type VEnv = M.Map TName (CombinedCtx, ExprContextId)
 
-data DelimitedVal = 
+data DelimitedVal =
   DVal {
       dLabel :: Name,
       dOpName :: Name,
@@ -104,12 +104,12 @@ data DelimitedFrame =
       dflBodId :: ExprContextId,
       dflVarName :: TName,
       dflValAddr :: Addr
-  } | DFrameDone 
+  } | DFrameDone
   | DFrameNone -- TODO: Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
 data Addr =
-  BindingAddr !CombinedCtx !TName
+  BindingAddr !CombinedCtx !TName !ExprContextId
   | UnitAddr
   | EndVAddr
   | EndKAddr
@@ -118,7 +118,7 @@ data Addr =
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
-  show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
+  show (BindingAddr ctx name ectx) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
   show UnitAddr = "UnitAddr"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
@@ -126,9 +126,9 @@ instance Show Addr where
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
-data RValue = 
-  RVAddr Addr 
-  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr 
+data RValue =
+  RVAddr Addr
+  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr
   deriving (Eq, Ord, Show)
 
 data Frame =
@@ -194,7 +194,7 @@ nextLetFrame
           gidx = groupIdx + 1
           idx = 0
           defs = defsOf (dgs !! gidx)
-          newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
+          newEnv = foldl (\acc x -> M.insert (defTName x) (ctx, contextId parent) acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
 
@@ -211,7 +211,7 @@ startEnv = M.empty
 lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
 lookupEnv x env =
   case M.lookup x env of
-    Just ctx -> Just $ BindingAddr ctx x
+    Just (ctx, ectx) -> Just $ BindingAddr ctx x ectx
     Nothing -> Nothing
 
 showStore store = show $ pretty store
@@ -228,10 +228,10 @@ data AChange =
   | AChangeLit LiteralChangeX
   | AChangeKont Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
-  
-vcontextId change = 
-  case change of 
-    AChangeClos e _ -> contextId e 
+
+vcontextId change =
+  case change of
+    AChangeClos e _ -> contextId e
     AChangePrim _ e -> contextId e
     AChangeConstr e _ -> contextId e
     AChangeObj e _ _ -> contextId e

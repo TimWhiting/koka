@@ -26,10 +26,10 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
-  CEval ExprContext CombinedCtx -- expr, env, ctx
+  CEval ExprContext VEnv -- expr, env, ctx
   | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
-  | CHandleEffects RValue ExprContextId Handler CombinedCtx
-  | CHandleLocal RValue ExprContextId TName Addr CombinedCtx
+  | CHandleEffects RValue VEnv ExprContextId Handler CombinedCtx
+  | CHandleLocal RValue VEnv ExprContextId TName Addr CombinedCtx
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int
@@ -45,7 +45,7 @@ startCombinedCtx = do
 inject :: ExprContext -> FixAAMR r s e FixInput
 inject ctx = do
   c <- startCombinedCtx
-  return $ Step (CEval ctx c)
+  return $ Step (CEval ctx (c, M.empty))
 
 data FixInput =
   Step Conf
