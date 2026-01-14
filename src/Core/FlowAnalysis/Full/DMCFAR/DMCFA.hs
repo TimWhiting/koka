@@ -183,7 +183,7 @@ doEval expr venv = do
       returnV $ eval e venv
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
-  where 
+  where
     doCase brs = do
           s <- focusScrutinee expr
           branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
@@ -206,10 +206,22 @@ doEval expr venv = do
           res <- eval f (limitEnv venv (fvs f))
           doContinue res (FApp (length args) argExprs [] expr venv) (envCtx venv)
 
+adjustAddr (BindingAddr _ nm u) env' ctx  = BindingAddr ctx nm u
+adjustAddr (BindImplicitAddr _ _ u) env' ctx = BindImplicitAddr ctx env' u
+
 rebindAll :: HasCallStack => VEnv -> CombinedCtx -> FixAAMR r s e VEnv
 rebindAll (oldCtx, vars) ctx = do
-  mapM_ (\(var, ctxId) -> rebind (BindingAddr oldCtx var ctxId) (BindingAddr ctx var ctxId)) (M.toList vars) 
+  mapM_ (\(var, ctxId) -> rebind (BindingAddr oldCtx var ctxId) (BindingAddr ctx var ctxId)) (M.toList vars)
   return (ctx, vars)
+
+rebindAllAddrs :: HasCallStack => [Addr] -> VEnv -> CombinedCtx -> FixAAMR r s e (VEnv, [Addr])
+rebindAllAddrs addrs (oldCtx, vars) newCtx = do
+  let newEnv = (newCtx, vars)
+  addrs' <- mapM (\addr -> do
+      let newAddr = adjustAddr addr newEnv newCtx
+      rebind addr newAddr
+      return newAddr) addrs
+  return (newEnv, addrs')
 
 doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
 doContinue res frame ctx =
@@ -281,8 +293,9 @@ doContinue res frame ctx =
               next:rest -> do
                 -- trace ("Next " ++ show next) $ return ()
                 env' <- rebindAll venv ctx
-                ret <- eval next (limitEnv env' (fvs next))
-                doContinue ret (FApp n rest (res ++ [addr]) eApp env') ctx -- TODO: Get all the new addresses for the frame.
+                (env'', addrs') <- rebindAllAddrs (res ++ [addr]) env' ctx
+                ret <- eval next (limitEnv env'' (fvs next))
+                doContinue ret (FApp n rest addrs' eApp env'') ctx -- TODO: Get all the new addresses for the frame.
           FLet groupIdx numGroups bindingIdx numBindings name resolved u (oldCtx, venv) -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
             val <- store addr
@@ -312,7 +325,7 @@ doContinue res frame ctx =
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
                         ) (M.toList bindings)
-                      each [ 
+                      each [
                           do returnV $ eval body (limitEnv newEnv (fvs body)),
                           if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
@@ -327,7 +340,7 @@ doContinue res frame ctx =
                   body <- focusBody cexpr
                   let [arg] = lamNames cexpr
                   env' <- rebindAll cenv ctx
-                  let newEnv = extendEnv env' (contextId cexpr) arg 
+                  let newEnv = extendEnv env' (contextId cexpr) arg
                   v <- store addr
                   extendStore (fromJust $ lookupEnv arg newEnv) v
                   returnV $ eval body (limitEnv newEnv (fvs body))
@@ -436,8 +449,8 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         d <- dLimit
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u) (getName varName)
-        env' <- rebindAll env newctx    
-        let newEnv = extendEnv env' (contextId e) varName  
+        env' <- rebindAll env newctx
+        let newEnv = extendEnv env' (contextId e) varName
         rebind UnitAddr (fromJust $ lookupEnv varName newEnv)
         res <- eval bod newEnv
         returnV $ handleLocal res newEnv (contextId bod) varName (head arguments) ctx
@@ -447,7 +460,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         let varName = head (lamNames e)
         bod <- focusBody e
         env' <- rebindAll env ctx
-        let newEnv = extendEnv env' (contextId e) varName 
+        let newEnv = extendEnv env' (contextId e) varName
         extendStore (fromJust $ lookupEnv varName newEnv) (head args)
         returnV $ eval bod newEnv
 localEff = True
@@ -521,9 +534,9 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
 branchMatch :: HasCallStack => ExprContext -> Branch -> AChangeTree -> VEnv -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
 branchMatch branchCtx branch addr env ctx = do
   match <- patMatch (head $ branchPatterns branch) addr
-  case match of 
+  case match of
     Left tree -> return $ Left tree
-    Right (bindings, tree) -> 
+    Right (bindings, tree) ->
       if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
       else do
         guard <- focusGuardExpr branchCtx
@@ -533,11 +546,11 @@ branchMatch branchCtx branch addr env ctx = do
           ) (M.toList bindings)
         RVAddr a <- eval guard newEnv
         v <- store a
-        case v of 
-          AChangeConstr con _ -> 
+        case v of
+          AChangeConstr con _ ->
             case exprOfCtx con of
               Con conName _ _ | getName conName == nameTrue ->
-                return $ Right (bindings, tree)  
+                return $ Right (bindings, tree)
               _ -> return $ Left tree
           _ -> return $ Left tree
 
