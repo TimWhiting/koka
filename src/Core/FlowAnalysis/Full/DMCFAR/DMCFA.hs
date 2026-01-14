@@ -50,9 +50,9 @@ doStep i =
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
   -- case addr of
-    -- BindImplicitAddr{} -> return ()
-    -- ConImplicitAddr{} -> return ()
-    -- _ -> trace ("Extending store: " ++ show addr ++  " with " ++ show v) $ return ()
+  --   BindImplicitAddr{} -> return ()
+  --   ConImplicitAddr{} -> return ()
+  --   _ -> trace ("Extending store: " ++ show addr ++  " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -119,7 +119,7 @@ doEval expr venv = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ " with env " ++ show venv)
                     v <- x
                     -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
                     return v
@@ -437,7 +437,8 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u) (getName varName)
         env' <- rebindAll env newctx    
-        let newEnv = extendEnv env' (contextId e) varName     
+        let newEnv = extendEnv env' (contextId e) varName  
+        rebind UnitAddr (fromJust $ lookupEnv varName newEnv)
         res <- eval bod newEnv
         returnV $ handleLocal res newEnv (contextId bod) varName (head arguments) ctx
   else do

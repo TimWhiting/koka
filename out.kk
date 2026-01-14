@@ -16,4 +16,4 @@ koka> copy/register
 Installing library in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/50e7567ab93459510bfd412b9898f4e9df3111e36f9d2dfd4eb8cba51d1770ee/9.6.6/lib/aarch64-osx-ghc-9.6.6/koka-3.2.3-JKPkVdIR1OY3NjAC7CLiJ8
 Installing executable koka in /Users/timwhiting/koka/.stack-work/install/aarch64-osx/50e7567ab93459510bfd412b9898f4e9df3111e36f9d2dfd4eb8cba51d1770ee/9.6.6/bin
 Registering library for koka-3.2.3..
-Failed to compile analysis/benchmarks/handlers/vec.kk
+dmcfa,analysis/benchmarks/handlers/vec/main,4,4,1,230,33,1.0,1.0,1.0,1.0,0.012286,0.010117,0.010328
