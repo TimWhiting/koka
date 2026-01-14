@@ -1,7 +1,7 @@
+- [ ] Figure out local vars issues in vec, etc for rebinding.
 - [ ] Need to adjust addresses in local frames to reflect rebinding.
 - [ ] Add back in local set information
 - [ ] Redo analysis....
-
 
 
 
