@@ -178,6 +178,7 @@ getAbResult = do
   let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
                         VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore ArgImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
                         VStore UnitAddr -> (evals, applies, ksizes, ssizes)

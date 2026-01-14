@@ -50,9 +50,9 @@ doStep i =
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
   -- case addr of
-  --   BindImplicitAddr{} -> return ()
-  --   ConImplicitAddr{} -> return ()
-  --   _ -> trace ("Extending store: " ++ show addr ++  " with " ++ show v) $ return ()
+    -- BindImplicitAddr{} -> return ()
+    -- ConImplicitAddr{} -> return ()
+    -- _ -> trace ("Extending store: " ++ show addr ++  " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -119,9 +119,9 @@ doEval expr venv = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ": with env " ++ show venv)
                     v <- x
-                    -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
+                    -- trace ("Result: " ++ showCtxExpr expr ++ ": with env " ++ show venv ++ "\n" ++ show v) $ return ()
                     return v
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -206,22 +206,23 @@ doEval expr venv = do
           res <- eval f (limitEnv venv (fvs f))
           doContinue res (FApp (length args) argExprs [] expr venv) (envCtx venv)
 
-adjustAddr (BindingAddr _ nm u) env' ctx  = BindingAddr ctx nm u
-adjustAddr (BindImplicitAddr _ _ u) env' ctx = BindImplicitAddr ctx env' u
-adjustAddr UnitAddr _ _ = UnitAddr
+adjustAddr (BindingAddr _ nm u) env' i ectx ctx  = BindingAddr ctx nm u
+adjustAddr (BindImplicitAddr _ _ u) env' i ectx ctx = ArgImplicitAddr ctx env' i ectx
+adjustAddr (ArgImplicitAddr _ _ _ u) env' i ectx ctx = ArgImplicitAddr ctx env' i ectx
+adjustAddr UnitAddr _ _ _ _ = UnitAddr
 
 rebindAll :: HasCallStack => VEnv -> CombinedCtx -> FixAAMR r s e VEnv
 rebindAll (oldCtx, vars) ctx = do
   mapM_ (\(var, ctxId) -> rebind (BindingAddr oldCtx var ctxId) (BindingAddr ctx var ctxId)) (M.toList vars)
   return (ctx, vars)
 
-rebindAllAddrs :: HasCallStack => [Addr] -> VEnv -> CombinedCtx -> FixAAMR r s e (VEnv, [Addr])
-rebindAllAddrs addrs (oldCtx, vars) newCtx = do
+rebindAllAddrs :: HasCallStack => ExprContextId -> [Addr] -> VEnv -> CombinedCtx -> FixAAMR r s e (VEnv, [Addr])
+rebindAllAddrs ectx addrs (oldCtx, vars) newCtx = do
   let newEnv = (newCtx, vars)
-  addrs' <- mapM (\addr -> do
-      let newAddr = adjustAddr addr newEnv newCtx
+  addrs' <- zipWithM (\i addr -> do
+      let newAddr = adjustAddr addr newEnv i ectx newCtx
       rebind addr newAddr
-      return newAddr) addrs
+      return newAddr) [0..] addrs
   return (newEnv, addrs')
 
 doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
@@ -292,9 +293,10 @@ doContinue res frame ctx =
                     _ -> do
                       trace ("Applying non function: " ++ show res) doBottom
               next:rest -> do
-                trace ("Next " ++ show next) $ return ()
+                -- app <- M.lookup uApp <$> states <$> getState
+                -- trace ("Next " ++ show next ++ " in " ++ show ctx ++ "\n" ++ show app) $ return ()
                 env' <- rebindAll venv ctx
-                (env'', addrs') <- rebindAllAddrs (res ++ [addr]) env' ctx
+                (env'', addrs') <- rebindAllAddrs uApp (res ++ [addr]) env' ctx
                 ret <- eval next (limitEnv env'' (fvs next))
                 doContinue ret (FApp n rest addrs' eApp env'') ctx -- TODO: Get all the new addresses for the frame.
           FLet groupIdx numGroups bindingIdx numBindings name resolved u (oldCtx, venv) -> do
