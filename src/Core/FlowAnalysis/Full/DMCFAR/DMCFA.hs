@@ -39,7 +39,7 @@ doStep i =
     case i of
       VStore UnitAddr -> return $ SV changeUnit
       VStore addr ->
-        trace ("Value not found in store :" ++ show addr)
+        error ("Value not found in store :" ++ show addr)
         doBottom
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
       Step (CEval expr venv) -> doEval expr venv
@@ -59,9 +59,12 @@ extendKStore addr v = do
   -- trace ("Extending KStore: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (KStore addr) (KV v)
 
+store :: HasCallStack => Addr -> FixAAMR r e s AChange
 store addr = do
   SV res <- doStep (VStore addr)
   return res
+
+kStore :: HasCallStack => Addr -> FixAAMR r e s Addr
 kStore addr = do
   KV res <- doStep (KStore addr)
   return res
@@ -72,9 +75,13 @@ unreturnV f = do
   return r
 returnV :: FixAAMR r s e RValue -> FixAAMR r s e FixChange
 returnV f = RV <$> f
+eval :: HasCallStack => ExprContext -> VEnv -> FixAAMR r s e RValue
 eval expr venv = unreturnV $ doStep $ Step (CEval expr venv)
+apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
+handleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res venv bodId hnd ctx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd ctx)
+handleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
 handleLocal res venv bodId varName valAddr ctx = unreturnV $ doStep $ Step (CHandleLocal res venv bodId varName valAddr ctx)
 
 returnConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
@@ -199,7 +206,7 @@ doEval expr venv = do
           res <- eval f (limitEnv venv (fvs f))
           doContinue res (FApp (length args) argExprs [] expr venv) (envCtx venv)
 
-rebindAll :: VEnv -> CombinedCtx -> FixAAMR r s e VEnv
+rebindAll :: HasCallStack => VEnv -> CombinedCtx -> FixAAMR r s e VEnv
 rebindAll (oldCtx, vars) ctx = do
   mapM_ (\(var, ctxId) -> rebind (BindingAddr oldCtx var ctxId) (BindingAddr ctx var ctxId)) (M.toList vars) 
   return (ctx, vars)
@@ -347,9 +354,10 @@ doApply kaddr addr delimCtx = do
       m <- mLimit
       let newRetCtx = addCall m newCtx bodId
       let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
+      env' <- rebindAll venv newRetCtx
       knext <- kStore kaddr
       res <- apply knext addr (dynamic newDelimCtx)
-      returnV $ handleLocal res venv bodId varName varAddr newRetCtx
+      returnV $ handleLocal res env' bodId varName varAddr newRetCtx
     KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do
       let newCtx = CombinedCtx ctx delimCtx
       d <- dLimit
@@ -431,7 +439,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         env' <- rebindAll env newctx    
         let newEnv = extendEnv env' (contextId e) varName     
         res <- eval bod newEnv
-        returnV $ handleLocal res venv (contextId bod) varName (head arguments) ctx
+        returnV $ handleLocal res newEnv (contextId bod) varName (head arguments) ctx
   else do
     case args !! 1 of
       AChangeClos e env -> do
@@ -509,7 +517,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
           doContinue res frame retCtx
         Nothing -> return $ RV res
 
-branchMatch :: ExprContext -> Branch -> AChangeTree -> VEnv -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
+branchMatch :: HasCallStack => ExprContext -> Branch -> AChangeTree -> VEnv -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
 branchMatch branchCtx branch addr env ctx = do
   match <- patMatch (head $ branchPatterns branch) addr
   case match of 
@@ -551,7 +559,7 @@ definitelyMatched (TChangeLit _ _) = True
 definitelyMatched (TChangeCon _ _ m) = all definitelyMatched (M.elems m)
 definitelyMatched (TChangePartialCon _ _) = True
 
-rebind :: Addr -> Addr -> FixAAMR r s e ()
+rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
   if oldAddr == newAddr then return ()
   else
