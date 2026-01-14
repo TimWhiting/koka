@@ -273,8 +273,9 @@ doContinue res frame ctx =
                       trace ("Applying non function: " ++ show res) doBottom
               next:rest -> do
                 -- trace ("Next " ++ show next) $ return ()
-                ret <- eval next (limitEnv venv (fvs next))
-                doContinue ret (FApp n rest (res ++ [addr]) eApp venv) ctx
+                env' <- rebindAll venv ctx
+                ret <- eval next (limitEnv env' (fvs next))
+                doContinue ret (FApp n rest (res ++ [addr]) eApp env') ctx
           FLet groupIdx numGroups bindingIdx numBindings name resolved u (oldCtx, venv) -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
             val <- store addr
