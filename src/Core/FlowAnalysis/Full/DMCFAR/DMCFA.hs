@@ -275,7 +275,7 @@ doContinue res frame ctx =
                 -- trace ("Next " ++ show next) $ return ()
                 env' <- rebindAll venv ctx
                 ret <- eval next (limitEnv env' (fvs next))
-                doContinue ret (FApp n rest (res ++ [addr]) eApp env') ctx
+                doContinue ret (FApp n rest (res ++ [addr]) eApp env') ctx -- TODO: Get all the new addresses for the frame.
           FLet groupIdx numGroups bindingIdx numBindings name resolved u (oldCtx, venv) -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
             val <- store addr
@@ -485,7 +485,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
             let params = lamNames op
             opBod <- focusBody op
             env' <- rebindAll openv retCtx
-            let newEnv = foldl (\acc x -> extendEnv acc (contextId op) x) openv params
+            let newEnv = foldl (\acc x -> extendEnv acc (contextId op) x) env' params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (\n -> fromJust $ lookupEnv n newEnv) params)
             if isTailOpT opConName then do
