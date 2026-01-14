@@ -366,13 +366,12 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
-                    let bottomD = -1 -- if rebinding flags then 0 else 0
+                    let bottomD = 0
                     -- liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
                     let doSweep = sweep flags
                     let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
                         sweepDM mT d m i = do
                           let bottomM = 0
-                          -- let bottomM = if not (kcfa flags) then (if d == bottomD then 1 else 1) else 1
                           when doSweep $ do
                             if d == bottomD && m == bottomM then return ()
                             else if d == bottomD then do
@@ -388,28 +387,28 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                     if rebinding flags then do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMainR bc (\bc mn ->
-                            trace ("Loading new module " ++ show mn)
+                            -- trace ("Loading new module " ++ show mn)
                             runBuild term flags $ do
-                              bc' <- buildcFreshFromRoots bc
-                              buildcTypeCheck (mn:buildcRoots bc') bc'
+                              -- bc' <- buildcFreshFromRoots bc
+                              buildcTypeCheck (mn:buildcRoots bc) bc
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
                     else if kcfa flags then do
                       sweepDM (mSensitivity flags) 0 (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMainK bc (\bc mn ->
-                            trace ("Loading new module " ++ show mn)
+                            -- trace ("Loading new module " ++ show mn)
                             runBuild term flags $ do
-                              bc' <- buildcFreshFromRoots bc
-                              buildcTypeCheck (mn:buildcRoots bc') bc'
+                              -- bc' <- buildcFreshFromRoots bc
+                              buildcTypeCheck (mn:buildcRoots bc) bc
                           ) mod (mSensitivity flags)
                         return ()
                     else do
                       sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
                         liftIO $ evalMain bc (\bc mn ->
-                            trace ("Loading new module " ++ show mn)
+                            -- trace ("Loading new module " ++ show mn)
                             runBuild term flags $ do
-                              bc' <- buildcFreshFromRoots bc
-                              buildcTypeCheck (mn:buildcRoots bc') bc'
+                              -- bc' <- buildcFreshFromRoots bc
+                              buildcTypeCheck (mn:buildcRoots bc) bc
                           ) mod (mSensitivity flags) (dSensitivity flags)
                         return ()
                       return ()
