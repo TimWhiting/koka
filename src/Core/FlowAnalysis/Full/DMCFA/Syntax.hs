@@ -218,7 +218,7 @@ evalMain bc build mod m d = do
         rebind addr EndVAddr
         return ()
       RV _ -> 
-        trace("Expected main to evaluate to an address" ++ show res)
+        -- trace("Expected main to evaluate to an address" ++ show res)
         doBottom
     return ()
 

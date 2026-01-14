@@ -465,7 +465,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
         let ops' = map (\(n, a) -> (unmakeOpHidden opName $ nameStem n, a)) ops
         case lookup opName ops' of
-          Nothing -> error ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
+          Nothing -> error ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops' ++ " " ++ show hName ++ " " ++ show hnd)
           Just op -> do
             AChangeObj _ opConName [opAddr] <- store op
             AChangeClos op openv <- store (snd opAddr)
