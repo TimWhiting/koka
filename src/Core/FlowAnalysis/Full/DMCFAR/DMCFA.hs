@@ -31,14 +31,7 @@ import Lib.PPrint (hcat, tupled, vcat, text)
 import Common.File (startsWith, endsWith)
 import Syntax.Syntax (ValueBinder(binderName))
 import Data.List (intercalate)
-import qualified Core.FlowAnalysis.StaticContext as SC
-import Data.Either (isRight)
-
-
--- rebindFrame :: HasCallStack => Frame -> CombinedCtx -> FixAAMR r s e ()
--- rebindFrame frame newCtx = do 
---   expr' <- frameNextExpr frame
---   rebindAll (nextAndFvs expr') (frameCtx frame) newCtx
+import Data.Either (isRight, fromRight)
 
 doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
@@ -46,32 +39,29 @@ doStep i =
     case i of
       VStore UnitAddr -> return $ SV changeUnit
       VStore addr ->
-        error ("Value not found in store :" ++ show addr)
+        trace ("Value not found in store :" ++ show addr)
         doBottom
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
-      Step (CEval expr ctx) -> doEval expr ctx
+      Step (CEval expr venv) -> doEval expr venv
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
-      Step (CHandleEffects res bodId hnd retCtx) -> doHandleEffects res bodId hnd retCtx
-      Step (CHandleLocal res bodId varName valAddr retCtx) -> doHandleLocal res bodId varName valAddr retCtx
+      Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx
+      Step (CHandleLocal res venv bodId varName valAddr ctx) -> doHandleLocal res venv bodId varName valAddr ctx
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
   -- case addr of
-    -- BindImplicitAddr{} -> trace ("Extending implicit store: " ++ show addr ++ " with " ++ show v) $ return ()
+    -- BindImplicitAddr{} -> return ()
     -- ConImplicitAddr{} -> return ()
-    -- _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+    -- _ -> trace ("Extending store: " ++ show addr ++  " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
   -- trace ("Extending KStore: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (KStore addr) (KV v)
 
-
-store :: HasCallStack => Addr -> FixAAMR r s e AChange
 store addr = do
   SV res <- doStep (VStore addr)
   return res
-kStore :: HasCallStack => Addr -> FixAAMR r s e Addr
 kStore addr = do
   KV res <- doStep (KStore addr)
   return res
@@ -82,39 +72,30 @@ unreturnV f = do
   return r
 returnV :: FixAAMR r s e RValue -> FixAAMR r s e FixChange
 returnV f = RV <$> f
-eval :: HasCallStack => ExprContext -> CombinedCtx -> FixAAMR r s e RValue
-eval expr ctx = unreturnV $ doStep $ Step (CEval expr ctx)
-apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
+eval expr venv = unreturnV $ doStep $ Step (CEval expr venv)
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
-handleEffects :: HasCallStack => RValue -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e RValue
-handleEffects res bodId hnd retCtx = unreturnV $ doStep $ Step (CHandleEffects res bodId hnd retCtx)
-handleLocal :: HasCallStack => RValue -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
-handleLocal res bodId varName valAddr retCtx = unreturnV $ doStep $ Step (CHandleLocal res bodId varName valAddr retCtx)
-returnConst :: CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
-returnConst ctx expr v = RV . RVAddr <$> allocConst ctx expr v
-returnAddr :: Addr -> FixAAMR r s e FixChange
-returnAddr addr = return $ RV $ RVAddr addr
+handleEffects res venv bodId hnd ctx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd ctx)
+handleLocal res venv bodId varName valAddr ctx = unreturnV $ doStep $ Step (CHandleLocal res venv bodId varName valAddr ctx)
+
+returnConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
+returnConst env ctx expr v = RV . RVAddr <$> allocConst env ctx expr v
 returnOp :: DelimitedVal -> StaticCtx -> Frame ->  DelimitedFrame -> Addr -> FixAAMR r s e FixChange
 returnOp dval ctx frame dframe kaddr = return $ RV $ ROp dval ctx frame dframe kaddr
+returnAddr :: Addr -> FixAAMR r s e FixChange
+returnAddr addr = return $ RV $ RVAddr addr
 
-allocConst :: CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e Addr
-allocConst ctx expr v = do
-  let addr = BindImplicitAddr ctx (contextId expr)
+
+allocConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e Addr
+allocConst env ctx expr v = do
+  let addr = BindImplicitAddr ctx (limitEnv env (fvs expr)) (contextId expr)
   extendStore addr v
   return addr
-
-rebindAll :: HasCallStack => S.Set TName -> CombinedCtx -> CombinedCtx -> FixAAMR r s e ()
-rebindAll free oldCtx newCtx = do
-  if oldCtx == newCtx then return ()
-  else
-    -- trace ("Rebinding all from " ++ show oldCtx ++ " to " ++ show newCtx ++ " for " ++ show (S.toList free)) $
-    mapM_ (\fv -> rebind (BindingAddr oldCtx fv) (BindingAddr newCtx fv)) free
 
 fvsl :: [ExprContext] -> S.Set TName
 fvsl exprs = S.unions $ map fvs exprs
 
-doEval :: HasCallStack => ExprContext -> CombinedCtx -> FixAAMR r s e FixChange
-doEval expr ctx = do
+doEval :: HasCallStack => ExprContext -> VEnv -> FixAAMR r s e FixChange
+doEval expr venv = do
   let open = case exprOfCtx expr of
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
@@ -125,121 +106,124 @@ doEval expr ctx = do
         Lam{} -> True
         TypeApp e _ -> isSimpleExpr e
         TypeLam _ e -> isSimpleExpr e
-        App (Var nm _) _ _ | isConstructorName (getName nm) || getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
+        App (Var nm _) _ _ |  getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (TypeApp (Var nm _) _) _ _ | isConstructorName (getName nm) || getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (App (TypeApp (Var nm _) _) [e] _) _ _ -> getName nm == nameEffectOpen
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ show (ppContextPath expr) ++ "\n" ++ showCtxExpr expr ++ "\n:" ++ show ctx)
-                    res <- x
-                    -- analysisLog (" Result: " ++ show (ppContextPath expr) ++ "\n" ++ show res)
-                    return res
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    v <- x
+                    -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
+                    return v
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
     App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen || getName name == namePretendDecreasing -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
-      returnV $ eval f ctx
+      returnV $ eval f venv
     App (TypeApp (Var name _) _) [_,_,f] _ | getName name == nameMaskAt -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
-      res <- eval f ctx
-      doContinue res FMask ctx
+      res <- eval f venv
+      doContinue res FMask (envCtx venv)
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
-      res <- eval f ctx
-      doContinue res FMask ctx
+      res <- eval f venv
+      doContinue res FMask (envCtx venv)
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
                       Nothing -> []
       -- trace ("Con: " ++ show tn ++ " with params: " ++ show params) $ return ()
       let constr = AChangeConstr expr params
-      returnConst ctx expr constr
+      returnConst venv (envCtx venv) expr constr
     Var name _ -> do
       if isPrimitive name && not (isTrickyPrimitive name) then do
         -- trace ("Primitive " ++ show name) $ return ()
-        returnConst ctx expr (AChangePrim name expr)
+        returnConst venv (envCtx venv) expr (AChangePrim name expr)
       else if qualifier (getName name) == nameCoreHnd then
         error ("Unexpected handler library name in DMCFA: " ++ show name)
-      else if qualifier (getName name) == nameNil then do
-        -- trace ("Found variable: " ++ show name ++ " at " ++ show name) $ return ()
-        returnAddr (BindingAddr ctx name)
-      else do
-        -- trace ("Evaluating external: " ++ show name) $ return ()
-        res <- bindExternal (equalPrimitive name)
-        case res of
-          Just expr -> do
-            c <- startCombinedCtx
-            returnV $ eval expr c
-          Nothing -> trace ("Variable not found: " ++ show name) doBottom
-    Lit l -> returnConst ctx expr (injLit (contextId expr) l)
-    Lam{} -> returnConst ctx expr (AChangeClos expr ctx)
+      else case lookupEnv name venv of
+        Just addr -> returnAddr addr
+        Nothing -> do
+          -- trace ("Evaluating external: " ++ show name) $ return ()
+          res <- bindExternal (equalPrimitive name)
+          case res of
+            Just expr -> do
+              c <- startCombinedCtx
+              returnV $ eval expr (c, M.empty)
+            Nothing -> trace ("Variable not found: " ++ show name) doBottom
+    Lit l -> returnConst venv (envCtx venv) expr (injLit (contextId expr) l)
+    Lam{} -> returnConst venv (envCtx venv) expr (AChangeClos expr (limitEnv venv (fvs expr)))
     App _ args _ -> doApp args
     Let dgs _ -> doLet dgs
     Case _ brs -> doCase brs
     TypeApp{} -> do
       e <- focusChild 0 expr
-      returnV $ eval e ctx
-    TypeLam _ Lam{} -> returnConst ctx expr (AChangeClos expr ctx)
+      returnV $ eval e venv
+    TypeLam _ Lam{} -> returnConst venv (envCtx venv) expr (AChangeClos expr (limitEnv venv (fvs expr)))
     TypeLam _ (App _ args _) -> doApp args
-    TypeLam _ (Let dgs _) -> doLet dgs
+    TypeLam _ (Let args _) -> doLet args
     TypeLam _ (Case _ brs) -> doCase brs
     TypeLam _ _ -> do --(TypeApp Var{} _)
       childs <- childrenContexts expr
       -- trace ("TypeLam: " ++ show (map contextId childs)) $ return ()
       e <- focusChild 0 expr
-      returnV $ eval e ctx
+      returnV $ eval e venv
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
   where 
     doCase brs = do
           s <- focusScrutinee expr
           branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
-          -- trace (show branches) $ return ()
-          res <- eval s ctx
-          doContinue res (FScrut expr branches ctx) ctx
+          res <- eval s (limitEnv venv (fvs s))
+          doContinue res (FScrut expr branches venv) (envCtx venv)
     doLet dgs = do
           child <- childrenContexts expr
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
           bind <- focusLetDefBinding 0 0 expr
           let defGroup = head dgs
-          -- let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) (defsOf defGroup)
+          let newEnv = foldl (\acc x -> extendEnv acc (contextId expr) (defTName x)) venv (defsOf defGroup)
           let defName = defTName (defOfCtx bind)
           -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
-          res <- eval bind ctx
-          doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr ctx) ctx
+          res <- eval bind (limitEnv newEnv (S.insert defName (fvs bind)))
+          doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) (envCtx venv)
     doApp args = do
           f <- focusFun expr
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
-          res <- eval f ctx
-          doContinue res (FApp (length args) argExprs [] expr ctx) ctx
+          res <- eval f (limitEnv venv (fvs f))
+          doContinue res (FApp (length args) argExprs [] expr venv) (envCtx venv)
 
+rebindAll :: VEnv -> CombinedCtx -> FixAAMR r s e VEnv
+rebindAll (oldCtx, vars) ctx = do
+  mapM_ (\(var, ctxId) -> rebind (BindingAddr oldCtx var ctxId) (BindingAddr ctx var ctxId)) (M.toList vars) 
+  return (ctx, vars)
 
 doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
 doContinue res frame ctx =
-  -- trace ("Continuing with\nFrame:" ++ show frame ++ "\nResult:\n"  ++ show res ++  "\n:" ++ show ctx) $
   case res of
     ROp dval ctx' frame' dframe knext -> do
+      -- trace ("Capturing frame: " ++ show frame) $ do
       let k' = KAddr frame' ctx' dframe dval
       extendKStore k' knext
       returnOp dval (static ctx) frame dframe k'
-    RVAddr addr -> do
+    RVAddr addr ->
+      -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
       case frame of
           FrameDone -> returnAddr addr
-          f | f == FMask -> do -- TODO: Implement proper masking
+          f | f == FMask -> do
             v <- store addr
             case v of
               AChangeClos e env -> do
                 bod <- focusBody e
-                rebindAll (fvvs e) env ctx
-                returnV $ eval bod ctx
-          FApp n args res eApp oldCtx -> do
+                env' <- rebindAll env ctx
+                returnV $ eval bod env'
+          FApp n args res eApp venv -> do
             let uApp = contextId eApp
             case args of
               [] -> case res ++ [addr] of
@@ -248,78 +232,80 @@ doContinue res frame ctx =
                   case res of
                     AChangeClos cexpr cenv -> do
                       body <- focusBody cexpr
-                      let params = lamNames cexpr
+                      let args = lamNames cexpr
                       m <- mLimit
                       let newCtx = addCall m ctx uApp
-                      -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show (f:arguments)) $ return ()
-                      zipWithM_ (\p a -> rebind a (BindingAddr newCtx p)) params arguments
-                      rebindAll (fvvs cexpr) cenv newCtx
-                      returnV $ eval body newCtx
+                      env' <- rebindAll cenv newCtx
+                      let newEnv = foldl (\acc x -> extendEnv acc (contextId cexpr) x) env' args
+                      -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
+                      zipWithM_ (\a p -> do
+                        val <- store p
+                        extendStore (fromJust $ lookupEnv a newEnv) val) args arguments
+                      returnV $ eval body newEnv
                     AChangePrim name pms -> do
-                      let retAddr = BindImplicitAddr ctx uApp
+                      let retAddr = BindImplicitAddr ctx venv uApp
                       let n = getName name
                       if not (isHandlerPrimitive n) then do
                         args <- mapM store arguments
                         res <- doPrimitive n args store
                         extendStore retAddr res
                         returnAddr retAddr
-                      else doHandlerPrimitive name n retAddr arguments ctx eApp
+                      else doHandlerPrimitive name n retAddr arguments venv ctx eApp
                     AChangeConstr con params -> do
                       let name = case exprOfCtx con of
                             Con n _ _ -> n
                             _ -> error "Expected a constructor"
-                      let retAddr = BindImplicitAddr ctx uApp
+                      let retAddr = BindImplicitAddr ctx venv uApp
                       let conParams = map (\nm -> ConImplicitAddr nm ctx uApp) params
                       zipWithM_ rebind arguments conParams
                       extendStore retAddr (AChangeObj con name (zip params conParams))
                       -- extendStore addr (AChangeObj con name (zip params arguments))
                       returnAddr retAddr
-                    AChangeKont kx hctx hnd -> do
+                    AChangeKont kx henv hnd -> do
                       m <- mLimit
                       d <- dLimit
                       let newCtx = addCall m ctx uApp
                           newDynCtx = addDelim d newCtx uApp (hLabel hnd)
                       -- trace ("Applying continuation\n" ++ show uApp ++ "\n" ++ show newCtx ++ "\n" ++ show newDynCtx) $ return () -- ++ "for\n" ++
                       res <- apply kx addr newDynCtx
-                      returnV $ handleEffects res uApp hnd newCtx
+                      returnV $ handleEffects res henv uApp hnd newCtx
                     _ -> do
                       trace ("Applying non function: " ++ show res) doBottom
               next:rest -> do
-                -- trace ("Adding addr " ++ show addr ++ " next " ++ show next) $ return ()
-                rebindAll (nextAndFvs next) oldCtx ctx
-                ret <- eval next ctx
-                doContinue ret (FApp n rest (res ++ [addr]) eApp ctx) ctx
-          FLet groupIdx numGroups bindingIdx numBindings name resolved u oldCtx -> do
-            -- trace ("Applying Let " ++ show addr ++ " " ++ show (BindingAddr ctx name)) $ return ()
-             -- We need to override the old name binding (in case it was in a different context)
-            rebind addr (BindingAddr ctx name)
+                -- trace ("Next " ++ show next) $ return ()
+                ret <- eval next (limitEnv venv (fvs next))
+                doContinue ret (FApp n rest (res ++ [addr]) eApp venv) ctx
+          FLet groupIdx numGroups bindingIdx numBindings name resolved u (oldCtx, venv) -> do
+            -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
+            val <- store addr
+            env' <- rebindAll (oldCtx, M.delete name venv) ctx
+            let newEnv = extendEnv env' (contextId u) name  -- We need to override the old name binding (in case it was in a different context)
+            extendStore (fromJust $ lookupEnv name newEnv) val
             -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
             -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
             if isLetDefBindingFinished groupIdx bindingIdx u then do
               -- trace ("Let group finished: " ++ show groupIdx ++ " of " ++ show numGroups) $ return ()
               body <- focusLetBod u
-              rebindAll (S.delete name $ fvvs body) oldCtx ctx
-              returnV $ eval body ctx
+              returnV $ eval body (limitEnv newEnv (fvs body))
             else do
               -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
-              rebindAll (S.delete name $ nextFvs next) oldCtx ctx
-              ret <- eval next ctx
-              doContinue ret (nextLetFrame frame ctx) ctx
-          FScrut parent branches oldCtx -> do
-            let recur [] tree = doBottom
+              ret <- eval next newEnv
+              doContinue ret (nextLetFrame frame{env=newEnv} ctx) ctx
+          FScrut parent branches env -> do
+            let recur [] _ = doBottom
                 recur ((branch, br):branches) tree = do
-                  match <- branchMatch br branch tree ctx
+                  match <- branchMatch br branch tree env ctx
                   case match of
                     Right (bindings, matchTree) -> do
-                      -- trace ("Match " ++ show (M.keys bindings)) $ return ()
-                      mapM_ (\(tname, extend) ->
-                        extend (BindingAddr ctx tname)
-                        ) (M.toList bindings)
                       body <- focusBranchExpr br
-                      rebindAll (S.difference (S.union (fvvs body) (nextFvs body)) (S.fromList $ M.keys bindings)) oldCtx ctx
-                      each [
-                        returnV $ eval body ctx,
+                      env' <- rebindAll (limitEnv env (fvs body)) ctx
+                      let newEnv = foldl (\acc tname -> extendEnv acc (contextId br) tname) env' (M.keys bindings)
+                      mapM_ (\(tname, extend) ->
+                        extend (fromJust $ lookupEnv tname newEnv)
+                        ) (M.toList bindings)
+                      each [ 
+                          do returnV $ eval body (limitEnv newEnv (fvs body)),
                           if definitelyMatched matchTree then doBottom
                           else recur branches matchTree
                        ]
@@ -332,50 +318,51 @@ doContinue res frame ctx =
               AChangeClos cexpr cenv -> do
                   body <- focusBody cexpr
                   let [arg] = lamNames cexpr
-                  m <- mLimit
-                  -- let newEnv = M.insert arg ctx cenv
-                  rebind addr (BindingAddr ctx arg)
-                  rebindAll (fvvs cexpr) cenv ctx
-                  returnV $ eval body ctx
-          FResume retCtx kont hnd u -> do
+                  env' <- rebindAll cenv ctx
+                  let newEnv = extendEnv env' (contextId cexpr) arg 
+                  v <- store addr
+                  extendStore (fromJust $ lookupEnv arg newEnv) v
+                  returnV $ eval body (limitEnv newEnv (fvs body))
+          FResume retCtx kont venv hnd u -> do
             m <- mLimit
             d <- dLimit
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx u (hLabel hnd)
-            -- trace ("Applying continuation " ++ show u ++ " " ++ show (hLabel hnd)) $ return ()
+            -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
             res <- apply kont addr newDelimCtx
-            returnV $ handleEffects res u hnd newRetCtx
+            returnV $ handleEffects res venv u hnd newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
 doApply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
-doApply kaddr addr dynctx = do
+doApply kaddr addr delimCtx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show dynctx) $ return ()
+  -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr
     KAddr (FRestoreDelim (DFrameLocal venv bodId varName varAddr)) ctx _ _ -> do
-      let newctx = CombinedCtx ctx dynctx
+      let newCtx = CombinedCtx ctx delimCtx
       d <- dLimit
       m <- mLimit
-      let newRetCtx = addCall m newctx bodId
+      let newRetCtx = addCall m newCtx bodId
       let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
       knext <- kStore kaddr
       res <- apply knext addr (dynamic newDelimCtx)
-      returnV $ handleLocal res bodId varName varAddr newRetCtx
+      returnV $ handleLocal res venv bodId varName varAddr newRetCtx
     KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do
-      let newctx = CombinedCtx ctx dynctx
+      let newCtx = CombinedCtx ctx delimCtx
       d <- dLimit
       m <- mLimit
-      let newRetCtx = addCall m newctx bodId
+      let newRetCtx = addCall m newCtx bodId
       let newDelimCtx = newDelim d m newRetCtx bodId (hLabel h)
       knext <- kStore kaddr
       res <- apply knext addr (dynamic newDelimCtx)
       -- trace ("Restoring handler context for " ++ show h ++ " with\n" ++ show newRetCtx ++ "\n" ++ show newDelimCtx ++ "\n") $ return () 
-      returnV $ handleEffects res bodId h newRetCtx
+      returnV $ handleEffects res venv bodId h newRetCtx
     KAddr frame ctx _ _ -> do
       knext <- kStore kaddr
-      res <- apply knext addr dynctx
-      let newctx = CombinedCtx ctx dynctx
+      res <- apply knext addr delimCtx
+      let newctx = CombinedCtx ctx delimCtx
       doContinue res frame newctx
 isHandlerPrimitive :: Name -> Bool
 isHandlerPrimitive n =
@@ -383,11 +370,11 @@ isHandlerPrimitive n =
   || n == nameEvvAt || n == nameMaskAt || isNamePerform n || isClauseName n
   || n == nameLocalVar || n == nameLocalGet || n == nameLocalSet
 
-doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> [Addr] -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
-doHandlerPrimitive name n addr arguments ctx u | isClauseName n || n == nameHTag || n == nameEvvAt = do
+doHandlerPrimitive :: HasCallStack => TName -> Name -> Addr -> [Addr] -> VEnv -> CombinedCtx -> ExprContext -> FixAAMR r s e FixChange
+doHandlerPrimitive name n addr arguments venv ctx u | isClauseName n || n == nameHTag || n == nameEvvAt = do
   extendStore addr (AChangeObj u name (zip (repeat nameNil) arguments))
   returnAddr addr
-doHandlerPrimitive name n addr arguments ctx u | isNamePerform n = do
+doHandlerPrimitive name n addr arguments venv ctx u | isNamePerform n = do
   let label = case exprOfCtx u of
         App (TypeApp _ tps) _ _ -> labelName (tps !! (length tps - 1))
         _ -> error $ "Expected a perform type application " ++ show (exprOfCtx u)
@@ -396,15 +383,15 @@ doHandlerPrimitive name n addr arguments ctx u | isNamePerform n = do
   let opN = newName $ nameLocalQual (getName opName)
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
   returnOp (DVal label opN u (drop 2 arguments) ctx) (static ctx) FrameDone DFrameDone EndKAddr
-doHandlerPrimitive name n addr arguments ctx u | n == nameLocalGet = do
+doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalGet = do
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
-    let [varAddr@(BindingAddr _ varName), _] = arguments
+    let [varAddr@(BindingAddr _ varName _), _] = arguments
     returnOp (DVal (getName varName) nameLocalGet u [] ctx) (static ctx) FrameDone DFrameDone EndKAddr
   else do
     returnAddr (head arguments)
-doHandlerPrimitive name n addr arguments ctx u | n == nameLocalSet = do
-  let [varAddr@(BindingAddr _ varName), val] = arguments
+doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalSet = do
+  let [varAddr@(BindingAddr _ varName _), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
     returnOp (DVal (getName varName) nameLocalSet u [val] ctx) (static ctx) FrameDone DFrameDone EndKAddr
@@ -412,7 +399,7 @@ doHandlerPrimitive name n addr arguments ctx u | n == nameLocalSet = do
     rebind val varAddr
     extendStore addr changeUnit
     returnAddr addr
-doHandlerPrimitive name n addr arguments ctx u | n == nameHandle = do
+doHandlerPrimitive name n addr arguments venv ctx u | n == nameHandle = do
   args <- mapM store arguments
   case args of
     [AChangeObj _ _ [hNameAddr], hnd, AChangeClos ret retenv, AChangeClos body bodyenv] -> do
@@ -422,51 +409,49 @@ doHandlerPrimitive name n addr arguments ctx u | n == nameHandle = do
       m <- mLimit
       -- trace ("OPS " ++ show henv) $ return ()
       bod <- focusBody body
+      -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
       let newctx = newDelim d m ctx (contextId u) label
-      -- trace ("Handling: " ++ show label ++ " in " ++ show ctx ++ " " ++ show newctx) $ return ()
-      -- trace ("New handler context:\n" ++ showCtxExpr bod ++ "\n") $ return ()
-      rebindAll (fvvs body) bodyenv newctx
-      res <- eval bod newctx
+      env' <- rebindAll bodyenv newctx
+      res <- eval bod env'
       let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
-      returnV $ handleEffects res (contextId bod) h ctx
+      returnV $ handleEffects res venv (contextId bod) h ctx
     _ -> doBottom
-doHandlerPrimitive name n addr arguments ctx u | n == nameLocalVar = do
+doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
   args <- mapM store arguments
   -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
   if localEff then do
     case args !! 1 of
       AChangeClos e env -> do
         let varName = head (lamNames e)
-        -- let newEnv = M.insert varName ctx env
         bod <- focusBody e
         d <- dLimit
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u) (getName varName)
-        -- trace ("New local context:\n" ++ show newctx ++ "\n") $ return ()
-        rebindAll (fvvs bod) ctx newctx
-        res <- eval bod newctx
-        returnV $ handleLocal res (contextId bod) varName (head arguments) ctx
+        env' <- rebindAll env newctx    
+        let newEnv = extendEnv env' (contextId e) varName     
+        res <- eval bod newEnv
+        returnV $ handleLocal res venv (contextId bod) varName (head arguments) ctx
   else do
     case args !! 1 of
       AChangeClos e env -> do
         let varName = head (lamNames e)
-        -- let newEnv = M.insert varName ctx env
         bod <- focusBody e
-        rebind (head arguments) (BindingAddr ctx varName)
-        returnV $ eval bod ctx
+        env' <- rebindAll env ctx
+        let newEnv = extendEnv env' (contextId e) varName 
+        extendStore (fromJust $ lookupEnv varName newEnv) (head args)
+        returnV $ eval bod newEnv
 localEff = True
 
-doHandleLocal :: HasCallStack => RValue -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
-doHandleLocal res bodId varName valAddr retCtx = do
+doHandleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
+doHandleLocal res venv bodId varName valAddr retCtx = do
   case res of
     ROp dval ctx' frame' dframe' knext -> do
       let kOp = KAddr frame' ctx' dframe' dval
       extendKStore kOp knext
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
-          -- trace ("Getting local variable: " ++ show varName ++ " of " ++ show valAddr) $ return ()
           res <- apply kOp valAddr (dynamic retCtx)
-          returnV $ handleLocal res bodId varName valAddr retCtx
+          returnV $ handleLocal res venv bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
           d <- dLimit
@@ -474,15 +459,15 @@ doHandleLocal res bodId varName valAddr retCtx = do
           let newRetCtx = addCall m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
           res <- apply kOp UnitAddr (dynamic newDelimCtx)
-          returnV $ handleLocal res bodId varName newAddr newRetCtx
+          returnV $ handleLocal res venv bodId varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let dframe = DFrameLocal retCtx bodId varName valAddr
+          let dframe = DFrameLocal venv bodId varName valAddr
           returnOp dval (static retCtx) (FRestoreDelim dframe) dframe kOp
     RVAddr addr -> returnAddr addr
 
-doHandleEffects :: HasCallStack => RValue -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e FixChange
-doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
+doHandleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e FixChange
+doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
   case res of
     ROp dval@(DVal hName opName opExpr args oCtx) ctx' frame' dframe' knext -> do
       if hName == label then do
@@ -492,50 +477,51 @@ doHandleEffects res bodId h@(Handler label hnd mbRet mbFrame) retCtx  = do
         AChangeObj _ tname hndargs@(_:ops) <- store hnd
         let ops' = map (\(n, a) -> (unmakeOpHidden opName $ nameStem n, a)) ops
         case lookup opName ops' of
-          Nothing -> error ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops')
+          Nothing -> error ("Unwind: Operation " ++ show opName ++ " not found in " ++ show ops' ++ " " ++ show hName ++ " " ++ show hnd)
           Just op -> do
             AChangeObj _ opConName [opAddr] <- store op
             AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             opBod <- focusBody op
-            rebindAll (fvvs op) openv retCtx
-            -- let newEnv = foldl (\acc x -> M.insert x retCtx acc) openv params
+            env' <- rebindAll openv retCtx
+            let newEnv = foldl (\acc x -> extendEnv acc (contextId op) x) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
-            zipWithM_ rebind args (map (BindingAddr retCtx) params)
-            if isTailOpT opConName then do -- TODO: TIM
-              res <- eval opBod retCtx
-              doContinue res (FResume ctx' kOp h (contextId opBod)) retCtx
+            zipWithM_ rebind args (map (\n -> fromJust $ lookupEnv n newEnv) params)
+            if isTailOpT opConName then do
+              res <- eval opBod (limitEnv newEnv (fvs opBod))
+              doContinue res (FResume ctx' kOp venv h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
-              returnV $ eval opBod retCtx
+              returnV $ eval opBod (limitEnv newEnv (fvs opBod))
             else do
-              extendStore (BindingAddr retCtx (last params)) (AChangeKont kOp retCtx h)
-              returnV $ eval opBod retCtx
+              extendStore (BindingAddr retCtx (last params) (contextId op)) (AChangeKont kOp venv h)
+              returnV $ eval opBod (limitEnv newEnv (fvs opBod))
       else do
         -- trace ("Allocating new return\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n" ++ show label ++ "," ++ show opName ++ "\n") $ return ()
         let k' = KAddr frame' ctx' dframe' dval
         extendKStore k' knext
-        let dframe = DFrame retCtx bodId h
+        let dframe = DFrame venv bodId h
         returnOp dval (static retCtx) (FRestoreDelim dframe) dframe k'
     res ->
       case mbFrame of
         Just frame -> do
-          -- trace ("Continuing after handling effects\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n") $ return ()
+          -- trace ("Continuing after handling effects\n" ++ show retCtx ++ "\n") $ return ()
           doContinue res frame retCtx
         Nothing -> return $ RV res
 
-branchMatch :: ExprContext -> Branch -> AChangeTree -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
-branchMatch branchCtx branch addr ctx = do
+branchMatch :: ExprContext -> Branch -> AChangeTree -> VEnv -> CombinedCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e) )
+branchMatch branchCtx branch addr env ctx = do
   match <- patMatch (head $ branchPatterns branch) addr
   case match of 
     Left tree -> return $ Left tree
     Right (bindings, tree) -> 
       if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
       else do
-        mapM_ (\(tname, extend) ->
-          extend (BindingAddr ctx tname)
-          ) (M.toList bindings)
         guard <- focusGuardExpr branchCtx
-        RVAddr a <- eval guard ctx
+        let newEnv = foldl (\acc tname -> extendEnv acc (contextId branchCtx) tname) env (M.keys bindings)
+        mapM_ (\(tname, extend) ->
+          extend (fromJust $ lookupEnv tname newEnv)
+          ) (M.toList bindings)
+        RVAddr a <- eval guard newEnv
         v <- store a
         case v of 
           AChangeConstr con _ -> 
@@ -564,7 +550,7 @@ definitelyMatched (TChangeLit _ _) = True
 definitelyMatched (TChangeCon _ _ m) = all definitelyMatched (M.elems m)
 definitelyMatched (TChangePartialCon _ _) = True
 
-rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
+rebind :: Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
   if oldAddr == newAddr then return ()
   else

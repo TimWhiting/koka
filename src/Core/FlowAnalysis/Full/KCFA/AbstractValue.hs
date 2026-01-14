@@ -53,9 +53,9 @@ type StaticCtx = [Call]
 addCall :: Int -> StaticCtx -> ExprContextId -> StaticCtx
 addCall m calls call = take m $ CallApp call : calls
 
-type VEnv = M.Map TName StaticCtx
+type VEnv = M.Map TName (StaticCtx, ExprContextId)
 
-data DelimitedVal = 
+data DelimitedVal =
   DVal {
       dLabel :: Name,
       dOpName :: Name,
@@ -73,12 +73,12 @@ data DelimitedFrame =
       dflBodId :: ExprContextId,
       dflVarName :: TName,
       dflValAddr :: Addr
-  } | DFrameDone 
+  } | DFrameDone
   | DFrameNone -- TODO: Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
 data Addr =
-  BindingAddr !StaticCtx !TName
+  BindingAddr !StaticCtx !TName !ExprContextId
   | UnitAddr
   | EndVAddr
   | EndKAddr
@@ -87,7 +87,7 @@ data Addr =
   | ConImplicitAddr !Name !StaticCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
-  show (BindingAddr ctx name) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
+  show (BindingAddr ctx name _) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
   show UnitAddr = "UnitAddr"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
@@ -95,9 +95,9 @@ instance Show Addr where
   show (BindImplicitAddr ctx env ctxId) = "BI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
-data RValue = 
-  RVAddr Addr 
-  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr 
+data RValue =
+  RVAddr Addr
+  | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr
   deriving (Eq, Ord, Show)
 
 data Frame =
@@ -150,7 +150,7 @@ nextLetFrame
           gidx = groupIdx + 1
           idx = 0
           defs = defsOf (dgs !! gidx)
-          newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) env defs in
+          newEnv = foldl (\acc x -> M.insert (defTName x) (ctx, contextId parent) acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
 
@@ -164,7 +164,7 @@ startEnv = M.empty
 lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
 lookupEnv x env =
   case M.lookup x env of
-    Just ctx -> Just $ BindingAddr ctx x
+    Just (ctx, env) -> Just $ BindingAddr ctx x env
     Nothing -> Nothing
 
 showStore store = show $ pretty store

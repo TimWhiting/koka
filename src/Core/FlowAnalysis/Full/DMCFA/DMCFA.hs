@@ -187,7 +187,7 @@ doEval expr venv ctx = do
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
           bind <- focusLetDefBinding 0 0 expr
           let defGroup = head dgs
-          let newEnv = foldl (\acc x -> M.insert (defTName x) ctx acc) venv (defsOf defGroup)
+          let newEnv = foldl (\acc x -> M.insert (defTName x) (ctx, contextId expr) acc) venv (defsOf defGroup)
           let defName = defTName (defOfCtx bind)
           -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
           res <- eval bind (limitEnv newEnv (S.insert defName (fvs bind))) ctx
@@ -229,7 +229,7 @@ doContinue res frame ctx =
                       let args = lamNames cexpr
                       m <- mLimit
                       let newCtx = addCall m ctx uApp
-                      let newEnv = foldl (\acc x -> M.insert x newCtx acc) cenv args
+                      let newEnv = foldl (\acc x -> M.insert x (newCtx, contextId cexpr) acc) cenv args
                       -- trace ("Applying closure: " ++ show cexpr ++ " with " ++ show args) $ return ()
                       zipWithM_ (\a p -> do
                         val <- store p
@@ -271,7 +271,7 @@ doContinue res frame ctx =
           FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
             val <- store addr
-            let env' = M.insert name ctx venv -- We need to override the old name binding (in case it was in a different context)
+            let env' = M.insert name (ctx, contextId u) venv -- We need to override the old name binding (in case it was in a different context)
             extendStore (fromJust $ lookupEnv name env') val
             -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
             -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
@@ -290,7 +290,7 @@ doContinue res frame ctx =
                   match <- branchMatch br branch tree env ctx
                   case match of
                     Right (bindings, matchTree) -> do
-                      let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
+                      let newEnv = foldl (\acc tname -> M.insert tname (ctx, contextId br) acc) env (M.keys bindings)
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
                         ) (M.toList bindings)
@@ -310,7 +310,7 @@ doContinue res frame ctx =
               AChangeClos cexpr cenv -> do
                   body <- focusBody cexpr
                   let [arg] = lamNames cexpr
-                  let newEnv = M.insert arg ctx cenv
+                  let newEnv = M.insert arg (ctx, contextId cexpr) cenv
                   v <- store addr
                   extendStore (fromJust $ lookupEnv arg newEnv) v
                   returnV $ eval body (limitEnv newEnv (fvs body)) ctx
@@ -377,12 +377,12 @@ doHandlerPrimitive name n addr arguments venv ctx u | isNamePerform n = do
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalGet = do
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
-    let [varAddr@(BindingAddr _ varName), _] = arguments
+    let [varAddr@(BindingAddr _ varName _), _] = arguments
     returnOp (DVal (getName varName) nameLocalGet u [] ctx) (static ctx) FrameDone DFrameDone EndKAddr
   else do
     returnAddr (head arguments)
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalSet = do
-  let [varAddr@(BindingAddr _ varName), val] = arguments
+  let [varAddr@(BindingAddr _ varName _), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
     returnOp (DVal (getName varName) nameLocalSet u [val] ctx) (static ctx) FrameDone DFrameDone EndKAddr
@@ -413,7 +413,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
     case args !! 1 of
       AChangeClos e env -> do
         let varName = head (lamNames e)
-        let newEnv = M.insert varName ctx env
+        let newEnv = M.insert varName (ctx, contextId e) env
         bod <- focusBody e
         d <- dLimit
         m <- mLimit
@@ -424,7 +424,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
     case args !! 1 of
       AChangeClos e env -> do
         let varName = head (lamNames e)
-        let newEnv = M.insert varName ctx env
+        let newEnv = M.insert varName (ctx, contextId e) env
         bod <- focusBody e
         extendStore (fromJust $ lookupEnv varName newEnv) (head args)
         returnV $ eval bod newEnv ctx
@@ -471,16 +471,16 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
             AChangeClos op openv <- store (snd opAddr)
             let params = lamNames op
             opBod <- focusBody op
-            let newEnv = foldl (\acc x -> M.insert x retCtx acc) openv params
+            let newEnv = foldl (\acc x -> M.insert x (retCtx, contextId op) acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
-            zipWithM_ rebind args (map (BindingAddr retCtx) params)
+            zipWithM_ rebind args (map (\n -> BindingAddr retCtx n (contextId op)) params)
             if isTailOpT opConName then do
               res <- eval opBod (limitEnv newEnv (fvs opBod)) retCtx
               doContinue res (FResume ctx' kOp venv h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
               returnV $ eval opBod (limitEnv newEnv (fvs opBod)) retCtx
             else do
-              extendStore (BindingAddr retCtx (last params)) (AChangeKont kOp venv h)
+              extendStore (BindingAddr retCtx (last params) (contextId op)) (AChangeKont kOp venv h)
               returnV $ eval opBod (limitEnv newEnv (fvs opBod)) retCtx
       else do
         -- trace ("Allocating new return\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n" ++ show label ++ "," ++ show opName ++ "\n") $ return ()
@@ -503,11 +503,11 @@ branchMatch branchCtx branch addr env ctx = do
     Right (bindings, tree) -> 
       if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
       else do
-        let newEnv = foldl (\acc tname -> M.insert tname ctx acc) env (M.keys bindings)
+        guard <- focusGuardExpr branchCtx
+        let newEnv = foldl (\acc tname -> M.insert tname (ctx, contextId branchCtx) acc) env (M.keys bindings)
         mapM_ (\(tname, extend) ->
           extend (fromJust $ lookupEnv tname newEnv)
           ) (M.toList bindings)
-        guard <- focusGuardExpr branchCtx
         RVAddr a <- eval guard newEnv ctx
         v <- store a
         case v of 
