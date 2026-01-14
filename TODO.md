@@ -1,4 +1,4 @@
-- [ ] Uniquefy names for 0CFA addresses and get the rest of the examples working.
+- [ ] Need to adjust addresses in local frames to reflect rebinding.
 - [ ] Add back in local set information
 - [ ] Redo analysis....
 
