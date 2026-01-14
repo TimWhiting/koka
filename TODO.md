@@ -1,5 +1,4 @@
-- [ ] Figure out local vars issues in vec, etc for rebinding.
-- [ ] Need to adjust addresses in local frames to reflect rebinding.
+- [ ] Figure out issue with DMCFA nested-tail-outer-first (application rebinding problem)
 - [ ] Add back in local set information
 - [ ] Redo analysis....
 
