@@ -1,3 +1,4 @@
+- [ ] Uniquefy names for 0CFA addresses and get the rest of the examples working.
 - [ ] Add back in local set information
 - [ ] Redo analysis....
 
