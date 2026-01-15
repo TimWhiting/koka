@@ -218,7 +218,7 @@ evalMain :: BuildContext
 evalMain bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx
-    trace (show (modCtx ctx)) $ return ()
+    -- trace (show (modCtx ctx)) $ return ()
     res <- doStep c
     case res of 
       RV (RVAddr addr) -> do
