@@ -38,10 +38,8 @@ doStep i =
   memo i $ do
     case i of
       VStore UnitAddr -> return $ SV changeUnit
-      VStore addr ->
-        error ("Value not found in store :" ++ show addr)
-        doBottom
-      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
+      VStore addr -> error ("Value not found in store :" ++ show addr)
+      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv) -> doEval expr venv
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
       Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx

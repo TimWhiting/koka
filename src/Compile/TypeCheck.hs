@@ -150,7 +150,7 @@ typeCheck flags defs coreImports program0
             typeImports      = [Core.Import name "" Core.ImportTypes Private "" rangeNull| name <- typeDeps, not (S.member name currentImports) && not (name == progName)]
             coreFinal        = coreUnique{ Core.coreProgImports = Core.coreProgImports coreUnique ++ typeImports }
 
-        return (coreFinal{Core.coreProgDefs = coreDefs},coreFinal,mbRangeMap)
+        return (coreFinal{Core.coreProgDefs = coreDefs1},coreFinal,mbRangeMap)
 
   where
     traceDefGroups :: String -> Core.CorePhase () ()

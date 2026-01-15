@@ -37,10 +37,8 @@ doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
   memo i $ do
     case i of
-      VStore addr ->
-        trace ("Value not found in store :" ++ show addr)
-        doBottom
-      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
+      VStore addr -> error ("Value not found in store :" ++ show addr)
+      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv ctx) -> doEval expr venv ctx
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
       Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx
@@ -393,6 +391,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         let varName = head (lamNames e)
         let newEnv = M.insert varName (ctx, contextId e) env
         bod <- focusBody e
+        rebind UnitAddr (fromJust $ lookupEnv varName newEnv)
         RV (res, newCtx) <- eval bod newEnv ctx
         handleLocal res venv (contextId bod) varName (head arguments) newCtx
   else do

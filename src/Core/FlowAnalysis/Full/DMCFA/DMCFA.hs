@@ -38,10 +38,8 @@ doStep i =
   memo i $ do
     case i of
       VStore UnitAddr -> return $ SV changeUnit
-      VStore addr ->
-        trace ("Value not found in store :" ++ show addr)
-        doBottom
-      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else doBottom
+      VStore addr -> error ("Value not found in store :" ++ show addr)
+      KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv ctx) -> doEval expr venv ctx
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
       Step (CHandleEffects res venv bodId hnd retCtx) -> doHandleEffects res venv bodId hnd retCtx
@@ -59,9 +57,11 @@ extendKStore addr v = do
   -- trace ("Extending KStore: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (KStore addr) (KV v)
 
+store :: HasCallStack => Addr -> FixAAMR r s e AChange
 store addr = do
   SV res <- doStep (VStore addr)
   return res
+kStore :: HasCallStack => Addr -> FixAAMR r s e Addr
 kStore addr = do
   KV res <- doStep (KStore addr)
   return res
@@ -72,9 +72,13 @@ unreturnV f = do
   return r
 returnV :: FixAAMR r s e RValue -> FixAAMR r s e FixChange
 returnV f = RV <$> f
+eval :: HasCallStack => ExprContext -> VEnv -> CombinedCtx -> FixAAMR r s e RValue
 eval expr venv ctx = unreturnV $ doStep $ Step (CEval expr venv ctx)
+apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
+handleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res venv bodId hnd retCtx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd retCtx)
+handleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
 handleLocal res venv bodId varName valAddr retCtx = unreturnV $ doStep $ Step (CHandleLocal res venv bodId varName valAddr retCtx)
 
 returnConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
@@ -150,7 +154,7 @@ doEval expr venv ctx = do
       else case lookupEnv name venv of
         Just addr -> returnAddr addr
         Nothing -> do
-          -- trace ("Evaluating external: " ++ show name) $ return ()
+          -- trace ("Evaluating external: " ++ show name ++ " " ++ show (ppContextPath expr)) $ return ()
           res <- bindExternal (equalPrimitive name)
           case res of
             Just expr -> do
@@ -418,8 +422,9 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do
         d <- dLimit
         m <- mLimit
         let newctx = newDelim d m ctx (contextId u) (getName varName)
+        rebind UnitAddr (fromJust $ lookupEnv varName newEnv) 
         res <- eval bod newEnv newctx
-        returnV $ handleLocal res venv (contextId bod) varName (head arguments) ctx
+        returnV $ handleLocal res newEnv (contextId bod) varName (head arguments) ctx
   else do
     case args !! 1 of
       AChangeClos e env -> do
@@ -537,7 +542,7 @@ definitelyMatched (TChangeLit _ _) = True
 definitelyMatched (TChangeCon _ _ m) = all definitelyMatched (M.elems m)
 definitelyMatched (TChangePartialCon _ _) = True
 
-rebind :: Addr -> Addr -> FixAAMR r s e ()
+rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
   if oldAddr == newAddr then return ()
   else
