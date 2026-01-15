@@ -112,13 +112,13 @@ doEval expr venv ctx = do
         App (Var nm _) _ _ |  getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (TypeApp (Var nm _) _) _ _ | isConstructorName (getName nm) || getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (App (TypeApp (Var nm _) _) [e] _) _ _ -> getName nm == nameEffectOpen
-        Var{} -> True
+        -- Var{} -> True
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     v <- x
-                    trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
+                    -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
                     return v
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -273,10 +273,10 @@ doContinue res frame ctx =
                 ret <- eval next (limitEnv venv (fvs next)) ctx
                 doContinue ret (FApp n rest (res ++ [addr]) eApp venv) ctx
           FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
-            -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
-            val <- store addr
+            -- trace ("Applying Let " ++ show ctx ++ " env " ++ show venv ++ " " ++ show (lookupEnv name venv)) $ return ()
             let env' = M.insert name (ctx, contextId u) venv -- We need to override the old name binding (in case it was in a different context)
-            extendStore (fromJust $ lookupEnv name env') val
+            rebind addr (fromJust $ lookupEnv name env') 
+            -- trace ("Applying Let " ++ show ctx ++ " env " ++ show env'++ " " ++ show (lookupEnv name env')) $ return ()
             -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
             -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
             if isLetDefBindingFinished groupIdx bindingIdx u then do
@@ -287,7 +287,7 @@ doContinue res frame ctx =
               -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
               ret <- eval next env' ctx
-              doContinue ret (nextLetFrame frame ctx) ctx
+              doContinue ret (nextLetFrame frame{env=env'} ctx) ctx
           FScrut parent branches env -> do
             let recur [] _ = doBottom
                 recur ((branch, br):branches) tree = do
@@ -446,6 +446,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
           res <- apply kOp valAddr (dynamic retCtx)
           returnV $ handleLocal res venv bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
+          -- v <- store newAddr
           extendStore UnitAddr changeUnit
           d <- dLimit
           m <- mLimit
