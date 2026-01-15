@@ -268,7 +268,7 @@ doContinue res frame ctx =
                       let n = getName name
                       if not (isHandlerPrimitive n) then do
                         args <- mapM store arguments
-                        res <- doPrimitive n args store
+                        res <- doPrimitive n args ctx uApp store extendStore
                         extendStore retAddr res
                         returnAddr retAddr
                       else doHandlerPrimitive name n retAddr arguments venv ctx eApp
@@ -370,10 +370,9 @@ doApply kaddr addr delimCtx = do
       m <- mLimit
       let newRetCtx = addCall m newCtx bodId
       let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-      env' <- rebindAll venv newRetCtx
       knext <- kStore kaddr
       res <- apply knext addr (dynamic newDelimCtx)
-      returnV $ handleLocal res env' bodId varName varAddr newRetCtx
+      returnV $ handleLocal res venv bodId varName varAddr newRetCtx
     KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do
       let newCtx = CombinedCtx ctx delimCtx
       d <- dLimit

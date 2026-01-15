@@ -1,4 +1,3 @@
-- [ ] Figure out issue with DMCFA nested-tail-outer-first (application rebinding problem)
 - [ ] Add back in local set information
 - [ ] Redo analysis....
 

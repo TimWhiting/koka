@@ -8,8 +8,9 @@ import std/os/dir
 val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"]
 val handler-files = ["yield", "vec", "unix", "nim", "ambient", "scoped"]
 val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
+val kokagen-files = ["build"] // "n/nim"
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
-            rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f)
+            rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f) ++ kokagen-files.map(fn(f) "analysis/benchmarks/koka-gen/" ++ f)
 
 effect out
   fun write(s: string): ()

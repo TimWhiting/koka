@@ -8,6 +8,8 @@ import qualified Data.Map.Strict as M
 import Numeric (showFFloat, showEFloat)
 import Data.List (dropWhileEnd)
 import Debug.Trace
+import Type.Type
+import Kind.Kind
 
 nameIntMul = coreIntName "*"
 nameIntDiv = coreIntName "/"
@@ -63,6 +65,9 @@ nameCoreStringJoinSep2 = newQualified "std/core/list" "joinsep2"
 nameCoreStringJoin = newLocallyQualified "std/core/list" "concat" "join"
 nameCoreStringJoin2 = newLocallyQualified "std/core/list" "concat" "join2"
 
+justValueName = newName "value"
+maybeType :: Type -> Type
+maybeType tp = TApp (TCon (TypeCon nameTpMaybe (kindFun kindStar kindStar))) [tp]
 nameCoreTypesExternAppend = newQualified "std/core/types" "@extern-x++"
 nameCoreIntExternShow = newQualified "std/core/int" "@extern-show"
 nameCoreCharInt = newQualified "std/core/char" "int"
@@ -177,10 +182,9 @@ isNeverOp :: TName -> Bool
 isNeverOp tn = nameStem (getName tn) `startsWith` "clause-never"
 
 isTrickyPrimitive :: TName -> Bool
-isTrickyPrimitive n = getName n `elem` [nameCoreXParse, nameCoreStringJoin, nameCoreStringJoinSep]
+isTrickyPrimitive n = getName n `elem` [nameCoreStringJoin, nameCoreStringJoinSep]
 
 equalPrimitive :: TName -> TName
-equalPrimitive name | getName name == nameCoreXParse = name{getName = nameCoreMInt}
 equalPrimitive name | getName name == nameCoreStringJoin = name{getName = nameCoreStringJoin2}
 equalPrimitive name | getName name == nameCoreStringJoinSep = name{getName = nameCoreStringJoinSep2}
 equalPrimitive name = name
