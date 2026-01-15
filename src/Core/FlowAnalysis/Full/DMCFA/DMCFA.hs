@@ -116,9 +116,9 @@ doEval expr venv ctx = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     v <- x
-                    -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
+                    trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
                     return v
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
