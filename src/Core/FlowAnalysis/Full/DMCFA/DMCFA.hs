@@ -100,7 +100,6 @@ doEval expr venv ctx = do
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       isSimpleExpr e = case e of
-        Var{} -> True
         Lit{} -> True
         Con{} -> True
         Lam{} -> True
@@ -109,6 +108,7 @@ doEval expr venv ctx = do
         App (Var nm _) _ _ |  getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (TypeApp (Var nm _) _) _ _ | isConstructorName (getName nm) || getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
         App (App (TypeApp (Var nm _) _) [e] _) _ _ -> getName nm == nameEffectOpen
+        Var{} -> True
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
@@ -156,7 +156,7 @@ doEval expr venv ctx = do
             Just expr -> do
               c <- startCombinedCtx
               returnV $ eval expr M.empty c
-            Nothing -> trace ("Variable not found: " ++ show name) doBottom
+            Nothing -> error ("Variable not found: " ++ show name)
     Lit l -> returnConst venv ctx expr (injLit (contextId expr) l)
     Lam{} -> returnConst venv ctx expr (AChangeClos expr venv)
     App _ args _ -> doApp args
@@ -240,7 +240,7 @@ doContinue res frame ctx =
                       let n = getName name
                       if not (isHandlerPrimitive n) then do
                         args <- mapM store arguments
-                        res <- doPrimitive n args store
+                        res <- doPrimitive n args ctx uApp store extendStore
                         extendStore retAddr res
                         returnAddr retAddr
                       else doHandlerPrimitive name n retAddr arguments venv ctx eApp
@@ -589,13 +589,15 @@ patMatch plit@(PatLit _) tree = do
       else return (Left tree)
     _ -> return (Left tree)
 patMatch (PatCon nm pats _ _ _ _ _ _) (TChangeLit addr l) = return $ Left (TChangeLit addr l)
-patMatch (PatCon nm pats _ _ _ _ _ _) tree = do
+patMatch pcon@(PatCon nm pats _ _ _ _ _ _) tree = do
   let newArgs args [] = map (TChangeV . snd) args -- take the rest as is
       newArgs (_:args) (n:rest) = n : newArgs args rest -- prefer known tree elements
+  -- trace ("Matching pattern " ++ show pcon ++ " against tree at " ++ show (addrOfTree tree)) $ return ()
   -- TODO: Early catch of wrong type
   v <- changeOfTree tree
   case v of
     AChangeObj _ name args ->
+      -- trace ("Pattern constructor " ++ show nm ++ " against object " ++ show name ++ " with args " ++ show (map fst args)) $ return () >>
       if name == nm then do
         let patArgs = zip pats (newArgs args (argsOfChange tree))
         matches <- mapM (uncurry patMatch) patArgs
@@ -605,6 +607,7 @@ patMatch (PatCon nm pats _ _ _ _ _ _) tree = do
         else return $ Left newTree
       else return $ Left tree
     AChangeConstr con params ->
+      -- trace ("Pattern constructor " ++ show nm ++ " against object " ++ show con) $ return () >>
       case exprOfCtx con of
         Con conName _ _ ->
          if null pats && nm == conName then return (Right (M.empty, TChangePartialCon (addrOfTree tree) v))

@@ -13,7 +13,7 @@ module Core.FlowAnalysis.StaticContext(
                           ExpressionSet,
                           contextId,contextOf,exprOfCtx,modCtx,ppContextPath,
                           enclosingDef,enclosingLambda,
-                          maybeExprOfCtx,
+                          maybeExprOfCtx, isTrueExpr, isFalseExpr,
                           rangesOverlap,
                           lamVar,lamVarName,lamNames,
                           showDg,showDef,showCtxExpr,
@@ -190,6 +190,12 @@ instance Eq C.Def where
 
 type ExpressionSet = S.Set ExprContextId
 
+isTrueExpr :: ExprContext -> Bool
+isTrueExpr e = maybe False isExprTrue (maybeExprOfCtx e)
+
+isFalseExpr :: ExprContext -> Bool
+isFalseExpr e = maybe False isExprFalse (maybeExprOfCtx e)
+
 localFv :: C.Expr -> S.Set TName
 localFv expr
   = S.fromList $ filter (not . isQualified . C.getName) (tnamesList (fv expr)) -- trick: only local names are not qualified
@@ -307,7 +313,7 @@ showExprKind e =
 
 ppContextPath :: ExprContext -> Doc
 ppContextPath ctx =
-  case ctx of 
+  case ctx of
     LamCBody _ c tn e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     AppCLambda _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     AppCParam _ c i e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
@@ -317,7 +323,7 @@ ppContextPath ctx =
     CaseCBody _ _ _ _ _ e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     CaseCBranch _ c _ _ b -> ppContextPathRec ctx <+> parens (text (showExprKind (C.guardExpr $ head $ C.branchGuards b)))
     ExprCBasic _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
-    
+
     _ -> ppContextPathRec ctx
 
 ppContextPathRec :: ExprContext -> Doc
@@ -369,7 +375,7 @@ letDefsOf ctx =
 
 isLetDefBindingFinished :: Int -> Int -> ExprContext -> Bool
 isLetDefBindingFinished defGroupIndex bindingIndex e = do
-  let defs = letDefsOf e in 
+  let defs = letDefsOf e in
    length defs == defGroupIndex + 1 &&
         let dfs = defs !! defGroupIndex
         in length (defsOf dfs) == bindingIndex + 1
@@ -503,7 +509,7 @@ showSimpleContext ctx =
     LetCDefGroup _ _ tn _ _ -> "LetDefGroup(" ++ showSimple tn ++ ")"
     LetCBody{} -> "LetBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCScrutinee{} -> "CaseMatch(" ++ showSimple (exprOfCtx ctx) ++ ")"
-    CaseCBranch{} -> "CaseBranch(" ++ showSimple (exprOfCtx ctx) ++ ")"
+    CaseCBranch _ _ _ _ b -> "CaseBranch(" ++ showSimple (C.guardExpr $ head $ C.branchGuards b) ++ ")"
     CaseCBody{} -> "CaseBody(" ++ showSimple (exprOfCtx ctx) ++ ")"
     CaseCGuard{} -> "CaseGuard(" ++ showSimple (exprOfCtx ctx) ++ ")"
     ExprCBasic{} -> "ExprBasic(" ++ showSimple (exprOfCtx ctx) ++ ")"
@@ -645,7 +651,7 @@ contextOf ctx =
     LetCDefGroup _ c _ _ _ -> Just c
     LetCBody _ c _ _ -> Just c
     CaseCScrutinee _ c _ -> Just c
-    CaseCBranch _ c _ _ _ -> Just c 
+    CaseCBranch _ c _ _ _ -> Just c
     CaseCGuard _ c _ _ _ _ -> Just c
     CaseCBody _ c _ _ _ _ -> Just c
     ExprCBasic _ c _ -> Just c
