@@ -177,12 +177,18 @@ getAbResult = do
   cache <- getCache
   let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
                         VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                                                          Bottom -> (evals, applies, ksizes, ssizes)
                         VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                                                               Bottom -> (evals, applies, ksizes, ssizes)
                         VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                                                              Bottom -> (evals, applies, ksizes, ssizes)
                         VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                                                     Bottom -> (evals, applies, ksizes, ssizes)
                         VStore UnitAddr -> (evals, applies, ksizes, ssizes)
                         KStore KAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                                                    Bottom -> (evals, applies, ksizes, ssizes)
                         KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
+                                                     Bottom -> (evals, applies, ksizes, ssizes)
                         Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                                                   Bottom -> (evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
