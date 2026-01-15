@@ -15,7 +15,7 @@ import Core.FlowAnalysis.Full.DMCFA.Monad
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core as C
-import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty)
+import Type.Type (splitFunScheme, Type (..), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty, typeInt)
 import Data.List (findIndex, isPrefixOf, intercalate)
 import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
@@ -30,12 +30,17 @@ import Common.Name
 import Core.FlowAnalysis.Monad (FixAR)
 import Common.File
 import Data.Char (toUpper)
-import Numeric (showFFloat, showEFloat)
+import Numeric (showFFloat, showEFloat, readHex)
+import Kind.Kind
 
 trueCon ::  AChange
 trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
 falseCon :: AChange
 falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
+justCon :: Addr -> Type -> AChange
+justCon addr tp = AChangeObj (ExprPrim (ExprContextId (-1003) nameJust) C.exprUnit) (TName nameJust (maybeType tp) Nothing) [(justValueName, addr)]
+nothingCon :: AChange
+nothingCon = AChangeConstr (ExprPrim (ExprContextId (-1004) nameNothing) C.exprUnit) []
 emptyCtx :: AChange
 emptyCtx = AChangeConstr (ExprPrim (ExprContextId (-2001) (newName "emptyCtx")) C.exprUnit) []
 hole :: AChange
@@ -113,8 +118,8 @@ opCmpString f [p1, p2] = do
       anyBool
     _ -> doBottom
 
-doPrimitive :: Name -> [AChange] -> (Addr -> FixAAMR r s e AChange) -> FixAAMR r s e AChange
-doPrimitive nm achanges store = do
+doPrimitive :: Name -> [AChange] -> CombinedCtx -> ExprContextId -> (Addr -> FixAAMR r s e AChange) -> (Addr -> AChange -> FixAAMR r s e ()) -> FixAAMR r s e AChange
+doPrimitive nm achanges ctx u store extendStore = do
   -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameCCtxEmpty then
     return emptyCtx
@@ -195,8 +200,8 @@ doPrimitive nm achanges store = do
       _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
-      [AChangeConstr (ExprPrim _ e) _] | isExprTrue e -> return falseCon
-      [AChangeConstr (ExprPrim _ e) _] | isExprFalse e -> return trueCon
+      [AChangeConstr c _] | isTrueExpr c -> return falseCon
+      [AChangeConstr c _] | isFalseExpr c -> return trueCon
       _ -> doBottom
   else if nm == nameIntOdd then
     case achanges of
@@ -206,6 +211,25 @@ doPrimitive nm achanges store = do
     opCmpString (==) achanges
   else if nm == nameCoreSliceXStartsWith then
     opCmpString (\s1 s2 -> s2 `isPrefixOf` s1) achanges
+  else if nm == nameCoreXParse then
+    case achanges of
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))), AChangeConstr e _] ->
+        if isTrueExpr e then
+          case readHex s of
+            [(v, "")] -> do
+              let addr = ConImplicitAddr justValueName ctx u
+              extendStore addr (AChangeLit $ LiteralChangeIntX (LChangeSingle (e1, v)))
+              return $ justCon addr typeInt
+            _ -> return nothingCon
+        else do
+          let addr = ConImplicitAddr justValueName ctx u
+          extendStore addr (AChangeLit $ LiteralChangeIntX (LChangeSingle (e1, read s)))
+          return $ justCon addr typeInt
+      [AChangeLit (LiteralChangeStringX _), AChangeConstr e _] -> do
+        let addr = ConImplicitAddr justValueName ctx u
+        extendStore addr (AChangeLit $ LiteralChangeIntX LChangeTop)
+        each [return nothingCon, return $ justCon addr typeInt]
+      _ -> doBottom
   else if nm == nameCoreSliceLength then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] -> return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e2, fromIntegral $ length s)))
