@@ -10,7 +10,7 @@ val handler-files = ["yield", "vec", "unix", "nim", "ambient", "scoped"]
 val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
 val kokagen-files = ["build"] // "n/nim"
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
-            rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f) ++ kokagen-files.map(fn(f) "analysis/benchmarks/koka-gen/" ++ f)
+            rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f) ++ kokagen-files.map(fn(f) "koka-gen/" ++ f)
 
 effect out
   fun write(s: string): ()
@@ -71,6 +71,6 @@ fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
     Error(err) -> throw-exn(err)
 
 fun main()
-  run-benchmarks()
+  run-benchmarks(analyses=[DMCFA, DMCFA-EXP])
   // run-benchmarks(["handlers/nim"], [DMCFA])
   // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP])
