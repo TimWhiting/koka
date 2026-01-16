@@ -121,7 +121,7 @@ fun check( t : tree ) : div int
 
 // generate `count` trees of `depth` and return the total checksum
 fun sum-count( count : int, depth : int ) : div int
-  fold-int(count+1,0) fn(i,csum)
+  fold(count+1,0) fn(i,csum)
     // csum + make(depth).check
     csum + make(depth).check
   

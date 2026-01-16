@@ -363,52 +363,27 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
-                    let bottomD = 0
-                    -- liftIO $ termInfo term (prettyCore defaultEnv (C CDefault) [] core)
-                    let doSweep = sweep flags
-                    let sweepDM :: Int -> Int -> Int -> (Flags -> Build ()) -> Build ()
-                        sweepDM mT d m i = do
-                          let bottomM = 0
-                          when doSweep $ do
-                            if d == bottomD && m == bottomM then return ()
-                            else if d == bottomD then do
-                              sweepDM mT d (m - 1) i
-                            else if m == bottomM then do
-                              sweepDM mT (d - 1) mT i
-                            else do
-                              sweepDM mT d (m - 1) i
-                          -- trace ("Evaluating " ++ show m ++ show d) $ return ()
-                          i flags{mSensitivity = m, dSensitivity = d}
+                    let sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
 
-
-                    if rebinding flags then do
-                      sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMainR bc (\bc mn ->
-                            -- trace ("Loading new module " ++ show mn)
-                            runBuild term flags $ do
-                              -- bc' <- buildcFreshFromRoots bc
-                              buildcTypeCheck (mn:buildcRoots bc) bc
-                          ) mod (mSensitivity flags) (dSensitivity flags)
-                        return ()
-                    else if kcfa flags then do
-                      sweepDM (mSensitivity flags) 0 (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMainK bc (\bc mn ->
-                            -- trace ("Loading new module " ++ show mn)
-                            runBuild term flags $ do
-                              -- bc' <- buildcFreshFromRoots bc
-                              buildcTypeCheck (mn:buildcRoots bc) bc
-                          ) mod (mSensitivity flags)
-                        return ()
-                    else do
-                      sweepDM (mSensitivity flags) (dSensitivity flags) (mSensitivity flags) $ \flags -> do
-                        liftIO $ evalMain bc (\bc mn ->
-                            -- trace ("Loading new module " ++ show mn)
-                            runBuild term flags $ do
-                              -- bc' <- buildcFreshFromRoots bc
-                              buildcTypeCheck (mn:buildcRoots bc) bc
-                          ) mod (mSensitivity flags) (dSensitivity flags)
-                        return ()
-                      return ()
+                    let runAnalysis d m = do
+                          if rebinding flags then 
+                             liftIO $ evalMainR bc (\bc mn ->
+                                 runBuild term flags $ do
+                                   buildcTypeCheck (mn:buildcRoots bc) bc
+                               ) mod m d
+                          else if kcfa flags then
+                             liftIO $ evalMainK bc (\bc mn ->
+                                 runBuild term flags $ do
+                                   buildcTypeCheck (mn:buildcRoots bc) bc
+                               ) mod m 
+                          else
+                             liftIO $ evalMain bc (\bc mn ->
+                                 runBuild term flags $ do
+                                   buildcTypeCheck (mn:buildcRoots bc) bc
+                               ) mod m d
+                          return ()
+                    
+                    mapM_ (\(d,m) -> runAnalysis d m) sens
                   -- let h = flagsHash flags
                   --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"

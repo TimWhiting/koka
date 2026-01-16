@@ -448,12 +448,13 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           -- v <- store newAddr
           extendStore UnitAddr changeUnit
+          v <- store newAddr
           d <- dLimit
           m <- mLimit
-          let newRetCtx = addCall m retCtx bodId
-          let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
+          let newRetCtx = addCall m retCtx (vcontextId v)
+          let newDelimCtx = newDelim d m newRetCtx (vcontextId v) (getName varName)
           res <- apply kOp UnitAddr (dynamic newDelimCtx)
-          returnV $ handleLocal res venv bodId varName newAddr newRetCtx
+          returnV $ handleLocal res venv (vcontextId v) varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
           let dframe = DFrameLocal venv bodId varName valAddr

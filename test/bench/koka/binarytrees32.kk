@@ -59,7 +59,7 @@ fun psum-count( count : int32, depth : int32 ) : pure int
   val n = 2
   val partc = count / n.int32
   val rest  = count % n.int32
-  val parts = list(1,n) fn(i){ task{ sum-count( partc, depth ) }
+  val parts = list(1,n) fn(i){ task{ sum-count( partc, depth ) } }
   (if rest > 0.int32 then sum-count(rest, depth).int else 0) + parts.await.map(int).sum
 
 

@@ -28,9 +28,9 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> (4, 4)
-    DMCFA-EXP -> (4, 4)
-    KCFA -> (0, 6)
+    DMCFA -> list(0,3).flatmap( fn(d) list(0,3).map( fn(m) (d,m)))  ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFA-EXP -> list(0,3).flatmap( fn(d) list(0,3).map( fn(m) (d,m))) ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> list(0,3).map( fn(k) (0,k) )
 
 fun show(a: analysis)
   match a
@@ -41,16 +41,7 @@ fun show(a: analysis)
 fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFA, DMCFA-EXP, KCFA])
   analyses.foreach fn(a)
     files.foreach fn(f)
-      val sens = a.sensitivities
-      val file = "benchmarks/results".path / f / (a.show ++ "-" ++ sens.fst.show ++ "-" ++ sens.snd.show ++ ".csv")
-      if file.is-file then return ()
-      var result := ""
-      with handler
-        fun write(s)
-          result := result ++ s ++ "\n"
-        return(x)
-          write-text-file(file, result, create-dir=True)
-      run-file(a, "stack run koka -- -l analysis/benchmarks/" ++ f ++ ".kk " ++ a.flag ++ " ", sens)
+      run-file(a, f, a.sensitivities)
 
 
 fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
@@ -61,13 +52,46 @@ fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
 fun int(s: sslice): exn int
   s.string.parse-int.unjust
 
-fun run-file(a: analysis, cmd: string, (df, mf): (int, int))
-  val full-cmd = cmd ++ "--sweep --ma=" ++ mf.show ++ " --da=" ++ df.show ++ " 2>&1"
-  println("Debug command:\n" ++ cmd ++ "--ma=" ++ mf.show ++ " --da=" ++ df.show ++ " 2>out.kk")
-  write("Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3")
+fun run-file(a: analysis, f: string, sens: list<(int, int)>)
+  val sens-to-run = sens.filter fn((d,m))
+    val file = "benchmarks/results".path / f / (a.show ++ "-" ++ d.show ++ "-" ++ m.show ++ ".csv")
+    !file.is-file
+
+  if sens-to-run.is-empty then
+    println("Skipping " ++ f ++ " " ++ a.show ++ " (all results exist)")
+    return ()
+
+  val cmd = "stack run koka -- -l analysis/benchmarks/" ++ f ++ ".kk " ++ a.flag ++ " "
+  val sens-flags = sens-to-run.map(fn((d,m)) "--sensitivity=\"(" ++ d.show ++ "," ++ m.show ++ ")\"").join(" ")
+  val full-cmd = cmd ++ sens-flags ++ " 2>&1"
+  
+  match sens-to-run.last
+    Just((d,m)) ->
+       val debug-cmd = cmd ++ "--sensitivity=\"(" ++ d.show ++ "," ++ m.show ++ ")\" 2>&1" 
+       println("Debug command:\n" ++ debug-cmd)
+    Nothing -> ()
+
   match run-system-read(full-cmd)
     Ok(res) -> 
-      write(res.split("\n").filter(_.contains(a.show ++ ",")).filter(fn(l) l.split(",").length >= 5).map(a.show ++ _.split(a.show).tail.join(a.show)).join("\n"))
+      val lines = res.split("\n").filter(fn(l) l.contains(a.show ++ ",") && l.split(",").length >= 5).map(fn(l) a.show ++ l.split(a.show).tail.join(a.show))
+      
+      var contents : list<(string,string)> := []
+      lines.foreach fn(line)
+        val parts = line.split(",")
+        // Analysis,File,D,M,...
+        if parts.length >= 4 then
+          val d = parts.drop(2).head("").trim
+          val m = parts.drop(3).head("").trim
+          val key = a.show ++ "-" ++ d ++ "-" ++ m ++ ".csv"
+          match contents.find(fn(kv) kv.fst == key)
+            Just((_,curr)) -> contents := contents.map(fn(kv) if kv.fst == key then (key, curr ++ "\n" ++ line) else kv)
+            Nothing        -> contents := Cons((key,line), contents)
+      
+      contents.foreach fn((key, content))
+          val file = "benchmarks/results".path / f / key
+          val header = "Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3"
+          write-text-file(file, header ++ "\n" ++ content ++ "\n", create-dir=True)
+
     Error(err) -> throw-exn(err)
 
 fun main()

@@ -1,4 +1,3 @@
-- [ ] Add back in local set information
 - [ ] Redo analysis....
 
 
