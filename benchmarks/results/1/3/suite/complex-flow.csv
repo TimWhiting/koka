@@ -1,0 +1,16 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-layers,1,3,1,239,71,1.0,1.0,1.0,1.0,0.013239,0.012005,0.011575
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-nested-interleave,1,3,1,143,16,1.0,1.0,1.0,1.0,0.004279,0.004462,0.004361
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-non-tail-call,1,3,1,83,4,1.0,1.0,1.0,1.0,0.001474,0.001582,0.001556
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-recursive,1,3,1,327,27,1.0,1.0,1.0,1.0040816326530613,0.012683,0.012624,0.013402
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-resume-func,1,3,1,74,5,1.0,1.0,1.0,1.0,0.001476,0.001248,0.001509
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-tail-call,1,3,1,72,4,1.0,1.0,1.0,1.0,0.00129,0.001088,0.001331
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-tail-effect,1,3,1,61,4,1.0,1.0,1.0,1.0,0.001025,0.000971,0.001174
+
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-layers,1,3,1,239,71,1.0,1.0,1.0,1.0,0.010098,0.01053,0.010791
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-nested-interleave,1,3,1,143,16,1.0,1.0,1.0,1.0,0.003004,0.003011,0.003036
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-non-tail-call,1,3,1,83,4,1.0,1.0,1.0,1.0,0.000929,0.001452,0.000914
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-recursive,1,3,1,327,27,1.0,1.0,1.0,1.0061728395061729,0.00969,0.00951,0.010027
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-resume-func,1,3,1,74,5,1.0,1.0,1.0,1.0,0.000971,0.001149,0.000935
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-tail-call,1,3,1,72,4,1.0,1.0,1.0,1.0,0.001275,0.000857,0.001229
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-tail-effect,1,3,1,61,4,1.0,1.0,1.0,1.0,0.000738,0.000959,0.00073

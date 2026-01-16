@@ -1,0 +1,6 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,100,100,1,420,1,1.0,1.0,1.0,1.0,0.020152,0.019692,0.01957
+dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,100,100,1,954,601,1.0,1.0,1.0,1.0,0.678446,0.647126,0.656942
+
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,100,100,1,420,1,1.0,1.0,1.0,1.0,0.01627,0.016538,0.01626
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,100,100,1,954,601,1.0,1.0,1.0,1.0,0.681175,0.639658,0.640763

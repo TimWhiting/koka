@@ -12,19 +12,34 @@ from collections import defaultdict
 from statistics import mean, stdev
 from typing import Dict, List, Tuple
 
-RESULTS_DIR = Path("benchmarks/results/suite")
+RESULTS_DIR = Path("benchmarks/results")
 OUTPUT_DIR = Path("benchmarks/analysis/exports")
 
 def load_all_results(benchmark: str, analysis: str) -> List[Dict]:
     """Load all CSV results for a benchmark/analysis combination."""
-    benchmark_dir = RESULTS_DIR / benchmark
-    pattern = f"{analysis}-*-*.csv"
-    
+    # Search in benchmarks/results/*/*/suite/{benchmark}.csv
     all_results = []
-    for csv_file in benchmark_dir.glob(pattern):
+    
+    if not RESULTS_DIR.exists():
+        return []
+
+    # Recursively find all csv files with the benchmark name
+    # We expect them to be in d/m/suite/benchmark.csv
+    # But since 'benchmark' is just "basic", we search for "basic.csv"
+    # and filter for those in "suite" folder if needed, or just generally.
+    # The script hardcodes SUITE benchmarks.
+    
+    file_pattern = f"{benchmark}.csv"
+    
+    for csv_file in RESULTS_DIR.rglob(file_pattern):
+        # We assume structure is valid.
         with open(csv_file, 'r') as f:
             reader = csv.DictReader(f)
             for row in reader:
+                # Filter by analysis type (the 'Analysis' column)
+                if row.get('Analysis') != analysis:
+                    continue
+                    
                 try:
                     row['D'] = int(row['D']) if row['D'] else 0
                     row['M(K)'] = int(row['M(K)']) if row['M(K)'] else 0

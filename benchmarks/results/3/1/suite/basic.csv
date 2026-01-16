@@ -1,0 +1,12 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/suite/basic/basic-exception,3,1,1,56,1,1.0,1.0,1.0,1.0,0.000813,0.001228,0.000794
+dmcfa,analysis/benchmarks/suite/basic/basic-resume,3,1,1,69,4,1.0,1.0,1.0,1.0,0.001355,0.001032,0.001533
+dmcfa,analysis/benchmarks/suite/basic/basic-resume-context,3,1,1,78,5,1.0,1.0,1.0,1.0,0.001265,0.003609,0.001715
+dmcfa,analysis/benchmarks/suite/basic/basic-resume-op,3,1,1,78,4,1.0,1.0,1.0,1.0,0.001807,0.001133,0.001499
+dmcfa,analysis/benchmarks/suite/basic/basic-resume-op-context,3,1,1,87,5,1.0,1.0,1.0,1.0,0.001311,0.001637,0.001831
+
+dmcfae,analysis/benchmarks/suite/basic/basic-exception,3,1,1,56,1,1.0,1.0,1.0,1.0,0.001025,0.00055,0.00053
+dmcfae,analysis/benchmarks/suite/basic/basic-resume,3,1,1,69,4,1.0,1.0,1.0,1.0,0.000999,0.000694,0.001034
+dmcfae,analysis/benchmarks/suite/basic/basic-resume-context,3,1,1,78,5,1.0,1.0,1.0,1.0,0.000898,0.00128,0.000881
+dmcfae,analysis/benchmarks/suite/basic/basic-resume-op,3,1,1,78,4,1.0,1.0,1.0,1.0,0.000947,0.001147,0.000808
+dmcfae,analysis/benchmarks/suite/basic/basic-resume-op-context,3,1,1,87,5,1.0,1.0,1.0,1.0,0.001267,0.001007,0.00133

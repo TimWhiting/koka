@@ -17,29 +17,29 @@ RESULTS_DIRS = [RESULTS_BASE / "suite", RESULTS_BASE / "handlers", RESULTS_BASE 
 OUTPUT_DIR = Path("benchmarks/analysis")
 
 def load_benchmark_names() -> List[str]:
-    """Load benchmark names from suite, handlers, and rosetta directories."""
+    """Load benchmark names by scanning the results directory structure."""
     benchmarks = set()
     
-    # Get benchmarks from suite
-    suite_dir = RESULTS_BASE / "suite"
-    if suite_dir.exists():
-        benchmarks.update(d.name for d in suite_dir.iterdir() if d.is_dir())
-    
-    # Get benchmarks from handlers
-    handlers_dir = RESULTS_BASE / "handlers"
-    if handlers_dir.exists():
-        benchmarks.update(d.name for d in handlers_dir.iterdir() if d.is_dir())
-    
-    # Get benchmarks from rosetta (recursively)
-    rosetta_dir = RESULTS_BASE / "rosetta"
-    if rosetta_dir.exists():
-        # Look for directories that contain CSV files
-        for p in rosetta_dir.rglob("*.csv"):
-            # Extract benchmark name from parent directory
-            parent_dir = p.parent
-            benchmarks.add(parent_dir.name)
-    
-    return sorted(benchmarks)
+    # Walk through the results directory
+    # Structure: benchmarks/results/<d>/<m>/<category>/<benchmark>.csv
+    if not RESULTS_BASE.exists():
+        return []
+        
+    for d_dir in RESULTS_BASE.iterdir():
+        if not d_dir.is_dir(): continue
+        for m_dir in d_dir.iterdir():
+            if not m_dir.is_dir(): continue
+            
+            # Now we are at specific sensitivity level
+            # Walk recursively to find all .csv files
+            for csv_file in m_dir.rglob("*.csv"):
+                # Get path relative to m_dir (e.g., suite/basic.csv)
+                rel_path = csv_file.relative_to(m_dir)
+                # Remove .csv extension
+                bench_name = str(rel_path.with_suffix(''))
+                benchmarks.add(bench_name)
+                
+    return sorted(list(benchmarks))
 
 SUITE_FILES = load_benchmark_names()
 
@@ -76,6 +76,18 @@ def parse_metrics(row: Dict) -> Dict:
             except ValueError:
                 pass
     
+    # Compute composite Time if missing but components exist
+    if 'Time' not in parsed or not parsed['Time']:
+        times = []
+        for t_col in ['Time1', 'Time2', 'Time3']:
+            if t_col in parsed and parsed[t_col]:
+                try:
+                    times.append(float(parsed[t_col]))
+                except ValueError:
+                    pass
+        if times:
+            parsed['Time'] = mean(times)
+            
     return parsed
 
 def extract_sensitivity_params(results: List[Dict]) -> Tuple[set, set]:
@@ -98,39 +110,14 @@ def extract_sensitivity_params(results: List[Dict]) -> Tuple[set, set]:
     return d_values, m_values
 
 def aggregate_by_analysis(results: List[Dict]) -> Dict[str, List[Dict]]:
-    """Group results by analysis type."""
+    """Group results by analysis type using the 'Analysis' column."""
     by_analysis = defaultdict(list)
     for row in results:
-        # Extract analysis type from filename or use a key
-        for analysis_key in ANALYSIS_TYPES.keys():
-            if analysis_key in row.get('File/Example', ''):
-                by_analysis[analysis_key].append(row)
-                break
+        # The 'Analysis' column contains the analysis name (e.g. 'dmcfa')
+        analysis = row.get('Analysis')
+        if analysis and analysis in ANALYSIS_TYPES:
+            by_analysis[analysis].append(row)
     return by_analysis
-
-def find_benchmark_dir(benchmark: str) -> Path:
-    """Find the directory containing results for a benchmark.
-    Searches recursively in suite, handlers, and rosetta directories.
-    """
-    # First try suite (most common)
-    suite_dir = RESULTS_BASE / "suite" / benchmark
-    if suite_dir.exists():
-        return suite_dir
-    
-    # Then try handlers subdirectories
-    handlers_dir = RESULTS_BASE / "handlers" / benchmark
-    if handlers_dir.exists():
-        return handlers_dir
-    
-    # Then search recursively in rosetta
-    rosetta_base = RESULTS_BASE / "rosetta"
-    if rosetta_base.exists():
-        for p in rosetta_base.rglob(benchmark):
-            if p.is_dir():
-                return p
-    
-    # Fallback: return the suite location (will be empty)
-    return suite_dir
 
 def compute_statistics(values: List[float]) -> Dict:
     """Compute statistics for a list of values."""
@@ -150,32 +137,70 @@ def compute_statistics(values: List[float]) -> Dict:
         'stdev': stdev(valid_values) if len(valid_values) > 1 else 0
     }
 
+
+def collect_benchmark_results(benchmark_name: str) -> List[Dict]:
+    """Collect all results for a benchmark across all sensitivity levels."""
+    all_results = []
+    
+    # Iterate over all d/m directories
+    if not RESULTS_BASE.exists():
+        return []
+        
+    for d_dir in RESULTS_BASE.iterdir():
+        if not d_dir.is_dir(): continue
+        # Try to parse d from directory name
+        try:
+            # Skip non-numeric directories if any (though run-benchmarks produces numeric)
+            if not d_dir.name.isdigit(): continue
+            d_val = int(d_dir.name)
+        except ValueError:
+            continue
+            
+        for m_dir in d_dir.iterdir():
+            if not m_dir.is_dir(): continue
+            try:
+                if not m_dir.name.isdigit(): continue
+                m_val = int(m_dir.name)
+            except ValueError:
+                continue
+
+            # Check if benchmark file exists in this d/m combination
+            # benchmark_name is like "suite/basic"
+            csv_path = m_dir / f"{benchmark_name}.csv"
+            
+            if csv_path.exists():
+                file_results = load_csv_results(csv_path)
+                # Ensure D and M(K) are set correctly in case they are missing or parsed wrong
+                # But they should be in the CSV content. 
+                # Older run-benchmarks put them there. 
+                # The gathering logic below expects to extract them.
+                all_results.extend(file_results)
+                
+    return all_results
+
 def analyze_suite_benchmark(benchmark_name: str) -> Dict:
     """Analyze a single suite benchmark across all analyses and sensitivity parameters."""
-    benchmark_dir = find_benchmark_dir(benchmark_name)
+    
     analysis_results = {}
     
-    if not benchmark_dir.exists():
-        print(f"Warning: {benchmark_dir} not found")
-        return {}
+    # Collect all raw results from all d/m directories
+    all_raw_results = collect_benchmark_results(benchmark_name)
     
-    for analysis_key, analysis_name in ANALYSIS_TYPES.items():
-        # Find CSV files for this analysis
-        pattern = f"{analysis_key}-*-*.csv"
-        csv_files = list(benchmark_dir.glob(pattern))
-        
-        if not csv_files:
+    if not all_raw_results:
+        # print(f"Warning: No results found for {benchmark_name}")
+        return {}
+
+    # Separate by analysis type
+    by_analysis = aggregate_by_analysis(all_raw_results)
+    
+    for analysis_key, rows in by_analysis.items():
+        if not rows:
             continue
         
-        all_results = []
-        for csv_file in csv_files:
-            all_results.extend(load_csv_results(csv_file))
-        
-        if not all_results:
-            continue
+        analysis_name = ANALYSIS_TYPES[analysis_key]
         
         # Parse and analyze
-        parsed_results = [parse_metrics(r) for r in all_results]
+        parsed_results = [parse_metrics(r) for r in rows]
         
         # Extract sensitivity parameters
         d_values, m_values = extract_sensitivity_params(parsed_results)
@@ -196,7 +221,7 @@ def analyze_suite_benchmark(benchmark_name: str) -> Dict:
             by_d[d].append(result)
             by_m[m].append(result)
             by_d_m[d][m].append(result)
-        
+            
         # Extract metrics for overall analysis
         times = [r.get('Time') for r in parsed_results if isinstance(r.get('Time'), (int, float))]
         nevals = [r.get('NEval') for r in parsed_results if isinstance(r.get('NEval'), (int, float))]

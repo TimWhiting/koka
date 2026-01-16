@@ -1,0 +1,16 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-layers,0,0,0,178,68,1.0056179775280898,1.088235294117647,1.2,1.06993006993007,0.00604,0.006451,0.00624
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-nested-interleave,0,0,1,127,14,1.0,1.0,1.0,1.009009009009009,0.001613,0.001679,0.001612
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-non-tail-call,0,0,0,78,4,1.0,1.0,1.0,1.0606060606060606,0.000741,0.000958,0.001069
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-recursive,0,0,0,99,14,1.0909090909090908,1.3571428571428572,2.3333333333333335,1.1645569620253164,0.002264,0.002101,0.001956
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-resume-func,0,0,1,74,5,1.0,1.0,1.0,1.0,0.001077,0.001059,0.000728
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-tail-call,0,0,1,72,4,1.0,1.0,1.0,1.0,0.000819,0.000653,0.000873
+dmcfa,analysis/benchmarks/suite/complex-flow/complex-tail-effect,0,0,1,61,4,1.0,1.0,1.0,1.0,0.000544,0.000708,0.000533
+
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-layers,0,0,0,178,68,1.0056179775280898,1.088235294117647,1.2,1.0816326530612246,0.005607,0.007001,0.005763
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-nested-interleave,0,0,1,127,14,1.0,1.0,1.0,1.0128205128205128,0.001422,0.001456,0.001567
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-non-tail-call,0,0,0,78,4,1.0,1.0,1.0,1.065217391304348,0.000739,0.001208,0.000705
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-recursive,0,0,0,99,21,1.0909090909090908,1.5714285714285714,3.25,1.2407407407407407,0.002427,0.002493,0.002536
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-resume-func,0,0,1,74,5,1.0,1.0,1.0,1.0,0.000854,0.000615,0.001012
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-tail-call,0,0,1,72,4,1.0,1.0,1.0,1.0,0.000626,0.000949,0.000593
+dmcfae,analysis/benchmarks/suite/complex-flow/complex-tail-effect,0,0,1,61,4,1.0,1.0,1.0,1.0,0.0006,0.000435,0.000608

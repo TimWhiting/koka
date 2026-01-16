@@ -69,36 +69,11 @@ import matplotlib.scale as mscale
 mscale.register_scale(PowerScale)
 
 RESULTS_BASE = Path("benchmarks/results")
-RESULTS_DIRS = [RESULTS_BASE / "suite", RESULTS_BASE / "handlers", RESULTS_BASE / "rosetta"]
 GRAPHS_DIR = Path("benchmarks/analysis/graphs")
 
 def get_benchmark_output_dir(benchmark: str) -> Path:
     """Get the output directory for a benchmark's graphs."""
     return GRAPHS_DIR / benchmark
-
-def find_benchmark_dir(benchmark: str) -> Path:
-    """Find the directory containing results for a benchmark.
-    Searches recursively in suite, handlers, and rosetta directories.
-    """
-    # First try suite (most common)
-    suite_dir = RESULTS_BASE / "suite" / benchmark
-    if suite_dir.exists():
-        return suite_dir
-    
-    # Then try handlers subdirectories
-    handlers_dir = RESULTS_BASE / "handlers" / benchmark
-    if handlers_dir.exists():
-        return handlers_dir
-    
-    # Then search recursively in rosetta
-    rosetta_base = RESULTS_BASE / "rosetta"
-    if rosetta_base.exists():
-        for p in rosetta_base.rglob(benchmark):
-            if p.is_dir():
-                return p
-    
-    # Fallback: return the suite location (will be empty)
-    return suite_dir
 
 def load_results(benchmark: str, analysis: str, metric: Literal['precision', 'proxy'] = 'precision') -> List[Dict]:
     """Load all results for a benchmark/analysis.
@@ -108,13 +83,22 @@ def load_results(benchmark: str, analysis: str, metric: Literal['precision', 'pr
         analysis: Analysis type (dmcfa, dmcfae, kcfa)
         metric: 'precision' for actual precision, 'proxy' for 1/AvgS/AvgMK/AvgK
     """
-    benchmark_dir = find_benchmark_dir(benchmark)
     all_results = []
+    if not RESULTS_BASE.exists():
+        return all_results
+
+    # Search recursively for the benchmark CSV file
+    # The file structure is d/m/suite/benchmark.csv or d/m/handlers/benchmark.csv
+    file_pattern = f"{benchmark}.csv"
     
-    for csv_file in benchmark_dir.glob(f"{analysis}-*-*.csv"):
+    for csv_file in RESULTS_BASE.rglob(file_pattern):
         with open(csv_file, 'r') as f:
             reader = csv.DictReader(f)
             for row in reader:
+                # Filter by analysis type
+                if row.get('Analysis') != analysis:
+                    continue
+                    
                 try:
                     row['D'] = int(row['D']) if row['D'] else 0
                     row['M(K)'] = int(row['M(K)']) if row['M(K)'] else 0

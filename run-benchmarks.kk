@@ -3,6 +3,7 @@ import std/text/regex
 import std/num/float64
 import std/os/file
 import std/os/path
+import std/os/env
 import std/os/dir
 
 val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"]
@@ -38,10 +39,10 @@ fun show(a: analysis)
     DMCFA-EXP -> "dmcfae"
     KCFA -> "kcfa"
 
-fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFA, DMCFA-EXP, KCFA])
+fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFA, DMCFA-EXP, KCFA], force: bool = False)
   analyses.foreach fn(a)
     files.foreach fn(f)
-      run-file(a, f, a.sensitivities)
+      run-file(a, f, a.sensitivities, force)
 
 
 fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
@@ -52,10 +53,14 @@ fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
 fun int(s: sslice): exn int
   s.string.parse-int.unjust
 
-fun run-file(a: analysis, f: string, sens: list<(int, int)>)
+fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
   val sens-to-run = sens.filter fn((d,m))
-    val file = "benchmarks/results".path / f / (a.show ++ "-" ++ d.show ++ "-" ++ m.show ++ ".csv")
-    !file.is-file
+    if force then True else
+      val file = "benchmarks/results".path / d.show / m.show / (f ++ ".csv")
+      if file.is-file then
+        val content = read-text-file(file)
+        !content.contains(a.show ++ ",")
+      else True
 
   if sens-to-run.is-empty then
     println("Skipping " ++ f ++ " " ++ a.show ++ " (all results exist)")
@@ -82,19 +87,30 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>)
         if parts.length >= 4 then
           val d = parts.drop(2).head("").trim
           val m = parts.drop(3).head("").trim
-          val key = a.show ++ "-" ++ d ++ "-" ++ m ++ ".csv"
+          val key = d ++ "/" ++ m ++ "/" ++ f ++ ".csv"
           match contents.find(fn(kv) kv.fst == key)
             Just((_,curr)) -> contents := contents.map(fn(kv) if kv.fst == key then (key, curr ++ "\n" ++ line) else kv)
             Nothing        -> contents := Cons((key,line), contents)
       
       contents.foreach fn((key, content))
-          val file = "benchmarks/results".path / f / key
+          val file = "benchmarks/results".path / key
           val header = "Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3"
-          write-text-file(file, header ++ "\n" ++ content ++ "\n", create-dir=True)
+          if file.is-file then
+             val current = read-text-file(file)
+             val clean-current = 
+               if force then 
+                 current.split("\n").filter(fn(l) !l.starts-with(a.show ++ ",").bool).join("\n")
+               else current
+             val sep = if clean-current.is-empty then "" else "\n"
+             write-text-file(file, clean-current ++ sep ++ content ++ "\n", create-dir=True)
+          else 
+             write-text-file(file, header ++ "\n" ++ content ++ "\n", create-dir=True)
 
     Error(err) -> throw-exn(err)
 
 fun main()
-  run-benchmarks(analyses=[DMCFA, DMCFA-EXP])
+  val args = get-args()
+  val force = args.find(fn(a) a == "--force").is-just
+  run-benchmarks(analyses=[DMCFA, DMCFA-EXP], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFA])
   // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP])

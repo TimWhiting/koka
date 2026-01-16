@@ -1,0 +1,4 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/handlers/yield/main,0,0,1,103,8,1.0388349514563107,1.25,1.0,1.1122448979591837,0.0016,0.001801,0.001243
+
+dmcfae,analysis/benchmarks/handlers/yield/main,0,0,1,103,8,1.0388349514563107,1.25,1.0,1.161764705882353,0.001041,0.001754,0.001563
