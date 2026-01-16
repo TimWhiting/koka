@@ -247,8 +247,7 @@ data Flags
          , rebinding      :: !Bool -- perform full program analysis with rebinding
          , kcfa           :: !Bool -- perform k-cfa analysis
          , sweep          :: !Bool -- do a sweep of analysis sensitivities
-         , mSensitivity   :: !Int -- sensitivity for demand analysis
-         , dSensitivity   :: !Int -- sensitivity for demand analysis
+         , sensitivities  :: ![(Int,Int)] -- sensitivities for analysis
          } deriving (Eq,Show)
 
 instance Hashable Flags where
@@ -410,8 +409,7 @@ flagsNull
           False   -- do not do rebinding by default
           False   -- do not do k-cfa by default
           False   -- no sweep by default
-          1       -- call sensitivity
-          1       -- delimiter sensitivity
+          []      -- sensitivities
 
 
 
@@ -516,8 +514,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
  , flag   []    ["analyze"]        (\b f -> f{analyze=b, rebuild=b})           "full program analysis"
  , flag   []    ["dmcfa"]          (\b f -> f{analyze=b, rebinding=b, rebuild=b})         "full program analysis with rebinding"
- , numOption 2 "n" [] ["ma"]       (\i f -> f{mSensitivity=i})                 "set call sensitivity for analysis (default 2)"
- , numOption 1 "n" [] ["da"]       (\i f -> f{dSensitivity=i})                 "set delimiter sensitivity for analysis (default 1)"
+ , option []    ["sensitivity"]    (ReqArg (\s -> Flag (\f -> f{sensitivities = read s : sensitivities f})) "(d,m)") "add analysis sensitivity (d,m)"
  , flag   []    ["kcfa"]           (\b f -> f{analyze=b, kcfa=b, rebuild=b})              "enable k-cfa analysis"
  , flag   []    ["sweep"]           (\b f -> f{sweep=b})              "analysis sweep"
  , emptyline
