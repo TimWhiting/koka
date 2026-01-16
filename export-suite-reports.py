@@ -9,20 +9,28 @@ from pathlib import Path
 from typing import Dict, List
 from collections import defaultdict
 
-RESULTS_DIR = Path("benchmarks/results/suite")
+RESULTS_DIR = Path("benchmarks/results")
 ANALYSIS_JSON = Path("benchmarks/analysis/suite-analysis.json")
 EXPORT_DIR = Path("benchmarks/analysis/exports")
 
-SUITE_FILES = [
-    "basic",
-    "nondet", 
-    "nested",
-    "multi-effect",
-    "recursion",
-    "state-handler",
-    "complex-flow",
-    "nested-nondet"
-]
+def load_suite_files_from_results() -> List[str]:
+    """Load benchmark names by scanning the results directory structure."""
+    benchmarks = set()
+    
+    if not RESULTS_DIR.exists():
+        return []
+        
+    for d_dir in RESULTS_DIR.iterdir():
+        if not d_dir.is_dir(): continue
+        for m_dir in d_dir.iterdir():
+            if not m_dir.is_dir(): continue
+            for csv_file in m_dir.rglob("*.csv"):
+                rel_path = csv_file.relative_to(m_dir)
+                benchmarks.add(str(rel_path.with_suffix('')))
+                
+    return sorted(list(benchmarks))
+
+SUITE_FILES = load_suite_files_from_results()
 
 def load_json_analysis() -> Dict:
     """Load the analysis JSON file."""

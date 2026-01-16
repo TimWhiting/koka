@@ -16,6 +16,15 @@ ANALYSIS_JSON = Path("benchmarks/analysis/suite-analysis.json")
 RESULTS_BASE = Path("benchmarks/results")
 EXPORT_DIR = Path("benchmarks/analysis/graphs")
 
+D_COLORS = {
+    '0': '#1f77b4',
+    '1': '#ff7f0e',
+    '2': '#2ca02c', 
+    '3': '#d62728',
+    '20': '#9467bd',
+    '100': '#8c564b'
+}
+
 # Define benchmark sets
 BENCHMARK_SETS = {
     "suite": ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"],
@@ -24,29 +33,27 @@ BENCHMARK_SETS = {
 }
 
 def load_suite_files() -> List[str]:
-    """Load benchmark names from suite, handlers, and rosetta directories."""
+    """Load benchmark names from all result files."""
     benchmarks = set()
     
-    # Get benchmarks from suite
-    suite_dir = RESULTS_BASE / "suite"
-    if suite_dir.exists():
-        benchmarks.update(d.name for d in suite_dir.iterdir() if d.is_dir())
-    
-    # Get benchmarks from handlers
-    handlers_dir = RESULTS_BASE / "handlers"
-    if handlers_dir.exists():
-        benchmarks.update(d.name for d in handlers_dir.iterdir() if d.is_dir())
-    
-    # Get benchmarks from rosetta (recursively)
-    rosetta_dir = RESULTS_BASE / "rosetta"
-    if rosetta_dir.exists():
-        # Look for directories that contain CSV files
-        for p in rosetta_dir.rglob("*.csv"):
-            # Extract benchmark name from parent directory
-            parent_dir = p.parent
-            benchmarks.add(parent_dir.name)
-    
-    return sorted(benchmarks)
+    if not RESULTS_BASE.exists():
+        return []
+        
+    # Walk through the results directory to find all benchmarks
+    # We look for any d/m directory to find the structure
+    for d_dir in RESULTS_BASE.iterdir():
+        if not d_dir.is_dir() or not d_dir.name.isdigit(): continue
+        
+        for m_dir in d_dir.iterdir():
+            if not m_dir.is_dir() or not m_dir.name.isdigit(): continue
+            
+            # Found a valid d/m root. Scan for all CSVs under here.
+            for csv_file in m_dir.rglob("*.csv"):
+                # Path relative to m_dir is the benchmark key (e.g. suite/basic.csv -> suite/basic)
+                rel_path = csv_file.relative_to(m_dir)
+                benchmarks.add(str(rel_path.with_suffix('')))
+                
+    return sorted(list(benchmarks))
 
 SUITE_FILES = load_suite_files()
 
@@ -396,144 +403,148 @@ def plot_precision_vs_cost(benchmark: str, analysis: Dict):
     
     print(f"Generated: {output_file}")
 
+def setup_broken_xaxis(fig, ax1, ax2):
+    """Setup style for broken x-axis between two subplots."""
+    ax1.spines['right'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    
+    # Don't put ticks on the broken side
+    ax1.yaxis.tick_left()
+    ax1.tick_params(labelright=False)
+    ax2.yaxis.tick_right()
+    ax2.tick_params(labelright=False) # Or True if specific
+    ax2.set_yticks([]) # Hide Y ticks on second plot if sharing Y fully
+    
+    # Diagonal lines
+    d = .015  # proportion of vertical to horizontal extent of the slanted line
+    kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+    ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)
+    ax1.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)
+
+    kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
+    ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)
+    ax2.plot((-d, +d), (-d, +d), **kwargs)
+
 def plot_aggregate_mk_by_d():
     """Plot aggregated M(K)/K comparison across all benchmarks with colors for analyses, line styles for D, and CIs."""
     analysis = load_json_analysis()
     
-    fig, ax = plt.subplots(figsize=(13, 7))
-    
-    colors = {'dmcfa': '#2E86AB', 'dmcfae': '#A23B72', 'kcfa': '#F18F01'}
-    linestyles = {1: '-', 2: '--', 3: '-.', 4: ':'}
-    
-    # First plot KCFA (background)
-    if SUITE_FILES[0] in analysis and 'kcfa' in analysis[SUITE_FILES[0]]:
+    # Gather data first to determine range
+    kcfa_data_points = {} # m -> (mean, ci_lower, ci_upper)
+    dmcfa_lines = defaultdict(list) # d -> list of (m, mean)
+    all_m = set()
+
+    # Data Collection: KCFA
+    if SUITE_FILES[0] in analysis:
         m_to_times = defaultdict(list)
         m_to_stats = defaultdict(list)
         for benchmark in SUITE_FILES:
             if benchmark not in analysis or 'kcfa' not in analysis[benchmark]:
                 continue
-            
-            kcfa_data = analysis[benchmark]['kcfa']
-            m_results = kcfa_data.get('m_trends', {})
-            for m_str, stats in m_results.items():
+            kcfa_res = analysis[benchmark]['kcfa'].get('m_trends', {})
+            for m_str, stats in kcfa_res.items():
                 m = int(m_str)
-                mean = stats.get('mean', 0)
-                m_to_times[m].append(mean)
+                m_to_times[m].append(stats.get('mean', 0))
                 m_to_stats[m].append({'stdev': stats.get('stdev', 0), 'count': stats.get('count', 1)})
         
-        if m_to_times:
-            m_vals = sorted(m_to_times.keys())
-            avg_times = []
-            ci_lower = []
-            ci_upper = []
+        for m in sorted(m_to_times.keys()):
+            times = m_to_times[m]
+            avg = sum(times) / len(times)
             
-            for m in m_vals:
-                times = m_to_times[m]
-                avg = sum(times) / len(times)
-                avg_times.append(avg)
-                
-                # Aggregate variance for CI
-                variances = [s['stdev'] ** 2 for s in m_to_stats[m]]
-                pooled_var = sum(variances) / len(variances) if variances else 0
-                mean_var = sum((t - avg) ** 2 for t in times) / len(times)
-                total_var = pooled_var + mean_var
-                total_stdev = total_var ** 0.5
-                
-                margin = 1.96 * (total_stdev / (len(SUITE_FILES) ** 0.5))
-                ci_lower.append(max(0, avg - margin))
-                ci_upper.append(avg + margin)
+            variances = [s['stdev'] ** 2 for s in m_to_stats[m]]
+            pooled_var = sum(variances) / len(variances) if variances else 0
+            mean_var = sum((t - avg) ** 2 for t in times) / len(times)
+            total_stdev = (pooled_var + mean_var) ** 0.5
+            margin = 1.96 * (total_stdev / (len(SUITE_FILES) ** 0.5))
             
-            ax.plot(m_vals, avg_times, marker='s', label='KCFA',
-                   color=colors['kcfa'], linestyle='-',
-                   linewidth=2.5, markersize=7, alpha=0.7, zorder=1)
-            ax.fill_between(m_vals, ci_lower, ci_upper,
-                           color=colors['kcfa'], alpha=0.06, zorder=1)
-    
-    # Then plot DMCFA and DMCFAE (on top)
+            kcfa_data_points[m] = (avg, max(0, avg - margin), avg + margin)
+            all_m.add(m)
+
+    # Data Collection: DMCFA
+    d_to_lines = defaultdict(list)
     for analysis_key in ['dmcfa', 'dmcfae']:
         for benchmark in SUITE_FILES:
-            if benchmark not in analysis or analysis_key not in analysis[benchmark]:
-                continue
-            
+            if benchmark not in analysis or analysis_key not in analysis[benchmark]: continue
             bench_analysis = analysis[benchmark][analysis_key]
-            if 'd_m_trends' not in bench_analysis:
-                continue
             
             d_values = sorted(bench_analysis.get('d_values', []))
-            
-            # For first benchmark in this analysis, accumulate D values
-            if benchmark == SUITE_FILES[0]:
-                d_to_lines = {d: [] for d in d_values}
-            
-            # Collect m_vals and times for each D
             for d_val in d_values:
                 d_key = str(d_val)
-                if d_key in bench_analysis['d_m_trends']:
+                if 'd_m_trends' in bench_analysis and d_key in bench_analysis['d_m_trends']:
                     m_results = bench_analysis['d_m_trends'][d_key]
                     for m_str, stats in m_results.items():
                         m = int(m_str)
-                        mean = stats.get('mean', 0)
-                        if (m, d_val) not in [x[0:2] for x in d_to_lines.get(d_val, [])]:
-                            d_to_lines[d_val].append((m, mean, []))
+                        d_to_lines[d_val].append((m, stats.get('mean', 0)))
+                        all_m.add(m)
+
+    # Consolidate DMCFA lines
+    final_dmcfa_lines = {}
+    for d_val, points in d_to_lines.items():
+        if not points: continue
+        m_map = defaultdict(list)
+        for m, t in points: m_map[m].append(t)
         
-        # Plot aggregated lines for this analysis
-        for d_val in sorted([d for d in d_to_lines if d_to_lines[d]]):
-            # Aggregate across benchmarks with stats for CI
-            m_to_times = defaultdict(list)
-            m_to_stats = defaultdict(list)
-            for benchmark in SUITE_FILES:
-                if benchmark not in analysis or analysis_key not in analysis[benchmark]:
-                    continue
-                
-                bench_analysis = analysis[benchmark][analysis_key]
-                d_key = str(d_val)
-                if 'd_m_trends' not in bench_analysis or d_key not in bench_analysis['d_m_trends']:
-                    continue
-                
-                m_results = bench_analysis['d_m_trends'][d_key]
-                for m_str, stats in m_results.items():
-                    m = int(m_str)
-                    mean = stats.get('mean', 0)
-                    m_to_times[m].append(mean)
-                    m_to_stats[m].append({'stdev': stats.get('stdev', 0), 'count': stats.get('count', 1)})
-            
-            if m_to_times:
-                m_vals = sorted(m_to_times.keys())
-                avg_times = []
-                ci_lower = []
-                ci_upper = []
-                
-                for m in m_vals:
-                    times = m_to_times[m]
-                    avg = sum(times) / len(times)
-                    avg_times.append(avg)
-                    
-                    # Aggregate variance for CI
-                    variances = [s['stdev'] ** 2 for s in m_to_stats[m]]
-                    pooled_var = sum(variances) / len(variances) if variances else 0
-                    mean_var = sum((t - avg) ** 2 for t in times) / len(times)
-                    total_var = pooled_var + mean_var
-                    total_stdev = total_var ** 0.5
-                    
-                    margin = 1.96 * (total_stdev / (len(SUITE_FILES) ** 0.5))
-                    ci_lower.append(max(0, avg - margin))
-                    ci_upper.append(avg + margin)
-                
-                linestyle = linestyles.get(d_val, '-')
-                label = f'{analysis_key.upper()} D={d_val}'
-                ax.plot(m_vals, avg_times, marker='o', label=label,
-                       color=colors[analysis_key], linestyle=linestyle,
-                       linewidth=2.5, markersize=7, alpha=0.9, zorder=10)
-                ax.fill_between(m_vals, ci_lower, ci_upper,
-                               color=colors[analysis_key], alpha=0.12, zorder=10)
+        line_data = [] # (m, avg)
+        for m in sorted(m_map.keys()):
+            line_data.append((m, sum(m_map[m])/len(m_map[m])))
+        final_dmcfa_lines[d_val] = line_data
+
+    # Setup Plot
+    has_large = any(m > 10 for m in all_m)
+    if has_large:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7), sharey=True, 
+                                      gridspec_kw={'width_ratios': [3, 1], 'wspace': 0.05})
+        setup_broken_xaxis(fig, ax1, ax2)
+        axes = [ax1, ax2]
+        ax1.set_xlim(-0.5, 5.5) # Main part
+        # Outlier part - assume > 10
+        outliers = [m for m in all_m if m > 10]
+        if outliers:
+            ax2.set_xlim(min(outliers)-2, max(outliers)+2)
+    else:
+        fig, ax = plt.subplots(figsize=(13, 7))
+        axes = [ax]
     
-    ax.set_xlabel('M(K) / K (Context Sensitivity)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Average Time (seconds, log scale)', fontsize=12, fontweight='bold')
-    ax.set_yscale('log')
-    ax.set_title('Aggregate: Context Sensitivity Cost Across Analyses (with D Levels and 95% CI, log scale)', 
-                fontsize=14, fontweight='bold')
-    ax.legend(fontsize=9, loc='best', ncol=3)
-    ax.grid(True, alpha=0.3, which='both')
+    # Plotting Function
+    for ax in axes:
+        # Plot KCFA
+        if kcfa_data_points:
+            m_vals = sorted(kcfa_data_points.keys())
+            avgs = [kcfa_data_points[m][0] for m in m_vals]
+            lowers = [kcfa_data_points[m][1] for m in m_vals]
+            uppers = [kcfa_data_points[m][2] for m in m_vals]
+            
+            ax.plot(m_vals, avgs, marker='s', label='KCFA', color=colors['kcfa'], 
+                   linestyle='-', linewidth=2.5, markersize=7, alpha=0.7, zorder=1)
+            ax.fill_between(m_vals, lowers, avgers=uppers, color=colors['kcfa'], alpha=0.06, zorder=1) # Note: argument name fix needed 
+
+        # Plot DMCFA/E
+        for d_val in sorted(final_dmcfa_lines.keys()):
+            line = final_dmcfa_lines[d_val]
+            ms, ts = zip(*line)
+            ax.plot(ms, ts, 'o-', label=f"D={d_val}", 
+                   color=D_COLORS.get(str(d_val), 'gray'), linewidth=2)
+
+    # Fix labels etc
+    target_ax = axes[0]
+    target_ax.set_yscale('log')
+    # If broken, ax2 also needs log scale (shared Y handles it? Yes)
+    
+    target_ax.set_ylabel('Average Time (seconds, log scale)', fontsize=12, fontweight='bold')
+    if len(axes) > 1:
+        fig.text(0.5, 0.04, 'M(K) / K (Context Sensitivity)', ha='center', fontsize=12, fontweight='bold')
+    else:
+        target_ax.set_xlabel('M(K) / K (Context Sensitivity)', fontsize=12, fontweight='bold')
+
+    plt.suptitle('Aggregate: Context Sensitivity Cost (with D Levels)', fontsize=14, fontweight='bold', y=0.95)
+    
+    # Legend - gather handles from first axis
+    h, l = axes[0].get_legend_handles_labels()
+    # De-duplicate legacy if needed, but dict keys are unique here usually?
+    # Actually we plot multiple times (once per axis). Just take one set.
+    by_label = dict(zip(l, h))
+    if by_label:
+        axes[0].legend(by_label.values(), by_label.keys(), fontsize=9, loc='best', ncol=3)
     
     output_file = EXPORT_DIR / "aggregate_mk_by_d_comparison.png"
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -546,10 +557,28 @@ def plot_aggregate_d_cost():
     """Plot D cost across all benchmarks for each analysis with confidence intervals."""
     analysis = load_json_analysis()
     
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    # Pre-scan data to check for outliers
+    all_d = set()
+    for analysis_key in DMCFA_ANALYSES:
+        for benchmark in SUITE_FILES:
+            if benchmark in analysis and analysis_key in analysis[benchmark]:
+                d_trends = analysis[benchmark][analysis_key].get('d_trends', {})
+                for d_str in d_trends: all_d.add(int(d_str))
     
+    has_large = any(d > 10 for d in all_d)
+    
+    if has_large:
+        fig, axes_flat = plt.subplots(1, 4, figsize=(16, 6), 
+                                     gridspec_kw={'width_ratios': [3, 1, 3, 1]})
+        # Group 0,1 -> Analysis 1. Group 2,3 -> Analysis 2
+        ax_groups = [(axes_flat[0], axes_flat[1]), (axes_flat[2], axes_flat[3])]
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        ax_groups = [(axes[0],), (axes[1],)]
+
     for idx, analysis_key in enumerate(DMCFA_ANALYSES):
-        ax = axes[idx]
+        current_axes = ax_groups[idx]
+        is_broken = len(current_axes) > 1
         
         # Collect D trends for all benchmarks
         bench_data = defaultdict(dict)
@@ -593,17 +622,50 @@ def plot_aggregate_d_cost():
             ci_lower.append(max(0, avg - margin))
             ci_upper.append(avg + margin)
         
-        ax.plot(d_vals, avg_by_d,
-               marker='o', linewidth=2.5, markersize=10, color='#2E86AB', alpha=0.85)
-        ax.fill_between(d_vals, ci_lower, ci_upper, color='#2E86AB', alpha=0.15)
+        # Plot on all axes in group
+        for ax in current_axes:
+            ax.plot(d_vals, avg_by_d,
+                   marker='o', linewidth=2.5, markersize=10, color='#2E86AB', alpha=0.85)
+            ax.fill_between(d_vals, ci_lower, ci_upper, color='#2E86AB', alpha=0.15)
         
-        ax.set_xlabel('D (Demand Level)', fontsize=11, fontweight='bold')
-        ax.set_ylabel('Average Time (seconds)', fontsize=11, fontweight='bold')
-        ax.set_title(f'{analysis_key.upper()}: Average D Cost Across Suite (with 95% CI)', 
+        target_ax = current_axes[0]
+        
+        if is_broken:
+            ax1, ax2 = current_axes
+            setup_broken_xaxis(fig, ax1, ax2)
+            ax1.set_xlim(-0.5, 5.5)
+            outliers = [d for d in d_vals if d > 10]
+            if outliers:
+                ax2.set_xlim(min(outliers)-2, max(outliers)+2)
+                # ax2 seems to share Y? NOT AUTOMATICALLY with subplots(1,4).
+                # Need to share Y manually or plotting limits manually.
+                # Let's share Y
+                ax2.sharey(ax1)
+                ax2.tick_params(labelleft=False)
+
+        target_ax.set_ylabel('Average Time (seconds)', fontsize=11, fontweight='bold')
+        
+        # Title mostly centered
+        if is_broken:
+             # Hacky title placement
+             target_ax.set_title(f'{analysis_key.upper()}: Average D Cost', 
+                    fontsize=12, fontweight='bold', loc='left')
+        else:
+             target_ax.set_title(f'{analysis_key.upper()}: Average D Cost Across Suite (with 95% CI)', 
                     fontsize=12, fontweight='bold')
-        ax.grid(True, alpha=0.3)
-        ax.set_xticks(range(0, 6))
-    
+             target_ax.set_xticks(range(0, max(d_vals)+1)) # Better than fixed 6
+
+        target_ax.grid(True, alpha=0.3)
+        if len(current_axes) > 1: current_axes[1].grid(True, alpha=0.3)
+        
+        # Common X label
+        if is_broken:
+             # x label on ax1 is misleading if it covers whole thing
+             # put text centered below
+             pass 
+        else:
+             target_ax.set_xlabel('D (Demand Level)', fontsize=11, fontweight='bold')
+
     plt.tight_layout()
     output_file = EXPORT_DIR / "aggregate_d_cost.png"
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -616,12 +678,52 @@ def plot_aggregate_mk_cost_for_set(benchmarks: List[str], set_name: str):
     """Plot M(K)/K cost across specified benchmarks with confidence intervals."""
     analysis = load_json_analysis()
     
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    # Pre-scan for M(K) range
+    all_m = set()
+    for analysis_key in DMCFA_ANALYSES:
+        for benchmark in benchmarks:
+            if benchmark in analysis and analysis_key in analysis[benchmark]:
+                m_trends = analysis[benchmark][analysis_key].get('m_trends', {})
+                for m_str in m_trends: all_m.add(int(m_str))
     
-    # DMCFA analyses on left, KCFA on right
-    ax_dmcfa = axes[0]
-    ax_kcfa = axes[1]
+    has_large_m = any(m > 10 for m in all_m)
     
+    if has_large_m:
+        fig = plt.figure(figsize=(16, 6))
+        gs = fig.add_gridspec(1, 3, width_ratios=[3, 1, 3], wspace=0.1)
+        ax_dmcfa_1 = fig.add_subplot(gs[0])
+        ax_dmcfa_2 = fig.add_subplot(gs[1])
+        ax_kcfa = fig.add_subplot(gs[2])
+        
+        setup_broken_xaxis(fig, ax_dmcfa_1, ax_dmcfa_2)
+        ax_dmcfa_1.set_xlim(-0.5, 5.5)
+        outliers = [m for m in all_m if m > 10]
+        if outliers:
+            ax_dmcfa_2.set_xlim(min(outliers)-2, max(outliers)+2)
+        
+        dmcfa_axes = [ax_dmcfa_1, ax_dmcfa_2]
+        
+        # Adjust spacing between DMCFA group and KCFA
+        # gridspec wspace handles between 1 and 2 roughly
+        # but 1 and 2 are close (broken), 2 and 3 should be far?
+        # wspace applies to all. Maybe use nested gridspec?
+        # Simpler: 4 cols. [3, 1, 0.5 (spacer), 4]
+        # Or just accept default.
+        # Let's check spacing manually by adjusting wspace for broken
+        # But setup_broken_xaxis expects them to be close?
+        # It relies on visual line.
+        
+        # Simpler manual approach with 1 row, 3 cols, sharey=False (between dmcfa and kcfa?)
+        # DMCFA pair shares Y.
+        ax_dmcfa_2.sharey(ax_dmcfa_1)
+        ax_dmcfa_2.tick_params(labelleft=False)
+        
+    else:
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+        ax_dmcfa = axes[0]
+        ax_kcfa = axes[1]
+        dmcfa_axes = [ax_dmcfa]
+
     colors = {'dmcfa': '#2E86AB', 'dmcfae': '#A23B72'}
     
     # DMCFA M(K) comparison with CIs
@@ -666,19 +768,31 @@ def plot_aggregate_mk_cost_for_set(benchmarks: List[str], set_name: str):
             ci_lower.append(max(0, avg - margin))
             ci_upper.append(avg + margin)
         
-        ax_dmcfa.plot(m_vals, avg_by_m,
+        # Plot on all DMCFA axes
+        for ax in dmcfa_axes:
+            ax.plot(m_vals, avg_by_m,
                      marker='o', linewidth=2.5, markersize=10, 
                      label=analysis_key.upper(),
                      color=colors[analysis_key], alpha=0.85)
-        ax_dmcfa.fill_between(m_vals, ci_lower, ci_upper,
+            ax.fill_between(m_vals, ci_lower, ci_upper,
                              color=colors[analysis_key], alpha=0.15)
     
-    ax_dmcfa.set_xlabel('M(K) (Context Sensitivity)', fontsize=11, fontweight='bold')
-    ax_dmcfa.set_ylabel('Average Time (seconds)', fontsize=11, fontweight='bold')
-    ax_dmcfa.set_title('DMCFA Analyses: Average M(K) Cost Across Suite (with 95% CI)', 
+    target_ax = dmcfa_axes[0]
+    target_ax.set_ylabel('Average Time (seconds)', fontsize=11, fontweight='bold')
+    
+    # Title
+    if len(dmcfa_axes) > 1:
+        target_ax.set_title('DMCFA Analyses: Average M(K) Cost', fontsize=12, fontweight='bold', loc='left')
+    else:
+        target_ax.set_title('DMCFA Analyses: Average M(K) Cost Across Suite (with 95% CI)', 
                       fontsize=12, fontweight='bold')
-    ax_dmcfa.legend(fontsize=11)
-    ax_dmcfa.grid(True, alpha=0.3)
+        
+    target_ax.grid(True, alpha=0.3)
+    if len(dmcfa_axes) > 1: dmcfa_axes[1].grid(True, alpha=0.3)
+    target_ax.legend(fontsize=11)
+    
+    # Common X label for DMCFA
+    target_ax.set_xlabel('M(K) (Context Sensitivity)', fontsize=11, fontweight='bold')
     
     # KCFA K comparison with CIs
     if 'kcfa' in analysis.get(SUITE_FILES[0], {}):

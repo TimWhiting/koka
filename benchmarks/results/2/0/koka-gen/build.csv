@@ -1,0 +1,6 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example1,2,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example2,2,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example3,2,0,1,346,28,1.0,1.0,1.0,1.0092307692307692,0.012602,0.012695,0.01227
+dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example4,2,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example5,2,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout

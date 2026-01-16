@@ -9,237 +9,47 @@ and those where it provides no benefit (precision-limited).
 ==========================================================================================
 BENCHMARK: BASIC
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             5 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             5 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             5 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: NONDET
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             4 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             4 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             3 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         1 examples
-
-Precision-Limited Examples (high cost, no precision gain):
-  analysis/benchmarks/suite/nondet/nondet-nested precision=0.00 [2.14x cost]
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: NESTED
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):            13 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):            13 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):            13 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: MULTI-EFFECT
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             3 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             3 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             3 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: RECURSION
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             9 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             9 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             9 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: STATE-HANDLER
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             1 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             1 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             0 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         1 examples
-
-Precision-Limited Examples (high cost, no precision gain):
-  analysis/benchmarks/suite/state-handler/state-countdown precision=0.00 [4.26x cost]
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: COMPLEX-FLOW
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             7 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             7 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             7 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
+Error: 'Time'
+Error: 'Time'
 
 ==========================================================================================
 BENCHMARK: NESTED-NONDET
 ==========================================================================================
-
-DMCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             8 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         0 examples
-
-DMCFAE
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             7 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         1 examples
-
-Precision-Limited Examples (high cost, no precision gain):
-  analysis/benchmarks/suite/nested-nondet/nondet-three-levels precision=0.00 [7.23x cost]
-
-KCFA
-------------------------------------------------------------------------------------------
-
-Precision Categories:
-  Perfect (100%):             4 examples
-  Improvable (gains):         0 examples
-  Limited (no gains):         4 examples
-
-Precision-Limited Examples (high cost, no precision gain):
-  analysis/benchmarks/suite/nested-nondet/nondet-both-contexts precision=0.00 [3.67x cost]
-  analysis/benchmarks/suite/nested-nondet/nondet-three-levels precision=0.00 [3.40x cost]
-  analysis/benchmarks/suite/nested-nondet/nondet-nested-simple precision=0.00 [3.33x cost]
+Error: 'Time'
+Error: 'Time'

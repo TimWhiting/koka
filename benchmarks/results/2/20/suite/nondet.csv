@@ -1,0 +1,10 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/suite/nondet/nondet-context,2,20,1,107,9,1.0,1.0,1.0,1.0,0.002301,0.002633,0.002509
+dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,2,20,1,84,7,1.0,1.0,1.0,1.0,0.001719,0.001452,0.001659
+dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,2,20,1,217,25,1.0,1.0,1.0,1.0,0.006464,0.006518,0.006414
+dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,2,20,1,92,7,1.0,1.0,1.0,1.0,0.001972,0.002121,0.00196
+
+dmcfae,analysis/benchmarks/suite/nondet/nondet-context,2,20,1,107,9,1.0,1.0,1.0,1.0,0.001957,0.001577,0.002103
+dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,2,20,1,84,7,1.0,1.0,1.0,1.0,0.001498,0.00108,0.001287
+dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,2,20,1,217,25,1.0,1.0,1.0,1.0,0.004891,0.004675,0.004914
+dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,2,20,1,92,7,1.0,1.0,1.0,1.0,0.001226,0.001415,0.001459
