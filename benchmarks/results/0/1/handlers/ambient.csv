@@ -1,0 +1,4 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfae,analysis/benchmarks/handlers/ambient/example0,0,1,1,157,12,1.0,1.0,1.0,1.0,0.002372,0.002372,0.002099
+
+dmcfa,analysis/benchmarks/handlers/ambient/example0,0,1,1,157,12,1.0,1.0,1.0,1.0,0.003448,0.0026,0.002773

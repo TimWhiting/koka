@@ -2,291 +2,314 @@
 
 ## Executive Summary
 
-Total examples analyzed: 2999
-Total benchmarks: 8
+Total examples analyzed: 2413
+Total benchmarks: 14
 Analysis types: 3 (DMCFA, DMCFA-Exp, KCFA)
 
 ## Benchmark Details
 
-### Basic
+### Handlers/Ambient
+
+**DMCFA-Exp**
+
+- Examples: 19
+- Evaluations (NEval):
+  - Average: 155.7
+  - Range: 133 - 157
+- Applications (NApply):
+  - Average: 12.4
+  - Range: 12 - 20
+- Precision: 94.7%
+
+### Handlers/Nim
+
+**DMCFA-Exp**
+
+- Examples: 133
+- Evaluations (NEval):
+  - Average: 448.7
+  - Range: 127 - 1113
+- Applications (NApply):
+  - Average: 38.7
+  - Range: 12 - 239
+- Precision: 36.1%
+
+### Handlers/Scoped
+
+**DMCFA-Exp**
+
+- Examples: 95
+- Evaluations (NEval):
+  - Average: 786.7
+  - Range: 0 - 3324
+- Applications (NApply):
+  - Average: 503.1
+  - Range: 0 - 3093
+- Precision: 22.9%
+
+### Handlers/Unix
 
 **DMCFA**
 
-- Examples: 100
+- Examples: 95
 - Evaluations (NEval):
-  - Average: 100.6
-  - Range: 75 - 120
+  - Average: 315.2
+  - Range: 124 - 1902
 - Applications (NApply):
-  - Average: 0.4
-  - Range: 0 - 1
+  - Average: 116.5
+  - Range: 26 - 1375
+- Precision: 55.8%
+
+**DMCFA-Exp**
+
+- Examples: 95
+- Evaluations (NEval):
+  - Average: 316.3
+  - Range: 124 - 1924
+- Applications (NApply):
+  - Average: 116.4
+  - Range: 26 - 1367
+- Precision: 55.8%
+
+### Handlers/Vec
+
+**DMCFA**
+
+- Examples: 19
+- Evaluations (NEval):
+  - Average: 229.0
+  - Range: 229 - 229
+- Applications (NApply):
+  - Average: 33.0
+  - Range: 33 - 33
 - Precision: 100.0%
 
 **DMCFA-Exp**
 
-- Examples: 100
+- Examples: 19
 - Evaluations (NEval):
-  - Average: 100.6
-  - Range: 75 - 120
+  - Average: 229.0
+  - Range: 229 - 229
 - Applications (NApply):
-  - Average: 0.4
-  - Range: 0 - 1
+  - Average: 33.0
+  - Range: 33 - 33
 - Precision: 100.0%
 
-**KCFA**
-
-- Examples: 30
-- Evaluations (NEval):
-  - Average: 117.0
-  - Range: 87 - 140
-- Applications (NApply):
-  - Average: 1.2
-  - Range: 0 - 2
-- Precision: 100.0%
-
-### Nondet
+### Handlers/Yield
 
 **DMCFA**
 
-- Examples: 80
+- Examples: 19
 - Evaluations (NEval):
-  - Average: 162.5
-  - Range: 111 - 293
+  - Average: 162.1
+  - Range: 103 - 191
 - Applications (NApply):
-  - Average: 1.8
-  - Range: 0 - 6
-- Precision: 85.0%
-
-**DMCFA-Exp**
-
-- Examples: 80
-- Evaluations (NEval):
-  - Average: 162.5
-  - Range: 111 - 293
-- Applications (NApply):
-  - Average: 1.8
-  - Range: 0 - 6
-- Precision: 85.0%
-
-**KCFA**
-
-- Examples: 24
-- Evaluations (NEval):
-  - Average: 181.0
-  - Range: 131 - 347
-- Applications (NApply):
-  - Average: 3.5
-  - Range: 2 - 6
-- Precision: 50.0%
-
-### Nested
-
-**DMCFA**
-
-- Examples: 260
-- Evaluations (NEval):
-  - Average: 206.0
-  - Range: 138 - 283
-- Applications (NApply):
-  - Average: 2.4
-  - Range: 0 - 4
+  - Average: 13.8
+  - Range: 8 - 18
 - Precision: 100.0%
 
 **DMCFA-Exp**
 
-- Examples: 260
+- Examples: 19
 - Evaluations (NEval):
-  - Average: 206.0
-  - Range: 138 - 283
+  - Average: 162.4
+  - Range: 103 - 191
 - Applications (NApply):
-  - Average: 2.4
-  - Range: 0 - 4
+  - Average: 13.8
+  - Range: 8 - 18
 - Precision: 100.0%
 
-**KCFA**
-
-- Examples: 78
-- Evaluations (NEval):
-  - Average: 240.7
-  - Range: 159 - 332
-- Applications (NApply):
-  - Average: 4.3
-  - Range: 1 - 7
-- Precision: 100.0%
-
-### Multi Effect
+### Suite/Basic
 
 **DMCFA**
 
-- Examples: 60
+- Examples: 95
 - Evaluations (NEval):
-  - Average: 336.4
-  - Range: 316 - 625
+  - Average: 73.2
+  - Range: 56 - 87
 - Applications (NApply):
-  - Average: 8.8
-  - Range: 5 - 80
-- Precision: 85.0%
+  - Average: 3.8
+  - Range: 1 - 5
+- Precision: 91.6%
 
 **DMCFA-Exp**
 
-- Examples: 60
+- Examples: 95
 - Evaluations (NEval):
-  - Average: 336.4
-  - Range: 316 - 625
+  - Average: 73.2
+  - Range: 56 - 87
 - Applications (NApply):
-  - Average: 8.8
-  - Range: 5 - 80
-- Precision: 85.0%
+  - Average: 3.8
+  - Range: 1 - 5
+- Precision: 91.6%
 
-**KCFA**
-
-- Examples: 18
-- Evaluations (NEval):
-  - Average: 398.9
-  - Range: 370 - 482
-- Applications (NApply):
-  - Average: 10.3
-  - Range: 8 - 13
-- Precision: 33.3%
-
-### Recursion
+### Suite/Complex Flow
 
 **DMCFA**
 
-- Examples: 180
+- Examples: 133
 - Evaluations (NEval):
-  - Average: 166.6
-  - Range: 137 - 209
+  - Average: 136.5
+  - Range: 61 - 467
 - Applications (NApply):
-  - Average: 1.8
-  - Range: 1 - 6
-- Precision: 88.9%
+  - Average: 22.0
+  - Range: 4 - 142
+- Precision: 81.2%
 
 **DMCFA-Exp**
 
-- Examples: 180
+- Examples: 133
 - Evaluations (NEval):
-  - Average: 166.7
-  - Range: 137 - 209
+  - Average: 136.7
+  - Range: 61 - 479
 - Applications (NApply):
-  - Average: 1.8
-  - Range: 1 - 6
-- Precision: 88.9%
+  - Average: 23.5
+  - Range: 4 - 174
+- Precision: 81.2%
 
-**KCFA**
-
-- Examples: 54
-- Evaluations (NEval):
-  - Average: 189.1
-  - Range: 162 - 268
-- Applications (NApply):
-  - Average: 3.3
-  - Range: 2 - 7
-- Precision: 55.6%
-
-### State Handler
+### Suite/Multi Effect
 
 **DMCFA**
 
-- Examples: 20
+- Examples: 57
 - Evaluations (NEval):
-  - Average: 381.8
-  - Range: 261 - 515
+  - Average: 235.3
+  - Range: 215 - 251
+- Applications (NApply):
+  - Average: 20.6
+  - Range: 18 - 24
+- Precision: 77.2%
+
+**DMCFA-Exp**
+
+- Examples: 57
+- Evaluations (NEval):
+  - Average: 235.3
+  - Range: 215 - 251
+- Applications (NApply):
+  - Average: 20.6
+  - Range: 18 - 24
+- Precision: 77.2%
+
+### Suite/Nested
+
+**DMCFA**
+
+- Examples: 247
+- Evaluations (NEval):
+  - Average: 151.0
+  - Range: 100 - 208
+- Applications (NApply):
+  - Average: 10.7
+  - Range: 6 - 16
+- Precision: 96.0%
+
+**DMCFA-Exp**
+
+- Examples: 247
+- Evaluations (NEval):
+  - Average: 151.0
+  - Range: 100 - 208
+- Applications (NApply):
+  - Average: 10.7
+  - Range: 6 - 16
+- Precision: 96.0%
+
+### Suite/Nested Nondet
+
+**DMCFA**
+
+- Examples: 152
+- Evaluations (NEval):
+  - Average: 256.2
+  - Range: 94 - 654
+- Applications (NApply):
+  - Average: 38.7
+  - Range: 2 - 120
+- Precision: 49.3%
+
+**DMCFA-Exp**
+
+- Examples: 152
+- Evaluations (NEval):
+  - Average: 256.4
+  - Range: 94 - 654
+- Applications (NApply):
+  - Average: 38.9
+  - Range: 2 - 124
+- Precision: 49.3%
+
+### Suite/Nondet
+
+**DMCFA**
+
+- Examples: 76
+- Evaluations (NEval):
+  - Average: 117.2
+  - Range: 83 - 217
+- Applications (NApply):
+  - Average: 11.3
+  - Range: 7 - 25
+- Precision: 67.1%
+
+**DMCFA-Exp**
+
+- Examples: 76
+- Evaluations (NEval):
+  - Average: 117.2
+  - Range: 83 - 217
+- Applications (NApply):
+  - Average: 11.3
+  - Range: 7 - 25
+- Precision: 67.1%
+
+### Suite/Recursion
+
+**DMCFA**
+
+- Examples: 171
+- Evaluations (NEval):
+  - Average: 120.8
+  - Range: 96 - 154
 - Applications (NApply):
   - Average: 8.2
-  - Range: 5 - 13
-- Precision: 60.0%
+  - Range: 5 - 19
+- Precision: 69.6%
 
 **DMCFA-Exp**
 
-- Examples: 20
+- Examples: 171
 - Evaluations (NEval):
-  - Average: 385.2
-  - Range: 280 - 520
+  - Average: 120.1
+  - Range: 96 - 154
 - Applications (NApply):
-  - Average: 8.7
-  - Range: 7 - 13
-- Precision: 60.0%
+  - Average: 8.1
+  - Range: 5 - 20
+- Precision: 74.9%
 
-**KCFA**
-
-- Examples: 6
-- Evaluations (NEval):
-  - Average: 306.0
-  - Range: 306 - 306
-- Applications (NApply):
-  - Average: 11.0
-  - Range: 11 - 11
-- Precision: 0.0%
-
-### Complex Flow
+### Suite/State Handler
 
 **DMCFA**
 
-- Examples: 140
+- Examples: 19
 - Evaluations (NEval):
-  - Average: 193.7
-  - Range: 80 - 667
+  - Average: 273.4
+  - Range: 170 - 330
 - Applications (NApply):
-  - Average: 15.1
-  - Range: 0 - 104
-- Precision: 89.3%
+  - Average: 33.3
+  - Range: 22 - 51
+- Precision: 42.1%
 
 **DMCFA-Exp**
 
-- Examples: 140
+- Examples: 19
 - Evaluations (NEval):
-  - Average: 194.8
-  - Range: 80 - 699
+  - Average: 273.5
+  - Range: 170 - 325
 - Applications (NApply):
-  - Average: 15.4
-  - Range: 0 - 104
-- Precision: 89.3%
-
-**KCFA**
-
-- Examples: 42
-- Evaluations (NEval):
-  - Average: 208.6
-  - Range: 94 - 545
-- Applications (NApply):
-  - Average: 7.4
-  - Range: 1 - 34
-- Precision: 71.4%
-
-### Nested Nondet
-
-**DMCFA**
-
-- Examples: 160
-- Evaluations (NEval):
-  - Average: 413.3
-  - Range: 127 - 1636
-- Applications (NApply):
-  - Average: 20.6
-  - Range: 0 - 488
-- Precision: 58.8%
-
-**DMCFA-Exp**
-
-- Examples: 160
-- Evaluations (NEval):
-  - Average: 413.5
-  - Range: 127 - 1636
-- Applications (NApply):
-  - Average: 20.6
-  - Range: 0 - 488
-- Precision: 58.8%
-
-**KCFA**
-
-- Examples: 48
-- Evaluations (NEval):
-  - Average: 353.3
-  - Range: 147 - 565
-- Applications (NApply):
-  - Average: 12.0
-  - Range: 0 - 28
-- Precision: 25.0%
+  - Average: 32.9
+  - Range: 23 - 49
+- Precision: 47.4%
 
 ## Performance Analysis
 
@@ -303,12 +326,12 @@ Lower precision indicates some losses or approximations in the analysis.
 
 Benchmarks with less than 100% precision:
 
-- **complex-flow**: 89.3% (140 examples)
-- **multi-effect**: 85.0% (60 examples)
-- **nested-nondet**: 58.8% (160 examples)
-- **nim**: 41.4% (140 examples)
-- **nondet**: 85.0% (80 examples)
-- **recursion**: 88.9% (180 examples)
-- **state-handler**: 60.0% (20 examples)
-- **unix**: 0.0% (100 examples)
-- **vec**: 0.0% (20 examples)
+- **handlers/unix**: 55.8% (95 examples)
+- **suite/basic**: 91.6% (95 examples)
+- **suite/complex-flow**: 81.2% (133 examples)
+- **suite/multi-effect**: 77.2% (57 examples)
+- **suite/nested**: 96.0% (247 examples)
+- **suite/nested-nondet**: 49.3% (152 examples)
+- **suite/nondet**: 67.1% (76 examples)
+- **suite/recursion**: 69.6% (171 examples)
+- **suite/state-handler**: 42.1% (19 examples)

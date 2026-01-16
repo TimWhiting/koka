@@ -1,0 +1,12 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/handlers/unix/example1,2,3,1,162,37,1.0,1.0,1.0,1.0,0.008159,0.008159,0.00813
+dmcfa,analysis/benchmarks/handlers/unix/example1_2,2,3,1,170,37,1.0,1.0,1.0,1.0,0.008452,0.007842,0.008553
+dmcfa,analysis/benchmarks/handlers/unix/example2,2,3,1,180,27,1.0,1.0,1.0,1.0,0.008336,0.00816,0.007824
+dmcfa,analysis/benchmarks/handlers/unix/example3,2,3,1,266,53,1.0,1.0,1.0,1.0,0.015551,0.016035,0.015213
+dmcfa,analysis/benchmarks/handlers/unix/example5,2,3,0,863,621,1.0266512166859791,1.1497584541062802,1.0887096774193548,1.0394736842105263,0.345128,0.346873,0.346542
+
+dmcfae,analysis/benchmarks/handlers/unix/example1,2,3,1,162,37,1.0,1.0,1.0,1.0,0.006361,0.006252,0.005721
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,2,3,1,170,37,1.0,1.0,1.0,1.0,0.005866,0.005706,0.006064
+dmcfae,analysis/benchmarks/handlers/unix/example2,2,3,1,180,27,1.0,1.0,1.0,1.0,0.006046,0.005893,0.005597
+dmcfae,analysis/benchmarks/handlers/unix/example3,2,3,1,266,53,1.0,1.0,1.0,1.0,0.013369,0.013004,0.012276
+dmcfae,analysis/benchmarks/handlers/unix/example5,2,3,0,872,621,1.026376146788991,1.1497584541062802,1.0887096774193548,1.050660792951542,0.415777,0.413903,0.416774

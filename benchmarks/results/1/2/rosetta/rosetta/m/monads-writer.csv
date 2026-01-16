@@ -1,0 +1,4 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,1,2,0,887,63,1.0191657271702368,1.0,1.0,1.0923753665689149,0.048703,0.048634,0.047511
+
+dmcfae,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,1,2,0,887,63,1.0191657271702368,1.0,1.0,1.1331877729257642,0.037281,0.036817,0.035895
