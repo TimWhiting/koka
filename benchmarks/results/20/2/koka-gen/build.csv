@@ -4,3 +4,9 @@ dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example2,20,2,timeout,0,0,0,
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example3,20,2,1,354,28,1.0,1.0,1.0,1.0,0.019225,0.020164,0.019394
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example4,20,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example5,20,2,1,500,54,1.0,1.0,1.0,1.0,0.030139,0.030242,0.031671
+
+dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example1,20,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example2,20,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example3,20,2,1,354,28,1.0,1.0,1.0,1.0,0.014685,0.014863,0.014333
+dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example4,20,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example5,20,2,1,500,54,1.0,1.0,1.0,1.0,0.022723,0.022783,0.022492
