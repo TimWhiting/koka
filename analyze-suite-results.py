@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 from statistics import mean, stdev, median
-from typing import Dict, List, Tuple, Tuple
+from typing import Dict, List, Tuple
 
 # Configuration
 RESULTS_BASE = Path("benchmarks/results")
