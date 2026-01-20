@@ -5,6 +5,11 @@ module Core.FlowAnalysis.Full.KCFA.Primitives where
 import Data.Maybe(fromJust)
 import Debug.Trace(trace)
 import qualified Data.Map.Strict as M
+import qualified Data.Bits as Bits
+import Data.Bits ((.&.), (.|.), xor)
+import Data.Int (Int32, Int64)
+import Data.Word (Word64, Word32)
+import GHC.Float (castWord64ToDouble, castDoubleToWord64)
 import Common.NamePrim
 import Common.Failure
 import Compile.Module
@@ -16,7 +21,7 @@ import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core as C
 import Type.Type (splitFunScheme, Type (TCon), TypeCon (..), Effect, extractOrderedEffect, isEffectEmpty, effectEmpty, typeInt)
-import Data.List (findIndex, isPrefixOf, intercalate)
+import Data.List (findIndex, isPrefixOf, intercalate, isInfixOf)
 import Type.Pretty (ppType)
 import Lib.PPrint (pretty)
 import Data.Either (isLeft)
@@ -29,7 +34,7 @@ import Common.Name
       qualifier )
 import Core.FlowAnalysis.Monad (FixAR)
 import Common.File
-import Data.Char (toUpper)
+import Data.Char (toUpper, toLower)
 import Numeric (showFFloat, showEFloat, readHex)
 
 trueCon ::  AChange
@@ -136,18 +141,90 @@ doPrimitive nm achanges ctx u store extendStore = do
     opCmpInt (>) achanges
   else if nm == nameIntGe || nm == nameInt32Ge then
     opCmpInt (>=) achanges
-  else if nm == nameIntAdd then
+  else if nm == nameIntAdd || nm == nameInt32Add then
     intOp (+) achanges
-  else if nm == nameIntMul then
+  else if nm == nameIntMul || nm == nameInt32Mul then
     intOp (*) achanges
-  else if nm == nameIntSub then
+  else if nm == nameIntSub || nm == nameInt32Sub then
     intOp (-) achanges
-  else if nm == nameIntDiv then
+  else if nm == nameIntDiv || nm == nameInt32Div then
     intOp div achanges
+  else if nm == nameInt32Shr then
+    intOp (\i s -> toInteger (fromIntegral i `Bits.shiftR` fromIntegral s :: Word32)) achanges
+  else if nm == nameInt32Sar then
+    intOp (\i s -> toInteger (fromIntegral i `Bits.shiftR` fromIntegral s :: Int32)) achanges
+  else if nm == nameInt32Shl then
+    intOp (\i s -> toInteger (fromIntegral i `Bits.shiftL` fromIntegral s :: Word32)) achanges
+  else if nm == nameInt32And then
+    intOp (\i1 i2 -> toInteger (fromIntegral i1 .&. fromIntegral i2 :: Word32)) achanges
+  else if nm == nameInt32Or then
+    intOp (\i1 i2 -> toInteger (fromIntegral i1 .|. fromIntegral i2 :: Word32)) achanges
+  else if nm == nameInt32Xor then
+    intOp (\i1 i2 -> toInteger (xor (fromIntegral i1) (fromIntegral i2) :: Word32)) achanges
+  else if nm == nameInt32RotL then
+    intOp (\i s -> toInteger (Bits.rotateL (fromIntegral i :: Word32) (fromIntegral s))) achanges
+  else if nm == nameInt32RotR then
+    intOp (\i s -> toInteger (Bits.rotateR (fromIntegral i :: Word32) (fromIntegral s))) achanges
+  else if nm == nameInt32Clz || nm == nameInt32Ctz || nm == nameInt32PopCount then
+    case achanges of
+      [AChangeLit (LiteralChangeIntX (LChangeSingle (e1, i1)))] ->
+        let f = if nm == nameInt32Clz then Bits.countLeadingZeros 
+                else if nm == nameInt32Ctz then Bits.countTrailingZeros
+                else Bits.popCount
+        in return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e1, toInteger (f (fromIntegral i1 :: Word32)))))
+      [AChangeLit (LiteralChangeIntX _)] -> return $ AChangeLit (LiteralChangeIntX LChangeTop)
+      _ -> doBottom
+  else if nm == nameInt64And then
+    intOp (\i1 i2 -> toInteger (fromIntegral i1 .&. fromIntegral i2 :: Word64)) achanges
+  else if nm == nameInt64Or then
+    intOp (\i1 i2 -> toInteger (fromIntegral i1 .|. fromIntegral i2 :: Word64)) achanges
+  else if nm == nameInt64Xor then
+    intOp (\i1 i2 -> toInteger (xor (fromIntegral i1) (fromIntegral i2) :: Word64)) achanges
+  else if nm == nameInt64Shr then
+    intOp (\i s -> toInteger (fromIntegral i `Bits.shiftR` fromIntegral s :: Word64)) achanges
+  else if nm == nameInt64Sar then
+    intOp (\i s -> toInteger (fromIntegral i `Bits.shiftR` fromIntegral s :: Int64)) achanges
+  else if nm == nameInt64Shl then
+    intOp (\i s -> toInteger (fromIntegral i `Bits.shiftL` fromIntegral s :: Word64)) achanges
+  else if nm == nameInt64RotL then
+    intOp (\i n -> toInteger (Bits.rotateL (fromIntegral i :: Word64) (fromIntegral n))) achanges
+  else if nm == nameInt64RotR then
+    intOp (\i n -> toInteger (Bits.rotateR (fromIntegral i :: Word64) (fromIntegral n))) achanges
+  else if nm == nameInt64HiLo32 || (nm == nameNumInt64ExternInt64 && length achanges == 2) || (nm == nameNumInt64Int64 && length achanges == 2) then
+    intOp (\hi lo -> (hi `Bits.shiftL` 32) Bits..|. (lo Bits..&. 0xFFFFFFFF)) achanges
+  else if nm == nameInt64Clz || nm == nameInt64Ctz || nm == nameInt64PopCount then
+    case achanges of
+      [AChangeLit (LiteralChangeIntX (LChangeSingle (e1, i1)))] ->
+        let f = if nm == nameInt64Clz then Bits.countLeadingZeros 
+                else if nm == nameInt64Ctz then Bits.countTrailingZeros
+                else Bits.popCount
+        in return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e1, toInteger (f (fromIntegral i1 :: Word64)))))
+      [AChangeLit (LiteralChangeIntX _)] -> return $ AChangeLit (LiteralChangeIntX LChangeTop)
+      _ -> doBottom
+  else if nm == nameNumInt64Int64 || nm == nameNumInt64ExternInt64 then
+    return $ head achanges
   else if nm == nameIntMod then
     intOp mod achanges
   else if nm == nameFloatAdd then
     floatOp (+) achanges
+  else if nm == nameNumFloat64ExternFloat64FromBits then
+    case achanges of
+      [AChangeLit (LiteralChangeIntX (LChangeSingle (e1, i)))] ->
+        return $ AChangeLit (LiteralChangeFloatX (LChangeSingle (e1, castWord64ToDouble (fromIntegral i))))
+      [AChangeLit (LiteralChangeIntX _)] -> return $ AChangeLit (LiteralChangeFloatX LChangeTop)
+      _ -> doBottom
+  else if nm == nameNumFloat64ExternFloat64ToBits then
+    case achanges of
+      [AChangeLit (LiteralChangeFloatX (LChangeSingle (e1, d)))] ->
+        return $ AChangeLit (LiteralChangeIntX (LChangeSingle (e1, toInteger (castDoubleToWord64 d))))
+      [AChangeLit (LiteralChangeFloatX _)] -> return $ AChangeLit (LiteralChangeIntX LChangeTop)
+      _ -> doBottom
+  else if nm == nameNumFloat64Float64 then
+    case achanges of
+      [AChangeLit (LiteralChangeIntX (LChangeSingle (e1, i)))] ->
+        return $ AChangeLit (LiteralChangeFloatX (LChangeSingle (e1, fromInteger i)))
+      [AChangeLit (LiteralChangeIntX _)] -> return $ AChangeLit (LiteralChangeFloatX LChangeTop)
+      _ -> doBottom
   else if nm == nameFloatMul then
     floatOp (*) achanges
   else if nm == nameFloatSub then
@@ -168,7 +245,7 @@ doPrimitive nm achanges ctx u store extendStore = do
     opCmpFloat (>) achanges
   else if nm == nameFloatGe then
     opCmpFloat (>=) achanges
-  else if nm == nameInternalSSizeT || nm == nameCoreIntExternSSizeT || nm == nameNumInt32Int32 then
+  else if nm == nameInternalSSizeT || nm == nameCoreIntExternSSizeT || nm == nameNumInt32Int32 || nm == nameNumInt64Int32 || nm == nameNumInt64UInt32 then
     return $ head achanges
   else if nm == nameNumSRandomFloat64 then
     return $ AChangeLit (LiteralChangeFloatX LChangeTop)
@@ -285,6 +362,15 @@ doPrimitive nm achanges ctx u store extendStore = do
       [AChangeLit (LiteralChangeStringX _)] ->
         return $ AChangeLit (LiteralChangeStringX LChangeTop)
       _ -> doBottom
+  else if nm == nameCoreStringToLower then
+    case achanges of
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] ->
+        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, map toLower s)))
+      [AChangeLit (LiteralChangeStringX _)] ->
+        return $ AChangeLit (LiteralChangeStringX LChangeTop)
+      _ -> doBottom
+  else if nm == nameCoreStringContains then
+    opCmpString (\s1 s2 -> s2 `isInfixOf` s1) achanges
   else if nm == nameCoreTypesExternAppend then
     case achanges of
       [AChangeLit (LiteralChangeStringX (LChangeSingle (_, s1))), AChangeLit (LiteralChangeStringX (LChangeSingle (u2, s2)))] ->
