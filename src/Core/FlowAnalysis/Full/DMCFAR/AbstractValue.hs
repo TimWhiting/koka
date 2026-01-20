@@ -24,7 +24,7 @@ import Common.Failure (assertion, HasCallStack)
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice, FixT, doBottom, each)
 import qualified Core.FlowAnalysis.FixpointMonad as FM
-import Core.CoreVar (bv)
+import Core.CoreVar (bv, fv)
 import Data.Foldable (find)
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
@@ -197,13 +197,13 @@ nextLetFrame
           gidx = groupIdx + 1
           idx = 0
           defs = defsOf (dgs !! gidx)
-          newEnv = foldl (\acc x -> extendEnv acc (contextId parent) (defTName x)) env defs in
+          newEnv = foldl (\acc x -> if defTName x `S.member` S.unions (map (fv . defExpr) defs) then extendEnv acc (contextId parent) (defTName x) else acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
 
 extendEnv :: VEnv -> ExprContextId -> TName -> VEnv
 extendEnv (ctx, m) id nm =
-  (ctx, M.insert nm id m)  
+  (ctx, M.insert nm id m)
 
 data Handler =
   Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
