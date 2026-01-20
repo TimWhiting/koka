@@ -1,0 +1,4 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/koka-gen/interp/interp,3,1,0,555,27,1.0792792792792794,1.2222222222222223,1.0,1.0739299610894941,0.026932,0.026284,0.028855
+
+dmcfae,analysis/benchmarks/koka-gen/interp/interp,3,1,0,557,27,1.0807899461400359,1.2222222222222223,1.0,1.0956521739130434,0.022308,0.021209,0.020861
