@@ -117,7 +117,7 @@ doEval expr venv = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ": with env " ++ show venv)
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ": with env " ++ show venv)
                     v <- x
                     -- trace ("Result: " ++ showCtxExpr expr ++ ": with env " ++ show venv ++ "\n" ++ show v) $ return ()
                     return v
@@ -291,8 +291,8 @@ doContinue res frame ctx =
                     _ -> do
                       trace ("Applying non function: " ++ show res) doBottom
               next:rest -> do
-                -- app <- M.lookup uApp <$> states <$> getState
-                -- trace ("Next " ++ show next ++ " in " ++ show ctx ++ "\n" ++ show app) $ return ()
+                app <- M.lookup uApp . states <$> getState
+                trace ("Next\n" ++ show next ++ "\n:" ++ show ctx ++ "\n" ++ show app ++ "\n" ++ show venv) $ return ()
                 env' <- rebindAll venv ctx
                 (env'', addrs') <- rebindAllAddrs uApp (res ++ [addr]) env' ctx
                 ret <- eval next (limitEnv env'' (fvs next))
