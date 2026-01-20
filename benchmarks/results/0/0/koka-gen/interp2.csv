@@ -8,3 +8,13 @@ dmcfa,analysis/benchmarks/koka-gen/interp2/t1,0,0,timeout,0,0,0,0,0,0,0,timeout,
 dmcfa,analysis/benchmarks/koka-gen/interp2/t2,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfa,analysis/benchmarks/koka-gen/interp2/t3,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfa,analysis/benchmarks/koka-gen/interp2/t4,0,0,0,245,3,1.0448979591836736,1.0,0.0,1.3333333333333333,0.260949,0.259967,0.253436
+
+dmcfae,analysis/benchmarks/koka-gen/interp2/err1,0,0,0,219,2,1.0,1.0,1.0,1.0703125,0.003294,0.002899,0.002912
+dmcfae,analysis/benchmarks/koka-gen/interp2/err2,0,0,0,374,77,3.695187165775401,5.740259740259741,5.5777777777777775,1.3628691983122363,2.390262,2.485777,2.357406
+dmcfae,analysis/benchmarks/koka-gen/interp2/err3,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/interp2/err4,0,0,0,248,14,1.8951612903225807,1.0,3.3846153846153846,1.2418300653594772,0.134351,0.139352,0.139634
+dmcfae,analysis/benchmarks/koka-gen/interp2/err5,0,0,0,263,9,1.520912547528517,1.0,2.8,1.284848484848485,0.0507,0.05295,0.051199
+dmcfae,analysis/benchmarks/koka-gen/interp2/t1,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/interp2/t2,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/interp2/t3,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/interp2/t4,0,0,0,245,3,1.0448979591836736,1.0,0.0,1.4411764705882353,0.236047,0.231283,0.250031
