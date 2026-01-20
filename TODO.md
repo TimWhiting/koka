@@ -1,10 +1,7 @@
 - [ ] Redo analysis....
-
-
-
-
-
-
+- [ ] Fix mini-ppl for dmcfa
+- [ ] Fix coop-communication for dmcfa/e
+- [ ] Figure out why timeout on ukanren on small m
 
 
 DONT WORK ON KCFA until we determine it is useful...
