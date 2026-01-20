@@ -27,6 +27,40 @@ nameInt32Lt = newQualified "std/num/int32" "<"
 nameInt32Le = newQualified "std/num/int32" "<="
 nameInt32Eq = newQualified "std/num/int32" "=="
 nameInt32NEq = newQualified "std/num/int32" "!="
+nameInt32Add = newQualified "std/num/int32" "+"
+nameInt32Sub = newQualified "std/num/int32" "-"
+nameInt32Mul = newQualified "std/num/int32" "*"
+nameInt32Div = newQualified "std/num/int32" "/"
+nameInt32Shr = newQualified "std/num/int32" "shr32"
+nameInt32Sar = newQualified "std/num/int32" "sar32"
+nameInt32Shl = newQualified "std/num/int32" "shl32"
+nameInt32And = newQualified "std/num/int32" "and"
+nameInt32Or  = newQualified "std/num/int32" "or"
+nameInt32Xor = newQualified "std/num/int32" "xor"
+nameInt32RotL = newQualified "std/num/int32" "rotl32"
+nameInt32RotR = newQualified "std/num/int32" "rotr32"
+nameInt32Clz = newQualified "std/num/int32" "clz"
+nameInt32Ctz = newQualified "std/num/int32" "ctz"
+nameInt32PopCount = newQualified "std/num/int32" "popcount"
+nameInt64And = newQualified "std/num/int64" "and"
+nameInt64Or  = newQualified "std/num/int64" "or"
+nameInt64Xor = newQualified "std/num/int64" "xor"
+nameInt64Shr = newQualified "std/num/int64" "shr64"
+nameInt64Sar = newQualified "std/num/int64" "sar64"
+nameInt64Shl = newQualified "std/num/int64" "shl64"
+nameInt64RotL = newQualified "std/num/int64" "rotl64"
+nameInt64RotR = newQualified "std/num/int64" "rotr64"
+nameInt64Clz = newQualified "std/num/int64" "clz"
+nameInt64Ctz = newQualified "std/num/int64" "ctz"
+nameInt64PopCount = newQualified "std/num/int64" "popcount64"
+nameInt64HiLo32 = newLocallyQualified "std/num/int64" "hilo32" "int64"
+nameNumInt64Int32 = newQualified "std/num/int64" "int32"
+nameNumInt64UInt32 = newQualified "std/num/int64" "uint32"
+nameNumInt64Int64 = newQualified "std/num/int64" "int64"
+nameNumInt64ExternInt64 = newQualified "std/num/int64" "@extern-int64"
+nameNumFloat64ExternFloat64FromBits = newQualified "std/num/float64" "@extern-float64-from-bits"
+nameNumFloat64ExternFloat64ToBits = newQualified "std/num/float64" "@extern-float64-to-bits"
+nameNumFloat64Float64 = newQualified "std/num/float64" "float64"
 nameFloatGt = newQualified "std/num/float64" ">"
 nameFloatGe = newQualified "std/num/float64" ">="
 nameFloatLt = newQualified "std/num/float64" "<"
@@ -49,6 +83,8 @@ nameCoreCharGt = newQualified "std/core/char" ">"
 nameCoreCharGtEq = newQualified "std/core/char" ">="
 nameCoreCharEq = newQualified "std/core/char" "=="
 nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-string"
+nameCoreStringContains = newQualified "std/core/string" "contains"
+nameCoreStringToLower = newQualified "std/core/string" "to-lower"
 nameCoreStringListChar = newQualified "std/core/string" "list"
 nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
 nameCoreSliceXStartsWith = newQualified "std/core/sslice" "xstarts-with"
@@ -136,12 +172,18 @@ isPrimitive tn =
                       nameIntEq, nameIntNEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
                       nameIntOdd,
                       nameInt32Gt, nameInt32Ge, nameInt32Lt, nameInt32Le, nameInt32Eq, nameInt32NEq,
+                      nameInt32Add, nameInt32Sub, nameInt32Mul, nameInt32Div,
+                      nameInt32Shr, nameInt32Sar, nameInt32Shl, nameInt32And, nameInt32Or, nameInt32Xor, nameInt32RotL, nameInt32RotR,
+                      nameInt32Clz, nameInt32Ctz, nameInt32PopCount,
+                      nameInt64Shr, nameInt64Sar, nameInt64Shl, nameInt64And, nameInt64Or, nameInt64Xor, nameInt64RotL, nameInt64RotR, nameInt64Clz, nameInt64Ctz, nameInt64PopCount, nameInt64HiLo32,
+                      nameNumInt64Int32, nameNumInt64UInt32,
+                      nameNumInt64Int64, nameNumInt64ExternInt64, nameNumFloat64ExternFloat64FromBits, nameNumFloat64ExternFloat64ToBits, nameNumFloat64Float64,
                       nameFloatAdd, nameFloatMul, nameFloatDiv, nameFloatSub, nameFloatAbs, nameFloatSqrt,
                       nameFloatShowFixed, nameFloatShowExpX,
                       nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
-                      nameStringEq, nameCoreStringToUpper, nameCoreStringCount, nameCoreStringExternRepeatZ,
+                      nameStringEq, nameCoreStringToUpper, nameCoreStringToLower, nameCoreStringContains, nameCoreStringCount, nameCoreStringExternRepeatZ,
                       nameCoreCharToString, nameCoreStringListChar, nameCoreStringVectorJoin, nameCoreVectorUnvlist,
                       nameCoreSliceString, nameCoreSliceXStartsWith, nameCoreSliceLength,
                       nameCoreStringJoinSep, nameCoreStringJoin,
