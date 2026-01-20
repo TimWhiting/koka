@@ -118,7 +118,7 @@ opCmpString f [p1, p2] = do
       anyBool
     _ -> doBottom
 
-doPrimitive :: Name -> [AChange] -> CombinedCtx -> ExprContextId -> (Addr -> FixAAMR r s e AChange) -> (Addr -> AChange -> FixAAMR r s e ()) -> FixAAMR r s e AChange
+doPrimitive :: HasCallStack => Name -> [AChange] -> CombinedCtx -> ExprContextId -> (Addr -> FixAAMR r s e AChange) -> (Addr -> AChange -> FixAAMR r s e ()) -> FixAAMR r s e AChange
 doPrimitive nm achanges ctx u store extendStore = do
   -- trace (" Primitive " ++ show achanges) $ return ()
   if nm == nameCCtxEmpty then
