@@ -1,0 +1,4 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/koka-gen/scheduler/scheduler,2,0,1,235,14,1.0595744680851065,1.0,1.0,1.3693181818181819,0.00582,0.005628,0.004993
+
+dmcfae,analysis/benchmarks/koka-gen/scheduler/scheduler,2,0,1,235,14,1.0595744680851065,1.0,1.0,1.512,0.004303,0.005278,0.004534

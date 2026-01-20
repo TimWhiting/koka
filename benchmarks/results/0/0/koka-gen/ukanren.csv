@@ -1,0 +1,6 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/koka-gen/ukanren/q1,0,0,0,672,35,1.1577380952380953,1.3142857142857143,1.3571428571428572,1.591796875,2.116652,2.172136,2.158813
+dmcfa,analysis/benchmarks/koka-gen/ukanren/q2,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+
+dmcfae,analysis/benchmarks/koka-gen/ukanren/q1,0,0,0,672,35,1.1577380952380953,1.3142857142857143,1.3571428571428572,1.8071625344352618,1.963101,1.996199,1.929376
+dmcfae,analysis/benchmarks/koka-gen/ukanren/q2,0,0,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout

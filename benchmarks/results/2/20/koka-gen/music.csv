@@ -1,0 +1,6 @@
+Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/koka-gen/music/search-come,2,20,1,1609,312,1.0,1.0,1.0,1.0,0.158462,0.158644,0.158225
+dmcfa,analysis/benchmarks/koka-gen/music/search-love,2,20,1,1556,312,1.0,1.0,1.0,1.0,0.156204,0.155875,0.153956
+
+dmcfae,analysis/benchmarks/koka-gen/music/search-come,2,20,1,1609,312,1.0,1.0,1.0,1.0,0.142228,0.141865,0.142445
+dmcfae,analysis/benchmarks/koka-gen/music/search-love,2,20,1,1556,312,1.0,1.0,1.0,1.0,0.138841,0.138156,0.138023
