@@ -1,6 +1,8 @@
 module analysis/loc-analysis
 
 import std/core/list
+import std/os/file
+import std/os/path
 import analysis/graph-data
 
 // Main algorithm: Calculates transitive Line of Code cost
@@ -49,8 +51,31 @@ fun merge( xs : list<(string, int)>, ys : list<(string, int)> ) : div list<(stri
       else
         Cons((n2, c2), merge(xs, yy))
 
+// Generate a JSON report for all analyze-* functions
+pub fun generate-json-report( g : graph ) : <io> ()
+  val analyze-funcs = g.filter fn(n)
+    n.name.contains("analyze-")
+  
+  val costs = analyze-funcs.map fn(n)
+    (n.name, calculate-cost(n.name, g))
+  
+  println("Generating benchmarks/analysis/loc-report.json...")
+  
+  // Manual JSON generation to avoid external dependencies for this task
+  var json := "{\n"
+  
+  costs.foreach-indexed fn(i, (name, cost))
+    val entry = "  \"" ++ name ++ "\": " ++ cost.show
+    json := json ++ entry ++ (if i < costs.length - 1 then ",\n" else "\n")
+  
+  json := json ++ "}"
+  
+  val p = "benchmarks/analysis/loc-report.json"
+  write-text-file(p.path, json)
+  println("Loc report saved successfully.")
+
 // Generate a report for all analyze-* functions
-pub fun generate-analyze-report( g : graph ) : <div,console> ()
+pub fun generate-analyze-report( g : graph ) : <io> ()
   println("=== LOC Analysis Report for analyze-* Functions ===\n")
   
   // Filter all nodes that contain "analyze-" in their name
@@ -97,3 +122,4 @@ pub fun main()
   println("\n" ++ "=".repeat(80) ++ "\n")
   val actual-graph = graph-data/dependency-graph
   generate-analyze-report(actual-graph)
+  generate-json-report(actual-graph)

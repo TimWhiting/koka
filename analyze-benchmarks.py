@@ -14,15 +14,42 @@ from typing import Dict, List, Optional
 RESULTS_BASE = Path("benchmarks/results")
 ANALYSIS_DIR = Path("benchmarks/analysis")
 OUTPUT_FILE = ANALYSIS_DIR / "benchmark-summary.json"
+LOC_FILE = ANALYSIS_DIR / "loc-report.json"
 
 def load_loc_data() -> Dict[str, int]:
-    """
-    Load LOC data from Koka analysis output.
-    Expected format: function_name => total LOC
-    """
-    # For now, we'll need to run the Koka analysis and capture output
-    # This is a placeholder - we'll integrate properly
-    return {}
+    """Load LOC data from the generated loc-report.json."""
+    if not LOC_FILE.exists():
+        print(f"Warning: {LOC_FILE} not found. LOC-based metrics will be unavailable.")
+        return {}
+    
+    with open(LOC_FILE, 'r') as f:
+        return json.load(f)
+
+def match_benchmark_to_loc(benchmark_id: str, loc_data: Dict[str, int]) -> int:
+    """Try to match a benchmark string (e.g. 'handlers/ambient/example0') to LOC data."""
+    # The benchmark IDs in CSV usually look like 'handlers/unix/example1'
+    # The LOC IDs look like 'handlers/unix/analyze-example1' or 'music/analyze-search-love'
+    
+    # Try direct match with 'analyze-' prefix
+    parts = benchmark_id.split('/')
+    if len(parts) >= 1:
+        # Case 1: handlers/unix/example1 -> handlers/unix/analyze-example1
+        with_prefix = "/".join(parts[:-1] + ["analyze-" + parts[-1]])
+        if with_prefix in loc_data:
+            return loc_data[with_prefix]
+            
+        # Case 2: music/search-love -> music/analyze-search-love
+        if len(parts) >= 1:
+             alt_prefix = "/".join(parts[:-1] + ["analyze-" + parts[-1]])
+             if alt_prefix in loc_data:
+                 return loc_data[alt_prefix]
+
+    # Try fuzzy match if literal fails
+    for loc_key, val in loc_data.items():
+        if benchmark_id in loc_key or loc_key in benchmark_id:
+            return val
+            
+    return 0
 
 def get_benchmark_category(filepath: Path) -> str:
     """Determine benchmark category from file path."""
@@ -67,24 +94,46 @@ def load_all_benchmark_results() -> Dict[str, List[Dict]]:
                         
                         # Parse numeric fields
                         try:
+                            # Use Full Example path as the unique identifier
+                            full_example = row.get('File/Example', benchmark_name)
+                            # Clean it up: analysis/benchmarks/koka-gen/interp/interp -> koka-gen/interp/interp
+                            display_name = full_example.replace('analysis/benchmarks/', '')
+                            
+                            # Handle timeouts - convert 'timeout' to NaN or 0 and mark it
+                            is_timeout = False
+                            for key in ['Precise', 'AvgS', 'AvgK', 'Time1', 'Time2', 'Time3']:
+                                if row.get(key) == 'timeout':
+                                    is_timeout = True
+                                    break
+                            
+                            row['is_timeout'] = is_timeout
                             row['D'] = int(row.get('D', 0))
                             row['M(K)'] = int(row.get('M(K)', 0))
-                            row['Precise'] = float(row.get('Precise', 0))
+                            
+                            if is_timeout:
+                                # For timeouts, we still want to keep the record but maybe not for stats
+                                row['Precise'] = 0.0
+                                row['AvgS'] = 0.0
+                                row['AvgK'] = 0.0
+                                row['Time'] = 300.0 # Standard timeout 5 mins
+                            else:
+                                row['Precise'] = float(row.get('Precise', 0))
+                                row['AvgS'] = float(row.get('AvgS', 0))
+                                row['AvgK'] = float(row.get('AvgK', 0))
+                                
+                                # Compute average time
+                                times = []
+                                for t in ['Time1', 'Time2', 'Time3']:
+                                    if t in row and row[t]:
+                                        times.append(float(row[t]))
+                                row['Time'] = mean(times) if times else 0.0
+                            
                             row['NEval'] = int(row.get('NEval', 0))
                             row['NApply'] = int(row.get('NApply', 0))
                             row['AvgEval'] = float(row.get('AvgEval', 0))
                             row['AvgApply'] = float(row.get('AvgApply', 0))
-                            row['AvgK'] = float(row.get('AvgK', 0))
-                            row['AvgS'] = float(row.get('AvgS', 0))
                             
-                            # Compute average time
-                            times = []
-                            for t in ['Time1', 'Time2', 'Time3']:
-                                if t in row and row[t]:
-                                    times.append(float(row[t]))
-                            row['Time'] = mean(times) if times else 0.0
-                            
-                            all_results[benchmark_name].append(row)
+                            all_results[display_name].append(row)
                         except (ValueError, TypeError) as e:
                             print(f"Warning: Failed to parse row in {csv_file}: {e}")
                             continue
@@ -102,7 +151,19 @@ def compute_benchmark_stats(results: List[Dict]) -> Dict:
         by_analysis[r['Analysis']].append(r)
     
     stats = {}
-    for analysis, rows in by_analysis.items():
+    for analysis, all_rows in by_analysis.items():
+        # Separate valid results from timeouts for statistics
+        rows = [r for r in all_rows if not r.get('is_timeout', False)]
+        timeout_count = sum(1 for r in all_rows if r.get('is_timeout', False))
+        
+        if not rows:
+            stats[analysis] = {
+                'num_examples': len(all_rows),
+                'timeout_count': timeout_count,
+                'category': all_rows[0]['category'] if all_rows else 'unknown'
+            }
+            continue
+
         # Compute statistics
         precisions = [r['Precise'] for r in rows]
         times = [r['Time'] for r in rows]
@@ -111,6 +172,8 @@ def compute_benchmark_stats(results: List[Dict]) -> Dict:
         
         # Proxy metric: 1/AvgS (higher is better, represents precision)
         proxies = [1.0/s if s > 0 else 0 for s in avg_s_values]
+        # Proxy metric K: 1/AvgK
+        proxies_k = [1.0/k if k > 0 else 0 for k in avg_k_values]
         
         stats[analysis] = {
             'num_examples': len(rows),
@@ -134,6 +197,12 @@ def compute_benchmark_stats(results: List[Dict]) -> Dict:
                 'min': min(proxies),
                 'max': max(proxies)
             },
+            'proxy_precision_k': {
+                'mean': mean(proxies_k),
+                'median': median(proxies_k),
+                'min': min(proxies_k),
+                'max': max(proxies_k)
+            },
             'avg_s': {
                 'mean': mean(avg_s_values),
                 'median': median(avg_s_values)
@@ -142,13 +211,15 @@ def compute_benchmark_stats(results: List[Dict]) -> Dict:
                 'mean': mean(avg_k_values),
                 'median': median(avg_k_values)
             },
-            'category': rows[0]['category']
+            'category': rows[0]['category'],
+            'timeout_count': timeout_count
         }
     
     return stats
 
 def analyze_parameter_sensitivity(results: List[Dict], analysis_type: str) -> Dict:
     """Analyze how metrics change with D and M parameters."""
+    # Keep all results for cost analysis, but we might want to flag precision as uncertain if many timeouts
     filtered = [r for r in results if r['Analysis'] == analysis_type]
     
     # Group by D parameter
@@ -158,17 +229,27 @@ def analyze_parameter_sensitivity(results: List[Dict], analysis_type: str) -> Di
     
     d_trends = {}
     for d_val, rows in sorted(by_d.items()):
+        # For precision/proxies, we might still want to exclude timeouts to be accurate,
+        # but for execution time we definitely want to include them at 300s.
+        valid_for_precision = [r for r in rows if not r.get('is_timeout', False)]
+        
         times = [r['Time'] for r in rows]
-        precisions = [r['Precise'] for r in rows]
-        avg_s = [r['AvgS'] for r in rows]
-        # Proxy metric: 1/AvgS
+        precisions = [r['Precise'] for r in valid_for_precision]
+        avg_s = [r['AvgS'] for r in valid_for_precision]
+        avg_k = [r['AvgK'] for r in valid_for_precision]
+        
+        # Proxy metrics
         proxies = [1.0/s if s > 0 else 0 for s in avg_s]
+        proxies_k = [1.0/k if k > 0 else 0 for k in avg_k]
         
         d_trends[d_val] = {
-            'time_mean': mean(times),
-            'precision_mean': mean(precisions),
-            'proxy_precision_mean': mean(proxies),
-            'avg_s_mean': mean(avg_s),
+            'time_mean': mean(times) if times else 0,
+            'precision_mean': mean(precisions) if precisions else 0,
+            'proxy_precision_mean': mean(proxies) if proxies else 0,
+            'proxy_precision_k_mean': mean(proxies_k) if proxies_k else 0,
+            'avg_s_mean': mean(avg_s) if avg_s else 0,
+            'avg_k_mean': mean(avg_k) if avg_k else 0,
+            'timeout_count': sum(1 for r in rows if r.get('is_timeout', False)),
             'count': len(rows)
         }
     
@@ -183,17 +264,25 @@ def analyze_parameter_sensitivity(results: List[Dict], analysis_type: str) -> Di
             by_m[r['M(K)']].append(r)
         
         for m_val, rows in sorted(by_m.items()):
+            valid_for_precision = [r for r in rows if not r.get('is_timeout', False)]
+            
             times = [r['Time'] for r in rows]
-            precisions = [r['Precise'] for r in rows]
-            avg_s = [r['AvgS'] for r in rows]
-            # Proxy metric: 1/AvgS
+            precisions = [r['Precise'] for r in valid_for_precision]
+            avg_s = [r['AvgS'] for r in valid_for_precision]
+            avg_k = [r['AvgK'] for r in valid_for_precision]
+            
+            # Proxy metrics
             proxies = [1.0/s if s > 0 else 0 for s in avg_s]
+            proxies_k = [1.0/k if k > 0 else 0 for k in avg_k]
             
             m_trends[d_val][m_val] = {
-                'time_mean': mean(times),
-                'precision_mean': mean(precisions),
-                'proxy_precision_mean': mean(proxies),
-                'avg_s_mean': mean(avg_s),
+                'time_mean': mean(times) if times else 0,
+                'precision_mean': mean(precisions) if precisions else 0,
+                'proxy_precision_mean': mean(proxies) if proxies else 0,
+                'proxy_precision_k_mean': mean(proxies_k) if proxies_k else 0,
+                'avg_s_mean': mean(avg_s) if avg_s else 0,
+                'avg_k_mean': mean(avg_k) if avg_k else 0,
+                'timeout_count': sum(1 for r in rows if r.get('is_timeout', False)),
                 'count': len(rows)
             }
     
@@ -204,6 +293,9 @@ def main():
     print("Loading benchmark results...")
     all_results = load_all_benchmark_results()
     
+    print("Loading LOC data...")
+    loc_data = load_loc_data()
+    
     print(f"Found {len(all_results)} benchmarks")
     
     # Compute per-benchmark statistics
@@ -212,12 +304,26 @@ def main():
         print(f"  Analyzing {benchmark}...")
         stats = compute_benchmark_stats(results)
         
-        # Add parameter sensitivity analysis
+        # Add LOC data
+        loc_count = match_benchmark_to_loc(benchmark, loc_data)
         for analysis_type in ['dmcfa', 'dmcfae']:
             if analysis_type in stats:
+                stats[analysis_type]['loc'] = loc_count
+                
+                # Add parameter sensitivity analysis
                 param_trends = analyze_parameter_sensitivity(results, analysis_type)
                 stats[analysis_type]['d_trends'] = param_trends['d_trends']
                 stats[analysis_type]['m_trends'] = param_trends['m_trends']
+                
+                # Add LOC-normalized cost to trends
+                if loc_count > 0:
+                    for d_val in stats[analysis_type]['d_trends']:
+                        t = stats[analysis_type]['d_trends'][d_val]
+                        t['cost_per_loc'] = t['time_mean'] / loc_count
+                    for d_val in stats[analysis_type]['m_trends']:
+                        for m_val in stats[analysis_type]['m_trends'][d_val]:
+                            t = stats[analysis_type]['m_trends'][d_val][m_val]
+                            t['cost_per_loc'] = t['time_mean'] / loc_count
         
         summary[benchmark] = stats
     
