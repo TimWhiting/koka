@@ -10,6 +10,7 @@ val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "st
 val handler-files = ["yield", "vec", "unix", "nim", "ambient", "scoped"]
 val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
 val kokagen-files = ["build", "interp", "interp2", "mini-ppl", "music", "scheduler", "ukanren"] // release, coop-communication 
+val float-files = ["handlers/nim", "koka-gen/mini-ppl", "rosetta/rosetta/0-nums/pr100prisoners", "rosetta/rosetta/0-nums/pr2048", "rosetta/rosetta/0-nums/pr24game", "rosetta/rosetta/g/gamma", "rosetta/rosetta/m/monads-writer"]
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
             rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f) ++ kokagen-files.map(fn(f) "koka-gen/" ++ f)
 
@@ -111,6 +112,8 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
 fun main()
   val args = get-args()
   val force = args.find(fn(a) a == "--force").is-just
-  run-benchmarks(analyses=[DMCFA, DMCFA-EXP], force=force)
+  val only-floats = args.find(fn(a) a == "--floats").is-just
+  val run-files = if only-floats then float-files else files
+  run-benchmarks(files=run-files, analyses=[DMCFA, DMCFA-EXP], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFA])
   // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP])

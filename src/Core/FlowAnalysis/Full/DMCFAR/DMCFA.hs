@@ -117,7 +117,7 @@ doEval expr venv = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ": with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ": with env " ++ show venv)
                     v <- x
                     -- trace ("Result: " ++ showCtxExpr expr ++ ": with env " ++ show venv ++ "\n" ++ show v) $ return ()
                     return v
@@ -192,7 +192,7 @@ doEval expr venv = do
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
           bind <- focusLetDefBinding 0 0 expr
           let defGroup = head dgs
-          let newEnv = foldl (\acc x -> extendEnv acc (contextId expr) (defTName x)) venv (defsOf defGroup)
+          let newEnv = foldl (\acc x -> if defTName x `S.member` S.unions (map (fv . defExpr) (defsOf defGroup)) then extendEnv acc (contextId expr) (defTName x) else acc) venv (defsOf defGroup)
           let defName = defTName (defOfCtx bind)
           -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
           res <- eval bind (limitEnv newEnv (S.insert defName (fvs bind)))
@@ -292,7 +292,7 @@ doContinue res frame ctx =
                       trace ("Applying non function: " ++ show res) doBottom
               next:rest -> do
                 app <- M.lookup uApp . states <$> getState
-                trace ("Next\n" ++ show next ++ "\n:" ++ show ctx ++ "\n" ++ show app ++ "\n" ++ show venv) $ return ()
+                -- trace ("Next\n" ++ show next ++ "\n:" ++ show ctx ++ "\n" ++ show app ++ "\n" ++ show venv) $ return ()
                 env' <- rebindAll venv ctx
                 (env'', addrs') <- rebindAllAddrs uApp (res ++ [addr]) env' ctx
                 ret <- eval next (limitEnv env'' (fvs next))
@@ -310,10 +310,12 @@ doContinue res frame ctx =
               body <- focusLetBod u
               returnV $ eval body (limitEnv newEnv (fvs body))
             else do
-              -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
+              -- trace ("Let group old:\n" ++ show frame) $ return ()
+              let nextFrame = nextLetFrame frame{env=newEnv} ctx
+              -- trace ("Let group next:\n" ++ show nextFrame) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
               ret <- eval next newEnv
-              doContinue ret (nextLetFrame frame{env=newEnv} ctx) ctx
+              doContinue ret nextFrame ctx
           FScrut parent branches env -> do
             let recur [] _ = doBottom
                 recur ((branch, br):branches) tree = do

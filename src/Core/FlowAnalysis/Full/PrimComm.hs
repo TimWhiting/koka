@@ -125,28 +125,69 @@ nameCoreMInt = newQualified "std/num/random" "mrandom-int"
 showMap st = M.foldlWithKey (\acc k v -> acc ++ show k ++ ": " ++ show v ++ "\n") "" st
 primitiveFuncWrappers = [nameUnsafeNoLocalCast, nameUnsafeTotalCast]
 
+-- | Show a float with a given precision. 
+-- If `numDigits` >= 0, it acts as "%.<numDigits>f" (fixed precision).
+-- If `numDigits` < 0, it acts as "%.<abs(numDigits)>g" (general precision).
+--
+-- This mimics Koka's `show-fixed` (and C's `printf("%g")` for negative precision), 
+-- where scientific notation is used if the exponent is < -4 or >= precision.
+--
+-- Note: Haskell's `Numeric.showGFloat` does not exactly match C's `%g` behavior 
+-- regarding trailing zeros and exact switch points, so we implement the logic manually here.
 showFFloatNoZeros :: Int -> Double -> String
-showFFloatNoZeros numDigits f =
-    let sigDigits = length $ show $ truncate f
-        decimalDigits = if numDigits > 0 then numDigits else abs numDigits - sigDigits
-        formatted = showFFloat (Just decimalDigits) f ""
-    in removeTrailingZeros formatted
+showFFloatNoZeros numDigits f
+  | isNaN f = "nan"
+  | isInfinite f = if f < 0 then "-inf" else "inf"
+  | numDigits >= 0 = showFFloat (Just numDigits) f ""
+  | otherwise =
+      let p = abs numDigits
+          e = exponent10 f
+      in if e < -4 || e >= p
+           then formatGExp (p - 1) f
+           else removeTrailingZeros (showFFloat (Just (max 0 (p - 1 - e))) f "")
 
+-- | Show a float in exponential notation.
+-- If `numDigits` >= 0, it acts as "%.<numDigits>e".
+-- If `numDigits` < 0, it falls back to `showFFloatNoZeros` (general behavior).
 showEFloatNoZeros :: Int -> Double -> String
-showEFloatNoZeros numDigits f =
-    let sigDigits = length $ show $ truncate f
-        decimalDigits = if numDigits > 0 then numDigits else abs numDigits - sigDigits
-        formatted = showEFloat (Just decimalDigits) f ""
-    in removeETrailingZeros formatted
+showEFloatNoZeros numDigits f
+  | isNaN f = "nan"
+  | isInfinite f = if f < 0 then "-inf" else "inf"
+  | numDigits >= 0 = formatExp numDigits f
+  | otherwise = showFFloatNoZeros numDigits f
+
+exponent10 :: Double -> Int
+exponent10 0 = 0
+exponent10 x = floor (logBase 10 (abs x))
+
+-- Formats exponent to match C style e+NN (at least 2 digits, unlike Haskell's show)
+formatExpon :: String -> String
+formatExpon "" = ""
+formatExpon (_:es) =
+    let (sign, num) = if null es then ("+", "0") else if head es == '-' then ("-", tail es) else ("+", es) -- handle potential "e" with no number? Unlikely.
+        p = if null num then 0 else read num :: Int
+    in "e" ++ sign ++ (if p < 10 then "0" else "") ++ show p
+
+stripExpon :: String -> String
+stripExpon s = if s == "e+00" || s == "e-00" then "" else s
+
+formatGExp :: Int -> Double -> String
+formatGExp digits f =
+    let s = showEFloat (Just digits) f ""
+        (mant, expPart) = break (== 'e') s
+        mant' = removeTrailingZeros mant
+        exp' = stripExpon (formatExpon expPart)
+    in mant' ++ exp'
+
+formatExp :: Int -> Double -> String
+formatExp digits f =
+    let s = showEFloat (Just digits) f ""
+        (mant, expPart) = break (== 'e') s
+        exp' = stripExpon (formatExpon expPart)
+    in mant ++ exp'
 
 removeETrailingZeros :: String -> String
-removeETrailingZeros s =
-    let (whole, frac) = break (== 'e') s
-        (fracPart, expPart) = break (== 'E') frac
-        fracCleaned = removeTrailingZeros fracPart
-    in case expPart of
-        [] -> whole ++ fracCleaned
-        _  -> whole ++ fracCleaned ++ expPart
+removeETrailingZeros = removeTrailingZeros
 
 removeTrailingZeros :: String -> String
 removeTrailingZeros s =
