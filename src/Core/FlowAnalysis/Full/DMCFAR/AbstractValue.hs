@@ -179,7 +179,7 @@ instance Show Frame where
   show (FApp totalArgs leftArgs resolvedArgs parent env) =
     "FApp(" ++ show totalArgs ++ ", " ++ show (map showSimpleContext leftArgs) ++ ", " ++ show resolvedArgs ++ ", " ++ showSimpleContext parent ++ ")"
   show (FLet groupIdx numGroups bindingIdx numBindings name resolved parent env) =
-    "FLet(" ++ show (groupIdx, numGroups, bindingIdx, numBindings, name) ++ ", " ++ show resolved ++ ", " ++ showSimpleContext parent ++ ")"
+    "FLet(" ++ show (groupIdx, numGroups, bindingIdx, numBindings, name) ++ ", " ++ show resolved ++ ", " ++ showSimpleContext parent ++ ", " ++ show (M.keys $ snd env) ++ ")"
   show (FDollar vaddr) = "FDollar(" ++ show vaddr ++ ")"
   show (FResume rretCtx vaddr venv rHnd rCtx) =
     "FResume(" ++ show rretCtx ++ ", " ++ show vaddr ++ ", " ++ showSimpleCtxId rCtx ++ ")"
