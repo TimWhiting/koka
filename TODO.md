@@ -1,7 +1,9 @@
-- [ ] Redo analysis....
-- [ ] Fix mini-ppl for dmcfa
-- [ ] Fix coop-communication for dmcfa/e
+- [ ] Redo analysis of LOC visualization
+- [ ] Run for longer (timeouts)
+- [ ] Fix coop-communication for dmcfa/e?
 - [ ] Figure out why timeout on ukanren on small m
+- [ ] Figure out how to best visualize results
+- [ ] Maybe focus the results on DMCFA even though it has overhead
 
 
 DONT WORK ON KCFA until we determine it is useful...
