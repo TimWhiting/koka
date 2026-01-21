@@ -1,4 +1,6 @@
 Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,20,2,0,887,63,1.0191657271702368,1.0,1.0,1.0923753665689149,0.060831,0.0589,0.059117
 
-dmcfae,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,20,2,0,887,63,1.0191657271702368,1.0,1.0,1.1331877729257642,0.04674,0.048393,0.044231
+
+dmcfa,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,20,2,0,887,63,1.0191657271702368,1.0,1.0,1.0923753665689149,0.064198,0.066121,0.064663
+
+dmcfae,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,20,2,0,887,63,1.0191657271702368,1.0,1.0,1.1331877729257642,0.054058,0.050283,0.048613
