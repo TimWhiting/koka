@@ -48,6 +48,8 @@ data AnalysisCtx =
   | Result String TName ExprContext
   deriving (Eq, Ord, Show)
 
+count f lst = length (filter f lst)
+
 findMainBody :: FixAR x s e i o c AnalysisCtx
 findMainBody = do
   ctx <- currentContext <$> getEnv

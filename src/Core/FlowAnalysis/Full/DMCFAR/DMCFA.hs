@@ -108,7 +108,7 @@ doEval expr venv = do
         Var{} -> True
         Lit{} -> True
         Con{} -> True
-        Lam{} -> True
+        -- Lam{} -> True
         TypeApp e _ -> isSimpleExpr e
         TypeLam _ e -> isSimpleExpr e
         App (Var nm _) _ _ |  getName nm `elem` [nameHTag, nameEvvAt, nameSSizeT] -> True
@@ -314,7 +314,7 @@ doContinue res frame ctx =
               let nextFrame = nextLetFrame frame{env=newEnv} ctx
               -- trace ("Let group next:\n" ++ show nextFrame) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
-              ret <- eval next newEnv
+              ret <- eval next (env nextFrame)
               doContinue ret nextFrame ctx
           FScrut parent branches env -> do
             let recur [] _ = doBottom

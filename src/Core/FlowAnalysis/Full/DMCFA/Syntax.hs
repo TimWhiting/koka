@@ -115,14 +115,16 @@ runQueryAtRange bc build mod m d doQuery =
                       let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
                       trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
-                              show result ++ "," ++ show (length evals) ++ "," ++ show (length applies) ++ ","
-                              ++ show (average evals) ++ "," ++ show (average applies) ++ ","
-                              ++ show (average kSizes) ++ "," ++ show (average sSizes) ++ ","
+                              show result ++ "," 
+                              ++ show (length evals) ++ "," ++ show (sum evals) ++ "," ++ show (count (== 1) evals) ++ "," 
+                              ++ show (length applies) ++ "," ++ show (sum applies) ++ "," ++ show (count (== 1) applies) ++ ","
+                              ++ show (length kSizes) ++ "," ++ show (sum kSizes) ++ "," ++ show (count (== 1) kSizes) ++ ","
+                              ++ show (length sSizes) ++ "," ++ show (sum sSizes) ++ "," ++ show (count (== 1) sSizes) ++ ","
                               ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just result
                     Nothing -> 
                       trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
-                               ",timeout,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
+                               ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
                       return Nothing
                 (total, timeouts) <- recur rest
                 case result of

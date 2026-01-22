@@ -268,8 +268,9 @@ doContinue res frame ctx =
             else do
               -- trace ("Let group next: " ++ show groupIdx ++ ", " ++ show bindingIdx) $ return ()
               next <- focusNextLetDefBinding groupIdx bindingIdx u
-              RV (ret, newCtx) <- eval next env' ctx
-              doContinue ret (nextLetFrame frame{env=env'} newCtx) newCtx
+              let nextFrame = nextLetFrame frame{env=env'} ctx
+              RV (ret, newCtx) <- eval next (env nextFrame) ctx
+              doContinue ret nextFrame newCtx
           FScrut parent branches env -> do
             let recur [] tree = doBottom
                 recur ((branch, br):branches) tree = do

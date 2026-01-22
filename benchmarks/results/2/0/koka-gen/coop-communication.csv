@@ -1,0 +1,4 @@
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
+dmcfa,analysis/benchmarks/koka-gen/coop-communication/spawn,2,0,1,535,545,528,311,473,226,98,124,88,435,488,411,0.134203,0.15627,0.138051
+
+dmcfae,analysis/benchmarks/koka-gen/coop-communication/spawn,2,0,1,545,553,540,240,349,170,83,97,72,293,338,276,0.075736,0.078245,0.077034
