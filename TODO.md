@@ -1,6 +1,7 @@
 - [ ] Redo analysis of LOC visualization
 - [ ] Run for longer (timeouts)
-- [ ] Fix coop-communication for dmcfa/e?
+- [ ] Use results to determine stack invariants (order of handlers)
+- [ ] Regenerate results with new format of results + stack invariants
 - [ ] Figure out why timeout on ukanren on small m
 - [ ] Figure out how to best visualize results
 - [ ] Maybe focus the results on DMCFA even though it has overhead

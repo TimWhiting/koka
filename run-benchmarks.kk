@@ -9,7 +9,7 @@ import std/os/dir
 val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"]
 val handler-files = ["yield", "vec", "unix", "nim", "ambient", "scoped"]
 val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
-val kokagen-files = ["build", "interp", "interp2", "mini-ppl", "music", "scheduler", "ukanren"] // release, coop-communication 
+val kokagen-files = ["build", "interp", "interp2", "mini-ppl", "music", "scheduler", "ukanren", "coop-communication"] // release, coop-communication 
 val float-files = ["handlers/nim", "koka-gen/mini-ppl", "rosetta/rosetta/0-nums/pr100prisoners", "rosetta/rosetta/0-nums/pr2048", "rosetta/rosetta/0-nums/pr24game", "rosetta/rosetta/g/gamma", "rosetta/rosetta/m/monads-writer"]
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
             rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f) ++ kokagen-files.map(fn(f) "koka-gen/" ++ f)
@@ -95,7 +95,7 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
       
       contents.foreach fn((key, content))
           val file = "benchmarks/results".path / key
-          val header = "Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3"
+          val header = "Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3"
           if file.is-file then
              val current = read-text-file(file)
              val clean-current = 
