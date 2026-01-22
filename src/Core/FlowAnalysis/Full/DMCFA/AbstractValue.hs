@@ -24,7 +24,7 @@ import Common.Failure (assertion, HasCallStack)
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.FixpointMonad (SimpleLattice(..), Lattice (..), Contains(..), SimpleChange (..), SLattice, FixT, doBottom, each)
 import qualified Core.FlowAnalysis.FixpointMonad as FM
-import Core.CoreVar (bv)
+import Core.CoreVar (bv, HasExpVar (..))
 import Data.Foldable (find)
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.Literals
@@ -194,10 +194,16 @@ nextLetFrame
           gidx = groupIdx + 1
           idx = 0
           defs = defsOf (dgs !! gidx)
-          newEnv = foldl (\acc x -> M.insert (defTName x) (ctx, contextId parent) acc) env defs in
+          newEnv = foldl (\acc x -> if defTName x `S.member` S.unions (map (fv . defExpr) defs) then extendEnv acc (ctx, contextId parent) (defTName x) else acc) env defs in
       FLet gidx numGroups idx (length defs) (letBindingName gidx idx parent) resolved parent newEnv
   | otherwise = error ("No next let frame for: " ++ show (groupIdx, numGroups, bindingIdx, numBindings, resolved, parent, env))
 
+showEnv :: VEnv -> String
+showEnv env = "\n{" ++ intercalate ", " (map showBinding (M.toList env)) ++ "}"
+  where
+    showBinding (name, (ctx, cid)) = show name ++ " -> (" ++ show ctx ++ ", " ++ showSimpleCtxId cid ++ ")\n"
+
+extendEnv env (ctx, cid) name = M.insert name (ctx, cid) env
 
 data Handler =
   Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
