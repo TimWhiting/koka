@@ -1,10 +1,12 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/nondet/nondet-context,2,3,1,107,9,1.0,1.0,1.0,1.0,0.00267,0.002615,0.002447
-dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,2,3,1,84,7,1.0,1.0,1.0,1.0,0.001495,0.001781,0.001414
-dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,2,3,1,217,25,1.0,1.0,1.0,1.0,0.006219,0.006782,0.0057
-dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,2,3,1,92,7,1.0,1.0,1.0,1.0,0.001632,0.002122,0.001755
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/suite/nondet/nondet-context,2,3,1,107,9,1.0,1.0,1.0,1.0,0.001619,0.002036,0.001932
-dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,2,3,1,84,7,1.0,1.0,1.0,1.0,0.001275,0.000991,0.001238
-dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,2,3,1,217,25,1.0,1.0,1.0,1.0,0.00413,0.004972,0.004312
-dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,2,3,1,92,7,1.0,1.0,1.0,1.0,0.001411,0.001462,0.001165
+
+dmcfa,analysis/benchmarks/suite/nondet/nondet-context,2,3,1,107,107,107,9,9,9,2,2,2,96,96,96,0.003055,0.002676,0.00251
+dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,2,3,1,84,84,84,7,7,7,1,1,1,71,71,71,0.001687,0.00185,0.001519
+dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,2,3,1,217,217,217,25,25,25,6,6,6,178,178,178,0.00655,0.006198,0.005661
+dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,2,3,1,92,92,92,7,7,7,1,1,1,79,79,79,0.002024,0.002061,0.001998
+
+dmcfae,analysis/benchmarks/suite/nondet/nondet-context,2,3,1,107,107,107,9,9,9,2,2,2,65,65,65,0.002797,0.003473,0.003908
+dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,2,3,1,84,84,84,7,7,7,1,1,1,50,50,50,0.001236,0.001445,0.001983
+dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,2,3,1,217,217,217,25,25,25,6,6,6,119,119,119,0.005303,0.005407,0.00497
+dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,2,3,1,92,92,92,7,7,7,1,1,1,55,55,55,0.001439,0.001206,0.001404

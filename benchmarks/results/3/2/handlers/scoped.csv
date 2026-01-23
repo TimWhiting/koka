@@ -1,12 +1,14 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfae,analysis/benchmarks/handlers/scoped/example1,3,2,0,604,142,1.1390728476821192,2.76056338028169,2.05,1.2727272727272727,0.137464,0.137843,0.136975
-dmcfae,analysis/benchmarks/handlers/scoped/example2,3,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfae,analysis/benchmarks/handlers/scoped/example3,3,2,0,1709,912,1.0526623756582798,1.5263157894736843,1.194888178913738,1.1675603217158177,0.680019,0.678717,0.683369
-dmcfae,analysis/benchmarks/handlers/scoped/example4,3,2,1,430,64,1.0,1.0,1.0,1.0,0.017484,0.019743,0.01829
-dmcfae,analysis/benchmarks/handlers/scoped/example5,3,2,0,2176,2066,1.0381433823529411,1.92594385285576,1.950261780104712,1.3101952277657267,1.997203,1.987022,1.993562
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfa,analysis/benchmarks/handlers/scoped/example1,3,2,0,588,126,1.1275510204081634,2.5238095238095237,1.9090909090909092,1.2339449541284404,0.109565,0.105971,0.104468
-dmcfa,analysis/benchmarks/handlers/scoped/example2,3,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfa,analysis/benchmarks/handlers/scoped/example3,3,2,0,1687,895,1.050978067575578,1.5094972067039105,1.1770491803278689,1.129644921552436,0.602212,0.5979,0.592468
-dmcfa,analysis/benchmarks/handlers/scoped/example4,3,2,1,430,64,1.0,1.0,1.0,1.0,0.024532,0.025367,0.024291
-dmcfa,analysis/benchmarks/handlers/scoped/example5,3,2,0,2127,2036,1.0380818053596614,1.9037328094302555,1.9086021505376345,1.231070496083551,1.584065,1.610836,1.596076
+
+dmcfa,analysis/benchmarks/handlers/scoped/example1,3,2,0,588,663,539,126,318,50,66,126,31,436,538,363,0.097866,0.099429,0.100522
+dmcfa,analysis/benchmarks/handlers/scoped/example2,3,2,0,1657,1743,1598,1151,5451,581,468,2386,189,1162,1535,1020,12.095458,12.181824,12.071872
+dmcfa,analysis/benchmarks/handlers/scoped/example3,3,2,0,1687,1773,1630,895,1351,664,305,359,258,1211,1368,1094,0.559761,0.55921,0.571423
+dmcfa,analysis/benchmarks/handlers/scoped/example4,3,2,1,430,430,430,64,64,64,32,32,32,377,377,377,0.025469,0.024915,0.023252
+dmcfa,analysis/benchmarks/handlers/scoped/example5,3,2,0,2127,2208,2061,2036,3876,1288,744,1420,486,1532,1886,1290,1.486162,1.504046,1.497259
+
+dmcfae,analysis/benchmarks/handlers/scoped/example1,3,2,0,604,688,550,142,392,50,80,164,31,297,378,240,0.134193,0.136894,0.134576
+dmcfae,analysis/benchmarks/handlers/scoped/example2,3,2,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/handlers/scoped/example3,3,2,0,1709,1799,1649,912,1392,669,309,370,255,746,871,656,0.649553,0.648662,0.649943
+dmcfae,analysis/benchmarks/handlers/scoped/example4,3,2,1,430,430,430,64,64,64,32,32,32,243,243,243,0.018725,0.017703,0.017995
+dmcfae,analysis/benchmarks/handlers/scoped/example5,3,2,0,2176,2259,2108,2138,4119,1383,671,1425,409,922,1208,735,1.844773,1.83555,1.834784

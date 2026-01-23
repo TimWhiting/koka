@@ -77,10 +77,18 @@ def generate_d_sensitivity_report():
             
             prev_time = None
             for d in sorted(d_trends.keys(), key=lambda x: int(x)):
-                stats = d_trends[d]
-                time_val = stats.get('mean', 0)
+                stats_group = d_trends[d]
+                time_stats = stats_group.get('time', {})
+                neval_stats = stats_group.get('nevals', {})
+                napply_stats = stats_group.get('napplies', {})
+                
+                time_val = time_stats.get('mean', 0)
+                neval_val = neval_stats.get('mean', 0)
+                napply_val = napply_stats.get('mean', 0)
                 
                 time_str = f"{time_val:.4f}"
+                neval_str = f"{neval_val:.0f}"
+                napply_str = f"{napply_val:.0f}"
                 
                 if prev_time is not None and prev_time > 0:
                     time_change = ((time_val - prev_time) / prev_time) * 100
@@ -88,7 +96,7 @@ def generate_d_sensitivity_report():
                 else:
                     time_chg_str = "base"
                 
-                f.write(f"{d:>5} {time_str:>12} {time_chg_str:>10}\n")
+                f.write(f"{d:>5} {time_str:>12} {time_chg_str:>10} {neval_str:>10} {napply_str:>10}\n")
                 prev_time = time_val
             
             f.write("\n")
@@ -131,13 +139,14 @@ def generate_mk_sensitivity_report():
                 f.write(f"{'M(K)':>5} {'Time(s)':>12} {'Multiplier':>12} {'Increase%':>10}\n")
                 f.write("-" * 60 + "\n")
                 
-                times_list = [m_trends[str(m)].get('mean', 0) for m in sorted(m_trends.keys(), key=int)]
+                times_list = [m_trends[str(m)]['time'].get('mean', 0) for m in sorted(m_trends.keys(), key=int) if 'time' in m_trends[str(m)]]
                 min_time = min(times_list) if times_list else 1
                 
                 prev_time = None
                 for m in sorted(m_trends.keys(), key=lambda x: int(x)):
-                    stats = m_trends[m]
-                    time_val = stats.get('mean', 0)
+                    stats_group = m_trends[m]
+                    time_stats = stats_group.get('time', {})
+                    time_val = time_stats.get('mean', 0)
                     multiplier = time_val / min_time if min_time > 0 else 1
                     
                     if prev_time is not None and prev_time > 0:
@@ -159,13 +168,14 @@ def generate_mk_sensitivity_report():
                 f.write(f"{'K':>5} {'Time(s)':>12} {'Multiplier':>12} {'Increase%':>10}\n")
                 f.write("-" * 60 + "\n")
                 
-                times_list = [k_trends[str(k)].get('mean', 0) for k in sorted(k_trends.keys(), key=int)]
+                times_list = [k_trends[str(k)]['time'].get('mean', 0) for k in sorted(k_trends.keys(), key=int) if 'time' in k_trends[str(k)]]
                 min_time = min(times_list) if times_list else 1
                 
                 prev_time = None
                 for k in sorted(k_trends.keys(), key=lambda x: int(x)):
-                    stats = k_trends[k]
-                    time_val = stats.get('mean', 0)
+                    stats_group = k_trends[k]
+                    time_stats = stats_group.get('time', {})
+                    time_val = time_stats.get('mean', 0)
                     multiplier = time_val / min_time if min_time > 0 else 1
                     
                     if prev_time is not None and prev_time > 0:
@@ -210,7 +220,7 @@ def generate_cost_summary_table():
                 f.write(f"{benchmark:<20} {'No data':>15}\n")
                 continue
             
-            times = [d_trends[str(d)].get('mean', 0) for d in sorted(d_trends.keys(), key=int)]
+            times = [d_trends[str(d)]['time'].get('mean', 0) for d in sorted(d_trends.keys(), key=int) if 'time' in d_trends[str(d)]]
             min_time = min(times) if times else 0
             max_time = max(times) if times else 0
             multiplier = max_time / min_time if min_time > 0 else 1
@@ -236,7 +246,7 @@ def generate_cost_summary_table():
                 f.write(f"{benchmark:<20} {'No data':>15}\n")
                 continue
             
-            times = [m_trends[str(m)].get('mean', 0) for m in sorted(m_trends.keys(), key=int)]
+            times = [m_trends[str(m)]['time'].get('mean', 0) for m in sorted(m_trends.keys(), key=int) if 'time' in m_trends[str(m)]]
             min_time = min(times) if times else 0
             max_time = max(times) if times else 0
             multiplier = max_time / min_time if min_time > 0 else 1

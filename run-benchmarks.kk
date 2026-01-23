@@ -14,6 +14,8 @@ val float-files = ["handlers/nim", "koka-gen/mini-ppl", "rosetta/rosetta/0-nums/
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
             rosetta-files.map(fn(f) "rosetta/rosetta/" ++ f) ++ kokagen-files.map(fn(f) "koka-gen/" ++ f)
 
+val header = "Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3"
+
 effect out
   fun write(s: string): ()
 
@@ -95,7 +97,6 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
       
       contents.foreach fn((key, content))
           val file = "benchmarks/results".path / key
-          val header = "Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3"
           if file.is-file then
              val current = read-text-file(file)
              val clean-current = 
@@ -109,8 +110,26 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
 
     Error(err) -> throw-exn(err)
 
+fun update-headers()
+  val results-dir = "benchmarks/results".path
+  if results-dir.is-directory then
+    results-dir.list-directory-recursive.foreach fn(p)
+      if p.extname == "csv" then
+          val lines = read-text-file(p).split("\n")
+          match lines
+            Cons(_,rest) ->
+              val new-content = Cons(header, rest).join("\n")
+              write-text-file(p, new-content)
+              println("Updated header for: " ++ p.string)
+            _ -> ()
+
 fun main()
   val args = get-args()
+  val update-headers-flag = args.find(fn(a) a == "--update-headers").is-just
+  if update-headers-flag then 
+    update-headers()
+    return ()
+    
   val force = args.find(fn(a) a == "--force").is-just
   val only-floats = args.find(fn(a) a == "--floats").is-just
   val run-files = if only-floats then float-files else files

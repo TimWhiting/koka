@@ -1,4 +1,6 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,pr4rings/four-squares,0,1,0,531,46,1.8097928436911488,1.434782608695652,1.6666666666666667,1.2962962962962963,0.0153,0.015116,0.016108
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,pr4rings/four-squares,0,1,0,627,82,1.784688995215311,1.7926829268292683,1.6666666666666667,1.3225806451612903,0.018805,0.019779,0.01882
+
+dmcfa,pr4rings/four-squares,0,1,0,531,961,472,46,66,37,15,25,9,378,490,288,0.016709,0.016972,0.017202
+
+dmcfae,pr4rings/four-squares,0,1,0,627,1119,520,82,147,41,39,65,13,279,369,191,0.018598,0.01796,0.018882

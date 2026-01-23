@@ -1,4 +1,6 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,pr4rings/four-squares,2,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,pr4rings/four-squares,2,2,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
+
+dmcfa,pr4rings/four-squares,2,2,0,3210,15074,2752,894,16600,306,465,4015,77,2046,3574,1467,7.385918,7.464181,7.450565
+
+dmcfae,pr4rings/four-squares,2,2,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
