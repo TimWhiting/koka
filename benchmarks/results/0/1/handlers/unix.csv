@@ -1,12 +1,14 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/handlers/unix/example1,0,1,0,142,35,1.0,1.0857142857142856,1.0555555555555556,1.065040650406504,0.005171,0.00429,0.004752
-dmcfa,analysis/benchmarks/handlers/unix/example1_2,0,1,0,150,34,1.0,1.0,1.0,1.0583941605839415,0.004024,0.004351,0.003844
-dmcfa,analysis/benchmarks/handlers/unix/example2,0,1,1,180,26,1.0,1.0,1.0,1.0,0.003691,0.003562,0.003416
-dmcfa,analysis/benchmarks/handlers/unix/example3,0,1,0,246,51,1.0,1.0588235294117647,1.0384615384615385,1.036697247706422,0.007309,0.006849,0.006654
-dmcfa,analysis/benchmarks/handlers/unix/example5,0,1,0,603,127,1.0066334991708126,1.2598425196850394,1.1228070175438596,1.0575396825396826,0.021539,0.022011,0.021629
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/handlers/unix/example1,0,1,0,142,35,1.0,1.0857142857142856,1.0555555555555556,1.0933333333333333,0.004236,0.004081,0.003439
-dmcfae,analysis/benchmarks/handlers/unix/example1_2,0,1,0,150,34,1.0,1.0,1.0,1.0875,0.00298,0.003446,0.003052
-dmcfae,analysis/benchmarks/handlers/unix/example2,0,1,1,180,26,1.0,1.0,1.0,1.0,0.003485,0.003333,0.002992
-dmcfae,analysis/benchmarks/handlers/unix/example3,0,1,0,246,51,1.0,1.0588235294117647,1.0384615384615385,1.051094890510949,0.00668,0.006918,0.006074
-dmcfae,analysis/benchmarks/handlers/unix/example5,0,1,0,603,127,1.0066334991708126,1.2598425196850394,1.1228070175438596,1.079268292682927,0.021168,0.020475,0.020639
+
+dmcfa,analysis/benchmarks/handlers/unix/example1,0,1,0,142,142,142,35,38,32,18,19,17,123,131,115,0.004959,0.004862,0.00486
+dmcfa,analysis/benchmarks/handlers/unix/example1_2,0,1,0,150,150,150,34,34,34,20,20,20,137,145,129,0.004275,0.004548,0.004282
+dmcfa,analysis/benchmarks/handlers/unix/example2,0,1,1,180,180,180,26,26,26,17,17,17,161,161,161,0.003556,0.004435,0.003737
+dmcfa,analysis/benchmarks/handlers/unix/example3,0,1,0,246,246,246,51,54,48,26,27,25,218,226,210,0.007489,0.008879,0.008696
+dmcfa,analysis/benchmarks/handlers/unix/example5,0,1,0,603,607,599,127,160,99,57,64,54,504,533,478,0.023182,0.025325,0.023462
+
+dmcfae,analysis/benchmarks/handlers/unix/example1,0,1,0,142,142,142,35,38,32,18,19,17,75,82,68,0.004796,0.004113,0.004535
+dmcfae,analysis/benchmarks/handlers/unix/example1_2,0,1,0,150,150,150,34,34,34,20,20,20,80,87,73,0.003481,0.004047,0.003715
+dmcfae,analysis/benchmarks/handlers/unix/example2,0,1,1,180,180,180,26,26,26,17,17,17,103,103,103,0.003148,0.003621,0.003362
+dmcfae,analysis/benchmarks/handlers/unix/example3,0,1,0,246,246,246,51,54,48,26,27,25,137,144,130,0.006727,0.007119,0.006447
+dmcfae,analysis/benchmarks/handlers/unix/example5,0,1,0,603,607,599,127,160,99,57,64,54,328,354,305,0.022693,0.022935,0.022157

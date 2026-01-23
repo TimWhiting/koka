@@ -65,7 +65,11 @@ def export_summary_csv(analysis: Dict):
                 'NApply_Min': data.get('napplies', {}).get('min', ''),
                 'NApply_Max': data.get('napplies', {}).get('max', ''),
                 'NApply_Mean': data.get('napplies', {}).get('mean', ''),
-                'Precision': data.get('precision', {}).get('mean', '')
+                'Precision': data.get('precision', {}).get('mean', ''),
+                'Prec_Eval': data.get('prec_eval_ratio', {}).get('mean', ''),
+                'Prec_Apply': data.get('prec_apply_ratio', {}).get('mean', ''),
+                'Prec_Stack': data.get('prec_s_ratio', {}).get('mean', ''),
+                'Prec_K': data.get('prec_k_ratio', {}).get('mean', '')
             }
             rows.append(row)
     
@@ -101,7 +105,10 @@ def export_per_analysis_csv(analysis: Dict):
                 'Max_Time_s': f"{data.get('time', {}).get('max', 0):.6f}",
                 'Avg_NEval': f"{data.get('nevals', {}).get('mean', 0):.1f}",
                 'Avg_NApply': f"{data.get('napplies', {}).get('mean', 0):.1f}",
-                'Precision': f"{data.get('precision', {}).get('mean', 0):.3f}"
+                'Precision': f"{data.get('precision', {}).get('mean', 0):.3f}",
+                'Prec_Eval': f"{data.get('prec_eval_ratio', {}).get('mean', 0):.3f}",
+                'Prec_Stack': f"{data.get('prec_s_ratio', {}).get('mean', 0):.3f}",
+                'Prec_K': f"{data.get('prec_k_ratio', {}).get('mean', 0):.3f}"
             }
             rows.append(row)
         
@@ -167,7 +174,15 @@ def generate_performance_report(analysis: Dict):
                 
                 if data.get('precision'):
                     p = data['precision']
-                    f.write(f"- Precision: {p.get('mean', 0):.1%}\n")
+                    f.write(f"- Direct Precision: {p.get('mean', 0):.1%}\n")
+
+                if data.get('prec_eval_ratio'):
+                    p = data['prec_eval_ratio']
+                    f.write(f"- Evaluation Precision: {p.get('mean', 0):.1%}\n")
+
+                if data.get('prec_s_ratio'):
+                    p = data['prec_s_ratio']
+                    f.write(f"- Stack Precision: {p.get('mean', 0):.1%}\n")
                 
                 f.write("\n")
         
@@ -201,7 +216,7 @@ def generate_performance_report(analysis: Dict):
         for benchmark, analyses in sorted(analysis.items()):
             dmcfa = analyses.get('dmcfa', {})
             if dmcfa and dmcfa.get('precision'):
-                prec = dmcfa['precision'].get('mean', 1.0)
+                prec = dmcfa['precision'].get('mean', 0.0)
                 if prec < 1.0:
                     f.write(f"- **{benchmark}**: {prec:.1%} ({dmcfa.get('num_examples', 0)} examples)\n")
     

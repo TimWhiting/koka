@@ -101,7 +101,7 @@ def load_all_benchmark_results() -> Dict[str, List[Dict]]:
                             
                             # Handle timeouts - convert 'timeout' to NaN or 0 and mark it
                             is_timeout = False
-                            for key in ['Precise', 'AvgS', 'AvgK', 'Time1', 'Time2', 'Time3']:
+                            for key in ['Precise', 'AvgS', 'AvgK', 'SumS', 'SumK', 'Time1', 'Time2', 'Time3']:
                                 if row.get(key) == 'timeout':
                                     is_timeout = True
                                     break
@@ -110,28 +110,62 @@ def load_all_benchmark_results() -> Dict[str, List[Dict]]:
                             row['D'] = int(row.get('D', 0))
                             row['M(K)'] = int(row.get('M(K)', 0))
                             
+                            # Parse numeric fields
+                            for key in ['NEval', 'NApply', 'NK', 'NS', 'SumEval', 'SumApply', 'SumK', 'SumS', 'PrecEval', 'PrecApply', 'PrecK', 'PrecS']:
+                                if key in row:
+                                    try:
+                                        row[key] = int(row.get(key, 0))
+                                    except ValueError:
+                                        row[key] = 0
+
                             if is_timeout:
                                 # For timeouts, we still want to keep the record but maybe not for stats
                                 row['Precise'] = 0.0
                                 row['AvgS'] = 0.0
                                 row['AvgK'] = 0.0
+                                row['AvgEval'] = 0.0
+                                row['AvgApply'] = 0.0
                                 row['Time'] = 300.0 # Standard timeout 5 mins
                             else:
                                 row['Precise'] = float(row.get('Precise', 0))
-                                row['AvgS'] = float(row.get('AvgS', 0))
-                                row['AvgK'] = float(row.get('AvgK', 0))
                                 
+                                # Compute Averages from Sums if they don't exist
+                                if 'SumS' in row and 'NS' in row:
+                                    row['AvgS'] = float(row['SumS']) / float(row['NS']) if row['NS'] > 0 else 0.0
+                                else:
+                                    row['AvgS'] = float(row.get('AvgS', 0))
+                                    
+                                if 'SumK' in row and 'NK' in row:
+                                    row['AvgK'] = float(row['SumK']) / float(row['NK']) if row['NK'] > 0 else 0.0
+                                else:
+                                    row['AvgK'] = float(row.get('AvgK', 0))
+
+                                if 'SumEval' in row and 'NEval' in row:
+                                    row['AvgEval'] = float(row['SumEval']) / float(row['NEval']) if row['NEval'] > 0 else 0.0
+                                else:
+                                    row['AvgEval'] = float(row.get('AvgEval', 0))
+
+                                if 'SumApply' in row and 'NApply' in row:
+                                    row['AvgApply'] = float(row['SumApply']) / float(row['NApply']) if row['NApply'] > 0 else 0.0
+                                else:
+                                    row['AvgApply'] = float(row.get('AvgApply', 0))
+                                
+                                # New precision metrics
+                                if 'PrecEval' in row and 'NEval' in row:
+                                    row['PrecRatioEval'] = float(row['PrecEval']) / float(row['NEval']) if row['NEval'] > 0 else 0.0
+                                if 'PrecApply' in row and 'NApply' in row:
+                                    row['PrecRatioApply'] = float(row['PrecApply']) / float(row['NApply']) if row['NApply'] > 0 else 0.0
+                                if 'PrecS' in row and 'NS' in row:
+                                    row['PrecRatioS'] = float(row['PrecS']) / float(row['NS']) if row['NS'] > 0 else 0.0
+                                if 'PrecK' in row and 'NK' in row:
+                                    row['PrecRatioK'] = float(row['PrecK']) / float(row['NK']) if row['NK'] > 0 else 0.0
+
                                 # Compute average time
                                 times = []
                                 for t in ['Time1', 'Time2', 'Time3']:
                                     if t in row and row[t]:
                                         times.append(float(row[t]))
                                 row['Time'] = mean(times) if times else 0.0
-                            
-                            row['NEval'] = int(row.get('NEval', 0))
-                            row['NApply'] = int(row.get('NApply', 0))
-                            row['AvgEval'] = float(row.get('AvgEval', 0))
-                            row['AvgApply'] = float(row.get('AvgApply', 0))
                             
                             all_results[display_name].append(row)
                         except (ValueError, TypeError) as e:
@@ -211,6 +245,18 @@ def compute_benchmark_stats(results: List[Dict]) -> Dict:
                 'mean': mean(avg_k_values),
                 'median': median(avg_k_values)
             },
+            'prec_eval_ratio': {
+                'mean': mean([r.get('PrecRatioEval', 0.0) for r in rows])
+            },
+            'prec_apply_ratio': {
+                'mean': mean([r.get('PrecRatioApply', 0.0) for r in rows])
+            },
+            'prec_s_ratio': {
+                'mean': mean([r.get('PrecRatioS', 0.0) for r in rows])
+            },
+            'prec_k_ratio': {
+                'mean': mean([r.get('PrecRatioK', 0.0) for r in rows])
+            },
             'category': rows[0]['category'],
             'timeout_count': timeout_count
         }
@@ -242,11 +288,21 @@ def analyze_parameter_sensitivity(results: List[Dict], analysis_type: str) -> Di
         proxies = [1.0/s if s > 0 else 0 for s in avg_s]
         proxies_k = [1.0/k if k > 0 else 0 for k in avg_k]
         
+        # New direct precision metrics
+        prec_evals = [r.get('PrecRatioEval', 0.0) for r in valid_for_precision]
+        prec_applies = [r.get('PrecRatioApply', 0.0) for r in valid_for_precision]
+        prec_s = [r.get('PrecRatioS', 0.0) for r in valid_for_precision]
+        prec_k = [r.get('PrecRatioK', 0.0) for r in valid_for_precision]
+        
         d_trends[d_val] = {
             'time_mean': mean(times) if times else 0,
             'precision_mean': mean(precisions) if precisions else 0,
             'proxy_precision_mean': mean(proxies) if proxies else 0,
             'proxy_precision_k_mean': mean(proxies_k) if proxies_k else 0,
+            'prec_eval_ratio_mean': mean(prec_evals) if prec_evals else 0.0,
+            'prec_apply_ratio_mean': mean(prec_applies) if prec_applies else 0.0,
+            'prec_s_ratio_mean': mean(prec_s) if prec_s else 0.0,
+            'prec_k_ratio_mean': mean(prec_k) if prec_k else 0.0,
             'avg_s_mean': mean(avg_s) if avg_s else 0,
             'avg_k_mean': mean(avg_k) if avg_k else 0,
             'timeout_count': sum(1 for r in rows if r.get('is_timeout', False)),
@@ -275,11 +331,21 @@ def analyze_parameter_sensitivity(results: List[Dict], analysis_type: str) -> Di
             proxies = [1.0/s if s > 0 else 0 for s in avg_s]
             proxies_k = [1.0/k if k > 0 else 0 for k in avg_k]
             
+            # New direct precision metrics
+            prec_evals = [r.get('PrecRatioEval', 0.0) for r in valid_for_precision]
+            prec_applies = [r.get('PrecRatioApply', 0.0) for r in valid_for_precision]
+            prec_s = [r.get('PrecRatioS', 0.0) for r in valid_for_precision]
+            prec_k = [r.get('PrecRatioK', 0.0) for r in valid_for_precision]
+            
             m_trends[d_val][m_val] = {
                 'time_mean': mean(times) if times else 0,
                 'precision_mean': mean(precisions) if precisions else 0,
                 'proxy_precision_mean': mean(proxies) if proxies else 0,
                 'proxy_precision_k_mean': mean(proxies_k) if proxies_k else 0,
+                'prec_eval_ratio_mean': mean(prec_evals) if prec_evals else 0.0,
+                'prec_apply_ratio_mean': mean(prec_applies) if prec_applies else 0.0,
+                'prec_s_ratio_mean': mean(prec_s) if prec_s else 0.0,
+                'prec_k_ratio_mean': mean(prec_k) if prec_k else 0.0,
                 'avg_s_mean': mean(avg_s) if avg_s else 0,
                 'avg_k_mean': mean(avg_k) if avg_k else 0,
                 'timeout_count': sum(1 for r in rows if r.get('is_timeout', False)),

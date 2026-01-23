@@ -1,8 +1,10 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/multi-effect/multi-inner-first,2,2,1,231,20,1.0,1.0,1.0,1.0,0.009429,0.009235,0.008962
-dmcfa,analysis/benchmarks/suite/multi-effect/multi-simple,2,2,1,231,18,1.0,1.0,1.0,1.0,0.008675,0.008533,0.008983
-dmcfa,analysis/benchmarks/suite/multi-effect/multi-two-outer,2,2,1,251,24,1.0,1.0,1.0,1.0,0.009417,0.009926,0.009131
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/suite/multi-effect/multi-inner-first,2,2,1,231,20,1.0,1.0,1.0,1.0,0.006229,0.006788,0.005943
-dmcfae,analysis/benchmarks/suite/multi-effect/multi-simple,2,2,1,231,18,1.0,1.0,1.0,1.0,0.005348,0.005615,0.005927
-dmcfae,analysis/benchmarks/suite/multi-effect/multi-two-outer,2,2,1,251,24,1.0,1.0,1.0,1.0,0.007169,0.006619,0.007155
+
+dmcfa,analysis/benchmarks/suite/multi-effect/multi-inner-first,2,2,1,231,231,231,20,20,20,10,10,10,210,210,210,0.009304,0.009406,0.009677
+dmcfa,analysis/benchmarks/suite/multi-effect/multi-simple,2,2,1,231,231,231,18,18,18,8,8,8,206,206,206,0.008577,0.008571,0.009471
+dmcfa,analysis/benchmarks/suite/multi-effect/multi-two-outer,2,2,1,251,251,251,24,24,24,11,11,11,222,222,222,0.009789,0.01,0.010068
+
+dmcfae,analysis/benchmarks/suite/multi-effect/multi-inner-first,2,2,1,231,231,231,20,20,20,10,10,10,137,137,137,0.006725,0.006468,0.006017
+dmcfae,analysis/benchmarks/suite/multi-effect/multi-simple,2,2,1,231,231,231,18,18,18,8,8,8,137,137,137,0.006777,0.00636,0.006038
+dmcfae,analysis/benchmarks/suite/multi-effect/multi-two-outer,2,2,1,251,251,251,24,24,24,11,11,11,146,146,146,0.00726,0.007363,0.007043

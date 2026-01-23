@@ -45,7 +45,17 @@ def load_all_results(benchmark: str, analysis: str) -> List[Dict]:
                     row['M(K)'] = int(row['M(K)']) if row['M(K)'] else 0
                     row['K'] = int(row.get('K', 0)) if row.get('K') else 0
                     row['Precise'] = float(row['Precise'])
-                    row['Time'] = float(row['Time'])
+                    
+                    # Compute average time if Time column is missing
+                    if 'Time' in row and row['Time'] and row['Time'] != 'timeout':
+                        row['Time'] = float(row['Time'])
+                    else:
+                        times = []
+                        for t in ['Time1', 'Time2', 'Time3']:
+                            if t in row and row[t] and row[t] != 'timeout':
+                                times.append(float(row[t]))
+                        row['Time'] = mean(times) if times else 0.0
+                        
                     all_results.append(row)
                 except (ValueError, TypeError):
                     continue

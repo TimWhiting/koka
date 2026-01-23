@@ -1,18 +1,20 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
 
-dmcfa,analysis/benchmarks/handlers/nim/example-check,2,0,0,497,38,1.0724346076458753,1.5526315789473684,1.0,1.139650872817955,0.022729,0.023179,0.022842
-dmcfa,analysis/benchmarks/handlers/nim/example-coin,2,0,1,318,94,1.0440251572327044,1.4680851063829787,1.0,1.1434426229508197,0.036969,0.037346,0.036518
-dmcfa,analysis/benchmarks/handlers/nim/example-gtree,2,0,0,250,14,1.076,1.2142857142857142,1.0,1.2524752475247525,0.006435,0.006715,0.005404
-dmcfa,analysis/benchmarks/handlers/nim/example-pc1,2,0,0,500,45,1.076,1.6444444444444444,1.0,1.139650872817955,0.024251,0.037349,0.025157
-dmcfa,analysis/benchmarks/handlers/nim/example-pc2,2,0,0,250,35,1.024,1.2571428571428571,1.0,1.0931372549019607,0.013408,0.013042,0.012963
-dmcfa,analysis/benchmarks/handlers/nim/example-perfect1,2,0,0,160,23,1.025,1.2608695652173914,1.0,1.1322314049586777,0.004924,0.005522,0.004972
-dmcfa,analysis/benchmarks/handlers/nim/example-perfect2,2,0,0,160,23,1.025,1.2608695652173914,1.0,1.1322314049586777,0.004609,0.005062,0.004924
 
-dmcfae,analysis/benchmarks/handlers/nim/example-check,2,0,0,506,38,1.08300395256917,1.5526315789473684,1.0,1.1911764705882353,0.018432,0.018934,0.019005
-dmcfae,analysis/benchmarks/handlers/nim/example-coin,2,0,1,318,94,1.0440251572327044,1.4680851063829787,1.0,1.2151898734177216,0.029969,0.030098,0.029851
-dmcfae,analysis/benchmarks/handlers/nim/example-gtree,2,0,0,250,14,1.076,1.2142857142857142,1.0,1.3571428571428572,0.005049,0.005192,0.004782
-dmcfae,analysis/benchmarks/handlers/nim/example-pc1,2,0,0,509,45,1.0864440078585462,1.6444444444444444,1.0,1.1911764705882353,0.022013,0.021126,0.021019
-dmcfae,analysis/benchmarks/handlers/nim/example-pc2,2,0,0,250,35,1.024,1.2571428571428571,1.0,1.1417910447761195,0.009648,0.009964,0.009722
-dmcfae,analysis/benchmarks/handlers/nim/example-perfect1,2,0,0,160,23,1.025,1.2608695652173914,1.0,1.2025316455696202,0.003689,0.004199,0.003565
-dmcfae,analysis/benchmarks/handlers/nim/example-perfect2,2,0,0,160,23,1.025,1.2608695652173914,1.0,1.2025316455696202,0.003956,0.003772,0.004087
+
+dmcfa,analysis/benchmarks/handlers/nim/example-check,2,0,0,497,533,462,38,59,25,19,19,19,401,457,349,0.02401,0.022642,0.023352
+dmcfa,analysis/benchmarks/handlers/nim/example-coin,2,0,1,318,332,305,94,138,50,15,15,15,244,279,209,0.033899,0.03676,0.036281
+dmcfa,analysis/benchmarks/handlers/nim/example-gtree,2,0,0,250,269,234,14,17,11,8,8,8,202,253,159,0.006065,0.006989,0.005804
+dmcfa,analysis/benchmarks/handlers/nim/example-pc1,2,0,0,500,538,464,45,74,28,19,19,19,401,457,349,0.025369,0.025763,0.02437
+dmcfa,analysis/benchmarks/handlers/nim/example-pc2,2,0,0,250,256,245,35,44,26,8,8,8,204,223,185,0.013243,0.012928,0.012936
+dmcfa,analysis/benchmarks/handlers/nim/example-perfect1,2,0,0,160,164,156,23,29,17,8,8,8,121,137,105,0.004791,0.005004,0.004357
+dmcfa,analysis/benchmarks/handlers/nim/example-perfect2,2,0,0,160,164,156,23,29,17,8,8,8,121,137,105,0.004814,0.005306,0.004644
+
+dmcfae,analysis/benchmarks/handlers/nim/example-check,2,0,0,506,548,466,38,59,25,19,19,19,272,324,223,0.017366,0.016781,0.017812
+dmcfae,analysis/benchmarks/handlers/nim/example-coin,2,0,1,318,332,305,94,138,50,15,15,15,158,192,124,0.028205,0.029125,0.027758
+dmcfae,analysis/benchmarks/handlers/nim/example-gtree,2,0,0,250,269,234,14,17,11,8,8,8,140,190,98,0.004471,0.005988,0.00489
+dmcfae,analysis/benchmarks/handlers/nim/example-pc1,2,0,0,509,553,468,45,74,28,19,19,19,272,324,223,0.019351,0.019822,0.019684
+dmcfae,analysis/benchmarks/handlers/nim/example-pc2,2,0,0,250,256,245,35,44,26,8,8,8,134,153,115,0.008737,0.009147,0.00881
+dmcfae,analysis/benchmarks/handlers/nim/example-perfect1,2,0,0,160,164,156,23,29,17,8,8,8,79,95,63,0.003289,0.003686,0.003324
+dmcfae,analysis/benchmarks/handlers/nim/example-perfect2,2,0,0,160,164,156,23,29,17,8,8,8,79,95,63,0.003503,0.003553,0.003639

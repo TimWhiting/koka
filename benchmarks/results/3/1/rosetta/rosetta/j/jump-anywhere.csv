@@ -1,6 +1,8 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,1,0,130,3,1.1615384615384616,1.0,1.0,1.0961538461538463,0.00398,0.003985,0.00371
-dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,1,0,447,424,1.0268456375838926,1.3325471698113207,1.047872340425532,1.0566037735849056,0.145675,0.147162,0.146612
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,1,0,130,3,1.1615384615384616,1.0,1.0,1.1428571428571428,0.003627,0.003428,0.003232
-dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,1,0,541,452,1.0295748613678373,1.4933628318584071,1.0931372549019607,1.1797752808988764,0.199145,0.197692,0.196491
+
+dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,1,0,130,151,114,3,3,3,3,3,3,104,114,94,0.004088,0.004289,0.003529
+dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,1,0,447,459,441,424,565,325,188,197,179,477,504,452,0.143198,0.142756,0.143591
+
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,3,1,0,130,151,114,3,3,3,3,3,3,70,80,60,0.003213,0.003551,0.003047
+dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,3,1,0,541,557,533,452,675,311,204,223,185,267,315,235,0.18968,0.186512,0.187054

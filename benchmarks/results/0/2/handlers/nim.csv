@@ -1,18 +1,20 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
 
-dmcfa,analysis/benchmarks/handlers/nim/example-check,0,2,0,842,52,1.2327790973871735,1.4807692307692308,1.037037037037037,1.2432859399684044,0.029971,0.030332,0.030305
-dmcfa,analysis/benchmarks/handlers/nim/example-coin,0,2,1,364,69,1.0247252747252746,1.2028985507246377,1.0,1.1118881118881119,0.014393,0.013733,0.013536
-dmcfa,analysis/benchmarks/handlers/nim/example-gtree,0,2,0,602,50,1.2491694352159468,1.24,1.0,1.4628450106157111,0.026023,0.026158,0.026107
-dmcfa,analysis/benchmarks/handlers/nim/example-pc1,0,2,0,743,32,1.2382234185733514,1.21875,1.05,1.199294532627866,0.022844,0.022818,0.022863
-dmcfa,analysis/benchmarks/handlers/nim/example-pc2,0,2,1,243,14,1.0,1.0,1.0,1.0,0.005078,0.004923,0.004978
-dmcfa,analysis/benchmarks/handlers/nim/example-perfect1,0,2,0,228,28,1.0219298245614035,1.2142857142857142,1.0,1.11864406779661,0.00689,0.006693,0.006351
-dmcfa,analysis/benchmarks/handlers/nim/example-perfect2,0,2,0,228,28,1.0219298245614035,1.2142857142857142,1.0,1.11864406779661,0.006664,0.006676,0.006457
 
-dmcfae,analysis/benchmarks/handlers/nim/example-check,0,2,0,858,52,1.2412587412587412,1.4807692307692308,1.037037037037037,1.3193473193473193,0.028686,0.028848,0.028043
-dmcfae,analysis/benchmarks/handlers/nim/example-coin,0,2,1,364,69,1.0247252747252746,1.2028985507246377,1.0,1.162303664921466,0.012511,0.012234,0.011401
-dmcfae,analysis/benchmarks/handlers/nim/example-gtree,0,2,0,608,50,1.2582236842105263,1.24,1.0,1.6283185840707965,0.026934,0.027241,0.027841
-dmcfae,analysis/benchmarks/handlers/nim/example-pc1,0,2,0,685,32,1.1386861313868613,1.21875,1.05,1.139344262295082,0.015856,0.016522,0.015845
-dmcfae,analysis/benchmarks/handlers/nim/example-pc2,0,2,1,243,14,1.0,1.0,1.0,1.0,0.004296,0.004003,0.004265
-dmcfae,analysis/benchmarks/handlers/nim/example-perfect1,0,2,0,228,28,1.0219298245614035,1.2142857142857142,1.0,1.1810344827586208,0.0059,0.005847,0.005427
-dmcfae,analysis/benchmarks/handlers/nim/example-perfect2,0,2,0,228,28,1.0219298245614035,1.2142857142857142,1.0,1.1810344827586208,0.005813,0.005837,0.005501
+
+dmcfa,analysis/benchmarks/handlers/nim/example-check,0,2,0,842,1038,760,52,77,36,27,28,26,633,787,528,0.044897,0.031007,0.033412
+dmcfa,analysis/benchmarks/handlers/nim/example-coin,0,2,1,364,373,356,69,83,55,13,13,13,286,318,254,0.014399,0.031126,0.01523
+dmcfa,analysis/benchmarks/handlers/nim/example-gtree,0,2,0,602,752,536,50,62,38,11,11,11,471,689,338,0.031199,0.030016,0.028251
+dmcfa,analysis/benchmarks/handlers/nim/example-pc1,0,2,0,743,920,672,32,39,26,20,21,19,567,680,499,0.024993,0.024045,0.024576
+dmcfa,analysis/benchmarks/handlers/nim/example-pc2,0,2,1,243,243,243,14,14,14,6,6,6,205,205,205,0.005847,0.006018,0.00545
+dmcfa,analysis/benchmarks/handlers/nim/example-perfect1,0,2,0,228,233,223,28,34,22,11,11,11,177,198,156,0.007633,0.007021,0.007213
+dmcfa,analysis/benchmarks/handlers/nim/example-perfect2,0,2,0,228,233,223,28,34,22,11,11,11,177,198,156,0.006326,0.007611,0.006416
+
+dmcfae,analysis/benchmarks/handlers/nim/example-check,0,2,0,858,1065,765,52,77,36,27,28,26,429,566,333,0.028724,0.029389,0.0294
+dmcfae,analysis/benchmarks/handlers/nim/example-coin,0,2,1,364,373,356,69,83,55,13,13,13,191,222,160,0.01205,0.012904,0.011706
+dmcfae,analysis/benchmarks/handlers/nim/example-gtree,0,2,0,608,765,535,50,62,38,11,11,11,339,552,211,0.027229,0.027459,0.027588
+dmcfae,analysis/benchmarks/handlers/nim/example-pc1,0,2,0,685,780,630,32,39,26,20,21,19,366,417,327,0.015615,0.015819,0.016411
+dmcfae,analysis/benchmarks/handlers/nim/example-pc2,0,2,1,243,243,243,14,14,14,6,6,6,138,138,138,0.004223,0.004188,0.004428
+dmcfae,analysis/benchmarks/handlers/nim/example-perfect1,0,2,0,228,233,223,28,34,22,11,11,11,116,137,95,0.006044,0.006285,0.005351
+dmcfae,analysis/benchmarks/handlers/nim/example-perfect2,0,2,0,228,233,223,28,34,22,11,11,11,116,137,95,0.00554,0.005875,0.005327

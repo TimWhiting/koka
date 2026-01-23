@@ -1,4 +1,6 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/koka-gen/interp/interp,0,2,0,552,29,1.2065217391304348,1.4827586206896552,1.0769230769230769,1.1755102040816328,0.017454,0.019301,0.01883
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/koka-gen/interp/interp,0,2,0,584,41,1.25513698630137,1.7317073170731707,1.0769230769230769,1.22,0.021551,0.022182,0.020792
+
+dmcfa,analysis/benchmarks/koka-gen/interp/interp,0,2,0,552,666,509,29,43,23,13,14,12,490,576,423,0.017972,0.019678,0.018631
+
+dmcfae,analysis/benchmarks/koka-gen/interp/interp,0,2,0,584,733,527,41,71,31,13,14,12,350,427,290,0.021996,0.022887,0.022177

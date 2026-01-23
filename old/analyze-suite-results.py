@@ -64,18 +64,57 @@ def load_csv_results(filepath: Path) -> List[Dict]:
 def parse_metrics(row: Dict) -> Dict:
     """Parse a result row and convert numeric fields."""
     parsed = dict(row)
-    numeric_fields = [
-        'D', 'M(K)', 'Precise', 'NEval', 'NApply', 
-        'AvgEval', 'AvgApply', 'AvgMK', 'AvgK', 'AvgS', 'Time'
-    ]
     
-    for field in numeric_fields:
+    # Fields to handle
+    int_fields = ['NEval', 'NApply', 'NK', 'NS', 'SumEval', 'SumApply', 'SumK', 'SumS', 'PrecEval', 'PrecApply', 'PrecK', 'PrecS']
+    float_fields = ['D', 'M(K)', 'Precise', 'Time1', 'Time2', 'Time3', 'Time']
+    
+    for field in int_fields:
         if field in parsed and parsed[field]:
             try:
-                parsed[field] = float(parsed[field])
+                val_str = str(parsed[field]).strip().lower()
+                if val_str == 'timeout':
+                    parsed[field] = 0
+                else:
+                    parsed[field] = int(float(parsed[field]))
+            except ValueError:
+                parsed[field] = 0
+                
+    for field in float_fields:
+        if field in parsed and parsed[field]:
+            try:
+                val_str = str(parsed[field]).strip().lower()
+                if val_str == 'timeout':
+                    parsed[field] = 300.0
+                else:
+                    parsed[field] = float(parsed[field])
             except ValueError:
                 pass
+
+    # Compute Averages from Sums if they don't exist
+    if 'SumS' in parsed and 'NS' in parsed:
+        parsed['AvgS'] = float(parsed['SumS']) / float(parsed['NS']) if parsed['NS'] > 0 else 0.0
     
+    if 'SumK' in parsed and 'NK' in parsed:
+        parsed['AvgK'] = float(parsed['SumK']) / float(parsed['NK']) if parsed['NK'] > 0 else 0.0
+        parsed['AvgMK'] = parsed['AvgK']
+
+    if 'SumEval' in parsed and 'NEval' in parsed:
+        parsed['AvgEval'] = float(parsed['SumEval']) / float(parsed['NEval']) if parsed['NEval'] > 0 else 0.0
+
+    if 'SumApply' in parsed and 'NApply' in parsed:
+        parsed['AvgApply'] = float(parsed['SumApply']) / float(parsed['NApply']) if parsed['NApply'] > 0 else 0.0
+    
+    # New precision metrics
+    if 'PrecEval' in parsed and 'NEval' in parsed:
+        parsed['PrecRatioEval'] = float(parsed['PrecEval']) / float(parsed['NEval']) if parsed['NEval'] > 0 else 0.0
+    if 'PrecApply' in parsed and 'NApply' in parsed:
+        parsed['PrecRatioApply'] = float(parsed['PrecApply']) / float(parsed['NApply']) if parsed['NApply'] > 0 else 0.0
+    if 'PrecS' in parsed and 'NS' in parsed:
+        parsed['PrecRatioS'] = float(parsed['PrecS']) / float(parsed['NS']) if parsed['NS'] > 0 else 0.0
+    if 'PrecK' in parsed and 'NK' in parsed:
+        parsed['PrecRatioK'] = float(parsed['PrecK']) / float(parsed['NK']) if parsed['NK'] > 0 else 0.0
+
     # Compute composite Time if missing but components exist
     if 'Time' not in parsed or not parsed['Time']:
         times = []
@@ -226,21 +265,37 @@ def analyze_suite_benchmark(benchmark_name: str) -> Dict:
         times = [r.get('Time') for r in parsed_results if isinstance(r.get('Time'), (int, float))]
         nevals = [r.get('NEval') for r in parsed_results if isinstance(r.get('NEval'), (int, float))]
         napplies = [r.get('NApply') for r in parsed_results if isinstance(r.get('NApply'), (int, float))]
+        nks = [r.get('NK') for r in parsed_results if isinstance(r.get('NK'), (int, float))]
+        nss = [r.get('NS') for r in parsed_results if isinstance(r.get('NS'), (int, float))]
         precisions = [r.get('Precise') for r in parsed_results if isinstance(r.get('Precise'), (int, float))]
         
+        # New precision ratios
+        prec_evals = [r.get('PrecRatioEval', 0.0) for r in parsed_results]
+        prec_applies = [r.get('PrecRatioApply', 0.0) for r in parsed_results]
+        prec_s = [r.get('PrecRatioS', 0.0) for r in parsed_results]
+        prec_k = [r.get('PrecRatioK', 0.0) for r in parsed_results]
+
         # Analyze trends across D values
         d_trends = {}
         for d in sorted(d_values):
             d_results = by_d[d]
-            d_times = [r.get('Time') for r in d_results if isinstance(r.get('Time'), (int, float))]
-            d_trends[d] = compute_statistics(d_times)
+            d_trends[d] = {
+                'time': compute_statistics([r.get('Time') for r in d_results]),
+                'nevals': compute_statistics([r.get('NEval') for r in d_results]),
+                'napplies': compute_statistics([r.get('NApply') for r in d_results]),
+                'precision': compute_statistics([r.get('Precise') for r in d_results])
+            }
         
         # Analyze trends across M(K) values
         m_trends = {}
         for m in sorted(m_values):
             m_results = by_m[m]
-            m_times = [r.get('Time') for r in m_results if isinstance(r.get('Time'), (int, float))]
-            m_trends[m] = compute_statistics(m_times)
+            m_trends[m] = {
+                'time': compute_statistics([r.get('Time') for r in m_results]),
+                'nevals': compute_statistics([r.get('NEval') for r in m_results]),
+                'napplies': compute_statistics([r.get('NApply') for r in m_results]),
+                'precision': compute_statistics([r.get('Precise') for r in m_results])
+            }
         
         # Analyze trends across both D and M(K) (2D breakdown)
         d_m_trends = {}
@@ -248,8 +303,12 @@ def analyze_suite_benchmark(benchmark_name: str) -> Dict:
             d_m_trends[d] = {}
             for m in sorted(m_values):
                 d_m_results = by_d_m[d][m]
-                d_m_times = [r.get('Time') for r in d_m_results if isinstance(r.get('Time'), (int, float))]
-                d_m_trends[d][m] = compute_statistics(d_m_times)
+                d_m_trends[d][m] = {
+                    'time': compute_statistics([r.get('Time') for r in d_m_results]),
+                    'nevals': compute_statistics([r.get('NEval') for r in d_m_results]),
+                    'napplies': compute_statistics([r.get('NApply') for r in d_m_results]),
+                    'precision': compute_statistics([r.get('Precise') for r in d_m_results])
+                }
         
         analysis_results[analysis_key] = {
             'name': analysis_name,
@@ -259,7 +318,13 @@ def analyze_suite_benchmark(benchmark_name: str) -> Dict:
             'time': compute_statistics(times),
             'nevals': compute_statistics(nevals),
             'napplies': compute_statistics(napplies),
+            'nks': compute_statistics(nks),
+            'nss': compute_statistics(nss),
             'precision': compute_statistics(precisions),
+            'prec_eval_ratio': compute_statistics(prec_evals),
+            'prec_apply_ratio': compute_statistics(prec_applies),
+            'prec_s_ratio': compute_statistics(prec_s),
+            'prec_k_ratio': compute_statistics(prec_k),
             'd_trends': d_trends,
             'm_trends': m_trends,
             'd_m_trends': d_m_trends,
@@ -304,7 +369,7 @@ def print_summary_table(summary: Dict):
             if data.get('d_trends'):
                 print(f"    Time by D value:")
                 for d in sorted(data['d_trends'].keys()):
-                    d_stats = data['d_trends'][d]
+                    d_stats = data['d_trends'][d]['time']
                     if d_stats:
                         print(f"      D={d}: {d_stats['mean']:.4f}s (n={d_stats['count']})")
             
@@ -312,7 +377,7 @@ def print_summary_table(summary: Dict):
             if data.get('m_trends'):
                 print(f"    Time by M(K) value:")
                 for m in sorted(data['m_trends'].keys()):
-                    m_stats = data['m_trends'][m]
+                    m_stats = data['m_trends'][m]['time']
                     if m_stats:
                         print(f"      M(K)={m}: {m_stats['mean']:.4f}s (n={m_stats['count']})")
             
@@ -351,7 +416,13 @@ def save_json_report(summary: Dict, output_file: Path):
                 'time': data['time'],
                 'nevals': data['nevals'],
                 'napplies': data['napplies'],
+                'nks': data.get('nks', {}),
+                'nss': data.get('nss', {}),
                 'precision': data['precision'],
+                'prec_eval_ratio': data.get('prec_eval_ratio', {}),
+                'prec_apply_ratio': data.get('prec_apply_ratio', {}),
+                'prec_s_ratio': data.get('prec_s_ratio', {}),
+                'prec_k_ratio': data.get('prec_k_ratio', {}),
                 'd_trends': {str(k): v for k, v in data.get('d_trends', {}).items()},
                 'm_trends': {str(k): v for k, v in data.get('m_trends', {}).items()},
                 'd_m_trends': d_m_trends

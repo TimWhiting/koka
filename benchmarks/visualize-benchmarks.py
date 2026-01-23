@@ -62,6 +62,18 @@ METRIC_CONFIG = {
         'filename_suffix': '_cost_loc',
         'json_key': 'cost_per_loc',
         'trend_key': 'cost_per_loc'
+    },
+    'prec_eval': {
+        'label': 'Evaluation Precision (Ratio)',
+        'filename_suffix': '_prec_eval',
+        'json_key': 'prec_eval_ratio',
+        'trend_key': 'prec_eval_ratio_mean'
+    },
+    'prec_stack': {
+        'label': 'Stack Precision (Ratio)',
+        'filename_suffix': '_prec_stack',
+        'json_key': 'prec_s_ratio',
+        'trend_key': 'prec_s_ratio_mean'
     }
 }
 

@@ -2,9 +2,11 @@
 - [ ] Run for longer (timeouts)
 - [ ] Use results to determine stack invariants (order of handlers)
 - [ ] Regenerate results with new format of results + stack invariants (including coop-communication due to commented examples)
-- [ ] Figure out why timeout on ukanren on small m
+- [ ] Figure out why timeout on ukanren/some build on small m
 - [ ] Figure out how to best visualize results
 - [ ] Maybe focus the results on DMCFA even though it has overhead
+
+- [ ] Figure out why some benchmarks timeout on (d,m)=0. Really that shouldn't happen, it should just be imprecise?
 
 
 DONT WORK ON KCFA until we determine it is useful...

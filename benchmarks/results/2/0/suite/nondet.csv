@@ -1,10 +1,12 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/nondet/nondet-context,2,0,0,106,9,1.0,1.0,1.0,1.053191489361702,0.001354,0.001947,0.001785
-dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,2,0,0,83,7,1.0,1.0,1.0,1.0285714285714285,0.001339,0.00109,0.001319
-dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,2,0,0,148,19,1.0135135135135136,1.0,1.0,1.1333333333333333,0.003169,0.003834,0.003184
-dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,2,0,0,91,7,1.0,1.0,1.0,1.0649350649350648,0.001242,0.00154,0.001139
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/suite/nondet/nondet-context,2,0,0,106,9,1.0,1.0,1.0,1.078125,0.001496,0.001497,0.001094
-dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,2,0,0,83,7,1.0,1.0,1.0,1.0408163265306123,0.00091,0.001101,0.000815
-dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,2,0,0,148,19,1.0135135135135136,1.0,1.0,1.1931818181818181,0.002231,0.002168,0.002313
-dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,2,0,0,91,7,1.0,1.0,1.0,1.0925925925925926,0.000971,0.001143,0.000837
+
+dmcfa,analysis/benchmarks/suite/nondet/nondet-context,2,0,0,106,106,106,9,9,9,2,2,2,94,99,89,0.001852,0.001459,0.00167
+dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,2,0,0,83,83,83,7,7,7,1,1,1,70,72,68,0.001171,0.001332,0.001312
+dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,2,0,0,148,150,146,19,19,19,6,6,6,135,153,121,0.00332,0.003875,0.003769
+dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,2,0,0,91,91,91,7,7,7,1,1,1,77,82,72,0.001228,0.001421,0.001466
+
+dmcfae,analysis/benchmarks/suite/nondet/nondet-context,2,0,0,106,106,106,9,9,9,2,2,2,64,69,59,0.001544,0.001536,0.001397
+dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,2,0,0,83,83,83,7,7,7,1,1,1,49,51,47,0.001052,0.000849,0.00108
+dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,2,0,0,148,150,146,19,19,19,6,6,6,88,105,75,0.002477,0.002672,0.002804
+dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,2,0,0,91,91,91,7,7,7,1,1,1,54,59,49,0.001251,0.001025,0.001176

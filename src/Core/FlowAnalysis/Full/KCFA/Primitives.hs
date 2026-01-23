@@ -285,6 +285,8 @@ doPrimitive nm achanges ctx u store extendStore = do
       [AChangeLit (LiteralChangeIntX _)] -> anyBool
   else if nm == nameStringEq then
     opCmpString (==) achanges
+  else if nm == nameCoreStringNeq then
+    opCmpString (/=) achanges
   else if nm == nameCoreSliceXStartsWith then
     opCmpString (\s1 s2 -> s2 `isPrefixOf` s1) achanges
   else if nm == nameCoreXParse then
