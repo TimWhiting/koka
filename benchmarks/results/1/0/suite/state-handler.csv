@@ -1,4 +1,6 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/state-handler/state-countdown,1,0,0,252,30,1.003968253968254,1.1333333333333333,1.0,1.0599078341013826,0.007171,0.007303,0.007203
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/suite/state-handler/state-countdown,1,0,0,256,30,1.00390625,1.1333333333333333,1.0,1.0743243243243243,0.005713,0.005391,0.005827
+
+dmcfa,analysis/benchmarks/suite/state-handler/state-countdown,1,0,0,252,253,251,30,34,26,10,10,10,217,230,204,0.007242,0.00722,0.006748
+
+dmcfae,analysis/benchmarks/suite/state-handler/state-countdown,1,0,0,256,257,255,30,34,26,10,10,10,148,159,137,0.006282,0.006425,0.006294

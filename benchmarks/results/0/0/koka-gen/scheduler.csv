@@ -1,4 +1,6 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/koka-gen/scheduler/scheduler,0,0,1,207,12,1.067632850241546,1.0,1.0,1.422077922077922,0.004304,0.004048,0.004322
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/koka-gen/scheduler/scheduler,0,0,1,207,12,1.067632850241546,1.0,1.0,1.5714285714285714,0.003777,0.003897,0.003942
+
+dmcfa,analysis/benchmarks/koka-gen/scheduler/scheduler,0,0,1,207,221,193,12,12,12,4,4,4,154,219,127,0.00389,0.00399,0.004209
+
+dmcfae,analysis/benchmarks/koka-gen/scheduler/scheduler,0,0,1,207,221,193,12,12,12,4,4,4,112,176,86,0.003953,0.004282,0.004366

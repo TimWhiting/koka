@@ -95,8 +95,12 @@ def extract_d_trends(analysis_data: Dict) -> Dict[str, List[Tuple[int, float]]]:
     trends = {}
     for analysis_key, data in analysis_data.items():
         if 'd_trends' in data:
-            d_trend = [(int(d), data['d_trends'][str(d)].get('mean', 0))
-                      for d in sorted(data.get('d_values', []))]
+            d_trend = []
+            for d in sorted(data.get('d_values', [])):
+                stats = data['d_trends'][str(d)]
+                # Support both flat and nested (new) structures
+                avg_time = stats.get('time', stats).get('mean', 0)
+                d_trend.append((int(d), avg_time))
             trends[analysis_key] = d_trend
     return trends
 
@@ -109,8 +113,11 @@ def extract_m_trends(analysis_data: Dict) -> Dict[str, List[Tuple[int, float]]]:
     trends = {}
     for analysis_key, data in analysis_data.items():
         if 'm_trends' in data:
-            m_trend = [(int(m), data['m_trends'][str(m)].get('mean', 0))
-                      for m in sorted(data.get('m_values', []))]
+            m_trend = []
+            for m in sorted(data.get('m_values', [])):
+                stats = data['m_trends'][str(m)]
+                avg_time = stats.get('time', stats).get('mean', 0)
+                m_trend.append((int(m), avg_time))
             trends[analysis_key] = m_trend
     return trends
 
@@ -124,10 +131,11 @@ def extract_precision_trends(analysis_data: Dict) -> Dict[str, List[Tuple[int, f
     for analysis_key, data in analysis_data.items():
         if 'm_trends' in data or 'k_trends' in data:
             trends_data = data.get('m_trends', data.get('k_trends', {}))
-            precision_trend = [
-                (int(param), trends_data[str(param)].get('mean', 0))
-                for param in sorted(data.get('m_values', data.get('k_values', [])))
-            ]
+            precision_trend = []
+            for param in sorted(data.get('m_values', data.get('k_values', []))):
+                stats = trends_data[str(param)]
+                avg_prec = stats.get('precision', stats).get('mean', 0)
+                precision_trend.append((int(param), avg_prec))
             precisions[analysis_key] = precision_trend
     return precisions
 

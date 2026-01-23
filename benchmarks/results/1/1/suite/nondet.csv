@@ -1,10 +1,12 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/nondet/nondet-context,1,1,1,107,9,1.0,1.0,1.0,1.0,0.002311,0.002325,0.002126
-dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,1,1,1,84,7,1.0,1.0,1.0,1.0,0.001288,0.001509,0.001224
-dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,1,1,0,183,19,1.0,1.0,1.0,1.1027397260273972,0.00444,0.005155,0.004774
-dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,1,1,1,92,7,1.0,1.0,1.0,1.0,0.001686,0.001357,0.001597
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
-dmcfae,analysis/benchmarks/suite/nondet/nondet-context,1,1,1,107,9,1.0,1.0,1.0,1.0,0.00189,0.001877,0.00119
-dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,1,1,1,84,7,1.0,1.0,1.0,1.0,0.001013,0.001227,0.000891
-dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,1,1,0,183,19,1.0,1.0,1.0,1.1505376344086022,0.003276,0.003413,0.003281
-dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,1,1,1,92,7,1.0,1.0,1.0,1.0,0.001185,0.001288,0.000994
+
+dmcfa,analysis/benchmarks/suite/nondet/nondet-context,1,1,1,107,107,107,9,9,9,2,2,2,96,96,96,0.002301,0.002305,0.002286
+dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,1,1,1,84,84,84,7,7,7,1,1,1,71,71,71,0.001213,0.001461,0.001555
+dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,1,1,0,183,183,183,19,19,19,6,6,6,146,161,133,0.004246,0.00474,0.004807
+dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,1,1,1,92,92,92,7,7,7,1,1,1,79,79,79,0.001791,0.00183,0.00144
+
+dmcfae,analysis/benchmarks/suite/nondet/nondet-context,1,1,1,107,107,107,9,9,9,2,2,2,65,65,65,0.00197,0.001427,0.001723
+dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,1,1,1,84,84,84,7,7,7,1,1,1,50,50,50,0.001151,0.001441,0.001137
+dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,1,1,0,183,183,183,19,19,19,6,6,6,93,107,81,0.003391,0.003692,0.003386
+dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,1,1,1,92,92,92,7,7,7,1,1,1,55,55,55,0.001187,0.001308,0.001348

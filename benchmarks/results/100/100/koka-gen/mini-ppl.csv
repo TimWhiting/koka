@@ -1,10 +1,12 @@
-Analysis,File/Example,D,M(K),Precise,NEval,NApply,AvgEval,AvgApply,AvgK,AvgS,Time1,Time2,Time3
+Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 
 
-dmcfa,analysis/benchmarks/koka-gen/mini-ppl/burglar,100,100,0,7351,651,1.0134675554346348,1.0460829493087558,1.0,1.075549888428435,0.757792,0.723607,0.731275
-dmcfa,analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,100,100,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfa,analysis/benchmarks/koka-gen/mini-ppl/drunk,100,100,0,9856,861,1.0145089285714286,1.0580720092915215,1.0,1.0830409356725146,1.168114,1.159559,1.153631
 
-dmcfae,analysis/benchmarks/koka-gen/mini-ppl/burglar,100,100,1,6803,601,1.0,1.0,1.0,1.0,0.726347,0.692539,0.70437
-dmcfae,analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,100,100,timeout,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfae,analysis/benchmarks/koka-gen/mini-ppl/drunk,100,100,1,9048,781,1.0,1.0,1.0,1.0,1.150895,1.143681,1.175803
+
+dmcfa,analysis/benchmarks/koka-gen/mini-ppl/burglar,100,100,0,7351,7450,7279,651,681,621,381,381,381,6274,6748,5800,0.7378,0.690314,0.691693
+dmcfa,analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,100,100,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfa,analysis/benchmarks/koka-gen/mini-ppl/drunk,100,100,0,9856,9999,9752,861,911,811,528,528,528,8550,9260,7840,1.125112,1.171556,1.17643
+
+dmcfae,analysis/benchmarks/koka-gen/mini-ppl/burglar,100,100,1,6803,6803,6803,601,601,601,343,343,343,3718,3718,3718,0.67091,0.628565,0.631443
+dmcfae,analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,100,100,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
+dmcfae,analysis/benchmarks/koka-gen/mini-ppl/drunk,100,100,1,9048,9048,9048,781,781,781,468,468,468,4969,4969,4969,1.020778,1.024182,1.028246

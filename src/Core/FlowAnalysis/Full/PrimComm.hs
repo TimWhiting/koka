@@ -86,6 +86,7 @@ nameCoreCharToString = newLocallyQualified "std/core/string" "char" "@extern-str
 nameCoreStringContains = newQualified "std/core/string" "contains"
 nameCoreStringToLower = newQualified "std/core/string" "to-lower"
 nameCoreStringListChar = newQualified "std/core/string" "list"
+nameCoreStringNeq = newQualified "std/core/string" "!="
 nameCoreSliceString = newQualified "std/core/sslice" "@extern-string"
 nameCoreSliceXStartsWith = newQualified "std/core/sslice" "xstarts-with"
 nameCoreSliceLength = newQualified "std/core/sslice" "length"
@@ -211,7 +212,7 @@ isPrimitive tn =
   let basics = getName tn `elem` [
                       nameIntAdd, nameIntMul, nameIntDiv, nameIntMod, nameIntSub,
                       nameIntEq, nameIntNEq, nameIntLt, nameIntLe, nameIntGt, nameIntGe,
-                      nameIntOdd,
+                      nameIntOdd, 
                       nameInt32Gt, nameInt32Ge, nameInt32Lt, nameInt32Le, nameInt32Eq, nameInt32NEq,
                       nameInt32Add, nameInt32Sub, nameInt32Mul, nameInt32Div,
                       nameInt32Shr, nameInt32Sar, nameInt32Shl, nameInt32And, nameInt32Or, nameInt32Xor, nameInt32RotL, nameInt32RotR,
@@ -224,7 +225,7 @@ isPrimitive tn =
                       nameFloatEq, nameFloatLt, nameFloatLe, nameFloatGt, nameFloatGe,
                       nameCoreIntShow,
                       nameCoreCharLt, nameCoreCharLtEq, nameCoreCharGt, nameCoreCharGtEq, nameCoreCharEq,
-                      nameStringEq, nameCoreStringToUpper, nameCoreStringToLower, nameCoreStringContains, nameCoreStringCount, nameCoreStringExternRepeatZ,
+                      nameStringEq, nameCoreStringNeq, nameCoreStringToUpper, nameCoreStringToLower, nameCoreStringContains, nameCoreStringCount, nameCoreStringExternRepeatZ,
                       nameCoreCharToString, nameCoreStringListChar, nameCoreStringVectorJoin, nameCoreVectorUnvlist,
                       nameCoreSliceString, nameCoreSliceXStartsWith, nameCoreSliceLength,
                       nameCoreStringJoinSep, nameCoreStringJoin,
