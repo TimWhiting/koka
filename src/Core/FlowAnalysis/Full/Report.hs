@@ -6,54 +6,54 @@ import GHC.Generics (Generic)
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy as B
 
--- | Baseline data from 0-CFA anchoring. Used to calculate Expansion and Productivity.
+-- | Baseline data from 0-CFA anchoring.
 -- Cited as the standard monovariant control (Shivers, 1991).
 data BaselineData = BaselineData
-  { programName          :: String  -- ^ Unique name of the benchmark program.
-  , bValueAddrs          :: Int     -- ^ Count of reachable addresses in the 0-CFA value store.
-  , bContAddrs           :: Int     -- ^ Count of reachable addresses in the 0-CFA continuation store.
+  { programName          :: String
+  , bStoreAddrs          :: Int -- ^ Total unique addresses in the 0-CFA store (Value + Continuation)
+  , bValueAddrs          :: Int -- ^ Total 0-CFA value addresses (for context depth)
+  , bContAddrs           :: Int -- ^ Total 0-CFA continuation addresses
   -- | Baseline semantic cardinalities (Full Environment + Value) for productivity comparison.
-  , bExprToValSemSizes   :: Map.Map String Int -- ^ Exp ID to closure/literal set size.
-  , bExprToValStrSizes   :: Map.Map String Int -- ^ Exp ID to unique Lambda/Constructor tag count.
-  , bStructToContSemSizes :: Map.Map String Int -- ^ Structural ID to full frame set size.
-  , bStructToContStrSizes :: Map.Map String Int -- ^ Structural ID to unique frame-template count.
-  , bCallToSemRetSizes   :: Map.Map String Int -- ^ Call site ID to return value set size.
-  , bStructToStrRetSizes :: Map.Map String Int -- ^ Structural ID to structural return set size.
+  , bExprToValSemSizes   :: Map.Map String Int 
+  , bExprToValStrSizes   :: Map.Map String Int 
+  , bStructToContSemSizes :: Map.Map String Int 
+  , bStructToContStrSizes :: Map.Map String Int 
+  , bCallToSemRetSizes   :: Map.Map String Int 
+  , bStructToStrRetSizes :: Map.Map String Int 
   } deriving (Generic, Show)
 
--- | Container for a specific sensitivity configuration run (e.g., polyvariant settings V, K).
+-- | Metrics for a specific sensitivity configuration.
 data PolyVariantMetrics = PolyVariantMetrics
-  { runID               :: String   -- ^ Identifier for the sensitivity level (e.g., "V2-K1").
-  , benchmarkName       :: String   -- ^ Name of the benchmark being analyzed.
-  , analysisTimes       :: [Double] -- ^ Wall-clock time samples in seconds for statistical averaging.
-  , isTimeout           :: Bool     -- ^ Flag indicating if the analysis exceeded the time limit.
-  , storeMetrics        :: Maybe StoreMetrics -- ^ Detailed metrics; 'Nothing' indicates a timeout or crash.
+  { runID               :: String 
+  , benchmarkName       :: String
+  , analysisTimes       :: [Double] 
+  , isTimeout           :: Bool
+  , storeMetrics        :: Maybe StoreMetrics
   } deriving (Generic, Show)
 
--- | Detailed partitioned store and return flow metrics.
+-- | Partitioned store metrics with explicit literal/structural separation.
 data StoreMetrics = StoreMetrics
-  { numValueAddresses    :: Int -- ^ Total unique addresses in the polyvariant value store.
-  , numContAddresses     :: Int -- ^ Total unique addresses in the polyvariant continuation store.
-  -- | Semantic Singletons: Addresses containing exactly one full value (Closure/Literal/Constructor).
-  , valSemSingletons     :: Int 
+  { numStoreAddresses    :: Int -- ^ Total unique addresses in the polyvariant store
+  , numLitAddresses      :: Int -- ^ Addresses containing literals (Lattice values)
+  , numStructAddresses   :: Int -- ^ Addresses containing closures or constructors
+  , numContAddresses     :: Int -- ^ Continuation addresses
+  -- | Precise counts (Singletons)
+  , valSemSingletons     :: Int -- ^ Semantic singletons across all value addresses
   , contSemSingletons    :: Int 
-  -- | Structural Singletons: Addresses resolving to a single code-level target (Lambda/Frame-Template).
-  , valStrSingletons     :: Int 
+  , valStrSingletons     :: Int -- ^ Structural singletons (Unique tags) in structural addresses
   , contStrSingletons    :: Int 
-  , semReturnSingletons  :: Int -- ^ Call sites returning a precise semantic value.
-  , strReturnSingletons  :: Int -- ^ Continuation applications returning to a precise structural state.
-  -- | Data Precision Metrics
-  , literalTopCount      :: Int -- ^ Number of literal addresses that have collapsed to the lattice 'Top'.
-  -- | Histograms for Semantic Cardinality. Key is cardinality, value is frequency. 
-  -- Use -1 for Lattice 'Top' (Infinity).
+  , semReturnSingletons  :: Int 
+  , strReturnSingletons  :: Int 
+  -- | Data Precision
+  , literalTopCount      :: Int -- ^ Literal addresses that hit Top (-1 in histogram)
+  -- | Cardinality Histograms
   , valCardHist          :: Map.Map Int Int
   , contCardHist         :: Map.Map Int Int
-  -- | Productivity Mappings: ID -> List of cardinalities found across all polyvariant contexts.
+  -- | Productivity Mappings
   , exprToValSemSizes    :: Map.Map String [Int]
   , structToContSemSizes :: Map.Map String [Int]
   , callToSemRetSizes    :: Map.Map String [Int]
   , structToStrRetSizes  :: Map.Map String [Int]
-  -- | Structural Productivity Mappings: Tracks lambda/template counts per ID.
   , exprToValStrSizes    :: Map.Map String [Int]
   , structToContStrSizes :: Map.Map String [Int]
   } deriving (Generic, Show)
