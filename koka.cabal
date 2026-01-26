@@ -96,6 +96,7 @@ library
       Core.FlowAnalysis.Full.KCFA.Syntax
       Core.FlowAnalysis.Full.PrimComm
       Core.FlowAnalysis.Full.PrimitivesOld
+      Core.FlowAnalysis.Full.Report
       Core.FlowAnalysis.Literals
       Core.FlowAnalysis.Monad
       Core.FlowAnalysis.StaticContext
@@ -182,6 +183,7 @@ library
       alex
   build-depends:
       FloatingHex >=0.5
+    , aeson
     , array
     , async
     , base >=4.9
@@ -260,6 +262,7 @@ executable koka-plain
   ghc-options: -rtsopts -j8 -O2 -threaded "-with-rtsopts=-N8"
   build-depends:
       FloatingHex >=0.5
+    , aeson
     , array
     , async
     , base >=4.9
@@ -287,6 +290,7 @@ test-suite koka-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       FloatingHex >=0.5
+    , aeson
     , array
     , async
     , base >=4.9
