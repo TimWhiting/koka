@@ -1,8 +1,5 @@
 Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-
-
-dmcfa,analysis/benchmarks/koka-gen/ukanren/q1,1,1,0,1444,1786,1328,66,73,59,31,32,30,1128,2046,837,9.709228,9.716514,9.772859
-dmcfa,analysis/benchmarks/koka-gen/ukanren/q2,1,1,0,1558,1926,1434,69,76,62,33,34,32,1207,2173,894,9.856385,9.960229,9.980681
-
-dmcfae,analysis/benchmarks/koka-gen/ukanren/q1,1,1,0,1470,1817,1351,78,91,65,37,44,31,759,1642,499,9.915661,9.993707,9.821456
-dmcfae,analysis/benchmarks/koka-gen/ukanren/q2,1,1,0,1584,1957,1457,81,94,68,39,46,33,804,1730,526,10.175479,10.41491,10.054739
+dmcfa,analysis/benchmarks/koka-gen/ukanren/q1,1,1,0,1444,1786,1328,66,73,59,31,32,30,1128,2046,837,9.524488,9.550163,9.550199
+dmcfa,analysis/benchmarks/koka-gen/ukanren/q2,1,1,0,1558,1926,1434,69,76,62,33,34,32,1207,2173,894,9.786817,9.672067,9.737882
+dmcfae,analysis/benchmarks/koka-gen/ukanren/q1,1,1,0,1470,1817,1351,78,91,65,37,44,31,759,1642,499,10.155421,10.186046,10.158794
+dmcfae,analysis/benchmarks/koka-gen/ukanren/q2,1,1,0,1584,1957,1457,81,94,68,39,46,33,804,1730,526,10.212926,10.282736,10.276203

@@ -1,8 +1,5 @@
 Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-
-
-dmcfa,analysis/benchmarks/koka-gen/music/search-come,3,3,0,1986,2332,1907,281,286,278,195,195,195,1670,2230,1321,0.172317,0.172803,0.170289
-dmcfa,analysis/benchmarks/koka-gen/music/search-love,3,3,0,1986,2332,1907,281,286,278,195,195,195,1670,2230,1321,0.170804,0.171379,0.170952
-
-dmcfae,analysis/benchmarks/koka-gen/music/search-come,3,3,0,1986,2332,1907,281,286,278,195,195,195,1070,1595,753,0.163038,0.16498,0.164957
-dmcfae,analysis/benchmarks/koka-gen/music/search-love,3,3,0,1986,2332,1907,281,286,278,195,195,195,1070,1595,753,0.163852,0.160766,0.160978
+dmcfa,analysis/benchmarks/koka-gen/music/search-come,3,3,0,1986,2332,1907,281,286,278,195,195,195,1670,2230,1321,0.172525,0.173155,0.174078
+dmcfa,analysis/benchmarks/koka-gen/music/search-love,3,3,0,1986,2332,1907,281,286,278,195,195,195,1670,2230,1321,0.17842,0.174427,0.171883
+dmcfae,analysis/benchmarks/koka-gen/music/search-come,3,3,0,1986,2332,1907,281,286,278,195,195,195,1070,1595,753,0.157632,0.157396,0.156823
+dmcfae,analysis/benchmarks/koka-gen/music/search-love,3,3,0,1986,2332,1907,281,286,278,195,195,195,1070,1595,753,0.154572,0.157156,0.154859

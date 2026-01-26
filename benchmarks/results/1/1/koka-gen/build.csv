@@ -1,14 +1,11 @@
 Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-
-
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example1,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example2,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example3,1,1,1,354,354,354,28,28,28,20,20,20,377,377,377,0.013613,0.013174,0.012819
+dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example3,1,1,1,354,354,354,28,28,28,20,20,20,377,377,377,0.013043,0.013691,0.012585
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example4,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfa,analysis/benchmarks/koka-gen/build/mymakefile-example5,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
-
 dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example1,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example2,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example3,1,1,1,354,354,354,28,28,28,20,20,20,210,210,210,0.009379,0.010088,0.009447
+dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example3,1,1,1,354,354,354,28,28,28,20,20,20,210,210,210,0.009241,0.009021,0.008558
 dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example4,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfae,analysis/benchmarks/koka-gen/build/mymakefile-example5,1,1,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout

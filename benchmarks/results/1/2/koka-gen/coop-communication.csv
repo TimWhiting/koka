@@ -1,10 +1,9 @@
 Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
 dmcfa,analysis/benchmarks/koka-gen/coop-communication/prime-sieve,1,2,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfa,analysis/benchmarks/koka-gen/coop-communication/send-recv,1,2,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfa,analysis/benchmarks/koka-gen/coop-communication/spawn,1,2,1,1079,1144,1030,1865,3646,966,335,412,281,932,1647,832,14.345752,14.286003,14.278634
-dmcfa,analysis/benchmarks/koka-gen/coop-communication/yield,1,2,1,567,593,550,753,1235,417,128,154,110,464,534,434,1.483561,1.494888,1.504602
-
+dmcfa,analysis/benchmarks/koka-gen/coop-communication/spawn,1,2,1,1079,1144,1030,1865,3646,966,335,412,281,932,1647,832,10.129557,10.106911,10.13921
+dmcfa,analysis/benchmarks/koka-gen/coop-communication/yield,1,2,1,567,593,550,753,1235,417,128,154,110,464,534,434,1.124037,1.083001,1.073757
 dmcfae,analysis/benchmarks/koka-gen/coop-communication/prime-sieve,1,2,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
 dmcfae,analysis/benchmarks/koka-gen/coop-communication/send-recv,1,2,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfae,analysis/benchmarks/koka-gen/coop-communication/spawn,1,2,1,990,1036,959,1505,2485,821,271,350,217,507,918,445,8.192017,8.205992,8.222051
-dmcfae,analysis/benchmarks/koka-gen/coop-communication/yield,1,2,1,587,611,572,788,1280,447,137,168,119,282,344,256,1.557865,1.556433,1.569206
+dmcfae,analysis/benchmarks/koka-gen/coop-communication/spawn,1,2,1,990,1036,959,1505,2485,821,271,350,217,507,918,445,5.522686,5.524236,5.534738
+dmcfae,analysis/benchmarks/koka-gen/coop-communication/yield,1,2,1,587,611,572,788,1280,447,137,168,119,282,344,256,1.053173,1.064784,1.05615

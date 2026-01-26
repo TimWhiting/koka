@@ -83,8 +83,8 @@ handleLocal res venv bodId varName valAddr retCtx = unreturnV $ doStep $ Step (C
 
 returnConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
 returnConst env ctx expr v = RV . RVAddr <$> allocConst env ctx expr v
-returnOp :: DelimitedVal -> StaticCtx -> Frame ->  DelimitedFrame -> Addr -> FixAAMR r s e FixChange
-returnOp dval ctx frame dframe kaddr = return $ RV $ ROp dval ctx frame dframe kaddr
+returnOp :: DelimitedVal -> StaticCtx -> Frame -> Addr -> FixAAMR r s e FixChange
+returnOp dval ctx frame kaddr = return $ RV $ ROp dval ctx frame DFrameDone kaddr
 returnAddr :: Addr -> FixAAMR r s e FixChange
 returnAddr addr = return $ RV $ RVAddr addr
 
@@ -210,7 +210,7 @@ doContinue res frame ctx =
       -- trace ("Capturing frame: " ++ show frame) $ do
       let k' = KAddr frame' ctx' dframe dval
       extendKStore k' knext
-      returnOp dval (static ctx) frame dframe k'
+      returnOp dval (static ctx) frame k'
     RVAddr addr ->
       -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
       case frame of
@@ -385,19 +385,19 @@ doHandlerPrimitive name n addr arguments venv ctx u | isNamePerform n = do
   let DefCNonRec _ _ opName = select
   let opN = newName $ nameLocalQual (getName opName)
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
-  returnOp (DVal label opN u (drop 2 arguments) ctx) (static ctx) FrameDone DFrameDone EndKAddr
+  returnOp (DVal label opN u (drop 2 arguments) ctx) (static ctx) FrameDone EndKAddr
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalGet = do
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
     let [varAddr@(BindingAddr _ varName _), _] = arguments
-    returnOp (DVal (getName varName) nameLocalGet u [] ctx) (static ctx) FrameDone DFrameDone EndKAddr
+    returnOp (DVal (getName varName) nameLocalGet u [] ctx) (static ctx) FrameDone EndKAddr
   else do
     returnAddr (head arguments)
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalSet = do
   let [varAddr@(BindingAddr _ varName _), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
-    returnOp (DVal (getName varName) nameLocalSet u [val] ctx) (static ctx) FrameDone DFrameDone EndKAddr
+    returnOp (DVal (getName varName) nameLocalSet u [val] ctx) (static ctx) FrameDone EndKAddr
   else do
     rebind val varAddr
     extendStore addr changeUnit
@@ -466,7 +466,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
           let dframe = DFrameLocal venv bodId varName valAddr
-          returnOp dval (static retCtx) (FRestoreDelim dframe) dframe kOp
+          returnOp dval (static retCtx) (FRestoreDelim dframe) kOp
     RVAddr addr -> returnAddr addr
 
 doHandleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e FixChange
@@ -503,7 +503,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
         let k' = KAddr frame' ctx' dframe' dval
         extendKStore k' knext
         let dframe = DFrame venv bodId h
-        returnOp dval (static retCtx) (FRestoreDelim dframe) dframe k'
+        returnOp dval (static retCtx) (FRestoreDelim dframe) k'
     res ->
       case mbFrame of
         Just frame -> do

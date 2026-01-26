@@ -1,8 +1,3 @@
 Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-
-
-
-
-dmcfa,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,1,3,0,950,950,950,67,67,67,41,41,41,740,744,736,0.056031,0.055916,0.056315
-
-dmcfae,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,1,3,0,950,950,950,67,67,67,41,41,41,499,503,495,0.04297,0.041414,0.042785
+dmcfa,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,1,3,0,950,950,950,67,67,67,41,41,41,740,744,736,0.055229,0.05488,0.057259
+dmcfae,analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,1,3,0,950,950,950,67,67,67,41,41,41,499,503,495,0.042957,0.042956,0.041762
