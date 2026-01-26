@@ -101,9 +101,9 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
              val current = read-text-file(file)
              val clean-current = 
                if force then 
-                 current.split("\n").filter(fn(l) !l.starts-with(a.show ++ ",").bool).join("\n")
+                 current.split("\n").filter(fn(l) !l.starts-with(a.show ++ ",").bool && !l.is-empty).join("\n")
                else current
-             val sep = if clean-current.is-empty then "" else "\n"
+             val sep = if clean-current.ends-with("\n").bool then "" else "\n"
              write-text-file(file, clean-current ++ sep ++ content ++ "\n", create-dir=True)
           else 
              write-text-file(file, header ++ "\n" ++ content ++ "\n", create-dir=True)
