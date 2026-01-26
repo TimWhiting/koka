@@ -1,6 +1,3 @@
 Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-
-
-dmcfa,analysis/benchmarks/handlers/vec/main,0,2,1,229,229,229,33,33,33,20,20,20,189,189,189,0.006011,0.006536,0.005997
-
-dmcfae,analysis/benchmarks/handlers/vec/main,0,2,1,229,229,229,33,33,33,20,20,20,123,123,123,0.00522,0.005361,0.004767
+dmcfa,analysis/benchmarks/handlers/vec/main,0,2,1,229,229,229,33,33,33,20,20,20,189,189,189,0.006249,0.006287,0.005666
+dmcfae,analysis/benchmarks/handlers/vec/main,0,2,1,229,229,229,33,33,33,20,20,20,123,123,123,0.004672,0.004912,0.004913
