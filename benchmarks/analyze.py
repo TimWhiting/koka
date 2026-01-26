@@ -28,35 +28,41 @@ def load_hierarchical_data(root_path, baselines_path):
                     for f_name in [f for f in os.listdir(b_p) if f.endswith('.json')]:
                         with open(os.path.join(b_p, f_name), 'r') as f:
                             data = json.load(f)
-                            data.update({'runID': run_id, 'dim1': d1, 'dim2': d2, 'suite': suite})
+                            data.update({'runID': run_id, 'dim1': d1, 'dim2': d2})
                             all_results.append(data)
     return all_results, baselines
 
 def compute_metrics(run, baseline):
-    """Computes relative and absolute precision metrics."""
-    # Handle timeouts per Smaragdakis et al. (2011)
+    """Computes relative and absolute precision metrics using explicit store sizes."""
     if run.get('isTimeout') or run.get('storeMetrics') is None:
         return {
             "status": "T/O", 
             "time": np.mean(run['analysisTimes']), 
             "expansion": np.nan, 
-            "top_ratio": 0.0,
-            "prec_sem": 0.0,
-            "prec_str": 0.0,
-            "prod_v_str": 0.0,
+            "prec_struct": 0.0,
+            "prec_lit": 0.0,
             "prod_v_sem": 0.0,
+            "prod_v_str": 0.0,
+            "prod_k_str": 0.0,
+            "prod_sem": 0.0,
             "prod_str": 0.0
         }
 
     m = run['storeMetrics']
-    base_tot = baseline['bValueAddrs'] + baseline['bContAddrs']
-    poly_tot = m['numValueAddresses'] + m['numContAddresses']
     
-    # Ratios following Van Horn & Might (2010)
+    # Expansion Factor (Van Horn & Might, 2010)
+    # Uses explicit store addresses to handle overlaps between partitions
+    base_tot = baseline['bStoreAddrs']
+    poly_tot = m['numStoreAddresses']
     expansion = poly_tot / base_tot if base_tot > 0 else 1.0
-    prec_sem = m['valSemSingletons'] / m['numValueAddresses'] if m['numValueAddresses'] > 0 else 1.0
-    prec_str = m['valStrSingletons'] / m['numValueAddresses'] if m['numValueAddresses'] > 0 else 1.0
-    top_ratio = m['literalTopCount'] / m['numValueAddresses'] if m['numValueAddresses'] > 0 else 0.0
+    
+    # Structural Precision (Control-Flow Resolution)
+    # Uses the explicit count of structural addresses to avoid dilution by literals
+    prec_struct = m['valStrSingletons'] / m['numStructAddresses'] if m['numStructAddresses'] > 0 else 1.0
+    
+    # Literal Precision (Data-Flow Resolution)
+    # Measures how many literal addresses avoided hitting 'Top' (-1)
+    prec_lit = (m['numLitAddresses'] - m['literalTopCount']) / m['numLitAddresses'] if m['numLitAddresses'] > 0 else 1.0
 
     # Productivity Helper (Smaragdakis et al., 2011)
     def calc_prod(poly_map, base_map):
@@ -69,16 +75,17 @@ def compute_metrics(run, baseline):
         "status": "OK",
         "time": np.mean(run['analysisTimes']),
         "expansion": expansion,
-        "prec_sem": prec_sem,
-        "prec_str": prec_str,
-        "top_ratio": top_ratio,
+        "prec_struct": prec_struct,
+        "prec_lit": prec_lit,
         "prod_v_sem": calc_prod(m['exprToValSemSizes'], baseline['bExprToValSemSizes']),
         "prod_v_str": calc_prod(m['exprToValStrSizes'], baseline['bExprToValStrSizes']),
+        "prod_k_str": calc_prod(m['structToContStrSizes'], baseline['bStructToContStrSizes']),
+        "prod_sem": calc_prod(m['callToSemRetSizes'], baseline['bCallToSemRetSizes']),
         "prod_str": calc_prod(m['structToStrRetSizes'], baseline['bStructToStrRetSizes'])
     }
 
 def generate_icfp_tables(results, baselines):
-    """Aggregates data and generates Markdown tables with time metrics."""
+    """Aggregates data and generates Markdown tables with segmented precision."""
     rows = []
     for r in results:
         b = baselines.get(r['benchmarkName'])
@@ -89,60 +96,69 @@ def generate_icfp_tables(results, baselines):
     
     df = pd.DataFrame(rows)
     
-    # 1. Global Summary Table (Geometric Mean for Expansion - Flemming et al., 2010)
+    # Global Summary Table (Geometric Mean for Expansion - Flemming et al., 2010)
     summary = df.groupby('runID').agg({
         'status': lambda x: (x == 'OK').sum(),
-        'time': 'mean', # Arithmetic mean for time is common, but gmean is also acceptable
+        'time': 'mean',
         'expansion': lambda x: gmean(x.dropna()) if not x.dropna().empty else np.nan,
-        'prec_sem': 'mean',
-        'prec_str': 'mean',
-        'top_ratio': 'mean'
-    }).rename(columns={'status': 'Solved', 'time': 'Time (s)'})
+        'prec_struct': 'mean',
+        'prec_lit': 'mean',
+        'prod_v_str': 'mean',
+        'prod_k_str': 'mean',
+        'prod_str': 'mean'
+    }).rename(columns={
+        'status': 'Solved', 
+        'time': 'Time (s)', 
+        'prec_struct': 'Struct Prec',
+        'prec_lit': 'Literal Prec',
+        'prod_v_str': 'Val Prod',
+        'prod_k_str': 'Cont Prod',
+        'prod_str': 'Ret Prod'
+    })
     
-    # 2. Marginal Utility Tables (Kastrinis & Smaragdakis, 2013)
-    prec_mu = df[df['status'] == 'OK'].pivot_table(index='dim1', columns='dim2', values='prec_sem', aggfunc='mean')
+    # Marginal Utility Tables (Kastrinis & Smaragdakis, 2013)
+    struct_mu = df[df['status'] == 'OK'].pivot_table(index='dim1', columns='dim2', values='prec_struct', aggfunc='mean')
     time_mu = df[df['status'] == 'OK'].pivot_table(index='dim1', columns='dim2', values='time', aggfunc='mean')
 
-    print("### Table 1: Global Efficiency, Time & Precision Summary")
+    print("### Table 1: Global Efficiency, Time & Segmented Precision")
     print(summary.to_markdown())
-    print("\n### Table 2: Marginal Precision Utility (Semantic Precision)")
-    print(prec_mu.to_markdown())
+    print("\n### Table 2: Marginal Structural Utility (Control-Flow Precision)")
+    print(struct_mu.to_markdown())
     print("\n### Table 3: Marginal Time Cost (Seconds)")
     print(time_mu.to_markdown())
     
-    return df, prec_mu, time_mu
+    return df, struct_mu, time_mu
 
-def plot_visualizations(df, prec_mu, time_mu):
+def plot_visualizations(df, struct_mu, time_mu):
     """Generates Pareto frontiers for both space and time complexity."""
     sns.set_theme(style="whitegrid")
     
-    # Aggregating per runID for the plots
     plot_df = df[df['status'] == 'OK'].groupby('runID').agg({
         'expansion': lambda x: gmean(x.dropna()),
         'time': 'mean',
-        'prec_sem': 'mean'
+        'prec_struct': 'mean'
     }).reset_index()
 
-    # A. Pareto Frontier (Expansion vs Precision)
+    # Pareto Frontier: Expansion vs Structural Precision
     plt.figure(figsize=(10, 5))
-    sns.scatterplot(data=plot_df, x='expansion', y='prec_sem', hue='runID', style='runID', s=150)
-    plt.title("Pareto Frontier: State Space Expansion vs Precision")
+    sns.scatterplot(data=plot_df, x='expansion', y='prec_struct', hue='runID', style='runID', s=150)
+    plt.title("Pareto Frontier: State Space Expansion vs Structural Precision")
     plt.xlabel("Expansion Factor (Geometric Mean)")
-    plt.ylabel("Semantic Precision (Arithmetic Mean)")
+    plt.ylabel("Structural Precision (Arithmetic Mean)")
     plt.savefig("pareto_expansion.png")
     
-    # B. Pareto Frontier (Time vs Precision)
+    # Pareto Frontier: Time vs Structural Precision
     plt.figure(figsize=(10, 5))
-    sns.scatterplot(data=plot_df, x='time', y='prec_sem', hue='runID', style='runID', s=150)
-    plt.title("Pareto Frontier: Execution Time vs Precision")
+    sns.scatterplot(data=plot_df, x='time', y='prec_struct', hue='runID', style='runID', s=150)
+    plt.title("Pareto Frontier: Execution Time vs Structural Precision")
     plt.xlabel("Execution Time (Seconds)")
-    plt.ylabel("Semantic Precision (Arithmetic Mean)")
+    plt.ylabel("Structural Precision (Arithmetic Mean)")
     plt.savefig("pareto_time.png")
     
-    # C. Marginal Precision Heatmap
+    # Marginal Structural Heatmap
     plt.figure(figsize=(8, 6))
-    sns.heatmap(prec_mu, annot=True, cmap="YlGnBu", fmt=".2f")
-    plt.title("Heatmap: Precision across Sensitivity Dimensions")
+    sns.heatmap(struct_mu, annot=True, cmap="YlGnBu", fmt=".2f")
+    plt.title("Heatmap: Structural Precision across Sensitivity Dimensions")
     plt.savefig("precision_heatmap.png")
 
     plt.show()
