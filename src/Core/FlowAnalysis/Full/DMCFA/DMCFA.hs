@@ -41,6 +41,7 @@ doStep i =
       VStore addr -> error ("Value not found in store :" ++ show addr)
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv ctx) -> doEval expr venv ctx
+      Step (CContinue a b c) -> doDoContinue a b c
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
       Step (CHandleEffects res venv bodId hnd retCtx) -> doHandleEffects res venv bodId hnd retCtx
       Step (CHandleLocal res venv bodId varName valAddr retCtx) -> doHandleLocal res venv bodId varName valAddr retCtx
@@ -76,6 +77,7 @@ eval :: HasCallStack => ExprContext -> VEnv -> CombinedCtx -> FixAAMR r s e RVal
 eval expr venv ctx = unreturnV $ doStep $ Step (CEval expr venv ctx)
 apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
+doContinue a b c = doStep $ Step (CContinue a b c)
 handleEffects :: HasCallStack => RValue -> VEnv -> ExprContextId -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res venv bodId hnd retCtx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd retCtx)
 handleLocal :: HasCallStack => RValue -> VEnv -> ExprContextId -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
@@ -116,6 +118,7 @@ doEval expr venv ctx = do
         -- App e _ _ -> isSimpleExpr e
         _ -> False -- Essentially just Let / Case
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
+                    -- analysisLog ("Evaluating " ++ showCtxExpr expr)
                     -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ showEnv venv)
                     v <- x
                     -- trace ("Result: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv ++ "\n" ++ show v) $ return ()
@@ -203,8 +206,8 @@ doEval expr venv ctx = do
           res <- eval f (limitEnv venv (fvs f)) ctx
           doContinue res (FApp (length args) argExprs [] expr venv) ctx
 
-doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
-doContinue res frame ctx =
+doDoContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
+doDoContinue res frame ctx =
   case res of
     ROp dval ctx' frame' dframe knext -> do
       -- trace ("Capturing frame: " ++ show frame) $ do
@@ -212,7 +215,7 @@ doContinue res frame ctx =
       extendKStore k' knext
       returnOp dval (static ctx) frame k'
     RVAddr addr ->
-      -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
+      -- trace ("Continuing: with frame " ++ show frame) $ do
       case frame of
           FrameDone -> returnAddr addr
           f | f == FMask -> do
