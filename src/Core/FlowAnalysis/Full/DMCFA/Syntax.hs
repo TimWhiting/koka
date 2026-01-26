@@ -193,6 +193,8 @@ getAbResult = do
                                                      Bottom -> (evals, applies, ksizes, ssizes)
                         Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                                                   Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                                                      Bottom -> (evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                                                    Bottom -> (evals, applies, ksizes, ssizes)
                         Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)

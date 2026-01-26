@@ -38,6 +38,7 @@ dependencies:
   - hashable >= 1.4
   - directory
   - process
+  - aeson
 
 library:
   other-extensions:
