@@ -1,3 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/handlers/ambient/example0,0,2,1,157,157,157,12,12,12,5,5,5,145,145,145,0.003614,0.003235,0.002981
-dmcfae,analysis/benchmarks/handlers/ambient/example0,0,2,1,157,157,157,12,12,12,5,5,5,96,96,96,0.002604,0.002693,0.002307

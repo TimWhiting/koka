@@ -194,7 +194,16 @@ joinLitLatticeX (LiteralLatticeX i0 f0 c0 s0) (LiteralLatticeX i1 f1 c1 s1) =
   LiteralLatticeX (i0 `joinSimpleX` i1) (f0 `joinSimpleX` f1) (c0 `joinSimpleX` c1) (s0 `joinSimpleX` s1)
 
 litIsBottomX :: LiteralLatticeX -> Bool
-litIsBottomX (LiteralLatticeX i f c s) = isBottom i && isBottom f && isBottom c && isBottom s
+litIsBottomX (LiteralLatticeX LBottom LBottom LBottom LBottom) = True
+litIsBottomX lit = False
+
+litIsTopX (LiteralLatticeX i f c s) = i == LTop || f == LTop || c == LTop || s == LTop
+
+litIsPrecise (LiteralLatticeX (LSingle _) LBottom LBottom LBottom) = True
+litIsPrecise (LiteralLatticeX LBottom (LSingle _) LBottom LBottom) = True
+litIsPrecise (LiteralLatticeX LBottom LBottom (LSingle _) LBottom) = True
+litIsPrecise (LiteralLatticeX LBottom LBottom LBottom (LSingle _)) = True
+litIsPrecise l = False
 
 patSubsumedX :: Pattern -> LiteralChangeX -> Bool
 patSubsumedX (PatLit (LitInt i)) (LiteralChangeIntX (LChangeSingle (_, x))) = i == x

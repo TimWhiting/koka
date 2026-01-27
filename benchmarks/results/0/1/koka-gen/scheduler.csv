@@ -1,3 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/koka-gen/scheduler/scheduler,0,1,1,356,377,335,19,19,19,7,7,7,286,511,243,0.017603,0.018718,0.017951
-dmcfae,analysis/benchmarks/koka-gen/scheduler/scheduler,0,1,1,364,387,341,19,19,19,7,7,7,197,405,160,0.01763,0.016952,0.017165

@@ -1,7 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/koka-gen/mini-ppl/burglar,2,1,0,1567,1635,1516,250,325,191,129,131,127,1278,1694,1025,0.096665,0.099562,0.100334
-dmcfa,analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,2,1,0,2553,2613,2496,1133,1656,841,489,546,454,2140,2540,1785,0.324159,0.324932,0.331368
-dmcfa,analysis/benchmarks/koka-gen/mini-ppl/drunk,2,1,0,1273,1321,1236,147,168,126,90,92,88,1071,1457,831,0.061135,0.059367,0.058594
-dmcfae,analysis/benchmarks/koka-gen/mini-ppl/burglar,2,1,0,1506,1565,1464,294,315,273,135,141,133,777,1152,553,0.090087,0.091021,0.091131
-dmcfae,analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,2,1,0,2439,2515,2366,941,1347,708,419,463,391,1215,1559,912,0.27352,0.272988,0.278953
-dmcfae,analysis/benchmarks/koka-gen/mini-ppl/drunk,2,1,0,1283,1335,1244,208,235,181,101,101,101,692,1046,478,0.063234,0.065426,0.06443
