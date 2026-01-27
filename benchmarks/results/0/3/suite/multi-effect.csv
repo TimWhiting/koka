@@ -1,7 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/multi-effect/multi-inner-first,0,3,1,231,231,231,20,20,20,10,10,10,205,205,205,0.004663,0.004863,0.004227
-dmcfa,analysis/benchmarks/suite/multi-effect/multi-simple,0,3,1,231,231,231,18,18,18,8,8,8,205,205,205,0.004552,0.004793,0.004518
-dmcfa,analysis/benchmarks/suite/multi-effect/multi-two-outer,0,3,1,251,251,251,24,24,24,11,11,11,218,218,218,0.005325,0.005647,0.005707
-dmcfae,analysis/benchmarks/suite/multi-effect/multi-inner-first,0,3,1,231,231,231,20,20,20,10,10,10,137,137,137,0.003748,0.003817,0.003253
-dmcfae,analysis/benchmarks/suite/multi-effect/multi-simple,0,3,1,231,231,231,18,18,18,8,8,8,137,137,137,0.003486,0.003537,0.00349
-dmcfae,analysis/benchmarks/suite/multi-effect/multi-two-outer,0,3,1,251,251,251,24,24,24,11,11,11,146,146,146,0.004002,0.004241,0.004657

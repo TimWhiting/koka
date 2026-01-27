@@ -6,21 +6,18 @@ from scipy.stats import gmean
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def load_hierarchical_data(root_path, baselines_path):
+def load_hierarchical_data(root_path):
     """Loads results from results/dim1/dim2/suite/benchmark hierarchy."""
-    with open(baselines_path, 'r') as f:
-        baselines = {b['programName']: b for b in json.load(f)}
-    
     all_results = []
-    for d1 in os.listdir(root_path):
-        d1_p = os.path.join(root_path, d1)
-        if not os.path.isdir(d1_p): continue
-        for d2 in os.listdir(d1_p):
-            d2_p = os.path.join(d1_p, d2)
-            if not os.path.isdir(d2_p): continue
-            run_id = f"{d1}-{d2}"
-            for suite in os.listdir(d2_p):
-                s_p = os.path.join(d2_p, suite)
+    for d in os.listdir(root_path):
+        d_p = os.path.join(root_path, d)
+        if not os.path.isdir(d_p): continue
+        for m in os.listdir(d_p):
+            m_p = os.path.join(d_p, m)
+            if not os.path.isdir(m_p): continue
+            run_id = f"{d}-{m}"
+            for suite in os.listdir(m_p):
+                s_p = os.path.join(m_p, suite)
                 if not os.path.isdir(s_p): continue
                 for bench in os.listdir(s_p):
                     b_p = os.path.join(s_p, bench)
@@ -28,9 +25,9 @@ def load_hierarchical_data(root_path, baselines_path):
                     for f_name in [f for f in os.listdir(b_p) if f.endswith('.json')]:
                         with open(os.path.join(b_p, f_name), 'r') as f:
                             data = json.load(f)
-                            data.update({'runID': run_id, 'dim1': d1, 'dim2': d2})
+                            data.update({'runID': run_id, 'd': d, 'm': m})
                             all_results.append(data)
-    return all_results, baselines
+    return all_results
 
 def compute_metrics(run, baseline):
     """Computes relative and absolute precision metrics using explicit store sizes."""
@@ -52,7 +49,7 @@ def compute_metrics(run, baseline):
     
     # Expansion Factor (Van Horn & Might, 2010)
     # Uses explicit store addresses to handle overlaps between partitions
-    base_tot = baseline['bStoreAddrs']
+    base_tot = baseline['numStoreAddresses']
     poly_tot = m['numStoreAddresses']
     expansion = poly_tot / base_tot if base_tot > 0 else 1.0
     
@@ -77,11 +74,11 @@ def compute_metrics(run, baseline):
         "expansion": expansion,
         "prec_struct": prec_struct,
         "prec_lit": prec_lit,
-        "prod_v_sem": calc_prod(m['exprToValSemSizes'], baseline['bExprToValSemSizes']),
-        "prod_v_str": calc_prod(m['exprToValStrSizes'], baseline['bExprToValStrSizes']),
-        "prod_k_str": calc_prod(m['structToContStrSizes'], baseline['bStructToContStrSizes']),
-        "prod_sem": calc_prod(m['callToSemRetSizes'], baseline['bCallToSemRetSizes']),
-        "prod_str": calc_prod(m['structToStrRetSizes'], baseline['bStructToStrRetSizes'])
+        "prod_v_sem": calc_prod(m['exprToValSemSizes'], baseline['exprToValSemSizes']),
+        "prod_v_str": calc_prod(m['exprToValStrSizes'], baseline['exprToValStrSizes']),
+        "prod_k_str": calc_prod(m['structToContStrSizes'], baseline['structToContStrSizes']),
+        "prod_sem": calc_prod(m['callToSemRetSizes'], baseline['callToSemRetSizes']),
+        "prod_str": calc_prod(m['structToStrRetSizes'], baseline['structToStrRetSizes'])
     }
 
 def generate_icfp_tables(results, baselines):
@@ -168,3 +165,29 @@ def process_histogram(hist):
     clean_hist = {int(k): v for k, v in hist.items() if int(k) != -1}
     top_count = hist.get("-1", 0)
     return clean_hist, top_count
+
+def main():
+    results_path = "benchmarks/results"
+    if not os.path.exists(results_path):
+        print(f"Error: Path '{results_path}' does not exist.")
+        return
+
+    results = load_hierarchical_data(results_path)
+    
+    # Enrich results with metadata for grouping
+    for r in results:
+        r['dim1'] = r['d']
+        r['dim2'] = r['m']
+    
+    # Identify baselines (typically the 0-sensitivity configuration)
+    baselines = {
+        r['benchmarkName']: r['storeMetrics']
+        for r in results
+        if r['d'] == '0' and r['m'] == '0' and r.get('storeMetrics')
+    }
+
+    df, struct_mu, time_mu = generate_icfp_tables(results, baselines)
+    plot_visualizations(df, struct_mu, time_mu)
+
+if __name__ == "__main__":
+    main()

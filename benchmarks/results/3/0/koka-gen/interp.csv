@@ -1,3 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/koka-gen/interp/interp,3,0,0,949,1149,870,128,382,67,60,106,33,829,1022,711,0.142549,0.135665,0.133624
-dmcfae,analysis/benchmarks/koka-gen/interp/interp,3,0,0,951,1151,872,130,382,69,61,108,34,548,730,437,0.134908,0.126954,0.121612

@@ -1,5 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,2,0,163,197,144,4,4,4,3,3,3,126,139,113,0.006128,0.006514,0.005653
-dmcfa,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,2,0,562,574,556,527,699,412,206,223,197,556,590,527,0.182976,0.18553,0.182036
-dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,2,2,0,163,197,144,4,4,4,3,3,3,84,97,71,0.005061,0.005422,0.005306
-dmcfae,analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,2,2,0,705,717,699,624,882,488,227,264,217,295,361,265,0.321205,0.327831,0.327434

@@ -58,13 +58,8 @@ fun int(s: sslice): exn int
 
 fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
   val sens-to-run = sens.filter fn((d,m))
-    if force then True else
-      val file = "benchmarks/results".path / d.show / m.show / (f ++ ".csv")
-      if file.is-file then
-        val content = read-text-file(file)
-        !content.contains(a.show ++ ",")
-      else True
-
+    if force then True else !("benchmarks/results".path / d.show / m.show / f).is-directory()
+      
   if sens-to-run.is-empty then
     println("Skipping " ++ f ++ " " ++ a.show ++ " (all results exist)")
     return ()
@@ -78,61 +73,14 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
        val debug-cmd = cmd ++ "--sensitivity=\"(" ++ d.show ++ "," ++ m.show ++ ")\" 2>&1" 
        println("Debug command:\n" ++ debug-cmd)
     Nothing -> ()
-
-  match run-system-read(full-cmd)
-    Ok(res) -> 
-      val lines = res.split("\n").filter(fn(l) l.contains(a.show ++ ",") && l.split(",").length >= 5).map(fn(l) a.show ++ l.split(a.show).tail.join(a.show))
-      
-      var contents : list<(string,string)> := []
-      lines.foreach fn(line)
-        val parts = line.split(",")
-        // Analysis,File,D,M,...
-        if parts.length >= 4 then
-          val d = parts.drop(2).head("").trim
-          val m = parts.drop(3).head("").trim
-          val key = d ++ "/" ++ m ++ "/" ++ f ++ ".csv"
-          match contents.find(fn(kv) kv.fst == key)
-            Just((_,curr)) -> contents := contents.map(fn(kv) if kv.fst == key then (key, curr ++ "\n" ++ line) else kv)
-            Nothing        -> contents := Cons((key,line), contents)
-      
-      contents.foreach fn((key, content))
-          val file = "benchmarks/results".path / key
-          if file.is-file then
-             val current = read-text-file(file)
-             val clean-current = 
-               if force then 
-                 current.split("\n").filter(fn(l) !l.starts-with(a.show ++ ",").bool && !l.is-empty).join("\n")
-               else current
-             val sep = if clean-current.ends-with("\n").bool then "" else "\n"
-             write-text-file(file, clean-current ++ sep ++ content ++ "\n", create-dir=True)
-          else 
-             write-text-file(file, header ++ "\n" ++ content ++ "\n", create-dir=True)
-
-    Error(err) -> throw-exn(err)
-
-fun update-headers()
-  val results-dir = "benchmarks/results".path
-  if results-dir.is-directory then
-    results-dir.list-directory-recursive.foreach fn(p)
-      if p.extname == "csv" then
-          val lines = read-text-file(p).split("\n")
-          match lines
-            Cons(_,rest) ->
-              val new-content = Cons(header, rest).join("\n")
-              write-text-file(p, new-content)
-              println("Updated header for: " ++ p.string)
-            _ -> ()
+  run-system-read(full-cmd)
+  ()
 
 fun main()
-  val args = get-args()
-  val update-headers-flag = args.find(fn(a) a == "--update-headers").is-just
-  if update-headers-flag then 
-    update-headers()
-    return ()
-    
+  val args = get-args()    
   val force = args.find(fn(a) a == "--force").is-just
   val only-floats = args.find(fn(a) a == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  run-benchmarks(files=run-files, analyses=[DMCFA, DMCFA-EXP], force=force)
+  // run-benchmarks(files=run-files, analyses=[DMCFA-EXP], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFA])
-  // run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP])
+  run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP])

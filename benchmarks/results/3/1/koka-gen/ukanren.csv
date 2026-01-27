@@ -1,5 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/koka-gen/ukanren/q1,3,1,0,1444,1786,1328,66,73,59,31,32,30,1128,2046,837,9.502897,9.476382,9.568233
-dmcfa,analysis/benchmarks/koka-gen/ukanren/q2,3,1,0,1558,1926,1434,69,76,62,33,34,32,1207,2173,894,9.794539,9.751,9.751076
-dmcfae,analysis/benchmarks/koka-gen/ukanren/q1,3,1,0,1470,1817,1351,78,91,65,37,44,31,759,1642,499,9.511186,9.62533,9.546193
-dmcfae,analysis/benchmarks/koka-gen/ukanren/q2,3,1,0,1584,1957,1457,81,94,68,39,46,33,804,1730,526,9.78313,9.821013,9.757735
