@@ -1,9 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/nondet/nondet-context,1,1,1,107,107,107,9,9,9,2,2,2,96,96,96,0.002295,0.002198,0.00203
-dmcfa,analysis/benchmarks/suite/nondet/nondet-discard,1,1,1,84,84,84,7,7,7,1,1,1,71,71,71,0.001569,0.001296,0.00184
-dmcfa,analysis/benchmarks/suite/nondet/nondet-nested,1,1,0,183,183,183,19,19,19,6,6,6,146,161,133,0.004897,0.004877,0.004639
-dmcfa,analysis/benchmarks/suite/nondet/nondet-simple,1,1,1,92,92,92,7,7,7,1,1,1,79,79,79,0.001631,0.001734,0.001853
-dmcfae,analysis/benchmarks/suite/nondet/nondet-context,1,1,1,107,107,107,9,9,9,2,2,2,65,65,65,0.001869,0.001838,0.001634
-dmcfae,analysis/benchmarks/suite/nondet/nondet-discard,1,1,1,84,84,84,7,7,7,1,1,1,50,50,50,0.001362,0.001232,0.001365
-dmcfae,analysis/benchmarks/suite/nondet/nondet-nested,1,1,0,183,183,183,19,19,19,6,6,6,93,107,81,0.003821,0.003901,0.003682
-dmcfae,analysis/benchmarks/suite/nondet/nondet-simple,1,1,1,92,92,92,7,7,7,1,1,1,55,55,55,0.001259,0.001494,0.001108

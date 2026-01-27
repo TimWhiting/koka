@@ -5,59 +5,64 @@ import Data.Aeson (ToJSON, encode)
 import GHC.Generics (Generic)
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy as B
-
--- | Baseline data from 0-CFA anchoring.
--- Cited as the standard monovariant control (Shivers, 1991).
-data BaselineData = BaselineData
-  { programName          :: String
-  , bStoreAddrs          :: Int -- ^ Total unique addresses in the 0-CFA store (Value + Continuation)
-  , bValueAddrs          :: Int -- ^ Total 0-CFA value addresses (for context depth)
-  , bContAddrs           :: Int -- ^ Total 0-CFA continuation addresses
-  -- | Baseline semantic cardinalities (Full Environment + Value) for productivity comparison.
-  , bExprToValSemSizes   :: Map.Map String Int 
-  , bExprToValStrSizes   :: Map.Map String Int 
-  , bStructToContSemSizes :: Map.Map String Int 
-  , bStructToContStrSizes :: Map.Map String Int 
-  , bCallToSemRetSizes   :: Map.Map String Int 
-  , bStructToStrRetSizes :: Map.Map String Int 
-  } deriving (Generic, Show)
+import Data.Fixed (Pico)
 
 -- | Metrics for a specific sensitivity configuration.
+-- To represent a 0-CFA baseline, use a specific runID (e.g., "0-0").
+-- The Python analysis script will treat the first element of each cardinality list 
+-- as the baseline value for productivity and expansion calculations.
 data PolyVariantMetrics = PolyVariantMetrics
-  { runID               :: String 
-  , benchmarkName       :: String
-  , analysisTimes       :: [Double] 
-  , isTimeout           :: Bool
-  , storeMetrics        :: Maybe StoreMetrics
+  { variant             :: String -- DMCFA / DMCFAE
+  , d                   :: Int   -- ^ Identifier for the sensitivity level (e.g., "V2-K1" or "0-0").
+  , m                   :: Int
+  , benchmarkName       :: String   -- ^ Name of the benchmark being analyzed.
+  , analysisTimes       :: [Pico] -- ^ Wall-clock time samples in seconds for statistical averaging.
+  , isTimeout           :: Bool     -- ^ Flag indicating if the analysis exceeded the time limit.
+  , storeMetrics        :: Maybe StoreMetrics -- ^ Detailed metrics; 'Nothing' indicates a timeout or crash.
   } deriving (Generic, Show)
 
 -- | Partitioned store metrics with explicit literal/structural separation.
+-- This structure facilitates the "Lattice of Sensitivities" approach (Smaragdakis et al., 2011).
 data StoreMetrics = StoreMetrics
-  { numStoreAddresses    :: Int -- ^ Total unique addresses in the polyvariant store
-  , numLitAddresses      :: Int -- ^ Addresses containing literals (Lattice values)
-  , numStructAddresses   :: Int -- ^ Addresses containing closures or constructors
-  , numContAddresses     :: Int -- ^ Continuation addresses
+  { numStoreAddresses    :: Int -- ^ Total unique addresses in the polyvariant store (Value + Continuation).
+  , numLitAddresses      :: Int -- ^ Addresses containing literals (Lattice values).
+  , numStructAddresses   :: Int -- ^ Addresses containing closures or constructors.
+  , numContAddresses     :: Int -- ^ Continuation addresses.
+  , numIndirectCallTargetExprs  :: Int --
   -- | Precise counts (Singletons)
-  , valSemSingletons     :: Int -- ^ Semantic singletons across all value addresses
-  , contSemSingletons    :: Int 
-  , valStrSingletons     :: Int -- ^ Structural singletons (Unique tags) in structural addresses
-  , contStrSingletons    :: Int 
-  , semReturnSingletons  :: Int 
-  , strReturnSingletons  :: Int 
+  -- Following Van Horn & Might (2010), we distinguish between semantic and structural precision.
+  , valSemSingletons     :: Int -- ^ Semantic singletons across all value addresses.
+  , contSemSingletons    :: Int -- ^ Semantic singletons in the continuation store.
+  , valStrSingletons     :: Int -- ^ Structural singletons (Unique tags) in structural addresses.
+  , contStrSingletons    :: Int -- ^ Structural singletons (Unique templates) in continuation addresses.
+  , semReturnSingletons  :: Int -- ^ Call sites returning a precise semantic value.
+  , strReturnSingletons  :: Int -- ^ Call sites returning a precise structural value
+  , semTargetSingletons  :: Int -- ^ Call targets var expression returning a precise closure.
+  , strTargetSingletons  :: Int -- ^ Call targets var expression returning a precise lambda.
   -- | Data Precision
-  , literalTopCount      :: Int -- ^ Literal addresses that hit Top (-1 in histogram)
+  , literalTopCount      :: Int -- ^ Literal addresses that hit Top (-1 in histogram).
   -- | Cardinality Histograms
   , valCardHist          :: Map.Map Int Int
   , contCardHist         :: Map.Map Int Int
+  , callTargetHist       :: Map.Map Int Int
+  , exprHist             :: Map.Map Int Int
+  , applyHist             :: Map.Map Int Int
   -- | Productivity Mappings
-  , exprToValSemSizes    :: Map.Map String [Int]
-  , structToContSemSizes :: Map.Map String [Int]
-  , callToSemRetSizes    :: Map.Map String [Int]
-  , structToStrRetSizes  :: Map.Map String [Int]
-  , exprToValStrSizes    :: Map.Map String [Int]
-  , structToContStrSizes :: Map.Map String [Int]
+  -- These maps store the cardinalities observed at each program point across all contexts.
+  -- For 0-CFA runs, these lists will contain exactly one element.
+  , exprToValSemSizes    :: Map.Map String [Int] -- ^ Exp ID to closure (constructor) set size.
+  , structToContSemSizes :: Map.Map String [Int] -- ^ Structural ID to full frame set size.
+  , callToSemRetSizes    :: Map.Map String [Int] -- ^ Call site ID to return value set size.
+  , structToStrRetSizes  :: Map.Map String [Int] -- ^ Structural ID to structural return set size.
+  -- | Structural Productivity Mappings
+  -- Tracking Lambda/Constructor/Frame-Template counts per ID (Shivers, 1991).
+  , exprToValStrSizes    :: Map.Map String [Int] -- ^ Exp ID to unique Lambda/Constructor tag count.
+  , structToContStrSizes :: Map.Map String [Int] -- ^ Structural ID to unique frame-template count.
+  , semCallTargetSizes   :: Map.Map String [Int] -- Call target var expression to closure set size
+  , strCallTargetSizes   :: Map.Map String [Int] -- Call target var expression to lambda set size
   } deriving (Generic, Show)
 
-instance ToJSON BaselineData
+ 
+
 instance ToJSON PolyVariantMetrics
 instance ToJSON StoreMetrics

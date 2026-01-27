@@ -1,3 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,analysis/benchmarks/suite/state-handler/state-countdown,2,1,0,291,292,290,41,47,35,10,10,10,268,290,246,0.014289,0.013986,0.015015
-dmcfae,analysis/benchmarks/suite/state-handler/state-countdown,2,1,0,295,296,294,41,47,35,10,10,10,174,188,160,0.011229,0.011588,0.011101

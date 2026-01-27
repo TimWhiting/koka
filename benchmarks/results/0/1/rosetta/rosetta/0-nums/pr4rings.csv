@@ -1,3 +1,0 @@
-Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3
-dmcfa,pr4rings/four-squares,0,1,0,531,961,472,46,66,37,15,25,9,378,490,288,0.016761,0.017487,0.016025
-dmcfae,pr4rings/four-squares,0,1,0,627,1119,520,82,147,41,39,65,13,279,369,191,0.020278,0.020548,0.02025
