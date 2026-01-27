@@ -16,25 +16,27 @@ def load_hierarchical_data(root_path):
             m_p = os.path.join(d_p, m)
             if not os.path.isdir(m_p): continue
             run_id = f"{d}-{m}"
-            for suite in os.listdir(m_p):
-                s_p = os.path.join(m_p, suite)
-                if not os.path.isdir(s_p): continue
-                for bench in os.listdir(s_p):
-                    b_p = os.path.join(s_p, bench)
-                    if not os.path.isdir(b_p): continue
-                    for f_name in [f for f in os.listdir(b_p) if f.endswith('.json')]:
-                        with open(os.path.join(b_p, f_name), 'r') as f:
-                            data = json.load(f)
-                            data.update({'runID': run_id, 'd': d, 'm': m})
-                            all_results.append(data)
+            for root, _, files in os.walk(m_p):
+                for f_name in files:
+                    if f_name.endswith('.json'):
+                        with open(os.path.join(root, f_name), 'r') as f:
+                            try:
+                                data = json.load(f)
+                                data.update({'runID': run_id, 'd': d, 'm': m})
+                                all_results.append(data)
+                            except json.JSONDecodeError:
+                                print(f"Warning: Failed to decode {f_name}")
     return all_results
 
 def compute_metrics(run, baseline):
     """Computes relative and absolute precision metrics using explicit store sizes."""
+    analysis_times = run.get('analysisTimes', [])
+    avg_time = np.mean(analysis_times) if analysis_times else 0.0
+
     if run.get('isTimeout') or run.get('storeMetrics') is None:
         return {
             "status": "T/O", 
-            "time": np.mean(run['analysisTimes']), 
+            "time": avg_time, 
             "expansion": np.nan, 
             "prec_struct": 0.0,
             "prec_lit": 0.0,
@@ -53,10 +55,19 @@ def compute_metrics(run, baseline):
     poly_tot = m['numStoreAddresses']
     expansion = poly_tot / base_tot if base_tot > 0 else 1.0
     
-    # Structural Precision (Control-Flow Resolution)
-    # Uses the explicit count of structural addresses to avoid dilution by literals
-    prec_struct = m['valStrSingletons'] / m['numStructAddresses'] if m['numStructAddresses'] > 0 else 1.0
+    # Relative Structural Precision (Improvement over baseline)
+    # Measures how many singletons were found relative to the original program's baseline size
+    # This prevents the 'expansion' from diluting the precision score.
+    base_total = baseline['numStructAddresses']
+    base_prec_struct = baseline['valStrSingletons'] / base_total if base_total > 0 else 1.0
+    poly_prec_struct = m['valStrSingletons'] / base_total if base_total > 0 else 1.0
+    prec_struct = poly_prec_struct / base_prec_struct if base_prec_struct > 0 else 1.0
     
+    # Relative Semantic Precision (Data-Flow Improvement)
+    base_prec_sem = baseline['valSemSingletons'] / base_total if base_total > 0 else 1.0
+    poly_prec_sem = m['valSemSingletons'] / base_total if base_total > 0 else 1.0
+    prec_sem = poly_prec_sem / base_prec_sem if base_prec_sem > 0 else 1.0
+
     # Literal Precision (Data-Flow Resolution)
     # Measures how many literal addresses avoided hitting 'Top' (-1)
     prec_lit = (m['numLitAddresses'] - m['literalTopCount']) / m['numLitAddresses'] if m['numLitAddresses'] > 0 else 1.0
@@ -64,15 +75,30 @@ def compute_metrics(run, baseline):
     # Productivity Helper (Smaragdakis et al., 2011)
     def calc_prod(poly_map, base_map):
         if not base_map: return 0.0
-        hits = sum(1 for x_id, szs in poly_map.items() 
-                  if any(s < base_map.get(x_id, float('inf')) and s != -1 for s in szs))
+        hits = 0
+        for x_id, szs in poly_map.items():
+            base_vals = base_map.get(x_id)
+            if base_vals is None: continue
+            
+            # Filter out -1 (Top) from baseline and get min
+            filtered_base = [v for v in base_vals if v != -1]
+            if not filtered_base:
+                # Baseline was Top, any non-Top size in poly is a hit
+                if any(s != -1 for s in szs):
+                    hits += 1
+                continue
+            
+            base_min = min(filtered_base)
+            if any(s < base_min and s != -1 for s in szs):
+                hits += 1
         return hits / len(base_map)
 
     return {
         "status": "OK",
-        "time": np.mean(run['analysisTimes']),
+        "time": avg_time,
         "expansion": expansion,
         "prec_struct": prec_struct,
+        "prec_sem": prec_sem,
         "prec_lit": prec_lit,
         "prod_v_sem": calc_prod(m['exprToValSemSizes'], baseline['exprToValSemSizes']),
         "prod_v_str": calc_prod(m['exprToValStrSizes'], baseline['exprToValStrSizes']),
@@ -88,10 +114,13 @@ def generate_icfp_tables(results, baselines):
         b = baselines.get(r['benchmarkName'])
         if b:
             m = compute_metrics(r, b)
-            m.update({'runID': r['runID'], 'dim1': r['dim1'], 'dim2': r['dim2'], 'bench': r['benchmarkName']})
+            m.update({'runID': r['runID'], 'd': r['d'], 'm': r['m'], 'bench': r['benchmarkName']})
             rows.append(m)
     
     df = pd.DataFrame(rows)
+    # Ensure dimensions are numeric for proper sorting in tables and plots
+    df['d'] = pd.to_numeric(df['d'], errors='coerce')
+    df['m'] = pd.to_numeric(df['m'], errors='coerce')
     
     # Global Summary Table (Geometric Mean for Expansion - Flemming et al., 2010)
     summary = df.groupby('runID').agg({
@@ -99,6 +128,7 @@ def generate_icfp_tables(results, baselines):
         'time': 'mean',
         'expansion': lambda x: gmean(x.dropna()) if not x.dropna().empty else np.nan,
         'prec_struct': 'mean',
+        'prec_sem': 'mean',
         'prec_lit': 'mean',
         'prod_v_str': 'mean',
         'prod_k_str': 'mean',
@@ -106,7 +136,8 @@ def generate_icfp_tables(results, baselines):
     }).rename(columns={
         'status': 'Solved', 
         'time': 'Time (s)', 
-        'prec_struct': 'Struct Prec',
+        'prec_struct': 'Rel Struct Prec',
+        'prec_sem': 'Rel Sem Prec',
         'prec_lit': 'Literal Prec',
         'prod_v_str': 'Val Prod',
         'prod_k_str': 'Cont Prod',
@@ -114,49 +145,87 @@ def generate_icfp_tables(results, baselines):
     })
     
     # Marginal Utility Tables (Kastrinis & Smaragdakis, 2013)
-    struct_mu = df[df['status'] == 'OK'].pivot_table(index='dim1', columns='dim2', values='prec_struct', aggfunc='mean')
-    time_mu = df[df['status'] == 'OK'].pivot_table(index='dim1', columns='dim2', values='time', aggfunc='mean')
+    struct_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='prec_struct', aggfunc='mean')
+    sem_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='prec_sem', aggfunc='mean')
+    time_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='time', aggfunc='mean')
 
-    print("### Table 1: Global Efficiency, Time & Segmented Precision")
+    print("### Table 1: Global Efficiency, Time & Relative Precision")
     print(summary.to_markdown())
-    print("\n### Table 2: Marginal Structural Utility (Control-Flow Precision)")
+    print("\n### Table 2: Marginal Structural Improvement (Relative to Baseline)")
     print(struct_mu.to_markdown())
-    print("\n### Table 3: Marginal Time Cost (Seconds)")
+    print("\n### Table 3: Marginal Semantic Improvement (Relative to Baseline)")
+    print(sem_mu.to_markdown())
+    print("\n### Table 4: Marginal Time Cost (Seconds)")
     print(time_mu.to_markdown())
     
-    return df, struct_mu, time_mu
+    return df, struct_mu, sem_mu, time_mu
 
-def plot_visualizations(df, struct_mu, time_mu):
+def plot_visualizations(df, struct_mu, sem_mu, time_mu):
     """Generates Pareto frontiers for both space and time complexity."""
     sns.set_theme(style="whitegrid")
     
-    plot_df = df[df['status'] == 'OK'].groupby('runID').agg({
+    # Group by both dimensions to preserve them in the aggregated dataframe
+    plot_df = df[df['status'] == 'OK'].groupby(['runID', 'd', 'm']).agg({
         'expansion': lambda x: gmean(x.dropna()),
         'time': 'mean',
-        'prec_struct': 'mean'
+        'prec_struct': 'mean',
+        'prec_sem': 'mean'
     }).reset_index()
+    
+    # Sort by numerical values first
+    plot_df = plot_df.sort_values(['d', 'm'])
+    
+    # Convert to string for categorical plotting to handle non-linear gaps (0, 1, 2, 20, 100)
+    # Re-using names 'd' and 'm' so they appear correctly in the legend
+    plot_df['d'] = plot_df['d'].astype(str)
+    plot_df['m'] = plot_df['m'].astype(str)
 
-    # Pareto Frontier: Expansion vs Structural Precision
-    plt.figure(figsize=(10, 5))
-    sns.scatterplot(data=plot_df, x='expansion', y='prec_struct', hue='runID', style='runID', s=150)
-    plt.title("Pareto Frontier: State Space Expansion vs Structural Precision")
-    plt.xlabel("Expansion Factor (Geometric Mean)")
-    plt.ylabel("Structural Precision (Arithmetic Mean)")
-    plt.savefig("pareto_expansion.png")
+    # Plot Pareto Frontiers (Expansion vs Precisions)
+    for metric, label, filename_pfx in [
+        ('prec_struct', 'Structural Improvement', 'expansion_struct'),
+        ('prec_sem', 'Semantic Improvement', 'expansion_sem')
+    ]:
+        fig, ax = plt.subplots(figsize=(12, 7))
+        sns.scatterplot(data=plot_df, x='expansion', y=metric, 
+                        hue='d', style='m', s=200, 
+                        palette="bright", edgecolor="black", alpha=0.8, ax=ax)
+        ax.set_title(f"Pareto Frontier: State Space Expansion vs {label}", fontsize=15, pad=20)
+        ax.set_xlabel("Expansion Factor (Geometric Mean, Log Scale)")
+        ax.set_xscale('log')
+        ax.set_ylabel(f"Relative Precision (Baseline = 1.0)")
+        ax.legend(title="Sensitivity (d, m)", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        plt.savefig(f"pareto_{filename_pfx}.png", bbox_inches='tight')
     
-    # Pareto Frontier: Time vs Structural Precision
-    plt.figure(figsize=(10, 5))
-    sns.scatterplot(data=plot_df, x='time', y='prec_struct', hue='runID', style='runID', s=150)
-    plt.title("Pareto Frontier: Execution Time vs Structural Precision")
-    plt.xlabel("Execution Time (Seconds)")
-    plt.ylabel("Structural Precision (Arithmetic Mean)")
-    plt.savefig("pareto_time.png")
+    # Plot Pareto Frontiers (Time vs Precisions)
+    for metric, label, filename_pfx in [
+        ('prec_struct', 'Structural Improvement', 'time_struct'),
+        ('prec_sem', 'Semantic Improvement', 'time_sem')
+    ]:
+        fig, ax = plt.subplots(figsize=(12, 7))
+        sns.scatterplot(data=plot_df, x='time', y=metric, 
+                        hue='d', style='m', s=200, 
+                        palette="bright", edgecolor="black", alpha=0.8, ax=ax)
+        ax.set_title(f"Pareto Frontier: Execution Time vs {label}", fontsize=15, pad=20)
+        ax.set_xlabel("Execution Time (Seconds, Log Scale)")
+        ax.set_xscale('log')
+        ax.set_ylabel(f"Relative Precision (Baseline = 1.0)")
+        ax.legend(title="Sensitivity (d, m)", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+        plt.savefig(f"pareto_{filename_pfx}.png", bbox_inches='tight')
     
-    # Marginal Structural Heatmap
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(struct_mu, annot=True, cmap="YlGnBu", fmt=".2f")
-    plt.title("Heatmap: Structural Precision across Sensitivity Dimensions")
-    plt.savefig("precision_heatmap.png")
+    # Heatmaps
+    for data, title, filename in [
+        (struct_mu, "Heatmap: Structural Improvement", "heatmap_struct.png"),
+        (sem_mu, "Heatmap: Semantic Improvement", "heatmap_sem.png")
+    ]:
+        fig, ax = plt.subplots(figsize=(10, 8))
+        sns.heatmap(data, annot=True, cmap="YlGnBu", fmt=".2f", ax=ax)
+        ax.set_title(title, fontsize=15, pad=20)
+        ax.set_xlabel("Sensitivity m")
+        ax.set_ylabel("Sensitivity d")
+        plt.tight_layout()
+        plt.savefig(filename, bbox_inches='tight')
 
     plt.show()
 
@@ -173,21 +242,22 @@ def main():
         return
 
     results = load_hierarchical_data(results_path)
+    if not results:
+        print("Error: No data found in benchmarks/results.")
+        return
     
-    # Enrich results with metadata for grouping
-    for r in results:
-        r['dim1'] = r['d']
-        r['dim2'] = r['m']
-    
-    # Identify baselines (typically the 0-sensitivity configuration)
+    # Identify baselines (typically the 0-sensitivity configuration: d=0, m=0)
     baselines = {
         r['benchmarkName']: r['storeMetrics']
         for r in results
-        if r['d'] == '0' and r['m'] == '0' and r.get('storeMetrics')
+        if str(r['d']) == '0' and str(r['m']) == '0' and r.get('storeMetrics')
     }
 
-    df, struct_mu, time_mu = generate_icfp_tables(results, baselines)
-    plot_visualizations(df, struct_mu, time_mu)
+    if not baselines:
+        print("Warning: No baseline results (d=0, m=0) found. Comparisons may be limited.")
+
+    df, struct_mu, sem_mu, time_mu = generate_icfp_tables(results, baselines)
+    plot_visualizations(df, struct_mu, sem_mu, time_mu)
 
 if __name__ == "__main__":
     main()
