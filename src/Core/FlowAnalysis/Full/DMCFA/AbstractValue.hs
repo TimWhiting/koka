@@ -71,6 +71,7 @@ ctxHnd (CombinedCtx _ (((id, nm), _): rst)) = (id, nm)
 ctxHnd (CombinedCtx _ []) = (ExprContextId (-5000) (newName "hnd"), newName "hnd")
 
 addCall :: Int -> CombinedCtx -> ExprContextId -> CombinedCtx
+addCall 0 (CombinedCtx (TKTop static) dyn) call = CombinedCtx (TKTop []) dyn
 addCall m (CombinedCtx (TKDelim static) dyn) call = CombinedCtx (TKDelim $ take m $ CallApp call : static) dyn
 addCall m (CombinedCtx (TKTop static) dyn) call = CombinedCtx (TKTop $ take m $ CallApp call : static) dyn
 
@@ -79,6 +80,7 @@ addDelim d (CombinedCtx static dyn) delim name = take d $ ((delim, name), static
 
 delimCtx (-1) m (TKDelim ctx) = TKDelim $ take m ctx
 delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx
+delimCtx 0 0 (TKTop ctx) = TKTop []
 delimCtx d m ctx = TKDelim $ take m [CallDelim]
 
 newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx d m static) $ take d $ ((delim, name), static) : dyn
@@ -298,8 +300,8 @@ data AbValue =
 semSizeOf :: AbValue -> Int
 semSizeOf (AbValue cls cntrs prims objs konts lit) =
   let others = length cls + length cntrs + length prims + length objs + length konts
-  in if others == 0 then 
-       if litIsPrecise lit then 1 else if litIsTopX lit then -1 else 0
+  in if others == 0 then 0
+       -- if litIsPrecise lit then 1 else if litIsTopX lit then -1 else 0
      else others
 
 addrs :: AbValue -> [Addr]

@@ -40,6 +40,10 @@ import Data.Time (getCurrentTime, diffUTCTime)
 import System.Timeout (timeout)
 import Data.Fixed (showFixed)
 import Data.Time.Clock (nominalDiffTimeToSeconds)
+import Core.FlowAnalysis.Full.Report (StoreMetrics(..), PolyVariantMetrics (PolyVariantMetrics))
+import Data.Aeson
+import System.Directory (createDirectoryIfMissing)
+import qualified Data.ByteString.Lazy as BS
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -53,6 +57,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> (ExprContext -> FixAAMR FixChange () () ())
   -> IO Bool
 runQueryAtRange bc build mod m d doQuery =
+  let runId = show m ++ "-" ++ show d in
   do
     (_, s, ctxs) <- runFixFinish (emptyBasicEnv m d build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
@@ -91,16 +96,19 @@ runQueryAtRange bc build mod m d doQuery =
                                   tend <- getCurrentTime
                                   return (l, analysisResult, nominalDiffTimeToSeconds $ diffUTCTime tend tstart)
                         first <- once
-                        case first of 
+                        case first of
                           Just (l, res, time1) -> do
-                            if debug then return $ Just (l, res, time1, time1, time1)
+                            if debug then return $ Just (l, res, [time1])
                             else do
                               Just (_, _, time2) <- once
                               Just (_, _, time3) <- once
-                              return $ Just (l, res, time1, time2, time3)
+                              return $ Just (l, res, [time1, time2, time3])
                           Nothing -> return Nothing
+                  let dir = "benchmarks/results/dmcfa/" ++ show d ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
+                  createDirectoryIfMissing True dir
                   case mbRes of
-                    Just (l, analysisResult, time1, time2, time3) -> do
+                    Just (l, analysisResult, times) -> do
+                      -- trace ("Evaluating expected result for " ++ show name) $ return ()
                       (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
                                       runFixCont $ do
                                         (_,ctx) <- loadModule (modName mod)
@@ -109,28 +117,33 @@ runQueryAtRange bc build mod m d doQuery =
                                       ress' <- getAbResult
                                       -- trace ("expected': " ++ show ress') $ return ()
                                       return ress'
-                      
+
                       let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                      let (_, _, (evals, applies, kSizes, sSizes)) = analysisResult
+                      let (_, _, (evals, applies, kSizes, sSizes), metrics) = analysisResult
+
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-                      trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
-                              show result ++ ","
-                              ++ show (length evals) ++ "," ++ show (sum evals) ++ "," ++ show (count (== 1) evals) ++ "," 
-                              ++ show (length applies) ++ "," ++ show (sum applies) ++ "," ++ show (count (== 1) applies) ++ ","
-                              ++ show (length kSizes) ++ "," ++ show (sum kSizes) ++ "," ++ show (count (== 1) kSizes) ++ ","
-                              ++ show (length sSizes) ++ "," ++ show (sum sSizes) ++ "," ++ show (count (== 1) sSizes) ++ ","
-                              ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
+                      let value = PolyVariantMetrics "dmcfa" d m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
+                      BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
+                      -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                      --         show result ++ "," 
+                      --         ++ show (length evals) ++ "," ++ show (sum evals) ++ "," ++ show (count (== 1) evals) ++ "," 
+                      --         ++ show (length applies) ++ "," ++ show (sum applies) ++ "," ++ show (count (== 1) applies) ++ ","
+                      --         ++ show (length kSizes) ++ "," ++ show (sum kSizes) ++ "," ++ show (count (== 1) kSizes) ++ ","
+                      --         ++ show (length sSizes) ++ "," ++ show (sum sSizes) ++ "," ++ show (count (== 1) sSizes) ++ ","
+                      --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just result
-                    Nothing -> 
-                      trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
-                               ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
+                    Nothing -> do
+                      let value = PolyVariantMetrics "dmcfa" d m (nameModule (modName mod) ++ "/" ++ name) [] False Nothing
+                      BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
+
+                      -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
+                      --          ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
                       return Nothing
                 (total, timeouts) <- recur rest
                 case result of
                   Just res -> return (res + total, timeouts)
                   Nothing -> return (total, timeouts + 1)
-                
-                
+
     -- tstart <- getCurrentTime
     (r, timeouts) <- recur values
     -- tend <- getCurrentTime
@@ -152,14 +165,14 @@ average xs = if null xs then 0 else fromIntegral (sum xs) / fromIntegral (length
 
 type CacheInfo = ([Int], [Int], [Int], [Int])
 
-compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo) -> (AbValue, M.Map Addr AbValue, CacheInfo) -> S.Set (AbValue, AbValue) -> Bool
-compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
+compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo, StoreMetrics) -> (AbValue, M.Map Addr AbValue, CacheInfo, StoreMetrics) -> S.Set (AbValue, AbValue) -> Bool
+compareResult (result, rMap, aci, sm1) (expected, eMap, bci, sm2) checked = do
   let objMatch :: (ExprContext, TName, [(Name, Addr)]) -> (ExprContext, TName, [(Name, Addr)]) -> Bool
       objMatch (_, name, args) (_, name2, args2) =
          let argsMatch = zipWith (\(n, a) (n2, a2) ->
                   let arg1 = fromJust $ M.lookup a rMap
                       arg2 = fromJust $ M.lookup a2 eMap in
-                  n == n2 && compareResult (arg1, rMap, aci) (arg2, eMap, bci) (S.insert (result, expected) checked)) args args2
+                  n == n2 && compareResult (arg1, rMap, aci, sm1) (arg2, eMap, bci, sm2) (S.insert (result, expected) checked)) args args2
          in name == name2 && and argsMatch
       conMatch :: (ExprContext, [Name]) -> (ExprContext, [Name]) -> Bool
       conMatch (name, args) (name2, args2) = eConName name == eConName name2
@@ -174,19 +187,110 @@ compareResult (result, rMap, aci) (expected, eMap, bci) checked = do
     -- trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
     False
 
-getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, CacheInfo)
+isAppExpr :: Expr -> Bool
+isAppExpr e =
+    case e of
+      C.App{} -> True
+      C.TypeApp e _ -> isAppExpr e
+      C.TypeLam _ e -> isAppExpr e
+      _ -> False
+isApp :: ExprContext -> Bool
+isApp e =
+  case maybeExprOfCtx e of
+    Just e -> isAppExpr e
+    _ -> False
+
+isIndirectAppFun :: ExprContext -> Bool
+isIndirectAppFun e =
+  case e of
+    AppCLambda _ _ (C.Var _ _) -> True
+    AppCLambda _ _ (C.TypeApp (C.Var _ _) _) -> True
+    _ -> False
+
+extractMetrics :: M.Map FixInput FixOutput -> StoreMetrics
+extractMetrics cache =
+  let
+    -- Lookup helpers
+    lookupVal :: Addr -> AbValue
+    lookupVal UnitAddr = emptyAbValue -- Approximation
+    lookupVal addr = case M.lookup (VStore addr) cache of
+      Just (SValue v) -> v
+      _ -> emptyAbValue
+
+    resolveRValue :: S.Set RValue -> AbValue
+    resolveRValue rvals = mconcat [ lookupVal addr | RVAddr addr <- S.toList rvals ]
+
+    -- Store Subsets
+    vEntries = M.toList $ M.filterWithKey (\k _ -> case k of VStore _ -> True; _ -> False) cache
+    kEntries = M.toList $ M.filterWithKey (\k _ -> case k of KStore _ -> True; _ -> False) cache
+
+    -- Metrics
+    numStore = length vEntries + length kEntries
+    numLit = count (\(_, SValue val) -> not (litIsBottomX (alits val))) vEntries
+    literalTopCount = count (\(_, SValue val) -> litIsTopX (alits val)) vEntries
+    numStruct = count (\(_, SValue val) -> semSizeOf val >= 1) vEntries
+    numCont = length kEntries
+
+    valSemSingletons = count (\(_, SValue val) -> semSizeOf val == 1) vEntries
+    contSemSingletons = count (\(_, KValue ks) -> S.size ks == 1) kEntries
+
+    abStructuralSize (AbValue cls cons prims objs _ _) =
+       S.size (S.map fst cls) + S.size (S.map (\(c,_) -> eConName c) cons) + S.size (S.map fst prims) + S.size (S.map (\(_,n,_) -> n) objs)
+
+    valStrSingletons = count (\(_, SValue val) -> abStructuralSize val == 1) vEntries
+
+    kStructuralSize ks = S.size $ S.map (\k -> case k of { KAddr frame _ _ _ -> frame; EndKAddr -> FCount }) ks
+    contStrSingletons = count (\(_, KValue ks) -> kStructuralSize ks == 1) kEntries
+
+    -- Returns
+    callSites = [ (ctx, val, e) | (Step (CEval e ctx), RValue val) <- M.toList cache, isApp e ]
+    callTargets = [(ctx, val, e) | (Step (CEval e ctx), RValue val) <- M.toList cache, isIndirectAppFun e]
+    callTargetCount = S.size $ S.fromList (map (\(_, _, e) -> e) callTargets)
+
+    semReturnSingletons = count (\(_, val, _) -> semSizeOf (resolveRValue val) == 1) callSites
+    strReturnSingletons = count (\(_, val, _) -> abStructuralSize (resolveRValue val) == 1) callSites
+
+    semTargetSingletons = count (\(_, val, _) -> semSizeOf (resolveRValue val) == 1) callTargets
+    strTargetSingletons = count (\(_, val, _) -> abStructuralSize (resolveRValue val) == 1) callTargets
+
+    -- Maps
+    exprToValSemSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (Step (CEval c _), RValue vs) <- M.toList cache, 0 /= semSizeOf (resolveRValue vs)]
+    exprToValStrSizes = M.fromListWith (++) [ (show $ contextId c, [abStructuralSize (resolveRValue vs)]) | (Step (CEval c _), RValue vs) <- M.toList cache , 0 /= abStructuralSize (resolveRValue vs)]
+    callToSemRetSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (ctx, vs, c) <- callSites, 0 /= semSizeOf (resolveRValue vs) ]
+    applyContSemSizes = M.fromListWith (++) [ (show $ kAddrId c, [semSizeOf (resolveRValue vs)]) | (Step (CApply c _ _), RValue vs) <- M.toList cache, 0 /= semSizeOf (resolveRValue vs) ]
+    applyContStrSizes = M.fromListWith (++) [ (show $ kAddrId c, [abStructuralSize (resolveRValue vs)]) | (KStore c, RValue vs) <- M.toList cache, 0 /= abStructuralSize (resolveRValue vs) ]
+    applyContRetSizes = M.fromListWith (++) [ (show $ kAddrId c, [abStructuralSize (resolveRValue vs)]) | (Step (CApply c _ _), RValue vs) <- M.toList cache, 0 /= abStructuralSize (resolveRValue vs)  ]
+    callTargetSemSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, 0 /= semSizeOf (resolveRValue vs)]
+    callTargetStrSizes = M.fromListWith (++) [ (show $ contextId c, [abStructuralSize (resolveRValue vs)]) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, 0 /= abStructuralSize (resolveRValue vs) ]
+
+    -- TODO: Literal values
+    
+    -- Histograms
+    ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e ctx), RValue val) <- M.toList cache]
+    ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
+  in StoreMetrics
+      numStore numLit numStruct numCont callTargetCount
+      valSemSingletons contSemSingletons valStrSingletons contStrSingletons
+      semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
+      literalTopCount
+      exprToValSemSizes applyContSemSizes callToSemRetSizes
+      applyContRetSizes exprToValStrSizes applyContStrSizes
+      callTargetSemSizes callTargetStrSizes
+
+getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, ([Int], [Int], [Int], [Int]), StoreMetrics)
 getAbResult = do
   cache <- getCache
+  -- ... existing cacheInfo calculation ...
   let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
-                        VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                           Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                                Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                               Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore ArgImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
-                                                              Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, sizeOf res : ssizes)
+                        VStore ArgImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)    
+                                                              Bottom -> (evals, applies, ksizes, ssizes)                                              
+                        VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                      Bottom -> (evals, applies, ksizes, ssizes)
                         VStore UnitAddr -> (evals, applies, ksizes, ssizes)
                         KStore KAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
@@ -215,7 +319,10 @@ getAbResult = do
             in (res, env)
           Nothing -> error ("Couldn't find " ++ show addr ++ " in cache " ++ show (filter (\k -> case k of {VStore{} -> True; _ -> False}) (M.keys cache)))
   let (finalRes, finalEnv) = getValue EndVAddr S.empty
-  return (finalRes, finalEnv, cacheInfo)
+
+  let metrics = extractMetrics cache
+
+  return (finalRes, finalEnv, cacheInfo, metrics)
 evalMainR :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
   -> IO Bool
@@ -224,11 +331,11 @@ evalMainR bc build mod m d = do
     c <- inject ctx
     -- trace (show (modCtx ctx)) $ return ()
     res <- doStep c
-    case res of 
+    case res of
       RV (RVAddr addr) -> do
         rebind addr EndVAddr
         return ()
-      RV _ -> 
+      RV _ ->
         -- trace("Expected main to evaluate to an address" ++ show res)
         doBottom
     return ()
@@ -236,8 +343,8 @@ evalMainR bc build mod m d = do
 writeSimpleDependencyGraph :: forall e s . String ->  M.Map FixInput (FixOutput, Integer, [ContX e s FixInput FixOutput FixChange], [ContF e s FixInput FixOutput FixChange]) -> IO ()
 writeSimpleDependencyGraph name cache = do
   let cache' = M.filterWithKey (\k v -> case k of {
-      Step (CEval {}) -> True; 
-      Step (CApply {}) -> True; 
+      Step (CEval {}) -> True;
+      Step (CApply {}) -> True;
       _ -> False}) cache
   -- trace ("cache': " ++ show (length cache') ++ " out of " ++ show (length cache)) $ return ()
   let values = M.foldl (\acc (v, toId, conts, fconts) -> acc ++ fmap (\(ContX _ from fromId) -> (v, from, fromId, toId)) conts) [] cache'

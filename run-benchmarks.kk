@@ -58,7 +58,7 @@ fun int(s: sslice): exn int
 
 fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
   val sens-to-run = sens.filter fn((d,m))
-    if force then True else !("benchmarks/results".path / d.show / m.show / f).is-directory()
+    if force then True else !("benchmarks/results".path / a.show / d.show / m.show / f.path).is-directory()
       
   if sens-to-run.is-empty then
     println("Skipping " ++ f ++ " " ++ a.show ++ " (all results exist)")
@@ -81,6 +81,6 @@ fun main()
   val force = args.find(fn(a) a == "--force").is-just
   val only-floats = args.find(fn(a) a == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  // run-benchmarks(files=run-files, analyses=[DMCFA-EXP], force=force)
+  run-benchmarks(files=run-files, analyses=[DMCFA, DMCFA-EXP], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFA])
-  run-benchmarks(["handlers/unix"], [DMCFA, DMCFA-EXP])
+  // run-benchmarks(["handlers/unix"], [DMCFA], force=force)
