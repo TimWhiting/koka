@@ -104,7 +104,7 @@ runQueryAtRange bc build mod m d doQuery =
                               Just (_, _, time3) <- once
                               return $ Just (l, res, [time1, time2, time3])
                           Nothing -> return Nothing
-                  let dir = "benchmarks/results/" ++ show d ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
+                  let dir = "benchmarks/results/dmcfae/" ++ show d ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
                   createDirectoryIfMissing True dir
                   case mbRes of
                     Just (l, analysisResult, times) -> do
@@ -254,31 +254,25 @@ extractMetrics cache =
     strTargetSingletons = count (\(_, val, _) -> abStructuralSize (resolveRValue val) == 1) callTargets
 
     -- Maps
-    exprToValSemSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache ]
-    exprToValStrSizes = M.fromListWith (++) [ (show $ contextId c, [abStructuralSize (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache ]
-    callToSemRetSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (ctx, vs, c) <- callSites ]
-    applyContSemSizes = M.fromListWith (++) [ (show $ kAddrId c, [semSizeOf (resolveRValue vs)]) | (Step (CApply c _ _), RValue vs) <- M.toList cache ]
-    applyContStrSizes = M.fromListWith (++) [ (show $ kAddrId c, [abStructuralSize (resolveRValue vs)]) | (KStore c, RValue vs) <- M.toList cache  ]
-    applyContRetSizes = M.fromListWith (++) [ (show $ kAddrId c, [abStructuralSize (resolveRValue vs)]) | (Step (CApply c _ _), RValue vs) <- M.toList cache ]
-    callTargetSemSizes = M.fromListWith (++) [(show $ contextId c, [semSizeOf (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c]
-    callTargetStrSizes = M.fromListWith (++) [(show $ contextId c, [abStructuralSize (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c]
+    exprToValSemSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache, 0 /= semSizeOf (resolveRValue vs)]
+    exprToValStrSizes = M.fromListWith (++) [ (show $ contextId c, [abStructuralSize (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache , 0 /= abStructuralSize (resolveRValue vs)]
+    callToSemRetSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (ctx, vs, c) <- callSites, 0 /= semSizeOf (resolveRValue vs) ]
+    applyContSemSizes = M.fromListWith (++) [ (show $ kAddrId c, [semSizeOf (resolveRValue vs)]) | (Step (CApply c _ _), RValue vs) <- M.toList cache, 0 /= semSizeOf (resolveRValue vs) ]
+    applyContStrSizes = M.fromListWith (++) [ (show $ kAddrId c, [abStructuralSize (resolveRValue vs)]) | (KStore c, RValue vs) <- M.toList cache, 0 /= abStructuralSize (resolveRValue vs) ]
+    applyContRetSizes = M.fromListWith (++) [ (show $ kAddrId c, [abStructuralSize (resolveRValue vs)]) | (Step (CApply c _ _), RValue vs) <- M.toList cache, 0 /= abStructuralSize (resolveRValue vs)  ]
+    callTargetSemSizes = M.fromListWith (++) [ (show $ contextId c, [semSizeOf (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, 0 /= semSizeOf (resolveRValue vs)]
+    callTargetStrSizes = M.fromListWith (++) [ (show $ contextId c, [abStructuralSize (resolveRValue vs)]) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, 0 /= abStructuralSize (resolveRValue vs) ]
+
+    -- TODO: Literal values
 
     -- Histograms
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e _ ctx), RValue val) <- M.toList cache]
     ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
-
-    histogram xs = M.fromListWith (+) [ (x, 1) | x <- xs ]
-    valCardHist = histogram [ semSizeOf val | (_, SValue val) <- vEntries ]
-    contCardHist = histogram [ S.size ks | (_, KValue ks) <- kEntries ]
-    evalHist = histogram (map S.size $ M.elems ctxsPerExpr)
-    applyHist = histogram (map S.size $ M.elems ctxsPerApply)
-    callTargetHist = histogram (map (\(_, val, _) -> abStructuralSize (resolveRValue val)) callTargets)
   in StoreMetrics
       numStore numLit numStruct numCont callTargetCount
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons
       semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
       literalTopCount
-      valCardHist contCardHist callTargetHist evalHist applyHist
       exprToValSemSizes applyContSemSizes callToSemRetSizes
       applyContRetSizes exprToValStrSizes applyContStrSizes
       callTargetSemSizes callTargetStrSizes
