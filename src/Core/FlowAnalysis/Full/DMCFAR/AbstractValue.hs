@@ -71,6 +71,7 @@ ctxHnd (CombinedCtx _ (((id, nm), _): rst)) = (id, nm)
 ctxHnd (CombinedCtx _ []) = (ExprContextId (-5000) (newName "hnd"), newName "hnd")
 
 addCall :: Int -> CombinedCtx -> ExprContextId -> CombinedCtx
+addCall 0 (CombinedCtx (TKTop static) dyn) call = CombinedCtx (TKTop []) dyn
 addCall m (CombinedCtx (TKDelim static) dyn) call = CombinedCtx (TKDelim $ take m $ CallApp call : static) dyn
 addCall m (CombinedCtx (TKTop static) dyn) call = CombinedCtx (TKTop $ take m $ CallApp call : static) dyn
 
@@ -79,6 +80,7 @@ addDelim d (CombinedCtx static dyn) delim name = take d $ ((delim, name), static
 
 delimCtx (-1) m (TKDelim ctx) = TKDelim $ take m ctx
 delimCtx (-1) m (TKTop ctx) = TKDelim $ take m ctx
+delimCtx 0 0 (TKTop ctx) = TKTop []
 delimCtx d m ctx = TKDelim $ take m [CallDelim]
 
 newDelim d m (CombinedCtx static dyn) delim name = CombinedCtx (delimCtx d m static) $ take d $ ((delim, name), static) : dyn
@@ -129,13 +131,34 @@ instance Show Addr where
   show (ArgImplicitAddr ctx env i ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show i ++ " " ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
+kAddrId :: Addr -> String
+kAddrId (KAddr frame _ _ dval@(DVal label op expr args ctx)) =
+  show op ++ "/" ++ show (contextId expr) ++ "/" ++ frameId frame
+kAddrId EndKAddr = "KEndAddr"
+
+frameId :: Frame -> String
+frameId frame =
+  case frame of 
+    FrameDone ctx -> "done@" ++ show ctx
+    FScrut parent _ _ -> "scrut@" ++ show (contextId parent)
+    FApp _ left _ parent _ -> "app/" ++ show (length left) ++ "@" ++ show (contextId parent)
+    FLet i _ j _ n _ parent _ -> "let/" ++ show i ++ "-" ++ show j ++ "/" ++ show n ++ "@" ++ show (contextId parent)
+    FDollar ctx _ -> "dollar@" ++ show ctx
+    FResume _ _ _ _ rctx -> "resume@" ++ show rctx
+    FRestoreDelim (DFrame _ b _) -> "restore@" ++ show b
+    FRestoreDelim (DFrameLocal _ b _ _) -> "restore@" ++ show b
+    FMask ctx -> "mask@" ++ show ctx
+
 data RValue =
   RVAddr Addr
   | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr
   deriving (Eq, Ord, Show)
 
 data Frame =
-  FrameDone
+  FCount -- Not a real frame, just for counting frames
+  | FrameDone {
+    ctx :: ExprContextId
+  }
   | FScrut {
       parent :: ExprContext,
       branches :: [ExprContext],
@@ -159,6 +182,7 @@ data Frame =
         env :: VEnv
       }
   | FDollar {
+      ctx :: ExprContextId,
       vaddr :: Addr -- Precise closure address
   }
   | FResume {
@@ -171,20 +195,22 @@ data Frame =
   | FRestoreDelim {
      dframe :: DelimitedFrame
   }
-  | FMask
+  | FMask {
+    ctx :: ExprContextId
+  }
   deriving (Eq, Ord)
 instance Show Frame where
-  show FrameDone = "FrameDone"
+  show (FrameDone _) = "FrameDone"
   show (FScrut parent branches env) = "FScrut(" ++ showSimpleContext parent ++ ", " ++ show (map showSimpleContext branches) ++ ")"
   show (FApp totalArgs leftArgs resolvedArgs parent env) =
     "FApp(" ++ show totalArgs ++ ", " ++ show (map showSimpleContext leftArgs) ++ ", " ++ show resolvedArgs ++ ", " ++ showSimpleContext parent ++ ")"
   show (FLet groupIdx numGroups bindingIdx numBindings name resolved parent env) =
     "FLet(" ++ show (groupIdx, numGroups, bindingIdx, numBindings, name) ++ ", " ++ show resolved ++ ", " ++ showSimpleContext parent ++ ", " ++ show (M.keys $ snd env) ++ ")"
-  show (FDollar vaddr) = "FDollar(" ++ show vaddr ++ ")"
+  show (FDollar _ vaddr) = "FDollar(" ++ show vaddr ++ ")"
   show (FResume rretCtx vaddr venv rHnd rCtx) =
     "FResume(" ++ show rretCtx ++ ", " ++ show vaddr ++ ", " ++ showSimpleCtxId rCtx ++ ")"
   show (FRestoreDelim dframe) = "FRestoreDelim(" ++ show dframe ++ ")"
-  show FMask = "FMask"
+  show (FMask _) = "FMask"
 
 
 nextLetFrame :: Frame -> CombinedCtx -> Frame
@@ -271,18 +297,13 @@ data AbValue =
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
-sizeOf :: AbValue -> Int
-sizeOf (AbValue cls cntrs prims objs konts lit) =
-  length cls + length cntrs + length prims + length objs + length konts + sizeLitX lit
 
-sizeLitX :: LiteralLatticeX -> Int
-sizeLitX (LiteralLatticeX sint sfloat schar strings) =
-  sizeLit sint + sizeLit sfloat + sizeLit schar + sizeLit strings
-
-sizeLit :: SLattice a -> Int
-sizeLit LBottom = 0
-sizeLit LTop = 2
-sizeLit LSingle{} = 1
+semSizeOf :: AbValue -> Int
+semSizeOf (AbValue cls cntrs prims objs konts lit) =
+  let others = length cls + length cntrs + length prims + length objs + length konts
+  in if others == 0 then 0
+       -- if litIsPrecise lit then 1 else if litIsTopX lit then -1 else 0
+     else others
 
 addrs :: AbValue -> [Addr]
 addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, _, args) -> map snd args) objs

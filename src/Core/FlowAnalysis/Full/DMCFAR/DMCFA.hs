@@ -132,13 +132,13 @@ doEval expr venv = do
       f <- focusChild 3 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f venv
-      doContinue res FMask (envCtx venv)
+      doContinue res (FMask (contextId expr)) (envCtx venv)
     App (TypeApp (Var name _) _) [f] _ | getName name == nameMaskBuiltin -> do
       -- TODO: Adjust the dynamic context to only what is necessary
       f <- focusChild 1 expr
       -- trace ("Masking " ++ show f) $ return ()
       res <- eval f venv
-      doContinue res FMask (envCtx venv)
+      doContinue res (FMask (contextId expr)) (envCtx venv)
     Con tn _ _ -> do
       let params = case splitFunScheme (typeOf tn) of
                       Just (_, params, _, _) -> map fst params
@@ -234,8 +234,8 @@ doContinue res frame ctx =
     RVAddr addr ->
       -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ do
       case frame of
-          FrameDone -> returnAddr addr
-          f | f == FMask -> do
+          FrameDone _ -> returnAddr addr
+          FMask _ -> do
             v <- store addr
             case v of
               AChangeClos e env -> do
@@ -336,7 +336,7 @@ doContinue res frame ctx =
                     Left newTree -> recur branches newTree
             case exprOfCtx parent of
               Case _ pats -> recur (zip pats branches) (TChangeV addr)
-          FDollar va -> do
+          FDollar _ va -> do
             res <- store va
             case res of
               AChangeClos cexpr cenv -> do
@@ -406,19 +406,19 @@ doHandlerPrimitive name n addr arguments venv ctx u | isNamePerform n = do
   let DefCNonRec _ _ opName = select
   let opN = newName $ nameLocalQual (getName opName)
   -- trace ("Performing: "  ++ show label ++ " " ++ show n ++ " with " ++ show select) $ return ()
-  returnOp (DVal label opN u (drop 2 arguments) ctx) (static ctx) FrameDone EndKAddr
+  returnOp (DVal label opN u (drop 2 arguments) ctx) (static ctx) (FrameDone (contextId u)) EndKAddr
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalGet = do
   -- trace ("LocalGet: " ++ show name ++ " " ++ show n ++ "\n" ++ show (head arguments)) $ return ()
   if localEff then do
     let [varAddr@(BindingAddr _ varName _), _] = arguments
-    returnOp (DVal (getName varName) nameLocalGet u [] ctx) (static ctx) FrameDone EndKAddr
+    returnOp (DVal (getName varName) nameLocalGet u [] ctx) (static ctx) (FrameDone (contextId u)) EndKAddr
   else do
     returnAddr (head arguments)
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalSet = do
   let [varAddr@(BindingAddr _ varName _), val] = arguments
   -- trace ("LocalSet: " ++ show name ++ " " ++ show n ++ "\n" ++ show args ++ "\n" ++ show arguments) $ return ()
   if localEff then do
-    returnOp (DVal (getName varName) nameLocalSet u [val] ctx) (static ctx) FrameDone EndKAddr
+    returnOp (DVal (getName varName) nameLocalSet u [val] ctx) (static ctx) (FrameDone (contextId u)) EndKAddr
   else do
     rebind val varAddr
     extendStore addr changeUnit
@@ -437,7 +437,7 @@ doHandlerPrimitive name n addr arguments venv ctx u | n == nameHandle = do
       let newctx = newDelim d m ctx (contextId u) label
       env' <- rebindAll bodyenv newctx
       res <- eval bod env'
-      let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
+      let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (contextId u) (arguments !! 2))
       returnV $ handleEffects res venv (contextId bod) h ctx
     _ -> doBottom
 doHandlerPrimitive name n addr arguments venv ctx u | n == nameLocalVar = do

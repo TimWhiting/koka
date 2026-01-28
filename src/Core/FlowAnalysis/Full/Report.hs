@@ -41,12 +41,6 @@ data StoreMetrics = StoreMetrics
   , strTargetSingletons  :: Int -- ^ Call targets var expression returning a precise lambda.
   -- | Data Precision
   , literalTopCount      :: Int -- ^ Literal addresses that hit Top (-1 in histogram).
-  -- | Cardinality Histograms
-  , valCardHist          :: Map.Map Int Int
-  , contCardHist         :: Map.Map Int Int
-  , callTargetHist       :: Map.Map Int Int
-  , exprHist             :: Map.Map Int Int
-  , applyHist             :: Map.Map Int Int
   -- | Productivity Mappings
   -- These maps store the cardinalities observed at each program point across all contexts.
   -- For 0-CFA runs, these lists will contain exactly one element.
