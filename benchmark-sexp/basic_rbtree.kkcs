@@ -1,91 +1,91 @@
-((module basic/rbtree)
-  (defs
-    (def basic/rbtree/is-red
-      (fn (color)
-        (match color
-          [basic/rbtree/Red std/core/types/True]
-          [basic/rbtree/Black std/core/types/False])))
-    (def basic/rbtree/is-black
-      (fn (color)
-        (match color
-          [basic/rbtree/Black std/core/types/True]
-          [basic/rbtree/Red std/core/types/False])))
-    (def basic/rbtree/is-node
-      (fn (tree)
-        (match tree
-          [(basic/rbtree/Node _ _ _ _ _) std/core/types/True]
-          [basic/rbtree/Leaf std/core/types/False])))
-    (def basic/rbtree/is-leaf
-      (fn (tree)
-        (match tree
-          [basic/rbtree/Leaf std/core/types/True]
-          [_ std/core/types/False])))
-    (def basic/rbtree/tree/is-red
-      (fn (t)
-        (match t
-          [(basic/rbtree/Node basic/rbtree/Red _ _ _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def basic/rbtree/balance-left
-      (fn (l k v r)
-        (match l
-          [(basic/rbtree/Node _ (basic/rbtree/Node basic/rbtree/Red lx kx vx rx) ky vy ry) (basic/rbtree/Node (basic/rbtree/Red (basic/rbtree/Node (basic/rbtree/Black lx kx vx rx)) ky vy (basic/rbtree/Node (basic/rbtree/Black ry k v r))))]
-          [(basic/rbtree/Node _ ly ky vy (basic/rbtree/Node basic/rbtree/Red lx kx vx rx)) (basic/rbtree/Node (basic/rbtree/Red (basic/rbtree/Node (basic/rbtree/Black ly ky vy lx)) kx vx (basic/rbtree/Node (basic/rbtree/Black rx k v r))))]
-          [(basic/rbtree/Node _ lx kx vx rx) (basic/rbtree/Node (basic/rbtree/Black (basic/rbtree/Node (basic/rbtree/Red lx kx vx rx)) k v r))]
-          [basic/rbtree/Leaf basic/rbtree/Leaf])))
-    (def basic/rbtree/balance-right
-      (fn (l k v r)
-        (match r
-          [(basic/rbtree/Node _ (basic/rbtree/Node basic/rbtree/Red lx kx vx rx) ky vy ry) (basic/rbtree/Node (basic/rbtree/Red (basic/rbtree/Node (basic/rbtree/Black l k v lx)) kx vx (basic/rbtree/Node (basic/rbtree/Black rx ky vy ry))))]
-          [(basic/rbtree/Node _ lx kx vx (basic/rbtree/Node basic/rbtree/Red ly ky vy ry)) (basic/rbtree/Node (basic/rbtree/Red (basic/rbtree/Node (basic/rbtree/Black l k v lx)) kx vx (basic/rbtree/Node (basic/rbtree/Black ly ky vy ry))))]
-          [(basic/rbtree/Node _ lx kx vx rx) (basic/rbtree/Node (basic/rbtree/Black l k v (basic/rbtree/Node (basic/rbtree/Red lx kx vx rx))))]
-          [basic/rbtree/Leaf basic/rbtree/Leaf])))
-    (def basic/rbtree/ins
-      (fn (t k v)
-        (match t
-          [(basic/rbtree/Node basic/rbtree/Red l kx vx r) (match (std/core/int/< (k kx))
-            [std/core/types/True (basic/rbtree/Node (basic/rbtree/Red (basic/rbtree/ins (l k v)) kx vx r))]
-            [std/core/types/False (match (std/core/int/== (k kx))
-              [std/core/types/True (basic/rbtree/Node (basic/rbtree/Red l k v r))]
-              [std/core/types/False (basic/rbtree/Node (basic/rbtree/Red l kx vx (basic/rbtree/ins (r k v))))])])]
-          [(basic/rbtree/Node basic/rbtree/Black l kx vx r) (match (std/core/int/< (k kx))
-            [std/core/types/True (match (basic/rbtree/tree/is-red (l))
-              [std/core/types/True (basic/rbtree/balance-left ((basic/rbtree/ins (l k v)) kx vx r))]
-              [std/core/types/False (basic/rbtree/Node (basic/rbtree/Black (basic/rbtree/ins (l k v)) kx vx r))])]
-            [std/core/types/False (match (std/core/int/== (k kx))
-              [std/core/types/True (basic/rbtree/Node (basic/rbtree/Black l k v r))]
-              [std/core/types/False (match (basic/rbtree/tree/is-red (r))
-                [std/core/types/True (basic/rbtree/balance-right (l kx vx (basic/rbtree/ins (r k v))))]
-                [std/core/types/False (basic/rbtree/Node (basic/rbtree/Black l kx vx (basic/rbtree/ins (r k v))))])])])]
-          [basic/rbtree/Leaf (basic/rbtree/Node (basic/rbtree/Red basic/rbtree/Leaf k v basic/rbtree/Leaf))])))
-    (def basic/rbtree/set-black
-      (fn (t)
-        (match t
-          [(basic/rbtree/Node _ l k v r) (basic/rbtree/Node (basic/rbtree/Black l k v r))]
-          [basic/rbtree/Leaf t])))
-    (def basic/rbtree/insert
-      (fn (t k v)
-        (match (basic/rbtree/tree/is-red (t))
-          [std/core/types/True (basic/rbtree/set-black ((basic/rbtree/ins (t k v))))]
-          [std/core/types/False (basic/rbtree/ins (t k v))])))
-    (def basic/rbtree/fold
-      (fn (t acc f)
-        (match t
-          [(basic/rbtree/Node _ l k v r) (basic/rbtree/fold (r (f (k v (basic/rbtree/fold (l acc f)))) f))]
-          [basic/rbtree/Leaf acc])))
-    (def basic/rbtree/make-tree
-      (fn (n)
-        (std/core/range/fold (0 (std/core/int/- (n 1)) basic/rbtree/Leaf (fn (i t)
-          (basic/rbtree/insert (t i (std/core/int/== ((std/core/int/% (i 10)) 0)))))))))
-    (def basic/rbtree/count
-      (fn (t)
-        (basic/rbtree/fold (t 0 (fn (k v r)
-          (match v
-            [std/core/types/True (std/core/int/+ (r 1))]
-            [std/core/types/False r]))))))
-    (def basic/rbtree/bench
-      (fn (n)
-        (std/core/console/default/show/println ((basic/rbtree/count ((basic/rbtree/make-tree (n)))) std/core/int/show))))
-    (def basic/rbtree/main
-      (fn ()
-        (letrec* ([n (std/core/maybe/default ((std/core/int/parse-int ((std/core/list/head ((std/os/env/get-args ()) "")) std/core/types/h-None)) 4200000))])
-          (basic/rbtree/bench (n)))))))
+(module
+  basic/rbtree
+  (define basic/rbtree/is-red
+    (λ (color)
+      (match color
+        [basic/rbtree/Red std/core/types/True]
+        [basic/rbtree/Black std/core/types/False])))
+  (define basic/rbtree/is-black
+    (λ (color)
+      (match color
+        [basic/rbtree/Black std/core/types/True]
+        [basic/rbtree/Red std/core/types/False])))
+  (define basic/rbtree/is-node
+    (λ (tree)
+      (match tree
+        [(basic/rbtree/Node _ _ _ _ _) std/core/types/True]
+        [basic/rbtree/Leaf std/core/types/False])))
+  (define basic/rbtree/is-leaf
+    (λ (tree)
+      (match tree
+        [basic/rbtree/Leaf std/core/types/True]
+        [_ std/core/types/False])))
+  (define basic/rbtree/tree/is-red
+    (λ (t)
+      (match t
+        [(basic/rbtree/Node basic/rbtree/Red _ _ _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define basic/rbtree/balance-left
+    (λ (l k v r)
+      (match l
+        [(basic/rbtree/Node _ (basic/rbtree/Node basic/rbtree/Red lx kx vx rx) ky vy ry) (basic/rbtree/Node basic/rbtree/Red (basic/rbtree/Node basic/rbtree/Black lx kx vx rx) ky vy (basic/rbtree/Node basic/rbtree/Black ry k v r))]
+        [(basic/rbtree/Node _ ly ky vy (basic/rbtree/Node basic/rbtree/Red lx kx vx rx)) (basic/rbtree/Node basic/rbtree/Red (basic/rbtree/Node basic/rbtree/Black ly ky vy lx) kx vx (basic/rbtree/Node basic/rbtree/Black rx k v r))]
+        [(basic/rbtree/Node _ lx kx vx rx) (basic/rbtree/Node basic/rbtree/Black (basic/rbtree/Node basic/rbtree/Red lx kx vx rx) k v r)]
+        [basic/rbtree/Leaf basic/rbtree/Leaf])))
+  (define basic/rbtree/balance-right
+    (λ (l k v r)
+      (match r
+        [(basic/rbtree/Node _ (basic/rbtree/Node basic/rbtree/Red lx kx vx rx) ky vy ry) (basic/rbtree/Node basic/rbtree/Red (basic/rbtree/Node basic/rbtree/Black l k v lx) kx vx (basic/rbtree/Node basic/rbtree/Black rx ky vy ry))]
+        [(basic/rbtree/Node _ lx kx vx (basic/rbtree/Node basic/rbtree/Red ly ky vy ry)) (basic/rbtree/Node basic/rbtree/Red (basic/rbtree/Node basic/rbtree/Black l k v lx) kx vx (basic/rbtree/Node basic/rbtree/Black ly ky vy ry))]
+        [(basic/rbtree/Node _ lx kx vx rx) (basic/rbtree/Node basic/rbtree/Black l k v (basic/rbtree/Node basic/rbtree/Red lx kx vx rx))]
+        [basic/rbtree/Leaf basic/rbtree/Leaf])))
+  (define basic/rbtree/ins
+    (λ (t k v)
+      (match t
+        [(basic/rbtree/Node basic/rbtree/Red l kx vx r) (match (std/core/int/< k kx)
+          [std/core/types/True (basic/rbtree/Node basic/rbtree/Red (basic/rbtree/ins l k v) kx vx r)]
+          [std/core/types/False (match (std/core/int/== k kx)
+            [std/core/types/True (basic/rbtree/Node basic/rbtree/Red l k v r)]
+            [std/core/types/False (basic/rbtree/Node basic/rbtree/Red l kx vx (basic/rbtree/ins r k v))])])]
+        [(basic/rbtree/Node basic/rbtree/Black l kx vx r) (match (std/core/int/< k kx)
+          [std/core/types/True (match (basic/rbtree/tree/is-red l)
+            [std/core/types/True (basic/rbtree/balance-left (basic/rbtree/ins l k v) kx vx r)]
+            [std/core/types/False (basic/rbtree/Node basic/rbtree/Black (basic/rbtree/ins l k v) kx vx r)])]
+          [std/core/types/False (match (std/core/int/== k kx)
+            [std/core/types/True (basic/rbtree/Node basic/rbtree/Black l k v r)]
+            [std/core/types/False (match (basic/rbtree/tree/is-red r)
+              [std/core/types/True (basic/rbtree/balance-right l kx vx (basic/rbtree/ins r k v))]
+              [std/core/types/False (basic/rbtree/Node basic/rbtree/Black l kx vx (basic/rbtree/ins r k v))])])])]
+        [basic/rbtree/Leaf (basic/rbtree/Node basic/rbtree/Red basic/rbtree/Leaf k v basic/rbtree/Leaf)])))
+  (define basic/rbtree/set-black
+    (λ (t)
+      (match t
+        [(basic/rbtree/Node _ l k v r) (basic/rbtree/Node basic/rbtree/Black l k v r)]
+        [basic/rbtree/Leaf t])))
+  (define basic/rbtree/insert
+    (λ (t k v)
+      (match (basic/rbtree/tree/is-red t)
+        [std/core/types/True (basic/rbtree/set-black (basic/rbtree/ins t k v))]
+        [std/core/types/False (basic/rbtree/ins t k v)])))
+  (define basic/rbtree/fold
+    (λ (t acc f)
+      (match t
+        [(basic/rbtree/Node _ l k v r) (basic/rbtree/fold r (f k v (basic/rbtree/fold l acc f)) f)]
+        [basic/rbtree/Leaf acc])))
+  (define basic/rbtree/make-tree
+    (λ (n)
+      (std/core/range/fold 0 (std/core/int/- n 1) basic/rbtree/Leaf (λ (i t)
+        (basic/rbtree/insert t i (std/core/int/== (std/core/int/% i 10) 0))))))
+  (define basic/rbtree/count
+    (λ (t)
+      (basic/rbtree/fold t 0 (λ (k v r)
+        (match v
+          [std/core/types/True (std/core/int/+ r 1)]
+          [std/core/types/False r])))))
+  (define basic/rbtree/bench
+    (λ (n)
+      (std/core/console/default/show/println (basic/rbtree/count (basic/rbtree/make-tree n)) std/core/int/show)))
+  (define basic/rbtree/main
+    (λ ()
+      (letrec* ([n (std/core/maybe/default (std/core/int/parse-int (std/core/list/head (std/os/env/get-args) "") std/core/types/h-None) 4200000)])
+        (basic/rbtree/bench n)))))

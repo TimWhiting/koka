@@ -1,102 +1,102 @@
-((module std/core/string)
-  (defs
-    (def std/core/string/char/string
-      (fn (c)
-        (std/core/string/char/h-extern-string (c))))
-    (def std/core/string/vector/string
-      (fn (h-arg-x1)
-        (std/core/string/vector/h-extern-string (h-arg-x1))))
-    (def std/core/string/vector
-      (fn (s)
-        (std/core/string/h-extern-vector (s))))
-    (def std/core/string/string-cmp
-      (fn (x y)
-        (std/core/string/h-extern-string-cmp (x y))))
-    (def std/core/string/cmp
-      (fn (x y)
-        (std/core/int/order ((std/core/string/string-cmp (x y))))))
-    (def std/core/string/order2
-      (fn (x y)
-        (match (std/core/string/cmp (x y))
-          [std/core/types/Lt (std/core/types/Lt2 (x y))]
-          [std/core/types/Gt (std/core/types/Gt2 (y x))]
-          [std/core/types/Eq (std/core/types/Eq2 (x))])))
-    (def std/core/string/<
-      (fn (x y)
-        (std/core/order/== ((std/core/string/cmp (x y)) std/core/types/Lt))))
-    (def std/core/string/<=
-      (fn (x y)
-        (std/core/order/< ((std/core/string/cmp (x y)) std/core/types/Gt))))
-    (def std/core/string/>
-      (fn (x y)
-        (std/core/order/== ((std/core/string/cmp (x y)) std/core/types/Gt))))
-    (def std/core/string/>=
-      (fn (x y)
-        (std/core/order/> ((std/core/string/cmp (x y)) std/core/types/Lt))))
-    (def std/core/string/chars/count
-      (fn (s)
-        (std/core/string/chars/h-extern-count (s))))
-    (def std/core/string/repeatz
-      (fn (s n)
-        (std/core/string/h-extern-repeatz (s n))))
-    (def std/core/string/repeat
-      (fn (s n)
-        (std/core/string/repeatz (s (std/core/int/ssize_t (n))))))
-    (def std/core/string/maybe/string
-      (fn (ms)
-        (match ms
-          [std/core/types/Nothing ""]
-          [(std/core/types/Just s) s])))
-    (def std/core/string/is-empty
-      (fn (s)
-        (std/core/string/== (s ""))))
-    (def |std/core/string/|||
-      (fn (x y)
-        (match (std/core/string/is-empty (x))
-          [std/core/types/True y]
-          [std/core/types/False x])))
-    (def std/core/string/is-notempty
-      (fn (s)
-        (std/core/string/!= (s ""))))
-    (def std/core/string/maybe
-      (fn (s)
-        (match (std/core/string/is-empty (s))
-          [std/core/types/True std/core/types/Nothing]
-          [std/core/types/False (std/core/types/Just (s))])))
-    (def std/core/string/to-upper
-      (fn (s)
-        (std/core/string/h-extern-to-upper (s))))
-    (def std/core/string/to-lower
-      (fn (s)
-        (std/core/string/h-extern-to-lower (s))))
-    (def std/core/string/list
-      (fn (s)
-        (std/core/string/h-extern-list (s))))
-    (def std/core/string/listchar/string
-      (fn (cs)
-        (std/core/string/listchar/h-extern-string (cs))))
-    (def std/core/string/pad-left
-      (fn (s width fill)
-        (letrec* ([h-uniq-fillh-367 (match fill
-          [(std/core/types/h-Optional h-uniq-fillh-368) h-uniq-fillh-368]
-          [std/core/types/h-None (char " ")])] [w width] [n (std/core/string/chars/count (s))])
-          (match (std/core/int/<= (w n))
-            [std/core/types/True s]
-            [std/core/types/False (std/core/types/++ ((std/core/string/repeat ((std/core/string/char/string (h-uniq-fillh-367)) (std/core/int/- (w n)))) s))]))))
-    (def std/core/string/pad-right
-      (fn (s width fill)
-        (letrec* ([h-uniq-fillh-414 (match fill
-          [(std/core/types/h-Optional h-uniq-fillh-415) h-uniq-fillh-415]
-          [std/core/types/h-None (char " ")])] [w width] [n (std/core/string/chars/count (s))])
-          (match (std/core/int/<= (w n))
-            [std/core/types/True s]
-            [std/core/types/False (std/core/types/++ (s (std/core/string/repeat ((std/core/string/char/string (h-uniq-fillh-414)) (std/core/int/- (w n))))))]))))
-    (def std/core/string/trim
-      (fn (s)
-        (std/core/string/trim-right ((std/core/string/trim-left (s))))))
-    (def std/core/string/sep/split
-      (fn (s sep)
-        (std/core/vector/list ((std/core/string/splitv (s sep))))))
-    (def std/core/string/splitn/split
-      (fn (s sep n)
-        (std/core/vector/list ((std/core/string/splitvn (s sep (std/core/int/ssize_t (n))))))))))
+(module
+  std/core/string
+  (define std/core/string/char/string
+    (λ (c)
+      (std/core/string/char/h-extern-string c)))
+  (define std/core/string/vector/string
+    (λ (h-arg-x1)
+      (std/core/string/vector/h-extern-string h-arg-x1)))
+  (define std/core/string/vector
+    (λ (s)
+      (std/core/string/h-extern-vector s)))
+  (define std/core/string/string-cmp
+    (λ (x y)
+      (std/core/string/h-extern-string-cmp x y)))
+  (define std/core/string/cmp
+    (λ (x y)
+      (std/core/int/order (std/core/string/string-cmp x y))))
+  (define std/core/string/order2
+    (λ (x y)
+      (match (std/core/string/cmp x y)
+        [std/core/types/Lt (std/core/types/Lt2 x y)]
+        [std/core/types/Gt (std/core/types/Gt2 y x)]
+        [std/core/types/Eq (std/core/types/Eq2 x)])))
+  (define std/core/string/<
+    (λ (x y)
+      (std/core/order/== (std/core/string/cmp x y) std/core/types/Lt)))
+  (define std/core/string/<=
+    (λ (x y)
+      (std/core/order/< (std/core/string/cmp x y) std/core/types/Gt)))
+  (define std/core/string/>
+    (λ (x y)
+      (std/core/order/== (std/core/string/cmp x y) std/core/types/Gt)))
+  (define std/core/string/>=
+    (λ (x y)
+      (std/core/order/> (std/core/string/cmp x y) std/core/types/Lt)))
+  (define std/core/string/chars/count
+    (λ (s)
+      (std/core/string/chars/h-extern-count s)))
+  (define std/core/string/repeatz
+    (λ (s n)
+      (std/core/string/h-extern-repeatz s n)))
+  (define std/core/string/repeat
+    (λ (s n)
+      (std/core/string/repeatz s (std/core/int/ssize_t n))))
+  (define std/core/string/maybe/string
+    (λ (ms)
+      (match ms
+        [std/core/types/Nothing ""]
+        [(std/core/types/Just s) s])))
+  (define std/core/string/is-empty
+    (λ (s)
+      (std/core/string/== s "")))
+  (define |std/core/string/|||
+    (λ (x y)
+      (match (std/core/string/is-empty x)
+        [std/core/types/True y]
+        [std/core/types/False x])))
+  (define std/core/string/is-notempty
+    (λ (s)
+      (std/core/string/!= s "")))
+  (define std/core/string/maybe
+    (λ (s)
+      (match (std/core/string/is-empty s)
+        [std/core/types/True std/core/types/Nothing]
+        [std/core/types/False (std/core/types/Just s)])))
+  (define std/core/string/to-upper
+    (λ (s)
+      (std/core/string/h-extern-to-upper s)))
+  (define std/core/string/to-lower
+    (λ (s)
+      (std/core/string/h-extern-to-lower s)))
+  (define std/core/string/list
+    (λ (s)
+      (std/core/string/h-extern-list s)))
+  (define std/core/string/listchar/string
+    (λ (cs)
+      (std/core/string/listchar/h-extern-string cs)))
+  (define std/core/string/pad-left
+    (λ (s width fill)
+      (letrec* ([h-uniq-fillh-367 (match fill
+        [(std/core/types/h-Optional h-uniq-fillh-368) h-uniq-fillh-368]
+        [std/core/types/h-None (char " ")])] [w width] [n (std/core/string/chars/count s)])
+        (match (std/core/int/<= w n)
+          [std/core/types/True s]
+          [std/core/types/False (std/core/types/++ (std/core/string/repeat (std/core/string/char/string h-uniq-fillh-367) (std/core/int/- w n)) s)]))))
+  (define std/core/string/pad-right
+    (λ (s width fill)
+      (letrec* ([h-uniq-fillh-414 (match fill
+        [(std/core/types/h-Optional h-uniq-fillh-415) h-uniq-fillh-415]
+        [std/core/types/h-None (char " ")])] [w width] [n (std/core/string/chars/count s)])
+        (match (std/core/int/<= w n)
+          [std/core/types/True s]
+          [std/core/types/False (std/core/types/++ s (std/core/string/repeat (std/core/string/char/string h-uniq-fillh-414) (std/core/int/- w n)))]))))
+  (define std/core/string/trim
+    (λ (s)
+      (std/core/string/trim-right (std/core/string/trim-left s))))
+  (define std/core/string/sep/split
+    (λ (s sep)
+      (std/core/vector/list (std/core/string/splitv s sep))))
+  (define std/core/string/splitn/split
+    (λ (s sep n)
+      (std/core/vector/list (std/core/string/splitvn s sep (std/core/int/ssize_t n))))))

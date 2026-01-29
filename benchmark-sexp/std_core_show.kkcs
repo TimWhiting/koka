@@ -1,55 +1,55 @@
-((module std/core/show)
-  (defs
-    (def std/core/show/gshow
-      (fn (h-arg-x1)
-        (std/core/show/h-extern-gshow (h-arg-x1))))
-    (def std/core/show/int-show-hex
-      (fn (i use-capitals)
-        (std/core/show/h-extern-int-show-hex (i use-capitals))))
-    (def std/core/show/show-hex
-      (fn (i width use-capitals pre)
-        (letrec* ([h-uniq-widthh-61 (match width
-          [(std/core/types/h-Optional h-uniq-widthh-62) h-uniq-widthh-62]
-          [std/core/types/h-None 1])] [h-uniq-use-capitalsh-65 (match use-capitals
-          [(std/core/types/h-Optional h-uniq-use-capitalsh-66) h-uniq-use-capitalsh-66]
-          [std/core/types/h-None std/core/types/True])] [h-uniq-preh-69 (match pre
-          [(std/core/types/h-Optional h-uniq-preh-70) h-uniq-preh-70]
-          [std/core/types/h-None "0x"])])
-          (std/core/types/++ ((match (std/core/int/< (i 0))
-            [std/core/types/True "-"]
-            [std/core/types/False ""]) (std/core/types/++ (h-uniq-preh-69 (std/core/string/pad-left ((std/core/show/int-show-hex ((std/core/int/abs (i)) h-uniq-use-capitalsh-65)) h-uniq-widthh-61 (std/core/types/h-Optional ((char "0"))))))))))))
-    (def std/core/show/show-char
-      (fn (c)
-        (match (match (std/core/char/< (c (char " ")))
-          [std/core/types/True std/core/types/True]
-          [_ (std/core/char/> (c (char "~")))])
-          [std/core/types/True (match (std/core/char/== (c (char "\n")))
-            [std/core/types/True "\\n"]
-            [std/core/types/False (match (std/core/char/== (c (char "")))
-              [std/core/types/True "\\r"]
-              [std/core/types/False (match (std/core/char/== (c (char "\t")))
-                [std/core/types/True "\\t"]
-                [std/core/types/False (match (std/core/int/<= ((std/core/char/int (c)) 255))
-                  [std/core/types/True (std/core/types/++ ("\\x" (letrec* ([h-fct-x251 std/core/show/show-hex] [h-arg-x247 (std/core/char/int (c))] [h-arg-x248 (std/core/types/h-Optional (2))] [h-arg-x250 (std/core/types/h-Optional (""))] [h-arg-x249 std/core/types/h-None])
-                    (h-fct-x251 (h-arg-x247 h-arg-x248 h-arg-x249 h-arg-x250)))))]
-                  [std/core/types/False (match (std/core/int/<= ((std/core/char/int (c)) 65535))
-                    [std/core/types/True (std/core/types/++ ("\\u" (letrec* ([h-fct-x306 std/core/show/show-hex] [h-arg-x302 (std/core/char/int (c))] [h-arg-x303 (std/core/types/h-Optional (4))] [h-arg-x305 (std/core/types/h-Optional (""))] [h-arg-x304 std/core/types/h-None])
-                      (h-fct-x306 (h-arg-x302 h-arg-x303 h-arg-x304 h-arg-x305)))))]
-                    [std/core/types/False (std/core/types/++ ("\\U" (letrec* ([h-fct-x349 std/core/show/show-hex] [h-arg-x345 (std/core/char/int (c))] [h-arg-x346 (std/core/types/h-Optional (6))] [h-arg-x348 (std/core/types/h-Optional (""))] [h-arg-x347 std/core/types/h-None])
-                      (h-fct-x349 (h-arg-x345 h-arg-x346 h-arg-x347 h-arg-x348)))))])])])])])]
-          [std/core/types/False (match (std/core/char/== (c (char "'")))
-            [std/core/types/True "\\'"]
-            [std/core/types/False (match (std/core/char/== (c (char "\"")))
-              [std/core/types/True "\\\""]
-              [std/core/types/False (match (std/core/char/== (c (char "\\")))
-                [std/core/types/True "\\\\"]
-                [std/core/types/False (std/core/string/char/string (c))])])])])))
-    (def std/core/show/char/show
-      (fn (c)
-        (std/core/types/++ ("'" (std/core/types/++ ((std/core/show/show-char (c)) "'"))))))
-    (def std/core/show/string/show
-      (fn (s)
-        (std/core/types/++ ("\"" (std/core/types/++ ((std/core/list/concat/join ((std/core/list/map ((std/core/string/list (s)) std/core/show/show-char)))) "\""))))))
-    (def std/core/show/sslice/show
-      (fn (s)
-        (std/core/show/string/show ((std/core/sslice/string (s))))))))
+(module
+  std/core/show
+  (define std/core/show/gshow
+    (λ (h-arg-x1)
+      (std/core/show/h-extern-gshow h-arg-x1)))
+  (define std/core/show/int-show-hex
+    (λ (i use-capitals)
+      (std/core/show/h-extern-int-show-hex i use-capitals)))
+  (define std/core/show/show-hex
+    (λ (i width use-capitals pre)
+      (letrec* ([h-uniq-widthh-61 (match width
+        [(std/core/types/h-Optional h-uniq-widthh-62) h-uniq-widthh-62]
+        [std/core/types/h-None 1])] [h-uniq-use-capitalsh-65 (match use-capitals
+        [(std/core/types/h-Optional h-uniq-use-capitalsh-66) h-uniq-use-capitalsh-66]
+        [std/core/types/h-None std/core/types/True])] [h-uniq-preh-69 (match pre
+        [(std/core/types/h-Optional h-uniq-preh-70) h-uniq-preh-70]
+        [std/core/types/h-None "0x"])])
+        (std/core/types/++ (match (std/core/int/< i 0)
+          [std/core/types/True "-"]
+          [std/core/types/False ""]) (std/core/types/++ h-uniq-preh-69 (std/core/string/pad-left (std/core/show/int-show-hex (std/core/int/abs i) h-uniq-use-capitalsh-65) h-uniq-widthh-61 (std/core/types/h-Optional (char "0"))))))))
+  (define std/core/show/show-char
+    (λ (c)
+      (match (match (std/core/char/< c (char " "))
+        [std/core/types/True std/core/types/True]
+        [_ (std/core/char/> c (char "~"))])
+        [std/core/types/True (match (std/core/char/== c (char "\n"))
+          [std/core/types/True "\\n"]
+          [std/core/types/False (match (std/core/char/== c (char ""))
+            [std/core/types/True "\\r"]
+            [std/core/types/False (match (std/core/char/== c (char "\t"))
+              [std/core/types/True "\\t"]
+              [std/core/types/False (match (std/core/int/<= (std/core/char/int c) 255)
+                [std/core/types/True (std/core/types/++ "\\x" (letrec* ([h-fct-x251 std/core/show/show-hex] [h-arg-x247 (std/core/char/int c)] [h-arg-x248 (std/core/types/h-Optional 2)] [h-arg-x250 (std/core/types/h-Optional "")] [h-arg-x249 std/core/types/h-None])
+                  (h-fct-x251 h-arg-x247 h-arg-x248 h-arg-x249 h-arg-x250)))]
+                [std/core/types/False (match (std/core/int/<= (std/core/char/int c) 65535)
+                  [std/core/types/True (std/core/types/++ "\\u" (letrec* ([h-fct-x306 std/core/show/show-hex] [h-arg-x302 (std/core/char/int c)] [h-arg-x303 (std/core/types/h-Optional 4)] [h-arg-x305 (std/core/types/h-Optional "")] [h-arg-x304 std/core/types/h-None])
+                    (h-fct-x306 h-arg-x302 h-arg-x303 h-arg-x304 h-arg-x305)))]
+                  [std/core/types/False (std/core/types/++ "\\U" (letrec* ([h-fct-x349 std/core/show/show-hex] [h-arg-x345 (std/core/char/int c)] [h-arg-x346 (std/core/types/h-Optional 6)] [h-arg-x348 (std/core/types/h-Optional "")] [h-arg-x347 std/core/types/h-None])
+                    (h-fct-x349 h-arg-x345 h-arg-x346 h-arg-x347 h-arg-x348)))])])])])])]
+        [std/core/types/False (match (std/core/char/== c (char "'"))
+          [std/core/types/True "\\'"]
+          [std/core/types/False (match (std/core/char/== c (char "\""))
+            [std/core/types/True "\\\""]
+            [std/core/types/False (match (std/core/char/== c (char "\\"))
+              [std/core/types/True "\\\\"]
+              [std/core/types/False (std/core/string/char/string c)])])])])))
+  (define std/core/show/char/show
+    (λ (c)
+      (std/core/types/++ "'" (std/core/types/++ (std/core/show/show-char c) "'"))))
+  (define std/core/show/string/show
+    (λ (s)
+      (std/core/types/++ "\"" (std/core/types/++ (std/core/list/concat/join (std/core/list/map (std/core/string/list s) std/core/show/show-char)) "\""))))
+  (define std/core/show/sslice/show
+    (λ (s)
+      (std/core/show/string/show (std/core/sslice/string s)))))

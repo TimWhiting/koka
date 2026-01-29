@@ -1,102 +1,90 @@
-((module learn/handler)
-  (defs
-    (def learn/handler/example/h-cfc
-      (fn (example)
-        (match example
-          [(learn/handler/h-Hnd-example h-x _) h-x])))
-    (def learn/handler/example/h-tag
-      (std/core/hnd/h-new-htag ("example@handler")))
-    (def learn/handler/example/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (learn/handler/example/h-tag hnd ret action))))
-    (def learn/handler/example/h-ctl-raise
-      (fn (example)
-        (match example
-          [(learn/handler/h-Hnd-example _ h-x) h-x])))
-    (def learn/handler/raise/h-select
-      (fn (hnd)
-        (match hnd
-          [(learn/handler/h-Hnd-example _ h-ctl-raise) h-ctl-raise])))
-    (def learn/handler/raise
-      (fn (msg)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) learn/handler/raise/h-select msg))))
-    (def learn/handler/foo
-      (fn (pred)
-        (match pred
-          [std/core/types/True (learn/handler/raise ("error"))]
-          [std/core/types/False 1])))
-    (def learn/handler/example1
-      (fn ()
-        (letrec* ([h (fn (h-action)
-          (learn/handler/example/h-handle ((learn/handler/h-Hnd-example (3 (std/core/hnd/clause-control1 ((fn (msg resume)
-            (letrec* ([_ (std/core/console/string/println (msg))])
-              42)))))) (fn (h-res)
-            h-res) h-action)))])
-          (h ((fn ()
-            (learn/handler/foo (std/core/types/True))))))))
-    (def learn/handler/example2
-      (fn ()
-        ((fn (h-action)
-          (learn/handler/example/h-handle ((learn/handler/h-Hnd-example (3 (std/core/hnd/clause-control1 ((fn (msg resume)
-            (letrec* ([_ (std/core/console/string/println (msg))])
-              42)))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          (learn/handler/foo (std/core/types/True)))))))
-    (def learn/handler/example3
-      (fn ()
-        ((fn (h-action)
-          (learn/handler/example/h-handle ((learn/handler/h-Hnd-example (3 (std/core/hnd/clause-control1 ((fn (msg resume)
-            (letrec* ([_ (std/core/console/string/println (msg))])
-              42)))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          (learn/handler/raise ("error")))))))
-    (def learn/handler/example4
-      (fn ()
-        ((fn (h-action)
-          (learn/handler/example/h-handle ((learn/handler/h-Hnd-example (0 (std/core/hnd/clause-never1 ((fn (msg)
-            (letrec* ([_ (std/core/console/string/println (msg))])
-              42)))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          (learn/handler/raise ("error")))))))
-    (def learn/handler/h-val-ask/h-select
-      (fn (hnd)
-        (match hnd
-          [(learn/handler/h-Hnd-ask _ h-val-ask) h-val-ask])))
-    (def learn/handler/h-val-ask
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) learn/handler/h-val-ask/h-select))))
-    (def learn/handler/ask/h-val-ask
-      (fn (ask)
-        (match ask
-          [(learn/handler/h-Hnd-ask _ h-x) h-x])))
-    (def learn/handler/ask/h-cfc
-      (fn (ask)
-        (match ask
-          [(learn/handler/h-Hnd-ask h-x _) h-x])))
-    (def learn/handler/ask/h-tag
-      (std/core/hnd/h-new-htag ("ask@handler")))
-    (def learn/handler/ask/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (learn/handler/ask/h-tag hnd ret action))))
-    (def learn/handler/ask
-      std/core/types/h-Valueop)
-    (def learn/handler/print-ask
-      (fn ()
-        (std/core/console/default/show/println ((learn/handler/h-val-ask ()) std/core/int/show))))
-    (def learn/handler/example5
-      (fn ()
-        (letrec* ([_ ((letrec* ([h-value-ask-l81-c12 42])
-          (fn (h-action)
-            (learn/handler/ask/h-handle ((learn/handler/h-Hnd-ask (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-ask-l81-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (learn/handler/print-ask ()))))])
-          ((letrec* ([h-value-ask-l82-c12 43])
-            (fn (h-action)
-              (learn/handler/ask/h-handle ((learn/handler/h-Hnd-ask (1 (std/core/hnd/clause-tail0 ((fn ()
-                h-value-ask-l82-c12))))) (fn (h-res)
-                h-res) h-action)))) ((fn ()
-            (learn/handler/print-ask ())))))))
-    (def learn/handler/main
-      (fn ()
-        (learn/handler/example5 ())))))
+(module
+  learn/handler
+  (define learn/handler/example/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle learn/handler/example/h-tag hnd ret action)))
+  (define learn/handler/example/h-ctl-raise
+    (λ (example)
+      (match example
+        [(learn/handler/h-Hnd-example _ h-x) h-x])))
+  (define learn/handler/raise/h-select
+    (λ (hnd)
+      (match hnd
+        [(learn/handler/h-Hnd-example _ h-ctl-raise) h-ctl-raise])))
+  (define learn/handler/raise
+    (λ (msg)
+      (perform learn/handler/example raise msg)))
+  (define learn/handler/foo
+    (λ (pred)
+      (match pred
+        [std/core/types/True (learn/handler/raise "error")]
+        [std/core/types/False 1])))
+  (define learn/handler/example1
+    (λ ()
+      (letrec* ([h (λ (h-action)
+        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
+          (letrec* ([_ (std/core/console/string/println msg)])
+            42)))]) (λ (h-res)
+          h-res) h-action))])
+        (h (λ ()
+          (learn/handler/foo std/core/types/True))))))
+  (define learn/handler/example2
+    (λ ()
+      ((λ (h-action)
+        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
+          (letrec* ([_ (std/core/console/string/println msg)])
+            42)))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        (learn/handler/foo std/core/types/True)))))
+  (define learn/handler/example3
+    (λ ()
+      ((λ (h-action)
+        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
+          (letrec* ([_ (std/core/console/string/println msg)])
+            42)))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        (learn/handler/raise "error")))))
+  (define learn/handler/example4
+    (λ ()
+      ((λ (h-action)
+        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-never1 (λ (msg)
+          (letrec* ([_ (std/core/console/string/println msg)])
+            42)))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        (learn/handler/raise "error")))))
+  (define learn/handler/h-val-ask/h-select
+    (λ (hnd)
+      (match hnd
+        [(learn/handler/h-Hnd-ask _ h-val-ask) h-val-ask])))
+  (define learn/handler/h-val-ask
+    (λ ()
+      (perform learn/handler/ask @val-ask)))
+  (define learn/handler/ask/h-val-ask
+    (λ (ask)
+      (match ask
+        [(learn/handler/h-Hnd-ask _ h-x) h-x])))
+  (define learn/handler/ask/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle learn/handler/ask/h-tag hnd ret action)))
+  (define learn/handler/ask
+    std/core/types/h-Valueop)
+  (define learn/handler/print-ask
+    (λ ()
+      (std/core/console/default/show/println (learn/handler/h-val-ask) std/core/int/show)))
+  (define learn/handler/example5
+    (λ ()
+      (letrec* ([_ ((letrec* ([h-value-ask-l81-c12 42])
+        (λ (h-action)
+          (learn/handler/ask/h-handle (handler learn/handler/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
+            h-value-ask-l81-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (learn/handler/print-ask)))])
+        ((letrec* ([h-value-ask-l82-c12 43])
+          (λ (h-action)
+            (learn/handler/ask/h-handle (handler learn/handler/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
+              h-value-ask-l82-c12))]) (λ (h-res)
+              h-res) h-action))) (λ ()
+          (learn/handler/print-ask))))))
+  (define learn/handler/main
+    (λ ()
+      (learn/handler/example5))))
