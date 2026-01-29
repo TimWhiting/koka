@@ -1,0 +1,111 @@
+((module analysis/benchmarks/suite/basic)
+  (defs
+    (def analysis/benchmarks/suite/basic/ex1/h-cfc
+      (fn (ex1)
+        (match ex1
+          [(analysis/benchmarks/suite/basic/h-Hnd-ex1 h-x _) h-x])))
+    (def analysis/benchmarks/suite/basic/ex1/h-tag
+      (std/core/hnd/h-new-htag ("ex1@basic")))
+    (def analysis/benchmarks/suite/basic/ex1/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/basic/ex1/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/basic/ex1/h-ctl-ex1
+      (fn (ex1)
+        (match ex1
+          [(analysis/benchmarks/suite/basic/h-Hnd-ex1 _ h-x) h-x])))
+    (def analysis/benchmarks/suite/basic/ex1/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/basic/h-Hnd-ex1 _ h-ctl-ex1) h-ctl-ex1])))
+    (def analysis/benchmarks/suite/basic/ex1
+      (fn (i)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/basic/ex1/h-select i))))
+    (def analysis/benchmarks/suite/basic/analyze-basic-exception
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 1 - exceptions"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/basic/ex1/h-handle ((analysis/benchmarks/suite/basic/h-Hnd-ex1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              a))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (analysis/benchmarks/suite/basic/ex1 (1))))))))
+    (def analysis/benchmarks/suite/basic/result-basic-exception
+      (fn ()
+        1))
+    (def analysis/benchmarks/suite/basic/analyze-basic-resume
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 10 - simple"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/basic/ex1/h-handle ((analysis/benchmarks/suite/basic/h-Hnd-ex1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (resume ((std/core/int/+ (a 1))))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (analysis/benchmarks/suite/basic/ex1 (0))))))))
+    (def analysis/benchmarks/suite/basic/result-basic-resume
+      (fn ()
+        1))
+    (def analysis/benchmarks/suite/basic/analyze-basic-resume-context
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 121 - simple cont"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/basic/ex1/h-handle ((analysis/benchmarks/suite/basic/h-Hnd-ex1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (resume ((std/core/int/+ (a 1))))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (std/core/int/+ ((analysis/benchmarks/suite/basic/ex1 (0)) 1))))))))
+    (def analysis/benchmarks/suite/basic/result-basic-resume-context
+      (fn ()
+        2))
+    (def analysis/benchmarks/suite/basic/analyze-basic-resume-op
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 122 - simple cont"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/basic/ex1/h-handle ((analysis/benchmarks/suite/basic/h-Hnd-ex1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (std/core/int/+ ((resume ((std/core/int/+ (a 1)))) 1))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (analysis/benchmarks/suite/basic/ex1 (0))))))))
+    (def analysis/benchmarks/suite/basic/result-basic-resume-op
+      (fn ()
+        2))
+    (def analysis/benchmarks/suite/basic/analyze-basic-resume-op-context
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 123 - simple cont2"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/basic/ex1/h-handle ((analysis/benchmarks/suite/basic/h-Hnd-ex1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (std/core/int/+ ((resume ((std/core/int/+ (a 1)))) 1))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (std/core/int/+ ((analysis/benchmarks/suite/basic/ex1 (0)) 1))))))))
+    (def analysis/benchmarks/suite/basic/result-basic-resume-op-context
+      (fn ()
+        3))
+    (def analysis/benchmarks/suite/basic/test-basic-exception
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/basic/analyze-basic-exception ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/basic/result-basic-exception ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-basic-exception passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-basic-exception FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/basic/result-basic-exception ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/basic/test-basic-resume
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/basic/analyze-basic-resume ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/basic/result-basic-resume ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-basic-resume passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-basic-resume FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/basic/result-basic-resume ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/basic/test-basic-resume-context
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/basic/analyze-basic-resume-context ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/basic/result-basic-resume-context ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-basic-resume-context passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-basic-resume-context FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/basic/result-basic-resume-context ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/basic/test-basic-resume-op
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/basic/analyze-basic-resume-op ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/basic/result-basic-resume-op ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-basic-resume-op passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-basic-resume-op FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/basic/result-basic-resume-op ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/basic/test-basic-resume-op-context
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/basic/analyze-basic-resume-op-context ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/basic/result-basic-resume-op-context ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-basic-resume-op-context passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-basic-resume-op-context FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/basic/result-basic-resume-op-context ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/basic/main
+      (fn ()
+        (letrec* ([_ (std/core/console/string/println ("Running basic tests..."))] [_ (analysis/benchmarks/suite/basic/test-basic-exception ())] [_ (analysis/benchmarks/suite/basic/test-basic-resume ())] [_ (analysis/benchmarks/suite/basic/test-basic-resume-context ())] [_ (analysis/benchmarks/suite/basic/test-basic-resume-op ())] [_ (analysis/benchmarks/suite/basic/test-basic-resume-op-context ())])
+          (std/core/console/string/println ("basic tests complete")))))))

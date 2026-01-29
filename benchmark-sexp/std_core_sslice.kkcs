@@ -1,0 +1,228 @@
+((module std/core/sslice)
+  (defs
+    (def std/core/sslice/sslice/len
+      (fn (sslice)
+        (match sslice
+          [(std/core/sslice/Sslice _ _ h-x) h-x])))
+    (def std/core/sslice/sslice/start
+      (fn (sslice)
+        (match sslice
+          [(std/core/sslice/Sslice _ h-x _) h-x])))
+    (def std/core/sslice/sslice/str
+      (fn (sslice)
+        (match sslice
+          [(std/core/sslice/Sslice h-x _ _) h-x])))
+    (def std/core/sslice/sslice/h-copy
+      (fn (h-this str start len)
+        (letrec* ([h-uniq-strh-138 (match str
+          [(std/core/types/h-Optional h-uniq-strh-139) h-uniq-strh-139]
+          [std/core/types/h-None (std/core/sslice/sslice/str (h-this))])] [h-uniq-starth-146 (match start
+          [(std/core/types/h-Optional h-uniq-starth-147) h-uniq-starth-147]
+          [std/core/types/h-None (std/core/sslice/sslice/start (h-this))])] [h-uniq-lenh-154 (match len
+          [(std/core/types/h-Optional h-uniq-lenh-155) h-uniq-lenh-155]
+          [std/core/types/h-None (std/core/sslice/sslice/len (h-this))])])
+          (std/core/sslice/Sslice (h-uniq-strh-138 h-uniq-starth-146 h-uniq-lenh-154)))))
+    (def std/core/sslice/h-new-sslice
+      (fn (str start len)
+        (std/core/sslice/Sslice (str start len))))
+    (def std/core/sslice/string
+      (fn (slice)
+        (std/core/sslice/h-extern-string (slice))))
+    (def std/core/sslice/==
+      (fn (slice1 slice2)
+        (match (std/core/types/Tuple2 (slice1 slice2))
+          [(std/core/types/Tuple2 (std/core/sslice/Sslice s1 start1 len1) (std/core/sslice/Sslice s2 start2 len2)) (match (match (std/core/unsafe/unsafe-ptr-eq (s1 s2))
+            [std/core/types/True (match (std/core/int/== (start1 start2))
+              [std/core/types/True (std/core/int/== (len1 len2))]
+              [_ std/core/types/False])]
+            [_ std/core/types/False])
+            [std/core/types/True std/core/types/True]
+            [std/core/types/False (std/core/string/== ((std/core/sslice/string (slice1)) (std/core/sslice/string (slice2))))])])))
+    (def std/core/sslice/!=
+      (fn (slice1 slice2)
+        (letrec* ([ievh-270 std/core/types/h-Hnodiv])
+          (std/core/types/bool/! ((std/core/sslice/== (slice1 slice2)))))))
+    (def std/core/sslice/===
+      (fn (slice1 slice2)
+        (match (std/core/types/Tuple2 (slice1 slice2))
+          [(std/core/types/Tuple2 (std/core/sslice/Sslice s1 start1 len1) (std/core/sslice/Sslice s2 start2 len2)) (match (std/core/int/== (start1 start2))
+            [std/core/types/True (match (std/core/int/== (len1 len2))
+              [std/core/types/True (std/core/string/== (s1 s2))]
+              [_ std/core/types/False])]
+            [_ std/core/types/False])])))
+    (def std/core/sslice/!==
+      (fn (slice1 slice2)
+        (letrec* ([ievh-352 std/core/types/h-Hnodiv])
+          (std/core/types/bool/! ((std/core/sslice/=== (slice1 slice2)))))))
+    (def std/core/sslice/count
+      (fn (slice)
+        (std/core/sslice/h-extern-count (slice))))
+    (def std/core/sslice/first1
+      (fn (s)
+        (std/core/sslice/h-extern-first1 (s))))
+    (def std/core/sslice/last1
+      (fn (s)
+        (std/core/sslice/h-extern-last1 (s))))
+    (def std/core/sslice/advance
+      (fn (slice count)
+        (std/core/sslice/h-extern-advance (slice count))))
+    (def std/core/sslice/extend
+      (fn (slice count)
+        (std/core/sslice/h-extern-extend (slice count))))
+    (def std/core/sslice/first
+      (fn (s n)
+        (letrec* ([h-uniq-nh-413 (match n
+          [(std/core/types/h-Optional h-uniq-nh-414) h-uniq-nh-414]
+          [std/core/types/h-None 1])] [slice (std/core/sslice/first1 (s))])
+          (match (std/core/int/== (h-uniq-nh-413 1))
+            [std/core/types/True slice]
+            [std/core/types/False (std/core/sslice/extend (slice (std/core/int/- (h-uniq-nh-413 1))))]))))
+    (def std/core/sslice/last
+      (fn (s n)
+        (letrec* ([h-uniq-nh-449 (match n
+          [(std/core/types/h-Optional h-uniq-nh-450) h-uniq-nh-450]
+          [std/core/types/h-None 1])] [slice (std/core/sslice/last1 (s))])
+          (match (std/core/int/== (h-uniq-nh-449 1))
+            [std/core/types/True slice]
+            [std/core/types/False (std/core/sslice/extend ((std/core/sslice/advance (slice (std/core/int/- (1 h-uniq-nh-449)))) (std/core/int/- (h-uniq-nh-449 1))))]))))
+    (def std/core/sslice/before
+      (fn (slice)
+        (match slice
+          [(std/core/sslice/Sslice s start _) (std/core/sslice/Sslice (s 0 start))])))
+    (def std/core/sslice/after
+      (fn (slice)
+        (match slice
+          [(std/core/sslice/Sslice s start len) (std/core/sslice/Sslice (s (std/core/int/+ (start len)) (std/core/int/- ((std/core/sslice/length (s)) (std/core/int/+ (start len))))))])))
+    (def std/core/sslice/capitalize
+      (fn (s)
+        (std/core/types/++ ((std/core/string/to-upper ((std/core/sslice/string ((std/core/sslice/first (s std/core/types/h-None)))))) (std/core/sslice/string ((std/core/sslice/after ((std/core/sslice/first (s std/core/types/h-None))))))))))
+    (def std/core/sslice/slice
+      (fn (s)
+        (std/core/sslice/Sslice (s 0 (std/core/sslice/length (s))))))
+    (def std/core/sslice/empty
+      (std/core/sslice/Sslice ("" 0 0)))
+    (def std/core/sslice/is-empty
+      (fn (slice)
+        (letrec* ([ievh-606 std/core/types/h-Hnodiv])
+          (std/core/types/bool/! ((std/core/int/is-pos ((std/core/sslice/sslice/len (slice)))))))))
+    (def std/core/sslice/invalid
+      (std/core/sslice/Sslice ("" -1 0)))
+    (def std/core/sslice/is-valid
+      (fn (slice)
+        (std/core/int/>= ((std/core/sslice/sslice/start (slice)) 0))))
+    (def std/core/sslice/is-notempty
+      (fn (slice)
+        (std/core/int/is-pos ((std/core/sslice/sslice/len (slice))))))
+    (def std/core/sslice/head
+      (fn (s)
+        (std/core/sslice/string ((std/core/sslice/first (s std/core/types/h-None))))))
+    (def std/core/sslice/tail
+      (fn (s)
+        (std/core/sslice/string ((std/core/sslice/after ((std/core/sslice/first (s std/core/types/h-None))))))))
+    (def std/core/sslice/common-prefix
+      (fn (s t upto)
+        (letrec* ([h-uniq-uptoh-695 (match upto
+          [(std/core/types/h-Optional h-uniq-uptoh-696) h-uniq-uptoh-696]
+          [std/core/types/h-None -1])])
+          (std/core/sslice/h-extern-common-prefix (s t h-uniq-uptoh-695)))))
+    (def std/core/sslice/next
+      (fn (slice)
+        (std/core/sslice/h-extern-next (slice))))
+    (def std/core/sslice/slice/truncate
+      (fn (slice)
+        (std/core/sslice/Sslice ((std/core/sslice/sslice/str (slice)) (std/core/sslice/sslice/start (slice)) 0))))
+    (def std/core/sslice/slice/foreach
+      (fn (slice action)
+        (match (std/core/sslice/next (slice))
+          [std/core/types/Nothing std/core/types/Unit]
+          [(std/core/types/Just (std/core/types/Tuple2 c (as rest (std/core/sslice/Sslice _ _ _)))) (letrec* ([_ (action (c))])
+            (std/core/sslice/slice/foreach (rest action)))])))
+    (def std/core/sslice/string/foreach
+      (fn (s action)
+        (std/core/sslice/slice/foreach ((std/core/sslice/slice (s)) action))))
+    (def std/core/sslice/pred/count
+      (fn (s pred)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-884 std/core/types/h-Hnodiv] [ievh-903 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (0 (fn (cnt)
+              (letrec* ([_ (std/core/sslice/string/foreach (s (fn (c)
+                (match ((fn (h-arg-x1)
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (pred (h-arg-x1)))))) (c))
+                  [std/core/types/True (std/core/types/local-set (cnt (std/core/int/+ ((std/core/types/local-get (cnt ievh-884)) 1))))]
+                  [std/core/types/False std/core/types/Unit]))))])
+                (std/core/types/local-get (cnt ievh-903))))))))))))
+    (def std/core/sslice/string/truncate
+      (fn (s count)
+        (std/core/sslice/string ((std/core/sslice/extend ((std/core/sslice/first (s std/core/types/h-None)) (std/core/int/- (count 1))))))))
+    (def std/core/sslice/subslice
+      (fn (slice start end)
+        (match (match (std/core/int/< (start 0))
+          [std/core/types/True std/core/types/True]
+          [_ (std/core/int/< (end 0))])
+          [std/core/types/True slice]
+          [std/core/types/False (std/core/sslice/extend ((std/core/sslice/slice/truncate ((std/core/sslice/advance (slice start)))) (std/core/int/- (end start))))])))
+    (def std/core/sslice/take
+      (fn (slice n)
+        (match (std/core/int/< (n 0))
+          [std/core/types/True slice]
+          [std/core/types/False (std/core/sslice/extend ((std/core/sslice/slice/truncate (slice)) n))])))
+    (def std/core/sslice/drop
+      (fn (slice n)
+        (match (std/core/int/<= (n 0))
+          [std/core/types/True slice]
+          [std/core/types/False (std/core/sslice/extend ((std/core/sslice/slice/truncate ((std/core/sslice/advance (slice n)))) (std/core/int/- ((std/core/sslice/count (slice)) n))))])))
+    (def std/core/sslice/slice/foreach-while
+      (fn (slice action)
+        (match (std/core/sslice/next (slice))
+          [std/core/types/Nothing std/core/types/Nothing]
+          [(std/core/types/Just (std/core/types/Tuple2 c (as rest (std/core/sslice/Sslice _ _ _)))) (match (action (c))
+            [std/core/types/Nothing (std/core/sslice/slice/foreach-while (rest action))]
+            [res res])])))
+    (def std/core/sslice/string/foreach-while
+      (fn (s action)
+        (std/core/sslice/slice/foreach-while ((std/core/sslice/slice (s)) action))))
+    (def std/core/sslice/head-char
+      (fn (s)
+        (std/core/sslice/string/foreach-while (s std/core/types/Just))))
+    (def std/core/sslice/find
+      (fn (s sub)
+        (letrec* ([i (std/core/int/ssize_t/int ((std/core/sslice/xindex-of (s sub))))])
+          (match (std/core/int/is-zero (i))
+            [std/core/types/True std/core/types/Nothing]
+            [std/core/types/False (std/core/types/Just ((std/core/sslice/Sslice (s (std/core/int/dec (i)) (std/core/sslice/length (sub))))))]))))
+    (def std/core/sslice/find-last
+      (fn (s sub)
+        (letrec* ([i (std/core/int/ssize_t/int ((std/core/sslice/xlast-index-of (s sub))))])
+          (match (std/core/int/is-zero (i))
+            [std/core/types/True std/core/types/Nothing]
+            [std/core/types/False (std/core/types/Just ((std/core/sslice/Sslice (s (std/core/int/dec (i)) (std/core/sslice/length (sub))))))]))))
+    (def std/core/sslice/starts-with
+      (fn (s pre)
+        (match (std/core/sslice/xstarts-with (s pre))
+          [std/core/types/True (std/core/types/Just ((std/core/sslice/Sslice (s (std/core/sslice/length (pre)) (std/core/int/- ((std/core/sslice/length (s)) (std/core/sslice/length (pre))))))))]
+          [std/core/types/False std/core/types/Nothing])))
+    (def std/core/sslice/xends-with
+      (fn (s post)
+        (std/core/sslice/h-extern-xends-with (s post))))
+    (def std/core/sslice/ends-with
+      (fn (s post)
+        (match (std/core/sslice/xends-with (s post))
+          [std/core/types/True (std/core/types/Just ((std/core/sslice/Sslice (s 0 (std/core/int/- ((std/core/sslice/length (s)) (std/core/sslice/length (post))))))))]
+          [std/core/types/False std/core/types/Nothing])))
+    (def std/core/sslice/trim-left
+      (fn (s sub)
+        (match (std/core/string/is-empty (sub))
+          [std/core/types/True s]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (match (std/core/sslice/starts-with (s sub))
+              [(std/core/types/Just (as slice (std/core/sslice/Sslice _ _ _))) (std/core/sslice/trim-left ((std/core/sslice/string (slice)) sub))]
+              [std/core/types/Nothing s]))])))
+    (def std/core/sslice/trim-right
+      (fn (s sub)
+        (match (std/core/string/is-empty (sub))
+          [std/core/types/True s]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (match (std/core/sslice/ends-with (s sub))
+              [(std/core/types/Just (as slice (std/core/sslice/Sslice _ _ _))) (std/core/sslice/trim-right ((std/core/sslice/string (slice)) sub))]
+              [std/core/types/Nothing s]))])))))

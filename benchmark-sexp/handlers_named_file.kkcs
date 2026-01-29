@@ -1,0 +1,50 @@
+((module handlers/named/file)
+  (defs
+    (def handlers/named/file/file/h-cfc
+      (fn (file)
+        (match file
+          [(handlers/named/file/h-Hnd-file h-x _) h-x])))
+    (def handlers/named/file/file/h-tag
+      (std/core/hnd/h-new-htag ("file@file")))
+    (def handlers/named/file/file/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-named-handle (handlers/named/file/file/h-tag hnd ret action))))
+    (def handlers/named/file/file/h-fun-read-line
+      (fn (file)
+        (match file
+          [(handlers/named/file/h-Hnd-file _ h-x) h-x])))
+    (def handlers/named/file/read-line/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/named/file/h-Hnd-file _ h-fun-read-line) h-fun-read-line])))
+    (def handlers/named/file/read-line
+      (fn (h-hname)
+        (std/core/hnd/h-perform0 (h-hname handlers/named/file/read-line/h-select))))
+    (def handlers/named/file/file
+      (fn (fname action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-310 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var ((std/core/list/lines ((std/os/file/read-text-file ((std/os/path/path (fname)))))) (fn (content)
+              ((fn (h-action)
+                (handlers/named/file/file/h-handle ((handlers/named/file/h-Hnd-file (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (match (std/core/types/local-get (content ievh-310))
+                    [std/core/types/Nil ""]
+                    [(std/core/types/Cons x xx) (letrec* ([_ (std/core/types/local-set (content xx))])
+                      x)])))))) (fn (h-res)
+                  h-res) h-action))) ((fn (f)
+                ((fn (h-arg-x1)
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (action (h-arg-x1)))))) (f))))))))))))))
+    (def handlers/named/file/main
+      (fn ()
+        (handlers/named/file/file ("package.yaml" (fn (f1)
+          (handlers/named/file/file ("stack.yaml" (fn (f2)
+            (std/core/console/string/println ((std/core/types/++ ((handlers/named/file/read-line (f1)) (std/core/types/++ ("\n" (handlers/named/file/read-line (f2))))))))))))))))
+    (def handlers/named/file/wrong-escape1
+      (fn ()
+        (handlers/named/file/file ("stack.yaml" (fn (f)
+          f)))))
+    (def handlers/named/file/example-wrong
+      (fn ()
+        (letrec* ([f (handlers/named/file/wrong-escape1 ())])
+          (std/core/console/string/println ((handlers/named/file/read-line (f)))))))))

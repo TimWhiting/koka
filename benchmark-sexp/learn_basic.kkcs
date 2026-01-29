@@ -1,0 +1,68 @@
+((module learn/basic)
+  (defs
+    (def learn/basic/example1
+      (fn ()
+        (std/core/list/map ((std/core/list/range/list (1 5)) (fn (i)
+          (std/core/console/default/show/println (i std/core/int/show)))))))
+    (def learn/basic/example1a
+      (fn ()
+        (std/core/list/map ((std/core/list/range/list (1 5)) (fn (i)
+          (std/core/console/default/show/println (i std/core/int/show)))))))
+    (def learn/basic/example1b
+      (fn ()
+        (std/core/list/map ((std/core/list/range/list (1 5)) (fn (i)
+          (std/core/console/default/show/println (i std/core/int/show)))))))
+    (def learn/basic/example2
+      (fn ()
+        (std/core/list/map ((std/core/list/range/list (1 5)) (fn (i)
+          (std/core/console/default/show/println (i std/core/int/show)))))))
+    (def learn/basic/example3
+      (fn ()
+        (std/core/list/map ((std/core/list/range/list (1 5)) (fn (i)
+          (std/core/console/default/show/println (i std/core/int/show)))))))
+    (def learn/basic/example3a
+      (fn ()
+        (std/core/list/map ((std/core/list/range/list (1 5)) (fn (i)
+          (std/core/console/default/show/println (i std/core/int/show)))))))
+    (def learn/basic/twice
+      (fn (f)
+        (letrec* ([_ (f ())])
+          (f ()))))
+    (def learn/basic/example4
+      (fn ()
+        (learn/basic/twice ((fn ()
+          (std/core/console/string/println ("hi")))))))
+    (def learn/basic/example4a
+      (fn ()
+        (learn/basic/twice ((fn ()
+          (std/core/console/string/println ("hi")))))))
+    (def learn/basic/example5
+      (fn ()
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-1211 std/core/types/h-Hnodiv] [ievh-1279 std/core/types/h-Hnodiv] [ievh-1325 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (0 (fn (i)
+              (std/core/while ((fn ()
+                (std/core/int/< ((std/core/types/local-get (i ievh-1211)) 10))) (fn ()
+                (letrec* ([_ (std/core/types/local-set (i (std/core/int/+ ((std/core/types/local-get (i ievh-1279)) 1))))])
+                  (std/core/console/default/show/println ((std/core/types/local-get (i ievh-1325)) std/core/int/show)))))))))))))))
+    (def learn/basic/example6
+      (fn ()
+        (std/core/console/default/show/println ((std/core/list/foldl ((std/core/types/Cons (21 (std/core/types/Cons (21 std/core/types/Nil)))) 0 std/core/int/+)) std/core/int/show))))
+    (def learn/basic/increment
+      (fn (xs)
+        (std/core/list/filter ((std/core/list/map (xs (fn (x)
+          (std/core/int/+ (x 1))))) (fn (x)
+          (std/core/int/> (x 2)))))))
+    (def learn/basic/increment2
+      (fn (xs)
+        (std/core/list/filter ((std/core/list/map (xs (fn (x)
+          (std/core/int/+ (x 1))))) (fn (x)
+          (std/core/int/> (x 2)))))))
+    (def learn/basic/example-trace
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace-info ("example trace" (std/core/debug/file/kk-file-line ("learn/basic.kk" "104"))))])
+          (std/core/debug/trace ((std/core/types/++ ("module: " "learn/basic")))))))
+    (def learn/basic/main
+      (fn ()
+        (letrec* ([_ (learn/basic/example1 ())] [_ (learn/basic/example2 ())] [_ (learn/basic/example3 ())] [_ (learn/basic/example4 ())])
+          (learn/basic/example5 ()))))))

@@ -1,0 +1,160 @@
+((module learn/lazycons)
+  (defs
+    (def learn/lazycons/stream1/lazy-tag
+      (std/core/types/h-make-int32 (3)))
+    (def learn/lazycons/stream1/lazy-Append1
+      (fn (h-lazy h-recurse xs ys)
+        (letrec* ([|| (std/core/lazy/memoize-target (h-lazy 16 2))])
+          (match (learn/lazycons/stream1/lazy-force ((learn/lazycons/stream1/lazy-force (xs))))
+            [learn/lazycons/Nil1 (std/core/lazy/memoize (h-lazy ys))]
+            [(learn/lazycons/Cons1 x xx) (std/core/lazy/memoize (h-lazy (learn/lazycons/Cons1 (x (learn/lazycons/Append1 (xx ys))))))]))))
+    (def learn/lazycons/stream1/lazy-eval-locked
+      (fn (h-lazy h-recurse)
+        (match h-lazy
+          [(learn/lazycons/Append1 xs ys) (learn/lazycons/stream1/lazy-Append1 (h-lazy h-recurse xs ys))]
+          [(learn/lazycons/stream1/Indirect h-indirect) (std/core/lazy/indirect-compress (h-indirect learn/lazycons/stream1/lazy-tag))]
+          [_ h-lazy])))
+    (def learn/lazycons/stream1/lazy-eval
+      (fn (h-lazy h-recurse)
+        (match (match (std/core/lazy/datatype-ptr-is-unique (h-lazy))
+          [std/core/types/True std/core/types/True]
+          [_ (std/core/types/not ((std/core/lazy/atomic-enter (h-lazy learn/lazycons/stream1/lazy-tag))))])
+          [std/core/types/True (learn/lazycons/stream1/lazy-eval-locked (h-lazy h-recurse))]
+          [std/core/types/False (letrec* ([v (learn/lazycons/stream1/lazy-eval-locked (h-lazy h-recurse))] [|| (std/core/lazy/atomic-leave (h-lazy))])
+            v)])))
+    (def learn/lazycons/stream1/lazy-whnf
+      (fn (h-lazy)
+        (letrec* ([h-val (learn/lazycons/stream1/lazy-eval (h-lazy std/core/types/True))])
+          (match (std/core/lazy/datatype-is-whnf (h-val learn/lazycons/stream1/lazy-tag))
+            [std/core/types/True h-val]
+            [std/core/types/False (learn/lazycons/stream1/lazy-whnf (h-val))]))))
+    (def learn/lazycons/stream1/lazy-force
+      (fn (h-lazy)
+        (match (std/core/lazy/datatype-is-whnf (h-lazy learn/lazycons/stream1/lazy-tag))
+          [std/core/types/True h-lazy]
+          [std/core/types/False (learn/lazycons/stream1/lazy-whnf (h-lazy))])))
+    (def learn/lazycons/stream1/lazy-step
+      (fn (h-lazy)
+        (match (std/core/lazy/datatype-is-whnf (h-lazy learn/lazycons/stream1/lazy-tag))
+          [std/core/types/True h-lazy]
+          [std/core/types/False (learn/lazycons/stream1/lazy-eval (h-lazy std/core/types/False))])))
+    (def learn/lazycons/xs
+      (learn/lazycons/Append1 ((learn/lazycons/Cons1 (1 (learn/lazycons/Cons1 (2 learn/lazycons/Nil1)))) (learn/lazycons/Cons1 (3 learn/lazycons/Nil1)))))
+    (def learn/lazycons/head1
+      (fn (xs)
+        (match (learn/lazycons/stream1/lazy-force (xs))
+          [learn/lazycons/Nil1 std/core/types/Nothing]
+          [(learn/lazycons/Cons1 x _) (std/core/types/Just (x))])))
+    (def learn/lazycons/stream/lazy-tag
+      (std/core/types/h-make-int32 (3)))
+    (def learn/lazycons/stream/lazy-eval
+      (fn (h-lazy h-recurse)
+        (match (match (std/core/lazy/datatype-ptr-is-unique (h-lazy))
+          [std/core/types/True std/core/types/True]
+          [_ (std/core/types/not ((std/core/lazy/atomic-enter (h-lazy learn/lazycons/stream/lazy-tag))))])
+          [std/core/types/True (learn/lazycons/stream/lazy-eval-locked (h-lazy h-recurse))]
+          [std/core/types/False (letrec* ([v (learn/lazycons/stream/lazy-eval-locked (h-lazy h-recurse))] [|| (std/core/lazy/atomic-leave (h-lazy))])
+            v)])))
+    (def learn/lazycons/stream/lazy-step
+      (fn (h-lazy)
+        (match (std/core/lazy/datatype-is-whnf (h-lazy learn/lazycons/stream/lazy-tag))
+          [std/core/types/True h-lazy]
+          [std/core/types/False (learn/lazycons/stream/lazy-eval (h-lazy std/core/types/False))])))
+    (def learn/lazycons/stream/lazy-SAppend
+      (fn (h-lazy h-recurse xs ys)
+        (letrec* ([|| (std/core/lazy/memoize-target (h-lazy 16 2))] [_ (learn/lazycons/stream/lazy-step (ys))])
+          (match (learn/lazycons/stream/lazy-force ((learn/lazycons/stream/lazy-force (xs))))
+            [learn/lazycons/SNil (std/core/lazy/memoize (h-lazy ys))]
+            [(learn/lazycons/SCons x xx) (std/core/lazy/memoize (h-lazy (learn/lazycons/SCons (x (learn/lazycons/SAppend (xx ys))))))]))))
+    (def learn/lazycons/stream/lazy-eval-locked
+      (fn (h-lazy h-recurse)
+        (match h-lazy
+          [(learn/lazycons/SAppend xs ys) (learn/lazycons/stream/lazy-SAppend (h-lazy h-recurse xs ys))]
+          [(learn/lazycons/SReverse xs acc) (learn/lazycons/stream/lazy-SReverse (h-lazy h-recurse xs acc))]
+          [(learn/lazycons/stream/Indirect h-indirect) (std/core/lazy/indirect-compress (h-indirect learn/lazycons/stream/lazy-tag))]
+          [_ h-lazy])))
+    (def learn/lazycons/stream/lazy-whnf
+      (fn (h-lazy)
+        (letrec* ([h-val (learn/lazycons/stream/lazy-eval (h-lazy std/core/types/True))])
+          (match (std/core/lazy/datatype-is-whnf (h-val learn/lazycons/stream/lazy-tag))
+            [std/core/types/True h-val]
+            [std/core/types/False (learn/lazycons/stream/lazy-whnf (h-val))]))))
+    (def learn/lazycons/stream/lazy-force
+      (fn (h-lazy)
+        (match (std/core/lazy/datatype-is-whnf (h-lazy learn/lazycons/stream/lazy-tag))
+          [std/core/types/True h-lazy]
+          [std/core/types/False (learn/lazycons/stream/lazy-whnf (h-lazy))])))
+    (def learn/lazycons/stream/lazy-SReverse
+      (fn (h-lazy h-recurse xs acc)
+        (letrec* ([|| (std/core/lazy/memoize-target (h-lazy 16 2))])
+          (match (learn/lazycons/stream/lazy-force ((learn/lazycons/stream/lazy-force (xs))))
+            [learn/lazycons/SNil (std/core/lazy/memoize (h-lazy acc))]
+            [(learn/lazycons/SCons x xx) (match h-recurse
+              [std/core/types/True (learn/lazycons/stream/lazy-SReverse (h-lazy h-recurse xx (learn/lazycons/SCons (x acc))))]
+              [std/core/types/False (std/core/lazy/memoize (h-lazy (learn/lazycons/SReverse (xx (learn/lazycons/SCons (x acc))))))])]))))
+    (def learn/lazycons/debug-show
+      (fn (xs h-implicit/show)
+        (match xs
+          [learn/lazycons/SNil "SNil"]
+          [(learn/lazycons/SCons x xx) (std/core/types/++ ("SCons(" (std/core/types/++ ((h-implicit/show (x)) (std/core/types/++ (", " (std/core/types/++ ((learn/lazycons/debug-show (xx h-implicit/show)) ")"))))))))]
+          [(learn/lazycons/SAppend xs ys) (std/core/types/++ ("SAppend(" (std/core/types/++ ((learn/lazycons/debug-show (xs h-implicit/show)) (std/core/types/++ (", " (std/core/types/++ ((learn/lazycons/debug-show (ys h-implicit/show)) ")"))))))))]
+          [(learn/lazycons/SReverse xs acc) (std/core/types/++ ("SReverse(" (std/core/types/++ ((learn/lazycons/debug-show (xs h-implicit/show)) (std/core/types/++ (", " (std/core/types/++ ((learn/lazycons/debug-show (acc h-implicit/show)) ")"))))))))]
+          [_ (std/core/exn/error-pattern ("learn/lazycons(76, 8)" "debug-show"))])))
+    (def learn/lazycons/show
+      (fn (h-pat-x141_11 h-implicit/show)
+        (match h-pat-x141_11
+          [(learn/lazycons/Bqueue front flen rear rlen) (std/core/types/++ ("Bqueue(" (std/core/types/++ ((learn/lazycons/debug-show (front h-implicit/show)) (std/core/types/++ (", flen=" (std/core/types/++ ((std/core/int/show (flen)) (std/core/types/++ (", " (std/core/types/++ ((learn/lazycons/debug-show (rear h-implicit/show)) (std/core/types/++ (", rlen=" (std/core/types/++ ((std/core/int/show (rlen)) ")"))))))))))))))))])))
+    (def learn/lazycons/bqueue/front
+      (fn (bqueue)
+        (match bqueue
+          [(learn/lazycons/Bqueue h-x _ _ _) h-x])))
+    (def learn/lazycons/bqueue/flen
+      (fn (bqueue)
+        (match bqueue
+          [(learn/lazycons/Bqueue _ h-x _ _) h-x])))
+    (def learn/lazycons/bqueue/rear
+      (fn (bqueue)
+        (match bqueue
+          [(learn/lazycons/Bqueue _ _ h-x _) h-x])))
+    (def learn/lazycons/bqueue/rlen
+      (fn (bqueue)
+        (match bqueue
+          [(learn/lazycons/Bqueue _ _ _ h-x) h-x])))
+    (def learn/lazycons/bqueue/h-copy
+      (fn (h-this front flen rear rlen)
+        (letrec* ([h-uniq-fronth-1874 (match front
+          [(std/core/types/h-Optional h-uniq-fronth-1875) h-uniq-fronth-1875]
+          [std/core/types/h-None (learn/lazycons/bqueue/front (h-this))])] [h-uniq-flenh-1885 (match flen
+          [(std/core/types/h-Optional h-uniq-flenh-1886) h-uniq-flenh-1886]
+          [std/core/types/h-None (learn/lazycons/bqueue/flen (h-this))])] [h-uniq-rearh-1896 (match rear
+          [(std/core/types/h-Optional h-uniq-rearh-1897) h-uniq-rearh-1897]
+          [std/core/types/h-None (learn/lazycons/bqueue/rear (h-this))])] [h-uniq-rlenh-1907 (match rlen
+          [(std/core/types/h-Optional h-uniq-rlenh-1908) h-uniq-rlenh-1908]
+          [std/core/types/h-None (learn/lazycons/bqueue/rlen (h-this))])])
+          (learn/lazycons/Bqueue (h-uniq-fronth-1874 h-uniq-flenh-1885 h-uniq-rearh-1896 h-uniq-rlenh-1907)))))
+    (def learn/lazycons/bempty
+      (learn/lazycons/Bqueue (learn/lazycons/SNil 0 learn/lazycons/SNil 0)))
+    (def learn/lazycons/check
+      (fn (h-pat-x107_12)
+        (match h-pat-x107_12
+          [(learn/lazycons/Bqueue front flen rear rlen) (match (std/core/int/>= (flen rlen))
+            [std/core/types/True (learn/lazycons/Bqueue (front flen rear rlen))]
+            [std/core/types/False (learn/lazycons/Bqueue ((learn/lazycons/SAppend (front (learn/lazycons/SReverse (rear learn/lazycons/SNil)))) (std/core/int/+ (flen rlen)) learn/lazycons/SNil 0))])])))
+    (def learn/lazycons/snoc
+      (fn (h-pat-x130_11 x)
+        (match h-pat-x130_11
+          [(learn/lazycons/Bqueue front flen rear rlen) (learn/lazycons/check ((learn/lazycons/Bqueue (front flen (learn/lazycons/SCons (x rear)) (std/core/int/+ (rlen 1))))))])))
+    (def learn/lazycons/uncons
+      (fn (h-pat-x136_13)
+        (match h-pat-x136_13
+          [(learn/lazycons/Bqueue front flen rear rlen) (match (learn/lazycons/stream/lazy-force (front))
+            [(learn/lazycons/SCons x xx) (std/core/types/Just ((std/core/types/Tuple2 (x (learn/lazycons/check ((learn/lazycons/Bqueue (xx (std/core/int/- (flen 1)) rear rlen))))))))]
+            [learn/lazycons/SNil std/core/types/Nothing])])))
+    (def learn/lazycons/main
+      (fn ()
+        (letrec* ([queue (learn/lazycons/snoc ((learn/lazycons/snoc ((learn/lazycons/snoc ((learn/lazycons/snoc ((learn/lazycons/snoc (learn/lazycons/bempty 1)) 2)) 3)) 4)) 5))] [_ (std/core/console/string/println ((learn/lazycons/show (queue std/core/int/show))))] [_ (std/core/range/fold (0 4 queue (fn (h-_wildcard-x148_24 q)
+          (match (learn/lazycons/uncons (q))
+            [(std/core/types/Just (std/core/types/Tuple2 _ qtail)) (letrec* ([_ (std/core/console/string/println ((learn/lazycons/show (qtail std/core/int/show))))])
+              qtail)]
+            [_ (std/core/exn/error-pattern ("learn/lazycons(149, 5)" "_"))]))))])
+          std/core/types/Unit)))))

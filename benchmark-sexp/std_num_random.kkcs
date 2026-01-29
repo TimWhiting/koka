@@ -1,0 +1,153 @@
+((module std/num/random)
+  (defs
+    (def std/num/random/random/h-cfc
+      (fn (random)
+        (match random
+          [(std/num/random/h-Hnd-random h-x _) h-x])))
+    (def std/num/random/random/h-tag
+      (std/core/hnd/h-new-htag ("random@random")))
+    (def std/num/random/random/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (std/num/random/random/h-tag hnd ret action))))
+    (def std/num/random/random-int32/h-select
+      (fn (hnd)
+        (match hnd
+          [(std/num/random/h-Hnd-random _ h-fun-random-int32) h-fun-random-int32])))
+    (def std/num/random/random-int32
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) std/num/random/random-int32/h-select))))
+    (def std/num/random/random/h-fun-random-int32
+      (fn (random)
+        (match random
+          [(std/num/random/h-Hnd-random _ h-x) h-x])))
+    (def std/num/random/sfc/cnt
+      (fn (sfc)
+        (match sfc
+          [(std/num/random/Sfc _ _ _ h-x) h-x])))
+    (def std/num/random/sfc/x
+      (fn (sfc)
+        (match sfc
+          [(std/num/random/Sfc h-x _ _ _) h-x])))
+    (def std/num/random/sfc/y
+      (fn (sfc)
+        (match sfc
+          [(std/num/random/Sfc _ h-x _ _) h-x])))
+    (def std/num/random/sfc/z
+      (fn (sfc)
+        (match sfc
+          [(std/num/random/Sfc _ _ h-x _) h-x])))
+    (def std/num/random/sfc/h-copy
+      (fn (h-this x y z cnt)
+        (letrec* ([h-uniq-xh-322 (match x
+          [(std/core/types/h-Optional h-uniq-xh-323) h-uniq-xh-323]
+          [std/core/types/h-None (std/num/random/sfc/x (h-this))])] [h-uniq-yh-330 (match y
+          [(std/core/types/h-Optional h-uniq-yh-331) h-uniq-yh-331]
+          [std/core/types/h-None (std/num/random/sfc/y (h-this))])] [h-uniq-zh-338 (match z
+          [(std/core/types/h-Optional h-uniq-zh-339) h-uniq-zh-339]
+          [std/core/types/h-None (std/num/random/sfc/z (h-this))])] [h-uniq-cnth-346 (match cnt
+          [(std/core/types/h-Optional h-uniq-cnth-347) h-uniq-cnth-347]
+          [std/core/types/h-None (std/num/random/sfc/cnt (h-this))])])
+          (std/num/random/Sfc (h-uniq-xh-322 h-uniq-yh-330 h-uniq-zh-338 h-uniq-cnth-346)))))
+    (def std/num/random/sfc-result/rnd
+      (fn (h-this)
+        (match h-this
+          [(std/num/random/Sfc-result h-x (std/num/random/Sfc _ _ _ _)) h-x])))
+    (def std/num/random/sfc-result/rstate
+      (fn (h-this)
+        (match h-this
+          [(std/num/random/Sfc-result _ (as h-x (std/num/random/Sfc _ _ _ _))) h-x])))
+    (def std/num/random/sfc-result/h-copy
+      (fn (h-this rnd rstate)
+        (letrec* ([h-uniq-rndh-381 (match rnd
+          [(std/core/types/h-Optional h-uniq-rndh-382) h-uniq-rndh-382]
+          [std/core/types/h-None (std/num/random/sfc-result/rnd (h-this))])] [h-uniq-rstateh-389 (match rstate
+          [(std/core/types/h-Optional h-uniq-rstateh-390) h-uniq-rstateh-390]
+          [std/core/types/h-None (std/num/random/sfc-result/rstate (h-this))])])
+          (std/num/random/Sfc-result (h-uniq-rndh-381 h-uniq-rstateh-389)))))
+    (def std/num/random/srandom-int32
+      (fn ()
+        (std/num/random/h-extern-srandom-int32 ())))
+    (def std/num/random/strong-random
+      (fn (action)
+        ((fn (h-action)
+          (std/num/random/random/h-handle ((std/num/random/h-Hnd-random (1 (std/core/hnd/clause-tail0 ((fn ()
+            (std/num/random/srandom-int32 ())))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (action ()))))))
+    (def std/num/random/h-default-random
+      (fn (action)
+        (std/num/random/strong-random (action))))
+    (def std/num/random/sfc-step
+      (fn (sfc)
+        (match sfc
+          [(std/num/random/Sfc x y z cnt) (letrec* ([res (std/num/int32/+ ((std/num/int32/+ (x y)) cnt))])
+            (std/num/random/Sfc-result (res (std/num/random/Sfc ((std/num/int32/^ (y (std/num/int32/shr (y 9)))) (std/num/int32/+ (z (std/num/int32/shl (z 3)))) (std/num/int32/+ ((std/num/int32/rotl (z 21)) res)) (std/num/int32/+ (cnt (std/num/int32/int32 (1)))))))))])))
+    (def std/num/random/sfc-init32
+      (fn (seed1 seed2)
+        (letrec* ([sfc0 (std/num/random/Sfc ((std/num/int32/int32 (0)) seed1 seed2 (std/num/int32/int32 (1))))])
+          (std/num/int32/fold-int32 ((std/num/int32/int32 (12)) sfc0 (fn (h-_wildcard-x57_34 s)
+            (std/num/random/sfc-result/rstate ((std/num/random/sfc-step (s))))))))))
+    (def std/num/random/sfc-init
+      (fn (seed)
+        (std/num/random/sfc-init32 ((std/num/int32/int32 (seed)) (std/num/int32/int32 ((std/core/int// (seed 4294967296))))))))
+    (def std/num/random/pseudo-random
+      (fn (seed action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-743 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var ((std/num/random/sfc-init (seed)) (fn (s)
+              ((fn (h-action)
+                (std/num/random/random/h-handle ((std/num/random/h-Hnd-random (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (letrec* ([sfc (std/num/random/sfc-step ((std/core/types/local-get (s ievh-743))))] [_ (std/core/types/local-set (s (std/num/random/sfc-result/rstate (sfc))))])
+                    (std/num/random/sfc-result/rnd (sfc)))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                ((fn ()
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (action ()))))) ())))))))))))))
+    (def std/num/random/random-bool
+      (fn ()
+        (std/num/int32/>= ((std/num/random/random-int32 ()) (std/num/int32/int32 (0))))))
+    (def std/num/random/random-int
+      (fn ()
+        (std/num/int32/int ((std/num/random/random-int32 ())))))
+    (def std/num/random/mrandom-int
+      (fn (h-_wildcard-x85_21)
+        (match (std/core/int/>= ((std/num/random/random-int ()) 0))
+          [std/core/types/True (std/core/types/Just ((std/num/random/random-int ())))]
+          [std/core/types/False std/core/types/Nothing])))
+    (def std/num/random/random-int64
+      (fn ()
+        (std/num/int64/hilo32/int64 ((std/num/random/random-int32 ()) (std/num/random/random-int32 ())))))
+    (def std/num/random/random-float64
+      (fn ()
+        (letrec* ([mag (std/num/int64/or ((std/num/int64/shr ((std/num/random/random-int64 ()) 12)) (std/num/int64/int64 (4607182418800017408))))])
+          (std/num/float64/- ((std/num/float64/float64-from-bits (mag)) 1.0)))))
+    (def std/num/random/srandom-bool
+      (fn ()
+        (std/num/int32/>= ((std/num/random/srandom-int32 ()) (std/num/int32/int32 (0))))))
+    (def std/num/random/choose
+      (fn (x y)
+        (match (std/num/random/srandom-bool ())
+          [std/core/types/True x]
+          [std/core/types/False y])))
+    (def std/num/random/srandom-int
+      (fn ()
+        (std/num/int32/int ((std/num/random/srandom-int32 ())))))
+    (def std/num/random/srandom-float64
+      (fn ()
+        (std/num/random/h-extern-srandom-float64 ())))
+    (def std/num/random/srandom-is-strong
+      (fn ()
+        (std/num/random/h-extern-srandom-is-strong ())))
+    (def std/num/random/srandom-int32-range
+      (fn (lo hi)
+        (std/num/random/h-extern-srandom-int32-range (lo hi))))
+    (def std/num/random/srandom-float64-range
+      (fn (lo hi)
+        (letrec* ([low (match (std/num/float64/<= (lo hi))
+          [std/core/types/True lo]
+          [std/core/types/False hi])] [high (match (std/num/float64/<= (lo hi))
+          [std/core/types/True hi]
+          [std/core/types/False lo])] [x (std/num/float64/+ ((std/num/float64/* ((std/num/float64/- (high low)) (std/num/random/srandom-float64 ()))) low))])
+          (match (std/num/float64/>= (x high))
+            [std/core/types/True low]
+            [std/core/types/False x]))))))

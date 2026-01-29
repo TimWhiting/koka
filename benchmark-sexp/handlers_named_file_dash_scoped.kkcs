@@ -1,0 +1,43 @@
+((module handlers/named/file-scoped)
+  (defs
+    (def handlers/named/file-scoped/file/h-cfc
+      (fn (file)
+        (match file
+          [(handlers/named/file-scoped/h-Hnd-file h-x _) h-x])))
+    (def handlers/named/file-scoped/file/h-tag
+      (std/core/hnd/h-new-htag ("file@file-scoped")))
+    (def handlers/named/file-scoped/file/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-named-handle (handlers/named/file-scoped/file/h-tag hnd ret action))))
+    (def handlers/named/file-scoped/file/h-fun-read-line
+      (fn (file)
+        (match file
+          [(handlers/named/file-scoped/h-Hnd-file _ h-x) h-x])))
+    (def handlers/named/file-scoped/read-line/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/named/file-scoped/h-Hnd-file _ h-fun-read-line) h-fun-read-line])))
+    (def handlers/named/file-scoped/read-line
+      (fn (h-hname)
+        (std/core/hnd/h-perform0 (h-hname handlers/named/file-scoped/read-line/h-select))))
+    (def handlers/named/file-scoped/file
+      (fn (fname action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-440 std/core/types/h-Hnodiv] [ievh-502 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (0 (fn (i)
+              ((fn (h-action)
+                (handlers/named/file-scoped/file/h-handle ((handlers/named/file-scoped/h-Hnd-file (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (letrec* ([_ (std/core/types/local-set (i (std/core/int/+ ((std/core/types/local-get (i ievh-440)) 1))))])
+                    (std/core/types/++ (fname (std/core/types/++ (": line " (std/core/int/show ((std/core/types/local-get (i ievh-502)))))))))))))) (fn (h-res)
+                  h-res) h-action))) ((fn (f)
+                ((fn (h-arg-x1)
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (action (h-arg-x1)))))) (f))))))))))))))
+    (def handlers/named/file-scoped/read-both
+      (fn (f1 f2)
+        (std/core/console/string/println ((std/core/types/++ ((handlers/named/file-scoped/read-line (f1)) (std/core/types/++ ("\n" (handlers/named/file-scoped/read-line (f2))))))))))
+    (def handlers/named/file-scoped/main
+      (fn ()
+        (handlers/named/file-scoped/file ("package.yaml" (fn (f1)
+          (handlers/named/file-scoped/file ("stack.yaml" (fn (f2)
+            (handlers/named/file-scoped/read-both (f1 f2))))))))))))

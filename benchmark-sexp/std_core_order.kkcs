@@ -1,0 +1,38 @@
+((module std/core/order)
+  (defs
+    (def std/core/order/order/int
+      (fn (x)
+        (match x
+          [std/core/types/Lt -1]
+          [std/core/types/Eq 0]
+          [std/core/types/Gt 1])))
+    (def std/core/order/order2/int
+      (fn (x)
+        (match x
+          [(std/core/types/Lt2 _ _) -1]
+          [(std/core/types/Eq2 _) 0]
+          [(std/core/types/Gt2 _ _) 1])))
+    (def std/core/order/==
+      (fn (x y)
+        (std/core/int/== ((std/core/order/order/int (x)) (std/core/order/order/int (y))))))
+    (def std/core/order/!=
+      (fn (x y)
+        (std/core/int/!= ((std/core/order/order/int (x)) (std/core/order/order/int (y))))))
+    (def std/core/order/>=
+      (fn (x y)
+        (std/core/int/>= ((std/core/order/order/int (x)) (std/core/order/order/int (y))))))
+    (def std/core/order/<=
+      (fn (x y)
+        (std/core/int/<= ((std/core/order/order/int (x)) (std/core/order/order/int (y))))))
+    (def std/core/order/>
+      (fn (x y)
+        (std/core/int/> ((std/core/order/order/int (x)) (std/core/order/order/int (y))))))
+    (def std/core/order/<
+      (fn (x y)
+        (std/core/int/< ((std/core/order/order/int (x)) (std/core/order/order/int (y))))))
+    (def std/core/order/default/order2
+      (fn (x y h-implicit/cmp)
+        (match (h-implicit/cmp (x y))
+          [std/core/types/Eq (std/core/types/Eq2 (x))]
+          [std/core/types/Lt (std/core/types/Lt2 (x y))]
+          [std/core/types/Gt (std/core/types/Gt2 (y x))])))))

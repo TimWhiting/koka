@@ -1,0 +1,8 @@
+((module analysis/benchmarks/suite/basic/h-main)
+  (defs
+    (def analysis/benchmarks/suite/basic/h-main/h-expr
+      (fn ()
+        (analysis/benchmarks/suite/basic/main ())))
+    (def analysis/benchmarks/suite/basic/h-main/h-main
+      (fn ()
+        (analysis/benchmarks/suite/basic/h-main/h-expr ())))))

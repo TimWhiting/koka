@@ -1,0 +1,160 @@
+((module analysis/benchmarks/koka-gen/build)
+  (defs
+    (def analysis/benchmarks/koka-gen/build/build/h-cfc
+      (fn (build)
+        (match build
+          [(analysis/benchmarks/koka-gen/build/h-Hnd-build h-x _ _) h-x])))
+    (def analysis/benchmarks/koka-gen/build/build/h-tag
+      (std/core/hnd/h-new-htag ("build@build")))
+    (def analysis/benchmarks/koka-gen/build/build/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/koka-gen/build/build/h-tag hnd ret action))))
+    (def analysis/benchmarks/koka-gen/build/build/h-ctl-need
+      (fn (build)
+        (match build
+          [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ _ h-x) h-x])))
+    (def analysis/benchmarks/koka-gen/build/need/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ _ h-ctl-need) h-ctl-need])))
+    (def analysis/benchmarks/koka-gen/build/need
+      (fn (key)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/build/need/h-select key))))
+    (def analysis/benchmarks/koka-gen/build/build/h-fun-log
+      (fn (build)
+        (match build
+          [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ h-x _) h-x])))
+    (def analysis/benchmarks/koka-gen/build/log/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ h-fun-log _) h-fun-log])))
+    (def analysis/benchmarks/koka-gen/build/log
+      (fn (msg)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/build/log/h-select msg))))
+    (def analysis/benchmarks/koka-gen/build/make
+      (fn (target rules)
+        (std/core/types/local-scope ((fn ()
+          (std/core/hnd/local-var (std/core/types/Nil (fn (cache)
+            (std/core/hnd/local-var (std/core/types/Nil (fn (stack)
+              (letrec* ([solve (fn (action)
+                (letrec* ([ievh-561 std/core/types/h-Hnodiv] [ievh-726 std/core/types/h-Hnodiv] [ievh-767 std/core/types/h-Hnodiv] [ievh-988 std/core/types/h-Hnodiv] [ievh-1073 std/core/types/h-Hnodiv] [ievh-1141 std/core/types/h-Hnodiv])
+                  ((fn (h-action)
+                    (analysis/benchmarks/koka-gen/build/build/h-handle ((analysis/benchmarks/koka-gen/build/h-Hnd-build (3 (std/core/hnd/clause-tail1 ((fn (msg)
+                      (std/core/console/string/println (msg))))) (std/core/hnd/clause-control1 ((fn (key resume)
+                      (letrec* ([_ (match (std/core/list/any ((std/core/types/local-get (stack ievh-561)) (fn (k)
+                        (std/core/string/== (k key)))))
+                        [std/core/types/True (std/core/exn/throw ((std/core/types/++ ("Circular dependency detected: " (std/core/types/++ ((std/core/list/joinsep/join ((std/core/types/local-get (stack ievh-726)) " -> ")) (std/core/types/++ (" -> " key)))))) std/core/types/h-None))]
+                        [std/core/types/False std/core/types/Unit])])
+                        (match (std/core/list/find ((std/core/types/local-get (cache ievh-767)) (fn (entry)
+                          (std/core/string/== ((std/core/types/tuple2/fst (entry)) key)))))
+                          [(std/core/types/Just (std/core/types/Tuple2 _ v)) (resume (v))]
+                          [std/core/types/Nothing (letrec* ([_ (std/core/types/local-set (stack (std/core/types/Cons (key (std/core/types/local-get (stack ievh-988))))))] [_ (std/core/console/string/println ((std/core/types/++ ("[Building] " (std/core/types/++ (key "..."))))))] [result (solve ((fn ()
+                            (rules (key)))))] [_ (match (std/core/types/local-get (stack ievh-1073))
+                            [(std/core/types/Cons _ rest) (std/core/types/local-set (stack rest))]
+                            [std/core/types/Nil std/core/types/Unit])] [_ (std/core/types/local-set (cache (std/core/types/Cons ((std/core/types/Tuple2 (key result)) (std/core/types/local-get (cache ievh-1141))))))])
+                            (resume (result)))]))))))) (fn (h-res)
+                      h-res) h-action))) (action))))])
+                (solve ((fn ()
+                  (analysis/benchmarks/koka-gen/build/need (target)))))))))))))))))
+    (def analysis/benchmarks/koka-gen/build/run-safe
+      (fn (action)
+        ((fn (h-action)
+          (std/core/exn/exn/h-handle ((std/core/exn/h-Hnd-exn (0 (std/core/hnd/clause-never1 ((fn (msg)
+            (letrec* ([_ (std/core/console/string/println ("\n!!! BUILD FAILED !!!"))] [_ (std/core/console/string/println ((std/core/types/++ ("Error: " (std/core/exn/show (msg))))))])
+              (std/core/types/Left ((std/core/exn/exception/message (msg)))))))))) (fn (x)
+            (std/core/types/Right (x))) h-action))) ((fn ()
+          (action ()))))))
+    (def analysis/benchmarks/koka-gen/build/my-makefile
+      (fn (key)
+        (match key
+          ["main.exe" (letrec* ([_ (analysis/benchmarks/koka-gen/build/log ("  Linking main.exe..."))] [o1 (analysis/benchmarks/koka-gen/build/need ("utils.o"))] [o2 (analysis/benchmarks/koka-gen/build/need ("main.o"))])
+            (std/core/types/++ ("BINARY(" (std/core/types/++ (o1 (std/core/types/++ ("+" (std/core/types/++ (o2 ")")))))))))]
+          ["main.o" (letrec* ([_ (analysis/benchmarks/koka-gen/build/log ("  Compiling main.c..."))] [c (analysis/benchmarks/koka-gen/build/need ("main.c"))] [h (analysis/benchmarks/koka-gen/build/need ("utils.h"))])
+            (std/core/types/++ ("OBJECT(" (std/core/types/++ (c ")")))))]
+          ["utils.o" (letrec* ([_ (analysis/benchmarks/koka-gen/build/log ("  Compiling utils.c..."))] [c (analysis/benchmarks/koka-gen/build/need ("utils.c"))] [h (analysis/benchmarks/koka-gen/build/need ("utils.h"))])
+            (std/core/types/++ ("OBJECT(" (std/core/types/++ (c ")")))))]
+          ["main.c" "int main() { ... }"]
+          ["utils.c" "int helper() { ... }"]
+          ["utils.h" "#define VAL 1"]
+          ["cycle-A" (analysis/benchmarks/koka-gen/build/need ("cycle-B"))]
+          ["cycle-B" (analysis/benchmarks/koka-gen/build/need ("cycle-A"))]
+          [_ (std/core/exn/throw ((std/core/types/++ ("No rule to build target: " key)) std/core/types/h-None))])))
+    (def analysis/benchmarks/koka-gen/build/analyze-mymakefile-example1
+      (fn ()
+        (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([result (analysis/benchmarks/koka-gen/build/make ("main.exe" analysis/benchmarks/koka-gen/build/my-makefile))] [_ (std/core/console/string/println ((std/core/types/++ ("\n[Result] " result))))])
+            result))))))
+    (def analysis/benchmarks/koka-gen/build/result-mymakefile-example1
+      (fn ()
+        (std/core/types/Right ("BINARY(OBJECT(int helper() { ... })+OBJECT(int main() { ... }))"))))
+    (def analysis/benchmarks/koka-gen/build/analyze-mymakefile-example2
+      (fn ()
+        (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (analysis/benchmarks/koka-gen/build/make ("cycle-A" analysis/benchmarks/koka-gen/build/my-makefile)))))))
+    (def analysis/benchmarks/koka-gen/build/result-mymakefile-example2
+      (fn ()
+        (std/core/types/Left ("Circular dependency detected: cycle-B -> cycle-A -> cycle-A"))))
+    (def analysis/benchmarks/koka-gen/build/analyze-mymakefile-example3
+      (fn ()
+        (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (analysis/benchmarks/koka-gen/build/make ("missing.lib" analysis/benchmarks/koka-gen/build/my-makefile)))))))
+    (def analysis/benchmarks/koka-gen/build/result-mymakefile-example3
+      (fn ()
+        (std/core/types/Left ("No rule to build target: missing.lib"))))
+    (def analysis/benchmarks/koka-gen/build/my-makefile2
+      (fn (key)
+        (match key
+          ["main.exe" (letrec* ([o1 (analysis/benchmarks/koka-gen/build/need ("utils.o"))] [o2 (analysis/benchmarks/koka-gen/build/need ("main.o"))])
+            (std/core/types/++ ("BINARY(" (std/core/types/++ (o1 (std/core/types/++ ("+" (std/core/types/++ (o2 ")")))))))))]
+          ["main.o" (std/core/types/++ ("OBJECT(" (std/core/types/++ ((analysis/benchmarks/koka-gen/build/need ("main.c")) ")"))))]
+          ["utils.o" (std/core/types/++ ("OBJECT(" (std/core/types/++ ((analysis/benchmarks/koka-gen/build/need ("utils.c")) ")"))))]
+          ["main.c" "int main() { ... }"]
+          ["utils.c" "int helper() { ... }"]
+          ["utils.h" "#define VAL 1"]
+          ["app.pkg" (letrec* ([_ (std/core/debug/trace ("Reading config to determine dependencies..."))] [cfg (analysis/benchmarks/koka-gen/build/need ("config.txt"))])
+            (match (std/core/string/== (cfg "release"))
+              [std/core/types/True (letrec* ([lib (analysis/benchmarks/koka-gen/build/need ("optimized.lib"))])
+                (std/core/types/++ ("PACKAGE(RELEASE, " (std/core/types/++ (lib ")")))))]
+              [std/core/types/False (letrec* ([lib (analysis/benchmarks/koka-gen/build/need ("debug.lib"))])
+                (std/core/types/++ ("PACKAGE(DEBUG, " (std/core/types/++ (lib ")")))))]))]
+          ["config.txt" "release"]
+          ["optimized.lib" "LIB(Opt)"]
+          ["debug.lib" "LIB(Dbg)"]
+          [key (letrec* ([n-str (std/core/sslice/trim-left (key "fib-"))])
+            (match (std/core/int/parse-int (n-str std/core/types/h-None))
+              [std/core/types/Nothing (std/core/exn/throw ((std/core/types/++ ("Invalid fib target: " key)) std/core/types/h-None))]
+              [(std/core/types/Just n) (match (std/core/int/<= (n 1))
+                [std/core/types/True "1"]
+                [std/core/types/False (letrec* ([_ (std/core/debug/trace ((std/core/types/++ ("Calculating " (std/core/types/++ (key (std/core/types/++ (" (needs " (std/core/types/++ ((std/core/int/show ((std/core/int/- (n 1)))) (std/core/types/++ (" & " (std/core/types/++ ((std/core/int/show ((std/core/int/- (n 2)))) ")..."))))))))))))))] [v1 (std/core/maybe/default ((std/core/int/parse-int ((analysis/benchmarks/koka-gen/build/need ((std/core/types/++ ("fib-" (std/core/int/show ((std/core/int/- (n 1)))))))) std/core/types/h-None)) 0))] [v2 (std/core/maybe/default ((std/core/int/parse-int ((analysis/benchmarks/koka-gen/build/need ((std/core/types/++ ("fib-" (std/core/int/show ((std/core/int/- (n 2)))))))) std/core/types/h-None)) 0))])
+                  (std/core/int/show ((std/core/int/+ (v1 v2)))))])]))]
+          [_ (std/core/exn/throw ((std/core/types/++ ("No rule for: " key)) std/core/types/h-None))])))
+    (def analysis/benchmarks/koka-gen/build/analyze-mymakefile-example4
+      (fn ()
+        (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([res (analysis/benchmarks/koka-gen/build/make ("app.pkg" analysis/benchmarks/koka-gen/build/my-makefile2))] [_ (std/core/console/string/println ((std/core/types/++ ("\n[Result] " res))))])
+            res))))))
+    (def analysis/benchmarks/koka-gen/build/result-mymakefile-example4
+      (fn ()
+        (std/core/types/Right ("PACKAGE(RELEASE, LIB(Opt))"))))
+    (def analysis/benchmarks/koka-gen/build/analyze-mymakefile-example5
+      (fn ()
+        (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([res (analysis/benchmarks/koka-gen/build/make ("fib-1" analysis/benchmarks/koka-gen/build/my-makefile2))] [_ (std/core/console/string/println ((std/core/types/++ ("\n[Result] fib-1 = " res))))])
+            res))))))
+    (def analysis/benchmarks/koka-gen/build/result-mymakefile-example5
+      (fn ()
+        (std/core/types/Right ("1"))))
+    (def analysis/benchmarks/koka-gen/build/main
+      (fn ()
+        (letrec* ([_ (std/core/console/string/println ("--- Koka Build System ---"))] [_ (std/core/console/string/println ("\nTest 1: Diamond Dependency"))] [_ (std/core/console/string/println ("Goal: main.exe depends on main.o and utils.o."))] [_ (std/core/console/string/println ("Both .o files depend on utils.h."))] [_ (std/core/console/string/println ("We expect utils.h to be built ONLY ONCE (Memoization).\n"))] [_ (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([result (analysis/benchmarks/koka-gen/build/make ("main.exe" analysis/benchmarks/koka-gen/build/my-makefile))])
+            (std/core/console/string/println ((std/core/types/++ ("\n[Result] " result))))))))] [_ (std/core/console/string/println ("\n------------------------------------------------"))] [_ (std/core/console/string/println ("Test 2: Circular Dependency"))] [_ (std/core/console/string/println ("Goal: Detect cycle between A and B.\n"))] [_ (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([_ (analysis/benchmarks/koka-gen/build/make ("cycle-A" analysis/benchmarks/koka-gen/build/my-makefile))])
+            std/core/types/Unit))))] [_ (std/core/console/string/println ("\n------------------------------------------------"))] [_ (std/core/console/string/println ("Test 3: Missing Rule"))] [_ (std/core/console/string/println ("Goal: Detect missing source file.\n"))] [_ (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([_ (analysis/benchmarks/koka-gen/build/make ("missing.lib" analysis/benchmarks/koka-gen/build/my-makefile))])
+            std/core/types/Unit))))] [_ (std/core/console/string/println ("\n------------------------------------------------"))] [_ (std/core/console/string/println ("Test 4: Dynamic Dependencies"))] [_ (std/core/console/string/println ("Goal: Build 'app.pkg'. The dependencies are unknown until 'config.txt' is built."))] [_ (std/core/console/string/println ("We expect 'optimized.lib' to be built, and 'debug.lib' to be IGNORED.\n"))] [_ (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+          (letrec* ([res (analysis/benchmarks/koka-gen/build/make ("app.pkg" analysis/benchmarks/koka-gen/build/my-makefile2))])
+            (std/core/console/string/println ((std/core/types/++ ("[Result] " res))))))))] [_ (std/core/console/string/println ("\n------------------------------------------------"))] [_ (std/core/console/string/println ("Test 5: Fibonacci Stress Test (DAG)"))] [_ (std/core/console/string/println ("Goal: Build 'fib-5'. Logic: fib(n) = fib(n-1) + fib(n-2)."))] [_ (std/core/console/string/println ("Without memoization, this triggers 15 builds. With memoization, exactly 6.\n"))])
+          (analysis/benchmarks/koka-gen/build/run-safe ((fn ()
+            (letrec* ([res (analysis/benchmarks/koka-gen/build/make ("fib-5" analysis/benchmarks/koka-gen/build/my-makefile2))])
+              (std/core/console/string/println ((std/core/types/++ ("[Result] fib-5 = " res)))))))))))))

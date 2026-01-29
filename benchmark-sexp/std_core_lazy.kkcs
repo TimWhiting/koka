@@ -1,0 +1,10 @@
+((module std/core/lazy)
+  (defs
+    (def std/core/lazy/memoize-target
+      (fn (target size scan-size)
+        (std/core/lazy/h-extern-memoize-target (target size scan-size))))
+    (def std/core/lazy/memoize
+      (fn (target x)
+        (std/core/lazy/h-extern-memoize (target x))))
+    (def std/core/lazy/internal
+      42)))

@@ -1,0 +1,8 @@
+((module analysis/benchmarks/suite/nested-nondet/h-main)
+  (defs
+    (def analysis/benchmarks/suite/nested-nondet/h-main/h-expr
+      (fn ()
+        (analysis/benchmarks/suite/nested-nondet/main ())))
+    (def analysis/benchmarks/suite/nested-nondet/h-main/h-main
+      (fn ()
+        (analysis/benchmarks/suite/nested-nondet/h-main/h-expr ())))))

@@ -1,0 +1,37 @@
+((module handlers/named/ask)
+  (defs
+    (def handlers/named/ask/reader/h-cfc
+      (fn (reader)
+        (match reader
+          [(handlers/named/ask/h-Hnd-reader h-x _) h-x])))
+    (def handlers/named/ask/reader/h-tag
+      (std/core/hnd/h-new-htag ("reader@ask")))
+    (def handlers/named/ask/reader/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-named-handle (handlers/named/ask/reader/h-tag hnd ret action))))
+    (def handlers/named/ask/reader/h-fun-ask
+      (fn (reader)
+        (match reader
+          [(handlers/named/ask/h-Hnd-reader _ h-x) h-x])))
+    (def handlers/named/ask/ask/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/named/ask/h-Hnd-reader _ h-fun-ask) h-fun-ask])))
+    (def handlers/named/ask/ask
+      (fn (h-hname)
+        (std/core/hnd/h-perform0 (h-hname handlers/named/ask/ask/h-select))))
+    (def handlers/named/ask/reader
+      (fn (msg action)
+        ((fn (h-action)
+          (handlers/named/ask/reader/h-handle ((handlers/named/ask/h-Hnd-reader (1 (std/core/hnd/clause-tail0 ((fn ()
+            msg))))) (fn (h-res)
+            h-res) h-action))) ((fn (r)
+          (action (r)))))))
+    (def handlers/named/ask/read2files
+      (fn (r1 r2)
+        (std/core/console/string/println ((std/core/types/++ ((handlers/named/ask/ask (r1)) (std/core/types/++ (" " (handlers/named/ask/ask (r2))))))))))
+    (def handlers/named/ask/main
+      (fn ()
+        (handlers/named/ask/reader ("hello" (fn (r1)
+          (handlers/named/ask/reader ("world" (fn (r2)
+            (handlers/named/ask/read2files (r1 r2))))))))))))

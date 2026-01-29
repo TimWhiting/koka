@@ -1,0 +1,70 @@
+((module std/core/maybe)
+  (defs
+    (def std/core/maybe/maybe
+      (fn (m onNothing onJust)
+        (match m
+          [std/core/types/Nothing onNothing]
+          [(std/core/types/Just x) (onJust (x))])))
+    (def std/core/maybe/default
+      (fn (m nothing)
+        (match m
+          [std/core/types/Nothing nothing]
+          [(std/core/types/Just x) x])))
+    (def std/core/maybe/unjust
+      (fn (m h-implicit/kk-file-line)
+        (match m
+          [(std/core/types/Just x) x]
+          [std/core/types/Nothing (std/core/exn/throw ((std/core/types/++ ("unexpected Nothing in " h-implicit/kk-file-line)) std/core/types/h-None))])))
+    (def std/core/maybe/expect
+      (fn (m error-msg)
+        (match m
+          [(std/core/types/Just x) x]
+          [std/core/types/Nothing (std/core/exn/throw (error-msg std/core/types/h-None))])))
+    (def std/core/maybe/map
+      (fn (m f)
+        (match m
+          [std/core/types/Nothing std/core/types/Nothing]
+          [(std/core/types/Just x) (std/core/types/Just ((f (x))))])))
+    (def |std/core/maybe/|||
+      (fn (m1 m2)
+        (match m1
+          [std/core/types/Nothing m2]
+          [_ m1])))
+    (def std/core/maybe/==
+      (fn (mb1 mb2 h-implicit/==)
+        (match mb1
+          [(std/core/types/Just x) (match mb2
+            [(std/core/types/Just y) (h-implicit/== (x y))]
+            [std/core/types/Nothing std/core/types/False])]
+          [std/core/types/Nothing (match mb2
+            [std/core/types/Nothing std/core/types/True]
+            [_ std/core/types/False])])))
+    (def std/core/maybe/cmp
+      (fn (mb1 mb2 h-implicit/cmp)
+        (match mb1
+          [(std/core/types/Just x) (match mb2
+            [(std/core/types/Just y) (h-implicit/cmp (x y))]
+            [std/core/types/Nothing std/core/types/Gt])]
+          [std/core/types/Nothing (match mb2
+            [std/core/types/Nothing std/core/types/Eq]
+            [_ std/core/types/Lt])])))
+    (def std/core/maybe/order2
+      (fn (mb1 mb2 h-implicit/order2)
+        (match mb1
+          [(std/core/types/Just x) (match mb2
+            [(std/core/types/Just y) (match (h-implicit/order2 (x y))
+              [(std/core/types/Eq2 z) (std/core/types/Eq2 ((std/core/types/Just (z))))]
+              [(std/core/types/Lt2 l g) (std/core/types/Lt2 ((std/core/types/Just (l)) (std/core/types/Just (g))))]
+              [(std/core/types/Gt2 l g) (std/core/types/Gt2 ((std/core/types/Just (l)) (std/core/types/Just (g))))])]
+            [std/core/types/Nothing (std/core/types/Gt2 (std/core/types/Nothing (std/core/types/Just (x))))])]
+          [std/core/types/Nothing (std/core/types/Lt2 (std/core/types/Nothing mb2))])))
+    (def std/core/maybe/show
+      (fn (mb h-implicit/show)
+        (match mb
+          [(std/core/types/Just x) (std/core/types/++ ("Just(" (std/core/types/++ ((h-implicit/show (x)) ")"))))]
+          [std/core/types/Nothing "Nothing"])))
+    (def std/core/maybe/bool
+      (fn (mb)
+        (match mb
+          [(std/core/types/Just _) std/core/types/True]
+          [std/core/types/Nothing std/core/types/False])))))

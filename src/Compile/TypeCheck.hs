@@ -27,6 +27,7 @@ import Syntax.Syntax
 import Static.FixityResolve( fixitiesCompose, fixitiesNew, fixityResolve )
 import Core.Pretty( prettyDef )
 import Core.CoreVar( extractDepsFromSignatures )
+import qualified Core.Sexp
 
 import Core.Check( checkCore )
 import Core.CheckFBIP( checkFBIP )

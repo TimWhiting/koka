@@ -1,0 +1,121 @@
+((module analysis/benchmarks/koka-gen/interp)
+  (defs
+    (def analysis/benchmarks/koka-gen/interp/is-lit
+      (fn (term)
+        (match term
+          [(analysis/benchmarks/koka-gen/interp/Lit _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/is-var
+      (fn (term)
+        (match term
+          [(analysis/benchmarks/koka-gen/interp/Var _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/is-add
+      (fn (term)
+        (match term
+          [(analysis/benchmarks/koka-gen/interp/Add _ _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/is-lam
+      (fn (term)
+        (match term
+          [(analysis/benchmarks/koka-gen/interp/Lam _ _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/is-app
+      (fn (term)
+        (match term
+          [(analysis/benchmarks/koka-gen/interp/App _ _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/is-vint
+      (fn (value)
+        (match value
+          [(analysis/benchmarks/koka-gen/interp/VInt _) std/core/types/True]
+          [(analysis/benchmarks/koka-gen/interp/VClos _ _ _) std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/is-vclos
+      (fn (value)
+        (match value
+          [(analysis/benchmarks/koka-gen/interp/VClos _ _ _) std/core/types/True]
+          [(analysis/benchmarks/koka-gen/interp/VInt _) std/core/types/False])))
+    (def analysis/benchmarks/koka-gen/interp/env/h-cfc
+      (fn (env)
+        (match env
+          [(analysis/benchmarks/koka-gen/interp/h-Hnd-env h-x _ _) h-x])))
+    (def analysis/benchmarks/koka-gen/interp/env/h-tag
+      (std/core/hnd/h-new-htag ("env@interp")))
+    (def analysis/benchmarks/koka-gen/interp/env/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/koka-gen/interp/env/h-tag hnd ret action))))
+    (def analysis/benchmarks/koka-gen/interp/env/h-ctl-lookup
+      (fn (env)
+        (match env
+          [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ h-x _) h-x])))
+    (def analysis/benchmarks/koka-gen/interp/lookup/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ h-ctl-lookup _) h-ctl-lookup])))
+    (def analysis/benchmarks/koka-gen/interp/lookup
+      (fn (name)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/interp/lookup/h-select name))))
+    (def analysis/benchmarks/koka-gen/interp/env/h-ctl-snapshot
+      (fn (env)
+        (match env
+          [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ _ h-x) h-x])))
+    (def analysis/benchmarks/koka-gen/interp/snapshot/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ _ h-ctl-snapshot) h-ctl-snapshot])))
+    (def analysis/benchmarks/koka-gen/interp/snapshot
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/interp/snapshot/h-select))))
+    (def analysis/benchmarks/koka-gen/interp/run-env
+      (fn (current-env action)
+        ((fn (h-action)
+          (analysis/benchmarks/koka-gen/interp/env/h-handle ((analysis/benchmarks/koka-gen/interp/h-Hnd-env (3 (std/core/hnd/clause-control1 ((fn (name resume)
+            (match (std/core/list/find (current-env (fn (entry)
+              (std/core/string/== ((std/core/types/tuple2/fst (entry)) name)))))
+              [(std/core/types/Just (std/core/types/Tuple2 _ v)) (resume (v))]
+              [std/core/types/Nothing (std/core/exn/throw ((std/core/types/++ ("Runtime Error: Variable '" (std/core/types/++ (name "' not found")))) std/core/types/h-None))])))) (std/core/hnd/clause-control0 ((fn (resume)
+            (resume (current-env))))))) (fn (h-res)
+            h-res) h-action))) (action))))
+    (def analysis/benchmarks/koka-gen/interp/show-value
+      (fn (v)
+        (match v
+          [(analysis/benchmarks/koka-gen/interp/VInt i) (std/core/int/show (i))]
+          [(analysis/benchmarks/koka-gen/interp/VClos _ _ _) "<closure>"])))
+    (def analysis/benchmarks/koka-gen/interp/run-safe
+      (fn (action)
+        ((fn (h-action)
+          (std/core/exn/exn/h-handle ((std/core/exn/h-Hnd-exn (0 (std/core/hnd/clause-never1 ((fn (msg)
+            (std/core/types/++ ("FAILURE: " (std/core/exn/show (msg))))))))) (fn (x)
+            (std/core/types/++ ("Success: " (analysis/benchmarks/koka-gen/interp/show-value (x))))) h-action))) ((fn ()
+          (action ()))))))
+    (def analysis/benchmarks/koka-gen/interp/eval
+      (fn (t)
+        (match t
+          [(analysis/benchmarks/koka-gen/interp/Lit i) (analysis/benchmarks/koka-gen/interp/VInt (i))]
+          [(analysis/benchmarks/koka-gen/interp/Var x) (analysis/benchmarks/koka-gen/interp/lookup (x))]
+          [(analysis/benchmarks/koka-gen/interp/Add l r) (match (std/core/types/Tuple2 ((analysis/benchmarks/koka-gen/interp/eval (l)) (analysis/benchmarks/koka-gen/interp/eval (r))))
+            [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/interp/VInt i1) (analysis/benchmarks/koka-gen/interp/VInt i2)) (analysis/benchmarks/koka-gen/interp/VInt ((std/core/int/+ (i1 i2))))]
+            [_ (std/core/exn/throw ("Type Error: Add expects integers" std/core/types/h-None))])]
+          [(analysis/benchmarks/koka-gen/interp/Lam p b) (letrec* ([captured (analysis/benchmarks/koka-gen/interp/snapshot ())])
+            (analysis/benchmarks/koka-gen/interp/VClos (p b captured)))]
+          [(analysis/benchmarks/koka-gen/interp/App f a) (letrec* ([func-val (analysis/benchmarks/koka-gen/interp/eval (f))] [arg-val (analysis/benchmarks/koka-gen/interp/eval (a))])
+            (match func-val
+              [(analysis/benchmarks/koka-gen/interp/VClos param body saved-env) (letrec* ([new-env (std/core/types/Cons ((std/core/types/Tuple2 (param arg-val)) saved-env))])
+                (analysis/benchmarks/koka-gen/interp/run-env (new-env (fn ()
+                  (analysis/benchmarks/koka-gen/interp/eval (body))))))]
+              [(analysis/benchmarks/koka-gen/interp/VInt _) (std/core/exn/throw ("Type Error: App expects a function" std/core/types/h-None))]))])))
+    (def analysis/benchmarks/koka-gen/interp/analyze-interp
+      (fn ()
+        (letrec* ([ex (analysis/benchmarks/koka-gen/interp/App ((analysis/benchmarks/koka-gen/interp/Lam ("x" (analysis/benchmarks/koka-gen/interp/App ((analysis/benchmarks/koka-gen/interp/Lam ("y" (analysis/benchmarks/koka-gen/interp/Add ((analysis/benchmarks/koka-gen/interp/Var ("x")) (analysis/benchmarks/koka-gen/interp/Var ("y")))))) (analysis/benchmarks/koka-gen/interp/Lit (20)))))) (analysis/benchmarks/koka-gen/interp/Lit (10))))])
+          (analysis/benchmarks/koka-gen/interp/run-safe ((fn ()
+            (analysis/benchmarks/koka-gen/interp/run-env (std/core/types/Nil (fn ()
+              (analysis/benchmarks/koka-gen/interp/eval (ex)))))))))))
+    (def analysis/benchmarks/koka-gen/interp/result-interp
+      (fn ()
+        "Success: 30"))
+    (def analysis/benchmarks/koka-gen/interp/main
+      (fn ()
+        (letrec* ([_ (std/core/console/string/println ("--- Koka Interpreter (Handler Stacking) ---"))] [ex (analysis/benchmarks/koka-gen/interp/App ((analysis/benchmarks/koka-gen/interp/Lam ("x" (analysis/benchmarks/koka-gen/interp/App ((analysis/benchmarks/koka-gen/interp/Lam ("y" (analysis/benchmarks/koka-gen/interp/Add ((analysis/benchmarks/koka-gen/interp/Var ("x")) (analysis/benchmarks/koka-gen/interp/Var ("y")))))) (analysis/benchmarks/koka-gen/interp/Lit (20)))))) (analysis/benchmarks/koka-gen/interp/Lit (10))))] [result (analysis/benchmarks/koka-gen/interp/run-safe ((fn ()
+          (analysis/benchmarks/koka-gen/interp/run-env (std/core/types/Nil (fn ()
+            (analysis/benchmarks/koka-gen/interp/eval (ex))))))))])
+          (std/core/console/string/println (result)))))))

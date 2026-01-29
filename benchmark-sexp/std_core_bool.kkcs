@@ -1,0 +1,64 @@
+((module std/core/bool)
+  (defs
+    (def std/core/bool/==
+      (fn (x y)
+        (letrec* ([ievh-29 std/core/types/h-Hnodiv])
+          (match x
+            [std/core/types/True y]
+            [std/core/types/False (std/core/types/bool/! (y))]))))
+    (def std/core/bool/!=
+      (fn (x y)
+        (letrec* ([ievh-47 std/core/types/h-Hnodiv])
+          (match x
+            [std/core/types/True (std/core/types/bool/! (y))]
+            [std/core/types/False y]))))
+    (def std/core/bool/<
+      (fn (x y)
+        (letrec* ([ievh-69 std/core/types/h-Hnodiv])
+          (match (std/core/types/bool/! (x))
+            [std/core/types/True y]
+            [_ std/core/types/False]))))
+    (def std/core/bool/>
+      (fn (x y)
+        (letrec* ([ievh-90 std/core/types/h-Hnodiv])
+          (match x
+            [std/core/types/True (std/core/types/bool/! (y))]
+            [_ std/core/types/False]))))
+    (def std/core/bool/<=
+      (fn (x y)
+        (letrec* ([ievh-105 std/core/types/h-Hnodiv])
+          (std/core/types/bool/! ((std/core/bool/> (x y)))))))
+    (def std/core/bool/>=
+      (fn (x y)
+        (letrec* ([ievh-125 std/core/types/h-Hnodiv])
+          (std/core/types/bool/! ((std/core/bool/< (x y)))))))
+    (def std/core/bool/xor
+      (fn (x y)
+        (letrec* ([ievh-149 std/core/types/h-Hnodiv])
+          (match x
+            [std/core/types/False y]
+            [std/core/types/True (std/core/types/bool/! (y))]))))
+    (def std/core/bool/cmp
+      (fn (x y)
+        (match (std/core/bool/< (x y))
+          [std/core/types/True std/core/types/Lt]
+          [std/core/types/False (match (std/core/bool/> (x y))
+            [std/core/types/True std/core/types/Gt]
+            [std/core/types/False std/core/types/Eq])])))
+    (def std/core/bool/order2
+      (fn (x y)
+        (match (std/core/bool/== (x y))
+          [std/core/types/True (std/core/types/Eq2 (x))]
+          [std/core/types/False (match (std/core/bool/< (x y))
+            [std/core/types/True (std/core/types/Lt2 (x y))]
+            [std/core/types/False (std/core/types/Gt2 (y x))])])))
+    (def std/core/bool/show
+      (fn (b)
+        (match b
+          [std/core/types/True "True"]
+          [std/core/types/False "False"])))
+    (def std/core/bool/int
+      (fn (b)
+        (match b
+          [std/core/types/True 1]
+          [std/core/types/False 0])))))

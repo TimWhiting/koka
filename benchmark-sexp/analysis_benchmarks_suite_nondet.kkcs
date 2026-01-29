@@ -1,0 +1,95 @@
+((module analysis/benchmarks/suite/nondet)
+  (defs
+    (def analysis/benchmarks/suite/nondet/ex2/h-cfc
+      (fn (ex2)
+        (match ex2
+          [(analysis/benchmarks/suite/nondet/h-Hnd-ex2 h-x _) h-x])))
+    (def analysis/benchmarks/suite/nondet/ex2/h-tag
+      (std/core/hnd/h-new-htag ("ex2@nondet")))
+    (def analysis/benchmarks/suite/nondet/ex2/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/nondet/ex2/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/nondet/ex2/h-ctl-ex2
+      (fn (ex2)
+        (match ex2
+          [(analysis/benchmarks/suite/nondet/h-Hnd-ex2 _ h-x) h-x])))
+    (def analysis/benchmarks/suite/nondet/ex2/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/nondet/h-Hnd-ex2 _ h-ctl-ex2) h-ctl-ex2])))
+    (def analysis/benchmarks/suite/nondet/ex2
+      (fn (a)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/nondet/ex2/h-select a))))
+    (def analysis/benchmarks/suite/nondet/analyze-nondet-simple
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 20 - nondeterminism"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nondet/ex2/h-handle ((analysis/benchmarks/suite/nondet/h-Hnd-ex2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (std/core/int/+ ((resume ((std/core/types/tuple2/fst (a)))) (resume ((std/core/types/tuple2/snd (a))))))))))) (fn (x)
+              x) h-action))) ((fn ()
+            (analysis/benchmarks/suite/nondet/ex2 ((std/core/types/Tuple2 (1 2))))))))))
+    (def analysis/benchmarks/suite/nondet/result-nondet-simple
+      (fn ()
+        3))
+    (def analysis/benchmarks/suite/nondet/analyze-nondet-context
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 21 - nondeterminism"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nondet/ex2/h-handle ((analysis/benchmarks/suite/nondet/h-Hnd-ex2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (std/core/int/+ ((resume ((std/core/types/tuple2/fst (a)))) (resume ((std/core/types/tuple2/snd (a))))))))))) (fn (x)
+              x) h-action))) ((fn ()
+            (std/core/int/+ ((analysis/benchmarks/suite/nondet/ex2 ((std/core/types/Tuple2 (1 2)))) 1))))))))
+    (def analysis/benchmarks/suite/nondet/result-nondet-context
+      (fn ()
+        5))
+    (def analysis/benchmarks/suite/nondet/analyze-nondet-nested
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 22 - nondeterminism twice"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nondet/ex2/h-handle ((analysis/benchmarks/suite/nondet/h-Hnd-ex2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (std/core/int/+ ((resume ((std/core/types/tuple2/fst (a)))) (resume ((std/core/types/tuple2/snd (a))))))))))) (fn (x)
+              x) h-action))) ((fn ()
+            (std/core/int/+ ((analysis/benchmarks/suite/nondet/ex2 ((std/core/types/Tuple2 (1 2)))) (analysis/benchmarks/suite/nondet/ex2 ((std/core/types/Tuple2 (1 2))))))))))))
+    (def analysis/benchmarks/suite/nondet/result-nondet-nested
+      (fn ()
+        12))
+    (def analysis/benchmarks/suite/nondet/analyze-nondet-discard
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Example 23 - resumption result discarded"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nondet/ex2/h-handle ((analysis/benchmarks/suite/nondet/h-Hnd-ex2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (match (resume ((std/core/types/tuple2/fst (a))))
+                [_ (resume ((std/core/types/tuple2/snd (a))))])))))) (fn (x)
+              x) h-action))) ((fn ()
+            (analysis/benchmarks/suite/nondet/ex2 ((std/core/types/Tuple2 (10 20))))))))))
+    (def analysis/benchmarks/suite/nondet/result-nondet-discard
+      (fn ()
+        20))
+    (def analysis/benchmarks/suite/nondet/test-nondet-simple
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nondet/analyze-nondet-simple ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nondet/result-nondet-simple ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-simple passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-simple FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nondet/result-nondet-simple ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nondet/test-nondet-context
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nondet/analyze-nondet-context ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nondet/result-nondet-context ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-context passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-context FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nondet/result-nondet-context ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nondet/test-nondet-nested
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nondet/analyze-nondet-nested ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nondet/result-nondet-nested ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-nested passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-nested FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nondet/result-nondet-nested ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nondet/test-nondet-discard
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nondet/analyze-nondet-discard ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nondet/result-nondet-discard ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-discard passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-discard FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nondet/result-nondet-discard ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nondet/main
+      (fn ()
+        (letrec* ([_ (std/core/console/string/println ("Running nondet tests..."))] [_ (analysis/benchmarks/suite/nondet/test-nondet-simple ())] [_ (analysis/benchmarks/suite/nondet/test-nondet-context ())] [_ (analysis/benchmarks/suite/nondet/test-nondet-nested ())] [_ (analysis/benchmarks/suite/nondet/test-nondet-discard ())])
+          (std/core/console/string/println ("nondet tests complete")))))))

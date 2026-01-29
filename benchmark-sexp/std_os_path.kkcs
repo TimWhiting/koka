@@ -1,0 +1,227 @@
+((module std/os/path)
+  (defs
+    (def std/os/path/h-create-Path
+      (fn (root parts)
+        (letrec* ([h-uniq-rooth-88 (match root
+          [(std/core/types/h-Optional h-uniq-rooth-89) h-uniq-rooth-89]
+          [std/core/types/h-None ""])] [h-uniq-partsh-94 (match parts
+          [(std/core/types/h-Optional h-uniq-partsh-95) h-uniq-partsh-95]
+          [std/core/types/h-None std/core/types/Nil])])
+          (std/os/path/Path (h-uniq-rooth-88 h-uniq-partsh-94)))))
+    (def std/os/path/path/root
+      (fn (path)
+        (match path
+          [(std/os/path/Path h-x _) h-x])))
+    (def std/os/path/path/parts
+      (fn (path)
+        (match path
+          [(std/os/path/Path _ h-x) h-x])))
+    (def std/os/path/path/h-copy
+      (fn (h-this root parts)
+        (letrec* ([h-uniq-rooth-127 (match root
+          [(std/core/types/h-Optional h-uniq-rooth-128) h-uniq-rooth-128]
+          [std/core/types/h-None (std/os/path/path/root (h-this))])] [h-uniq-partsh-135 (match parts
+          [(std/core/types/h-Optional h-uniq-partsh-136) h-uniq-partsh-136]
+          [std/core/types/h-None (std/os/path/path/parts (h-this))])])
+          (std/os/path/h-create-Path ((std/core/types/h-Optional (h-uniq-rooth-127)) (std/core/types/h-Optional (h-uniq-partsh-135)))))))
+    (def std/os/path/basename
+      (fn (p)
+        (std/core/maybe/default ((std/core/list/maybe/head ((std/os/path/path/parts (p)))) ""))))
+    (def std/os/path/dirname
+      (fn (p)
+        (std/core/types/++ ((std/os/path/path/root (p)) (std/core/list/joinsep/join ((std/core/list/reverse ((std/core/list/tail ((std/os/path/path/parts (p)))))) "/"))))))
+    (def std/os/path/is-empty
+      (fn (p)
+        (match (std/core/string/is-empty ((std/os/path/path/root (p))))
+          [std/core/types/True (std/core/types/is-nil ((std/os/path/path/parts (p))))]
+          [_ std/core/types/False])))
+    (def std/os/path/string
+      (fn (p)
+        (letrec* ([s (std/core/types/++ ((std/os/path/path/root (p)) (std/core/list/joinsep/join ((std/core/list/reverse ((std/os/path/path/parts (p)))) "/"))))])
+          (match (std/core/string/is-empty (s))
+            [std/core/types/True "."]
+            [std/core/types/False s]))))
+    (def std/os/path/split-base
+      (fn (basename)
+        (match (std/core/sslice/find-last (basename "."))
+          [(std/core/types/Just (as slice (std/core/sslice/Sslice _ _ _))) (std/core/types/Tuple2 ((std/core/sslice/string ((std/core/sslice/before (slice)))) (std/core/sslice/string ((std/core/sslice/after (slice))))))]
+          [std/core/types/Nothing (std/core/types/Tuple2 (basename ""))])))
+    (def std/os/path/extname
+      (fn (p)
+        (std/core/types/tuple2/snd ((std/os/path/split-base ((std/os/path/basename (p))))))))
+    (def std/os/path/stemname
+      (fn (p)
+        (std/core/types/tuple2/fst ((std/os/path/split-base ((std/os/path/basename (p))))))))
+    (def std/os/path/rootname
+      (fn (p)
+        (std/os/path/path/root (p))))
+    (def std/os/path/split-parts
+      (fn (parts)
+        (std/core/types/Tuple2 ((std/core/maybe/default ((std/core/list/maybe/head (parts)) "")) (std/core/list/tail (parts))))))
+    (def std/os/path/show
+      (fn (p)
+        (std/core/show/string/show ((std/os/path/string (p))))))
+    (def std/os/path/is-relative
+      (fn (p)
+        (std/core/string/is-empty ((std/os/path/path/root (p))))))
+    (def std/os/path/is-absolute
+      (fn (p)
+        (letrec* ([ievh-662 std/core/types/h-Hnodiv])
+          (std/core/types/bool/! ((std/os/path/is-relative (p)))))))
+    (def |std/os/path/|||
+      (fn (p1 p2)
+        (match (std/os/path/is-empty (p1))
+          [std/core/types/True p2]
+          [std/core/types/False p1])))
+    (def std/os/path/push-part
+      (fn (dir dirs)
+        (match (match (std/core/string/== (dir "."))
+          [std/core/types/True std/core/types/True]
+          [_ (std/core/string/== (dir ""))])
+          [std/core/types/True dirs]
+          [std/core/types/False (match (match (std/core/string/== (dir ".."))
+            [std/core/types/True (std/core/types/is-cons (dirs))]
+            [_ std/core/types/False])
+            [std/core/types/True (std/core/list/tail (dirs))]
+            [std/core/types/False (std/core/types/Cons (dir dirs))])])))
+    (def std/os/path/push-parts
+      (fn (parts dirs)
+        (match parts
+          [(std/core/types/Cons part rest) (std/os/path/push-parts (rest (std/os/path/push-part (part dirs))))]
+          [std/core/types/Nil dirs])))
+    (def std/os/path/path-parts
+      (fn (root s dirs)
+        (letrec* ([h-uniq-dirsh-1154 (match dirs
+          [(std/core/types/h-Optional h-uniq-dirsh-1155) h-uniq-dirsh-1155]
+          [std/core/types/h-None std/core/types/Nil])] [parts (std/os/path/push-parts ((std/core/string/sep/split (s "/")) h-uniq-dirsh-1154))])
+          (std/os/path/h-create-Path ((std/core/types/h-Optional (root)) (std/core/types/h-Optional (parts)))))))
+    (def std/os/path/proot
+      (fn ()
+        (letrec* ([_ (|std/text/parse/||| ((fn ()
+          (letrec* ([_ (std/text/parse/alpha ())] [_ (std/text/parse/char ((char ":")))])
+            std/core/types/Unit)) (fn ()
+          (letrec* ([_ (std/text/parse/char ((char "/")))] [_ (std/text/parse/many1 ((fn ()
+            (std/text/parse/none-of ("/")))))])
+            std/core/types/Unit))))])
+          (|std/text/parse/||| ((fn ()
+            (letrec* ([_ (std/text/parse/char ((char "/")))])
+              std/core/types/False)) (fn ()
+            (letrec* ([_ (std/text/parse/eof ())])
+              std/core/types/True)))))))
+    (def std/os/path/path
+      (fn (s)
+        (match (std/core/string/is-empty (s))
+          [std/core/types/True (std/os/path/h-create-Path ((std/core/types/h-Optional ("")) (std/core/types/h-Optional (std/core/types/Nil))))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit] [t (std/core/string/replace-all (s "\\" "/"))])
+            (match (std/text/parse/starts-with (t std/os/path/proot))
+              [std/core/types/Nothing (std/os/path/path-parts ("" t std/core/types/h-None))]
+              [(std/core/types/Just (std/core/types/Tuple2 eof (as rest (std/core/sslice/Sslice _ _ _)))) (std/os/path/path-parts ((std/core/types/++ ((std/core/sslice/string ((std/core/sslice/before (rest)))) (match eof
+                [std/core/types/True "/"]
+                [std/core/types/False ""]))) (std/core/sslice/string (rest)) std/core/types/h-None))]))])))
+    (def std/os/path/paths-collect
+      (fn (ps)
+        (letrec* ([ievh-1574 std/core/types/h-Hnodiv])
+          (match ps
+            [(std/core/types/Cons root (std/core/types/Cons part rest)) (std/core/types/Cons ((std/os/path/path ((std/core/types/++ (root (std/core/types/++ (":" part)))))) (std/os/path/paths-collect (rest))))]
+            [(std/core/types/Cons part rest) (std/core/types/Cons ((std/os/path/path (part)) (std/os/path/paths-collect (rest))))]
+            [std/core/types/Nil std/core/types/Nil]))))
+    (def std/os/path/paths
+      (fn (s)
+        (std/os/path/paths-collect ((std/core/string/sep/split ((std/core/string/replace-all (s ";" ":")) ":"))))))
+    (def std/os/path//
+      (fn (p1 p2)
+        (std/os/path/h-create-Path ((std/core/types/h-Optional ((std/os/path/path/root (p1)))) (std/core/types/h-Optional ((std/os/path/push-parts ((std/core/list/reverse ((std/os/path/path/parts (p2)))) (std/os/path/path/parts (p1))))))))))
+    (def std/os/path/pathstring//
+      (fn (p1 p2)
+        (std/os/path// (p1 (std/os/path/path (p2))))))
+    (def std/os/path/string//
+      (fn (p1 p2)
+        (std/os/path// ((std/os/path/path (p1)) (std/os/path/path (p2))))))
+    (def std/os/path/combine
+      (fn (ps)
+        (match ps
+          [std/core/types/Nil (std/os/path/h-create-Path (std/core/types/h-None std/core/types/h-None))]
+          [(std/core/types/Cons (as p (std/os/path/Path _ _)) pp) (std/core/list/foldl (pp p std/os/path//))])))
+    (def std/os/path/nodir
+      (fn (p)
+        (std/os/path/path/h-copy (p (std/core/types/h-Optional ("")) (std/core/types/h-Optional ((std/core/list/take ((std/os/path/path/parts (p)) 1))))))))
+    (def std/os/path/nobase
+      (fn (p)
+        (letrec* ([h-arg-x1957 p] [h-arg-x1959 (std/core/types/h-Optional ((std/core/list/tail ((std/os/path/path/parts (p))))))] [h-arg-x1958 std/core/types/h-None])
+          (std/os/path/path/h-copy (h-arg-x1957 h-arg-x1958 h-arg-x1959)))))
+    (def std/os/path/change-ext
+      (fn (p extname)
+        (match (std/os/path/split-parts ((std/os/path/path/parts (p))))
+          [(std/core/types/Tuple2 basename dirs) (match (std/os/path/split-base (basename))
+            [(std/core/types/Tuple2 stemname _) (letrec* ([newext (match (std/core/types/is-just ((std/core/sslice/starts-with (extname "."))))
+              [std/core/types/True extname]
+              [std/core/types/False (std/core/types/++ ("." extname))])])
+              (std/os/path/path-parts ((std/os/path/path/root (p)) (std/core/types/++ (stemname newext)) (std/core/types/h-Optional (dirs)))))])])))
+    (def std/os/path/noext
+      (fn (p)
+        (std/os/path/change-ext (p ""))))
+    (def std/os/path/default-ext
+      (fn (p newext)
+        (match (std/core/string/is-empty ((std/os/path/extname (p))))
+          [std/core/types/True (std/os/path/change-ext (p newext))]
+          [std/core/types/False p])))
+    (def std/os/path/change-base
+      (fn (p basename)
+        (letrec* ([q (std/os/path/nobase (p))])
+          (std/os/path/path-parts ((std/os/path/path/root (q)) basename (std/core/types/h-Optional ((std/os/path/path/parts (q)))))))))
+    (def std/os/path/change-stem
+      (fn (p stemname)
+        (letrec* ([ext (std/os/path/extname (p))])
+          (std/os/path/change-base (p (std/core/types/++ (stemname (match (std/core/string/is-empty (ext))
+            [std/core/types/True ""]
+            [std/core/types/False (std/core/types/++ ("." ext))]))))))))
+    (def std/os/path/dirparts
+      (fn (p)
+        (std/core/list/reverse ((std/os/path/path/parts (p))))))
+    (def std/os/path/parentname
+      (fn (p)
+        (std/core/maybe/default ((std/core/list/maybe/head ((std/core/list/tail ((std/os/path/path/parts (p)))))) ""))))
+    (def std/os/path/xrealpath
+      (fn (p)
+        (std/os/path/h-extern-xrealpath (p))))
+    (def std/os/path/string/realpath
+      (fn (s)
+        (std/os/path/path ((std/os/path/xrealpath (s))))))
+    (def std/os/path/realpath
+      (fn (p)
+        (std/os/path/string/realpath ((std/os/path/string (p))))))
+    (def std/os/path/cwd
+      (fn ()
+        (std/os/path/string/realpath ("."))))
+    (def std/os/path/partsep
+      (fn ()
+        (std/os/path/h-extern-partsep ())))
+    (def std/os/path/pathsep
+      (fn ()
+        (std/os/path/h-extern-pathsep ())))
+    (def std/os/path/xapp-path
+      (fn ()
+        (std/os/path/h-extern-xapp-path ())))
+    (def std/os/path/app-path
+      (fn ()
+        (std/os/path/path ((std/os/path/xapp-path ())))))
+    (def std/os/path/appdir
+      (fn ()
+        (letrec* ([p (std/os/path/nobase ((std/os/path/app-path ())))])
+          (match (match (std/core/string/== ((std/os/path/basename (p)) "bin"))
+            [std/core/types/True std/core/types/True]
+            [_ (std/core/string/== ((std/os/path/basename (p)) "exe"))])
+            [std/core/types/True (std/os/path/nobase (p))]
+            [std/core/types/False p]))))
+    (def std/os/path/xhomedir
+      (fn ()
+        (std/os/path/h-extern-xhomedir ())))
+    (def std/os/path/homedir
+      (fn ()
+        (std/os/path/path ((std/os/path/xhomedir ())))))
+    (def std/os/path/xtempdir
+      (fn ()
+        (std/os/path/h-extern-xtempdir ())))
+    (def std/os/path/tempdir
+      (fn ()
+        (std/os/path/path ((std/os/path/xtempdir ())))))))

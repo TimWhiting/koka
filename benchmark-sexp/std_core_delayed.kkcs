@@ -1,0 +1,67 @@
+((module std/core/delayed)
+  (defs
+    (def std/core/delayed/is-xcomputation
+      (fn (computation)
+        (match computation
+          [(std/core/delayed/XComputation _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def std/core/delayed/is-xdone
+      (fn (computation)
+        (match computation
+          [(std/core/delayed/XDone _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def std/core/delayed/is-xblocking
+      (fn (computation)
+        (match computation
+          [std/core/delayed/XBlocking std/core/types/True]
+          [_ std/core/types/False])))
+    (def std/core/delayed/delayed/dref
+      (fn (delayed)
+        (match delayed
+          [(std/core/delayed/XDelay h-x) h-x])))
+    (def std/core/delayed/delayed/h-copy
+      (fn (h-this dref)
+        (letrec* ([h-uniq-drefh-231 (match dref
+          [(std/core/types/h-Optional h-uniq-drefh-232) h-uniq-drefh-232]
+          [std/core/types/h-None (std/core/delayed/delayed/dref (h-this))])])
+          (std/core/delayed/XDelay (h-uniq-drefh-231)))))
+    (def std/core/delayed/delay
+      (fn (action)
+        (std/core/unsafe/unsafe-total ((fn ()
+          (letrec* ([r (std/core/types/ref ((std/core/delayed/XComputation (action))))])
+            (std/core/delayed/XDelay (r))))))))
+    (def std/core/delayed/memo
+      (fn (value)
+        (std/core/unsafe/unsafe-total ((fn ()
+          (letrec* ([r (std/core/types/ref ((std/core/delayed/XDone (value))))])
+            (std/core/delayed/XDelay (r))))))))
+    (def std/core/delayed/force/go
+      (fn (delayed)
+        (letrec* ([ievh-407 std/core/types/h-Hdiv] [ievh-412 std/core/types/h-Hdiv] [r (std/core/delayed/delayed/dref (delayed))])
+          (match (std/core/types/ref/! (r ievh-412))
+            [(std/core/delayed/XDone x) x]
+            [std/core/delayed/XBlocking (std/core/delayed/force/go (delayed))]
+            [(std/core/delayed/XComputation action) (letrec* ([_ (std/core/types/set (r std/core/delayed/XBlocking))] [x ((std/core/types/mask-st ((fn ()
+              (std/core/hnd/h-mask-builtin (action))))) ())] [_ (std/core/types/set (r (std/core/delayed/XDone (x))))])
+              x)]))))
+    (def std/core/delayed/unsafe-no-state-div-cast
+      (fn (f)
+        (std/core/delayed/h-extern-unsafe-no-state-div-cast (f))))
+    (def std/core/delayed/unsafe-no-state-div
+      (fn (f)
+        ((std/core/delayed/unsafe-no-state-div-cast (f)) ())))
+    (def std/core/delayed/force
+      (fn (delayed)
+        (std/core/delayed/unsafe-no-state-div ((fn ()
+          (std/core/delayed/force/go (delayed)))))))
+    (def std/core/delayed/once
+      (fn (calc)
+        (letrec* ([ievh-689 std/core/types/h-Hdiv] [ievh-694 std/core/types/h-Hdiv])
+          (std/core/unsafe/unsafe-total ((fn ()
+            (letrec* ([r (std/core/types/ref (std/core/types/Nothing))])
+              (fn ()
+                (std/core/unsafe/unsafe-total ((fn ()
+                  (match (std/core/types/ref/! (r ievh-694))
+                    [(std/core/types/Just x) x]
+                    [std/core/types/Nothing (letrec* ([x (calc ())] [_ (std/core/types/set (r (std/core/types/Just (x))))])
+                      x)]))))))))))))))

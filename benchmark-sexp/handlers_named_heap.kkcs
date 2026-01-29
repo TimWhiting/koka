@@ -1,0 +1,84 @@
+((module handlers/named/heap)
+  (defs
+    (def handlers/named/heap/heap/h-cfc
+      (fn (heap)
+        (match heap
+          [(handlers/named/heap/h-Hnd-heap h-x _) h-x])))
+    (def handlers/named/heap/heap/h-tag
+      (std/core/hnd/h-new-htag ("heap@heap")))
+    (def handlers/named/heap/heap/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/named/heap/heap/h-tag hnd ret action))))
+    (def handlers/named/heap/heap/h-ctl-new-ref
+      (fn (heap)
+        (match heap
+          [(handlers/named/heap/h-Hnd-heap _ h-x) h-x])))
+    (def handlers/named/heap/new-ref/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/named/heap/h-Hnd-heap _ h-ctl-new-ref) h-ctl-new-ref])))
+    (def handlers/named/heap/new-ref
+      (fn (init)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/named/heap/new-ref/h-select init))))
+    (def handlers/named/heap/ref/h-cfc
+      (fn (ref)
+        (match ref
+          [(handlers/named/heap/h-Hnd-ref h-x _ _) h-x])))
+    (def handlers/named/heap/ref/h-tag
+      (std/core/hnd/h-new-htag ("ref@heap")))
+    (def handlers/named/heap/ref/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-named-handle (handlers/named/heap/ref/h-tag hnd ret action))))
+    (def handlers/named/heap/ref/h-fun-get
+      (fn (ref)
+        (match ref
+          [(handlers/named/heap/h-Hnd-ref _ h-x _) h-x])))
+    (def handlers/named/heap/get/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/named/heap/h-Hnd-ref _ h-fun-get _) h-fun-get])))
+    (def handlers/named/heap/get
+      (fn (h-hname)
+        (std/core/hnd/h-perform0 (h-hname handlers/named/heap/get/h-select))))
+    (def handlers/named/heap/ref/h-fun-set
+      (fn (ref)
+        (match ref
+          [(handlers/named/heap/h-Hnd-ref _ _ h-x) h-x])))
+    (def handlers/named/heap/set/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/named/heap/h-Hnd-ref _ _ h-fun-set) h-fun-set])))
+    (def handlers/named/heap/set
+      (fn (h-hname value)
+        (std/core/hnd/h-perform1 (h-hname handlers/named/heap/set/h-select value))))
+    (def handlers/named/heap/with-ref
+      (fn (init action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-1048 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (init (fn (s)
+              ((fn (h-action)
+                (handlers/named/heap/ref/h-handle ((handlers/named/heap/h-Hnd-ref (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (std/core/types/local-get (s ievh-1048))))) (std/core/hnd/clause-tail1 ((fn (x)
+                  (std/core/types/local-set (s x))))))) (fn (h-res)
+                  h-res) h-action))) ((fn (r)
+                ((fn (h-arg-x1)
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (action (h-arg-x1)))))) (r))))))))))))))
+    (def handlers/named/heap/heap
+      (fn (action)
+        ((fn (h-action)
+          (handlers/named/heap/heap/h-handle ((handlers/named/heap/h-Hnd-heap (3 (std/core/hnd/clause-control1 ((fn (init resume)
+            (handlers/named/heap/with-ref (init resume))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (action ()))))))
+    (def handlers/named/heap/dynamic-ref
+      (fn (init)
+        (letrec* ([x (handlers/named/heap/new-ref (init))])
+          x)))
+    (def handlers/named/heap/main
+      (fn ()
+        (handlers/named/heap/heap ((fn ()
+          (letrec* ([r1 (handlers/named/heap/new-ref (41))] [r2 (handlers/named/heap/dynamic-ref (std/core/types/True))])
+            (std/core/console/default/show/println ((std/core/int/+ ((handlers/named/heap/get (r1)) (match (handlers/named/heap/get (r2))
+              [std/core/types/True 1]
+              [std/core/types/False 0]))) std/core/int/show))))))))))

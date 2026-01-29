@@ -1,0 +1,146 @@
+((module analysis/benchmarks/koka-gen/mini-ppl)
+  (defs
+    (def analysis/benchmarks/koka-gen/mini-ppl/choice/h-cfc
+      (fn (choice)
+        (match choice
+          [(analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice h-x _) h-x])))
+    (def analysis/benchmarks/koka-gen/mini-ppl/choice/h-tag
+      (std/core/hnd/h-new-htag ("choice@mini-ppl")))
+    (def analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/koka-gen/mini-ppl/choice/h-tag hnd ret action))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/choice/h-ctl-flip
+      (fn (choice)
+        (match choice
+          [(analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice _ h-x) h-x])))
+    (def analysis/benchmarks/koka-gen/mini-ppl/flip/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice _ h-ctl-flip) h-ctl-flip])))
+    (def analysis/benchmarks/koka-gen/mini-ppl/flip
+      (fn (p)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/mini-ppl/flip/h-select p))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/uniform
+      (fn (n)
+        (match (std/core/int/<= (n 0))
+          [std/core/types/True 0]
+          [std/core/types/False (match (std/core/int/== (n 1))
+            [std/core/types/True 0]
+            [std/core/types/False (letrec* ([p (std/num/float64// (1.0 (std/num/float64/float64 (n))))])
+              (match (analysis/benchmarks/koka-gen/mini-ppl/flip (p))
+                [std/core/types/True 0]
+                [std/core/types/False (std/core/int/+ (1 (analysis/benchmarks/koka-gen/mini-ppl/uniform ((std/core/int/- (n 1))))))]))])])))
+    (def analysis/benchmarks/koka-gen/mini-ppl/reject
+      (fn ()
+        (std/core/exn/throw ("Observation failed" std/core/types/h-None))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/exact
+      (fn (action)
+        ((fn (h-action)
+          (analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle ((analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice (3 (std/core/hnd/clause-control1 ((fn (p resume)
+            (letrec* ([true-branch (resume (std/core/types/True))] [false-branch (resume (std/core/types/False))] [weighted-true (std/core/list/map (true-branch (fn (r)
+              (std/core/types/Tuple2 ((std/core/types/tuple2/fst (r)) (std/num/float64/* ((std/core/types/tuple2/snd (r)) p)))))))] [weighted-false (std/core/list/map (false-branch (fn (r)
+              (std/core/types/Tuple2 ((std/core/types/tuple2/fst (r)) (std/num/float64/* ((std/core/types/tuple2/snd (r)) (std/num/float64/- (1.0 p)))))))))])
+              (std/core/list/++ (weighted-true weighted-false)))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          ((fn (h-action)
+            (std/core/exn/exn/h-handle ((std/core/exn/h-Hnd-exn (0 (std/core/hnd/clause-never1 ((fn (msg)
+              std/core/types/Nil))))) (fn (x)
+              (std/core/types/Cons ((std/core/types/Tuple2 (x 1.0)) std/core/types/Nil))) h-action))) ((fn ()
+            (action ())))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/show-dist
+      (fn (dist)
+        (letrec* ([total-prob (std/num/float64/sum ((std/core/list/map (dist std/core/types/tuple2/snd))))] [lines (std/core/list/map (dist (fn (d)
+          (letrec* ([prob (std/num/float64// ((std/core/types/tuple2/snd (d)) total-prob))])
+            (std/core/types/++ ("  " (std/core/types/++ ((std/core/types/tuple2/fst (d)) (std/core/types/++ (": " (std/core/types/++ ((std/num/float64/show ((std/num/float64/* (prob 100.0)) (std/core/types/h-Optional (1)))) "%"))))))))))))])
+          (std/core/types/++ ("\nDistribution (Total Mass: " (std/core/types/++ ((std/num/float64/show (total-prob (std/core/types/h-Optional (4)))) (std/core/types/++ ("):\n" (std/core/list/joinsep/join (lines "\n")))))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/sample
+      (fn (action)
+        ((fn (h-action)
+          (analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle ((analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice (3 (std/core/hnd/clause-control1 ((fn (p resume)
+            (letrec* ([r (std/num/random/random-float64 ())])
+              (resume ((std/num/float64/< (r p)))))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          ((fn (h-action)
+            (std/core/exn/exn/h-handle ((std/core/exn/h-Hnd-exn (0 (std/core/hnd/clause-never1 ((fn (msg)
+              std/core/types/Nothing))))) (fn (x)
+              (std/core/types/Just (x))) h-action))) ((fn ()
+            (action ())))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/burglar-model
+      (fn ()
+        (letrec* ([ievh-1844 std/core/types/h-Hdiv] [burglary (analysis/benchmarks/koka-gen/mini-ppl/flip (1.0e-2))] [earthquake (analysis/benchmarks/koka-gen/mini-ppl/flip (2.0e-3))] [alarm (match (match burglary
+          [std/core/types/True earthquake]
+          [_ std/core/types/False])
+          [std/core/types/True (analysis/benchmarks/koka-gen/mini-ppl/flip (0.95))]
+          [std/core/types/False (match burglary
+            [std/core/types/True (analysis/benchmarks/koka-gen/mini-ppl/flip (0.94))]
+            [std/core/types/False (match earthquake
+              [std/core/types/True (analysis/benchmarks/koka-gen/mini-ppl/flip (0.29))]
+              [std/core/types/False (analysis/benchmarks/koka-gen/mini-ppl/flip (1.0e-3))])])])] [mary-calls (match alarm
+          [std/core/types/True (analysis/benchmarks/koka-gen/mini-ppl/flip (0.7))]
+          [std/core/types/False (analysis/benchmarks/koka-gen/mini-ppl/flip (1.0e-2))])] [_ (match (std/core/types/bool/! (mary-calls))
+          [std/core/types/True (analysis/benchmarks/koka-gen/mini-ppl/reject ())]
+          [std/core/types/False std/core/types/Unit])])
+          (match burglary
+            [std/core/types/True "Burglary!"]
+            [std/core/types/False "Safe"]))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/drunk-walk
+      (fn (steps)
+        (match (std/core/int/> (steps 10))
+          [std/core/types/True steps]
+          [std/core/types/False (match (analysis/benchmarks/koka-gen/mini-ppl/flip (0.5))
+            [std/core/types/True steps]
+            [std/core/types/False (analysis/benchmarks/koka-gen/mini-ppl/drunk-walk ((std/core/int/+ (steps 1))))])])))
+    (def analysis/benchmarks/koka-gen/mini-ppl/analyze-burglar
+      (fn ()
+        (std/num/random/pseudo-random (42 (fn ()
+          (analysis/benchmarks/koka-gen/mini-ppl/show-dist ((analysis/benchmarks/koka-gen/mini-ppl/exact (analysis/benchmarks/koka-gen/mini-ppl/burglar-model)))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/result-burglar
+      (fn ()
+        (std/core/types/++ ("\nDistribution (Total Mass: 0.0176):\n" (std/core/types/++ ("  Burglary!: 0.1%\n" (std/core/types/++ ("  Burglary!: 0.0%\n" (std/core/types/++ ("  Burglary!: 37.4%\n" (std/core/types/++ ("  Burglary!: 0.0%\n" (std/core/types/++ ("  Safe: 2.3%\n" (std/core/types/++ ("  Safe: 0.1%\n" (std/core/types/++ ("  Safe: 3.9%\n" "  Safe: 56.2%"))))))))))))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/analyze-drunk
+      (fn ()
+        (std/num/random/pseudo-random (42 (fn ()
+          (analysis/benchmarks/koka-gen/mini-ppl/show-dist ((analysis/benchmarks/koka-gen/mini-ppl/exact ((fn ()
+            (std/core/int/show ((analysis/benchmarks/koka-gen/mini-ppl/drunk-walk (0))))))))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/result-drunk
+      (fn ()
+        (std/core/types/++ ("\nDistribution (Total Mass: 1.0000):\n" (std/core/types/++ ("  0: 50.0%\n" (std/core/types/++ ("  1: 25.0%\n" (std/core/types/++ ("  2: 12.5%\n" (std/core/types/++ ("  3: 6.2%\n" (std/core/types/++ ("  4: 3.1%\n" (std/core/types/++ ("  5: 1.6%\n" (std/core/types/++ ("  6: 0.8%\n" (std/core/types/++ ("  7: 0.4%\n" (std/core/types/++ ("  8: 0.2%\n" (std/core/types/++ ("  9: 0.1%\n" (std/core/types/++ ("  10: 0.0%\n" "  11: 0.0%"))))))))))))))))))))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/analyze-burglar-mc
+      (fn ()
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-2377 std/core/types/h-Hnodiv] [ievh-2534 std/core/types/h-Hnodiv] [ievh-2556 std/core/types/h-Hnodiv] [ievh-2579 std/core/types/h-Hnodiv] [ievh-2648 std/core/types/h-Hnodiv])
+            (std/num/random/pseudo-random (42 (fn ()
+              (std/core/hnd/local-var (0 (fn (burglary-count)
+                (std/core/hnd/local-var (0 (fn (total-valid)
+                  (letrec* ([_ (std/core/range/for (1 1000 (fn (i)
+                    (letrec* ([res (analysis/benchmarks/koka-gen/mini-ppl/sample (analysis/benchmarks/koka-gen/mini-ppl/burglar-model))])
+                      (match res
+                        [std/core/types/Nothing std/core/types/Unit]
+                        [(std/core/types/Just s) (letrec* ([_ (std/core/types/local-set (total-valid (std/core/int/+ ((std/core/types/local-get (total-valid ievh-2377)) 1))))])
+                          (match (std/core/string/== (s "Burglary!"))
+                            [std/core/types/True (std/core/types/local-set (burglary-count (std/core/int/+ ((std/core/types/local-get (burglary-count ievh-2534)) 1))))]
+                            [std/core/types/False std/core/types/Unit]))])))))] [est (std/num/float64// ((std/num/float64/float64 ((std/core/types/local-get (burglary-count ievh-2556)))) (std/num/float64/float64 ((std/core/types/local-get (total-valid ievh-2579))))))])
+                    (std/core/types/++ ("Total Valid: " (std/core/types/++ ((std/core/int/show ((std/core/types/local-get (total-valid ievh-2648)))) (std/core/types/++ (", Prob: " (std/core/types/++ ((std/num/float64/show ((std/num/float64/* (est 100.0)) (std/core/types/h-Optional (2)))) "%"))))))))))))))))))))))))
+    (def analysis/benchmarks/koka-gen/mini-ppl/result-burglar-mc
+      (fn ()
+        "Total Valid: 12, Prob: 41.67%"))
+    (def analysis/benchmarks/koka-gen/mini-ppl/main
+      (fn ()
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-3237 std/core/types/h-Hnodiv] [ievh-3394 std/core/types/h-Hnodiv] [ievh-3490 std/core/types/h-Hnodiv] [ievh-3547 std/core/types/h-Hnodiv] [ievh-3597 std/core/types/h-Hnodiv] [ievh-3620 std/core/types/h-Hnodiv] [_ (std/core/console/string/println ("--- Mini-PPL with Algebraic Effects ---"))] [_ (std/core/console/string/println ("\n[Exact Inference] Burglar Model:"))] [d1 (analysis/benchmarks/koka-gen/mini-ppl/exact (analysis/benchmarks/koka-gen/mini-ppl/burglar-model))] [_ (std/core/console/string/println ((analysis/benchmarks/koka-gen/mini-ppl/show-dist (d1))))] [_ (std/core/console/string/println ("\n[Exact Inference] Drunk Walk (Steps taken):"))] [d2 (analysis/benchmarks/koka-gen/mini-ppl/exact ((fn ()
+            (std/core/int/show ((analysis/benchmarks/koka-gen/mini-ppl/drunk-walk (0)))))))] [_ (std/core/console/string/println ((analysis/benchmarks/koka-gen/mini-ppl/show-dist (d2))))] [_ (std/core/console/string/println ("\n[Monte Carlo] Sampling Burglar Model (1000 runs, Seed 42):"))])
+            (std/num/random/pseudo-random (42 (fn ()
+              (std/core/hnd/local-var (0 (fn (burglary-count)
+                (std/core/hnd/local-var (0 (fn (total-valid)
+                  (letrec* ([_ (std/core/range/for (1 1000 (fn (i)
+                    (letrec* ([res (analysis/benchmarks/koka-gen/mini-ppl/sample (analysis/benchmarks/koka-gen/mini-ppl/burglar-model))])
+                      (match res
+                        [std/core/types/Nothing std/core/types/Unit]
+                        [(std/core/types/Just s) (letrec* ([_ (std/core/types/local-set (total-valid (std/core/int/+ ((std/core/types/local-get (total-valid ievh-3237)) 1))))])
+                          (match (std/core/string/== (s "Burglary!"))
+                            [std/core/types/True (std/core/types/local-set (burglary-count (std/core/int/+ ((std/core/types/local-get (burglary-count ievh-3394)) 1))))]
+                            [std/core/types/False std/core/types/Unit]))])))))] [_ (std/core/console/string/println ((std/core/types/++ ("  Total Valid Samples: " (std/core/int/show ((std/core/types/local-get (total-valid ievh-3490))))))))])
+                    (match (std/core/int/> ((std/core/types/local-get (total-valid ievh-3547)) 0))
+                      [std/core/types/True (letrec* ([est (std/num/float64// ((std/num/float64/float64 ((std/core/types/local-get (burglary-count ievh-3597)))) (std/num/float64/float64 ((std/core/types/local-get (total-valid ievh-3620))))))])
+                        (std/core/console/string/println ((std/core/types/++ ("  Estimated Prob of Burglary: " (std/core/types/++ ((std/num/float64/show ((std/num/float64/* (est 100.0)) (std/core/types/h-Optional (2)))) "%")))))))]
+                      [std/core/types/False std/core/types/Unit])))))))))))))))))))

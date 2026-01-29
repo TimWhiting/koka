@@ -1,0 +1,100 @@
+((module std/core/vector)
+  (defs
+    (def std/core/vector/h-unsafe-vector
+      (fn (n)
+        (std/core/vector/h-extern-unsafe-vector (n))))
+    (def std/core/vector/vector-alloc
+      (fn (n init)
+        (std/core/vector/h-extern-vector-alloc (n init))))
+    (def std/core/vector/vector-alloc-total
+      (fn (n f)
+        (std/core/vector/h-extern-vector-alloc-total (n f))))
+    (def std/core/vector/h-index
+      (fn (v index)
+        (letrec* ([idx (std/core/int/ssize_t (index))])
+          (match (std/core/vector/ssize_t/< (idx (std/core/vector/lengthz (v))))
+            [std/core/types/True (std/core/vector/unsafe-idx (v idx))]
+            [std/core/types/False (std/core/exn/throw ("index out of bounds" (std/core/types/h-Optional (std/core/exn/ExnRange))))]))))
+    (def std/core/vector/at
+      (fn (v index)
+        (letrec* ([idx (std/core/int/ssize_t (index))])
+          (match (std/core/vector/ssize_t/< (idx (std/core/vector/lengthz (v))))
+            [std/core/types/True (std/core/types/Just ((std/core/vector/unsafe-idx (v idx))))]
+            [std/core/types/False std/core/types/Nothing]))))
+    (def std/core/vector/length
+      (fn (v)
+        (std/core/int/ssize_t/int ((std/core/vector/lengthz (v))))))
+    (def std/core/vector/vector
+      (fn (n default)
+        (std/core/vector/vector-alloc ((std/core/int/ssize_t (n)) default))))
+    (def std/core/vector/vector-init-total
+      (fn (n f)
+        (std/core/vector/vector-alloc-total ((std/core/int/ssize_t (n)) (fn (i)
+          (f ((std/core/int/ssize_t/int (i)))))))))
+    (def std/core/vector/ssize_t/decr
+      (fn (i)
+        (std/core/vector/ssize_t/h-extern-decr (i))))
+    (def std/core/vector/ssize_t/incr
+      (fn (i)
+        (std/core/vector/ssize_t/h-extern-incr (i))))
+    (def std/core/vector/forz
+      (fn (n action)
+        (letrec* ([rep (fn (i)
+          (match (std/core/vector/ssize_t/< (i n))
+            [std/core/types/True (letrec* ([_ (action (i))])
+              (rep ((std/core/vector/ssize_t/incr (i)))))]
+            [std/core/types/False std/core/types/Unit]))])
+          (rep ((std/core/int/ssize_t (0)))))))
+    (def std/core/vector/vector-init
+      (fn (n f)
+        (letrec* ([len (std/core/int/ssize_t (n))] [v (std/core/vector/unsafe-vector (len))] [_ (std/core/vector/forz (len (fn (i)
+          (std/core/vector/unsafe-assign (v i (f ((std/core/int/ssize_t/int (i)))))))))])
+          v)))
+    (def std/core/vector/foreach-indexedz
+      (fn (v f)
+        (std/core/vector/forz ((std/core/vector/lengthz (v)) (fn (i)
+          (f (i (std/core/vector/unsafe-idx (v i)))))))))
+    (def std/core/vector/foreach
+      (fn (v f)
+        (std/core/vector/foreach-indexedz (v (fn (h-_wildcard-x112_26 x)
+          (f (x)))))))
+    (def std/core/vector/foreach-indexed
+      (fn (v f)
+        (std/core/vector/foreach-indexedz (v (fn (i x)
+          (f ((std/core/int/ssize_t/int (i)) x)))))))
+    (def std/core/vector/for-whilez
+      (fn (n action)
+        (letrec* ([rep (fn (i)
+          (match (std/core/vector/ssize_t/< (i n))
+            [std/core/types/True (match (action (i))
+              [std/core/types/Nothing (rep ((std/core/vector/ssize_t/incr (i))))]
+              [(std/core/types/Just x) (std/core/types/Just (x))])]
+            [std/core/types/False std/core/types/Nothing]))])
+          (rep ((std/core/int/ssize_t (0)))))))
+    (def std/core/vector/foreach-while
+      (fn (v f)
+        (std/core/vector/for-whilez ((std/core/vector/lengthz (v)) (fn (i)
+          (f ((std/core/vector/unsafe-idx (v i)))))))))
+    (def std/core/vector/map
+      (fn (v f)
+        (letrec* ([w (std/core/vector/unsafe-vector ((std/core/int/ssize_t ((std/core/vector/length (v))))))] [_ (std/core/vector/foreach-indexedz (v (fn (i x)
+          (std/core/vector/unsafe-assign (w i (f (x)))))))])
+          w)))
+    (def std/core/vector/vlist
+      (fn (v tail)
+        (letrec* ([h-uniq-tailh-918 (match tail
+          [(std/core/types/h-Optional h-uniq-tailh-919) h-uniq-tailh-919]
+          [std/core/types/h-None std/core/types/Nil])])
+          (std/core/vector/h-extern-vlist (v h-uniq-tailh-918)))))
+    (def std/core/vector/list
+      (fn (v)
+        (std/core/vector/vlist (v std/core/types/h-None))))
+    (def std/core/vector/unvlist
+      (fn (xs)
+        (std/core/vector/h-extern-unvlist (xs))))
+    (def std/core/vector/list/vector
+      (fn (xs)
+        (std/core/vector/unvlist (xs))))
+    (def std/core/vector/ssize_t/is-zero
+      (fn (i)
+        (std/core/vector/ssize_t/h-extern-is-zero (i))))))
