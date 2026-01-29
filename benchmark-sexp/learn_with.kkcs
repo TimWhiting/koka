@@ -30,14 +30,16 @@
   (define learn/with/h-val-ask/h-select
     (λ (hnd)
       (match hnd
-        [(learn/with/h-Hnd-ask _ h-val-ask) h-val-ask])))
+        [(learn/with/ask _ h-val-ask) h-val-ask])))
   (define learn/with/h-val-ask
     (λ ()
       (perform learn/with/ask @val-ask)))
   (define learn/with/ask/h-val-ask
     (λ (ask)
       (match ask
-        [(learn/with/h-Hnd-ask _ h-x) h-x])))
+        [(learn/with/ask _ h-x) h-x])))
+  (define learn/with/ask/h-tag
+    "ask@with")
   (define learn/with/ask/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle learn/with/ask/h-tag hnd ret action)))
@@ -50,32 +52,32 @@
     (λ ()
       ((letrec* ([h-value-ask-l79-c14 21])
         (λ (h-action)
-          (learn/with/ask/h-handle (handler learn/with/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
-            h-value-ask-l79-c14))]) (λ (h-res)
+          (learn/with/ask/h-handle (handler learn/with/ask [val ask (λ ()
+            h-value-ask-l79-c14)]) (λ (h-res)
             h-res) h-action))) (λ ()
         (std/core/console/default/show/println (learn/with/ask-twice) std/core/int/show)))))
   (define learn/with/example3-expanded
     (λ ()
       ((letrec* ([h-value-ask-l84-c17 21])
         (λ (h-action)
-          (learn/with/ask/h-handle (handler learn/with/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
-            h-value-ask-l84-c17))]) (λ (h-res)
+          (learn/with/ask/h-handle (handler learn/with/ask [val ask (λ ()
+            h-value-ask-l84-c17)]) (λ (h-res)
             h-res) h-action))) (λ ()
         (std/core/console/default/show/println (learn/with/ask-twice) std/core/int/show)))))
   (define learn/with/example4
     (λ ()
       ((letrec* ([h-value-ask-l104-c12 21])
         (λ (h-action)
-          (learn/with/ask/h-handle (handler learn/with/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
-            h-value-ask-l104-c12))]) (λ (h-res)
+          (learn/with/ask/h-handle (handler learn/with/ask [val ask (λ ()
+            h-value-ask-l104-c12)]) (λ (h-res)
             h-res) h-action))) (λ ()
         (std/core/console/default/show/println (learn/with/ask-twice) std/core/int/show)))))
   (define learn/with/example4-expanded
     (λ ()
       ((letrec* ([h-value-ask-l109-c17 21])
         (λ (h-action)
-          (learn/with/ask/h-handle (handler learn/with/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
-            h-value-ask-l109-c17))]) (λ (h-res)
+          (learn/with/ask/h-handle (handler learn/with/ask [val ask (λ ()
+            h-value-ask-l109-c17)]) (λ (h-res)
             h-res) h-action))) (λ ()
         (std/core/console/default/show/println (learn/with/ask-twice) std/core/int/show)))))
   (define learn/with/main

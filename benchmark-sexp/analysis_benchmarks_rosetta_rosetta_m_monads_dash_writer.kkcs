@@ -1,16 +1,18 @@
 (module
   analysis/benchmarks/rosetta/rosetta/m/monads-writer
+  (define analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-tag
+    "log@monads-writer")
   (define analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-tag hnd ret action)))
   (define analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-fun-log
     (λ (log)
       (match log
-        [(analysis/benchmarks/rosetta/rosetta/m/monads-writer/h-Hnd-log _ h-x) h-x])))
+        [(analysis/benchmarks/rosetta/rosetta/m/monads-writer/log _ h-x) h-x])))
   (define analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/rosetta/rosetta/m/monads-writer/h-Hnd-log _ h-fun-log) h-fun-log])))
+        [(analysis/benchmarks/rosetta/rosetta/m/monads-writer/log _ h-fun-log) h-fun-log])))
   (define analysis/benchmarks/rosetta/rosetta/m/monads-writer/log
     (λ (s)
       (perform analysis/benchmarks/rosetta/rosetta/m/monads-writer/log log s)))
@@ -33,8 +35,8 @@
         (letrec* ([ievh-443 std/core/types/h-Hnodiv] [ievh-527 std/core/types/h-Hnodiv] [ievh-560 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var std/core/types/Nil (λ (logv)
             ((λ (h-action)
-              (analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-handle (handler analysis/benchmarks/rosetta/rosetta/m/monads-writer/h-Hnd-log [fun log (std/core/hnd/clause-tail1 (λ (s)
-                (std/core/types/local-set logv (std/core/types/Cons s (std/core/types/local-get logv ievh-527)))))]) (λ (result)
+              (analysis/benchmarks/rosetta/rosetta/m/monads-writer/log/h-handle (handler analysis/benchmarks/rosetta/rosetta/m/monads-writer/log [fun log (λ (s)
+                (std/core/types/local-set logv (std/core/types/Cons s (std/core/types/local-get logv ievh-527))))]) (λ (result)
                 (std/core/types/Tuple2 result (std/core/list/reverse (std/core/types/local-get logv ievh-560)))) h-action)) (λ ()
               (analysis/benchmarks/rosetta/rosetta/m/monads-writer/half (analysis/benchmarks/rosetta/rosetta/m/monads-writer/add-one (analysis/benchmarks/rosetta/rosetta/m/monads-writer/root (analysis/benchmarks/rosetta/rosetta/m/monads-writer/write "Initial value" 5.0)))))))))))))
   (define analysis/benchmarks/rosetta/rosetta/m/monads-writer/writer/wlog

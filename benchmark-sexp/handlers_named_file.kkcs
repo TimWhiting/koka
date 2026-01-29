@@ -1,16 +1,18 @@
 (module
   handlers/named/file
+  (define handlers/named/file/file/h-tag
+    "file@file")
   (define handlers/named/file/file/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-named-handle handlers/named/file/file/h-tag hnd ret action)))
   (define handlers/named/file/file/h-fun-read-line
     (λ (file)
       (match file
-        [(handlers/named/file/h-Hnd-file _ h-x) h-x])))
+        [(handlers/named/file/file _ h-x) h-x])))
   (define handlers/named/file/read-line/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/file/h-Hnd-file _ h-fun-read-line) h-fun-read-line])))
+        [(handlers/named/file/file _ h-fun-read-line) h-fun-read-line])))
   (define handlers/named/file/read-line
     (λ (h-hname)
       (perform handlers/named/file/file read-line)))
@@ -20,15 +22,15 @@
         (letrec* ([ievh-310 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var (std/core/list/lines (std/os/file/read-text-file (std/os/path/path fname))) (λ (content)
             ((λ (h-action)
-              (handlers/named/file/file/h-handle (handler handlers/named/file/h-Hnd-file [fun read-line (std/core/hnd/clause-tail0 (λ ()
+              (handlers/named/file/file/h-handle (handler handlers/named/file/file [fun read-line (λ ()
                 (match (std/core/types/local-get content ievh-310)
                   [std/core/types/Nil ""]
                   [(std/core/types/Cons x xx) (letrec* ([_ (std/core/types/local-set content xx)])
-                    x)])))]) (λ (h-res)
+                    x)]))]) (λ (h-res)
                 h-res) h-action)) (λ (f)
               ((λ (h-arg-x1)
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (action h-arg-x1)))) f))))))))))
+                (λ ()
+                  (action h-arg-x1))) f))))))))))
   (define handlers/named/file/main
     (λ ()
       (handlers/named/file/file "package.yaml" (λ (f1)

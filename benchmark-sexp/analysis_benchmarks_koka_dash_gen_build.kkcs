@@ -1,27 +1,29 @@
 (module
   analysis/benchmarks/koka-gen/build
+  (define analysis/benchmarks/koka-gen/build/build/h-tag
+    "build@build")
   (define analysis/benchmarks/koka-gen/build/build/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/build/build/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/build/build/h-ctl-need
     (λ (build)
       (match build
-        [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/build/build _ _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/build/need/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ _ h-ctl-need) h-ctl-need])))
+        [(analysis/benchmarks/koka-gen/build/build _ _ h-ctl-need) h-ctl-need])))
   (define analysis/benchmarks/koka-gen/build/need
     (λ (key)
       (perform analysis/benchmarks/koka-gen/build/build need key)))
   (define analysis/benchmarks/koka-gen/build/build/h-fun-log
     (λ (build)
       (match build
-        [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ h-x _) h-x])))
+        [(analysis/benchmarks/koka-gen/build/build _ h-x _) h-x])))
   (define analysis/benchmarks/koka-gen/build/log/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/build/h-Hnd-build _ h-fun-log _) h-fun-log])))
+        [(analysis/benchmarks/koka-gen/build/build _ h-fun-log _) h-fun-log])))
   (define analysis/benchmarks/koka-gen/build/log
     (λ (msg)
       (perform analysis/benchmarks/koka-gen/build/build log msg)))
@@ -33,8 +35,8 @@
             (letrec* ([solve (λ (action)
               (letrec* ([ievh-561 std/core/types/h-Hnodiv] [ievh-726 std/core/types/h-Hnodiv] [ievh-767 std/core/types/h-Hnodiv] [ievh-988 std/core/types/h-Hnodiv] [ievh-1073 std/core/types/h-Hnodiv] [ievh-1141 std/core/types/h-Hnodiv])
                 ((λ (h-action)
-                  (analysis/benchmarks/koka-gen/build/build/h-handle (handler analysis/benchmarks/koka-gen/build/h-Hnd-build [fun log (std/core/hnd/clause-tail1 (λ (msg)
-                    (std/core/console/string/println msg)))] [ctl need (std/core/hnd/clause-control1 (λ (key resume)
+                  (analysis/benchmarks/koka-gen/build/build/h-handle (handler analysis/benchmarks/koka-gen/build/build [fun log (λ (msg)
+                    (std/core/console/string/println msg))] [ctl need (λ (key resume)
                     (letrec* ([_ (match (std/core/list/any (std/core/types/local-get stack ievh-561) (λ (k)
                       (std/core/string/== k key)))
                       [std/core/types/True (std/core/exn/throw (std/core/types/++ "Circular dependency detected: " (std/core/types/++ (std/core/list/joinsep/join (std/core/types/local-get stack ievh-726) " -> ") (std/core/types/++ " -> " key))) std/core/types/h-None)]
@@ -46,14 +48,14 @@
                           (rules key)))] [_ (match (std/core/types/local-get stack ievh-1073)
                           [(std/core/types/Cons _ rest) (std/core/types/local-set stack rest)]
                           [std/core/types/Nil std/core/types/Unit])] [_ (std/core/types/local-set cache (std/core/types/Cons (std/core/types/Tuple2 key result) (std/core/types/local-get cache ievh-1141)))])
-                          (resume result))]))))]) (λ (h-res)
+                          (resume result))])))]) (λ (h-res)
                     h-res) h-action)) action)))])
               (solve (λ ()
                 (analysis/benchmarks/koka-gen/build/need target))))))))))))
   (define analysis/benchmarks/koka-gen/build/run-safe
     (λ (action)
       ((λ (h-action)
-        (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [?  (std/core/hnd/clause-never1 (λ (msg)
+        (std/core/exn/exn/h-handle (handler std/core/exn/exn [?  (std/core/hnd/clause-never1 (λ (msg)
           (letrec* ([_ (std/core/console/string/println "\n!!! BUILD FAILED !!!")] [_ (std/core/console/string/println (std/core/types/++ "Error: " (std/core/exn/show msg)))])
             (std/core/types/Left (std/core/exn/exception/message msg)))))]) (λ (x)
           (std/core/types/Right x)) h-action)) (λ ()

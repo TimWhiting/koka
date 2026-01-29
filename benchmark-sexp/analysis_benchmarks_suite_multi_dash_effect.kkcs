@@ -1,44 +1,50 @@
 (module
   analysis/benchmarks/suite/multi-effect
+  (define analysis/benchmarks/suite/multi-effect/ex51/h-tag
+    "ex51@multi-effect")
   (define analysis/benchmarks/suite/multi-effect/ex51/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/multi-effect/ex51/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/multi-effect/ex51/h-ctl-ex51
     (λ (ex51)
       (match ex51
-        [(analysis/benchmarks/suite/multi-effect/h-Hnd-ex51 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/multi-effect/ex51 _ h-x) h-x])))
   (define analysis/benchmarks/suite/multi-effect/ex51/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/multi-effect/h-Hnd-ex51 _ h-ctl-ex51) h-ctl-ex51])))
+        [(analysis/benchmarks/suite/multi-effect/ex51 _ h-ctl-ex51) h-ctl-ex51])))
   (define analysis/benchmarks/suite/multi-effect/ex51
     (λ (a)
       (perform analysis/benchmarks/suite/multi-effect/ex51 ex51 a)))
+  (define analysis/benchmarks/suite/multi-effect/ex52/h-tag
+    "ex52@multi-effect")
   (define analysis/benchmarks/suite/multi-effect/ex52/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/multi-effect/ex52/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/multi-effect/ex52/h-ctl-ex52
     (λ (ex52)
       (match ex52
-        [(analysis/benchmarks/suite/multi-effect/h-Hnd-ex52 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/multi-effect/ex52 _ h-x) h-x])))
   (define analysis/benchmarks/suite/multi-effect/ex52/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/multi-effect/h-Hnd-ex52 _ h-ctl-ex52) h-ctl-ex52])))
+        [(analysis/benchmarks/suite/multi-effect/ex52 _ h-ctl-ex52) h-ctl-ex52])))
   (define analysis/benchmarks/suite/multi-effect/ex52
     (λ (a)
       (perform analysis/benchmarks/suite/multi-effect/ex52 ex52 a)))
+  (define analysis/benchmarks/suite/multi-effect/ex53/h-tag
+    "ex53@multi-effect")
   (define analysis/benchmarks/suite/multi-effect/ex53/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/multi-effect/ex53/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/multi-effect/ex53/h-ctl-ex53
     (λ (ex53)
       (match ex53
-        [(analysis/benchmarks/suite/multi-effect/h-Hnd-ex53 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/multi-effect/ex53 _ h-x) h-x])))
   (define analysis/benchmarks/suite/multi-effect/ex53/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/multi-effect/h-Hnd-ex53 _ h-ctl-ex53) h-ctl-ex53])))
+        [(analysis/benchmarks/suite/multi-effect/ex53 _ h-ctl-ex53) h-ctl-ex53])))
   (define analysis/benchmarks/suite/multi-effect/ex53
     (λ (a)
       (perform analysis/benchmarks/suite/multi-effect/ex53 ex53 a)))
@@ -46,16 +52,16 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 50 - whole lot of effects")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/multi-effect/ex51/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex51 [ctl ex51 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/multi-effect/ex51/h-handle (handler analysis/benchmarks/suite/multi-effect/ex51 [ctl ex51 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/multi-effect/ex52/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex52 [ctl ex52 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/multi-effect/ex51 (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/multi-effect/ex52/h-handle (handler analysis/benchmarks/suite/multi-effect/ex52 [ctl ex52 (λ (a resume)
+              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/multi-effect/ex51 (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/multi-effect/ex53/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex53 [ctl ex53 (std/core/hnd/clause-control1 (λ (b resume)
-                (std/core/int/+ (resume b) b)))]) (λ (h-res)
+              (analysis/benchmarks/suite/multi-effect/ex53/h-handle (handler analysis/benchmarks/suite/multi-effect/ex53 [ctl ex53 (λ (b resume)
+                (std/core/int/+ (resume b) b))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (std/core/int/+ (std/core/int/+ 1 (analysis/benchmarks/suite/multi-effect/ex52 (std/core/types/Tuple2 1 2))) (analysis/benchmarks/suite/multi-effect/ex53 1)))))))))))
   (define analysis/benchmarks/suite/multi-effect/result-multi-simple
@@ -65,16 +71,16 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 51 - whole lot of effects inner first")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/multi-effect/ex51/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex51 [ctl ex51 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/multi-effect/ex51/h-handle (handler analysis/benchmarks/suite/multi-effect/ex51 [ctl ex51 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/multi-effect/ex52/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex52 [ctl ex52 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/multi-effect/ex51 (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/multi-effect/ex52/h-handle (handler analysis/benchmarks/suite/multi-effect/ex52 [ctl ex52 (λ (a resume)
+              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/multi-effect/ex51 (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/multi-effect/ex53/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex53 [ctl ex53 (std/core/hnd/clause-control1 (λ (b resume)
-                (std/core/int/+ (resume b) b)))]) (λ (h-res)
+              (analysis/benchmarks/suite/multi-effect/ex53/h-handle (handler analysis/benchmarks/suite/multi-effect/ex53 [ctl ex53 (λ (b resume)
+                (std/core/int/+ (resume b) b))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (std/core/int/+ (std/core/int/+ (analysis/benchmarks/suite/multi-effect/ex53 1) (analysis/benchmarks/suite/multi-effect/ex52 (std/core/types/Tuple2 1 2))) 1))))))))))
   (define analysis/benchmarks/suite/multi-effect/result-multi-inner-first
@@ -84,16 +90,16 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 52 - whole lot of effects two outer calls")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/multi-effect/ex51/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex51 [ctl ex51 (std/core/hnd/clause-control1 (λ (z resume)
-            (resume (std/core/int/+ z 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/multi-effect/ex51/h-handle (handler analysis/benchmarks/suite/multi-effect/ex51 [ctl ex51 (λ (z resume)
+            (resume (std/core/int/+ z 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/multi-effect/ex52/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex52 [ctl ex52 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/multi-effect/ex51 (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/multi-effect/ex52/h-handle (handler analysis/benchmarks/suite/multi-effect/ex52 [ctl ex52 (λ (a resume)
+              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/multi-effect/ex51 (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/multi-effect/ex53/h-handle (handler analysis/benchmarks/suite/multi-effect/h-Hnd-ex53 [ctl ex53 (std/core/hnd/clause-control1 (λ (b resume)
-                (std/core/int/+ (resume b) (analysis/benchmarks/suite/multi-effect/ex51 b))))]) (λ (h-res)
+              (analysis/benchmarks/suite/multi-effect/ex53/h-handle (handler analysis/benchmarks/suite/multi-effect/ex53 [ctl ex53 (λ (b resume)
+                (std/core/int/+ (resume b) (analysis/benchmarks/suite/multi-effect/ex51 b)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (std/core/int/+ (analysis/benchmarks/suite/multi-effect/ex52 (std/core/types/Tuple2 1 2)) (analysis/benchmarks/suite/multi-effect/ex53 1)))))))))))
   (define analysis/benchmarks/suite/multi-effect/result-multi-two-outer

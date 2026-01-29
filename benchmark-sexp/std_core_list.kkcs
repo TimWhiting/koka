@@ -268,8 +268,8 @@
           (std/core/hnd/local-var 0 (λ (i)
             (std/core/list/foreach xs (λ (x)
               (letrec* ([j (std/core/types/local-get i ievh-3443)] [_ ((λ (h-arg-x1 h-arg-x2)
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (action h-arg-x1 h-arg-x2)))) j x)])
+                (λ ()
+                  (action h-arg-x1 h-arg-x2))) j x)])
                 (std/core/types/local-set i (std/core/int/+ (std/core/types/local-get i ievh-3495) 1))))))))))))
   (define std/core/list/intersperse
     (λ (xs sep)

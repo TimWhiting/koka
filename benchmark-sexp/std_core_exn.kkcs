@@ -1,16 +1,18 @@
 (module
   std/core/exn
+  (define std/core/exn/exn/h-tag
+    "exn@exn")
   (define std/core/exn/exn/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle std/core/exn/exn/h-tag hnd ret action)))
   (define std/core/exn/exn/h-brk-throw-exn
     (λ (exn)
       (match exn
-        [(std/core/exn/h-Hnd-exn _ h-x) h-x])))
+        [(std/core/exn/exn _ h-x) h-x])))
   (define std/core/exn/throw-exn/h-select
     (λ (hnd)
       (match hnd
-        [(std/core/exn/h-Hnd-exn _ h-brk-throw-exn) h-brk-throw-exn])))
+        [(std/core/exn/exn _ h-brk-throw-exn) h-brk-throw-exn])))
   (define std/core/exn/throw-exn
     (λ (exn)
       (perform std/core/exn/exn throw-exn exn)))
@@ -94,7 +96,7 @@
   (define std/core/exn/handle/try
     (λ (action hndl)
       ((λ (h-action)
-        (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [? h-brk-throw-exn (std/core/hnd/clause-never1 (λ (exn)
+        (std/core/exn/exn/h-handle (handler std/core/exn/exn [? h-brk-throw-exn (std/core/hnd/clause-never1 (λ (exn)
           (hndl exn)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))

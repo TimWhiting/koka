@@ -1,16 +1,18 @@
 (module
   analysis/benchmarks/suite/basic
+  (define analysis/benchmarks/suite/basic/ex1/h-tag
+    "ex1@basic")
   (define analysis/benchmarks/suite/basic/ex1/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/basic/ex1/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/basic/ex1/h-ctl-ex1
     (λ (ex1)
       (match ex1
-        [(analysis/benchmarks/suite/basic/h-Hnd-ex1 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/basic/ex1 _ h-x) h-x])))
   (define analysis/benchmarks/suite/basic/ex1/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/basic/h-Hnd-ex1 _ h-ctl-ex1) h-ctl-ex1])))
+        [(analysis/benchmarks/suite/basic/ex1 _ h-ctl-ex1) h-ctl-ex1])))
   (define analysis/benchmarks/suite/basic/ex1
     (λ (i)
       (perform analysis/benchmarks/suite/basic/ex1 ex1 i)))
@@ -18,8 +20,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 1 - exceptions")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/h-Hnd-ex1 [ctl ex1 (std/core/hnd/clause-control1 (λ (a resume)
-            a))]) (λ (h-res)
+          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/ex1 [ctl ex1 (λ (a resume)
+            a)]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/basic/ex1 1))))))
   (define analysis/benchmarks/suite/basic/result-basic-exception
@@ -29,8 +31,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 10 - simple")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/h-Hnd-ex1 [ctl ex1 (std/core/hnd/clause-control1 (λ (a resume)
-            (resume (std/core/int/+ a 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/ex1 [ctl ex1 (λ (a resume)
+            (resume (std/core/int/+ a 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/basic/ex1 0))))))
   (define analysis/benchmarks/suite/basic/result-basic-resume
@@ -40,8 +42,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 121 - simple cont")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/h-Hnd-ex1 [ctl ex1 (std/core/hnd/clause-control1 (λ (a resume)
-            (resume (std/core/int/+ a 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/ex1 [ctl ex1 (λ (a resume)
+            (resume (std/core/int/+ a 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (std/core/int/+ (analysis/benchmarks/suite/basic/ex1 0) 1))))))
   (define analysis/benchmarks/suite/basic/result-basic-resume-context
@@ -51,8 +53,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 122 - simple cont")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/h-Hnd-ex1 [ctl ex1 (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume (std/core/int/+ a 1)) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/ex1 [ctl ex1 (λ (a resume)
+            (std/core/int/+ (resume (std/core/int/+ a 1)) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/basic/ex1 0))))))
   (define analysis/benchmarks/suite/basic/result-basic-resume-op
@@ -62,8 +64,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 123 - simple cont2")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/h-Hnd-ex1 [ctl ex1 (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume (std/core/int/+ a 1)) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/basic/ex1/h-handle (handler analysis/benchmarks/suite/basic/ex1 [ctl ex1 (λ (a resume)
+            (std/core/int/+ (resume (std/core/int/+ a 1)) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (std/core/int/+ (analysis/benchmarks/suite/basic/ex1 0) 1))))))
   (define analysis/benchmarks/suite/basic/result-basic-resume-op-context

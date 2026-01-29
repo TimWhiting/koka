@@ -35,40 +35,42 @@
       (match value
         [(analysis/benchmarks/koka-gen/interp/VClos _ _ _) std/core/types/True]
         [(analysis/benchmarks/koka-gen/interp/VInt _) std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp/env/h-tag
+    "env@interp")
   (define analysis/benchmarks/koka-gen/interp/env/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/interp/env/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/interp/env/h-ctl-lookup
     (λ (env)
       (match env
-        [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ h-x _) h-x])))
+        [(analysis/benchmarks/koka-gen/interp/env _ h-x _) h-x])))
   (define analysis/benchmarks/koka-gen/interp/lookup/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ h-ctl-lookup _) h-ctl-lookup])))
+        [(analysis/benchmarks/koka-gen/interp/env _ h-ctl-lookup _) h-ctl-lookup])))
   (define analysis/benchmarks/koka-gen/interp/lookup
     (λ (name)
       (perform analysis/benchmarks/koka-gen/interp/env lookup name)))
   (define analysis/benchmarks/koka-gen/interp/env/h-ctl-snapshot
     (λ (env)
       (match env
-        [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/interp/env _ _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/interp/snapshot/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/interp/h-Hnd-env _ _ h-ctl-snapshot) h-ctl-snapshot])))
+        [(analysis/benchmarks/koka-gen/interp/env _ _ h-ctl-snapshot) h-ctl-snapshot])))
   (define analysis/benchmarks/koka-gen/interp/snapshot
     (λ ()
       (perform analysis/benchmarks/koka-gen/interp/env snapshot)))
   (define analysis/benchmarks/koka-gen/interp/run-env
     (λ (current-env action)
       ((λ (h-action)
-        (analysis/benchmarks/koka-gen/interp/env/h-handle (handler analysis/benchmarks/koka-gen/interp/h-Hnd-env [ctl lookup (std/core/hnd/clause-control1 (λ (name resume)
+        (analysis/benchmarks/koka-gen/interp/env/h-handle (handler analysis/benchmarks/koka-gen/interp/env [ctl lookup (λ (name resume)
           (match (std/core/list/find current-env (λ (entry)
             (std/core/string/== (std/core/types/tuple2/fst entry) name)))
             [(std/core/types/Just (std/core/types/Tuple2 _ v)) (resume v)]
-            [std/core/types/Nothing (std/core/exn/throw (std/core/types/++ "Runtime Error: Variable '" (std/core/types/++ name "' not found")) std/core/types/h-None)])))] [ctl snapshot (std/core/hnd/clause-control0 (λ (resume)
-          (resume current-env)))]) (λ (h-res)
+            [std/core/types/Nothing (std/core/exn/throw (std/core/types/++ "Runtime Error: Variable '" (std/core/types/++ name "' not found")) std/core/types/h-None)]))] [ctl snapshot (λ (resume)
+          (resume current-env))]) (λ (h-res)
           h-res) h-action)) action)))
   (define analysis/benchmarks/koka-gen/interp/show-value
     (λ (v)
@@ -78,7 +80,7 @@
   (define analysis/benchmarks/koka-gen/interp/run-safe
     (λ (action)
       ((λ (h-action)
-        (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [?  (std/core/hnd/clause-never1 (λ (msg)
+        (std/core/exn/exn/h-handle (handler std/core/exn/exn [?  (std/core/hnd/clause-never1 (λ (msg)
           (std/core/types/++ "FAILURE: " (std/core/exn/show msg))))]) (λ (x)
           (std/core/types/++ "Success: " (analysis/benchmarks/koka-gen/interp/show-value x))) h-action)) (λ ()
         (action)))))

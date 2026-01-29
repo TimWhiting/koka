@@ -42,7 +42,7 @@
           [(std/core/delayed/XDone x) x]
           [std/core/delayed/XBlocking (std/core/delayed/force/go delayed)]
           [(std/core/delayed/XComputation action) (letrec* ([_ (std/core/types/set r std/core/delayed/XBlocking)] [x ((std/core/types/mask-st (λ ()
-            (std/core/hnd/h-mask-builtin action))))] [_ (std/core/types/set r (std/core/delayed/XDone x))])
+            action)))] [_ (std/core/types/set r (std/core/delayed/XDone x))])
             x)]))))
   (define std/core/delayed/unsafe-no-state-div-cast
     (λ (f)

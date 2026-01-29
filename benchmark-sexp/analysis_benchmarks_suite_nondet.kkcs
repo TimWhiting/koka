@@ -1,16 +1,18 @@
 (module
   analysis/benchmarks/suite/nondet
+  (define analysis/benchmarks/suite/nondet/ex2/h-tag
+    "ex2@nondet")
   (define analysis/benchmarks/suite/nondet/ex2/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nondet/ex2/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nondet/ex2/h-ctl-ex2
     (λ (ex2)
       (match ex2
-        [(analysis/benchmarks/suite/nondet/h-Hnd-ex2 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nondet/ex2 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nondet/ex2/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nondet/h-Hnd-ex2 _ h-ctl-ex2) h-ctl-ex2])))
+        [(analysis/benchmarks/suite/nondet/ex2 _ h-ctl-ex2) h-ctl-ex2])))
   (define analysis/benchmarks/suite/nondet/ex2
     (λ (a)
       (perform analysis/benchmarks/suite/nondet/ex2 ex2 a)))
@@ -18,8 +20,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 20 - nondeterminism")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/h-Hnd-ex2 [ctl ex2 (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a)))))]) (λ (x)
+          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/ex2 [ctl ex2 (λ (a resume)
+            (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a))))]) (λ (x)
             x) h-action)) (λ ()
           (analysis/benchmarks/suite/nondet/ex2 (std/core/types/Tuple2 1 2)))))))
   (define analysis/benchmarks/suite/nondet/result-nondet-simple
@@ -29,8 +31,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 21 - nondeterminism")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/h-Hnd-ex2 [ctl ex2 (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a)))))]) (λ (x)
+          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/ex2 [ctl ex2 (λ (a resume)
+            (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a))))]) (λ (x)
             x) h-action)) (λ ()
           (std/core/int/+ (analysis/benchmarks/suite/nondet/ex2 (std/core/types/Tuple2 1 2)) 1))))))
   (define analysis/benchmarks/suite/nondet/result-nondet-context
@@ -40,8 +42,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 22 - nondeterminism twice")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/h-Hnd-ex2 [ctl ex2 (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a)))))]) (λ (x)
+          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/ex2 [ctl ex2 (λ (a resume)
+            (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a))))]) (λ (x)
             x) h-action)) (λ ()
           (std/core/int/+ (analysis/benchmarks/suite/nondet/ex2 (std/core/types/Tuple2 1 2)) (analysis/benchmarks/suite/nondet/ex2 (std/core/types/Tuple2 1 2))))))))
   (define analysis/benchmarks/suite/nondet/result-nondet-nested
@@ -51,9 +53,9 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 23 - resumption result discarded")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/h-Hnd-ex2 [ctl ex2 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nondet/ex2/h-handle (handler analysis/benchmarks/suite/nondet/ex2 [ctl ex2 (λ (a resume)
             (match (resume (std/core/types/tuple2/fst a))
-              [_ (resume (std/core/types/tuple2/snd a))])))]) (λ (x)
+              [_ (resume (std/core/types/tuple2/snd a))]))]) (λ (x)
             x) h-action)) (λ ()
           (analysis/benchmarks/suite/nondet/ex2 (std/core/types/Tuple2 10 20)))))))
   (define analysis/benchmarks/suite/nondet/result-nondet-discard

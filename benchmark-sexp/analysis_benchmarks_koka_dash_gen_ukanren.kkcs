@@ -65,56 +65,58 @@
               [std/core/types/Nothing std/core/types/Nothing]
               [(std/core/types/Just s2) (analysis/benchmarks/koka-gen/ukanren/unify t1x t2x s2)])]
             [_ std/core/types/Nothing])]))))
+  (define analysis/benchmarks/koka-gen/ukanren/logic/h-tag
+    "logic@ukanren")
   (define analysis/benchmarks/koka-gen/ukanren/logic/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/ukanren/logic/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-fresh
     (λ (logic)
       (match logic
-        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ h-x _) h-x])))
+        [(analysis/benchmarks/koka-gen/ukanren/logic _ _ h-x _) h-x])))
   (define analysis/benchmarks/koka-gen/ukanren/fresh/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ h-ctl-fresh _) h-ctl-fresh])))
+        [(analysis/benchmarks/koka-gen/ukanren/logic _ _ h-ctl-fresh _) h-ctl-fresh])))
   (define analysis/benchmarks/koka-gen/ukanren/fresh
     (λ ()
       (perform analysis/benchmarks/koka-gen/ukanren/logic fresh)))
   (define analysis/benchmarks/koka-gen/ukanren/unify-term/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ _ h-ctl-unify-term) h-ctl-unify-term])))
+        [(analysis/benchmarks/koka-gen/ukanren/logic _ _ _ h-ctl-unify-term) h-ctl-unify-term])))
   (define analysis/benchmarks/koka-gen/ukanren/unify-term
     (λ (t1 t2)
       (perform analysis/benchmarks/koka-gen/ukanren/logic unify-term t1 t2)))
   (define analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-unify-term
     (λ (logic)
       (match logic
-        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/ukanren/logic _ _ _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-flip
     (λ (logic)
       (match logic
-        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ h-x _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/ukanren/logic _ h-x _ _) h-x])))
   (define analysis/benchmarks/koka-gen/ukanren/flip/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ h-ctl-flip _ _) h-ctl-flip])))
+        [(analysis/benchmarks/koka-gen/ukanren/logic _ h-ctl-flip _ _) h-ctl-flip])))
   (define analysis/benchmarks/koka-gen/ukanren/flip
     (λ ()
       (perform analysis/benchmarks/koka-gen/ukanren/logic flip)))
   (define analysis/benchmarks/koka-gen/ukanren/solve
     (λ (action)
       ((λ (h-action)
-        (analysis/benchmarks/koka-gen/ukanren/logic/h-handle (handler analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+        (analysis/benchmarks/koka-gen/ukanren/logic/h-handle (handler analysis/benchmarks/koka-gen/ukanren/logic [ctl flip (λ (resume)
           (λ (s)
             (letrec* ([results-true ((resume std/core/types/True) s)] [results-false ((resume std/core/types/False) s)])
-              (std/core/list/++ results-true results-false)))))] [ctl fresh (std/core/hnd/clause-control0 (λ (resume)
+              (std/core/list/++ results-true results-false))))] [ctl fresh (λ (resume)
           (λ (s)
             (letrec* ([new-var (analysis/benchmarks/koka-gen/ukanren/Var (analysis/benchmarks/koka-gen/ukanren/state/next-id s))] [new-state (analysis/benchmarks/koka-gen/ukanren/state/h-copy s (std/core/types/h-Optional (std/core/int/+ (analysis/benchmarks/koka-gen/ukanren/state/next-id s) 1)) std/core/types/h-None)])
-              ((resume new-var) new-state)))))] [ctl unify-term (std/core/hnd/clause-control2 (λ (t1 t2 resume)
+              ((resume new-var) new-state))))] [ctl unify-term (λ (t1 t2 resume)
           (λ (s)
             (match (analysis/benchmarks/koka-gen/ukanren/unify t1 t2 (analysis/benchmarks/koka-gen/ukanren/state/sub s))
               [std/core/types/Nothing std/core/types/Nil]
-              [(std/core/types/Just new-sub) ((resume std/core/types/Unit) (analysis/benchmarks/koka-gen/ukanren/state/h-copy s std/core/types/h-None (std/core/types/h-Optional new-sub)))]))))]) (λ (x)
+              [(std/core/types/Just new-sub) ((resume std/core/types/Unit) (analysis/benchmarks/koka-gen/ukanren/state/h-copy s std/core/types/h-None (std/core/types/h-Optional new-sub)))])))]) (λ (x)
           (λ (s)
             (std/core/types/Cons (std/core/types/Tuple2 x s) std/core/types/Nil))) h-action)) action)))
   (define analysis/benchmarks/koka-gen/ukanren/===

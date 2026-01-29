@@ -1,27 +1,29 @@
 (module
   analysis/benchmarks/handlers/scoped
+  (define analysis/benchmarks/handlers/scoped/nondet/h-tag
+    "nondet@scoped")
   (define analysis/benchmarks/handlers/scoped/nondet/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/scoped/nondet/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/scoped/nondet/h-ctl-flip
     (λ (nondet)
       (match nondet
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-nondet _ _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/scoped/nondet _ _ h-x) h-x])))
   (define analysis/benchmarks/handlers/scoped/flip/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-nondet _ _ h-ctl-flip) h-ctl-flip])))
+        [(analysis/benchmarks/handlers/scoped/nondet _ _ h-ctl-flip) h-ctl-flip])))
   (define analysis/benchmarks/handlers/scoped/flip
     (λ ()
       (perform analysis/benchmarks/handlers/scoped/nondet flip)))
   (define analysis/benchmarks/handlers/scoped/nondet/h-ctl-fail
     (λ (nondet)
       (match nondet
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-nondet _ h-x _) h-x])))
+        [(analysis/benchmarks/handlers/scoped/nondet _ h-x _) h-x])))
   (define analysis/benchmarks/handlers/scoped/fail/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-nondet _ h-ctl-fail _) h-ctl-fail])))
+        [(analysis/benchmarks/handlers/scoped/nondet _ h-ctl-fail _) h-ctl-fail])))
   (define analysis/benchmarks/handlers/scoped/fail
     (λ ()
       (perform analysis/benchmarks/handlers/scoped/nondet fail)))
@@ -42,9 +44,9 @@
             (std/core/types/Cons v (analysis/benchmarks/handlers/scoped/knapsack (std/core/int/- w v) vs)))])])))
   (define analysis/benchmarks/handlers/scoped/solutions
     (λ (h-action)
-      (analysis/benchmarks/handlers/scoped/nondet/h-handle (handler analysis/benchmarks/handlers/scoped/h-Hnd-nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
-        std/core/types/Nil))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
-        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (x)
+      (analysis/benchmarks/handlers/scoped/nondet/h-handle (handler analysis/benchmarks/handlers/scoped/nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        std/core/types/Nil))] [ctl flip (λ (resume)
+        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False)))]) (λ (x)
         (std/core/types/Cons x std/core/types/Nil)) h-action)))
   (define analysis/benchmarks/handlers/scoped/example1
     (λ ()
@@ -56,28 +58,30 @@
   (define analysis/benchmarks/handlers/scoped/result-example1
     (λ ()
       (std/core/types/Cons (std/core/types/Cons 3 std/core/types/Nil) (std/core/types/Cons (std/core/types/Cons 2 (std/core/types/Cons 1 std/core/types/Nil)) (std/core/types/Cons (std/core/types/Cons 1 (std/core/types/Cons 2 std/core/types/Nil)) (std/core/types/Cons (std/core/types/Cons 1 (std/core/types/Cons 1 (std/core/types/Cons 1 std/core/types/Nil))) std/core/types/Nil))))))
+  (define analysis/benchmarks/handlers/scoped/state/h-tag
+    "state@scoped")
   (define analysis/benchmarks/handlers/scoped/state/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/scoped/state/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/scoped/state/h-fun-get
     (λ (state)
       (match state
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-state _ h-x _) h-x])))
+        [(analysis/benchmarks/handlers/scoped/state _ h-x _) h-x])))
   (define analysis/benchmarks/handlers/scoped/get/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-state _ h-fun-get _) h-fun-get])))
+        [(analysis/benchmarks/handlers/scoped/state _ h-fun-get _) h-fun-get])))
   (define analysis/benchmarks/handlers/scoped/get
     (λ ()
       (perform analysis/benchmarks/handlers/scoped/state get)))
   (define analysis/benchmarks/handlers/scoped/state/h-fun-put
     (λ (state)
       (match state
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-state _ _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/scoped/state _ _ h-x) h-x])))
   (define analysis/benchmarks/handlers/scoped/put/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-state _ _ h-fun-put) h-fun-put])))
+        [(analysis/benchmarks/handlers/scoped/state _ _ h-fun-put) h-fun-put])))
   (define analysis/benchmarks/handlers/scoped/put
     (λ (i)
       (perform analysis/benchmarks/handlers/scoped/state put i)))
@@ -87,12 +91,12 @@
         (letrec* ([ievh-1573 std/core/types/h-Hnodiv] [ievh-1648 std/core/types/h-Hnodiv] [ievh-1706 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var init (λ (s)
             ((λ (h-action)
-              (analysis/benchmarks/handlers/scoped/state/h-handle (handler analysis/benchmarks/handlers/scoped/h-Hnd-state [fun get (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get s ievh-1648)))] [fun put (std/core/hnd/clause-tail1 (λ (i)
-                (std/core/types/local-set s i)))]) (λ (x)
+              (analysis/benchmarks/handlers/scoped/state/h-handle (handler analysis/benchmarks/handlers/scoped/state [fun get (λ ()
+                (std/core/types/local-get s ievh-1648))] [fun put (λ (i)
+                (std/core/types/local-set s i))]) (λ (x)
                 (std/core/types/Tuple2 (std/core/types/local-get s ievh-1706) x)) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define analysis/benchmarks/handlers/scoped/incr
     (λ (i)
       (letrec* ([h-uniq-ih-1766 (match i
@@ -111,10 +115,10 @@
           (action)))))))
   (define analysis/benchmarks/handlers/scoped/choices
     (λ (h-action)
-      (analysis/benchmarks/handlers/scoped/nondet/h-handle (handler analysis/benchmarks/handlers/scoped/h-Hnd-nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
-        (analysis/benchmarks/handlers/scoped/fail)))] [ctl flip (std/core/hnd/clause-tail0 (λ ()
+      (analysis/benchmarks/handlers/scoped/nondet/h-handle (handler analysis/benchmarks/handlers/scoped/nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        (analysis/benchmarks/handlers/scoped/fail)))] [ctl flip (λ ()
         (letrec* ([_ (analysis/benchmarks/handlers/scoped/incr std/core/types/h-None)])
-          (analysis/benchmarks/handlers/scoped/flip))))]) (λ (h-res)
+          (analysis/benchmarks/handlers/scoped/flip)))]) (λ (h-res)
         h-res) h-action)))
   (define analysis/benchmarks/handlers/scoped/state-show
     (λ (x h-implicit/show)
@@ -144,14 +148,16 @@
   (define analysis/benchmarks/handlers/scoped/cutfail/h-ctl-cutfail
     (λ (cutfail)
       (match cutfail
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-cutfail _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/scoped/cutfail _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/scoped/cutfail/h-tag
+    "cutfail@scoped")
   (define analysis/benchmarks/handlers/scoped/cutfail/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/scoped/cutfail/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/scoped/cutfail/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-cutfail _ h-ctl-cutfail) h-ctl-cutfail])))
+        [(analysis/benchmarks/handlers/scoped/cutfail _ h-ctl-cutfail) h-ctl-cutfail])))
   (define analysis/benchmarks/handlers/scoped/cutfail
     (λ ()
       (perform analysis/benchmarks/handlers/scoped/cutfail cutfail)))
@@ -163,7 +169,7 @@
   (define analysis/benchmarks/handlers/scoped/hcutfail
     (λ (action)
       ((λ (h-action)
-        (analysis/benchmarks/handlers/scoped/cutfail/h-handle (handler analysis/benchmarks/handlers/scoped/h-Hnd-cutfail [ctl cutfail (std/core/hnd/clause-control0 (λ (resume)
+        (analysis/benchmarks/handlers/scoped/cutfail/h-handle (handler analysis/benchmarks/handlers/scoped/cutfail [ctl cutfail (std/core/hnd/clause-control0 (λ (resume)
           (analysis/benchmarks/handlers/scoped/fail)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
@@ -173,23 +179,23 @@
         (letrec* ([ievh-3052 std/core/types/h-Hdiv] [ievh-3255 std/core/types/h-Hdiv] [ievh-3281 std/core/types/h-Hdiv])
           (std/core/hnd/local-var (std/core/types/Cons analysis/benchmarks/handlers/scoped/fail std/core/types/Nil) (λ (q)
             ((λ (h-action)
-              (analysis/benchmarks/handlers/scoped/nondet/h-handle (handler analysis/benchmarks/handlers/scoped/h-Hnd-nondet [ctl fail (letrec* ([ievh-3158 std/core/types/h-Hdiv])
+              (analysis/benchmarks/handlers/scoped/nondet/h-handle (handler analysis/benchmarks/handlers/scoped/nondet [ctl fail (letrec* ([ievh-3158 std/core/types/h-Hdiv])
                 (std/core/hnd/clause-control0 (λ (resume)
                   (match (std/core/types/local-get q ievh-3158)
                     [std/core/types/Nil (analysis/benchmarks/handlers/scoped/fail)]
                     [(std/core/types/Cons p ps) (letrec* ([_ (std/core/types/local-set q ps)])
-                      (p))]))))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+                      (p))]))))] [ctl flip (λ (resume)
                 (letrec* ([_ (std/core/types/local-set q (std/core/types/Cons (λ ()
                   (resume std/core/types/False)) (std/core/types/local-get q ievh-3255)))])
-                  (resume std/core/types/True))))]) (λ (x)
+                  (resume std/core/types/True)))]) (λ (x)
                 (match (analysis/benchmarks/handlers/scoped/flip)
                   [std/core/types/True x]
                   [std/core/types/False (match (std/core/types/local-get q ievh-3281)
                     [std/core/types/Nil (analysis/benchmarks/handlers/scoped/fail)]
                     [(std/core/types/Cons p ps) (letrec* ([_ (std/core/types/local-set q ps)])
                       (p))])])) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define analysis/benchmarks/handlers/scoped/call
     (λ (p)
       (analysis/benchmarks/handlers/scoped/hcutfail (λ ()
@@ -214,14 +220,16 @@
   (define analysis/benchmarks/handlers/scoped/symbol/h-fun-symbol
     (λ (symbol)
       (match symbol
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-symbol _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/scoped/symbol _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/scoped/symbol/h-tag
+    "symbol@scoped")
   (define analysis/benchmarks/handlers/scoped/symbol/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/scoped/symbol/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/scoped/symbol/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/scoped/h-Hnd-symbol _ h-fun-symbol) h-fun-symbol])))
+        [(analysis/benchmarks/handlers/scoped/symbol _ h-fun-symbol) h-fun-symbol])))
   (define analysis/benchmarks/handlers/scoped/symbol
     (λ (s)
       (perform analysis/benchmarks/handlers/scoped/symbol symbol s)))
@@ -231,16 +239,16 @@
         (letrec* ([ievh-3776 std/core/types/h-Hnodiv] [ievh-3862 std/core/types/h-Hnodiv] [ievh-3916 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var input (λ (cs)
             ((λ (h-action)
-              (analysis/benchmarks/handlers/scoped/symbol/h-handle (handler analysis/benchmarks/handlers/scoped/h-Hnd-symbol [fun symbol (std/core/hnd/clause-tail1 (λ (s)
+              (analysis/benchmarks/handlers/scoped/symbol/h-handle (handler analysis/benchmarks/handlers/scoped/symbol [fun symbol (λ (s)
                 (match (std/core/sslice/starts-with (std/core/types/local-get cs ievh-3862) s)
                   [std/core/types/Nothing (analysis/benchmarks/handlers/scoped/fail)]
                   [(std/core/types/Just (as rest (std/core/sslice/Sslice _ _ _))) (letrec* ([_ (std/core/types/local-set cs (std/core/sslice/string rest))])
-                    s)])))]) (λ (x)
+                    s)]))]) (λ (x)
                 (match (std/core/string/is-empty (std/core/types/local-get cs ievh-3916))
                   [std/core/types/True x]
                   [std/core/types/False (analysis/benchmarks/handlers/scoped/fail)])) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define analysis/benchmarks/handlers/scoped/digits
     (std/core/list/map (std/core/list/range/list 0 9) std/core/int/show))
   (define analysis/benchmarks/handlers/scoped/digit

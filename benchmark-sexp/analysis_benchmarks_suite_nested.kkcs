@@ -1,114 +1,130 @@
 (module
   analysis/benchmarks/suite/nested
+  (define analysis/benchmarks/suite/nested/ex31/h-tag
+    "ex31@nested")
   (define analysis/benchmarks/suite/nested/ex31/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex31/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex31/h-ctl-ex31
     (λ (ex31)
       (match ex31
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex31 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex31 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex31/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex31 _ h-ctl-ex31) h-ctl-ex31])))
+        [(analysis/benchmarks/suite/nested/ex31 _ h-ctl-ex31) h-ctl-ex31])))
   (define analysis/benchmarks/suite/nested/ex31
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex31 ex31 a)))
+  (define analysis/benchmarks/suite/nested/ex32/h-tag
+    "ex32@nested")
   (define analysis/benchmarks/suite/nested/ex32/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex32/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex32/h-ctl-ex32
     (λ (ex32)
       (match ex32
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex32 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex32 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex32/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex32 _ h-ctl-ex32) h-ctl-ex32])))
+        [(analysis/benchmarks/suite/nested/ex32 _ h-ctl-ex32) h-ctl-ex32])))
   (define analysis/benchmarks/suite/nested/ex32
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex32 ex32 a)))
+  (define analysis/benchmarks/suite/nested/ex33/h-tag
+    "ex33@nested")
   (define analysis/benchmarks/suite/nested/ex33/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex33/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex33/h-ctl-ex33
     (λ (ex33)
       (match ex33
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex33 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex33 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex33/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex33 _ h-ctl-ex33) h-ctl-ex33])))
+        [(analysis/benchmarks/suite/nested/ex33 _ h-ctl-ex33) h-ctl-ex33])))
   (define analysis/benchmarks/suite/nested/ex33
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex33 ex33 a)))
+  (define analysis/benchmarks/suite/nested/ex41/h-tag
+    "ex41@nested")
   (define analysis/benchmarks/suite/nested/ex41/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex41/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex41/h-ctl-ex41
     (λ (ex41)
       (match ex41
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex41 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex41 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex41/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex41 _ h-ctl-ex41) h-ctl-ex41])))
+        [(analysis/benchmarks/suite/nested/ex41 _ h-ctl-ex41) h-ctl-ex41])))
   (define analysis/benchmarks/suite/nested/ex41
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex41 ex41 a)))
+  (define analysis/benchmarks/suite/nested/ex42/h-tag
+    "ex42@nested")
   (define analysis/benchmarks/suite/nested/ex42/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex42/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex42/h-ctl-ex42
     (λ (ex42)
       (match ex42
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex42 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex42 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex42/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex42 _ h-ctl-ex42) h-ctl-ex42])))
+        [(analysis/benchmarks/suite/nested/ex42 _ h-ctl-ex42) h-ctl-ex42])))
   (define analysis/benchmarks/suite/nested/ex42
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex42 ex42 a)))
+  (define analysis/benchmarks/suite/nested/ex43/h-tag
+    "ex43@nested")
   (define analysis/benchmarks/suite/nested/ex43/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex43/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex43/h-ctl-ex43
     (λ (ex43)
       (match ex43
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex43 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex43 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex43/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex43 _ h-ctl-ex43) h-ctl-ex43])))
+        [(analysis/benchmarks/suite/nested/ex43 _ h-ctl-ex43) h-ctl-ex43])))
   (define analysis/benchmarks/suite/nested/ex43
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex43 ex43 a)))
+  (define analysis/benchmarks/suite/nested/ex51/h-tag
+    "ex51@nested")
   (define analysis/benchmarks/suite/nested/ex51/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex51/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex51/h-ctl-ex51
     (λ (ex51)
       (match ex51
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex51 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex51 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex51/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex51 _ h-ctl-ex51) h-ctl-ex51])))
+        [(analysis/benchmarks/suite/nested/ex51 _ h-ctl-ex51) h-ctl-ex51])))
   (define analysis/benchmarks/suite/nested/ex51
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex51 ex51 a)))
+  (define analysis/benchmarks/suite/nested/ex52/h-tag
+    "ex52@nested")
   (define analysis/benchmarks/suite/nested/ex52/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested/ex52/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested/ex52/h-ctl-ex52
     (λ (ex52)
       (match ex52
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex52 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested/ex52 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested/ex52/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested/h-Hnd-ex52 _ h-ctl-ex52) h-ctl-ex52])))
+        [(analysis/benchmarks/suite/nested/ex52 _ h-ctl-ex52) h-ctl-ex52])))
   (define analysis/benchmarks/suite/nested/ex52
     (λ (a)
       (perform analysis/benchmarks/suite/nested/ex52 ex52 a)))
@@ -116,12 +132,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 3 nested effects")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex32 [ctl ex32 (std/core/hnd/clause-control1 (λ (y resume)
-              (resume (analysis/benchmarks/suite/nested/ex31 y))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/ex32 [ctl ex32 (λ (y resume)
+              (resume (analysis/benchmarks/suite/nested/ex31 y)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested/ex32 1))))))))
   (define analysis/benchmarks/suite/nested/result-nested-simple
@@ -131,12 +147,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 30 nested effects")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex32 [ctl ex32 (std/core/hnd/clause-control1 (λ (y resume)
-              (resume (analysis/benchmarks/suite/nested/ex31 y))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/ex32 [ctl ex32 (λ (y resume)
+              (resume (analysis/benchmarks/suite/nested/ex31 y)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested/ex31 1))))))))
   (define analysis/benchmarks/suite/nested/result-nested-simple-two
@@ -146,12 +162,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 31 - mixed effects op in handler after resume")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex33 [ctl ex33 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/nested/ex31 (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/ex33 [ctl ex33 (λ (a resume)
+              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/nested/ex31 (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ 1 (analysis/benchmarks/suite/nested/ex33 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-op-after
@@ -161,12 +177,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 32 - mixed effects op in handler before resume")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex33 [ctl ex33 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (analysis/benchmarks/suite/nested/ex31 (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/ex33 [ctl ex33 (λ (a resume)
+              (std/core/int/+ (analysis/benchmarks/suite/nested/ex31 (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ 1 (analysis/benchmarks/suite/nested/ex33 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-op-before
@@ -176,12 +192,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 33 - mixed effects under both handlers - inner first")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex33 [ctl ex33 (std/core/hnd/clause-control1 (λ (a resume)
-              (resume (std/core/types/tuple2/fst a))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/ex33 [ctl ex33 (λ (a resume)
+              (resume (std/core/types/tuple2/fst a)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ (std/core/int/+ 1 (analysis/benchmarks/suite/nested/ex33 (std/core/types/Tuple2 1 2))) (analysis/benchmarks/suite/nested/ex31 0)))))))))
   (define analysis/benchmarks/suite/nested/result-nested-inner-first
@@ -191,12 +207,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 34 - mixed effects under both handlers - outer first")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (z resume)
-            (std/core/int/+ (resume z) 1)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (z resume)
+            (std/core/int/+ (resume z) 1))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex33 [ctl ex33 (std/core/hnd/clause-control1 (λ (a resume)
-              (resume (std/core/types/tuple2/fst a))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/ex33 [ctl ex33 (λ (a resume)
+              (resume (std/core/types/tuple2/fst a)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ (std/core/int/+ (analysis/benchmarks/suite/nested/ex31 0) 1) (analysis/benchmarks/suite/nested/ex33 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-outer-first
@@ -206,12 +222,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 4 nested effects (tail resume outer)")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex41 [ctl ex41 (std/core/hnd/clause-control1 (λ (z resume)
-            (resume (std/core/int/+ z 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/ex41 [ctl ex41 (λ (z resume)
+            (resume (std/core/int/+ z 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex42/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex42 [ctl ex42 (std/core/hnd/clause-control1 (λ (y resume)
-              (resume (analysis/benchmarks/suite/nested/ex41 y))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex42/h-handle (handler analysis/benchmarks/suite/nested/ex42 [ctl ex42 (λ (y resume)
+              (resume (analysis/benchmarks/suite/nested/ex41 y)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested/ex42 1))))))))
   (define analysis/benchmarks/suite/nested/result-nested-tail-simple
@@ -221,12 +237,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 41 - mixed effects op in handler after resume (tail resume outer)")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex41 [ctl ex41 (std/core/hnd/clause-control1 (λ (z resume)
-            (resume (std/core/int/+ z 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/ex41 [ctl ex41 (λ (z resume)
+            (resume (std/core/int/+ z 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex43 [ctl ex43 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/nested/ex41 (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/ex43 [ctl ex43 (λ (a resume)
+              (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/nested/ex41 (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ 1 (analysis/benchmarks/suite/nested/ex43 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-tail-op-after
@@ -236,12 +252,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 42 - mixed effects op in handler before resume (tail resume outer)")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex41 [ctl ex41 (std/core/hnd/clause-control1 (λ (z resume)
-            (resume (std/core/int/+ z 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/ex41 [ctl ex41 (λ (z resume)
+            (resume (std/core/int/+ z 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex43 [ctl ex43 (std/core/hnd/clause-control1 (λ (a resume)
-              (std/core/int/+ (analysis/benchmarks/suite/nested/ex41 (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/ex43 [ctl ex43 (λ (a resume)
+              (std/core/int/+ (analysis/benchmarks/suite/nested/ex41 (std/core/types/tuple2/fst a)) (resume (std/core/types/tuple2/snd a))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ 1 (analysis/benchmarks/suite/nested/ex43 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-tail-op-before
@@ -251,12 +267,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 43 - mixed effects under both handlers - inner first (tail resume outer)")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex41 [ctl ex41 (std/core/hnd/clause-control1 (λ (z resume)
-            (resume (std/core/int/+ z 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/ex41 [ctl ex41 (λ (z resume)
+            (resume (std/core/int/+ z 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex43 [ctl ex43 (std/core/hnd/clause-control1 (λ (a resume)
-              (resume (std/core/types/tuple2/fst a))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/ex43 [ctl ex43 (λ (a resume)
+              (resume (std/core/types/tuple2/fst a)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ (std/core/int/+ 1 (analysis/benchmarks/suite/nested/ex43 (std/core/types/Tuple2 1 2))) (analysis/benchmarks/suite/nested/ex41 0)))))))))
   (define analysis/benchmarks/suite/nested/result-nested-tail-inner-first
@@ -266,12 +282,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 44 - mixed effects under both handlers - outer first (tail resume outer)")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex41 [ctl ex41 (std/core/hnd/clause-control1 (λ (z resume)
-            (resume (std/core/int/+ z 1))))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex41/h-handle (handler analysis/benchmarks/suite/nested/ex41 [ctl ex41 (λ (z resume)
+            (resume (std/core/int/+ z 1)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex43 [ctl ex43 (std/core/hnd/clause-control1 (λ (a resume)
-              (resume (std/core/types/tuple2/fst a))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex43/h-handle (handler analysis/benchmarks/suite/nested/ex43 [ctl ex43 (λ (a resume)
+              (resume (std/core/types/tuple2/fst a)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (std/core/int/+ (std/core/int/+ (analysis/benchmarks/suite/nested/ex41 0) 1) (analysis/benchmarks/suite/nested/ex43 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-tail-outer-first
@@ -281,16 +297,16 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 50 - three levels")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (x resume)
-            (resume (std/core/int/+ x 10))))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (x resume)
+            (resume (std/core/int/+ x 10)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex32 [ctl ex32 (std/core/hnd/clause-control1 (λ (x resume)
-              (resume (std/core/int/* (analysis/benchmarks/suite/nested/ex31 x) 2))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/ex32 [ctl ex32 (λ (x resume)
+              (resume (std/core/int/* (analysis/benchmarks/suite/nested/ex31 x) 2)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex33 [ctl ex33 (std/core/hnd/clause-control1 (λ (a resume)
-                (resume (std/core/int/+ (analysis/benchmarks/suite/nested/ex32 (std/core/types/tuple2/fst a)) (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+              (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/ex33 [ctl ex33 (λ (a resume)
+                (resume (std/core/int/+ (analysis/benchmarks/suite/nested/ex32 (std/core/types/tuple2/fst a)) (std/core/types/tuple2/snd a))))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (analysis/benchmarks/suite/nested/ex33 (std/core/types/Tuple2 1 5)))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-three-levels
@@ -300,16 +316,16 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example 51 - absorb effect")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex31 [ctl ex31 (std/core/hnd/clause-control1 (λ (x resume)
-            (resume x)))]) (λ (h-res)
+          (analysis/benchmarks/suite/nested/ex31/h-handle (handler analysis/benchmarks/suite/nested/ex31 [ctl ex31 (λ (x resume)
+            (resume x))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex32 [ctl ex32 (std/core/hnd/clause-control1 (λ (x resume)
-              100))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested/ex32/h-handle (handler analysis/benchmarks/suite/nested/ex32 [ctl ex32 (λ (x resume)
+              100)]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/h-Hnd-ex33 [ctl ex33 (std/core/hnd/clause-control1 (λ (a resume)
-                (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/nested/ex32 (std/core/types/tuple2/snd a)))))]) (λ (h-res)
+              (analysis/benchmarks/suite/nested/ex33/h-handle (handler analysis/benchmarks/suite/nested/ex33 [ctl ex33 (λ (a resume)
+                (std/core/int/+ (resume (std/core/types/tuple2/fst a)) (analysis/benchmarks/suite/nested/ex32 (std/core/types/tuple2/snd a))))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (analysis/benchmarks/suite/nested/ex33 (std/core/types/Tuple2 1 2)))))))))))
   (define analysis/benchmarks/suite/nested/result-nested-absorb

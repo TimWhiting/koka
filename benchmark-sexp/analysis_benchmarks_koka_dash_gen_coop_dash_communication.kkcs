@@ -58,61 +58,63 @@
         [(std/core/types/h-Optional h-uniq-waiters-callbackh-698) h-uniq-waiters-callbackh-698]
         [std/core/types/h-None (analysis/benchmarks/koka-gen/coop-communication/channel-state/waiters-callback h-this)])])
         (analysis/benchmarks/koka-gen/coop-communication/Channel-state h-uniq-keyh-669 h-uniq-mboxh-683 h-uniq-waiters-callbackh-697))))
+  (define analysis/benchmarks/koka-gen/coop-communication/comm/h-tag
+    "comm@coop-communication")
   (define analysis/benchmarks/koka-gen/coop-communication/comm/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/coop-communication/comm/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/coop-communication/comm/h-ctl-spawn
     (λ (comm)
       (match comm
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ _ _ h-x _) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ _ _ h-x _) h-x])))
   (define analysis/benchmarks/koka-gen/coop-communication/spawn/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ _ _ h-ctl-spawn _) h-ctl-spawn])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ _ _ h-ctl-spawn _) h-ctl-spawn])))
   (define analysis/benchmarks/koka-gen/coop-communication/spawn
     (λ (action)
       (perform analysis/benchmarks/koka-gen/coop-communication/comm spawn action)))
   (define analysis/benchmarks/koka-gen/coop-communication/comm/h-ctl-yield
     (λ (comm)
       (match comm
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ _ _ _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ _ _ _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/coop-communication/yield/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ _ _ _ h-ctl-yield) h-ctl-yield])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ _ _ _ h-ctl-yield) h-ctl-yield])))
   (define analysis/benchmarks/koka-gen/coop-communication/yield
     (λ ()
       (perform analysis/benchmarks/koka-gen/coop-communication/comm yield)))
   (define analysis/benchmarks/koka-gen/coop-communication/comm/h-ctl-send
     (λ (comm)
       (match comm
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ h-x _ _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ h-x _ _ _) h-x])))
   (define analysis/benchmarks/koka-gen/coop-communication/send/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ h-ctl-send _ _ _) h-ctl-send])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ h-ctl-send _ _ _) h-ctl-send])))
   (define analysis/benchmarks/koka-gen/coop-communication/send
     (λ (ch v)
       (perform analysis/benchmarks/koka-gen/coop-communication/comm send ch v)))
   (define analysis/benchmarks/koka-gen/coop-communication/comm/h-ctl-recv
     (λ (comm)
       (match comm
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ h-x _ _ _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ h-x _ _ _ _) h-x])))
   (define analysis/benchmarks/koka-gen/coop-communication/recv/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ h-ctl-recv _ _ _ _) h-ctl-recv])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ h-ctl-recv _ _ _ _) h-ctl-recv])))
   (define analysis/benchmarks/koka-gen/coop-communication/recv
     (λ (ch)
       (perform analysis/benchmarks/koka-gen/coop-communication/comm recv ch)))
   (define analysis/benchmarks/koka-gen/coop-communication/comm/h-ctl-shutdown
     (λ (comm)
       (match comm
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ _ h-x _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ _ h-x _ _) h-x])))
   (define analysis/benchmarks/koka-gen/coop-communication/shutdown/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm _ _ _ h-ctl-shutdown _ _) h-ctl-shutdown])))
+        [(analysis/benchmarks/koka-gen/coop-communication/comm _ _ _ h-ctl-shutdown _ _) h-ctl-shutdown])))
   (define analysis/benchmarks/koka-gen/coop-communication/shutdown
     (λ ()
       (perform analysis/benchmarks/koka-gen/coop-communication/comm shutdown)))
@@ -138,7 +140,7 @@
                       [(std/core/types/Cons current-task rest) (letrec* ([_ (std/core/types/local-set ready rest)])
                         ((analysis/benchmarks/koka-gen/coop-communication/task/run current-task)))])))] [handle-comm (λ (action)
                   ((λ (h-action)
-                    (analysis/benchmarks/koka-gen/coop-communication/comm/h-handle (handler analysis/benchmarks/koka-gen/coop-communication/h-Hnd-comm [ctl recv (letrec* ([ievh-2336 std/core/types/h-Hdiv])
+                    (analysis/benchmarks/koka-gen/coop-communication/comm/h-handle (handler analysis/benchmarks/koka-gen/coop-communication/comm [ctl recv (letrec* ([ievh-2336 std/core/types/h-Hdiv])
                       (std/core/hnd/clause-control1 (λ (ch resume)
                         (letrec* ([key (analysis/benchmarks/koka-gen/coop-communication/chan/name ch)])
                           (match (find-channel key)
@@ -163,20 +165,20 @@
                               [std/core/types/Nil (letrec* ([_ (update-channel key (analysis/benchmarks/koka-gen/coop-communication/Channel-state key (std/core/list/++ (analysis/benchmarks/koka-gen/coop-communication/channel-state/mbox cs) (std/core/types/Cons msg std/core/types/Nil)) (analysis/benchmarks/koka-gen/coop-communication/channel-state/waiters-callback cs)))])
                                 (resume std/core/types/Unit))])]
                             [std/core/types/Nothing (letrec* ([_ (std/core/types/local-set channels (std/core/list/++ (std/core/types/local-get channels ievh-2653) (std/core/types/Cons (analysis/benchmarks/koka-gen/coop-communication/Channel-state key (std/core/types/Cons msg std/core/types/Nil) std/core/types/Nil) std/core/types/Nil)))])
-                              (resume std/core/types/Unit))])))))] [ctl shutdown (std/core/hnd/clause-control0 (λ (resume)
+                              (resume std/core/types/Unit))])))))] [ctl shutdown (λ (resume)
                       (letrec* ([_ (std/core/types/local-set ready std/core/types/Nil)])
-                        (std/core/types/local-set done std/core/types/True))))] [ctl spawn (std/core/hnd/clause-control1 (λ (child resume)
+                        (std/core/types/local-set done std/core/types/True)))] [ctl spawn (λ (child resume)
                       (letrec* ([child-task (λ ()
                         (handle-comm child))] [parent-task (λ ()
                         (letrec* ([k (resume std/core/types/Unit)])
                           (std/core/types/unit/h-copy k)))] [_ (enqueue (analysis/benchmarks/koka-gen/coop-communication/Task child-task))])
-                        (enqueue (analysis/benchmarks/koka-gen/coop-communication/Task parent-task)))))] [ctl yield (std/core/hnd/clause-control0 (λ (resume)
+                        (enqueue (analysis/benchmarks/koka-gen/coop-communication/Task parent-task))))] [ctl yield (λ (resume)
                       (enqueue (analysis/benchmarks/koka-gen/coop-communication/Task (λ ()
-                        (resume std/core/types/Unit))))))]) (λ (_w-l73-c14)
+                        (resume std/core/types/Unit)))))]) (λ (_w-l73-c14)
                       std/core/types/Unit) h-action)) (λ ()
-                    (std/core/hnd/h-mask-builtin action))))] [main-task (handle-comm (λ ()
-                  (std/core/hnd/h-mask-builtin (λ ()
-                    (main1)))))] [_ (enqueue (analysis/benchmarks/koka-gen/coop-communication/Task (λ ()
+                    action)))] [main-task (handle-comm (λ ()
+                  (λ ()
+                    (main1))))] [_ (enqueue (analysis/benchmarks/koka-gen/coop-communication/Task (λ ()
                   (std/core/types/unit/h-copy main-task))))])
                   (std/core/while (λ ()
                     (std/core/types/bool/! (std/core/types/local-get done ievh-3005))) (λ ()
@@ -241,17 +243,19 @@
                 std/core/types/True) (λ ()
                 (letrec* ([x (analysis/benchmarks/koka-gen/coop-communication/recv ping-ch)] [_ (std/core/console/string/println (std/core/types/++ "Pong: got " (std/core/types/++ (std/core/int/show x) (std/core/types/++ ", replying " (std/core/int/show (std/core/int/* x 10))))))])
                   (analysis/benchmarks/koka-gen/coop-communication/send pong-ch (std/core/int/* x 10)))))))))))))
+  (define analysis/benchmarks/koka-gen/coop-communication/logger/h-tag
+    "logger@coop-communication")
   (define analysis/benchmarks/koka-gen/coop-communication/logger/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/coop-communication/logger/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/coop-communication/logger/h-fun-log
     (λ (logger)
       (match logger
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-logger _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/logger _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/coop-communication/log/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-logger _ h-fun-log) h-fun-log])))
+        [(analysis/benchmarks/koka-gen/coop-communication/logger _ h-fun-log) h-fun-log])))
   (define analysis/benchmarks/koka-gen/coop-communication/log
     (λ (msg)
       (perform analysis/benchmarks/koka-gen/coop-communication/logger log msg)))
@@ -262,8 +266,8 @@
           (std/core/hnd/local-var std/core/types/Nil (λ (log-buffer)
             (letrec* ([log-ch (analysis/benchmarks/koka-gen/coop-communication/channel "log-ch")])
               ((λ (h-action)
-                (analysis/benchmarks/koka-gen/coop-communication/logger/h-handle (handler analysis/benchmarks/koka-gen/coop-communication/h-Hnd-logger [fun log (std/core/hnd/clause-tail1 (λ (msg)
-                  (std/core/types/local-set log-buffer (std/core/list/++ (std/core/types/local-get log-buffer ievh-6245) (std/core/types/Cons msg std/core/types/Nil)))))]) (λ (h-res)
+                (analysis/benchmarks/koka-gen/coop-communication/logger/h-handle (handler analysis/benchmarks/koka-gen/coop-communication/logger [fun log (λ (msg)
+                  (std/core/types/local-set log-buffer (std/core/list/++ (std/core/types/local-get log-buffer ievh-6245) (std/core/types/Cons msg std/core/types/Nil))))]) (λ (h-res)
                   h-res) h-action)) (λ ()
                 (letrec* ([_ (analysis/benchmarks/koka-gen/coop-communication/schedule (λ ()
                   (letrec* ([_ (analysis/benchmarks/koka-gen/coop-communication/log "Task 1: starting")] [_ (analysis/benchmarks/koka-gen/coop-communication/spawn (λ ()
@@ -274,14 +278,16 @@
   (define analysis/benchmarks/koka-gen/coop-communication/bail-out/h-ctl-bail-out
     (λ (h-this)
       (match h-this
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-bail-out _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/coop-communication/bail-out _ h-x) h-x])))
+  (define analysis/benchmarks/koka-gen/coop-communication/bail-out/h-tag
+    "bail-out@coop-communication")
   (define analysis/benchmarks/koka-gen/coop-communication/bail-out/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/coop-communication/bail-out/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/coop-communication/bail-out/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/coop-communication/h-Hnd-bail-out _ h-ctl-bail-out) h-ctl-bail-out])))
+        [(analysis/benchmarks/koka-gen/coop-communication/bail-out _ h-ctl-bail-out) h-ctl-bail-out])))
   (define analysis/benchmarks/koka-gen/coop-communication/bail-out
     (λ (reason)
       (perform analysis/benchmarks/koka-gen/coop-communication/bail-out bail-out reason)))
@@ -297,8 +303,8 @@
               (analysis/benchmarks/koka-gen/coop-communication/shutdown))))] [_ (analysis/benchmarks/koka-gen/coop-communication/send check-ch 999)])
             (std/core/console/string/println "Task: waiting..."))))])
           "Completed normally"))] [result ((λ (h-action)
-        (analysis/benchmarks/koka-gen/coop-communication/bail-out/h-handle (handler analysis/benchmarks/koka-gen/coop-communication/h-Hnd-bail-out [ctl bail-out (std/core/hnd/clause-control1 (λ (reason resume)
-          (std/core/types/++ "Bailed out: " reason)))]) (λ (h-res)
+        (analysis/benchmarks/koka-gen/coop-communication/bail-out/h-handle (handler analysis/benchmarks/koka-gen/coop-communication/bail-out [ctl bail-out (λ (reason resume)
+          (std/core/types/++ "Bailed out: " reason))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (run-scheduler)))])
         (std/core/console/string/println (std/core/types/++ "Result: " result)))))

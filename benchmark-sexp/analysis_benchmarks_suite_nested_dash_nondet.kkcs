@@ -1,72 +1,82 @@
 (module
   analysis/benchmarks/suite/nested-nondet
+  (define analysis/benchmarks/suite/nested-nondet/choice1/h-tag
+    "choice1@nested-nondet")
   (define analysis/benchmarks/suite/nested-nondet/choice1/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested-nondet/choice1/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested-nondet/choice1/h-ctl-choice1
     (λ (choice1)
       (match choice1
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested-nondet/choice1 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested-nondet/choice1/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 _ h-ctl-choice1) h-ctl-choice1])))
+        [(analysis/benchmarks/suite/nested-nondet/choice1 _ h-ctl-choice1) h-ctl-choice1])))
   (define analysis/benchmarks/suite/nested-nondet/choice1
     (λ (a)
       (perform analysis/benchmarks/suite/nested-nondet/choice1 choice1 a)))
+  (define analysis/benchmarks/suite/nested-nondet/choice2/h-tag
+    "choice2@nested-nondet")
   (define analysis/benchmarks/suite/nested-nondet/choice2/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested-nondet/choice2/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested-nondet/choice2/h-ctl-choice2
     (λ (choice2)
       (match choice2
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested-nondet/choice2 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested-nondet/choice2/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 _ h-ctl-choice2) h-ctl-choice2])))
+        [(analysis/benchmarks/suite/nested-nondet/choice2 _ h-ctl-choice2) h-ctl-choice2])))
   (define analysis/benchmarks/suite/nested-nondet/choice2
     (λ (a)
       (perform analysis/benchmarks/suite/nested-nondet/choice2 choice2 a)))
+  (define analysis/benchmarks/suite/nested-nondet/choice3/h-tag
+    "choice3@nested-nondet")
   (define analysis/benchmarks/suite/nested-nondet/choice3/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested-nondet/choice3/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested-nondet/choice3/h-ctl-choice3
     (λ (choice3)
       (match choice3
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested-nondet/choice3 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested-nondet/choice3/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 _ h-ctl-choice3) h-ctl-choice3])))
+        [(analysis/benchmarks/suite/nested-nondet/choice3 _ h-ctl-choice3) h-ctl-choice3])))
   (define analysis/benchmarks/suite/nested-nondet/choice3
     (λ (a)
       (perform analysis/benchmarks/suite/nested-nondet/choice3 choice3 a)))
+  (define analysis/benchmarks/suite/nested-nondet/tail1/h-tag
+    "tail1@nested-nondet")
   (define analysis/benchmarks/suite/nested-nondet/tail1/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested-nondet/tail1/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested-nondet/tail1/h-ctl-tail1
     (λ (tail1)
       (match tail1
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested-nondet/tail1 _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested-nondet/tail1/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 _ h-ctl-tail1) h-ctl-tail1])))
+        [(analysis/benchmarks/suite/nested-nondet/tail1 _ h-ctl-tail1) h-ctl-tail1])))
   (define analysis/benchmarks/suite/nested-nondet/tail1
     (λ (a)
       (perform analysis/benchmarks/suite/nested-nondet/tail1 tail1 a)))
+  (define analysis/benchmarks/suite/nested-nondet/fail/h-tag
+    "fail@nested-nondet")
   (define analysis/benchmarks/suite/nested-nondet/fail/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/nested-nondet/fail/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/nested-nondet/fail/h-ctl-fail
     (λ (fail)
       (match fail
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-fail _ h-x) h-x])))
+        [(analysis/benchmarks/suite/nested-nondet/fail _ h-x) h-x])))
   (define analysis/benchmarks/suite/nested-nondet/fail/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/nested-nondet/h-Hnd-fail _ h-ctl-fail) h-ctl-fail])))
+        [(analysis/benchmarks/suite/nested-nondet/fail _ h-ctl-fail) h-ctl-fail])))
   (define analysis/benchmarks/suite/nested-nondet/fail
     (λ ()
       (perform analysis/benchmarks/suite/nested-nondet/fail fail)))
@@ -74,14 +84,14 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 1 - simple forking")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-              (std/core/int/+ r1 r2))))]) (λ (h-res)
+              (std/core/int/+ r1 r2)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 [ctl choice2 (std/core/hnd/clause-control1 (λ (a resume)
+            (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice2 [ctl choice2 (λ (a resume)
               (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-                (std/core/int/+ r1 r2))))]) (λ (h-res)
+                (std/core/int/+ r1 r2)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested-nondet/choice2 (std/core/types/Tuple2 (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 1 2)) (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 3 4)))))))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-nested-simple
@@ -91,13 +101,13 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 2 - nondet with tail-resumptive")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-              (std/core/int/+ r1 r2))))]) (λ (h-res)
+              (std/core/int/+ r1 r2)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested-nondet/tail1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 [ctl tail1 (std/core/hnd/clause-control1 (λ (x resume)
-              (resume (std/core/int/* x 2))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested-nondet/tail1/h-handle (handler analysis/benchmarks/suite/nested-nondet/tail1 [ctl tail1 (λ (x resume)
+              (resume (std/core/int/* x 2)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested-nondet/tail1 (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 1 2))))))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-nested-tail
@@ -107,19 +117,19 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 3 - three levels")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-              (std/core/int/+ r1 r2))))]) (λ (h-res)
+              (std/core/int/+ r1 r2)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 [ctl choice2 (std/core/hnd/clause-control1 (λ (a resume)
+            (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice2 [ctl choice2 (λ (a resume)
               (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-                (std/core/int/+ r1 r2))))]) (λ (h-res)
+                (std/core/int/+ r1 r2)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/nested-nondet/choice3/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 [ctl choice3 (std/core/hnd/clause-control1 (λ (a resume)
+              (analysis/benchmarks/suite/nested-nondet/choice3/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice3 [ctl choice3 (λ (a resume)
                 (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-                  (std/core/int/+ r1 r2))))]) (λ (h-res)
+                  (std/core/int/+ r1 r2)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (analysis/benchmarks/suite/nested-nondet/choice3 (std/core/types/Tuple2 (analysis/benchmarks/suite/nested-nondet/choice2 (std/core/types/Tuple2 1 2)) (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 3 4)))))))))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-three-levels
@@ -129,18 +139,18 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 4 - alternating nondet/tail-resumptive")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-              (std/core/int/+ r1 r2))))]) (λ (h-res)
+              (std/core/int/+ r1 r2)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested-nondet/tail1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 [ctl tail1 (std/core/hnd/clause-control1 (λ (x resume)
-              (resume (std/core/int/* x 2))))]) (λ (h-res)
+            (analysis/benchmarks/suite/nested-nondet/tail1/h-handle (handler analysis/benchmarks/suite/nested-nondet/tail1 [ctl tail1 (λ (x resume)
+              (resume (std/core/int/* x 2)))]) (λ (h-res)
               h-res) h-action)) (λ ()
             ((λ (h-action)
-              (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 [ctl choice2 (std/core/hnd/clause-control1 (λ (a resume)
+              (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice2 [ctl choice2 (λ (a resume)
                 (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-                  (std/core/int/+ r1 r2))))]) (λ (h-res)
+                  (std/core/int/+ r1 r2)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (analysis/benchmarks/suite/nested-nondet/choice2 (std/core/types/Tuple2 (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 (analysis/benchmarks/suite/nested-nondet/tail1 1) (analysis/benchmarks/suite/nested-nondet/tail1 2))) 10)))))))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-alternating
@@ -150,14 +160,14 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 5 - nondet in inner and outer context")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-              (std/core/int/+ r1 r2))))]) (λ (h-res)
+              (std/core/int/+ r1 r2)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 [ctl choice2 (std/core/hnd/clause-control1 (λ (a resume)
+            (analysis/benchmarks/suite/nested-nondet/choice2/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice2 [ctl choice2 (λ (a resume)
               (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-                (std/core/int/+ (std/core/int/* r1 2) (std/core/int/* r2 3)))))]) (λ (h-res)
+                (std/core/int/+ (std/core/int/* r1 2) (std/core/int/* r2 3))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested-nondet/choice2 (std/core/types/Tuple2 (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 1 2)) (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 10 20)))))))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-both-contexts
@@ -167,11 +177,11 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 6 - guarded choice")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (match (std/core/int/> (std/core/types/tuple2/fst a) 0)
               [std/core/types/True (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
                 (std/core/int/+ r1 r2))]
-              [std/core/types/False (resume 0)])))]) (λ (h-res)
+              [std/core/types/False (resume 0)]))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (std/core/int/+ (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 1 2)) (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 0 5))))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-guarded
@@ -181,12 +191,12 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 7 - nondet with failure")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))])
-              (std/core/int/+ r1 r2))))]) (λ (h-res)
+              (std/core/int/+ r1 r2)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/nested-nondet/fail/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-fail [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+            (analysis/benchmarks/suite/nested-nondet/fail/h-handle (handler analysis/benchmarks/suite/nested-nondet/fail [ctl fail (std/core/hnd/clause-control0 (λ (resume)
               0))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 10 (analysis/benchmarks/suite/nested-nondet/fail))))))))))
@@ -197,14 +207,14 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Nested nondet 8 - variable branches")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 [ctl choice1 (std/core/hnd/clause-control1 (λ (a resume)
+          (analysis/benchmarks/suite/nested-nondet/choice1/h-handle (handler analysis/benchmarks/suite/nested-nondet/choice1 [ctl choice1 (λ (a resume)
             (match (std/core/int/== (std/core/types/tuple2/fst a) 0)
               [std/core/types/True (resume (std/core/types/tuple2/snd a))]
               [std/core/types/False (match (std/core/int/== (std/core/types/tuple2/fst a) 1)
                 [std/core/types/True (letrec* ([x (resume (std/core/types/tuple2/snd a))] [y (resume (std/core/types/tuple2/fst a))])
                   (std/core/int/+ x y))]
                 [std/core/types/False (letrec* ([r1 (resume (std/core/types/tuple2/fst a))] [r2 (resume (std/core/types/tuple2/snd a))] [r3 (resume (std/core/types/tuple2/snd a))])
-                  (std/core/int/+ (std/core/int/+ r1 r2) r3))])])))]) (λ (h-res)
+                  (std/core/int/+ (std/core/int/+ r1 r2) r3))])]))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/nested-nondet/choice1 (std/core/types/Tuple2 2 5)))))))
   (define analysis/benchmarks/suite/nested-nondet/result-nondet-variable-branches

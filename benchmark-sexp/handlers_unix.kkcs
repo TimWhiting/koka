@@ -1,16 +1,18 @@
 (module
   handlers/unix
+  (define handlers/unix/bio/h-tag
+    "bio@unix")
   (define handlers/unix/bio/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/unix/bio/h-tag hnd ret action)))
   (define handlers/unix/bio/h-fun-write
     (λ (bio)
       (match bio
-        [(handlers/unix/h-Hnd-bio _ h-x) h-x])))
+        [(handlers/unix/bio _ h-x) h-x])))
   (define handlers/unix/write/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/unix/h-Hnd-bio _ h-fun-write) h-fun-write])))
+        [(handlers/unix/bio _ h-fun-write) h-fun-write])))
   (define handlers/unix/write
     (λ (fd s)
       (perform handlers/unix/bio write fd s)))
@@ -25,12 +27,12 @@
         (letrec* ([ievh-671 std/core/types/h-Hnodiv] [ievh-720 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var "" (λ (buf)
             ((λ (h-action)
-              (handlers/unix/bio/h-handle (handler handlers/unix/h-Hnd-bio [fun write (std/core/hnd/clause-tail2 (λ (fd s)
-                (std/core/types/local-set buf (std/core/types/++ (std/core/types/local-get buf ievh-671) s))))]) (λ (h-res)
+              (handlers/unix/bio/h-handle (handler handlers/unix/bio [fun write (λ (fd s)
+                (std/core/types/local-set buf (std/core/types/++ (std/core/types/local-get buf ievh-671) s)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               (std/core/types/Tuple2 ((λ ()
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (action))))) (std/core/types/local-get buf ievh-720)))))))))))
+                (λ ()
+                  (action)))) (std/core/types/local-get buf ievh-720)))))))))))
   (define handlers/unix/bio2
     (λ (action)
       (std/core/types/local-scope (λ ()
@@ -40,35 +42,37 @@
               ((λ (x)
                 (std/core/types/Tuple2 x (std/core/types/local-get buf ievh-804))) (h-action))) (λ ()
               ((λ (h-action)
-                (handlers/unix/bio/h-handle (handler handlers/unix/h-Hnd-bio [fun write (std/core/hnd/clause-tail2 (λ (fd s)
-                  (std/core/types/local-set buf (std/core/types/++ (std/core/types/local-get buf ievh-900) s))))]) (λ (h-res)
+                (handlers/unix/bio/h-handle (handler handlers/unix/bio [fun write (λ (fd s)
+                  (std/core/types/local-set buf (std/core/types/++ (std/core/types/local-get buf ievh-900) s)))]) (λ (h-res)
                   h-res) h-action)) (λ ()
                 ((λ ()
-                  (std/core/hnd/h-mask-builtin (λ ()
-                    (action))))))))))))))))
+                  (λ ()
+                    (action)))))))))))))))
   (define handlers/unix/example1
     (λ ()
       (handlers/unix/bio (λ ()
         (letrec* ([_ (handlers/unix/echo "hi ")])
           (handlers/unix/echo "unix world"))))))
+  (define handlers/unix/exit/h-tag
+    "exit@unix")
   (define handlers/unix/exit/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/unix/exit/h-tag hnd ret action)))
   (define handlers/unix/exit/h-ctl-exit
     (λ (exit)
       (match exit
-        [(handlers/unix/h-Hnd-exit _ h-x) h-x])))
+        [(handlers/unix/exit _ h-x) h-x])))
   (define handlers/unix/exit/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/unix/h-Hnd-exit _ h-ctl-exit) h-ctl-exit])))
+        [(handlers/unix/exit _ h-ctl-exit) h-ctl-exit])))
   (define handlers/unix/exit
     (λ (exitcode)
       (perform handlers/unix/exit exit exitcode)))
   (define handlers/unix/status
     (λ (action)
       ((λ (h-action)
-        (handlers/unix/exit/h-handle (handler handlers/unix/h-Hnd-exit [ctl exit (std/core/hnd/clause-never1 (λ (code)
+        (handlers/unix/exit/h-handle (handler handlers/unix/exit [ctl exit (std/core/hnd/clause-never1 (λ (code)
           code))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (letrec* ([_ (action)])
@@ -100,17 +104,19 @@
         [handlers/unix/Root "root"]
         [handlers/unix/Alice "alice"]
         [handlers/unix/Bob "bob"])))
+  (define handlers/unix/whoami/h-tag
+    "whoami@unix")
   (define handlers/unix/whoami/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/unix/whoami/h-tag hnd ret action)))
   (define handlers/unix/whoami/h-fun-whoami
     (λ (whoami)
       (match whoami
-        [(handlers/unix/h-Hnd-whoami _ h-x) h-x])))
+        [(handlers/unix/whoami _ h-x) h-x])))
   (define handlers/unix/whoami/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/unix/h-Hnd-whoami _ h-fun-whoami) h-fun-whoami])))
+        [(handlers/unix/whoami _ h-fun-whoami) h-fun-whoami])))
   (define handlers/unix/whoami
     (λ ()
       (perform handlers/unix/whoami whoami)))
@@ -121,8 +127,8 @@
   (define handlers/unix/env
     (λ (user action)
       ((λ (h-action)
-        (handlers/unix/whoami/h-handle (handler handlers/unix/h-Hnd-whoami [fun whoami (std/core/hnd/clause-tail0 (λ ()
-          (handlers/unix/user/show user)))]) (λ (h-res)
+        (handlers/unix/whoami/h-handle (handler handlers/unix/whoami [fun whoami (λ ()
+          (handlers/unix/user/show user))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
   (define handlers/unix/example3
@@ -132,17 +138,19 @@
           (handlers/unix/env handlers/unix/Alice (λ ()
             (letrec* ([_ (handlers/unix/echo "hi ")])
               (handlers/unix/echo (handlers/unix/whoami)))))))))))
+  (define handlers/unix/su/h-tag
+    "su@unix")
   (define handlers/unix/su/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/unix/su/h-tag hnd ret action)))
   (define handlers/unix/su/h-ctl-su
     (λ (su)
       (match su
-        [(handlers/unix/h-Hnd-su _ h-x) h-x])))
+        [(handlers/unix/su _ h-x) h-x])))
   (define handlers/unix/su/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/unix/h-Hnd-su _ h-ctl-su) h-ctl-su])))
+        [(handlers/unix/su _ h-ctl-su) h-ctl-su])))
   (define handlers/unix/su
     (λ (u)
       (perform handlers/unix/su su u)))
@@ -150,27 +158,27 @@
     (λ (initial-user action)
       (handlers/unix/env initial-user (λ ()
         ((λ (h-action)
-          (handlers/unix/su/h-handle (handler handlers/unix/h-Hnd-su [ctl su (std/core/hnd/clause-control1 (λ (u resume)
+          (handlers/unix/su/h-handle (handler handlers/unix/su [ctl su (λ (u resume)
             (std/core/hnd/h-mask-at (std/core/hnd/h-evv-index handlers/unix/whoami/h-tag) std/core/types/False (λ ()
               (handlers/unix/env u (λ ()
-                (resume std/core/types/Unit)))))))]) (λ (h-res)
+                (resume std/core/types/Unit))))))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (action)))))))
   (define handlers/unix/session-manager2
     (λ (initial-user action)
       ((λ (h-action)
-        (handlers/unix/whoami/h-handle (handler handlers/unix/h-Hnd-whoami [fun whoami (std/core/hnd/clause-tail0 (λ ()
-          (handlers/unix/user/show initial-user)))]) (λ (h-res)
+        (handlers/unix/whoami/h-handle (handler handlers/unix/whoami [fun whoami (λ ()
+          (handlers/unix/user/show initial-user))]) (λ (h-res)
           h-res) h-action)) (λ ()
         ((λ (h-action)
-          (handlers/unix/su/h-handle (handler handlers/unix/h-Hnd-su [ctl su (std/core/hnd/clause-control1 (λ (u resume)
+          (handlers/unix/su/h-handle (handler handlers/unix/su [ctl su (λ (u resume)
             ((λ (h-override-action)
               ((λ (h-action)
-                (handlers/unix/whoami/h-handle (handler handlers/unix/h-Hnd-whoami [fun whoami (std/core/hnd/clause-tail0 (λ ()
-                  (handlers/unix/user/show u)))]) (λ (h-res)
+                (handlers/unix/whoami/h-handle (handler handlers/unix/whoami [fun whoami (λ ()
+                  (handlers/unix/user/show u))]) (λ (h-res)
                   h-res) h-action)) (λ ()
                 (std/core/hnd/h-mask-at (std/core/hnd/h-evv-index handlers/unix/whoami/h-tag) std/core/types/True h-override-action)))) (λ ()
-              (resume std/core/types/Unit)))))]) (λ (h-res)
+              (resume std/core/types/Unit))))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (action)))))))
   (define handlers/unix/session-manager3
@@ -179,16 +187,16 @@
         (letrec* ([ievh-2684 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var initial-user (λ (user)
             ((λ (h-action)
-              (handlers/unix/whoami/h-handle (handler handlers/unix/h-Hnd-whoami [fun whoami (std/core/hnd/clause-tail0 (λ ()
-                (handlers/unix/user/show (std/core/types/local-get user ievh-2684))))]) (λ (h-res)
+              (handlers/unix/whoami/h-handle (handler handlers/unix/whoami [fun whoami (λ ()
+                (handlers/unix/user/show (std/core/types/local-get user ievh-2684)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               ((λ (h-action)
-                (handlers/unix/su/h-handle (handler handlers/unix/h-Hnd-su [ctl su (std/core/hnd/clause-tail1 (λ (u)
-                  (std/core/types/local-set user u)))]) (λ (h-res)
+                (handlers/unix/su/h-handle (handler handlers/unix/su [fun su (λ (u)
+                  (std/core/types/local-set user u))]) (λ (h-res)
                   h-res) h-action)) (λ ()
                 ((λ ()
-                  (std/core/hnd/h-mask-builtin (λ ()
-                    (action))))))))))))))))
+                  (λ ()
+                    (action)))))))))))))))
   (define handlers/unix/example4
     (λ ()
       (handlers/unix/bio (λ ()
@@ -196,25 +204,27 @@
           (handlers/unix/session-manager3 handlers/unix/Root (λ ()
             (letrec* ([_ (handlers/unix/echo "hi ")] [_ (handlers/unix/echo (handlers/unix/whoami))] [_ (handlers/unix/su handlers/unix/Alice)] [_ (handlers/unix/echo ", and hi ")])
               (handlers/unix/echo (handlers/unix/whoami)))))))))))
+  (define handlers/unix/fork/h-tag
+    "fork@unix")
   (define handlers/unix/fork/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/unix/fork/h-tag hnd ret action)))
   (define handlers/unix/fork/h-ctl-fork
     (λ (fork)
       (match fork
-        [(handlers/unix/h-Hnd-fork _ h-x) h-x])))
+        [(handlers/unix/fork _ h-x) h-x])))
   (define handlers/unix/fork/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/unix/h-Hnd-fork _ h-ctl-fork) h-ctl-fork])))
+        [(handlers/unix/fork _ h-ctl-fork) h-ctl-fork])))
   (define handlers/unix/fork
     (λ ()
       (perform handlers/unix/fork fork)))
   (define handlers/unix/forking
     (λ (action)
       ((λ (h-action)
-        (handlers/unix/fork/h-handle (handler handlers/unix/h-Hnd-fork [ctl fork (std/core/hnd/clause-control0 (λ (resume)
-          (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (x)
+        (handlers/unix/fork/h-handle (handler handlers/unix/fork [ctl fork (λ (resume)
+          (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False)))]) (λ (x)
           (std/core/types/Cons x std/core/types/Nil)) h-action)) (λ ()
         (action)))))
   (define handlers/unix/is-done
@@ -227,26 +237,28 @@
       (match pstate
         [(handlers/unix/Paused _) std/core/types/True]
         [_ std/core/types/False])))
+  (define handlers/unix/interrupt/h-tag
+    "interrupt@unix")
   (define handlers/unix/interrupt/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/unix/interrupt/h-tag hnd ret action)))
   (define handlers/unix/interrupt/h-ctl-interrupt
     (λ (interrupt)
       (match interrupt
-        [(handlers/unix/h-Hnd-interrupt _ h-x) h-x])))
+        [(handlers/unix/interrupt _ h-x) h-x])))
   (define handlers/unix/interrupt/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/unix/h-Hnd-interrupt _ h-ctl-interrupt) h-ctl-interrupt])))
+        [(handlers/unix/interrupt _ h-ctl-interrupt) h-ctl-interrupt])))
   (define handlers/unix/interrupt
     (λ ()
       (perform handlers/unix/interrupt interrupt)))
   (define handlers/unix/reify-process
     (λ (action)
       ((λ (h-action)
-        (handlers/unix/interrupt/h-handle (handler handlers/unix/h-Hnd-interrupt [ctl interrupt (std/core/hnd/clause-control-raw0 (λ (rcontext)
+        (handlers/unix/interrupt/h-handle (handler handlers/unix/interrupt [ctl interrupt (λ (rcontext)
           (handlers/unix/Paused (λ ()
-            (std/core/hnd/resume rcontext std/core/types/Unit)))))]) (λ (h-res)
+            (std/core/hnd/resume rcontext std/core/types/Unit))))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (handlers/unix/Done (action))))))
   (define handlers/unix/scheduler
@@ -289,9 +301,9 @@
     (λ (action)
       ((λ (h-override-action)
         ((λ (h-action)
-          (handlers/unix/bio/h-handle (handler handlers/unix/h-Hnd-bio [fun write (std/core/hnd/clause-tail2 (λ (fd s)
+          (handlers/unix/bio/h-handle (handler handlers/unix/bio [fun write (λ (fd s)
             (letrec* ([_ (handlers/unix/interrupt)])
-              (handlers/unix/write fd s))))]) (λ (h-res)
+              (handlers/unix/write fd s)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (std/core/hnd/h-mask-at (std/core/hnd/h-evv-index handlers/unix/bio/h-tag) std/core/types/True h-override-action)))) (λ ()
         (action)))))
