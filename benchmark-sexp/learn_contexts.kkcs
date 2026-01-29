@@ -1,0 +1,90 @@
+((module learn/contexts)
+  (defs
+    (def learn/contexts/map-std
+      (fn (xs f)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/types/Cons ((f (x)) (learn/contexts/map-std (xx f))))]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def learn/contexts/map-tail
+      (fn (xs f)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/types/Cons ((f (x)) (learn/contexts/map-tail (xx f))))]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def learn/contexts/test-tail
+      (fn ()
+        (std/core/console/default/show/println ((std/core/list/map ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))) std/core/int/inc)) (fn (h-arg-x1)
+          (std/core/list/show (h-arg-x1 std/core/int/show)))))))
+    (def learn/contexts/map-acc
+      (fn (xs f acc)
+        (match xs
+          [(std/core/types/Cons x xx) (learn/contexts/map-acc (xx f (std/core/types/Cons ((f (x)) acc))))]
+          [std/core/types/Nil (std/core/list/reverse (acc))])))
+    (def learn/contexts/map-acc-entry
+      (fn (xs f)
+        (learn/contexts/map-acc (xs f std/core/types/Nil))))
+    (def learn/contexts/test-acc
+      (fn ()
+        (std/core/console/default/show/println ((learn/contexts/map-acc-entry ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))) std/core/int/inc)) (fn (h-arg-x1)
+          (std/core/list/show (h-arg-x1 std/core/int/show)))))))
+    (def learn/contexts/map-td
+      (fn (xs f acc)
+        (match xs
+          [(std/core/types/Cons x xx) (learn/contexts/map-td (xx f (std/core/types/cctx/++ (acc (letrec* ([h-cctx-x770 (std/core/types/Cons ((f (x)) (std/core/types/h-cctx-hole-create ())))] [h-cctx-x771 (std/core/types/h-field-addr-of (h-cctx-x770 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+            (std/core/types/h-cctx-create (h-cctx-x770 h-cctx-x771)))))))]
+          [std/core/types/Nil (std/core/types/cctx/++. (acc std/core/types/Nil))])))
+    (def learn/contexts/map-td-entry
+      (fn (xs f)
+        (learn/contexts/map-td (xs f (std/core/types/cctx/empty ())))))
+    (def learn/contexts/test-td
+      (fn ()
+        (std/core/console/default/show/println ((learn/contexts/map-td-entry ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))) std/core/int/inc)) (fn (h-arg-x1)
+          (std/core/list/show (h-arg-x1 std/core/int/show)))))))
+    (def learn/contexts/concat
+      (fn (xs ys)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/types/Cons (x (learn/contexts/concat (xx ys))))]
+          [std/core/types/Nil ys])))
+    (def learn/contexts/flatten
+      (fn (xss)
+        (match xss
+          [(std/core/types/Cons xs xxs) (learn/contexts/concat (xs (learn/contexts/flatten (xxs))))]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def learn/contexts/concat-td
+      (fn (xs acc)
+        (match xs
+          [(std/core/types/Cons x xx) (learn/contexts/concat-td (xx (std/core/types/cctx/++ (acc (letrec* ([h-cctx-x1142 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x1143 (std/core/types/h-field-addr-of (h-cctx-x1142 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+            (std/core/types/h-cctx-create (h-cctx-x1142 h-cctx-x1143)))))))]
+          [std/core/types/Nil acc])))
+    (def learn/contexts/flatten-td
+      (fn (xss acc)
+        (match xss
+          [(std/core/types/Cons xs xxs) (learn/contexts/flatten-td (xxs (learn/contexts/concat-td (xs acc))))]
+          [std/core/types/Nil acc])))
+    (def learn/contexts/flatten-entry
+      (fn (xss)
+        (std/core/types/cctx/++. ((learn/contexts/flatten-td (xss (std/core/types/cctx/empty ()))) std/core/types/Nil))))
+    (def learn/contexts/example-flatten
+      (fn ()
+        (std/core/console/default/show/println ((learn/contexts/flatten-entry ((std/core/types/Cons ((std/core/types/Cons (1 (std/core/types/Cons (2 std/core/types/Nil)))) (std/core/types/Cons ((std/core/types/Cons (3 (std/core/types/Cons (4 std/core/types/Nil)))) (std/core/types/Cons (std/core/types/Nil std/core/types/Nil)))))))) (fn (h-arg-x1)
+          (std/core/list/show (h-arg-x1 std/core/int/show)))))))
+    (def learn/contexts/partition-td
+      (fn (xs pred acc1 acc2)
+        (match xs
+          [std/core/types/Nil (std/core/types/Tuple2 ((std/core/types/cctx/++. (acc1 std/core/types/Nil)) (std/core/types/cctx/++. (acc2 std/core/types/Nil))))]
+          [(std/core/types/Cons x xx) (match (pred (x))
+            [std/core/types/True (learn/contexts/partition-td (xx pred (std/core/types/cctx/++ (acc1 (letrec* ([h-cctx-x1524 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x1525 (std/core/types/h-field-addr-of (h-cctx-x1524 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x1524 h-cctx-x1525))))) acc2))]
+            [std/core/types/False (learn/contexts/partition-td (xx pred acc1 (std/core/types/cctx/++ (acc2 (letrec* ([h-cctx-x1571 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x1572 (std/core/types/h-field-addr-of (h-cctx-x1571 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x1571 h-cctx-x1572)))))))])])))
+    (def learn/contexts/partition-entry
+      (fn (xs pred)
+        (learn/contexts/partition-td (xs pred (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ())))))
+    (def learn/contexts/example-partition
+      (fn ()
+        (learn/contexts/partition-entry ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 (std/core/types/Cons (4 (std/core/types/Cons (5 std/core/types/Nil)))))))))) std/core/int/is-odd))))
+    (def learn/contexts/main
+      (fn ()
+        (std/core/console/default/show/println ((learn/contexts/example-partition ()) (fn (h-arg-x1)
+          (std/core/tuple/tuple2/show (h-arg-x1 (fn (h-arg-x1)
+            (std/core/list/show (h-arg-x1 std/core/int/show))) (fn (h-arg-x1)
+            (std/core/list/show (h-arg-x1 std/core/int/show))))))))))))

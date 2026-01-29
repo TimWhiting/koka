@@ -1,0 +1,26 @@
+((module std/core/either)
+  (defs
+    (def std/core/either/maybe
+      (fn (e)
+        (match e
+          [(std/core/types/Left _) std/core/types/Nothing]
+          [(std/core/types/Right x) (std/core/types/Just (x))])))
+    (def std/core/either/map
+      (fn (e f)
+        (match e
+          [(std/core/types/Right x) (std/core/types/Right ((f (x))))]
+          [(std/core/types/Left x) (std/core/types/Left (x))])))
+    (def std/core/either/==
+      (fn (e1 e2 h-implicit/left/== h-implicit/right/==)
+        (match e1
+          [(std/core/types/Left l1) (match e2
+            [(std/core/types/Left l2) (h-implicit/left/== (l1 l2))]
+            [_ std/core/types/False])]
+          [(std/core/types/Right r1) (match e2
+            [(std/core/types/Right r2) (h-implicit/right/== (r1 r2))]
+            [_ std/core/types/False])])))
+    (def std/core/either/show
+      (fn (e h-implicit/left/show h-implicit/right/show)
+        (match e
+          [(std/core/types/Right x) (std/core/types/++ ("Right(" (std/core/types/++ ((h-implicit/right/show (x)) ")"))))]
+          [(std/core/types/Left y) (std/core/types/++ ("Left(" (std/core/types/++ ((h-implicit/left/show (y)) ")"))))])))))

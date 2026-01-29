@@ -1,0 +1,356 @@
+((module analysis/benchmarks/handlers/nim)
+  (defs
+    (def analysis/benchmarks/handlers/nim/is-bob
+      (fn (player)
+        (match player
+          [analysis/benchmarks/handlers/nim/Bob std/core/types/True]
+          [analysis/benchmarks/handlers/nim/Alice std/core/types/False])))
+    (def analysis/benchmarks/handlers/nim/is-alice
+      (fn (player)
+        (match player
+          [analysis/benchmarks/handlers/nim/Alice std/core/types/True]
+          [analysis/benchmarks/handlers/nim/Bob std/core/types/False])))
+    (def analysis/benchmarks/handlers/nim/==
+      (fn (p1 p2)
+        (match (std/core/types/Tuple2 (p1 p2))
+          [(std/core/types/Tuple2 analysis/benchmarks/handlers/nim/Bob analysis/benchmarks/handlers/nim/Bob) std/core/types/True]
+          [(std/core/types/Tuple2 analysis/benchmarks/handlers/nim/Alice analysis/benchmarks/handlers/nim/Alice) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/handlers/nim/player/show
+      (fn (p)
+        (match p
+          [analysis/benchmarks/handlers/nim/Bob "bob"]
+          [analysis/benchmarks/handlers/nim/Alice "alice"])))
+    (def analysis/benchmarks/handlers/nim/move/h-cfc
+      (fn (move)
+        (match move
+          [(analysis/benchmarks/handlers/nim/h-Hnd-move h-x _) h-x])))
+    (def analysis/benchmarks/handlers/nim/move/h-ctl-move
+      (fn (move)
+        (match move
+          [(analysis/benchmarks/handlers/nim/h-Hnd-move _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/nim/move/h-tag
+      (std/core/hnd/h-new-htag ("move@nim")))
+    (def analysis/benchmarks/handlers/nim/move/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/nim/move/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/nim/move/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/nim/h-Hnd-move _ h-ctl-move) h-ctl-move])))
+    (def analysis/benchmarks/handlers/nim/move
+      (fn (player sticks)
+        (std/core/hnd/h-perform2 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/nim/move/h-select player sticks))))
+    (def analysis/benchmarks/handlers/nim/alice-turn
+      (fn (n)
+        (match (std/core/int/<= (n 0))
+          [std/core/types/True analysis/benchmarks/handlers/nim/Bob]
+          [std/core/types/False (analysis/benchmarks/handlers/nim/bob-turn ((std/core/int/- (n (analysis/benchmarks/handlers/nim/move (analysis/benchmarks/handlers/nim/Alice n))))))])))
+    (def analysis/benchmarks/handlers/nim/bob-turn
+      (fn (n)
+        (match (std/core/int/<= (n 0))
+          [std/core/types/True analysis/benchmarks/handlers/nim/Alice]
+          [std/core/types/False (analysis/benchmarks/handlers/nim/alice-turn ((std/core/int/- (n (analysis/benchmarks/handlers/nim/move (analysis/benchmarks/handlers/nim/Bob n))))))])))
+    (def analysis/benchmarks/handlers/nim/game
+      (fn (n)
+        (analysis/benchmarks/handlers/nim/alice-turn (n))))
+    (def analysis/benchmarks/handlers/nim/perfect
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/move/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-move (1 (std/core/hnd/clause-tail2 ((fn (_p n)
+          (std/core/int/max (1 (std/core/int/% (n 4))))))))) (fn (h-res)
+          h-res) h-action))))
+    (def analysis/benchmarks/handlers/nim/example-perfect1
+      (fn ()
+        (analysis/benchmarks/handlers/nim/perfect ((fn ()
+          (analysis/benchmarks/handlers/nim/game (7)))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-perfect1
+      (fn ()
+        (analysis/benchmarks/handlers/nim/example-perfect1 ())))
+    (def analysis/benchmarks/handlers/nim/result-example-perfect1
+      (fn ()
+        analysis/benchmarks/handlers/nim/Alice))
+    (def analysis/benchmarks/handlers/nim/example-perfect2
+      (fn ()
+        (analysis/benchmarks/handlers/nim/perfect ((fn ()
+          (analysis/benchmarks/handlers/nim/game (12)))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-perfect2
+      (fn ()
+        (analysis/benchmarks/handlers/nim/example-perfect2 ())))
+    (def analysis/benchmarks/handlers/nim/result-example-perfect2
+      (fn ()
+        analysis/benchmarks/handlers/nim/Bob))
+    (def analysis/benchmarks/handlers/nim/is-take
+      (fn (gtree)
+        (match gtree
+          [(analysis/benchmarks/handlers/nim/Take _ _) std/core/types/True]
+          [(analysis/benchmarks/handlers/nim/Winner _) std/core/types/False])))
+    (def analysis/benchmarks/handlers/nim/gtree/player
+      (fn (gtree)
+        (match gtree
+          [(analysis/benchmarks/handlers/nim/Take h-x _) h-x]
+          [(analysis/benchmarks/handlers/nim/Winner h-x) h-x])))
+    (def analysis/benchmarks/handlers/nim/is-winner
+      (fn (gtree)
+        (match gtree
+          [(analysis/benchmarks/handlers/nim/Winner _) std/core/types/True]
+          [(analysis/benchmarks/handlers/nim/Take _ _) std/core/types/False])))
+    (def analysis/benchmarks/handlers/nim/valid-moves
+      (fn (n)
+        (std/core/list/filter ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))) (fn (m)
+          (std/core/int/<= (m n)))))))
+    (def analysis/benchmarks/handlers/nim/gametree
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/move/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-move (3 (std/core/hnd/clause-control2 ((fn (p n resume)
+          (letrec* ([moves (analysis/benchmarks/handlers/nim/valid-moves (n))] [subgames (std/core/list/map (moves resume))] [subtrees (std/core/list/zip (moves subgames))])
+            (analysis/benchmarks/handlers/nim/Take (p subtrees)))))))) (fn (x)
+          (analysis/benchmarks/handlers/nim/Winner (x))) h-action))))
+    (def analysis/benchmarks/handlers/nim/show-gtree
+      (fn (gt indent)
+        (match gt
+          [(analysis/benchmarks/handlers/nim/Winner p) (std/core/types/++ ((analysis/benchmarks/handlers/nim/player/show (p)) " wins"))]
+          [(analysis/benchmarks/handlers/nim/Take p moves) (letrec* ([lines (std/core/list/map (moves (fn (h-pat-x106_32)
+            (match h-pat-x106_32
+              [(std/core/types/Tuple2 sticks gtx) (std/core/types/++ ("\n" (std/core/types/++ ((std/core/string/repeat (" " indent)) (std/core/types/++ ((std/core/int/show (sticks)) (std/core/types/++ (" -> " (analysis/benchmarks/handlers/nim/show-gtree (gtx (std/core/int/+ (indent 2))))))))))))]))))])
+            (std/core/types/++ ((analysis/benchmarks/handlers/nim/player/show (p)) (std/core/list/concat/join (lines)))))])))
+    (def analysis/benchmarks/handlers/nim/gtree/show
+      (fn (gt)
+        (analysis/benchmarks/handlers/nim/show-gtree (gt 2))))
+    (def analysis/benchmarks/handlers/nim/example-gtree
+      (fn ()
+        (analysis/benchmarks/handlers/nim/gametree ((fn ()
+          (analysis/benchmarks/handlers/nim/game (3)))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-gtree
+      (fn ()
+        (analysis/benchmarks/handlers/nim/example-gtree ())))
+    (def analysis/benchmarks/handlers/nim/result-example-gtree
+      (fn ()
+        (analysis/benchmarks/handlers/nim/Take (analysis/benchmarks/handlers/nim/Alice (std/core/types/Cons ((std/core/types/Tuple2 (1 (analysis/benchmarks/handlers/nim/Take (analysis/benchmarks/handlers/nim/Bob (std/core/types/Cons ((std/core/types/Tuple2 (1 (analysis/benchmarks/handlers/nim/Take (analysis/benchmarks/handlers/nim/Alice (std/core/types/Cons ((std/core/types/Tuple2 (1 (analysis/benchmarks/handlers/nim/Winner (analysis/benchmarks/handlers/nim/Alice)))) std/core/types/Nil)))))) (std/core/types/Cons ((std/core/types/Tuple2 (2 (analysis/benchmarks/handlers/nim/Winner (analysis/benchmarks/handlers/nim/Bob)))) std/core/types/Nil)))))))) (std/core/types/Cons ((std/core/types/Tuple2 (2 (analysis/benchmarks/handlers/nim/Take (analysis/benchmarks/handlers/nim/Bob (std/core/types/Cons ((std/core/types/Tuple2 (1 (analysis/benchmarks/handlers/nim/Winner (analysis/benchmarks/handlers/nim/Bob)))) std/core/types/Nil)))))) (std/core/types/Cons ((std/core/types/Tuple2 (3 (analysis/benchmarks/handlers/nim/Winner (analysis/benchmarks/handlers/nim/Alice)))) std/core/types/Nil))))))))))
+    (def analysis/benchmarks/handlers/nim/cheat/h-cfc
+      (fn (cheat)
+        (match cheat
+          [(analysis/benchmarks/handlers/nim/h-Hnd-cheat h-x _) h-x])))
+    (def analysis/benchmarks/handlers/nim/cheat/h-fun-cheat
+      (fn (cheat)
+        (match cheat
+          [(analysis/benchmarks/handlers/nim/h-Hnd-cheat _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/nim/cheat/h-tag
+      (std/core/hnd/h-new-htag ("cheat@nim")))
+    (def analysis/benchmarks/handlers/nim/cheat/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/nim/cheat/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/nim/cheat/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/nim/h-Hnd-cheat _ h-fun-cheat) h-fun-cheat])))
+    (def analysis/benchmarks/handlers/nim/cheat
+      (fn (player)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/nim/cheat/h-select player))))
+    (def analysis/benchmarks/handlers/nim/cheat-report
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/cheat/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-cheat (1 (std/core/hnd/clause-tail1 ((fn (p)
+          (std/core/exn/throw ((std/core/types/++ ((analysis/benchmarks/handlers/nim/player/show (p)) " cheated!")) std/core/types/h-None))))))) (fn (h-res)
+          h-res) h-action))))
+    (def analysis/benchmarks/handlers/nim/check
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/move/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-move (3 (std/core/hnd/clause-control2 ((fn (p n resume)
+          (letrec* ([m (analysis/benchmarks/handlers/nim/move (p n))])
+            (match (std/core/maybe/bool ((std/core/list/find ((analysis/benchmarks/handlers/nim/valid-moves (n)) (fn (i)
+              (std/core/int/== (i m)))))))
+              [std/core/types/True (resume (m))]
+              [std/core/types/False (analysis/benchmarks/handlers/nim/cheat (p))]))))))) (fn (h-res)
+          h-res) h-action))))
+    (def analysis/benchmarks/handlers/nim/example-check
+      (fn ()
+        (analysis/benchmarks/handlers/nim/perfect ((fn ()
+          (analysis/benchmarks/handlers/nim/cheat-report ((fn ()
+            (analysis/benchmarks/handlers/nim/check ((fn ()
+              (analysis/benchmarks/handlers/nim/game (7)))))))))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-check
+      (fn ()
+        (std/core/exn/error/try ((fn ()
+          (analysis/benchmarks/handlers/nim/example-check ()))))))
+    (def analysis/benchmarks/handlers/nim/result-example-check
+      (fn ()
+        (std/core/exn/Ok (analysis/benchmarks/handlers/nim/Alice))))
+    (def analysis/benchmarks/handlers/nim/pc
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/move/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-move (1 (std/core/hnd/clause-tail2 ((fn (p n)
+          (match p
+            [analysis/benchmarks/handlers/nim/Alice (std/core/int/max (1 (std/core/int/% (n 4))))]
+            [analysis/benchmarks/handlers/nim/Bob n])))))) (fn (h-res)
+          h-res) h-action))))
+    (def analysis/benchmarks/handlers/nim/example-pc1
+      (fn ()
+        (analysis/benchmarks/handlers/nim/pc ((fn ()
+          (analysis/benchmarks/handlers/nim/cheat-report ((fn ()
+            (analysis/benchmarks/handlers/nim/check ((fn ()
+              (analysis/benchmarks/handlers/nim/game (12)))))))))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-pc1
+      (fn ()
+        (std/core/exn/error/try ((fn ()
+          (analysis/benchmarks/handlers/nim/example-pc1 ()))))))
+    (def analysis/benchmarks/handlers/nim/result-example-pc1
+      (fn ()
+        (std/core/exn/Error ((std/core/exn/Exception ("bob cheated!" std/core/exn/ExnError))))))
+    (def analysis/benchmarks/handlers/nim/example-pc2
+      (fn ()
+        (analysis/benchmarks/handlers/nim/perfect ((fn ()
+          (analysis/benchmarks/handlers/nim/cheat-report ((fn ()
+            (analysis/benchmarks/handlers/nim/check ((fn ()
+              (analysis/benchmarks/handlers/nim/pc ((fn ()
+                (analysis/benchmarks/handlers/nim/game (12))))))))))))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-pc2
+      (fn ()
+        (analysis/benchmarks/handlers/nim/example-pc2 ())))
+    (def analysis/benchmarks/handlers/nim/result-example-pc2
+      (fn ()
+        analysis/benchmarks/handlers/nim/Bob))
+    (def analysis/benchmarks/handlers/nim/choose/h-cfc
+      (fn (choose)
+        (match choose
+          [(analysis/benchmarks/handlers/nim/h-Hnd-choose h-x _) h-x])))
+    (def analysis/benchmarks/handlers/nim/choose/h-ctl-choose
+      (fn (choose)
+        (match choose
+          [(analysis/benchmarks/handlers/nim/h-Hnd-choose _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/nim/choose/h-tag
+      (std/core/hnd/h-new-htag ("choose@nim")))
+    (def analysis/benchmarks/handlers/nim/choose/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/nim/choose/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/nim/choose/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/nim/h-Hnd-choose _ h-ctl-choose) h-ctl-choose])))
+    (def analysis/benchmarks/handlers/nim/choose
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/nim/choose/h-select))))
+    (def analysis/benchmarks/handlers/nim/bob-chooses
+      (fn (m)
+        (match (analysis/benchmarks/handlers/nim/choose ())
+          [std/core/types/True (analysis/benchmarks/handlers/nim/pc (m))]
+          [std/core/types/False (analysis/benchmarks/handlers/nim/perfect (m))])))
+    (def analysis/benchmarks/handlers/nim/all-results
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/choose/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-choose (3 (std/core/hnd/clause-control0 ((fn (resume)
+          (std/core/list/++ ((resume (std/core/types/True)) (resume (std/core/types/False))))))))) (fn (x)
+          (std/core/types/Cons (x std/core/types/Nil))) h-action))))
+    (def analysis/benchmarks/handlers/nim/example-choose
+      (fn ()
+        ((fn (h-action)
+          (analysis/benchmarks/handlers/nim/choose/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-choose (3 (std/core/hnd/clause-control0 ((fn (resume)
+            (std/core/list/++ ((resume (std/core/types/True)) (resume (std/core/types/False))))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (analysis/benchmarks/handlers/nim/bob-chooses ((fn ()
+            (std/core/types/Cons ((analysis/benchmarks/handlers/nim/game (7)) std/core/types/Nil))))))))))
+    (def analysis/benchmarks/handlers/nim/coin
+      (fn (h-action)
+        (analysis/benchmarks/handlers/nim/choose/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-choose (1 (std/core/hnd/clause-tail0 ((fn ()
+          (std/num/float64/> ((std/num/random/srandom-float64 ()) 0.5))))))) (fn (h-res)
+          h-res) h-action))))
+    (def analysis/benchmarks/handlers/nim/example-coin
+      (fn ()
+        (analysis/benchmarks/handlers/nim/coin ((fn ()
+          (analysis/benchmarks/handlers/nim/bob-chooses ((fn ()
+            (analysis/benchmarks/handlers/nim/game (7))))))))))
+    (def analysis/benchmarks/handlers/nim/analyze-example-coin
+      (fn ()
+        (analysis/benchmarks/handlers/nim/example-coin ())))
+    (def analysis/benchmarks/handlers/nim/result-example-coin
+      (fn ()
+        (match (std/num/float64/> ((std/num/random/srandom-float64 ()) 0.5))
+          [std/core/types/True analysis/benchmarks/handlers/nim/Alice]
+          [std/core/types/False analysis/benchmarks/handlers/nim/Bob])))
+    (def analysis/benchmarks/handlers/nim/state/h-cfc
+      (fn (state)
+        (match state
+          [(analysis/benchmarks/handlers/nim/h-Hnd-state h-x _ _) h-x])))
+    (def analysis/benchmarks/handlers/nim/state/h-tag
+      (std/core/hnd/h-new-htag ("state@nim")))
+    (def analysis/benchmarks/handlers/nim/state/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/nim/state/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/nim/state/h-fun-get
+      (fn (state)
+        (match state
+          [(analysis/benchmarks/handlers/nim/h-Hnd-state _ h-x _) h-x])))
+    (def analysis/benchmarks/handlers/nim/get/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/nim/h-Hnd-state _ h-fun-get _) h-fun-get])))
+    (def analysis/benchmarks/handlers/nim/get
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/nim/get/h-select))))
+    (def analysis/benchmarks/handlers/nim/state/h-fun-put
+      (fn (state)
+        (match state
+          [(analysis/benchmarks/handlers/nim/h-Hnd-state _ _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/nim/put/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/nim/h-Hnd-state _ _ h-fun-put) h-fun-put])))
+    (def analysis/benchmarks/handlers/nim/put
+      (fn (x)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/nim/put/h-select x))))
+    (def analysis/benchmarks/handlers/nim/state
+      (fn (init action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-3689 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (init (fn (s)
+              ((fn (h-action)
+                (analysis/benchmarks/handlers/nim/state/h-handle ((analysis/benchmarks/handlers/nim/h-Hnd-state (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (std/core/types/local-get (s ievh-3689))))) (std/core/hnd/clause-tail1 ((fn (x)
+                  (std/core/types/local-set (s x))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                (std/core/hnd/h-mask-builtin ((fn ()
+                  (action ()))))))))))))))))
+    (def analysis/benchmarks/handlers/nim/s0
+      (std/core/types/Cons ((std/core/types/Tuple2 (analysis/benchmarks/handlers/nim/Alice 0)) (std/core/types/Cons ((std/core/types/Tuple2 (analysis/benchmarks/handlers/nim/Bob 0)) std/core/types/Nil)))))
+    (def analysis/benchmarks/handlers/nim/update-score
+      (fn (p gs)
+        (std/core/list/map (gs (fn (h-pat-x251_14)
+          (match h-pat-x251_14
+            [(std/core/types/Tuple2 q s) (match (analysis/benchmarks/handlers/nim/== (p q))
+              [std/core/types/True (std/core/types/Tuple2 (q (std/core/int/+ (s 1))))]
+              [std/core/types/False (std/core/types/Tuple2 (q s))])]))))))
+    (def analysis/benchmarks/handlers/nim/score-updater
+      (fn (h-action)
+        ((fn (p)
+          (letrec* ([_ (analysis/benchmarks/handlers/nim/put ((analysis/benchmarks/handlers/nim/update-score (p (analysis/benchmarks/handlers/nim/get ())))))])
+            p)) ((h-action ())))))
+    (def analysis/benchmarks/handlers/nim/print-board
+      (fn (gs)
+        (letrec* ([scores (std/core/list/map (gs (fn (h-pat-x257_26)
+          (match h-pat-x257_26
+            [(std/core/types/Tuple2 p s) (std/core/types/++ ((analysis/benchmarks/handlers/nim/player/show (p)) (std/core/types/++ (" -> " (std/core/int/show (s))))))]))))])
+          (std/core/console/string/println ((std/core/list/joinsep/join (scores "\n")))))))
+    (def analysis/benchmarks/handlers/nim/printer
+      (fn (h-action)
+        ((fn (x)
+          (letrec* ([_ (analysis/benchmarks/handlers/nim/print-board ((analysis/benchmarks/handlers/nim/get ())))])
+            x)) ((h-action ())))))
+    (def analysis/benchmarks/handlers/nim/example-print1
+      (fn ()
+        (analysis/benchmarks/handlers/nim/state (analysis/benchmarks/handlers/nim/s0 (fn ()
+          (analysis/benchmarks/handlers/nim/printer ((fn ()
+            (analysis/benchmarks/handlers/nim/coin ((fn ()
+              (analysis/benchmarks/handlers/nim/bob-chooses ((fn ()
+                (analysis/benchmarks/handlers/nim/score-updater ((fn ()
+                  (analysis/benchmarks/handlers/nim/game (7)))))))))))))))))))
+    (def analysis/benchmarks/handlers/nim/replay
+      (fn (n action)
+        ((fn (h-action)
+          ((fn (x)
+            (match (std/core/int/<= (n 1))
+              [std/core/types/True x]
+              [std/core/types/False (analysis/benchmarks/handlers/nim/replay ((std/core/int/- (n 1)) action))])) ((h-action ())))) ((fn ()
+          (action ()))))))
+    (def analysis/benchmarks/handlers/nim/example-print2
+      (fn ()
+        (analysis/benchmarks/handlers/nim/state (analysis/benchmarks/handlers/nim/s0 (fn ()
+          (analysis/benchmarks/handlers/nim/printer ((fn ()
+            (analysis/benchmarks/handlers/nim/replay (10 (fn ()
+              (analysis/benchmarks/handlers/nim/coin ((fn ()
+                (analysis/benchmarks/handlers/nim/bob-chooses ((fn ()
+                  (analysis/benchmarks/handlers/nim/score-updater ((fn ()
+                    (analysis/benchmarks/handlers/nim/game (7))))))))))))))))))))))))

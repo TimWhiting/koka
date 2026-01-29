@@ -1,0 +1,490 @@
+((module std/core/list)
+  (defs
+    (def std/core/list/maybe/head
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons x _) (std/core/types/Just (x))]
+          [std/core/types/Nil std/core/types/Nothing])))
+    (def std/core/list/head
+      (fn (xs default)
+        (match xs
+          [(std/core/types/Cons x _) x]
+          [std/core/types/Nil default])))
+    (def std/core/list/tail
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons _ xx) xx]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/is-empty
+      (fn (xs)
+        (match xs
+          [std/core/types/Nil std/core/types/True]
+          [_ std/core/types/False])))
+    (def std/core/list/single
+      (fn (x)
+        (std/core/types/Cons (x std/core/types/Nil))))
+    (def std/core/list/length
+      (fn (xs)
+        (letrec* ([len (fn (ys acc)
+          (match ys
+            [(std/core/types/Cons _ yy) (len (yy (std/core/int/+ (acc 1))))]
+            [std/core/types/Nil acc]))])
+          (len (xs 0)))))
+    (def std/core/list/==
+      (fn (xs ys h-implicit/==)
+        (match xs
+          [(std/core/types/Cons x xx) (match ys
+            [std/core/types/Nil std/core/types/False]
+            [(std/core/types/Cons y yy) (match (h-implicit/== (x y))
+              [std/core/types/True (std/core/list/== (xx yy h-implicit/==))]
+              [_ std/core/types/False])])]
+          [std/core/types/Nil (match ys
+            [std/core/types/Nil std/core/types/True]
+            [(std/core/types/Cons _ _) std/core/types/False])])))
+    (def std/core/list/cmp
+      (fn (xs ys h-implicit/cmp)
+        (match xs
+          [(std/core/types/Cons x xx) (match ys
+            [std/core/types/Nil std/core/types/Gt]
+            [(std/core/types/Cons y yy) (match (h-implicit/cmp (x y))
+              [std/core/types/Eq (std/core/list/cmp (xx yy h-implicit/cmp))]
+              [lg lg])])]
+          [std/core/types/Nil (match ys
+            [std/core/types/Nil std/core/types/Eq]
+            [(std/core/types/Cons _ _) std/core/types/Lt])])))
+    (def std/core/list/take
+      (fn (xs n)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/types/Cons (x (std/core/list/take (xx (std/core/int/- (n 1))))))]
+          [_ std/core/types/Nil])))
+    (def std/core/list/drop
+      (fn (xs n)
+        (match xs
+          [(std/core/types/Cons _ xx) (std/core/list/drop (xx (std/core/int/- (n 1))))]
+          [_ xs])))
+    (def std/core/list/reverse-acc
+      (fn (acc ys)
+        (match ys
+          [(std/core/types/Cons x xx) (std/core/list/reverse-acc ((std/core/types/Cons (x acc)) xx))]
+          [std/core/types/Nil acc])))
+    (def std/core/list/reverse-append
+      (fn (xs tl)
+        (std/core/list/reverse-acc (tl xs))))
+    (def std/core/list/reverse
+      (fn (xs)
+        (std/core/list/reverse-append (xs std/core/types/Nil))))
+    (def std/core/list/append
+      (fn (xs ys)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/types/Cons (x (std/core/list/append (xx ys))))]
+          [std/core/types/Nil ys])))
+    (def std/core/list/++
+      (fn (xs ys)
+        (std/core/list/append (xs ys))))
+    (def std/core/list/foldl
+      (fn (xs z f)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/list/foldl (xx (f (z x)) f))]
+          [std/core/types/Nil z])))
+    (def std/core/list/foldr
+      (fn (xs z f)
+        (std/core/list/foldl ((std/core/list/reverse (xs)) z (fn (x y)
+          (f (y x)))))))
+    (def std/core/list/foldl1
+      (fn (xs f)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/list/foldl (xx x f))]
+          [std/core/types/Nil (std/core/exn/throw ("unexpected Nil in std/core/foldl1" std/core/types/h-None))])))
+    (def std/core/list/foldr1
+      (fn (xs f)
+        (std/core/list/foldl1 ((std/core/list/reverse (xs)) f))))
+    (def std/core/list/split
+      (fn (xs n)
+        (std/core/types/Tuple2 ((std/core/list/take (xs n)) (std/core/list/drop (xs n))))))
+    (def std/core/list/drop-while
+      (fn (xs predicate)
+        (match xs
+          [(std/core/types/Cons x xx) (match (predicate (x))
+            [std/core/types/True (std/core/list/drop-while (xx predicate))]
+            [std/core/types/False xs])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/filter
+      (fn (xs pred)
+        (match xs
+          [(std/core/types/Cons x xx) (match (pred (x))
+            [std/core/types/True (std/core/types/Cons (x (std/core/list/filter (xx pred))))]
+            [std/core/types/False (std/core/list/filter (xx pred))])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/filter-map
+      (fn (xs pred)
+        (match xs
+          [std/core/types/Nil std/core/types/Nil]
+          [(std/core/types/Cons x xx) (match (pred (x))
+            [std/core/types/Nothing (std/core/list/filter-map (xx pred))]
+            [(std/core/types/Just y) (std/core/types/Cons (y (std/core/list/filter-map (xx pred))))])])))
+    (def std/core/list/foreach-while
+      (fn (xs action)
+        (match xs
+          [std/core/types/Nil std/core/types/Nothing]
+          [(std/core/types/Cons x xx) (match (action (x))
+            [std/core/types/Nothing (std/core/list/foreach-while (xx action))]
+            [just just])])))
+    (def std/core/list/find
+      (fn (xs pred)
+        (std/core/list/foreach-while (xs (fn (x)
+          (match (pred (x))
+            [std/core/types/True (std/core/types/Just (x))]
+            [std/core/types/False std/core/types/Nothing]))))))
+    (def std/core/list/find-maybe
+      (fn (xs pred)
+        (std/core/list/foreach-while (xs pred))))
+    (def std/core/list/maybe/list
+      (fn (m)
+        (match m
+          [std/core/types/Nothing std/core/types/Nil]
+          [(std/core/types/Just x) (std/core/types/Cons (x std/core/types/Nil))])))
+    (def std/core/list/range/list
+      (fn (lo hi)
+        (match (std/core/int/<= (lo hi))
+          [std/core/types/True (std/core/types/Cons (lo (std/core/list/range/list ((std/core/int/inc (lo)) hi))))]
+          [std/core/types/False std/core/types/Nil])))
+    (def std/core/list/map
+      (fn (xs f)
+        (match xs
+          [(std/core/types/Cons x xx) (std/core/types/Cons ((f (x)) (std/core/list/map (xx f))))]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/char/list
+      (fn (lo hi)
+        (std/core/list/map ((std/core/list/range/list ((std/core/char/int (lo)) (std/core/char/int (hi)))) std/core/char/int/char))))
+    (def std/core/list/function/list
+      (fn (lo hi f)
+        (match (std/core/int/<= (lo hi))
+          [std/core/types/True (std/core/types/Cons ((f (lo)) (std/core/list/function/list ((std/core/int/inc (lo)) hi f))))]
+          [std/core/types/False std/core/types/Nil])))
+    (def std/core/list/stride/list
+      (fn (lo hi stride)
+        (match (std/core/int/<= (lo hi))
+          [std/core/types/True (std/core/types/Cons (lo (std/core/list/stride/list ((std/core/int/+ (lo stride)) hi stride))))]
+          [std/core/types/False std/core/types/Nil])))
+    (def std/core/list/stridefunction/list
+      (fn (lo hi stride f)
+        (match (std/core/int/<= (lo hi))
+          [std/core/types/True (std/core/types/Cons ((f (lo)) (std/core/list/stridefunction/list ((std/core/int/+ (lo stride)) hi stride f))))]
+          [std/core/types/False std/core/types/Nil])))
+    (def std/core/list/string/map
+      (fn (s f)
+        (std/core/string/listchar/string ((std/core/list/map ((std/core/string/list (s)) f))))))
+    (def std/core/list/order2
+      (fn (xs ys h-implicit/order2)
+        (match xs
+          [std/core/types/Nil (match ys
+            [std/core/types/Nil (std/core/types/Eq2 (std/core/types/Nil))]
+            [|ys'| (std/core/types/Lt2 (std/core/types/Nil |ys'|))])]
+          [(std/core/types/Cons x xx) (match ys
+            [std/core/types/Nil (std/core/types/Gt2 (std/core/types/Nil (std/core/types/Cons (x xx))))]
+            [(std/core/types/Cons y yy) (match (h-implicit/order2 (x y))
+              [(std/core/types/Eq2 z) (match (std/core/list/order2 (xx yy h-implicit/order2))
+                [(std/core/types/Eq2 zz) (std/core/types/Eq2 ((std/core/types/Cons (z zz))))]
+                [(std/core/types/Lt2 |xx'| |yy'|) (std/core/types/Lt2 ((std/core/types/Cons (z |xx'|)) (std/core/types/Cons (z |yy'|))))]
+                [(std/core/types/Gt2 |yy'| |xx'|) (std/core/types/Gt2 ((std/core/types/Cons (z |yy'|)) (std/core/types/Cons (z |xx'|))))])]
+              [(std/core/types/Lt2 |x'| |y'|) (std/core/types/Lt2 ((std/core/types/Cons (|x'| xx)) (std/core/types/Cons (|y'| yy))))]
+              [(std/core/types/Gt2 |y'| |x'|) (std/core/types/Gt2 ((std/core/types/Cons (|y'| yy)) (std/core/types/Cons (|x'| xx))))])])])))
+    (def std/core/list/map-indexed
+      (fn (xs f)
+        (letrec* ([map-idx (fn (ys i)
+          (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons ((f (i y)) (map-idx (yy (std/core/int/+ (i 1))))))]
+            [std/core/types/Nil std/core/types/Nil]))])
+          (map-idx (xs 0)))))
+    (def std/core/list/map-peek
+      (fn (xs f)
+        (letrec* ([mappeek (fn (ys)
+          (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons ((f (y yy)) (mappeek (yy))))]
+            [std/core/types/Nil std/core/types/Nil]))])
+          (mappeek (xs)))))
+    (def std/core/list/map-indexed-peek
+      (fn (xs f)
+        (letrec* ([mapidx (fn (ys i)
+          (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons ((f (i y yy)) (mapidx (yy (std/core/int/+ (i 1))))))]
+            [std/core/types/Nil std/core/types/Nil]))])
+          (mapidx (xs 0)))))
+    (def std/core/list/replicate
+      (fn (x n)
+        (match (std/core/int/> (n 0))
+          [std/core/types/True (std/core/types/Cons (x (std/core/list/replicate (x (std/core/int/dec (n))))))]
+          [std/core/types/False std/core/types/Nil])))
+    (def std/core/list/remove
+      (fn (xs pred)
+        (letrec* ([ievh-2804 std/core/types/h-Hnodiv])
+          (std/core/list/filter (xs (fn (x)
+            (std/core/types/bool/! ((pred (x))))))))))
+    (def std/core/list/partition-acc
+      (fn (xs pred acc1 acc2)
+        (match xs
+          [std/core/types/Nil (std/core/types/Tuple2 ((std/core/types/cctx/++. (acc1 std/core/types/Nil)) (std/core/types/cctx/++. (acc2 std/core/types/Nil))))]
+          [(std/core/types/Cons x xx) (match (pred (x))
+            [std/core/types/True (std/core/list/partition-acc (xx pred (std/core/types/cctx/++ (acc1 (letrec* ([h-cctx-x2928 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x2929 (std/core/types/h-field-addr-of (h-cctx-x2928 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x2928 h-cctx-x2929))))) acc2))]
+            [std/core/types/False (std/core/list/partition-acc (xx pred acc1 (std/core/types/cctx/++ (acc2 (letrec* ([h-cctx-x2975 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x2976 (std/core/types/h-field-addr-of (h-cctx-x2975 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x2975 h-cctx-x2976)))))))])])))
+    (def std/core/list/partition
+      (fn (xs pred)
+        (std/core/list/partition-acc (xs pred (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ())))))
+    (def std/core/list/lookup
+      (fn (xs pred)
+        (std/core/list/foreach-while (xs (fn (kv)
+          (match (pred ((std/core/types/tuple2/fst (kv))))
+            [std/core/types/True (std/core/types/Just ((std/core/types/tuple2/snd (kv))))]
+            [std/core/types/False std/core/types/Nothing]))))))
+    (def std/core/list/index-of-acc
+      (fn (xs pred idx)
+        (match xs
+          [(std/core/types/Cons x xx) (match (pred (x))
+            [std/core/types/True idx]
+            [std/core/types/False (std/core/list/index-of-acc (xx pred (std/core/int/+ (idx 1))))])]
+          [std/core/types/Nil -1])))
+    (def std/core/list/index-of
+      (fn (xs pred)
+        (std/core/list/index-of-acc (xs pred 0))))
+    (def std/core/list/foreach
+      (fn (xs action)
+        (match xs
+          [(std/core/types/Cons x xx) (letrec* ([_ (action (x))])
+            (std/core/list/foreach (xx action)))]
+          [std/core/types/Nil std/core/types/Unit])))
+    (def std/core/list/map-while
+      (fn (xs action)
+        (match xs
+          [std/core/types/Nil std/core/types/Nil]
+          [(std/core/types/Cons x xx) (match (action (x))
+            [(std/core/types/Just y) (std/core/types/Cons (y (std/core/list/map-while (xx action))))]
+            [std/core/types/Nothing std/core/types/Nil])])))
+    (def std/core/list/foreach-indexed
+      (fn (xs action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-3443 std/core/types/h-Hnodiv] [ievh-3495 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (0 (fn (i)
+              (std/core/list/foreach (xs (fn (x)
+                (letrec* ([j (std/core/types/local-get (i ievh-3443))] [_ ((fn (h-arg-x1 h-arg-x2)
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (action (h-arg-x1 h-arg-x2)))))) (j x))])
+                  (std/core/types/local-set (i (std/core/int/+ ((std/core/types/local-get (i ievh-3495)) 1)))))))))))))))))
+    (def std/core/list/intersperse
+      (fn (xs sep)
+        (letrec* ([before (fn (ys)
+          (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons (sep (std/core/types/Cons (y (before (yy))))))]
+            [std/core/types/Nil std/core/types/Nil]))])
+          (match xs
+            [(std/core/types/Cons x xx) (std/core/types/Cons (x (before (xx))))]
+            [std/core/types/Nil std/core/types/Nil]))))
+    (def std/core/list/joinsep
+      (fn (xs sep)
+        (match xs
+          [std/core/types/Nil ""]
+          [(std/core/types/Cons x std/core/types/Nil) x]
+          [(std/core/types/Cons x (std/core/types/Cons y std/core/types/Nil)) (std/core/types/++ (x y))]
+          [_ (std/core/string/vectorsep/join ((std/core/vector/list/vector (xs)) sep))])))
+    (def std/core/list/concat/join
+      (fn (xs)
+        (match xs
+          [std/core/types/Nil ""]
+          [(std/core/types/Cons x std/core/types/Nil) x]
+          [(std/core/types/Cons x (std/core/types/Cons y std/core/types/Nil)) (std/core/types/++ (x y))]
+          [_ (std/core/string/vector/join ((std/core/vector/list/vector (xs))))])))
+    (def std/core/list/joinsep/join
+      (fn (xs sep)
+        (std/core/list/joinsep (xs sep))))
+    (def std/core/list/show
+      (fn (xs h-implicit/show)
+        (std/core/types/++ ("[" (std/core/types/++ ((std/core/list/joinsep/join ((std/core/list/map (xs h-implicit/show)) ",")) "]"))))))
+    (def std/core/list/show-list
+      (fn (xs show-elem)
+        (std/core/list/show (xs show-elem))))
+    (def std/core/list/zip
+      (fn (xs ys)
+        (match xs
+          [(std/core/types/Cons x xx) (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons ((std/core/types/Tuple2 (x y)) (std/core/list/zip (xx yy))))]
+            [std/core/types/Nil std/core/types/Nil])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/zipwith
+      (fn (xs ys f)
+        (match xs
+          [(std/core/types/Cons x xx) (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons ((f (x y)) (std/core/list/zipwith (xx yy f))))]
+            [std/core/types/Nil std/core/types/Nil])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/zipwith-iter
+      (fn (i xs ys f)
+        (match xs
+          [(std/core/types/Cons x xx) (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons ((f (i x y)) (std/core/list/zipwith-iter ((std/core/int/+ (i 1)) xx yy f))))]
+            [std/core/types/Nil std/core/types/Nil])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/zipwith-indexed
+      (fn (xs0 ys0 f)
+        (std/core/list/zipwith-iter (0 xs0 ys0 f))))
+    (def std/core/list/unzip
+      (fn (xs)
+        (letrec* ([iter (fn (ys acc1 acc2)
+          (match ys
+            [(std/core/types/Cons (std/core/types/Tuple2 x y) xx) (iter (xx (std/core/types/cctx/++ (acc1 (letrec* ([h-cctx-x4194 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4195 (std/core/types/h-field-addr-of (h-cctx-x4194 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4194 h-cctx-x4195))))) (std/core/types/cctx/++ (acc2 (letrec* ([h-cctx-x4237 (std/core/types/Cons (y (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4238 (std/core/types/h-field-addr-of (h-cctx-x4237 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4237 h-cctx-x4238)))))))]
+            [std/core/types/Nil (std/core/types/Tuple2 ((std/core/types/cctx/++. (acc1 std/core/types/Nil)) (std/core/types/cctx/++. (acc2 std/core/types/Nil))))]))])
+          (iter (xs (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ()))))))
+    (def std/core/list/unzip3
+      (fn (xs)
+        (letrec* ([iter (fn (ys acc1 acc2 acc3)
+          (match ys
+            [(std/core/types/Cons (std/core/types/Tuple3 x y z) xx) (iter (xx (std/core/types/cctx/++ (acc1 (letrec* ([h-cctx-x4410 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4411 (std/core/types/h-field-addr-of (h-cctx-x4410 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4410 h-cctx-x4411))))) (std/core/types/cctx/++ (acc2 (letrec* ([h-cctx-x4453 (std/core/types/Cons (y (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4454 (std/core/types/h-field-addr-of (h-cctx-x4453 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4453 h-cctx-x4454))))) (std/core/types/cctx/++ (acc3 (letrec* ([h-cctx-x4496 (std/core/types/Cons (z (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4497 (std/core/types/h-field-addr-of (h-cctx-x4496 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4496 h-cctx-x4497)))))))]
+            [std/core/types/Nil (std/core/types/Tuple3 ((std/core/types/cctx/++. (acc1 std/core/types/Nil)) (std/core/types/cctx/++. (acc2 std/core/types/Nil)) (std/core/types/cctx/++. (acc3 std/core/types/Nil))))]))])
+          (iter (xs (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ()))))))
+    (def std/core/list/unzip4
+      (fn (xs)
+        (letrec* ([iter (fn (ys acc1 acc2 acc3 acc4)
+          (match ys
+            [(std/core/types/Cons (std/core/types/Tuple4 x y z w) xx) (iter (xx (std/core/types/cctx/++ (acc1 (letrec* ([h-cctx-x4717 (std/core/types/Cons (x (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4718 (std/core/types/h-field-addr-of (h-cctx-x4717 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4717 h-cctx-x4718))))) (std/core/types/cctx/++ (acc2 (letrec* ([h-cctx-x4760 (std/core/types/Cons (y (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4761 (std/core/types/h-field-addr-of (h-cctx-x4760 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4760 h-cctx-x4761))))) (std/core/types/cctx/++ (acc3 (letrec* ([h-cctx-x4803 (std/core/types/Cons (z (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4804 (std/core/types/h-field-addr-of (h-cctx-x4803 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4803 h-cctx-x4804))))) (std/core/types/cctx/++ (acc4 (letrec* ([h-cctx-x4846 (std/core/types/Cons (w (std/core/types/h-cctx-hole-create ())))] [h-cctx-x4847 (std/core/types/h-field-addr-of (h-cctx-x4846 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+              (std/core/types/h-cctx-create (h-cctx-x4846 h-cctx-x4847)))))))]
+            [std/core/types/Nil (std/core/types/Tuple4 ((std/core/types/cctx/++. (acc1 std/core/types/Nil)) (std/core/types/cctx/++. (acc2 std/core/types/Nil)) (std/core/types/cctx/++. (acc3 std/core/types/Nil)) (std/core/types/cctx/++. (acc4 std/core/types/Nil))))]))])
+          (iter (xs (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ()) (std/core/types/cctx/empty ()))))))
+    (def std/core/list/span
+      (fn (xs predicate)
+        (letrec* ([span-acc (fn (ys acc)
+          (match ys
+            [(std/core/types/Cons y yy) (match (predicate (y))
+              [std/core/types/True (span-acc (yy (std/core/types/cctx/++ (acc (letrec* ([h-cctx-x5101 (std/core/types/Cons (y (std/core/types/h-cctx-hole-create ())))] [h-cctx-x5102 (std/core/types/h-field-addr-of (h-cctx-x5101 "(\"std/core/types\",\"\",\"Cons\")" "(\"\",\"\",\"tail\")"))])
+                (std/core/types/h-cctx-create (h-cctx-x5101 h-cctx-x5102)))))))]
+              [std/core/types/False (std/core/types/Tuple2 ((std/core/types/cctx/++. (acc std/core/types/Nil)) ys))])]
+            [std/core/types/Nil (std/core/types/Tuple2 ((std/core/types/cctx/++. (acc std/core/types/Nil)) ys))]))])
+          (span-acc (xs (std/core/types/cctx/empty ()))))))
+    (def std/core/list/take-while
+      (fn (xs predicate)
+        (match xs
+          [(std/core/types/Cons x xx) (match (predicate (x))
+            [std/core/types/True (std/core/types/Cons (x (std/core/list/take-while (xx predicate))))]
+            [std/core/types/False std/core/types/Nil])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/joinsep2
+      (fn (xs sep)
+        (match xs
+          [std/core/types/Nil ""]
+          [(std/core/types/Cons x std/core/types/Nil) x]
+          [(std/core/types/Cons x (std/core/types/Cons y std/core/types/Nil)) (std/core/types/++ (x y))]
+          [(std/core/types/Cons x (std/core/types/Cons y std/core/types/Nil)) (std/core/types/++ (x (std/core/types/++ (sep y))))]
+          [(std/core/types/Cons x (std/core/types/Cons y rst)) (std/core/types/++ (x (std/core/types/++ (sep (std/core/types/++ (y (std/core/types/++ (sep (std/core/list/joinsep2 (rst sep))))))))))])))
+    (def std/core/list/concat/join2
+      (fn (xs)
+        (match xs
+          [std/core/types/Nil ""]
+          [(std/core/types/Cons x std/core/types/Nil) x]
+          [(std/core/types/Cons x (std/core/types/Cons y rst)) (std/core/types/++ (x (std/core/types/++ (y (std/core/list/concat/join2 (rst))))))])))
+    (def std/core/list/reverse-join
+      (fn (xs)
+        (std/core/list/concat/join ((std/core/list/reverse (xs))))))
+    (def std/core/list/join-end
+      (fn (xs end)
+        (match xs
+          [std/core/types/Nil ""]
+          [_ (std/core/types/++ ((std/core/list/joinsep (xs end)) end))])))
+    (def std/core/list/concat
+      (fn (xss)
+        (letrec* ([concat-pre (fn (ys zss)
+          (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons (y (concat-pre (yy zss))))]
+            [std/core/types/Nil (match zss
+              [(std/core/types/Cons zs zzs) (concat-pre (zs zzs))]
+              [std/core/types/Nil std/core/types/Nil])]))])
+          (concat-pre (std/core/types/Nil xss)))))
+    (def std/core/list/flatmap
+      (fn (xs f)
+        (letrec* ([flatmap-pre (fn (ys zs)
+          (match ys
+            [(std/core/types/Cons y yy) (std/core/types/Cons (y (flatmap-pre (yy zs))))]
+            [std/core/types/Nil (match zs
+              [(std/core/types/Cons z zz) (flatmap-pre ((f (z)) zz))]
+              [std/core/types/Nil std/core/types/Nil])]))])
+          (flatmap-pre (std/core/types/Nil xs)))))
+    (def std/core/list/flatmap-maybe
+      (fn (xs f)
+        (match xs
+          [(std/core/types/Cons x xx) (match (f (x))
+            [(std/core/types/Just y) (std/core/types/Cons (y (std/core/list/flatmap-maybe (xx f))))]
+            [std/core/types/Nothing (std/core/list/flatmap-maybe (xx f))])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/concat-maybe
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons x xx) (match x
+            [(std/core/types/Just y) (std/core/types/Cons (y (std/core/list/concat-maybe (xx))))]
+            [std/core/types/Nothing (std/core/list/concat-maybe (xx))])]
+          [std/core/types/Nil std/core/types/Nil])))
+    (def std/core/list/last
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons x std/core/types/Nil) (std/core/types/Just (x))]
+          [(std/core/types/Cons _ xx) (std/core/list/last (xx))]
+          [std/core/types/Nil std/core/types/Nothing])))
+    (def std/core/list/init
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons x (as xx (std/core/types/Cons _ _))) (std/core/types/Cons (x (std/core/list/init (xx))))]
+          [_ std/core/types/Nil])))
+    (def std/core/list/h-index
+      (fn (xs n)
+        (match xs
+          [(std/core/types/Cons x xx) (match (std/core/int/> (n 0))
+            [std/core/types/True (std/core/list/h-index (xx (std/core/int/- (n 1))))]
+            [std/core/types/False (match (std/core/int/== (n 0))
+              [std/core/types/True (std/core/types/Just (x))]
+              [std/core/types/False std/core/types/Nothing])])]
+          [std/core/types/Nil std/core/types/Nothing])))
+    (def std/core/list/all
+      (fn (xs predicate)
+        (match xs
+          [(std/core/types/Cons x xx) (match (predicate (x))
+            [std/core/types/True (std/core/list/all (xx predicate))]
+            [std/core/types/False std/core/types/False])]
+          [std/core/types/Nil std/core/types/True])))
+    (def std/core/list/any
+      (fn (xs predicate)
+        (match xs
+          [(std/core/types/Cons x xx) (match (predicate (x))
+            [std/core/types/True std/core/types/True]
+            [std/core/types/False (std/core/list/any (xx predicate))])]
+          [std/core/types/Nil std/core/types/False])))
+    (def std/core/list/sum
+      (fn (xs)
+        (std/core/list/foldl (xs 0 (fn (x y)
+          (std/core/int/+ (x y)))))))
+    (def std/core/list/minimum
+      (fn (xs default)
+        (letrec* ([h-uniq-defaulth-6089 (match default
+          [(std/core/types/h-Optional h-uniq-defaulth-6090) h-uniq-defaulth-6090]
+          [std/core/types/h-None 0])])
+          (match xs
+            [std/core/types/Nil h-uniq-defaulth-6089]
+            [(std/core/types/Cons x xx) (std/core/list/foldl (xx x std/core/int/min))]))))
+    (def std/core/list/maximum
+      (fn (xs default)
+        (letrec* ([h-uniq-defaulth-6123 (match default
+          [(std/core/types/h-Optional h-uniq-defaulth-6124) h-uniq-defaulth-6124]
+          [std/core/types/h-None 0])])
+          (match xs
+            [std/core/types/Nil h-uniq-defaulth-6123]
+            [(std/core/types/Cons x xx) (std/core/list/foldl (xx x std/core/int/max))]))))
+    (def std/core/list/lines
+      (fn (s)
+        (std/core/string/sep/split (s "\n"))))
+    (def std/core/list/unlines
+      (fn (xs)
+        (std/core/list/joinsep/join (xs "\n"))))))

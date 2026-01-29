@@ -1,0 +1,349 @@
+((module analysis/benchmarks/handlers/unix)
+  (defs
+    (def analysis/benchmarks/handlers/unix/bio/h-cfc
+      (fn (bio)
+        (match bio
+          [(analysis/benchmarks/handlers/unix/h-Hnd-bio h-x _) h-x])))
+    (def analysis/benchmarks/handlers/unix/bio/h-tag
+      (std/core/hnd/h-new-htag ("bio@unix")))
+    (def analysis/benchmarks/handlers/unix/bio/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/unix/bio/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/unix/bio/h-fun-write
+      (fn (bio)
+        (match bio
+          [(analysis/benchmarks/handlers/unix/h-Hnd-bio _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/unix/write/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/unix/h-Hnd-bio _ h-fun-write) h-fun-write])))
+    (def analysis/benchmarks/handlers/unix/write
+      (fn (fd s)
+        (std/core/hnd/h-perform2 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/unix/write/h-select fd s))))
+    (def analysis/benchmarks/handlers/unix/stdout
+      0)
+    (def analysis/benchmarks/handlers/unix/echo
+      (fn (s)
+        (analysis/benchmarks/handlers/unix/write (analysis/benchmarks/handlers/unix/stdout s))))
+    (def analysis/benchmarks/handlers/unix/bio
+      (fn (action1)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-674 std/core/types/h-Hnodiv] [ievh-723 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var ("" (fn (buf)
+              ((fn (h-action)
+                (analysis/benchmarks/handlers/unix/bio/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-bio (1 (std/core/hnd/clause-tail2 ((fn (fd s)
+                  (std/core/types/local-set (buf (std/core/types/++ ((std/core/types/local-get (buf ievh-674)) s))))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                (std/core/types/Tuple2 (((fn ()
+                  (std/core/hnd/h-mask-builtin ((fn ()
+                    (action1 ()))))) ()) (std/core/types/local-get (buf ievh-723))))))))))))))))
+    (def analysis/benchmarks/handlers/unix/bio2
+      (fn (action2)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-807 std/core/types/h-Hnodiv] [ievh-903 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var ("" (fn (buf)
+              ((fn (h-action)
+                ((fn (x)
+                  (std/core/types/Tuple2 (x (std/core/types/local-get (buf ievh-807))))) ((h-action ())))) ((fn ()
+                ((fn (h-action)
+                  (analysis/benchmarks/handlers/unix/bio/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-bio (1 (std/core/hnd/clause-tail2 ((fn (fd s)
+                    (std/core/types/local-set (buf (std/core/types/++ ((std/core/types/local-get (buf ievh-903)) s))))))))) (fn (h-res)
+                    h-res) h-action))) ((fn ()
+                  ((fn ()
+                    (std/core/hnd/h-mask-builtin ((fn ()
+                      (action2 ()))))) ()))))))))))))))))
+    (def analysis/benchmarks/handlers/unix/analyze-example1
+      (fn ()
+        (analysis/benchmarks/handlers/unix/bio ((fn ()
+          (letrec* ([_ (analysis/benchmarks/handlers/unix/echo ("hi "))])
+            (analysis/benchmarks/handlers/unix/echo ("unix world"))))))))
+    (def analysis/benchmarks/handlers/unix/result-example1
+      (fn ()
+        (std/core/types/Tuple2 (std/core/types/Unit "hi unix world"))))
+    (def analysis/benchmarks/handlers/unix/analyze-example1_2
+      (fn ()
+        (analysis/benchmarks/handlers/unix/bio2 ((fn ()
+          (letrec* ([_ (analysis/benchmarks/handlers/unix/echo ("hi "))])
+            (analysis/benchmarks/handlers/unix/echo ("unix world"))))))))
+    (def analysis/benchmarks/handlers/unix/result-example1_2
+      (fn ()
+        (std/core/types/Tuple2 (std/core/types/Unit "hi unix world"))))
+    (def analysis/benchmarks/handlers/unix/exit/h-cfc
+      (fn (exit)
+        (match exit
+          [(analysis/benchmarks/handlers/unix/h-Hnd-exit h-x _) h-x])))
+    (def analysis/benchmarks/handlers/unix/exit/h-tag
+      (std/core/hnd/h-new-htag ("exit@unix")))
+    (def analysis/benchmarks/handlers/unix/exit/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/unix/exit/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/unix/exit/h-ctl-exit
+      (fn (exit)
+        (match exit
+          [(analysis/benchmarks/handlers/unix/h-Hnd-exit _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/unix/exit/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/unix/h-Hnd-exit _ h-ctl-exit) h-ctl-exit])))
+    (def analysis/benchmarks/handlers/unix/exit
+      (fn (exitcode)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/unix/exit/h-select exitcode))))
+    (def analysis/benchmarks/handlers/unix/status
+      (fn (action3)
+        ((fn (h-action)
+          (analysis/benchmarks/handlers/unix/exit/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-exit (0 (std/core/hnd/clause-never1 ((fn (code)
+            code))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (letrec* ([_ (action3 ())])
+            0))))))
+    (def analysis/benchmarks/handlers/unix/analyze-example2
+      (fn ()
+        (analysis/benchmarks/handlers/unix/bio ((fn ()
+          (analysis/benchmarks/handlers/unix/status ((fn ()
+            (letrec* ([_ (analysis/benchmarks/handlers/unix/echo ("hi "))] [_ (analysis/benchmarks/handlers/unix/exit (1))])
+              (analysis/benchmarks/handlers/unix/echo ("unix world")))))))))))
+    (def analysis/benchmarks/handlers/unix/result-example2
+      (fn ()
+        (std/core/types/Tuple2 (1 "hi "))))
+    (def analysis/benchmarks/handlers/unix/is-root
+      (fn (user)
+        (match user
+          [analysis/benchmarks/handlers/unix/Root std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/handlers/unix/is-alice
+      (fn (user)
+        (match user
+          [analysis/benchmarks/handlers/unix/Alice std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/handlers/unix/is-bob
+      (fn (user)
+        (match user
+          [analysis/benchmarks/handlers/unix/Bob std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/handlers/unix/user/show
+      (fn (user)
+        (match user
+          [analysis/benchmarks/handlers/unix/Root "root"]
+          [analysis/benchmarks/handlers/unix/Alice "alice"]
+          [analysis/benchmarks/handlers/unix/Bob "bob"])))
+    (def analysis/benchmarks/handlers/unix/whoami/h-cfc
+      (fn (whoami)
+        (match whoami
+          [(analysis/benchmarks/handlers/unix/h-Hnd-whoami h-x _) h-x])))
+    (def analysis/benchmarks/handlers/unix/whoami/h-tag
+      (std/core/hnd/h-new-htag ("whoami@unix")))
+    (def analysis/benchmarks/handlers/unix/whoami/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/unix/whoami/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/unix/whoami/h-fun-whoami
+      (fn (whoami)
+        (match whoami
+          [(analysis/benchmarks/handlers/unix/h-Hnd-whoami _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/unix/whoami/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/unix/h-Hnd-whoami _ h-fun-whoami) h-fun-whoami])))
+    (def analysis/benchmarks/handlers/unix/whoami
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/unix/whoami/h-select))))
+    (def analysis/benchmarks/handlers/unix/intstr/show
+      (fn (h-pat-x110_18)
+        (match h-pat-x110_18
+          [(std/core/types/Tuple2 i s) (std/core/types/++ ("exit with status " (std/core/types/++ ((std/core/int/show (i)) (std/core/types/++ ("\n" (std/core/show/string/show (s))))))))])))
+    (def analysis/benchmarks/handlers/unix/env
+      (fn (user action)
+        ((fn (h-action)
+          (analysis/benchmarks/handlers/unix/whoami/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-whoami (1 (std/core/hnd/clause-tail0 ((fn ()
+            (analysis/benchmarks/handlers/unix/user/show (user))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (action ()))))))
+    (def analysis/benchmarks/handlers/unix/analyze-example3
+      (fn ()
+        (analysis/benchmarks/handlers/unix/bio ((fn ()
+          (analysis/benchmarks/handlers/unix/status ((fn ()
+            (analysis/benchmarks/handlers/unix/env (analysis/benchmarks/handlers/unix/Alice (fn ()
+              (letrec* ([_ (analysis/benchmarks/handlers/unix/echo ("hi "))])
+                (analysis/benchmarks/handlers/unix/echo ((analysis/benchmarks/handlers/unix/whoami ())))))))))))))))
+    (def analysis/benchmarks/handlers/unix/result-example3
+      (fn ()
+        (std/core/types/Tuple2 (0 "hi alice"))))
+    (def analysis/benchmarks/handlers/unix/su/h-cfc
+      (fn (su)
+        (match su
+          [(analysis/benchmarks/handlers/unix/h-Hnd-su h-x _) h-x])))
+    (def analysis/benchmarks/handlers/unix/su/h-tag
+      (std/core/hnd/h-new-htag ("su@unix")))
+    (def analysis/benchmarks/handlers/unix/su/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/unix/su/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/unix/su/h-ctl-su
+      (fn (su)
+        (match su
+          [(analysis/benchmarks/handlers/unix/h-Hnd-su _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/unix/su/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/unix/h-Hnd-su _ h-ctl-su) h-ctl-su])))
+    (def analysis/benchmarks/handlers/unix/su
+      (fn (u)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/unix/su/h-select u))))
+    (def analysis/benchmarks/handlers/unix/session-manager1
+      (fn (initial-user action4)
+        (analysis/benchmarks/handlers/unix/env (initial-user (fn ()
+          ((fn (h-action)
+            (analysis/benchmarks/handlers/unix/su/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-su (3 (std/core/hnd/clause-control1 ((fn (u resume)
+              (std/core/hnd/h-mask-at ((std/core/hnd/h-evv-index (analysis/benchmarks/handlers/unix/whoami/h-tag)) std/core/types/False (fn ()
+                (analysis/benchmarks/handlers/unix/env (u (fn ()
+                  (resume (std/core/types/Unit))))))))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (action4 ())))))))))
+    (def analysis/benchmarks/handlers/unix/session-manager2
+      (fn (initial-user action5)
+        ((fn (h-action)
+          (analysis/benchmarks/handlers/unix/whoami/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-whoami (1 (std/core/hnd/clause-tail0 ((fn ()
+            (analysis/benchmarks/handlers/unix/user/show (initial-user))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          ((fn (h-action)
+            (analysis/benchmarks/handlers/unix/su/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-su (3 (std/core/hnd/clause-control1 ((fn (u resume)
+              ((fn (h-override-action)
+                ((fn (h-action)
+                  (analysis/benchmarks/handlers/unix/whoami/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-whoami (1 (std/core/hnd/clause-tail0 ((fn ()
+                    (analysis/benchmarks/handlers/unix/user/show (u))))))) (fn (h-res)
+                    h-res) h-action))) ((fn ()
+                  (std/core/hnd/h-mask-at ((std/core/hnd/h-evv-index (analysis/benchmarks/handlers/unix/whoami/h-tag)) std/core/types/True h-override-action)))))) ((fn ()
+                (resume (std/core/types/Unit)))))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (action5 ())))))))))
+    (def analysis/benchmarks/handlers/unix/session-manager3
+      (fn (initial-user action6)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-2772 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (initial-user (fn (user)
+              ((fn (h-action)
+                (analysis/benchmarks/handlers/unix/whoami/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-whoami (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (analysis/benchmarks/handlers/unix/user/show ((std/core/types/local-get (user ievh-2772))))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                ((fn (h-action)
+                  (analysis/benchmarks/handlers/unix/su/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-su (1 (std/core/hnd/clause-tail1 ((fn (u)
+                    (std/core/types/local-set (user u))))))) (fn (h-res)
+                    h-res) h-action))) ((fn ()
+                  ((fn ()
+                    (std/core/hnd/h-mask-builtin ((fn ()
+                      (action6 ()))))) ()))))))))))))))))
+    (def analysis/benchmarks/handlers/unix/fork/h-cfc
+      (fn (fork)
+        (match fork
+          [(analysis/benchmarks/handlers/unix/h-Hnd-fork h-x _) h-x])))
+    (def analysis/benchmarks/handlers/unix/fork/h-tag
+      (std/core/hnd/h-new-htag ("fork@unix")))
+    (def analysis/benchmarks/handlers/unix/fork/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/unix/fork/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/unix/fork/h-ctl-fork
+      (fn (fork)
+        (match fork
+          [(analysis/benchmarks/handlers/unix/h-Hnd-fork _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/unix/fork/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/unix/h-Hnd-fork _ h-ctl-fork) h-ctl-fork])))
+    (def analysis/benchmarks/handlers/unix/fork
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/unix/fork/h-select))))
+    (def analysis/benchmarks/handlers/unix/forking
+      (fn (action)
+        ((fn (h-action)
+          (analysis/benchmarks/handlers/unix/fork/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-fork (3 (std/core/hnd/clause-control0 ((fn (resume)
+            (std/core/list/++ ((resume (std/core/types/True)) (resume (std/core/types/False))))))))) (fn (x)
+            (std/core/types/Cons (x std/core/types/Nil))) h-action))) ((fn ()
+          (action ()))))))
+    (def analysis/benchmarks/handlers/unix/is-done
+      (fn (pstate)
+        (match pstate
+          [(analysis/benchmarks/handlers/unix/Done _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/handlers/unix/is-paused
+      (fn (pstate)
+        (match pstate
+          [(analysis/benchmarks/handlers/unix/Paused _) std/core/types/True]
+          [_ std/core/types/False])))
+    (def analysis/benchmarks/handlers/unix/interrupt/h-cfc
+      (fn (interrupt)
+        (match interrupt
+          [(analysis/benchmarks/handlers/unix/h-Hnd-interrupt h-x _) h-x])))
+    (def analysis/benchmarks/handlers/unix/interrupt/h-tag
+      (std/core/hnd/h-new-htag ("interrupt@unix")))
+    (def analysis/benchmarks/handlers/unix/interrupt/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/unix/interrupt/h-tag hnd ret action))))
+    (def analysis/benchmarks/handlers/unix/interrupt/h-ctl-interrupt
+      (fn (interrupt)
+        (match interrupt
+          [(analysis/benchmarks/handlers/unix/h-Hnd-interrupt _ h-x) h-x])))
+    (def analysis/benchmarks/handlers/unix/interrupt/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/handlers/unix/h-Hnd-interrupt _ h-ctl-interrupt) h-ctl-interrupt])))
+    (def analysis/benchmarks/handlers/unix/interrupt
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/unix/interrupt/h-select))))
+    (def analysis/benchmarks/handlers/unix/reify-process
+      (fn (action)
+        ((fn (h-action)
+          (analysis/benchmarks/handlers/unix/interrupt/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-interrupt (3 (std/core/hnd/clause-control-raw0 ((fn (rcontext)
+            (analysis/benchmarks/handlers/unix/Paused ((fn ()
+              (std/core/hnd/resume (rcontext std/core/types/Unit)))))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (analysis/benchmarks/handlers/unix/Done ((action ()))))))))
+    (def analysis/benchmarks/handlers/unix/scheduler
+      (fn (pstates)
+        (letrec* ([schedule (fn (todos dones)
+          (match todos
+            [std/core/types/Nil dones]
+            [(std/core/types/Cons (analysis/benchmarks/handlers/unix/Done x) pp) (schedule (pp (std/core/types/Cons (x dones))))]
+            [(std/core/types/Cons (analysis/benchmarks/handlers/unix/Paused p) pp) (letrec* ([ps (analysis/benchmarks/handlers/unix/forking (p))])
+              (schedule ((std/core/list/++ (pp ps)) dones)))]))])
+          (schedule (pstates std/core/types/Nil)))))
+    (def analysis/benchmarks/handlers/unix/timeshare
+      (fn (action)
+        (letrec* ([p (analysis/benchmarks/handlers/unix/Paused ((fn ()
+          (analysis/benchmarks/handlers/unix/reify-process (action)))))])
+          (analysis/benchmarks/handlers/unix/scheduler ((std/core/types/Cons (p std/core/types/Nil)))))))
+    (def analysis/benchmarks/handlers/unix/ritchie
+      (fn ()
+        (letrec* ([_ (analysis/benchmarks/handlers/unix/echo ("UNIX is basically "))] [_ (analysis/benchmarks/handlers/unix/echo ("a simple operating system, "))] [_ (analysis/benchmarks/handlers/unix/echo ("but "))])
+          (analysis/benchmarks/handlers/unix/echo ("you have to be a genius to understand the simplicity.\n")))))
+    (def analysis/benchmarks/handlers/unix/hamlet
+      (fn ()
+        (letrec* ([_ (analysis/benchmarks/handlers/unix/echo ("To be, or not to be, "))] [_ (analysis/benchmarks/handlers/unix/echo ("that is the question:\n"))])
+          (analysis/benchmarks/handlers/unix/echo ("Whether 'tis nobler in the mind to suffer\n")))))
+    (def analysis/benchmarks/handlers/unix/analyze-example5
+      (fn ()
+        ((fn (h-action)
+          ((fn (x)
+            (std/core/types/tuple2/snd (x))) ((h-action ())))) ((fn ()
+          (analysis/benchmarks/handlers/unix/bio ((fn ()
+            (analysis/benchmarks/handlers/unix/timeshare ((fn ()
+              (analysis/benchmarks/handlers/unix/status ((fn ()
+                (analysis/benchmarks/handlers/unix/session-manager3 (analysis/benchmarks/handlers/unix/Root (fn ()
+                  (match (analysis/benchmarks/handlers/unix/fork ())
+                    [std/core/types/True (letrec* ([_ (analysis/benchmarks/handlers/unix/su (analysis/benchmarks/handlers/unix/Alice))])
+                      (analysis/benchmarks/handlers/unix/ritchie ()))]
+                    [std/core/types/False (letrec* ([_ (analysis/benchmarks/handlers/unix/su (analysis/benchmarks/handlers/unix/Bob))])
+                      (analysis/benchmarks/handlers/unix/hamlet ()))]))))))))))))))))))
+    (def analysis/benchmarks/handlers/unix/example5
+      (fn ()
+        (std/core/console/string/println ((analysis/benchmarks/handlers/unix/analyze-example5 ())))))
+    (def analysis/benchmarks/handlers/unix/result-example5
+      (fn ()
+        "UNIX is basically a simple operating system, but you have to be a genius to understand the simplicity.\nTo be, or not to be, that is the question:\nWhether 'tis nobler in the mind to suffer\n"))
+    (def analysis/benchmarks/handlers/unix/interrupt-write
+      (fn (action)
+        ((fn (h-override-action)
+          ((fn (h-action)
+            (analysis/benchmarks/handlers/unix/bio/h-handle ((analysis/benchmarks/handlers/unix/h-Hnd-bio (1 (std/core/hnd/clause-tail2 ((fn (fd s)
+              (letrec* ([_ (analysis/benchmarks/handlers/unix/interrupt ())])
+                (analysis/benchmarks/handlers/unix/write (fd s)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (std/core/hnd/h-mask-at ((std/core/hnd/h-evv-index (analysis/benchmarks/handlers/unix/bio/h-tag)) std/core/types/True h-override-action)))))) ((fn ()
+          (action ()))))))))

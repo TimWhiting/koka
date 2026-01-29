@@ -1,0 +1,183 @@
+((module std/core/tuple)
+  (defs
+    (def std/core/tuple/tuple2/map
+      (fn (t f)
+        (std/core/types/Tuple2 ((f ((std/core/types/tuple2/fst (t)))) (f ((std/core/types/tuple2/snd (t))))))))
+    (def std/core/tuple/tuple3/map
+      (fn (t f)
+        (std/core/types/Tuple3 ((f ((std/core/types/tuple3/fst (t)))) (f ((std/core/types/tuple3/snd (t)))) (f ((std/core/types/tuple3/thd (t))))))))
+    (def std/core/tuple/tuple4/map
+      (fn (t f)
+        (std/core/types/Tuple4 ((f ((std/core/types/tuple4/fst (t)))) (f ((std/core/types/tuple4/snd (t)))) (f ((std/core/types/tuple4/thd (t)))) (f ((std/core/types/tuple4/field4 (t))))))))
+    (def std/core/tuple/tuple5/map
+      (fn (t f)
+        (std/core/types/Tuple5 ((f ((std/core/types/tuple5/fst (t)))) (f ((std/core/types/tuple5/snd (t)))) (f ((std/core/types/tuple5/thd (t)))) (f ((std/core/types/tuple5/field4 (t)))) (f ((std/core/types/tuple5/field5 (t))))))))
+    (def std/core/tuple/unit/==
+      (fn (a b)
+        std/core/types/True))
+    (def std/core/tuple/tuple2/==
+      (fn (h-pat-x36_22 h-pat-x36_39 h-implicit/fst/== h-implicit/snd/==)
+        (match h-pat-x36_22
+          [(std/core/types/Tuple2 x1 y1) (match h-pat-x36_39
+            [(std/core/types/Tuple2 x2 y2) (match (h-implicit/fst/== (x1 x2))
+              [std/core/types/True (h-implicit/snd/== (y1 y2))]
+              [_ std/core/types/False])])])))
+    (def std/core/tuple/tuple3/==
+      (fn (h-pat-x40_22 h-pat-x40_44 h-implicit/fst/== h-implicit/snd/== h-implicit/thd/==)
+        (match h-pat-x40_22
+          [(std/core/types/Tuple3 x1 y1 z1) (match h-pat-x40_44
+            [(std/core/types/Tuple3 x2 y2 z2) (match (h-implicit/fst/== (x1 x2))
+              [std/core/types/True (match (h-implicit/snd/== (y1 y2))
+                [std/core/types/True (h-implicit/thd/== (z1 z2))]
+                [_ std/core/types/False])]
+              [_ std/core/types/False])])])))
+    (def std/core/tuple/tuple4/==
+      (fn (h-pat-x44_22 h-pat-x44_49 h-implicit/fst/== h-implicit/snd/== h-implicit/thd/== h-implicit/field4/==)
+        (match h-pat-x44_22
+          [(std/core/types/Tuple4 x1 y1 z1 w1) (match h-pat-x44_49
+            [(std/core/types/Tuple4 x2 y2 z2 w2) (match (h-implicit/fst/== (x1 x2))
+              [std/core/types/True (match (h-implicit/snd/== (y1 y2))
+                [std/core/types/True (match (h-implicit/thd/== (z1 z2))
+                  [std/core/types/True (h-implicit/field4/== (w1 w2))]
+                  [_ std/core/types/False])]
+                [_ std/core/types/False])]
+              [_ std/core/types/False])])])))
+    (def std/core/tuple/tuple5/==
+      (fn (h-pat-x50_22 h-pat-x50_54 h-implicit/fst/== h-implicit/snd/== h-implicit/thd/== h-implicit/field4/== h-implicit/field5/==)
+        (match h-pat-x50_22
+          [(std/core/types/Tuple5 x1 y1 z1 w1 v1) (match h-pat-x50_54
+            [(std/core/types/Tuple5 x2 y2 z2 w2 v2) (match (h-implicit/fst/== (x1 x2))
+              [std/core/types/True (match (h-implicit/snd/== (y1 y2))
+                [std/core/types/True (match (h-implicit/thd/== (z1 z2))
+                  [std/core/types/True (match (h-implicit/field4/== (w1 w2))
+                    [std/core/types/True (h-implicit/field5/== (v1 v2))]
+                    [_ std/core/types/False])]
+                  [_ std/core/types/False])]
+                [_ std/core/types/False])]
+              [_ std/core/types/False])])])))
+    (def std/core/tuple/unit/cmp
+      (fn (a b)
+        std/core/types/Eq))
+    (def std/core/tuple/tuple2/cmp
+      (fn (h-pat-x60_21 h-pat-x60_38 h-implicit/fst/cmp h-implicit/snd/cmp)
+        (match h-pat-x60_21
+          [(std/core/types/Tuple2 x1 y1) (match h-pat-x60_38
+            [(std/core/types/Tuple2 x2 y2) (match (h-implicit/fst/cmp (x1 x2))
+              [std/core/types/Eq (h-implicit/snd/cmp (y1 y2))]
+              [lg lg])])])))
+    (def std/core/tuple/tuple3/cmp
+      (fn (h-pat-x66_26 h-pat-x66_48 h-implicit/fst/cmp h-implicit/snd/cmp h-implicit/thd/cmp)
+        (match h-pat-x66_26
+          [(std/core/types/Tuple3 x1 y1 z1) (match h-pat-x66_48
+            [(std/core/types/Tuple3 x2 y2 z2) (match (h-implicit/fst/cmp (x1 x2))
+              [std/core/types/Eq (match (h-implicit/snd/cmp (y1 y2))
+                [std/core/types/Eq (h-implicit/thd/cmp (z1 z2))]
+                [lg lg])]
+              [lg lg])])])))
+    (def std/core/tuple/tuple4/cmp
+      (fn (h-pat-x74_26 h-pat-x74_53 h-implicit/fst/cmp h-implicit/snd/cmp h-implicit/thd/cmp h-implicit/field4/cmp)
+        (match h-pat-x74_26
+          [(std/core/types/Tuple4 x1 y1 z1 w1) (match h-pat-x74_53
+            [(std/core/types/Tuple4 x2 y2 z2 w2) (match (h-implicit/fst/cmp (x1 x2))
+              [std/core/types/Eq (match (h-implicit/snd/cmp (y1 y2))
+                [std/core/types/Eq (match (h-implicit/thd/cmp (z1 z2))
+                  [std/core/types/Eq (h-implicit/field4/cmp (w1 w2))]
+                  [lg lg])]
+                [lg lg])]
+              [lg lg])])])))
+    (def std/core/tuple/tuple5/cmp
+      (fn (h-pat-x86_26 h-pat-x86_58 h-implicit/fst/cmp h-implicit/snd/cmp h-implicit/thd/cmp h-implicit/field4/cmp h-implicit/field5/cmp)
+        (match h-pat-x86_26
+          [(std/core/types/Tuple5 x1 y1 z1 w1 v1) (match h-pat-x86_58
+            [(std/core/types/Tuple5 x2 y2 z2 w2 v2) (match (h-implicit/fst/cmp (x1 x2))
+              [std/core/types/Eq (match (h-implicit/snd/cmp (y1 y2))
+                [std/core/types/Eq (match (h-implicit/thd/cmp (z1 z2))
+                  [std/core/types/Eq (match (h-implicit/field4/cmp (w1 w2))
+                    [std/core/types/Eq (h-implicit/field5/cmp (v1 v2))]
+                    [lg lg])]
+                  [lg lg])]
+                [lg lg])]
+              [lg lg])])])))
+    (def std/core/tuple/unit/order2
+      (fn (a b)
+        (std/core/types/Eq2 (a))))
+    (def std/core/tuple/tuple2/order2
+      (fn (h-pat-x104_24 h-pat-x104_42 h-implicit/a/order2 h-implicit/b/order2)
+        (match h-pat-x104_24
+          [(std/core/types/Tuple2 x1 x2) (match h-pat-x104_42
+            [(std/core/types/Tuple2 y1 y2) (match (h-implicit/a/order2 (x1 y1))
+              [(std/core/types/Eq2 z1) (match (h-implicit/b/order2 (x2 y2))
+                [(std/core/types/Eq2 z2) (std/core/types/Eq2 ((std/core/types/Tuple2 (z1 z2))))]
+                [(std/core/types/Lt2 |x2'| |y2'|) (std/core/types/Lt2 ((std/core/types/Tuple2 (z1 |x2'|)) (std/core/types/Tuple2 (z1 |y2'|))))]
+                [(std/core/types/Gt2 |y2'| |x2'|) (std/core/types/Gt2 ((std/core/types/Tuple2 (z1 |y2'|)) (std/core/types/Tuple2 (z1 |x2'|))))])]
+              [(std/core/types/Lt2 |x1'| |y1'|) (std/core/types/Lt2 ((std/core/types/Tuple2 (|x1'| x2)) (std/core/types/Tuple2 (|y1'| y2))))]
+              [(std/core/types/Gt2 |y1'| |x1'|) (std/core/types/Gt2 ((std/core/types/Tuple2 (|y1'| y2)) (std/core/types/Tuple2 (|x1'| x2))))])])])))
+    (def std/core/tuple/tuple3/order2
+      (fn (h-pat-x115_24 h-pat-x115_49 h-implicit/a/order2 h-implicit/b/order2 h-implicit/c/order2)
+        (match h-pat-x115_24
+          [(std/core/types/Tuple3 x1 x2 x3) (match h-pat-x115_49
+            [(std/core/types/Tuple3 y1 y2 y3) (match (h-implicit/a/order2 (x1 y1))
+              [(std/core/types/Eq2 z1) (match (h-implicit/b/order2 (x2 y2))
+                [(std/core/types/Eq2 z2) (match (h-implicit/c/order2 (x3 y3))
+                  [(std/core/types/Eq2 z3) (std/core/types/Eq2 ((std/core/types/Tuple3 (z1 z2 z3))))]
+                  [(std/core/types/Lt2 |x3'| |y3'|) (std/core/types/Lt2 ((std/core/types/Tuple3 (z1 z2 |x3'|)) (std/core/types/Tuple3 (z1 z2 |y3'|))))]
+                  [(std/core/types/Gt2 |y3'| |x3'|) (std/core/types/Gt2 ((std/core/types/Tuple3 (z1 z2 |y3'|)) (std/core/types/Tuple3 (z1 z2 |x3'|))))])]
+                [(std/core/types/Lt2 |x2'| |y2'|) (std/core/types/Lt2 ((std/core/types/Tuple3 (z1 |x2'| x3)) (std/core/types/Tuple3 (z1 |y2'| y3))))]
+                [(std/core/types/Gt2 |y2'| |x2'|) (std/core/types/Gt2 ((std/core/types/Tuple3 (z1 |y2'| y3)) (std/core/types/Tuple3 (z1 |x2'| x3))))])]
+              [(std/core/types/Lt2 |x1'| |y1'|) (std/core/types/Lt2 ((std/core/types/Tuple3 (|x1'| x2 x3)) (std/core/types/Tuple3 (|y1'| y2 y3))))]
+              [(std/core/types/Gt2 |y1'| |x1'|) (std/core/types/Gt2 ((std/core/types/Tuple3 (|y1'| y2 y3)) (std/core/types/Tuple3 (|x1'| x2 x3))))])])])))
+    (def std/core/tuple/tuple4/order2
+      (fn (h-pat-x130_24 h-pat-x130_56 h-implicit/a/order2 h-implicit/b/order2 h-implicit/c/order2 h-implicit/field4/order2)
+        (match h-pat-x130_24
+          [(std/core/types/Tuple4 x1 x2 x3 x4) (match h-pat-x130_56
+            [(std/core/types/Tuple4 y1 y2 y3 y4) (match (h-implicit/a/order2 (x1 y1))
+              [(std/core/types/Eq2 z1) (match (h-implicit/b/order2 (x2 y2))
+                [(std/core/types/Eq2 z2) (match (h-implicit/c/order2 (x3 y3))
+                  [(std/core/types/Eq2 z3) (match (h-implicit/field4/order2 (x4 y4))
+                    [(std/core/types/Eq2 z4) (std/core/types/Eq2 ((std/core/types/Tuple4 (z1 z2 z3 z4))))]
+                    [(std/core/types/Lt2 |x4'| |y4'|) (std/core/types/Lt2 ((std/core/types/Tuple4 (z1 z2 z3 |x4'|)) (std/core/types/Tuple4 (z1 z2 z3 |y4'|))))]
+                    [(std/core/types/Gt2 |y4'| |x4'|) (std/core/types/Gt2 ((std/core/types/Tuple4 (z1 z2 z3 |y4'|)) (std/core/types/Tuple4 (z1 z2 z3 |x4'|))))])]
+                  [(std/core/types/Lt2 |x3'| |y3'|) (std/core/types/Lt2 ((std/core/types/Tuple4 (z1 z2 |x3'| x4)) (std/core/types/Tuple4 (z1 z2 |y3'| y4))))]
+                  [(std/core/types/Gt2 |y3'| |x3'|) (std/core/types/Gt2 ((std/core/types/Tuple4 (z1 z2 |y3'| y4)) (std/core/types/Tuple4 (z1 z2 |x3'| x4))))])]
+                [(std/core/types/Lt2 |x2'| |y2'|) (std/core/types/Lt2 ((std/core/types/Tuple4 (z1 |x2'| x3 x4)) (std/core/types/Tuple4 (z1 |y2'| y3 y4))))]
+                [(std/core/types/Gt2 |y2'| |x2'|) (std/core/types/Gt2 ((std/core/types/Tuple4 (z1 |y2'| y3 y4)) (std/core/types/Tuple4 (z1 |x2'| x3 x4))))])]
+              [(std/core/types/Lt2 |x1'| |y1'|) (std/core/types/Lt2 ((std/core/types/Tuple4 (|x1'| x2 x3 x4)) (std/core/types/Tuple4 (|y1'| y2 y3 y4))))]
+              [(std/core/types/Gt2 |y1'| |x1'|) (std/core/types/Gt2 ((std/core/types/Tuple4 (|y1'| y2 y3 y4)) (std/core/types/Tuple4 (|x1'| x2 x3 x4))))])])])))
+    (def std/core/tuple/tuple5/order2
+      (fn (h-pat-x148_24 h-pat-x148_63 h-implicit/a/order2 h-implicit/b/order2 h-implicit/c/order2 h-implicit/field4/order2 h-implicit/field5/order2)
+        (match h-pat-x148_24
+          [(std/core/types/Tuple5 x1 x2 x3 x4 x5) (match h-pat-x148_63
+            [(std/core/types/Tuple5 y1 y2 y3 y4 y5) (match (h-implicit/a/order2 (x1 y1))
+              [(std/core/types/Eq2 z1) (match (h-implicit/b/order2 (x2 y2))
+                [(std/core/types/Eq2 z2) (match (h-implicit/c/order2 (x3 y3))
+                  [(std/core/types/Eq2 z3) (match (h-implicit/field4/order2 (x4 y4))
+                    [(std/core/types/Eq2 z4) (match (h-implicit/field5/order2 (x5 y5))
+                      [(std/core/types/Eq2 z5) (std/core/types/Eq2 ((std/core/types/Tuple5 (z1 z2 z3 z4 z5))))]
+                      [(std/core/types/Lt2 |x5'| |y5'|) (std/core/types/Lt2 ((std/core/types/Tuple5 (z1 z2 z3 z4 |x5'|)) (std/core/types/Tuple5 (z1 z2 z3 z4 |y5'|))))]
+                      [(std/core/types/Gt2 |y5'| |x5'|) (std/core/types/Gt2 ((std/core/types/Tuple5 (z1 z2 z3 z4 |y5'|)) (std/core/types/Tuple5 (z1 z2 z3 z4 |x5'|))))])]
+                    [(std/core/types/Lt2 |x4'| |y4'|) (std/core/types/Lt2 ((std/core/types/Tuple5 (z1 z2 z3 |x4'| x5)) (std/core/types/Tuple5 (z1 z2 z3 |y4'| y5))))]
+                    [(std/core/types/Gt2 |y4'| |x4'|) (std/core/types/Gt2 ((std/core/types/Tuple5 (z1 z2 z3 |y4'| y5)) (std/core/types/Tuple5 (z1 z2 z3 |x4'| x5))))])]
+                  [(std/core/types/Lt2 |x3'| |y3'|) (std/core/types/Lt2 ((std/core/types/Tuple5 (z1 z2 |x3'| x4 x5)) (std/core/types/Tuple5 (z1 z2 |y3'| y4 y5))))]
+                  [(std/core/types/Gt2 |y3'| |x3'|) (std/core/types/Gt2 ((std/core/types/Tuple5 (z1 z2 |y3'| y4 y5)) (std/core/types/Tuple5 (z1 z2 |x3'| x4 x5))))])]
+                [(std/core/types/Lt2 |x2'| |y2'|) (std/core/types/Lt2 ((std/core/types/Tuple5 (z1 |x2'| x3 x4 x5)) (std/core/types/Tuple5 (z1 |y2'| y3 y4 y5))))]
+                [(std/core/types/Gt2 |y2'| |x2'|) (std/core/types/Gt2 ((std/core/types/Tuple5 (z1 |y2'| y3 y4 y5)) (std/core/types/Tuple5 (z1 |x2'| x3 x4 x5))))])]
+              [(std/core/types/Lt2 |x1'| |y1'|) (std/core/types/Lt2 ((std/core/types/Tuple5 (|x1'| x2 x3 x4 x5)) (std/core/types/Tuple5 (|y1'| y2 y3 y4 y5))))]
+              [(std/core/types/Gt2 |y1'| |x1'|) (std/core/types/Gt2 ((std/core/types/Tuple5 (|y1'| y2 y3 y4 y5)) (std/core/types/Tuple5 (|x1'| x2 x3 x4 x5))))])])])))
+    (def std/core/tuple/unit/show
+      (fn (u)
+        "()"))
+    (def std/core/tuple/tuple2/show
+      (fn (x h-implicit/fst/show h-implicit/snd/show)
+        (std/core/types/++ ("(" (std/core/types/++ ((h-implicit/fst/show ((std/core/types/tuple2/fst (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/snd/show ((std/core/types/tuple2/snd (x)))) ")"))))))))))
+    (def std/core/tuple/tuple3/show
+      (fn (x h-implicit/fst/show h-implicit/snd/show h-implicit/thd/show)
+        (std/core/types/++ ("(" (std/core/types/++ ((h-implicit/fst/show ((std/core/types/tuple3/fst (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/snd/show ((std/core/types/tuple3/snd (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/thd/show ((std/core/types/tuple3/thd (x)))) ")"))))))))))))))
+    (def std/core/tuple/tuple4/show
+      (fn (x h-implicit/fst/show h-implicit/snd/show h-implicit/thd/show h-implicit/field4/show)
+        (std/core/types/++ ("(" (std/core/types/++ ((h-implicit/fst/show ((std/core/types/tuple4/fst (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/snd/show ((std/core/types/tuple4/snd (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/thd/show ((std/core/types/tuple4/thd (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/field4/show ((std/core/types/tuple4/field4 (x)))) ")"))))))))))))))))))
+    (def std/core/tuple/tuple5/show
+      (fn (x h-implicit/fst/show h-implicit/snd/show h-implicit/thd/show h-implicit/field4/show h-implicit/field5/show)
+        (std/core/types/++ ("(" (std/core/types/++ ((h-implicit/fst/show ((std/core/types/tuple5/fst (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/snd/show ((std/core/types/tuple5/snd (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/thd/show ((std/core/types/tuple5/thd (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/field4/show ((std/core/types/tuple5/field4 (x)))) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/field5/show ((std/core/types/tuple5/field5 (x)))) ")"))))))))))))))))))))))
+    (def std/core/tuple/show-tuple
+      (fn (x showfst showsnd)
+        (std/core/tuple/tuple2/show (x showfst showsnd))))))

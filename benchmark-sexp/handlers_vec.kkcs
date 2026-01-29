@@ -1,0 +1,61 @@
+((module handlers/vec)
+  (defs
+    (def handlers/vec/ix/index
+      (fn (ix)
+        (match ix
+          [(handlers/vec/Ix h-x) h-x])))
+    (def handlers/vec/ix/h-copy
+      (fn (h-this index)
+        (letrec* ([h-uniq-indexh-127 (match index
+          [(std/core/types/h-Optional h-uniq-indexh-128) h-uniq-indexh-128]
+          [std/core/types/h-None (handlers/vec/ix/index (h-this))])])
+          (handlers/vec/Ix (h-uniq-indexh-127)))))
+    (def handlers/vec/vec/h-cfc
+      (fn (vec)
+        (match vec
+          [(handlers/vec/h-Hnd-vec h-x _ _) h-x])))
+    (def handlers/vec/vec/h-tag
+      (std/core/hnd/h-new-htag ("vec@vec")))
+    (def handlers/vec/vec/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/vec/vec/h-tag hnd ret action))))
+    (def handlers/vec/vec/h-fun-push
+      (fn (vec)
+        (match vec
+          [(handlers/vec/h-Hnd-vec _ _ h-x) h-x])))
+    (def handlers/vec/push/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/vec/h-Hnd-vec _ _ h-fun-push) h-fun-push])))
+    (def handlers/vec/push
+      (fn (s)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/vec/push/h-select s))))
+    (def handlers/vec/vec/h-fun-lookup
+      (fn (vec)
+        (match vec
+          [(handlers/vec/h-Hnd-vec _ h-x _) h-x])))
+    (def handlers/vec/lookup/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/vec/h-Hnd-vec _ h-fun-lookup _) h-fun-lookup])))
+    (def handlers/vec/lookup
+      (fn (ix)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/vec/lookup/h-select ix))))
+    (def handlers/vec/vec
+      (fn (action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-654 std/core/types/h-Hnodiv] [ievh-722 std/core/types/h-Hnodiv] [ievh-766 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (std/core/types/Nil (fn (xs)
+              ((fn (h-action)
+                (handlers/vec/vec/h-handle ((handlers/vec/h-Hnd-vec (1 (std/core/hnd/clause-tail1 ((fn (ix)
+                  (std/core/maybe/default ((std/core/list/h-index ((std/core/types/local-get (xs ievh-654)) (handlers/vec/ix/index (ix)))) ""))))) (std/core/hnd/clause-tail1 ((fn (s)
+                  (letrec* ([i (std/core/list/length ((std/core/types/local-get (xs ievh-722))))] [_ (std/core/types/local-set (xs (std/core/list/++ ((std/core/types/local-get (xs ievh-766)) (std/core/types/Cons (s std/core/types/Nil))))))])
+                    (handlers/vec/Ix (i)))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                (std/core/hnd/h-mask-builtin ((fn ()
+                  (action ()))))))))))))))))
+    (def handlers/vec/main
+      (fn ()
+        (handlers/vec/vec ((fn ()
+          (letrec* ([ix (handlers/vec/push ("hello"))])
+            (std/core/console/string/println ((std/core/types/++ ((handlers/vec/lookup (ix)) " world"))))))))))))
