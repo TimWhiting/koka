@@ -1,30 +1,34 @@
 (module
   analysis/benchmarks/suite/state-handler
+  (define analysis/benchmarks/suite/state-handler/get/h-tag
+    "get@state-handler")
   (define analysis/benchmarks/suite/state-handler/get/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/state-handler/get/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/state-handler/get/h-ctl-get
     (λ (get)
       (match get
-        [(analysis/benchmarks/suite/state-handler/h-Hnd-get _ h-x) h-x])))
+        [(analysis/benchmarks/suite/state-handler/get _ h-x) h-x])))
   (define analysis/benchmarks/suite/state-handler/get/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/state-handler/h-Hnd-get _ h-ctl-get) h-ctl-get])))
+        [(analysis/benchmarks/suite/state-handler/get _ h-ctl-get) h-ctl-get])))
   (define analysis/benchmarks/suite/state-handler/get
     (λ ()
       (perform analysis/benchmarks/suite/state-handler/get get)))
+  (define analysis/benchmarks/suite/state-handler/set/h-tag
+    "set@state-handler")
   (define analysis/benchmarks/suite/state-handler/set/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/state-handler/set/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/state-handler/set/h-ctl-set
     (λ (set)
       (match set
-        [(analysis/benchmarks/suite/state-handler/h-Hnd-set _ h-x) h-x])))
+        [(analysis/benchmarks/suite/state-handler/set _ h-x) h-x])))
   (define analysis/benchmarks/suite/state-handler/set/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/state-handler/h-Hnd-set _ h-ctl-set) h-ctl-set])))
+        [(analysis/benchmarks/suite/state-handler/set _ h-ctl-set) h-ctl-set])))
   (define analysis/benchmarks/suite/state-handler/set
     (λ (i)
       (perform analysis/benchmarks/suite/state-handler/set set i)))
@@ -39,18 +43,18 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example get/set")] [x 2])
         ((λ (h-action)
-          (analysis/benchmarks/suite/state-handler/get/h-handle (handler analysis/benchmarks/suite/state-handler/h-Hnd-get [ctl get (std/core/hnd/clause-control0 (λ (resume)
-            (resume x)))]) (λ (h-res)
+          (analysis/benchmarks/suite/state-handler/get/h-handle (handler analysis/benchmarks/suite/state-handler/get [ctl get (λ (resume)
+            (resume x))]) (λ (h-res)
             h-res) h-action)) (λ ()
           ((λ (h-action)
-            (analysis/benchmarks/suite/state-handler/set/h-handle (handler analysis/benchmarks/suite/state-handler/h-Hnd-set [ctl set (std/core/hnd/clause-control1 (λ (a resume)
+            (analysis/benchmarks/suite/state-handler/set/h-handle (handler analysis/benchmarks/suite/state-handler/set [ctl set (λ (a resume)
               ((λ (h-override-action)
                 ((λ (h-action)
-                  (analysis/benchmarks/suite/state-handler/get/h-handle (handler analysis/benchmarks/suite/state-handler/h-Hnd-get [ctl get (std/core/hnd/clause-control0 (λ (resume)
-                    (resume a)))]) (λ (h-res)
+                  (analysis/benchmarks/suite/state-handler/get/h-handle (handler analysis/benchmarks/suite/state-handler/get [ctl get (λ (resume)
+                    (resume a))]) (λ (h-res)
                     h-res) h-action)) (λ ()
                   (std/core/hnd/h-mask-at (std/core/hnd/h-evv-index analysis/benchmarks/suite/state-handler/get/h-tag) std/core/types/True h-override-action)))) (λ ()
-                (resume std/core/types/Unit)))))]) (λ (h-res)
+                (resume std/core/types/Unit))))]) (λ (h-res)
               h-res) h-action)) (λ ()
             (analysis/benchmarks/suite/state-handler/countdown))))))))
   (define analysis/benchmarks/suite/state-handler/result-state-countdown

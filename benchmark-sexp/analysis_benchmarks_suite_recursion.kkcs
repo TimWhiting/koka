@@ -1,16 +1,18 @@
 (module
   analysis/benchmarks/suite/recursion
+  (define analysis/benchmarks/suite/recursion/iter/h-tag
+    "iter@recursion")
   (define analysis/benchmarks/suite/recursion/iter/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/suite/recursion/iter/h-tag hnd ret action)))
   (define analysis/benchmarks/suite/recursion/iter/h-ctl-it
     (λ (iter)
       (match iter
-        [(analysis/benchmarks/suite/recursion/h-Hnd-iter _ h-x) h-x])))
+        [(analysis/benchmarks/suite/recursion/iter _ h-x) h-x])))
   (define analysis/benchmarks/suite/recursion/it/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/suite/recursion/h-Hnd-iter _ h-ctl-it) h-ctl-it])))
+        [(analysis/benchmarks/suite/recursion/iter _ h-ctl-it) h-ctl-it])))
   (define analysis/benchmarks/suite/recursion/it
     (λ (i)
       (perform analysis/benchmarks/suite/recursion/iter it i)))
@@ -36,8 +38,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_suma")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ a (resume a))))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ a (resume a)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iter 1))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum
@@ -47,8 +49,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_suma")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ a (resume a))))]) (λ (x)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ a (resume a)))]) (λ (x)
             0) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iter 1))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-handler
@@ -58,8 +60,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sum2a")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ a (resume a))))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ a (resume a)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iter 2))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-two
@@ -69,8 +71,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sum1b")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ (resume a) a))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iter 1))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-b
@@ -80,8 +82,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sum2b")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ (resume a) a))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iter 2))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-two-b
@@ -91,8 +93,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sumc")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ a (resume a))))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ a (resume a)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iterxx 1))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-c
@@ -102,8 +104,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sum2c")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ a (resume a))))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ a (resume a)))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iterxx 2))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-two-c
@@ -113,8 +115,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sum1d")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ (resume a) a))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iterxx 1))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-d
@@ -124,8 +126,8 @@
     (λ ()
       (letrec* ([_ (std/core/debug/trace "Example x_sum2d")])
         ((λ (h-action)
-          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
-            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/iter [ctl it (λ (a resume)
+            (std/core/int/+ (resume a) a))]) (λ (h-res)
             h-res) h-action)) (λ ()
           (analysis/benchmarks/suite/recursion/iterxx 2))))))
   (define analysis/benchmarks/suite/recursion/result-iter-sum-two-d

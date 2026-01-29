@@ -1,16 +1,18 @@
 (module
   analysis/benchmarks/koka-gen/mini-ppl
+  (define analysis/benchmarks/koka-gen/mini-ppl/choice/h-tag
+    "choice@mini-ppl")
   (define analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/mini-ppl/choice/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/mini-ppl/choice/h-ctl-flip
     (λ (choice)
       (match choice
-        [(analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/mini-ppl/choice _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/mini-ppl/flip/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice _ h-ctl-flip) h-ctl-flip])))
+        [(analysis/benchmarks/koka-gen/mini-ppl/choice _ h-ctl-flip) h-ctl-flip])))
   (define analysis/benchmarks/koka-gen/mini-ppl/flip
     (λ (p)
       (perform analysis/benchmarks/koka-gen/mini-ppl/choice flip p)))
@@ -30,14 +32,14 @@
   (define analysis/benchmarks/koka-gen/mini-ppl/exact
     (λ (action)
       ((λ (h-action)
-        (analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle (handler analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice [ctl flip (std/core/hnd/clause-control1 (λ (p resume)
+        (analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle (handler analysis/benchmarks/koka-gen/mini-ppl/choice [ctl flip (λ (p resume)
           (letrec* ([true-branch (resume std/core/types/True)] [false-branch (resume std/core/types/False)] [weighted-true (std/core/list/map true-branch (λ (r)
             (std/core/types/Tuple2 (std/core/types/tuple2/fst r) (std/num/float64/* (std/core/types/tuple2/snd r) p))))] [weighted-false (std/core/list/map false-branch (λ (r)
             (std/core/types/Tuple2 (std/core/types/tuple2/fst r) (std/num/float64/* (std/core/types/tuple2/snd r) (std/num/float64/- 1.0 p)))))])
-            (std/core/list/++ weighted-true weighted-false))))]) (λ (h-res)
+            (std/core/list/++ weighted-true weighted-false)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         ((λ (h-action)
-          (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [?  (std/core/hnd/clause-never1 (λ (msg)
+          (std/core/exn/exn/h-handle (handler std/core/exn/exn [?  (std/core/hnd/clause-never1 (λ (msg)
             std/core/types/Nil))]) (λ (x)
             (std/core/types/Cons (std/core/types/Tuple2 x 1.0) std/core/types/Nil)) h-action)) (λ ()
           (action)))))))
@@ -50,12 +52,12 @@
   (define analysis/benchmarks/koka-gen/mini-ppl/sample
     (λ (action)
       ((λ (h-action)
-        (analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle (handler analysis/benchmarks/koka-gen/mini-ppl/h-Hnd-choice [ctl flip (std/core/hnd/clause-control1 (λ (p resume)
+        (analysis/benchmarks/koka-gen/mini-ppl/choice/h-handle (handler analysis/benchmarks/koka-gen/mini-ppl/choice [ctl flip (λ (p resume)
           (letrec* ([r (std/num/random/random-float64)])
-            (resume (std/num/float64/< r p)))))]) (λ (h-res)
+            (resume (std/num/float64/< r p))))]) (λ (h-res)
           h-res) h-action)) (λ ()
         ((λ (h-action)
-          (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [?  (std/core/hnd/clause-never1 (λ (msg)
+          (std/core/exn/exn/h-handle (handler std/core/exn/exn [?  (std/core/hnd/clause-never1 (λ (msg)
             std/core/types/Nothing))]) (λ (x)
             (std/core/types/Just x)) h-action)) (λ ()
           (action)))))))

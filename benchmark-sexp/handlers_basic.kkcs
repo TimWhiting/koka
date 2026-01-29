@@ -3,14 +3,16 @@
   (define handlers/basic/ask/h-fun-ask
     (λ (ask)
       (match ask
-        [(handlers/basic/h-Hnd-ask _ h-x) h-x])))
+        [(handlers/basic/ask _ h-x) h-x])))
+  (define handlers/basic/ask/h-tag
+    "ask@basic")
   (define handlers/basic/ask/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/basic/ask/h-tag hnd ret action)))
   (define handlers/basic/ask/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/basic/h-Hnd-ask _ h-fun-ask) h-fun-ask])))
+        [(handlers/basic/ask _ h-fun-ask) h-fun-ask])))
   (define handlers/basic/ask
     (λ ()
       (perform handlers/basic/ask ask)))
@@ -21,21 +23,23 @@
   (define handlers/basic/example2
     (λ ()
       ((λ (h-action)
-        (handlers/basic/ask/h-handle (handler handlers/basic/h-Hnd-ask [fun ask (std/core/hnd/clause-tail0 (λ ()
-          "there"))]) (λ (h-res)
+        (handlers/basic/ask/h-handle (handler handlers/basic/ask [fun ask (λ ()
+          "there")]) (λ (h-res)
           h-res) h-action)) (λ ()
         (handlers/basic/hello)))))
   (define handlers/basic/raise/h-ctl-raise
     (λ (raise)
       (match raise
-        [(handlers/basic/h-Hnd-raise _ h-x) h-x])))
+        [(handlers/basic/raise _ h-x) h-x])))
+  (define handlers/basic/raise/h-tag
+    "raise@basic")
   (define handlers/basic/raise/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/basic/raise/h-tag hnd ret action)))
   (define handlers/basic/raise/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/basic/h-Hnd-raise _ h-ctl-raise) h-ctl-raise])))
+        [(handlers/basic/raise _ h-ctl-raise) h-ctl-raise])))
   (define handlers/basic/raise
     (λ (s)
       (perform handlers/basic/raise raise s)))
@@ -47,7 +51,7 @@
   (define handlers/basic/rcatch
     (λ (action h)
       ((λ (h-action)
-        (handlers/basic/raise/h-handle (handler handlers/basic/h-Hnd-raise [ctl raise (std/core/hnd/clause-control1 (λ (s resume)
+        (handlers/basic/raise/h-handle (handler handlers/basic/raise [ctl raise (std/core/hnd/clause-control1 (λ (s resume)
           (h s)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
@@ -59,35 +63,37 @@
   (define handlers/basic/to-maybe
     (λ (action)
       ((λ (h-action)
-        (handlers/basic/raise/h-handle (handler handlers/basic/h-Hnd-raise [ctl raise (std/core/hnd/clause-never1 (λ (s)
+        (handlers/basic/raise/h-handle (handler handlers/basic/raise [ctl raise (std/core/hnd/clause-never1 (λ (s)
           std/core/types/Nothing))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (std/core/types/Just (action))))))
   (define handlers/basic/example1
     (λ ()
       (std/core/console/default/show/println (handlers/basic/zerodiv 10 0) std/core/int/show)))
+  (define handlers/basic/state/h-tag
+    "state@basic")
   (define handlers/basic/state/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/basic/state/h-tag hnd ret action)))
   (define handlers/basic/state/h-fun-get
     (λ (state)
       (match state
-        [(handlers/basic/h-Hnd-state _ h-x _) h-x])))
+        [(handlers/basic/state _ h-x _) h-x])))
   (define handlers/basic/get/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/basic/h-Hnd-state _ h-fun-get _) h-fun-get])))
+        [(handlers/basic/state _ h-fun-get _) h-fun-get])))
   (define handlers/basic/get
     (λ ()
       (perform handlers/basic/state get)))
   (define handlers/basic/state/h-fun-put
     (λ (state)
       (match state
-        [(handlers/basic/h-Hnd-state _ _ h-x) h-x])))
+        [(handlers/basic/state _ _ h-x) h-x])))
   (define handlers/basic/put/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/basic/h-Hnd-state _ _ h-fun-put) h-fun-put])))
+        [(handlers/basic/state _ _ h-fun-put) h-fun-put])))
   (define handlers/basic/put
     (λ (x)
       (perform handlers/basic/state put x)))
@@ -104,26 +110,28 @@
         (letrec* ([ievh-1795 std/core/types/h-Hnodiv] [ievh-1869 std/core/types/h-Hnodiv] [ievh-1928 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var init (λ (s)
             ((λ (h-action)
-              (handlers/basic/state/h-handle (handler handlers/basic/h-Hnd-state [fun get (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get s ievh-1869)))] [fun put (std/core/hnd/clause-tail1 (λ (x)
-                (std/core/types/local-set s x)))]) (λ (x)
+              (handlers/basic/state/h-handle (handler handlers/basic/state [fun get (λ ()
+                (std/core/types/local-get s ievh-1869))] [fun put (λ (x)
+                (std/core/types/local-set s x))]) (λ (x)
                 (std/core/types/Tuple2 x (std/core/types/local-get s ievh-1928))) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define handlers/basic/example3
     (λ ()
       (std/core/types/tuple2/snd (handlers/basic/state 1 handlers/basic/counter))))
   (define handlers/basic/yield/h-ctl-yield
     (λ (yield)
       (match yield
-        [(handlers/basic/h-Hnd-yield _ h-x) h-x])))
+        [(handlers/basic/yield _ h-x) h-x])))
+  (define handlers/basic/yield/h-tag
+    "yield@basic")
   (define handlers/basic/yield/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/basic/yield/h-tag hnd ret action)))
   (define handlers/basic/yield/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/basic/h-Hnd-yield _ h-ctl-yield) h-ctl-yield])))
+        [(handlers/basic/yield _ h-ctl-yield) h-ctl-yield])))
   (define handlers/basic/yield
     (λ (item)
       (perform handlers/basic/yield yield item)))
@@ -136,10 +144,10 @@
   (define handlers/basic/foreach
     (λ (f action)
       ((λ (h-action)
-        (handlers/basic/yield/h-handle (handler handlers/basic/h-Hnd-yield [ctl yield (std/core/hnd/clause-control1 (λ (x resume)
+        (handlers/basic/yield/h-handle (handler handlers/basic/yield [ctl yield (λ (x resume)
           (match (f x)
             [std/core/types/True (resume std/core/types/Unit)]
-            [std/core/types/False std/core/types/Unit])))]) (λ (h-res)
+            [std/core/types/False std/core/types/Unit]))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
   (define handlers/basic/example4
@@ -151,26 +159,28 @@
   (define handlers/basic/flip/h-ctl-flip
     (λ (flip)
       (match flip
-        [(handlers/basic/h-Hnd-flip _ h-x) h-x])))
+        [(handlers/basic/flip _ h-x) h-x])))
+  (define handlers/basic/flip/h-tag
+    "flip@basic")
   (define handlers/basic/flip/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/basic/flip/h-tag hnd ret action)))
   (define handlers/basic/flip/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/basic/h-Hnd-flip _ h-ctl-flip) h-ctl-flip])))
+        [(handlers/basic/flip _ h-ctl-flip) h-ctl-flip])))
   (define handlers/basic/flip
     (λ ()
       (perform handlers/basic/flip flip)))
   (define handlers/basic/coinflip
     (λ (h-action)
-      (handlers/basic/flip/h-handle (handler handlers/basic/h-Hnd-flip [ctl flip (std/core/hnd/clause-tail0 (λ ()
-        (std/num/random/srandom-bool)))]) (λ (h-res)
+      (handlers/basic/flip/h-handle (handler handlers/basic/flip [ctl flip (λ ()
+        (std/num/random/srandom-bool))]) (λ (h-res)
         h-res) h-action)))
   (define handlers/basic/amb
     (λ (h-action)
-      (handlers/basic/flip/h-handle (handler handlers/basic/h-Hnd-flip [ctl flip (std/core/hnd/clause-control0 (λ (resume)
-        (std/core/list/++ (resume std/core/types/False) (resume std/core/types/True))))]) (λ (x)
+      (handlers/basic/flip/h-handle (handler handlers/basic/flip [ctl flip (λ (resume)
+        (std/core/list/++ (resume std/core/types/False) (resume std/core/types/True)))]) (λ (x)
         (std/core/types/Cons x std/core/types/Nil)) h-action)))
   (define handlers/basic/example4b
     (λ ()

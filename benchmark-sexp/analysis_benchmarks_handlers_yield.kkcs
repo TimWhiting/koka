@@ -1,16 +1,18 @@
 (module
   analysis/benchmarks/handlers/yield
+  (define analysis/benchmarks/handlers/yield/yield/h-tag
+    "yield@yield")
   (define analysis/benchmarks/handlers/yield/yield/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/yield/yield/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/yield/yield/h-fun-yield
     (λ (yield)
       (match yield
-        [(analysis/benchmarks/handlers/yield/h-Hnd-yield _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/yield/yield _ h-x) h-x])))
   (define analysis/benchmarks/handlers/yield/yield/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/yield/h-Hnd-yield _ h-fun-yield) h-fun-yield])))
+        [(analysis/benchmarks/handlers/yield/yield _ h-fun-yield) h-fun-yield])))
   (define analysis/benchmarks/handlers/yield/yield
     (λ (x)
       (perform analysis/benchmarks/handlers/yield/yield yield x)))
@@ -23,8 +25,8 @@
   (define analysis/benchmarks/handlers/yield/analyze-main
     (λ ()
       ((λ (h-action)
-        (analysis/benchmarks/handlers/yield/yield/h-handle (handler analysis/benchmarks/handlers/yield/h-Hnd-yield [fun yield (std/core/hnd/clause-tail1 (λ (i)
-          (std/core/console/string/println (std/core/types/++ "yielded " (std/core/int/show i)))))]) (λ (h-res)
+        (analysis/benchmarks/handlers/yield/yield/h-handle (handler analysis/benchmarks/handlers/yield/yield [fun yield (λ (i)
+          (std/core/console/string/println (std/core/types/++ "yielded " (std/core/int/show i))))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (letrec* ([_ (analysis/benchmarks/handlers/yield/traverse (std/core/types/Cons 1 (std/core/types/Cons 2 (std/core/types/Cons 3 std/core/types/Nil))))])
           (std/core/console/string/println "done"))))))

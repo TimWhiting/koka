@@ -25,42 +25,46 @@
       (match ntype
         [(handlers/named/unify/App _ _) std/core/types/True]
         [(handlers/named/unify/Con _) std/core/types/False])))
+  (define handlers/named/unify/subst/h-tag
+    "subst@unify")
   (define handlers/named/unify/subst/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/named/unify/subst/h-tag hnd ret action)))
   (define handlers/named/unify/subst/h-ctl-fresh
     (λ (subst)
       (match subst
-        [(handlers/named/unify/h-Hnd-subst _ h-x) h-x])))
+        [(handlers/named/unify/subst _ h-x) h-x])))
   (define handlers/named/unify/fresh/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/unify/h-Hnd-subst _ h-ctl-fresh) h-ctl-fresh])))
+        [(handlers/named/unify/subst _ h-ctl-fresh) h-ctl-fresh])))
   (define handlers/named/unify/fresh
     (λ ()
       (perform handlers/named/unify/subst fresh)))
+  (define handlers/named/unify/variable/h-tag
+    "variable@unify")
   (define handlers/named/unify/variable/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-named-handle handlers/named/unify/variable/h-tag hnd ret action)))
   (define handlers/named/unify/variable/h-fun-get
     (λ (variable)
       (match variable
-        [(handlers/named/unify/h-Hnd-variable _ h-x _) h-x])))
+        [(handlers/named/unify/variable _ h-x _) h-x])))
   (define handlers/named/unify/get/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/unify/h-Hnd-variable _ h-fun-get _) h-fun-get])))
+        [(handlers/named/unify/variable _ h-fun-get _) h-fun-get])))
   (define handlers/named/unify/get
     (λ (h-hname)
       (perform handlers/named/unify/variable get)))
   (define handlers/named/unify/variable/h-fun-resolve
     (λ (variable)
       (match variable
-        [(handlers/named/unify/h-Hnd-variable _ _ h-x) h-x])))
+        [(handlers/named/unify/variable _ _ h-x) h-x])))
   (define handlers/named/unify/resolve/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/unify/h-Hnd-variable _ _ h-fun-resolve) h-fun-resolve])))
+        [(handlers/named/unify/variable _ _ h-fun-resolve) h-fun-resolve])))
   (define handlers/named/unify/resolve
     (λ (h-hname tp)
       (perform handlers/named/unify/variable resolve tp)))
@@ -70,20 +74,20 @@
         (letrec* ([ievh-1003 std/core/types/h-Hnodiv] [ievh-1037 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var std/core/types/Nothing (λ (mtp)
             ((λ (h-action)
-              (handlers/named/unify/variable/h-handle (handler handlers/named/unify/h-Hnd-variable [fun get (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get mtp ievh-1003)))] [fun resolve (std/core/hnd/clause-tail1 (λ (tp)
+              (handlers/named/unify/variable/h-handle (handler handlers/named/unify/variable [fun get (λ ()
+                (std/core/types/local-get mtp ievh-1003))] [fun resolve (λ (tp)
                 (match (std/core/types/local-get mtp ievh-1037)
                   [std/core/types/Nothing (std/core/types/local-set mtp (std/core/types/Just tp))]
-                  [(std/core/types/Just _) (std/core/exn/throw "cannot resolve a unification variable more than once" std/core/types/h-None)])))]) (λ (h-res)
+                  [(std/core/types/Just _) (std/core/exn/throw "cannot resolve a unification variable more than once" std/core/types/h-None)]))]) (λ (h-res)
                 h-res) h-action)) (λ (v)
               ((λ (h-arg-x1)
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (action h-arg-x1)))) v))))))))))
+                (λ ()
+                  (action h-arg-x1))) v))))))))))
   (define handlers/named/unify/subst
     (λ (action)
       ((λ (h-action)
-        (handlers/named/unify/subst/h-handle (handler handlers/named/unify/h-Hnd-subst [ctl fresh (std/core/hnd/clause-control0 (λ (resume)
-          (handlers/named/unify/with-var resume)))]) (λ (h-res)
+        (handlers/named/unify/subst/h-handle (handler handlers/named/unify/subst [ctl fresh (λ (resume)
+          (handlers/named/unify/with-var resume))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
   (define handlers/named/unify/resolve-all

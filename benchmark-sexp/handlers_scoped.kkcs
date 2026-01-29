@@ -1,27 +1,29 @@
 (module
   handlers/scoped
+  (define handlers/scoped/nondet/h-tag
+    "nondet@scoped")
   (define handlers/scoped/nondet/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/scoped/nondet/h-tag hnd ret action)))
   (define handlers/scoped/nondet/h-ctl-flip
     (λ (nondet)
       (match nondet
-        [(handlers/scoped/h-Hnd-nondet _ _ h-x) h-x])))
+        [(handlers/scoped/nondet _ _ h-x) h-x])))
   (define handlers/scoped/flip/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/scoped/h-Hnd-nondet _ _ h-ctl-flip) h-ctl-flip])))
+        [(handlers/scoped/nondet _ _ h-ctl-flip) h-ctl-flip])))
   (define handlers/scoped/flip
     (λ ()
       (perform handlers/scoped/nondet flip)))
   (define handlers/scoped/nondet/h-ctl-fail
     (λ (nondet)
       (match nondet
-        [(handlers/scoped/h-Hnd-nondet _ h-x _) h-x])))
+        [(handlers/scoped/nondet _ h-x _) h-x])))
   (define handlers/scoped/fail/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/scoped/h-Hnd-nondet _ h-ctl-fail _) h-ctl-fail])))
+        [(handlers/scoped/nondet _ h-ctl-fail _) h-ctl-fail])))
   (define handlers/scoped/fail
     (λ ()
       (perform handlers/scoped/nondet fail)))
@@ -42,36 +44,38 @@
             (std/core/types/Cons v (handlers/scoped/knapsack (std/core/int/- w v) vs)))])])))
   (define handlers/scoped/solutions
     (λ (h-action)
-      (handlers/scoped/nondet/h-handle (handler handlers/scoped/h-Hnd-nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
-        std/core/types/Nil))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
-        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (x)
+      (handlers/scoped/nondet/h-handle (handler handlers/scoped/nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        std/core/types/Nil))] [ctl flip (λ (resume)
+        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False)))]) (λ (x)
         (std/core/types/Cons x std/core/types/Nil)) h-action)))
   (define handlers/scoped/example1
     (λ ()
       (handlers/scoped/solutions (λ ()
         (handlers/scoped/knapsack 3 (std/core/types/Cons 3 (std/core/types/Cons 2 (std/core/types/Cons 1 std/core/types/Nil))))))))
+  (define handlers/scoped/state/h-tag
+    "state@scoped")
   (define handlers/scoped/state/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/scoped/state/h-tag hnd ret action)))
   (define handlers/scoped/state/h-fun-get
     (λ (state)
       (match state
-        [(handlers/scoped/h-Hnd-state _ h-x _) h-x])))
+        [(handlers/scoped/state _ h-x _) h-x])))
   (define handlers/scoped/get/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/scoped/h-Hnd-state _ h-fun-get _) h-fun-get])))
+        [(handlers/scoped/state _ h-fun-get _) h-fun-get])))
   (define handlers/scoped/get
     (λ ()
       (perform handlers/scoped/state get)))
   (define handlers/scoped/state/h-fun-put
     (λ (state)
       (match state
-        [(handlers/scoped/h-Hnd-state _ _ h-x) h-x])))
+        [(handlers/scoped/state _ _ h-x) h-x])))
   (define handlers/scoped/put/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/scoped/h-Hnd-state _ _ h-fun-put) h-fun-put])))
+        [(handlers/scoped/state _ _ h-fun-put) h-fun-put])))
   (define handlers/scoped/put
     (λ (i)
       (perform handlers/scoped/state put i)))
@@ -81,12 +85,12 @@
         (letrec* ([ievh-1454 std/core/types/h-Hnodiv] [ievh-1529 std/core/types/h-Hnodiv] [ievh-1587 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var init (λ (s)
             ((λ (h-action)
-              (handlers/scoped/state/h-handle (handler handlers/scoped/h-Hnd-state [fun get (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get s ievh-1529)))] [fun put (std/core/hnd/clause-tail1 (λ (i)
-                (std/core/types/local-set s i)))]) (λ (x)
+              (handlers/scoped/state/h-handle (handler handlers/scoped/state [fun get (λ ()
+                (std/core/types/local-get s ievh-1529))] [fun put (λ (i)
+                (std/core/types/local-set s i))]) (λ (x)
                 (std/core/types/Tuple2 (std/core/types/local-get s ievh-1587) x)) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define handlers/scoped/incr
     (λ (i)
       (letrec* ([h-uniq-ih-1647 (match i
@@ -105,10 +109,10 @@
           (action)))))))
   (define handlers/scoped/choices
     (λ (h-action)
-      (handlers/scoped/nondet/h-handle (handler handlers/scoped/h-Hnd-nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
-        (handlers/scoped/fail)))] [ctl flip (std/core/hnd/clause-tail0 (λ ()
+      (handlers/scoped/nondet/h-handle (handler handlers/scoped/nondet [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        (handlers/scoped/fail)))] [ctl flip (λ ()
         (letrec* ([_ (handlers/scoped/incr std/core/types/h-None)])
-          (handlers/scoped/flip))))]) (λ (h-res)
+          (handlers/scoped/flip)))]) (λ (h-res)
         h-res) h-action)))
   (define handlers/scoped/state-show
     (λ (x h-implicit/show)
@@ -126,14 +130,16 @@
   (define handlers/scoped/cutfail/h-ctl-cutfail
     (λ (cutfail)
       (match cutfail
-        [(handlers/scoped/h-Hnd-cutfail _ h-x) h-x])))
+        [(handlers/scoped/cutfail _ h-x) h-x])))
+  (define handlers/scoped/cutfail/h-tag
+    "cutfail@scoped")
   (define handlers/scoped/cutfail/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/scoped/cutfail/h-tag hnd ret action)))
   (define handlers/scoped/cutfail/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/scoped/h-Hnd-cutfail _ h-ctl-cutfail) h-ctl-cutfail])))
+        [(handlers/scoped/cutfail _ h-ctl-cutfail) h-ctl-cutfail])))
   (define handlers/scoped/cutfail
     (λ ()
       (perform handlers/scoped/cutfail cutfail)))
@@ -145,7 +151,7 @@
   (define handlers/scoped/hcutfail
     (λ (action)
       ((λ (h-action)
-        (handlers/scoped/cutfail/h-handle (handler handlers/scoped/h-Hnd-cutfail [ctl cutfail (std/core/hnd/clause-control0 (λ (resume)
+        (handlers/scoped/cutfail/h-handle (handler handlers/scoped/cutfail [ctl cutfail (std/core/hnd/clause-control0 (λ (resume)
           (handlers/scoped/fail)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
@@ -155,23 +161,23 @@
         (letrec* ([ievh-2640 std/core/types/h-Hdiv] [ievh-2843 std/core/types/h-Hdiv] [ievh-2869 std/core/types/h-Hdiv])
           (std/core/hnd/local-var (std/core/types/Cons handlers/scoped/fail std/core/types/Nil) (λ (q)
             ((λ (h-action)
-              (handlers/scoped/nondet/h-handle (handler handlers/scoped/h-Hnd-nondet [ctl fail (letrec* ([ievh-2746 std/core/types/h-Hdiv])
+              (handlers/scoped/nondet/h-handle (handler handlers/scoped/nondet [ctl fail (letrec* ([ievh-2746 std/core/types/h-Hdiv])
                 (std/core/hnd/clause-control0 (λ (resume)
                   (match (std/core/types/local-get q ievh-2746)
                     [std/core/types/Nil (handlers/scoped/fail)]
                     [(std/core/types/Cons p ps) (letrec* ([_ (std/core/types/local-set q ps)])
-                      (p))]))))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+                      (p))]))))] [ctl flip (λ (resume)
                 (letrec* ([_ (std/core/types/local-set q (std/core/types/Cons (λ ()
                   (resume std/core/types/False)) (std/core/types/local-get q ievh-2843)))])
-                  (resume std/core/types/True))))]) (λ (x)
+                  (resume std/core/types/True)))]) (λ (x)
                 (match (handlers/scoped/flip)
                   [std/core/types/True x]
                   [std/core/types/False (match (std/core/types/local-get q ievh-2869)
                     [std/core/types/Nil (handlers/scoped/fail)]
                     [(std/core/types/Cons p ps) (letrec* ([_ (std/core/types/local-set q ps)])
                       (p))])])) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define handlers/scoped/call
     (λ (p)
       (handlers/scoped/hcutfail (λ ()
@@ -190,14 +196,16 @@
   (define handlers/scoped/symbol/h-fun-symbol
     (λ (symbol)
       (match symbol
-        [(handlers/scoped/h-Hnd-symbol _ h-x) h-x])))
+        [(handlers/scoped/symbol _ h-x) h-x])))
+  (define handlers/scoped/symbol/h-tag
+    "symbol@scoped")
   (define handlers/scoped/symbol/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/scoped/symbol/h-tag hnd ret action)))
   (define handlers/scoped/symbol/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/scoped/h-Hnd-symbol _ h-fun-symbol) h-fun-symbol])))
+        [(handlers/scoped/symbol _ h-fun-symbol) h-fun-symbol])))
   (define handlers/scoped/symbol
     (λ (s)
       (perform handlers/scoped/symbol symbol s)))
@@ -207,16 +215,16 @@
         (letrec* ([ievh-3331 std/core/types/h-Hnodiv] [ievh-3417 std/core/types/h-Hnodiv] [ievh-3471 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var input (λ (cs)
             ((λ (h-action)
-              (handlers/scoped/symbol/h-handle (handler handlers/scoped/h-Hnd-symbol [fun symbol (std/core/hnd/clause-tail1 (λ (s)
+              (handlers/scoped/symbol/h-handle (handler handlers/scoped/symbol [fun symbol (λ (s)
                 (match (std/core/sslice/starts-with (std/core/types/local-get cs ievh-3417) s)
                   [std/core/types/Nothing (handlers/scoped/fail)]
                   [(std/core/types/Just (as rest (std/core/sslice/Sslice _ _ _))) (letrec* ([_ (std/core/types/local-set cs (std/core/sslice/string rest))])
-                    s)])))]) (λ (x)
+                    s)]))]) (λ (x)
                 (match (std/core/string/is-empty (std/core/types/local-get cs ievh-3471))
                   [std/core/types/True x]
                   [std/core/types/False (handlers/scoped/fail)])) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define handlers/scoped/digits
     (std/core/list/map (std/core/list/range/list 0 9) std/core/int/show))
   (define handlers/scoped/digit

@@ -1,19 +1,21 @@
 (module
   std/num/random
+  (define std/num/random/random/h-tag
+    "random@random")
   (define std/num/random/random/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle std/num/random/random/h-tag hnd ret action)))
   (define std/num/random/random-int32/h-select
     (λ (hnd)
       (match hnd
-        [(std/num/random/h-Hnd-random _ h-fun-random-int32) h-fun-random-int32])))
+        [(std/num/random/random _ h-fun-random-int32) h-fun-random-int32])))
   (define std/num/random/random-int32
     (λ ()
       (perform std/num/random/random random-int32)))
   (define std/num/random/random/h-fun-random-int32
     (λ (random)
       (match random
-        [(std/num/random/h-Hnd-random _ h-x) h-x])))
+        [(std/num/random/random _ h-x) h-x])))
   (define std/num/random/sfc/cnt
     (λ (sfc)
       (match sfc
@@ -64,8 +66,8 @@
   (define std/num/random/strong-random
     (λ (action)
       ((λ (h-action)
-        (std/num/random/random/h-handle (handler std/num/random/h-Hnd-random [fun random-int32 (std/core/hnd/clause-tail0 (λ ()
-          (std/num/random/srandom-int32)))]) (λ (h-res)
+        (std/num/random/random/h-handle (handler std/num/random/random [fun random-int32 (λ ()
+          (std/num/random/srandom-int32))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
   (define std/num/random/h-default-random
@@ -90,13 +92,13 @@
         (letrec* ([ievh-743 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var (std/num/random/sfc-init seed) (λ (s)
             ((λ (h-action)
-              (std/num/random/random/h-handle (handler std/num/random/h-Hnd-random [fun random-int32 (std/core/hnd/clause-tail0 (λ ()
+              (std/num/random/random/h-handle (handler std/num/random/random [fun random-int32 (λ ()
                 (letrec* ([sfc (std/num/random/sfc-step (std/core/types/local-get s ievh-743))] [_ (std/core/types/local-set s (std/num/random/sfc-result/rstate sfc))])
-                  (std/num/random/sfc-result/rnd sfc))))]) (λ (h-res)
+                  (std/num/random/sfc-result/rnd sfc)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
               ((λ ()
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (action))))))))))))))
+                (λ ()
+                  (action)))))))))))))
   (define std/num/random/random-bool
     (λ ()
       (std/num/int32/>= (std/num/random/random-int32) (std/num/int32/int32 0))))

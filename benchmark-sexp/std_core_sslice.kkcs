@@ -147,8 +147,8 @@
           (std/core/hnd/local-var 0 (λ (cnt)
             (letrec* ([_ (std/core/sslice/string/foreach s (λ (c)
               (match ((λ (h-arg-x1)
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (pred h-arg-x1)))) c)
+                (λ ()
+                  (pred h-arg-x1))) c)
                 [std/core/types/True (std/core/types/local-set cnt (std/core/int/+ (std/core/types/local-get cnt ievh-884) 1))]
                 [std/core/types/False std/core/types/Unit])))])
               (std/core/types/local-get cnt ievh-903)))))))))

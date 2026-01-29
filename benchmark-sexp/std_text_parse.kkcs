@@ -1,49 +1,51 @@
 (module
   std/text/parse
+  (define std/text/parse/parse/h-tag
+    "parse@parse")
   (define std/text/parse/parse/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle std/text/parse/parse/h-tag hnd ret action)))
   (define std/text/parse/parse/h-fun-satisfy
     (λ (parse)
       (match parse
-        [(std/text/parse/h-Hnd-parse _ _ _ _ h-x) h-x])))
+        [(std/text/parse/parse _ _ _ _ h-x) h-x])))
   (define std/text/parse/satisfy/h-select
     (λ (hnd)
       (match hnd
-        [(std/text/parse/h-Hnd-parse _ _ _ _ h-fun-satisfy) h-fun-satisfy])))
+        [(std/text/parse/parse _ _ _ _ h-fun-satisfy) h-fun-satisfy])))
   (define std/text/parse/satisfy
     (λ (pred)
       (perform std/text/parse/parse satisfy pred)))
   (define std/text/parse/parse/h-brk-fail
     (λ (parse)
       (match parse
-        [(std/text/parse/h-Hnd-parse _ _ h-x _ _) h-x])))
+        [(std/text/parse/parse _ _ h-x _ _) h-x])))
   (define std/text/parse/fail/h-select
     (λ (hnd)
       (match hnd
-        [(std/text/parse/h-Hnd-parse _ _ h-brk-fail _ _) h-brk-fail])))
+        [(std/text/parse/parse _ _ h-brk-fail _ _) h-brk-fail])))
   (define std/text/parse/fail
     (λ (msg)
       (perform std/text/parse/parse fail msg)))
   (define std/text/parse/parse/h-ctl-pick
     (λ (parse)
       (match parse
-        [(std/text/parse/h-Hnd-parse _ _ _ h-x _) h-x])))
+        [(std/text/parse/parse _ _ _ h-x _) h-x])))
   (define std/text/parse/pick/h-select
     (λ (hnd)
       (match hnd
-        [(std/text/parse/h-Hnd-parse _ _ _ h-ctl-pick _) h-ctl-pick])))
+        [(std/text/parse/parse _ _ _ h-ctl-pick _) h-ctl-pick])))
   (define std/text/parse/pick
     (λ ()
       (perform std/text/parse/parse pick)))
   (define std/text/parse/parse/h-fun-current-input
     (λ (parse)
       (match parse
-        [(std/text/parse/h-Hnd-parse _ h-x _ _ _) h-x])))
+        [(std/text/parse/parse _ h-x _ _ _) h-x])))
   (define std/text/parse/current-input/h-select
     (λ (hnd)
       (match hnd
-        [(std/text/parse/h-Hnd-parse _ h-fun-current-input _ _ _) h-fun-current-input])))
+        [(std/text/parse/parse _ h-fun-current-input _ _ _) h-fun-current-input])))
   (define std/text/parse/current-input
     (λ ()
       (perform std/text/parse/parse current-input)))
@@ -76,17 +78,17 @@
         (letrec* ([ievh-1090 std/core/types/h-Hnodiv] [ievh-1163 std/core/types/h-Hnodiv] [ievh-1243 std/core/types/h-Hnodiv] [ievh-1406 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var input0 (λ (input)
             ((λ (h-action)
-              (std/text/parse/parse/h-handle (handler std/text/parse/h-Hnd-parse [fun current-input (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get input ievh-1163)))] [? h-brk-fail (letrec* ([ievh-1208 std/core/types/h-Hnodiv])
+              (std/text/parse/parse/h-handle (handler std/text/parse/parse [fun current-input (λ ()
+                (std/core/types/local-get input ievh-1163))] [? h-brk-fail (letrec* ([ievh-1208 std/core/types/h-Hnodiv])
                 (std/core/hnd/clause-never1 (λ (msg)
-                  (std/text/parse/ParseError msg (std/core/types/local-get input ievh-1208)))))] [ctl pick (std/core/hnd/clause-control0 (λ (resume)
+                  (std/text/parse/ParseError msg (std/core/types/local-get input ievh-1208)))))] [ctl pick (λ (resume)
                 (letrec* ([save (std/core/types/local-get input ievh-1243)])
                   (match (resume std/core/types/True)
                     [(std/text/parse/ParseOk x1 (as rest1 (std/core/sslice/Sslice _ _ _))) (std/text/parse/ParseOk x1 rest1)]
                     [err1 (letrec* ([_ (std/core/types/local-set input save)])
                       (match (resume std/core/types/False)
                         [(std/text/parse/ParseOk x2 (as rest2 (std/core/sslice/Sslice _ _ _))) (std/text/parse/ParseOk x2 rest2)]
-                        [_ err1]))]))))] [fun satisfy (letrec* ([ievh-1330 std/core/types/h-Hnodiv])
+                        [_ err1]))])))] [fun satisfy (letrec* ([ievh-1330 std/core/types/h-Hnodiv])
                 (std/core/hnd/clause-tail1 (λ (pred)
                   (letrec* ([inp (std/core/types/local-get input ievh-1330)] [m (λ ()
                     (pred inp))])
@@ -95,8 +97,8 @@
                         (std/core/types/Just x))]
                       [std/core/types/Nothing std/core/types/Nothing])))))]) (λ (x)
                 (std/text/parse/ParseOk x (std/core/types/local-get input ievh-1406))) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (p))))))))))))
+              (λ ()
+                (p)))))))))))
   (define std/text/parse/starts-with
     (λ (s p)
       (match (std/text/parse/parse (std/core/sslice/slice s) p)

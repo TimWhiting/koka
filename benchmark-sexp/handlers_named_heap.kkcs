@@ -1,41 +1,45 @@
 (module
   handlers/named/heap
+  (define handlers/named/heap/heap/h-tag
+    "heap@heap")
   (define handlers/named/heap/heap/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/named/heap/heap/h-tag hnd ret action)))
   (define handlers/named/heap/heap/h-ctl-new-ref
     (λ (heap)
       (match heap
-        [(handlers/named/heap/h-Hnd-heap _ h-x) h-x])))
+        [(handlers/named/heap/heap _ h-x) h-x])))
   (define handlers/named/heap/new-ref/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/heap/h-Hnd-heap _ h-ctl-new-ref) h-ctl-new-ref])))
+        [(handlers/named/heap/heap _ h-ctl-new-ref) h-ctl-new-ref])))
   (define handlers/named/heap/new-ref
     (λ (init)
       (perform handlers/named/heap/heap new-ref init)))
+  (define handlers/named/heap/ref/h-tag
+    "ref@heap")
   (define handlers/named/heap/ref/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-named-handle handlers/named/heap/ref/h-tag hnd ret action)))
   (define handlers/named/heap/ref/h-fun-get
     (λ (ref)
       (match ref
-        [(handlers/named/heap/h-Hnd-ref _ h-x _) h-x])))
+        [(handlers/named/heap/ref _ h-x _) h-x])))
   (define handlers/named/heap/get/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/heap/h-Hnd-ref _ h-fun-get _) h-fun-get])))
+        [(handlers/named/heap/ref _ h-fun-get _) h-fun-get])))
   (define handlers/named/heap/get
     (λ (h-hname)
       (perform handlers/named/heap/ref get)))
   (define handlers/named/heap/ref/h-fun-set
     (λ (ref)
       (match ref
-        [(handlers/named/heap/h-Hnd-ref _ _ h-x) h-x])))
+        [(handlers/named/heap/ref _ _ h-x) h-x])))
   (define handlers/named/heap/set/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/named/heap/h-Hnd-ref _ _ h-fun-set) h-fun-set])))
+        [(handlers/named/heap/ref _ _ h-fun-set) h-fun-set])))
   (define handlers/named/heap/set
     (λ (h-hname value)
       (perform handlers/named/heap/ref set value)))
@@ -45,17 +49,17 @@
         (letrec* ([ievh-1048 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var init (λ (s)
             ((λ (h-action)
-              (handlers/named/heap/ref/h-handle (handler handlers/named/heap/h-Hnd-ref [fun get (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get s ievh-1048)))] [fun set (std/core/hnd/clause-tail1 (λ (x)
-                (std/core/types/local-set s x)))]) (λ (h-res)
+              (handlers/named/heap/ref/h-handle (handler handlers/named/heap/ref [fun get (λ ()
+                (std/core/types/local-get s ievh-1048))] [fun set (λ (x)
+                (std/core/types/local-set s x))]) (λ (h-res)
                 h-res) h-action)) (λ (r)
               ((λ (h-arg-x1)
-                (std/core/hnd/h-mask-builtin (λ ()
-                  (action h-arg-x1)))) r))))))))))
+                (λ ()
+                  (action h-arg-x1))) r))))))))))
   (define handlers/named/heap/heap
     (λ (action)
       ((λ (h-action)
-        (handlers/named/heap/heap/h-handle (handler handlers/named/heap/h-Hnd-heap [ctl new-ref (std/core/hnd/clause-control1 (λ (init resume)
+        (handlers/named/heap/heap/h-handle (handler handlers/named/heap/heap [ctl new-ref (std/core/hnd/clause-control1 (λ (init resume)
           (handlers/named/heap/with-ref init resume)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (action)))))
