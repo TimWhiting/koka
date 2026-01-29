@@ -12,14 +12,18 @@
 module Core.Sexp( sexpCore, sexpExpr, sexpDef, sexpDefGroup, sexpLit ) where
 
 import Data.Char (isAlphaNum)
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, isPrefixOf)
 import Common.Name
-import Common.NamePrim( nameEffectOpen, nameDecreasing )
+import Common.NamePrim( nameEffectOpen, nameDecreasing, nameCoreHnd, nameHTag, nameMaskBuiltin )
 import Common.Syntax
 import Lib.PPrint
 import Core.Core
 import Type.Type( Type(..), TypeCon(..), splitFunScheme )
 import Data.Maybe (fromJust, isJust)
+import Common.File (startsWith)
+import Debug.Trace (trace)
+import Type.Pretty (defaultEnv)
+import Core.Pretty (prettyExpr)
 
 {--------------------------------------------------------------------------
   S-expression combinators
@@ -88,7 +92,7 @@ sexpCore (Core modName _imports _fixDefs _typeDefGroups defGroups _externals _do
 isFilteredDef :: Def -> Bool
 isFilteredDef def =
   let n = showPlain (defName def)
-  in "/@tag" `isSuffixOf` n || "/@cfc" `isSuffixOf` n
+  in "/@cfc" `isSuffixOf` n
 
 {--------------------------------------------------------------------------
   Definitions
@@ -112,6 +116,18 @@ sexpDef def
   Expressions
 --------------------------------------------------------------------------}
 
+sexprFixOpen :: Expr -> Expr
+sexprFixOpen e =
+  case e of
+    App fn args r ->
+      case getOpenArg fn of
+        -- If unwrapped function is also skippable (like pretend-decreasing), skip it too
+        Just (Var tname _) | isSkippableName (getName tname), [arg] <- args -> arg
+        Just (TypeApp (Var tname _) _) | isSkippableName (getName tname), [arg] <- args -> arg
+        Just arg -> App (sexprFixOpen arg) (map sexprFixOpen args) r
+        Nothing  -> App (sexprFixOpen fn) (map sexprFixOpen args) r
+    _ -> e
+
 -- | Convert an Expr to S-expression (skip TypeLam and TypeApp)
 sexpExpr :: Expr -> Doc
 sexpExpr expr = case expr of
@@ -127,7 +143,7 @@ sexpExpr expr = case expr of
     staggedHang "λ" (slist (map sexpTName tnames)) [sexpExpr body]
 
   -- Variable: just the name
-  Var tname _info -> 
+  Var tname _info ->
     if isSkippableName (getName tname) then error "Open"
     else sexpTName tname
 
@@ -154,14 +170,9 @@ sexpExpr expr = case expr of
     sexpHandlerCon tname (drop 1 args)
 
   App fn args _ ->
-    case getOpenArg fn of
-      -- If unwrapped function is also skippable (like pretend-decreasing), skip it too
-      Just (Var tname _) | isSkippableName (getName tname), [arg] <- args ->
-        sexpExpr arg
-      Just (TypeApp (Var tname _) _) | isSkippableName (getName tname), [arg] <- args ->
-        sexpExpr arg
-      Just arg -> slist (sexpExpr arg : map sexpExpr args)
-      Nothing  -> slist (sexpExpr fn : map sexpExpr args)
+    case sexprFixOpen expr of
+      App fn args _ -> slist (sexpExpr fn: map sexpExpr args)
+      e -> sexpExpr e
 
   -- Constructor: just the name
   Con tname _repr _ -> sexpTName tname
@@ -185,6 +196,7 @@ sexpExpr expr = case expr of
 
 -- | Convert a TName to S-expression (just the name as symbol)
 sexpTName :: TName -> Doc
+sexpTName tname | isHandlerConName (getName tname) = sexpSym (fromHandlerConName (getName tname))
 sexpTName tname = sexpSym (getName tname)
 
 -- | Convert a Name to a symbol, escaping with pipes if needed
@@ -201,19 +213,15 @@ sexpSym name = satom (escapeSymbol (sanitize (showPlain name)))
 
 -- | Check if name is @open or pretend-decreasing
 isSkippableName :: Name -> Bool
-isSkippableName nm = nm == nameEffectOpen || nm == nameDecreasing
+isSkippableName nm = nm == nameEffectOpen || nm == nameDecreasing || nm == nameHTag || nm == nameMaskBuiltin
 
 -- | Check if name is a perform function (@perform1, @perform2, etc.)
 isPerformName :: Name -> Bool
-isPerformName nm = nameModule nm == "std/core/hnd" && "@perform" `isPrefixOf` nameLocal nm
-  where
-    isPrefixOf prefix str = take (length prefix) str == prefix
+isPerformName nm = nameModule nm == nameModule nameCoreHnd && "@perform" `isPrefixOf` nameStem nm
 
 -- | Check if a constructor is a handler constructor (@Hnd-*)
 isHandlerCon :: Name -> Bool
-isHandlerCon nm = "@Hnd-" `isPrefixOf` nameLocal nm
-  where
-    isPrefixOf prefix str = take (length prefix) str == prefix
+isHandlerCon nm = "@Hnd-" `isPrefixOf` nameStem nm
 
 -- | Get field names from a constructor's type (raw, not sanitized)
 getConFieldNames :: TName -> [String]
@@ -250,47 +258,46 @@ stripFieldPrefix name
   | "@val-" `isPrefixOf` name = ("val", drop 5 name)
   | "@ctl-" `isPrefixOf` name = ("ctl", drop 5 name)
   | otherwise = ("?", name)
-  where
-    isPrefixOf prefix str = take (length prefix) str == prefix
 
 -- | Detect clause kind from expression and unwrap if needed
 -- Returns (kind, unwrapped-expr)
 detectClauseKind :: Expr -> (String, Expr)
-detectClauseKind expr = case unwrapExpr expr of
-  -- clause-tail0 is a value, unwrap the application
-  App (TypeApp (Var tname _) _) [arg] _ | isClauseTail0 (getName tname) -> ("val", arg)
-  App (Var tname _) [arg] _ | isClauseTail0 (getName tname) -> ("val", arg)
-  -- Other clause-tail* are functions
-  App (TypeApp (Var tname _) _) [arg] _ | isClauseTail (getName tname) -> ("fun", arg)
-  App (Var tname _) [arg] _ | isClauseTail (getName tname) -> ("fun", arg)
-  -- clause-control* are control operations
-  App (TypeApp (Var tname _) _) [arg] _ | isClauseControl (getName tname) -> ("ctl", arg)
-  App (Var tname _) [arg] _ | isClauseControl (getName tname) -> ("ctl", arg)
-  -- Unknown
-  _ -> ("?", expr)
+detectClauseKind expr =
+  trace (show $ prettyExpr defaultEnv expr) $
+  case unwrapExpr (sexprFixOpen expr) of
+    App fn [arg] _ ->
+      case unwrapExpr fn of
+        Var tname _ | isClauseTail0 (getName tname)   -> ("?", arg)
+                    | isClauseTail (getName tname)    -> ("fun", arg)
+                    | isClauseControl (getName tname) -> ("ctl", arg)
+        _ -> ("?", expr)
+    _ -> ("?", expr)
   where
     unwrapExpr (TypeApp e _) = unwrapExpr e
     unwrapExpr (TypeLam _ e) = unwrapExpr e
     unwrapExpr e = e
 
+isClauseName :: Name -> Bool
+isClauseName name = qualifier name == nameCoreHnd && nameStem name `startsWith` "clause"
+
+isNamePerform :: Name -> Bool
+isNamePerform n = qualifier n == nameCoreHnd && nameStem n `startsWith` "@perform"
+
+
 -- | Check if name is clause-tail0
 isClauseTail0 :: Name -> Bool
-isClauseTail0 nm = nameModule nm == "std/core/hnd" && nameLocal nm == "clause-tail0"
+isClauseTail0 nm = nameModule nm == nameModule nameCoreHnd && nameStem nm == "clause-tail0"
 
 -- | Check if name is clause-tail* (but not tail0)
 isClauseTail :: Name -> Bool
-isClauseTail nm = nameModule nm == "std/core/hnd" &&
-                  "clause-tail" `isPrefixOf` nameLocal nm &&
-                  nameLocal nm /= "clause-tail0"
-  where
-    isPrefixOf prefix str = take (length prefix) str == prefix
+isClauseTail nm = nameModule nm == nameModule nameCoreHnd &&
+                  "clause-tail" `isPrefixOf` nameStem nm &&
+                  nameStem nm /= "clause-tail0"
 
 -- | Check if name is clause-control*
 isClauseControl :: Name -> Bool
-isClauseControl nm = nameModule nm == "std/core/hnd" &&
-                     "clause-control" `isPrefixOf` nameLocal nm
-  where
-    isPrefixOf prefix str = take (length prefix) str == prefix
+isClauseControl nm = nameModule nm == nameModule nameCoreHnd &&
+                     "clause-control" `isPrefixOf` nameStem nm
 
 -- | Extract the operation name from a select function reference
 -- The select is typically a Var like "module/effect/@select"
@@ -299,7 +306,7 @@ getSelectOpName :: Expr -> String
 getSelectOpName (Var tname _) =
   let nm = getName tname
       lq = nameLocalQual nm
-  in if null lq then nameLocal nm else lq
+  in if null lq then nameStem nm else lq
 getSelectOpName (TypeApp e _) = getSelectOpName e
 getSelectOpName (App e _ _) = getSelectOpName e
 getSelectOpName (Lam _ _ e) = getSelectOpName e  -- unwrap lambda
