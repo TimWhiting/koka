@@ -1,0 +1,36 @@
+((module handlers/yield)
+  (defs
+    (def handlers/yield/yield/h-cfc
+      (fn (yield)
+        (match yield
+          [(handlers/yield/h-Hnd-yield h-x _) h-x])))
+    (def handlers/yield/yield/h-tag
+      (std/core/hnd/h-new-htag ("yield@yield")))
+    (def handlers/yield/yield/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/yield/yield/h-tag hnd ret action))))
+    (def handlers/yield/yield/h-fun-yield
+      (fn (yield)
+        (match yield
+          [(handlers/yield/h-Hnd-yield _ h-x) h-x])))
+    (def handlers/yield/yield/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/yield/h-Hnd-yield _ h-fun-yield) h-fun-yield])))
+    (def handlers/yield/yield
+      (fn (x)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/yield/yield/h-select x))))
+    (def handlers/yield/traverse
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons x xx) (letrec* ([_ (handlers/yield/yield (x))])
+            (handlers/yield/traverse (xx)))]
+          [std/core/types/Nil std/core/types/Unit])))
+    (def handlers/yield/main
+      (fn ()
+        ((fn (h-action)
+          (handlers/yield/yield/h-handle ((handlers/yield/h-Hnd-yield (1 (std/core/hnd/clause-tail1 ((fn (i)
+            (std/core/console/string/println ((std/core/types/++ ("yielded " (std/core/int/show (i))))))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (letrec* ([_ (handlers/yield/traverse ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil))))))))])
+            (std/core/console/string/println ("done"))))))))))

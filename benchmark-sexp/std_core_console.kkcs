@@ -1,0 +1,40 @@
+((module std/core/console)
+  (defs
+    (def std/core/console/redirect
+      (std/core/unsafe/unsafe-total ((fn ()
+        (std/core/types/ref (std/core/types/Nothing))))))
+    (def std/core/console/print-redirect
+      (fn (print)
+        (std/core/types/set (std/core/console/redirect (std/core/types/Just (print))))))
+    (def std/core/console/xprintsln
+      (fn (s)
+        (std/core/console/h-extern-xprintsln (s))))
+    (def std/core/console/xprints
+      (fn (s)
+        (std/core/console/h-extern-xprints (s))))
+    (def std/core/console/prints
+      (fn (s)
+        (letrec* ([ievh-137 std/core/types/h-Hdiv] [ievh-142 std/core/types/h-Hnodiv])
+          ((std/core/console/unsafe-nostate ((fn ()
+            (match (std/core/types/ref/! (std/core/console/redirect ievh-142))
+              [std/core/types/Nothing (std/core/console/xprints (s))]
+              [(std/core/types/Just f) (f (s))])))) ()))))
+    (def std/core/console/printsln
+      (fn (s)
+        (letrec* ([ievh-196 std/core/types/h-Hdiv] [ievh-201 std/core/types/h-Hnodiv])
+          ((std/core/console/unsafe-nostate ((fn ()
+            (match (std/core/types/ref/! (std/core/console/redirect ievh-201))
+              [std/core/types/Nothing (std/core/console/xprintsln (s))]
+              [(std/core/types/Just f) (f ((std/core/types/++ (s "\n"))))])))) ()))))
+    (def std/core/console/string/print
+      (fn (s)
+        (std/core/console/prints (s))))
+    (def std/core/console/default/show/print
+      (fn (x h-implicit/show)
+        (std/core/console/prints ((h-implicit/show (x))))))
+    (def std/core/console/string/println
+      (fn (s)
+        (std/core/console/printsln (s))))
+    (def std/core/console/default/show/println
+      (fn (x h-implicit/show)
+        (std/core/console/printsln ((h-implicit/show (x))))))))

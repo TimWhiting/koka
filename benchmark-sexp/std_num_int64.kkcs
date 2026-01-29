@@ -1,0 +1,291 @@
+((module std/num/int64)
+  (defs
+    (def std/num/int64/int64
+      (fn (i)
+        (std/num/int64/h-extern-int64 (i))))
+    (def std/num/int64/one
+      (std/num/int64/int64 (1)))
+    (def std/num/int64/zero
+      (std/num/int64/int64 (0)))
+    (def std/num/int64/bool/int64
+      (fn (b)
+        (match b
+          [std/core/types/True std/num/int64/one]
+          [std/core/types/False std/num/int64/zero])))
+    (def std/num/int64/hilo/int64
+      (fn (hi lo)
+        (std/num/int64/or ((std/num/int64/shl64 (hi (std/num/int64/int64 (32)))) (std/num/int64/and (lo (std/num/int64/int64 (4294967295))))))))
+    (def std/num/int64/max-int64
+      (std/num/int64/int64 (9223372036854775807)))
+    (def std/num/int64/min-int64
+      (std/num/int64/int64 (-9223372036854775808)))
+    (def std/num/int64/bits-int64
+      (std/num/int64/int64 (64)))
+    (def std/num/int64/i64
+      (fn (i)
+        (std/num/int64/int64 (i))))
+    (def std/num/int64/bool
+      (fn (i)
+        (std/num/int64/!= (i std/num/int64/zero))))
+    (def std/num/int64/hi
+      (fn (i)
+        (std/num/int64/sar64 (i (std/num/int64/int64 (32))))))
+    (def std/num/int64/lo
+      (fn (i)
+        (std/num/int64/and (i (std/num/int64/int64 (4294967295))))))
+    (def std/num/int64/int64/uint
+      (fn (i)
+        (match (std/num/int64/is-neg (i))
+          [std/core/types/True (std/core/int/+ (18446744073709551616 (std/num/int64/int (i))))]
+          [std/core/types/False (std/num/int64/int (i))])))
+    (def std/num/int64/hilo/int
+      (fn (h-pat-x445_19)
+        (match h-pat-x445_19
+          [(std/core/types/Tuple2 hi lo) (std/core/int/+ ((std/core/int/* ((std/num/int64/int (hi)) 18446744073709551616)) (std/num/int64/int64/uint (lo))))])))
+    (def std/num/int64/hilo/uint
+      (fn (h-pat-x450_20)
+        (match h-pat-x450_20
+          [(std/core/types/Tuple2 hi lo) (std/core/int/+ ((std/core/int/* ((std/num/int64/int64/uint (hi)) 18446744073709551616)) (std/num/int64/int64/uint (lo))))])))
+    (def std/num/int64/show
+      (fn (i)
+        (std/core/int/show ((std/num/int64/int (i))))))
+    (def std/num/int64/int/uint64
+      (fn (i)
+        (match (std/core/int/> (i (std/num/int64/int (std/num/int64/max-int64))))
+          [std/core/types/True (std/num/int64/int64 ((std/core/int/- (i 18446744073709551616))))]
+          [std/core/types/False (std/num/int64/int64 (i))])))
+    (def std/num/int64/show-hex
+      (fn (i width use-capitals pre)
+        (letrec* ([h-uniq-widthh-609 (match width
+          [(std/core/types/h-Optional h-uniq-widthh-610) h-uniq-widthh-610]
+          [std/core/types/h-None 1])] [h-uniq-use-capitalsh-613 (match use-capitals
+          [(std/core/types/h-Optional h-uniq-use-capitalsh-614) h-uniq-use-capitalsh-614]
+          [std/core/types/h-None std/core/types/True])] [h-uniq-preh-617 (match pre
+          [(std/core/types/h-Optional h-uniq-preh-618) h-uniq-preh-618]
+          [std/core/types/h-None "0x"])])
+          (std/core/show/show-hex ((std/num/int64/int (i)) (std/core/types/h-Optional (h-uniq-widthh-609)) (std/core/types/h-Optional (h-uniq-use-capitalsh-613)) (std/core/types/h-Optional (h-uniq-preh-617)))))))
+    (def std/num/int64/show-hex64
+      (fn (i width use-capitals pre)
+        (letrec* ([h-uniq-widthh-660 (match width
+          [(std/core/types/h-Optional h-uniq-widthh-661) h-uniq-widthh-661]
+          [std/core/types/h-None 16])] [h-uniq-use-capitalsh-664 (match use-capitals
+          [(std/core/types/h-Optional h-uniq-use-capitalsh-665) h-uniq-use-capitalsh-665]
+          [std/core/types/h-None std/core/types/True])] [h-uniq-preh-668 (match pre
+          [(std/core/types/h-Optional h-uniq-preh-669) h-uniq-preh-669]
+          [std/core/types/h-None "0x"])])
+          (std/core/show/show-hex ((std/num/int64/int64/uint (i)) (std/core/types/h-Optional (h-uniq-widthh-660)) (std/core/types/h-Optional (h-uniq-use-capitalsh-664)) (std/core/types/h-Optional (h-uniq-preh-668)))))))
+    (def std/num/int64/sign
+      (fn (i)
+        (match (std/num/int64/is-pos (i))
+          [std/core/types/True std/core/types/Gt]
+          [std/core/types/False (match (std/num/int64/is-neg (i))
+            [std/core/types/True std/core/types/Lt]
+            [std/core/types/False std/core/types/Eq])])))
+    (def std/num/int64/is-odd
+      (fn (i)
+        (std/num/int64/== ((std/num/int64/and (i std/num/int64/one)) std/num/int64/one))))
+    (def std/num/int64/is-even
+      (fn (i)
+        (std/num/int64/== ((std/num/int64/and (i std/num/int64/one)) std/num/int64/zero))))
+    (def std/num/int64/inc
+      (fn (i)
+        (std/num/int64/+ (i (std/num/int64/int64 (1))))))
+    (def std/num/int64/dec
+      (fn (i)
+        (std/num/int64/- (i (std/num/int64/int64 (1))))))
+    (def std/num/int64/cmp
+      (fn (x y)
+        (match (std/num/int64/< (x y))
+          [std/core/types/True std/core/types/Lt]
+          [std/core/types/False (match (std/num/int64/> (x y))
+            [std/core/types/True std/core/types/Gt]
+            [std/core/types/False std/core/types/Eq])])))
+    (def std/num/int64/^
+      (fn (x y)
+        (std/num/int64/xor (x y))))
+    (def std/num/int64/negate
+      (fn (i)
+        (std/num/int64/- ((std/num/int64/int64 (0)) i))))
+    (def std/num/int64/abs
+      (fn (i)
+        (letrec* ([ievh-1067 std/core/types/h-Hdiv])
+          (match (std/core/types/bool/! ((std/num/int64/is-neg (i))))
+            [std/core/types/True i]
+            [std/core/types/False (match (std/num/int64/> (i std/num/int64/min-int64))
+              [std/core/types/True (std/num/int64/negate (i))]
+              [std/core/types/False (std/core/exn/throw ("std/num/int64/abs: cannot make min-int64 into a positive int64 without overflow" std/core/types/h-None))])]))))
+    (def std/num/int64/abs0
+      (fn (i)
+        (letrec* ([ievh-1148 std/core/types/h-Hdiv])
+          (match (std/core/types/bool/! ((std/num/int64/is-neg (i))))
+            [std/core/types/True i]
+            [std/core/types/False (match (std/num/int64/> (i std/num/int64/min-int64))
+              [std/core/types/True (std/num/int64/negate (i))]
+              [std/core/types/False (std/num/int64/int64 (0))])]))))
+    (def std/num/int64/shl
+      (fn (i shift)
+        (std/num/int64/shl64 (i (std/num/int64/int64 (shift))))))
+    (def std/num/int64/shr
+      (fn (i shift)
+        (std/num/int64/shr64 (i (std/num/int64/int64 (shift))))))
+    (def std/num/int64/sar
+      (fn (i shift)
+        (std/num/int64/sar64 (i (std/num/int64/int64 (shift))))))
+    (def std/num/int64/rotl
+      (fn (i shift)
+        (std/num/int64/rotl64 (i (std/num/int64/int64 (shift))))))
+    (def std/num/int64/rotr
+      (fn (i shift)
+        (std/num/int64/rotr64 (i (std/num/int64/int64 (shift))))))
+    (def std/num/int64/popcount
+      (fn (i)
+        (std/num/int64/int ((std/num/int64/popcount64 (i))))))
+    (def std/num/int64/clmul-wide
+      (fn (x y)
+        (std/num/int64/h-extern-clmul-wide (x y))))
+    (def std/num/int64/min
+      (fn (i j)
+        (match (std/num/int64/<= (i j))
+          [std/core/types/True i]
+          [std/core/types/False j])))
+    (def std/num/int64/max
+      (fn (i j)
+        (match (std/num/int64/>= (i j))
+          [std/core/types/True i]
+          [std/core/types/False j])))
+    (def std/num/int64/umul
+      (fn (i j)
+        (std/num/int64/h-extern-umul (i j))))
+    (def std/num/int64/imul
+      (fn (i j)
+        (std/num/int64/h-extern-imul (i j))))
+    (def std/num/int64/cdiv
+      (fn (i j)
+        (match (std/num/int64/is-zero (j))
+          [std/core/types/True (std/core/exn/throw ("std/num/int64/cdiv: division by zero" std/core/types/h-None))]
+          [std/core/types/False (match (match (std/num/int64/== (j (std/num/int64/int64 (-1))))
+            [std/core/types/True (std/num/int64/== (i std/num/int64/min-int64))]
+            [_ std/core/types/False])
+            [std/core/types/True (std/core/exn/throw ("std/num/int64/cdiv: division overflow in cdiv(min-int64, -1.int64)" std/core/types/h-None))]
+            [std/core/types/False (std/num/int64/unsafe-cdiv (i j))])])))
+    (def std/num/int64/cmod
+      (fn (i j)
+        (match (std/num/int64/is-zero (j))
+          [std/core/types/True (std/core/exn/throw ("std/num/int64/cmod: modulus by zero" std/core/types/h-None))]
+          [std/core/types/False (match (match (std/num/int64/== (j (std/num/int64/int64 (-1))))
+            [std/core/types/True (std/num/int64/== (i std/num/int64/min-int64))]
+            [_ std/core/types/False])
+            [std/core/types/True (std/core/exn/throw ("std/num/int64/cmod: modulus overflow in cmod(min-int64, -1.int64)" std/core/types/h-None))]
+            [std/core/types/False (std/num/int64/unsafe-cmod (i j))])])))
+    (def std/num/int64/~
+      (fn (i)
+        (std/num/int64/- ((std/num/int64/int64 (0)) i))))
+    (def std/num/int64//
+      (fn (x y)
+        (match (std/num/int64/== (y (std/num/int64/int64 (0))))
+          [std/core/types/True (std/num/int64/int64 (0))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (match (match (std/num/int64/== (y (std/num/int64/int64 (-1))))
+              [std/core/types/True (std/num/int64/== (x std/num/int64/min-int64))]
+              [_ std/core/types/False])
+              [std/core/types/True x]
+              [std/core/types/False (letrec* ([_ std/core/types/Unit] [q (std/num/int64/unsafe-cdiv (x y))] [r (std/num/int64/unsafe-cmod (x y))])
+                (match (std/num/int64/>= (r (std/num/int64/int64 (0))))
+                  [std/core/types/True q]
+                  [std/core/types/False (match (std/num/int64/> (y (std/num/int64/int64 (0))))
+                    [std/core/types/True (std/num/int64/dec (q))]
+                    [std/core/types/False (std/num/int64/inc (q))])]))]))])))
+    (def std/num/int64/%
+      (fn (x y)
+        (match (std/num/int64/== (y (std/num/int64/int64 (0))))
+          [std/core/types/True x]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (match (match (std/num/int64/== (y (std/num/int64/int64 (-1))))
+              [std/core/types/True (std/num/int64/== (x std/num/int64/min-int64))]
+              [_ std/core/types/False])
+              [std/core/types/True (std/num/int64/int64 (0))]
+              [std/core/types/False (letrec* ([_ std/core/types/Unit] [r (std/num/int64/unsafe-cmod (x y))])
+                (match (std/num/int64/>= (r (std/num/int64/int64 (0))))
+                  [std/core/types/True r]
+                  [std/core/types/False (match (std/num/int64/> (y (std/num/int64/int64 (0))))
+                    [std/core/types/True (std/num/int64/+ (r y))]
+                    [std/core/types/False (std/num/int64/- (r y))])]))]))])))
+    (def std/num/int64/divmod
+      (fn (x y)
+        (match (std/num/int64/is-zero (y))
+          [std/core/types/True (std/core/types/Tuple2 (std/num/int64/zero x))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (match (match (std/num/int64/== (y (std/num/int64/int64 (-1))))
+              [std/core/types/True (std/num/int64/== (x std/num/int64/min-int64))]
+              [_ std/core/types/False])
+              [std/core/types/True (std/core/types/Tuple2 (x (std/num/int64/int64 (0))))]
+              [std/core/types/False (letrec* ([_ std/core/types/Unit] [q (std/num/int64/unsafe-cdiv (x y))] [r (std/num/int64/unsafe-cmod (x y))])
+                (match (std/num/int64/>= (r (std/num/int64/int64 (0))))
+                  [std/core/types/True (std/core/types/Tuple2 (q r))]
+                  [std/core/types/False (match (std/num/int64/> (y (std/num/int64/int64 (0))))
+                    [std/core/types/True (std/core/types/Tuple2 ((std/num/int64/dec (q)) (std/num/int64/+ (r y))))]
+                    [std/core/types/False (std/core/types/Tuple2 ((std/num/int64/inc (q)) (std/num/int64/- (r y))))])]))]))])))
+    (def std/num/int64/range/fold-int64
+      (fn (start end init f)
+        (match (std/num/int64/> (start end))
+          [std/core/types/True init]
+          [std/core/types/False (letrec* ([x (f (start init))])
+            (std/num/int64/range/fold-int64 ((std/num/int64/inc (start)) end x f)))])))
+    (def std/num/int64/fold-int64
+      (fn (n init f)
+        (std/num/int64/range/fold-int64 (std/num/int64/zero (std/num/int64/dec (n)) init f))))
+    (def std/num/int64/range/for-while64
+      (fn (start end action)
+        (letrec* ([rep (fn (i)
+          (match (std/num/int64/<= (i end))
+            [std/core/types/True (match (action (i))
+              [std/core/types/Nothing (rep ((std/num/int64/inc (i))))]
+              [(std/core/types/Just x) (std/core/types/Just (x))])]
+            [std/core/types/False std/core/types/Nothing]))])
+          (rep (start)))))
+    (def std/num/int64/for-while64
+      (fn (n action)
+        (std/num/int64/range/for-while64 (std/num/int64/zero (std/num/int64/dec (n)) action))))
+    (def std/num/int64/list64
+      (fn (lo hi)
+        (match (std/num/int64/<= (lo hi))
+          [std/core/types/True (std/core/types/Cons (lo (std/num/int64/list64 ((std/num/int64/inc (lo)) hi))))]
+          [std/core/types/False std/core/types/Nil])))
+    (def std/num/int64/sumacc64
+      (fn (xs acc)
+        (match xs
+          [(std/core/types/Cons x xx) (std/num/int64/sumacc64 (xx (std/num/int64/+ (acc x))))]
+          [std/core/types/Nil acc])))
+    (def std/num/int64/sum64
+      (fn (xs)
+        (std/num/int64/sumacc64 (xs (std/num/int64/int64 (0))))))
+    (def std/num/int64/test-prefix-sum
+      (fn ()
+        (letrec* ([x (std/num/int64/int64 (1295))])
+          (std/num/int64/show-hex ((std/num/int64/clmul (x (std/num/int64/int64 (-1)))) std/core/types/h-None std/core/types/h-None std/core/types/h-None)))))
+    (def std/num/int64/test-bit-spread1
+      (fn ()
+        (letrec* ([x (std/num/int64/int64 (1535))])
+          (std/num/int64/show-hex ((std/num/int64/clmul (x x)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)))))
+    (def std/num/int64/test-bit-spread2
+      (fn ()
+        (letrec* ([x (std/num/int64/int64 (1531))])
+          (std/num/int64/show-hex ((std/num/int64/clmul (x x)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)))))
+    (def std/num/int64/zip-clmul
+      (fn (x)
+        (std/num/int64/or ((std/num/int64/clmul (x x)) (std/num/int64/clmulr (x x))))))
+    (def std/num/int64/test-clmulr1
+      (fn ()
+        (letrec* ([x (std/num/int64/int64 (51))])
+          (std/core/types/++ ((std/num/int64/show-hex ((std/num/int64/bit-zip (x)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)) (std/core/types/++ (" == " (std/num/int64/show-hex ((std/num/int64/zip-clmul (x)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)))))))))
+    (def std/num/int64/test-clmulr2
+      (fn ()
+        (letrec* ([x (std/num/int64/int64 (81986702028889840))])
+          (std/core/types/++ ((std/num/int64/show-hex ((std/num/int64/bit-zip (x)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)) (std/core/types/++ (" == " (std/num/int64/show-hex ((std/num/int64/zip-clmul (x)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)))))))))
+    (def std/num/int64/clmulrev
+      (fn (x y)
+        (std/num/int64/bit-reverse ((std/num/int64/clmul ((std/num/int64/bit-reverse (x)) (std/num/int64/bit-reverse (y))))))))
+    (def std/num/int64/test-clmulrev1
+      (fn ()
+        (letrec* ([x (std/num/int64/int64 (305419896))] [y (std/num/int64/byte-reverse ((std/num/int64/int64 (2309737967))))])
+          (std/core/types/++ ((std/num/int64/show-hex ((std/num/int64/clmulr (x y)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)) (std/core/types/++ (" == " (std/num/int64/show-hex ((std/num/int64/clmulrev (x y)) std/core/types/h-None std/core/types/h-None std/core/types/h-None)))))))))))

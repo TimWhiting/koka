@@ -37,6 +37,7 @@ import Syntax.GenDoc( genDoc )
 
 import qualified Core.Core as Core
 import qualified Core.Pretty
+import qualified Core.Sexp
 import Core.Borrowed( Borrowed )
 
 import Backend.CSharp.FromCore    ( csharpFromCore )
@@ -92,6 +93,10 @@ codeGen term flags sequential newtypes borrowed kgamma gamma entry imported mod
          do termTrace term "generate core"
             let outCore  = outBase ++ ".kkc"
             writeDocW 10000 outCore coreDoc  -- just for debugging
+            -- also write s-expression core
+            let sexpDoc  = Core.Sexp.sexpCore (fromMaybe core $ modCoreUnopt mod)
+            let outSexp  = outBase ++ ".kkcs"
+            writeDocW 160 outSexp sexpDoc
 
        when (showCore flags || (showFinalCore flags && not (isTargetC (target flags)))) $
          do termInfo term coreDoc

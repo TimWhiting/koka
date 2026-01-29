@@ -1,0 +1,8 @@
+((module samples/basic/fibonacci/h-main)
+  (defs
+    (def samples/basic/fibonacci/h-main/h-expr
+      (fn ()
+        (samples/basic/fibonacci/main ())))
+    (def samples/basic/fibonacci/h-main/h-main
+      (fn ()
+        (samples/basic/fibonacci/h-main/h-expr ())))))

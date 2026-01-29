@@ -1,0 +1,10 @@
+((module samples/all)
+  (defs
+    (def samples/all/run
+      (fn (name action)
+        (letrec* ([_ (std/core/console/string/println ((std/core/types/++ ("run " (std/core/types/++ (name "\n--------------------------"))))))] [_ (action ())])
+          (std/core/console/string/println ("")))))
+    (def samples/all/main
+      (fn ()
+        (letrec* ([_ (samples/all/run ("caesar" basic/caesar/main))] [_ (samples/all/run ("fibonacci" basic/fibonacci/main))] [_ (samples/all/run ("garsia-wachs" basic/garsia-wachs/main))] [_ (samples/all/run ("basic" learn/basic/main))] [_ (samples/all/run ("contexts" learn/contexts/main))] [_ (samples/all/run ("handler" learn/handler/main))] [_ (samples/all/run ("fip" learn/fip/main))] [_ (samples/all/run ("lazycons" learn/lazycons/main))] [_ (samples/all/run ("implicits" learn/implicits/main))] [_ (samples/all/run ("qualifiers" learn/qualifiers/main))] [_ (samples/all/run ("with" learn/with/main))] [_ (samples/all/run ("ask-poly" handlers/named/ask-poly/main))] [_ (samples/all/run ("heap" handlers/named/heap/main))] [_ (samples/all/run ("unify" handlers/named/unify/main))] [_ (samples/all/run ("ask" handlers/named/ask/main))] [_ (samples/all/run ("ambient" handlers/ambient/main))] [_ (samples/all/run ("nim" handlers/nim/main))] [_ (samples/all/run ("parser" handlers/parser/main))] [_ (samples/all/run ("scoped" handlers/scoped/main))] [_ (samples/all/run ("vec" handlers/vec/main))] [_ (samples/all/run ("yield" handlers/yield/main))] [_ (samples/all/run ("unix" handlers/unix/main))])
+          (samples/all/run ("rbtree (this can take a bit longer..)" basic/rbtree/main)))))))

@@ -1,0 +1,251 @@
+((module handlers/basic)
+  (defs
+    (def handlers/basic/ask/h-cfc
+      (fn (ask)
+        (match ask
+          [(handlers/basic/h-Hnd-ask h-x _) h-x])))
+    (def handlers/basic/ask/h-fun-ask
+      (fn (ask)
+        (match ask
+          [(handlers/basic/h-Hnd-ask _ h-x) h-x])))
+    (def handlers/basic/ask/h-tag
+      (std/core/hnd/h-new-htag ("ask@basic")))
+    (def handlers/basic/ask/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/basic/ask/h-tag hnd ret action))))
+    (def handlers/basic/ask/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/basic/h-Hnd-ask _ h-fun-ask) h-fun-ask])))
+    (def handlers/basic/ask
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/basic/ask/h-select))))
+    (def handlers/basic/hello
+      (fn ()
+        (letrec* ([name (handlers/basic/ask ())])
+          (std/core/console/string/println ((std/core/types/++ ("Hello " (std/core/types/++ (name (std/core/types/++ (", " (handlers/basic/ask ()))))))))))))
+    (def handlers/basic/example2
+      (fn ()
+        ((fn (h-action)
+          (handlers/basic/ask/h-handle ((handlers/basic/h-Hnd-ask (1 (std/core/hnd/clause-tail0 ((fn ()
+            "there"))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (handlers/basic/hello ()))))))
+    (def handlers/basic/raise/h-cfc
+      (fn (raise)
+        (match raise
+          [(handlers/basic/h-Hnd-raise h-x _) h-x])))
+    (def handlers/basic/raise/h-ctl-raise
+      (fn (raise)
+        (match raise
+          [(handlers/basic/h-Hnd-raise _ h-x) h-x])))
+    (def handlers/basic/raise/h-tag
+      (std/core/hnd/h-new-htag ("raise@basic")))
+    (def handlers/basic/raise/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/basic/raise/h-tag hnd ret action))))
+    (def handlers/basic/raise/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/basic/h-Hnd-raise _ h-ctl-raise) h-ctl-raise])))
+    (def handlers/basic/raise
+      (fn (s)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/basic/raise/h-select s))))
+    (def handlers/basic/safe-div
+      (fn (x y)
+        (match (std/core/int/== (y 0))
+          [std/core/types/True (handlers/basic/raise ("division by zero"))]
+          [std/core/types/False (std/core/int// (x y))])))
+    (def handlers/basic/rcatch
+      (fn (action h)
+        ((fn (h-action)
+          (handlers/basic/raise/h-handle ((handlers/basic/h-Hnd-raise (3 (std/core/hnd/clause-control1 ((fn (s resume)
+            (h (s))))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (action ()))))))
+    (def handlers/basic/zerodiv
+      (fn (x y)
+        (handlers/basic/rcatch ((fn ()
+          (handlers/basic/safe-div (x y))) (fn (s)
+          0)))))
+    (def handlers/basic/to-maybe
+      (fn (action)
+        ((fn (h-action)
+          (handlers/basic/raise/h-handle ((handlers/basic/h-Hnd-raise (0 (std/core/hnd/clause-never1 ((fn (s)
+            std/core/types/Nothing))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (std/core/types/Just ((action ()))))))))
+    (def handlers/basic/example1
+      (fn ()
+        (std/core/console/default/show/println ((handlers/basic/zerodiv (10 0)) std/core/int/show))))
+    (def handlers/basic/state/h-cfc
+      (fn (state)
+        (match state
+          [(handlers/basic/h-Hnd-state h-x _ _) h-x])))
+    (def handlers/basic/state/h-tag
+      (std/core/hnd/h-new-htag ("state@basic")))
+    (def handlers/basic/state/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/basic/state/h-tag hnd ret action))))
+    (def handlers/basic/state/h-fun-get
+      (fn (state)
+        (match state
+          [(handlers/basic/h-Hnd-state _ h-x _) h-x])))
+    (def handlers/basic/get/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/basic/h-Hnd-state _ h-fun-get _) h-fun-get])))
+    (def handlers/basic/get
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/basic/get/h-select))))
+    (def handlers/basic/state/h-fun-put
+      (fn (state)
+        (match state
+          [(handlers/basic/h-Hnd-state _ _ h-x) h-x])))
+    (def handlers/basic/put/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/basic/h-Hnd-state _ _ h-fun-put) h-fun-put])))
+    (def handlers/basic/put
+      (fn (x)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/basic/put/h-select x))))
+    (def handlers/basic/counter
+      (fn ()
+        (letrec* ([i (handlers/basic/get ())])
+          (match (std/core/int/<= (i 0))
+            [std/core/types/True std/core/types/Unit]
+            [std/core/types/False (letrec* ([_ (std/core/console/string/println ("hi"))] [_ (handlers/basic/put ((std/core/int/- (i 1))))])
+              (handlers/basic/counter ()))]))))
+    (def handlers/basic/state
+      (fn (init action)
+        (std/core/types/local-scope ((fn ()
+          (letrec* ([ievh-1795 std/core/types/h-Hnodiv] [ievh-1869 std/core/types/h-Hnodiv] [ievh-1928 std/core/types/h-Hnodiv])
+            (std/core/hnd/local-var (init (fn (s)
+              ((fn (h-action)
+                (handlers/basic/state/h-handle ((handlers/basic/h-Hnd-state (1 (std/core/hnd/clause-tail0 ((fn ()
+                  (std/core/types/local-get (s ievh-1869))))) (std/core/hnd/clause-tail1 ((fn (x)
+                  (std/core/types/local-set (s x))))))) (fn (x)
+                  (std/core/types/Tuple2 (x (std/core/types/local-get (s ievh-1928))))) h-action))) ((fn ()
+                (std/core/hnd/h-mask-builtin ((fn ()
+                  (action ()))))))))))))))))
+    (def handlers/basic/example3
+      (fn ()
+        (std/core/types/tuple2/snd ((handlers/basic/state (1 handlers/basic/counter))))))
+    (def handlers/basic/yield/h-cfc
+      (fn (yield)
+        (match yield
+          [(handlers/basic/h-Hnd-yield h-x _) h-x])))
+    (def handlers/basic/yield/h-ctl-yield
+      (fn (yield)
+        (match yield
+          [(handlers/basic/h-Hnd-yield _ h-x) h-x])))
+    (def handlers/basic/yield/h-tag
+      (std/core/hnd/h-new-htag ("yield@basic")))
+    (def handlers/basic/yield/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/basic/yield/h-tag hnd ret action))))
+    (def handlers/basic/yield/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/basic/h-Hnd-yield _ h-ctl-yield) h-ctl-yield])))
+    (def handlers/basic/yield
+      (fn (item)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/basic/yield/h-select item))))
+    (def handlers/basic/iterate
+      (fn (xs)
+        (match xs
+          [(std/core/types/Cons x xx) (letrec* ([_ (handlers/basic/yield (x))])
+            (handlers/basic/iterate (xx)))]
+          [std/core/types/Nil std/core/types/Unit])))
+    (def handlers/basic/foreach
+      (fn (f action)
+        ((fn (h-action)
+          (handlers/basic/yield/h-handle ((handlers/basic/h-Hnd-yield (3 (std/core/hnd/clause-control1 ((fn (x resume)
+            (match (f (x))
+              [std/core/types/True (resume (std/core/types/Unit))]
+              [std/core/types/False std/core/types/Unit])))))) (fn (h-res)
+            h-res) h-action))) ((fn ()
+          (action ()))))))
+    (def handlers/basic/example4
+      (fn ()
+        (handlers/basic/foreach ((fn (x)
+          (letrec* ([_ (std/core/console/default/show/println (x std/core/int/show))])
+            (std/core/int/<= (x 1)))) (fn ()
+          (handlers/basic/iterate ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))))))))))
+    (def handlers/basic/flip/h-cfc
+      (fn (flip)
+        (match flip
+          [(handlers/basic/h-Hnd-flip h-x _) h-x])))
+    (def handlers/basic/flip/h-ctl-flip
+      (fn (flip)
+        (match flip
+          [(handlers/basic/h-Hnd-flip _ h-x) h-x])))
+    (def handlers/basic/flip/h-tag
+      (std/core/hnd/h-new-htag ("flip@basic")))
+    (def handlers/basic/flip/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (handlers/basic/flip/h-tag hnd ret action))))
+    (def handlers/basic/flip/h-select
+      (fn (hnd)
+        (match hnd
+          [(handlers/basic/h-Hnd-flip _ h-ctl-flip) h-ctl-flip])))
+    (def handlers/basic/flip
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/basic/flip/h-select))))
+    (def handlers/basic/coinflip
+      (fn (h-action)
+        (handlers/basic/flip/h-handle ((handlers/basic/h-Hnd-flip (1 (std/core/hnd/clause-tail0 ((fn ()
+          (std/num/random/srandom-bool ())))))) (fn (h-res)
+          h-res) h-action))))
+    (def handlers/basic/amb
+      (fn (h-action)
+        (handlers/basic/flip/h-handle ((handlers/basic/h-Hnd-flip (3 (std/core/hnd/clause-control0 ((fn (resume)
+          (std/core/list/++ ((resume (std/core/types/False)) (resume (std/core/types/True))))))))) (fn (x)
+          (std/core/types/Cons (x std/core/types/Nil))) h-action))))
+    (def handlers/basic/example4b
+      (fn ()
+        ((fn (h-action)
+          ((fn (x)
+            std/core/types/Unit) ((h-action ())))) ((fn ()
+          (handlers/basic/amb ((fn ()
+            (handlers/basic/foreach ((fn (x)
+              (letrec* ([_ (match (handlers/basic/flip ())
+                [std/core/types/True (std/core/console/default/show/println (x std/core/int/show))]
+                [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("flip false " (std/core/int/show (x))))))])])
+                (std/core/int/<= (x 1)))) (fn ()
+              (handlers/basic/iterate ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))))))))))))))))
+    (def handlers/basic/xor
+      (fn ()
+        (letrec* ([p (handlers/basic/flip ())] [q (handlers/basic/flip ())])
+          (match (match p
+            [std/core/types/True std/core/types/True]
+            [_ q])
+            [std/core/types/True (std/core/types/not ((match p
+              [std/core/types/True q]
+              [_ std/core/types/False])))]
+            [_ std/core/types/False]))))
+    (def handlers/basic/example5
+      (fn ()
+        (std/core/console/string/println ((std/core/list/show ((handlers/basic/amb (handlers/basic/xor)) std/core/bool/show))))))
+    (def handlers/basic/surprising
+      (fn ()
+        (letrec* ([p (handlers/basic/flip ())] [i (handlers/basic/get ())] [_ (handlers/basic/put ((std/core/int/+ (i 1))))])
+          (match (match (std/core/int/> (i 0))
+            [std/core/types/True p]
+            [_ std/core/types/False])
+            [std/core/types/True (handlers/basic/xor ())]
+            [std/core/types/False std/core/types/False]))))
+    (def handlers/basic/example6
+      (fn ()
+        (std/core/console/string/println ((std/core/tuple/tuple2/show ((handlers/basic/state (0 (fn ()
+          (handlers/basic/amb (handlers/basic/surprising))))) (fn (h-arg-x1)
+          (std/core/list/show (h-arg-x1 std/core/bool/show))) std/core/int/show))))))
+    (def handlers/basic/example7
+      (fn ()
+        (std/core/console/string/println ((std/core/list/show ((handlers/basic/amb ((fn ()
+          (handlers/basic/state (0 handlers/basic/surprising))))) (fn (h-arg-x1)
+          (std/core/tuple/tuple2/show (h-arg-x1 std/core/bool/show std/core/int/show)))))))))
+    (def handlers/basic/main
+      (fn ()
+        (letrec* ([_ (handlers/basic/example1 ())] [_ (handlers/basic/example2 ())] [_ (handlers/basic/example3 ())] [_ (handlers/basic/example4 ())] [_ (handlers/basic/example5 ())] [_ (handlers/basic/example6 ())])
+          42)))))

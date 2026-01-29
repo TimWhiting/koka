@@ -109,6 +109,7 @@ library
       Core.OpenResolve
       Core.Parse
       Core.Pretty
+      Core.Sexp
       Core.Simplify
       Core.Specialize
       Core.Uniquefy

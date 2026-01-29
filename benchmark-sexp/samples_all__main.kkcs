@@ -1,0 +1,9 @@
+((module samples/all/h-main)
+  (defs
+    (def samples/all/h-main/h-expr
+      (fn ()
+        (samples/all/main ())))
+    (def samples/all/h-main/h-main
+      (fn ()
+        (std/core/h-default-exn ((fn ()
+          (samples/all/h-main/h-expr ()))))))))

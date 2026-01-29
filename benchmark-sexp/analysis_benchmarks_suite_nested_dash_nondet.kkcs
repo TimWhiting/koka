@@ -1,0 +1,294 @@
+((module analysis/benchmarks/suite/nested-nondet)
+  (defs
+    (def analysis/benchmarks/suite/nested-nondet/choice1/h-cfc
+      (fn (choice1)
+        (match choice1
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 h-x _) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/choice1/h-tag
+      (std/core/hnd/h-new-htag ("choice1@nested-nondet")))
+    (def analysis/benchmarks/suite/nested-nondet/choice1/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/nested-nondet/choice1/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/nested-nondet/choice1/h-ctl-choice1
+      (fn (choice1)
+        (match choice1
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 _ h-x) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/choice1/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 _ h-ctl-choice1) h-ctl-choice1])))
+    (def analysis/benchmarks/suite/nested-nondet/choice1
+      (fn (a)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/nested-nondet/choice1/h-select a))))
+    (def analysis/benchmarks/suite/nested-nondet/choice2/h-cfc
+      (fn (choice2)
+        (match choice2
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 h-x _) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/choice2/h-tag
+      (std/core/hnd/h-new-htag ("choice2@nested-nondet")))
+    (def analysis/benchmarks/suite/nested-nondet/choice2/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/nested-nondet/choice2/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/nested-nondet/choice2/h-ctl-choice2
+      (fn (choice2)
+        (match choice2
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 _ h-x) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/choice2/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 _ h-ctl-choice2) h-ctl-choice2])))
+    (def analysis/benchmarks/suite/nested-nondet/choice2
+      (fn (a)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/nested-nondet/choice2/h-select a))))
+    (def analysis/benchmarks/suite/nested-nondet/choice3/h-cfc
+      (fn (choice3)
+        (match choice3
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 h-x _) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/choice3/h-tag
+      (std/core/hnd/h-new-htag ("choice3@nested-nondet")))
+    (def analysis/benchmarks/suite/nested-nondet/choice3/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/nested-nondet/choice3/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/nested-nondet/choice3/h-ctl-choice3
+      (fn (choice3)
+        (match choice3
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 _ h-x) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/choice3/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 _ h-ctl-choice3) h-ctl-choice3])))
+    (def analysis/benchmarks/suite/nested-nondet/choice3
+      (fn (a)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/nested-nondet/choice3/h-select a))))
+    (def analysis/benchmarks/suite/nested-nondet/tail1/h-cfc
+      (fn (tail1)
+        (match tail1
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 h-x _) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/tail1/h-tag
+      (std/core/hnd/h-new-htag ("tail1@nested-nondet")))
+    (def analysis/benchmarks/suite/nested-nondet/tail1/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/nested-nondet/tail1/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/nested-nondet/tail1/h-ctl-tail1
+      (fn (tail1)
+        (match tail1
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 _ h-x) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/tail1/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 _ h-ctl-tail1) h-ctl-tail1])))
+    (def analysis/benchmarks/suite/nested-nondet/tail1
+      (fn (a)
+        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/nested-nondet/tail1/h-select a))))
+    (def analysis/benchmarks/suite/nested-nondet/fail/h-cfc
+      (fn (fail)
+        (match fail
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-fail h-x _) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/fail/h-tag
+      (std/core/hnd/h-new-htag ("fail@nested-nondet")))
+    (def analysis/benchmarks/suite/nested-nondet/fail/h-handle
+      (fn (hnd ret action)
+        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/nested-nondet/fail/h-tag hnd ret action))))
+    (def analysis/benchmarks/suite/nested-nondet/fail/h-ctl-fail
+      (fn (fail)
+        (match fail
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-fail _ h-x) h-x])))
+    (def analysis/benchmarks/suite/nested-nondet/fail/h-select
+      (fn (hnd)
+        (match hnd
+          [(analysis/benchmarks/suite/nested-nondet/h-Hnd-fail _ h-ctl-fail) h-ctl-fail])))
+    (def analysis/benchmarks/suite/nested-nondet/fail
+      (fn ()
+        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/nested-nondet/fail/h-select))))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-nested-simple
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 1 - simple forking"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            ((fn (h-action)
+              (analysis/benchmarks/suite/nested-nondet/choice2/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+                (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                  (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+                h-res) h-action))) ((fn ()
+              (analysis/benchmarks/suite/nested-nondet/choice2 ((std/core/types/Tuple2 ((analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (1 2)))) (analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (3 4)))))))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-nested-simple
+      (fn ()
+        20))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-nested-tail
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 2 - nondet with tail-resumptive"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            ((fn (h-action)
+              (analysis/benchmarks/suite/nested-nondet/tail1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 (3 (std/core/hnd/clause-control1 ((fn (x resume)
+                (resume ((std/core/int/* (x 2))))))))) (fn (h-res)
+                h-res) h-action))) ((fn ()
+              (analysis/benchmarks/suite/nested-nondet/tail1 ((analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (1 2)))))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-nested-tail
+      (fn ()
+        6))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-three-levels
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 3 - three levels"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            ((fn (h-action)
+              (analysis/benchmarks/suite/nested-nondet/choice2/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+                (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                  (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+                h-res) h-action))) ((fn ()
+              ((fn (h-action)
+                (analysis/benchmarks/suite/nested-nondet/choice3/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice3 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+                  (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                    (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                (analysis/benchmarks/suite/nested-nondet/choice3 ((std/core/types/Tuple2 ((analysis/benchmarks/suite/nested-nondet/choice2 ((std/core/types/Tuple2 (1 2)))) (analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (3 4))))))))))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-three-levels
+      (fn ()
+        40))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-alternating
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 4 - alternating nondet/tail-resumptive"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            ((fn (h-action)
+              (analysis/benchmarks/suite/nested-nondet/tail1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-tail1 (3 (std/core/hnd/clause-control1 ((fn (x resume)
+                (resume ((std/core/int/* (x 2))))))))) (fn (h-res)
+                h-res) h-action))) ((fn ()
+              ((fn (h-action)
+                (analysis/benchmarks/suite/nested-nondet/choice2/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+                  (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                    (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+                  h-res) h-action))) ((fn ()
+                (analysis/benchmarks/suite/nested-nondet/choice2 ((std/core/types/Tuple2 ((analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 ((analysis/benchmarks/suite/nested-nondet/tail1 (1)) (analysis/benchmarks/suite/nested-nondet/tail1 (2)))))) 10))))))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-alternating
+      (fn ()
+        26))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-both-contexts
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 5 - nondet in inner and outer context"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            ((fn (h-action)
+              (analysis/benchmarks/suite/nested-nondet/choice2/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice2 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+                (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                  (std/core/int/+ ((std/core/int/* (r1 2)) (std/core/int/* (r2 3)))))))))) (fn (h-res)
+                h-res) h-action))) ((fn ()
+              (analysis/benchmarks/suite/nested-nondet/choice2 ((std/core/types/Tuple2 ((analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (1 2)))) (analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (10 20)))))))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-both-contexts
+      (fn ()
+        192))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-guarded
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 6 - guarded choice"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (match (std/core/int/> ((std/core/types/tuple2/fst (a)) 0))
+                [std/core/types/True (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                  (std/core/int/+ (r1 r2)))]
+                [std/core/types/False (resume (0))])))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (std/core/int/+ ((analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (1 2)))) (analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (0 5))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-guarded
+      (fn ()
+        3))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-with-failure
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 7 - nondet with failure"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))])
+                (std/core/int/+ (r1 r2)))))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            ((fn (h-action)
+              (analysis/benchmarks/suite/nested-nondet/fail/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-fail (3 (std/core/hnd/clause-control0 ((fn (resume)
+                0))))) (fn (h-res)
+                h-res) h-action))) ((fn ()
+              (analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (10 (analysis/benchmarks/suite/nested-nondet/fail ()))))))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-with-failure
+      (fn ()
+        0))
+    (def analysis/benchmarks/suite/nested-nondet/analyze-nondet-variable-branches
+      (fn ()
+        (letrec* ([_ (std/core/debug/trace ("Nested nondet 8 - variable branches"))])
+          ((fn (h-action)
+            (analysis/benchmarks/suite/nested-nondet/choice1/h-handle ((analysis/benchmarks/suite/nested-nondet/h-Hnd-choice1 (3 (std/core/hnd/clause-control1 ((fn (a resume)
+              (match (std/core/int/== ((std/core/types/tuple2/fst (a)) 0))
+                [std/core/types/True (resume ((std/core/types/tuple2/snd (a))))]
+                [std/core/types/False (match (std/core/int/== ((std/core/types/tuple2/fst (a)) 1))
+                  [std/core/types/True (letrec* ([x (resume ((std/core/types/tuple2/snd (a))))] [y (resume ((std/core/types/tuple2/fst (a))))])
+                    (std/core/int/+ (x y)))]
+                  [std/core/types/False (letrec* ([r1 (resume ((std/core/types/tuple2/fst (a))))] [r2 (resume ((std/core/types/tuple2/snd (a))))] [r3 (resume ((std/core/types/tuple2/snd (a))))])
+                    (std/core/int/+ ((std/core/int/+ (r1 r2)) r3)))])])))))) (fn (h-res)
+              h-res) h-action))) ((fn ()
+            (analysis/benchmarks/suite/nested-nondet/choice1 ((std/core/types/Tuple2 (2 5))))))))))
+    (def analysis/benchmarks/suite/nested-nondet/result-nondet-variable-branches
+      (fn ()
+        12))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-nested-simple
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-nested-simple ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-nested-simple ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-nested-simple passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-nested-simple FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-nested-simple ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-nested-tail
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-nested-tail ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-nested-tail ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-nested-tail passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-nested-tail FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-nested-tail ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-three-levels
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-three-levels ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-three-levels ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-three-levels passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-three-levels FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-three-levels ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-alternating
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-alternating ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-alternating ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-alternating passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-alternating FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-alternating ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-both-contexts
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-both-contexts ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-both-contexts ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-both-contexts passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-both-contexts FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-both-contexts ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-guarded
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-guarded ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-guarded ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-guarded passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-guarded FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-guarded ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-with-failure
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-with-failure ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-with-failure ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-with-failure passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-with-failure FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-with-failure ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/test-nondet-variable-branches
+      (fn ()
+        (letrec* ([result (analysis/benchmarks/suite/nested-nondet/analyze-nondet-variable-branches ())])
+          (match (std/core/int/== (result (analysis/benchmarks/suite/nested-nondet/result-nondet-variable-branches ())))
+            [std/core/types/True (std/core/console/string/println ("✓ test-nondet-variable-branches passed"))]
+            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-nondet-variable-branches FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/nested-nondet/result-nondet-variable-branches ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
+    (def analysis/benchmarks/suite/nested-nondet/main
+      (fn ()
+        (letrec* ([_ (std/core/console/string/println ("Running nested-nondet tests..."))] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-nested-simple ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-nested-tail ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-three-levels ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-alternating ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-both-contexts ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-guarded ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-with-failure ())] [_ (analysis/benchmarks/suite/nested-nondet/test-nondet-variable-branches ())])
+          (std/core/console/string/println ("nested-nondet tests complete")))))))
