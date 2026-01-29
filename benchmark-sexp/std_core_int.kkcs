@@ -1,141 +1,141 @@
-((module std/core/int)
-  (defs
-    (def std/core/int/order
-      (fn (i)
-        (match (std/core/int/< (i 0))
-          [std/core/types/True std/core/types/Lt]
-          [std/core/types/False (match (std/core/int/> (i 0))
-            [std/core/types/True std/core/types/Gt]
-            [std/core/types/False std/core/types/Eq])])))
-    (def std/core/int/cmp
-      (fn (x y)
-        (match (std/core/int/== (x y))
-          [std/core/types/True std/core/types/Eq]
-          [std/core/types/False (match (std/core/int/> (x y))
-            [std/core/types/True std/core/types/Gt]
-            [std/core/types/False std/core/types/Lt])])))
-    (def std/core/int/order2
-      (fn (x y)
-        (match (std/core/int/== (x y))
-          [std/core/types/True (std/core/types/Eq2 (x))]
-          [std/core/types/False (match (std/core/int/< (x y))
-            [std/core/types/True (std/core/types/Lt2 (x y))]
-            [std/core/types/False (std/core/types/Gt2 (y x))])])))
-    (def std/core/int/+
-      (fn (x y)
-        (std/core/int/int-add (x y))))
-    (def std/core/int/-
-      (fn (x y)
-        (std/core/int/int-sub (x y))))
-    (def std/core/int/divmod
-      (fn (x y)
-        (std/core/int/h-extern-divmod (x y))))
-    (def std/core/int/negate
-      (fn (i)
-        (std/core/int/~ (i))))
-    (def std/core/int/inc
-      (fn (i)
-        (std/core/int/+ (i 1))))
-    (def std/core/int/dec
-      (fn (i)
-        (std/core/int/- (i 1))))
-    (def std/core/int/pow
-      (fn (i exp)
-        (std/core/int/h-extern-pow (i exp))))
-    (def std/core/int/^
-      (fn (i exp)
-        (std/core/int/pow (i exp))))
-    (def std/core/int/count-digits
-      (fn (i)
-        (std/core/int/h-extern-count-digits (i))))
-    (def std/core/int/mul-exp10
-      (fn (i n)
-        (std/core/int/h-extern-mul-exp10 (i n))))
-    (def std/core/int/exp10
-      (fn (exp)
-        (std/core/int/mul-exp10 (1 exp))))
-    (def std/core/int/exp2
-      (fn (exp)
-        (std/core/int/pow (2 exp))))
-    (def std/core/int/is-exp10
-      (fn (i)
-        (std/core/int/h-extern-is-exp10 (i))))
-    (def std/core/int/cdiv-exp10
-      (fn (i n)
-        (std/core/int/h-extern-cdiv-exp10 (i n))))
-    (def std/core/int/cdivmod-exp10
-      (fn (i n)
-        (match (std/core/int/<= (n 0))
-          [std/core/types/True (std/core/types/Tuple2 (i 0))]
-          [std/core/types/False (letrec* ([_ std/core/types/Unit] [cq (std/core/int/cdiv-exp10 (i n))] [cr (std/core/int/- (i (std/core/int/mul-exp10 (cq n))))])
-            (std/core/types/Tuple2 (cq cr)))])))
-    (def std/core/int/is-neg
-      (fn (i)
-        (std/core/int/< (i 0))))
-    (def std/core/int/divmod-exp10
-      (fn (i n)
-        (letrec* ([ievh-391 std/core/types/h-Hdiv])
-          (match (std/core/int/cdivmod-exp10 (i n))
-            [(std/core/types/Tuple2 cq cr) (match (std/core/types/bool/! ((std/core/int/is-neg (cr))))
-              [std/core/types/True (std/core/types/Tuple2 (cq cr))]
-              [std/core/types/False (std/core/types/Tuple2 ((std/core/int/dec (cq)) (std/core/int/+ (cr (std/core/int/exp10 (n))))))])]))))
-    (def std/core/int/is-even
-      (fn (i)
-        (letrec* ([ievh-452 std/core/types/h-Hnodiv])
-          (std/core/types/bool/! ((std/core/int/is-odd (i)))))))
-    (def std/core/int/is-pos
-      (fn (i)
-        (std/core/int/> (i 0))))
-    (def std/core/int/sign
-      (fn (i)
-        (std/core/int/cmp (i 0))))
-    (def std/core/int/min
-      (fn (i j)
-        (match (std/core/int/<= (i j))
-          [std/core/types/True i]
-          [std/core/types/False j])))
-    (def std/core/int/max
-      (fn (i j)
-        (match (std/core/int/>= (i j))
-          [std/core/types/True i]
-          [std/core/types/False j])))
-    (def std/core/int/maybe
-      (fn (i)
-        (match (std/core/int/== (i 0))
-          [std/core/types/True std/core/types/Nothing]
-          [std/core/types/False (std/core/types/Just (i))])))
-    (def std/core/int/show
-      (fn (i)
-        (std/core/int/h-extern-show (i))))
-    (def std/core/int/bool
-      (fn (i)
-        (std/core/int/!= (i 0))))
-    (def std/core/int/mbint
-      (fn (m)
-        (match m
-          [std/core/types/Nothing 0]
-          [(std/core/types/Just i) i])))
-    (def std/core/int/xparse
-      (fn (s hex)
-        (std/core/int/h-extern-xparse (s hex))))
-    (def std/core/int/parse-int
-      (fn (s hex)
-        (letrec* ([h-uniq-hexh-580 (match hex
-          [(std/core/types/h-Optional h-uniq-hexh-581) h-uniq-hexh-581]
-          [std/core/types/h-None std/core/types/False])])
-          (std/core/int/xparse (s h-uniq-hexh-580)))))
-    (def std/core/int/int8
-      (fn (i)
-        (std/core/int/h-extern-int8 (i))))
-    (def std/core/int/uint8
-      (fn (i)
-        (std/core/int/h-extern-uint8 (i))))
-    (def std/core/int/int16
-      (fn (i)
-        (std/core/int/h-extern-int16 (i))))
-    (def std/core/int/intptr_t
-      (fn (i)
-        (std/core/int/h-extern-intptr_t (i))))
-    (def std/core/int/ssize_t
-      (fn (i)
-        (std/core/int/h-extern-ssize_t (i))))))
+(module
+  std/core/int
+  (define std/core/int/order
+    (λ (i)
+      (match (std/core/int/< i 0)
+        [std/core/types/True std/core/types/Lt]
+        [std/core/types/False (match (std/core/int/> i 0)
+          [std/core/types/True std/core/types/Gt]
+          [std/core/types/False std/core/types/Eq])])))
+  (define std/core/int/cmp
+    (λ (x y)
+      (match (std/core/int/== x y)
+        [std/core/types/True std/core/types/Eq]
+        [std/core/types/False (match (std/core/int/> x y)
+          [std/core/types/True std/core/types/Gt]
+          [std/core/types/False std/core/types/Lt])])))
+  (define std/core/int/order2
+    (λ (x y)
+      (match (std/core/int/== x y)
+        [std/core/types/True (std/core/types/Eq2 x)]
+        [std/core/types/False (match (std/core/int/< x y)
+          [std/core/types/True (std/core/types/Lt2 x y)]
+          [std/core/types/False (std/core/types/Gt2 y x)])])))
+  (define std/core/int/+
+    (λ (x y)
+      (std/core/int/int-add x y)))
+  (define std/core/int/-
+    (λ (x y)
+      (std/core/int/int-sub x y)))
+  (define std/core/int/divmod
+    (λ (x y)
+      (std/core/int/h-extern-divmod x y)))
+  (define std/core/int/negate
+    (λ (i)
+      (std/core/int/~ i)))
+  (define std/core/int/inc
+    (λ (i)
+      (std/core/int/+ i 1)))
+  (define std/core/int/dec
+    (λ (i)
+      (std/core/int/- i 1)))
+  (define std/core/int/pow
+    (λ (i exp)
+      (std/core/int/h-extern-pow i exp)))
+  (define std/core/int/^
+    (λ (i exp)
+      (std/core/int/pow i exp)))
+  (define std/core/int/count-digits
+    (λ (i)
+      (std/core/int/h-extern-count-digits i)))
+  (define std/core/int/mul-exp10
+    (λ (i n)
+      (std/core/int/h-extern-mul-exp10 i n)))
+  (define std/core/int/exp10
+    (λ (exp)
+      (std/core/int/mul-exp10 1 exp)))
+  (define std/core/int/exp2
+    (λ (exp)
+      (std/core/int/pow 2 exp)))
+  (define std/core/int/is-exp10
+    (λ (i)
+      (std/core/int/h-extern-is-exp10 i)))
+  (define std/core/int/cdiv-exp10
+    (λ (i n)
+      (std/core/int/h-extern-cdiv-exp10 i n)))
+  (define std/core/int/cdivmod-exp10
+    (λ (i n)
+      (match (std/core/int/<= n 0)
+        [std/core/types/True (std/core/types/Tuple2 i 0)]
+        [std/core/types/False (letrec* ([_ std/core/types/Unit] [cq (std/core/int/cdiv-exp10 i n)] [cr (std/core/int/- i (std/core/int/mul-exp10 cq n))])
+          (std/core/types/Tuple2 cq cr))])))
+  (define std/core/int/is-neg
+    (λ (i)
+      (std/core/int/< i 0)))
+  (define std/core/int/divmod-exp10
+    (λ (i n)
+      (letrec* ([ievh-391 std/core/types/h-Hdiv])
+        (match (std/core/int/cdivmod-exp10 i n)
+          [(std/core/types/Tuple2 cq cr) (match (std/core/types/bool/! (std/core/int/is-neg cr))
+            [std/core/types/True (std/core/types/Tuple2 cq cr)]
+            [std/core/types/False (std/core/types/Tuple2 (std/core/int/dec cq) (std/core/int/+ cr (std/core/int/exp10 n)))])]))))
+  (define std/core/int/is-even
+    (λ (i)
+      (letrec* ([ievh-452 std/core/types/h-Hnodiv])
+        (std/core/types/bool/! (std/core/int/is-odd i)))))
+  (define std/core/int/is-pos
+    (λ (i)
+      (std/core/int/> i 0)))
+  (define std/core/int/sign
+    (λ (i)
+      (std/core/int/cmp i 0)))
+  (define std/core/int/min
+    (λ (i j)
+      (match (std/core/int/<= i j)
+        [std/core/types/True i]
+        [std/core/types/False j])))
+  (define std/core/int/max
+    (λ (i j)
+      (match (std/core/int/>= i j)
+        [std/core/types/True i]
+        [std/core/types/False j])))
+  (define std/core/int/maybe
+    (λ (i)
+      (match (std/core/int/== i 0)
+        [std/core/types/True std/core/types/Nothing]
+        [std/core/types/False (std/core/types/Just i)])))
+  (define std/core/int/show
+    (λ (i)
+      (std/core/int/h-extern-show i)))
+  (define std/core/int/bool
+    (λ (i)
+      (std/core/int/!= i 0)))
+  (define std/core/int/mbint
+    (λ (m)
+      (match m
+        [std/core/types/Nothing 0]
+        [(std/core/types/Just i) i])))
+  (define std/core/int/xparse
+    (λ (s hex)
+      (std/core/int/h-extern-xparse s hex)))
+  (define std/core/int/parse-int
+    (λ (s hex)
+      (letrec* ([h-uniq-hexh-580 (match hex
+        [(std/core/types/h-Optional h-uniq-hexh-581) h-uniq-hexh-581]
+        [std/core/types/h-None std/core/types/False])])
+        (std/core/int/xparse s h-uniq-hexh-580))))
+  (define std/core/int/int8
+    (λ (i)
+      (std/core/int/h-extern-int8 i)))
+  (define std/core/int/uint8
+    (λ (i)
+      (std/core/int/h-extern-uint8 i)))
+  (define std/core/int/int16
+    (λ (i)
+      (std/core/int/h-extern-int16 i)))
+  (define std/core/int/intptr_t
+    (λ (i)
+      (std/core/int/h-extern-intptr_t i)))
+  (define std/core/int/ssize_t
+    (λ (i)
+      (std/core/int/h-extern-ssize_t i))))

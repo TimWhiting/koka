@@ -1,101 +1,95 @@
-((module analysis/benchmarks/koka-gen/scheduler)
-  (defs
-    (def analysis/benchmarks/koka-gen/scheduler/task/run
-      (fn (task)
-        (match task
-          [(analysis/benchmarks/koka-gen/scheduler/Task h-x) h-x])))
-    (def analysis/benchmarks/koka-gen/scheduler/task/h-copy
-      (fn (h-this run)
-        (letrec* ([h-uniq-runh-121 (match run
-          [(std/core/types/h-Optional h-uniq-runh-122) h-uniq-runh-122]
-          [std/core/types/h-None (analysis/benchmarks/koka-gen/scheduler/task/run (h-this))])])
-          (analysis/benchmarks/koka-gen/scheduler/Task (h-uniq-runh-121)))))
-    (def analysis/benchmarks/koka-gen/scheduler/proc/h-cfc
-      (fn (proc)
-        (match proc
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc h-x _ _ _) h-x])))
-    (def analysis/benchmarks/koka-gen/scheduler/proc/h-tag
-      (std/core/hnd/h-new-htag ("proc@scheduler")))
-    (def analysis/benchmarks/koka-gen/scheduler/proc/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/koka-gen/scheduler/proc/h-tag hnd ret action))))
-    (def analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-yield
-      (fn (proc)
-        (match proc
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ _ h-x) h-x])))
-    (def analysis/benchmarks/koka-gen/scheduler/yield/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ _ h-ctl-yield) h-ctl-yield])))
-    (def analysis/benchmarks/koka-gen/scheduler/yield
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/scheduler/yield/h-select))))
-    (def analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-fork
-      (fn (proc)
-        (match proc
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ h-x _) h-x])))
-    (def analysis/benchmarks/koka-gen/scheduler/fork/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ h-ctl-fork _) h-ctl-fork])))
-    (def analysis/benchmarks/koka-gen/scheduler/fork
-      (fn (action)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/scheduler/fork/h-select action))))
-    (def analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-exit
-      (fn (proc)
-        (match proc
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ h-x _ _) h-x])))
-    (def analysis/benchmarks/koka-gen/scheduler/exit/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ h-ctl-exit _ _) h-ctl-exit])))
-    (def analysis/benchmarks/koka-gen/scheduler/exit
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/scheduler/exit/h-select))))
-    (def analysis/benchmarks/koka-gen/scheduler/run-next
-      (fn (queue)
-        (match queue
-          [std/core/types/Nil std/core/types/Unit]
-          [(std/core/types/Cons (as next (analysis/benchmarks/koka-gen/scheduler/Task _)) rest) ((analysis/benchmarks/koka-gen/scheduler/task/run (next)) (rest))])))
-    (def analysis/benchmarks/koka-gen/scheduler/handle-proc
-      (fn (action)
-        ((fn (h-action)
-          (analysis/benchmarks/koka-gen/scheduler/proc/h-handle ((analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc (3 (std/core/hnd/clause-control0 ((fn (resume)
-            (fn (q)
-              (analysis/benchmarks/koka-gen/scheduler/run-next (q)))))) (std/core/hnd/clause-control1 ((fn (child-action resume)
-            (fn (q)
-              (letrec* ([child-task (analysis/benchmarks/koka-gen/scheduler/Task ((fn (next-q)
-                (letrec* ([child-runner (analysis/benchmarks/koka-gen/scheduler/handle-proc (child-action))])
-                  (child-runner (next-q))))))])
-                ((resume (std/core/types/Unit)) ((std/core/list/++ (q (std/core/types/Cons (child-task std/core/types/Nil))))))))))) (std/core/hnd/clause-control0 ((fn (resume)
-            (fn (q)
-              (letrec* ([continuation (analysis/benchmarks/koka-gen/scheduler/Task ((fn (next-q)
-                ((resume (std/core/types/Unit)) (next-q)))))])
-                (analysis/benchmarks/koka-gen/scheduler/run-next ((std/core/list/++ (q (std/core/types/Cons (continuation std/core/types/Nil))))))))))))) (fn (_w-l36-c12)
-            (fn (q)
-              (analysis/benchmarks/koka-gen/scheduler/run-next (q)))) h-action))) (action))))
-    (def analysis/benchmarks/koka-gen/scheduler/schedule
-      (fn (main)
-        (letrec* ([start-func (analysis/benchmarks/koka-gen/scheduler/handle-proc (main))])
-          (start-func (std/core/types/Nil)))))
-    (def analysis/benchmarks/koka-gen/scheduler/main
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("--- Koka Green Threads (Corrected) ---"))])
-          (analysis/benchmarks/koka-gen/scheduler/schedule ((fn ()
-            (letrec* ([_ (std/core/debug/trace ("Main: Start"))] [_ (analysis/benchmarks/koka-gen/scheduler/fork ((fn ()
-              (letrec* ([_ (std/core/debug/trace ("  Child A: 1"))] [_ (analysis/benchmarks/koka-gen/scheduler/yield ())])
-                (std/core/debug/trace ("  Child A: 2"))))))] [_ (analysis/benchmarks/koka-gen/scheduler/fork ((fn ()
-              (letrec* ([_ (std/core/debug/trace ("  Child B: 1"))] [_ (analysis/benchmarks/koka-gen/scheduler/yield ())])
-                (std/core/debug/trace ("  Child B: 2"))))))] [_ (std/core/debug/trace ("Main: Yielding..."))] [_ (analysis/benchmarks/koka-gen/scheduler/yield ())])
-              (std/core/debug/trace ("Main: Done")))))))))
-    (def analysis/benchmarks/koka-gen/scheduler/analyze-scheduler
-      (fn ()
-        (letrec* ([_ (analysis/benchmarks/koka-gen/scheduler/schedule ((fn ()
-          (letrec* ([_ (analysis/benchmarks/koka-gen/scheduler/fork ((fn ()
-            (analysis/benchmarks/koka-gen/scheduler/yield ()))))] [_ (analysis/benchmarks/koka-gen/scheduler/fork ((fn ()
-            (analysis/benchmarks/koka-gen/scheduler/yield ()))))])
-            (analysis/benchmarks/koka-gen/scheduler/yield ())))))])
-          "ok")))
-    (def analysis/benchmarks/koka-gen/scheduler/result-scheduler
-      (fn ()
-        "ok"))))
+(module
+  analysis/benchmarks/koka-gen/scheduler
+  (define analysis/benchmarks/koka-gen/scheduler/task/run
+    (λ (task)
+      (match task
+        [(analysis/benchmarks/koka-gen/scheduler/Task h-x) h-x])))
+  (define analysis/benchmarks/koka-gen/scheduler/task/h-copy
+    (λ (h-this run)
+      (letrec* ([h-uniq-runh-121 (match run
+        [(std/core/types/h-Optional h-uniq-runh-122) h-uniq-runh-122]
+        [std/core/types/h-None (analysis/benchmarks/koka-gen/scheduler/task/run h-this)])])
+        (analysis/benchmarks/koka-gen/scheduler/Task h-uniq-runh-121))))
+  (define analysis/benchmarks/koka-gen/scheduler/proc/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/scheduler/proc/h-tag hnd ret action)))
+  (define analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-yield
+    (λ (proc)
+      (match proc
+        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ _ h-x) h-x])))
+  (define analysis/benchmarks/koka-gen/scheduler/yield/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ _ h-ctl-yield) h-ctl-yield])))
+  (define analysis/benchmarks/koka-gen/scheduler/yield
+    (λ ()
+      (perform analysis/benchmarks/koka-gen/scheduler/proc yield)))
+  (define analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-fork
+    (λ (proc)
+      (match proc
+        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ h-x _) h-x])))
+  (define analysis/benchmarks/koka-gen/scheduler/fork/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ h-ctl-fork _) h-ctl-fork])))
+  (define analysis/benchmarks/koka-gen/scheduler/fork
+    (λ (action)
+      (perform analysis/benchmarks/koka-gen/scheduler/proc fork action)))
+  (define analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-exit
+    (λ (proc)
+      (match proc
+        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ h-x _ _) h-x])))
+  (define analysis/benchmarks/koka-gen/scheduler/exit/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ h-ctl-exit _ _) h-ctl-exit])))
+  (define analysis/benchmarks/koka-gen/scheduler/exit
+    (λ ()
+      (perform analysis/benchmarks/koka-gen/scheduler/proc exit)))
+  (define analysis/benchmarks/koka-gen/scheduler/run-next
+    (λ (queue)
+      (match queue
+        [std/core/types/Nil std/core/types/Unit]
+        [(std/core/types/Cons (as next (analysis/benchmarks/koka-gen/scheduler/Task _)) rest) ((analysis/benchmarks/koka-gen/scheduler/task/run next) rest)])))
+  (define analysis/benchmarks/koka-gen/scheduler/handle-proc
+    (λ (action)
+      ((λ (h-action)
+        (analysis/benchmarks/koka-gen/scheduler/proc/h-handle (handler analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc [ctl exit (std/core/hnd/clause-control0 (λ (resume)
+          (λ (q)
+            (analysis/benchmarks/koka-gen/scheduler/run-next q))))] [ctl fork (std/core/hnd/clause-control1 (λ (child-action resume)
+          (λ (q)
+            (letrec* ([child-task (analysis/benchmarks/koka-gen/scheduler/Task (λ (next-q)
+              (letrec* ([child-runner (analysis/benchmarks/koka-gen/scheduler/handle-proc child-action)])
+                (child-runner next-q))))])
+              ((resume std/core/types/Unit) (std/core/list/++ q (std/core/types/Cons child-task std/core/types/Nil)))))))] [ctl yield (std/core/hnd/clause-control0 (λ (resume)
+          (λ (q)
+            (letrec* ([continuation (analysis/benchmarks/koka-gen/scheduler/Task (λ (next-q)
+              ((resume std/core/types/Unit) next-q)))])
+              (analysis/benchmarks/koka-gen/scheduler/run-next (std/core/list/++ q (std/core/types/Cons continuation std/core/types/Nil)))))))]) (λ (_w-l36-c12)
+          (λ (q)
+            (analysis/benchmarks/koka-gen/scheduler/run-next q))) h-action)) action)))
+  (define analysis/benchmarks/koka-gen/scheduler/schedule
+    (λ (main)
+      (letrec* ([start-func (analysis/benchmarks/koka-gen/scheduler/handle-proc main)])
+        (start-func std/core/types/Nil))))
+  (define analysis/benchmarks/koka-gen/scheduler/main
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "--- Koka Green Threads (Corrected) ---")])
+        (analysis/benchmarks/koka-gen/scheduler/schedule (λ ()
+          (letrec* ([_ (std/core/debug/trace "Main: Start")] [_ (analysis/benchmarks/koka-gen/scheduler/fork (λ ()
+            (letrec* ([_ (std/core/debug/trace "  Child A: 1")] [_ (analysis/benchmarks/koka-gen/scheduler/yield)])
+              (std/core/debug/trace "  Child A: 2"))))] [_ (analysis/benchmarks/koka-gen/scheduler/fork (λ ()
+            (letrec* ([_ (std/core/debug/trace "  Child B: 1")] [_ (analysis/benchmarks/koka-gen/scheduler/yield)])
+              (std/core/debug/trace "  Child B: 2"))))] [_ (std/core/debug/trace "Main: Yielding...")] [_ (analysis/benchmarks/koka-gen/scheduler/yield)])
+            (std/core/debug/trace "Main: Done")))))))
+  (define analysis/benchmarks/koka-gen/scheduler/analyze-scheduler
+    (λ ()
+      (letrec* ([_ (analysis/benchmarks/koka-gen/scheduler/schedule (λ ()
+        (letrec* ([_ (analysis/benchmarks/koka-gen/scheduler/fork (λ ()
+          (analysis/benchmarks/koka-gen/scheduler/yield)))] [_ (analysis/benchmarks/koka-gen/scheduler/fork (λ ()
+          (analysis/benchmarks/koka-gen/scheduler/yield)))])
+          (analysis/benchmarks/koka-gen/scheduler/yield))))])
+        "ok")))
+  (define analysis/benchmarks/koka-gen/scheduler/result-scheduler
+    (λ ()
+      "ok")))

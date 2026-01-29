@@ -1,37 +1,31 @@
-((module handlers/named/ask-poly)
-  (defs
-    (def handlers/named/ask-poly/reader/h-cfc
-      (fn (reader)
-        (match reader
-          [(handlers/named/ask-poly/h-Hnd-reader h-x _) h-x])))
-    (def handlers/named/ask-poly/reader/h-tag
-      (std/core/hnd/h-new-htag ("reader@ask-poly")))
-    (def handlers/named/ask-poly/reader/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-named-handle (handlers/named/ask-poly/reader/h-tag hnd ret action))))
-    (def handlers/named/ask-poly/reader/h-fun-ask
-      (fn (reader)
-        (match reader
-          [(handlers/named/ask-poly/h-Hnd-reader _ h-x) h-x])))
-    (def handlers/named/ask-poly/ask/h-select
-      (fn (hnd)
-        (match hnd
-          [(handlers/named/ask-poly/h-Hnd-reader _ h-fun-ask) h-fun-ask])))
-    (def handlers/named/ask-poly/ask
-      (fn (h-hname)
-        (std/core/hnd/h-perform0 (h-hname handlers/named/ask-poly/ask/h-select))))
-    (def handlers/named/ask-poly/reader
-      (fn (x action)
-        ((fn (h-action)
-          (handlers/named/ask-poly/reader/h-handle ((handlers/named/ask-poly/h-Hnd-reader (1 (std/core/hnd/clause-tail0 ((fn ()
-            x))))) (fn (h-res)
-            h-res) h-action))) ((fn (r)
-          (action (r)))))))
-    (def handlers/named/ask-poly/read2files
-      (fn (r1 r2 h-implicit/show)
-        (std/core/console/string/println ((std/core/types/++ ((handlers/named/ask-poly/ask (r1)) (std/core/types/++ (" " (h-implicit/show ((handlers/named/ask-poly/ask (r2))))))))))))
-    (def handlers/named/ask-poly/main
-      (fn ()
-        (handlers/named/ask-poly/reader ("hello" (fn (r1)
-          (handlers/named/ask-poly/reader (42 (fn (r2)
-            (handlers/named/ask-poly/read2files (r1 r2 std/core/int/show))))))))))))
+(module
+  handlers/named/ask-poly
+  (define handlers/named/ask-poly/reader/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-named-handle handlers/named/ask-poly/reader/h-tag hnd ret action)))
+  (define handlers/named/ask-poly/reader/h-fun-ask
+    (λ (reader)
+      (match reader
+        [(handlers/named/ask-poly/h-Hnd-reader _ h-x) h-x])))
+  (define handlers/named/ask-poly/ask/h-select
+    (λ (hnd)
+      (match hnd
+        [(handlers/named/ask-poly/h-Hnd-reader _ h-fun-ask) h-fun-ask])))
+  (define handlers/named/ask-poly/ask
+    (λ (h-hname)
+      (perform handlers/named/ask-poly/reader ask)))
+  (define handlers/named/ask-poly/reader
+    (λ (x action)
+      ((λ (h-action)
+        (handlers/named/ask-poly/reader/h-handle (handler handlers/named/ask-poly/h-Hnd-reader [fun ask (std/core/hnd/clause-tail0 (λ ()
+          x))]) (λ (h-res)
+          h-res) h-action)) (λ (r)
+        (action r)))))
+  (define handlers/named/ask-poly/read2files
+    (λ (r1 r2 h-implicit/show)
+      (std/core/console/string/println (std/core/types/++ (handlers/named/ask-poly/ask r1) (std/core/types/++ " " (h-implicit/show (handlers/named/ask-poly/ask r2)))))))
+  (define handlers/named/ask-poly/main
+    (λ ()
+      (handlers/named/ask-poly/reader "hello" (λ (r1)
+        (handlers/named/ask-poly/reader 42 (λ (r2)
+          (handlers/named/ask-poly/read2files r1 r2 std/core/int/show))))))))

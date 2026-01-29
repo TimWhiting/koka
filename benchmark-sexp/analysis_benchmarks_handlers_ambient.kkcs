@@ -1,466 +1,400 @@
-((module analysis/benchmarks/handlers/ambient)
-  (defs
-    (def analysis/benchmarks/handlers/ambient/h-val-width/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-width _ h-val-width) h-val-width])))
-    (def analysis/benchmarks/handlers/ambient/h-val-width
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/h-val-width/h-select))))
-    (def analysis/benchmarks/handlers/ambient/width/h-val-width
-      (fn (width)
-        (match width
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-width _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/width/h-cfc
-      (fn (width)
-        (match width
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-width h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/width/h-tag
-      (std/core/hnd/h-new-htag ("width@ambient")))
-    (def analysis/benchmarks/handlers/ambient/width/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/width/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/width
-      std/core/types/h-Valueop)
-    (def analysis/benchmarks/handlers/ambient/f
-      (fn ()
-        (letrec* ([g ((letrec* ([h-value-width-l14-c20 80])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/width/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-width (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-width-l14-c20))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (fn ()
-            (std/core/int/+ ((analysis/benchmarks/handlers/ambient/h-val-width ()) 1))))))] [h (fn ()
-          ((letrec* ([h-value-width-l15-c26 80])
-            (fn (h-action)
-              (analysis/benchmarks/handlers/ambient/width/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-width (1 (std/core/hnd/clause-tail0 ((fn ()
-                h-value-width-l15-c26))))) (fn (h-res)
-                h-res) h-action)))) ((fn ()
-            (std/core/int/+ ((analysis/benchmarks/handlers/ambient/h-val-width ()) 1))))))])
-          (std/core/types/Tuple2 ((g ()) (h ()))))))
-    (def analysis/benchmarks/handlers/ambient/analyze-example0
-      (fn ()
-        ((letrec* ([h-value-width-l20-c12 78])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/width/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-width (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-width-l20-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (analysis/benchmarks/handlers/ambient/f ()))))))
-    (def analysis/benchmarks/handlers/ambient/result-example0
-      (fn ()
-        (std/core/types/Tuple2 (79 81))))
-    (def analysis/benchmarks/handlers/ambient/half
-      (fn (action)
-        ((letrec* ([h-value-width-l26-c12 (std/core/int// ((analysis/benchmarks/handlers/ambient/h-val-width ()) 2))])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/width/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-width (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-width-l26-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (action ()))))))
-    (def analysis/benchmarks/handlers/ambient/h-val-emitx/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-emitx _ h-val-emitx) h-val-emitx])))
-    (def analysis/benchmarks/handlers/ambient/h-val-emitx
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/h-val-emitx/h-select))))
-    (def analysis/benchmarks/handlers/ambient/emitx/h-val-emitx
-      (fn (emitx)
-        (match emitx
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-emitx _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/emitx/h-cfc
-      (fn (emitx)
-        (match emitx
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-emitx h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/emitx/h-tag
-      (std/core/hnd/h-new-htag ("emitx@ambient")))
-    (def analysis/benchmarks/handlers/ambient/emitx/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/emitx/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/emitx
-      std/core/types/h-Valueop)
-    (def analysis/benchmarks/handlers/ambient/emit1
-      (fn (action)
-        ((letrec* ([h-value-emitx-l37-c12 (fn (s)
-          (std/core/console/string/println (s)))])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/emitx/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-emitx (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-emitx-l37-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (action ()))))))
-    (def analysis/benchmarks/handlers/ambient/emit/h-cfc
-      (fn (emit)
-        (match emit
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-emit h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/emit/h-fun-emit
-      (fn (emit)
-        (match emit
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-emit _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/emit/h-tag
-      (std/core/hnd/h-new-htag ("emit@ambient")))
-    (def analysis/benchmarks/handlers/ambient/emit/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/emit/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/emit/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-emit _ h-fun-emit) h-fun-emit])))
-    (def analysis/benchmarks/handlers/ambient/emit
-      (fn (s)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/emit/h-select s))))
-    (def analysis/benchmarks/handlers/ambient/pretty-emit1
-      (fn (action)
-        (std/core/exn/error/try ((fn ()
-          ((fn (h-action)
-            (analysis/benchmarks/handlers/ambient/emit/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-emit (1 (std/core/hnd/clause-tail1 ((fn (s)
-              (std/core/console/string/println (s))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (letrec* ([_ (analysis/benchmarks/handlers/ambient/emit ("hi"))])
-              (action ()))))))))))
-    (def analysis/benchmarks/handlers/ambient/pretty-emit2
-      (fn (action)
-        ((fn (h-action)
-          (analysis/benchmarks/handlers/ambient/emit/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-emit (1 (std/core/hnd/clause-tail1 ((fn (s)
-            (std/core/console/string/println ((std/core/sslice/string/truncate (s (analysis/benchmarks/handlers/ambient/h-val-width ())))))))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          (action ()))))))
-    (def analysis/benchmarks/handlers/ambient/pretty-emit
-      (fn (action)
-        (std/core/types/local-scope ((fn ()
-          (letrec* ([ievh-1850 std/core/types/h-Hnodiv] [ievh-1906 std/core/types/h-Hnodiv])
-            (std/core/hnd/local-var ("" (fn (out)
-              (letrec* ([_ ((fn (h-action)
-                (analysis/benchmarks/handlers/ambient/emit/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-emit (1 (std/core/hnd/clause-tail1 ((fn (s)
-                  (std/core/types/local-set (out (std/core/types/++ ((std/core/types/local-get (out ievh-1850)) (std/core/types/++ (s "\n"))))))))))) (fn (h-res)
-                  h-res) h-action))) ((fn ()
-                ((fn ()
-                  (std/core/hnd/h-mask-builtin ((fn ()
-                    (action ()))))) ()))))])
-                (std/core/types/local-get (out ievh-1906))))))))))))
-    (def analysis/benchmarks/handlers/ambient/state/h-cfc
-      (fn (state)
-        (match state
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-state h-x _ _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/state/h-tag
-      (std/core/hnd/h-new-htag ("state@ambient")))
-    (def analysis/benchmarks/handlers/ambient/state/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/state/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/state/h-ctl-get
-      (fn (state)
-        (match state
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/get/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ h-ctl-get _) h-ctl-get])))
-    (def analysis/benchmarks/handlers/ambient/get
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/get/h-select))))
-    (def analysis/benchmarks/handlers/ambient/state/h-ctl-set
-      (fn (state)
-        (match state
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/set/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ _ h-ctl-set) h-ctl-set])))
-    (def analysis/benchmarks/handlers/ambient/set
-      (fn (x)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/set/h-select x))))
-    (def analysis/benchmarks/handlers/ambient/state1
-      (fn (action)
-        (std/core/types/local-scope ((fn ()
-          (letrec* ([ievh-2422 std/core/types/h-Hnodiv])
-            (std/core/hnd/local-var (0 (fn (s)
-              ((fn (h-action)
-                (analysis/benchmarks/handlers/ambient/state/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-state (1 (std/core/hnd/clause-tail0 ((fn ()
-                  (std/core/types/local-get (s ievh-2422))))) (std/core/hnd/clause-tail1 ((fn (x)
-                  (std/core/types/local-set (s x))))))) (fn (h-res)
-                  h-res) h-action))) ((fn ()
-                (std/core/hnd/h-mask-builtin ((fn ()
-                  (action ()))))))))))))))))
-    (def analysis/benchmarks/handlers/ambient/total/h-cfc
-      (fn (total)
-        (match total
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-total h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/total/h-fun-total
-      (fn (total)
-        (match total
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-total _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/total/h-tag
-      (std/core/hnd/h-new-htag ("total@ambient")))
-    (def analysis/benchmarks/handlers/ambient/total/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/total/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/total/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-total _ h-fun-total) h-fun-total])))
-    (def analysis/benchmarks/handlers/ambient/total
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/total/h-select))))
-    (def analysis/benchmarks/handlers/ambient/emit4
-      (fn (action)
-        (std/core/types/local-scope ((fn ()
-          (letrec* ([ievh-2737 std/core/types/h-Hnodiv] [ievh-2830 std/core/types/h-Hnodiv] [ievh-2911 std/core/types/h-Hnodiv])
-            (std/core/hnd/local-var ("" (fn (out)
-              ((fn (h-action)
-                ((fn (x)
-                  (std/core/types/local-get (out ievh-2737))) ((h-action ())))) ((fn ()
-                ((fn (h-action)
-                  (analysis/benchmarks/handlers/ambient/emit/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-emit (1 (std/core/hnd/clause-tail1 ((fn (s)
-                    (std/core/types/local-set (out (std/core/types/++ ((std/core/types/local-get (out ievh-2830)) (std/core/types/++ (s "\n"))))))))))) (fn (h-res)
-                    h-res) h-action))) ((fn ()
-                  ((fn (h-action)
-                    (analysis/benchmarks/handlers/ambient/total/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-total (1 (std/core/hnd/clause-tail0 ((fn ()
-                      (std/core/string/chars/count ((std/core/types/local-get (out ievh-2911))))))))) (fn (h-res)
-                      h-res) h-action))) ((fn ()
-                    ((fn ()
-                      (std/core/hnd/h-mask-builtin ((fn ()
-                        (action ()))))) ())))))))))))))))))))
-    (def analysis/benchmarks/handlers/ambient/abort/h-cfc
-      (fn (abort)
-        (match abort
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-abort h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/abort/h-ctl-abort
-      (fn (abort)
-        (match abort
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-abort _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/abort/h-tag
-      (std/core/hnd/h-new-htag ("abort@ambient")))
-    (def analysis/benchmarks/handlers/ambient/abort/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/abort/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/abort/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-abort _ h-ctl-abort) h-ctl-abort])))
-    (def analysis/benchmarks/handlers/ambient/abort
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/abort/h-select))))
-    (def analysis/benchmarks/handlers/ambient/pretty-abort
-      (fn (action)
-        (analysis/benchmarks/handlers/ambient/pretty-emit ((fn ()
-          ((fn (h-action)
-            (analysis/benchmarks/handlers/ambient/abort/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-abort (3 (std/core/hnd/clause-control0 ((fn (resume)
-              std/core/types/Unit))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (action ())))))))))
-    (def analysis/benchmarks/handlers/ambient/choice/h-cfc
-      (fn (choice)
-        (match choice
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-choice h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/choice/h-ctl-choice
-      (fn (choice)
-        (match choice
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-choice _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/choice/h-tag
-      (std/core/hnd/h-new-htag ("choice@ambient")))
-    (def analysis/benchmarks/handlers/ambient/choice/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/choice/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/choice/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-choice _ h-ctl-choice) h-ctl-choice])))
-    (def analysis/benchmarks/handlers/ambient/choice
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/choice/h-select))))
-    (def analysis/benchmarks/handlers/ambient/pretty-all
-      (fn (action)
-        ((fn (h-action)
-          (analysis/benchmarks/handlers/ambient/choice/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-choice (3 (std/core/hnd/clause-control0 ((fn (resume)
-            (std/core/list/append ((resume (std/core/types/True)) (resume (std/core/types/False))))))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          (std/core/types/Cons ((analysis/benchmarks/handlers/ambient/pretty-abort (action)) std/core/types/Nil)))))))
-    (def analysis/benchmarks/handlers/ambient/pretty-all2
-      (fn (action)
-        ((fn (h-action)
-          (analysis/benchmarks/handlers/ambient/choice/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-choice (3 (std/core/hnd/clause-control0 ((fn (resume)
-            (std/core/list/append ((resume (std/core/types/True)) (resume (std/core/types/False))))))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          ((fn (h-action)
-            ((fn (x)
-              (std/core/types/Cons (x std/core/types/Nil))) ((h-action ())))) ((fn ()
-            (analysis/benchmarks/handlers/ambient/pretty-abort (action))))))))))
-    (def analysis/benchmarks/handlers/ambient/state2
-      (fn (init action)
-        ((fn (h-action)
-          ((fn (f)
-            (f (init))) ((h-action ())))) ((fn ()
-          ((fn (h-action)
-            (analysis/benchmarks/handlers/ambient/state/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-state (3 (std/core/hnd/clause-control0 ((fn (resume)
-              (fn (s)
-                ((resume (s)) (s)))))) (std/core/hnd/clause-control1 ((fn (x resume)
-              (fn (s)
-                ((resume (std/core/types/Unit)) (x)))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (letrec* ([x (action ())])
-              (fn (s)
-                x))))))))))
-    (def analysis/benchmarks/handlers/ambient/h-val-cwd/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-cwd _ h-val-cwd) h-val-cwd])))
-    (def analysis/benchmarks/handlers/ambient/h-val-cwd
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/h-val-cwd/h-select))))
-    (def analysis/benchmarks/handlers/ambient/cwd/h-val-cwd
-      (fn (cwd)
-        (match cwd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-cwd _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/cwd/h-cfc
-      (fn (cwd)
-        (match cwd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-cwd h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/cwd/h-tag
-      (std/core/hnd/h-new-htag ("cwd@ambient")))
-    (def analysis/benchmarks/handlers/ambient/cwd/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/cwd/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/cwd
-      std/core/types/h-Valueop)
-    (def analysis/benchmarks/handlers/ambient/is-home
-      (fn ()
-        (std/core/string/== ((analysis/benchmarks/handlers/ambient/h-val-cwd ()) "/home"))))
-    (def analysis/benchmarks/handlers/ambient/example1
-      (fn ()
-        ((letrec* ([h-value-cwd-l121-c12 "/"])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/cwd/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-cwd (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-cwd-l121-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (analysis/benchmarks/handlers/ambient/is-home ()))))))
-    (def analysis/benchmarks/handlers/ambient/gchildren
-      (fn (g v)
-        std/core/types/Nil))
-    (def analysis/benchmarks/handlers/ambient/bound
-      (fn (g)
-        10))
-    (def analysis/benchmarks/handlers/ambient/graph/h-copy
-      (fn (h-this)
-        analysis/benchmarks/handlers/ambient/Graph))
-    (def analysis/benchmarks/handlers/ambient/rose/sub
-      (fn (rose)
-        (match rose
-          [(analysis/benchmarks/handlers/ambient/Rose _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/rose/v
-      (fn (rose)
-        (match rose
-          [(analysis/benchmarks/handlers/ambient/Rose h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/rose/h-copy
-      (fn (h-this v sub)
-        (letrec* ([h-uniq-vh-4227 (match v
-          [(std/core/types/h-Optional h-uniq-vh-4228) h-uniq-vh-4228]
-          [std/core/types/h-None (analysis/benchmarks/handlers/ambient/rose/v (h-this))])] [h-uniq-subh-4235 (match sub
-          [(std/core/types/h-Optional h-uniq-subh-4236) h-uniq-subh-4236]
-          [std/core/types/h-None (analysis/benchmarks/handlers/ambient/rose/sub (h-this))])])
-          (analysis/benchmarks/handlers/ambient/Rose (h-uniq-vh-4227 h-uniq-subh-4235)))))
-    (def analysis/benchmarks/handlers/ambient/marked/h-cfc
-      (fn (marked)
-        (match marked
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-marked h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/marked/h-fun-marked
-      (fn (marked)
-        (match marked
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-marked _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/marked/h-tag
-      (std/core/hnd/h-new-htag ("marked@ambient")))
-    (def analysis/benchmarks/handlers/ambient/marked/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/marked/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/marked/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-marked _ h-fun-marked) h-fun-marked])))
-    (def analysis/benchmarks/handlers/ambient/marked
-      (fn (v)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/marked/h-select v))))
-    (def analysis/benchmarks/handlers/ambient/mark/h-cfc
-      (fn (mark)
-        (match mark
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-mark h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/mark/h-fun-mark
-      (fn (mark)
-        (match mark
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-mark _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/mark/h-tag
-      (std/core/hnd/h-new-htag ("mark@ambient")))
-    (def analysis/benchmarks/handlers/ambient/mark/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/mark/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/mark/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-mark _ h-fun-mark) h-fun-mark])))
-    (def analysis/benchmarks/handlers/ambient/mark
-      (fn (v)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/mark/h-select v))))
-    (def analysis/benchmarks/handlers/ambient/children/h-cfc
-      (fn (children)
-        (match children
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-children h-x _) h-x])))
-    (def analysis/benchmarks/handlers/ambient/children/h-fun-children
-      (fn (children)
-        (match children
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-children _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/ambient/children/h-tag
-      (std/core/hnd/h-new-htag ("children@ambient")))
-    (def analysis/benchmarks/handlers/ambient/children/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/ambient/children/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/ambient/children/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/ambient/h-Hnd-children _ h-fun-children) h-fun-children])))
-    (def analysis/benchmarks/handlers/ambient/children
-      (fn (v)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/ambient/children/h-select v))))
-    (def analysis/benchmarks/handlers/ambient/dfs-loop
-      (fn (vs)
-        (match vs
-          [std/core/types/Nil std/core/types/Nil]
-          [(std/core/types/Cons v vv) (match (analysis/benchmarks/handlers/ambient/marked (v))
-            [std/core/types/True (analysis/benchmarks/handlers/ambient/dfs-loop (vv))]
-            [std/core/types/False (letrec* ([_ (analysis/benchmarks/handlers/ambient/mark (v))] [sub (analysis/benchmarks/handlers/ambient/dfs-loop ((analysis/benchmarks/handlers/ambient/children (v))))])
-              (std/core/types/Cons ((analysis/benchmarks/handlers/ambient/Rose (v sub)) (analysis/benchmarks/handlers/ambient/dfs-loop (vv)))))])])))
-    (def analysis/benchmarks/handlers/ambient/dfs
-      (fn (g vs)
-        (std/core/types/local-scope ((fn ()
-          (letrec* ([ievh-5057 std/core/types/h-Hnodiv])
-            (std/core/hnd/local-var ((std/core/vector/vector ((analysis/benchmarks/handlers/ambient/bound (g)) std/core/types/False)) (fn (visited)
-              ((fn (h-action)
-                (analysis/benchmarks/handlers/ambient/children/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-children (1 (std/core/hnd/clause-tail1 ((fn (v)
-                  (analysis/benchmarks/handlers/ambient/gchildren (g v))))))) (fn (h-res)
-                  h-res) h-action))) ((fn ()
-                ((fn (h-action)
-                  (analysis/benchmarks/handlers/ambient/marked/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-marked (1 (std/core/hnd/clause-tail1 ((fn (v)
-                    (std/core/vector/h-index ((std/core/types/local-get (visited ievh-5057)) v))))))) (fn (h-res)
-                    h-res) h-action))) ((fn ()
-                  ((fn (h-action)
-                    (analysis/benchmarks/handlers/ambient/mark/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-mark (1 (std/core/hnd/clause-tail1 ((fn (v)
-                      (std/core/vector/assign/h-index (visited v std/core/types/True))))))) (fn (h-res)
-                      h-res) h-action))) ((fn ()
-                    (analysis/benchmarks/handlers/ambient/dfs-loop (vs))))))))))))))))))))
-    (def analysis/benchmarks/handlers/ambient/main
-      (fn ()
-        (letrec* ([_ ((letrec* ([h-value-width-l161-c12 78])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/width/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-width (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-width-l161-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (std/core/console/default/show/println ((analysis/benchmarks/handlers/ambient/f ()) (fn (h-arg-x1)
-            (std/core/tuple/tuple2/show (h-arg-x1 std/core/int/show std/core/int/show))))))))] [_ ((letrec* ([h-value-width-l162-c12 78])
-          (fn (h-action)
-            (analysis/benchmarks/handlers/ambient/width/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-width (1 (std/core/hnd/clause-tail0 ((fn ()
-              h-value-width-l162-c12))))) (fn (h-res)
-              h-res) h-action)))) ((fn ()
-          (std/core/console/default/show/println ((analysis/benchmarks/handlers/ambient/half (analysis/benchmarks/handlers/ambient/f)) (fn (h-arg-x1)
-            (std/core/tuple/tuple2/show (h-arg-x1 std/core/int/show std/core/int/show))))))))])
-          ((letrec* ([h-value-cwd-l163-c12 "/"])
-            (fn (h-action)
-              (analysis/benchmarks/handlers/ambient/cwd/h-handle ((analysis/benchmarks/handlers/ambient/h-Hnd-cwd (1 (std/core/hnd/clause-tail0 ((fn ()
-                h-value-cwd-l163-c12))))) (fn (h-res)
-                h-res) h-action)))) ((fn ()
-            (std/core/console/default/show/println ((analysis/benchmarks/handlers/ambient/is-home ()) std/core/bool/show))))))))))
+(module
+  analysis/benchmarks/handlers/ambient
+  (define analysis/benchmarks/handlers/ambient/h-val-width/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-width _ h-val-width) h-val-width])))
+  (define analysis/benchmarks/handlers/ambient/h-val-width
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/width @val-width)))
+  (define analysis/benchmarks/handlers/ambient/width/h-val-width
+    (λ (width)
+      (match width
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-width _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/width/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/width/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/width
+    std/core/types/h-Valueop)
+  (define analysis/benchmarks/handlers/ambient/f
+    (λ ()
+      (letrec* ([g ((letrec* ([h-value-width-l14-c20 80])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/width/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-width [val width (std/core/hnd/clause-tail0 (λ ()
+            h-value-width-l14-c20))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (λ ()
+          (std/core/int/+ (analysis/benchmarks/handlers/ambient/h-val-width) 1))))] [h (λ ()
+        ((letrec* ([h-value-width-l15-c26 80])
+          (λ (h-action)
+            (analysis/benchmarks/handlers/ambient/width/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-width [val width (std/core/hnd/clause-tail0 (λ ()
+              h-value-width-l15-c26))]) (λ (h-res)
+              h-res) h-action))) (λ ()
+          (std/core/int/+ (analysis/benchmarks/handlers/ambient/h-val-width) 1))))])
+        (std/core/types/Tuple2 (g) (h)))))
+  (define analysis/benchmarks/handlers/ambient/analyze-example0
+    (λ ()
+      ((letrec* ([h-value-width-l20-c12 78])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/width/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-width [val width (std/core/hnd/clause-tail0 (λ ()
+            h-value-width-l20-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (analysis/benchmarks/handlers/ambient/f)))))
+  (define analysis/benchmarks/handlers/ambient/result-example0
+    (λ ()
+      (std/core/types/Tuple2 79 81)))
+  (define analysis/benchmarks/handlers/ambient/half
+    (λ (action)
+      ((letrec* ([h-value-width-l26-c12 (std/core/int// (analysis/benchmarks/handlers/ambient/h-val-width) 2)])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/width/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-width [val width (std/core/hnd/clause-tail0 (λ ()
+            h-value-width-l26-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (action)))))
+  (define analysis/benchmarks/handlers/ambient/h-val-emitx/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-emitx _ h-val-emitx) h-val-emitx])))
+  (define analysis/benchmarks/handlers/ambient/h-val-emitx
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/emitx @val-emitx)))
+  (define analysis/benchmarks/handlers/ambient/emitx/h-val-emitx
+    (λ (emitx)
+      (match emitx
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-emitx _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/emitx/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/emitx/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/emitx
+    std/core/types/h-Valueop)
+  (define analysis/benchmarks/handlers/ambient/emit1
+    (λ (action)
+      ((letrec* ([h-value-emitx-l37-c12 (λ (s)
+        (std/core/console/string/println s))])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/emitx/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-emitx [val emitx (std/core/hnd/clause-tail0 (λ ()
+            h-value-emitx-l37-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (action)))))
+  (define analysis/benchmarks/handlers/ambient/emit/h-fun-emit
+    (λ (emit)
+      (match emit
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-emit _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/emit/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/emit/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/emit/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-emit _ h-fun-emit) h-fun-emit])))
+  (define analysis/benchmarks/handlers/ambient/emit
+    (λ (s)
+      (perform analysis/benchmarks/handlers/ambient/emit emit s)))
+  (define analysis/benchmarks/handlers/ambient/pretty-emit1
+    (λ (action)
+      (std/core/exn/error/try (λ ()
+        ((λ (h-action)
+          (analysis/benchmarks/handlers/ambient/emit/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-emit [fun emit (std/core/hnd/clause-tail1 (λ (s)
+            (std/core/console/string/println s)))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (letrec* ([_ (analysis/benchmarks/handlers/ambient/emit "hi")])
+            (action))))))))
+  (define analysis/benchmarks/handlers/ambient/pretty-emit2
+    (λ (action)
+      ((λ (h-action)
+        (analysis/benchmarks/handlers/ambient/emit/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-emit [fun emit (std/core/hnd/clause-tail1 (λ (s)
+          (std/core/console/string/println (std/core/sslice/string/truncate s (analysis/benchmarks/handlers/ambient/h-val-width)))))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        (action)))))
+  (define analysis/benchmarks/handlers/ambient/pretty-emit
+    (λ (action)
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-1850 std/core/types/h-Hnodiv] [ievh-1906 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var "" (λ (out)
+            (letrec* ([_ ((λ (h-action)
+              (analysis/benchmarks/handlers/ambient/emit/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-emit [fun emit (std/core/hnd/clause-tail1 (λ (s)
+                (std/core/types/local-set out (std/core/types/++ (std/core/types/local-get out ievh-1850) (std/core/types/++ s "\n")))))]) (λ (h-res)
+                h-res) h-action)) (λ ()
+              ((λ ()
+                (std/core/hnd/h-mask-builtin (λ ()
+                  (action)))))))])
+              (std/core/types/local-get out ievh-1906)))))))))
+  (define analysis/benchmarks/handlers/ambient/state/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/state/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/state/h-ctl-get
+    (λ (state)
+      (match state
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ h-x _) h-x])))
+  (define analysis/benchmarks/handlers/ambient/get/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ h-ctl-get _) h-ctl-get])))
+  (define analysis/benchmarks/handlers/ambient/get
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/state get)))
+  (define analysis/benchmarks/handlers/ambient/state/h-ctl-set
+    (λ (state)
+      (match state
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/set/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-state _ _ h-ctl-set) h-ctl-set])))
+  (define analysis/benchmarks/handlers/ambient/set
+    (λ (x)
+      (perform analysis/benchmarks/handlers/ambient/state set x)))
+  (define analysis/benchmarks/handlers/ambient/state1
+    (λ (action)
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-2422 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var 0 (λ (s)
+            ((λ (h-action)
+              (analysis/benchmarks/handlers/ambient/state/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-state [ctl get (std/core/hnd/clause-tail0 (λ ()
+                (std/core/types/local-get s ievh-2422)))] [ctl set (std/core/hnd/clause-tail1 (λ (x)
+                (std/core/types/local-set s x)))]) (λ (h-res)
+                h-res) h-action)) (λ ()
+              (std/core/hnd/h-mask-builtin (λ ()
+                (action))))))))))))
+  (define analysis/benchmarks/handlers/ambient/total/h-fun-total
+    (λ (total)
+      (match total
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-total _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/total/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/total/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/total/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-total _ h-fun-total) h-fun-total])))
+  (define analysis/benchmarks/handlers/ambient/total
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/total total)))
+  (define analysis/benchmarks/handlers/ambient/emit4
+    (λ (action)
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-2737 std/core/types/h-Hnodiv] [ievh-2830 std/core/types/h-Hnodiv] [ievh-2911 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var "" (λ (out)
+            ((λ (h-action)
+              ((λ (x)
+                (std/core/types/local-get out ievh-2737)) (h-action))) (λ ()
+              ((λ (h-action)
+                (analysis/benchmarks/handlers/ambient/emit/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-emit [fun emit (std/core/hnd/clause-tail1 (λ (s)
+                  (std/core/types/local-set out (std/core/types/++ (std/core/types/local-get out ievh-2830) (std/core/types/++ s "\n")))))]) (λ (h-res)
+                  h-res) h-action)) (λ ()
+                ((λ (h-action)
+                  (analysis/benchmarks/handlers/ambient/total/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-total [fun total (std/core/hnd/clause-tail0 (λ ()
+                    (std/core/string/chars/count (std/core/types/local-get out ievh-2911))))]) (λ (h-res)
+                    h-res) h-action)) (λ ()
+                  ((λ ()
+                    (std/core/hnd/h-mask-builtin (λ ()
+                      (action))))))))))))))))))
+  (define analysis/benchmarks/handlers/ambient/abort/h-ctl-abort
+    (λ (abort)
+      (match abort
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-abort _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/abort/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/abort/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/abort/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-abort _ h-ctl-abort) h-ctl-abort])))
+  (define analysis/benchmarks/handlers/ambient/abort
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/abort abort)))
+  (define analysis/benchmarks/handlers/ambient/pretty-abort
+    (λ (action)
+      (analysis/benchmarks/handlers/ambient/pretty-emit (λ ()
+        ((λ (h-action)
+          (analysis/benchmarks/handlers/ambient/abort/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-abort [ctl abort (std/core/hnd/clause-control0 (λ (resume)
+            std/core/types/Unit))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (action)))))))
+  (define analysis/benchmarks/handlers/ambient/choice/h-ctl-choice
+    (λ (choice)
+      (match choice
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-choice _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/choice/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/choice/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/choice/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-choice _ h-ctl-choice) h-ctl-choice])))
+  (define analysis/benchmarks/handlers/ambient/choice
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/choice choice)))
+  (define analysis/benchmarks/handlers/ambient/pretty-all
+    (λ (action)
+      ((λ (h-action)
+        (analysis/benchmarks/handlers/ambient/choice/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-choice [ctl choice (std/core/hnd/clause-control0 (λ (resume)
+          (std/core/list/append (resume std/core/types/True) (resume std/core/types/False))))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        (std/core/types/Cons (analysis/benchmarks/handlers/ambient/pretty-abort action) std/core/types/Nil)))))
+  (define analysis/benchmarks/handlers/ambient/pretty-all2
+    (λ (action)
+      ((λ (h-action)
+        (analysis/benchmarks/handlers/ambient/choice/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-choice [ctl choice (std/core/hnd/clause-control0 (λ (resume)
+          (std/core/list/append (resume std/core/types/True) (resume std/core/types/False))))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        ((λ (h-action)
+          ((λ (x)
+            (std/core/types/Cons x std/core/types/Nil)) (h-action))) (λ ()
+          (analysis/benchmarks/handlers/ambient/pretty-abort action)))))))
+  (define analysis/benchmarks/handlers/ambient/state2
+    (λ (init action)
+      ((λ (h-action)
+        ((λ (f)
+          (f init)) (h-action))) (λ ()
+        ((λ (h-action)
+          (analysis/benchmarks/handlers/ambient/state/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-state [ctl get (std/core/hnd/clause-control0 (λ (resume)
+            (λ (s)
+              ((resume s) s))))] [ctl set (std/core/hnd/clause-control1 (λ (x resume)
+            (λ (s)
+              ((resume std/core/types/Unit) x))))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (letrec* ([x (action)])
+            (λ (s)
+              x))))))))
+  (define analysis/benchmarks/handlers/ambient/h-val-cwd/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-cwd _ h-val-cwd) h-val-cwd])))
+  (define analysis/benchmarks/handlers/ambient/h-val-cwd
+    (λ ()
+      (perform analysis/benchmarks/handlers/ambient/cwd @val-cwd)))
+  (define analysis/benchmarks/handlers/ambient/cwd/h-val-cwd
+    (λ (cwd)
+      (match cwd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-cwd _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/cwd/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/cwd/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/cwd
+    std/core/types/h-Valueop)
+  (define analysis/benchmarks/handlers/ambient/is-home
+    (λ ()
+      (std/core/string/== (analysis/benchmarks/handlers/ambient/h-val-cwd) "/home")))
+  (define analysis/benchmarks/handlers/ambient/example1
+    (λ ()
+      ((letrec* ([h-value-cwd-l121-c12 "/"])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/cwd/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-cwd [val cwd (std/core/hnd/clause-tail0 (λ ()
+            h-value-cwd-l121-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (analysis/benchmarks/handlers/ambient/is-home)))))
+  (define analysis/benchmarks/handlers/ambient/gchildren
+    (λ (g v)
+      std/core/types/Nil))
+  (define analysis/benchmarks/handlers/ambient/bound
+    (λ (g)
+      10))
+  (define analysis/benchmarks/handlers/ambient/graph/h-copy
+    (λ (h-this)
+      analysis/benchmarks/handlers/ambient/Graph))
+  (define analysis/benchmarks/handlers/ambient/rose/sub
+    (λ (rose)
+      (match rose
+        [(analysis/benchmarks/handlers/ambient/Rose _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/rose/v
+    (λ (rose)
+      (match rose
+        [(analysis/benchmarks/handlers/ambient/Rose h-x _) h-x])))
+  (define analysis/benchmarks/handlers/ambient/rose/h-copy
+    (λ (h-this v sub)
+      (letrec* ([h-uniq-vh-4227 (match v
+        [(std/core/types/h-Optional h-uniq-vh-4228) h-uniq-vh-4228]
+        [std/core/types/h-None (analysis/benchmarks/handlers/ambient/rose/v h-this)])] [h-uniq-subh-4235 (match sub
+        [(std/core/types/h-Optional h-uniq-subh-4236) h-uniq-subh-4236]
+        [std/core/types/h-None (analysis/benchmarks/handlers/ambient/rose/sub h-this)])])
+        (analysis/benchmarks/handlers/ambient/Rose h-uniq-vh-4227 h-uniq-subh-4235))))
+  (define analysis/benchmarks/handlers/ambient/marked/h-fun-marked
+    (λ (marked)
+      (match marked
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-marked _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/marked/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/marked/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/marked/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-marked _ h-fun-marked) h-fun-marked])))
+  (define analysis/benchmarks/handlers/ambient/marked
+    (λ (v)
+      (perform analysis/benchmarks/handlers/ambient/marked marked v)))
+  (define analysis/benchmarks/handlers/ambient/mark/h-fun-mark
+    (λ (mark)
+      (match mark
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-mark _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/mark/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/mark/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/mark/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-mark _ h-fun-mark) h-fun-mark])))
+  (define analysis/benchmarks/handlers/ambient/mark
+    (λ (v)
+      (perform analysis/benchmarks/handlers/ambient/mark mark v)))
+  (define analysis/benchmarks/handlers/ambient/children/h-fun-children
+    (λ (children)
+      (match children
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-children _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/ambient/children/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/ambient/children/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/ambient/children/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/ambient/h-Hnd-children _ h-fun-children) h-fun-children])))
+  (define analysis/benchmarks/handlers/ambient/children
+    (λ (v)
+      (perform analysis/benchmarks/handlers/ambient/children children v)))
+  (define analysis/benchmarks/handlers/ambient/dfs-loop
+    (λ (vs)
+      (match vs
+        [std/core/types/Nil std/core/types/Nil]
+        [(std/core/types/Cons v vv) (match (analysis/benchmarks/handlers/ambient/marked v)
+          [std/core/types/True (analysis/benchmarks/handlers/ambient/dfs-loop vv)]
+          [std/core/types/False (letrec* ([_ (analysis/benchmarks/handlers/ambient/mark v)] [sub (analysis/benchmarks/handlers/ambient/dfs-loop (analysis/benchmarks/handlers/ambient/children v))])
+            (std/core/types/Cons (analysis/benchmarks/handlers/ambient/Rose v sub) (analysis/benchmarks/handlers/ambient/dfs-loop vv)))])])))
+  (define analysis/benchmarks/handlers/ambient/dfs
+    (λ (g vs)
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-5057 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var (std/core/vector/vector (analysis/benchmarks/handlers/ambient/bound g) std/core/types/False) (λ (visited)
+            ((λ (h-action)
+              (analysis/benchmarks/handlers/ambient/children/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-children [fun children (std/core/hnd/clause-tail1 (λ (v)
+                (analysis/benchmarks/handlers/ambient/gchildren g v)))]) (λ (h-res)
+                h-res) h-action)) (λ ()
+              ((λ (h-action)
+                (analysis/benchmarks/handlers/ambient/marked/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-marked [fun marked (std/core/hnd/clause-tail1 (λ (v)
+                  (std/core/vector/h-index (std/core/types/local-get visited ievh-5057) v)))]) (λ (h-res)
+                  h-res) h-action)) (λ ()
+                ((λ (h-action)
+                  (analysis/benchmarks/handlers/ambient/mark/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-mark [fun mark (std/core/hnd/clause-tail1 (λ (v)
+                    (std/core/vector/assign/h-index visited v std/core/types/True)))]) (λ (h-res)
+                    h-res) h-action)) (λ ()
+                  (analysis/benchmarks/handlers/ambient/dfs-loop vs))))))))))))))
+  (define analysis/benchmarks/handlers/ambient/main
+    (λ ()
+      (letrec* ([_ ((letrec* ([h-value-width-l161-c12 78])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/width/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-width [val width (std/core/hnd/clause-tail0 (λ ()
+            h-value-width-l161-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (std/core/console/default/show/println (analysis/benchmarks/handlers/ambient/f) (λ (h-arg-x1)
+          (std/core/tuple/tuple2/show h-arg-x1 std/core/int/show std/core/int/show)))))] [_ ((letrec* ([h-value-width-l162-c12 78])
+        (λ (h-action)
+          (analysis/benchmarks/handlers/ambient/width/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-width [val width (std/core/hnd/clause-tail0 (λ ()
+            h-value-width-l162-c12))]) (λ (h-res)
+            h-res) h-action))) (λ ()
+        (std/core/console/default/show/println (analysis/benchmarks/handlers/ambient/half analysis/benchmarks/handlers/ambient/f) (λ (h-arg-x1)
+          (std/core/tuple/tuple2/show h-arg-x1 std/core/int/show std/core/int/show)))))])
+        ((letrec* ([h-value-cwd-l163-c12 "/"])
+          (λ (h-action)
+            (analysis/benchmarks/handlers/ambient/cwd/h-handle (handler analysis/benchmarks/handlers/ambient/h-Hnd-cwd [val cwd (std/core/hnd/clause-tail0 (λ ()
+              h-value-cwd-l163-c12))]) (λ (h-res)
+              h-res) h-action))) (λ ()
+          (std/core/console/default/show/println (analysis/benchmarks/handlers/ambient/is-home) std/core/bool/show)))))))

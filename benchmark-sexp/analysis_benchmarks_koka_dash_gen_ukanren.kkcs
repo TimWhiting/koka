@@ -1,186 +1,180 @@
-((module analysis/benchmarks/koka-gen/ukanren)
-  (defs
-    (def analysis/benchmarks/koka-gen/ukanren/is-var
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/ukanren/Var _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/ukanren/is-atom
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/ukanren/Atom _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/ukanren/is-pair
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/ukanren/Pair _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/ukanren/is-unit
-      (fn (term)
-        (match term
-          [analysis/benchmarks/koka-gen/ukanren/Unit std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/ukanren/state/next-id
-      (fn (state)
-        (match state
-          [(analysis/benchmarks/koka-gen/ukanren/State h-x _) h-x])))
-    (def analysis/benchmarks/koka-gen/ukanren/state/sub
-      (fn (state)
-        (match state
-          [(analysis/benchmarks/koka-gen/ukanren/State _ h-x) h-x])))
-    (def analysis/benchmarks/koka-gen/ukanren/state/h-copy
-      (fn (h-this next-id sub)
-        (letrec* ([h-uniq-next-idh-183 (match next-id
-          [(std/core/types/h-Optional h-uniq-next-idh-184) h-uniq-next-idh-184]
-          [std/core/types/h-None (analysis/benchmarks/koka-gen/ukanren/state/next-id (h-this))])] [h-uniq-subh-191 (match sub
-          [(std/core/types/h-Optional h-uniq-subh-192) h-uniq-subh-192]
-          [std/core/types/h-None (analysis/benchmarks/koka-gen/ukanren/state/sub (h-this))])])
-          (analysis/benchmarks/koka-gen/ukanren/State (h-uniq-next-idh-183 h-uniq-subh-191)))))
-    (def analysis/benchmarks/koka-gen/ukanren/empty-state
-      (analysis/benchmarks/koka-gen/ukanren/State (0 std/core/types/Nil)))
-    (def analysis/benchmarks/koka-gen/ukanren/walk
-      (fn (t s)
-        (match t
-          [(analysis/benchmarks/koka-gen/ukanren/Var i) (match (std/core/list/find (s (fn (entry)
-            (std/core/int/== ((std/core/types/tuple2/fst (entry)) i)))))
-            [(std/core/types/Just (std/core/types/Tuple2 _ v)) (analysis/benchmarks/koka-gen/ukanren/walk (v s))]
-            [std/core/types/Nothing t])]
-          [_ t])))
-    (def analysis/benchmarks/koka-gen/ukanren/eq-term
-      (fn (t1 t2)
-        (match (std/core/types/Tuple2 (t1 t2))
-          [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Var i) (analysis/benchmarks/koka-gen/ukanren/Var j)) (std/core/int/== (i j))]
-          [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Atom a) (analysis/benchmarks/koka-gen/ukanren/Atom b)) (std/core/string/== (a b))]
-          [(std/core/types/Tuple2 analysis/benchmarks/koka-gen/ukanren/Unit analysis/benchmarks/koka-gen/ukanren/Unit) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/ukanren/unify
-      (fn (t1 t2 s)
-        (letrec* ([u (analysis/benchmarks/koka-gen/ukanren/walk (t1 s))] [v (analysis/benchmarks/koka-gen/ukanren/walk (t2 s))])
-          (match (analysis/benchmarks/koka-gen/ukanren/eq-term (u v))
-            [std/core/types/True (std/core/types/Just (s))]
-            [std/core/types/False (match (std/core/types/Tuple2 (u v))
-              [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Var i) _) (std/core/types/Just ((std/core/types/Cons ((std/core/types/Tuple2 (i v)) s))))]
-              [(std/core/types/Tuple2 _ (analysis/benchmarks/koka-gen/ukanren/Var i)) (std/core/types/Just ((std/core/types/Cons ((std/core/types/Tuple2 (i u)) s))))]
-              [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Pair h1 t1x) (analysis/benchmarks/koka-gen/ukanren/Pair h2 t2x)) (match (analysis/benchmarks/koka-gen/ukanren/unify (h1 h2 s))
-                [std/core/types/Nothing std/core/types/Nothing]
-                [(std/core/types/Just s2) (analysis/benchmarks/koka-gen/ukanren/unify (t1x t2x s2))])]
-              [_ std/core/types/Nothing])]))))
-    (def analysis/benchmarks/koka-gen/ukanren/logic/h-cfc
-      (fn (logic)
-        (match logic
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic h-x _ _ _) h-x])))
-    (def analysis/benchmarks/koka-gen/ukanren/logic/h-tag
-      (std/core/hnd/h-new-htag ("logic@ukanren")))
-    (def analysis/benchmarks/koka-gen/ukanren/logic/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/koka-gen/ukanren/logic/h-tag hnd ret action))))
-    (def analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-fresh
-      (fn (logic)
-        (match logic
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ h-x _) h-x])))
-    (def analysis/benchmarks/koka-gen/ukanren/fresh/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ h-ctl-fresh _) h-ctl-fresh])))
-    (def analysis/benchmarks/koka-gen/ukanren/fresh
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/ukanren/fresh/h-select))))
-    (def analysis/benchmarks/koka-gen/ukanren/unify-term/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ _ h-ctl-unify-term) h-ctl-unify-term])))
-    (def analysis/benchmarks/koka-gen/ukanren/unify-term
-      (fn (t1 t2)
-        (std/core/hnd/h-perform2 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/ukanren/unify-term/h-select t1 t2))))
-    (def analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-unify-term
-      (fn (logic)
-        (match logic
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ _ h-x) h-x])))
-    (def analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-flip
-      (fn (logic)
-        (match logic
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ h-x _ _) h-x])))
-    (def analysis/benchmarks/koka-gen/ukanren/flip/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ h-ctl-flip _ _) h-ctl-flip])))
-    (def analysis/benchmarks/koka-gen/ukanren/flip
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/ukanren/flip/h-select))))
-    (def analysis/benchmarks/koka-gen/ukanren/solve
-      (fn (action)
-        ((fn (h-action)
-          (analysis/benchmarks/koka-gen/ukanren/logic/h-handle ((analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic (3 (std/core/hnd/clause-control0 ((fn (resume)
-            (fn (s)
-              (letrec* ([results-true ((resume (std/core/types/True)) (s))] [results-false ((resume (std/core/types/False)) (s))])
-                (std/core/list/++ (results-true results-false))))))) (std/core/hnd/clause-control0 ((fn (resume)
-            (fn (s)
-              (letrec* ([new-var (analysis/benchmarks/koka-gen/ukanren/Var ((analysis/benchmarks/koka-gen/ukanren/state/next-id (s))))] [new-state (analysis/benchmarks/koka-gen/ukanren/state/h-copy (s (std/core/types/h-Optional ((std/core/int/+ ((analysis/benchmarks/koka-gen/ukanren/state/next-id (s)) 1)))) std/core/types/h-None))])
-                ((resume (new-var)) (new-state))))))) (std/core/hnd/clause-control2 ((fn (t1 t2 resume)
-            (fn (s)
-              (match (analysis/benchmarks/koka-gen/ukanren/unify (t1 t2 (analysis/benchmarks/koka-gen/ukanren/state/sub (s))))
-                [std/core/types/Nothing std/core/types/Nil]
-                [(std/core/types/Just new-sub) ((resume (std/core/types/Unit)) ((analysis/benchmarks/koka-gen/ukanren/state/h-copy (s std/core/types/h-None (std/core/types/h-Optional (new-sub))))))]))))))) (fn (x)
-            (fn (s)
-              (std/core/types/Cons ((std/core/types/Tuple2 (x s)) std/core/types/Nil)))) h-action))) (action))))
-    (def analysis/benchmarks/koka-gen/ukanren/===
-      (fn (t1 t2)
-        (analysis/benchmarks/koka-gen/ukanren/unify-term (t1 t2))))
-    (def analysis/benchmarks/koka-gen/ukanren/conde
-      (fn (clauses)
-        (match clauses
-          [std/core/types/Nil (analysis/benchmarks/koka-gen/ukanren/unify-term ((analysis/benchmarks/koka-gen/ukanren/Atom ("fail")) (analysis/benchmarks/koka-gen/ukanren/Atom ("fail-me"))))]
-          [(std/core/types/Cons c rest) (match (analysis/benchmarks/koka-gen/ukanren/flip ())
-            [std/core/types/True (c ())]
-            [std/core/types/False (analysis/benchmarks/koka-gen/ukanren/conde (rest))])])))
-    (def analysis/benchmarks/koka-gen/ukanren/to-logic-list
-      (fn (xs)
-        (match xs
-          [std/core/types/Nil analysis/benchmarks/koka-gen/ukanren/Unit]
-          [(std/core/types/Cons h t) (analysis/benchmarks/koka-gen/ukanren/Pair ((analysis/benchmarks/koka-gen/ukanren/Atom ((std/core/int/show (h)))) (analysis/benchmarks/koka-gen/ukanren/to-logic-list (t))))])))
-    (def analysis/benchmarks/koka-gen/ukanren/reify
-      (fn (t s)
-        (match (analysis/benchmarks/koka-gen/ukanren/walk (t s))
-          [(analysis/benchmarks/koka-gen/ukanren/Var i) (std/core/types/++ ("_." (std/core/int/show (i))))]
-          [(analysis/benchmarks/koka-gen/ukanren/Atom n) n]
-          [analysis/benchmarks/koka-gen/ukanren/Unit "[]"]
-          [(analysis/benchmarks/koka-gen/ukanren/Pair h tail) (std/core/types/++ ("[" (std/core/types/++ ((analysis/benchmarks/koka-gen/ukanren/reify (h s)) (std/core/types/++ (" . " (std/core/types/++ ((analysis/benchmarks/koka-gen/ukanren/reify (tail s)) "]"))))))))])))
-    (def analysis/benchmarks/koka-gen/ukanren/appendo
-      (fn (l s out)
-        (analysis/benchmarks/koka-gen/ukanren/conde ((std/core/types/Cons ((fn ()
-          (letrec* ([_ (analysis/benchmarks/koka-gen/ukanren/=== (l analysis/benchmarks/koka-gen/ukanren/Unit))])
-            (analysis/benchmarks/koka-gen/ukanren/=== (s out)))) (std/core/types/Cons ((fn ()
-          (letrec* ([h (analysis/benchmarks/koka-gen/ukanren/fresh ())] [t (analysis/benchmarks/koka-gen/ukanren/fresh ())] [res (analysis/benchmarks/koka-gen/ukanren/fresh ())] [_ (analysis/benchmarks/koka-gen/ukanren/=== (l (analysis/benchmarks/koka-gen/ukanren/Pair (h t))))] [_ (analysis/benchmarks/koka-gen/ukanren/=== (out (analysis/benchmarks/koka-gen/ukanren/Pair (h res))))])
-            (analysis/benchmarks/koka-gen/ukanren/appendo (t s res)))) std/core/types/Nil))))))))
-    (def analysis/benchmarks/koka-gen/ukanren/analyze-q1
-      (fn ()
-        (letrec* ([runner1 (analysis/benchmarks/koka-gen/ukanren/solve ((fn ()
-          (letrec* ([q (analysis/benchmarks/koka-gen/ukanren/fresh ())] [l1 (analysis/benchmarks/koka-gen/ukanren/to-logic-list ((std/core/types/Cons (1 std/core/types/Nil))))] [l2 (analysis/benchmarks/koka-gen/ukanren/to-logic-list ((std/core/types/Cons (2 std/core/types/Nil))))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo (l1 l2 q))])
-            q))))] [results1 (runner1 (analysis/benchmarks/koka-gen/ukanren/empty-state))])
-          (std/core/list/joinsep/join ((std/core/list/map (results1 (fn (res)
-            (std/core/types/++ ("q = " (analysis/benchmarks/koka-gen/ukanren/reify ((std/core/types/tuple2/fst (res)) (analysis/benchmarks/koka-gen/ukanren/state/sub ((std/core/types/tuple2/snd (res))))))))))) ", ")))))
-    (def analysis/benchmarks/koka-gen/ukanren/result-q1
-      (fn ()
-        "q = [1 . [2 . []]]"))
-    (def analysis/benchmarks/koka-gen/ukanren/analyze-q2
-      (fn ()
-        (letrec* ([runner2 (analysis/benchmarks/koka-gen/ukanren/solve ((fn ()
-          (letrec* ([x (analysis/benchmarks/koka-gen/ukanren/fresh ())] [y (analysis/benchmarks/koka-gen/ukanren/fresh ())] [target (analysis/benchmarks/koka-gen/ukanren/to-logic-list ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil))))))))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo (x y target))])
-            (std/core/types/Tuple2 (x y))))))] [results2 (runner2 (analysis/benchmarks/koka-gen/ukanren/empty-state))])
-          (std/core/list/joinsep/join ((std/core/list/map (results2 (fn (res)
-            (std/core/types/++ ("x = " (std/core/types/++ ((analysis/benchmarks/koka-gen/ukanren/reify ((std/core/types/tuple2/fst ((std/core/types/tuple2/fst (res)))) (analysis/benchmarks/koka-gen/ukanren/state/sub ((std/core/types/tuple2/snd (res)))))) (std/core/types/++ (", y = " (analysis/benchmarks/koka-gen/ukanren/reify ((std/core/types/tuple2/snd ((std/core/types/tuple2/fst (res)))) (analysis/benchmarks/koka-gen/ukanren/state/sub ((std/core/types/tuple2/snd (res))))))))))))))) "\n")))))
-    (def analysis/benchmarks/koka-gen/ukanren/result-q2
-      (fn ()
-        "x = [], y = [1 . [2 . [3 . []]]]\nx = [1 . []], y = [2 . [3 . []]]\nx = [1 . [2 . []]], y = [3 . []]\nx = [1 . [2 . [3 . []]]], y = []"))
-    (def analysis/benchmarks/koka-gen/ukanren/main
-      (fn ()
-        (letrec* ([_ (std/core/console/string/println ("--- Koka Micro-Kanren ---"))] [_ (std/core/console/string/println ("\nQuery 1: append([1], [2], q)"))] [runner1 (analysis/benchmarks/koka-gen/ukanren/solve ((fn ()
-          (letrec* ([q (analysis/benchmarks/koka-gen/ukanren/fresh ())] [l1 (analysis/benchmarks/koka-gen/ukanren/to-logic-list ((std/core/types/Cons (1 std/core/types/Nil))))] [l2 (analysis/benchmarks/koka-gen/ukanren/to-logic-list ((std/core/types/Cons (2 std/core/types/Nil))))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo (l1 l2 q))])
-            q))))] [results1 (runner1 (analysis/benchmarks/koka-gen/ukanren/empty-state))] [_ (std/core/list/foreach (results1 (fn (res)
+(module
+  analysis/benchmarks/koka-gen/ukanren
+  (define analysis/benchmarks/koka-gen/ukanren/is-var
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/ukanren/Var _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/ukanren/is-atom
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/ukanren/Atom _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/ukanren/is-pair
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/ukanren/Pair _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/ukanren/is-unit
+    (λ (term)
+      (match term
+        [analysis/benchmarks/koka-gen/ukanren/Unit std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/ukanren/state/next-id
+    (λ (state)
+      (match state
+        [(analysis/benchmarks/koka-gen/ukanren/State h-x _) h-x])))
+  (define analysis/benchmarks/koka-gen/ukanren/state/sub
+    (λ (state)
+      (match state
+        [(analysis/benchmarks/koka-gen/ukanren/State _ h-x) h-x])))
+  (define analysis/benchmarks/koka-gen/ukanren/state/h-copy
+    (λ (h-this next-id sub)
+      (letrec* ([h-uniq-next-idh-183 (match next-id
+        [(std/core/types/h-Optional h-uniq-next-idh-184) h-uniq-next-idh-184]
+        [std/core/types/h-None (analysis/benchmarks/koka-gen/ukanren/state/next-id h-this)])] [h-uniq-subh-191 (match sub
+        [(std/core/types/h-Optional h-uniq-subh-192) h-uniq-subh-192]
+        [std/core/types/h-None (analysis/benchmarks/koka-gen/ukanren/state/sub h-this)])])
+        (analysis/benchmarks/koka-gen/ukanren/State h-uniq-next-idh-183 h-uniq-subh-191))))
+  (define analysis/benchmarks/koka-gen/ukanren/empty-state
+    (analysis/benchmarks/koka-gen/ukanren/State 0 std/core/types/Nil))
+  (define analysis/benchmarks/koka-gen/ukanren/walk
+    (λ (t s)
+      (match t
+        [(analysis/benchmarks/koka-gen/ukanren/Var i) (match (std/core/list/find s (λ (entry)
+          (std/core/int/== (std/core/types/tuple2/fst entry) i)))
+          [(std/core/types/Just (std/core/types/Tuple2 _ v)) (analysis/benchmarks/koka-gen/ukanren/walk v s)]
+          [std/core/types/Nothing t])]
+        [_ t])))
+  (define analysis/benchmarks/koka-gen/ukanren/eq-term
+    (λ (t1 t2)
+      (match (std/core/types/Tuple2 t1 t2)
+        [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Var i) (analysis/benchmarks/koka-gen/ukanren/Var j)) (std/core/int/== i j)]
+        [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Atom a) (analysis/benchmarks/koka-gen/ukanren/Atom b)) (std/core/string/== a b)]
+        [(std/core/types/Tuple2 analysis/benchmarks/koka-gen/ukanren/Unit analysis/benchmarks/koka-gen/ukanren/Unit) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/ukanren/unify
+    (λ (t1 t2 s)
+      (letrec* ([u (analysis/benchmarks/koka-gen/ukanren/walk t1 s)] [v (analysis/benchmarks/koka-gen/ukanren/walk t2 s)])
+        (match (analysis/benchmarks/koka-gen/ukanren/eq-term u v)
+          [std/core/types/True (std/core/types/Just s)]
+          [std/core/types/False (match (std/core/types/Tuple2 u v)
+            [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Var i) _) (std/core/types/Just (std/core/types/Cons (std/core/types/Tuple2 i v) s))]
+            [(std/core/types/Tuple2 _ (analysis/benchmarks/koka-gen/ukanren/Var i)) (std/core/types/Just (std/core/types/Cons (std/core/types/Tuple2 i u) s))]
+            [(std/core/types/Tuple2 (analysis/benchmarks/koka-gen/ukanren/Pair h1 t1x) (analysis/benchmarks/koka-gen/ukanren/Pair h2 t2x)) (match (analysis/benchmarks/koka-gen/ukanren/unify h1 h2 s)
+              [std/core/types/Nothing std/core/types/Nothing]
+              [(std/core/types/Just s2) (analysis/benchmarks/koka-gen/ukanren/unify t1x t2x s2)])]
+            [_ std/core/types/Nothing])]))))
+  (define analysis/benchmarks/koka-gen/ukanren/logic/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/ukanren/logic/h-tag hnd ret action)))
+  (define analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-fresh
+    (λ (logic)
+      (match logic
+        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ h-x _) h-x])))
+  (define analysis/benchmarks/koka-gen/ukanren/fresh/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ h-ctl-fresh _) h-ctl-fresh])))
+  (define analysis/benchmarks/koka-gen/ukanren/fresh
+    (λ ()
+      (perform analysis/benchmarks/koka-gen/ukanren/logic fresh)))
+  (define analysis/benchmarks/koka-gen/ukanren/unify-term/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ _ h-ctl-unify-term) h-ctl-unify-term])))
+  (define analysis/benchmarks/koka-gen/ukanren/unify-term
+    (λ (t1 t2)
+      (perform analysis/benchmarks/koka-gen/ukanren/logic unify-term t1 t2)))
+  (define analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-unify-term
+    (λ (logic)
+      (match logic
+        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ _ _ h-x) h-x])))
+  (define analysis/benchmarks/koka-gen/ukanren/logic/h-ctl-flip
+    (λ (logic)
+      (match logic
+        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ h-x _ _) h-x])))
+  (define analysis/benchmarks/koka-gen/ukanren/flip/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic _ h-ctl-flip _ _) h-ctl-flip])))
+  (define analysis/benchmarks/koka-gen/ukanren/flip
+    (λ ()
+      (perform analysis/benchmarks/koka-gen/ukanren/logic flip)))
+  (define analysis/benchmarks/koka-gen/ukanren/solve
+    (λ (action)
+      ((λ (h-action)
+        (analysis/benchmarks/koka-gen/ukanren/logic/h-handle (handler analysis/benchmarks/koka-gen/ukanren/h-Hnd-logic [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+          (λ (s)
+            (letrec* ([results-true ((resume std/core/types/True) s)] [results-false ((resume std/core/types/False) s)])
+              (std/core/list/++ results-true results-false)))))] [ctl fresh (std/core/hnd/clause-control0 (λ (resume)
+          (λ (s)
+            (letrec* ([new-var (analysis/benchmarks/koka-gen/ukanren/Var (analysis/benchmarks/koka-gen/ukanren/state/next-id s))] [new-state (analysis/benchmarks/koka-gen/ukanren/state/h-copy s (std/core/types/h-Optional (std/core/int/+ (analysis/benchmarks/koka-gen/ukanren/state/next-id s) 1)) std/core/types/h-None)])
+              ((resume new-var) new-state)))))] [ctl unify-term (std/core/hnd/clause-control2 (λ (t1 t2 resume)
+          (λ (s)
+            (match (analysis/benchmarks/koka-gen/ukanren/unify t1 t2 (analysis/benchmarks/koka-gen/ukanren/state/sub s))
+              [std/core/types/Nothing std/core/types/Nil]
+              [(std/core/types/Just new-sub) ((resume std/core/types/Unit) (analysis/benchmarks/koka-gen/ukanren/state/h-copy s std/core/types/h-None (std/core/types/h-Optional new-sub)))]))))]) (λ (x)
+          (λ (s)
+            (std/core/types/Cons (std/core/types/Tuple2 x s) std/core/types/Nil))) h-action)) action)))
+  (define analysis/benchmarks/koka-gen/ukanren/===
+    (λ (t1 t2)
+      (analysis/benchmarks/koka-gen/ukanren/unify-term t1 t2)))
+  (define analysis/benchmarks/koka-gen/ukanren/conde
+    (λ (clauses)
+      (match clauses
+        [std/core/types/Nil (analysis/benchmarks/koka-gen/ukanren/unify-term (analysis/benchmarks/koka-gen/ukanren/Atom "fail") (analysis/benchmarks/koka-gen/ukanren/Atom "fail-me"))]
+        [(std/core/types/Cons c rest) (match (analysis/benchmarks/koka-gen/ukanren/flip)
+          [std/core/types/True (c)]
+          [std/core/types/False (analysis/benchmarks/koka-gen/ukanren/conde rest)])])))
+  (define analysis/benchmarks/koka-gen/ukanren/to-logic-list
+    (λ (xs)
+      (match xs
+        [std/core/types/Nil analysis/benchmarks/koka-gen/ukanren/Unit]
+        [(std/core/types/Cons h t) (analysis/benchmarks/koka-gen/ukanren/Pair (analysis/benchmarks/koka-gen/ukanren/Atom (std/core/int/show h)) (analysis/benchmarks/koka-gen/ukanren/to-logic-list t))])))
+  (define analysis/benchmarks/koka-gen/ukanren/reify
+    (λ (t s)
+      (match (analysis/benchmarks/koka-gen/ukanren/walk t s)
+        [(analysis/benchmarks/koka-gen/ukanren/Var i) (std/core/types/++ "_." (std/core/int/show i))]
+        [(analysis/benchmarks/koka-gen/ukanren/Atom n) n]
+        [analysis/benchmarks/koka-gen/ukanren/Unit "[]"]
+        [(analysis/benchmarks/koka-gen/ukanren/Pair h tail) (std/core/types/++ "[" (std/core/types/++ (analysis/benchmarks/koka-gen/ukanren/reify h s) (std/core/types/++ " . " (std/core/types/++ (analysis/benchmarks/koka-gen/ukanren/reify tail s) "]"))))])))
+  (define analysis/benchmarks/koka-gen/ukanren/appendo
+    (λ (l s out)
+      (analysis/benchmarks/koka-gen/ukanren/conde (std/core/types/Cons (λ ()
+        (letrec* ([_ (analysis/benchmarks/koka-gen/ukanren/=== l analysis/benchmarks/koka-gen/ukanren/Unit)])
+          (analysis/benchmarks/koka-gen/ukanren/=== s out))) (std/core/types/Cons (λ ()
+        (letrec* ([h (analysis/benchmarks/koka-gen/ukanren/fresh)] [t (analysis/benchmarks/koka-gen/ukanren/fresh)] [res (analysis/benchmarks/koka-gen/ukanren/fresh)] [_ (analysis/benchmarks/koka-gen/ukanren/=== l (analysis/benchmarks/koka-gen/ukanren/Pair h t))] [_ (analysis/benchmarks/koka-gen/ukanren/=== out (analysis/benchmarks/koka-gen/ukanren/Pair h res))])
+          (analysis/benchmarks/koka-gen/ukanren/appendo t s res))) std/core/types/Nil)))))
+  (define analysis/benchmarks/koka-gen/ukanren/analyze-q1
+    (λ ()
+      (letrec* ([runner1 (analysis/benchmarks/koka-gen/ukanren/solve (λ ()
+        (letrec* ([q (analysis/benchmarks/koka-gen/ukanren/fresh)] [l1 (analysis/benchmarks/koka-gen/ukanren/to-logic-list (std/core/types/Cons 1 std/core/types/Nil))] [l2 (analysis/benchmarks/koka-gen/ukanren/to-logic-list (std/core/types/Cons 2 std/core/types/Nil))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo l1 l2 q)])
+          q)))] [results1 (runner1 analysis/benchmarks/koka-gen/ukanren/empty-state)])
+        (std/core/list/joinsep/join (std/core/list/map results1 (λ (res)
+          (std/core/types/++ "q = " (analysis/benchmarks/koka-gen/ukanren/reify (std/core/types/tuple2/fst res) (analysis/benchmarks/koka-gen/ukanren/state/sub (std/core/types/tuple2/snd res)))))) ", "))))
+  (define analysis/benchmarks/koka-gen/ukanren/result-q1
+    (λ ()
+      "q = [1 . [2 . []]]"))
+  (define analysis/benchmarks/koka-gen/ukanren/analyze-q2
+    (λ ()
+      (letrec* ([runner2 (analysis/benchmarks/koka-gen/ukanren/solve (λ ()
+        (letrec* ([x (analysis/benchmarks/koka-gen/ukanren/fresh)] [y (analysis/benchmarks/koka-gen/ukanren/fresh)] [target (analysis/benchmarks/koka-gen/ukanren/to-logic-list (std/core/types/Cons 1 (std/core/types/Cons 2 (std/core/types/Cons 3 std/core/types/Nil))))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo x y target)])
+          (std/core/types/Tuple2 x y))))] [results2 (runner2 analysis/benchmarks/koka-gen/ukanren/empty-state)])
+        (std/core/list/joinsep/join (std/core/list/map results2 (λ (res)
+          (std/core/types/++ "x = " (std/core/types/++ (analysis/benchmarks/koka-gen/ukanren/reify (std/core/types/tuple2/fst (std/core/types/tuple2/fst res)) (analysis/benchmarks/koka-gen/ukanren/state/sub (std/core/types/tuple2/snd res))) (std/core/types/++ ", y = " (analysis/benchmarks/koka-gen/ukanren/reify (std/core/types/tuple2/snd (std/core/types/tuple2/fst res)) (analysis/benchmarks/koka-gen/ukanren/state/sub (std/core/types/tuple2/snd res)))))))) "\n"))))
+  (define analysis/benchmarks/koka-gen/ukanren/result-q2
+    (λ ()
+      "x = [], y = [1 . [2 . [3 . []]]]\nx = [1 . []], y = [2 . [3 . []]]\nx = [1 . [2 . []]], y = [3 . []]\nx = [1 . [2 . [3 . []]]], y = []"))
+  (define analysis/benchmarks/koka-gen/ukanren/main
+    (λ ()
+      (letrec* ([_ (std/core/console/string/println "--- Koka Micro-Kanren ---")] [_ (std/core/console/string/println "\nQuery 1: append([1], [2], q)")] [runner1 (analysis/benchmarks/koka-gen/ukanren/solve (λ ()
+        (letrec* ([q (analysis/benchmarks/koka-gen/ukanren/fresh)] [l1 (analysis/benchmarks/koka-gen/ukanren/to-logic-list (std/core/types/Cons 1 std/core/types/Nil))] [l2 (analysis/benchmarks/koka-gen/ukanren/to-logic-list (std/core/types/Cons 2 std/core/types/Nil))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo l1 l2 q)])
+          q)))] [results1 (runner1 analysis/benchmarks/koka-gen/ukanren/empty-state)] [_ (std/core/list/foreach results1 (λ (res)
+        (match res
+          [(std/core/types/Tuple2 val-q (as final-state (analysis/benchmarks/koka-gen/ukanren/State _ _))) (std/core/console/string/println (std/core/types/++ "Solution: q = " (analysis/benchmarks/koka-gen/ukanren/reify val-q (analysis/benchmarks/koka-gen/ukanren/state/sub final-state))))])))] [_ (std/core/console/string/println "\nQuery 2: append(x, y, [1, 2, 3])")] [runner2 (analysis/benchmarks/koka-gen/ukanren/solve (λ ()
+        (letrec* ([x (analysis/benchmarks/koka-gen/ukanren/fresh)] [y (analysis/benchmarks/koka-gen/ukanren/fresh)] [target (analysis/benchmarks/koka-gen/ukanren/to-logic-list (std/core/types/Cons 1 (std/core/types/Cons 2 (std/core/types/Cons 3 std/core/types/Nil))))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo x y target)])
+          (std/core/types/Tuple2 x y))))] [results2 (runner2 analysis/benchmarks/koka-gen/ukanren/empty-state)])
+        (std/core/list/foreach results2 (λ (res)
           (match res
-            [(std/core/types/Tuple2 val-q (as final-state (analysis/benchmarks/koka-gen/ukanren/State _ _))) (std/core/console/string/println ((std/core/types/++ ("Solution: q = " (analysis/benchmarks/koka-gen/ukanren/reify (val-q (analysis/benchmarks/koka-gen/ukanren/state/sub (final-state))))))))]))))] [_ (std/core/console/string/println ("\nQuery 2: append(x, y, [1, 2, 3])"))] [runner2 (analysis/benchmarks/koka-gen/ukanren/solve ((fn ()
-          (letrec* ([x (analysis/benchmarks/koka-gen/ukanren/fresh ())] [y (analysis/benchmarks/koka-gen/ukanren/fresh ())] [target (analysis/benchmarks/koka-gen/ukanren/to-logic-list ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil))))))))] [_ (analysis/benchmarks/koka-gen/ukanren/appendo (x y target))])
-            (std/core/types/Tuple2 (x y))))))] [results2 (runner2 (analysis/benchmarks/koka-gen/ukanren/empty-state))])
-          (std/core/list/foreach (results2 (fn (res)
-            (match res
-              [(std/core/types/Tuple2 (std/core/types/Tuple2 val-x val-y) (as final-state (analysis/benchmarks/koka-gen/ukanren/State _ _))) (std/core/console/string/println ((std/core/types/++ ("Solution: x = " (std/core/types/++ ((analysis/benchmarks/koka-gen/ukanren/reify (val-x (analysis/benchmarks/koka-gen/ukanren/state/sub (final-state)))) (std/core/types/++ (", y = " (analysis/benchmarks/koka-gen/ukanren/reify (val-y (analysis/benchmarks/koka-gen/ukanren/state/sub (final-state))))))))))))])))))))))
+            [(std/core/types/Tuple2 (std/core/types/Tuple2 val-x val-y) (as final-state (analysis/benchmarks/koka-gen/ukanren/State _ _))) (std/core/console/string/println (std/core/types/++ "Solution: x = " (std/core/types/++ (analysis/benchmarks/koka-gen/ukanren/reify val-x (analysis/benchmarks/koka-gen/ukanren/state/sub final-state)) (std/core/types/++ ", y = " (analysis/benchmarks/koka-gen/ukanren/reify val-y (analysis/benchmarks/koka-gen/ukanren/state/sub final-state))))))])))))))

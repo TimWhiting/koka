@@ -1,69 +1,69 @@
-((module std/os/env)
-  (defs
-    (def std/os/env/to-tuples
-      (fn (xs)
-        (match xs
-          [(std/core/types/Cons name (std/core/types/Cons value xx)) (std/core/types/Cons ((std/core/types/Tuple2 (name value)) (std/os/env/to-tuples (xx))))]
-          [(std/core/types/Cons name std/core/types/Nil) (std/core/types/Cons ((std/core/types/Tuple2 (name "")) std/core/types/Nil))]
-          [std/core/types/Nil std/core/types/Nil])))
-    (def std/os/env/os-get-env
-      (fn ()
-        (std/os/env/h-extern-os-get-env ())))
-    (def std/os/env/environ
-      (std/core/delayed/delay ((fn ()
-        (std/os/env/to-tuples ((std/core/vector/list ((std/os/env/os-get-env ())))))))))
-    (def std/os/env/get-env
-      (fn ()
-        (std/core/delayed/force (std/os/env/environ))))
-    (def std/os/env/get-env-value
-      (fn (name)
-        (std/core/list/lookup ((std/os/env/get-env ()) (fn (nm)
-          (std/core/string/== (nm name)))))))
-    (def std/os/env/os-get-argv
-      (fn ()
-        (std/os/env/h-extern-os-get-argv ())))
-    (def std/os/env/argv
-      (std/core/delayed/delay ((fn ()
-        (std/core/vector/list ((std/os/env/os-get-argv ())))))))
-    (def std/os/env/get-argv
-      (fn ()
-        (std/core/delayed/force (std/os/env/argv))))
-    (def std/os/env/get-args
-      (fn ()
-        (letrec* ([is-node (std/core/string/== ((std/core/host ()) "node"))])
-          (match (std/os/env/get-argv ())
-            [(std/core/types/Cons x xx) (std/core/list/drop (xx 1))]
-            [xs (std/core/list/drop (xs 1))]))))
-    (def std/os/env/get-os-name
-      (fn ()
-        (std/os/env/h-extern-get-os-name ())))
-    (def std/os/env/get-cpu-arch
-      (fn ()
-        (std/os/env/h-extern-get-cpu-arch ())))
-    (def std/os/env/get-cpu-count
-      (fn ()
-        (std/os/env/h-extern-get-cpu-count ())))
-    (def std/os/env/get-compiler-version
-      (fn ()
-        (std/os/env/h-extern-get-compiler-version ())))
-    (def std/os/env/get-cc-name
-      (fn ()
-        (std/os/env/h-extern-get-cc-name ())))
-    (def std/os/env/get-cpu-is-little-endian
-      (fn ()
-        (std/os/env/h-extern-get-cpu-is-little-endian ())))
-    (def std/os/env/get-cpu-int-bits
-      (fn ()
-        (std/os/env/h-extern-get-cpu-int-bits ())))
-    (def std/os/env/get-cpu-size-bits
-      (fn ()
-        (std/os/env/h-extern-get-cpu-size-bits ())))
-    (def std/os/env/get-cpu-address-bits
-      (fn ()
-        (std/os/env/h-extern-get-cpu-address-bits ())))
-    (def std/os/env/get-cpu-pointer-bits
-      (fn ()
-        (std/os/env/h-extern-get-cpu-pointer-bits ())))
-    (def std/os/env/get-cpu-boxed-bits
-      (fn ()
-        (std/os/env/h-extern-get-cpu-boxed-bits ())))))
+(module
+  std/os/env
+  (define std/os/env/to-tuples
+    (λ (xs)
+      (match xs
+        [(std/core/types/Cons name (std/core/types/Cons value xx)) (std/core/types/Cons (std/core/types/Tuple2 name value) (std/os/env/to-tuples xx))]
+        [(std/core/types/Cons name std/core/types/Nil) (std/core/types/Cons (std/core/types/Tuple2 name "") std/core/types/Nil)]
+        [std/core/types/Nil std/core/types/Nil])))
+  (define std/os/env/os-get-env
+    (λ ()
+      (std/os/env/h-extern-os-get-env)))
+  (define std/os/env/environ
+    (std/core/delayed/delay (λ ()
+      (std/os/env/to-tuples (std/core/vector/list (std/os/env/os-get-env))))))
+  (define std/os/env/get-env
+    (λ ()
+      (std/core/delayed/force std/os/env/environ)))
+  (define std/os/env/get-env-value
+    (λ (name)
+      (std/core/list/lookup (std/os/env/get-env) (λ (nm)
+        (std/core/string/== nm name)))))
+  (define std/os/env/os-get-argv
+    (λ ()
+      (std/os/env/h-extern-os-get-argv)))
+  (define std/os/env/argv
+    (std/core/delayed/delay (λ ()
+      (std/core/vector/list (std/os/env/os-get-argv)))))
+  (define std/os/env/get-argv
+    (λ ()
+      (std/core/delayed/force std/os/env/argv)))
+  (define std/os/env/get-args
+    (λ ()
+      (letrec* ([is-node (std/core/string/== (std/core/host) "node")])
+        (match (std/os/env/get-argv)
+          [(std/core/types/Cons x xx) (std/core/list/drop xx 1)]
+          [xs (std/core/list/drop xs 1)]))))
+  (define std/os/env/get-os-name
+    (λ ()
+      (std/os/env/h-extern-get-os-name)))
+  (define std/os/env/get-cpu-arch
+    (λ ()
+      (std/os/env/h-extern-get-cpu-arch)))
+  (define std/os/env/get-cpu-count
+    (λ ()
+      (std/os/env/h-extern-get-cpu-count)))
+  (define std/os/env/get-compiler-version
+    (λ ()
+      (std/os/env/h-extern-get-compiler-version)))
+  (define std/os/env/get-cc-name
+    (λ ()
+      (std/os/env/h-extern-get-cc-name)))
+  (define std/os/env/get-cpu-is-little-endian
+    (λ ()
+      (std/os/env/h-extern-get-cpu-is-little-endian)))
+  (define std/os/env/get-cpu-int-bits
+    (λ ()
+      (std/os/env/h-extern-get-cpu-int-bits)))
+  (define std/os/env/get-cpu-size-bits
+    (λ ()
+      (std/os/env/h-extern-get-cpu-size-bits)))
+  (define std/os/env/get-cpu-address-bits
+    (λ ()
+      (std/os/env/h-extern-get-cpu-address-bits)))
+  (define std/os/env/get-cpu-pointer-bits
+    (λ ()
+      (std/os/env/h-extern-get-cpu-pointer-bits)))
+  (define std/os/env/get-cpu-boxed-bits
+    (λ ()
+      (std/os/env/h-extern-get-cpu-boxed-bits))))

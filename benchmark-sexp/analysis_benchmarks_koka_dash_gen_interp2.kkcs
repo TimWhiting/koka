@@ -1,248 +1,242 @@
-((module analysis/benchmarks/koka-gen/interp2)
-  (defs
-    (def analysis/benchmarks/koka-gen/interp2/is-slit
-      (fn (surface)
-        (match surface
-          [(analysis/benchmarks/koka-gen/interp2/SLit _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-svar
-      (fn (surface)
-        (match surface
-          [(analysis/benchmarks/koka-gen/interp2/SVar _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-sprim
-      (fn (surface)
-        (match surface
-          [(analysis/benchmarks/koka-gen/interp2/SPrim _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-slam
-      (fn (surface)
-        (match surface
-          [(analysis/benchmarks/koka-gen/interp2/SLam _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-sapp
-      (fn (surface)
-        (match surface
-          [(analysis/benchmarks/koka-gen/interp2/SApp _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-slet
-      (fn (surface)
-        (match surface
-          [(analysis/benchmarks/koka-gen/interp2/SLet _ _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-lit
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/interp2/Lit _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-var
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/interp2/Var _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-prim
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/interp2/Prim _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-lam
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/interp2/Lam _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-app
-      (fn (term)
-        (match term
-          [(analysis/benchmarks/koka-gen/interp2/App _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-vint
-      (fn (value)
-        (match value
-          [(analysis/benchmarks/koka-gen/interp2/VInt _) std/core/types/True]
-          [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/is-vclos
-      (fn (value)
-        (match value
-          [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) std/core/types/True]
-          [(analysis/benchmarks/koka-gen/interp2/VInt _) std/core/types/False])))
-    (def analysis/benchmarks/koka-gen/interp2/desugar
-      (fn (s)
-        (match s
-          [(analysis/benchmarks/koka-gen/interp2/SLit i) (analysis/benchmarks/koka-gen/interp2/Lit (i))]
-          [(analysis/benchmarks/koka-gen/interp2/SVar n) (analysis/benchmarks/koka-gen/interp2/Var (n))]
-          [(analysis/benchmarks/koka-gen/interp2/SPrim op args) (analysis/benchmarks/koka-gen/interp2/Prim (op (std/core/list/map (args analysis/benchmarks/koka-gen/interp2/desugar))))]
-          [(analysis/benchmarks/koka-gen/interp2/SLam ps b) (analysis/benchmarks/koka-gen/interp2/Lam (ps (analysis/benchmarks/koka-gen/interp2/desugar (b))))]
-          [(analysis/benchmarks/koka-gen/interp2/SApp f args) (analysis/benchmarks/koka-gen/interp2/App ((analysis/benchmarks/koka-gen/interp2/desugar (f)) (std/core/list/map (args analysis/benchmarks/koka-gen/interp2/desugar))))]
-          [(analysis/benchmarks/koka-gen/interp2/SLet name expr body) (analysis/benchmarks/koka-gen/interp2/App ((analysis/benchmarks/koka-gen/interp2/Lam ((std/core/types/Cons (name std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/desugar (body)))) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/desugar (expr)) std/core/types/Nil))))])))
-    (def analysis/benchmarks/koka-gen/interp2/env/h-cfc
-      (fn (env)
-        (match env
-          [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env h-x _ _) h-x])))
-    (def analysis/benchmarks/koka-gen/interp2/env/h-tag
-      (std/core/hnd/h-new-htag ("env@interp2")))
-    (def analysis/benchmarks/koka-gen/interp2/env/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/koka-gen/interp2/env/h-tag hnd ret action))))
-    (def analysis/benchmarks/koka-gen/interp2/env/h-ctl-lookup
-      (fn (env)
-        (match env
-          [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ h-x _) h-x])))
-    (def analysis/benchmarks/koka-gen/interp2/lookup/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ h-ctl-lookup _) h-ctl-lookup])))
-    (def analysis/benchmarks/koka-gen/interp2/lookup
-      (fn (name)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/interp2/lookup/h-select name))))
-    (def analysis/benchmarks/koka-gen/interp2/env/h-ctl-snapshot
-      (fn (env)
-        (match env
-          [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ _ h-x) h-x])))
-    (def analysis/benchmarks/koka-gen/interp2/snapshot/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ _ h-ctl-snapshot) h-ctl-snapshot])))
-    (def analysis/benchmarks/koka-gen/interp2/snapshot
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/koka-gen/interp2/snapshot/h-select))))
-    (def analysis/benchmarks/koka-gen/interp2/run-env
-      (fn (current-env action)
-        ((fn (h-action)
-          (analysis/benchmarks/koka-gen/interp2/env/h-handle ((analysis/benchmarks/koka-gen/interp2/h-Hnd-env (3 (std/core/hnd/clause-control1 ((fn (name resume)
-            (match (std/core/list/find (current-env (fn (entry)
-              (std/core/string/== ((std/core/types/tuple2/fst (entry)) name)))))
-              [(std/core/types/Just (std/core/types/Tuple2 _ v)) (resume (v))]
-              [std/core/types/Nothing (std/core/exn/throw ((std/core/types/++ ("Runtime Error: Variable '" (std/core/types/++ (name "' not found")))) std/core/types/h-None))])))) (std/core/hnd/clause-control0 ((fn (resume)
-            (resume (current-env))))))) (fn (h-res)
-            h-res) h-action))) (action))))
-    (def analysis/benchmarks/koka-gen/interp2/show
-      (fn (v)
-        (match v
-          [(analysis/benchmarks/koka-gen/interp2/VInt i) (std/core/int/show (i))]
-          [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) "<closure>"])))
-    (def analysis/benchmarks/koka-gen/interp2/run-safe
-      (fn (action h-implicit/a/show)
-        ((fn (h-action)
-          (std/core/exn/exn/h-handle ((std/core/exn/h-Hnd-exn (0 (std/core/hnd/clause-never1 ((fn (msg)
-            (std/core/types/++ ("FAILURE: " (std/core/exn/show (msg))))))))) (fn (x)
-            (h-implicit/a/show (x))) h-action))) ((fn ()
-          (action ()))))))
-    (def analysis/benchmarks/koka-gen/interp2/eval-prim
-      (fn (op args)
-        (match (std/core/types/Tuple2 (op args))
-          [(std/core/types/Tuple2 "+" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt a) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt b) std/core/types/Nil))) (analysis/benchmarks/koka-gen/interp2/VInt ((std/core/int/+ (a b))))]
-          [(std/core/types/Tuple2 "-" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt a) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt b) std/core/types/Nil))) (analysis/benchmarks/koka-gen/interp2/VInt ((std/core/int/- (a b))))]
-          [(std/core/types/Tuple2 "*" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt a) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt b) std/core/types/Nil))) (analysis/benchmarks/koka-gen/interp2/VInt ((std/core/int/* (a b))))]
-          [(std/core/types/Tuple2 "sum" xs) (letrec* ([total (std/core/list/foldl (xs 0 (fn (acc v)
-            (match v
-              [(analysis/benchmarks/koka-gen/interp2/VInt k) (std/core/int/+ (acc k))]
-              [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) 0]))))])
-            (analysis/benchmarks/koka-gen/interp2/VInt (total)))]
-          [_ (std/core/exn/throw ((std/core/types/++ ("Primitive error: Unknown op '" (std/core/types/++ (op "' or invalid args")))) std/core/types/h-None))])))
-    (def analysis/benchmarks/koka-gen/interp2/eval
-      (fn (t)
-        (match t
-          [(analysis/benchmarks/koka-gen/interp2/Lit i) (analysis/benchmarks/koka-gen/interp2/VInt (i))]
-          [(analysis/benchmarks/koka-gen/interp2/Var x) (analysis/benchmarks/koka-gen/interp2/lookup (x))]
-          [(analysis/benchmarks/koka-gen/interp2/Prim op args) (letrec* ([arg-vals (std/core/list/map (args analysis/benchmarks/koka-gen/interp2/eval))])
-            (analysis/benchmarks/koka-gen/interp2/eval-prim (op arg-vals)))]
-          [(analysis/benchmarks/koka-gen/interp2/Lam ps b) (letrec* ([cap (analysis/benchmarks/koka-gen/interp2/snapshot ())])
-            (analysis/benchmarks/koka-gen/interp2/VClos (ps b cap)))]
-          [(analysis/benchmarks/koka-gen/interp2/App f args) (letrec* ([func-val (analysis/benchmarks/koka-gen/interp2/eval (f))] [arg-vals (std/core/list/map (args analysis/benchmarks/koka-gen/interp2/eval))])
-            (match func-val
-              [(analysis/benchmarks/koka-gen/interp2/VClos params body saved-env) (letrec* ([_ (match (std/core/int/!= ((std/core/list/length (params)) (std/core/list/length (arg-vals))))
-                [std/core/types/True (std/core/exn/throw ((std/core/types/++ ("Arity Mismatch: Expected " (std/core/types/++ ((std/core/int/show ((std/core/list/length (params)))) (std/core/types/++ (" args, got " (std/core/int/show ((std/core/list/length (arg-vals)))))))))) std/core/types/h-None))]
-                [std/core/types/False std/core/types/Unit])] [bindings (std/core/list/zip (params arg-vals))] [new-env (std/core/list/++ (bindings saved-env))])
-                (analysis/benchmarks/koka-gen/interp2/run-env (new-env (fn ()
-                  (analysis/benchmarks/koka-gen/interp2/eval (body))))))]
-              [(analysis/benchmarks/koka-gen/interp2/VInt _) (std/core/exn/throw ("Type Error: Application on non-function" std/core/types/h-None))]))])))
-    (def analysis/benchmarks/koka-gen/interp2/interpret
-      (fn (s)
-        (letrec* ([core (analysis/benchmarks/koka-gen/interp2/desugar (s))] [res (analysis/benchmarks/koka-gen/interp2/run-env (std/core/types/Nil (fn ()
-          (analysis/benchmarks/koka-gen/interp2/eval (core)))))])
-          (std/core/types/++ ("Result: " (analysis/benchmarks/koka-gen/interp2/show (res)))))))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-t1
-      (fn ()
-        (letrec* ([t1 (analysis/benchmarks/koka-gen/interp2/SLet ("x" (analysis/benchmarks/koka-gen/interp2/SLit (10)) (analysis/benchmarks/koka-gen/interp2/SPrim ("*" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("x")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (2)) std/core/types/Nil))))))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (t1))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-t1
-      (fn ()
-        "Result: 20"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-t2
-      (fn ()
-        (letrec* ([t2 (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("x" (std/core/types/Cons ("y" std/core/types/Nil)))) (analysis/benchmarks/koka-gen/interp2/SPrim ("-" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("x")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("y")) std/core/types/Nil)))))))) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (4)) std/core/types/Nil))))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (t2))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-t2
-      (fn ()
-        "Result: 6"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-t3
-      (fn ()
-        (letrec* ([t3 (analysis/benchmarks/koka-gen/interp2/SLet ("x" (analysis/benchmarks/koka-gen/interp2/SLit (100)) (analysis/benchmarks/koka-gen/interp2/SLet ("f" (analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("y" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SPrim ("+" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("x")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("y")) std/core/types/Nil)))))))) (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SVar ("f")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (5)) std/core/types/Nil))))))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (t3))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-t3
-      (fn ()
-        "Result: 105"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-t4
-      (fn ()
-        (letrec* ([t4 (analysis/benchmarks/koka-gen/interp2/SPrim ("sum" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (1)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (2)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (3)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (4)) std/core/types/Nil))))))))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (t4))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-t4
-      (fn ()
-        "Result: 10"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-err1
-      (fn ()
-        (letrec* ([err1 (analysis/benchmarks/koka-gen/interp2/SVar ("z"))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (err1))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-err1
-      (fn ()
-        "FAILURE: Runtime Error: Variable 'z' not found"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-err2
-      (fn ()
-        (letrec* ([err2 (analysis/benchmarks/koka-gen/interp2/SPrim ("+" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("x" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SVar ("x")))) std/core/types/Nil))))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (err2))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-err2
-      (fn ()
-        "FAILURE: Primitive error: Unknown op '+' or invalid args"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-err3
-      (fn ()
-        (letrec* ([err3 (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("x" (std/core/types/Cons ("y" std/core/types/Nil)))) (analysis/benchmarks/koka-gen/interp2/SVar ("x")))) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) std/core/types/Nil))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (err3))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-err3
-      (fn ()
-        "FAILURE: Arity Mismatch: Expected 2 args, got 1"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-err4
-      (fn ()
-        (letrec* ([err4 (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SLit (5)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) std/core/types/Nil))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (err4))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-err4
-      (fn ()
-        "FAILURE: Type Error: Application on non-function"))
-    (def analysis/benchmarks/koka-gen/interp2/analyze-err5
-      (fn ()
-        (letrec* ([err5 (analysis/benchmarks/koka-gen/interp2/SPrim ("modulo" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (3)) std/core/types/Nil))))))])
-          (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (err5))) std/core/types/id)))))
-    (def analysis/benchmarks/koka-gen/interp2/result-err5
-      (fn ()
-        "FAILURE: Primitive error: Unknown op 'modulo' or invalid args"))
-    (def analysis/benchmarks/koka-gen/interp2/main
-      (fn ()
-        (letrec* ([_ (std/core/console/string/println ("--- Koka Extended Interpreter ---"))] [t1 (analysis/benchmarks/koka-gen/interp2/SLet ("x" (analysis/benchmarks/koka-gen/interp2/SLit (10)) (analysis/benchmarks/koka-gen/interp2/SPrim ("*" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("x")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (2)) std/core/types/Nil))))))))] [_ (std/core/console/string/println ((analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (t1))) std/core/show/string/show))))] [t2 (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("x" (std/core/types/Cons ("y" std/core/types/Nil)))) (analysis/benchmarks/koka-gen/interp2/SPrim ("-" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("x")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("y")) std/core/types/Nil)))))))) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (4)) std/core/types/Nil))))))] [_ (std/core/console/string/println ((analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (t2))) std/core/show/string/show))))] [t3 (analysis/benchmarks/koka-gen/interp2/SLet ("x" (analysis/benchmarks/koka-gen/interp2/SLit (100)) (analysis/benchmarks/koka-gen/interp2/SLet ("f" (analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("y" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SPrim ("+" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("x")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SVar ("y")) std/core/types/Nil)))))))) (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SVar ("f")) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (5)) std/core/types/Nil))))))))] [_ (std/core/console/string/println ((analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (t3))) std/core/show/string/show))))] [t4 (analysis/benchmarks/koka-gen/interp2/SPrim ("sum" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (1)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (2)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (3)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (4)) std/core/types/Nil))))))))))] [_ (std/core/console/string/println ((analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (t4))) std/core/show/string/show))))] [_ (std/core/console/string/println ("\n--- Error Handling Tests ---"))] [err1 (analysis/benchmarks/koka-gen/interp2/SVar ("z"))] [_ (std/core/console/string/println ((std/core/types/++ ("Test 1 (Unbound): " (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (err1))) std/core/show/string/show))))))] [err2 (analysis/benchmarks/koka-gen/interp2/SPrim ("+" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("x" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SVar ("x")))) std/core/types/Nil))))))] [_ (std/core/console/string/println ((std/core/types/++ ("Test 2 (Type Error): " (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (err2))) std/core/show/string/show))))))] [err3 (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SLam ((std/core/types/Cons ("x" (std/core/types/Cons ("y" std/core/types/Nil)))) (analysis/benchmarks/koka-gen/interp2/SVar ("x")))) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) std/core/types/Nil))))] [_ (std/core/console/string/println ((std/core/types/++ ("Test 3 (Arity Error): " (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (err3))) std/core/show/string/show))))))] [err4 (analysis/benchmarks/koka-gen/interp2/SApp ((analysis/benchmarks/koka-gen/interp2/SLit (5)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) std/core/types/Nil))))] [_ (std/core/console/string/println ((std/core/types/++ ("Test 4 (Not a Function): " (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-          (analysis/benchmarks/koka-gen/interp2/interpret (err4))) std/core/show/string/show))))))] [err5 (analysis/benchmarks/koka-gen/interp2/SPrim ("modulo" (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (10)) (std/core/types/Cons ((analysis/benchmarks/koka-gen/interp2/SLit (3)) std/core/types/Nil))))))])
-          (std/core/console/string/println ((std/core/types/++ ("Test 5 (Unknown Prim): " (analysis/benchmarks/koka-gen/interp2/run-safe ((fn ()
-            (analysis/benchmarks/koka-gen/interp2/interpret (err5))) std/core/show/string/show)))))))))))
+(module
+  analysis/benchmarks/koka-gen/interp2
+  (define analysis/benchmarks/koka-gen/interp2/is-slit
+    (λ (surface)
+      (match surface
+        [(analysis/benchmarks/koka-gen/interp2/SLit _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-svar
+    (λ (surface)
+      (match surface
+        [(analysis/benchmarks/koka-gen/interp2/SVar _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-sprim
+    (λ (surface)
+      (match surface
+        [(analysis/benchmarks/koka-gen/interp2/SPrim _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-slam
+    (λ (surface)
+      (match surface
+        [(analysis/benchmarks/koka-gen/interp2/SLam _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-sapp
+    (λ (surface)
+      (match surface
+        [(analysis/benchmarks/koka-gen/interp2/SApp _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-slet
+    (λ (surface)
+      (match surface
+        [(analysis/benchmarks/koka-gen/interp2/SLet _ _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-lit
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/interp2/Lit _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-var
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/interp2/Var _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-prim
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/interp2/Prim _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-lam
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/interp2/Lam _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-app
+    (λ (term)
+      (match term
+        [(analysis/benchmarks/koka-gen/interp2/App _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-vint
+    (λ (value)
+      (match value
+        [(analysis/benchmarks/koka-gen/interp2/VInt _) std/core/types/True]
+        [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/is-vclos
+    (λ (value)
+      (match value
+        [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) std/core/types/True]
+        [(analysis/benchmarks/koka-gen/interp2/VInt _) std/core/types/False])))
+  (define analysis/benchmarks/koka-gen/interp2/desugar
+    (λ (s)
+      (match s
+        [(analysis/benchmarks/koka-gen/interp2/SLit i) (analysis/benchmarks/koka-gen/interp2/Lit i)]
+        [(analysis/benchmarks/koka-gen/interp2/SVar n) (analysis/benchmarks/koka-gen/interp2/Var n)]
+        [(analysis/benchmarks/koka-gen/interp2/SPrim op args) (analysis/benchmarks/koka-gen/interp2/Prim op (std/core/list/map args analysis/benchmarks/koka-gen/interp2/desugar))]
+        [(analysis/benchmarks/koka-gen/interp2/SLam ps b) (analysis/benchmarks/koka-gen/interp2/Lam ps (analysis/benchmarks/koka-gen/interp2/desugar b))]
+        [(analysis/benchmarks/koka-gen/interp2/SApp f args) (analysis/benchmarks/koka-gen/interp2/App (analysis/benchmarks/koka-gen/interp2/desugar f) (std/core/list/map args analysis/benchmarks/koka-gen/interp2/desugar))]
+        [(analysis/benchmarks/koka-gen/interp2/SLet name expr body) (analysis/benchmarks/koka-gen/interp2/App (analysis/benchmarks/koka-gen/interp2/Lam (std/core/types/Cons name std/core/types/Nil) (analysis/benchmarks/koka-gen/interp2/desugar body)) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/desugar expr) std/core/types/Nil))])))
+  (define analysis/benchmarks/koka-gen/interp2/env/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/interp2/env/h-tag hnd ret action)))
+  (define analysis/benchmarks/koka-gen/interp2/env/h-ctl-lookup
+    (λ (env)
+      (match env
+        [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ h-x _) h-x])))
+  (define analysis/benchmarks/koka-gen/interp2/lookup/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ h-ctl-lookup _) h-ctl-lookup])))
+  (define analysis/benchmarks/koka-gen/interp2/lookup
+    (λ (name)
+      (perform analysis/benchmarks/koka-gen/interp2/env lookup name)))
+  (define analysis/benchmarks/koka-gen/interp2/env/h-ctl-snapshot
+    (λ (env)
+      (match env
+        [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ _ h-x) h-x])))
+  (define analysis/benchmarks/koka-gen/interp2/snapshot/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/koka-gen/interp2/h-Hnd-env _ _ h-ctl-snapshot) h-ctl-snapshot])))
+  (define analysis/benchmarks/koka-gen/interp2/snapshot
+    (λ ()
+      (perform analysis/benchmarks/koka-gen/interp2/env snapshot)))
+  (define analysis/benchmarks/koka-gen/interp2/run-env
+    (λ (current-env action)
+      ((λ (h-action)
+        (analysis/benchmarks/koka-gen/interp2/env/h-handle (handler analysis/benchmarks/koka-gen/interp2/h-Hnd-env [ctl lookup (std/core/hnd/clause-control1 (λ (name resume)
+          (match (std/core/list/find current-env (λ (entry)
+            (std/core/string/== (std/core/types/tuple2/fst entry) name)))
+            [(std/core/types/Just (std/core/types/Tuple2 _ v)) (resume v)]
+            [std/core/types/Nothing (std/core/exn/throw (std/core/types/++ "Runtime Error: Variable '" (std/core/types/++ name "' not found")) std/core/types/h-None)])))] [ctl snapshot (std/core/hnd/clause-control0 (λ (resume)
+          (resume current-env)))]) (λ (h-res)
+          h-res) h-action)) action)))
+  (define analysis/benchmarks/koka-gen/interp2/show
+    (λ (v)
+      (match v
+        [(analysis/benchmarks/koka-gen/interp2/VInt i) (std/core/int/show i)]
+        [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) "<closure>"])))
+  (define analysis/benchmarks/koka-gen/interp2/run-safe
+    (λ (action h-implicit/a/show)
+      ((λ (h-action)
+        (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [?  (std/core/hnd/clause-never1 (λ (msg)
+          (std/core/types/++ "FAILURE: " (std/core/exn/show msg))))]) (λ (x)
+          (h-implicit/a/show x)) h-action)) (λ ()
+        (action)))))
+  (define analysis/benchmarks/koka-gen/interp2/eval-prim
+    (λ (op args)
+      (match (std/core/types/Tuple2 op args)
+        [(std/core/types/Tuple2 "+" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt a) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt b) std/core/types/Nil))) (analysis/benchmarks/koka-gen/interp2/VInt (std/core/int/+ a b))]
+        [(std/core/types/Tuple2 "-" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt a) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt b) std/core/types/Nil))) (analysis/benchmarks/koka-gen/interp2/VInt (std/core/int/- a b))]
+        [(std/core/types/Tuple2 "*" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt a) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/VInt b) std/core/types/Nil))) (analysis/benchmarks/koka-gen/interp2/VInt (std/core/int/* a b))]
+        [(std/core/types/Tuple2 "sum" xs) (letrec* ([total (std/core/list/foldl xs 0 (λ (acc v)
+          (match v
+            [(analysis/benchmarks/koka-gen/interp2/VInt k) (std/core/int/+ acc k)]
+            [(analysis/benchmarks/koka-gen/interp2/VClos _ _ _) 0])))])
+          (analysis/benchmarks/koka-gen/interp2/VInt total))]
+        [_ (std/core/exn/throw (std/core/types/++ "Primitive error: Unknown op '" (std/core/types/++ op "' or invalid args")) std/core/types/h-None)])))
+  (define analysis/benchmarks/koka-gen/interp2/eval
+    (λ (t)
+      (match t
+        [(analysis/benchmarks/koka-gen/interp2/Lit i) (analysis/benchmarks/koka-gen/interp2/VInt i)]
+        [(analysis/benchmarks/koka-gen/interp2/Var x) (analysis/benchmarks/koka-gen/interp2/lookup x)]
+        [(analysis/benchmarks/koka-gen/interp2/Prim op args) (letrec* ([arg-vals (std/core/list/map args analysis/benchmarks/koka-gen/interp2/eval)])
+          (analysis/benchmarks/koka-gen/interp2/eval-prim op arg-vals))]
+        [(analysis/benchmarks/koka-gen/interp2/Lam ps b) (letrec* ([cap (analysis/benchmarks/koka-gen/interp2/snapshot)])
+          (analysis/benchmarks/koka-gen/interp2/VClos ps b cap))]
+        [(analysis/benchmarks/koka-gen/interp2/App f args) (letrec* ([func-val (analysis/benchmarks/koka-gen/interp2/eval f)] [arg-vals (std/core/list/map args analysis/benchmarks/koka-gen/interp2/eval)])
+          (match func-val
+            [(analysis/benchmarks/koka-gen/interp2/VClos params body saved-env) (letrec* ([_ (match (std/core/int/!= (std/core/list/length params) (std/core/list/length arg-vals))
+              [std/core/types/True (std/core/exn/throw (std/core/types/++ "Arity Mismatch: Expected " (std/core/types/++ (std/core/int/show (std/core/list/length params)) (std/core/types/++ " args, got " (std/core/int/show (std/core/list/length arg-vals))))) std/core/types/h-None)]
+              [std/core/types/False std/core/types/Unit])] [bindings (std/core/list/zip params arg-vals)] [new-env (std/core/list/++ bindings saved-env)])
+              (analysis/benchmarks/koka-gen/interp2/run-env new-env (λ ()
+                (analysis/benchmarks/koka-gen/interp2/eval body))))]
+            [(analysis/benchmarks/koka-gen/interp2/VInt _) (std/core/exn/throw "Type Error: Application on non-function" std/core/types/h-None)]))])))
+  (define analysis/benchmarks/koka-gen/interp2/interpret
+    (λ (s)
+      (letrec* ([core (analysis/benchmarks/koka-gen/interp2/desugar s)] [res (analysis/benchmarks/koka-gen/interp2/run-env std/core/types/Nil (λ ()
+        (analysis/benchmarks/koka-gen/interp2/eval core)))])
+        (std/core/types/++ "Result: " (analysis/benchmarks/koka-gen/interp2/show res)))))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-t1
+    (λ ()
+      (letrec* ([t1 (analysis/benchmarks/koka-gen/interp2/SLet "x" (analysis/benchmarks/koka-gen/interp2/SLit 10) (analysis/benchmarks/koka-gen/interp2/SPrim "*" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "x") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 2) std/core/types/Nil))))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret t1)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-t1
+    (λ ()
+      "Result: 20"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-t2
+    (λ ()
+      (letrec* ([t2 (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "x" (std/core/types/Cons "y" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SPrim "-" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "x") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "y") std/core/types/Nil)))) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 4) std/core/types/Nil)))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret t2)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-t2
+    (λ ()
+      "Result: 6"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-t3
+    (λ ()
+      (letrec* ([t3 (analysis/benchmarks/koka-gen/interp2/SLet "x" (analysis/benchmarks/koka-gen/interp2/SLit 100) (analysis/benchmarks/koka-gen/interp2/SLet "f" (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "y" std/core/types/Nil) (analysis/benchmarks/koka-gen/interp2/SPrim "+" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "x") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "y") std/core/types/Nil)))) (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SVar "f") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 5) std/core/types/Nil))))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret t3)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-t3
+    (λ ()
+      "Result: 105"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-t4
+    (λ ()
+      (letrec* ([t4 (analysis/benchmarks/koka-gen/interp2/SPrim "sum" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 1) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 2) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 3) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 4) std/core/types/Nil)))))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret t4)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-t4
+    (λ ()
+      "Result: 10"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-err1
+    (λ ()
+      (letrec* ([err1 (analysis/benchmarks/koka-gen/interp2/SVar "z")])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret err1)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-err1
+    (λ ()
+      "FAILURE: Runtime Error: Variable 'z' not found"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-err2
+    (λ ()
+      (letrec* ([err2 (analysis/benchmarks/koka-gen/interp2/SPrim "+" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "x" std/core/types/Nil) (analysis/benchmarks/koka-gen/interp2/SVar "x")) std/core/types/Nil)))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret err2)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-err2
+    (λ ()
+      "FAILURE: Primitive error: Unknown op '+' or invalid args"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-err3
+    (λ ()
+      (letrec* ([err3 (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "x" (std/core/types/Cons "y" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SVar "x")) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) std/core/types/Nil))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret err3)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-err3
+    (λ ()
+      "FAILURE: Arity Mismatch: Expected 2 args, got 1"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-err4
+    (λ ()
+      (letrec* ([err4 (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SLit 5) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) std/core/types/Nil))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret err4)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-err4
+    (λ ()
+      "FAILURE: Type Error: Application on non-function"))
+  (define analysis/benchmarks/koka-gen/interp2/analyze-err5
+    (λ ()
+      (letrec* ([err5 (analysis/benchmarks/koka-gen/interp2/SPrim "modulo" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 3) std/core/types/Nil)))])
+        (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret err5)) std/core/types/id))))
+  (define analysis/benchmarks/koka-gen/interp2/result-err5
+    (λ ()
+      "FAILURE: Primitive error: Unknown op 'modulo' or invalid args"))
+  (define analysis/benchmarks/koka-gen/interp2/main
+    (λ ()
+      (letrec* ([_ (std/core/console/string/println "--- Koka Extended Interpreter ---")] [t1 (analysis/benchmarks/koka-gen/interp2/SLet "x" (analysis/benchmarks/koka-gen/interp2/SLit 10) (analysis/benchmarks/koka-gen/interp2/SPrim "*" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "x") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 2) std/core/types/Nil))))] [_ (std/core/console/string/println (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret t1)) std/core/show/string/show))] [t2 (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "x" (std/core/types/Cons "y" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SPrim "-" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "x") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "y") std/core/types/Nil)))) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 4) std/core/types/Nil)))] [_ (std/core/console/string/println (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret t2)) std/core/show/string/show))] [t3 (analysis/benchmarks/koka-gen/interp2/SLet "x" (analysis/benchmarks/koka-gen/interp2/SLit 100) (analysis/benchmarks/koka-gen/interp2/SLet "f" (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "y" std/core/types/Nil) (analysis/benchmarks/koka-gen/interp2/SPrim "+" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "x") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SVar "y") std/core/types/Nil)))) (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SVar "f") (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 5) std/core/types/Nil))))] [_ (std/core/console/string/println (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret t3)) std/core/show/string/show))] [t4 (analysis/benchmarks/koka-gen/interp2/SPrim "sum" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 1) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 2) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 3) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 4) std/core/types/Nil)))))] [_ (std/core/console/string/println (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret t4)) std/core/show/string/show))] [_ (std/core/console/string/println "\n--- Error Handling Tests ---")] [err1 (analysis/benchmarks/koka-gen/interp2/SVar "z")] [_ (std/core/console/string/println (std/core/types/++ "Test 1 (Unbound): " (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret err1)) std/core/show/string/show)))] [err2 (analysis/benchmarks/koka-gen/interp2/SPrim "+" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "x" std/core/types/Nil) (analysis/benchmarks/koka-gen/interp2/SVar "x")) std/core/types/Nil)))] [_ (std/core/console/string/println (std/core/types/++ "Test 2 (Type Error): " (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret err2)) std/core/show/string/show)))] [err3 (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SLam (std/core/types/Cons "x" (std/core/types/Cons "y" std/core/types/Nil)) (analysis/benchmarks/koka-gen/interp2/SVar "x")) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) std/core/types/Nil))] [_ (std/core/console/string/println (std/core/types/++ "Test 3 (Arity Error): " (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret err3)) std/core/show/string/show)))] [err4 (analysis/benchmarks/koka-gen/interp2/SApp (analysis/benchmarks/koka-gen/interp2/SLit 5) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) std/core/types/Nil))] [_ (std/core/console/string/println (std/core/types/++ "Test 4 (Not a Function): " (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+        (analysis/benchmarks/koka-gen/interp2/interpret err4)) std/core/show/string/show)))] [err5 (analysis/benchmarks/koka-gen/interp2/SPrim "modulo" (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 10) (std/core/types/Cons (analysis/benchmarks/koka-gen/interp2/SLit 3) std/core/types/Nil)))])
+        (std/core/console/string/println (std/core/types/++ "Test 5 (Unknown Prim): " (analysis/benchmarks/koka-gen/interp2/run-safe (λ ()
+          (analysis/benchmarks/koka-gen/interp2/interpret err5)) std/core/show/string/show)))))))

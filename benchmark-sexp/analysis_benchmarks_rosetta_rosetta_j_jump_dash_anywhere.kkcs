@@ -1,0 +1,105 @@
+(module
+  analysis/benchmarks/rosetta/rosetta/j/jump-anywhere
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit/h-tag hnd ret action)))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit/h-brk-exit
+    (λ (exit)
+      (match exit
+        [(analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-exit _ h-x) h-x])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-exit _ h-brk-exit) h-brk-exit])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit
+    (λ (a)
+      (perform analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit exit a)))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/find-first
+    (λ ()
+      ((λ (h-action)
+        (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit/h-handle (handler analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-exit [? h-brk-exit (std/core/hnd/clause-never1 (λ (a)
+          a))]) (λ (x)
+          "not found") h-action)) (λ ()
+        (std/core/range/for 0 10 (λ (i)
+          (match (std/core/int/== i 9)
+            [std/core/types/True (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/exit "Found 9")]
+            [std/core/types/False std/core/types/Unit])))))))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop/h-tag hnd ret action)))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop/h-brk-lbreak
+    (λ (loop)
+      (match loop
+        [(analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-loop _ h-x _) h-x])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lbreak/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-loop _ h-brk-lbreak _) h-brk-lbreak])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lbreak
+    (λ ()
+      (perform analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop lbreak)))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop/h-brk-lcontinue
+    (λ (loop)
+      (match loop
+        [(analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-loop _ _ h-x) h-x])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lcontinue/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-loop _ _ h-brk-lcontinue) h-brk-lcontinue])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lcontinue
+    (λ ()
+      (perform analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop lcontinue)))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop
+    (λ (check body)
+      (match (check)
+        [std/core/types/True (letrec* ([next ((λ (h-action)
+          (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop/h-handle (handler analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/h-Hnd-loop [? h-brk-lbreak (std/core/hnd/clause-never0 (λ ()
+            (λ ()
+              std/core/types/Unit)))] [? h-brk-lcontinue (std/core/hnd/clause-never0 (λ ()
+            (λ ()
+              (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop check body))))]) (λ (x)
+            (λ ()
+              (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop check body))) h-action)) body)])
+          (next))]
+        [std/core/types/False std/core/types/Unit])))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/main
+    (λ ()
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-1155 std/core/types/h-Hnodiv] [ievh-1223 std/core/types/h-Hnodiv] [ievh-1269 std/core/types/h-Hnodiv] [ievh-1413 std/core/types/h-Hnodiv] [ievh-1561 std/core/types/h-Hnodiv] [ievh-1709 std/core/types/h-Hnodiv] [ievh-1804 std/core/types/h-Hnodiv] [_ (std/core/console/string/println (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/find-first))])
+          (std/core/hnd/local-var 0 (λ (i)
+            (letrec* ([_ (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop (λ ()
+              (std/core/int/< (std/core/types/local-get i ievh-1155) 10)) (λ ()
+              (letrec* ([_ (std/core/types/local-set i (std/core/int/+ (std/core/types/local-get i ievh-1223) 1))])
+                (match (std/core/int/== (std/core/types/local-get i ievh-1269) 4)
+                  [std/core/types/True std/core/types/Unit]
+                  [std/core/types/False (letrec* ([_ std/core/types/Unit] [_ (match (std/core/int/== (std/core/types/local-get i ievh-1413) 5)
+                    [std/core/types/True (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lcontinue)]
+                    [std/core/types/False std/core/types/Unit])] [_ (match (std/core/int/== (std/core/types/local-get i ievh-1561) 8)
+                    [std/core/types/True (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lbreak)]
+                    [std/core/types/False std/core/types/Unit])])
+                    (std/core/console/default/show/println (std/core/types/local-get i ievh-1709) std/core/int/show))]))))])
+              (std/core/console/default/show/println (std/core/types/local-get i ievh-1804) std/core/int/show)))))))))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/analyze-e1
+    (λ ()
+      (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/find-first)))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/result-e1
+    (λ ()
+      "Found 9"))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/analyze-loop
+    (λ ()
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-1935 std/core/types/h-Hnodiv] [ievh-2003 std/core/types/h-Hnodiv] [ievh-2049 std/core/types/h-Hnodiv] [ievh-2197 std/core/types/h-Hnodiv] [ievh-2334 std/core/types/h-Hnodiv] [ievh-2377 std/core/types/h-Hnodiv] [ievh-2428 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var 0 (λ (i)
+            (std/core/hnd/local-var "" (λ (r)
+              (letrec* ([_ (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop (λ ()
+                (std/core/int/< (std/core/types/local-get i ievh-1935) 10)) (λ ()
+                (letrec* ([_ (std/core/types/local-set i (std/core/int/+ (std/core/types/local-get i ievh-2003) 1))] [_ (match (std/core/int/== (std/core/types/local-get i ievh-2049) 5)
+                  [std/core/types/True (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lcontinue)]
+                  [std/core/types/False std/core/types/Unit])] [_ (match (std/core/int/== (std/core/types/local-get i ievh-2197) 8)
+                  [std/core/types/True (analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/lbreak)]
+                  [std/core/types/False std/core/types/Unit])])
+                  (std/core/types/local-set r (std/core/types/++ (std/core/types/local-get r ievh-2334) (std/core/int/show (std/core/types/local-get i ievh-2377)))))))])
+                (std/core/types/local-get r ievh-2428)))))))))))
+  (define analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/result-loop
+    (λ ()
+      "123467")))

@@ -1,153 +1,147 @@
-((module std/core/exn)
-  (defs
-    (def std/core/exn/exn/h-cfc
-      (fn (exn)
-        (match exn
-          [(std/core/exn/h-Hnd-exn h-x _) h-x])))
-    (def std/core/exn/exn/h-tag
-      (std/core/hnd/h-new-htag ("exn@exn")))
-    (def std/core/exn/exn/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (std/core/exn/exn/h-tag hnd ret action))))
-    (def std/core/exn/exn/h-brk-throw-exn
-      (fn (exn)
-        (match exn
-          [(std/core/exn/h-Hnd-exn _ h-x) h-x])))
-    (def std/core/exn/throw-exn/h-select
-      (fn (hnd)
-        (match hnd
-          [(std/core/exn/h-Hnd-exn _ h-brk-throw-exn) h-brk-throw-exn])))
-    (def std/core/exn/throw-exn
-      (fn (exn)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) std/core/exn/throw-exn/h-select exn))))
-    (def std/core/exn/exception/info
-      (fn (exception)
-        (match exception
-          [(std/core/exn/Exception _ h-x) h-x])))
-    (def std/core/exn/exception/message
-      (fn (exception)
-        (match exception
-          [(std/core/exn/Exception h-x _) h-x])))
-    (def std/core/exn/exception/h-copy
-      (fn (h-this message info)
-        (letrec* ([h-uniq-messageh-369 (match message
-          [(std/core/types/h-Optional h-uniq-messageh-370) h-uniq-messageh-370]
-          [std/core/types/h-None (std/core/exn/exception/message (h-this))])] [h-uniq-infoh-377 (match info
-          [(std/core/types/h-Optional h-uniq-infoh-378) h-uniq-infoh-378]
-          [std/core/types/h-None (std/core/exn/exception/info (h-this))])])
-          (std/core/exn/Exception (h-uniq-messageh-369 h-uniq-infoh-377)))))
-    (def std/core/exn/h-tag-ExnError
-      "std/core/exn/ExnError")
-    (def std/core/exn/h-tag-ExnAssert
-      "std/core/exn/ExnAssert")
-    (def std/core/exn/h-tag-ExnTodo
-      "std/core/exn/ExnTodo")
-    (def std/core/exn/h-tag-ExnRange
-      "std/core/exn/ExnRange")
-    (def std/core/exn/h-tag-ExnPattern
-      "std/core/exn/ExnPattern")
-    (def std/core/exn/h-tag-ExnSystem
-      "std/core/exn/ExnSystem")
-    (def std/core/exn/h-tag-ExnInternal
-      "std/core/exn/ExnInternal")
-    (def std/core/exn/throw
-      (fn (message info)
-        (letrec* ([h-uniq-infoh-398 (match info
-          [(std/core/types/h-Optional h-uniq-infoh-399) h-uniq-infoh-399]
-          [std/core/types/h-None std/core/exn/ExnError])])
-          (std/core/exn/throw-exn ((std/core/exn/Exception (message h-uniq-infoh-398)))))))
-    (def std/core/exn/error-pattern
-      (fn (location definition)
-        (std/core/exn/throw ((std/core/types/++ (location (std/core/types/++ (": " (std/core/types/++ (definition ": pattern match failure")))))) (std/core/types/h-Optional ((std/core/exn/ExnPattern (location definition))))))))
-    (def std/core/exn/is-exnError
-      (fn (exception-info)
-        (match exception-info
-          [std/core/exn/ExnError std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-exnAssert
-      (fn (exception-info)
-        (match exception-info
-          [std/core/exn/ExnAssert std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-exnTodo
-      (fn (exception-info)
-        (match exception-info
-          [std/core/exn/ExnTodo std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-exnRange
-      (fn (exception-info)
-        (match exception-info
-          [std/core/exn/ExnRange std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-exnPattern
-      (fn (exception-info)
-        (match exception-info
-          [(std/core/exn/ExnPattern _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-exnSystem
-      (fn (exception-info)
-        (match exception-info
-          [(std/core/exn/ExnSystem _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-exnInternal
-      (fn (exception-info)
-        (match exception-info
-          [(std/core/exn/ExnInternal _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/show
-      (fn (exn)
-        (std/core/exn/exception/message (exn))))
-    (def std/core/exn/handle/try
-      (fn (action hndl)
-        ((fn (h-action)
-          (std/core/exn/exn/h-handle ((std/core/exn/h-Hnd-exn (0 (std/core/hnd/clause-never1 ((fn (exn)
-            (hndl (exn))))))) (fn (h-res)
-            h-res) h-action))) ((fn ()
-          (action ()))))))
-    (def std/core/exn/error/try
-      (fn (action)
-        (std/core/exn/handle/try ((fn ()
-          (std/core/exn/Ok ((action ())))) (fn (exn)
-          (std/core/exn/Error (exn)))))))
-    (def std/core/exn/catch
-      (fn (action hndl)
-        (std/core/exn/handle/try (action hndl))))
-    (def std/core/exn/is-error
-      (fn (error)
-        (match error
-          [(std/core/exn/Error (std/core/exn/Exception _ _)) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/is-ok
-      (fn (error)
-        (match error
-          [(std/core/exn/Ok _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/exn/untry
-      (fn (err)
-        (match err
-          [(std/core/exn/Error (as exn (std/core/exn/Exception _ _))) (std/core/exn/throw-exn (exn))]
-          [(std/core/exn/Ok x) x])))
-    (def std/core/exn/exn
-      (fn (err)
-        (std/core/exn/untry (err))))
-    (def std/core/exn/default
-      (fn (t def)
-        (match t
-          [(std/core/exn/Error (std/core/exn/Exception _ _)) def]
-          [(std/core/exn/Ok x) x])))
-    (def std/core/exn/maybe
-      (fn (t)
-        (match t
-          [(std/core/exn/Error (std/core/exn/Exception _ _)) std/core/types/Nothing]
-          [(std/core/exn/Ok x) (std/core/types/Just (x))])))
-    (def std/core/exn/either
-      (fn (t)
-        (match t
-          [(std/core/exn/Error (as exn (std/core/exn/Exception _ _))) (std/core/types/Left (exn))]
-          [(std/core/exn/Ok x) (std/core/types/Right (x))])))
-    (def std/core/exn/on-exit
-      (fn (hndler action)
-        (std/core/hnd/finally (hndler action))))
-    (def std/core/exn/exn-error-range
-      (fn ()
-        (std/core/exn/throw ("index out-of-range" (std/core/types/h-Optional (std/core/exn/ExnRange))))))))
+(module
+  std/core/exn
+  (define std/core/exn/exn/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle std/core/exn/exn/h-tag hnd ret action)))
+  (define std/core/exn/exn/h-brk-throw-exn
+    (λ (exn)
+      (match exn
+        [(std/core/exn/h-Hnd-exn _ h-x) h-x])))
+  (define std/core/exn/throw-exn/h-select
+    (λ (hnd)
+      (match hnd
+        [(std/core/exn/h-Hnd-exn _ h-brk-throw-exn) h-brk-throw-exn])))
+  (define std/core/exn/throw-exn
+    (λ (exn)
+      (perform std/core/exn/exn throw-exn exn)))
+  (define std/core/exn/exception/info
+    (λ (exception)
+      (match exception
+        [(std/core/exn/Exception _ h-x) h-x])))
+  (define std/core/exn/exception/message
+    (λ (exception)
+      (match exception
+        [(std/core/exn/Exception h-x _) h-x])))
+  (define std/core/exn/exception/h-copy
+    (λ (h-this message info)
+      (letrec* ([h-uniq-messageh-369 (match message
+        [(std/core/types/h-Optional h-uniq-messageh-370) h-uniq-messageh-370]
+        [std/core/types/h-None (std/core/exn/exception/message h-this)])] [h-uniq-infoh-377 (match info
+        [(std/core/types/h-Optional h-uniq-infoh-378) h-uniq-infoh-378]
+        [std/core/types/h-None (std/core/exn/exception/info h-this)])])
+        (std/core/exn/Exception h-uniq-messageh-369 h-uniq-infoh-377))))
+  (define std/core/exn/h-tag-ExnError
+    "std/core/exn/ExnError")
+  (define std/core/exn/h-tag-ExnAssert
+    "std/core/exn/ExnAssert")
+  (define std/core/exn/h-tag-ExnTodo
+    "std/core/exn/ExnTodo")
+  (define std/core/exn/h-tag-ExnRange
+    "std/core/exn/ExnRange")
+  (define std/core/exn/h-tag-ExnPattern
+    "std/core/exn/ExnPattern")
+  (define std/core/exn/h-tag-ExnSystem
+    "std/core/exn/ExnSystem")
+  (define std/core/exn/h-tag-ExnInternal
+    "std/core/exn/ExnInternal")
+  (define std/core/exn/throw
+    (λ (message info)
+      (letrec* ([h-uniq-infoh-398 (match info
+        [(std/core/types/h-Optional h-uniq-infoh-399) h-uniq-infoh-399]
+        [std/core/types/h-None std/core/exn/ExnError])])
+        (std/core/exn/throw-exn (std/core/exn/Exception message h-uniq-infoh-398)))))
+  (define std/core/exn/error-pattern
+    (λ (location definition)
+      (std/core/exn/throw (std/core/types/++ location (std/core/types/++ ": " (std/core/types/++ definition ": pattern match failure"))) (std/core/types/h-Optional (std/core/exn/ExnPattern location definition)))))
+  (define std/core/exn/is-exnError
+    (λ (exception-info)
+      (match exception-info
+        [std/core/exn/ExnError std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-exnAssert
+    (λ (exception-info)
+      (match exception-info
+        [std/core/exn/ExnAssert std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-exnTodo
+    (λ (exception-info)
+      (match exception-info
+        [std/core/exn/ExnTodo std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-exnRange
+    (λ (exception-info)
+      (match exception-info
+        [std/core/exn/ExnRange std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-exnPattern
+    (λ (exception-info)
+      (match exception-info
+        [(std/core/exn/ExnPattern _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-exnSystem
+    (λ (exception-info)
+      (match exception-info
+        [(std/core/exn/ExnSystem _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-exnInternal
+    (λ (exception-info)
+      (match exception-info
+        [(std/core/exn/ExnInternal _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/show
+    (λ (exn)
+      (std/core/exn/exception/message exn)))
+  (define std/core/exn/handle/try
+    (λ (action hndl)
+      ((λ (h-action)
+        (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [? h-brk-throw-exn (std/core/hnd/clause-never1 (λ (exn)
+          (hndl exn)))]) (λ (h-res)
+          h-res) h-action)) (λ ()
+        (action)))))
+  (define std/core/exn/error/try
+    (λ (action)
+      (std/core/exn/handle/try (λ ()
+        (std/core/exn/Ok (action))) (λ (exn)
+        (std/core/exn/Error exn)))))
+  (define std/core/exn/catch
+    (λ (action hndl)
+      (std/core/exn/handle/try action hndl)))
+  (define std/core/exn/is-error
+    (λ (error)
+      (match error
+        [(std/core/exn/Error (std/core/exn/Exception _ _)) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/is-ok
+    (λ (error)
+      (match error
+        [(std/core/exn/Ok _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/exn/untry
+    (λ (err)
+      (match err
+        [(std/core/exn/Error (as exn (std/core/exn/Exception _ _))) (std/core/exn/throw-exn exn)]
+        [(std/core/exn/Ok x) x])))
+  (define std/core/exn/exn
+    (λ (err)
+      (std/core/exn/untry err)))
+  (define std/core/exn/default
+    (λ (t def)
+      (match t
+        [(std/core/exn/Error (std/core/exn/Exception _ _)) def]
+        [(std/core/exn/Ok x) x])))
+  (define std/core/exn/maybe
+    (λ (t)
+      (match t
+        [(std/core/exn/Error (std/core/exn/Exception _ _)) std/core/types/Nothing]
+        [(std/core/exn/Ok x) (std/core/types/Just x)])))
+  (define std/core/exn/either
+    (λ (t)
+      (match t
+        [(std/core/exn/Error (as exn (std/core/exn/Exception _ _))) (std/core/types/Left exn)]
+        [(std/core/exn/Ok x) (std/core/types/Right x)])))
+  (define std/core/exn/on-exit
+    (λ (hndler action)
+      (std/core/hnd/finally hndler action)))
+  (define std/core/exn/exn-error-range
+    (λ ()
+      (std/core/exn/throw "index out-of-range" (std/core/types/h-Optional std/core/exn/ExnRange)))))

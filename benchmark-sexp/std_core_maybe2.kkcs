@@ -1,65 +1,65 @@
-((module std/core/maybe2)
-  (defs
-    (def std/core/maybe2/maybe2
-      (fn (m onNothing onJust)
-        (match m
-          [std/core/types/Nothing2 onNothing]
-          [(std/core/types/Just2 x y) (onJust (x y))])))
-    (def std/core/maybe2/default
-      (fn (m nothing)
-        (match m
-          [std/core/types/Nothing2 nothing]
-          [(std/core/types/Just2 x y) (std/core/types/Tuple2 (x y))])))
-    (def std/core/maybe2/unjust
-      (fn (m h-implicit/kk-file-line)
-        (match m
-          [(std/core/types/Just2 x y) (std/core/types/Tuple2 (x y))]
-          [std/core/types/Nothing2 (std/core/exn/throw ((std/core/types/++ ("unexpected Nothing2 in " h-implicit/kk-file-line)) std/core/types/h-None))])))
-    (def std/core/maybe2/expect
-      (fn (m error-msg)
-        (match m
-          [(std/core/types/Just2 x y) (std/core/types/Tuple2 (x y))]
-          [std/core/types/Nothing2 (std/core/exn/throw (error-msg std/core/types/h-None))])))
-    (def std/core/maybe2/map
-      (fn (m f)
-        (match m
-          [std/core/types/Nothing2 std/core/types/Nothing2]
-          [(std/core/types/Just2 x y) (match (f (x y))
-            [(std/core/types/Tuple2 fx fy) (std/core/types/Just2 (fx fy))])])))
-    (def |std/core/maybe2/|||
-      (fn (m1 m2)
-        (match m1
-          [std/core/types/Nothing2 m2]
-          [_ m1])))
-    (def std/core/maybe2/==
-      (fn (mb1 mb2 h-implicit/fst/== h-implicit/snd/==)
-        (match mb1
-          [(std/core/types/Just2 x y) (match mb2
-            [(std/core/types/Just2 a b) (match (h-implicit/fst/== (x a))
-              [std/core/types/True (h-implicit/snd/== (y b))]
-              [_ std/core/types/False])]
-            [std/core/types/Nothing2 std/core/types/False])]
-          [std/core/types/Nothing2 (match mb2
-            [std/core/types/Nothing2 std/core/types/True]
-            [_ std/core/types/False])])))
-    (def std/core/maybe2/cmp
-      (fn (mb1 mb2 h-implicit/fst/cmp h-implicit/snd/cmp)
-        (match mb1
-          [(std/core/types/Just2 x y) (match mb2
-            [(std/core/types/Just2 a b) (match (h-implicit/fst/cmp (x a))
-              [std/core/types/Eq (h-implicit/snd/cmp (y b))]
-              [lg lg])]
-            [std/core/types/Nothing2 std/core/types/Gt])]
-          [std/core/types/Nothing2 (match mb2
-            [std/core/types/Nothing2 std/core/types/Eq]
-            [_ std/core/types/Lt])])))
-    (def std/core/maybe2/show
-      (fn (mb h-implicit/fst/show h-implicit/snd/show)
-        (match mb
-          [(std/core/types/Just2 x y) (std/core/types/++ ("Just2(" (std/core/types/++ ((h-implicit/fst/show (x)) (std/core/types/++ ("," (std/core/types/++ ((h-implicit/snd/show (y)) ")"))))))))]
-          [std/core/types/Nothing2 "Nothing2"])))
-    (def std/core/maybe2/bool
-      (fn (mb)
-        (match mb
-          [(std/core/types/Just2 _ _) std/core/types/True]
-          [std/core/types/Nothing2 std/core/types/False])))))
+(module
+  std/core/maybe2
+  (define std/core/maybe2/maybe2
+    (λ (m onNothing onJust)
+      (match m
+        [std/core/types/Nothing2 onNothing]
+        [(std/core/types/Just2 x y) (onJust x y)])))
+  (define std/core/maybe2/default
+    (λ (m nothing)
+      (match m
+        [std/core/types/Nothing2 nothing]
+        [(std/core/types/Just2 x y) (std/core/types/Tuple2 x y)])))
+  (define std/core/maybe2/unjust
+    (λ (m h-implicit/kk-file-line)
+      (match m
+        [(std/core/types/Just2 x y) (std/core/types/Tuple2 x y)]
+        [std/core/types/Nothing2 (std/core/exn/throw (std/core/types/++ "unexpected Nothing2 in " h-implicit/kk-file-line) std/core/types/h-None)])))
+  (define std/core/maybe2/expect
+    (λ (m error-msg)
+      (match m
+        [(std/core/types/Just2 x y) (std/core/types/Tuple2 x y)]
+        [std/core/types/Nothing2 (std/core/exn/throw error-msg std/core/types/h-None)])))
+  (define std/core/maybe2/map
+    (λ (m f)
+      (match m
+        [std/core/types/Nothing2 std/core/types/Nothing2]
+        [(std/core/types/Just2 x y) (match (f x y)
+          [(std/core/types/Tuple2 fx fy) (std/core/types/Just2 fx fy)])])))
+  (define |std/core/maybe2/|||
+    (λ (m1 m2)
+      (match m1
+        [std/core/types/Nothing2 m2]
+        [_ m1])))
+  (define std/core/maybe2/==
+    (λ (mb1 mb2 h-implicit/fst/== h-implicit/snd/==)
+      (match mb1
+        [(std/core/types/Just2 x y) (match mb2
+          [(std/core/types/Just2 a b) (match (h-implicit/fst/== x a)
+            [std/core/types/True (h-implicit/snd/== y b)]
+            [_ std/core/types/False])]
+          [std/core/types/Nothing2 std/core/types/False])]
+        [std/core/types/Nothing2 (match mb2
+          [std/core/types/Nothing2 std/core/types/True]
+          [_ std/core/types/False])])))
+  (define std/core/maybe2/cmp
+    (λ (mb1 mb2 h-implicit/fst/cmp h-implicit/snd/cmp)
+      (match mb1
+        [(std/core/types/Just2 x y) (match mb2
+          [(std/core/types/Just2 a b) (match (h-implicit/fst/cmp x a)
+            [std/core/types/Eq (h-implicit/snd/cmp y b)]
+            [lg lg])]
+          [std/core/types/Nothing2 std/core/types/Gt])]
+        [std/core/types/Nothing2 (match mb2
+          [std/core/types/Nothing2 std/core/types/Eq]
+          [_ std/core/types/Lt])])))
+  (define std/core/maybe2/show
+    (λ (mb h-implicit/fst/show h-implicit/snd/show)
+      (match mb
+        [(std/core/types/Just2 x y) (std/core/types/++ "Just2(" (std/core/types/++ (h-implicit/fst/show x) (std/core/types/++ "," (std/core/types/++ (h-implicit/snd/show y) ")"))))]
+        [std/core/types/Nothing2 "Nothing2"])))
+  (define std/core/maybe2/bool
+    (λ (mb)
+      (match mb
+        [(std/core/types/Just2 _ _) std/core/types/True]
+        [std/core/types/Nothing2 std/core/types/False]))))

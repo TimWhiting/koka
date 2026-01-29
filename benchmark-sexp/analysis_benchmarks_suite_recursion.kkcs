@@ -1,197 +1,191 @@
-((module analysis/benchmarks/suite/recursion)
-  (defs
-    (def analysis/benchmarks/suite/recursion/iter/h-cfc
-      (fn (iter)
-        (match iter
-          [(analysis/benchmarks/suite/recursion/h-Hnd-iter h-x _) h-x])))
-    (def analysis/benchmarks/suite/recursion/iter/h-tag
-      (std/core/hnd/h-new-htag ("iter@recursion")))
-    (def analysis/benchmarks/suite/recursion/iter/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/recursion/iter/h-tag hnd ret action))))
-    (def analysis/benchmarks/suite/recursion/iter/h-ctl-it
-      (fn (iter)
-        (match iter
-          [(analysis/benchmarks/suite/recursion/h-Hnd-iter _ h-x) h-x])))
-    (def analysis/benchmarks/suite/recursion/it/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/suite/recursion/h-Hnd-iter _ h-ctl-it) h-ctl-it])))
-    (def analysis/benchmarks/suite/recursion/it
-      (fn (i)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/recursion/it/h-select i))))
-    (def analysis/benchmarks/suite/recursion/iterxx
-      (fn (n)
-        (match (std/core/int/== (n 0))
-          [std/core/types/True 0]
-          [std/core/types/False (letrec* ([n0 (analysis/benchmarks/suite/recursion/iterxx ((std/core/int/- (n 1))))] [_ (analysis/benchmarks/suite/recursion/it (n))])
-            n0)])))
-    (def analysis/benchmarks/suite/recursion/iterx
-      (fn (n)
-        (match (std/core/int/== (n 0))
-          [std/core/types/True -1]
-          [std/core/types/False (letrec* ([_ (analysis/benchmarks/suite/recursion/it (n))])
-            (analysis/benchmarks/suite/recursion/iterx ((std/core/int/- (n 1)))))])))
-    (def analysis/benchmarks/suite/recursion/iter
-      (fn (n)
-        (match (std/core/int/== (n 0))
-          [std/core/types/True 0]
-          [std/core/types/False (letrec* ([_ (analysis/benchmarks/suite/recursion/it (n))])
-            (analysis/benchmarks/suite/recursion/iter ((std/core/int/- (n 1)))))])))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_suma"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ (a (resume (a))))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iter (1))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum
-      (fn ()
-        1))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-handler
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_suma"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ (a (resume (a))))))))) (fn (x)
-              0) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iter (1))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-handler
-      (fn ()
-        1))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-two
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sum2a"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ (a (resume (a))))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iter (2))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-two
-      (fn ()
-        3))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-b
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sum1b"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ ((resume (a)) a))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iter (1))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-b
-      (fn ()
-        1))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-two-b
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sum2b"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ ((resume (a)) a))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iter (2))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-two-b
-      (fn ()
-        3))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-c
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sumc"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ (a (resume (a))))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iterxx (1))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-c
-      (fn ()
-        1))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-two-c
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sum2c"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ (a (resume (a))))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iterxx (2))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-two-c
-      (fn ()
-        3))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-d
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sum1d"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ ((resume (a)) a))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iterxx (1))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-d
-      (fn ()
-        1))
-    (def analysis/benchmarks/suite/recursion/analyze-iter-sum-two-d
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example x_sum2d"))])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/recursion/iter/h-handle ((analysis/benchmarks/suite/recursion/h-Hnd-iter (3 (std/core/hnd/clause-control1 ((fn (a resume)
-              (std/core/int/+ ((resume (a)) a))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            (analysis/benchmarks/suite/recursion/iterxx (2))))))))
-    (def analysis/benchmarks/suite/recursion/result-iter-sum-two-d
-      (fn ()
-        3))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-handler
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-handler ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-handler ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-handler passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-handler FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-handler ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-two
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-two ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-two passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-two FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-two ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-b
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-b ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-b ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-b passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-b FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-b ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-two-b
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two-b ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-two-b ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-two-b passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-two-b FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-two-b ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-c
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-c ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-c ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-c passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-c FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-c ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-two-c
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two-c ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-two-c ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-two-c passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-two-c FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-two-c ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-d
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-d ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-d ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-d passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-d FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-d ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/test-iter-sum-two-d
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two-d ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/recursion/result-iter-sum-two-d ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-iter-sum-two-d passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-iter-sum-two-d FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/recursion/result-iter-sum-two-d ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/recursion/main
-      (fn ()
-        (letrec* ([_ (std/core/console/string/println ("Running recursion tests..."))] [_ (analysis/benchmarks/suite/recursion/test-iter-sum ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-handler ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-b ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two-b ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-c ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two-c ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-d ())] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two-d ())])
-          (std/core/console/string/println ("recursion tests complete")))))))
+(module
+  analysis/benchmarks/suite/recursion
+  (define analysis/benchmarks/suite/recursion/iter/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/suite/recursion/iter/h-tag hnd ret action)))
+  (define analysis/benchmarks/suite/recursion/iter/h-ctl-it
+    (λ (iter)
+      (match iter
+        [(analysis/benchmarks/suite/recursion/h-Hnd-iter _ h-x) h-x])))
+  (define analysis/benchmarks/suite/recursion/it/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/suite/recursion/h-Hnd-iter _ h-ctl-it) h-ctl-it])))
+  (define analysis/benchmarks/suite/recursion/it
+    (λ (i)
+      (perform analysis/benchmarks/suite/recursion/iter it i)))
+  (define analysis/benchmarks/suite/recursion/iterxx
+    (λ (n)
+      (match (std/core/int/== n 0)
+        [std/core/types/True 0]
+        [std/core/types/False (letrec* ([n0 (analysis/benchmarks/suite/recursion/iterxx (std/core/int/- n 1))] [_ (analysis/benchmarks/suite/recursion/it n)])
+          n0)])))
+  (define analysis/benchmarks/suite/recursion/iterx
+    (λ (n)
+      (match (std/core/int/== n 0)
+        [std/core/types/True -1]
+        [std/core/types/False (letrec* ([_ (analysis/benchmarks/suite/recursion/it n)])
+          (analysis/benchmarks/suite/recursion/iterx (std/core/int/- n 1)))])))
+  (define analysis/benchmarks/suite/recursion/iter
+    (λ (n)
+      (match (std/core/int/== n 0)
+        [std/core/types/True 0]
+        [std/core/types/False (letrec* ([_ (analysis/benchmarks/suite/recursion/it n)])
+          (analysis/benchmarks/suite/recursion/iter (std/core/int/- n 1)))])))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_suma")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ a (resume a))))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iter 1))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum
+    (λ ()
+      1))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-handler
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_suma")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ a (resume a))))]) (λ (x)
+            0) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iter 1))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-handler
+    (λ ()
+      1))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-two
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sum2a")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ a (resume a))))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iter 2))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-two
+    (λ ()
+      3))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-b
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sum1b")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iter 1))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-b
+    (λ ()
+      1))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-two-b
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sum2b")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iter 2))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-two-b
+    (λ ()
+      3))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-c
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sumc")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ a (resume a))))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iterxx 1))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-c
+    (λ ()
+      1))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-two-c
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sum2c")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ a (resume a))))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iterxx 2))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-two-c
+    (λ ()
+      3))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-d
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sum1d")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iterxx 1))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-d
+    (λ ()
+      1))
+  (define analysis/benchmarks/suite/recursion/analyze-iter-sum-two-d
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example x_sum2d")])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/recursion/iter/h-handle (handler analysis/benchmarks/suite/recursion/h-Hnd-iter [ctl it (std/core/hnd/clause-control1 (λ (a resume)
+            (std/core/int/+ (resume a) a)))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          (analysis/benchmarks/suite/recursion/iterxx 2))))))
+  (define analysis/benchmarks/suite/recursion/result-iter-sum-two-d
+    (λ ()
+      3))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-handler
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-handler)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-handler))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-handler passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-handler FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-handler)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-two
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-two))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-two passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-two FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-two)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-b
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-b)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-b))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-b passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-b FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-b)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-two-b
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two-b)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-two-b))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-two-b passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-two-b FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-two-b)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-c
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-c)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-c))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-c passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-c FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-c)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-two-c
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two-c)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-two-c))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-two-c passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-two-c FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-two-c)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-d
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-d)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-d))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-d passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-d FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-d)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/test-iter-sum-two-d
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/recursion/analyze-iter-sum-two-d)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/recursion/result-iter-sum-two-d))
+          [std/core/types/True (std/core/console/string/println "✓ test-iter-sum-two-d passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-iter-sum-two-d FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/recursion/result-iter-sum-two-d)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/recursion/main
+    (λ ()
+      (letrec* ([_ (std/core/console/string/println "Running recursion tests...")] [_ (analysis/benchmarks/suite/recursion/test-iter-sum)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-handler)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-b)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two-b)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-c)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two-c)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-d)] [_ (analysis/benchmarks/suite/recursion/test-iter-sum-two-d)])
+        (std/core/console/string/println "recursion tests complete")))))

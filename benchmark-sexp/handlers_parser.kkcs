@@ -1,163 +1,151 @@
-((module handlers/parser)
-  (defs
-    (def handlers/parser/many/h-cfc
-      (fn (many)
-        (match many
-          [(handlers/parser/h-Hnd-many h-x _ _) h-x])))
-    (def handlers/parser/many/h-tag
-      (std/core/hnd/h-new-htag ("many@parser")))
-    (def handlers/parser/many/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (handlers/parser/many/h-tag hnd ret action))))
-    (def handlers/parser/many/h-ctl-flip
-      (fn (many)
-        (match many
-          [(handlers/parser/h-Hnd-many _ _ h-x) h-x])))
-    (def handlers/parser/flip/h-select
-      (fn (hnd)
-        (match hnd
-          [(handlers/parser/h-Hnd-many _ _ h-ctl-flip) h-ctl-flip])))
-    (def handlers/parser/flip
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/parser/flip/h-select))))
-    (def handlers/parser/many/h-ctl-fail
-      (fn (many)
-        (match many
-          [(handlers/parser/h-Hnd-many _ h-x _) h-x])))
-    (def handlers/parser/fail/h-select
-      (fn (hnd)
-        (match hnd
-          [(handlers/parser/h-Hnd-many _ h-ctl-fail _) h-ctl-fail])))
-    (def handlers/parser/fail
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/parser/fail/h-select))))
-    (def handlers/parser/select
-      (fn (xs)
-        (match xs
-          [std/core/types/Nil (handlers/parser/fail ())]
-          [(std/core/types/Cons x xx) (match (handlers/parser/flip ())
-            [std/core/types/True x]
-            [std/core/types/False (handlers/parser/select (xx))])])))
-    (def handlers/parser/solutions
-      (fn (h-action)
-        (handlers/parser/many/h-handle ((handlers/parser/h-Hnd-many (3 (std/core/hnd/clause-control0 ((fn (resume)
-          std/core/types/Nil))) (std/core/hnd/clause-control0 ((fn (resume)
-          (std/core/list/++ ((resume (std/core/types/True)) (resume (std/core/types/False))))))))) (fn (x)
-          (std/core/types/Cons (x std/core/types/Nil))) h-action))))
-    (def handlers/parser/eager
-      (fn (h-action)
-        (handlers/parser/many/h-handle ((handlers/parser/h-Hnd-many (3 (std/core/hnd/clause-control0 ((fn (resume)
-          std/core/types/Nil))) (std/core/hnd/clause-control0 ((fn (resume)
-          (match (resume (std/core/types/True))
-            [std/core/types/Nil (resume (std/core/types/False))]
-            [xs xs])))))) (fn (x)
-          (std/core/types/Cons (x std/core/types/Nil))) h-action))))
-    (def handlers/parser/choice
-      (fn (p1 p2)
-        (match (handlers/parser/flip ())
-          [std/core/types/True (p1 ())]
-          [std/core/types/False (p2 ())])))
-    (def handlers/parser/many
-      (fn (p)
-        (handlers/parser/choice ((fn ()
-          (handlers/parser/many1 (p))) (fn ()
-          std/core/types/Nil)))))
-    (def handlers/parser/many1
-      (fn (p)
-        (std/core/types/Cons ((p ()) (handlers/parser/many (p))))))
-    (def handlers/parser/parse/h-cfc
-      (fn (parse)
-        (match parse
-          [(handlers/parser/h-Hnd-parse h-x _) h-x])))
-    (def handlers/parser/parse/h-tag
-      (std/core/hnd/h-new-htag ("parse@parser")))
-    (def handlers/parser/parse/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (handlers/parser/parse/h-tag hnd ret action))))
-    (def handlers/parser/parse/h-fun-satisfy
-      (fn (parse)
-        (match parse
-          [(handlers/parser/h-Hnd-parse _ h-x) h-x])))
-    (def handlers/parser/satisfy/h-select
-      (fn (hnd)
-        (match hnd
-          [(handlers/parser/h-Hnd-parse _ h-fun-satisfy) h-fun-satisfy])))
-    (def handlers/parser/satisfy
-      (fn (pred)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) handlers/parser/satisfy/h-select pred))))
-    (def handlers/parser/parse
-      (fn (inp action)
-        (std/core/types/local-scope ((fn ()
-          (letrec* ([ievh-1195 std/core/types/h-Hnodiv] [ievh-1337 std/core/types/h-Hnodiv])
-            (std/core/hnd/local-var (inp (fn (input)
-              ((fn (h-action)
-                (handlers/parser/parse/h-handle ((handlers/parser/h-Hnd-parse (1 (letrec* ([ievh-1269 std/core/types/h-Hnodiv])
-                  (std/core/hnd/clause-tail1 ((fn (pred)
-                    (match (pred ((std/core/types/local-get (input ievh-1269))))
-                      [std/core/types/Nothing (handlers/parser/fail ())]
-                      [(std/core/types/Just (std/core/types/Tuple2 res rest)) (letrec* ([_ (std/core/types/local-set (input rest))])
-                        res)]))))))) (fn (x)
-                  (std/core/types/Tuple2 (x (std/core/types/local-get (input ievh-1337))))) h-action))) ((fn ()
-                (std/core/hnd/h-mask-builtin ((fn ()
-                  (action ()))))))))))))))))
-    (def handlers/parser/char
-      (fn (p)
-        (handlers/parser/satisfy ((fn (input)
-          (letrec* ([sc (std/core/sslice/head (input))])
-            (match (std/core/string/list (sc))
-              [(std/core/types/Cons c std/core/types/Nil) (std/core/types/Just ((std/core/types/Tuple2 (c (std/core/sslice/tail (input))))))]
-              [_ std/core/types/Nothing])))))))
-    (def handlers/parser/symbol
-      (fn (c)
-        (letrec* ([_ (handlers/parser/char ((fn (d)
-          (std/core/char/== (c d)))))])
-          std/core/types/Unit)))
-    (def handlers/parser/digit
-      (fn ()
-        (std/core/char/int ((std/core/char/- ((handlers/parser/char (std/core/char/is-digit)) (char "0")))))))
-    (def handlers/parser/alpha
-      (fn ()
-        (std/core/char/int ((std/core/char/- ((handlers/parser/char (std/core/char/is-alpha)) (char "a")))))))
-    (def handlers/parser/number
-      (fn ()
-        (std/core/list/foldl ((handlers/parser/many1 (handlers/parser/digit)) 0 (fn (n d)
-          (std/core/int/+ ((std/core/int/* (10 n)) d)))))))
-    (def handlers/parser/expr
-      (fn ()
-        (handlers/parser/choice ((fn ()
-          (letrec* ([i (handlers/parser/term ())] [_ (handlers/parser/symbol ((char "+")))] [j (handlers/parser/term ())])
-            (std/core/int/+ (i j)))) (fn ()
-          (handlers/parser/term ()))))))
-    (def handlers/parser/factor
-      (fn ()
-        (handlers/parser/choice (handlers/parser/number (fn ()
-          (letrec* ([_ (handlers/parser/symbol ((char "(")))] [i (handlers/parser/expr ())] [_ (handlers/parser/symbol ((char ")")))])
-            i))))))
-    (def handlers/parser/term
-      (fn ()
-        (handlers/parser/choice ((fn ()
-          (letrec* ([i (handlers/parser/factor ())] [_ (handlers/parser/symbol ((char "*")))] [j (handlers/parser/factor ())])
-            (std/core/int/* (i j)))) (fn ()
-          (handlers/parser/factor ()))))))
-    (def handlers/parser/mparse
-      (fn (p input)
-        (handlers/parser/solutions ((fn ()
-          (handlers/parser/parse (input p)))))))
-    (def handlers/parser/eparse
-      (fn (p input)
-        (handlers/parser/eager ((fn ()
-          (handlers/parser/parse (input p)))))))
-    (def handlers/parser/example1
-      (fn ()
-        (std/core/console/default/show/println ((handlers/parser/mparse (handlers/parser/expr "1+2*3")) (fn (h-arg-x1)
-          (std/core/list/show (h-arg-x1 (fn (h-arg-x1)
-            (std/core/tuple/tuple2/show (h-arg-x1 std/core/int/show std/core/show/string/show))))))))))
-    (def handlers/parser/example2
-      (fn ()
-        (std/core/console/default/show/println ((handlers/parser/eparse (handlers/parser/expr "1+2*3")) (fn (h-arg-x1)
-          (std/core/list/show (h-arg-x1 (fn (h-arg-x1)
-            (std/core/tuple/tuple2/show (h-arg-x1 std/core/int/show std/core/show/string/show))))))))))
-    (def handlers/parser/main
-      (fn ()
-        (letrec* ([_ (handlers/parser/example1 ())])
-          (handlers/parser/example2 ()))))))
+(module
+  handlers/parser
+  (define handlers/parser/many/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle handlers/parser/many/h-tag hnd ret action)))
+  (define handlers/parser/many/h-ctl-flip
+    (λ (many)
+      (match many
+        [(handlers/parser/h-Hnd-many _ _ h-x) h-x])))
+  (define handlers/parser/flip/h-select
+    (λ (hnd)
+      (match hnd
+        [(handlers/parser/h-Hnd-many _ _ h-ctl-flip) h-ctl-flip])))
+  (define handlers/parser/flip
+    (λ ()
+      (perform handlers/parser/many flip)))
+  (define handlers/parser/many/h-ctl-fail
+    (λ (many)
+      (match many
+        [(handlers/parser/h-Hnd-many _ h-x _) h-x])))
+  (define handlers/parser/fail/h-select
+    (λ (hnd)
+      (match hnd
+        [(handlers/parser/h-Hnd-many _ h-ctl-fail _) h-ctl-fail])))
+  (define handlers/parser/fail
+    (λ ()
+      (perform handlers/parser/many fail)))
+  (define handlers/parser/select
+    (λ (xs)
+      (match xs
+        [std/core/types/Nil (handlers/parser/fail)]
+        [(std/core/types/Cons x xx) (match (handlers/parser/flip)
+          [std/core/types/True x]
+          [std/core/types/False (handlers/parser/select xx)])])))
+  (define handlers/parser/solutions
+    (λ (h-action)
+      (handlers/parser/many/h-handle (handler handlers/parser/h-Hnd-many [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        std/core/types/Nil))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (x)
+        (std/core/types/Cons x std/core/types/Nil)) h-action)))
+  (define handlers/parser/eager
+    (λ (h-action)
+      (handlers/parser/many/h-handle (handler handlers/parser/h-Hnd-many [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        std/core/types/Nil))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+        (match (resume std/core/types/True)
+          [std/core/types/Nil (resume std/core/types/False)]
+          [xs xs])))]) (λ (x)
+        (std/core/types/Cons x std/core/types/Nil)) h-action)))
+  (define handlers/parser/choice
+    (λ (p1 p2)
+      (match (handlers/parser/flip)
+        [std/core/types/True (p1)]
+        [std/core/types/False (p2)])))
+  (define handlers/parser/many
+    (λ (p)
+      (handlers/parser/choice (λ ()
+        (handlers/parser/many1 p)) (λ ()
+        std/core/types/Nil))))
+  (define handlers/parser/many1
+    (λ (p)
+      (std/core/types/Cons (p) (handlers/parser/many p))))
+  (define handlers/parser/parse/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle handlers/parser/parse/h-tag hnd ret action)))
+  (define handlers/parser/parse/h-fun-satisfy
+    (λ (parse)
+      (match parse
+        [(handlers/parser/h-Hnd-parse _ h-x) h-x])))
+  (define handlers/parser/satisfy/h-select
+    (λ (hnd)
+      (match hnd
+        [(handlers/parser/h-Hnd-parse _ h-fun-satisfy) h-fun-satisfy])))
+  (define handlers/parser/satisfy
+    (λ (pred)
+      (perform handlers/parser/parse satisfy pred)))
+  (define handlers/parser/parse
+    (λ (inp action)
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-1195 std/core/types/h-Hnodiv] [ievh-1337 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var inp (λ (input)
+            ((λ (h-action)
+              (handlers/parser/parse/h-handle (handler handlers/parser/h-Hnd-parse [fun satisfy (letrec* ([ievh-1269 std/core/types/h-Hnodiv])
+                (std/core/hnd/clause-tail1 (λ (pred)
+                  (match (pred (std/core/types/local-get input ievh-1269))
+                    [std/core/types/Nothing (handlers/parser/fail)]
+                    [(std/core/types/Just (std/core/types/Tuple2 res rest)) (letrec* ([_ (std/core/types/local-set input rest)])
+                      res)]))))]) (λ (x)
+                (std/core/types/Tuple2 x (std/core/types/local-get input ievh-1337))) h-action)) (λ ()
+              (std/core/hnd/h-mask-builtin (λ ()
+                (action))))))))))))
+  (define handlers/parser/char
+    (λ (p)
+      (handlers/parser/satisfy (λ (input)
+        (letrec* ([sc (std/core/sslice/head input)])
+          (match (std/core/string/list sc)
+            [(std/core/types/Cons c std/core/types/Nil) (std/core/types/Just (std/core/types/Tuple2 c (std/core/sslice/tail input)))]
+            [_ std/core/types/Nothing]))))))
+  (define handlers/parser/symbol
+    (λ (c)
+      (letrec* ([_ (handlers/parser/char (λ (d)
+        (std/core/char/== c d)))])
+        std/core/types/Unit)))
+  (define handlers/parser/digit
+    (λ ()
+      (std/core/char/int (std/core/char/- (handlers/parser/char std/core/char/is-digit) (char "0")))))
+  (define handlers/parser/alpha
+    (λ ()
+      (std/core/char/int (std/core/char/- (handlers/parser/char std/core/char/is-alpha) (char "a")))))
+  (define handlers/parser/number
+    (λ ()
+      (std/core/list/foldl (handlers/parser/many1 handlers/parser/digit) 0 (λ (n d)
+        (std/core/int/+ (std/core/int/* 10 n) d)))))
+  (define handlers/parser/expr
+    (λ ()
+      (handlers/parser/choice (λ ()
+        (letrec* ([i (handlers/parser/term)] [_ (handlers/parser/symbol (char "+"))] [j (handlers/parser/term)])
+          (std/core/int/+ i j))) (λ ()
+        (handlers/parser/term)))))
+  (define handlers/parser/factor
+    (λ ()
+      (handlers/parser/choice handlers/parser/number (λ ()
+        (letrec* ([_ (handlers/parser/symbol (char "("))] [i (handlers/parser/expr)] [_ (handlers/parser/symbol (char ")"))])
+          i)))))
+  (define handlers/parser/term
+    (λ ()
+      (handlers/parser/choice (λ ()
+        (letrec* ([i (handlers/parser/factor)] [_ (handlers/parser/symbol (char "*"))] [j (handlers/parser/factor)])
+          (std/core/int/* i j))) (λ ()
+        (handlers/parser/factor)))))
+  (define handlers/parser/mparse
+    (λ (p input)
+      (handlers/parser/solutions (λ ()
+        (handlers/parser/parse input p)))))
+  (define handlers/parser/eparse
+    (λ (p input)
+      (handlers/parser/eager (λ ()
+        (handlers/parser/parse input p)))))
+  (define handlers/parser/example1
+    (λ ()
+      (std/core/console/default/show/println (handlers/parser/mparse handlers/parser/expr "1+2*3") (λ (h-arg-x1)
+        (std/core/list/show h-arg-x1 (λ (h-arg-x1)
+          (std/core/tuple/tuple2/show h-arg-x1 std/core/int/show std/core/show/string/show)))))))
+  (define handlers/parser/example2
+    (λ ()
+      (std/core/console/default/show/println (handlers/parser/eparse handlers/parser/expr "1+2*3") (λ (h-arg-x1)
+        (std/core/list/show h-arg-x1 (λ (h-arg-x1)
+          (std/core/tuple/tuple2/show h-arg-x1 std/core/int/show std/core/show/string/show)))))))
+  (define handlers/parser/main
+    (λ ()
+      (letrec* ([_ (handlers/parser/example1)])
+        (handlers/parser/example2)))))
