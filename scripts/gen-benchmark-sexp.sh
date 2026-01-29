@@ -11,6 +11,9 @@ mkdir -p "$OUTPUT_DIR"
 
 # Suite benchmarks (have main, compile normally)
 echo "Compiling suite benchmarks..."
+
+$KOKA --core -r samples/all.kk
+
 $KOKA --core \
   analysis/benchmarks/suite/basic.kk \
   analysis/benchmarks/suite/nondet.kk \

@@ -1,65 +1,59 @@
-((module analysis/benchmarks/handlers/vec)
-  (defs
-    (def analysis/benchmarks/handlers/vec/ix/index
-      (fn (ix)
-        (match ix
-          [(analysis/benchmarks/handlers/vec/Ix h-x) h-x])))
-    (def analysis/benchmarks/handlers/vec/ix/h-copy
-      (fn (h-this index)
-        (letrec* ([h-uniq-indexh-127 (match index
-          [(std/core/types/h-Optional h-uniq-indexh-128) h-uniq-indexh-128]
-          [std/core/types/h-None (analysis/benchmarks/handlers/vec/ix/index (h-this))])])
-          (analysis/benchmarks/handlers/vec/Ix (h-uniq-indexh-127)))))
-    (def analysis/benchmarks/handlers/vec/vec/h-cfc
-      (fn (vec)
-        (match vec
-          [(analysis/benchmarks/handlers/vec/h-Hnd-vec h-x _ _) h-x])))
-    (def analysis/benchmarks/handlers/vec/vec/h-tag
-      (std/core/hnd/h-new-htag ("vec@vec")))
-    (def analysis/benchmarks/handlers/vec/vec/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/handlers/vec/vec/h-tag hnd ret action))))
-    (def analysis/benchmarks/handlers/vec/vec/h-fun-push
-      (fn (vec)
-        (match vec
-          [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ _ h-x) h-x])))
-    (def analysis/benchmarks/handlers/vec/push/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ _ h-fun-push) h-fun-push])))
-    (def analysis/benchmarks/handlers/vec/push
-      (fn (s)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/vec/push/h-select s))))
-    (def analysis/benchmarks/handlers/vec/vec/h-fun-lookup
-      (fn (vec)
-        (match vec
-          [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ h-x _) h-x])))
-    (def analysis/benchmarks/handlers/vec/lookup/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ h-fun-lookup _) h-fun-lookup])))
-    (def analysis/benchmarks/handlers/vec/lookup
-      (fn (ix)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/handlers/vec/lookup/h-select ix))))
-    (def analysis/benchmarks/handlers/vec/vec
-      (fn (action1)
-        (std/core/types/local-scope ((fn ()
-          (letrec* ([ievh-654 std/core/types/h-Hnodiv] [ievh-722 std/core/types/h-Hnodiv] [ievh-766 std/core/types/h-Hnodiv])
-            (std/core/hnd/local-var (std/core/types/Nil (fn (xs)
-              ((fn (h-action)
-                (analysis/benchmarks/handlers/vec/vec/h-handle ((analysis/benchmarks/handlers/vec/h-Hnd-vec (1 (std/core/hnd/clause-tail1 ((fn (ix)
-                  (std/core/maybe/default ((std/core/list/h-index ((std/core/types/local-get (xs ievh-654)) (analysis/benchmarks/handlers/vec/ix/index (ix)))) ""))))) (std/core/hnd/clause-tail1 ((fn (s)
-                  (letrec* ([i (std/core/list/length ((std/core/types/local-get (xs ievh-722))))] [_ (std/core/types/local-set (xs (std/core/list/++ ((std/core/types/local-get (xs ievh-766)) (std/core/types/Cons (s std/core/types/Nil))))))])
-                    (analysis/benchmarks/handlers/vec/Ix (i)))))))) (fn (h-res)
-                  h-res) h-action))) ((fn ()
-                ((fn ()
-                  (std/core/hnd/h-mask-builtin ((fn ()
-                    (action1 ()))))) ())))))))))))))
-    (def analysis/benchmarks/handlers/vec/analyze-main
-      (fn ()
-        (analysis/benchmarks/handlers/vec/vec ((fn ()
-          (letrec* ([ix (analysis/benchmarks/handlers/vec/push ("hello"))])
-            (std/core/types/++ ((analysis/benchmarks/handlers/vec/lookup (ix)) " world"))))))))
-    (def analysis/benchmarks/handlers/vec/result-main
-      (fn ()
-        "hello world"))))
+(module
+  analysis/benchmarks/handlers/vec
+  (define analysis/benchmarks/handlers/vec/ix/index
+    (λ (ix)
+      (match ix
+        [(analysis/benchmarks/handlers/vec/Ix h-x) h-x])))
+  (define analysis/benchmarks/handlers/vec/ix/h-copy
+    (λ (h-this index)
+      (letrec* ([h-uniq-indexh-127 (match index
+        [(std/core/types/h-Optional h-uniq-indexh-128) h-uniq-indexh-128]
+        [std/core/types/h-None (analysis/benchmarks/handlers/vec/ix/index h-this)])])
+        (analysis/benchmarks/handlers/vec/Ix h-uniq-indexh-127))))
+  (define analysis/benchmarks/handlers/vec/vec/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/handlers/vec/vec/h-tag hnd ret action)))
+  (define analysis/benchmarks/handlers/vec/vec/h-fun-push
+    (λ (vec)
+      (match vec
+        [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/vec/push/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ _ h-fun-push) h-fun-push])))
+  (define analysis/benchmarks/handlers/vec/push
+    (λ (s)
+      (perform analysis/benchmarks/handlers/vec/vec push s)))
+  (define analysis/benchmarks/handlers/vec/vec/h-fun-lookup
+    (λ (vec)
+      (match vec
+        [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ h-x _) h-x])))
+  (define analysis/benchmarks/handlers/vec/lookup/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/handlers/vec/h-Hnd-vec _ h-fun-lookup _) h-fun-lookup])))
+  (define analysis/benchmarks/handlers/vec/lookup
+    (λ (ix)
+      (perform analysis/benchmarks/handlers/vec/vec lookup ix)))
+  (define analysis/benchmarks/handlers/vec/vec
+    (λ (action1)
+      (std/core/types/local-scope (λ ()
+        (letrec* ([ievh-654 std/core/types/h-Hnodiv] [ievh-722 std/core/types/h-Hnodiv] [ievh-766 std/core/types/h-Hnodiv])
+          (std/core/hnd/local-var std/core/types/Nil (λ (xs)
+            ((λ (h-action)
+              (analysis/benchmarks/handlers/vec/vec/h-handle (handler analysis/benchmarks/handlers/vec/h-Hnd-vec [fun lookup (std/core/hnd/clause-tail1 (λ (ix)
+                (std/core/maybe/default (std/core/list/h-index (std/core/types/local-get xs ievh-654) (analysis/benchmarks/handlers/vec/ix/index ix)) "")))] [fun push (std/core/hnd/clause-tail1 (λ (s)
+                (letrec* ([i (std/core/list/length (std/core/types/local-get xs ievh-722))] [_ (std/core/types/local-set xs (std/core/list/++ (std/core/types/local-get xs ievh-766) (std/core/types/Cons s std/core/types/Nil)))])
+                  (analysis/benchmarks/handlers/vec/Ix i))))]) (λ (h-res)
+                h-res) h-action)) (λ ()
+              ((λ ()
+                (std/core/hnd/h-mask-builtin (λ ()
+                  (action1))))))))))))))
+  (define analysis/benchmarks/handlers/vec/analyze-main
+    (λ ()
+      (analysis/benchmarks/handlers/vec/vec (λ ()
+        (letrec* ([ix (analysis/benchmarks/handlers/vec/push "hello")])
+          (std/core/types/++ (analysis/benchmarks/handlers/vec/lookup ix) " world"))))))
+  (define analysis/benchmarks/handlers/vec/result-main
+    (λ ()
+      "hello world")))

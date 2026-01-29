@@ -1,123 +1,123 @@
-((module learn/fip)
-  (defs
-    (def learn/fip/rev-acc
-      (fn (xs acc)
-        (match xs
-          [(std/core/types/Cons x xx) (learn/fip/rev-acc (xx (std/core/types/Cons (x acc))))]
-          [std/core/types/Nil acc])))
-    (def learn/fip/rev
-      (fn (xs)
-        (learn/fip/rev-acc (xs std/core/types/Nil))))
-    (def learn/fip/example-rev
-      (fn ()
-        (std/core/console/default/show/println ((learn/fip/rev ((std/core/types/Cons (1 (std/core/types/Cons (2 (std/core/types/Cons (3 std/core/types/Nil)))))))) (fn (h-arg-x1)
-          (std/core/list/show (h-arg-x1 std/core/int/show)))))))
-    (def learn/fip/example-persistent
-      (fn ()
-        (letrec* ([xs (std/core/list/range/list (1 5))])
-          (std/core/list/++ (xs (learn/fip/rev (xs)))))))
-    (def learn/fip/example-bad
-      (fn ()
-        (letrec* ([xs (std/core/list/range/list (1 5))] [ys (learn/fip/rev (xs))] [n (std/core/list/length (xs))])
-          (std/core/console/default/show/println ((std/core/types/Tuple2 (ys n)) (fn (h-arg-x1)
-            (std/core/tuple/tuple2/show (h-arg-x1 (fn (h-arg-x1)
-              (std/core/list/show (h-arg-x1 std/core/int/show))) std/core/int/show))))))))
-    (def learn/fip/filter-odd
-      (fn (xs)
-        (match xs
-          [(std/core/types/Cons x xx) (match (std/core/int/is-odd (x))
-            [std/core/types/True (std/core/types/Cons (x (learn/fip/filter-odd (xx))))]
-            [std/core/types/False (learn/fip/filter-odd (xx))])]
-          [std/core/types/Nil std/core/types/Nil])))
-    (def learn/fip/is-bin
-      (fn (tree)
-        (match tree
-          [(learn/fip/Bin _ _ _) std/core/types/True]
-          [learn/fip/Tip std/core/types/False])))
-    (def learn/fip/is-tip
-      (fn (tree)
-        (match tree
-          [learn/fip/Tip std/core/types/True]
-          [_ std/core/types/False])))
-    (def learn/fip/insert
-      (fn (t k)
-        (match t
-          [(learn/fip/Bin l x r) (match (std/core/int/== (x k))
-            [std/core/types/True (learn/fip/Bin (l k r))]
-            [std/core/types/False (match (std/core/int/< (x k))
-              [std/core/types/True (learn/fip/Bin (l x (learn/fip/insert (r k))))]
-              [std/core/types/False (learn/fip/Bin ((learn/fip/insert (l k)) x r))])])]
-          [learn/fip/Tip (learn/fip/Bin (learn/fip/Tip k learn/fip/Tip))])))
-    (def learn/fip/insert-poly
-      (fn (t k h-implicit/cmp)
-        (match t
-          [(learn/fip/Bin l x r) (match (std/core/default/cmp/== (x k h-implicit/cmp))
-            [std/core/types/True (learn/fip/Bin (l k r))]
-            [std/core/types/False (match (std/core/default/cmp/< (x k h-implicit/cmp))
-              [std/core/types/True (learn/fip/Bin (l x (learn/fip/insert-poly (r k h-implicit/cmp))))]
-              [std/core/types/False (learn/fip/Bin ((learn/fip/insert-poly (l k h-implicit/cmp)) x r))])])]
-          [learn/fip/Tip (learn/fip/Bin (learn/fip/Tip k learn/fip/Tip))])))
-    (def learn/fip/insert-order
-      (fn (t k h-implicit/order2)
-        (match t
-          [(learn/fip/Bin l x r) (match (h-implicit/order2 (x k))
-            [(std/core/types/Eq2 kx) (learn/fip/Bin (l kx r))]
-            [(std/core/types/Lt2 kx kk) (learn/fip/Bin (l kx (learn/fip/insert-order (r kk h-implicit/order2))))]
-            [(std/core/types/Gt2 kk kx) (learn/fip/Bin ((learn/fip/insert-order (l kk h-implicit/order2)) kx r))])]
-          [learn/fip/Tip (learn/fip/Bin (learn/fip/Tip k learn/fip/Tip))])))
-    (def learn/fip/height
-      (fn (t)
-        (match t
-          [learn/fip/Tip 0]
-          [(learn/fip/Bin l _ r) (std/core/int/+ (1 (std/core/int/max ((learn/fip/height (l)) (learn/fip/height (r))))))])))
-    (def learn/fip/sum
-      (fn (t)
-        (match t
-          [learn/fip/Tip 0]
-          [(learn/fip/Bin l x r) (std/core/int/+ ((std/core/int/+ (x (learn/fip/sum (l)))) (learn/fip/sum (r))))])))
-    (def learn/fip/tree
-      (fn (elems h-implicit/order2)
-        (std/core/list/foldl (elems learn/fip/Tip (fn (t i)
-          (learn/fip/insert-order (t i h-implicit/order2)))))))
-    (def learn/fip/example-order
-      (fn ()
-        (std/core/console/default/show/println ((std/core/types/Cons ((learn/fip/height ((learn/fip/tree ((std/core/types/Cons (2 (std/core/types/Cons (3 (std/core/types/Cons (1 std/core/types/Nil)))))) std/core/int/order2)))) (std/core/types/Cons ((learn/fip/height ((learn/fip/tree ((std/core/types/Cons ((char "a") (std/core/types/Cons ((char "b") (std/core/types/Cons ((char "c") std/core/types/Nil)))))) std/core/char/order2)))) (std/core/types/Cons ((learn/fip/height ((learn/fip/tree ((std/core/types/Cons (2 (std/core/types/Cons (3 (std/core/types/Cons (1 std/core/types/Nil)))))) (fn (x y)
-          (std/core/types/Eq2 (x))))))) std/core/types/Nil)))))) (fn (h-arg-x1)
-          (std/core/list/show (h-arg-x1 std/core/int/show)))))))
-    (def learn/fip/is-binL
-      (fn (zipper)
-        (match zipper
-          [(learn/fip/BinL _ _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def learn/fip/is-binR
-      (fn (zipper)
-        (match zipper
-          [(learn/fip/BinR _ _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def learn/fip/is-done
-      (fn (zipper)
-        (match zipper
-          [learn/fip/Done std/core/types/True]
-          [_ std/core/types/False])))
-    (def learn/fip/tmap-down
-      (fn (t f acc)
-        (match t
-          [(learn/fip/Bin l x r) (learn/fip/tmap-down (l f (learn/fip/BinL (acc x r))))]
-          [learn/fip/Tip (learn/fip/tmap-up (learn/fip/Tip f acc))])))
-    (def learn/fip/tmap-up
-      (fn (t f acc)
-        (match acc
-          [(learn/fip/BinL up x r) (learn/fip/tmap-down (r f (learn/fip/BinR (t (f (x)) up))))]
-          [(learn/fip/BinR l fx up) (learn/fip/tmap-up ((learn/fip/Bin (l fx t)) f up))]
-          [learn/fip/Done t])))
-    (def learn/fip/tmap
-      (fn (t f)
-        (learn/fip/tmap-down (t f learn/fip/Done))))
-    (def learn/fip/example-tmap
-      (fn ()
-        (learn/fip/sum ((learn/fip/tmap ((learn/fip/tree ((std/core/list/range/list (1 10)) std/core/int/order2)) std/core/int/inc))))))
-    (def learn/fip/main
-      (fn ()
-        (letrec* ([_ (std/core/console/default/show/println ((learn/fip/example-persistent ()) (fn (h-arg-x1)
-          (std/core/list/show (h-arg-x1 std/core/int/show)))))])
-          (std/core/console/default/show/println ((learn/fip/example-tmap ()) std/core/int/show)))))))
+(module
+  learn/fip
+  (define learn/fip/rev-acc
+    (λ (xs acc)
+      (match xs
+        [(std/core/types/Cons x xx) (learn/fip/rev-acc xx (std/core/types/Cons x acc))]
+        [std/core/types/Nil acc])))
+  (define learn/fip/rev
+    (λ (xs)
+      (learn/fip/rev-acc xs std/core/types/Nil)))
+  (define learn/fip/example-rev
+    (λ ()
+      (std/core/console/default/show/println (learn/fip/rev (std/core/types/Cons 1 (std/core/types/Cons 2 (std/core/types/Cons 3 std/core/types/Nil)))) (λ (h-arg-x1)
+        (std/core/list/show h-arg-x1 std/core/int/show)))))
+  (define learn/fip/example-persistent
+    (λ ()
+      (letrec* ([xs (std/core/list/range/list 1 5)])
+        (std/core/list/++ xs (learn/fip/rev xs)))))
+  (define learn/fip/example-bad
+    (λ ()
+      (letrec* ([xs (std/core/list/range/list 1 5)] [ys (learn/fip/rev xs)] [n (std/core/list/length xs)])
+        (std/core/console/default/show/println (std/core/types/Tuple2 ys n) (λ (h-arg-x1)
+          (std/core/tuple/tuple2/show h-arg-x1 (λ (h-arg-x1)
+            (std/core/list/show h-arg-x1 std/core/int/show)) std/core/int/show))))))
+  (define learn/fip/filter-odd
+    (λ (xs)
+      (match xs
+        [(std/core/types/Cons x xx) (match (std/core/int/is-odd x)
+          [std/core/types/True (std/core/types/Cons x (learn/fip/filter-odd xx))]
+          [std/core/types/False (learn/fip/filter-odd xx)])]
+        [std/core/types/Nil std/core/types/Nil])))
+  (define learn/fip/is-bin
+    (λ (tree)
+      (match tree
+        [(learn/fip/Bin _ _ _) std/core/types/True]
+        [learn/fip/Tip std/core/types/False])))
+  (define learn/fip/is-tip
+    (λ (tree)
+      (match tree
+        [learn/fip/Tip std/core/types/True]
+        [_ std/core/types/False])))
+  (define learn/fip/insert
+    (λ (t k)
+      (match t
+        [(learn/fip/Bin l x r) (match (std/core/int/== x k)
+          [std/core/types/True (learn/fip/Bin l k r)]
+          [std/core/types/False (match (std/core/int/< x k)
+            [std/core/types/True (learn/fip/Bin l x (learn/fip/insert r k))]
+            [std/core/types/False (learn/fip/Bin (learn/fip/insert l k) x r)])])]
+        [learn/fip/Tip (learn/fip/Bin learn/fip/Tip k learn/fip/Tip)])))
+  (define learn/fip/insert-poly
+    (λ (t k h-implicit/cmp)
+      (match t
+        [(learn/fip/Bin l x r) (match (std/core/default/cmp/== x k h-implicit/cmp)
+          [std/core/types/True (learn/fip/Bin l k r)]
+          [std/core/types/False (match (std/core/default/cmp/< x k h-implicit/cmp)
+            [std/core/types/True (learn/fip/Bin l x (learn/fip/insert-poly r k h-implicit/cmp))]
+            [std/core/types/False (learn/fip/Bin (learn/fip/insert-poly l k h-implicit/cmp) x r)])])]
+        [learn/fip/Tip (learn/fip/Bin learn/fip/Tip k learn/fip/Tip)])))
+  (define learn/fip/insert-order
+    (λ (t k h-implicit/order2)
+      (match t
+        [(learn/fip/Bin l x r) (match (h-implicit/order2 x k)
+          [(std/core/types/Eq2 kx) (learn/fip/Bin l kx r)]
+          [(std/core/types/Lt2 kx kk) (learn/fip/Bin l kx (learn/fip/insert-order r kk h-implicit/order2))]
+          [(std/core/types/Gt2 kk kx) (learn/fip/Bin (learn/fip/insert-order l kk h-implicit/order2) kx r)])]
+        [learn/fip/Tip (learn/fip/Bin learn/fip/Tip k learn/fip/Tip)])))
+  (define learn/fip/height
+    (λ (t)
+      (match t
+        [learn/fip/Tip 0]
+        [(learn/fip/Bin l _ r) (std/core/int/+ 1 (std/core/int/max (learn/fip/height l) (learn/fip/height r)))])))
+  (define learn/fip/sum
+    (λ (t)
+      (match t
+        [learn/fip/Tip 0]
+        [(learn/fip/Bin l x r) (std/core/int/+ (std/core/int/+ x (learn/fip/sum l)) (learn/fip/sum r))])))
+  (define learn/fip/tree
+    (λ (elems h-implicit/order2)
+      (std/core/list/foldl elems learn/fip/Tip (λ (t i)
+        (learn/fip/insert-order t i h-implicit/order2)))))
+  (define learn/fip/example-order
+    (λ ()
+      (std/core/console/default/show/println (std/core/types/Cons (learn/fip/height (learn/fip/tree (std/core/types/Cons 2 (std/core/types/Cons 3 (std/core/types/Cons 1 std/core/types/Nil))) std/core/int/order2)) (std/core/types/Cons (learn/fip/height (learn/fip/tree (std/core/types/Cons (char "a") (std/core/types/Cons (char "b") (std/core/types/Cons (char "c") std/core/types/Nil))) std/core/char/order2)) (std/core/types/Cons (learn/fip/height (learn/fip/tree (std/core/types/Cons 2 (std/core/types/Cons 3 (std/core/types/Cons 1 std/core/types/Nil))) (λ (x y)
+        (std/core/types/Eq2 x)))) std/core/types/Nil))) (λ (h-arg-x1)
+        (std/core/list/show h-arg-x1 std/core/int/show)))))
+  (define learn/fip/is-binL
+    (λ (zipper)
+      (match zipper
+        [(learn/fip/BinL _ _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define learn/fip/is-binR
+    (λ (zipper)
+      (match zipper
+        [(learn/fip/BinR _ _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define learn/fip/is-done
+    (λ (zipper)
+      (match zipper
+        [learn/fip/Done std/core/types/True]
+        [_ std/core/types/False])))
+  (define learn/fip/tmap-down
+    (λ (t f acc)
+      (match t
+        [(learn/fip/Bin l x r) (learn/fip/tmap-down l f (learn/fip/BinL acc x r))]
+        [learn/fip/Tip (learn/fip/tmap-up learn/fip/Tip f acc)])))
+  (define learn/fip/tmap-up
+    (λ (t f acc)
+      (match acc
+        [(learn/fip/BinL up x r) (learn/fip/tmap-down r f (learn/fip/BinR t (f x) up))]
+        [(learn/fip/BinR l fx up) (learn/fip/tmap-up (learn/fip/Bin l fx t) f up)]
+        [learn/fip/Done t])))
+  (define learn/fip/tmap
+    (λ (t f)
+      (learn/fip/tmap-down t f learn/fip/Done)))
+  (define learn/fip/example-tmap
+    (λ ()
+      (learn/fip/sum (learn/fip/tmap (learn/fip/tree (std/core/list/range/list 1 10) std/core/int/order2) std/core/int/inc))))
+  (define learn/fip/main
+    (λ ()
+      (letrec* ([_ (std/core/console/default/show/println (learn/fip/example-persistent) (λ (h-arg-x1)
+        (std/core/list/show h-arg-x1 std/core/int/show)))])
+        (std/core/console/default/show/println (learn/fip/example-tmap) std/core/int/show)))))

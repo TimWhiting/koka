@@ -1,80 +1,68 @@
-((module analysis/benchmarks/suite/state-handler)
-  (defs
-    (def analysis/benchmarks/suite/state-handler/get/h-cfc
-      (fn (get)
-        (match get
-          [(analysis/benchmarks/suite/state-handler/h-Hnd-get h-x _) h-x])))
-    (def analysis/benchmarks/suite/state-handler/get/h-tag
-      (std/core/hnd/h-new-htag ("get@state-handler")))
-    (def analysis/benchmarks/suite/state-handler/get/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/state-handler/get/h-tag hnd ret action))))
-    (def analysis/benchmarks/suite/state-handler/get/h-ctl-get
-      (fn (get)
-        (match get
-          [(analysis/benchmarks/suite/state-handler/h-Hnd-get _ h-x) h-x])))
-    (def analysis/benchmarks/suite/state-handler/get/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/suite/state-handler/h-Hnd-get _ h-ctl-get) h-ctl-get])))
-    (def analysis/benchmarks/suite/state-handler/get
-      (fn ()
-        (std/core/hnd/h-perform0 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/state-handler/get/h-select))))
-    (def analysis/benchmarks/suite/state-handler/set/h-cfc
-      (fn (set)
-        (match set
-          [(analysis/benchmarks/suite/state-handler/h-Hnd-set h-x _) h-x])))
-    (def analysis/benchmarks/suite/state-handler/set/h-tag
-      (std/core/hnd/h-new-htag ("set@state-handler")))
-    (def analysis/benchmarks/suite/state-handler/set/h-handle
-      (fn (hnd ret action)
-        (std/core/hnd/h-hhandle (analysis/benchmarks/suite/state-handler/set/h-tag hnd ret action))))
-    (def analysis/benchmarks/suite/state-handler/set/h-ctl-set
-      (fn (set)
-        (match set
-          [(analysis/benchmarks/suite/state-handler/h-Hnd-set _ h-x) h-x])))
-    (def analysis/benchmarks/suite/state-handler/set/h-select
-      (fn (hnd)
-        (match hnd
-          [(analysis/benchmarks/suite/state-handler/h-Hnd-set _ h-ctl-set) h-ctl-set])))
-    (def analysis/benchmarks/suite/state-handler/set
-      (fn (i)
-        (std/core/hnd/h-perform1 ((std/core/hnd/h-evv-at ((std/core/types/h-make-ssize_t (0)))) analysis/benchmarks/suite/state-handler/set/h-select i))))
-    (def analysis/benchmarks/suite/state-handler/countdown
-      (fn ()
-        (letrec* ([i (analysis/benchmarks/suite/state-handler/get ())])
-          (match (std/core/int/== (i 0))
-            [std/core/types/True i]
-            [std/core/types/False (letrec* ([_ (analysis/benchmarks/suite/state-handler/set ((std/core/int/- (i 1))))])
-              (analysis/benchmarks/suite/state-handler/countdown ()))]))))
-    (def analysis/benchmarks/suite/state-handler/analyze-state-countdown
-      (fn ()
-        (letrec* ([_ (std/core/debug/trace ("Example get/set"))] [x 2])
-          ((fn (h-action)
-            (analysis/benchmarks/suite/state-handler/get/h-handle ((analysis/benchmarks/suite/state-handler/h-Hnd-get (3 (std/core/hnd/clause-control0 ((fn (resume)
-              (resume (x))))))) (fn (h-res)
-              h-res) h-action))) ((fn ()
-            ((fn (h-action)
-              (analysis/benchmarks/suite/state-handler/set/h-handle ((analysis/benchmarks/suite/state-handler/h-Hnd-set (3 (std/core/hnd/clause-control1 ((fn (a resume)
-                ((fn (h-override-action)
-                  ((fn (h-action)
-                    (analysis/benchmarks/suite/state-handler/get/h-handle ((analysis/benchmarks/suite/state-handler/h-Hnd-get (3 (std/core/hnd/clause-control0 ((fn (resume)
-                      (resume (a))))))) (fn (h-res)
-                      h-res) h-action))) ((fn ()
-                    (std/core/hnd/h-mask-at ((std/core/hnd/h-evv-index (analysis/benchmarks/suite/state-handler/get/h-tag)) std/core/types/True h-override-action)))))) ((fn ()
-                  (resume (std/core/types/Unit)))))))))) (fn (h-res)
-                h-res) h-action))) ((fn ()
-              (analysis/benchmarks/suite/state-handler/countdown ()))))))))))
-    (def analysis/benchmarks/suite/state-handler/result-state-countdown
-      (fn ()
-        0))
-    (def analysis/benchmarks/suite/state-handler/test-state-countdown
-      (fn ()
-        (letrec* ([result (analysis/benchmarks/suite/state-handler/analyze-state-countdown ())])
-          (match (std/core/int/== (result (analysis/benchmarks/suite/state-handler/result-state-countdown ())))
-            [std/core/types/True (std/core/console/string/println ("✓ test-state-countdown passed"))]
-            [std/core/types/False (std/core/console/string/println ((std/core/types/++ ("✗ test-state-countdown FAILED: expected " (std/core/types/++ ((std/core/int/show ((analysis/benchmarks/suite/state-handler/result-state-countdown ()))) (std/core/types/++ (", got " (std/core/int/show (result))))))))))]))))
-    (def analysis/benchmarks/suite/state-handler/main
-      (fn ()
-        (letrec* ([_ (std/core/console/string/println ("Running state-handler tests..."))] [_ (analysis/benchmarks/suite/state-handler/test-state-countdown ())])
-          (std/core/console/string/println ("state-handler tests complete")))))))
+(module
+  analysis/benchmarks/suite/state-handler
+  (define analysis/benchmarks/suite/state-handler/get/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/suite/state-handler/get/h-tag hnd ret action)))
+  (define analysis/benchmarks/suite/state-handler/get/h-ctl-get
+    (λ (get)
+      (match get
+        [(analysis/benchmarks/suite/state-handler/h-Hnd-get _ h-x) h-x])))
+  (define analysis/benchmarks/suite/state-handler/get/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/suite/state-handler/h-Hnd-get _ h-ctl-get) h-ctl-get])))
+  (define analysis/benchmarks/suite/state-handler/get
+    (λ ()
+      (perform analysis/benchmarks/suite/state-handler/get get)))
+  (define analysis/benchmarks/suite/state-handler/set/h-handle
+    (λ (hnd ret action)
+      (std/core/hnd/h-hhandle analysis/benchmarks/suite/state-handler/set/h-tag hnd ret action)))
+  (define analysis/benchmarks/suite/state-handler/set/h-ctl-set
+    (λ (set)
+      (match set
+        [(analysis/benchmarks/suite/state-handler/h-Hnd-set _ h-x) h-x])))
+  (define analysis/benchmarks/suite/state-handler/set/h-select
+    (λ (hnd)
+      (match hnd
+        [(analysis/benchmarks/suite/state-handler/h-Hnd-set _ h-ctl-set) h-ctl-set])))
+  (define analysis/benchmarks/suite/state-handler/set
+    (λ (i)
+      (perform analysis/benchmarks/suite/state-handler/set set i)))
+  (define analysis/benchmarks/suite/state-handler/countdown
+    (λ ()
+      (letrec* ([i (analysis/benchmarks/suite/state-handler/get)])
+        (match (std/core/int/== i 0)
+          [std/core/types/True i]
+          [std/core/types/False (letrec* ([_ (analysis/benchmarks/suite/state-handler/set (std/core/int/- i 1))])
+            (analysis/benchmarks/suite/state-handler/countdown))]))))
+  (define analysis/benchmarks/suite/state-handler/analyze-state-countdown
+    (λ ()
+      (letrec* ([_ (std/core/debug/trace "Example get/set")] [x 2])
+        ((λ (h-action)
+          (analysis/benchmarks/suite/state-handler/get/h-handle (handler analysis/benchmarks/suite/state-handler/h-Hnd-get [ctl get (std/core/hnd/clause-control0 (λ (resume)
+            (resume x)))]) (λ (h-res)
+            h-res) h-action)) (λ ()
+          ((λ (h-action)
+            (analysis/benchmarks/suite/state-handler/set/h-handle (handler analysis/benchmarks/suite/state-handler/h-Hnd-set [ctl set (std/core/hnd/clause-control1 (λ (a resume)
+              ((λ (h-override-action)
+                ((λ (h-action)
+                  (analysis/benchmarks/suite/state-handler/get/h-handle (handler analysis/benchmarks/suite/state-handler/h-Hnd-get [ctl get (std/core/hnd/clause-control0 (λ (resume)
+                    (resume a)))]) (λ (h-res)
+                    h-res) h-action)) (λ ()
+                  (std/core/hnd/h-mask-at (std/core/hnd/h-evv-index analysis/benchmarks/suite/state-handler/get/h-tag) std/core/types/True h-override-action)))) (λ ()
+                (resume std/core/types/Unit)))))]) (λ (h-res)
+              h-res) h-action)) (λ ()
+            (analysis/benchmarks/suite/state-handler/countdown))))))))
+  (define analysis/benchmarks/suite/state-handler/result-state-countdown
+    (λ ()
+      0))
+  (define analysis/benchmarks/suite/state-handler/test-state-countdown
+    (λ ()
+      (letrec* ([result (analysis/benchmarks/suite/state-handler/analyze-state-countdown)])
+        (match (std/core/int/== result (analysis/benchmarks/suite/state-handler/result-state-countdown))
+          [std/core/types/True (std/core/console/string/println "✓ test-state-countdown passed")]
+          [std/core/types/False (std/core/console/string/println (std/core/types/++ "✗ test-state-countdown FAILED: expected " (std/core/types/++ (std/core/int/show (analysis/benchmarks/suite/state-handler/result-state-countdown)) (std/core/types/++ ", got " (std/core/int/show result)))))]))))
+  (define analysis/benchmarks/suite/state-handler/main
+    (λ ()
+      (letrec* ([_ (std/core/console/string/println "Running state-handler tests...")] [_ (analysis/benchmarks/suite/state-handler/test-state-countdown)])
+        (std/core/console/string/println "state-handler tests complete")))))

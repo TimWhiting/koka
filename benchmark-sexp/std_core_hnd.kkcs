@@ -1,680 +1,680 @@
-((module std/core/hnd)
-  (defs
-    (def std/core/hnd/htag/tagname
-      (fn (htag)
-        (match htag
-          [(std/core/hnd/Htag h-x) h-x])))
-    (def std/core/hnd/htag/h-copy
-      (fn (h-this tagname)
-        (letrec* ([h-uniq-tagnameh-1885 (match tagname
-          [(std/core/types/h-Optional h-uniq-tagnameh-1886) h-uniq-tagnameh-1886]
-          [std/core/types/h-None (std/core/hnd/htag/tagname (h-this))])])
-          (std/core/hnd/Htag (h-uniq-tagnameh-1885)))))
-    (def std/core/hnd/h-new-htag
-      (fn (tag)
-        (std/core/hnd/Htag (tag))))
-    (def std/core/hnd/htag/show
-      (fn (h-pat-x126_20)
-        (match h-pat-x126_20
-          [(std/core/hnd/Htag tag) tag])))
-    (def std/core/hnd/ev/htag
-      (fn (ev)
-        (match ev
-          [(std/core/hnd/Ev h-x _ _ _) h-x])))
-    (def std/core/hnd/ev/h-copy
-      (fn (h-this htag marker hnd hevv)
-        (letrec* ([h-uniq-htagh-1986 (match htag
-          [(std/core/types/h-Optional h-uniq-htagh-1987) h-uniq-htagh-1987]
-          [std/core/types/h-None (std/core/hnd/ev/htag (h-this))])])
-          (std/core/hnd/Ev (h-uniq-htagh-1986 marker hnd hevv)))))
-    (def std/core/hnd/eq-marker
-      (fn (x y)
-        (std/core/hnd/h-extern-eq-marker (x y))))
-    (def std/core/hnd/ev/==
-      (fn (h-pat-x141_18 h-pat-x141_37)
-        (match h-pat-x141_18
-          [(std/core/hnd/Ev _ m1 _ _) (match h-pat-x141_37
-            [(std/core/hnd/Ev _ m2 _ _) (std/core/hnd/eq-marker (m1 m2))])])))
-    (def std/core/hnd/fresh-marker
-      (fn ()
-        (std/core/hnd/h-extern-fresh-marker ())))
-    (def std/core/hnd/fresh-marker-named
-      (fn ()
-        (std/core/hnd/h-extern-fresh-marker-named ())))
-    (def std/core/hnd/evv-insert
-      (fn (evv ev)
-        (std/core/hnd/h-extern-evv-insert (evv ev))))
-    (def std/core/hnd/evv-show
-      (fn (evv)
-        (std/core/hnd/h-extern-evv-show (evv))))
-    (def std/core/hnd/evv-eq
-      (fn (evv0 evv1)
-        (std/core/hnd/h-extern-evv-eq (evv0 evv1))))
-    (def std/core/hnd/h-evv-index
-      (fn (htag)
-        (std/core/hnd/h-extern-evv-index (htag))))
-    (def std/core/hnd/evv-get
-      (fn ()
-        (std/core/hnd/h-extern-evv-get ())))
-    (def std/core/hnd/h-evv-is-affine
-      (fn ()
-        (std/core/hnd/h-extern-evv-is-affine ())))
-    (def std/core/hnd/evv-swap-delete
-      (fn (i behind)
-        (std/core/hnd/h-extern-evv-swap-delete (i behind))))
-    (def std/core/hnd/evv-swap-create
-      (fn (indices)
-        (std/core/hnd/h-extern-evv-swap-create (indices))))
-    (def std/core/hnd/yield-extend
-      (fn (next)
-        (std/core/hnd/h-extern-yield-extend (next))))
-    (def std/core/hnd/yield-bind
-      (fn (x next)
-        (match (std/core/hnd/yielding ())
-          [std/core/types/True (std/core/hnd/yield-extend (next))]
-          [std/core/types/False (next (x))])))
-    (def std/core/hnd/yield-bind2
-      (fn (x extend next)
-        (match (std/core/hnd/yielding ())
-          [std/core/types/True (std/core/hnd/yield-extend (extend))]
-          [std/core/types/False (next (x))])))
-    (def std/core/hnd/yield-cont
-      (fn (f)
-        (std/core/hnd/h-extern-yield-cont (f))))
-    (def std/core/hnd/yield-prompt
-      (fn (m)
-        (std/core/hnd/h-extern-yield-prompt (m))))
-    (def std/core/hnd/yield-to-prim
-      (fn (m clause)
-        (std/core/hnd/h-extern-yield-to-prim (m clause))))
-    (def std/core/hnd/yield-to-final
-      (fn (m clause)
-        (std/core/hnd/h-extern-yield-to-final (m clause))))
-    (def std/core/hnd/yield-to
-      (fn (m clause)
-        (letrec* ([g (std/core/hnd/yield-to-prim (m clause))])
-          (std/core/hnd/yield-extend ((fn (f)
-            (f ())))))))
-    (def std/core/hnd/yield-capture
-      (fn ()
-        (std/core/hnd/h-extern-yield-capture ())))
-    (def std/core/hnd/unsafe-reyield
-      (fn (yld)
-        (std/core/hnd/h-extern-unsafe-reyield (yld))))
-    (def std/core/hnd/is-deep
-      (fn (resume-result)
-        (match resume-result
-          [(std/core/hnd/Deep _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/is-shallow
-      (fn (resume-result)
-        (match resume-result
-          [(std/core/hnd/Shallow _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/is-finalize
-      (fn (resume-result)
-        (match resume-result
-          [(std/core/hnd/Finalize _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/is-pure
-      (fn (yld)
-        (match yld
-          [std/core/hnd/Pure std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/is-yieldingFinal
-      (fn (yld)
-        (match yld
-          [std/core/hnd/YieldingFinal std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/is-yielding
-      (fn (yld)
-        (match yld
-          [std/core/hnd/Yielding std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/is-yield
-      (fn (yld)
-        (match yld
-          [(std/core/hnd/Yield _ _) std/core/types/True]
-          [_ std/core/types/False])))
-    (def std/core/hnd/guard
-      (fn (w)
-        (std/core/hnd/h-extern-guard (w))))
-    (def std/core/hnd/resume-final
-      (fn ()
-        (std/core/hnd/h-extern-resume-final ())))
-    (def std/core/hnd/prompt
-      (fn (w0 w1 ev m ret result)
-        (letrec* ([_ (std/core/hnd/guard (w1))] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yield-prompt (m))
-            [std/core/hnd/Pure (ret (result))]
-            [std/core/hnd/YieldingFinal (std/core/hnd/keep-yielding-final ())]
-            [std/core/hnd/Yielding (std/core/hnd/yield-cont ((fn (cont res)
-              (letrec* ([|w0'| (std/core/hnd/evv-get ())] [|w1'| (match (std/core/hnd/evv-eq (w0 |w0'|))
+(module
+  std/core/hnd
+  (define std/core/hnd/htag/tagname
+    (λ (htag)
+      (match htag
+        [(std/core/hnd/Htag h-x) h-x])))
+  (define std/core/hnd/htag/h-copy
+    (λ (h-this tagname)
+      (letrec* ([h-uniq-tagnameh-1885 (match tagname
+        [(std/core/types/h-Optional h-uniq-tagnameh-1886) h-uniq-tagnameh-1886]
+        [std/core/types/h-None (std/core/hnd/htag/tagname h-this)])])
+        (std/core/hnd/Htag h-uniq-tagnameh-1885))))
+  (define std/core/hnd/h-new-htag
+    (λ (tag)
+      (std/core/hnd/Htag tag)))
+  (define std/core/hnd/htag/show
+    (λ (h-pat-x126_20)
+      (match h-pat-x126_20
+        [(std/core/hnd/Htag tag) tag])))
+  (define std/core/hnd/ev/htag
+    (λ (ev)
+      (match ev
+        [(std/core/hnd/Ev h-x _ _ _) h-x])))
+  (define std/core/hnd/ev/h-copy
+    (λ (h-this htag marker hnd hevv)
+      (letrec* ([h-uniq-htagh-1986 (match htag
+        [(std/core/types/h-Optional h-uniq-htagh-1987) h-uniq-htagh-1987]
+        [std/core/types/h-None (std/core/hnd/ev/htag h-this)])])
+        (std/core/hnd/Ev h-uniq-htagh-1986 marker hnd hevv))))
+  (define std/core/hnd/eq-marker
+    (λ (x y)
+      (std/core/hnd/h-extern-eq-marker x y)))
+  (define std/core/hnd/ev/==
+    (λ (h-pat-x141_18 h-pat-x141_37)
+      (match h-pat-x141_18
+        [(std/core/hnd/Ev _ m1 _ _) (match h-pat-x141_37
+          [(std/core/hnd/Ev _ m2 _ _) (std/core/hnd/eq-marker m1 m2)])])))
+  (define std/core/hnd/fresh-marker
+    (λ ()
+      (std/core/hnd/h-extern-fresh-marker)))
+  (define std/core/hnd/fresh-marker-named
+    (λ ()
+      (std/core/hnd/h-extern-fresh-marker-named)))
+  (define std/core/hnd/evv-insert
+    (λ (evv ev)
+      (std/core/hnd/h-extern-evv-insert evv ev)))
+  (define std/core/hnd/evv-show
+    (λ (evv)
+      (std/core/hnd/h-extern-evv-show evv)))
+  (define std/core/hnd/evv-eq
+    (λ (evv0 evv1)
+      (std/core/hnd/h-extern-evv-eq evv0 evv1)))
+  (define std/core/hnd/h-evv-index
+    (λ (htag)
+      (std/core/hnd/h-extern-evv-index htag)))
+  (define std/core/hnd/evv-get
+    (λ ()
+      (std/core/hnd/h-extern-evv-get)))
+  (define std/core/hnd/h-evv-is-affine
+    (λ ()
+      (std/core/hnd/h-extern-evv-is-affine)))
+  (define std/core/hnd/evv-swap-delete
+    (λ (i behind)
+      (std/core/hnd/h-extern-evv-swap-delete i behind)))
+  (define std/core/hnd/evv-swap-create
+    (λ (indices)
+      (std/core/hnd/h-extern-evv-swap-create indices)))
+  (define std/core/hnd/yield-extend
+    (λ (next)
+      (std/core/hnd/h-extern-yield-extend next)))
+  (define std/core/hnd/yield-bind
+    (λ (x next)
+      (match (std/core/hnd/yielding)
+        [std/core/types/True (std/core/hnd/yield-extend next)]
+        [std/core/types/False (next x)])))
+  (define std/core/hnd/yield-bind2
+    (λ (x extend next)
+      (match (std/core/hnd/yielding)
+        [std/core/types/True (std/core/hnd/yield-extend extend)]
+        [std/core/types/False (next x)])))
+  (define std/core/hnd/yield-cont
+    (λ (f)
+      (std/core/hnd/h-extern-yield-cont f)))
+  (define std/core/hnd/yield-prompt
+    (λ (m)
+      (std/core/hnd/h-extern-yield-prompt m)))
+  (define std/core/hnd/yield-to-prim
+    (λ (m clause)
+      (std/core/hnd/h-extern-yield-to-prim m clause)))
+  (define std/core/hnd/yield-to-final
+    (λ (m clause)
+      (std/core/hnd/h-extern-yield-to-final m clause)))
+  (define std/core/hnd/yield-to
+    (λ (m clause)
+      (letrec* ([g (std/core/hnd/yield-to-prim m clause)])
+        (std/core/hnd/yield-extend (λ (f)
+          (f))))))
+  (define std/core/hnd/yield-capture
+    (λ ()
+      (std/core/hnd/h-extern-yield-capture)))
+  (define std/core/hnd/unsafe-reyield
+    (λ (yld)
+      (std/core/hnd/h-extern-unsafe-reyield yld)))
+  (define std/core/hnd/is-deep
+    (λ (resume-result)
+      (match resume-result
+        [(std/core/hnd/Deep _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/is-shallow
+    (λ (resume-result)
+      (match resume-result
+        [(std/core/hnd/Shallow _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/is-finalize
+    (λ (resume-result)
+      (match resume-result
+        [(std/core/hnd/Finalize _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/is-pure
+    (λ (yld)
+      (match yld
+        [std/core/hnd/Pure std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/is-yieldingFinal
+    (λ (yld)
+      (match yld
+        [std/core/hnd/YieldingFinal std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/is-yielding
+    (λ (yld)
+      (match yld
+        [std/core/hnd/Yielding std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/is-yield
+    (λ (yld)
+      (match yld
+        [(std/core/hnd/Yield _ _) std/core/types/True]
+        [_ std/core/types/False])))
+  (define std/core/hnd/guard
+    (λ (w)
+      (std/core/hnd/h-extern-guard w)))
+  (define std/core/hnd/resume-final
+    (λ ()
+      (std/core/hnd/h-extern-resume-final)))
+  (define std/core/hnd/prompt
+    (λ (w0 w1 ev m ret result)
+      (letrec* ([_ (std/core/hnd/guard w1)] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yield-prompt m)
+          [std/core/hnd/Pure (ret result)]
+          [std/core/hnd/YieldingFinal (std/core/hnd/keep-yielding-final)]
+          [std/core/hnd/Yielding (std/core/hnd/yield-cont (λ (cont res)
+            (letrec* ([|w0'| (std/core/hnd/evv-get)] [|w1'| (match (std/core/hnd/evv-eq w0 |w0'|)
+              [std/core/types/True w1]
+              [std/core/types/False (std/core/hnd/evv-insert |w0'| ev)])] [_ (std/core/hnd/evv-set |w1'|)])
+              (std/core/hnd/prompt |w0'| |w1'| ev m ret (cont res)))))]
+          [(std/core/hnd/Yield clause cont) (letrec* ([resume (λ (r)
+            (match r
+              [(std/core/hnd/Deep x) (letrec* ([|w0'| (std/core/hnd/evv-get)] [|w1'| (match (std/core/hnd/evv-eq w0 |w0'|)
                 [std/core/types/True w1]
-                [std/core/types/False (std/core/hnd/evv-insert (|w0'| ev))])] [_ (std/core/hnd/evv-set (|w1'|))])
-                (std/core/hnd/prompt (|w0'| |w1'| ev m ret (cont (res))))))))]
-            [(std/core/hnd/Yield clause cont) (letrec* ([resume (fn (r)
-              (match r
-                [(std/core/hnd/Deep x) (letrec* ([|w0'| (std/core/hnd/evv-get ())] [|w1'| (match (std/core/hnd/evv-eq (w0 |w0'|))
-                  [std/core/types/True w1]
-                  [std/core/types/False (std/core/hnd/evv-insert (|w0'| ev))])] [_ (std/core/hnd/evv-set (|w1'|))])
-                  (std/core/hnd/prompt (|w0'| |w1'| ev m ret (cont ((fn ()
-                    x))))))]
-                [(std/core/hnd/Shallow x) (std/core/hnd/yield-bind ((cont ((fn ()
-                  x))) (fn (y)
-                  (ret (y)))))]
-                [(std/core/hnd/Finalize x) (letrec* ([|w0'| (std/core/hnd/evv-get ())] [|w1'| (match (std/core/hnd/evv-eq (w0 |w0'|))
-                  [std/core/types/True w1]
-                  [std/core/types/False (std/core/hnd/evv-insert (|w0'| ev))])] [_ (std/core/hnd/evv-set (|w1'|))])
-                  (std/core/hnd/prompt (|w0'| |w1'| ev m ret (cont ((fn ()
-                    (std/core/hnd/yield-to-final (m (fn (h-_wildcard-x409_85)
-                      x)))))))))]))])
-              (clause (resume)))]))))
-    (def std/core/hnd/h-hhandle
-      (fn (tag h ret action)
-        (letrec* ([w0 (std/core/hnd/evv-get ())] [m (std/core/hnd/fresh-marker ())] [ev (std/core/hnd/Ev (tag m h w0))] [w1 (std/core/hnd/evv-insert (w0 ev))] [_ (std/core/hnd/evv-set (w1))])
-          (std/core/hnd/prompt (w0 w1 ev m ret ((std/core/hnd/cast-ev0 (action)) ()))))))
-    (def std/core/hnd/h-named-handle
-      (fn (tag h ret action)
-        (letrec* ([m (std/core/hnd/fresh-marker-named ())] [w0 (std/core/hnd/evv-get ())] [ev (std/core/hnd/Ev (tag m h w0))])
-          (std/core/hnd/prompt (w0 w0 ev m ret ((std/core/hnd/cast-ev1 (action)) (ev)))))))
-    (def std/core/hnd/mask-at1
-      (fn (i behind action x)
-        (letrec* ([w0 (std/core/hnd/evv-swap-delete (i behind))] [y ((std/core/hnd/cast-ev1 (action)) (x))] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/mask-at1 (i behind cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-mask-at
-      (fn (i behind action)
-        (letrec* ([w0 (std/core/hnd/evv-swap-delete (i behind))] [x ((std/core/hnd/cast-ev0 (action)) ())] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/mask-at1 (i behind cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              x)]))))
-    (def std/core/hnd/h-mask-builtin
-      (fn (action)
-        ((std/core/hnd/cast-ev0 (action)) ())))
-    (def std/core/hnd/prompt-local-var
-      (fn (loc res)
-        (letrec* ([ievh-4036 std/core/types/h-Hdiv] [ievh-4057 std/core/types/h-Hdiv])
-          (match (std/core/types/bool/! ((std/core/hnd/yielding ())))
-            [std/core/types/True res]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit] [v (std/core/types/local-get (loc ievh-4057))])
-              (std/core/hnd/yield-cont ((fn (cont x)
-                (letrec* ([_ (std/core/types/local-set (loc v))])
-                  (std/core/hnd/prompt-local-var (loc (cont (x)))))))))]))))
-    (def std/core/hnd/local-var
-      (fn (init action)
-        (std/core/undiv/pretend-no-div ((fn ()
-          (letrec* ([loc (std/core/types/local-new (init))] [res ((std/core/hnd/cast-ev1 (action)) (loc))])
-            (std/core/hnd/prompt-local-var (loc res))))))))
-    (def std/core/hnd/finally-prompt
-      (fn (fin res)
-        (letrec* ([ievh-4275 std/core/types/h-Hdiv] [h-cont-x11919 (fn (h-x-x11920)
-          h-x-x11920)])
-          (match (std/core/types/bool/! ((std/core/hnd/yielding ())))
-            [std/core/types/True (h-cont-x11919 ((letrec* ([_ (fin ())])
-              (match (std/core/hnd/yielding ())
-                [std/core/types/True (std/core/hnd/yield-extend ((fn (h-_wildcard-x483_40)
-                  res)))]
-                [std/core/types/False res]))))]
-            [std/core/types/False (letrec* ([h-cont-x11917 (fn (h-x-x11918)
-              (h-cont-x11919 (h-x-x11918)))])
-              (match (std/core/hnd/yielding-non-final ())
-                [std/core/types/True (h-cont-x11917 ((std/core/hnd/yield-cont ((fn (cont x)
-                  (std/core/hnd/finally-prompt (fin (cont (x)))))))))]
-                [std/core/types/False (letrec* ([yld (std/core/hnd/yield-capture ())] [_ (fin ())])
-                  (match (std/core/hnd/yielding ())
-                    [std/core/types/True (std/core/hnd/yield-extend ((fn (h-_wildcard-x490_43)
-                      (std/core/hnd/unsafe-reyield (yld)))))]
-                    [std/core/types/False (letrec* ([_ std/core/types/Unit])
-                      (h-cont-x11917 ((std/core/hnd/unsafe-reyield (yld)))))]))]))]))))
-    (def std/core/hnd/finally
-      (fn (fin action)
-        (std/core/hnd/finally-prompt (fin (action ())))))
-    (def std/core/hnd/initially-prompt
-      (fn (init res)
-        (match (std/core/hnd/yielding-non-final ())
-          [std/core/types/True (letrec* ([count ((std/core/hnd/unsafe-st ((fn ()
-            (std/core/types/ref (0))))) ())])
-            (std/core/hnd/yield-cont ((fn (cont x)
-              (letrec* ([ievh-4509 std/core/types/h-Hnodiv] [ievh-4514 std/core/types/h-Hnodiv] [cnt ((std/core/hnd/unsafe-st ((fn ()
-                (std/core/types/ref/! (count ievh-4514))))) ())] [_ ((std/core/hnd/unsafe-st ((fn ()
-                (std/core/types/set (count (std/core/hnd/add (cnt 1))))))) ())] [_ (match (std/core/hnd/eq (cnt 0))
-                [std/core/types/True std/core/types/Unit]
-                [std/core/types/False (letrec* ([r (init (cnt))])
-                  (match (std/core/hnd/yielding ())
-                    [std/core/types/True (letrec* ([_ (std/core/hnd/yield-extend ((fn (h-_wildcard-x531_35)
-                      (std/core/hnd/initially-prompt (init (cont (x)))))))])
-                      std/core/types/Unit)]
-                    [std/core/types/False std/core/types/Unit]))])])
-                (std/core/hnd/initially-prompt (init (cont (x)))))))))]
-          [std/core/types/False res])))
-    (def std/core/hnd/initially
-      (fn (init action)
-        (letrec* ([_ (init (0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-extend ((fn (h-_wildcard-x519_40)
-              (std/core/hnd/initially-prompt (init (action ()))))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              (std/core/hnd/initially-prompt (init (action ()))))]))))
-    (def std/core/hnd/resume-context/k
-      (fn (h-this)
-        (match h-this
-          [(std/core/hnd/Resume-context h-x) h-x])))
-    (def std/core/hnd/resume-context/h-copy
-      (fn (h-this k)
-        (letrec* ([h-uniq-kh-4796 (match k
-          [(std/core/types/h-Optional h-uniq-kh-4797) h-uniq-kh-4797]
-          [std/core/types/h-None (std/core/hnd/resume-context/k (h-this))])])
-          (std/core/hnd/Resume-context (h-uniq-kh-4796)))))
-    (def std/core/hnd/resume
-      (fn (r x)
-        ((std/core/hnd/resume-context/k (r)) ((std/core/hnd/Deep (x))))))
-    (def std/core/hnd/resume-shallow
-      (fn (r x)
-        ((std/core/hnd/cast-ev1 ((std/core/hnd/resume-context/k (r)))) ((std/core/hnd/Shallow (x))))))
-    (def std/core/hnd/finalize
-      (fn (r x)
-        ((std/core/hnd/resume-context/k (r)) ((std/core/hnd/Finalize (x))))))
-    (def std/core/hnd/clause1/clause
-      (fn (clause1)
-        (match clause1
-          [(std/core/hnd/Clause1 h-x) h-x])))
-    (def std/core/hnd/clause1/h-copy
-      (fn (h-this clause)
-        (letrec* ([h-uniq-clauseh-5153 (match clause
-          [(std/core/types/h-Optional h-uniq-clauseh-5154) h-uniq-clauseh-5154]
-          [std/core/types/h-None (std/core/hnd/clause1/clause (h-this))])])
-          (std/core/hnd/Clause1 (h-uniq-clauseh-5153)))))
-    (def std/core/hnd/h-perform1
-      (fn (ev op x)
-        (match ev
-          [(std/core/hnd/Ev _ m h _) (match (op (h))
-            [(std/core/hnd/Clause1 f) ((std/core/hnd/cast-clause1 (f)) (m ev x))])])))
-    (def std/core/hnd/evv-swap-with
-      (fn (ev)
-        (match ev
-          [(std/core/hnd/Ev _ _ _ w) (std/core/hnd/evv-swap (w))])))
-    (def std/core/hnd/under1x
-      (fn (ev op x)
-        (letrec* ([w0 (std/core/hnd/evv-swap-with (ev))] [y (op (x))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/under1x (ev cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit] [_ (std/core/hnd/evv-set (w0))])
-              y)]))))
-    (def std/core/hnd/under1
-      (fn (ev op x)
-        (letrec* ([w0 (std/core/hnd/evv-swap-with (ev))] [y (op (x))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/under1x (ev cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit] [_ (std/core/hnd/evv-set (w0))])
-              y)]))))
-    (def std/core/hnd/clause-control-raw1
-      (fn (op)
-        (std/core/hnd/Clause1 ((fn (m h-_wildcard-x598_16 x)
-          (std/core/hnd/yield-to (m (fn (k)
-            (op (x (std/core/hnd/Resume-context (k))))))))))))
-    (def std/core/hnd/get
-      (fn (ref)
-        (letrec* ([ievh-5714 std/core/types/h-Hdiv])
-          (std/core/types/ref/! (ref ievh-5714)))))
-    (def std/core/hnd/protect-prompt
-      (fn (resumed k res)
-        (letrec* ([ievh-5762 std/core/types/h-Hnodiv] [ievh-5767 std/core/types/h-Hnodiv] [ievh-5787 std/core/types/h-Hdiv] [did-resume ((std/core/hnd/unsafe-st ((fn ()
-          (std/core/types/ref/! (resumed ievh-5767))))) ())] [h-cont-x11925 (fn (h-x-x11926)
-          h-x-x11926)])
-          (match did-resume
-            [std/core/types/True (h-cont-x11925 (res))]
-            [std/core/types/False (letrec* ([h-cont-x11923 (fn (h-x-x11924)
-              (h-cont-x11925 (h-x-x11924)))])
-              (match (std/core/types/bool/! ((std/core/hnd/yielding ())))
-                [std/core/types/True (h-cont-x11923 ((k ((std/core/hnd/Finalize (res))))))]
-                [std/core/types/False (letrec* ([h-cont-x11921 (fn (h-x-x11922)
-                  (h-cont-x11923 (h-x-x11922)))])
-                  (match (std/core/hnd/yielding-non-final ())
-                    [std/core/types/True (h-cont-x11921 ((std/core/hnd/yield-cont ((fn (cont x)
-                      (std/core/hnd/protect-prompt (resumed k (cont (x)))))))))]
-                    [std/core/types/False (letrec* ([yld (std/core/hnd/yield-capture ())] [_ (k ((std/core/hnd/Finalize (res))))])
-                      (match (std/core/hnd/yielding ())
-                        [std/core/types/True (std/core/hnd/yield-extend ((fn (h-_wildcard-x621_43)
-                          (std/core/hnd/unsafe-reyield (yld)))))]
-                        [std/core/types/False (letrec* ([_ std/core/types/Unit])
-                          (h-cont-x11921 ((std/core/hnd/unsafe-reyield (yld)))))]))]))]))]))))
-    (def std/core/hnd/protect
-      (fn (x clause k)
-        (letrec* ([resumed ((std/core/hnd/unsafe-st ((fn ()
-          (std/core/types/ref (std/core/types/False))))) ())] [kprotect (fn (ret)
-          (letrec* ([_ ((std/core/hnd/unsafe-st ((fn ()
-            (std/core/types/set (resumed std/core/types/True))))) ())])
-            (k ((std/core/hnd/Deep (ret))))))] [res (clause (x kprotect))])
-          (std/core/hnd/protect-prompt (resumed k res)))))
-    (def std/core/hnd/clause-control1
-      (fn (clause)
-        (std/core/hnd/Clause1 ((fn (m h-_wildcard-x639_16 x)
-          (std/core/hnd/yield-to (m (fn (k)
-            (std/core/hnd/protect (x clause k))))))))))
-    (def std/core/hnd/clause-tail1
-      (fn (op)
-        (std/core/hnd/Clause1 ((fn (h-_wildcard-x644_14 ev x)
-          (std/core/hnd/under1 (ev op x)))))))
-    (def std/core/hnd/clause-tail-noop1
-      (fn (op)
-        (std/core/hnd/Clause1 ((fn (h-_wildcard-x649_14 h-_wildcard-x649_17 x)
-          (op (x)))))))
-    (def std/core/hnd/clause-never1
-      (fn (op)
-        (std/core/hnd/Clause1 ((fn (m h-_wildcard-x654_16 x)
-          (std/core/hnd/yield-to-final (m (fn (h-_wildcard-x654_45)
-            (op (x))))))))))
-    (def std/core/hnd/clause0/clause
-      (fn (clause0)
-        (match clause0
-          [(std/core/hnd/Clause0 h-x) h-x])))
-    (def std/core/hnd/clause0/h-copy
-      (fn (h-this clause)
-        (letrec* ([h-uniq-clauseh-6486 (match clause
-          [(std/core/types/h-Optional h-uniq-clauseh-6487) h-uniq-clauseh-6487]
-          [std/core/types/h-None (std/core/hnd/clause0/clause (h-this))])])
-          (std/core/hnd/Clause0 (h-uniq-clauseh-6486)))))
-    (def std/core/hnd/h-perform0
-      (fn (ev op)
-        (match ev
-          [(std/core/hnd/Ev _ m h _) (match (op (h))
-            [(std/core/hnd/Clause0 f) ((std/core/hnd/cast-clause0 (f)) (m ev))])])))
-    (def std/core/hnd/under0
-      (fn (ev op)
-        (letrec* ([w0 (std/core/hnd/evv-swap-with (ev))] [y (op ())] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/under1 (ev cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/clause-control-raw0
-      (fn (op)
-        (std/core/hnd/Clause0 ((fn (m h-_wildcard-x680_16)
-          (std/core/hnd/yield-to (m (fn (k)
-            (op ((std/core/hnd/Resume-context (k))))))))))))
-    (def std/core/hnd/clause-control0
-      (fn (op)
-        (std/core/hnd/Clause0 ((fn (m h-_wildcard-x688_16)
-          (std/core/hnd/yield-to (m (fn (k)
-            (std/core/hnd/protect (std/core/types/Unit (fn (h-_wildcard-x688_55 r)
-              (op (r))) k))))))))))
-    (def std/core/hnd/clause-tail0
-      (fn (op)
-        (std/core/hnd/Clause0 ((fn (h-_wildcard-x692_14 ev)
-          (std/core/hnd/under0 (ev op)))))))
-    (def std/core/hnd/clause-tail-noop0
-      (fn (op)
-        (std/core/hnd/Clause0 ((fn (h-_wildcard-x695_14 h-_wildcard-x695_17)
-          (op ()))))))
-    (def std/core/hnd/clause-value
-      (fn (v)
-        (std/core/hnd/Clause0 ((fn (h-_wildcard-x698_14 h-_wildcard-x698_17)
-          v)))))
-    (def std/core/hnd/clause-never0
-      (fn (op)
-        (std/core/hnd/Clause0 ((fn (m h-_wildcard-x701_16)
-          (std/core/hnd/yield-to-final (m (fn (h-_wildcard-x701_43)
-            (op ())))))))))
-    (def std/core/hnd/clause2/clause
-      (fn (clause2)
-        (match clause2
-          [(std/core/hnd/Clause2 h-x) h-x])))
-    (def std/core/hnd/clause2/h-copy
-      (fn (h-this clause)
-        (letrec* ([h-uniq-clauseh-7275 (match clause
-          [(std/core/types/h-Optional h-uniq-clauseh-7276) h-uniq-clauseh-7276]
-          [std/core/types/h-None (std/core/hnd/clause2/clause (h-this))])])
-          (std/core/hnd/Clause2 (h-uniq-clauseh-7275)))))
-    (def std/core/hnd/under2
-      (fn (ev op x1 x2)
-        (letrec* ([w0 (std/core/hnd/evv-swap-with (ev))] [z (op (x1 x2))] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/under1 (ev cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              z)]))))
-    (def std/core/hnd/protect2
-      (fn (x1 x2 clause k)
-        (letrec* ([resumed ((std/core/hnd/unsafe-st ((fn ()
-          (std/core/types/ref (std/core/types/False))))) ())] [kprotect (fn (ret)
-          (letrec* ([_ ((std/core/hnd/unsafe-st ((fn ()
-            (std/core/types/set (resumed std/core/types/True))))) ())])
-            (k ((std/core/hnd/Deep (ret))))))] [res (clause (x1 x2 kprotect))])
-          (std/core/hnd/protect-prompt (resumed k res)))))
-    (def std/core/hnd/clause-control2
-      (fn (clause)
-        (std/core/hnd/Clause2 ((fn (m h-_wildcard-x726_16 x1 x2)
-          (std/core/hnd/yield-to (m (fn (k)
-            (std/core/hnd/protect2 (x1 x2 clause k))))))))))
-    (def std/core/hnd/clause-control-raw2
-      (fn (op)
-        (std/core/hnd/Clause2 ((fn (m h-_wildcard-x730_16 x1 x2)
-          (std/core/hnd/yield-to (m (fn (k)
-            (op (x1 x2 (std/core/hnd/Resume-context (k))))))))))))
-    (def std/core/hnd/clause-tail2
-      (fn (op)
-        (std/core/hnd/Clause2 ((fn (m ev x1 x2)
-          (std/core/hnd/under2 (ev op x1 x2)))))))
-    (def std/core/hnd/clause-tail-noop2
-      (fn (op)
-        (std/core/hnd/Clause2 ((fn (h-_wildcard-x736_14 h-_wildcard-x736_17 x1 x2)
-          (op (x1 x2)))))))
-    (def std/core/hnd/h-perform2
-      (fn (evx op x y)
-        (match evx
-          [(std/core/hnd/Ev _ m h _) (match (op (h))
-            [(std/core/hnd/Clause2 f) ((std/core/hnd/cast-clause2 (f)) (m evx x y))])])))
-    (def std/core/hnd/clause-never2
-      (fn (op)
-        (std/core/hnd/Clause2 ((fn (m h-_wildcard-x744_16 x1 x2)
-          (std/core/hnd/yield-to-final (m (fn (h-_wildcard-x744_49)
-            (op (x1 x2))))))))))
-    (def std/core/hnd/xperform1
-      (fn (ev op x)
-        (match ev
-          [(std/core/hnd/Ev _ m h _) (match (op (h))
-            [(std/core/hnd/Clause1 f) ((std/core/hnd/cast-clause1 (f)) (m ev x))])])))
-    (def std/core/hnd/clause-control-raw3
-      (fn (op)
-        (std/core/hnd/clause-control-raw1 ((fn (h-pat-x759_27 r)
-          (match h-pat-x759_27
-            [(std/core/types/Tuple3 x1 x2 x3) (op (x1 x2 x3 r))]))))))
-    (def std/core/hnd/clause-control3
-      (fn (op)
-        (std/core/hnd/clause-control1 ((fn (h-pat-x762_23 k)
-          (match h-pat-x762_23
-            [(std/core/types/Tuple3 x1 x2 x3) (op (x1 x2 x3 k))]))))))
-    (def std/core/hnd/clause-tail3
-      (fn (op)
-        (std/core/hnd/clause-tail1 ((fn (h-pat-x765_20)
-          (match h-pat-x765_20
-            [(std/core/types/Tuple3 x1 x2 x3) (op (x1 x2 x3))]))))))
-    (def std/core/hnd/clause-tail-noop3
-      (fn (op)
-        (std/core/hnd/clause-tail-noop1 ((fn (h-pat-x768_25)
-          (match h-pat-x768_25
-            [(std/core/types/Tuple3 x1 x2 x3) (op (x1 x2 x3))]))))))
-    (def std/core/hnd/clause-never3
-      (fn (op)
-        (std/core/hnd/clause-never1 ((fn (h-pat-x771_20)
-          (match h-pat-x771_20
-            [(std/core/types/Tuple3 x1 x2 x3) (op (x1 x2 x3))]))))))
-    (def std/core/hnd/h-perform3
-      (fn (ev op x1 x2 x3)
-        (std/core/hnd/xperform1 (ev op (std/core/types/Tuple3 (x1 x2 x3))))))
-    (def std/core/hnd/under3
-      (fn (ev op x1 x2 x3)
-        (letrec* ([w0 (std/core/hnd/evv-swap-with (ev))] [z (op (x1 x2 x3))] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/under1 (ev cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              z)]))))
-    (def std/core/hnd/clause-control4
-      (fn (op)
-        (std/core/hnd/clause-control1 ((fn (h-pat-x786_23 k)
-          (match h-pat-x786_23
-            [(std/core/types/Tuple4 x1 x2 x3 x4) (op (x1 x2 x3 x4 k))]))))))
-    (def std/core/hnd/clause-tail4
-      (fn (op)
-        (std/core/hnd/clause-tail1 ((fn (h-pat-x789_20)
-          (match h-pat-x789_20
-            [(std/core/types/Tuple4 x1 x2 x3 x4) (op (x1 x2 x3 x4))]))))))
-    (def std/core/hnd/clause-tail-noop4
-      (fn (op)
-        (std/core/hnd/clause-tail-noop1 ((fn (h-pat-x792_25)
-          (match h-pat-x792_25
-            [(std/core/types/Tuple4 x1 x2 x3 x4) (op (x1 x2 x3 x4))]))))))
-    (def std/core/hnd/clause-never4
-      (fn (op)
-        (std/core/hnd/clause-never1 ((fn (h-pat-x795_20)
-          (match h-pat-x795_20
-            [(std/core/types/Tuple4 x1 x2 x3 x4) (op (x1 x2 x3 x4))]))))))
-    (def std/core/hnd/h-perform4
-      (fn (ev op x1 x2 x3 x4)
-        (std/core/hnd/xperform1 (ev op (std/core/types/Tuple4 (x1 x2 x3 x4))))))
-    (def std/core/hnd/under4
-      (fn (ev op x1 x2 x3 x4)
-        (letrec* ([w0 (std/core/hnd/evv-swap-with (ev))] [z (op (x1 x2 x3 x4))] [_ (std/core/hnd/evv-set (w0))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/under1 (ev cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              z)]))))
-    (def std/core/hnd/h-open-none0
-      (fn (f)
-        (letrec* ([w (std/core/hnd/evv-swap-create0 ())] [x ((std/core/hnd/cast-ev0 (f)) ())] [keep (std/core/hnd/evv-set (w))])
-          x)))
-    (def std/core/hnd/h-open-none1
-      (fn (f x1)
-        (letrec* ([w (std/core/hnd/evv-swap-create0 ())] [x ((std/core/hnd/cast-ev1 (f)) (x1))] [keep (std/core/hnd/evv-set (w))])
-          x)))
-    (def std/core/hnd/h-open-none2
-      (fn (f x1 x2)
-        (letrec* ([w (std/core/hnd/evv-swap-create0 ())] [x ((std/core/hnd/cast-ev2 (f)) (x1 x2))] [keep (std/core/hnd/evv-set (w))])
-          x)))
-    (def std/core/hnd/h-open-none3
-      (fn (f x1 x2 x3)
-        (letrec* ([w (std/core/hnd/evv-swap-create0 ())] [x ((std/core/hnd/cast-ev3 (f)) (x1 x2 x3))] [keep (std/core/hnd/evv-set (w))])
-          x)))
-    (def std/core/hnd/h-open-none4
-      (fn (f x1 x2 x3 x4)
-        (letrec* ([w (std/core/hnd/evv-swap-create0 ())] [x ((std/core/hnd/cast-ev4 (f)) (x1 x2 x3 x4))] [keep (std/core/hnd/evv-set (w))])
-          x)))
-    (def std/core/hnd/open-at1
-      (fn (i f x)
-        (letrec* ([w (std/core/hnd/evv-swap-create1 (i))] [y ((std/core/hnd/cast-ev1 (f)) (x))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open-at1 (i cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open-at0
-      (fn (i f)
-        (letrec* ([w (std/core/hnd/evv-swap-create1 (i))] [y ((std/core/hnd/cast-ev0 (f)) ())] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open-at1 (i cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open-at1
-      (fn (i f x)
-        (letrec* ([w (std/core/hnd/evv-swap-create1 (i))] [y ((std/core/hnd/cast-ev1 (f)) (x))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open-at1 (i cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open-at2
-      (fn (i f x1 x2)
-        (letrec* ([w (std/core/hnd/evv-swap-create1 (i))] [y ((std/core/hnd/cast-ev2 (f)) (x1 x2))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open-at1 (i cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open-at3
-      (fn (i f x1 x2 x3)
-        (letrec* ([w (std/core/hnd/evv-swap-create1 (i))] [y ((std/core/hnd/cast-ev3 (f)) (x1 x2 x3))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open-at1 (i cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open-at4
-      (fn (i f x1 x2 x3 x4)
-        (letrec* ([w (std/core/hnd/evv-swap-create1 (i))] [y ((std/core/hnd/cast-ev4 (f)) (x1 x2 x3 x4))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open-at1 (i cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/open1
-      (fn (indices f x)
-        (letrec* ([w (std/core/hnd/evv-swap-create (indices))] [y ((std/core/hnd/cast-ev1 (f)) (x))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open1 (indices cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open0
-      (fn (indices f)
-        (letrec* ([w (std/core/hnd/evv-swap-create (indices))] [y ((std/core/hnd/cast-ev0 (f)) ())] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open1 (indices cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open1
-      (fn (indices f x)
-        (letrec* ([w (std/core/hnd/evv-swap-create (indices))] [y ((std/core/hnd/cast-ev1 (f)) (x))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open1 (indices cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open2
-      (fn (indices f x1 x2)
-        (letrec* ([w (std/core/hnd/evv-swap-create (indices))] [y ((std/core/hnd/cast-ev2 (f)) (x1 x2))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open1 (indices cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open3
-      (fn (indices f x1 x2 x3)
-        (letrec* ([w (std/core/hnd/evv-swap-create (indices))] [y ((std/core/hnd/cast-ev3 (f)) (x1 x2 x3))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open1 (indices cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/h-open4
-      (fn (indices f x1 x2 x3 x4)
-        (letrec* ([w (std/core/hnd/evv-swap-create (indices))] [y ((std/core/hnd/cast-ev4 (f)) (x1 x2 x3 x4))] [_ (std/core/hnd/evv-set (w))])
-          (match (std/core/hnd/yielding ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont res)
-              (std/core/hnd/open1 (indices cont res)))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              y)]))))
-    (def std/core/hnd/try-finalize-prompt
-      (fn (res)
-        (letrec* ([ievh-11829 std/core/types/h-Hdiv])
-          (match (std/core/hnd/yielding-non-final ())
-            [std/core/types/True (std/core/hnd/yield-cont ((fn (cont x)
-              (std/core/hnd/try-finalize-prompt ((cont (x)))))))]
-            [std/core/types/False (letrec* ([_ std/core/types/Unit])
-              (match (std/core/types/bool/! ((std/core/hnd/yielding ())))
-                [std/core/types/True (std/core/types/Right (res))]
-                [std/core/types/False (std/core/types/Left ((std/core/hnd/yield-capture ())))]))]))))
-    (def std/core/hnd/unsafe-try-finalize
-      (fn (action)
-        (std/core/hnd/try-finalize-prompt ((action ())))))))
+                [std/core/types/False (std/core/hnd/evv-insert |w0'| ev)])] [_ (std/core/hnd/evv-set |w1'|)])
+                (std/core/hnd/prompt |w0'| |w1'| ev m ret (cont (λ ()
+                  x))))]
+              [(std/core/hnd/Shallow x) (std/core/hnd/yield-bind (cont (λ ()
+                x)) (λ (y)
+                (ret y)))]
+              [(std/core/hnd/Finalize x) (letrec* ([|w0'| (std/core/hnd/evv-get)] [|w1'| (match (std/core/hnd/evv-eq w0 |w0'|)
+                [std/core/types/True w1]
+                [std/core/types/False (std/core/hnd/evv-insert |w0'| ev)])] [_ (std/core/hnd/evv-set |w1'|)])
+                (std/core/hnd/prompt |w0'| |w1'| ev m ret (cont (λ ()
+                  (std/core/hnd/yield-to-final m (λ (h-_wildcard-x409_85)
+                    x))))))]))])
+            (clause resume))]))))
+  (define std/core/hnd/h-hhandle
+    (λ (tag h ret action)
+      (letrec* ([w0 (std/core/hnd/evv-get)] [m (std/core/hnd/fresh-marker)] [ev (std/core/hnd/Ev tag m h w0)] [w1 (std/core/hnd/evv-insert w0 ev)] [_ (std/core/hnd/evv-set w1)])
+        (std/core/hnd/prompt w0 w1 ev m ret ((std/core/hnd/cast-ev0 action))))))
+  (define std/core/hnd/h-named-handle
+    (λ (tag h ret action)
+      (letrec* ([m (std/core/hnd/fresh-marker-named)] [w0 (std/core/hnd/evv-get)] [ev (std/core/hnd/Ev tag m h w0)])
+        (std/core/hnd/prompt w0 w0 ev m ret ((std/core/hnd/cast-ev1 action) ev)))))
+  (define std/core/hnd/mask-at1
+    (λ (i behind action x)
+      (letrec* ([w0 (std/core/hnd/evv-swap-delete i behind)] [y ((std/core/hnd/cast-ev1 action) x)] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/mask-at1 i behind cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-mask-at
+    (λ (i behind action)
+      (letrec* ([w0 (std/core/hnd/evv-swap-delete i behind)] [x ((std/core/hnd/cast-ev0 action))] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/mask-at1 i behind cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            x)]))))
+  (define std/core/hnd/h-mask-builtin
+    (λ (action)
+      ((std/core/hnd/cast-ev0 action))))
+  (define std/core/hnd/prompt-local-var
+    (λ (loc res)
+      (letrec* ([ievh-4036 std/core/types/h-Hdiv] [ievh-4057 std/core/types/h-Hdiv])
+        (match (std/core/types/bool/! (std/core/hnd/yielding))
+          [std/core/types/True res]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit] [v (std/core/types/local-get loc ievh-4057)])
+            (std/core/hnd/yield-cont (λ (cont x)
+              (letrec* ([_ (std/core/types/local-set loc v)])
+                (std/core/hnd/prompt-local-var loc (cont x))))))]))))
+  (define std/core/hnd/local-var
+    (λ (init action)
+      (std/core/undiv/pretend-no-div (λ ()
+        (letrec* ([loc (std/core/types/local-new init)] [res ((std/core/hnd/cast-ev1 action) loc)])
+          (std/core/hnd/prompt-local-var loc res))))))
+  (define std/core/hnd/finally-prompt
+    (λ (fin res)
+      (letrec* ([ievh-4275 std/core/types/h-Hdiv] [h-cont-x11919 (λ (h-x-x11920)
+        h-x-x11920)])
+        (match (std/core/types/bool/! (std/core/hnd/yielding))
+          [std/core/types/True (h-cont-x11919 (letrec* ([_ (fin)])
+            (match (std/core/hnd/yielding)
+              [std/core/types/True (std/core/hnd/yield-extend (λ (h-_wildcard-x483_40)
+                res))]
+              [std/core/types/False res])))]
+          [std/core/types/False (letrec* ([h-cont-x11917 (λ (h-x-x11918)
+            (h-cont-x11919 h-x-x11918))])
+            (match (std/core/hnd/yielding-non-final)
+              [std/core/types/True (h-cont-x11917 (std/core/hnd/yield-cont (λ (cont x)
+                (std/core/hnd/finally-prompt fin (cont x)))))]
+              [std/core/types/False (letrec* ([yld (std/core/hnd/yield-capture)] [_ (fin)])
+                (match (std/core/hnd/yielding)
+                  [std/core/types/True (std/core/hnd/yield-extend (λ (h-_wildcard-x490_43)
+                    (std/core/hnd/unsafe-reyield yld)))]
+                  [std/core/types/False (letrec* ([_ std/core/types/Unit])
+                    (h-cont-x11917 (std/core/hnd/unsafe-reyield yld)))]))]))]))))
+  (define std/core/hnd/finally
+    (λ (fin action)
+      (std/core/hnd/finally-prompt fin (action))))
+  (define std/core/hnd/initially-prompt
+    (λ (init res)
+      (match (std/core/hnd/yielding-non-final)
+        [std/core/types/True (letrec* ([count ((std/core/hnd/unsafe-st (λ ()
+          (std/core/types/ref 0))))])
+          (std/core/hnd/yield-cont (λ (cont x)
+            (letrec* ([ievh-4509 std/core/types/h-Hnodiv] [ievh-4514 std/core/types/h-Hnodiv] [cnt ((std/core/hnd/unsafe-st (λ ()
+              (std/core/types/ref/! count ievh-4514))))] [_ ((std/core/hnd/unsafe-st (λ ()
+              (std/core/types/set count (std/core/hnd/add cnt 1)))))] [_ (match (std/core/hnd/eq cnt 0)
+              [std/core/types/True std/core/types/Unit]
+              [std/core/types/False (letrec* ([r (init cnt)])
+                (match (std/core/hnd/yielding)
+                  [std/core/types/True (letrec* ([_ (std/core/hnd/yield-extend (λ (h-_wildcard-x531_35)
+                    (std/core/hnd/initially-prompt init (cont x))))])
+                    std/core/types/Unit)]
+                  [std/core/types/False std/core/types/Unit]))])])
+              (std/core/hnd/initially-prompt init (cont x))))))]
+        [std/core/types/False res])))
+  (define std/core/hnd/initially
+    (λ (init action)
+      (letrec* ([_ (init 0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-extend (λ (h-_wildcard-x519_40)
+            (std/core/hnd/initially-prompt init (action))))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (std/core/hnd/initially-prompt init (action)))]))))
+  (define std/core/hnd/resume-context/k
+    (λ (h-this)
+      (match h-this
+        [(std/core/hnd/Resume-context h-x) h-x])))
+  (define std/core/hnd/resume-context/h-copy
+    (λ (h-this k)
+      (letrec* ([h-uniq-kh-4796 (match k
+        [(std/core/types/h-Optional h-uniq-kh-4797) h-uniq-kh-4797]
+        [std/core/types/h-None (std/core/hnd/resume-context/k h-this)])])
+        (std/core/hnd/Resume-context h-uniq-kh-4796))))
+  (define std/core/hnd/resume
+    (λ (r x)
+      ((std/core/hnd/resume-context/k r) (std/core/hnd/Deep x))))
+  (define std/core/hnd/resume-shallow
+    (λ (r x)
+      ((std/core/hnd/cast-ev1 (std/core/hnd/resume-context/k r)) (std/core/hnd/Shallow x))))
+  (define std/core/hnd/finalize
+    (λ (r x)
+      ((std/core/hnd/resume-context/k r) (std/core/hnd/Finalize x))))
+  (define std/core/hnd/clause1/clause
+    (λ (clause1)
+      (match clause1
+        [(std/core/hnd/Clause1 h-x) h-x])))
+  (define std/core/hnd/clause1/h-copy
+    (λ (h-this clause)
+      (letrec* ([h-uniq-clauseh-5153 (match clause
+        [(std/core/types/h-Optional h-uniq-clauseh-5154) h-uniq-clauseh-5154]
+        [std/core/types/h-None (std/core/hnd/clause1/clause h-this)])])
+        (std/core/hnd/Clause1 h-uniq-clauseh-5153))))
+  (define std/core/hnd/h-perform1
+    (λ (ev op x)
+      (match ev
+        [(std/core/hnd/Ev _ m h _) (match (op h)
+          [(std/core/hnd/Clause1 f) ((std/core/hnd/cast-clause1 f) m ev x)])])))
+  (define std/core/hnd/evv-swap-with
+    (λ (ev)
+      (match ev
+        [(std/core/hnd/Ev _ _ _ w) (std/core/hnd/evv-swap w)])))
+  (define std/core/hnd/under1x
+    (λ (ev op x)
+      (letrec* ([w0 (std/core/hnd/evv-swap-with ev)] [y (op x)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/under1x ev cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit] [_ (std/core/hnd/evv-set w0)])
+            y)]))))
+  (define std/core/hnd/under1
+    (λ (ev op x)
+      (letrec* ([w0 (std/core/hnd/evv-swap-with ev)] [y (op x)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/under1x ev cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit] [_ (std/core/hnd/evv-set w0)])
+            y)]))))
+  (define std/core/hnd/clause-control-raw1
+    (λ (op)
+      (std/core/hnd/Clause1 (λ (m h-_wildcard-x598_16 x)
+        (std/core/hnd/yield-to m (λ (k)
+          (op x (std/core/hnd/Resume-context k))))))))
+  (define std/core/hnd/get
+    (λ (ref)
+      (letrec* ([ievh-5714 std/core/types/h-Hdiv])
+        (std/core/types/ref/! ref ievh-5714))))
+  (define std/core/hnd/protect-prompt
+    (λ (resumed k res)
+      (letrec* ([ievh-5762 std/core/types/h-Hnodiv] [ievh-5767 std/core/types/h-Hnodiv] [ievh-5787 std/core/types/h-Hdiv] [did-resume ((std/core/hnd/unsafe-st (λ ()
+        (std/core/types/ref/! resumed ievh-5767))))] [h-cont-x11925 (λ (h-x-x11926)
+        h-x-x11926)])
+        (match did-resume
+          [std/core/types/True (h-cont-x11925 res)]
+          [std/core/types/False (letrec* ([h-cont-x11923 (λ (h-x-x11924)
+            (h-cont-x11925 h-x-x11924))])
+            (match (std/core/types/bool/! (std/core/hnd/yielding))
+              [std/core/types/True (h-cont-x11923 (k (std/core/hnd/Finalize res)))]
+              [std/core/types/False (letrec* ([h-cont-x11921 (λ (h-x-x11922)
+                (h-cont-x11923 h-x-x11922))])
+                (match (std/core/hnd/yielding-non-final)
+                  [std/core/types/True (h-cont-x11921 (std/core/hnd/yield-cont (λ (cont x)
+                    (std/core/hnd/protect-prompt resumed k (cont x)))))]
+                  [std/core/types/False (letrec* ([yld (std/core/hnd/yield-capture)] [_ (k (std/core/hnd/Finalize res))])
+                    (match (std/core/hnd/yielding)
+                      [std/core/types/True (std/core/hnd/yield-extend (λ (h-_wildcard-x621_43)
+                        (std/core/hnd/unsafe-reyield yld)))]
+                      [std/core/types/False (letrec* ([_ std/core/types/Unit])
+                        (h-cont-x11921 (std/core/hnd/unsafe-reyield yld)))]))]))]))]))))
+  (define std/core/hnd/protect
+    (λ (x clause k)
+      (letrec* ([resumed ((std/core/hnd/unsafe-st (λ ()
+        (std/core/types/ref std/core/types/False))))] [kprotect (λ (ret)
+        (letrec* ([_ ((std/core/hnd/unsafe-st (λ ()
+          (std/core/types/set resumed std/core/types/True))))])
+          (k (std/core/hnd/Deep ret))))] [res (clause x kprotect)])
+        (std/core/hnd/protect-prompt resumed k res))))
+  (define std/core/hnd/clause-control1
+    (λ (clause)
+      (std/core/hnd/Clause1 (λ (m h-_wildcard-x639_16 x)
+        (std/core/hnd/yield-to m (λ (k)
+          (std/core/hnd/protect x clause k)))))))
+  (define std/core/hnd/clause-tail1
+    (λ (op)
+      (std/core/hnd/Clause1 (λ (h-_wildcard-x644_14 ev x)
+        (std/core/hnd/under1 ev op x)))))
+  (define std/core/hnd/clause-tail-noop1
+    (λ (op)
+      (std/core/hnd/Clause1 (λ (h-_wildcard-x649_14 h-_wildcard-x649_17 x)
+        (op x)))))
+  (define std/core/hnd/clause-never1
+    (λ (op)
+      (std/core/hnd/Clause1 (λ (m h-_wildcard-x654_16 x)
+        (std/core/hnd/yield-to-final m (λ (h-_wildcard-x654_45)
+          (op x)))))))
+  (define std/core/hnd/clause0/clause
+    (λ (clause0)
+      (match clause0
+        [(std/core/hnd/Clause0 h-x) h-x])))
+  (define std/core/hnd/clause0/h-copy
+    (λ (h-this clause)
+      (letrec* ([h-uniq-clauseh-6486 (match clause
+        [(std/core/types/h-Optional h-uniq-clauseh-6487) h-uniq-clauseh-6487]
+        [std/core/types/h-None (std/core/hnd/clause0/clause h-this)])])
+        (std/core/hnd/Clause0 h-uniq-clauseh-6486))))
+  (define std/core/hnd/h-perform0
+    (λ (ev op)
+      (match ev
+        [(std/core/hnd/Ev _ m h _) (match (op h)
+          [(std/core/hnd/Clause0 f) ((std/core/hnd/cast-clause0 f) m ev)])])))
+  (define std/core/hnd/under0
+    (λ (ev op)
+      (letrec* ([w0 (std/core/hnd/evv-swap-with ev)] [y (op)] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/under1 ev cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/clause-control-raw0
+    (λ (op)
+      (std/core/hnd/Clause0 (λ (m h-_wildcard-x680_16)
+        (std/core/hnd/yield-to m (λ (k)
+          (op (std/core/hnd/Resume-context k))))))))
+  (define std/core/hnd/clause-control0
+    (λ (op)
+      (std/core/hnd/Clause0 (λ (m h-_wildcard-x688_16)
+        (std/core/hnd/yield-to m (λ (k)
+          (std/core/hnd/protect std/core/types/Unit (λ (h-_wildcard-x688_55 r)
+            (op r)) k)))))))
+  (define std/core/hnd/clause-tail0
+    (λ (op)
+      (std/core/hnd/Clause0 (λ (h-_wildcard-x692_14 ev)
+        (std/core/hnd/under0 ev op)))))
+  (define std/core/hnd/clause-tail-noop0
+    (λ (op)
+      (std/core/hnd/Clause0 (λ (h-_wildcard-x695_14 h-_wildcard-x695_17)
+        (op)))))
+  (define std/core/hnd/clause-value
+    (λ (v)
+      (std/core/hnd/Clause0 (λ (h-_wildcard-x698_14 h-_wildcard-x698_17)
+        v))))
+  (define std/core/hnd/clause-never0
+    (λ (op)
+      (std/core/hnd/Clause0 (λ (m h-_wildcard-x701_16)
+        (std/core/hnd/yield-to-final m (λ (h-_wildcard-x701_43)
+          (op)))))))
+  (define std/core/hnd/clause2/clause
+    (λ (clause2)
+      (match clause2
+        [(std/core/hnd/Clause2 h-x) h-x])))
+  (define std/core/hnd/clause2/h-copy
+    (λ (h-this clause)
+      (letrec* ([h-uniq-clauseh-7275 (match clause
+        [(std/core/types/h-Optional h-uniq-clauseh-7276) h-uniq-clauseh-7276]
+        [std/core/types/h-None (std/core/hnd/clause2/clause h-this)])])
+        (std/core/hnd/Clause2 h-uniq-clauseh-7275))))
+  (define std/core/hnd/under2
+    (λ (ev op x1 x2)
+      (letrec* ([w0 (std/core/hnd/evv-swap-with ev)] [z (op x1 x2)] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/under1 ev cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            z)]))))
+  (define std/core/hnd/protect2
+    (λ (x1 x2 clause k)
+      (letrec* ([resumed ((std/core/hnd/unsafe-st (λ ()
+        (std/core/types/ref std/core/types/False))))] [kprotect (λ (ret)
+        (letrec* ([_ ((std/core/hnd/unsafe-st (λ ()
+          (std/core/types/set resumed std/core/types/True))))])
+          (k (std/core/hnd/Deep ret))))] [res (clause x1 x2 kprotect)])
+        (std/core/hnd/protect-prompt resumed k res))))
+  (define std/core/hnd/clause-control2
+    (λ (clause)
+      (std/core/hnd/Clause2 (λ (m h-_wildcard-x726_16 x1 x2)
+        (std/core/hnd/yield-to m (λ (k)
+          (std/core/hnd/protect2 x1 x2 clause k)))))))
+  (define std/core/hnd/clause-control-raw2
+    (λ (op)
+      (std/core/hnd/Clause2 (λ (m h-_wildcard-x730_16 x1 x2)
+        (std/core/hnd/yield-to m (λ (k)
+          (op x1 x2 (std/core/hnd/Resume-context k))))))))
+  (define std/core/hnd/clause-tail2
+    (λ (op)
+      (std/core/hnd/Clause2 (λ (m ev x1 x2)
+        (std/core/hnd/under2 ev op x1 x2)))))
+  (define std/core/hnd/clause-tail-noop2
+    (λ (op)
+      (std/core/hnd/Clause2 (λ (h-_wildcard-x736_14 h-_wildcard-x736_17 x1 x2)
+        (op x1 x2)))))
+  (define std/core/hnd/h-perform2
+    (λ (evx op x y)
+      (match evx
+        [(std/core/hnd/Ev _ m h _) (match (op h)
+          [(std/core/hnd/Clause2 f) ((std/core/hnd/cast-clause2 f) m evx x y)])])))
+  (define std/core/hnd/clause-never2
+    (λ (op)
+      (std/core/hnd/Clause2 (λ (m h-_wildcard-x744_16 x1 x2)
+        (std/core/hnd/yield-to-final m (λ (h-_wildcard-x744_49)
+          (op x1 x2)))))))
+  (define std/core/hnd/xperform1
+    (λ (ev op x)
+      (match ev
+        [(std/core/hnd/Ev _ m h _) (match (op h)
+          [(std/core/hnd/Clause1 f) ((std/core/hnd/cast-clause1 f) m ev x)])])))
+  (define std/core/hnd/clause-control-raw3
+    (λ (op)
+      (std/core/hnd/clause-control-raw1 (λ (h-pat-x759_27 r)
+        (match h-pat-x759_27
+          [(std/core/types/Tuple3 x1 x2 x3) (op x1 x2 x3 r)])))))
+  (define std/core/hnd/clause-control3
+    (λ (op)
+      (std/core/hnd/clause-control1 (λ (h-pat-x762_23 k)
+        (match h-pat-x762_23
+          [(std/core/types/Tuple3 x1 x2 x3) (op x1 x2 x3 k)])))))
+  (define std/core/hnd/clause-tail3
+    (λ (op)
+      (std/core/hnd/clause-tail1 (λ (h-pat-x765_20)
+        (match h-pat-x765_20
+          [(std/core/types/Tuple3 x1 x2 x3) (op x1 x2 x3)])))))
+  (define std/core/hnd/clause-tail-noop3
+    (λ (op)
+      (std/core/hnd/clause-tail-noop1 (λ (h-pat-x768_25)
+        (match h-pat-x768_25
+          [(std/core/types/Tuple3 x1 x2 x3) (op x1 x2 x3)])))))
+  (define std/core/hnd/clause-never3
+    (λ (op)
+      (std/core/hnd/clause-never1 (λ (h-pat-x771_20)
+        (match h-pat-x771_20
+          [(std/core/types/Tuple3 x1 x2 x3) (op x1 x2 x3)])))))
+  (define std/core/hnd/h-perform3
+    (λ (ev op x1 x2 x3)
+      (std/core/hnd/xperform1 ev op (std/core/types/Tuple3 x1 x2 x3))))
+  (define std/core/hnd/under3
+    (λ (ev op x1 x2 x3)
+      (letrec* ([w0 (std/core/hnd/evv-swap-with ev)] [z (op x1 x2 x3)] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/under1 ev cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            z)]))))
+  (define std/core/hnd/clause-control4
+    (λ (op)
+      (std/core/hnd/clause-control1 (λ (h-pat-x786_23 k)
+        (match h-pat-x786_23
+          [(std/core/types/Tuple4 x1 x2 x3 x4) (op x1 x2 x3 x4 k)])))))
+  (define std/core/hnd/clause-tail4
+    (λ (op)
+      (std/core/hnd/clause-tail1 (λ (h-pat-x789_20)
+        (match h-pat-x789_20
+          [(std/core/types/Tuple4 x1 x2 x3 x4) (op x1 x2 x3 x4)])))))
+  (define std/core/hnd/clause-tail-noop4
+    (λ (op)
+      (std/core/hnd/clause-tail-noop1 (λ (h-pat-x792_25)
+        (match h-pat-x792_25
+          [(std/core/types/Tuple4 x1 x2 x3 x4) (op x1 x2 x3 x4)])))))
+  (define std/core/hnd/clause-never4
+    (λ (op)
+      (std/core/hnd/clause-never1 (λ (h-pat-x795_20)
+        (match h-pat-x795_20
+          [(std/core/types/Tuple4 x1 x2 x3 x4) (op x1 x2 x3 x4)])))))
+  (define std/core/hnd/h-perform4
+    (λ (ev op x1 x2 x3 x4)
+      (std/core/hnd/xperform1 ev op (std/core/types/Tuple4 x1 x2 x3 x4))))
+  (define std/core/hnd/under4
+    (λ (ev op x1 x2 x3 x4)
+      (letrec* ([w0 (std/core/hnd/evv-swap-with ev)] [z (op x1 x2 x3 x4)] [_ (std/core/hnd/evv-set w0)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/under1 ev cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            z)]))))
+  (define std/core/hnd/h-open-none0
+    (λ (f)
+      (letrec* ([w (std/core/hnd/evv-swap-create0)] [x ((std/core/hnd/cast-ev0 f))] [keep (std/core/hnd/evv-set w)])
+        x)))
+  (define std/core/hnd/h-open-none1
+    (λ (f x1)
+      (letrec* ([w (std/core/hnd/evv-swap-create0)] [x ((std/core/hnd/cast-ev1 f) x1)] [keep (std/core/hnd/evv-set w)])
+        x)))
+  (define std/core/hnd/h-open-none2
+    (λ (f x1 x2)
+      (letrec* ([w (std/core/hnd/evv-swap-create0)] [x ((std/core/hnd/cast-ev2 f) x1 x2)] [keep (std/core/hnd/evv-set w)])
+        x)))
+  (define std/core/hnd/h-open-none3
+    (λ (f x1 x2 x3)
+      (letrec* ([w (std/core/hnd/evv-swap-create0)] [x ((std/core/hnd/cast-ev3 f) x1 x2 x3)] [keep (std/core/hnd/evv-set w)])
+        x)))
+  (define std/core/hnd/h-open-none4
+    (λ (f x1 x2 x3 x4)
+      (letrec* ([w (std/core/hnd/evv-swap-create0)] [x ((std/core/hnd/cast-ev4 f) x1 x2 x3 x4)] [keep (std/core/hnd/evv-set w)])
+        x)))
+  (define std/core/hnd/open-at1
+    (λ (i f x)
+      (letrec* ([w (std/core/hnd/evv-swap-create1 i)] [y ((std/core/hnd/cast-ev1 f) x)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open-at1 i cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open-at0
+    (λ (i f)
+      (letrec* ([w (std/core/hnd/evv-swap-create1 i)] [y ((std/core/hnd/cast-ev0 f))] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open-at1 i cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open-at1
+    (λ (i f x)
+      (letrec* ([w (std/core/hnd/evv-swap-create1 i)] [y ((std/core/hnd/cast-ev1 f) x)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open-at1 i cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open-at2
+    (λ (i f x1 x2)
+      (letrec* ([w (std/core/hnd/evv-swap-create1 i)] [y ((std/core/hnd/cast-ev2 f) x1 x2)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open-at1 i cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open-at3
+    (λ (i f x1 x2 x3)
+      (letrec* ([w (std/core/hnd/evv-swap-create1 i)] [y ((std/core/hnd/cast-ev3 f) x1 x2 x3)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open-at1 i cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open-at4
+    (λ (i f x1 x2 x3 x4)
+      (letrec* ([w (std/core/hnd/evv-swap-create1 i)] [y ((std/core/hnd/cast-ev4 f) x1 x2 x3 x4)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open-at1 i cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/open1
+    (λ (indices f x)
+      (letrec* ([w (std/core/hnd/evv-swap-create indices)] [y ((std/core/hnd/cast-ev1 f) x)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open1 indices cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open0
+    (λ (indices f)
+      (letrec* ([w (std/core/hnd/evv-swap-create indices)] [y ((std/core/hnd/cast-ev0 f))] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open1 indices cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open1
+    (λ (indices f x)
+      (letrec* ([w (std/core/hnd/evv-swap-create indices)] [y ((std/core/hnd/cast-ev1 f) x)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open1 indices cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open2
+    (λ (indices f x1 x2)
+      (letrec* ([w (std/core/hnd/evv-swap-create indices)] [y ((std/core/hnd/cast-ev2 f) x1 x2)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open1 indices cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open3
+    (λ (indices f x1 x2 x3)
+      (letrec* ([w (std/core/hnd/evv-swap-create indices)] [y ((std/core/hnd/cast-ev3 f) x1 x2 x3)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open1 indices cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/h-open4
+    (λ (indices f x1 x2 x3 x4)
+      (letrec* ([w (std/core/hnd/evv-swap-create indices)] [y ((std/core/hnd/cast-ev4 f) x1 x2 x3 x4)] [_ (std/core/hnd/evv-set w)])
+        (match (std/core/hnd/yielding)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont res)
+            (std/core/hnd/open1 indices cont res)))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            y)]))))
+  (define std/core/hnd/try-finalize-prompt
+    (λ (res)
+      (letrec* ([ievh-11829 std/core/types/h-Hdiv])
+        (match (std/core/hnd/yielding-non-final)
+          [std/core/types/True (std/core/hnd/yield-cont (λ (cont x)
+            (std/core/hnd/try-finalize-prompt (cont x))))]
+          [std/core/types/False (letrec* ([_ std/core/types/Unit])
+            (match (std/core/types/bool/! (std/core/hnd/yielding))
+              [std/core/types/True (std/core/types/Right res)]
+              [std/core/types/False (std/core/types/Left (std/core/hnd/yield-capture))]))]))))
+  (define std/core/hnd/unsafe-try-finalize
+    (λ (action)
+      (std/core/hnd/try-finalize-prompt (action)))))
