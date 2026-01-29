@@ -96,64 +96,68 @@
         (analysis/benchmarks/koka-gen/music/Library h-uniq-next-idh-378 h-uniq-artistsh-386 h-uniq-albumsh-394 h-uniq-songsh-402))))
   (define analysis/benchmarks/koka-gen/music/empty-lib
     (analysis/benchmarks/koka-gen/music/Library 1 std/core/types/Nil std/core/types/Nil std/core/types/Nil))
+  (define analysis/benchmarks/koka-gen/music/music-ops/h-tag
+    "music-ops@music")
   (define analysis/benchmarks/koka-gen/music/music-ops/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/music/music-ops/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/music/music-ops/h-ctl-add-artist
     (λ (h-this)
       (match h-this
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ _ h-x _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ _ h-x _ _) h-x])))
   (define analysis/benchmarks/koka-gen/music/add-artist/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ _ h-ctl-add-artist _ _) h-ctl-add-artist])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ _ h-ctl-add-artist _ _) h-ctl-add-artist])))
   (define analysis/benchmarks/koka-gen/music/add-artist
     (λ (name)
       (perform analysis/benchmarks/koka-gen/music/music-ops add-artist name)))
   (define analysis/benchmarks/koka-gen/music/music-ops/h-ctl-add-album
     (λ (h-this)
       (match h-this
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ h-x _ _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ h-x _ _ _) h-x])))
   (define analysis/benchmarks/koka-gen/music/add-album/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ h-ctl-add-album _ _ _) h-ctl-add-album])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ h-ctl-add-album _ _ _) h-ctl-add-album])))
   (define analysis/benchmarks/koka-gen/music/add-album
     (λ (artist-id title)
       (perform analysis/benchmarks/koka-gen/music/music-ops add-album artist-id title)))
   (define analysis/benchmarks/koka-gen/music/music-ops/h-ctl-add-song
     (λ (h-this)
       (match h-this
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ _ _ h-x _) h-x])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ _ _ h-x _) h-x])))
   (define analysis/benchmarks/koka-gen/music/add-song/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ _ _ h-ctl-add-song _) h-ctl-add-song])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ _ _ h-ctl-add-song _) h-ctl-add-song])))
   (define analysis/benchmarks/koka-gen/music/add-song
     (λ (album-id title duration)
       (perform analysis/benchmarks/koka-gen/music/music-ops add-song album-id title duration)))
   (define analysis/benchmarks/koka-gen/music/music-ops/h-ctl-get-library
     (λ (h-this)
       (match h-this
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ _ _ _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ _ _ _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/music/get-library/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-music-ops _ _ _ _ h-ctl-get-library) h-ctl-get-library])))
+        [(analysis/benchmarks/koka-gen/music/music-ops _ _ _ _ h-ctl-get-library) h-ctl-get-library])))
   (define analysis/benchmarks/koka-gen/music/get-library
     (λ ()
       (perform analysis/benchmarks/koka-gen/music/music-ops get-library)))
+  (define analysis/benchmarks/koka-gen/music/search/h-tag
+    "search@music")
   (define analysis/benchmarks/koka-gen/music/search/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/music/search/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/music/search/h-ctl-find-songs
     (λ (search)
       (match search
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-search _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/music/search _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/music/find-songs/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/music/h-Hnd-search _ h-ctl-find-songs) h-ctl-find-songs])))
+        [(analysis/benchmarks/koka-gen/music/search _ h-ctl-find-songs) h-ctl-find-songs])))
   (define analysis/benchmarks/koka-gen/music/find-songs
     (λ (query)
       (perform analysis/benchmarks/koka-gen/music/search find-songs query)))
@@ -163,26 +167,26 @@
         (letrec* ([ievh-1240 std/core/types/h-Hnodiv] [ievh-1266 std/core/types/h-Hnodiv] [ievh-1323 std/core/types/h-Hnodiv] [ievh-1378 std/core/types/h-Hnodiv] [ievh-1428 std/core/types/h-Hnodiv] [ievh-1454 std/core/types/h-Hnodiv] [ievh-1511 std/core/types/h-Hnodiv] [ievh-1562 std/core/types/h-Hnodiv] [ievh-1615 std/core/types/h-Hnodiv] [ievh-1641 std/core/types/h-Hnodiv] [ievh-1698 std/core/types/h-Hnodiv] [ievh-1757 std/core/types/h-Hnodiv] [ievh-1799 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var initial (λ (db)
             ((λ (h-action)
-              (analysis/benchmarks/koka-gen/music/music-ops/h-handle (handler analysis/benchmarks/koka-gen/music/h-Hnd-music-ops [ctl add-album (std/core/hnd/clause-control2 (λ (aid title resume)
+              (analysis/benchmarks/koka-gen/music/music-ops/h-handle (handler analysis/benchmarks/koka-gen/music/music-ops [ctl add-album (λ (aid title resume)
                 (letrec* ([id (analysis/benchmarks/koka-gen/music/library/next-id (std/core/types/local-get db ievh-1240))] [_ (std/core/types/local-set db (letrec* ([h-fct-x1397 (std/core/types/local-get db ievh-1266)] [h-arg-x1392 (std/core/types/local-get db ievh-1323)] [h-arg-x1393 (std/core/types/h-Optional (std/core/int/+ id 1))] [h-arg-x1395 (std/core/types/h-Optional (std/core/types/Cons (analysis/benchmarks/koka-gen/music/Album id aid title) (analysis/benchmarks/koka-gen/music/library/albums (std/core/types/local-get db ievh-1378))))] [h-arg-x1394 std/core/types/h-None] [h-arg-x1396 std/core/types/h-None])
                   (analysis/benchmarks/koka-gen/music/library/h-copy h-arg-x1392 h-arg-x1393 h-arg-x1394 h-arg-x1395 h-arg-x1396)))])
-                  (resume id))))] [ctl add-artist (std/core/hnd/clause-control1 (λ (name resume)
+                  (resume id)))] [ctl add-artist (λ (name resume)
                 (letrec* ([id (analysis/benchmarks/koka-gen/music/library/next-id (std/core/types/local-get db ievh-1428))] [_ (std/core/types/local-set db (analysis/benchmarks/koka-gen/music/library/h-copy (std/core/types/local-get db ievh-1511) (std/core/types/h-Optional (std/core/int/+ id 1)) (std/core/types/h-Optional (std/core/types/Cons (analysis/benchmarks/koka-gen/music/Artist id name) (analysis/benchmarks/koka-gen/music/library/artists (std/core/types/local-get db ievh-1562)))) std/core/types/h-None std/core/types/h-None))])
-                  (resume id))))] [ctl add-song (std/core/hnd/clause-control3 (λ (aid title dur resume)
+                  (resume id)))] [ctl add-song (λ (aid title dur resume)
                 (letrec* ([id (analysis/benchmarks/koka-gen/music/library/next-id (std/core/types/local-get db ievh-1615))] [_ (std/core/types/local-set db (letrec* ([h-fct-x1773 (std/core/types/local-get db ievh-1641)] [h-arg-x1768 (std/core/types/local-get db ievh-1698)] [h-arg-x1769 (std/core/types/h-Optional (std/core/int/+ id 1))] [h-arg-x1772 (std/core/types/h-Optional (std/core/types/Cons (analysis/benchmarks/koka-gen/music/Song id aid title dur) (analysis/benchmarks/koka-gen/music/library/songs (std/core/types/local-get db ievh-1757))))] [h-arg-x1770 std/core/types/h-None] [h-arg-x1771 std/core/types/h-None])
                   (analysis/benchmarks/koka-gen/music/library/h-copy h-arg-x1768 h-arg-x1769 h-arg-x1770 h-arg-x1771 h-arg-x1772)))])
-                  (resume id))))] [ctl get-library (std/core/hnd/clause-control0 (λ (resume)
-                (resume (std/core/types/local-get db ievh-1799))))]) (λ (h-res)
+                  (resume id)))] [ctl get-library (λ (resume)
+                (resume (std/core/types/local-get db ievh-1799)))]) (λ (h-res)
                 h-res) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define analysis/benchmarks/koka-gen/music/search-service
     (λ (action)
       ((λ (h-action)
-        (analysis/benchmarks/koka-gen/music/search/h-handle (handler analysis/benchmarks/koka-gen/music/h-Hnd-search [ctl find-songs (std/core/hnd/clause-control1 (λ (query resume)
+        (analysis/benchmarks/koka-gen/music/search/h-handle (handler analysis/benchmarks/koka-gen/music/search [ctl find-songs (λ (query resume)
           (letrec* ([current-db (analysis/benchmarks/koka-gen/music/get-library)] [results (std/core/list/filter (analysis/benchmarks/koka-gen/music/library/songs current-db) (λ (s)
             (std/core/string/contains (std/core/string/to-lower (analysis/benchmarks/koka-gen/music/song/title s)) (std/core/string/to-lower query))))])
-            (resume results))))]) (λ (h-res)
+            (resume results)))]) (λ (h-res)
           h-res) h-action)) action)))
   (define analysis/benchmarks/koka-gen/music/populate-lib
     (λ ()

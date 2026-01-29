@@ -24,14 +24,16 @@
   (define analysis/benchmarks/handlers/nim/move/h-ctl-move
     (λ (move)
       (match move
-        [(analysis/benchmarks/handlers/nim/h-Hnd-move _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/nim/move _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/nim/move/h-tag
+    "move@nim")
   (define analysis/benchmarks/handlers/nim/move/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/nim/move/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/nim/move/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/nim/h-Hnd-move _ h-ctl-move) h-ctl-move])))
+        [(analysis/benchmarks/handlers/nim/move _ h-ctl-move) h-ctl-move])))
   (define analysis/benchmarks/handlers/nim/move
     (λ (player sticks)
       (perform analysis/benchmarks/handlers/nim/move move player sticks)))
@@ -50,8 +52,8 @@
       (analysis/benchmarks/handlers/nim/alice-turn n)))
   (define analysis/benchmarks/handlers/nim/perfect
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-move [ctl move (std/core/hnd/clause-tail2 (λ (_p n)
-        (std/core/int/max 1 (std/core/int/% n 4))))]) (λ (h-res)
+      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/move [fun move (λ (_p n)
+        (std/core/int/max 1 (std/core/int/% n 4)))]) (λ (h-res)
         h-res) h-action)))
   (define analysis/benchmarks/handlers/nim/example-perfect1
     (λ ()
@@ -94,9 +96,9 @@
         (std/core/int/<= m n)))))
   (define analysis/benchmarks/handlers/nim/gametree
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-move [ctl move (std/core/hnd/clause-control2 (λ (p n resume)
+      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/move [ctl move (λ (p n resume)
         (letrec* ([moves (analysis/benchmarks/handlers/nim/valid-moves n)] [subgames (std/core/list/map moves resume)] [subtrees (std/core/list/zip moves subgames)])
-          (analysis/benchmarks/handlers/nim/Take p subtrees))))]) (λ (x)
+          (analysis/benchmarks/handlers/nim/Take p subtrees)))]) (λ (x)
         (analysis/benchmarks/handlers/nim/Winner x)) h-action)))
   (define analysis/benchmarks/handlers/nim/show-gtree
     (λ (gt indent)
@@ -122,30 +124,32 @@
   (define analysis/benchmarks/handlers/nim/cheat/h-fun-cheat
     (λ (cheat)
       (match cheat
-        [(analysis/benchmarks/handlers/nim/h-Hnd-cheat _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/nim/cheat _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/nim/cheat/h-tag
+    "cheat@nim")
   (define analysis/benchmarks/handlers/nim/cheat/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/nim/cheat/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/nim/cheat/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/nim/h-Hnd-cheat _ h-fun-cheat) h-fun-cheat])))
+        [(analysis/benchmarks/handlers/nim/cheat _ h-fun-cheat) h-fun-cheat])))
   (define analysis/benchmarks/handlers/nim/cheat
     (λ (player)
       (perform analysis/benchmarks/handlers/nim/cheat cheat player)))
   (define analysis/benchmarks/handlers/nim/cheat-report
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/cheat/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-cheat [fun cheat (std/core/hnd/clause-tail1 (λ (p)
+      (analysis/benchmarks/handlers/nim/cheat/h-handle (handler analysis/benchmarks/handlers/nim/cheat [fun cheat (std/core/hnd/clause-tail1 (λ (p)
         (std/core/exn/throw (std/core/types/++ (analysis/benchmarks/handlers/nim/player/show p) " cheated!") std/core/types/h-None)))]) (λ (h-res)
         h-res) h-action)))
   (define analysis/benchmarks/handlers/nim/check
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-move [ctl move (std/core/hnd/clause-control2 (λ (p n resume)
+      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/move [ctl move (λ (p n resume)
         (letrec* ([m (analysis/benchmarks/handlers/nim/move p n)])
           (match (std/core/maybe/bool (std/core/list/find (analysis/benchmarks/handlers/nim/valid-moves n) (λ (i)
             (std/core/int/== i m))))
             [std/core/types/True (resume m)]
-            [std/core/types/False (analysis/benchmarks/handlers/nim/cheat p)]))))]) (λ (h-res)
+            [std/core/types/False (analysis/benchmarks/handlers/nim/cheat p)])))]) (λ (h-res)
         h-res) h-action)))
   (define analysis/benchmarks/handlers/nim/example-check
     (λ ()
@@ -162,10 +166,10 @@
       (std/core/exn/Ok analysis/benchmarks/handlers/nim/Alice)))
   (define analysis/benchmarks/handlers/nim/pc
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-move [ctl move (std/core/hnd/clause-tail2 (λ (p n)
+      (analysis/benchmarks/handlers/nim/move/h-handle (handler analysis/benchmarks/handlers/nim/move [fun move (λ (p n)
         (match p
           [analysis/benchmarks/handlers/nim/Alice (std/core/int/max 1 (std/core/int/% n 4))]
-          [analysis/benchmarks/handlers/nim/Bob n])))]) (λ (h-res)
+          [analysis/benchmarks/handlers/nim/Bob n]))]) (λ (h-res)
         h-res) h-action)))
   (define analysis/benchmarks/handlers/nim/example-pc1
     (λ ()
@@ -196,14 +200,16 @@
   (define analysis/benchmarks/handlers/nim/choose/h-ctl-choose
     (λ (choose)
       (match choose
-        [(analysis/benchmarks/handlers/nim/h-Hnd-choose _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/nim/choose _ h-x) h-x])))
+  (define analysis/benchmarks/handlers/nim/choose/h-tag
+    "choose@nim")
   (define analysis/benchmarks/handlers/nim/choose/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/nim/choose/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/nim/choose/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/nim/h-Hnd-choose _ h-ctl-choose) h-ctl-choose])))
+        [(analysis/benchmarks/handlers/nim/choose _ h-ctl-choose) h-ctl-choose])))
   (define analysis/benchmarks/handlers/nim/choose
     (λ ()
       (perform analysis/benchmarks/handlers/nim/choose choose)))
@@ -214,21 +220,21 @@
         [std/core/types/False (analysis/benchmarks/handlers/nim/perfect m)])))
   (define analysis/benchmarks/handlers/nim/all-results
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/choose/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-choose [ctl choose (std/core/hnd/clause-control0 (λ (resume)
-        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (x)
+      (analysis/benchmarks/handlers/nim/choose/h-handle (handler analysis/benchmarks/handlers/nim/choose [ctl choose (λ (resume)
+        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False)))]) (λ (x)
         (std/core/types/Cons x std/core/types/Nil)) h-action)))
   (define analysis/benchmarks/handlers/nim/example-choose
     (λ ()
       ((λ (h-action)
-        (analysis/benchmarks/handlers/nim/choose/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-choose [ctl choose (std/core/hnd/clause-control0 (λ (resume)
-          (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (h-res)
+        (analysis/benchmarks/handlers/nim/choose/h-handle (handler analysis/benchmarks/handlers/nim/choose [ctl choose (λ (resume)
+          (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False)))]) (λ (h-res)
           h-res) h-action)) (λ ()
         (analysis/benchmarks/handlers/nim/bob-chooses (λ ()
           (std/core/types/Cons (analysis/benchmarks/handlers/nim/game 7) std/core/types/Nil)))))))
   (define analysis/benchmarks/handlers/nim/coin
     (λ (h-action)
-      (analysis/benchmarks/handlers/nim/choose/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-choose [ctl choose (std/core/hnd/clause-tail0 (λ ()
-        (std/num/float64/> (std/num/random/srandom-float64) 0.5)))]) (λ (h-res)
+      (analysis/benchmarks/handlers/nim/choose/h-handle (handler analysis/benchmarks/handlers/nim/choose [ctl choose (λ ()
+        (std/num/float64/> (std/num/random/srandom-float64) 0.5))]) (λ (h-res)
         h-res) h-action)))
   (define analysis/benchmarks/handlers/nim/example-coin
     (λ ()
@@ -243,28 +249,30 @@
       (match (std/num/float64/> (std/num/random/srandom-float64) 0.5)
         [std/core/types/True analysis/benchmarks/handlers/nim/Alice]
         [std/core/types/False analysis/benchmarks/handlers/nim/Bob])))
+  (define analysis/benchmarks/handlers/nim/state/h-tag
+    "state@nim")
   (define analysis/benchmarks/handlers/nim/state/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/handlers/nim/state/h-tag hnd ret action)))
   (define analysis/benchmarks/handlers/nim/state/h-fun-get
     (λ (state)
       (match state
-        [(analysis/benchmarks/handlers/nim/h-Hnd-state _ h-x _) h-x])))
+        [(analysis/benchmarks/handlers/nim/state _ h-x _) h-x])))
   (define analysis/benchmarks/handlers/nim/get/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/nim/h-Hnd-state _ h-fun-get _) h-fun-get])))
+        [(analysis/benchmarks/handlers/nim/state _ h-fun-get _) h-fun-get])))
   (define analysis/benchmarks/handlers/nim/get
     (λ ()
       (perform analysis/benchmarks/handlers/nim/state get)))
   (define analysis/benchmarks/handlers/nim/state/h-fun-put
     (λ (state)
       (match state
-        [(analysis/benchmarks/handlers/nim/h-Hnd-state _ _ h-x) h-x])))
+        [(analysis/benchmarks/handlers/nim/state _ _ h-x) h-x])))
   (define analysis/benchmarks/handlers/nim/put/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/handlers/nim/h-Hnd-state _ _ h-fun-put) h-fun-put])))
+        [(analysis/benchmarks/handlers/nim/state _ _ h-fun-put) h-fun-put])))
   (define analysis/benchmarks/handlers/nim/put
     (λ (x)
       (perform analysis/benchmarks/handlers/nim/state put x)))
@@ -274,12 +282,12 @@
         (letrec* ([ievh-3689 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var init (λ (s)
             ((λ (h-action)
-              (analysis/benchmarks/handlers/nim/state/h-handle (handler analysis/benchmarks/handlers/nim/h-Hnd-state [fun get (std/core/hnd/clause-tail0 (λ ()
-                (std/core/types/local-get s ievh-3689)))] [fun put (std/core/hnd/clause-tail1 (λ (x)
-                (std/core/types/local-set s x)))]) (λ (h-res)
+              (analysis/benchmarks/handlers/nim/state/h-handle (handler analysis/benchmarks/handlers/nim/state [fun get (λ ()
+                (std/core/types/local-get s ievh-3689))] [fun put (λ (x)
+                (std/core/types/local-set s x))]) (λ (h-res)
                 h-res) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define analysis/benchmarks/handlers/nim/s0
     (std/core/types/Cons (std/core/types/Tuple2 analysis/benchmarks/handlers/nim/Alice 0) (std/core/types/Cons (std/core/types/Tuple2 analysis/benchmarks/handlers/nim/Bob 0) std/core/types/Nil)))
   (define analysis/benchmarks/handlers/nim/update-score

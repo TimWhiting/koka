@@ -1,27 +1,29 @@
 (module
   handlers/parser
+  (define handlers/parser/many/h-tag
+    "many@parser")
   (define handlers/parser/many/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/parser/many/h-tag hnd ret action)))
   (define handlers/parser/many/h-ctl-flip
     (λ (many)
       (match many
-        [(handlers/parser/h-Hnd-many _ _ h-x) h-x])))
+        [(handlers/parser/many _ _ h-x) h-x])))
   (define handlers/parser/flip/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/parser/h-Hnd-many _ _ h-ctl-flip) h-ctl-flip])))
+        [(handlers/parser/many _ _ h-ctl-flip) h-ctl-flip])))
   (define handlers/parser/flip
     (λ ()
       (perform handlers/parser/many flip)))
   (define handlers/parser/many/h-ctl-fail
     (λ (many)
       (match many
-        [(handlers/parser/h-Hnd-many _ h-x _) h-x])))
+        [(handlers/parser/many _ h-x _) h-x])))
   (define handlers/parser/fail/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/parser/h-Hnd-many _ h-ctl-fail _) h-ctl-fail])))
+        [(handlers/parser/many _ h-ctl-fail _) h-ctl-fail])))
   (define handlers/parser/fail
     (λ ()
       (perform handlers/parser/many fail)))
@@ -34,17 +36,17 @@
           [std/core/types/False (handlers/parser/select xx)])])))
   (define handlers/parser/solutions
     (λ (h-action)
-      (handlers/parser/many/h-handle (handler handlers/parser/h-Hnd-many [ctl fail (std/core/hnd/clause-control0 (λ (resume)
-        std/core/types/Nil))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
-        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False))))]) (λ (x)
+      (handlers/parser/many/h-handle (handler handlers/parser/many [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        std/core/types/Nil))] [ctl flip (λ (resume)
+        (std/core/list/++ (resume std/core/types/True) (resume std/core/types/False)))]) (λ (x)
         (std/core/types/Cons x std/core/types/Nil)) h-action)))
   (define handlers/parser/eager
     (λ (h-action)
-      (handlers/parser/many/h-handle (handler handlers/parser/h-Hnd-many [ctl fail (std/core/hnd/clause-control0 (λ (resume)
-        std/core/types/Nil))] [ctl flip (std/core/hnd/clause-control0 (λ (resume)
+      (handlers/parser/many/h-handle (handler handlers/parser/many [ctl fail (std/core/hnd/clause-control0 (λ (resume)
+        std/core/types/Nil))] [ctl flip (λ (resume)
         (match (resume std/core/types/True)
           [std/core/types/Nil (resume std/core/types/False)]
-          [xs xs])))]) (λ (x)
+          [xs xs]))]) (λ (x)
         (std/core/types/Cons x std/core/types/Nil)) h-action)))
   (define handlers/parser/choice
     (λ (p1 p2)
@@ -59,17 +61,19 @@
   (define handlers/parser/many1
     (λ (p)
       (std/core/types/Cons (p) (handlers/parser/many p))))
+  (define handlers/parser/parse/h-tag
+    "parse@parser")
   (define handlers/parser/parse/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle handlers/parser/parse/h-tag hnd ret action)))
   (define handlers/parser/parse/h-fun-satisfy
     (λ (parse)
       (match parse
-        [(handlers/parser/h-Hnd-parse _ h-x) h-x])))
+        [(handlers/parser/parse _ h-x) h-x])))
   (define handlers/parser/satisfy/h-select
     (λ (hnd)
       (match hnd
-        [(handlers/parser/h-Hnd-parse _ h-fun-satisfy) h-fun-satisfy])))
+        [(handlers/parser/parse _ h-fun-satisfy) h-fun-satisfy])))
   (define handlers/parser/satisfy
     (λ (pred)
       (perform handlers/parser/parse satisfy pred)))
@@ -79,15 +83,15 @@
         (letrec* ([ievh-1195 std/core/types/h-Hnodiv] [ievh-1337 std/core/types/h-Hnodiv])
           (std/core/hnd/local-var inp (λ (input)
             ((λ (h-action)
-              (handlers/parser/parse/h-handle (handler handlers/parser/h-Hnd-parse [fun satisfy (letrec* ([ievh-1269 std/core/types/h-Hnodiv])
+              (handlers/parser/parse/h-handle (handler handlers/parser/parse [fun satisfy (letrec* ([ievh-1269 std/core/types/h-Hnodiv])
                 (std/core/hnd/clause-tail1 (λ (pred)
                   (match (pred (std/core/types/local-get input ievh-1269))
                     [std/core/types/Nothing (handlers/parser/fail)]
                     [(std/core/types/Just (std/core/types/Tuple2 res rest)) (letrec* ([_ (std/core/types/local-set input rest)])
                       res)]))))]) (λ (x)
                 (std/core/types/Tuple2 x (std/core/types/local-get input ievh-1337))) h-action)) (λ ()
-              (std/core/hnd/h-mask-builtin (λ ()
-                (action))))))))))))
+              (λ ()
+                (action)))))))))))
   (define handlers/parser/char
     (λ (p)
       (handlers/parser/satisfy (λ (input)

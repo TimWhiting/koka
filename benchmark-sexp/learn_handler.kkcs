@@ -1,16 +1,18 @@
 (module
   learn/handler
+  (define learn/handler/example/h-tag
+    "example@handler")
   (define learn/handler/example/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle learn/handler/example/h-tag hnd ret action)))
   (define learn/handler/example/h-ctl-raise
     (λ (example)
       (match example
-        [(learn/handler/h-Hnd-example _ h-x) h-x])))
+        [(learn/handler/example _ h-x) h-x])))
   (define learn/handler/raise/h-select
     (λ (hnd)
       (match hnd
-        [(learn/handler/h-Hnd-example _ h-ctl-raise) h-ctl-raise])))
+        [(learn/handler/example _ h-ctl-raise) h-ctl-raise])))
   (define learn/handler/raise
     (λ (msg)
       (perform learn/handler/example raise msg)))
@@ -22,7 +24,7 @@
   (define learn/handler/example1
     (λ ()
       (letrec* ([h (λ (h-action)
-        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
+        (learn/handler/example/h-handle (handler learn/handler/example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
           (letrec* ([_ (std/core/console/string/println msg)])
             42)))]) (λ (h-res)
           h-res) h-action))])
@@ -31,7 +33,7 @@
   (define learn/handler/example2
     (λ ()
       ((λ (h-action)
-        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
+        (learn/handler/example/h-handle (handler learn/handler/example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
           (letrec* ([_ (std/core/console/string/println msg)])
             42)))]) (λ (h-res)
           h-res) h-action)) (λ ()
@@ -39,7 +41,7 @@
   (define learn/handler/example3
     (λ ()
       ((λ (h-action)
-        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
+        (learn/handler/example/h-handle (handler learn/handler/example [ctl raise (std/core/hnd/clause-control1 (λ (msg resume)
           (letrec* ([_ (std/core/console/string/println msg)])
             42)))]) (λ (h-res)
           h-res) h-action)) (λ ()
@@ -47,7 +49,7 @@
   (define learn/handler/example4
     (λ ()
       ((λ (h-action)
-        (learn/handler/example/h-handle (handler learn/handler/h-Hnd-example [ctl raise (std/core/hnd/clause-never1 (λ (msg)
+        (learn/handler/example/h-handle (handler learn/handler/example [ctl raise (std/core/hnd/clause-never1 (λ (msg)
           (letrec* ([_ (std/core/console/string/println msg)])
             42)))]) (λ (h-res)
           h-res) h-action)) (λ ()
@@ -55,14 +57,16 @@
   (define learn/handler/h-val-ask/h-select
     (λ (hnd)
       (match hnd
-        [(learn/handler/h-Hnd-ask _ h-val-ask) h-val-ask])))
+        [(learn/handler/ask _ h-val-ask) h-val-ask])))
   (define learn/handler/h-val-ask
     (λ ()
       (perform learn/handler/ask @val-ask)))
   (define learn/handler/ask/h-val-ask
     (λ (ask)
       (match ask
-        [(learn/handler/h-Hnd-ask _ h-x) h-x])))
+        [(learn/handler/ask _ h-x) h-x])))
+  (define learn/handler/ask/h-tag
+    "ask@handler")
   (define learn/handler/ask/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle learn/handler/ask/h-tag hnd ret action)))
@@ -75,14 +79,14 @@
     (λ ()
       (letrec* ([_ ((letrec* ([h-value-ask-l81-c12 42])
         (λ (h-action)
-          (learn/handler/ask/h-handle (handler learn/handler/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
-            h-value-ask-l81-c12))]) (λ (h-res)
+          (learn/handler/ask/h-handle (handler learn/handler/ask [val ask (λ ()
+            h-value-ask-l81-c12)]) (λ (h-res)
             h-res) h-action))) (λ ()
         (learn/handler/print-ask)))])
         ((letrec* ([h-value-ask-l82-c12 43])
           (λ (h-action)
-            (learn/handler/ask/h-handle (handler learn/handler/h-Hnd-ask [val ask (std/core/hnd/clause-tail0 (λ ()
-              h-value-ask-l82-c12))]) (λ (h-res)
+            (learn/handler/ask/h-handle (handler learn/handler/ask [val ask (λ ()
+              h-value-ask-l82-c12)]) (λ (h-res)
               h-res) h-action))) (λ ()
           (learn/handler/print-ask))))))
   (define learn/handler/main

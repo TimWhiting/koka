@@ -98,7 +98,7 @@
   (define std/core/h-default-exn
     (λ (action)
       ((λ (h-action)
-        (std/core/exn/exn/h-handle (handler std/core/exn/h-Hnd-exn [? h-brk-throw-exn (std/core/hnd/clause-never1 (λ (exn)
+        (std/core/exn/exn/h-handle (handler std/core/exn/exn [? h-brk-throw-exn (std/core/hnd/clause-never1 (λ (exn)
           (letrec* ([_ (std/core/console/string/print "uncaught exception: ")])
             (std/core/console/default/show/println exn std/core/exn/show))))]) (λ (h-res)
           h-res) h-action)) action)))

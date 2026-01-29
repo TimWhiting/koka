@@ -10,39 +10,41 @@
         [(std/core/types/h-Optional h-uniq-runh-122) h-uniq-runh-122]
         [std/core/types/h-None (analysis/benchmarks/koka-gen/scheduler/task/run h-this)])])
         (analysis/benchmarks/koka-gen/scheduler/Task h-uniq-runh-121))))
+  (define analysis/benchmarks/koka-gen/scheduler/proc/h-tag
+    "proc@scheduler")
   (define analysis/benchmarks/koka-gen/scheduler/proc/h-handle
     (λ (hnd ret action)
       (std/core/hnd/h-hhandle analysis/benchmarks/koka-gen/scheduler/proc/h-tag hnd ret action)))
   (define analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-yield
     (λ (proc)
       (match proc
-        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ _ h-x) h-x])))
+        [(analysis/benchmarks/koka-gen/scheduler/proc _ _ _ h-x) h-x])))
   (define analysis/benchmarks/koka-gen/scheduler/yield/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ _ h-ctl-yield) h-ctl-yield])))
+        [(analysis/benchmarks/koka-gen/scheduler/proc _ _ _ h-ctl-yield) h-ctl-yield])))
   (define analysis/benchmarks/koka-gen/scheduler/yield
     (λ ()
       (perform analysis/benchmarks/koka-gen/scheduler/proc yield)))
   (define analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-fork
     (λ (proc)
       (match proc
-        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ h-x _) h-x])))
+        [(analysis/benchmarks/koka-gen/scheduler/proc _ _ h-x _) h-x])))
   (define analysis/benchmarks/koka-gen/scheduler/fork/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ _ h-ctl-fork _) h-ctl-fork])))
+        [(analysis/benchmarks/koka-gen/scheduler/proc _ _ h-ctl-fork _) h-ctl-fork])))
   (define analysis/benchmarks/koka-gen/scheduler/fork
     (λ (action)
       (perform analysis/benchmarks/koka-gen/scheduler/proc fork action)))
   (define analysis/benchmarks/koka-gen/scheduler/proc/h-ctl-exit
     (λ (proc)
       (match proc
-        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ h-x _ _) h-x])))
+        [(analysis/benchmarks/koka-gen/scheduler/proc _ h-x _ _) h-x])))
   (define analysis/benchmarks/koka-gen/scheduler/exit/h-select
     (λ (hnd)
       (match hnd
-        [(analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc _ h-ctl-exit _ _) h-ctl-exit])))
+        [(analysis/benchmarks/koka-gen/scheduler/proc _ h-ctl-exit _ _) h-ctl-exit])))
   (define analysis/benchmarks/koka-gen/scheduler/exit
     (λ ()
       (perform analysis/benchmarks/koka-gen/scheduler/proc exit)))
@@ -54,18 +56,18 @@
   (define analysis/benchmarks/koka-gen/scheduler/handle-proc
     (λ (action)
       ((λ (h-action)
-        (analysis/benchmarks/koka-gen/scheduler/proc/h-handle (handler analysis/benchmarks/koka-gen/scheduler/h-Hnd-proc [ctl exit (std/core/hnd/clause-control0 (λ (resume)
+        (analysis/benchmarks/koka-gen/scheduler/proc/h-handle (handler analysis/benchmarks/koka-gen/scheduler/proc [ctl exit (λ (resume)
           (λ (q)
-            (analysis/benchmarks/koka-gen/scheduler/run-next q))))] [ctl fork (std/core/hnd/clause-control1 (λ (child-action resume)
+            (analysis/benchmarks/koka-gen/scheduler/run-next q)))] [ctl fork (λ (child-action resume)
           (λ (q)
             (letrec* ([child-task (analysis/benchmarks/koka-gen/scheduler/Task (λ (next-q)
               (letrec* ([child-runner (analysis/benchmarks/koka-gen/scheduler/handle-proc child-action)])
                 (child-runner next-q))))])
-              ((resume std/core/types/Unit) (std/core/list/++ q (std/core/types/Cons child-task std/core/types/Nil)))))))] [ctl yield (std/core/hnd/clause-control0 (λ (resume)
+              ((resume std/core/types/Unit) (std/core/list/++ q (std/core/types/Cons child-task std/core/types/Nil))))))] [ctl yield (λ (resume)
           (λ (q)
             (letrec* ([continuation (analysis/benchmarks/koka-gen/scheduler/Task (λ (next-q)
               ((resume std/core/types/Unit) next-q)))])
-              (analysis/benchmarks/koka-gen/scheduler/run-next (std/core/list/++ q (std/core/types/Cons continuation std/core/types/Nil)))))))]) (λ (_w-l36-c12)
+              (analysis/benchmarks/koka-gen/scheduler/run-next (std/core/list/++ q (std/core/types/Cons continuation std/core/types/Nil))))))]) (λ (_w-l36-c12)
           (λ (q)
             (analysis/benchmarks/koka-gen/scheduler/run-next q))) h-action)) action)))
   (define analysis/benchmarks/koka-gen/scheduler/schedule
