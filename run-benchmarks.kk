@@ -81,6 +81,6 @@ fun main()
   val force = args.find(fn(a) a == "--force").is-just
   val only-floats = args.find(fn(a) a == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  run-benchmarks(files=run-files, analyses=[DMCFA, DMCFA-EXP], force=force)
+  run-benchmarks(files=run-files, analyses=[DMCFA], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFA])
   // run-benchmarks(["handlers/unix"], [DMCFA], force=force)

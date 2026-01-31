@@ -29,8 +29,8 @@ data Conf =
   CEval ExprContext VEnv CombinedCtx -- expr, env, ctx
   | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
   | CContinue RValue Frame CombinedCtx
-  | CHandleEffects RValue VEnv ExprContextId Handler CombinedCtx
-  | CHandleLocal RValue VEnv ExprContextId TName Addr CombinedCtx
+  | CHandleEffects RValue VEnv Call Handler CombinedCtx
+  | CHandleLocal RValue VEnv Call TName Addr CombinedCtx
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int

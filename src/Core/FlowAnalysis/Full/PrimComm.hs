@@ -262,8 +262,11 @@ isTailOp tn = nameStem tn `startsWith` "clause-tail"
 isTailOpT :: TName -> Bool
 isTailOpT tn = isTailOp (getName tn)
 
-isNeverOp :: TName -> Bool
-isNeverOp tn = nameStem (getName tn) `startsWith` "clause-never"
+isNeverOpT :: TName -> Bool
+isNeverOpT tn = nameStem (getName tn) `startsWith` "clause-never"
+
+isNeverOp :: Name -> Bool
+isNeverOp tn = nameStem tn `startsWith` "clause-never"
 
 isTrickyPrimitive :: TName -> Bool
 isTrickyPrimitive n = getName n `elem` [nameCoreStringJoin, nameCoreStringJoinSep]
