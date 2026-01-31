@@ -38,23 +38,23 @@ import Data.Char (toUpper, toLower)
 import Numeric (showFFloat, showEFloat, readHex)
 
 trueCon ::  AChange
-trueCon = AChangeConstr (ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue) []
+trueCon = AChangeConstr nameTrue []
 falseCon :: AChange
-falseCon = AChangeConstr (ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse) []
+falseCon = AChangeConstr nameFalse []
 justCon :: Addr -> Type -> AChange
-justCon addr tp = AChangeObj (ExprPrim (ExprContextId (-1003) nameJust) C.exprUnit) (TName nameJust (maybeType tp) Nothing) [(justValueName, addr)]
+justCon addr tp = AChangeObj nameJust [(justValueName, addr)]
 nothingCon :: AChange
-nothingCon = AChangeConstr (ExprPrim (ExprContextId (-1004) nameNothing) C.exprUnit) []
+nothingCon = AChangeConstr nameNothing []
 emptyCtx :: AChange 
-emptyCtx = AChangeConstr (ExprPrim (ExprContextId (-2001) (newName "emptyCtx")) C.exprUnit) []
+emptyCtx = AChangeConstr (newName "emptyCtx") []
 hole :: AChange 
-hole = AChangeConstr (ExprPrim (ExprContextId (-2000) (newName "hole")) C.exprUnit) []
+hole = AChangeConstr (newName "hole") []
 toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
 anyBool :: (Ord i, Show c, Show o, Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
-changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) []
+changeUnit = AChangeConstr nameUnit []
 
 intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAAMR x s e AChange
 intOp f [p1, p2] = do
@@ -276,8 +276,8 @@ doPrimitive nm achanges ctx u store extendStore = do
       _ -> doBottom
   else if nm == nameBoolNegate then
     case achanges of
-      [AChangeConstr c _] | isTrueExpr c -> return falseCon
-      [AChangeConstr c _] | isFalseExpr c -> return trueCon
+      [AChangeConstr conMatch _] | conMatch == nameTrue -> return falseCon
+      [AChangeConstr conMatch _] | conMatch == nameFalse -> return trueCon
       _ -> doBottom
   else if nm == nameIntOdd then
     case achanges of
@@ -291,8 +291,8 @@ doPrimitive nm achanges ctx u store extendStore = do
     opCmpString (\s1 s2 -> s2 `isPrefixOf` s1) achanges
   else if nm == nameCoreXParse then
     case achanges of
-      [AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))), AChangeConstr e _] ->
-        if isTrueExpr e then
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))), AChangeConstr conMatch _] ->
+        if conMatch == nameTrue then
           case readHex s of
             [(v, "")] -> do
               let addr = ConImplicitAddr justValueName ctx u
@@ -303,7 +303,7 @@ doPrimitive nm achanges ctx u store extendStore = do
           let addr = ConImplicitAddr justValueName ctx u
           extendStore addr (AChangeLit $ LiteralChangeIntX (LChangeSingle (e1, read s)))
           return $ justCon addr typeInt
-      [AChangeLit (LiteralChangeStringX _), AChangeConstr e _] -> do
+      [AChangeLit (LiteralChangeStringX _), AChangeConstr conMatch _] -> do
         let addr = ConImplicitAddr justValueName ctx u
         extendStore addr (AChangeLit $ LiteralChangeIntX LChangeTop)
         each [return nothingCon, return $ justCon addr typeInt]
@@ -315,7 +315,7 @@ doPrimitive nm achanges ctx u store extendStore = do
       _ -> doBottom
   else if nm == nameCoreSliceString then 
     case achanges of 
-      [AChangeObj _ _ [(_, str), (_, start), (_, len)]] -> do
+      [AChangeObj _ [(_, str), (_, start), (_, len)]] -> do
         rString <- store str
         rStart <- store start
         rLen <- store len
@@ -327,7 +327,7 @@ doPrimitive nm achanges ctx u store extendStore = do
           _ -> return $ AChangeLit (LiteralChangeStringX LChangeTop)
   else if nm == nameCoreStringVectorJoin then
     case achanges of
-      [AChangeObj _ _ args] -> do
+      [AChangeObj _ args] -> do
         vals <- mapM (store . snd) args
         if all (\v -> case v of AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s))) -> True; _ -> False) vals then do
           let vals2 = map (\(AChangeLit (LiteralChangeStringX (LChangeSingle (e1, s)))) -> s) vals

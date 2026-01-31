@@ -167,15 +167,15 @@ type CacheInfo = ([Int], [Int], [Int], [Int])
 
 compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo, StoreMetrics) -> (AbValue, M.Map Addr AbValue, CacheInfo, StoreMetrics) -> S.Set (AbValue, AbValue) -> Bool
 compareResult (result, rMap, aci, sm1) (expected, eMap, bci, sm2) checked = do
-  let objMatch :: (ExprContext, TName, [(Name, Addr)]) -> (ExprContext, TName, [(Name, Addr)]) -> Bool
-      objMatch (_, name, args) (_, name2, args2) =
+  let objMatch :: (Name, [(Name, Addr)]) -> (Name, [(Name, Addr)]) -> Bool
+      objMatch (name, args) (name2, args2) =
          let argsMatch = zipWith (\(n, a) (n2, a2) ->
                   let arg1 = fromJust $ M.lookup a rMap
                       arg2 = fromJust $ M.lookup a2 eMap in
                   n == n2 && compareResult (arg1, rMap, aci, sm1) (arg2, eMap, bci, sm2) (S.insert (result, expected) checked)) args args2
          in name == name2 && and argsMatch
-      conMatch :: (ExprContext, [Name]) -> (ExprContext, [Name]) -> Bool
-      conMatch (name, args) (name2, args2) = eConName name == eConName name2
+      conMatch :: (Name, [Name]) -> (Name, [Name]) -> Bool
+      conMatch (name, args) (name2, args2) = name == name2
   if S.member (result, expected) checked then
     True
   else if alits result `litXEquiv` alits expected then
@@ -235,7 +235,7 @@ extractMetrics cache =
     contSemSingletons = count (\(_, KValue ks) -> S.size ks == 1) kEntries
 
     abStructuralSize (AbValue cls cons prims objs _ _) =
-       S.size (S.map fst cls) + S.size (S.map (\(c,_) -> eConName c) cons) + S.size (S.map fst prims) + S.size (S.map (\(_,n,_) -> n) objs)
+       S.size (S.map fst cls) + S.size (S.map fst cons) + S.size prims + S.size (S.map fst objs)
 
     valStrSingletons = count (\(_, SValue val) -> abStructuralSize val == 1) vEntries
 

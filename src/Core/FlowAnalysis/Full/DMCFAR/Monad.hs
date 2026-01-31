@@ -28,8 +28,8 @@ import Type.Pretty (defaultEnv, ppType)
 data Conf =
   CEval ExprContext VEnv -- expr, env, ctx
   | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
-  | CHandleEffects RValue VEnv ExprContextId Handler CombinedCtx
-  | CHandleLocal RValue VEnv ExprContextId TName Addr CombinedCtx
+  | CHandleEffects RValue VEnv Call Handler CombinedCtx
+  | CHandleLocal RValue VEnv Call TName Addr CombinedCtx
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int
