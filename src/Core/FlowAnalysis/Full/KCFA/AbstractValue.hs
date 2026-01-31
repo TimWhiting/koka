@@ -41,17 +41,23 @@ data Call =
   CallTop
   | CallDelim
   | CallApp ExprContextId
+  | CtxId (Either ExprContextId Name)
   deriving (Eq, Ord)
 
 instance Show Call where
   show CallTop = "top"
   show CallDelim = "delim"
   show (CallApp ctxId) = "a" ++ showSimpleCtxId ctxId
+  show (CtxId (Left ctxId)) = "c" ++ showSimpleCtxId ctxId
+  show (CtxId (Right name)) = "c" ++ show name
 
 type StaticCtx = [Call]
 
 addCall :: Int -> StaticCtx -> ExprContextId -> StaticCtx
 addCall m calls call = take m $ CallApp call : calls
+
+addCallRaw :: Int -> StaticCtx -> Call -> StaticCtx
+addCallRaw m calls call = take m $ call : calls
 
 type VEnv = M.Map TName (StaticCtx, ExprContextId)
 
@@ -66,11 +72,11 @@ data DelimitedVal =
 data DelimitedFrame =
   DFrame {
       dframeVEnv :: VEnv,
-      dframeBodId :: ExprContextId,
+      dframeBodId :: Call,
       dframeHnd :: Handler
   } | DFrameLocal {
       dflVEnv :: VEnv,
-      dflBodId :: ExprContextId,
+      dflBodId :: Call,
       dflVarName :: TName,
       dflValAddr :: Addr
   } | DFrameDone
@@ -101,7 +107,8 @@ data RValue =
   deriving (Eq, Ord, Show)
 
 data Frame =
-  FrameDone
+  FrameDone { ctx :: ExprContextId }
+  | FCount
   | FScrut {
       parent :: ExprContext,
       branches :: [ExprContext],
@@ -136,7 +143,9 @@ data Frame =
   | FRestoreDelim {
      dframe :: DelimitedFrame
   }
-  | FMask
+  | FMask {
+    ctx :: ExprContextId
+  }
   deriving (Eq, Ord, Show)
 
 
@@ -175,21 +184,22 @@ instance (Pretty k, Pretty v)=> Pretty (M.Map k v) where
 
 data AChange =
   AChangeClos ExprContext VEnv
-  | AChangePrim TName ExprContext
-  | AChangeConstr ExprContext [Name]
-  | AChangeObj ExprContext TName [(Name,Addr)]
+  | AChangePrim Name
+  | AChangeConstr Name [Name]
+  | AChangeObj Name [(Name,Addr)]
   | AChangeLit LiteralChangeX
   | AChangeKont Addr VEnv Handler -- Where to return to and where to extend the return continuation
   deriving (Eq, Ord)
 
+vcontextId :: AChange -> Either ExprContextId Name
 vcontextId change =
   case change of
-    AChangeClos e _ -> contextId e
-    AChangePrim _ e -> contextId e
-    AChangeConstr e _ -> contextId e
-    AChangeObj e _ _ -> contextId e
-    AChangeLit e -> litEx e
-    AChangeKont _ _ h@(Handler _ _ e _) -> contextId $ fromJust e
+    AChangeClos e _ -> Left $ contextId e
+    AChangePrim n -> Right n
+    AChangeConstr nm _ -> Right nm
+    AChangeObj nm _ -> Right nm
+    AChangeLit e -> Left $ litEx e
+    AChangeKont _ _ (Handler _ _ e _) -> Left $ contextId $ fromJust e
 
 envOfClos :: AChange -> VEnv
 envOfClos res =
@@ -203,25 +213,46 @@ ctxOfClos res =
 
 instance Show AChange where
   show (AChangeClos expr env) = showNoEnvClosure (expr, env)
-  show (AChangeConstr expr params) = showSimpleClosure (expr, startEnv)
-  show (AChangeObj e name args) = show name ++ "(" ++ show args ++ ")"
-  show (AChangePrim name expr) = show name
+  show (AChangeConstr name params) = show name ++ "(" ++ intercalate "," (map show params) ++ ")"
+  show (AChangeObj name args) = show name ++ "(" ++ show args ++ ")"
+  show (AChangePrim name) = show name
   show (AChangeKont addr env handler) = "Kont" ++ show (addr, env, handler)
   show (AChangeLit lit) = show lit
 
 data AbValue =
   AbValue{
     aclos:: !(Set (ExprContext, VEnv)),
-    acons:: !(Set (ExprContext, [Name])),
-    aprims :: !(Set (TName, ExprContext)),
-    aobjs :: !(Set (ExprContext, TName, [(Name,Addr)])),
+    acons:: !(Set (Name, [Name])),
+    aprims :: !(Set Name),
+    aobjs :: !(Set (Name, [(Name,Addr)])),
     akonts:: !(Set (Addr, VEnv, Handler)),
     alits:: !LiteralLatticeX
   } deriving (Eq, Ord)
 
-sizeOf :: AbValue -> Int
-sizeOf (AbValue cls cntrs prims objs konts lit) =
-  length cls + length cntrs + length prims + length objs + length konts + sizeLitX lit
+semSizeOf :: AbValue -> Int
+semSizeOf (AbValue cls cntrs prims objs konts lit) =
+  let others = length cls + length cntrs + length prims + length objs + length konts
+  in if others == 0 then 0
+       -- if litIsPrecise lit then 1 else if litIsTopX lit then -1 else 0
+     else others
+
+kAddrId :: Addr -> String
+kAddrId (KAddr frame _ _ dval@(DVal label op expr args)) =
+  show op ++ "/" ++ show (contextId expr) ++ "/" ++ frameId frame
+kAddrId EndKAddr = "KEndAddr"
+
+frameId :: Frame -> String
+frameId frame =
+  case frame of
+    FrameDone ctx -> "done@" ++ show ctx
+    FScrut parent _ _ -> "scrut@" ++ show (contextId parent)
+    FApp _ left _ parent _ -> "app/" ++ show (length left) ++ "@" ++ show (contextId parent)
+    FLet i _ j _ n _ parent _ -> "let/" ++ show i ++ "-" ++ show j ++ "/" ++ show n ++ "@" ++ show (contextId parent)
+    FDollar ctx -> "dollar@" ++ show ctx
+    FResume _ _ _ rctx -> "resume@" ++ show rctx
+    FRestoreDelim (DFrame _ b _) -> "restore@" ++ show b
+    FRestoreDelim (DFrameLocal _ b _ _) -> "restore@" ++ show b
+    FMask ctx -> "mask@" ++ show ctx
 
 sizeLitX :: LiteralLatticeX -> Int
 sizeLitX (LiteralLatticeX sint sfloat schar strings) =
@@ -233,7 +264,7 @@ sizeLit LTop = 2
 sizeLit LSingle{} = 1
 
 addrs :: AbValue -> [Addr]
-addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, _, args) -> map snd args) objs
+addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, args) -> map snd args) objs
 
 changes :: AbValue -> [AChange]
 changes (AbValue clos constrs prims objs konts lits) =
@@ -241,8 +272,8 @@ changes (AbValue clos constrs prims objs konts lits) =
   where
     closs = map (uncurry AChangeClos) $ S.toList clos
     constrss = map (uncurry AChangeConstr) $ S.toList constrs
-    primss = map (uncurry AChangePrim) $ S.toList prims
-    objss = map (\(e, n, a) -> AChangeObj e n a) $ S.toList objs
+    primss = map AChangePrim $ S.toList prims
+    objss = map (\(n, a) -> AChangeObj n a) $ S.toList objs
     kontss = map (\(addr, env, handler) -> AChangeKont addr env handler) $ S.toList konts
     litss = changesLit lits
 
@@ -255,9 +286,9 @@ changesLit (LiteralLatticeX sint sfloat schar strings) =
 
 changeIn :: AChange -> AbValue -> Bool
 changeIn (AChangeClos ctx env) (AbValue clos _ _ _ _ _) = S.member (ctx,env) clos
-changeIn (AChangeConstr ctx params) (AbValue _ constr _ _ _ _) = S.member (ctx,params) constr
-changeIn (AChangePrim name expr) (AbValue _ _ prims _ _ _) = S.member (name, expr) prims
-changeIn (AChangeObj exp name args) (AbValue _ _ _ objs _ _) = S.member (exp, name, args) objs
+changeIn (AChangeConstr name params) (AbValue _ constr _ _ _ _) = S.member (name,params) constr
+changeIn (AChangePrim name) (AbValue _ _ prims _ _ _) = S.member name prims
+changeIn (AChangeObj name args) (AbValue _ _ _ objs _ _) = S.member (name, args) objs
 changeIn (AChangeKont addr env handler) (AbValue _ _ _ _ konts _) = S.member (addr, env, handler) konts
 changeIn (AChangeLit lit) (AbValue _ _ _ _ _ (LiteralLatticeX ints floats chars strings)) =
   case lit of
@@ -299,18 +330,18 @@ limitEnv env fvs = M.filterWithKey (\k _ -> k `S.member` fvs) env
 showSimpleAbValue :: AbValue -> String
 showSimpleAbValue (AbValue cls cntrs prims objs konts lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-  (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map (showSimpleContext . fst) (S.toList cntrs)) ++ "]") ++
-  (if S.null prims then "" else " prims: [" ++ intercalate "," (map (showSimpleContext . snd) (S.toList prims)) ++ "]") ++
-  (if S.null objs then "" else " objs: [" ++ intercalate "," (map show (S.toList objs)) ++ "]") ++
+  (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map (show . fst) (S.toList cntrs)) ++ "]") ++
+  (if S.null prims then "" else " prims: [" ++ intercalate "," (map show (S.toList prims)) ++ "]") ++
+  (if S.null objs then "" else " objs: [" ++ intercalate "," (map (show . (\(n,_) -> n)) (S.toList objs)) ++ "]") ++
   (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
   (if litIsBottomX lit then "" else " lits: " ++ show lit)
 
 showNoEnvAbValue :: AbValue -> String
 showNoEnvAbValue (AbValue cls cntrs prims objs konts lit) =
   (if S.null cls then "" else "closures: " ++ show (map showSimpleClosure (S.toList cls))) ++
-  (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map (showSimpleContext . fst) (S.toList cntrs)) ++ "]") ++
-  (if S.null prims then "" else " prims: [" ++ intercalate "," (map (showSimpleContext . snd) (S.toList prims)) ++ "]") ++
-  (if S.null objs then "" else " objs: [" ++ intercalate "," (map show (S.toList objs)) ++ "]") ++
+  (if S.null cntrs then "" else " constrs: [" ++ intercalate "," (map (show . fst) (S.toList cntrs)) ++ "]") ++
+  (if S.null prims then "" else " prims: [" ++ intercalate "," (map show (S.toList prims)) ++ "]") ++
+  (if S.null objs then "" else " objs: [" ++ intercalate "," (map (show . (\(n,_) -> n)) (S.toList objs)) ++ "]") ++
   (if S.null konts then "" else " konts: " ++ show (map show (S.toList konts))) ++
   (if litIsBottomX lit then "" else " lits: " ++ show lit)
 
@@ -348,8 +379,8 @@ addChange :: AbValue -> AChange -> (AChange, AbValue)
 addChange ab@(AbValue cls cs prims objs konts lit) change =
   case change of
     AChangeClos lam env -> (change, AbValue (S.insert (lam,env) cls) cs prims objs konts lit)
-    AChangePrim name expr -> (change, AbValue cls cs (S.insert (name, expr) prims) objs konts lit)
-    AChangeObj exp name addrs -> (change, AbValue cls cs prims (S.insert (exp, name, addrs) objs) konts lit)
+    AChangePrim name -> (change, AbValue cls cs (S.insert name prims) objs konts lit)
+    AChangeObj name addrs -> (change, AbValue cls cs prims (S.insert (name, addrs) objs) konts lit)
     AChangeConstr c params -> (change, AbValue cls (S.insert (c,params) cs) prims objs konts lit)
     AChangeKont addr env handler -> (change, AbValue cls cs prims objs (S.insert (addr, env, handler) konts) lit)
     AChangeLit l ->
