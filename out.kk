@@ -1,40 +1,40 @@
 ]4;0;?\[6nparse   : .../std/core/types.kk
 parse   : .../std/core/undiv.kk
 parse   : .../std/core/unsafe.kk
-parse   : .../std/core/hnd.kk
-parse   : .../std/core/int.kk
-parse   : .../std/core/bool.kk
-parse   : .../std/core/exn.kk
-parse   : .../std/core/char.kk
 parse   : .../std/core/order.kk
-parse   : .../std/core/string.kk
+parse   : .../std/core/hnd.kk
+parse   : .../std/core/char.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/exn.kk
 parse   : .../std/core/sslice.kk
-parse   : .../std/core/vector.kk
 parse   : .../std/core/list.kk
+parse   : .../std/core/vector.kk
+parse   : .../std/core/string.kk
 parse   : .../std/core/maybe.kk
-parse   : .../std/core/maybe2.kk
 parse   : .../std/core/either.kk
 parse   : .../std/core/tuple.kk
+parse   : .../std/core/maybe2.kk
+check   : std/core/types
 parse   : .../std/core/lazy.kk
-parse   : .../std/core/show.kk
 parse   : .../std/core/console.kk
-parse   : .../analysis/benchmarks/koka-gen/coop-communication.kk
-parse   : .../std/core.kk
+parse   : .../std/core/show.kk
 parse   : .../std/core/debug.kk
 parse   : .../std/core/delayed.kk
-check   : std/core/types
-check   : std/core/lazy
-check   : std/core/unsafe
-check   : std/core/undiv
-check   : std/core/bool
+parse   : .../analysis/test/interp2-t3.kk
+parse   : .../std/core.kk
 check   : std/core/int
+check   : std/core/bool
+check   : std/core/lazy
+check   : std/core/undiv
+check   : std/core/unsafe
 check   : std/core/hnd
-check   : std/core/char
 check   : std/core/order
-check   : std/core/either
-check   : std/core/delayed
+check   : std/core/char
 check   : std/core/tuple
 check   : std/core/exn
+check   : std/core/delayed
+check   : std/core/either
 check   : std/core/maybe2
 check   : std/core/vector
 check   : std/core/maybe
@@ -45,8 +45,5 @@ check   : std/core/show
 check   : std/core/console
 check   : std/core/debug
 check   : std/core
-check   : analysis/benchmarks/koka-gen/coop-communication
-dmcfa,analysis/benchmarks/koka-gen/coop-communication/prime-sieve,100,100,timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout
-dmcfa,analysis/benchmarks/koka-gen/coop-communication/send-recv,100,100,1,1517,1517,1517,332,332,332,194,194,194,1357,1358,1356,0.36613,0.362739,0.3666
-dmcfa,analysis/benchmarks/koka-gen/coop-communication/spawn,100,100,1,993,993,993,292,292,292,165,165,165,904,906,902,0.236461,0.236641,0.239618
-dmcfa,analysis/benchmarks/koka-gen/coop-communication/yield,100,100,1,521,521,521,153,153,153,84,84,84,464,466,462,0.076207,0.075314,0.075544
+check   : analysis/test/interp2-t3
+user interrupt

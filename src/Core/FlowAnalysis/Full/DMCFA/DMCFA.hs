@@ -334,7 +334,8 @@ doDoContinue res frame ctx =
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx (CallApp u) (hLabel hnd)
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            res <- apply kont addr newDelimCtx
+            AChangeKont kaddr _ _ <- store kont
+            res <- apply kaddr addr newDelimCtx
             returnV $ handleEffects res venv (CallApp u) hnd newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
@@ -494,7 +495,9 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
             zipWithM_ rebind args (map (\n -> BindingAddr retCtx n (contextId op)) params)
             if isTailOp opConName then do
               res <- eval opBod (limitEnv newEnv (fvs opBod)) retCtx
-              doContinue res (FResume ctx' kOp venv h (contextId opBod)) retCtx
+              let kaddr = BindKImplicitAddr retCtx venv (contextId op)
+              extendStore kaddr (AChangeKont kOp venv h)
+              doContinue res (FResume ctx' kaddr venv h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
               returnV $ eval opBod (limitEnv newEnv (fvs opBod)) retCtx
             else do

@@ -82,7 +82,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- do
                   mbRes <- do
                         let once = do
-                              timeout 50000000 $ do
+                              timeout 500000000 $ do
                                   tstart <- getCurrentTime
                                   -- trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -91,6 +91,7 @@ runQueryAtRange bc build mod m d doQuery =
                                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                                   ress' <- getAbResult
+                                                  -- trace ("Finished Analyzing " ++ show name) $ return ()
                                                   -- trace ("result': " ++ show ress') $ return ()
                                                   return ress'
                                   tend <- getCurrentTime
@@ -133,7 +134,7 @@ runQueryAtRange bc build mod m d doQuery =
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just result
                     Nothing -> do
-                      let value = PolyVariantMetrics "dmcfa" d m (nameModule (modName mod) ++ "/" ++ name) [] False Nothing
+                      let value = PolyVariantMetrics "dmcfa" d m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
                       -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
@@ -268,8 +269,11 @@ extractMetrics cache =
     -- Histograms
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e ctx), RValue val) <- M.toList cache]
     ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
+    
+    -- Total FixInput states
+    numTotalFixInput = M.size cache
   in StoreMetrics
-      numStore numLit numStruct numCont callTargetCount
+      numStore numLit numStruct numCont callTargetCount numTotalFixInput
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons
       semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
       literalTopCount
@@ -284,6 +288,8 @@ getAbResult = do
   let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
                         VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                           Bottom -> (evals, applies, ksizes, ssizes)
+                        VStore BindKImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
+                                                                Bottom -> (evals, applies, ksizes, ssizes)
                         VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                                Bottom -> (evals, applies, ksizes, ssizes)
                         VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
@@ -299,6 +305,8 @@ getAbResult = do
                                                      Bottom -> (evals, applies, ksizes, ssizes)
                         Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
                                                   Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                                                      Bottom -> (evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                                                    Bottom -> (evals, applies, ksizes, ssizes)
                         Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
