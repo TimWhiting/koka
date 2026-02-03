@@ -44,6 +44,8 @@ import Core.Core
 import qualified Core.Core as Core
 import Core.Pretty
 import Core.CoreVar
+import Control.Exception (catch)
+import GHC.IO (unsafePerformIO)
 
 trace s x =
    -- Lib.Trace.trace s
