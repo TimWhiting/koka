@@ -133,7 +133,7 @@ runQueryAtRange bc build mod m doQuery =
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just result
                     Nothing -> do
-                      let value = PolyVariantMetrics "dmcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) [] False Nothing
+                      let value = PolyVariantMetrics "dmcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
                       -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
@@ -268,8 +268,11 @@ extractMetrics cache =
     -- Histograms
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e _ ctx), RValue val) <- M.toList cache]
     ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
+    
+    -- Total FixInput states
+    numTotalFixInput = M.size cache
   in StoreMetrics
-      numStore numLit numStruct numCont callTargetCount
+      numStore numLit numStruct numCont callTargetCount numTotalFixInput
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons
       semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
       literalTopCount
@@ -286,6 +289,8 @@ getAbResult = do
                                                           Bottom -> (evals, applies, ksizes, ssizes)
                         VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                                Bottom -> (evals, applies, ksizes, ssizes)
+                        VStore BindKImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
+                                                                Bottom -> (evals, applies, ksizes, ssizes)
                         VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
                                                               Bottom -> (evals, applies, ksizes, ssizes)
                         VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
@@ -299,6 +304,8 @@ getAbResult = do
                                                   Bottom -> (evals, applies, ksizes, ssizes)
                         Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                                                    Bottom -> (evals, applies, ksizes, ssizes)
+                        Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
+                                                      Bottom -> (evals, applies, ksizes, ssizes)
                         Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
                                                            Bottom -> (evals, applies, ksizes, ssizes)
                         Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)

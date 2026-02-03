@@ -98,39 +98,44 @@ envCtx (ctx, _) = ctx
 
 data DelimitedVal =
   DVal {
-      dLabel :: Name,
-      dOpName :: Name,
-      dExpr :: ExprContext,
-      dArgs :: [Addr],
-      dCtx :: CombinedCtx
+      dLabel :: !Name,
+      dOpName :: !Name,
+      dExpr :: !ExprContext,
+      dArgs :: ![Addr],  -- INVARIANT: Never contains KAddr (same as Frame invariant)
+      dCtx :: !CombinedCtx
   } deriving (Eq, Ord, Show)
 
 data DelimitedFrame =
   DFrame {
-      dframeVEnv :: VEnv,
-      dframeBodId :: Call,
-      dframeHnd :: Handler
+      dframeVEnv :: !VEnv,
+      dframeBodId :: !Call,
+      dframeHnd :: !Handler
   } | DFrameLocal {
-      dflVEnv :: VEnv,
-      dflBodId :: Call,
-      dflVarName :: TName,
-      dflValAddr :: Addr
+      dflVEnv :: !VEnv,
+      dflBodId :: !Call,
+      dflVarName :: !TName,
+      dflValAddr :: !Addr  -- INVARIANT: Never KAddr (value address for local variable)
   } | DFrameDone
   | DFrameNone -- TODO: Don't use DelimFrames
   deriving (Eq, Ord, Show)
 
+-- IMPORTANT INVARIANT: Addrs stored in Frame constructors are NEVER KAddrs.
+-- This breaks the potential Addr → Frame → KAddr → Frame recursion cycle.
+-- Frames only contain BindingAddr, UnitAddr, EndVAddr, and other non-continuation addresses.
 data Addr =
   BindingAddr !CombinedCtx !TName !ExprContextId
   | UnitAddr
   | EndVAddr
   | EndKAddr
-  | KAddr !Frame !StaticCtx !DelimitedFrame !DelimitedVal
+  | KAddr !Frame !StaticCtx !DelimitedFrame !DelimitedVal  -- KAddr contains Frame, but Frame addrs are never KAddr
   | BindImplicitAddr !CombinedCtx !VEnv !ExprContextId
+  | BindKImplicitAddr !CombinedCtx !VEnv !ExprContextId
   | ArgImplicitAddr !CombinedCtx !VEnv !Int !ExprContextId
   | ConImplicitAddr !Name !CombinedCtx !ExprContextId
   deriving (Eq, Ord)
 instance Show Addr where
   show (BindingAddr ctx name ectx) = "B@(" ++ show name ++ ":" ++ show ctx ++ ")"
+  show (BindKImplicitAddr ctx env ctxId) = "BKI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
   show UnitAddr = "UnitAddr"
   show EndVAddr = "EndVAddr"
   show EndKAddr = "EndKAddr"
@@ -162,49 +167,53 @@ data RValue =
   | ROp DelimitedVal StaticCtx Frame DelimitedFrame Addr
   deriving (Eq, Ord, Show)
 
+-- IMPORTANT INVARIANT: All Addr fields in Frame constructors (resolvedArgs, resolved, vaddr)
+-- must be non-continuation addresses (never KAddr). This ensures finite state space by
+-- breaking the Addr → Frame → Addr recursion cycle.
+-- Continuation addresses are only stored in the continuation store, not in frames.
 data Frame =
   FCount -- Not a real frame, just for counting frames
   | FrameDone {
-    ctx :: ExprContextId
+    ctx :: !ExprContextId
   }
   | FScrut {
-      parent :: ExprContext,
-      branches :: [ExprContext],
-      env :: VEnv
+      parent :: !ExprContext,
+      branches :: ![ExprContext],
+      env :: !VEnv
     }
   | FApp {
-      totalArgs :: Int,
-      leftArgs :: [ExprContext],
-      resolvedArgs :: [Addr],
-      parent :: ExprContext,
-      env :: VEnv
+      totalArgs :: !Int,
+      leftArgs :: ![ExprContext],
+      resolvedArgs :: ![Addr],  -- INVARIANT: Never contains KAddr
+      parent :: !ExprContext,
+      env :: !VEnv
     }
   | FLet {
-        groupIdx :: Int,
-        numGroups :: Int,
-        bindingIdx :: Int,
-        numBindings :: Int,
-        name :: TName,
-        resolved :: [Addr],
-        parent :: ExprContext,
-        env :: VEnv
+        groupIdx :: !Int,
+        numGroups :: !Int,
+        bindingIdx :: !Int,
+        numBindings :: !Int,
+        name :: !TName,
+        resolved :: ![Addr],  -- INVARIANT: Never contains KAddr
+        parent :: !ExprContext,
+        env :: !VEnv
       }
   | FDollar {
-      ctx :: ExprContextId,
-      vaddr :: Addr -- Precise closure address
+      ctx :: !ExprContextId,
+      vaddr :: !Addr  -- INVARIANT: Never KAddr - Precise closure address only
   }
   | FResume {
-      rretCtx :: StaticCtx,
-      vaddr :: Addr,
-      venv :: VEnv,
-      rHnd :: Handler,
-      rCtx :: ExprContextId
+      rretCtx :: !StaticCtx,
+      vaddr :: !Addr,  -- INVARIANT: Never KAddr
+      venv :: !VEnv,
+      rHnd :: !Handler,
+      rCtx :: !ExprContextId
   }
   | FRestoreDelim {
-     dframe :: DelimitedFrame
+     dframe :: !DelimitedFrame
   }
   | FMask {
-    ctx :: ExprContextId
+    ctx :: !ExprContextId
   }
   deriving (Eq, Ord)
 instance Show Frame where
@@ -238,9 +247,10 @@ nextLetFrame
 extendEnv :: VEnv -> ExprContextId -> TName -> VEnv
 extendEnv (ctx, m) id nm =
   (ctx, M.insert nm id m)
-
+-- IMPORTANT INVARIANT: hReturn is only ever FDollar when it is Just.
+-- This constrains the Frame → DelimitedFrame → Handler → Frame cycle to only FDollar frames.
 data Handler =
-  Handler { hLabel :: Name, ops :: Addr, hReturnExpr :: Maybe ExprContext, hReturn :: Maybe Frame }
+  Handler { hLabel :: !Name, ops :: !Addr, hReturnExpr :: !(Maybe ExprContext), hReturn :: !(Maybe Frame) }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]

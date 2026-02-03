@@ -15,6 +15,7 @@
 {-# LANGUAGE GADTs #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Core.FlowAnalysis.FixpointMonad(
   FixTS, FixT, FixIn,
@@ -135,13 +136,13 @@ instance Ord a => Lattice (ChangeSet a) a where
 type FixTS e s i l d = FixT e s i l d d
 data ContX e s i l d = ContX {
                             contV :: d -> FixIn e s i l d (), -- The continuation to call when the cache changes
-                            from :: Maybe i,
-                            fromId :: Integer
+                            from :: !(Maybe i),
+                            fromId :: !Integer
                           }
 data ContF e s i l d = ContF {
                             contFV :: l -> FixIn e s i l d (), -- The continuation to call when the cache changes
-                            fromF :: Maybe i,
-                            fromFId :: Integer
+                            fromF :: !(Maybe i),
+                            fromFId :: !Integer
                           } 
 instance Show (ContX e s i l d) where
   show _ = "ContX"
@@ -230,7 +231,9 @@ memo key f = do
       (xss, tid, [], []) -> do
         -- First time requesting the memoed function with this key
         -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
-        put (M.insert key (xss, tid, [cont], []) cache, state, if tid == newId then newId + 1 else newId, invalid)
+        let !newCache = M.insert key (xss, tid, [cont], []) cache
+            !newNewId = if tid == newId then newId + 1 else newId
+        put (newCache, state, newNewId, invalid)
         if isBottom xss then do 
           -- trace ("Running " ++ show key) $ return ()
           runContT (localCtxT (Just key) tid f) (\x -> do
@@ -241,7 +244,8 @@ memo key f = do
         else mapM_ c (elems xss)
       (xss, tid, conts, fconts) -> do
         -- Requesting the result of the memoized function from a different dependant
-        put (M.insert key (xss, tid, cont:conts, fconts) cache, state, newId, invalid)
+        let !newCache = M.insert key (xss, tid, cont:conts, fconts) cache
+        put (newCache, state, newId, invalid)
         -- trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         mapM_ c (elems xss)
       )
@@ -258,7 +262,9 @@ memoFull key f = do
       (xss, tid, [], []) -> do
         -- First time requesting the memoed function with this key
         -- trace ("\nNew memo request for  " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
-        put (M.insert key (xss, tid, [], [cont]) cache, state, if tid == newId then newId + 1 else newId, invalid)
+        let !newCache = M.insert key (xss, tid, [], [cont]) cache
+            !newNewId = if tid == newId then newId + 1 else newId
+        put (newCache, state, newNewId, invalid)
         if isBottom xss then do
           c xss
           runContT (localCtxT (Just key) tid f) (\x -> do
@@ -270,7 +276,8 @@ memoFull key f = do
           c xss
       (xss, tid, conts, fconts) -> do
         -- Requesting the result of the memoized function from a different dependant
-        put (M.insert key (xss, tid, conts, cont:fconts) cache, state, newId, invalid)
+        let !newCache = M.insert key (xss, tid, conts, cont:fconts) cache
+        put (newCache, state, newId, invalid)
         -- trace ("\nNew continuation for " ++ show key ++ "\nFrom: " ++ show from ++ "\n") $ return ()
         c xss
     )
@@ -296,12 +303,11 @@ push key value = do
     -- Otherwise, insert the value into the cache and call all continuations in the cache
     -- that depend on changes to this key
     let (value', added) = value `insert` values
+        !newCache = M.insert key (added, keyId, conts, fconts) cache
+        !newNewId = if keyId == newId then newId + 1 else newId
     -- when (values /= bottom) $ 
     --   trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
-    if keyId == newId then
-      put (M.insert key (added, keyId, conts, fconts) cache, state, newId + 1, invalid)
-    else
-      put (M.insert key (added, keyId, conts, fconts) cache, state, newId, invalid)
+    put (newCache, state, newNewId, invalid)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi) -> do
       -- trace ("\nCalling continuation:" ++ show key ++ "\n\tFrom: " ++ show f ++ "\n\tTo: " ++ show key ++ "\n\tNew value: " ++ show value ++ "\n") $ return ()

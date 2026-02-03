@@ -8,7 +8,7 @@ import std/os/dir
 
 val suite-files = ["basic", "nondet", "nested", "multi-effect", "recursion", "state-handler", "complex-flow", "nested-nondet"]
 val handler-files = ["yield", "vec", "unix", "nim", "ambient", "scoped"]
-val rosetta-files = ["0-nums/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
+val rosetta-files = ["nums0/pr4rings", "j/jump-anywhere", "m/monads-writer"] // "n/nim"
 val kokagen-files = ["build", "interp", "interp2", "mini-ppl", "music", "scheduler", "ukanren", "coop-communication"] // release, coop-communication 
 val float-files = ["handlers/nim", "koka-gen/mini-ppl", "rosetta/rosetta/0-nums/pr100prisoners", "rosetta/rosetta/0-nums/pr2048", "rosetta/rosetta/0-nums/pr24game", "rosetta/rosetta/g/gamma", "rosetta/rosetta/m/monads-writer"]
 val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "handlers/" ++ f) ++
@@ -32,9 +32,9 @@ fun flag(a: analysis)
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> list(0,3).flatmap( fn(d) list(0,3).map( fn(m) (d,m)))  ++ [(20, 2), (2, 20), (100, 100)] 
-    DMCFA-EXP -> list(0,3).flatmap( fn(d) list(0,3).map( fn(m) (d,m))) ++ [(20, 2), (2, 20), (100, 100)]
-    KCFA -> list(0,3).map( fn(k) (0,k) )
+    DMCFA -> list(0,0).flatmap( fn(d) list(0,0).map( fn(m) (d,m)))  // ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFA-EXP -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> list(0,2).map( fn(k) (0,k) )
 
 fun show(a: analysis)
   match a
@@ -58,7 +58,10 @@ fun int(s: sslice): exn int
 
 fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
   val sens-to-run = sens.filter fn((d,m))
-    if force then True else !("benchmarks/results".path / a.show / d.show / m.show / f.path).is-directory()
+    if force then True else 
+      val folder = cwd() / "benchmarks/results".path / a.show / d.show / m.show / "analysis" / "benchmarks" / f.path
+      // println("Checking folder: " ++ folder.show ++ " exists: " ++ folder.is-directory().show)
+      !folder.is-directory()
       
   if sens-to-run.is-empty then
     println("Skipping " ++ f ++ " " ++ a.show ++ " (all results exist)")
@@ -81,6 +84,6 @@ fun main()
   val force = args.find(fn(a) a == "--force").is-just
   val only-floats = args.find(fn(a) a == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  run-benchmarks(files=run-files, analyses=[DMCFA], force=force)
+  run-benchmarks(files=run-files, analyses=[KCFA], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFA])
   // run-benchmarks(["handlers/unix"], [DMCFA], force=force)

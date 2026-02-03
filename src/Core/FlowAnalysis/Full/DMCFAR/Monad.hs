@@ -26,10 +26,11 @@ import Lib.PPrint (vcat, text, Pretty(..), hcat, Doc, indent)
 import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
-  CEval ExprContext VEnv -- expr, env, ctx
-  | CApply Addr Addr DynamicCtx -- kont, vaddr, dynctx
-  | CHandleEffects RValue VEnv Call Handler CombinedCtx
-  | CHandleLocal RValue VEnv Call TName Addr CombinedCtx
+  CEval !ExprContext !VEnv -- expr, env, ctx
+  | CApply !Addr !Addr !DynamicCtx -- kont, vaddr, dynctx
+  | CContinue !RValue !Frame !CombinedCtx
+  | CHandleEffects !RValue !VEnv !Call !Handler !CombinedCtx
+  | CHandleLocal !RValue !VEnv !Call !TName !Addr !CombinedCtx
   deriving (Eq, Ord, Show)
 
 mLimit :: FixAAMR r s e Int
@@ -48,9 +49,9 @@ inject ctx = do
   return $ Step (CEval ctx (c, M.empty))
 
 data FixInput =
-  Step Conf
-  | VStore Addr
-  | KStore Addr
+  Step !Conf
+  | VStore !Addr
+  | KStore !Addr
   deriving (Eq, Ord, Show)
 
 data FixOutput =

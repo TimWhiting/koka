@@ -39,9 +39,9 @@ import Numeric (showFFloat, showEFloat, readHex)
 import Kind.Kind (kindFun, kindStar)
 
 trueCon ::  AChange
-trueCon = AChangeConstr (newName "true") []
+trueCon = AChangeConstr nameTrue []
 falseCon :: AChange
-falseCon = AChangeConstr (newName "false") []
+falseCon = AChangeConstr nameFalse []
 justCon :: Addr -> Type -> AChange
 justCon addr tp = AChangeObj nameJust [(justValueName, addr)]
 nothingCon :: AChange
