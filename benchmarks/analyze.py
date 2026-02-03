@@ -130,6 +130,7 @@ def compute_metrics(run, baseline_run):
     return {
         "status": "OK",
         "time": avg_time,
+        "rel_time": rel_time,
         "expansion": expansion,
         "prec_struct": prec_struct,
         "prec_sem": prec_sem,
@@ -215,6 +216,10 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
+    # Count timeouts per runID for annotations
+    timeout_counts = df[df['status'] == 'T/O'].groupby('runID').size().to_dict()
+    total_counts = df.groupby('runID').size().to_dict()
+    
     # Group by both dimensions to preserve them in the aggregated dataframe
     plot_df = df[df['status'] == 'OK'].groupby(['runID', 'd', 'm']).agg({
         'expansion': safe_gmean,
@@ -232,10 +237,27 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
     # Sort by numerical values first
     plot_df = plot_df.sort_values(['d', 'm'])
     
+    # Add timeout info to plot_df for annotations
+    plot_df['timeouts'] = plot_df['runID'].map(lambda x: timeout_counts.get(x, 0))
+    plot_df['total'] = plot_df['runID'].map(lambda x: total_counts.get(x, 0))
+    
     # Convert to string for categorical plotting to handle non-linear gaps (0, 1, 2, 20, 100)
     # Re-using names 'd' and 'm' so they appear correctly in the legend
     plot_df['d'] = plot_df['d'].astype(str)
     plot_df['m'] = plot_df['m'].astype(str)
+
+    def add_timeout_annotations(ax, plot_df, x_col, y_col):
+        """Add timeout count annotations to points that have timeouts."""
+        for _, row in plot_df[plot_df['timeouts'] > 0].iterrows():
+            ax.annotate(
+                f"⚠{int(row['timeouts'])}",
+                xy=(row[x_col], row[y_col]),
+                xytext=(5, 5),
+                textcoords='offset points',
+                fontsize=9,
+                color='red',
+                fontweight='bold'
+            )
 
     # Plot Pareto Frontiers (Expansion vs Precisions)
     for metric, label, filename_pfx in [
@@ -246,11 +268,15 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         sns.scatterplot(data=plot_df, x='expansion', y=metric, 
                         hue='d', style='m', s=200, 
                         palette="bright", edgecolor="black", alpha=0.8, ax=ax)
+        add_timeout_annotations(ax, plot_df, 'expansion', metric)
         ax.set_title(f"[{variant_name}] Pareto: Space vs {label}", fontsize=15, pad=20)
         ax.set_xlabel("Expansion Factor (Geometric Mean, Log Scale)")
         ax.set_xscale('log')
         ax.set_ylabel(f"Relative Precision (Baseline = 1.0)")
-        ax.legend(title="Sensitivity (d, m)", bbox_to_anchor=(1.05, 1), loc='upper left')
+        # Add timeout legend note
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles, labels, title="Sensitivity (d, m)\n⚠N = N timeouts", 
+                  bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         print(f"Saving Pareto Space: {os.path.join(output_dir, f'pareto_{filename_pfx}.png')}")
         plt.savefig(os.path.join(output_dir, f"pareto_{filename_pfx}.png"), bbox_inches='tight')
@@ -266,11 +292,15 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         sns.scatterplot(data=plot_df, x='rel_time', y=metric, 
                         hue='d', style='m', s=200, 
                         palette="bright", edgecolor="black", alpha=0.8, ax=ax)
+        add_timeout_annotations(ax, plot_df, 'rel_time', metric)
         ax.set_title(f"[{variant_name}] Pareto: Relative Time vs {label}", fontsize=15, pad=20)
         ax.set_xlabel("Time Overhead (Geometric Mean, Log Scale)")
         ax.set_xscale('log')
         ax.set_ylabel(f"Relative Precision (Baseline = 1.0)")
-        ax.legend(title="Sensitivity (d, m)", bbox_to_anchor=(1.05, 1), loc='upper left')
+        # Add timeout legend note
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles, labels, title="Sensitivity (d, m)\n⚠N = N timeouts", 
+                  bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.tight_layout()
         print(f"Saving Pareto Time: {os.path.join(output_dir, f'pareto_{filename_pfx}.png')}")
         plt.savefig(os.path.join(output_dir, f"pareto_{filename_pfx}.png"), bbox_inches='tight')
@@ -283,6 +313,10 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         (sem_mu, "Heatmap: Semantic Improvement", "heatmap_sem.png"),
         (time_mu, "Heatmap: Time Overhead (Relative)", "heatmap_time.png")
     ]:
+        # Skip if data is empty or all NaN
+        if data is None or data.empty or data.isna().all().all():
+            print(f"Warning: Skipping heatmap '{filename}' for variant {variant_name} - no valid data.")
+            continue
         fig, ax = plt.subplots(figsize=(10, 8))
         sns.heatmap(data, annot=True, cmap="YlGnBu", fmt=".2f", ax=ax)
         ax.set_title(f"[{variant_name}] {title}", fontsize=15, pad=20)

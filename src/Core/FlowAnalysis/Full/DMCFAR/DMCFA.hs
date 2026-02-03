@@ -33,6 +33,13 @@ import Syntax.Syntax (ValueBinder(binderName))
 import Data.List (intercalate)
 import Data.Either (isRight, fromRight)
 
+-- TERMINATION GUARANTEE:
+-- The analysis terminates because:
+-- 1. FixInput (the memoization key) has finite state space (documented in AbstractValue.hs)
+-- 2. All recursive analysis calls go through doStep (memoization boundary)
+-- 3. Results form a lattice with finite height (changes propagate upward via FixChange)
+-- 4. Helper functions (patMatch, branchMatch) recurse on finite structures (source program syntax)
+-- 5. No infinite loops exist outside memoization (all recursion bounded by program structure)
 doStep :: HasCallStack => FixInput -> FixAAMR r s e FixChange
 doStep i =
   memo i $ do
@@ -42,6 +49,7 @@ doStep i =
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv) -> doEval expr venv
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
+      Step (CContinue res frame ctx) -> doDoContinue res frame ctx
       Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx
       Step (CHandleLocal res venv bodId varName valAddr ctx) -> doHandleLocal res venv bodId varName valAddr ctx
 
@@ -77,6 +85,8 @@ eval :: HasCallStack => ExprContext -> VEnv -> FixAAMR r s e RValue
 eval expr venv = unreturnV $ doStep $ Step (CEval expr venv)
 apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
+doContinue a b c = doStep $ Step (CContinue a b c)
+
 handleEffects :: HasCallStack => RValue -> VEnv -> Call -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res venv bodId hnd ctx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd ctx)
 handleLocal :: HasCallStack => RValue -> VEnv -> Call -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
@@ -226,8 +236,8 @@ rebindAllAddrs ectx addrs (oldCtx, vars) newCtx = do
       return newAddr) [0..] addrs
   return (newEnv, addrs')
 
-doContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
-doContinue res frame ctx =
+doDoContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
+doDoContinue res frame ctx =
   case res of
     ROp dval ctx' frame' dframe knext -> do
       -- trace ("Capturing frame: " ++ show frame) $ do
@@ -316,7 +326,9 @@ doContinue res frame ctx =
               ret <- eval next (env nextFrame)
               doContinue ret nextFrame ctx
           FScrut parent branches env -> do
-            let recur [] _ = doBottom
+            -- Branch matching recursion is bounded by the finite list of branches from source program.
+            -- The recur function processes the branches list, which decreases on each recursive call.
+            let recur [] _ = doBottom -- error ("NO matching branch found\n" ++ show tree ++ "\n" ++ show parent)
                 recur ((branch, br):branches) tree = do
                   match <- branchMatch br branch tree env ctx
                   case match of
@@ -352,14 +364,15 @@ doContinue res frame ctx =
             let newRetCtx = addCall m ctx u
                 newDelimCtx = addDelim d newRetCtx (CallApp u) (hLabel hnd)
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            res <- apply kont addr newDelimCtx
+            AChangeKont kaddr _ _ <- store kont
+            res <- apply kaddr addr newDelimCtx
             returnV $ handleEffects res venv (CallApp u) hnd newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
 doApply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
 doApply kaddr addr delimCtx = do
-  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show dynctx) $ return ()
+  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show delimCtx) $ return ()
   -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr
@@ -438,7 +451,7 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameHandle = do
       res <- eval bod env'
       let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (contextId u) (arguments !! 2))
       returnV $ handleEffects res venv (CallApp $ contextId bod) h ctx
-    _ -> doBottom
+    _ -> error ("Malformed handle primitive arguments: " ++ show args)
 doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
   args <- mapM store arguments
   -- trace ("LocalVar: " ++ show name ++ " " ++ show n) $ return ()
@@ -514,7 +527,9 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
             zipWithM_ rebind args (map (\n -> fromJust $ lookupEnv n newEnv) params)
             if isTailOp opConName then do
               res <- eval opBod (limitEnv newEnv (fvs opBod))
-              doContinue res (FResume ctx' kOp venv h (contextId opBod)) retCtx
+              let kaddr = BindKImplicitAddr retCtx venv (contextId op)
+              extendStore kaddr (AChangeKont kOp venv h)
+              doContinue res (FResume ctx' kaddr venv h (contextId opBod)) retCtx
             else if isNeverOp opConName then do
               returnV $ eval opBod (limitEnv newEnv (fvs opBod))
             else do
@@ -562,6 +577,7 @@ data AChangeTree =
   | TChangeLit Addr LiteralChangeX
   | TChangeCon Addr AChange (M.Map Name AChangeTree)
   | TChangePartialCon Addr AChange
+  deriving Show
 
 -- Assuming that the tree is from the Bindings then it definitely matches this pattern, i.e., all literals are fully matched
 definitelyMatched :: AChangeTree -> Bool
@@ -574,6 +590,9 @@ definitelyMatched (TChangeLit _ _) = True
 definitelyMatched (TChangeCon _ _ m) = all definitelyMatched (M.elems m)
 definitelyMatched (TChangePartialCon _ _) = True
 
+-- rebind goes through memoization boundary (calls store -> doStep).
+-- No infinite loops: either addresses are equal (returns immediately) or
+-- computation joins via lattice and terminates due to finite height.
 rebind :: HasCallStack => Addr -> Addr -> FixAAMR r s e ()
 rebind oldAddr newAddr =
   if oldAddr == newAddr then return ()
@@ -611,6 +630,8 @@ getTree :: Either AChangeTree (Bindings r s e) -> AChangeTree
 getTree (Left tree) = tree
 getTree (Right (_, tree)) = tree
 
+-- Pattern matching recursion is bounded by the finite pattern structure from source program.
+-- Each recursive call to patMatch processes a structurally smaller pattern (PatVar removes one layer).
 patMatch :: Pattern -> AChangeTree -> FixAAMR r s e (Either AChangeTree (Bindings r s e))
 patMatch (PatVar name rest) tree = do
   match <- patMatch rest tree

@@ -41,6 +41,7 @@ doStep i =
       KStore addr -> if addr == EndKAddr then return $ KV EndKAddr else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv ctx) -> doEval expr venv ctx
       Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
+      Step (CContinue a b c) -> doDoContinue a b c
       Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx
       Step (CHandleLocal res venv bodId varName valAddr retCtx) -> doHandleLocal res venv bodId varName valAddr retCtx
 
@@ -64,6 +65,7 @@ kStore addr = do
   return res
 eval expr venv ctx = doStep $ Step (CEval expr venv ctx)
 apply kaddr addr ctx = doStep $ Step (CApply kaddr addr ctx)
+doContinue res frame ctx = doDoContinue res frame ctx -- doStep $ Step (CContinue res frame ctx)
 handleEffects res venv bodId hnd retCtx = doStep $ Step (CHandleEffects res venv bodId hnd retCtx)
 handleLocal res venv bodId varName valAddr retCtx = doStep $ Step (CHandleLocal res venv bodId varName valAddr retCtx)
 
@@ -188,8 +190,8 @@ doEval expr venv ctx = do
           RV (res, newCtx) <- eval f (limitEnv venv (fvs f)) ctx
           doContinue res (FApp (length args) argExprs [] expr venv) newCtx
 
-doContinue :: HasCallStack => RValue -> Frame -> StaticCtx -> FixAAMR r s e FixChange
-doContinue res frame ctx =
+doDoContinue :: HasCallStack => RValue -> Frame -> StaticCtx -> FixAAMR r s e FixChange
+doDoContinue res frame ctx =
   case res of
     ROp dval ctx' frame' dframe knext -> do
       let k' = KAddr frame' ctx' dframe dval
@@ -305,7 +307,8 @@ doContinue res frame ctx =
             m <- mLimit
             let newRetCtx = addCall m ctx u
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
-            RV (res, newCtx) <- apply kont addr newRetCtx 
+            AChangeKont kaddr _ _ <- store kont
+            RV (res, newCtx) <- apply kaddr addr newRetCtx 
             handleEffects res venv (CallApp u) hnd newCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
@@ -449,7 +452,9 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
             zipWithM_ rebind args (map (\n -> BindingAddr newCtx n (contextId op)) params)
             if isTailOp opConName then do -- TODO: Add operation call context?
               RV (res', retCtx') <- eval opBod (limitEnv newEnv (fvs opBod)) newCtx
-              doContinue res' (FResume kOp venv h (contextId opBod)) retCtx'
+              let kaddr = BindKImplicitAddr retCtx' venv (contextId opBod)
+              extendStore kaddr (AChangeKont kOp venv h)
+              doContinue res' (FResume kaddr venv h (contextId opBod)) retCtx'
             else if isNeverOp opConName then do
               eval opBod (limitEnv newEnv (fvs opBod)) newCtx
             else do
