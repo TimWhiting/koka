@@ -192,6 +192,7 @@ library
     , containers
     , directory
     , hashable >=1.4
+    , intern
     , isocline >=1.0.6
     , mtl
     , parsec
@@ -199,6 +200,7 @@ library
     , text
     , time
     , transformers
+    , unordered-containers
   default-language: Haskell2010
   if os(windows)
     cpp-options: -DWINDOWS
@@ -238,6 +240,7 @@ executable koka
     , containers
     , directory
     , hashable >=1.4
+    , intern
     , isocline >=1.0.6
     , koka
     , lens
@@ -252,6 +255,7 @@ executable koka
     , text-rope
     , time
     , transformers
+    , unordered-containers
   default-language: Haskell2010
 
 executable koka-plain
@@ -271,6 +275,7 @@ executable koka-plain
     , containers
     , directory
     , hashable >=1.4
+    , intern
     , isocline >=1.0.6
     , koka
     , mtl
@@ -279,6 +284,7 @@ executable koka-plain
     , text
     , time
     , transformers
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite koka-test
@@ -303,6 +309,7 @@ test-suite koka-test
     , hashable >=1.4
     , hspec
     , hspec-core
+    , intern
     , isocline >=1.0.6
     , json
     , mtl
@@ -312,4 +319,5 @@ test-suite koka-test
     , text
     , time
     , transformers
+    , unordered-containers
   default-language: Haskell2010

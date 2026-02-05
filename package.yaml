@@ -38,7 +38,9 @@ dependencies:
   - isocline >= 1.0.6
   - FloatingHex >= 0.5
   - hashable >= 1.4
+  - intern
   - aeson
+  - unordered-containers
 
 library:
   other-extensions:
