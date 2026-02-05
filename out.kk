@@ -1,43 +1,43 @@
 ]4;0;?\[6nparse   : .../std/core/types.kk
 parse   : .../std/core/undiv.kk
 parse   : .../std/core/unsafe.kk
-parse   : .../std/core/order.kk
 parse   : .../std/core/hnd.kk
-parse   : .../std/core/char.kk
-parse   : .../std/core/bool.kk
-parse   : .../std/core/int.kk
 parse   : .../std/core/exn.kk
-parse   : .../std/core/sslice.kk
-parse   : .../std/core/list.kk
+parse   : .../std/core/bool.kk
+parse   : .../std/core/order.kk
+parse   : .../std/core/int.kk
+parse   : .../std/core/char.kk
 parse   : .../std/core/vector.kk
 parse   : .../std/core/string.kk
+parse   : .../std/core/sslice.kk
+parse   : .../std/core/list.kk
 parse   : .../std/core/maybe.kk
-parse   : .../std/core/either.kk
-parse   : .../std/core/tuple.kk
 parse   : .../std/core/maybe2.kk
-check   : std/core/types
+parse   : .../std/core/tuple.kk
+parse   : .../std/core/either.kk
 parse   : .../std/core/lazy.kk
 parse   : .../std/core/console.kk
 parse   : .../std/core/show.kk
-parse   : .../std/core/debug.kk
 parse   : .../std/core/delayed.kk
+parse   : .../std/core/debug.kk
 parse   : .../analysis/test/interp2-t3.kk
 parse   : .../std/core.kk
-check   : std/core/int
+check   : std/core/types
 check   : std/core/bool
-check   : std/core/lazy
+check   : std/core/int
 check   : std/core/undiv
-check   : std/core/unsafe
 check   : std/core/hnd
+check   : std/core/lazy
+check   : std/core/unsafe
 check   : std/core/order
 check   : std/core/char
 check   : std/core/tuple
-check   : std/core/exn
 check   : std/core/delayed
+check   : std/core/exn
 check   : std/core/either
-check   : std/core/maybe2
-check   : std/core/vector
 check   : std/core/maybe
+check   : std/core/vector
+check   : std/core/maybe2
 check   : std/core/string
 check   : std/core/sslice
 check   : std/core/list
@@ -46,4 +46,6 @@ check   : std/core/console
 check   : std/core/debug
 check   : std/core
 check   : analysis/test/interp2-t3
-user interrupt
+/@virtual/analysis/test/interp2-t3/@main.kk(1, 3): type error: identifier analysis/test/interp2-t3/main cannot be found
+
+Failed to compile analysis/test/interp2-t3.kk

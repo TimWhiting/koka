@@ -105,7 +105,7 @@ runQueryAtRange bc build mod m d doQuery =
                               Just (_, _, time3) <- once
                               return $ Just (l, res, [time1, time2, time3])
                           Nothing -> return Nothing
-                  let dir = "benchmarks/results/dmcfa/" ++ show d ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
+                  let dir = "benchmarks/results/dmcfar/" ++ show d ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
                   createDirectoryIfMissing True dir
                   case mbRes of
                     Just (l, analysisResult, times) -> do
@@ -123,9 +123,9 @@ runQueryAtRange bc build mod m d doQuery =
                       let (_, _, (evals, applies, kSizes, sSizes), metrics) = analysisResult
 
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-                      let value = PolyVariantMetrics "dmcfa" d m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
+                      let value = PolyVariantMetrics "dmcfar" d m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
-                      -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                      -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
                       --         show result ++ "," 
                       --         ++ show (length evals) ++ "," ++ show (sum evals) ++ "," ++ show (count (== 1) evals) ++ "," 
                       --         ++ show (length applies) ++ "," ++ show (sum applies) ++ "," ++ show (count (== 1) applies) ++ ","
@@ -134,10 +134,10 @@ runQueryAtRange bc build mod m d doQuery =
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just result
                     Nothing -> do
-                      let value = PolyVariantMetrics "dmcfa" d m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
+                      let value = PolyVariantMetrics "dmcfar" d m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
-                      -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
+                      -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
                       --          ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
                       return Nothing
                 (total, timeouts) <- recur rest

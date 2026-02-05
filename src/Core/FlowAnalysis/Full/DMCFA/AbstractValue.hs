@@ -48,6 +48,8 @@ instance Show Call where
   show CallTop = "top"
   show CallDelim = "delim"
   show (CallApp ctxId) = "a" ++ showSimpleCtxId ctxId
+  show (CtxId (Left ctxId)) = "c" ++ showSimpleCtxId ctxId
+  show (CtxId (Right name)) = "c" ++ show name
 
 data StaticCtx =
   TKTop [Call]
