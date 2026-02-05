@@ -47,3 +47,4 @@ alex/
 __pycache__
 .venv
 benchmarks/results
+*.prof
