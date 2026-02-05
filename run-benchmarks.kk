@@ -20,33 +20,27 @@ effect out
   fun write(s: string): ()
 
 type analysis
-  DMCFA
-  DMCFA-EXP
+  DMCFAR
+  DMCFAE
   KCFA
-
-fun flag(a: analysis)
-  match a
-    DMCFA -> "--dmcfa"
-    DMCFA-EXP -> "--analyze"
-    KCFA -> "--kcfa" 
 
 fun sensitivities(a: analysis)
   match a
-    DMCFA -> list(0,0).flatmap( fn(d) list(0,0).map( fn(m) (d,m)))  // ++ [(20, 2), (2, 20), (100, 100)] 
-    DMCFA-EXP -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)]
-    KCFA -> list(0,2).map( fn(k) (0,k) )
+    DMCFAR -> list(0,1).flatmap( fn(d) list(0,1).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFAE -> list(0,1).flatmap( fn(d) list(0,1).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> list(0,1).map( fn(k) (0,k) )
 
 fun show(a: analysis)
   match a
-    DMCFA -> "dmcfa"
-    DMCFA-EXP -> "dmcfae"
+    DMCFAR -> "dmcfar"
+    DMCFAE -> "dmcfae"
     KCFA -> "kcfa"
+fun flag(a: analysis) "--" ++ a.show
 
-fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFA, DMCFA-EXP, KCFA], force: bool = False)
+fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFAR, DMCFAE, KCFA], force: bool = False)
   analyses.foreach fn(a)
     files.foreach fn(f)
       run-file(a, f, a.sensitivities, force)
-
 
 fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
   match xs
@@ -73,17 +67,17 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
   
   match sens-to-run.last
     Just((d,m)) ->
-       val debug-cmd = cmd ++ "--sensitivity=\"(" ++ d.show ++ "," ++ m.show ++ ")\" 2>&1" 
-       println("Debug command:\n" ++ debug-cmd)
+      val debug-cmd = cmd ++ "--sensitivity=\"(" ++ d.show ++ "," ++ m.show ++ ")\" 2>&1" 
+      println("Debug command:\n" ++ debug-cmd)
     Nothing -> ()
   run-system-read(full-cmd)
   ()
 
 fun main()
   val args = get-args()    
-  val force = args.find(fn(a) a == "--force").is-just
-  val only-floats = args.find(fn(a) a == "--floats").is-just
+  val force = args.find(_ == "--force").is-just
+  val only-floats = args.find(_ == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  run-benchmarks(files=run-files, analyses=[KCFA], force=force)
-  // run-benchmarks(["handlers/nim"], [DMCFA])
-  // run-benchmarks(["handlers/unix"], [DMCFA], force=force)
+  run-benchmarks(files=run-files, analyses=[DMCFAR, DMCFAE, KCFA], force=force)
+  // run-benchmarks(["handlers/nim"], [DMCFAR])
+  // run-benchmarks(["handlers/unix"], [DMCFAR], force=force)

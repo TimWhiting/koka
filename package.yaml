@@ -38,7 +38,9 @@ dependencies:
   - hashable >= 1.4
   - directory
   - process
+  - intern
   - aeson
+  - unordered-containers
 
 library:
   other-extensions:

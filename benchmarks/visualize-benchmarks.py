@@ -94,7 +94,7 @@ def plot_metric_vs_cost(analysis: dict, metric_type: str = 'precision'):
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
-    for analysis_type, ax, title in [('dmcfa', ax1, 'DMCFA'), ('dmcfae', ax2, 'DMCFA-Exp')]:
+    for analysis_type, ax, title in [('dmcfar', ax1, 'DMCFAR'), ('dmcfae', ax2, 'DMCFA')]:
         by_category = defaultdict(lambda: {'metric': [], 'time': [], 'names': []})
         
         for benchmark, stats in analysis.items():
@@ -137,9 +137,9 @@ def plot_parameter_sensitivity(analysis: dict, metric_type: str = 'precision'):
     # Select a few representative benchmarks
     benchmarks_to_plot = []
     for benchmark, stats in analysis.items():
-        if 'dmcfa' in stats and 'd_trends' in stats['dmcfa']:
+        if 'dmcfar' in stats and 'd_trends' in stats['dmcfar']:
             # Pick benchmarks with varying D values
-            if len(stats['dmcfa']['d_trends']) > 2:
+            if len(stats['dmcfar']['d_trends']) > 2:
                 benchmarks_to_plot.append(benchmark)
     
     # Limit to top 6 most interesting
@@ -163,8 +163,8 @@ def plot_parameter_sensitivity(analysis: dict, metric_type: str = 'precision'):
         if metric_type != 'cost':
             ax2 = ax.twinx()
 
-        for a_type, base_color, a_label in [('dmcfa', '#1f77b4', 'DMCFA'), 
-                                           ('dmcfae', '#ff7f0e', 'DMCFAE')]:
+        for a_type, base_color, a_label in [('dmcfar', '#1f77b4', 'DMCFAR'), 
+                                            ('dmcfae', '#ff7f0e', 'DMCFA')]:
             if a_type not in analysis[benchmark]:
                 continue
                 
@@ -246,7 +246,7 @@ def plot_cost_distribution(analysis: dict):
     """Plot distribution of execution times by category."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
-    for analysis_type, ax, title in [('dmcfa', ax1, 'DMCFA'), ('dmcfae', ax2, 'DMCFA-Exp')]:
+    for analysis_type, ax, title in [('dmcfar', ax1, 'DMCFAR'), ('dmcfae', ax2, 'DMCFA')]:
         by_category = defaultdict(list)
         
         for benchmark, stats in analysis.items():
@@ -290,9 +290,9 @@ def plot_m_across_d_lines(analysis: dict, metric_type: str = 'precision'):
     # Select representative benchmarks with good M/D coverage
     benchmarks_to_plot = []
     for benchmark, stats in analysis.items():
-        if 'dmcfa' in stats and 'm_trends' in stats['dmcfa']:
+        if 'dmcfar' in stats and 'm_trends' in stats['dmcfar']:
             # Count how many D/M combinations exist
-            total_points = sum(len(m_dict) for m_dict in stats['dmcfa']['m_trends'].values())
+            total_points = sum(len(m_dict) for m_dict in stats['dmcfar']['m_trends'].values())
             if total_points >= 6:  # At least 6 data points
                 benchmarks_to_plot.append((benchmark, total_points))
     
@@ -313,9 +313,9 @@ def plot_m_across_d_lines(analysis: dict, metric_type: str = 'precision'):
         
         ax = axes[idx]
         
-        # Plot both DMCFA and DMCFAE
-        for analysis_type, color, label_prefix in [('dmcfa', '#1f77b4', 'DMCFA'), 
-                                                     ('dmcfae', '#ff7f0e', 'DMCFAE')]:
+        # Plot both DMCFAR and DMCFA
+        for analysis_type, color, label_prefix in [('dmcfar', '#1f77b4', 'DMCFAR'), 
+                                                     ('dmcfae', '#ff7f0e', 'DMCFA')]:
             if analysis_type not in analysis[benchmark] or 'm_trends' not in analysis[benchmark][analysis_type]:
                 continue
             
@@ -399,7 +399,7 @@ def plot_metric_by_sensitivity(analysis: dict, metric_type: str = 'precision'):
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
-    for analysis_type, ax, title in [('dmcfa', ax1, 'DMCFA'), ('dmcfae', ax2, 'DMCFA-Exp')]:
+    for analysis_type, ax, title in [('dmcfar', ax1, 'DMCFAR'), ('dmcfae', ax2, 'DMCFA')]:
         # Collect metric by D parameter
         by_d = defaultdict(list)
         

@@ -76,6 +76,8 @@ import Common.File( joinPaths, splitOn, endsWith, startsWith, isPathSep )
 import Common.Range( rangeStart, posLine, posColumn )
 import Data.List(intersperse,isPrefixOf)
 import Common.ColorScheme
+import Data.Interned (intern, unintern)
+import Data.Interned.String (InternedString)
 
 -- just for hover info
 import Data.Numbers.FloatingHex( showHFloat )
@@ -107,12 +109,16 @@ type Names = [Name]
 -- - Plain module names have an empty local qualifier and stem
 -- - If there is a local qualifier, the stem cannot be empty
 data Name  = Name
-             { nameModule     :: !String        -- module name (`std/core`)
-             , hashModule     :: !Int
-             , nameLocalQual  :: !String        -- local qualifier (`int`)
-             , hashLocalQual  :: !Int
-             , nameStem       :: !String        -- the stem (`show`)
-             , hashStem       :: !Int
+             { nameModule       :: !String            -- module name (`std/core`)
+             , hashModule       :: !Int
+             , nameLocalQual    :: !String            -- local qualifier (`int`)
+             , hashLocalQual    :: !Int
+             , nameStem         :: !String            -- the stem (`show`)
+             , hashStem         :: !Int
+             , internedModule   :: !InternedString    -- interned module for O(1) equality
+             , internedLocalQual:: !InternedString    -- interned local qualifier for O(1) equality
+             , internedStem     :: !InternedString    -- interned stem for O(1) equality
+             , lowerStem        :: !InternedString    -- lowercased stem for case-insensitive comparison
              }
 
 type ModuleName = Name
@@ -123,7 +129,7 @@ join m n          = joinWith "/" m n
 joins ms  = foldr join "" ms
 
 nameLocal :: Name -> String
-nameLocal (Name m _ l _ n _)
+nameLocal (Name m _ l _ n _ _ _ _ _)
   = join l n
 
 nameCaseEqual name1 name2
@@ -148,10 +154,10 @@ nameCaseOverlapPrefixOf name1 name2
 isSameNamespace name1 name2
   = (isConstructorName name1 == isConstructorName name2)
 
-lowerCompare (Name m1 _ l1 _ n1 _) (Name m2 _ l2 _ n2 _)
-  = case lowerCompareS m1 m2 of
-      EQ -> case lowerCompareS l1 l2 of
-              EQ -> lowerCompareS n1 n2
+lowerCompare (Name _ _ _ _ _ _ im1 il1 _ ls1) (Name _ _ _ _ _ _ im2 il2 _ ls2)
+  = case compare im1 im2 of  -- compare interned modules
+      EQ -> case compare il1 il2 of  -- compare interned local qualifiers
+              EQ -> compare ls1 ls2  -- compare lowercased stems
               lg -> lg
       lg -> lg
 
@@ -164,33 +170,24 @@ lowerCompareS [] (d:ds) = LT
 lowerCompareS [] []     = EQ
 
 instance Eq Name where
-  nm1@(Name m1 hm1 l1 hl1 n1 hn1) == nm2@(Name m2 hm2 l2 hl2 n2 hn2)
-    = let eq = (hn1 == hn2) && (hl1 == hl2) && (hm1 == hm2) in
-      assertion ("Common.Name.Eq: wrong hashes: " ++ show [(hm1,hl1,hn1),(hm2,hl2,hn2)] ++ show (nm1,nm2))
-                (if not eq then showFullyExplicit nm1 /= showFullyExplicit nm2 else True) $
-      eq && (lowerCompare nm1 nm2 == EQ)
-      -- eq && m1 == m2 && l1 == l2 && n1 == n2 -- (eq && (lowerCompare n1 n2 == EQ)) // Lower compare doesn't make a difference since the hash will likely not be equal
-
-
+  (Name _ _ _ _ _ _ im1 il1 in1 ls1) == (Name _ _ _ _ _ _ im2 il2 in2 ls2)
+    = ls1 == ls2 && im1 == im2 && il1 == il2  -- O(1) pointer equality on interned strings!
 
 instance Ord Name where
-  -- compare module, stem name, and then local name for dependencies
-  compare nm1@(Name m1 hm1 l1 hl1 n1 hn1) nm2@(Name m2 hm2 l2 hl2 n2 hn2)
-    = case compare hm1 hm2 of
+  -- Compare module, stem (case-insensitive), then local qualifier
+  -- Interned strings give O(1) equality checks via pointer comparison
+  compare nm1@(Name _ hm1 _ hl1 _ hn1 im1 il1 in1 ls1) nm2@(Name _ hm2 _ hl2 _ hn2 im2 il2 in2 ls2)
+    | ls1 == ls2 && im1 == im2 && il1 == il2 = EQ  -- O(1) equality shortcut
+    | otherwise = case compare hm1 hm2 of
         EQ -> case compare hn1 hn2 of
                 EQ -> case compare hl1 hl2 of
-                        EQ -> lowerCompare nm1 nm2
-                        -- EQ -> case compare m1 m2 of -- Don't use lowerCompare here, since the hash will not be equal (ruled out by EQ)
-                        --         EQ -> case compare l1 l2 of
-                        --                 EQ -> compare n1 n2
-                        --                 lg -> lg
-                        --         lg -> lg
+                        EQ -> lowerCompare nm1 nm2  -- fallback to full comparison
                         lg -> lg
                 lg -> lg
         lg -> lg
 
 -- Effects compare by name first, then by module name for efficiency at runtime
-labelNameCompare (Name m1 hm1 l1 hl1 n1 hn1) (Name m2 hm2 l2 hl2 n2 hn2)
+labelNameCompare (Name m1 hm1 l1 hl1 n1 hn1 _ _ _ _) (Name m2 hm2 l2 hl2 n2 hn2 _ _ _ _)
   = case lowerCompareS (n1 ++ "@") (n2 ++ "@") of -- Labels are name@module, so if a name looks like name-x@module and name@module, we need to compare @ and - (which is what the runtime does)
           EQ -> case compare l1 l2 of
                       EQ -> compare m1 m2
@@ -199,8 +196,8 @@ labelNameCompare (Name m1 hm1 l1 hl1 n1 hn1) (Name m2 hm2 l2 hl2 n2 hn2)
 
 
 stemIsEqual :: Name -> Name -> Bool
-stemIsEqual (Name m1 _ l1 _ n1 hn1) (Name m2 _ l2 _ n2 hn2)
-  = (hn1 == hn2 && n1 == n2)
+stemIsEqual (Name _ _ _ _ _ _ hn1 _ in1 _) (Name _ _ _ _ _ _ hn2 _ in2 _)
+  = in1 == in2  -- O(1) pointer comparison on interned stem
 
 isIdChar :: Char -> Bool
 isIdChar c
@@ -224,13 +221,13 @@ wrapId s
 
 
 showName :: Bool -> Name -> String
-showName explicitLocalQualifier (Name m _ l _ n _)
+showName explicitLocalQualifier (Name m _ l _ n _ _ _ _ _)
   = let ln = join l (wrapId n)
     in if null m then ln
-                 else if null ln then m
-                                 else m ++ (if explicitLocalQualifier && not (null l) then "/#" else "/") ++ ln
+                  else if null ln then m
+                                  else m ++ (if explicitLocalQualifier && not (null l) then "/#" else "/") ++ ln
 
-showFullyExplicit (Name m _ l _ n _)
+showFullyExplicit (Name m _ l _ n _ _ _ _ _)
    = let ln = join l (wrapId n)
      in if null m then "#" ++ ln
                   else if null ln then m
@@ -239,7 +236,7 @@ showFullyExplicit (Name m _ l _ n _)
 showExplicit name
   = showName True name
 
-showPlain (Name m _ l _ n _)
+showPlain (Name m _ l _ n _ _ _ _ _)
   = join m (join l n)
 
 
@@ -252,12 +249,12 @@ instance Pretty Name where
     = text (show name)
 
 prettyNameEx :: String -> ColorScheme -> Name -> Doc  -- explicit /# if needed
-prettyNameEx lsep cs (Name m _ l _ n _)
+prettyNameEx lsep cs (Name m _ l _ n _ _ _ _ _)
   = let ln = join l (wrapId n)
     in if null m then text ln
-                 else color (colorModule cs)
-                          (text m <.> (if null ln then empty else (if null l then text "/" else text lsep)))
-                      <.> text ln
+                  else color (colorModule cs)
+                           (text m <.> (if null ln then empty else (if null l then text "/" else text lsep)))
+                       <.> text ln
 
 prettyName :: ColorScheme -> Name -> Doc      -- not explicit /#
 prettyName cs name
@@ -271,7 +268,7 @@ prettyCoreName cs name
 
 
 -- todo: remove these as we can now read/write reliably using readQualifiedName
-showTupled (Name m _ l _ n _)
+showTupled (Name m _ l _ n _ _ _ _ _)
   = show (m,l,n)
 
 readTupled s
@@ -298,7 +295,7 @@ newQualified m n
 
 newLocallyQualified :: String -> String -> String -> Name
 newLocallyQualified m l n
-  = Name m (hash m) l (hash l) n (hash n)
+  = Name m (hash m) l (hash l) n (hash n) (intern m) (intern l) (intern n) (intern (map toLower n))
 
 -- The hash function:
 --  1) can be compared: h1 < h2  => name1 < name2 && h1 > h2 => name1 > name2
@@ -310,10 +307,10 @@ hash :: String -> Int
 hash s = foldl (\h c -> h*256 + fromEnum c) 0 (map toLower (take 4 (s ++ "\0\0\0\0")))
 
 nameMapStem :: Name -> (String -> String) -> Name
-nameMapStem (Name m hm l hl n _) f
-  = let fn = f n in Name m hm l hl fn (hash fn)
-
-
+nameMapStem (Name m hm l hl n _ im il _ _) f
+  = let fn = f n
+        ln = map toLower fn
+    in Name m hm l hl fn (hash fn) im il (intern fn) (intern ln)
 
 readQualifiedName :: String -> Name
 readQualifiedName ('?':s)
@@ -471,38 +468,38 @@ nameIsNil name
   = null (nameStem name) && null (nameModule name)
 
 qualify :: HasCallStack => Name -> Name -> Name
-qualify (Name m hm _ 0 _ 0) (Name _ 0 l hl n hn)     = Name m hm l hl n hn
-qualify (Name m1 _ _ 0 _ 0) name@(Name m2 _ _ _ _ _) | m1 == m2 = name
+qualify (Name m hm _ 0 _ 0 _ _ _ _) (Name _ 0 l hl n hn _ _ _ _) = Name m hm l hl n hn (intern m) (intern l) (intern n) (intern (map toLower n))
+qualify (Name m1 _ _ 0 _ 0 im1 _ _ _) name@(Name m2 _ _ _ _ _ im2 _ _ _) | im1 == im2 = name
 qualify n1 n2
   = failure ("Common.Name.qualify: illegal qualification: " ++ show (n1,n2))
 
 unqualify :: Name -> Name
-unqualify (Name _ _ l hl n hn)
-  = Name "" 0 l hl n hn
+unqualify (Name _ _ l hl n hn _ il in_ inl)
+  = Name "" 0 l hl n hn (intern "") il in_ inl
 
 qualifier :: Name -> Name
-qualifier (Name m hm _ _ _ _)
-  = Name m hm "" 0 "" 0
+qualifier (Name m hm _ _ _ _ im _ _ _)
+  = Name m hm "" 0 "" 0 im (intern "") (intern "") (intern "")
 
 nameAsModuleName :: Name -> Name
-nameAsModuleName (Name m _ l _ n _)
+nameAsModuleName (Name m _ l _ n _ _ _ _ _)
   = newModuleName (join m (join l n))
 
 qualifyLocally :: Name -> Name -> Name
-qualifyLocally (Name loc _ _ 0 _ 0) (Name m _ l _ n _)
+qualifyLocally (Name loc _ _ 0 _ 0 _ _ _ _) (Name m _ l _ n _ _ _ _ _)
   = newLocallyQualified m (join loc l) n
 qualifyLocally name1 name2
   = failure ("Common.Name.qualifyLocally: illegal qualification: " ++ showExplicit name1 ++ ", " ++ showExplicit name2)
 
 -- move the module qualifier to the local qualifier
 requalifyLocally :: Name -> Name
-requalifyLocally name@(Name m _ l _ n _)
+requalifyLocally name@(Name m _ l _ n _ _ _ _ _)
   = if null m then name else newLocallyQualified "" (join m l) n
 
 -- only keep the stem
 unqualifyFull :: Name -> Name
-unqualifyFull (Name _ _ _ _ n hn)
-  = Name "" 0 "" 0 n hn
+unqualifyFull (Name _ _ _ _ n hn _ _ _ _)
+  = Name "" 0 "" 0 n hn (intern "") (intern "") (intern n) (intern (map toLower n))
 
 -- full qualifier: module + local qualifier
 fullQualifier :: Name -> String
@@ -511,11 +508,11 @@ fullQualifier name
 
 -- add the local qualifier to the module qualifier
 unqualifyLocally :: Name -> Name
-unqualifyLocally name@(Name m _ l _ n _)
+unqualifyLocally name@(Name m _ l _ n _ _ _ _ _)
   = if null l then name else newQualified (join m l) n
 
 unqualifyAsModuleName :: Name -> Name
-unqualifyAsModuleName (Name m _ l _ n _)
+unqualifyAsModuleName (Name m _ l _ n _ _ _ _ _)
   = newModuleName (join m l)
 
 isInDefaultNameSpace, isInWrongNameSpace :: Name -> Bool

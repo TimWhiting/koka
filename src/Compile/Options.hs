@@ -512,11 +512,11 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["showc"]          (\b f -> f{showAsmC=b})          "show generated C"
  , flag   []    ["core"]           (\b f -> f{genCore=b})           "generate a core file"
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
- , flag   []    ["analyze"]        (\b f -> f{analyze=b, rebuild=b})           "full program analysis"
- , flag   []    ["dmcfa"]          (\b f -> f{analyze=b, rebinding=b, rebuild=b})         "full program analysis with rebinding"
+ , flag   []    ["dmcfae"]          (\b f -> f{analyze=b, rebuild=b})           "full program analysis"
+ , flag   []    ["dmcfar"]         (\b f -> f{analyze=b, rebinding=b, rebuild=b})         "full program analysis with rebinding"
  , option []    ["sensitivity"]    (ReqArg (\s -> Flag (\f -> f{sensitivities = read s : sensitivities f})) "(d,m)") "add analysis sensitivity (d,m)"
  , flag   []    ["kcfa"]           (\b f -> f{analyze=b, kcfa=b, rebuild=b})              "enable k-cfa analysis"
- , flag   []    ["sweep"]           (\b f -> f{sweep=b})              "analysis sweep"
+ , flag   []    ["sweep"]          (\b f -> f{sweep=b})              "analysis sweep"
  , emptyline
 
  -- hidden
