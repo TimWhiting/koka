@@ -383,6 +383,517 @@ def plot_histograms(results, variant_name):
     plt.savefig(os.path.join(output_dir, "cardinality_histograms.png"), bbox_inches='tight')
     plt.close()
 
+def plot_size_vs_time_comparison(all_results):
+    """
+    Plots program size (configurations visited from 0CFA) vs analysis time for different analyses and sensitivities.
+    Shows d=0,1,2 in rows with KCFA baseline on left, includes timeout counts.
+    Program size = numTotalFixInputStates - numStoreAddresses (number of configurations/Step states visited)
+    """
+    sns.set_theme(style="whitegrid")
+    
+    # Get program sizes from KCFA d=0, m=0 (this is 0CFA)
+    program_sizes = {}
+    for r in all_results:
+        if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
+            if r.get('storeMetrics'):
+                bench = r['benchmarkName']
+                m = r['storeMetrics']
+                # Use configurations visited as program size proxy
+                total_states = m.get('numTotalFixInputStates', 0)
+                store_addrs = m.get('numStoreAddresses', 0)
+                configs_visited = total_states - store_addrs
+                if configs_visited > 0:
+                    program_sizes[bench] = configs_visited
+    
+    if not program_sizes:
+        print("Warning: No KCFA 0-0 results found to determine program sizes.")
+        return
+    
+    print(f"Found {len(program_sizes)} benchmarks with program size data")
+    
+    # Collect data for plotting (including timeout info)
+    plot_data = []
+    timeout_data = []
+    timeout_counts = {}
+    
+    # Define which configurations to plot: d=0,1,2 for DMCFAR/DMCFAE, always KCFA
+    d_values = ['0', '1', '2']
+    m_values = ['0', '1', '2', '3']
+    
+    for r in all_results:
+        bench = r['benchmarkName']
+        if bench not in program_sizes:
+            continue
+            
+        variant = r['variant']
+        d = str(r['d'])
+        m = str(r['m'])
+        
+        # Track timeouts
+        config_key = (variant, d, m)
+        if config_key not in timeout_counts:
+            timeout_counts[config_key] = {'total': 0, 'timeout': 0}
+        timeout_counts[config_key]['total'] += 1
+        
+        # KCFA: d is always 0, m is the k parameter
+        if variant == 'kcfa' and d == '0' and m in m_values:
+            times = r.get('analysisTimes', [])
+            is_timeout = r.get('isTimeout', False)
+            
+            if is_timeout:
+                timeout_counts[config_key]['timeout'] += 1
+                # Add timeout point for visualization
+                timeout_data.append({
+                    'benchmark': bench,
+                    'programSize': program_sizes[bench],
+                    'variant': variant,
+                    'd': d,
+                    'm': m
+                })
+                # Add timeout to plot_data with penalty time for trendline fitting
+                plot_data.append({
+                    'benchmark': bench,
+                    'programSize': program_sizes[bench],
+                    'time': 600,  # Penalty: slightly above 500s timeout
+                    'variant': variant,
+                    'd': d,
+                    'm': m,
+                    'is_timeout': True
+                })
+            elif times:
+                avg_time = np.mean(times)
+                plot_data.append({
+                    'benchmark': bench,
+                    'programSize': program_sizes[bench],
+                    'time': avg_time,
+                    'variant': variant,
+                    'd': d,
+                    'm': m,
+                    'is_timeout': False
+                })
+        
+        # DMCFAR/DMCFAE: both d and m vary
+        elif variant in ['dmcfar', 'dmcfae'] and d in d_values and m in m_values:
+            times = r.get('analysisTimes', [])
+            is_timeout = r.get('isTimeout', False)
+            
+            if is_timeout:
+                timeout_counts[config_key]['timeout'] += 1
+                # Add timeout point for visualization
+                timeout_data.append({
+                    'benchmark': bench,
+                    'programSize': program_sizes[bench],
+                    'variant': variant,
+                    'd': d,
+                    'm': m
+                })
+                # Add timeout to plot_data with penalty time for trendline fitting
+                plot_data.append({
+                    'benchmark': bench,
+                    'programSize': program_sizes[bench],
+                    'time': 600,  # Penalty: slightly above 500s timeout
+                    'variant': variant,
+                    'd': d,
+                    'm': m,
+                    'is_timeout': True
+                })
+            elif times:
+                avg_time = np.mean(times)
+                plot_data.append({
+                    'benchmark': bench,
+                    'programSize': program_sizes[bench],
+                    'time': avg_time,
+                    'variant': variant,
+                    'd': d,
+                    'm': m,
+                    'is_timeout': False
+                })
+    
+    if not plot_data:
+        print("Warning: No matching data found for size vs time plot.")
+        return
+    
+    df = pd.DataFrame(plot_data)
+    df_timeout = pd.DataFrame(timeout_data) if timeout_data else pd.DataFrame()
+    print(f"Plotting {len(df)} data points and {len(df_timeout)} timeout points")
+    
+    # Create grid: rows=d values (0,1,2), columns=variants (KCFA, DMCFAR, DMCFAE)
+    d_values = ['0', '1', '2']
+    fig, axes = plt.subplots(3, 3, figsize=(18, 14), sharex=True, sharey=True)
+    
+    # Define styling
+    sensitivity_styles = {
+        '0': {'linestyle': '-', 'linewidth': 2.5, 'marker': 'o', 'markersize': 5},
+        '1': {'linestyle': '--', 'linewidth': 2, 'marker': 's', 'markersize': 4},
+        '2': {'linestyle': ':', 'linewidth': 2, 'marker': '^', 'markersize': 4},
+        '3': {'linestyle': '-.', 'linewidth': 2, 'marker': 'D', 'markersize': 3},
+    }
+    
+    variant_info = [
+        ('kcfa', 'KCFA', '#1f77b4'),
+        ('dmcfar', 'DMCFAR', '#ff7f0e'),
+        ('dmcfae', 'DMCFAE', '#2ca02c')
+    ]
+    
+    for row_idx, d_val in enumerate(d_values):
+        for col_idx, (variant, variant_name, color) in enumerate(variant_info):
+            ax = axes[row_idx, col_idx]
+            
+            # For KCFA, d is always 0 (only k/m varies)
+            if variant == 'kcfa':
+                variant_df = df[df['variant'] == variant].copy()
+                title_d = "k-CFA"
+            else:
+                variant_df = df[(df['variant'] == variant) & (df['d'] == d_val)].copy()
+                title_d = f"d={d_val}"
+            
+            if variant_df.empty:
+                ax.text(0.5, 0.5, 'No data', ha='center', va='center', 
+                       transform=ax.transAxes, fontsize=11)
+            else:
+                # Find max time for timeout marker placement
+                max_time = variant_df['time'].max() if not variant_df.empty else 100
+                timeout_marker_y = max_time * 1.5  # Place timeouts above the data
+                
+                # Plot each sensitivity level
+                for m_val in sorted(variant_df['m'].unique()):
+                    subset = variant_df[variant_df['m'] == m_val].sort_values('programSize')
+                    style = sensitivity_styles.get(m_val, sensitivity_styles['0'])
+                    
+                    # Get timeout count for legend
+                    config_key = (variant, d_val if variant != 'kcfa' else '0', m_val)
+                    t_info = timeout_counts.get(config_key, {'total': 0, 'timeout': 0})
+                    n_timeout = t_info['timeout']
+                    
+                    # Fit trendline using ALL points including timeouts
+                    # DMCFAR: polynomial (log-log space), KCFA/DMCFAE: exponential (log-linear space)
+                    slope_str = ""
+                    if len(subset) >= 2:
+                        x_vals = subset['programSize'].values
+                        y_vals = subset['time'].values
+                        
+                        if variant == 'dmcfar':
+                            # Polynomial fit: y = a * x^b (linear in log-log space)
+                            log_x = np.log10(x_vals)
+                            log_y = np.log10(y_vals)
+                            coeffs = np.polyfit(log_x, log_y, 1)
+                            slope = coeffs[0]  # exponent in y = x^slope relationship
+                            slope_str = f' [x^{slope:.2f}]'
+                        else:  # kcfa or dmcfae
+                            # Exponential fit: y = a * exp(b*x) (linear in log-linear space)
+                            log_y = np.log10(y_vals)
+                            coeffs = np.polyfit(x_vals, log_y, 1)
+                            slope = coeffs[0]  # coefficient in exp(slope*x)
+                            slope_str = f' [exp({slope:.2e}*x)]'
+                    
+                    if variant == 'kcfa':
+                        label = f'k={m_val}{slope_str}' + (f' (T/O:{n_timeout})' if n_timeout > 0 else '')
+                    else:
+                        label = f'm={m_val}{slope_str}' + (f' (T/O:{n_timeout})' if n_timeout > 0 else '')
+                    
+                    # Plot scatter points only for non-timeout data
+                    non_timeout_subset = subset[~subset['is_timeout']]
+                    ax.scatter(non_timeout_subset['programSize'], non_timeout_subset['time'], 
+                              color=color, alpha=0.7, label=label, 
+                              marker=style['marker'], s=style['markersize']**2, zorder=5)
+                    
+                    # Plot trendline using all data (including timeouts)
+                    if len(subset) >= 2:
+                        x_range = np.linspace(subset['programSize'].min(), 
+                                             subset['programSize'].max(), 100)
+                        
+                        if variant == 'dmcfar':
+                            # Polynomial trendline
+                            poly = np.poly1d(coeffs)
+                            y_trend = 10 ** poly(np.log10(x_range))
+                        else:  # kcfa or dmcfae
+                            # Exponential trendline
+                            poly = np.poly1d(coeffs)
+                            y_trend = 10 ** poly(x_range)
+                        
+                        # Plot trendline with same color but more transparent
+                        ax.plot(x_range, y_trend, color=color, alpha=0.4, 
+                               linestyle=style['linestyle'], linewidth=2, zorder=2)
+                    
+                    # Plot timeout markers for this m_val
+                    if not df_timeout.empty:
+                        if variant == 'kcfa':
+                            timeout_subset = df_timeout[(df_timeout['variant'] == variant) & 
+                                                       (df_timeout['m'] == m_val)]
+                        else:
+                            timeout_subset = df_timeout[(df_timeout['variant'] == variant) & 
+                                                       (df_timeout['d'] == d_val) & 
+                                                       (df_timeout['m'] == m_val)]
+                        
+                        if not timeout_subset.empty:
+                            ax.scatter(timeout_subset['programSize'], 
+                                     [timeout_marker_y] * len(timeout_subset),
+                                     marker='x', s=100, color='red', alpha=0.8, 
+                                     linewidths=2, zorder=10)
+            
+            # Labels and formatting
+            if row_idx == 2:
+                ax.set_xlabel('Program Size (0CFA Configs)', fontsize=10)
+            if col_idx == 0:
+                ax.set_ylabel('Time (seconds)', fontsize=10)
+            
+            # Title
+            if row_idx == 0:
+                ax.set_title(f'{variant_name}\n{title_d}', fontsize=12, fontweight='bold', pad=8)
+            else:
+                ax.set_title(title_d, fontsize=11, pad=5)
+            
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            ax.legend(fontsize=8, loc='best', framealpha=0.9)
+            ax.grid(True, alpha=0.3, which='both')
+            ax.set_axisbelow(True)
+    
+    fig.suptitle('Program Size vs Analysis Time: KCFA Baseline (left) vs DMCFAR vs DMCFAE\n' + 
+                 'Rows: Delimiter Depth d | T/O = Timeout Count', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout(rect=[0, 0, 1, 0.99])
+    
+    output_path = "benchmarks/analysis/size_vs_time_comparison.png"
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, bbox_inches='tight', dpi=150)
+    print(f"Saved: {output_path}")
+    
+    plt.show()
+    plt.close('all')
+
+def plot_size_vs_cont_precision(all_results):
+    """Plot program size vs continuation precision (contStrSingletons / numCont) across variants."""
+    
+    # Get program sizes from KCFA 0-0 baseline
+    program_sizes = {}
+    for r in all_results:
+        if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
+            bench = r['benchmarkName']
+            if r.get('storeMetrics'):
+                m = r['storeMetrics']
+                total_states = m.get('numTotalFixInputStates', 0)
+                store_addrs = m.get('numStoreAddresses', 0)
+                configs_visited = total_states - store_addrs
+                if configs_visited > 0:
+                    program_sizes[bench] = configs_visited
+    
+    if not program_sizes:
+        print("Warning: No KCFA 0-0 results found to determine program sizes.")
+        return
+    
+    print(f"Found {len(program_sizes)} benchmarks with program size data")
+    
+    # Collect data for plotting
+    plot_data = []
+    timeout_counts = {}
+    
+    d_values = ['0', '1', '2']
+    m_values = ['0', '1', '2', '3']
+    
+    for r in all_results:
+        bench = r['benchmarkName']
+        if bench not in program_sizes:
+            continue
+            
+        variant = r['variant']
+        d = str(r['d'])
+        m = str(r['m'])
+        
+        config_key = (variant, d, m)
+        if config_key not in timeout_counts:
+            timeout_counts[config_key] = {'total': 0, 'timeout': 0}
+        timeout_counts[config_key]['total'] += 1
+        
+        # Skip timeouts and entries without metrics
+        is_timeout = r.get('isTimeout', False)
+        if is_timeout:
+            timeout_counts[config_key]['timeout'] += 1
+            continue
+        
+        if not r.get('storeMetrics'):
+            continue
+            
+        metrics = r['storeMetrics']
+        num_cont = metrics.get('numContAddresses', 0)
+        cont_str_singletons = metrics.get('contStrSingletons', 0)
+        
+        # Calculate continuation precision (avoid division by zero)
+        if num_cont > 0:
+            cont_precision = cont_str_singletons / num_cont
+        else:
+            continue  # Skip if no continuations
+        
+        # KCFA: d is always 0, m is the k parameter
+        if variant == 'kcfa' and d == '0' and m in m_values:
+            plot_data.append({
+                'benchmark': bench,
+                'programSize': program_sizes[bench],
+                'contPrecision': cont_precision,
+                'variant': variant,
+                'd': d,
+                'm': m
+            })
+        
+        # DMCFAR/DMCFAE: both d and m vary
+        elif variant in ['dmcfar', 'dmcfae'] and d in d_values and m in m_values:
+            plot_data.append({
+                'benchmark': bench,
+                'programSize': program_sizes[bench],
+                'contPrecision': cont_precision,
+                'variant': variant,
+                'd': d,
+                'm': m
+            })
+    
+    if not plot_data:
+        print("Warning: No matching data found for size vs continuation precision plot.")
+        return
+    
+    df = pd.DataFrame(plot_data)
+    print(f"Plotting {len(df)} data points for continuation precision")
+    
+    # Create grid: rows=d values (0,1,2), columns=variants (KCFA, DMCFAR, DMCFAE)
+    d_values = ['0', '1', '2']
+    fig, axes = plt.subplots(3, 3, figsize=(18, 14), sharex=True, sharey=True)
+    
+    # Define styling
+    sensitivity_styles = {
+        '0': {'linestyle': '-', 'linewidth': 2.5, 'marker': 'o', 'markersize': 5},
+        '1': {'linestyle': '--', 'linewidth': 2, 'marker': 's', 'markersize': 4},
+        '2': {'linestyle': ':', 'linewidth': 2, 'marker': '^', 'markersize': 4},
+        '3': {'linestyle': '-.', 'linewidth': 2, 'marker': 'D', 'markersize': 3},
+    }
+    
+    variant_info = [
+        ('kcfa', 'KCFA', '#1f77b4'),
+        ('dmcfar', 'DMCFAR', '#ff7f0e'),
+        ('dmcfae', 'DMCFAE', '#2ca02c')
+    ]
+    
+    for row_idx, d_val in enumerate(d_values):
+        for col_idx, (variant, variant_name, color) in enumerate(variant_info):
+            ax = axes[row_idx, col_idx]
+            
+            # For KCFA, d is always 0 (only k/m varies)
+            if variant == 'kcfa':
+                variant_df = df[df['variant'] == variant].copy()
+                title_d = "k-CFA"
+            else:
+                variant_df = df[(df['variant'] == variant) & (df['d'] == d_val)].copy()
+                title_d = f"d={d_val}"
+            
+            if variant_df.empty:
+                ax.text(0.5, 0.5, 'No data', ha='center', va='center', 
+                       transform=ax.transAxes, fontsize=11)
+            else:
+                # Plot each sensitivity level
+                for m_val in sorted(variant_df['m'].unique()):
+                    subset = variant_df[variant_df['m'] == m_val].sort_values('programSize')
+                    style = sensitivity_styles.get(m_val, sensitivity_styles['0'])
+                    
+                    # Get timeout count for legend
+                    config_key = (variant, d_val if variant != 'kcfa' else '0', m_val)
+                    t_info = timeout_counts.get(config_key, {'total': 0, 'timeout': 0})
+                    n_timeout = t_info['timeout']
+                    
+                    # Fit trendline using ALL points
+                    # Continuation precision: polynomial fit makes more sense (log-log space)
+                    slope_str = ""
+                    if len(subset) >= 2:
+                        x_vals = subset['programSize'].values
+                        y_vals = subset['contPrecision'].values
+                        
+                        # Use log-log fit for all variants
+                        log_x = np.log10(x_vals)
+                        log_y = np.log10(y_vals)
+                        coeffs = np.polyfit(log_x, log_y, 1)
+                        slope = coeffs[0]  # exponent in y = x^slope relationship
+                        slope_str = f' [x^{slope:.2f}]'
+                    
+                    if variant == 'kcfa':
+                        label = f'k={m_val}{slope_str}' + (f' (T/O:{n_timeout})' if n_timeout > 0 else '')
+                    else:
+                        label = f'm={m_val}{slope_str}' + (f' (T/O:{n_timeout})' if n_timeout > 0 else '')
+                    
+                    # Plot scatter points
+                    ax.scatter(subset['programSize'], subset['contPrecision'], 
+                              color=color, alpha=0.7, label=label, 
+                              marker=style['marker'], s=style['markersize']**2, zorder=5)
+                    
+                    # Plot trendline
+                    if len(subset) >= 2:
+                        poly = np.poly1d(coeffs)
+                        
+                        # Generate smooth trendline in log-log space
+                        x_range = np.logspace(np.log10(subset['programSize'].min()), 
+                                             np.log10(subset['programSize'].max()), 100)
+                        y_trend = 10 ** poly(np.log10(x_range))
+                        
+                        # Plot trendline with same color but more transparent
+                        ax.plot(x_range, y_trend, color=color, alpha=0.4, 
+                               linestyle=style['linestyle'], linewidth=2, zorder=2)
+            
+            # Labels and formatting
+            if row_idx == 2:
+                ax.set_xlabel('Program Size (0CFA Configs)', fontsize=10)
+            if col_idx == 0:
+                ax.set_ylabel('Continuation Precision', fontsize=10)
+            
+            # Title
+            if row_idx == 0:
+                ax.set_title(f'{variant_name}\n{title_d}', fontsize=12, fontweight='bold', pad=8)
+            else:
+                ax.set_title(title_d, fontsize=11, pad=5)
+            
+            ax.set_xscale('log')
+            ax.set_yscale('log')
+            ax.legend(fontsize=8, loc='best', framealpha=0.9)
+            ax.grid(True, alpha=0.3, which='both')
+            ax.set_axisbelow(True)
+    
+    fig.suptitle('Program Size vs Continuation Precision (contStrSingletons / numCont)\n' + 
+                 'Rows: Delimiter Depth d | T/O = Timeout Count', 
+                 fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout(rect=[0, 0, 1, 0.99])
+    
+    output_path = "benchmarks/analysis/size_vs_cont_precision.png"
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, bbox_inches='tight', dpi=150)
+    print(f"Saved: {output_path}")
+    
+    plt.show()
+    plt.close('all')
+
+def print_top_programs_by_size(all_results, top_n=10):
+    """Print the top N programs by size (0CFA configurations visited)."""
+    
+    # Get program sizes from KCFA 0-0 baseline
+    program_sizes = {}
+    for r in all_results:
+        if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
+            bench = r['benchmarkName']
+            if r.get('storeMetrics'):
+                m = r['storeMetrics']
+                total_states = m.get('numTotalFixInputStates', 0)
+                store_addrs = m.get('numStoreAddresses', 0)
+                configs_visited = total_states - store_addrs
+                if configs_visited > 0:
+                    program_sizes[bench] = configs_visited
+    
+    if not program_sizes:
+        print("No program size data found.")
+        return
+    
+    # Sort by size descending and get top N
+    sorted_programs = sorted(program_sizes.items(), key=lambda x: x[1], reverse=True)
+    
+    print(f"\nTop {top_n} Programs by Size (0CFA Configurations Visited):")
+    print("-" * 70)
+    for i, (benchmark, size) in enumerate(sorted_programs[:top_n], 1):
+        print(f"{i:2d}. {benchmark:50s} {size:10,d}")
+    print("-" * 70)
+
 def main():
     results_path = "benchmarks/results"
     if not os.path.exists(results_path):
@@ -394,29 +905,38 @@ def main():
         print("Error: No data found in benchmarks/results.")
         return
     
-    # Group results by variant
-    variants = {}
-    for r in all_results:
-        v = r['variant']
-        if v not in variants:
-            variants[v] = []
-        variants[v].append(r)
+    # Print top 10 programs by size
+    print_top_programs_by_size(all_results, top_n=10)
     
-    for v_name, v_results in variants.items():
-        # Identify baselines (typically the 0-sensitivity configuration: d=0, m=0) for THIS variant
-        baselines = {
-            r['benchmarkName']: r
-            for r in v_results
-            if str(r['d']) == '0' and str(r['m']) == '0' and r.get('storeMetrics')
-        }
+    # Generate size vs time comparison plot
+    # plot_size_vs_time_comparison(all_results)
+    
+    # Generate size vs continuation precision plot
+    plot_size_vs_cont_precision(all_results)
+    
+    # Group results by variant
+    # variants = {}
+    # for r in all_results:
+    #     v = r['variant']
+    #     if v not in variants:
+    #         variants[v] = []
+    #     variants[v].append(r)
+    
+    # for v_name, v_results in variants.items():
+    #     # Identify baselines (typically the 0-sensitivity configuration: d=0, m=0) for THIS variant
+    #     baselines = {
+    #         r['benchmarkName']: r
+    #         for r in v_results
+    #         if str(r['d']) == '0' and str(r['m']) == '0' and r.get('storeMetrics')
+    #     }
 
-        if not baselines:
-            print(f"Warning: No baseline results (d=0, m=0) found for variant '{v_name}'.")
+    #     if not baselines:
+    #         print(f"Warning: No baseline results (d=0, m=0) found for variant '{v_name}'.")
 
-        df, struct_mu, sem_mu, time_mu = generate_icfp_tables(v_results, baselines, v_name)
-        if not df.empty:
-            plot_visualizations(df, struct_mu, sem_mu, time_mu, v_name)
-            plot_histograms(v_results, v_name)
+    #     df, struct_mu, sem_mu, time_mu = generate_icfp_tables(v_results, baselines, v_name)
+    #     if not df.empty:
+    #         plot_visualizations(df, struct_mu, sem_mu, time_mu, v_name)
+    #         plot_histograms(v_results, v_name)
 
 if __name__ == "__main__":
     main()
