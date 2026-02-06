@@ -149,6 +149,16 @@ kAddrId (KAddr frame _ _ dval@(DVal label op expr args ctx)) =
   show op ++ "/" ++ show (contextId expr) ++ "/" ++ frameId frame
 kAddrId EndKAddr = "KEndAddr"
 
+vAddrId :: Addr -> String
+vAddrId (BindingAddr _ name ectx) = "B@" ++ show name ++ ":" ++ show ectx
+vAddrId UnitAddr = "UnitAddr"
+vAddrId EndVAddr = "EndVAddr"
+vAddrId (BindImplicitAddr _ _ ectx) = "BI@" ++ show ectx
+vAddrId (BindKImplicitAddr _ _ ectx) = "BKI@" ++ show ectx
+vAddrId (ArgImplicitAddr _ _ i ectx) = "AI@" ++ show i ++ ":" ++ show ectx
+vAddrId (ConImplicitAddr nm _ ectx) = "CI@" ++ show nm ++ ":" ++ show ectx
+vAddrId addr = error $ "vAddrId called on continuation address: " ++ show addr
+
 frameId :: Frame -> String
 frameId frame =
   case frame of 

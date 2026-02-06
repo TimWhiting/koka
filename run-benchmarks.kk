@@ -26,9 +26,9 @@ type analysis
 
 fun sensitivities(a: analysis)
   match a
-    DMCFAR -> list(0,1).flatmap( fn(d) list(0,1).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)] 
-    DMCFAE -> list(0,1).flatmap( fn(d) list(0,1).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)]
-    KCFA -> list(0,1).map( fn(k) (0,k) )
+    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFAE -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> list(0,2).map( fn(k) (0,k) )
 
 fun show(a: analysis)
   match a

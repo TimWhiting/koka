@@ -242,6 +242,31 @@ extractMetrics cache =
     kStructuralSize ks = S.size $ S.map (\k -> case k of { KAddr frame _ _ _ -> frame; EndKAddr -> FCount }) ks
     contStrSingletons = count (\(_, KValue ks) -> kStructuralSize ks == 1) kEntries
 
+    -- 0CFA aggregated continuation singletons
+    -- Aggregate all continuation sets by their kAddrId (0CFA key)
+    kEntriesByAddrId = M.fromListWith S.union [ (kAddrId addr, ks) | (KStore addr, KValue ks) <- kEntries ]
+    cont0CFAStrSingletons = count (\(_, ks) -> kStructuralSize ks == 1) (M.toList kEntriesByAddrId)
+
+    -- 0CFA aggregated value singletons
+    -- Aggregate all value sets by their vAddrId (0CFA key)
+    vEntriesByAddrId = M.fromListWith (<>) [ (vAddrId addr, val) | (VStore addr, SValue val) <- vEntries ]
+    val0CFAStrSingletons = count (\(_, val) -> abStructuralSize val == 1) (M.toList vEntriesByAddrId)
+
+    -- Combined 0CFA precision (total singletons / total 0CFA addresses)
+    combined0CFAStrSingletons = val0CFAStrSingletons + cont0CFAStrSingletons
+
+    -- Literal top count at 0CFA level
+    vLitEntriesByAddrId = M.fromListWith (<>) [ (vAddrId addr, val) | (VStore addr, SValue val) <- vEntries, numLit > 0 ]
+    literal0CFATopCount = count (\(_, val) -> litIsTopX (alits val)) (M.toList vLitEntriesByAddrId)
+
+    -- Context explosion metrics
+    ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e _ ctx), RValue val) <- M.toList cache]
+    ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
+    
+    -- Build histograms: how many expressions/continuations have N contexts?
+    exprContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerExpr]
+    contContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerApply]
+
     -- Returns
     callSites = [ (ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isApp e ]
     callTargets = [(ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isIndirectAppFun e]
@@ -265,17 +290,15 @@ extractMetrics cache =
 
     -- TODO: Literal values
 
-    -- Histograms
-    ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e _ ctx), RValue val) <- M.toList cache]
-    ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
-    
     -- Total FixInput states
     numTotalFixInput = M.size cache
   in StoreMetrics
       numStore numLit numStruct numCont callTargetCount numTotalFixInput
-      valSemSingletons contSemSingletons valStrSingletons contStrSingletons
+      valSemSingletons contSemSingletons valStrSingletons contStrSingletons cont0CFAStrSingletons
+      val0CFAStrSingletons combined0CFAStrSingletons
       semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
-      literalTopCount
+      literalTopCount literal0CFATopCount
+      exprContextHistogram contContextHistogram
       exprToValSemSizes applyContSemSizes callToSemRetSizes
       applyContRetSizes exprToValStrSizes applyContStrSizes
       callTargetSemSizes callTargetStrSizes

@@ -85,7 +85,7 @@ eval :: HasCallStack => ExprContext -> VEnv -> FixAAMR r s e RValue
 eval expr venv = unreturnV $ doStep $ Step (CEval expr venv)
 apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
 apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
-doContinue a b c = doStep $ Step (CContinue a b c)
+doContinue a b c = doDoContinue a b c-- doStep $ Step (CContinue a b c)
 
 handleEffects :: HasCallStack => RValue -> VEnv -> Call -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res venv bodId hnd ctx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd ctx)
