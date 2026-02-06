@@ -66,7 +66,7 @@ kStore addr = do
   return res
 eval expr venv ctx = doStep $ Step (CEval expr venv ctx)
 apply kaddr addr ctx = doStep $ Step (CApply kaddr addr ctx)
-doContinue res frame ctx = doDoContinue res frame ctx -- doStep $ Step (CContinue res frame ctx)
+doContinue res frame ctx = doDoContinue res frame ctx -- doDoContinue res frame ctx -- doStep $ Step (CContinue res frame ctx)
 handleEffects res venv bodId hnd retCtx = doStep $ Step (CHandleEffects res venv bodId hnd retCtx)
 handleLocal res venv bodId varName valAddr retCtx = doStep $ Step (CHandleLocal res venv bodId varName valAddr retCtx)
 

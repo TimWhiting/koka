@@ -36,12 +36,19 @@ data StoreMetrics = StoreMetrics
   , contSemSingletons    :: Int -- ^ Semantic singletons in the continuation store.
   , valStrSingletons     :: Int -- ^ Structural singletons (Unique tags) in structural addresses.
   , contStrSingletons    :: Int -- ^ Structural singletons (Unique templates) in continuation addresses.
+  , cont0CFAStrSingletons :: Int -- ^ Structural singletons after aggregating by 0CFA key (kAddrId).
+  , val0CFAStrSingletons :: Int -- ^ Structural singletons after aggregating by 0CFA key (vAddrId).
+  , combined0CFAStrSingletons :: Int -- ^ Combined value+continuation structural singletons at 0CFA level.
   , semReturnSingletons  :: Int -- ^ Call sites returning a precise semantic value.
   , strReturnSingletons  :: Int -- ^ Call sites returning a precise structural value
   , semTargetSingletons  :: Int -- ^ Call targets var expression returning a precise closure.
   , strTargetSingletons  :: Int -- ^ Call targets var expression returning a precise lambda.
   -- | Data Precision
   , literalTopCount      :: Int -- ^ Literal addresses that hit Top (-1 in histogram).
+  , literal0CFATopCount  :: Int -- ^ Literal addresses hitting Top after 0CFA aggregation.
+  -- | Context Explosion Metrics
+  , exprContextHistogram :: Map.Map Int Int -- ^ Histogram: N contexts -> count of expressions with N contexts.
+  , contContextHistogram :: Map.Map Int Int -- ^ Histogram: N contexts -> count of continuations with N contexts.
   -- | Productivity Mappings
   -- These maps store the cardinalities observed at each program point across all contexts.
   -- For 0-CFA runs, these lists will contain exactly one element.
