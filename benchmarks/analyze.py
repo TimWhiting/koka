@@ -383,11 +383,15 @@ def plot_histograms(results, variant_name):
     plt.savefig(os.path.join(output_dir, "cardinality_histograms.png"), bbox_inches='tight')
     plt.close()
 
-def plot_size_vs_time_comparison(all_results):
+def plot_size_vs_time_comparison(all_results, min_size=100):
     """
     Plots program size (configurations visited from 0CFA) vs analysis time for different analyses and sensitivities.
     Shows d=0,1,2 in rows with KCFA baseline on left, includes timeout counts.
     Program size = numTotalFixInputStates - numStoreAddresses (number of configurations/Step states visited)
+    
+    Args:
+        all_results: List of all benchmark results
+        min_size: Minimum program size (configurations visited) to include (default: 100)
     """
     sns.set_theme(style="whitegrid")
     
@@ -397,12 +401,15 @@ def plot_size_vs_time_comparison(all_results):
         if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
             if r.get('storeMetrics'):
                 bench = r['benchmarkName']
+                # Filter out benchmarks/suite programs (smallest benchmarks)
+                if '/suite/' in bench:
+                    continue
                 m = r['storeMetrics']
                 # Use configurations visited as program size proxy
                 total_states = m.get('numTotalFixInputStates', 0)
                 store_addrs = m.get('numStoreAddresses', 0)
                 configs_visited = total_states - store_addrs
-                if configs_visited > 0:
+                if configs_visited > 0 and configs_visited >= min_size:
                     program_sizes[bench] = configs_visited
     
     if not program_sizes:
@@ -662,20 +669,28 @@ def plot_size_vs_time_comparison(all_results):
     plt.show()
     plt.close('all')
 
-def plot_size_vs_cont_precision(all_results):
-    """Plot program size vs continuation precision (contStrSingletons / numCont) across variants."""
+def plot_size_vs_cont_precision(all_results, min_size=100):
+    """Plot program size vs continuation precision (contStrSingletons / numCont) across variants.
+    
+    Args:
+        all_results: List of all benchmark results
+        min_size: Minimum program size (configurations visited) to include (default: 100)
+    """
     
     # Get program sizes from KCFA 0-0 baseline
     program_sizes = {}
     for r in all_results:
         if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
             bench = r['benchmarkName']
+            # Filter out benchmarks/suite programs (smallest benchmarks)
+            if '/suite/' in bench:
+                continue
             if r.get('storeMetrics'):
                 m = r['storeMetrics']
                 total_states = m.get('numTotalFixInputStates', 0)
                 store_addrs = m.get('numStoreAddresses', 0)
                 configs_visited = total_states - store_addrs
-                if configs_visited > 0:
+                if configs_visited > 0 and configs_visited >= min_size:
                     program_sizes[bench] = configs_visited
     
     if not program_sizes:
@@ -873,6 +888,9 @@ def print_top_programs_by_size(all_results, top_n=10):
     for r in all_results:
         if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
             bench = r['benchmarkName']
+            # Filter out benchmarks/suite programs (smallest benchmarks)
+            if '/suite/' in bench:
+                continue
             if r.get('storeMetrics'):
                 m = r['storeMetrics']
                 total_states = m.get('numTotalFixInputStates', 0)
@@ -895,7 +913,7 @@ def print_top_programs_by_size(all_results, top_n=10):
     print("-" * 70)
 
 def main():
-    results_path = "benchmarks/results"
+    results_path = "benchmarks/old-results"
     if not os.path.exists(results_path):
         print(f"Error: Path '{results_path}' does not exist.")
         return
@@ -908,11 +926,11 @@ def main():
     # Print top 10 programs by size
     print_top_programs_by_size(all_results, top_n=10)
     
-    # Generate size vs time comparison plot
-    # plot_size_vs_time_comparison(all_results)
+    # Generate size vs time comparison plot (min_size=100 to filter small programs)
+    plot_size_vs_time_comparison(all_results, min_size=350)
     
-    # Generate size vs continuation precision plot
-    plot_size_vs_cont_precision(all_results)
+    # Generate size vs continuation precision plot (min_size=100 to filter small programs)
+    plot_size_vs_cont_precision(all_results, min_size=350)
     
     # Group results by variant
     # variants = {}
