@@ -229,12 +229,13 @@ rebindAll (oldCtx, vars) ctx = do
 
 rebindAllAddrs :: HasCallStack => ExprContextId -> [Addr] -> VEnv -> CombinedCtx -> FixAAMR r s e (VEnv, [Addr])
 rebindAllAddrs ectx addrs (oldCtx, vars) newCtx = do
-  let newEnv = (newCtx, vars)
-  addrs' <- zipWithM (\i addr -> do
-      let newAddr = adjustAddr addr newEnv i ectx newCtx
-      rebind addr newAddr
-      return newAddr) [0..] addrs
-  return (newEnv, addrs')
+  if oldCtx == newCtx then return ((oldCtx, vars), addrs) else do
+    let newEnv = (newCtx, vars)
+    addrs' <- zipWithM (\i addr -> do
+        let newAddr = adjustAddr addr newEnv i ectx newCtx
+        rebind addr newAddr
+        return newAddr) [0..] addrs
+    return (newEnv, addrs')
 
 doDoContinue :: HasCallStack => RValue -> Frame -> CombinedCtx -> FixAAMR r s e FixChange
 doDoContinue res frame ctx =

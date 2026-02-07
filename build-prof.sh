@@ -1,0 +1,1 @@
+stack build --profile --ghc-options="-fprof-auto -rtsopts"
