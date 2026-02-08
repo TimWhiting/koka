@@ -1,10 +1,12 @@
 import json
 import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import gmean
-import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import gmean
+
 
 def safe_gmean(x):
     """Computes geometric mean safely, handling zeros, negatives, and empty sets."""
@@ -913,7 +915,7 @@ def print_top_programs_by_size(all_results, top_n=10):
     print("-" * 70)
 
 def main():
-    results_path = "benchmarks/old-results"
+    results_path = "benchmarks/results"
     if not os.path.exists(results_path):
         print(f"Error: Path '{results_path}' does not exist.")
         return
@@ -933,28 +935,28 @@ def main():
     plot_size_vs_cont_precision(all_results, min_size=350)
     
     # Group results by variant
-    # variants = {}
-    # for r in all_results:
-    #     v = r['variant']
-    #     if v not in variants:
-    #         variants[v] = []
-    #     variants[v].append(r)
+    variants = {}
+    for r in all_results:
+        v = r['variant']
+        if v not in variants:
+            variants[v] = []
+        variants[v].append(r)
     
-    # for v_name, v_results in variants.items():
-    #     # Identify baselines (typically the 0-sensitivity configuration: d=0, m=0) for THIS variant
-    #     baselines = {
-    #         r['benchmarkName']: r
-    #         for r in v_results
-    #         if str(r['d']) == '0' and str(r['m']) == '0' and r.get('storeMetrics')
-    #     }
+    for v_name, v_results in variants.items():
+        # Identify baselines (typically the 0-sensitivity configuration: d=0, m=0) for THIS variant
+        baselines = {
+            r['benchmarkName']: r
+            for r in v_results
+            if str(r['d']) == '0' and str(r['m']) == '0' and r.get('storeMetrics')
+        }
 
-    #     if not baselines:
-    #         print(f"Warning: No baseline results (d=0, m=0) found for variant '{v_name}'.")
+        if not baselines:
+            print(f"Warning: No baseline results (d=0, m=0) found for variant '{v_name}'.")
 
-    #     df, struct_mu, sem_mu, time_mu = generate_icfp_tables(v_results, baselines, v_name)
-    #     if not df.empty:
-    #         plot_visualizations(df, struct_mu, sem_mu, time_mu, v_name)
-    #         plot_histograms(v_results, v_name)
+        df, struct_mu, sem_mu, time_mu = generate_icfp_tables(v_results, baselines, v_name)
+        if not df.empty:
+            plot_visualizations(df, struct_mu, sem_mu, time_mu, v_name)
+            plot_histograms(v_results, v_name)
 
 if __name__ == "__main__":
     main()
