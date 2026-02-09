@@ -133,7 +133,7 @@ runQueryAtRange bc build mod m doQuery =
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just result
                     Nothing -> do
-                      let value = PolyVariantMetrics "dmcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
+                      let value = PolyVariantMetrics "kcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
                       -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++

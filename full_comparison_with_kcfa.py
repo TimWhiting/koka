@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 # Get the top benchmarks from dmcfar
-base_path_far = Path('benchmarks/old-results/dmcfar/2/2')
+base_path_far = Path('benchmarks/old-results/dmcfar/0/0')
 json_files = list(base_path_far.rglob('*.json'))
 
 benchmark_configs = []
@@ -17,7 +17,7 @@ for json_file in json_files:
             if data and not data.get('isTimeout', False) and 'storeMetrics' in data:
                 metrics = data.get('storeMetrics')
                 if metrics and 'numTotalFixInputStates' in metrics:
-                    configs = metrics['numTotalFixInputStates']
+                    configs = metrics['numTotalFixInputStates'] - metrics['numStoreAddresses']
                     benchmark_name = data.get('benchmarkName', '')
                     clean_name = benchmark_name.replace('analysis/benchmarks/', '')
                     benchmark_configs.append((clean_name, configs))
@@ -39,7 +39,7 @@ for benchmark_name, dmcfar_d2m2_configs in top_benchmarks:
     
     # Collect data from all variants
     # KCFA doesn't have object sensitivity (d), so it's always in folder 0/k where k is call-string depth
-    for variant, d, m in [('dmcfar', 0, 0), ('kcfa', 0, 2), ('dmcfae', 2, 2), ('dmcfar', 2, 2)]:
+    for variant, d, m in [('dmcfar', 0, 0), ('kcfa', 0, 2), ('dmcfae', 1, 1), ('dmcfar', 1, 1)]:
         path = Path(f'benchmarks/old-results/{variant}/{d}/{m}')
         found = False
         
@@ -61,7 +61,7 @@ for benchmark_name, dmcfar_d2m2_configs in top_benchmarks:
                             metrics = data['storeMetrics']
                             if 'numTotalFixInputStates' in metrics:
                                 result[f'{key}_status'] = 'OK'
-                                result[f'{key}_configs'] = metrics['numTotalFixInputStates']
+                                result[f'{key}_configs'] = metrics['numTotalFixInputStates'] - metrics['numStoreAddresses']
                                 result[f'{key}_time'] = avg_time
                             else:
                                 result[f'{key}_status'] = 'NO_METRICS'
@@ -86,7 +86,7 @@ for benchmark_name, dmcfar_d2m2_configs in top_benchmarks:
 
 # Print table
 print(f"{'Benchmark':<40} {'0-CFA':<15} {'KCFA':<15} {'DMCFAE':<15} {'DMCFAR':<15}")
-print(f"{'':40} {'(d=0,m=0)':<15} {'(d=2,m=2)':<15} {'(d=2,m=2)':<15} {'(d=2,m=2)':<15}")
+print(f"{'':40} {'(d=0,m=0)':<15} {'(d=0,m=2)':<15} {'(d=2,m=2)':<15} {'(d=2,m=2)':<15}")
 print("-" * 120)
 
 for r in results:
@@ -103,7 +103,7 @@ for r in results:
         else:
             return status
     
-    print(f"{name:<40} {fmt_cfg('dmcfar_0_0'):<15} {fmt_cfg('kcfa_2_2'):<15} {fmt_cfg('dmcfae_2_2'):<15} {fmt_cfg('dmcfar_2_2'):<15}")
+    print(f"{name:<40} {fmt_cfg('dmcfar_0_0'):<15} {fmt_cfg('kcfa_0_2'):<15} {fmt_cfg('dmcfae_1_1'):<15} {fmt_cfg('dmcfar_1_1'):<15}")
 
 print()
 print("=" * 120)
@@ -125,7 +125,7 @@ for r in results:
         else:
             return '---'
     
-    print(f"{name:<40} {fmt_time('dmcfar_0_0'):<12} {fmt_time('kcfa_2_2'):<12} {fmt_time('dmcfae_2_2'):<12} {fmt_time('dmcfar_2_2'):<12}")
+    print(f"{name:<40} {fmt_time('dmcfar_0_0'):<12} {fmt_time('kcfa_0_2'):<12} {fmt_time('dmcfae_1_1'):<12} {fmt_time('dmcfar_1_1'):<12}")
 
 print()
 print("=" * 120)
@@ -139,9 +139,9 @@ for r in results:
     name = r['name'][:38] + '..' if len(r['name']) > 40 else r['name']
     
     d0m0_configs = r.get('dmcfar_0_0_configs')
-    d2m2_configs = r.get('dmcfar_2_2_configs')
+    d2m2_configs = r.get('dmcfar_1_1_configs')
     d0m0_time = r.get('dmcfar_0_0_time')
-    d2m2_time = r.get('dmcfar_2_2_time')
+    d2m2_time = r.get('dmcfar_1_1_time')
     
     if d0m0_configs and d2m2_configs and d0m0_time and d2m2_time and d0m0_configs > 0 and d0m0_time > 0:
         config_explosion = d2m2_configs / d0m0_configs

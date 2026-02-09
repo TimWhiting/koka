@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 
-# Find all JSON files in dmcfae/2/2
-base_path = Path('benchmarks/old-results/dmcfae/2/2')
+# Find all JSON files in dmcfae/0/0
+base_path = Path('benchmarks/old-results/dmcfar/0/0')
 json_files = list(base_path.rglob('*.json'))
 
 total_configs = 0
@@ -19,7 +19,7 @@ for json_file in json_files:
             if data and 'storeMetrics' in data:
                 metrics = data.get('storeMetrics')
                 if metrics and 'numTotalFixInputStates' in metrics:
-                    configs = metrics['numTotalFixInputStates']
+                    configs = metrics['numTotalFixInputStates'] - metrics['numStoreAddresses']
                     total_configs += configs
                     files_with_data += 1
                     benchmark_name = data.get('benchmarkName', json_file.name)

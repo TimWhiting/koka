@@ -16,9 +16,6 @@ val files = suite-files.map(fn(f) "suite/" ++ f) ++ handler-files.map(fn(f) "han
 
 val header = "Analysis,File/Example,D,M(K),Precise,NEval,SumEval,PrecEval,NApply,SumApply,PrecApply,NK,SumK,PrecK,NS,SumS,PrecS,Time1,Time2,Time3"
 
-effect out
-  fun write(s: string): ()
-
 type analysis
   DMCFAR
   DMCFAE
@@ -26,9 +23,9 @@ type analysis
 
 fun sensitivities(a: analysis)
   match a
-    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)] 
-    DMCFAE -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ [(20, 2), (2, 20), (100, 100)]
-    KCFA -> list(0,2).map( fn(k) (0,k) )
+    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) ++ [(100,100)] // ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFAE -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m)))  ++ [(100,100)]// ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> list(0,2).map( fn(k) (0,k) ) ++ [(100,100)]
 
 fun show(a: analysis)
   match a
