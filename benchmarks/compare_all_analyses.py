@@ -258,6 +258,34 @@ def main():
     print(f"\n{'='*80}")
     print("KEY COMPARISONS")
     print(f"{'='*80}\n")
+
+    # --- Report cont0cfa_sing ratio over rebinding 0CFA ---
+    print(f"\n{'='*80}")
+    print("cont0cfa_sing relative to rebinding 0CFA (0,0) for each config:")
+    print(f"{'='*80}\n")
+    for config, desc in configs_of_interest:
+        # Determine the matching rebinding 0CFA config for this variant
+        if config.startswith("DMCFAR"):
+            base_config = "DMCFAR (0,0)"
+        elif config.startswith("DMCFAE"):
+            base_config = "DMCFAE (0,0)"
+        elif config.startswith("k-CFA"):
+            base_config = "k-CFA k=0"
+        else:
+            continue
+        ratios = []
+        for bench, configs in data.items():
+            if config in configs and base_config in configs:
+                base_val = configs[base_config].get('cont0cfa_sing', 0)
+                val = configs[config].get('cont0cfa_sing', 0)
+                if base_val > 0:
+                    ratios.append(val / base_val)
+        if ratios:
+            mean_ratio = np.mean(ratios)
+            median_ratio = np.median(ratios)
+            print(f"{config:<25} Mean: {mean_ratio:>7.3f}  Median: {median_ratio:>7.3f}  N={len(ratios)}")
+        else:
+            print(f"{config:<25} No data.")
     
     comparisons = [
         ("DMCFAR (1,1)", "k-CFA k=1", "DMCFAR vs k-CFA"),
