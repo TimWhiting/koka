@@ -84,13 +84,13 @@ runQueryAtRange bc build mod m doQuery =
                         let once = do
                               timeout 500000000 $ do
                                   tstart <- getCurrentTime
-                                  -- trace (" Analyzing " ++ show name) $ return ()
+                                  trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m 0 build True ()) s' $ do
                                                   runFixCont $ do
                                                     (_,ctx) <- loadModule (modName mod)
                                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
-                                                  ress' <- getAbResult
+                                                  ress' <- getCache
                                                   -- trace ("result': " ++ show ress') $ return ()
                                                   return ress'
                                   tend <- getCurrentTime
@@ -114,12 +114,11 @@ runQueryAtRange bc build mod m doQuery =
                                         (_,ctx) <- loadModule (modName mod)
                                         -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                         withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
-                                      ress' <- getAbResult
+                                      ress' <- getCache
                                       -- trace ("expected': " ++ show ress') $ return ()
                                       return ress'
+                      let metrics = extractMetrics analysisResult expectedResult
 
-                      let !result = (if compareResult analysisResult expectedResult S.empty then 1 else 0)
-                      let (_, _, (evals, applies, kSizes, sSizes), metrics) = analysisResult
 
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
                       let value = PolyVariantMetrics "kcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
@@ -131,7 +130,7 @@ runQueryAtRange bc build mod m doQuery =
                       --         ++ show (length kSizes) ++ "," ++ show (sum kSizes) ++ "," ++ show (count (== 1) kSizes) ++ ","
                       --         ++ show (length sSizes) ++ "," ++ show (sum sSizes) ++ "," ++ show (count (== 1) sSizes) ++ ","
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
-                      return $ Just result
+                      return $ Just (if preciseResult metrics then 1 else 0)
                     Nothing -> do
                       let value = PolyVariantMetrics "kcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
@@ -165,14 +164,14 @@ average xs = if null xs then 0 else fromIntegral (sum xs) / fromIntegral (length
 
 type CacheInfo = ([Int], [Int], [Int], [Int])
 
-compareResult :: (AbValue, M.Map Addr AbValue, CacheInfo, StoreMetrics) -> (AbValue, M.Map Addr AbValue, CacheInfo, StoreMetrics) -> S.Set (AbValue, AbValue) -> Bool
-compareResult (result, rMap, aci, sm1) (expected, eMap, bci, sm2) checked = do
+compareResult :: (AbValue, M.Map Addr AbValue) -> (AbValue, M.Map Addr AbValue) -> S.Set (AbValue, AbValue) -> Bool
+compareResult (result, rMap) (expected, eMap) checked = do
   let objMatch :: (Name, [(Name, Addr)]) -> (Name, [(Name, Addr)]) -> Bool
       objMatch (name, args) (name2, args2) =
          let argsMatch = zipWith (\(n, a) (n2, a2) ->
                   let arg1 = fromJust $ M.lookup a rMap
                       arg2 = fromJust $ M.lookup a2 eMap in
-                  n == n2 && compareResult (arg1, rMap, aci, sm1) (arg2, eMap, bci, sm2) (S.insert (result, expected) checked)) args args2
+                  n == n2 && compareResult (arg1, rMap) (arg2, eMap) (S.insert (result, expected) checked)) args args2
          in name == name2 && and argsMatch
       conMatch :: (Name, [Name]) -> (Name, [Name]) -> Bool
       conMatch (name, args) (name2, args2) = name == name2
@@ -207,8 +206,8 @@ isIndirectAppFun e =
     AppCLambda _ _ (C.TypeApp (C.Var _ _) _) -> True
     _ -> False
 
-extractMetrics :: M.Map FixInput FixOutput -> StoreMetrics
-extractMetrics cache =
+extractMetrics :: M.Map FixInput FixOutput -> M.Map FixInput FixOutput -> StoreMetrics
+extractMetrics cache cacheExpected =
   let
     -- Lookup helpers
     lookupVal :: Addr -> AbValue
@@ -289,9 +288,28 @@ extractMetrics cache =
     -- TODO: Literal values 
     
     -- Total FixInput states
+    getValue cache addr addrsx =
+          case M.lookup (VStore addr) cache of
+            Just (SValue res) ->
+              let !env = foldl (\acc addr ->
+                              if S.member addr addrsx then
+                                acc
+                              else
+                                let (v, map') = getValue cache addr (S.insert addr addrsx)
+                                in M.insert addr v (M.union acc map')
+                          ) M.empty (addrs res)
+              in (res, env)
+            Nothing -> error ("Couldn't find " ++ show addr ++ " in cache " ++ show (filter (\k -> case k of {VStore{} -> True; _ -> False}) (M.keys cache)))
+    final = getValue cache EndVAddr S.empty
+    expected = getValue cacheExpected EndVAddr S.empty
+    -- Total FixInput states
     numTotalFixInput = M.size cache
+    numFixpoint = M.size $ M.filterWithKey (\k _ -> case k of Step{} -> True; _ -> False) cache
+    !result = compareResult final expected S.empty
+
+
   in StoreMetrics
-      numStore numLit numStruct numCont callTargetCount numTotalFixInput
+      numStore numLit numStruct numCont callTargetCount numTotalFixInput numFixpoint result
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons cont0CFAStrSingletons
       val0CFAStrSingletons combined0CFAStrSingletons
       semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
@@ -301,54 +319,6 @@ extractMetrics cache =
       applyContRetSizes exprToValStrSizes applyContStrSizes
       callTargetSemSizes callTargetStrSizes
 
-getAbResult :: PostFixAAMR x s e (AbValue, M.Map Addr AbValue, ([Int], [Int], [Int], [Int]), StoreMetrics)
-getAbResult = do
-  cache <- getCache
-  -- ... existing cacheInfo calculation ...
-  let cacheInfo = M.foldlWithKey (\acc@(evals, applies, ksizes, ssizes) k v -> case k of
-                        VStore BindingAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
-                                                          Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore BindImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
-                                                               Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore BindKImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
-                                                                Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore ConImplicitAddr{} -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
-                                                              Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore EndVAddr -> case v of SValue res -> (evals, applies, ksizes, semSizeOf res : ssizes)
-                                                     Bottom -> (evals, applies, ksizes, ssizes)
-                        VStore UnitAddr -> (evals, applies, ksizes, ssizes)
-                        KStore KAddr{} -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
-                                                    Bottom -> (evals, applies, ksizes, ssizes)
-                        KStore EndKAddr -> case v of KValue res -> (evals, applies, length res : ksizes, ssizes)
-                                                     Bottom -> (evals, applies, ksizes, ssizes)
-                        Step CEval{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                                                  Bottom -> (evals, applies, ksizes, ssizes)
-                        Step CApply{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
-                                                   Bottom -> (evals, applies, ksizes, ssizes)
-                        Step CContinue{} -> case v of RValue vals -> (length vals : evals, applies, ksizes, ssizes)
-                                                      Bottom -> (evals, applies, ksizes, ssizes)
-                        Step CHandleEffects{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
-                                                           Bottom -> (evals, applies, ksizes, ssizes)
-                        Step CHandleLocal{} -> case v of RValue vals -> (evals, length vals : applies, ksizes, ssizes)
-                                                         Bottom -> (evals, applies, ksizes, ssizes))
-                        ([], [], [], []) cache
-  let getValue addr addrsx =
-        case M.lookup (VStore addr) cache of
-          Just (SValue res) ->
-            let !env = foldl (\acc addr ->
-                            if S.member addr addrsx then
-                              acc
-                            else
-                              let (v, map') = getValue addr (S.insert addr addrsx)
-                              in M.insert addr v (M.union acc map')
-                         ) M.empty (addrs res)
-            in (res, env)
-          Nothing -> error ("Couldn't find " ++ show addr ++ " in cache " ++ show (filter (\k -> case k of {VStore{} -> True; _ -> False}) (M.keys cache)))
-  let (finalRes, finalEnv) = getValue EndVAddr S.empty
-
-  let metrics = extractMetrics cache
-
-  return (finalRes, finalEnv, cacheInfo, metrics)
 evalMainK :: BuildContext
   -> TypeChecker -> Module -> Int
   -> IO Bool
