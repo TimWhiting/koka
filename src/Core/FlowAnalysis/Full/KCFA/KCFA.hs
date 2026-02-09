@@ -48,10 +48,10 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  -- case addr of
-  --   BindImplicitAddr{} -> return ()
-  --   ConImplicitAddr{} -> return ()
-    -- _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  case addr of
+    -- BindImplicitAddr{} -> return ()
+    -- ConImplicitAddr{} -> return ()
+    _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -71,7 +71,7 @@ handleEffects res venv bodId hnd retCtx = doStep $ Step (CHandleEffects res venv
 handleLocal res venv bodId varName valAddr retCtx = doStep $ Step (CHandleLocal res venv bodId varName valAddr retCtx)
 
 returnConst :: VEnv -> StaticCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
-returnConst env ctx expr v = do 
+returnConst env ctx expr v = do
   addr <- allocConst env ctx expr v
   return $ RV (RVAddr addr, ctx)
 
@@ -97,16 +97,16 @@ doEval expr venv ctx = do
         App (TypeApp (Var name _) _) [arg] _ | getName name == nameEffectOpen -> True
         _ -> False
       isSimpleExpr e = case e of
-        Var{} -> True
-        Lit{} -> True
-        Con{} -> True
-        Lam{} -> True
-        TypeApp e _ -> isSimpleExpr e
-        TypeLam _ e -> isSimpleExpr e
-        App e _ _ -> isSimpleExpr e
+        -- Var{} -> True
+        -- Lit{} -> True
+        -- -- Con{} -> True
+        -- Lam{} -> True
+        -- TypeApp e _ -> isSimpleExpr e
+        -- TypeLam _ e -> isSimpleExpr e
+        -- App e _ _ -> False -- isSimpleExpr e
         _ -> False
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -168,13 +168,13 @@ doEval expr venv ctx = do
       eval e venv ctx
     -- TypeLam _ e -> do
     --   trace ("TypeLam not handled yet: " ++ show e) $ doBottom
-  where 
+  where
     doCase brs = do
           s <- focusScrutinee expr
           branches <- mapM (\i -> focusBranch i expr) [0..length brs - 1]
           RV (res, newCtx) <- eval s (limitEnv venv (fvs s)) ctx
           doContinue res (FScrut expr branches venv) newCtx
-    doLet dgs = do 
+    doLet dgs = do
           child <- childrenContexts expr
           -- trace ("LetChildren: " ++ intercalate "\n" (map show child)) $ return ()
           bind <- focusLetDefBinding 0 0 expr
@@ -183,7 +183,7 @@ doEval expr venv ctx = do
           let defName = defTName (defOfCtx bind)
           -- trace ("Let binding: " ++ show defName ++ " in " ++ show newEnv) $ return ()
           RV (res, newCtx) <- eval bind (limitEnv newEnv (S.insert defName (fvs bind))) ctx
-          doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) newCtx 
+          doContinue res (FLet 0 (length dgs) 0 (length (defsOf defGroup)) defName [] expr newEnv) newCtx
     doApp args = do
           f <- focusFun expr
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
@@ -199,7 +199,7 @@ doDoContinue res frame ctx =
       extendKStore k' knext
       returnOp dval ctx frame k'
     RVAddr addr -> do
-      -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx) $ return ()
+      trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx ++ " \n " ++ show res) $ return ()
       case frame of
           FrameDone _ -> returnAddr addr ctx
           FMask _ -> do
@@ -238,6 +238,7 @@ doDoContinue res frame ctx =
                       let retAddr = BindImplicitAddr ctx venv uApp
                       let name = conName
                       let conParams = map (\nm -> ConImplicitAddr nm ctx uApp) params
+                      trace ("Extending Constructor Args " ++ show ctx) $ return ()
                       zipWithM_ rebind arguments conParams
                       extendStore retAddr (AChangeObj name (zip params conParams))
                       -- extendStore retAddr (AChangeObj con name (zip params arguments))
@@ -277,6 +278,7 @@ doDoContinue res frame ctx =
                   match <- branchMatch br branch tree env ctx
                   case match of
                     Right (bindings, matchTree) -> do
+                      trace ("Matched branch bindings: " ++ show matchTree) $ return ()
                       let newEnv = foldl (\acc tname -> M.insert tname (ctx, contextId br) acc) env (M.keys bindings)
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
@@ -309,14 +311,14 @@ doDoContinue res frame ctx =
             let newRetCtx = addCall m ctx u
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
             AChangeKont kaddr _ _ <- store kont
-            RV (res, newCtx) <- apply kaddr addr newRetCtx 
+            RV (res, newCtx) <- apply kaddr addr newRetCtx
             handleEffects res venv (CallApp u) hnd newCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
 
 doApply :: HasCallStack => Addr -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doApply kaddr addr ctx = do
-  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show dynctx) $ return ()
+  trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show ctx) $ return ()
   -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr ctx
@@ -470,16 +472,16 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
     res ->
       case mbFrame of
         Just frame -> do
-          -- trace ("Continuing after handling effects\n" ++ show retCtx  ++ "\n" ++ show delimCtx ++ "\n") $ return ()
+          trace ("Continuing after handling effects\n" ++ show ctx) $ return ()
           doContinue res frame ctx
         Nothing -> return $ RV (res, ctx)
 
 branchMatch :: ExprContext -> Branch -> AChangeTree -> VEnv -> StaticCtx -> FixAAMR r s e (Either AChangeTree (Bindings r s e))
 branchMatch branchCtx branch addr env ctx = do
   match <- patMatch (head $ branchPatterns branch) addr
-  case match of 
+  case match of
     Left tree -> return $ Left tree
-    Right (bindings, tree) -> 
+    Right (bindings, tree) ->
       if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
       else do
         let newEnv = foldl (\acc tname -> M.insert tname (ctx, contextId branchCtx) acc) env (M.keys bindings)
@@ -487,20 +489,22 @@ branchMatch branchCtx branch addr env ctx = do
           extend (fromJust $ lookupEnv tname newEnv)
           ) (M.toList bindings)
         guard <- focusGuardExpr branchCtx
+        trace "Branch Guard" $ return ()
         RV (RVAddr a, ctx') <- eval guard newEnv ctx -- TODO: Pass back the ctx'
         v <- store a
-        case v of 
+        case v of
           AChangeConstr conName _ | conName == nameTrue ->
-            return $ Right (bindings, tree)  
+            return $ Right (M.empty, tree)
           _ -> return $ Left tree
 
 type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
 
-data AChangeTree = 
+data AChangeTree =
   TChangeV Addr
   | TChangeLit Addr LiteralChangeX
-  | TChangeCon Addr AChange (M.Map Name AChangeTree) 
+  | TChangeCon Addr AChange (M.Map Name AChangeTree)
   | TChangePartialCon Addr AChange
+  deriving (Show)
 
 -- Assuming that the tree is from the Bindings then it definitely matches this pattern, i.e., all literals are fully matched
 definitelyMatched :: AChangeTree -> Bool

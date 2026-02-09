@@ -23,9 +23,12 @@ type analysis
 
 fun sensitivities(a: analysis)
   match a
-    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) ++ [(100,100)] // ++ [(20, 2), (2, 20), (100, 100)] 
-    DMCFAE -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m)))  ++ [(100,100)]// ++ [(20, 2), (2, 20), (100, 100)]
-    KCFA -> list(0,2).map( fn(k) (0,k) ) ++ [(100,100)]
+    DMCFAR -> //list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) ++  
+                [(100,100)] // ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFAE -> //list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) ++ 
+                 [(100,100)]// ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> //list(0,2).map( fn(k) (0,k) ) ++ 
+              [(0,100)]
 
 fun show(a: analysis)
   match a
@@ -51,7 +54,7 @@ fun run-file(a: analysis, f: string, sens: list<(int, int)>, force: bool)
   val sens-to-run = sens.filter fn((d,m))
     if force then True else 
       val folder = cwd() / "benchmarks/results".path / a.show / d.show / m.show / "analysis" / "benchmarks" / f.path
-      // println("Checking folder: " ++ folder.show ++ " exists: " ++ folder.is-directory().show)
+      println("Checking folder: " ++ folder.show ++ " exists: " ++ folder.is-directory().show)
       !folder.is-directory()
       
   if sens-to-run.is-empty then
@@ -75,6 +78,6 @@ fun main()
   val force = args.find(_ == "--force").is-just
   val only-floats = args.find(_ == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  run-benchmarks(files=run-files, analyses=[DMCFAR, DMCFAE, KCFA], force=force)
+  run-benchmarks(files=run-files, analyses=[KCFA], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFAR])
   // run-benchmarks(["handlers/unix"], [DMCFAR], force=force)
