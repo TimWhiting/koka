@@ -30,6 +30,8 @@ data StoreMetrics = StoreMetrics
   , numContAddresses     :: Int -- ^ Continuation addresses.
   , numIndirectCallTargetExprs  :: Int --
   , numTotalFixInputStates :: Int -- ^ Total FixInput states explored (cache size)
+  , numTotalFixpointStates :: Int -- ^ Total FixInput states that were part of the fixpoint (Excluding store entries in cache)
+  , preciseResult :: Bool -- Whether the analysis result was precise (matches expected - sometimes uninformative - unit result) 
   -- | Precise counts (Singletons)
   -- Following Van Horn & Might (2010), we distinguish between semantic and structural precision.
   , valSemSingletons     :: Int -- ^ Semantic singletons across all value addresses.

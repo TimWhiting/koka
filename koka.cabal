@@ -75,9 +75,6 @@ library
       Core.FlowAnalysis.Demand.Primitives
       Core.FlowAnalysis.Demand.Syntax
       Core.FlowAnalysis.FixpointMonad
-      Core.FlowAnalysis.Full.AAC.AAC
-      Core.FlowAnalysis.Full.AAC.Monad
-      Core.FlowAnalysis.Full.AAC.Syntax
       Core.FlowAnalysis.Full.AbstractValue
       Core.FlowAnalysis.Full.DMCFA.AbstractValue
       Core.FlowAnalysis.Full.DMCFA.DMCFA

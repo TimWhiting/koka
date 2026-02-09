@@ -305,8 +305,8 @@ push key value = do
     let (value', added) = value `insert` values
         !newCache = M.insert key (added, keyId, conts, fconts) cache
         !newNewId = if keyId == newId then newId + 1 else newId
-    -- when (values /= bottom) $ 
-    --   trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
+    when (values /= bottom) $ 
+      trace ("New result at " ++ show key ++ "\n" ++ show value ++ "\nNot in:\n" ++ show values ++ "\nNew:\n" ++ show value') $ return ()
     put (newCache, state, newNewId, invalid)
     -- trace ("Calling continuations for " ++ show key ++ " " ++ show (length conts)) $ return ()
     mapM_ (\(ContX c f fi) -> do
