@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 base_path = Path('benchmarks/results')
-json_files = list(base_path.rglob('0/100/**/*.json')) + list(base_path.rglob('100/100/**/*.json'))
+json_files = list(base_path.rglob('0/10000/**/*.json')) + list(base_path.rglob('100/2000/**/*.json'))
 
 benchmark_configs = []
 for json_file in json_files:

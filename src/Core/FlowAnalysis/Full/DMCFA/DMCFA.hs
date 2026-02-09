@@ -463,7 +463,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
           v <- store newAddr
           d <- dLimit
           m <- mLimit
-          let newRetCtx = addCallRaw m retCtx (CtxId $ vcontextId v)
+          let newRetCtx = addCallRaw m retCtx bodId
           let newDelimCtx = newDelim d m newRetCtx (CtxId $ vcontextId v) (getName varName)
           res <- apply kOp UnitAddr (dynamic newDelimCtx)
           returnV $ handleLocal res venv (CtxId $ vcontextId v) varName newAddr newRetCtx
