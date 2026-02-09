@@ -48,10 +48,10 @@ doStep i =
 
 extendStore :: Addr -> AChange -> FixAAMR r e s ()
 extendStore addr v = do
-  case addr of
-    -- BindImplicitAddr{} -> return ()
-    -- ConImplicitAddr{} -> return ()
-    _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
+  -- case addr of
+  --   -- BindImplicitAddr{} -> return ()
+  --   -- ConImplicitAddr{} -> return ()
+  --   _ -> trace ("Extending store: " ++ show addr ++ " with " ++ show v) $ return ()
   lift $ push (VStore addr) (SV v)
 extendKStore :: Addr -> Addr -> FixAAMR r e s ()
 extendKStore addr v = do
@@ -106,7 +106,7 @@ doEval expr venv ctx = do
         -- App e _ _ -> False -- isSimpleExpr e
         _ -> False
       process x = if not open && not (isSimpleExpr (exprOfCtx expr)) then do
-                    analysisLog ("Evaluating: " ++ showCtxExpr expr ++ ":" ++ show ctx ++ " with env " ++ show venv)
+                    -- analysisLog ("Evaluating: " ++ showCtxExpr expr ++ " " ++ show (contextId expr) ++ ":" ++ show ctx ++ " with env " ++ show venv)
                     x
                   else x-- trace ("Evaluating: " ++ show expr ++ " in " ++ show (M.toList venv) ++ " : " ++ show ctx) $ --  ++ " " ++ show kaddr ++ " " ++ show ctx) $
    in process $ case exprOfCtx expr of
@@ -189,6 +189,7 @@ doEval expr venv ctx = do
           argExprs <- zipWithM (\i _ -> focusParam i expr) [0..] args
           -- trace ("Applying function: " ++ show f ++ " to args: " ++ show argExprs ++ " with env " ++ show venv) $ return ()
           RV (res, newCtx) <- eval f (limitEnv venv (fvs f)) ctx
+          -- trace ("Function result: " ++ show res ++ " continuing with " ++ show newCtx) $ return ()
           doContinue res (FApp (length args) argExprs [] expr venv) newCtx
 
 doDoContinue :: HasCallStack => RValue -> Frame -> StaticCtx -> FixAAMR r s e FixChange
@@ -199,7 +200,7 @@ doDoContinue res frame ctx =
       extendKStore k' knext
       returnOp dval ctx frame k'
     RVAddr addr -> do
-      trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx ++ " \n " ++ show res) $ return ()
+      -- trace ("Continuing: with frame " ++ show frame ++ " in " ++ show ctx ++ " \n " ++ show res) $ return ()
       case frame of
           FrameDone _ -> returnAddr addr ctx
           FMask _ -> do
@@ -234,13 +235,13 @@ doDoContinue res frame ctx =
                         extendStore retAddr res
                         returnAddr retAddr ctx
                       else doHandlerPrimitive name retAddr arguments venv ctx eApp
-                    AChangeConstr conName params -> do
+                    AChangeConstr conName params  -> do
                       let retAddr = BindImplicitAddr ctx venv uApp
                       let name = conName
-                      let conParams = map (\nm -> ConImplicitAddr nm ctx uApp) params
-                      trace ("Extending Constructor Args " ++ show ctx) $ return ()
-                      zipWithM_ rebind arguments conParams
-                      extendStore retAddr (AChangeObj name (zip params conParams))
+                      -- let conParams = map (\nm -> ConImplicitAddr nm origCtx uApp) params
+                      -- trace ("Extending Constructor Args " ++ show ctx) $ return ()
+                      -- zipWithM_ rebind arguments conParams
+                      extendStore retAddr (AChangeObj name (zip params arguments))
                       -- extendStore retAddr (AChangeObj con name (zip params arguments))
                       returnAddr retAddr ctx
                     AChangeKont kx henv hnd -> do
@@ -254,6 +255,7 @@ doDoContinue res frame ctx =
               next:rest -> do
                 -- trace ("Next " ++ show next) $ return ()
                 RV (ret, newCtx) <- eval next (limitEnv venv (fvs next)) ctx
+                -- trace ("Function arg result: " ++ show ret ++ " continuing with " ++ show newCtx) $ return ()
                 doContinue ret (FApp n rest (res ++ [addr]) eApp venv) newCtx
           FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
@@ -278,7 +280,7 @@ doDoContinue res frame ctx =
                   match <- branchMatch br branch tree env ctx
                   case match of
                     Right (bindings, matchTree) -> do
-                      trace ("Matched branch bindings: " ++ show matchTree) $ return ()
+                      -- trace ("Matched branch bindings: " ++ show matchTree) $ return ()
                       let newEnv = foldl (\acc tname -> M.insert tname (ctx, contextId br) acc) env (M.keys bindings)
                       mapM_ (\(tname, extend) ->
                         extend (fromJust $ lookupEnv tname newEnv)
@@ -318,7 +320,7 @@ doDoContinue res frame ctx =
 
 doApply :: HasCallStack => Addr -> Addr -> StaticCtx -> FixAAMR r s e FixChange
 doApply kaddr addr ctx = do
-  trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show ctx) $ return ()
+  -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show ctx) $ return ()
   -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr ctx
@@ -438,7 +440,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
       if hName == label then do
         let kOp = KAddr frame' ctx' dframe' dval
         extendKStore kOp knext
-        -- trace ("Evaluating operation: " ++ show opName ++ " at handler " ++ show label) $ return ()
+        -- trace ("Evaluating operation: " ++ show opName ++ " at handler " ++ show label ++ " " ++ show ctx) $ return ()
         AChangeObj tname hndargs@(_:ops) <- store hnd
         let ops' = map (\(n, a) -> (unmakeOpHidden opName $ nameStem n, a)) ops
         case lookup opName ops' of
@@ -472,7 +474,7 @@ doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
     res ->
       case mbFrame of
         Just frame -> do
-          trace ("Continuing after handling effects\n" ++ show ctx) $ return ()
+          -- trace ("Continuing after handling effects\n" ++ show ctx) $ return ()
           doContinue res frame ctx
         Nothing -> return $ RV (res, ctx)
 
