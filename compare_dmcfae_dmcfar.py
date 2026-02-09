@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 # Get the same top benchmarks
-base_path_far = Path('benchmarks/old-results/dmcfar/2/2')
+base_path_far = Path('benchmarks/old-results/dmcfar/0/0')
 json_files = list(base_path_far.rglob('*.json'))
 
 benchmark_configs = []
@@ -17,7 +17,7 @@ for json_file in json_files:
             if data and not data.get('isTimeout', False) and 'storeMetrics' in data:
                 metrics = data.get('storeMetrics')
                 if metrics and 'numTotalFixInputStates' in metrics:
-                    configs = metrics['numTotalFixInputStates']
+                    configs = metrics['numTotalFixInputStates'] - metrics['numStoreAddresses']
                     benchmark_name = data.get('benchmarkName', '')
                     clean_name = benchmark_name.replace('analysis/benchmarks/', '')
                     benchmark_configs.append((clean_name, configs))
