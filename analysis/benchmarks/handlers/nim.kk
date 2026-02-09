@@ -146,7 +146,7 @@ pub fun example-check()
   with perfect
   with cheat-report
   with check
-  game(3)  // alice
+  game(7)  // alice
 pub fun analyze-example-check()
   try
     example-check()
