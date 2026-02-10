@@ -23,12 +23,12 @@ type analysis
 
 fun sensitivities(a: analysis)
   match a
-    DMCFAR -> //list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) ++  
-                [(100,2000)] // ++ [(20, 2), (2, 20), (100, 100)] 
-    DMCFAE -> //list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) ++ 
-                 [(100,2000)]// ++ [(20, 2), (2, 20), (100, 100)]
-    KCFA -> //list(0,2).map( fn(k) (0,k) ) ++ 
-              [(0,10000)]
+    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++  
+                // [(100,2000)] // ++ [(20, 2), (2, 20), (100, 100)] 
+    DMCFAE -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))) // ++ 
+                //  [(100,2000)]// ++ [(20, 2), (2, 20), (100, 100)]
+    KCFA -> list(0,2).map( fn(k) (0,k) ) // ++ 
+              // [(0,10000)]
 
 fun show(a: analysis)
   match a
@@ -78,6 +78,6 @@ fun main()
   val force = args.find(_ == "--force").is-just
   val only-floats = args.find(_ == "--floats").is-just
   val run-files = if only-floats then float-files else files
-  run-benchmarks(files=run-files, analyses=[KCFA], force=force)
+  run-benchmarks(files=run-files, analyses=[DMCFAR, DMCFAE, KCFA], force=force)
   // run-benchmarks(["handlers/nim"], [DMCFAR])
   // run-benchmarks(["handlers/unix"], [DMCFAR], force=force)
