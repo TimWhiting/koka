@@ -54,16 +54,17 @@ data StoreMetrics = StoreMetrics
   -- | Productivity Mappings
   -- These maps store the cardinalities observed at each program point across all contexts.
   -- For 0-CFA runs, these lists will contain exactly one element.
-  , exprToValSemSizes    :: Map.Map String [Int] -- ^ Exp ID to closure (constructor) set size.
-  , structToContSemSizes :: Map.Map String [Int] -- ^ Structural ID to full frame set size.
-  , callToSemRetSizes    :: Map.Map String [Int] -- ^ Call site ID to return value set size.
-  , structToStrRetSizes  :: Map.Map String [Int] -- ^ Structural ID to structural return set size.
+  , storeToStrSizes      :: Map.Map String Int -- ^ val 0CFA ID to structural set size.
+  , exprToValSemSizes    :: Map.Map String Int -- ^ Exp ID to closure (constructor) set size.
+  , structToContSemSizes :: Map.Map String Int -- ^ Structural ID to full frame set size.
+  , callToSemRetSizes    :: Map.Map String Int -- ^ Call site ID to return value set size.
+  , structToStrRetSizes  :: Map.Map String Int -- ^ Structural ID to structural return set size.
   -- | Structural Productivity Mappings
   -- Tracking Lambda/Constructor/Frame-Template counts per ID (Shivers, 1991).
-  , exprToValStrSizes    :: Map.Map String [Int] -- ^ Exp ID to unique Lambda/Constructor tag count.
-  , structToContStrSizes :: Map.Map String [Int] -- ^ Structural ID to unique frame-template count.
-  , semCallTargetSizes   :: Map.Map String [Int] -- Call target var expression to closure set size
-  , strCallTargetSizes   :: Map.Map String [Int] -- Call target var expression to lambda set size
+  , exprToValStrSizes    :: Map.Map String Int -- ^ Exp ID to unique Lambda/Constructor tag count.
+  , structToContStrSizes :: Map.Map String Int -- ^ Structural ID to unique frame-template count.
+  , semCallTargetSizes   :: Map.Map String Int -- Call target var expression to closure set size
+  , strCallTargetSizes   :: Map.Map String Int -- Call target var expression to lambda set size
   } deriving (Generic, Show)
 
  

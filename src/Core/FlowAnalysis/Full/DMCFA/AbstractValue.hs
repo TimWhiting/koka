@@ -324,6 +324,10 @@ semSizeOf (AbValue cls cntrs prims objs konts lit) =
        -- if litIsPrecise lit then 1 else if litIsTopX lit then -1 else 0
      else others
 
+onlyLit :: AbValue -> Bool
+onlyLit (AbValue cls cntrs prims objs konts lit) =
+  S.null cls && S.null cntrs && S.null prims && S.null objs && S.null konts
+
 addrs :: AbValue -> [Addr]
 addrs (AbValue _ _ _ objs _ _) = concatMap (\(_, args) -> map snd args) objs
 

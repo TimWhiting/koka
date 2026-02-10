@@ -6,6 +6,7 @@ Helps identify which benchmarks and configurations are timing out.
 
 import json
 import os
+from numpy import mean
 import pandas as pd
 from collections import defaultdict
 
@@ -60,6 +61,11 @@ def analyze_timeouts(results):
     print(f"Timeouts: {len(timeouts)} ({100*len(timeouts)/len(results):.1f}%)")
     print(f"Successful: {len(non_timeouts)} ({100*len(non_timeouts)/len(results):.1f}%)")
     
+    for r in non_timeouts:
+        n = mean(r.get('analysisTimes', []))
+        if n > 1:
+            print(f"  • {r.get('benchmarkName', 'unknown')} ({r.get('variant', 'unknown')}, d={r.get('d', '?')}, m={r.get('m', '?')}) - avg time: {n:.2f}s")
+
     if not timeouts:
         print("\n✓ No timeouts found!")
         return
@@ -85,6 +91,7 @@ def analyze_timeouts(results):
     for t in timeouts:
         variant = t.get('variant', 'unknown')
         by_variant[variant].append(t)
+        
     
     print(f"\n{'='*80}")
     print(f"TIMEOUTS BY VARIANT")
