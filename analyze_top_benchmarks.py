@@ -5,10 +5,9 @@ Compare state space explosion for the largest benchmarks
 import json
 from pathlib import Path
 
-# Get the top benchmarks from d=2,m=2
-base_path = Path('benchmarks/old-results/dmcfar/2/2')
+# Get the top benchmarks from d=0,m=0
+base_path = Path('benchmarks/results/dmcfar/0/0')
 json_files = list(base_path.rglob('*.json'))
-
 benchmark_configs = []
 for json_file in json_files:
     try:
@@ -16,8 +15,8 @@ for json_file in json_files:
             data = json.load(f)
             if data and not data.get('isTimeout', False) and 'storeMetrics' in data:
                 metrics = data.get('storeMetrics')
-                if metrics and 'numTotalFixInputStates' in metrics:
-                    configs = metrics['numTotalFixInputStates']
+                if metrics and 'numTotalFixpointStates' in metrics:
+                    configs = metrics['numTotalFixpointStates']
                     benchmark_name = data.get('benchmarkName', '')
                     # Clean up the name
                     clean_name = benchmark_name.replace('analysis/benchmarks/', '')
@@ -36,7 +35,7 @@ print()
 
 results = []
 
-for benchmark_name, d2m2_configs in top_benchmarks:
+for benchmark_name, d0m0_configs in top_benchmarks:
     # Try to find the 0-CFA version
     benchmark_path = benchmark_name.replace('/', '/')  # Already clean
     
@@ -44,21 +43,21 @@ for benchmark_name, d2m2_configs in top_benchmarks:
     d0m0_path = None
     d2m2_path = None
     
-    for json_file in Path('benchmarks/old-results/dmcfar/0/0').rglob('*.json'):
+    for json_file in Path('benchmarks/results/dmcfar/0/0').rglob('*.json'):
         with open(json_file, 'r') as f:
             data = json.load(f)
             if data.get('benchmarkName', '').replace('analysis/benchmarks/', '') == benchmark_name:
                 d0m0_path = json_file
                 break
     
-    for json_file in Path('benchmarks/old-results/dmcfar/2/2').rglob('*.json'):
+    for json_file in Path('benchmarks/results/dmcfar/2/2').rglob('*.json'):
         with open(json_file, 'r') as f:
             data = json.load(f)
             if data.get('benchmarkName', '').replace('analysis/benchmarks/', '') == benchmark_name:
                 d2m2_path = json_file
                 break
     
-    d0m0_configs = None
+    d2m2_configs = None
     d0m0_time = None
     d2m2_time = None
     
@@ -67,8 +66,7 @@ for benchmark_name, d2m2_configs in top_benchmarks:
             data = json.load(f)
             if not data.get('isTimeout', False) and 'storeMetrics' in data:
                 metrics = data.get('storeMetrics')
-                if metrics and 'numTotalFixInputStates' in metrics:
-                    d0m0_configs = metrics['numTotalFixInputStates']
+                if metrics and 'numTotalFixpointStates' in metrics:
                     times = data.get('analysisTimes', [])
                     if times:
                         d0m0_time = sum(times) / len(times)
@@ -76,7 +74,10 @@ for benchmark_name, d2m2_configs in top_benchmarks:
     if d2m2_path and d2m2_path.exists():
         with open(d2m2_path, 'r') as f:
             data = json.load(f)
-            if not data.get('isTimeout', False):
+            if not data.get('isTimeout', False):   
+                metrics = data.get('storeMetrics')    
+                if metrics and 'numTotalFixpointStates' in metrics:
+                    d2m2_configs = metrics['numTotalFixpointStates']
                 times = data.get('analysisTimes', [])
                 if times:
                     d2m2_time = sum(times) / len(times)

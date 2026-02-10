@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 # Find all JSON files in dmcfae/2/2
-base_path = Path('benchmarks/old-results/dmcfae/2/2')
+base_path = Path('benchmarks/old-results/dmcfar/0/0')
 json_files = list(base_path.rglob('*.json'))
 
 total_configs = 0
