@@ -94,8 +94,8 @@ def compute_metrics(run, baseline_run):
     # Measures how many singletons were found relative to the original program's baseline size
     # This prevents the 'expansion' from diluting the precision score.
     base_total = baseline['numStructAddresses']
-    base_prec_struct = baseline['valStrSingletons'] / base_total if base_total > 0 else 1.0
-    poly_prec_struct = m['valStrSingletons'] / base_total if base_total > 0 else 1.0
+    base_prec_struct = baseline['val0CFAStrSingletons'] / base_total if base_total > 0 else 1.0
+    poly_prec_struct = m['val0CFAStrSingletons'] / base_total if base_total > 0 else 1.0
     prec_struct = poly_prec_struct / base_prec_struct if base_prec_struct > 0 else 1.0
     
     # Relative Semantic Precision (Data-Flow Improvement)
@@ -175,7 +175,7 @@ def generate_icfp_tables(results, baselines, variant_name):
         'time': 'mean',
         'rel_time': safe_gmean,
         'expansion': safe_gmean,
-        'prec_struct': 'mean',
+        'prec_struct': safe_gmean,
         'prec_sem': 'mean',
         'prec_lit': 'mean',
         'prod_v_str': 'mean',
@@ -194,7 +194,7 @@ def generate_icfp_tables(results, baselines, variant_name):
     })
     
     # Marginal Utility Tables (Kastrinis & Smaragdakis, 2013)
-    struct_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='prec_struct', aggfunc='mean')
+    struct_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='prec_struct', aggfunc=safe_gmean)
     sem_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='prec_sem', aggfunc='mean')
     time_mu = df[df['status'] == 'OK'].pivot_table(index='d', columns='m', values='rel_time', aggfunc=safe_gmean)
 
@@ -226,7 +226,7 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
     plot_df = df[df['status'] == 'OK'].groupby(['runID', 'd', 'm']).agg({
         'expansion': safe_gmean,
         'rel_time': safe_gmean,
-        'prec_struct': 'mean',
+        'prec_struct': safe_gmean,
         'prec_sem': 'mean'
     }).reset_index()
     
@@ -389,7 +389,7 @@ def plot_size_vs_time_comparison(all_results, min_size=100):
     """
     Plots program size (configurations visited from 0CFA) vs analysis time for different analyses and sensitivities.
     Shows d=0,1,2 in rows with KCFA baseline on left, includes timeout counts.
-    Program size = numTotalFixInputStates - numStoreAddresses (number of configurations/Step states visited)
+    Program size = numTotalFixpointStates (number of configurations/Step states visited)
     
     Args:
         all_results: List of all benchmark results
@@ -408,9 +408,8 @@ def plot_size_vs_time_comparison(all_results, min_size=100):
                     continue
                 m = r['storeMetrics']
                 # Use configurations visited as program size proxy
-                total_states = m.get('numTotalFixInputStates', 0)
-                store_addrs = m.get('numStoreAddresses', 0)
-                configs_visited = total_states - store_addrs
+                total_states = m.get('numTotalFixpointStates', 0)
+                configs_visited = total_states
                 if configs_visited > 0 and configs_visited >= min_size:
                     program_sizes[bench] = configs_visited
     
@@ -681,6 +680,7 @@ def plot_size_vs_cont_precision(all_results, min_size=100):
     
     # Get program sizes from KCFA 0-0 baseline
     program_sizes = {}
+    program_conts = {}
     for r in all_results:
         if r['variant'] == 'kcfa' and str(r['d']) == '0' and str(r['m']) == '0':
             bench = r['benchmarkName']
@@ -689,11 +689,12 @@ def plot_size_vs_cont_precision(all_results, min_size=100):
                 continue
             if r.get('storeMetrics'):
                 m = r['storeMetrics']
-                total_states = m.get('numTotalFixInputStates', 0)
-                store_addrs = m.get('numStoreAddresses', 0)
-                configs_visited = total_states - store_addrs
+                total_states = m.get('numTotalFixpointStates', 0)
+                configs_visited = total_states
+                program_conts[bench] = m.get('numContAddresses', 0)
                 if configs_visited > 0 and configs_visited >= min_size:
                     program_sizes[bench] = configs_visited
+                
     
     if not program_sizes:
         print("Warning: No KCFA 0-0 results found to determine program sizes.")
@@ -732,15 +733,13 @@ def plot_size_vs_cont_precision(all_results, min_size=100):
             continue
             
         metrics = r['storeMetrics']
-        num_cont = metrics.get('numContAddresses', 0)
-        cont_str_singletons = metrics.get('contStrSingletons', 0)
-        
+        num_cont = program_conts.get(bench)
+        cont_str_singletons = metrics.get('cont0CFAStrSingletons', 0)
         # Calculate continuation precision (avoid division by zero)
         if num_cont > 0:
             cont_precision = cont_str_singletons / num_cont
         else:
-            continue  # Skip if no continuations
-        
+            continue  # Skip if no continuations    
         # KCFA: d is always 0, m is the k parameter
         if variant == 'kcfa' and d == '0' and m in m_values:
             plot_data.append({
@@ -895,9 +894,8 @@ def print_top_programs_by_size(all_results, top_n=10):
                 continue
             if r.get('storeMetrics'):
                 m = r['storeMetrics']
-                total_states = m.get('numTotalFixInputStates', 0)
-                store_addrs = m.get('numStoreAddresses', 0)
-                configs_visited = total_states - store_addrs
+                total_states = m.get('numTotalFixpointStates', 0)
+                configs_visited = total_states
                 if configs_visited > 0:
                     program_sizes[bench] = configs_visited
     
