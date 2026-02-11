@@ -81,16 +81,31 @@ library
       Core.FlowAnalysis.Full.DMCFA.Monad
       Core.FlowAnalysis.Full.DMCFA.Primitives
       Core.FlowAnalysis.Full.DMCFA.Syntax
+      Core.FlowAnalysis.Full.DMCFA2.AbstractValue
+      Core.FlowAnalysis.Full.DMCFA2.DMCFA
+      Core.FlowAnalysis.Full.DMCFA2.Monad
+      Core.FlowAnalysis.Full.DMCFA2.Primitives
+      Core.FlowAnalysis.Full.DMCFA2.Syntax
       Core.FlowAnalysis.Full.DMCFAR.AbstractValue
       Core.FlowAnalysis.Full.DMCFAR.DMCFA
       Core.FlowAnalysis.Full.DMCFAR.Monad
       Core.FlowAnalysis.Full.DMCFAR.Primitives
       Core.FlowAnalysis.Full.DMCFAR.Syntax
+      Core.FlowAnalysis.Full.DMCFAR2.AbstractValue
+      Core.FlowAnalysis.Full.DMCFAR2.DMCFA
+      Core.FlowAnalysis.Full.DMCFAR2.Monad
+      Core.FlowAnalysis.Full.DMCFAR2.Primitives
+      Core.FlowAnalysis.Full.DMCFAR2.Syntax
       Core.FlowAnalysis.Full.KCFA.AbstractValue
       Core.FlowAnalysis.Full.KCFA.KCFA
       Core.FlowAnalysis.Full.KCFA.Monad
       Core.FlowAnalysis.Full.KCFA.Primitives
       Core.FlowAnalysis.Full.KCFA.Syntax
+      Core.FlowAnalysis.Full.KCFA2.AbstractValue
+      Core.FlowAnalysis.Full.KCFA2.KCFA
+      Core.FlowAnalysis.Full.KCFA2.Monad
+      Core.FlowAnalysis.Full.KCFA2.Primitives
+      Core.FlowAnalysis.Full.KCFA2.Syntax
       Core.FlowAnalysis.Full.PrimComm
       Core.FlowAnalysis.Full.PrimitivesOld
       Core.FlowAnalysis.Full.Report

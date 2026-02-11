@@ -63,7 +63,7 @@ toChange b = if b then trueCon else falseCon
 anyBool :: (Ord i, Show c, Show o, Lattice o c) => FixAR x s e i o c AChange
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
-changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) M.empty
+changeUnit = AChangeConstr (ExprPrim (ExprContextId (-1000) nameUnit) C.exprUnit) M.empty
 
 isPrimitive :: TName -> Bool
 isPrimitive tn =
