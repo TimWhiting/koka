@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use uncurry" #-}
-module Core.FlowAnalysis.Full.KCFA.Primitives where
+module Core.FlowAnalysis.Full.KCFA2.Primitives where
 
 import Data.Maybe(fromJust)
 import Debug.Trace(trace)
@@ -15,8 +15,8 @@ import Common.Failure
 import Compile.Module
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.StaticContext
-import Core.FlowAnalysis.Full.KCFA.AbstractValue
-import Core.FlowAnalysis.Full.KCFA.Monad
+import Core.FlowAnalysis.Full.KCFA2.AbstractValue
+import Core.FlowAnalysis.Full.KCFA2.Monad
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core as C

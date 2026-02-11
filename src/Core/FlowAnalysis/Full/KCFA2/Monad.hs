@@ -1,14 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Core.FlowAnalysis.Full.KCFA.Monad where
+module Core.FlowAnalysis.Full.KCFA2.Monad where
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Control.Monad.Reader (lift)
 import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.StaticContext
-import Core.FlowAnalysis.Full.KCFA.AbstractValue
+import Core.FlowAnalysis.Full.KCFA2.AbstractValue
 import Core.FlowAnalysis.Literals
 import Core.Core
 import Data.Int (Int)

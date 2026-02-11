@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant return" #-}
 {-# HLINT ignore "Redundant if" #-}
-module Core.FlowAnalysis.Full.KCFA.Syntax where
+module Core.FlowAnalysis.Full.KCFA2.Syntax where
 
 import Data.List (intercalate, find, minimumBy, groupBy, sort, permutations)
 import qualified Data.Map.Strict as M
@@ -26,9 +26,9 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Syntax
 import Core.FlowAnalysis.Monad
-import Core.FlowAnalysis.Full.KCFA.KCFA
-import Core.FlowAnalysis.Full.KCFA.AbstractValue
-import Core.FlowAnalysis.Full.KCFA.Monad
+import Core.FlowAnalysis.Full.KCFA2.KCFA
+import Core.FlowAnalysis.Full.KCFA2.AbstractValue
+import Core.FlowAnalysis.Full.KCFA2.Monad
 import Common.Failure (HasCallStack)
 import Common.NamePrim (nameMain)
 import Common.Name (Name(..))
@@ -104,7 +104,7 @@ runQueryAtRange bc build mod m doQuery =
                               Just (_, _, time3) <- once
                               return $ Just (l, res, [time1, time2, time3])
                           Nothing -> return Nothing
-                  let dir = "benchmarks/results/kcfa/" ++ show 0 ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
+                  let dir = "benchmarks/results/kcfa2/" ++ show 0 ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
                   createDirectoryIfMissing True dir
                   case mbRes of
                     Just (l, analysisResult, times) -> do
@@ -121,7 +121,7 @@ runQueryAtRange bc build mod m doQuery =
 
 
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-                      let value = PolyVariantMetrics "kcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
+                      let value = PolyVariantMetrics "kcfa2" 0 m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
                       -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
                       --         show result ++ "," 
@@ -132,7 +132,7 @@ runQueryAtRange bc build mod m doQuery =
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just (if preciseResult metrics then 1 else 0)
                     Nothing -> do
-                      let value = PolyVariantMetrics "kcfa" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
+                      let value = PolyVariantMetrics "kcfa2" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
                       -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
@@ -321,10 +321,10 @@ extractMetrics cache cacheExpected =
       applyContRetSizes exprToValStrSizes applyContStrSizes
       callTargetSemSizes callTargetStrSizes
 
-evalMainK :: BuildContext
+evalMainK2 :: BuildContext
   -> TypeChecker -> Module -> Int
   -> IO Bool
-evalMainK bc build mod m = do
+evalMainK2 bc build mod m = do
   runQueryAtRange bc build mod m $ \ctx -> do
     c <- inject ctx
     -- trace (show (modCtx ctx)) $ return ()
