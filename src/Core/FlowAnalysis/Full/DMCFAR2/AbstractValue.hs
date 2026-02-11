@@ -6,7 +6,7 @@
 -- found in the LICENSE file at the root of this distribution.
 -----------------------------------------------------------------------------
 {-# LANGUAGE InstanceSigs #-}
-module Core.FlowAnalysis.Full.DMCFAR.AbstractValue where
+module Core.FlowAnalysis.Full.DMCFAR2.AbstractValue where
 import Data.Map.Strict as M hiding (take, foldl, map)
 import Common.Name
 import Type.Type

@@ -67,6 +67,9 @@ import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
 import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainK)
 import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
+import Core.FlowAnalysis.Full.DMCFA2.Syntax (evalMain2)
+import Core.FlowAnalysis.Full.KCFA2.Syntax (evalMainK2)
+import Core.FlowAnalysis.Full.DMCFAR2.Syntax (evalMainR2)
 import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
 
@@ -367,20 +370,31 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   when (analyze flags) $ do
                     let sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
-
                     let runAnalysis d m = do
-                          if rebinding flags then 
+                          if rebinding flags then do
                              liftIO $ evalMainR bc (\bc mn ->
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m d
-                          else if kcfa flags then
+                             liftIO $ evalMainR2 bc (\bc mn ->
+                                 runBuild term flags $ do
+                                   buildcTypeCheck (mn:buildcRoots bc) bc
+                               ) mod m d
+                          else if kcfa flags then do
                              liftIO $ evalMainK bc (\bc mn ->
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m 
-                          else
+                             liftIO $ evalMainK2 bc (\bc mn ->
+                                 runBuild term flags $ do
+                                   buildcTypeCheck (mn:buildcRoots bc) bc
+                               ) mod m 
+                          else do
                              liftIO $ evalMain bc (\bc mn ->
+                                 runBuild term flags $ do
+                                   buildcTypeCheck (mn:buildcRoots bc) bc
+                               ) mod m d
+                             liftIO $ evalMain2 bc (\bc mn ->
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m d

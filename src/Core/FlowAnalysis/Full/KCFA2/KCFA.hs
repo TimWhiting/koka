@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Eta reduce" #-}
 {-# HLINT ignore "Use map with tuple-section" #-}
-module Core.FlowAnalysis.Full.KCFA.KCFA where
+module Core.FlowAnalysis.Full.KCFA2.KCFA where
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Control.Monad.Reader (lift)
@@ -10,9 +10,9 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Monad
 import Core.FlowAnalysis.StaticContext
 import Core.FlowAnalysis.Literals
-import Core.FlowAnalysis.Full.KCFA.AbstractValue
-import Core.FlowAnalysis.Full.KCFA.Monad
-import Core.FlowAnalysis.Full.KCFA.Primitives
+import Core.FlowAnalysis.Full.KCFA2.AbstractValue
+import Core.FlowAnalysis.Full.KCFA2.Monad
+import Core.FlowAnalysis.Full.KCFA2.Primitives
 import Core.FlowAnalysis.Full.PrimComm
 import Core.Core
 import Data.Int (Int)
