@@ -94,9 +94,11 @@ def compute_metrics(run, baseline_run):
     # Measures how many singletons were found relative to the original program's baseline size
     # This prevents the 'expansion' from diluting the precision score.
     base_total = baseline['numStructAddresses']
-    base_prec_struct = baseline['val0CFAStrSingletons'] / base_total if base_total > 0 else 1.0
-    poly_prec_struct = m['val0CFAStrSingletons'] / base_total if base_total > 0 else 1.0
-    prec_struct = poly_prec_struct / base_prec_struct if base_prec_struct > 0 else 1.0
+    # base_prec_struct = baseline['val0CFAStrSingletons'] / base_total if base_total > 0 else 1.0
+    # poly_prec_struct = m['val0CFAStrSingletons'] / base_total if base_total > 0 else 1.0
+    # if poly_prec_struct < base_prec_struct:
+    #     raise Exception(f"Poly: {poly_prec_struct}, Base: {base_prec_struct}, Addrs: {base_total}, Name: {run['benchmarkName']}, Variant: {run['variant']}, Params: {run['d']} {run['m']}")
+    # prec_struct = poly_prec_struct / base_prec_struct if base_prec_struct > 0 else 1.0
     
     # Relative Semantic Precision (Data-Flow Improvement)
     base_prec_sem = baseline['valSemSingletons'] / base_total if base_total > 0 else 1.0
@@ -108,24 +110,28 @@ def compute_metrics(run, baseline_run):
     prec_lit = (m['numLitAddresses'] - m['literalTopCount']) / m['numLitAddresses'] if m['numLitAddresses'] > 0 else 1.0
 
     # Productivity Helper (Smaragdakis et al., 2011)
-    def calc_prod(poly_map, base_map):
-        if not base_map: return 0.0
+    def calc_prod(metric, poly, base):
+        poly_map = poly[metric]
+        base_map = base[metric]
+        if not base_map: 
+            if not poly_map:
+                return 0.0
+            return 0.0 # raise Exception("Error " + str(base_map) + " " + str(run['benchmarkName']))
         hits = 0
-        for x_id, szs in poly_map.items():
-            base_vals = base_map.get(x_id)
+        for x_id, base_vals in base_map.items():
+            szs = poly_map.get(x_id)
             # if len(base_vals) > 1: raise Exception(f"Unexpected list length in base map {base_vals} {x_id}")
-            if base_vals is None: continue
-            
-            # Filter out -1 (Top) from baseline and get min
-            filtered_base = [v for v in base_vals if v != -1]
-            if not filtered_base:
-                # Baseline was Top, any non-Top size in poly is a hit
-                if any(s != -1 for s in szs):
-                    hits += 1
+            if szs is None: 
+                hits += 1 # dead code for poly
                 continue
             
+            # Filter out -1 (Top) from baseline and get min
+            filtered_base = [v for v in [base_vals] if v != -1]
+            if not filtered_base:
+                continue
             base_min = min(filtered_base)
-            if any(s < base_min and s != -1 for s in szs):
+            
+            if any(s < base_min and s != -1 for s in [szs]):
                 hits += 1
         return hits / len(base_map)
 
@@ -134,14 +140,14 @@ def compute_metrics(run, baseline_run):
         "time": avg_time,
         "rel_time": rel_time,
         "expansion": expansion,
-        "prec_struct": prec_struct,
+        "prec_struct": calc_prod('storeToStrSizes', m, baseline),
         "prec_sem": prec_sem,
         "prec_lit": prec_lit,
-        "prod_v_sem": calc_prod(m['exprToValSemSizes'], baseline['exprToValSemSizes']),
-        "prod_v_str": calc_prod(m['exprToValStrSizes'], baseline['exprToValStrSizes']),
-        "prod_k_str": calc_prod(m['structToContStrSizes'], baseline['structToContStrSizes']),
-        "prod_sem": calc_prod(m['callToSemRetSizes'], baseline['callToSemRetSizes']),
-        "prod_str": calc_prod(m['structToStrRetSizes'], baseline['structToStrRetSizes'])
+        "prod_v_sem": calc_prod('exprToValSemSizes', m, baseline),
+        "prod_v_str": calc_prod('exprToValStrSizes', m, baseline),
+        "prod_k_str": calc_prod('structToContStrSizes', m, baseline),
+        "prod_sem": calc_prod('callToSemRetSizes', m, baseline),
+        "prod_str": calc_prod('structToStrRetSizes', m, baseline)
     }
 
 def generate_icfp_tables(results, baselines, variant_name):
@@ -274,7 +280,7 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         ax.set_title(f"[{variant_name}] Pareto: Space vs {label}", fontsize=15, pad=20)
         ax.set_xlabel("Expansion Factor (Geometric Mean, Log Scale)")
         ax.set_xscale('log')
-        ax.set_ylabel(f"Relative Precision (Baseline = 1.0)")
+        ax.set_ylabel(f"Relative Precision (Baseline = {1.0 if metric == 'prec_sem' else 0.0})")
         # Add timeout legend note
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles, labels, title="Sensitivity (d, m)\n⚠N = N timeouts", 
@@ -282,7 +288,7 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         plt.tight_layout()
         print(f"Saving Pareto Space: {os.path.join(output_dir, f'pareto_{filename_pfx}.png')}")
         plt.savefig(os.path.join(output_dir, f"pareto_{filename_pfx}.png"), bbox_inches='tight')
-        plt.show()
+        # plt.show()
         plt.close()
     
     # Plot Pareto Frontiers (Rel Time vs Precisions)
@@ -298,7 +304,7 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         ax.set_title(f"[{variant_name}] Pareto: Relative Time vs {label}", fontsize=15, pad=20)
         ax.set_xlabel("Time Overhead (Geometric Mean, Log Scale)")
         ax.set_xscale('log')
-        ax.set_ylabel(f"Relative Precision (Baseline = 1.0)")
+        ax.set_ylabel(f"Relative Precision (Baseline = {1.0 if metric == 'prec_sem' else 0.0})")
         # Add timeout legend note
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles, labels, title="Sensitivity (d, m)\n⚠N = N timeouts", 
@@ -306,7 +312,7 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         plt.tight_layout()
         print(f"Saving Pareto Time: {os.path.join(output_dir, f'pareto_{filename_pfx}.png')}")
         plt.savefig(os.path.join(output_dir, f"pareto_{filename_pfx}.png"), bbox_inches='tight')
-        plt.show()
+        # plt.show()
         plt.close()
     
     # Heatmaps
@@ -327,7 +333,7 @@ def plot_visualizations(df, struct_mu, sem_mu, time_mu, variant_name):
         plt.tight_layout()
         print(f"Saving Heatmap: {os.path.join(output_dir, filename)}")
         plt.savefig(os.path.join(output_dir, filename), bbox_inches='tight')
-        plt.show()
+        # plt.show()
         plt.close()
 
 def plot_histograms(results, variant_name):
@@ -354,14 +360,8 @@ def plot_histograms(results, variant_name):
             if r['runID'] == run_id and r.get('storeMetrics'):
                 m = r['storeMetrics']
                 # Aggregate across all program points for more stable histograms
-                for sizes in m.get('exprToValSemSizes', {}).values():
-                    for s in sizes:
-                        s_val = s if s != -1 else "Top"
-                        sem_counts[s_val] = sem_counts.get(s_val, 0) + 1
-                for sizes in m.get('exprToValStrSizes', {}).values():
-                    for s in sizes:
-                        s_val = s if s != -1 else "Top"
-                        str_counts[s_val] = str_counts.get(s_val, 0) + 1
+                sem_counts = m.get('exprToValSemSizes', {})
+                str_counts = m.get('exprToValStrSizes', {})
 
         for j, (counts, title, color) in enumerate([
             (sem_counts, f"Semantic Val Cardinality ({run_id})", "skyblue"),
@@ -667,7 +667,7 @@ def plot_size_vs_time_comparison(all_results, min_size=100):
     plt.savefig(output_path, bbox_inches='tight', dpi=150)
     print(f"Saved: {output_path}")
     
-    plt.show()
+    # plt.show()
     plt.close('all')
 
 def plot_size_vs_cont_precision(all_results, min_size=100):
@@ -878,7 +878,7 @@ def plot_size_vs_cont_precision(all_results, min_size=100):
     plt.savefig(output_path, bbox_inches='tight', dpi=150)
     print(f"Saved: {output_path}")
     
-    plt.show()
+    # plt.show()
     plt.close('all')
 
 def print_top_programs_by_size(all_results, top_n=10):
