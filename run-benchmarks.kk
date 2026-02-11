@@ -37,10 +37,10 @@ fun show(a: analysis)
     KCFA -> "kcfa"
 fun flag(a: analysis) "--" ++ a.show
 
-fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFAR, DMCFAE, KCFA], force: bool = False)
+fun run-benchmarks(files: list<string> = files, analyses: list<analysis> = [DMCFAR, DMCFAE, KCFA], force: bool = False, precise=False)
   analyses.foreach fn(a)
     files.foreach fn(f)
-      run-file(a, f, a.sensitivities, force)
+      run-file(a, f, if precise then [(100, 2000)] else a.sensitivities, force)
 
 fun filter-matches( xs : list<list<sslice>> ) : list<list<sslice>>
   match xs
@@ -79,5 +79,6 @@ fun main()
   val only-floats = args.find(_ == "--floats").is-just
   val run-files = if only-floats then float-files else files
   run-benchmarks(files=run-files, analyses=[DMCFAR, DMCFAE, KCFA], force=force)
+  // run-benchmarks(files=run-files, analyses=[DMCFAR, DMCFAE, KCFA], force=force, precise=True)
   // run-benchmarks(["handlers/nim"], [DMCFAR])
   // run-benchmarks(["handlers/unix"], [DMCFAR], force=force)
