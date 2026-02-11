@@ -135,7 +135,7 @@ charCmpOp f (ctx, env) = do
         anyBool env
     _ -> doBottom
 
-changeUnit env = AChangeConstr (ExprPrim (ExprContextId (-1000) (newName "unit")) C.exprUnit) env
+changeUnit env = AChangeConstr (ExprPrim (ExprContextId (-1000) nameUnit) C.exprUnit) env
 trueCon = AChangeConstr $ ExprPrim (ExprContextId (-1001) (newName "true")) C.exprTrue
 falseCon = AChangeConstr $ ExprPrim (ExprContextId (-1002) (newName "false")) C.exprFalse
 toChange :: Bool -> EnvCtx -> AChange

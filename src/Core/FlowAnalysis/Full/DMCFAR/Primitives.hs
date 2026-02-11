@@ -54,7 +54,7 @@ toChange :: Bool  -> AChange
 toChange b = if b then trueCon else falseCon
 anyBool = each [return $ toChange True, return $ toChange False]
 changeUnit :: AChange
-changeUnit = AChangeConstr (newName "unit") []
+changeUnit = AChangeConstr nameUnit []
 
 intOp :: (Integer -> Integer -> Integer) -> [AChange] -> FixAAMR x s e AChange
 intOp f [p1, p2] = do
