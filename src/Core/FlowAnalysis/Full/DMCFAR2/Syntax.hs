@@ -260,7 +260,7 @@ extractMetrics cache cacheExpected =
 
     -- Context explosion metrics
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e ctx), RValue val) <- M.toList cache]
-    ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply _ k _ ctx), RValue val) <- M.toList cache]
+    ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
     
     exprContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerExpr]
     contContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerApply]
@@ -281,9 +281,9 @@ extractMetrics cache cacheExpected =
     exprToValSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)]
     exprToValStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _), RValue vs) <- M.toList cache , not $ onlyLit (resolveRValue vs)]
     callToSemRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (ctx, vs, c) <- callSites, not $ onlyLit (resolveRValue vs) ]
-    applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply _ c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs) ]
-    applyContStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (KStore c, RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs) ]
-    applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply _ c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)  ]
+    applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs) ]
+    applyContStrSizes = M.map S.size $ M.fromListWith (<>) [ (show $ kAddrId c, S.map kAddrId (S.map snd vs)) | (KStore c, KValue vs) <- M.toList cache ]
+    applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)  ]
     callTargetSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs)]
     callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs) ]
 
