@@ -376,28 +376,28 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m d
-                             liftIO $ evalMainR2 bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m d
+                            --  liftIO $ evalMainR2 bc (\bc mn ->
+                            --      runBuild term flags $ do
+                            --        buildcTypeCheck (mn:buildcRoots bc) bc
+                            --    ) mod m d
                           else if kcfa flags then do
                              liftIO $ evalMainK bc (\bc mn ->
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m 
-                             liftIO $ evalMainK2 bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m 
+                            --  liftIO $ evalMainK2 bc (\bc mn ->
+                            --      runBuild term flags $ do
+                            --        buildcTypeCheck (mn:buildcRoots bc) bc
+                            --    ) mod m 
                           else do
                              liftIO $ evalMain bc (\bc mn ->
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m d
-                             liftIO $ evalMain2 bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m d
+                            --  liftIO $ evalMain2 bc (\bc mn ->
+                            --      runBuild term flags $ do
+                            --        buildcTypeCheck (mn:buildcRoots bc) bc
+                            --    ) mod m d
                           return ()
                     
                     mapM_ (\(d,m) -> runAnalysis d m) sens

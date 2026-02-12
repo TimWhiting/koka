@@ -48,7 +48,7 @@ doStep i =
       VStore addr -> error ("Value not found in store :" ++ show addr)
       KStore addr -> if addr == EndKAddr then return $ KV (FCount, EndKAddr) else error ("Continuation not found in store :" ++ show addr)
       Step (CEval expr venv) -> doEval expr venv
-      Step (CApply parentFrame kaddr addr ctx) -> doApply parentFrame kaddr addr ctx
+      Step (CApply kaddr addr ctx) -> doApply kaddr addr ctx
       Step (CContinue res frame ctx) -> doDoContinue res frame ctx
       Step (CHandleEffects res venv bodId hnd ctx) -> doHandleEffects res venv bodId hnd ctx
       Step (CHandleLocal res venv bodId varName valAddr ctx) -> doHandleLocal res venv bodId varName valAddr ctx
@@ -83,8 +83,8 @@ returnV :: FixAAMR r s e RValue -> FixAAMR r s e FixChange
 returnV f = RV <$> f
 eval :: HasCallStack => ExprContext -> VEnv -> FixAAMR r s e RValue
 eval expr venv = unreturnV $ doStep $ Step (CEval expr venv)
-apply :: HasCallStack => Maybe Frame -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
-apply frame kaddr addr ctx = unreturnV $ doStep $ Step (CApply frame kaddr addr ctx)
+apply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e RValue
+apply kaddr addr ctx = unreturnV $ doStep $ Step (CApply kaddr addr ctx)
 doContinue a b c = doStep $ Step (CContinue a b c)
 
 handleEffects :: HasCallStack => RValue -> VEnv -> Call -> Handler -> CombinedCtx -> FixAAMR r s e RValue
@@ -296,7 +296,7 @@ doDoContinue res frame ctx =
                       let newCtx = addCall m ctx uApp
                           newDynCtx = addDelim d newCtx (CallApp uApp) (hLabel hnd)
                       -- trace ("Applying continuation\n" ++ show uApp ++ "\n" ++ show newCtx ++ "\n" ++ show newDynCtx) $ return () -- ++ "for\n" ++
-                      res <- apply Nothing kx addr newDynCtx
+                      res <- apply kx addr newDynCtx
                       returnV $ handleEffects res henv (CallApp uApp) hnd newCtx
                     _ -> do
                       trace ("Applying non function: " ++ show res) doBottom
@@ -366,7 +366,7 @@ doDoContinue res frame ctx =
                 newDelimCtx = addDelim d newRetCtx (CallApp u) (hLabel hnd)
             -- trace ("Applying continuation " ++ show (contextId u) ++ " " ++ show henv ) $ return () -- ++ "for\n" ++ 
             AChangeKont kaddr _ _ <- store kont
-            res <- apply Nothing kaddr addr newDelimCtx
+            res <- apply kaddr addr newDelimCtx
             returnV $ handleEffects res venv (CallApp u) hnd newRetCtx
           _ -> do
             error ("Continuing: " ++ show res ++ " with unknown frame " ++ show frame)
@@ -374,23 +374,24 @@ doDoContinue res frame ctx =
 kAddrFrame :: Addr -> Frame
 kAddrFrame (KAddr fr _ _ _) = fr
 
-doApply :: HasCallStack => Maybe Frame -> Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
-doApply frame0 kaddr addr delimCtx = do
+doApply :: HasCallStack => Addr -> Addr -> DynamicCtx -> FixAAMR r s e FixChange
+doApply kaddr addr delimCtx = do
   -- trace ("Applying: " ++ show addr ++ " with " ++ show kaddr ++ " " ++ show delimCtx) $ return ()
   -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr
     KAddr frame1 ctx _ _ -> do
       (frame, knext) <- kStore kaddr 
-      if Just frame /= frame0 && frame0 /= Nothing then doBottom
-      else case frame of 
+      -- if Just frame /= frame0 && frame0 /= Nothing then doBottom
+      -- else 
+      case frame of 
         FRestoreDelim (DFrameLocal venv bodId varName varAddr) -> do
           let newCtx = CombinedCtx ctx delimCtx
           d <- dLimit
           m <- mLimit
           let newRetCtx = addCallRaw m newCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
-          res <- apply (Just frame1) knext addr (dynamic newDelimCtx)
+          res <- apply knext addr (dynamic newDelimCtx)
           returnV $ handleLocal res venv bodId varName varAddr newRetCtx
         FRestoreDelim (DFrame venv bodId h) -> do
           let newCtx = CombinedCtx ctx delimCtx
@@ -398,11 +399,11 @@ doApply frame0 kaddr addr delimCtx = do
           m <- mLimit
           let newRetCtx = addCallRaw m newCtx bodId
           let newDelimCtx = newDelim d m newRetCtx bodId (hLabel h)
-          res <- apply (Just frame1) knext addr (dynamic newDelimCtx)
+          res <- apply knext addr (dynamic newDelimCtx)
           -- trace ("Restoring handler context for " ++ show h ++ " with\n" ++ show newRetCtx ++ "\n" ++ show newDelimCtx ++ "\n") $ return () 
           returnV $ handleEffects res venv bodId h newRetCtx
         _ -> do
-          res <- apply (Just frame1) knext addr delimCtx
+          res <- apply knext addr delimCtx
           let newctx = CombinedCtx ctx delimCtx
           doContinue res frame newctx
 isHandlerPrimitive :: Name -> Bool
@@ -490,7 +491,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
     ROp dval ctx' frame' dframe' knext -> do
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
-          res <- apply Nothing knext valAddr (dynamic retCtx)
+          res <- apply knext valAddr (dynamic retCtx)
           returnV $ handleLocal res venv bodId varName valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
@@ -499,7 +500,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
           m <- mLimit
           let newRetCtx = addCallRaw m retCtx (CtxId $ vcontextId v)
           let newDelimCtx = newDelim d m newRetCtx (CtxId $ vcontextId v) (getName varName)
-          res <- apply Nothing knext UnitAddr (dynamic newDelimCtx)
+          res <- apply knext UnitAddr (dynamic newDelimCtx)
           returnV $ handleLocal res venv (CtxId $ vcontextId v) varName newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()

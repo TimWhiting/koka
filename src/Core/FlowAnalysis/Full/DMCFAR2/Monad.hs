@@ -27,7 +27,7 @@ import Type.Pretty (defaultEnv, ppType)
 
 data Conf =
   CEval !ExprContext !VEnv -- expr, env, ctx
-  | CApply !(Maybe Frame) !Addr !Addr !DynamicCtx -- kont, vaddr, dynctx
+  | CApply !Addr !Addr !DynamicCtx -- kont, vaddr, dynctx
   | CContinue !RValue !Frame !CombinedCtx
   | CHandleEffects !RValue !VEnv !Call !Handler !CombinedCtx
   | CHandleLocal !RValue !VEnv !Call !TName !Addr !CombinedCtx

@@ -1,0 +1,56 @@
+
+Comparing dmcfar and dmcfar2:
+  Total benchmarks compared: 672
+  Total benchmarks with differences: 667
+
+  preciseResult Changes:
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-nested-interleave (d=0, m=0): True -> False
+  Benchmark: analysis/benchmarks/handlers/scoped/example2 (d=0, m=0): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example4 (d=0, m=0): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example5 (d=0, m=1): False -> None
+  Benchmark: analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares (d=0, m=2): False -> None
+  Benchmark: analysis/benchmarks/suite/recursion/iter-sum-two (d=0, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/recursion/iter-sum-two-d (d=0, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/recursion/iter-sum-two-c (d=0, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/recursion/iter-sum-two-b (d=0, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-layers (d=0, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-recursive (d=0, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example2 (d=0, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example5 (d=0, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example5 (d=1, m=1): False -> None
+  Benchmark: analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares (d=1, m=2): False -> None
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-layers (d=1, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-recursive (d=1, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example2 (d=1, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example5 (d=1, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example2 (d=2, m=1): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example5 (d=2, m=1): False -> None
+  Benchmark: analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares (d=2, m=2): False -> None
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-layers (d=2, m=2): True -> False
+  Benchmark: analysis/benchmarks/suite/complex-flow/complex-recursive (d=2, m=2): False -> None
+  Benchmark: analysis/benchmarks/handlers/scoped/example5 (d=2, m=2): False -> None
+
+  Top-level Metric Trends (Increase / Decrease / Same):
+    contStrSingletons             :   17 ↑ /  632 ↓ /    1 =
+    numTotalFixInputStates        :   66 ↑ /  582 ↓ /    2 =
+    combined0CFAStrSingletons     :    6 ↑ /  634 ↓ /   10 =
+    cont0CFAStrSingletons         :    6 ↑ /  634 ↓ /   10 =
+    contSemSingletons             :    1 ↑ /  637 ↓ /   12 =
+    numContAddresses              :   20 ↑ /  612 ↓ /   18 =
+    numTotalFixpointStates        :   72 ↑ /  550 ↓ /   28 =
+    numStoreAddresses             :   46 ↑ /  573 ↓ /   31 =
+    valSemSingletons              :   74 ↑ /   45 ↓ /  531 =
+    numStructAddresses            :   83 ↑ /   29 ↓ /  538 =
+    valStrSingletons              :   72 ↑ /   33 ↓ /  545 =
+    numLitAddresses               :   61 ↑ /   41 ↓ /  548 =
+    literalTopCount               :   63 ↑ /   10 ↓ /  577 =
+    semReturnSingletons           :   10 ↑ /   62 ↓ /  578 =
+    strReturnSingletons           :   12 ↑ /   57 ↓ /  581 =
+    semTargetSingletons           :   26 ↑ /   36 ↓ /  588 =
+    strTargetSingletons           :   14 ↑ /   32 ↓ /  604 =
+    literal0CFATopCount           :   14 ↑ /    0 ↓ /  636 =
+    val0CFAStrSingletons          :    6 ↑ /    4 ↓ /  640 =
+    preciseResult                 :    0 ↑ /    8 ↓ /  642 =
+
+================================================================================
+Analysis complete. Total discrepancies (individual benchmarks) found: 667
