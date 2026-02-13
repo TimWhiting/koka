@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Redundant return" #-}
 {-# HLINT ignore "Redundant if" #-}
-module Core.FlowAnalysis.Full.DMCFA.Syntax where
+module Core.FlowAnalysis.Full.KCFAR.Syntax where
 
 import Data.List (intercalate, find, minimumBy, groupBy, sort, permutations)
 import qualified Data.Map.Strict as M
@@ -26,9 +26,9 @@ import Core.FlowAnalysis.FixpointMonad
 import Core.FlowAnalysis.Literals
 import Core.FlowAnalysis.Syntax
 import Core.FlowAnalysis.Monad
-import Core.FlowAnalysis.Full.DMCFA.DMCFA
-import Core.FlowAnalysis.Full.DMCFA.AbstractValue
-import Core.FlowAnalysis.Full.DMCFA.Monad
+import Core.FlowAnalysis.Full.KCFAR.KCFA
+import Core.FlowAnalysis.Full.KCFAR.AbstractValue
+import Core.FlowAnalysis.Full.KCFAR.Monad
 import Common.Failure (HasCallStack)
 import Common.NamePrim (nameMain)
 import Common.Name (Name(..))
@@ -53,13 +53,13 @@ debug = False
 
 runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
-  -> Module -> Int -> Int
+  -> Module -> Int
   -> (ExprContext -> FixAAMR FixChange () () ())
   -> IO Bool
-runQueryAtRange bc build mod m d doQuery =
-  let runId = show m ++ "-" ++ show d in
+runQueryAtRange bc build mod m doQuery =
+  let runId = show m ++ "-" ++ show 0 in
   do
-    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m d build False ()) (emptyBasicState bc ()) $
+    (_, s, ctxs) <- runFixFinish (emptyBasicEnv m 0 build False ()) (emptyBasicState bc ()) $
               do runFixCont $ do
                     (_,ctx) <- loadModule (modName mod)
                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ do
@@ -84,14 +84,13 @@ runQueryAtRange bc build mod m d doQuery =
                         let once = do
                               timeout 500000000 $ do
                                   tstart <- getCurrentTime
-                                  -- trace (" Analyzing " ++ show name) $ return ()
-                                  (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                                  trace (" Analyzing " ++ show name) $ return ()
+                                  (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m 0 build True ()) s' $ do
                                                   runFixCont $ do
                                                     (_,ctx) <- loadModule (modName mod)
                                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                                   ress' <- getCache
-                                                  -- trace ("Finished Analyzing " ++ show name) $ return ()
                                                   -- trace ("result': " ++ show ress') $ return ()
                                                   return ress'
                                   tend <- getCurrentTime
@@ -105,12 +104,12 @@ runQueryAtRange bc build mod m d doQuery =
                               Just (_, _, time3) <- once
                               return $ Just (l, res, [time1, time2, time3])
                           Nothing -> return Nothing
-                  let dir = "benchmarks/results/dmcfae/" ++ show d ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
+                  let dir = "benchmarks/results/kcfar/" ++ show 0 ++ "/" ++ show m ++ "/" ++ nameModule (modName mod)
                   createDirectoryIfMissing True dir
                   case mbRes of
                     Just (l, analysisResult, times) -> do
                       -- trace ("Evaluating expected result for " ++ show name) $ return ()
-                      (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
+                      (_, _, expectedResult) <- runFixFinishC (emptyBasicEnv m 0 build True ()) s' $ do
                                       runFixCont $ do
                                         (_,ctx) <- loadModule (modName mod)
                                         -- trace ("Context: " ++ show (contextId ctx)) $ return ()
@@ -118,13 +117,13 @@ runQueryAtRange bc build mod m d doQuery =
                                       ress' <- getCache
                                       -- trace ("expected': " ++ show ress') $ return ()
                                       return ress'
-
                       let metrics = extractMetrics analysisResult expectedResult
 
+
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
-                      let value = PolyVariantMetrics "dmcfae" d m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
+                      let value = PolyVariantMetrics "kcfar" 0 m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
-                      -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                      -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
                       --         show result ++ "," 
                       --         ++ show (length evals) ++ "," ++ show (sum evals) ++ "," ++ show (count (== 1) evals) ++ "," 
                       --         ++ show (length applies) ++ "," ++ show (sum applies) ++ "," ++ show (count (== 1) applies) ++ ","
@@ -133,10 +132,10 @@ runQueryAtRange bc build mod m d doQuery =
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
                       return $ Just (if preciseResult metrics then 1 else 0)
                     Nothing -> do
-                      let value = PolyVariantMetrics "dmcfae" d m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
+                      let value = PolyVariantMetrics "kcfar" 0 m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
-                      -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
+                      -- trace ("dmcfa," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
                       --          ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
                       return Nothing
                 (total, timeouts) <- recur rest
@@ -259,16 +258,15 @@ extractMetrics cache cacheExpected =
     literal0CFATopCount = count (\(_, val) -> litIsTopX (alits val)) (M.toList vLitEntriesByAddrId)
 
     -- Context explosion metrics
-    ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e _ ctx), RValue val) <- M.toList cache]
+    ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e ctx), RValue val) <- M.toList cache]
     ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
-    
-    -- Build histograms: how many expressions/continuations have N contexts?
+
     exprContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerExpr]
     contContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerApply]
 
     -- Returns
-    callSites =   [(ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isApp e ]
-    callTargets = [(ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isIndirectAppFun e]
+    callSites = [ (ctx, S.map fst val, e) | (Step (CEval e ctx), RValue val) <- M.toList cache, isApp e]
+    callTargets = [(ctx, S.map fst val, e) | (Step (CEval e ctx), RValue val) <- M.toList cache, isIndirectAppFun e]
     callTargetCount = S.size $ S.fromList (map (\(_, _, e) -> e) callTargets)
 
     semReturnSingletons = count (\(_, val, _) -> semSizeOf (resolveRValue val) == 1) callSites
@@ -279,19 +277,18 @@ extractMetrics cache cacheExpected =
 
     -- Maps
     storeToStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ vAddrId addr, sv) | (VStore addr, SValue sv) <- M.toList cache]
-    exprToValSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)]
-    exprToValStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache , not $ onlyLit (resolveRValue vs)]
+    exprToValSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs))]
+    exprToValStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _), RValue vs) <- M.toList cache , not $ onlyLit (resolveRValue (S.map fst vs))]
     callToSemRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (ctx, vs, c) <- callSites, not $ onlyLit (resolveRValue vs) ]
-    applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs) ]
+    applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue (S.map fst vs)) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs)) ]
     applyContStrSizes = M.map S.size $ M.fromListWith (<>) [ (show $ kAddrId c, S.map kAddrId vs) | (KStore c, KValue vs) <- M.toList cache ]
-    applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)  ]
-    callTargetSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs)]
-    callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs) ]
+    applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue (S.map fst vs)) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs))  ]
+    callTargetSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue (S.map fst vs))]
+    callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue (S.map fst vs)) ]
 
-    -- TODO: Literal values
-    
+    -- TODO: Literal values 
+
     -- Total FixInput states
-    
     getValue cache addr addrsx =
           case M.lookup (VStore addr) cache of
             Just (SValue res) ->
@@ -310,6 +307,8 @@ extractMetrics cache cacheExpected =
     numTotalFixInput = M.size cache
     numFixpoint = M.size $ M.filterWithKey (\k _ -> case k of Step{} -> True; _ -> False) cache
     !result = compareResult final expected S.empty
+
+
   in StoreMetrics
       numStore numLit numStruct numCont callTargetCount numTotalFixInput numFixpoint result
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons cont0CFAStrSingletons
@@ -322,16 +321,16 @@ extractMetrics cache cacheExpected =
       applyContRetSizes exprToValStrSizes applyContStrSizes
       callTargetSemSizes callTargetStrSizes
 
-evalMain :: BuildContext
-  -> TypeChecker -> Module -> Int -> Int
+evalMainKR :: BuildContext
+  -> TypeChecker -> Module -> Int
   -> IO Bool
-evalMain bc build mod m d = do
-  runQueryAtRange bc build mod m d $ \ctx -> do
+evalMainKR bc build mod m = do
+  runQueryAtRange bc build mod m $ \ctx -> do
     c <- inject ctx
     -- trace (show (modCtx ctx)) $ return ()
     res <- doStep c
     case res of
-      RV (RVAddr addr) -> do
+      RV (RVAddr addr, _) -> do
         rebind addr EndVAddr
         return ()
       RV _ ->
