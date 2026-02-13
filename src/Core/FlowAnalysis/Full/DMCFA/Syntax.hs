@@ -82,7 +82,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- do
                   mbRes <- do
                         let once = do
-                              timeout 5000000 $ do
+                              timeout 500000000 $ do
                                   tstart <- getCurrentTime
                                   -- trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -91,6 +91,7 @@ runQueryAtRange bc build mod m d doQuery =
                                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                                   ress' <- getCache
+                                                  -- trace ("Finished Analyzing " ++ show name) $ return ()
                                                   -- trace ("result': " ++ show ress') $ return ()
                                                   return ress'
                                   tend <- getCurrentTime
@@ -123,7 +124,7 @@ runQueryAtRange bc build mod m d doQuery =
                       -- writeSimpleDependencyGraph (moduleNameToPath (modName mod)) l
                       let value = PolyVariantMetrics "dmcfae" d m (nameModule (modName mod) ++ "/" ++ name) times False (Just metrics)
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
-                      -- trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
+                      -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++ "," ++
                       --         show result ++ "," 
                       --         ++ show (length evals) ++ "," ++ show (sum evals) ++ "," ++ show (count (== 1) evals) ++ "," 
                       --         ++ show (length applies) ++ "," ++ show (sum applies) ++ "," ++ show (count (== 1) applies) ++ ","
@@ -135,7 +136,7 @@ runQueryAtRange bc build mod m d doQuery =
                       let value = PolyVariantMetrics "dmcfae" d m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
 
-                      -- trace ("dmcfae," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
+                      -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
                       --          ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
                       return Nothing
                 (total, timeouts) <- recur rest
@@ -247,11 +248,10 @@ extractMetrics cache cacheExpected =
     cont0CFAStrSingletons = count (\(_, ks) -> kStructuralSize ks == 1) (M.toList kEntriesByAddrId)
 
     -- 0CFA aggregated value singletons
-    -- Aggregate all value sets by their vAddrId (0CFA key)
     vEntriesByAddrId = M.fromListWith (<>) [ (vAddrId addr, val) | (VStore addr, SValue val) <- vEntries ]
     val0CFAStrSingletons = count (\(_, val) -> abStructuralSize val == 1) (M.toList vEntriesByAddrId)
 
-    -- Combined 0CFA precision (total singletons / total 0CFA addresses)
+    -- Combined 0CFA precision
     combined0CFAStrSingletons = val0CFAStrSingletons + cont0CFAStrSingletons
 
     -- Literal top count at 0CFA level
@@ -267,7 +267,7 @@ extractMetrics cache cacheExpected =
     contContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerApply]
 
     -- Returns
-    callSites = [ (ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isApp e ]
+    callSites =   [(ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isApp e ]
     callTargets = [(ctx, val, e) | (Step (CEval e _ ctx), RValue val) <- M.toList cache, isIndirectAppFun e]
     callTargetCount = S.size $ S.fromList (map (\(_, _, e) -> e) callTargets)
 
@@ -289,6 +289,9 @@ extractMetrics cache cacheExpected =
     callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs) ]
 
     -- TODO: Literal values
+    
+    -- Total FixInput states
+    
     getValue cache addr addrsx =
           case M.lookup (VStore addr) cache of
             Just (SValue res) ->
@@ -307,7 +310,6 @@ extractMetrics cache cacheExpected =
     numTotalFixInput = M.size cache
     numFixpoint = M.size $ M.filterWithKey (\k _ -> case k of Step{} -> True; _ -> False) cache
     !result = compareResult final expected S.empty
-
   in StoreMetrics
       numStore numLit numStruct numCont callTargetCount numTotalFixInput numFixpoint result
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons cont0CFAStrSingletons

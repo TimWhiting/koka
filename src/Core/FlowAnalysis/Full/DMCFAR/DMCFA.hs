@@ -274,7 +274,7 @@ doDoContinue res frame ctx =
                       zipWithM_ (\a p -> do
                         val <- store p
                         extendStore (fromJust $ lookupEnv a newEnv) val) args arguments
-                      returnV $ eval body newEnv
+                      returnV $ eval body (limitEnv newEnv (fvs body))
                     AChangePrim name -> do
                       let retAddr = BindImplicitAddr ctx venv uApp
                       if not (isHandlerPrimitive name) then do
@@ -301,7 +301,7 @@ doDoContinue res frame ctx =
                     _ -> do
                       trace ("Applying non function: " ++ show res) doBottom
               next:rest -> do
-                app <- M.lookup uApp . states <$> getState
+                -- app <- M.lookup uApp . states <$> getState
                 -- trace ("Next\n" ++ show next ++ "\n:" ++ show ctx ++ "\n" ++ show app ++ "\n" ++ show venv) $ return ()
                 env' <- rebindAll venv ctx
                 (env'', addrs') <- rebindAllAddrs uApp (res ++ [addr]) env' ctx
