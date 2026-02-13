@@ -1,0 +1,21 @@
+Comparison,Metric,Wins,Losses,Avg Win %,Avg Loss %
+"DMCFAR 1,1 vs KCFA 1",Success/Fail,1,2,-,-
+"DMCFAR 1,1 vs KCFA 1",Abs Cont Prec,2,0,+13.9%,0.0%
+"DMCFAR 1,1 vs KCFA 1",Abs Value Prec,16,13,+1.3%,-1.4%
+"DMCFAR 1,1 vs KCFA 1",Cont Improv,3,0,+18.8%,0.0%
+"DMCFAR 1,1 vs KCFA 1",Value Improv,21,2,+3.1%,-3.9%
+"DMCFAR 2,2 vs KCFA 2",Success/Fail,1,1,-,-
+"DMCFAR 2,2 vs KCFA 2",Abs Cont Prec,2,0,+14.1%,0.0%
+"DMCFAR 2,2 vs KCFA 2",Abs Value Prec,15,12,+1.1%,-1.1%
+"DMCFAR 2,2 vs KCFA 2",Cont Improv,2,2,+28.2%,-4.2%
+"DMCFAR 2,2 vs KCFA 2",Value Improv,19,4,+2.2%,-5.2%
+"DMCFAE 1,1 vs KCFA 1",Success/Fail,1,3,-,-
+"DMCFAE 1,1 vs KCFA 1",Abs Cont Prec,2,0,+13.9%,0.0%
+"DMCFAE 1,1 vs KCFA 1",Abs Value Prec,16,13,+1.3%,-1.4%
+"DMCFAE 1,1 vs KCFA 1",Cont Improv,3,0,+18.8%,0.0%
+"DMCFAE 1,1 vs KCFA 1",Value Improv,21,2,+3.1%,-3.9%
+"DMCFAE 2,2 vs KCFA 2",Success/Fail,1,2,-,-
+"DMCFAE 2,2 vs KCFA 2",Abs Cont Prec,2,0,+14.1%,0.0%
+"DMCFAE 2,2 vs KCFA 2",Abs Value Prec,15,12,+1.3%,-1.0%
+"DMCFAE 2,2 vs KCFA 2",Cont Improv,2,2,+28.2%,-4.2%
+"DMCFAE 2,2 vs KCFA 2",Value Improv,20,3,+2.3%,-5.5%
