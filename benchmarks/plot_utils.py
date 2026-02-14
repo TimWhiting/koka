@@ -5,15 +5,41 @@ import numpy as np
 import pandas as pd
 from scipy.stats import gmean
 
-def safe_gmean(x):
-    """Computes geometric mean safely, handling zeros, negatives, and empty sets."""
-    if x is None: return np.nan
-    clean = pd.to_numeric(x, errors='coerce').dropna()
-    # gmean requires strictly positive values
-    pos = clean[clean > 0]
-    if pos.empty:
+def geometric_mean(data):
+    # Add epsilon
+    pos = pd.Series(data).copy()
+    pos = pos[pos > 0]
+    if len(pos) == 0:
         return np.nan
     return gmean(pos)
+
+def calc_precise_stats(metric, poly, base):
+    """Calculates number of precise items (size <= 1) in poly map, relative to base keys."""
+    base_map = base.get(metric)
+    if not base_map:
+        return 0, 0
+    
+    poly_map = poly.get(metric, {})
+    
+    hits = 0
+    total = 0
+    
+    for x_id, base_val in base_map.items():
+        # Check poly value
+        # If missing in poly -> Dead code -> Precise (size 0)
+        # If present and <= 1 -> Precise
+        
+        poly_val = poly_map.get(x_id)
+        
+        # Note: poly_val could be None if missing
+        if poly_val is None:
+             hits += 1
+        elif poly_val != -1 and poly_val <= 1:
+             hits += 1
+             
+        total += 1
+        
+    return hits, total
 
 def calc_prod_stats(metric, poly, base):
     """Calculates productivity stats (hits, total) relative to baseline."""
@@ -52,7 +78,56 @@ def calc_prod(metric, poly, base):
     if total == 0: return 0.0
     return hits / total
 
-def compute_metrics(run, baseline_run):
+def calc_abs_impr_stats(metric, poly, base):
+    """
+    Calculates Absolute Precision Improvement stats (hits, total) relative to baseline.
+    
+    A "hit" is defined as an item that is EITHER:
+    1. Precise in the baseline (size <= 1)
+    2. Improved in the polyvariant analysis (poly < base)
+    
+    This metric aims to show "Baseline Precision + Gain", effectively the union of precise items.
+    """
+    poly_map = poly.get(metric)
+    base_map = base.get(metric)
+    
+    if not base_map: 
+        if not poly_map:
+            return 0, 0
+        raise Exception("Do not call with empty baseline")
+    
+    hits = 0
+    total_relevant = 0
+    
+    for x_id, base_val in base_map.items():
+        # Iterate over keys in BASELINE to ensure comparable set
+        
+        if base_val == -1: # Base is Top
+            # Check if Poly improved
+            p_val = poly_map.get(x_id, 0) # Default 0 (dead) if missing
+            if p_val != -1:
+                hits += 1
+        else: # Base is Value
+            # Base is precise if <= 1
+            is_base_precise = (base_val <= 1)
+            
+            # Check if Poly improved strictly
+            p_val = poly_map.get(x_id, 0)
+            # Note: if p_val is None (missing), it is 0. 
+            # 0 < b_val (since b_val >= 0 for non-top) is true if b_val > 0.
+            
+            is_improved = False
+            if p_val is not None and p_val != -1 and p_val < base_val:
+                is_improved = True
+                
+            if is_base_precise or is_improved:
+                hits += 1
+        
+        total_relevant += 1
+            
+    return hits, total_relevant
+
+def compute_metrics(run, baseline_run=None):
     """Computes precision metrics relative to baseline."""
     
     # Basic info
@@ -68,6 +143,11 @@ def compute_metrics(run, baseline_run):
 
     m = run.get('storeMetrics')
     if not m:
+        
+        # Pass through raw literal counts for debugging
+        metrics['literal0CFATopCount'] = n_lit_top
+        metrics['numLitAddresses'] = l_total
+        
         return metrics
 
     # Absolute Precision (for filtering)
@@ -92,14 +172,13 @@ def compute_metrics(run, baseline_run):
         # prod_k_str: Improvement in Continuation Structure
         metrics['prod_k_str'] = calc_prod('structToContStrSizes', m, baseline)
         
-        # prec_val_total: Combined Store + Literal Improvement
+        # prec_val_total: Combined Store + Literal Improvement (Standard Productivity)
         # Lit Hits = Base.Imprecise - New.Imprecise
-        # User requested using literal0CFATopCount
         b_lit_top = baseline.get('literal0CFATopCount', 0)
         n_lit_top = m.get('literal0CFATopCount', 0)
         l_hits = max(0, b_lit_top - n_lit_top)
         
-        # Base.numLitAddresses to be safe (should be static)
+        # Base.numLitAddresses to be safe
         l_total = baseline.get('numLitAddresses', 0)
         
         total_hits = s_hits + l_hits
@@ -107,10 +186,69 @@ def compute_metrics(run, baseline_run):
         
         metrics['prec_val_total'] = total_hits / total_items if total_items > 0 else 0.0
 
+        # --- NEW METRICS ---
+        
+        # 1. Real Precision (Count <= 1 or Missing, relative to Baseline)
+        
+        # Store Real
+        s_real_hits, s_real_total = calc_precise_stats('storeToStrSizes', m, baseline)
+        
+        # Literals Real
+        # Use BASELINE numLitAddresses to ensure comparability
+        l_total = baseline.get('numLitAddresses', 0)
+        n_lit_top = m.get('literal0CFATopCount', 0)
+        # Real Hits = Total (Static) - Top (Dynamic/Static Imprecise)
+        l_real_hits = max(0, l_total - n_lit_top)
+        
+        # Combined Value Real (Store + Literals)
+        total_real_hits = s_real_hits + l_real_hits
+        total_real_denom = s_real_total + l_total
+        metrics['prec_val_real'] = total_real_hits / total_real_denom if total_real_denom > 0 else 0.0
+        
+        # 2. Absolute Improvement (Baseline Precision + Gain)
+        
+        # Store Abs Impr
+        s_abs_impr_hits, s_total_abs = calc_abs_impr_stats('storeToStrSizes', m, baseline)
+        
+        # Literal Abs Impr
+        # For Literals, "Gain" is reducing Top count. 
+        # Baseline Precise = l_total - b_lit_top
+        # Gain = max(0, b_lit_top - n_lit_top)
+        # Sum = l_total - b_lit_top + b_lit_top - n_lit_top = l_total - n_lit_top
+        # This is exactly l_real_hits.
+        l_abs_impr_hits = l_real_hits
+        
+        # Combined Value Abs Impr (Store + Literals)
+        total_abs_impr_hits = s_abs_impr_hits + l_abs_impr_hits
+        total_abs_denom = s_total_abs + l_total
+        metrics['prec_val_abs_impr'] = total_abs_impr_hits / total_abs_denom if total_abs_denom > 0 else 0.0
+
+        # Continuation Real
+        c_real_hits, c_real_total = calc_precise_stats('structToContStrSizes', m, baseline)
+        metrics['prec_cont_real'] = c_real_hits / c_real_total if c_real_total > 0 else 0.0
+
+        # Continuation Absolute Improvement
+        c_abs_impr_hits, c_total = calc_abs_impr_stats('structToContStrSizes', m, baseline)
+        metrics['prec_cont_abs_impr'] = c_abs_impr_hits / c_total if c_total > 0 else 0.0
+        
+        # Remove/Zero out intermediate single-component metrics to avoid confusion if not needed
+        # or keep them if useful for debugging, but ensure main ones are correct.
+        metrics['prec_struct_real'] = s_real_hits / s_real_total if s_real_total > 0 else 0.0
+        metrics['prec_struct_abs_impr'] = s_abs_impr_hits / s_total_abs if s_total_abs > 0 else 0.0
+        
+        # Add raw literal counts for debugging
+        metrics['numLitAddresses'] = l_total
+        metrics['literal0CFATopCount'] = n_lit_top
+
+
     else:
         metrics['prec_struct'] = 0.0
         metrics['prod_k_str'] = 0.0
         metrics['prec_val_total'] = 0.0
+        metrics['prec_val_real'] = 0.0
+        metrics['prec_val_abs_impr'] = 0.0
+        metrics['prec_cont_real'] = 0.0
+        metrics['prec_cont_abs_impr'] = 0.0
 
     return metrics
 
@@ -145,9 +283,16 @@ def load_results_with_baselines(base_dir="benchmarks/results-cached"):
         # Find baseline: kcfa d=0 m=0
         baseline = None
         for r in runs:
-            if r.get('variant') == 'kcfa' and str(r.get('d')) == '0' and str(r.get('m')) == '0':
+            if r.get('variant') == 'kcfa' and str(r.get('d')) == '0':
                 baseline = r
                 break
+        
+        # Fallback to dmcfar d=0 m=1 if kcfa missing
+        if not baseline:
+            for r in runs:
+                 if r.get('variant') == 'dmcfar' and str(r.get('d')) == '0' and str(r.get('m')) == '1':
+                     baseline = r
+                     break
         
         # If no strict 0-CFA found, try to find "lowest" configuration?
         # Typically 0-CFA should exist if the suite was run.
@@ -214,15 +359,39 @@ def prepare_tradeoff_data(results, config1, config2, metrics):
     df_pivot.columns = [f"{col[0]}_{col[1]}" for col in df_pivot.columns]
     df_pivot = df_pivot.reset_index()
     
+    # DEBUG
+    # print("Pivot Columns:", df_pivot.columns.tolist())
+    
     # Map back to generic names for easier plotting
     # e.g., 'Cost_Base', 'Cost_New', 'Prec_Base', 'Prec_New'
     rename_map = {}
     for metric_name, col_name in metrics.items():
-        rename_map[f"{col_name}_{config1['label']}"] = f"{metric_name}_Base"
-        rename_map[f"{col_name}_{config2['label']}"] = f"{metric_name}_New"
+        # Check if columns exist
+        base_col = f"{col_name}_{config1['label']}"
+        new_col = f"{col_name}_{config2['label']}"
+        if base_col not in df_pivot.columns:
+             # This happens if one config is missing entirely or metric is missing
+             # print(f"Warning: {base_col} not found in pivot")
+             pass
+        else:
+             rename_map[base_col] = f"{metric_name}_Base"
+             
+        if new_col not in df_pivot.columns:
+             pass
+        else:
+             rename_map[new_col] = f"{metric_name}_New"
     
     df_final = df_pivot.rename(columns=rename_map)
     df_final = df_final.dropna() # Only keep benchmarks present in both
+    
+    # Calculate Gain and Ratio
+    # Note: Cost_New/Cost_Base depends on metric direction
+    # But usually ratio of New/Base is standard.
+    # Precision Gain = New - Base
+    
+    df_final['Prec_Gain'] = df_final['Precision_New'] - df_final['Precision_Base']
+    df_final['Cost_Ratio'] = df_final['Cost_New'] / df_final['Cost_Base']
+    
     return df_final
 
 def get_tradeoff_color(prec_gain, cost_ratio):

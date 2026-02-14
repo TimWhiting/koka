@@ -8,65 +8,88 @@ from plot_utils import load_results_with_baselines, prepare_tradeoff_data, get_t
 
 # Load results
 print("Loading results with sophisticated metrics...")
-results = load_results_with_baselines("benchmarks/results-cached")
-
 # Configs to compare
 c_base = {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'}
 c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
 
-# Metrics mapping: {'DesiredName': 'ColumnNameInResults'}
-metrics = {
-    'Precision': 'prec_val_total',
-    'Cost': 'Time'
-}
-
-# Prepare Data
-df_final = prepare_tradeoff_data(results, c_base, c_new, metrics)
-
-# Add "Improvement" columns for filtering/coloring
-df_final['Prec_Gain'] = df_final['Precision_New'] - df_final['Precision_Base']
-df_final['Cost_Ratio'] = df_final['Cost_New'] / df_final['Cost_Base']
-
-print(f"Plotting {len(df_final)} common benchmarks.")
-
-# Plot
-plt.figure(figsize=(10, 8))
-sns.set_theme(style="whitegrid")
-
-# Create connected scatter plot
-for i, row in df_final.iterrows():
-    # Cost for time: Cost Ratio < 1.0 is Better (Faster)
-    # get_tradeoff_color expects "Cost", where lower is better. 
-    # Time ratio < 1.0 means New is faster (lower cost).
-    
-    color, alpha = get_tradeoff_color(row['Prec_Gain'], row['Cost_Ratio'])
-    
-    p0 = (row['Cost_Base'], row['Precision_Base'])
-    p1 = (row['Cost_New'], row['Precision_New'])
-    
-    plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=alpha, linewidth=1)
-    
-    # Plot points
-    plt.scatter(p0[0], p0[1], color='gray', s=10, alpha=0.5) 
-    plt.scatter(p1[0], p1[1], color=color, s=20, alpha=0.8) 
-
-# Improve axes
-plt.xscale('log')
-plt.xlabel("Analysis Time (s, Log Scale)")
-plt.ylabel("Value Precision Improvement (Store + Literals)")
-plt.title("Expert Trade-off: Time Cost vs Value Precision Gain")
-
-# Add manual legend
-legend_elements = [
-    Line2D([0], [0], color='green', lw=2, label='Win-Win (Better Prec & Faster)'),
-    Line2D([0], [0], color='blue', lw=2, label='Trade-off (Better Prec & Slower)'),
-    Line2D([0], [0], color='red', lw=2, label='Regression (Worse Prec)'),
-    Line2D([0], [0], marker='o', color='gray', label='1-kCFA Start', markersize=5, linestyle='None'),
-    Line2D([0], [0], marker='o', color='black', label='1,1-HMCFAR End', markersize=5, linestyle='None')
+# Metrics mapping: {'DesiredName': 'ColumnNameInResults', 'Filename': 'savename'}
+metrics_to_plot = [
+    {'Name': 'Value Precision Improvement (Store + Literals)', 'Col': 'prec_val_total', 'File': 'plot_expert_time_productivity.png'},
+    {'Name': 'Value Precision (Absolute via Improvement)', 'Col': 'prec_val_abs_impr', 'File': 'plot_expert_time_abs_impr.png'},
+    {'Name': 'Value Precision (Real)', 'Col': 'prec_val_real', 'File': 'plot_expert_time_real.png'},
+    {'Name': 'Continuation Precision Improvement', 'Col': 'prod_k_str', 'File': 'plot_expert_time_cont_productivity.png'},
+    {'Name': 'Continuation Precision (Absolute via Improvement)', 'Col': 'prec_cont_abs_impr', 'File': 'plot_expert_time_cont_abs_impr.png'},
+    {'Name': 'Continuation Precision (Real)', 'Col': 'prec_cont_real', 'File': 'plot_expert_time_cont_real.png'}
 ]
-plt.legend(handles=legend_elements, loc='upper left')
-plt.tight_layout()
 
-output_path = "benchmarks/new_analysis/plot_expert_time_productivity.png"
-plt.savefig(output_path)
-print(f"Saved {output_path}")
+# Baseline: 1-kCFA (d=0, m=1)
+c_base = {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'}
+c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
+
+# Load results using shared util
+# This caches results so subsequent calls are fast
+print("Loading results with sophisticated metrics...")
+df_final = load_results_with_baselines()
+
+# Process each metric
+for m_info in metrics_to_plot:
+    metric_name = m_info['Name']
+    col_name = m_info['Col']
+    filename = m_info['File']
+    
+    print(f"Plotting {metric_name}...")
+    
+    try:
+        # Pass metrics map expected by prepare_tradeoff_data
+        metrics_map = {'Cost': 'Time', 'Precision': col_name}
+        plot_df = prepare_tradeoff_data(df_final, c_base, c_new, metrics_map)
+    except KeyError:
+        print(f"Skipping {metric_name}: Column {col_name} not found.")
+        continue
+
+    print(f"Plotting {len(plot_df)} common benchmarks.")
+
+    # Calculate Gain and Ratio which were removed
+    plot_df['Prec_Gain'] = plot_df['Precision_New'] - plot_df['Precision_Base']
+    plot_df['Cost_Ratio'] = plot_df['Cost_New'] / plot_df['Cost_Base']
+
+    plt.figure(figsize=(10, 6))
+    sns.set_theme(style="whitegrid")
+
+    for i, row in plot_df.iterrows():
+        # Cost for time: Cost Ratio < 1.0 is Better (Faster)
+        # get_tradeoff_color expects "Cost", where lower is better. 
+        
+        color, alpha = get_tradeoff_color(row['Prec_Gain'], row['Cost_Ratio'])
+        
+        p0 = (row['Cost_Base'], row['Precision_Base'])
+        p1 = (row['Cost_New'], row['Precision_New'])
+        
+        plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=alpha, linewidth=1)
+        
+        # Plot points
+        plt.scatter(p0[0], p0[1], color='gray', s=10, alpha=0.5) 
+        plt.scatter(p1[0], p1[1], color=color, s=20, alpha=0.8) 
+
+    # Improve axes
+    plt.xscale('log')
+    plt.xlabel("Analysis Time (s, Log Scale)")
+    plt.ylabel(metric_name)
+    plt.title(f"Expert Trade-off: Time Cost vs {metric_name}")
+
+    # Add manual legend
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='green', lw=2, label='Win-Win (Better Prec, Faster)'),
+        Line2D([0], [0], color='blue', lw=2, label='Trade-off (Better Prec, Slower)'),
+        Line2D([0], [0], color='red', lw=2, label='Regression (Worse Prec)'),
+        Line2D([0], [0], color='gray', lw=2, label='Efficiency Change (Same Prec)'),
+    ]
+    plt.legend(handles=legend_elements, loc='best')
+
+    plt.tight_layout()
+    plt.savefig(f"benchmarks/new_analysis/{filename}")
+    print(f"Saved benchmarks/new_analysis/{filename}")
+
+# Do not run main logic again outside loop
+exit()
