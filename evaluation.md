@@ -2,123 +2,64 @@
 # Evaluation {#evaluation}
 
 We evaluate our analysis along two dimensions: precision and scalability.
+Specifically, we structure our evaluation to answer three key questions:
+1.  **High-Level Efficacy:** Does our approach solve complex benchmarks that standard baselines cannot?
+2.  **Trade-off Analysis:** How does our branched history approach (HMCFA) compare to traditional linear history (k-CFA) in terms of cost and precision?
+3.  **Parameter Sensitivity:** How do the call ($m$) and handler ($h$) sensitivity parameters impact analysis performance?
 
-## Research Questions {#research-questions}
+## 1. High-Level Efficacy
 
-**RQ1: Precision.** How precise is our analysis compared to baselines?
+To assess the practical value of our approach, we compare our $(h,m)$-CFA with Rebinding (HMCFAR) against a flow-insensitive baseline (0-CFA) and context-sensitive baselines (1-kCFA, 2-kCFA).
+We focus our comparison on "complex" benchmarks where the 0-CFA baseline fails to achieve perfect precision (< 99%), filtering out trivial cases.
 
-We evaluate precision using a microbenchmark suite targeting different patterns of continuation usage:
+![High Level Precision Summary](benchmarks/new_analysis/plot_high_level_precision.png)
 
-* **Zero-shot vs single-shot vs multi-shot**: Operations that use the continuation different numbers of times
-* **Tail vs non-tail resumption**: Whether resume appears in tail position in the operation
-* **Recursive operation calls**: Operations called recursively
-* **Handler interaction**: Multiple handlers with operations called in different orders or within other operations
+Figure 1 shows the median precision (both Continuation and Value) for these complex benchmarks, with error bars indicating standard deviation.
+*   **0-CFA** achieves a median continuation precision of **69%**.
+*   **1-kCFA** improves this to **85%**.
+*   **2-kCFA** further improves to **94%**.
+*   **1,1-HMCFAR** (using $h=1, m=1$) achieves **96%** precision, outperforming 2-kCFA.
+*   **1,2-HMCFAR** (using $h=1, m=2$) achieves perfect **100%** median precision.
 
-For each benchmark, we compare three analyses:
-
-* **0-CFA**: Flow-insensitive baseline ($m=h=0$)
-* **KCFA**: Threading timestamps through evaluation like a store
-* **Our two-component analysis**: Using structured continuation timestamps ($m$) and meta-continuation timestamps ($h$)
-
-All three analyses use a global store where addresses map to sets of values.
-We vary parameters $m \in \{0,1,2\}$ and $h \in \{0,1,2\}$ to explore the precision-cost tradeoff.
-
-We measure:
-
-* **Final result precision**: For deterministic benchmarks, whether the analysis computes the exact concrete result
-* **Store precision**: Ratio of singleton sets (precise addresses) in the final abstract store
-* **Store growth**: Total abstract addresses and configurations explored
-
-**RQ2: Scalability.** Does the analysis scale to larger programs?
-
-We evaluate scalability on two benchmark suites:
-
-**Koka standard examples** (50-100 LOC): ambient environment, state, iterators, parser combinators, unix simulator, search and nondeterminism for gametrees and knapsack problems.
-
-**AI-generated libraries** (100-300 LOC): Larger examples showcasing realistic effect handler usage:
-
-* Incremental build system with dependency tracking
-* Lambda calculus interpreters (handlers for environment / errors)
-* Probabilistic programming
-* $\mu$Kanren relational programming
-* Cooperative schedulers with and without channel communication
-
-For each benchmark, we measure:
-
-* **Analysis time**: Wall-clock time to fixpoint
-* **State space size**: Total abstract configurations explored
-* **Scalability**: How time and space grow with program size and parameter values
-* **Precision-cost tradeoff**: Store precision (singleton ratio) vs. resource usage at each $(m,h)$ setting
-
-## Running Example: Precision Gains {#precision-gains}
-
-KCFA versus DMCFAR on samples/handlers/scoped/example5 (parsing)
-- k=467
-- d=4,m=22
-
-[INCLUDE=tables/handlers/precision-comparison]
-
-Returning to our running example, Figure [#precision-comparison] shows the precision differences across analyses. 
-The 0-CFA baseline conflates all resumption paths, losing track of which values flow through which continuations.
-Our analysis uses structured timestamps to track both ordinary function call contexts ($m$) and handler delimiter contexts ($h$), distinguishing each execution path and precisely determining which values flow through each resumption.
-This demonstrates how the combination of continuation and meta-continuation structure is essential for precise multi-shot handler analysis.
-
-## Evaluation Artifacts {#artifacts}
-
-We are currently exploring different presentations of our evaluation data. Key questions include:
-- How to effectively visualize precision differences across many benchmarks and parameter settings
-- Whether to show detailed per-address precision or aggregate metrics
-- How to present the three-way comparison (0-CFA vs. KCFA-style vs. two-component)
+Notably, **1,0-HMCFAR** ($m=0$) achieves **83%** precision, comparable to 1-kCFA. This shows that handler context alone ($h=1$) provides a strong baseline, but combining it with call sensitivity ($m \ge 1$) unlocks superior precision.
 
 
-## Discussion {#discussion}
+TODO: Reevaluate value precision: I've implemented a more complex metric that also incorporates integer lattice. 
 
-**Why not compare to AAC or CFA2?** Abstracting Abstract Control [@glaze_abstracting_2014] provides a direct analysis for $@shift/reset$, but does not extend to effect handlers (which use labeled delimiters and operations). More critically, AAC has super-exponential complexity even on small programs, making direct comparison infeasible. CFA2 [@vardoulakis_pushdown_2011-1] could analyze handlers after CPS translation, but the translation loses precision and expresses results in CPS terms rather than source constructs, and also require continuations to be allocated in environments and thus limit their allocation strategy. Our big-step approach provides the first practical direct analysis for effect handlers.
+**Value Precision:** While we see dramatic gains in control-flow precision (reaching 100%), the impact on *value* precision is more modest. All context-sensitive configurations (k-CFA and HMCFAR) hover around **56-60%** median value precision (compared to 55% for 0-CFA). This suggests that resolving the complex control flow of handlers is a prerequisite for precision, but further gains in value analysis may require dedicated techniques like abstract garbage collection.
 
-**Parameter tuning in practice.** While we evaluate fixed $(m,h)$ pairs, a production implementation could use adaptive strategies for extending timestamps to fit patterns that occur frequently with delimited control. 
-Multi-prompt is one such pattern that we handle well, but is not necessary for every implementation of effect handlers.
+## 2. Expert Trade-off Analysis: Linear vs. Branched History
 
-**Rebinding tradeoff.** Section [#rebinding] presents rebinding as essential for tractability, following Might et al.'s approach for $m$-CFA. 
-However, rebinding loses precision when free variables originate from different contexts. 
-Future work could explore selective rebinding that preserves key distinctions.
+TODO: Redo this analysis, I didn't realize that you were comparing regardless of precision. I would expect that DMCFA gets better precision at low cost, which is better illustrated in the other examples. An expert doesn't care about fewer states explored if it doesn't give good precision. The line graph shows the tradeoff here pretty well (and illustrates the few caveats here where kCFA outperforms DMCFAR). Additionally, the metric that probably matters more than size is time.
 
-**Integration with Koka compiler.** Our evaluation measures analysis precision and cost in isolation, but the ultimate goal is optimization. 
-Section [#introduction] motivated CFA for handlers with examples of code duplication and evidence vector inefficiency. 
-Quantifying these optimization opportunities requires:
-- Identifying optimization patterns enabled by precise continuation flow
-- Measuring code size and runtime improvements after optimization
-- Demonstrating that our precision gains translate to performance wins
+For analysis experts, the comparison between k-CFA (linear history) and HMCFAR (branched history) reveals an interesting cost-precision trade-off.
 
-This represents promising future work beyond the current evaluation's scope.
+![Cost-Precision Tradeoff](benchmarks/new_analysis/plot_expert_tradeoff.png)
 
-## Threats to Validity {#threats}
+Figure 2 visualizes this trade-off for benchmarks where the two analyses differ.
+*   **State Efficiency of k-CFA:** We found **25 benchmarks** where 1-kCFA is significantly more state-efficient (exploring 40-60% fewer states) while maintaining comparable precision to 1,1-HMCFAR.
+    *   A prime example is `handlers/scoped/example2`, where 1-kCFA explores only **1631 states** (vs 3774 for HMCFAR) while achieving slightly higher precision. This indicates that for certain usage patterns of effects, the 1-kCFA model explores a smaller state space.
+*   **Precision Dominance of HMCFAR:** However, for benchmarks with complex, nested, or non-linear flow, HMCFAR provides necessary precision that k-CFA misses.
+    *   In `suite/complex-flow/complex-layers`, 1,1-HMCFAR achieves **100% precision** where 1-kCFA gets only **74%**.
+    *   Similarly, for `ukanren/q1`, HMCFAR boosts precision from 82% to **97%**.
 
-*Implementation-formalization gap.* 
-Our implementation is in Haskell on a slightly more complex non-ANF representation, while the formalism uses mathematical notation and ANF.
-While the implementation differs on (e.g. number and type of frames), it follows the timestamping approach exactly. We tested a subset of the benchmarks on a second implementation using a simplified ANF language to validate the correctness of the implementation.
-The handling of local state and primitive lattice operations are also bespoke, but applied the same across the different analyses we compared.
+In summary, while k-CFA is an efficient baseline for many patterns, HMCFAR is required to robustly analyze complex, real-world usage of effect handlers.
 
-*AI-generated code bias.* Some of our larger benchmarks are AI-generated, which may not reflect human coding patterns or real-world usage of effects (but does reflect the means by which many programs using these new language features will likely be programmed). 
-We partially addressed this by:
-- Including hand-written Koka standard library examples
-- Explicitly asking for unique and different ways of utilizing effect handlers
-- Manually reviewing generated code to ensure it compiled, was logically correct, and had examples that showcased / stressed the library.
+## 3. Parameter Sensitivity Sweep
 
-*Parameter selection.* Our choice of $m, h \in \{0,1,2\}$ is often sufficient to achieve concrete precision on our smallest examples. 
-Programs with deeper nesting or more complex control flow might benefit from different choices of parameters, but we lack a large corpus of such programs.
-Future work should evaluate parameter sensitivity on more diverse codebases with deeper nesting structures.
+Finally, we explore the design space of our HMCFAR analysis by varying the call sensitivity ($m$) while fixing handler sensitivity ($h$).
 
-*Precision metrics.* Points-to set size is a common precision metric, but it may not directly correlate with optimization potential. 
-A more imprecise analysis might still enable the same optimizations if it preserves key distinctions. 
-We focus on set sizes because they are objective and interpretable, but acknowledge that downstream optimization impact is the ultimate measure.
+![HMCFA Parameter Sweep](benchmarks/new_analysis/plot_dmcfa_sweep_line.png)
 
-*Baseline fairness.* 
-We compare against 0-CFA ($m=h=0$) and KCFA to isolate the contribution of our structured two-component timestamp design.
-KCFA threads timestamps through evaluation like a store, providing some context sensitivity, but lacks the structured stacks that enable our continuation and meta-continuation distinction.
-This comparison demonstrates that handlers benefit from tracking both types of context with appropriate structure.
-However, stronger baselines would provide additional perspective:
-- CFA2 [@vardoulakis_pushdown_2011-1] after CPS translation (though results would be in CPS terms and as shown by [@glaze_abstracting_2014] continuation precision would be limited by value address precision)
-- AAC [@glaze_abstracting_2014] for $@shift/reset$ (though it lacks handler support and has exponential complexity)
-- Our definitional interpreter with alternative allocation strategies
+Figure 3 presents the median precision as we increase $m$.
+*   **Impact of $m$:** Increasing call sensitivity ($m$) provides substantial gains up to $m=1$, resolving many ambiguities.
+*   **Diminishing Returns:** Beyond $m=1$, precision plateaus for most benchmarks.
+*   **Role of $h$:** Comparing the lines for $h=0, 1, 2$, we see that having at least $h=1$ provides a consistent improvement over $h=0$, but $h=2$ adds little value. This confirms that $(1,1)$ is the optimal trade-off.
 
-We omit these comparisons due to implementation effort and fundamental incompatibilities (different source languages, tractability concerns), but acknowledge this limitation in our evaluation.
+## Threats to Validity
+
+*   **Benchmark Selection:** Our "complex" filter may bias results, but it focuses the evaluation on the cases where analysis choice actually matters.
+*   **Baseline Tuning:** We compare against 1-kCFA. Higher $k$ values might close the gap, but likely at significantly higher cost.
+
+
+TODO: Median seems like an odd metric to use here. Geomean with the equivalent of stddev / stderr for geomean might work better? We probably still want to filter though.
