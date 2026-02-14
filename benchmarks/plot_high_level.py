@@ -28,7 +28,7 @@ def get_metrics(run):
     prec = precise/num_cont if num_cont > 0 else 1.0
     
     num_store = sm.get('numStructAddresses', 0) + sm.get('numLitAddresses', 0)
-    precise_val = sm.get('valStrSingletons', 0) + (sm.get('numLitAddresses', 0) - sm.get('literalTopCount', 0))
+    precise_val = sm.get('valStrSingletons', 0) + (sm.get('numLitAddresses', 0) - sm.get('literal0CFATopCount', 0))
     val_prec = precise_val/num_store if num_store > 0 else 1.0
     
     return sm.get('numTotalFixInputStates', 0), prec, val_prec
@@ -128,118 +128,85 @@ print("\nMedian Precision Summary:")
 print(summary_median)
 
 # Plot
-plt.figure(figsize=(12, 7))
-sns.set_theme(style="whitegrid")
-
-# We want Assymetric Error Bars: Upper = GMean * GSD, Lower = GMean / GSD
-# yerr needs to be (2, N) where row 0 is lower errors (Mean - Lower), row 1 is upper errors (Upper - Mean)
-
-# To plot with hue and custom error bars in Seaborn is hard.
-# We will use sns.barplot to draw the bars (height=GMean) and then loop to draw error bars?
-# Or we can just use the 'ci' from bootstrap if we define a custom estimator?
-# The user asked for "equivalent of stddev", so GSD interval is best.
-# Bootstrapping gmean is also valid and easier in Seaborn: errorbar=('ci', 95), estimator=gmean.
-# But user specifically asked for "stddev equivalent".
-# Let's try to pass errorbar=None and add them manually, or use matplotlib directly.
-
-# Simplified: Use bootstrap CI for Geomean. It is statistically sound and "equivalent" in spirit (uncertainty).
-# User said: "equivalent of stddev / stderr for geomean".
-# GSD matches this best. 
-# Let's compute yerr manually and plot.
-
+# Define order fixed
 order = ['0-CFA', '1-kCFA', '2-kCFA', '1,0-HMCFAR', '1,1-HMCFAR', '1,2-HMCFAR']
 
-# Bar chart of Geomean Precision without error bars first
-ax = sns.barplot(x='Configuration', y='PrecisionValue', hue='MetricType', data=df_long,
-                 order=order,
-                 palette="viridis", estimator=geometric_mean, errorbar=None)
-
-# Add error bars manually
-# We need to iterate bars and find corresponding GSD
-# This depends on the exact order of patches.
-# Seaborn plots hue groups together... actually it interleaves them?
-# Let's rely on matching coordinates.
-
-# Collect data for simple lookup
-lookup = summary.set_index(['Configuration', 'MetricType'])
-
-for i, p in enumerate(ax.patches):
-    # Identify bar
-    height = p.get_height()
-    if height == 0 or np.isnan(height): continue
+# Plotting Function
+def plot_precision(data, metric_col, error_col_lower, error_col_upper, title, filename, ylabel):
+    plt.figure(figsize=(12, 7))
+    sns.set_theme(style="whitegrid")
     
-    # Get config from x-tick
-    # x-ticks are 0, 1, 2...
-    # The patch x position tells us which hue it is.
-    # But seaborn behavior varies.
-    # Robust way: iterate (Config, Type) in the order seaborn plots them.
-    # Seaborn plots all bars for Hue=0, then all bars for Hue=1? No, usually nested.
-    pass 
-
-# Actually, standard Seaborn barplot with hue plots:
-# Group 1 (Config 1): Bar 1 (Hue 1), Bar 2 (Hue 2)...
-# No, Seaborn < 0.12 often plotted all hue 1 bars then all hue 2 bars.
-# Seaborn >= 0.12 (check version? assume recent).
-# Let's try a safer approach: Calculate error bars and use plt.errorbar based on bar centers.
-
-# Correct iteration:
-# Get x locations
-# For each patch:
-#   cx = p.get_x() + p.get_width()/2
-#   cy = height
-#   We need to know WHICH config and metric this is.
-#   We can deduce MetricType from the patch color or order?
-#   If we have 2 hue levels, ax.containers[0] is Hue 0, ax.containers[1] is Hue 1.
-
-hue_order = sorted(df_long['MetricType'].unique()) # Check if seaborn sorts? default is sorted?
-# Actually default is appearance order or sorted?
-# Let's specify hue_order explicitly to be safe.
-hue_order = ['Continuation Precision', 'Value Precision']
-
-# Re-plot to ensure order
-plt.clf()
-ax = sns.barplot(x='Configuration', y='PrecisionValue', hue='MetricType', data=df_long,
-                 order=order, hue_order=hue_order,
-                 palette="viridis", estimator=geometric_mean, errorbar=None)
-
-# Add error bars
-print(f"Number of containers: {len(ax.containers)}")
-print(f"Hue order: {hue_order}")
-
-for j, container in enumerate(ax.containers):
-    if j >= len(hue_order): break # Avoid index error if extra containers
-    metric = hue_order[j]
-    # Container has bars for each config in 'order'
-    for k, bar in enumerate(container):
-        if k >= len(order): continue
-        config = order[k]
-        # Look up
-        try:
-            row = lookup.loc[(config, metric)]
-            gm = row['GMean']
-            gsd = row['GSD']
+    # We use hue_order corresponding to MetricType
+    hue_order = ['Continuation Precision', 'Value Precision']
+    
+    ax = sns.barplot(x='Configuration', y=metric_col, hue='MetricType', data=data,
+                     order=order, hue_order=hue_order,
+                     palette="viridis")
+    
+    # Add error bars
+    if error_col_lower and error_col_upper:
+        for j, metric in enumerate(hue_order):
+            if j >= len(ax.containers): break
+            container = ax.containers[j]
             
-            lower = gm / gsd
-            upper = gm * gsd
-            
-            yerr_lower = gm - lower
-            yerr_upper = upper - gm
-            
-            ax.errorbar(bar.get_x() + bar.get_width()/2, gm, 
-                        yerr=[[yerr_lower], [yerr_upper]],
-                        fmt='none', c='black', capsize=5)
-            
-            # Annotate
-            ax.annotate(f'{gm:.2f}', (bar.get_x() + bar.get_width() / 2., gm),
-                        ha='center', va='bottom', xytext=(0, 5), textcoords='offset points', fontsize=10)
-        except KeyError:
-            pass
+            for k, bar in enumerate(container):
+                if k >= len(order): continue
+                config = order[k]
+                
+                row = data[(data['Configuration'] == config) & (data['MetricType'] == metric)]
+                if row.empty: continue
+                
+                val = row[metric_col].values[0]
+                lower = row[error_col_lower].values[0]
+                upper = row[error_col_upper].values[0]
+                
+                # yerr relative to val
+                yerr_lower = val - lower
+                yerr_upper = upper - val
+                
+                if pd.isna(yerr_lower) or pd.isna(yerr_upper): continue
 
-ax.set_title(f"Geometric Mean Precision (N={len(complex_bench_names)})", fontsize=14)
-ax.set_ylabel("Geomean Precision", fontsize=12)
-ax.set_ylim(0, 1.15) # More space for annotations
-# ax.legend(title="Precision Type") # Already there
+                ax.errorbar(bar.get_x() + bar.get_width()/2, val, 
+                            yerr=[[yerr_lower], [yerr_upper]],
+                            fmt='none', c='black', capsize=5)
+                
+                # Annotate
+                ax.annotate(f'{val:.2f}', (bar.get_x() + bar.get_width() / 2., val),
+                            ha='center', va='bottom', xytext=(0, 5), textcoords='offset points', fontsize=10)
 
-plt.tight_layout()
-plt.savefig("benchmarks/new_analysis/plot_high_level_precision.png")
-print("Saved plot_high_level_precision.png")
+    else:
+        # Just annotate values
+         for j, metric in enumerate(hue_order):
+            if j >= len(ax.containers): break
+            container = ax.containers[j]
+            for k, bar in enumerate(container):
+                if k >= len(order): continue
+                config = order[k]
+                row = data[(data['Configuration'] == config) & (data['MetricType'] == metric)]
+                if row.empty: continue
+                val = row[metric_col].values[0]
+                ax.annotate(f'{val:.2f}', (bar.get_x() + bar.get_width() / 2., val),
+                            ha='center', va='bottom', xytext=(0, 5), textcoords='offset points', fontsize=10)
+
+    ax.set_title(title, fontsize=14)
+    ax.set_ylabel(ylabel, fontsize=12)
+    ax.set_ylim(0, 1.15)
+    plt.tight_layout()
+    plt.savefig(filename)
+    print(f"Saved {filename}")
+
+# 1. Geomean Plot
+# Prepare error columns
+summary['Lower'] = summary['GMean'] / summary['GSD']
+summary['Upper'] = summary['GMean'] * summary['GSD']
+
+plot_precision(summary, 'GMean', 'Lower', 'Upper',
+               f"Geometric Mean Precision (N={len(complex_bench_names)})",
+               "benchmarks/new_analysis/plot_high_level_precision_geomean.png",
+               "Geomean Precision")
+
+# 2. Median Plot
+plot_precision(summary_median, 'Median', None, None,
+               f"Median Precision (N={len(complex_bench_names)})",
+               "benchmarks/new_analysis/plot_high_level_precision_median.png",
+               "Median Precision")

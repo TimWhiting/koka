@@ -35,11 +35,11 @@ for config in configs:
         (df_filtered['m'] == config['m'])
     ]
     for _, row in subset.iterrows():
-        # Metric 1: Store Precision Improvement (prec_struct)
+        # Metric 1: Value Precision Improvement (prec_val_total)
         filtered_data.append({
             'Configuration': config['label'],
-            'MetricType': 'Store Precision (Improvement)',
-            'Value': row['prec_struct']
+            'MetricType': 'Value Precision (Improvement)',
+            'Value': row['prec_val_total']
         })
         # Metric 2: Continuation Precision Improvement (prod_k_str)
         filtered_data.append({
@@ -54,8 +54,8 @@ df_long = pd.DataFrame(filtered_data)
 # Use Arithmetic Mean for Productivity (Average Relative Improvement)
 # Geometric Mean penalizes algorithms that improve more benchmarks if those improvements are small.
 
-# prec_struct uses mean
-df_struct = df_long[df_long['MetricType'] == 'Store Precision (Improvement)']
+# prec_val_total uses mean
+df_struct = df_long[df_long['MetricType'] == 'Value Precision (Improvement)']
 summary_struct = df_struct.groupby(['Configuration', 'MetricType'])['Value'].mean().reset_index()
 summary_struct_se = df_struct.groupby(['Configuration', 'MetricType'])['Value'].sem().reset_index()
 summary_struct = pd.merge(summary_struct, summary_struct_se, on=['Configuration', 'MetricType'], suffixes=('_mean', '_se'))
@@ -66,70 +66,72 @@ summary_cont = df_cont.groupby(['Configuration', 'MetricType'])['Value'].mean().
 summary_cont_se = df_cont.groupby(['Configuration', 'MetricType'])['Value'].sem().reset_index()
 summary_cont = pd.merge(summary_cont, summary_cont_se, on=['Configuration', 'MetricType'], suffixes=('_mean', '_se'))
 
-# Combine
-summary = pd.concat([summary_struct, summary_cont], ignore_index=True)
+# Function to plot
+def plot_metric(data, metric_col, error_col, title, filename, ylabel):
+    plt.figure(figsize=(12, 7))
+    sns.set_theme(style="whitegrid")
+    
+    # Bar plot
+    ax = sns.barplot(data=data, x="Configuration", y=metric_col, hue="MetricType", order=order, hue_order=hue_order,
+                     palette="viridis")
+    
+    # Error bars
+    if error_col:
+        for j, metric in enumerate(hue_order):
+            if j >= len(ax.containers): break
+            container = ax.containers[j]
+            for k, bar in enumerate(container):
+                if k >= len(order): continue
+                config = order[k]
+                
+                row = data[(data['Configuration'] == config) & (data['MetricType'] == metric)]
+                if row.empty: continue
+                
+                val = row[metric_col].values[0]
+                err = row[error_col].values[0]
+                
+                if pd.isna(err): continue
+                
+                ax.errorbar(bar.get_x() + bar.get_width() / 2, val,
+                            yerr=err, fmt='none', c='black', capsize=5)
 
-print("\nProductivity Summary (Mean +/- SE):")
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', 1000)
-print(summary)
-
-# Plot
-plt.figure(figsize=(12, 7))
-sns.set_theme(style="whitegrid")
+    plt.title(title)
+    plt.ylabel(ylabel)
+    plt.xlabel("Analysis Configuration")
+    plt.legend(title="Metric", loc='upper left')
+    plt.tight_layout()
+    plt.savefig(filename)
+    print(f"Saved {filename}")
 
 # Define order (Exclude 0-CFA from plot as it is the baseline)
 order = [c['label'] for c in configs if c['label'] != '0-CFA']
-hue_order = ['Continuation Precision (Improvement)', 'Store Precision (Improvement)']
+hue_order = ['Continuation Precision (Improvement)', 'Value Precision (Improvement)']
 
-# Helper for plotting with mixed estimators?
-# sns.barplot doesn't support mixed estimators easily per hue.
-# We have computed summary stats already. We can plot from summary dataframe directly?
-# But we need bars side-by-side.
+# 1. Mean Plot
+print("\nProductivity Summary (Mean +/- SE):")
+print(summary_struct[['Configuration', 'Value_mean', 'Value_se']])
+print(summary_cont[['Configuration', 'Value_mean', 'Value_se']])
 
-# Let's use the summary DF for plotting to have total control
-# Summary has Configuration, MetricType, Value_mean, Value_se
-# Create a barplot of the means
-ax = sns.barplot(data=summary, x="Configuration", y="Value_mean", hue="MetricType", order=order, hue_order=hue_order,
-                 palette="viridis")
+# Combine Mean data
+summary_mean = pd.concat([summary_struct, summary_cont], ignore_index=True)
+plot_metric(summary_mean, 'Value_mean', 'Value_se', 
+            "High-Level Productivity (Mean Improvement over 0-CFA)", 
+            "benchmarks/new_analysis/plot_high_level_productivity_mean.png",
+            "Relative Improvement (Mean)")
 
-# Add error bars manually
-# We need to find the correct bar patches.
-# sns.barplot orders bars by hue then by x.
-# containers[0] is first hue level (Continuation)
-# containers[1] is second hue level (Store)
+# 2. Median Plot
+# Calculate Median
+summary_struct_med = df_struct.groupby(['Configuration', 'MetricType'])['Value'].median().reset_index()
+summary_cont_med = df_cont.groupby(['Configuration', 'MetricType'])['Value'].median().reset_index()
+summary_median = pd.concat([summary_struct_med, summary_cont_med], ignore_index=True)
+# Rename for plotting function
+summary_median = summary_median.rename(columns={'Value': 'Value_median'})
+summary_median['Value_err'] = 0 # No error bars for median for now
 
-for j, metric in enumerate(hue_order):
-    # Find the bars for this metric
-    # containers[j] lists bars for the j-th hue level
-    if j >= len(ax.containers): break
-    container = ax.containers[j]
-    
-    for k, bar in enumerate(container):
-        if k >= len(order): continue
-        config = order[k]
-        
-        row = summary[(summary['Configuration'] == config) & (summary['MetricType'] == metric)]
-        if row.empty: continue
-        
-        val_mean = row['Value_mean'].values[0]
-        val_se = row['Value_se'].values[0]
-        
-        if pd.isna(val_se): continue
+print("\nProductivity Summary (Median):")
+print(summary_median)
 
-        # Standard Error Bars
-        yerr = val_se
-            
-        ax.errorbar(bar.get_x() + bar.get_width() / 2, val_mean,
-                    yerr=yerr,
-                    fmt='none', c='black', capsize=5)
-
-plt.title("High-Level Productivity (Improvement over 0-CFA) on Complex Benchmarks (Mean +/- SE)")
-plt.ylabel("Relative Improvement (Productivity)")
-plt.xlabel("Analysis Configuration")
-plt.legend(title="Metric", loc='upper left')
-plt.tight_layout()
-
-output_path = "benchmarks/new_analysis/plot_high_level_productivity.png"
-plt.savefig(output_path)
-print(f"Saved {output_path}")
+plot_metric(summary_median, 'Value_median', None,
+            "High-Level Productivity (Median Improvement over 0-CFA)",
+            "benchmarks/new_analysis/plot_high_level_productivity_median.png",
+            "Relative Improvement (Median)")

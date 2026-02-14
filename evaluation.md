@@ -13,12 +13,21 @@ To assess the practical value of our approach, we compare our $(h,m)$-CFA with R
 We focus our comparison on "complex" benchmarks where the 0-CFA baseline fails to achieve perfect precision (< 99%), filtering out trivial cases.
 
 Figure 1 shows the **Productivity** (Average Relative Improvement over 0-CFA) for these simple-to-complex benchmarks.
-*   **Structural Precision:** 1,2-HMCFAR achieves the highest average improvement (**6.8%**), outperforming 1-kCFA (**5.8%**) and matching 2-kCFA (**6.7%**).
-*   **Continuation Precision:** 1,2-HMCFAR demonstrates a massive advantage with **32.3%** average improvement compared to 1-kCFA (**23.4%**), confirming its superior handling of complex control-flow.
+*   **Value Precision:** 1,2-HMCFAR achieves the highest average improvement (**6.9%**), outperforming 1-kCFA (**5.8%**) and 2-kCFA (**6.7%**).
+*   **Continuation Precision:** 1,2-HMCFAR demonstrates a massive advantage with **32.3%** average improvement compared to 1-kCFA (**23.4%**).
 
-**Discussion:** The new data confirms that HMCFAR (specifically with $m \ge 1$) provides robust improvement across the benchmark suite. The ability to distinguish return contexts allows HMCFAR to achieve significantly higher continuation precision, resolving control-flow ambiguities that k-CFA conflates.
+**Discussion:** The new data confirms that HMCFAR (specifically with $m \ge 1$) provides robust improvement across the benchmark suite.
 
-## 2. Expert Trade-off Analysis: Linear vs. Branched History
+### Part 2: Absolute Precision (Median)
+While productivity shows relative gains, absolute precision reveals typical performance.
+
+![Median Absolut![High Level Productivity (Mean)](plot_high_level_productivity_mean.png)_median.png)
+
+Figure 2 shows the **Median Absolute Precision** across complex benchmarks.
+*   **Continuation Precision:** 1,2-HMCFAR achieves a perfect **100% median precision**, solving the majority of benchmarks completely. In contrast, 1-kCFA achieves only **85%**, and 0-CFA drops to **69%**.
+*   **Value Precision:** HMCFAR also leads in value precision with **91%**, compared to **87%** for 1-kCFA.
+
+### Part 3: Expert Trade-off Analysis: Linear vs. Branched History
 
 For analysis experts, we compare k-CFA (linear history) and HMCFAR (branched history) across two dimensions: State Space and Analysis Time.
 
