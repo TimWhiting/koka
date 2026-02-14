@@ -15,14 +15,14 @@ def safe_gmean(x):
         return np.nan
     return gmean(pos)
 
-def calc_prod(metric, poly, base):
-    """Calculates productivity (fraction of refined values) relative to baseline."""
+def calc_prod_stats(metric, poly, base):
+    """Calculates productivity stats (hits, total) relative to baseline."""
     poly_map = poly.get(metric)
     base_map = base.get(metric)
     
     if not base_map: 
         if not poly_map:
-            return 0.0 # Both empty -> no improvement but also no loss
+            return 0, 0
         raise Exception("Do not call with empty baseline")
     
     hits = 0
@@ -32,14 +32,7 @@ def calc_prod(metric, poly, base):
         # Poly not there means that we found spurious / dead code in base -> always max improvement (0)
         poly_val = poly_map.get(x_id, 0) 
     
-        # Logic:
-        # 1. If Baseline is Top (-1):
-        #    - If Poly is NOT Top => Improvement (Hit)
-        #    - Else => No Improvement
-        # 2. If Baseline is Finite:
-        #    - If Poly is NOT Top AND Poly < Baseline => Improvement (Hit)
-        #    - Else => No Improvement
-        
+        # Logic matches calc_prod
         if base_val == -1:
             if poly_val is not None and poly_val != -1:
                 hits += 1
@@ -51,8 +44,13 @@ def calc_prod(metric, poly, base):
         
         total_relevant += 1
             
-    if total_relevant == 0: return 0.0
-    return hits / total_relevant
+    return hits, total_relevant
+
+def calc_prod(metric, poly, base):
+    """Calculates productivity fraction."""
+    hits, total = calc_prod_stats(metric, poly, base)
+    if total == 0: return 0.0
+    return hits / total
 
 def compute_metrics(run, baseline_run):
     """Computes precision metrics relative to baseline."""
@@ -73,36 +71,46 @@ def compute_metrics(run, baseline_run):
         return metrics
 
     # Absolute Precision (for filtering)
-    # Continuation Precision (Singletons / Total)
     num_cont = m.get('numContAddresses', 0)
     cont_single = m.get('cont0CFAStrSingletons', 0)
     metrics['AbsContPrecision'] = cont_single / num_cont if num_cont > 0 else 1.0
     
-    # Structural Precision (Singletons / Total)
     num_struct = m.get('numStructAddresses', 0)
     val_single = m.get('val0CFAStrSingletons', 0)
     metrics['AbsStructPrecision'] = val_single / num_struct if num_struct > 0 else 1.0
     
-    # State Space
     metrics['States'] = m.get('numTotalFixInputStates', 0)
 
-    # Relative Metrics (from analyze.py)
+    # Relative Metrics
     if baseline_run and baseline_run.get('storeMetrics'):
         baseline = baseline_run['storeMetrics']
         
         # prec_struct: Improvement in Store Structure
-        metrics['prec_struct'] = calc_prod('storeToStrSizes', m, baseline)
+        s_hits, s_total = calc_prod_stats('storeToStrSizes', m, baseline)
+        metrics['prec_struct'] = s_hits / s_total if s_total > 0 else 0.0
         
         # prod_k_str: Improvement in Continuation Structure
         metrics['prod_k_str'] = calc_prod('structToContStrSizes', m, baseline)
         
-        # prec_lit: Absolute Literal Precision
-        metrics['prec_lit'] = (m.get('numLitAddresses', 0) - m.get('literalTopCount', 0)) / m.get('numLitAddresses', 1) if m.get('numLitAddresses', 0) > 0 else 1.0
+        # prec_val_total: Combined Store + Literal Improvement
+        # Lit Hits = Base.Imprecise - New.Imprecise
+        # User requested using literal0CFATopCount
+        b_lit_top = baseline.get('literal0CFATopCount', 0)
+        n_lit_top = m.get('literal0CFATopCount', 0)
+        l_hits = max(0, b_lit_top - n_lit_top)
+        
+        # Base.numLitAddresses to be safe (should be static)
+        l_total = baseline.get('numLitAddresses', 0)
+        
+        total_hits = s_hits + l_hits
+        total_items = s_total + l_total
+        
+        metrics['prec_val_total'] = total_hits / total_items if total_items > 0 else 0.0
+
     else:
-        # No baseline -> Relative metrics are 0?
         metrics['prec_struct'] = 0.0
         metrics['prod_k_str'] = 0.0
-        metrics['prec_lit'] = 0.0 # Default
+        metrics['prec_val_total'] = 0.0
 
     return metrics
 
@@ -234,7 +242,7 @@ def get_tradeoff_color(prec_gain, cost_ratio):
     else:
         # Comparable precision
         if cost_ratio < 1.0:
-            return 'green', 0.4 # Efficiency Gain
+            return 'gray', 0.4 # Efficiency Gain (same prec) - Keep gray to avoid confusion with Prec gain
         elif cost_ratio > 1.0:
             return 'gray', 0.4 # Efficiency Loss (not quite Regression)
         return 'gray', 0.3

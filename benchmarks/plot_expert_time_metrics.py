@@ -16,7 +16,7 @@ c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
 
 # Metrics mapping: {'DesiredName': 'ColumnNameInResults'}
 metrics = {
-    'Precision': 'prec_struct',
+    'Precision': 'prec_val_total',
     'Cost': 'Time'
 }
 
@@ -53,7 +53,7 @@ for i, row in df_final.iterrows():
 # Improve axes
 plt.xscale('log')
 plt.xlabel("Analysis Time (s, Log Scale)")
-plt.ylabel("Value Precision Improvement (over 0-CFA)")
+plt.ylabel("Value Precision Improvement (Store + Literals)")
 plt.title("Expert Trade-off: Time Cost vs Value Precision Gain")
 
 # Add manual legend
