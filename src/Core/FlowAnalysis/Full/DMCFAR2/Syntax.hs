@@ -82,7 +82,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- do
                   mbRes <- do
                         let once = do
-                              timeout 500000000 $ do
+                              timeout 5000000 $ do
                                   tstart <- getCurrentTime
                                   -- trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -257,6 +257,7 @@ extractMetrics cache cacheExpected =
     -- Literal top count at 0CFA level
     vLitEntriesByAddrId = M.fromListWith (<>) [ (vAddrId addr, val) | (VStore addr, SValue val) <- vEntries, numLit > 0 ]
     literal0CFATopCount = count (\(_, val) -> litIsTopX (alits val)) (M.toList vLitEntriesByAddrId)
+    literal0CFAPrecise = M.map (\val -> not (litIsTopX (alits val))) vLitEntriesByAddrId
 
     -- Context explosion metrics
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e ctx), RValue val) <- M.toList cache]
@@ -316,6 +317,7 @@ extractMetrics cache cacheExpected =
       semReturnSingletons strReturnSingletons semTargetSingletons strTargetSingletons
       literalTopCount literal0CFATopCount
       exprContextHistogram contContextHistogram
+      literal0CFAPrecise
       storeToStrSizes
       exprToValSemSizes applyContSemSizes callToSemRetSizes
       applyContRetSizes exprToValStrSizes applyContStrSizes

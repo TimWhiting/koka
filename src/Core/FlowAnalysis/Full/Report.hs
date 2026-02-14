@@ -54,6 +54,7 @@ data StoreMetrics = StoreMetrics
   -- | Productivity Mappings
   -- These maps store the cardinalities observed at each program point across all contexts.
   -- For 0-CFA runs, these lists will contain exactly one element.
+  , literal0CFAPrecise   :: Map.Map String Bool -- Whether a 0CFA address containing a literal is precise
   , storeToStrSizes      :: Map.Map String Int -- ^ val 0CFA ID to structural set size.
   , exprToValSemSizes    :: Map.Map String Int -- ^ Exp ID to closure (constructor) set size.
   , structToContSemSizes :: Map.Map String Int -- ^ Structural ID to full frame set size.
