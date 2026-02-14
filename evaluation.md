@@ -12,16 +12,11 @@ Specifically, we structure our evaluation to answer three key questions:
 To assess the practical value of our approach, we compare our $(h,m)$-CFA with Rebinding (HMCFAR) against a flow-insensitive baseline (0-CFA) and context-sensitive baselines (1-kCFA, 2-kCFA).
 We focus our comparison on "complex" benchmarks where the 0-CFA baseline fails to achieve perfect precision (< 99%), filtering out trivial cases.
 
-Figure 1 shows the **geometric mean** precision (both Continuation and Value) for these complex benchmarks, with error bars indicating geometric standard deviation (GSD). We also report the **median** in parentheses for completeness.
-*   **0-CFA** achieves a geomean continuation precision of **55%** (median **69%**).
-*   **1-kCFA** improves this to **72%** (median **85%**).
-*   **2-kCFA** further improves to **78%** (median **94%**).
-*   **1,1-HMCFAR** (using $h=1, m=1$) achieves **82%** (median **96%**), outperforming 2-kCFA.
-*   **1,2-HMCFAR** (using $h=1, m=2$) achieves **84%** (median **100%**).
+Figure 1 shows the **Productivity** (Average Relative Improvement over 0-CFA) for these simple-to-complex benchmarks.
+*   **Structural Precision:** 1,2-HMCFAR achieves the highest average improvement (**6.8%**), outperforming 1-kCFA (**5.8%**) and matching 2-kCFA (**6.7%**).
+*   **Continuation Precision:** 1,2-HMCFAR demonstrates a massive advantage with **32.3%** average improvement compared to 1-kCFA (**23.4%**), confirming its superior handling of complex control-flow.
 
-Notably, **1,0-HMCFAR** ($m=0$) achieves **66%** geomean (median **83%**). This shows that handler context alone ($h=1$) provides a baseline improvement over 0-CFA, but combining it with call sensitivity ($m \ge 1$) unlocks superior precision.
-
-**Value Precision:** In terms of value precision, 1,2-HMCFAR achieves a geomean of **88%** and a median of **94%**, significantly outperforming baselines (0-CFA median **80%**) and matching or beating 2-kCFA (median **87%**). This confirms that HMCFAR's precise control flow analysis translates to high value flow precision.
+**Discussion:** The new data confirms that HMCFAR (specifically with $m \ge 1$) provides robust improvement across the benchmark suite. The ability to distinguish return contexts allows HMCFAR to achieve significantly higher continuation precision, resolving control-flow ambiguities that k-CFA conflates.
 
 ## 2. Expert Trade-off Analysis: Linear vs. Branched History
 

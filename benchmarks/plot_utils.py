@@ -1,0 +1,264 @@
+
+import os
+import json
+import numpy as np
+import pandas as pd
+from scipy.stats import gmean
+
+def safe_gmean(x):
+    """Computes geometric mean safely, handling zeros, negatives, and empty sets."""
+    if x is None: return np.nan
+    clean = pd.to_numeric(x, errors='coerce').dropna()
+    # gmean requires strictly positive values
+    pos = clean[clean > 0]
+    if pos.empty:
+        return np.nan
+    return gmean(pos)
+
+def calc_prod(metric, poly, base):
+    """Calculates productivity (fraction of refined values) relative to baseline."""
+    poly_map = poly.get(metric)
+    base_map = base.get(metric)
+    
+    if not base_map: 
+        if not poly_map:
+            return 0.0 # Both empty -> no improvement but also no loss
+        raise Exception("Do not call with empty baseline")
+    
+    hits = 0
+    total_relevant = 0
+    
+    for x_id, base_val in base_map.items():
+        # Poly not there means that we found spurious / dead code in base -> always max improvement (0)
+        poly_val = poly_map.get(x_id, 0) 
+    
+        # Logic:
+        # 1. If Baseline is Top (-1):
+        #    - If Poly is NOT Top => Improvement (Hit)
+        #    - Else => No Improvement
+        # 2. If Baseline is Finite:
+        #    - If Poly is NOT Top AND Poly < Baseline => Improvement (Hit)
+        #    - Else => No Improvement
+        
+        if base_val == -1:
+            if poly_val is not None and poly_val != -1:
+                hits += 1
+            total_relevant += 1
+            continue
+
+        if poly_val is not None and poly_val != -1 and poly_val < base_val:
+            hits += 1
+        
+        total_relevant += 1
+            
+    if total_relevant == 0: return 0.0
+    return hits / total_relevant
+
+def compute_metrics(run, baseline_run):
+    """Computes precision metrics relative to baseline."""
+    
+    # Basic info
+    metrics = {
+        'status': "OK" if not run.get('isTimeout') else "T/O",
+        'analysisTimes': run.get('analysisTimes', []),
+        'Time': np.mean(run.get('analysisTimes', [0])) if run.get('analysisTimes') else 0.0,
+        'variant': run.get('variant'),
+        'd': run.get('d'),
+        'm': run.get('m'),
+        'benchmarkName': run.get('benchmarkName', 'unknown')
+    }
+
+    m = run.get('storeMetrics')
+    if not m:
+        return metrics
+
+    # Absolute Precision (for filtering)
+    # Continuation Precision (Singletons / Total)
+    num_cont = m.get('numContAddresses', 0)
+    cont_single = m.get('cont0CFAStrSingletons', 0)
+    metrics['AbsContPrecision'] = cont_single / num_cont if num_cont > 0 else 1.0
+    
+    # Structural Precision (Singletons / Total)
+    num_struct = m.get('numStructAddresses', 0)
+    val_single = m.get('val0CFAStrSingletons', 0)
+    metrics['AbsStructPrecision'] = val_single / num_struct if num_struct > 0 else 1.0
+    
+    # State Space
+    metrics['States'] = m.get('numTotalFixInputStates', 0)
+
+    # Relative Metrics (from analyze.py)
+    if baseline_run and baseline_run.get('storeMetrics'):
+        baseline = baseline_run['storeMetrics']
+        
+        # prec_struct: Improvement in Store Structure
+        metrics['prec_struct'] = calc_prod('storeToStrSizes', m, baseline)
+        
+        # prod_k_str: Improvement in Continuation Structure
+        metrics['prod_k_str'] = calc_prod('structToContStrSizes', m, baseline)
+        
+        # prec_lit: Absolute Literal Precision
+        metrics['prec_lit'] = (m.get('numLitAddresses', 0) - m.get('literalTopCount', 0)) / m.get('numLitAddresses', 1) if m.get('numLitAddresses', 0) > 0 else 1.0
+    else:
+        # No baseline -> Relative metrics are 0?
+        metrics['prec_struct'] = 0.0
+        metrics['prod_k_str'] = 0.0
+        metrics['prec_lit'] = 0.0 # Default
+
+    return metrics
+
+def load_results_with_baselines(base_dir="benchmarks/results-cached"):
+    """Loads results, identifies 0-CFA baselines, and calculates metrics."""
+    # 1. Load all files
+    all_runs = []
+    runs_by_bench = {}
+    
+    for root, _, files in os.walk(base_dir):
+        for file in files:
+            if file.endswith(".json"):
+                try:
+                    with open(os.path.join(root, file), 'r') as f:
+                        data = json.load(f)
+                        data['filePath'] = os.path.join(root, file)
+                        # Ensure d/m are strings or consistent
+                        all_runs.append(data)
+                        
+                        bench = data.get('benchmarkName')
+                        if bench:
+                            if bench not in runs_by_bench:
+                                runs_by_bench[bench] = []
+                            runs_by_bench[bench].append(data)
+                except:
+                    pass
+    
+    # 2. Process each benchmark
+    processed_results = []
+    
+    for bench, runs in runs_by_bench.items():
+        # Find baseline: kcfa d=0 m=0
+        baseline = None
+        for r in runs:
+            if r.get('variant') == 'kcfa' and str(r.get('d')) == '0' and str(r.get('m')) == '0':
+                baseline = r
+                break
+        
+        # If no strict 0-CFA found, try to find "lowest" configuration?
+        # Typically 0-CFA should exist if the suite was run.
+        # If not, relative metrics will be 0.
+        
+        for r in runs:
+            # Skip runs without metrics
+            if not r.get('storeMetrics'):
+                continue
+                
+            m = compute_metrics(r, baseline)
+            processed_results.append(m)
+            
+    return processed_results
+
+def geometric_sd(data):
+    """Calculates geometric standard deviation."""
+    clean = pd.to_numeric(data, errors='coerce').dropna()
+    pos = clean[clean > 0]
+    if pos.empty: return np.nan
+    log_data = np.log(pos)
+    return np.exp(np.std(log_data))
+
+def get_complex_benchmarks(df, threshold=0.99):
+    """Returns list of benchmark names where 0-CFA precision < threshold."""
+    baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
+    if baseline.empty:
+        return df['benchmarkName'].unique()
+    
+    complex_bench = baseline[baseline['AbsContPrecision'] < threshold]['benchmarkName'].unique()
+    print(f"Identified {len(complex_bench)} complex benchmarks (0-CFA Prec < {threshold}).")
+    return complex_bench
+
+def prepare_tradeoff_data(results, config1, config2, metrics):
+    """
+    Prepares data for tradeoff analysis between two configurations.
+    config1: dict {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'}
+    config2: dict {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
+    metrics: dict {'Precision': 'prec_struct', 'Cost': 'States'}
+    """
+    df = pd.DataFrame(results)
+    
+    # Filter for the two configs
+    c1 = df[(df['variant'] == config1['variant']) & 
+            (df['d'] == config1['d']) & 
+            (df['m'] == config1['m'])].copy()
+    c1['Configuration'] = config1['label']
+    
+    c2 = df[(df['variant'] == config2['variant']) & 
+            (df['d'] == config2['d']) & 
+            (df['m'] == config2['m'])].copy()
+    c2['Configuration'] = config2['label']
+    
+    combined = pd.concat([c1, c2])
+    
+    # Pivot
+    pivot_cols = ['benchmarkName', 'Configuration']
+    value_cols = list(metrics.values())
+    
+    # Pivot creates MultiIndex columns
+    df_pivot = combined.pivot(index='benchmarkName', columns='Configuration', values=value_cols)
+    
+    # Flatten columns: State_1-kCFA, Precision_1-kCFA, etc.
+    df_pivot.columns = [f"{col[0]}_{col[1]}" for col in df_pivot.columns]
+    df_pivot = df_pivot.reset_index()
+    
+    # Map back to generic names for easier plotting
+    # e.g., 'Cost_Base', 'Cost_New', 'Prec_Base', 'Prec_New'
+    rename_map = {}
+    for metric_name, col_name in metrics.items():
+        rename_map[f"{col_name}_{config1['label']}"] = f"{metric_name}_Base"
+        rename_map[f"{col_name}_{config2['label']}"] = f"{metric_name}_New"
+    
+    df_final = df_pivot.rename(columns=rename_map)
+    df_final = df_final.dropna() # Only keep benchmarks present in both
+    return df_final
+
+def get_tradeoff_color(prec_gain, cost_ratio):
+    """
+    Returns color based on Cost/Benefit analysis.
+    Green: Win-Win (Better Prec & Lower Cost)
+    Blue: Trade-off (Better Prec & Higher Cost)
+    Red: Regression (Worse Prec)
+    """
+    if prec_gain < -0.01: # Worse Precision
+        return 'red', 0.6
+    elif prec_gain > 0.01: # Better Precision
+        if cost_ratio < 1.0:
+            return 'green', 0.6 # Win-Win
+        else:
+            return 'blue', 0.6 # Trade-off
+    else:
+        # Comparable precision
+        if cost_ratio < 1.0:
+            return 'green', 0.4 # Efficiency Gain
+        elif cost_ratio > 1.0:
+            return 'gray', 0.4 # Efficiency Loss (not quite Regression)
+        return 'gray', 0.3
+
+def filter_common_benchmarks(df, config_list):
+    """
+    Keeps only benchmarks that appear in all specified configurations.
+    config_list: list of dicts {'variant': 'kcfa', 'd': 0, 'm': 0}
+    """
+    common_bench = None
+    
+    for config in config_list:
+        subset = df[
+            (df['variant'] == config['variant']) & 
+            (df['d'] == config['d']) & 
+            (df['m'] == config['m'])
+        ]
+        benchs = set(subset['benchmarkName'].unique())
+        
+        if common_bench is None:
+            common_bench = benchs
+        else:
+            common_bench = common_bench.intersection(benchs)
+            
+    print(f"Filtering: {len(common_bench)} benchmarks present in all {len(config_list)} configurations.")
+    return df[df['benchmarkName'].isin(common_bench)]
+
