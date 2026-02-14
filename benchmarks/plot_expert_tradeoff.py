@@ -100,17 +100,27 @@ for bench in plot_df['Benchmark'].unique():
         k_pt = subset_b[subset_b['Configuration'] == '1-kCFA'].iloc[0]
         d_pt = subset_b[subset_b['Configuration'] == '1,1-HMCFAR'].iloc[0]
         
-        # Color based on direction?
-        # If HMCFAR improves precision significantly -> Green line
-        # If HMCFAR just increases cost -> Red/Gray line
+        # Color based on direction
+        # Red: Precision Decreases
+        # Green: Precision Increases AND States Decreases (Win-Win)
+        # Blue: Precision Increases BUT States Increases (Trade-off)
+        # Gray: Small change
+        
+        prec_gain = d_pt['Precision'] - k_pt['Precision']
+        state_ratio = d_pt['States'] / k_pt['States'] if k_pt['States'] > 0 else 1.0
+        
         color = 'gray'
         alpha = 0.3
-        if d_pt['Precision'] > k_pt['Precision'] + 0.05:
-            color = 'green'
+        
+        if prec_gain < -0.01: # Worse Precision
+            color = 'red'
             alpha = 0.6
-        elif d_pt['States'] > k_pt['States'] * 1.5 and abs(d_pt['Precision'] - k_pt['Precision']) < 0.05:
-            color = 'red' # High cost, no gain
-            alpha = 0.4
+        elif prec_gain > 0:
+            if state_ratio < 1.0:
+                color = 'green' # Smaller & Better
+            else:
+                color = 'blue' # Larger & Better
+            alpha = 0.6
             
         plt.plot([k_pt['States'], d_pt['States']], [k_pt['Precision'], d_pt['Precision']], color=color, alpha=alpha, linewidth=1)
         
