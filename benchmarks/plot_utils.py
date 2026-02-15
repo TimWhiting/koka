@@ -41,6 +41,35 @@ def calc_precise_stats(metric, poly, base):
         
     return hits, total
 
+def calc_literal_stats(poly, base):
+    """
+    Calculates literal precision stats (hits, total) relative to baseline.
+    Uses 'literal0CFAPrecise' map (Addr -> Bool).
+    Hit = Literal is Precise (True) OR Literal is Dead (Missing in Poly).
+    """
+    poly_map = poly.get('literal0CFAPrecise', {})
+    base_map = base.get('literal0CFAPrecise')
+    
+    if not base_map:
+        return 0, 0
+    
+    hits = 0
+    total = 0
+    
+    for k, base_val in base_map.items():
+        total += 1
+        
+        # If missing in poly -> Dead Code -> Precise
+        if k not in poly_map:
+            hits += 1
+            continue
+            
+        # If present, check if precise (True)
+        if poly_map[k]:
+            hits += 1
+            
+    return hits, total
+
 def calc_prod_stats(metric, poly, base):
     """Calculates productivity stats (hits, total) relative to baseline."""
     poly_map = poly.get(metric)
@@ -194,11 +223,8 @@ def compute_metrics(run, baseline_run=None):
         s_real_hits, s_real_total = calc_precise_stats('storeToStrSizes', m, baseline)
         
         # Literals Real
-        # Use BASELINE numLitAddresses to ensure comparability
-        l_total = baseline.get('numLitAddresses', 0)
-        n_lit_top = m.get('literal0CFATopCount', 0)
-        # Real Hits = Total (Static) - Top (Dynamic/Static Imprecise)
-        l_real_hits = max(0, l_total - n_lit_top)
+        # Use new map-based calculation
+        l_real_hits, l_total = calc_literal_stats(m, baseline)
         
         # Combined Value Real (Store + Literals)
         total_real_hits = s_real_hits + l_real_hits
@@ -211,11 +237,8 @@ def compute_metrics(run, baseline_run=None):
         s_abs_impr_hits, s_total_abs = calc_abs_impr_stats('storeToStrSizes', m, baseline)
         
         # Literal Abs Impr
-        # For Literals, "Gain" is reducing Top count. 
-        # Baseline Precise = l_total - b_lit_top
-        # Gain = max(0, b_lit_top - n_lit_top)
-        # Sum = l_total - b_lit_top + b_lit_top - n_lit_top = l_total - n_lit_top
-        # This is exactly l_real_hits.
+        # For Literals, "Real Precision" IS "Absolute Improvement" logic
+        # (Precise now means improved or already precise)
         l_abs_impr_hits = l_real_hits
         
         # Combined Value Abs Impr (Store + Literals)
@@ -238,7 +261,8 @@ def compute_metrics(run, baseline_run=None):
         
         # Add raw literal counts for debugging
         metrics['numLitAddresses'] = l_total
-        metrics['literal0CFATopCount'] = n_lit_top
+        metrics['literalHits'] = l_real_hits # Replacing Top count with Hits for debug
+
 
 
     else:
