@@ -74,7 +74,8 @@ if not regressions.empty:
     print(f"\nDetails for worst regression: {bench_name}")
     
     # Find rows in original df to get components
-    cols = ['variant', 'd', 'm', 'prec_val_real', 'prec_struct_real', 'literal0CFATopCount', 'numLitAddresses']
+    print("\nComponent Breakdown (Approx from columns):")
+    cols = ['prec_struct_real', 'literalHits', 'numLitAddresses']
     print(df_final[df_final['benchmarkName'] == bench_name][cols])
 else:
     print("No regressions found.")

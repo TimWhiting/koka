@@ -273,7 +273,8 @@ doDoContinue res frame ctx =
                       RV (res, newCtx') <- apply kx addr newCtx
                       handleEffects res henv (CallApp uApp) hnd newCtx'
                     _ -> do
-                      trace ("Applying non function: " ++ show res) doBottom
+                      -- trace ("Applying non function: " ++ show res) 
+                      doBottom
               next:rest -> do
                 env' <- rebindAll venv ctx
                 (env'', addrs') <- rebindAllAddrs uApp (res ++ [addr]) env' ctx
