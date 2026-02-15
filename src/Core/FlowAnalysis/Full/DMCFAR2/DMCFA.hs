@@ -299,7 +299,8 @@ doDoContinue res frame ctx =
                       res <- apply kx addr newDynCtx
                       returnV $ handleEffects res henv (CallApp uApp) hnd newCtx
                     _ -> do
-                      trace ("Applying non function: " ++ show res) doBottom
+                      -- trace ("Applying non function: " ++ show res) 
+                      doBottom
               next:rest -> do
                 app <- M.lookup uApp . states <$> getState
                 -- trace ("Next\n" ++ show next ++ "\n:" ++ show ctx ++ "\n" ++ show app ++ "\n" ++ show venv) $ return ()

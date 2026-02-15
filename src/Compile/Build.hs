@@ -383,10 +383,10 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m 
-                             liftIO $ evalMainKR bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m 
+                            --  liftIO $ evalMainKR bc (\bc mn ->
+                            --      runBuild term flags $ do
+                            --        buildcTypeCheck (mn:buildcRoots bc) bc
+                            --    ) mod m 
                             --  liftIO $ evalMainK2 bc (\bc mn ->
                             --      runBuild term flags $ do
                             --        buildcTypeCheck (mn:buildcRoots bc) bc
