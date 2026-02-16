@@ -53,32 +53,50 @@ def plot_sweep():
     # Define the 4 metrics to plot
     # Key: Column Name in df
     # Value: (Display Name, Filename Suffix, Y-Label)
+    # Updated Key: Column Name in df -> (HitsCol, TotalCol)
+    # Value: (Display Name, Filename Suffix, Y-Label)
     metrics_to_plot = {
-        'prod_k_str': ('Continuation Precision (Improvement)', 'cont_productivity', 'Geomean Relative Improvement'),
-        'prec_val_total': ('Value Precision (Improvement)', 'val_productivity', 'Geomean Relative Improvement'),
-        'prec_cont_real': ('Continuation Precision (Real)', 'cont_real', 'Geomean Real Precision'),
-        'prec_val_real': ('Value Precision (Real)', 'val_real', 'Geomean Real Precision')
+        'prod_k_str': ('prod_k_str_hits', 'prod_k_str_total', 
+                       'Continuation Precision (Improvement)', 'cont_productivity', 'Relative Improvement (Pooled)'),
+        'prec_val_total': ('prec_val_total_hits', 'prec_val_total_total', 
+                           'Value Precision (Improvement)', 'val_productivity', 'Relative Improvement (Pooled)'),
+        'prec_cont_real': ('prec_cont_real_hits', 'prec_cont_real_total',
+                           'Continuation Precision (Real)', 'cont_real', 'Real Precision (Pooled)'),
+        'prec_val_real': ('prec_val_real_hits', 'prec_val_real_total',
+                          'Value Precision (Real)', 'val_real', 'Real Precision (Pooled)')
     }
     
     sns.set_theme(style="whitegrid")
     
-    for metric_col, (title, suffix, ylabel) in metrics_to_plot.items():
+    for metric_key, val in metrics_to_plot.items():
+        if len(val) == 5:
+            hits_col, total_col, title, suffix, ylabel = val
+        else:
+             print(f"Skipping malformed metric config {metric_key}")
+             continue
+
         plt.figure(figsize=(8, 6))
         
-        # Aggregate: Geomean per (m, h)
-        # We compute the geomean across all benchmarks for each config
-        agg = df_sweep.groupby(['m', 'h'])[metric_col].apply(geometric_mean).reset_index()
+        # Aggregate: Sum hits and totals per group
+        # This effectively calculates the Micro-Average (Weighted Mean)
+        # Ratio = Sum(Hits) / Sum(Total) across all benchmarks in the group
         
-        sns.lineplot(data=agg, x='m', y=metric_col, hue='h', style='h', 
+        # Groupby sums
+        sums = df_sweep.groupby(['m', 'h'])[[hits_col, total_col]].sum().reset_index()
+        
+        # Calculate ratio
+        # Avoid division by zero
+        sums[metric_key] = sums.apply(lambda row: row[hits_col] / row[total_col] if row[total_col] > 0 else 0.0, axis=1)
+        
+        sns.lineplot(data=sums, x='m', y=metric_key, hue='h', style='h', 
                      markers=True, palette="viridis", linewidth=2.5, markersize=8)
         
         plt.title(f"Effect of Call Sensitivity on {title}", fontsize=14)
         plt.xlabel("Call Context Sensitivity (m)", fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        plt.xticks(sorted(agg['m'].unique()))
+        plt.xticks(sorted(sums['m'].unique()))
         
         # Adjust Y-limits slightly to show data clearly
-        # For Real/Prec metrics 0-1 is natural, but improvement might be small
         if 'real' in suffix:
              plt.ylim(0.0, 1.05)
         

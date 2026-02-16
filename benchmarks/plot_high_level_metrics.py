@@ -39,32 +39,29 @@ for config in configs:
         filtered_data.append({
             'Configuration': config['label'],
             'MetricType': 'Value Precision (Improvement)',
-            'Value': row['prec_val_total']
+            'Value': row.get('prec_val_total', 0.0),
+            'Hits': row.get('prec_val_total_hits', 0),
+            'Total': row.get('prec_val_total_total', 0)
         })
         # Metric 2: Continuation Precision Improvement (prod_k_str)
         filtered_data.append({
             'Configuration': config['label'],
             'MetricType': 'Continuation Precision (Improvement)',
-            'Value': row['prod_k_str']
+            'Value': row.get('prod_k_str', 0.0),
+            'Hits': row.get('prod_k_str_hits', 0),
+            'Total': row.get('prod_k_str_total', 0)
         })
 
 df_long = pd.DataFrame(filtered_data)
 
-# Calculate Summary Stats
-# Use Arithmetic Mean for Productivity (Average Relative Improvement)
-# Geometric Mean penalizes algorithms that improve more benchmarks if those improvements are small.
+# Calculate Summary Stats: Micro-Average (Pooled Mean)
+# Sum all hits / Sum all totals for each config group
+# This weights larger benchmarks more heavily and handles 0/0 gracefully.
 
-# prec_val_total uses mean
-df_struct = df_long[df_long['MetricType'] == 'Value Precision (Improvement)']
-summary_struct = df_struct.groupby(['Configuration', 'MetricType'])['Value'].mean().reset_index()
-summary_struct_se = df_struct.groupby(['Configuration', 'MetricType'])['Value'].sem().reset_index()
-summary_struct = pd.merge(summary_struct, summary_struct_se, on=['Configuration', 'MetricType'], suffixes=('_mean', '_se'))
-
-# prod_k_str uses mean
-df_cont = df_long[df_long['MetricType'] == 'Continuation Precision (Improvement)']
-summary_cont = df_cont.groupby(['Configuration', 'MetricType'])['Value'].mean().reset_index()
-summary_cont_se = df_cont.groupby(['Configuration', 'MetricType'])['Value'].sem().reset_index()
-summary_cont = pd.merge(summary_cont, summary_cont_se, on=['Configuration', 'MetricType'], suffixes=('_mean', '_se'))
+# Group by Configuration and MetricType
+summary = df_long.groupby(['Configuration', 'MetricType'])[['Hits', 'Total']].sum().reset_index()
+summary['Value_mean'] = summary['Hits'] / summary['Total']
+summary['Value_se'] = 0 # Error bars not applicable for single pooled ratio without bootstrapping
 
 # Function to plot
 def plot_metric(data, metric_col, error_col, title, filename, ylabel):
@@ -90,7 +87,7 @@ def plot_metric(data, metric_col, error_col, title, filename, ylabel):
                 val = row[metric_col].values[0]
                 err = row[error_col].values[0]
                 
-                if pd.isna(err): continue
+                if pd.isna(err) or err == 0: continue
                 
                 ax.errorbar(bar.get_x() + bar.get_width() / 2, val,
                             yerr=err, fmt='none', c='black', capsize=5)
@@ -107,19 +104,20 @@ def plot_metric(data, metric_col, error_col, title, filename, ylabel):
 order = [c['label'] for c in configs if c['label'] != '0-CFA']
 hue_order = ['Continuation Precision (Improvement)', 'Value Precision (Improvement)']
 
-# 1. Mean Plot
-print("\nProductivity Summary (Mean +/- SE):")
-print(summary_struct[['Configuration', 'Value_mean', 'Value_se']])
-print(summary_cont[['Configuration', 'Value_mean', 'Value_se']])
+# 1. Micro-Average Plot
+print("\nProductivity Summary (Micro-Average):")
+print(summary[['Configuration', 'MetricType', 'Value_mean']])
 
-# Combine Mean data
-summary_mean = pd.concat([summary_struct, summary_cont], ignore_index=True)
-plot_metric(summary_mean, 'Value_mean', 'Value_se', 
-            "High-Level Productivity (Mean Improvement over 0-CFA)", 
+plot_metric(summary, 'Value_mean', None, 
+            "High-Level Productivity (Pooled Mean Improvement over 0-CFA)", 
             "benchmarks/new_analysis/plot_high_level_productivity_mean.png",
-            "Relative Improvement (Mean)")
+            "Relative Improvement (Pooled Mean)")
 
 # 2. Median Plot
+# Filter dataframes for median calculation
+df_struct = df_long[df_long['MetricType'] == 'Value Precision (Improvement)']
+df_cont = df_long[df_long['MetricType'] == 'Continuation Precision (Improvement)']
+
 # Calculate Median
 summary_struct_med = df_struct.groupby(['Configuration', 'MetricType'])['Value'].median().reset_index()
 summary_cont_med = df_cont.groupby(['Configuration', 'MetricType'])['Value'].median().reset_index()
