@@ -216,6 +216,12 @@ def compute_metrics(run, baseline_run=None):
     
     metrics['States'] = m.get('numTotalFixInputStates', 0)
 
+    # Absolute Literal Stats (using map)
+    lit_map = m.get('literal0CFAPrecise', {})
+    metrics['literalMapSize'] = len(lit_map)
+    metrics['literalPreciseCount'] = sum(1 for v in lit_map.values() if v is True)
+
+
     # Relative Metrics
     if baseline_run and baseline_run.get('storeMetrics'):
         baseline = baseline_run['storeMetrics']
@@ -235,6 +241,8 @@ def compute_metrics(run, baseline_run=None):
         total_items = s_total + l_total
         
         metrics['prec_val_total'] = total_hits / total_items if total_items > 0 else 0.0
+        metrics['prec_val_total_hits'] = total_hits
+        metrics['prec_val_total_total'] = total_items
 
         # --- NEW METRICS ---
         
@@ -251,6 +259,8 @@ def compute_metrics(run, baseline_run=None):
         total_real_hits = s_real_hits + l_real_hits
         total_real_denom = s_real_total + l_total
         metrics['prec_val_real'] = total_real_hits / total_real_denom if total_real_denom > 0 else 0.0
+        metrics['prec_val_real_hits'] = total_real_hits
+        metrics['prec_val_real_total'] = total_real_denom
         
         # 2. Absolute Improvement (Baseline Precision + Gain)
         
@@ -266,23 +276,37 @@ def compute_metrics(run, baseline_run=None):
         total_abs_impr_hits = s_abs_impr_hits + l_abs_impr_hits
         total_abs_denom = s_total_abs + l_total
         metrics['prec_val_abs_impr'] = total_abs_impr_hits / total_abs_denom if total_abs_denom > 0 else 0.0
+        metrics['prec_val_abs_impr_hits'] = total_abs_impr_hits
+        metrics['prec_val_abs_impr_total'] = total_abs_denom
 
         # Continuation Real
         c_real_hits, c_real_total = calc_precise_stats('structToContStrSizes', m, baseline)
         metrics['prec_cont_real'] = c_real_hits / c_real_total if c_real_total > 0 else 0.0
+        metrics['prec_cont_real_hits'] = c_real_hits
+        metrics['prec_cont_real_total'] = c_real_total
 
         # Continuation Absolute Improvement
         c_abs_impr_hits, c_total = calc_abs_impr_stats('structToContStrSizes', m, baseline)
         metrics['prec_cont_abs_impr'] = c_abs_impr_hits / c_total if c_total > 0 else 0.0
+        metrics['prec_cont_abs_impr_hits'] = c_abs_impr_hits
+        metrics['prec_cont_abs_impr_total'] = c_total
+        
+        # Continuation Productivity (Structure)
+        # Note: 'prod_k_str' was calculated earlier, we need to add the counts
+        k_hits, k_total = calc_prod_stats('structToContStrSizes', m, baseline)
+        metrics['prod_k_str_hits'] = k_hits
+        metrics['prod_k_str_total'] = k_total
         
         # Remove/Zero out intermediate single-component metrics to avoid confusion if not needed
         # or keep them if useful for debugging, but ensure main ones are correct.
         metrics['prec_struct_real'] = s_real_hits / s_real_total if s_real_total > 0 else 0.0
         metrics['prec_struct_abs_impr'] = s_abs_impr_hits / s_total_abs if s_total_abs > 0 else 0.0
         
-        # Add raw literal counts for debugging
-        metrics['numLitAddresses'] = l_total
-        metrics['literalHits'] = l_real_hits # Replacing Top count with Hits for debug
+        
+        # Add raw literal counts for debugging (Optional, now covered above)
+        # metrics['numLitAddresses'] = l_total # Redundant
+        metrics['literalHits'] = l_real_hits # Relative hits (should match precise count if baseline is self)
+
 
 
 
@@ -483,4 +507,26 @@ def filter_common_benchmarks(df, config_list):
             
     print(f"Filtering: {len(common_bench)} benchmarks present in all {len(config_list)} configurations.")
     return df[df['benchmarkName'].isin(common_bench)]
+
+def get_benchmark_category(bench_name):
+    """
+    Categorizes benchmark based on path/name.
+    Categories:
+    - Koka-Gen: 'koka-gen'
+    - Rosetta: 'rosetta'
+    - Handlers: 'handlers'
+    - Suite: 'suite' (Micro-benchmarks)
+    - Other: Fallback
+    """
+    if 'koka-gen' in bench_name:
+        return 'Koka-Gen'
+    elif 'rosetta' in bench_name:
+        return 'Rosetta'
+    elif 'handlers' in bench_name:
+        return 'Handlers'
+    elif 'suite' in bench_name:
+        return 'Micro-Suite'
+    else:
+        return 'Other'
+
 
