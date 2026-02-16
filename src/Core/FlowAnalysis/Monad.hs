@@ -31,6 +31,7 @@ type PostFixA r s e i o c = PostFixAR r s (AnalysisEnv e) i o c o
 data BasicState r s = BasicState{
   buildc :: BuildContext,
   states :: M.Map ExprContextId ExprContext,
+  state0Id :: M.Map ExprContextId String, -- a stable id
   moduleContexts :: M.Map ModuleName ExprContext,
   maxContextId :: Int,
   childrenIds :: M.Map ExprContextId [ExprContextId],
@@ -65,11 +66,11 @@ analysisLog s = do
 
 emptyBasicState :: BuildContext -> s -> BasicState r s
 emptyBasicState bc s =
-  BasicState bc M.empty M.empty 0 M.empty M.empty 0 S.empty s
+  BasicState bc M.empty M.empty M.empty 0 M.empty M.empty 0 S.empty s
 
 transformBasicState :: (s -> x) -> (Set r -> Set b) -> BasicState r s -> BasicState b x
-transformBasicState f final (BasicState bc s mc mid cid sid u fr ad) =
-  BasicState bc s mc mid cid sid u (final fr) (f ad)
+transformBasicState f final (BasicState bc s sids mc mid cid sid u fr ad) =
+  BasicState bc s sids mc mid cid sid u (final fr) (f ad)
 
 type TypeChecker = (BuildContext -> ModuleName -> IO (Either Errors (BuildContext,Errors)))
 
@@ -104,15 +105,15 @@ focusBody e = do
     Nothing -> error ("Children looking for body " ++ show children)
 
 focusLetBod :: ExprContext -> FixAR x s e i o c ExprContext
-focusLetBod context = do 
+focusLetBod context = do
   child <- focusChild 0 context
   focusLetBodyRec child
 
 focusLetBodyRec :: ExprContext -> FixAR x s e i o c ExprContext
-focusLetBodyRec context = 
+focusLetBodyRec context =
   -- trace ("Focusing let body of " ++ showSimpleContext context) $ do
   case maybeExprOfCtx context of
-    Nothing -> do 
+    Nothing -> do
       bod <- focusChild 0 context
       focusLetBodyRec bod
     _ -> return context -- Lets have their return expression as first child
@@ -268,7 +269,8 @@ addContextId f = do
   -- trace ("Adding context id " ++ show newId) $ return ()
   state <- getState
   let x = f newId
-  setState state{states=M.insert newId x (states state)}
+  setState state{states=M.insert newId x (states state), 
+                 state0Id=M.insert newId (stableId x) (state0Id state)}
   return x
 
 addSpecialId :: (ExprContextId, ExprContextId) -> (ExprContextId -> ExprContext) -> FixAR x s e i o c ExprContext
@@ -283,7 +285,9 @@ addSpecialId ids f = do
       -- trace ("Adding special id " ++ show ids ++ " " ++ show newId) $ return ()
       let x = f newId
       state <- getState -- Refetch state because newContextId mutates it
-      setState state{states=M.insert newId x (states state), specialIds=M.insert ids newId (specialIds state)}
+      setState state{states=M.insert newId x (states state), 
+                     state0Id=M.insert newId (stableId x) (state0Id state), 
+                     specialIds=M.insert ids newId (specialIds state)}
       return x
 
 --------------------------------------- ExprContext Helpers -------------------------------------
@@ -390,7 +394,7 @@ childrenContexts ctx = do
                 CaseCGuard _ _ _ _ _ e -> childrenOfExpr ctx e
                 CaseCScrutinee _ _ e -> childrenOfExpr ctx e
                 CaseCBranch _ _ tn i b -> do
-                  guardCtx <- addContextId (\guardId -> CaseCGuard guardId ctx tn i b (guardTest $ head $ branchGuards b)) 
+                  guardCtx <- addContextId (\guardId -> CaseCGuard guardId ctx tn i b (guardTest $ head $ branchGuards b))
                   bodyCtx <- addContextId (\bodyId -> CaseCBody bodyId ctx tn i b (guardExpr $ head $ branchGuards b))
                   return [guardCtx, bodyCtx]
                 ExprCBasic{} -> return []

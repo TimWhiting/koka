@@ -82,7 +82,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- do
                   mbRes <- do
                         let once = do
-                              timeout 600000000 $ do
+                              timeout 6000000 $ do
                                   tstart <- getCurrentTime
                                   -- trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
@@ -91,8 +91,10 @@ runQueryAtRange bc build mod m d doQuery =
                                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                                   ress' <- getCache
+                                                  exprs <- state0Id <$> getStateR
+                                                  -- trace ("Finished Analyzing " ++ show name) $ return ()
                                                   -- trace ("result': " ++ show ress') $ return ()
-                                                  return ress'
+                                                  return (ress', exprs)
                                   tend <- getCurrentTime
                                   return (l, analysisResult, nominalDiffTimeToSeconds $ diffUTCTime tend tstart)
                         first <- once
@@ -115,8 +117,9 @@ runQueryAtRange bc build mod m d doQuery =
                                         -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                         withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery resCtx
                                       ress' <- getCache
+                                      exprs <- state0Id <$> getStateR
                                       -- trace ("expected': " ++ show ress') $ return ()
-                                      return ress'
+                                      return (ress', exprs)
 
                       let metrics = extractMetrics analysisResult expectedResult
 
@@ -206,8 +209,8 @@ isIndirectAppFun e =
     AppCLambda _ _ (C.TypeApp (C.Var _ _) _) -> True
     _ -> False
 
-extractMetrics :: M.Map FixInput FixOutput -> M.Map FixInput FixOutput -> StoreMetrics
-extractMetrics cache cacheExpected =
+extractMetrics :: (M.Map FixInput FixOutput, M.Map ExprContextId String) -> (M.Map FixInput FixOutput, M.Map ExprContextId String) -> StoreMetrics
+extractMetrics (cache, exprIds) (cacheExpected, _) =
   let
     -- Lookup helpers
     lookupVal :: Addr -> AbValue
@@ -243,25 +246,25 @@ extractMetrics cache cacheExpected =
 
     -- 0CFA aggregated continuation singletons
     -- Aggregate all continuation sets by their kAddrId (0CFA key)
-    kEntriesByAddrId = M.fromListWith S.union [ (kAddrId addr, S.map fst ks) | (KStore addr, KValue ks) <- kEntries ]
+    kEntriesByAddrId = M.fromListWith S.union [ (kAddrId exprIds addr, S.map fst ks) | (KStore addr, KValue ks) <- kEntries ]
     cont0CFAStrSingletons = count (\(_, ks) -> S.size ks == 1) (M.toList kEntriesByAddrId)
 
     -- 0CFA aggregated value singletons
     -- Aggregate all value sets by their vAddrId (0CFA key)
-    vEntriesByAddrId = M.fromListWith (<>) [ (vAddrId addr, val) | (VStore addr, SValue val) <- vEntries ]
+    vEntriesByAddrId = M.fromListWith (<>) [ (vAddrId exprIds addr, val) | (VStore addr, SValue val) <- vEntries ]
     val0CFAStrSingletons = count (\(_, val) -> abStructuralSize val == 1) (M.toList vEntriesByAddrId)
 
     -- Combined 0CFA precision (total singletons / total 0CFA addresses)
     combined0CFAStrSingletons = val0CFAStrSingletons + cont0CFAStrSingletons
 
     -- Literal top count at 0CFA level
-    vLitEntriesByAddrId = M.fromListWith (<>) [ (vAddrId addr, val) | (VStore addr, SValue val) <- vEntries, numLit > 0 ]
+    vLitEntriesByAddrId = M.fromListWith (<>) [ (vAddrId exprIds addr, val) | (VStore addr, SValue val) <- vEntries, numLit > 0 ]
     literal0CFATopCount = count (\(_, val) -> litIsTopX (alits val)) (M.toList vLitEntriesByAddrId)
     literal0CFAPrecise = M.map (\val -> not (litIsTopX (alits val))) vLitEntriesByAddrId
 
     -- Context explosion metrics
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e _ ctx), RValue val) <- M.toList cache]
-    ctxsPerApply = M.fromListWith S.union [(kAddrId k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
+    ctxsPerApply = M.fromListWith S.union [(kAddrId exprIds k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
     
     -- Build histograms: how many expressions/continuations have N contexts?
     exprContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerExpr]
@@ -279,13 +282,13 @@ extractMetrics cache cacheExpected =
     strTargetSingletons = count (\(_, val, _) -> abStructuralSize (resolveRValue val) == 1) callTargets
 
     -- Maps
-    storeToStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ vAddrId addr, sv) | (VStore addr, SValue sv) <- M.toList cache]
+    storeToStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ vAddrId exprIds addr, sv) | (VStore addr, SValue sv) <- M.toList cache]
     exprToValSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)]
     exprToValStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache , not $ onlyLit (resolveRValue vs)]
     callToSemRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (ctx, vs, c) <- callSites, not $ onlyLit (resolveRValue vs) ]
-    applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs) ]
-    applyContStrSizes = M.map S.size $ M.fromListWith (<>) [ (show $ kAddrId c, S.map (kAddrId . snd) vs) | (KStore c, KValue vs) <- M.toList cache ]
-    applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)  ]
+    applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId exprIds c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs) ]
+    applyContStrSizes = M.map S.size $ M.fromListWith (<>) [ (show $ kAddrId exprIds c, S.map ((kAddrId exprIds) . snd) vs) | (KStore c, KValue vs) <- M.toList cache ]
+    applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId exprIds c, resolveRValue vs) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue vs)  ]
     callTargetSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs)]
     callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs) ]
 
