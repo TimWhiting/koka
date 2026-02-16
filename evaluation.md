@@ -33,36 +33,40 @@ For analysis experts, we compare k-CFA (linear history) and HMCFAR (branched his
 
 ### Cost-Precision Trade-off (States)
 
-![Cost-Precision Tradeoff](benchmarks/new_analysis/plot_expert_tradeoff.png)
+![Cost-Precision Tradeoff](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/plot_expert_tradeoff_productivity.png)
 
 Figure 2 illustrates the trade-off between state space size and precision. Detailed cost/benefit analysis is encoded in the colors:
-*   **Green lines (Win-Win):** HMCFAR improves precision **AND** reduces state space.
-*   **Blue lines (Trade-off):** HMCFAR improves precision but explores more states.
-*   **Red lines (Regression):** HMCFAR has worse precision.
+*   **Green (Win-Win):** HMCFAR improves precision **AND** reduces state space.
+*   **Blue (Trade-off):** HMCFAR improves precision but explores more states.
+*   **Red (Regression):** HMCFAR has worse precision.
 
 We see that for many benchmarks, HMCFAR achieves higher precision (Green/Blue lines). In cases like `complex-layers` (Blue), this precision comes at a moderate increase in state space size.
 
 ### Time-Precision Trade-off (Time)
 
-![Time-Precision Tradeoff](benchmarks/new_analysis/plot_expert_time_tradeoff.png)
+![Time-Precision Tradeoff](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/plot_expert_time_productivity.png)
 
 Figure 3 shows the trade-off in terms of analysis time.
-*   **Green lines (Win-Win):** HMCFAR improves precision **AND** reduces analysis time.
-*   **Blue lines (Trade-off):** HMCFAR improves precision but takes longer.
-*   **Red lines (Regression):** HMCFAR has worse precision.
+*   **Green (Win-Win):** HMCFAR improves precision **AND** reduces analysis time.
+*   **Blue (Trade-off):** HMCFAR improves precision but takes longer.
+*   **Red (Regression):** HMCFAR has worse precision.
 
-This view confirms that HMCFAR often pays a time cost for its precision (Blue lines), but in some cases (Green lines), the precision trade-off yields performance benefits due to smaller state spaces or faster convergence.
+This view confirms that HMCFAR often pays a time cost for its precision (Blue lines), but in some cases (Green lines), the precision trade-off yields performance benefits.
 
-This view confirms that HMCFAR often pays a time cost for its precision (green lines often show increased time), but in some cases (blue lines), the precision trade-off yields performance benefits.
+### Part 3: Parameter Sensitivity
 
-Finally, we explore the design space of our HMCFAR analysis by varying the call sensitivity ($m$) while fixing handler sensitivity ($h$).
+Finally, we explore the design space of our HMCFAR analysis by varying the call sensitivity ($m$) while fixing handler sensitivity ($h$). We plot four metric variations using the **Geometric Mean** across complex benchmarks.
 
-![HMCFA Parameter Sweep](benchmarks/new_analysis/plot_dmcfa_sweep_line.png)
+#### Continuation Precision (Improvement & Real)
+![Continuation Improvement](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/plot_dmcfa_sweep_cont_productivity.png)
+![Continuation Real](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/plot_dmcfa_sweep_cont_real.png)
 
-Figure 4 presents the median precision as we increase $m$.
-*   **Impact of $m$:** Increasing call sensitivity ($m$) provides substantial gains up to $m=1$, resolving many ambiguities.
-*   **Diminishing Returns:** Beyond $m=1$, precision plateaus for most benchmarks.
-*   **Role of $h$:** Comparing the lines for $h=0, 1, 2$, we see that having at least $h=1$ provides a consistent improvement over $h=0$, but $h=2$ adds little value. This confirms that $(1,1)$ is the optimal trade-off.
+#### Value Precision (Improvement & Real)
+![Value Improvement](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/plot_dmcfa_sweep_val_productivity.png)
+![Value Real](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/plot_dmcfa_sweep_val_real.png)
+
+*   **Impact of $m$:** Increasing call sensitivity ($m$) consistently improves both Continuation and Value precision, with diminishing returns after $m=1$.
+*   **Role of $h$:** Detailed breakdown shows $h=1$ provides significant lift over $h=0$, confirming the benefit of handler sensitivity.
 
 ## Threats to Validity
 

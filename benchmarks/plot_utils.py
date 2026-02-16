@@ -70,6 +70,32 @@ def calc_literal_stats(poly, base):
             
     return hits, total
 
+def calc_literal_prod_stats(poly, base):
+    """
+    Calculates literal productivity (improvement) relative to baseline.
+    Only considers literals present in the baseline.
+    Hit = Literal was Imprecise in Base (False) AND is Precise (True) or Dead (Missing) in Poly.
+    """
+    poly_map = poly.get('literal0CFAPrecise', {})
+    base_map = base.get('literal0CFAPrecise')
+    
+    if not base_map:
+        return 0, 0
+    
+    hits = 0
+    total = 0
+    
+    for k, base_val in base_map.items():
+        total += 1
+        
+        # We only count hits if there was room for improvement (Base was Imprecise)
+        if base_val is False: 
+            # Check if now Precise (True) or Dead (Missing)
+            if k not in poly_map or poly_map[k] is True:
+                hits += 1
+                
+    return hits, total
+
 def calc_prod_stats(metric, poly, base):
     """Calculates productivity stats (hits, total) relative to baseline."""
     poly_map = poly.get(metric)
@@ -174,8 +200,8 @@ def compute_metrics(run, baseline_run=None):
     if not m:
         
         # Pass through raw literal counts for debugging
-        metrics['literal0CFATopCount'] = n_lit_top
-        metrics['numLitAddresses'] = l_total
+        metrics['literal0CFATopCount'] = 0
+        metrics['numLitAddresses'] = 0
         
         return metrics
 
@@ -202,13 +228,8 @@ def compute_metrics(run, baseline_run=None):
         metrics['prod_k_str'] = calc_prod('structToContStrSizes', m, baseline)
         
         # prec_val_total: Combined Store + Literal Improvement (Standard Productivity)
-        # Lit Hits = Base.Imprecise - New.Imprecise
-        b_lit_top = baseline.get('literal0CFATopCount', 0)
-        n_lit_top = m.get('literal0CFATopCount', 0)
-        l_hits = max(0, b_lit_top - n_lit_top)
-        
-        # Base.numLitAddresses to be safe
-        l_total = baseline.get('numLitAddresses', 0)
+        # Fix: Use map-based calculation to ensure we only look at baseline scope
+        l_hits, l_total = calc_literal_prod_stats(m, baseline)
         
         total_hits = s_hits + l_hits
         total_items = s_total + l_total

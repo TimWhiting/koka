@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, safe_gmean, geometric_sd, get_complex_benchmarks, filter_common_benchmarks
+from plot_utils import load_results_with_baselines, geometric_mean, geometric_sd, get_complex_benchmarks, filter_common_benchmarks
 
 # Load results
 print("Loading results with sophisticated metrics...")

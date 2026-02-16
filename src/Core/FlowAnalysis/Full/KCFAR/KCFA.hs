@@ -413,7 +413,7 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameHandle = do
       bod <- focusBody body
       -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
       RV (res, newCtx) <- eval bod (limitEnv bodyenv (fvs body))
-      let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
+      let h = Handler (contextId bod) label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
       handleEffects res venv (CtxId $ Left $ contextId bod) h newCtx
     _ -> doBottom
 doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
@@ -427,7 +427,7 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
         bod <- focusBody e
         rebind UnitAddr (fromJust $ lookupEnv varName newEnv)
         RV (res, newCtx) <- eval bod newEnv
-        handleLocal res venv (CtxId $ Left $ contextId bod) varName (head arguments) newCtx
+        handleLocal res venv (CtxId $ Left $ contextId bod) (contextId bod, varName) (head arguments) newCtx
   else do
     case args !! 1 of
       AChangeClos e env -> do
@@ -439,17 +439,17 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
         eval bod newEnv
 localEff = True
 
-doHandleLocal :: HasCallStack => RValue -> VEnv -> Call -> TName -> Addr -> StaticCtx -> FixAAMR r s e FixChange
-doHandleLocal res venv bodId varName valAddr ctx = do
+doHandleLocal :: HasCallStack => RValue -> VEnv -> Call -> (ExprContextId, TName) -> Addr -> StaticCtx -> FixAAMR r s e FixChange
+doHandleLocal res venv bodId varName@(varId, varTName) valAddr ctx = do
   case res of
     ROp dval ctx' frame' dframe' knext -> do
       let kOp = KAddr frame' ctx' dframe' dval
       extendKStore kOp knext
       case dval of
-        DVal hName opName oExpr args | hName == getName varName && opName == nameLocalGet -> do
+        DVal hName opName oExpr args | hName == getName varTName && opName == nameLocalGet -> do
           RV (res, newCtx) <- apply kOp valAddr ctx
           handleLocal res venv bodId varName valAddr newCtx
-        DVal hName opName oExpr [newAddr] | hName == getName varName && opName == nameLocalSet -> do
+        DVal hName opName oExpr [newAddr] | hName == getName varTName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
           m <- mLimit
           v <- store newAddr
@@ -463,7 +463,7 @@ doHandleLocal res venv bodId varName valAddr ctx = do
     RVAddr addr -> returnAddr addr ctx
 
 doHandleEffects :: HasCallStack => RValue -> VEnv -> Call -> Handler -> StaticCtx -> FixAAMR r s e FixChange
-doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) ctx = do
+doHandleEffects res venv bodId h@(Handler _ label hnd mbRet mbFrame) ctx = do
   case res of
     ROp dval@(DVal hName opName opExpr args) ctx' frame' dframe' knext  -> do
       if hName == label then do

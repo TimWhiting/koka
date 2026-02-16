@@ -44,6 +44,12 @@ data Call =
   | CtxId (Either ExprContextId Name)
   deriving (Eq, Ord)
 
+showStableCall mp CallTop = "top"
+showStableCall mp CallDelim = "delim"
+showStableCall mp (CallApp id) = fromJust (M.lookup id mp)
+showStableCall mp (CtxId (Left id)) = fromJust (M.lookup id mp)
+showStableCall mp (CtxId (Right nm)) = show nm
+
 instance Show Call where
   show CallTop = "top"
   show CallDelim = "delim"
@@ -113,7 +119,7 @@ data DelimitedFrame =
   } | DFrameLocal {
       dflVEnv :: !VEnv,
       dflBodId :: !Call,
-      dflVarName :: !TName,
+      dflVarName :: !(ExprContextId, TName),
       dflValAddr :: !Addr  -- INVARIANT: Never KAddr (value address for local variable)
   } | DFrameDone
   | DFrameNone -- TODO: Don't use DelimFrames
@@ -144,33 +150,33 @@ instance Show Addr where
   show (ArgImplicitAddr ctx env i ctxId) = "AI@(" ++ showSimpleCtxId ctxId ++ ":" ++ show i ++ " " ++ show ctx ++ ")"
   show (ConImplicitAddr nm ctx ctxId) = "CI@(" ++ show nm ++ " " ++ showSimpleCtxId ctxId ++ ":" ++ show ctx ++ ")"
 
-kAddrId :: Addr -> String
-kAddrId (KAddr frame _ _ dval@(DVal label op expr args ctx)) =
-  show op ++ "/" ++ show (contextId expr) ++ "/" ++ frameId frame
-kAddrId EndKAddr = "KEndAddr"
+kAddrId :: M.Map ExprContextId String -> Addr -> String
+kAddrId mp (KAddr frame _ _ dval@(DVal label op expr args ctx)) =
+  show op ++ "/" ++ fromJust (M.lookup (contextId expr) mp) ++ "/" ++ frameId mp frame
+kAddrId mp EndKAddr = "KEndAddr"
 
-vAddrId :: Addr -> String
-vAddrId (BindingAddr _ name ectx) = "B@" ++ show name ++ ":" ++ show ectx
-vAddrId UnitAddr = "UnitAddr"
-vAddrId EndVAddr = "EndVAddr"
-vAddrId (BindImplicitAddr _ _ ectx) = "BI@" ++ show ectx
-vAddrId (BindKImplicitAddr _ _ ectx) = "BKI@" ++ show ectx
-vAddrId (ArgImplicitAddr _ _ i ectx) = "AI@" ++ show i ++ ":" ++ show ectx
-vAddrId (ConImplicitAddr nm _ ectx) = "CI@" ++ show nm ++ ":" ++ show ectx
-vAddrId addr = error $ "vAddrId called on continuation address: " ++ show addr
+vAddrId :: M.Map ExprContextId String -> Addr -> String
+vAddrId mp (BindingAddr _ name ectx) = "B@" ++ show name ++ ":" ++ fromJust (M.lookup ectx mp)
+vAddrId mp UnitAddr = "UnitAddr"
+vAddrId mp EndVAddr = "EndVAddr"
+vAddrId mp (BindImplicitAddr _ _ ectx) = "BI@" ++ fromJust (M.lookup ectx mp)
+vAddrId mp (BindKImplicitAddr _ _ ectx) = "BKI@" ++ fromJust (M.lookup ectx mp)
+vAddrId mp (ArgImplicitAddr _ _ i ectx) = "AI@" ++ show i ++ ":" ++ fromJust (M.lookup ectx mp)
+vAddrId mp (ConImplicitAddr nm _ ectx) = "CI@" ++ show nm ++ ":" ++ fromJust (M.lookup ectx mp)
+vAddrId mp addr = error $ "vAddrId called on continuation address: " ++ show addr
 
-frameId :: Frame -> String
-frameId frame =
+frameId :: M.Map ExprContextId String -> Frame -> String
+frameId mp frame =
   case frame of 
-    FrameDone ctx -> "done@" ++ show ctx
-    FScrut parent _ _ -> "scrut@" ++ show (contextId parent)
-    FApp _ left _ parent _ -> "app/" ++ show (length left) ++ "@" ++ show (contextId parent)
-    FLet i _ j _ n _ parent _ -> "let/" ++ show i ++ "-" ++ show j ++ "/" ++ show n ++ "@" ++ show (contextId parent)
-    FDollar ctx _ -> "dollar@" ++ show ctx
-    FResume _ _ _ _ rctx -> "resume@" ++ show rctx
+    FrameDone ctx -> "done@" ++ fromJust (M.lookup ctx mp)
+    FScrut parent _ _ -> "scrut@" ++ fromJust (M.lookup (contextId parent) mp)
+    FApp _ left _ parent _ -> "app/" ++ show (length left) ++ "@" ++ fromJust (M.lookup (contextId parent) mp)
+    FLet i _ j _ n _ parent _ -> "let/" ++ show i ++ "-" ++ show j ++ "/" ++ show n ++ "@" ++ fromJust (M.lookup (contextId parent) mp)
+    FDollar ctx _ -> "dollar@" ++ fromJust (M.lookup ctx mp)
+    FResume _ _ _ _ rctx -> "resume@" ++ fromJust (M.lookup rctx mp)
     FRestoreDelim (DFrame _ b _) -> "restore@" ++ show b
-    FRestoreDelim (DFrameLocal _ b _ _) -> "restore@" ++ show b
-    FMask ctx -> "mask@" ++ show ctx
+    FRestoreDelim (DFrameLocal _ b (ctx, _) _) -> "restore-local@" ++ fromJust (M.lookup ctx mp)
+    FMask ctx -> "mask@" ++ fromJust (M.lookup ctx mp)
 
 data RValue =
   RVAddr Addr
@@ -260,7 +266,7 @@ extendEnv (ctx, m) id nm =
 -- IMPORTANT INVARIANT: hReturn is only ever FDollar when it is Just.
 -- This constrains the Frame → DelimitedFrame → Handler → Frame cycle to only FDollar frames.
 data Handler =
-  Handler { hLabel :: !Name, ops :: !Addr, hReturnExpr :: !(Maybe ExprContext), hReturn :: !(Maybe Frame) }
+  Handler { hContextId :: ExprContextId, hLabel :: !Name, ops :: !Addr, hReturnExpr :: !(Maybe ExprContext), hReturn :: !(Maybe Frame) }
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
@@ -296,7 +302,7 @@ vcontextId change =
     AChangeConstr nm _ -> Right nm
     AChangeObj nm _ -> Right nm
     AChangeLit e -> Left $ litEx e
-    AChangeKont _ _ h@(Handler _ _ e _) -> Left $ contextId $ fromJust e
+    AChangeKont _ _ h@(Handler id _ _ e _) -> Left id
 
 envOfClos :: AChange -> VEnv
 envOfClos res =

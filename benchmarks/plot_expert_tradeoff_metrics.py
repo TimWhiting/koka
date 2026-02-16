@@ -58,34 +58,6 @@ for m_info in metrics_to_plot:
 
     # Draw lines
     for i, row in plot_df.iterrows():
-        # Color logic depends on Gain.
-        # gain = Prec_New - Prec_Base.
-        # prepare_tradeoff_data computes 'Prec_Gain'.
-        # For Absolute metrics, Prec_Gain is valid (New Abs - Base Abs).
-        # For Improvement metric (prec_val_total), 'Base' is effectively 0? 
-        # No, prec_val_total IS the improvement.
-        # Wait, prepare_tradeoff_data expects raw precision values in Base and New to compute Gain.
-        # But 'prec_val_total' is ALREADY a relative improvement metric.
-        # If we use it as "Precision", then Base is what? 
-        # In `compute_metrics`, `prec_val_total` is only calculated for the run relative to base.
-        # It is NOT an absolute value.
-        # So `prepare_tradeoff_data` which pivots on Variant will fail if we try to treat it as absolute.
-        # Actually `prec_val_total` is stored in the Poly run. 
-        # Does the Baseline run have `prec_val_total`? No.
-        
-        # Issue: `prepare_tradeoff_data` pivots base and new.
-        # For `prec_val_total`:
-        #   New['prec_val_total'] is 0.05.
-        #   Base['prec_val_total'] is ?? (likely 0 or null).
-        #   If we use this, Gain = 0.05 - 0 = 0.05.
-        #   This works! It treats Base as 0 improvement.
-        
-        # For `prec_val_real`:
-        #   New['prec_val_real'] is 0.9.
-        #   Base['prec_val_real'] is 0.8.
-        #   Gain = 0.1.
-        #   This also works.
-        
         color, alpha = get_tradeoff_color(row['Prec_Gain'], row['Cost_Ratio'])
         
         p0 = (row['Cost_Base'], row['Precision_Base'])
