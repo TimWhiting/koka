@@ -89,7 +89,7 @@ doContinue a b c = doStep $ Step (CContinue a b c)
 
 handleEffects :: HasCallStack => RValue -> VEnv -> Call -> Handler -> CombinedCtx -> FixAAMR r s e RValue
 handleEffects res venv bodId hnd ctx = unreturnV $ doStep $ Step (CHandleEffects res venv bodId hnd ctx)
-handleLocal :: HasCallStack => RValue -> VEnv -> Call -> TName -> Addr -> CombinedCtx -> FixAAMR r s e RValue
+handleLocal :: HasCallStack => RValue -> VEnv -> Call -> (ExprContextId, TName) -> Addr -> CombinedCtx -> FixAAMR r s e RValue
 handleLocal res venv bodId varName valAddr ctx = unreturnV $ doStep $ Step (CHandleLocal res venv bodId varName valAddr ctx)
 
 returnConst :: VEnv -> CombinedCtx -> ExprContext -> AChange -> FixAAMR r s e FixChange
@@ -378,7 +378,7 @@ doApply kaddr addr delimCtx = do
   -- trace ("Applying: " ++ show k) $ return ()
   case kaddr of
     EndKAddr -> returnAddr addr
-    KAddr (FRestoreDelim (DFrameLocal venv bodId varName varAddr)) ctx _ _ -> do
+    KAddr (FRestoreDelim (DFrameLocal venv bodId (id, varName) varAddr)) ctx _ _ -> do
       let newCtx = CombinedCtx ctx delimCtx
       d <- dLimit
       m <- mLimit
@@ -386,7 +386,7 @@ doApply kaddr addr delimCtx = do
       let newDelimCtx = newDelim d m newRetCtx bodId (getName varName)
       knext <- kStore kaddr
       res <- apply knext addr (dynamic newDelimCtx)
-      returnV $ handleLocal res venv bodId varName varAddr newRetCtx
+      returnV $ handleLocal res venv bodId (id, varName) varAddr newRetCtx
     KAddr (FRestoreDelim (DFrame venv bodId h)) ctx _ _ -> do
       let newCtx = CombinedCtx ctx delimCtx
       d <- dLimit
@@ -451,7 +451,7 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameHandle = do
       let newctx = newDelim d m ctx (CallApp $ contextId u) label
       env' <- rebindAll bodyenv newctx
       res <- eval bod env'
-      let h = Handler label (arguments !! 1) (Just ret) (Just $ FDollar (contextId u) (arguments !! 2))
+      let h = Handler (contextId bod) label (arguments !! 1) (Just ret) (Just $ FDollar (contextId u) (arguments !! 2))
       returnV $ handleEffects res venv (CallApp $ contextId bod) h ctx
     _ -> error ("Malformed handle primitive arguments: " ++ show args)
 doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
@@ -469,7 +469,7 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
         let newEnv = extendEnv env' (contextId e) varName
         rebind UnitAddr (fromJust $ lookupEnv varName newEnv)
         res <- eval bod newEnv
-        returnV $ handleLocal res newEnv (CallApp $ contextId bod) varName (head arguments) ctx
+        returnV $ handleLocal res newEnv (CallApp $ contextId bod) (contextId bod, varName) (head arguments) ctx
   else do
     case args !! 1 of
       AChangeClos e env -> do
@@ -481,8 +481,8 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
         returnV $ eval bod newEnv
 localEff = True
 
-doHandleLocal :: HasCallStack => RValue -> VEnv -> Call -> TName -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
-doHandleLocal res venv bodId varName valAddr retCtx = do
+doHandleLocal :: HasCallStack => RValue -> VEnv -> Call -> (ExprContextId, TName) -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
+doHandleLocal res venv bodId (id, varName) valAddr retCtx = do
   case res of
     ROp dval ctx' frame' dframe' knext -> do
       let kOp = KAddr frame' ctx' dframe' dval
@@ -490,7 +490,7 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
           res <- apply kOp valAddr (dynamic retCtx)
-          returnV $ handleLocal res venv bodId varName valAddr retCtx
+          returnV $ handleLocal res venv bodId (id, varName) valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           extendStore UnitAddr changeUnit
           v <- store newAddr
@@ -499,15 +499,15 @@ doHandleLocal res venv bodId varName valAddr retCtx = do
           let newRetCtx = addCallRaw m retCtx (CtxId $ vcontextId v)
           let newDelimCtx = newDelim d m newRetCtx (CtxId $ vcontextId v) (getName varName)
           res <- apply kOp UnitAddr (dynamic newDelimCtx)
-          returnV $ handleLocal res venv (CtxId $ vcontextId v) varName newAddr newRetCtx
+          returnV $ handleLocal res venv (CtxId $ vcontextId v) (id, varName) newAddr newRetCtx
         DVal hName opName opExpr args oCtx -> do
           -- trace ("Passing along local operation: " ++ show opName ++ " at local " ++ show varName ++ " searching for " ++ show hName) $ return ()
-          let dframe = DFrameLocal venv bodId varName valAddr
+          let dframe = DFrameLocal venv bodId (id, varName) valAddr
           returnOp dval (static retCtx) (FRestoreDelim dframe) kOp
     RVAddr addr -> returnAddr addr
 
 doHandleEffects :: HasCallStack => RValue -> VEnv -> Call -> Handler -> CombinedCtx -> FixAAMR r s e FixChange
-doHandleEffects res venv bodId h@(Handler label hnd mbRet mbFrame) retCtx = do
+doHandleEffects res venv bodId h@(Handler id label hnd mbRet mbFrame) retCtx = do
   case res of
     ROp dval@(DVal hName opName opExpr args oCtx) ctx' frame' dframe' knext -> do
       if hName == label then do

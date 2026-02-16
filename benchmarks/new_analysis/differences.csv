@@ -1,239 +1,95 @@
 Comparison,Benchmark,Category,Difference Type,DMCFAR Detail,KCFA Detail,Delta
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Cont Prec,1.000,0.765,0.23529411764705888
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Abs Cont Prec,0.957,0.913,0.0434782608695653
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Abs Value Prec,0.968,0.919,0.049233947323119254
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Value Prec,0.980,0.945,0.03517241379310343
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Abs Value Prec,0.933,0.898,0.03438067684855006
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/scheduler/scheduler,Generated,Abs Value Prec,0.822,0.800,0.02178217821782169
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Abs Value Prec,0.924,0.906,0.018351780696220676
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Abs Value Prec,0.874,0.857,0.016420361247947546
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Abs Value Prec,0.864,0.859,0.0050426012867327286
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/yield/main,Mid-sized (Programs),Abs Value Prec,0.958,0.955,0.0037878787878787845
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-perfect1,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-perfect2,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Abs Value Prec,0.953,0.950,0.00340432960893855
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Abs Value Prec,0.963,0.961,0.0026638682596060725
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err4,Generated,Abs Value Prec,0.983,0.981,0.0018848660959710495
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,Mid-sized (Programs),Abs Value Prec,0.951,0.950,0.0012195121951219523
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t4,Generated,Abs Value Prec,0.929,0.928,0.0012059303397886634
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Abs Value Prec,0.938,0.937,0.0011447811447812262
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Abs Value Prec,0.958,0.960,-0.0016624327555290197
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Abs Value Prec,0.951,0.953,-0.0018006220330659684
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Abs Value Prec,0.961,0.966,-0.005460078768349419
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Abs Value Prec,0.950,0.957,-0.006896551724137945
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Abs Value Prec,0.939,0.946,-0.007284334588312347
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Abs Value Prec,0.924,0.934,-0.009798226249951636
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err5,Generated,Abs Value Prec,0.935,0.945,-0.010495195861049522
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/ukanren/q1,Generated,Abs Value Prec,0.788,0.798,-0.010747739455303496
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-come,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-love,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Abs Value Prec,0.930,0.943,-0.013571665011585576
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Abs Value Prec,0.867,0.880,-0.01376811594202898
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Abs Value Prec,0.729,0.807,-0.07806224899598402
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Cont Improv,0.471,0.000,0.47058823529411764
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Cont Improv,0.814,0.763,0.05084745762711873
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Cont Improv,0.826,0.783,0.04347826086956519
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/prime-sieve,Generated,Success/Fail,Timeout,Success,
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/send-recv,Generated,Success/Fail,Timeout,Success,
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/ukanren/q2,Generated,Success/Fail,Success,Timeout,
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares,Mid-sized (Programs),Success/Fail,Timeout,Success,
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Value Improv,0.295,0.119,0.17533597140180843
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Value Improv,0.107,0.000,0.10666666666666667
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Value Improv,0.234,0.152,0.08160024786026876
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Value Improv,0.510,0.453,0.05685143742468585
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Value Improv,0.247,0.204,0.04359819686469757
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Value Improv,0.086,0.056,0.030081724917405663
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err5,Generated,Value Improv,0.211,0.191,0.020473022912047306
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err4,Generated,Value Improv,0.277,0.262,0.015628681379093734
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t4,Generated,Value Improv,0.142,0.126,0.015606157338440813
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Value Improv,0.215,0.201,0.014297658862876261
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Value Improv,0.128,0.114,0.013954820756261255
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Value Improv,0.011,0.000,0.011494252873563218
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Value Improv,0.105,0.094,0.010923535253227395
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Value Improv,0.183,0.172,0.010919540229885033
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-come,Generated,Value Improv,0.067,0.057,0.01000392903557288
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-love,Generated,Value Improv,0.067,0.057,0.01000392903557288
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Value Improv,0.104,0.094,0.009698805041741684
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Value Improv,0.074,0.066,0.007830158217629973
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Value Improv,0.062,0.056,0.006634078212290506
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-check,Mid-sized (Programs),Value Improv,0.191,0.186,0.005382493440086122
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Value Improv,0.008,0.004,0.003903915122534369
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Value Improv,0.322,0.327,-0.004162191192266351
-"DMCFAE 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Value Improv,0.010,0.084,-0.07392068273092368
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Cont Prec,1.000,0.765,0.23529411764705888
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Abs Cont Prec,0.884,0.837,0.046511627906976716
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Abs Value Prec,0.949,0.898,0.05123460943281977
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Value Prec,0.980,0.945,0.03517241379310343
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Abs Value Prec,0.992,0.957,0.034770114942528796
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/scheduler/scheduler,Generated,Abs Value Prec,0.822,0.800,0.02178217821782169
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Abs Value Prec,0.874,0.857,0.016420361247947546
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Abs Value Prec,0.969,0.961,0.008798837584759411
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Abs Value Prec,0.864,0.859,0.0050426012867327286
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/yield/main,Mid-sized (Programs),Abs Value Prec,0.958,0.955,0.0037878787878787845
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-perfect1,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-perfect2,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Abs Value Prec,0.953,0.950,0.00340432960893855
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Abs Value Prec,0.968,0.966,0.0019366500258219954
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err4,Generated,Abs Value Prec,0.983,0.981,0.0018848660959710495
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,Mid-sized (Programs),Abs Value Prec,0.951,0.950,0.0012195121951219523
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t4,Generated,Abs Value Prec,0.929,0.928,0.0012059303397886634
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Abs Value Prec,0.942,0.943,-0.0011469862935138408
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Abs Value Prec,0.958,0.960,-0.0016624327555290197
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Abs Value Prec,0.951,0.953,-0.0018006220330659684
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Abs Value Prec,0.964,0.969,-0.005571965628356601
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp/interp,Generated,Abs Value Prec,0.924,0.934,-0.009798226249951636
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err5,Generated,Abs Value Prec,0.935,0.945,-0.010495195861049522
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-come,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-love,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Abs Value Prec,0.930,0.943,-0.013571665011585576
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Abs Value Prec,0.938,0.952,-0.01367003367003361
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Abs Value Prec,0.867,0.880,-0.01376811594202898
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Abs Value Prec,0.802,0.819,-0.017193775100401543
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Cont Improv,0.471,0.000,0.47058823529411764
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Cont Improv,0.256,0.163,0.09302325581395349
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Cont Improv,0.000,0.032,-0.03225806451612903
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Cont Improv,0.814,0.864,-0.05084745762711862
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Success/Fail,Timeout,Success,
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example5,Generated,Success/Fail,Success,Timeout,
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares,Mid-sized (Programs),Success/Fail,Timeout,Success,
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Value Improv,0.107,0.000,0.10666666666666667
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Value Improv,0.275,0.216,0.05971203660095539
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Value Improv,0.225,0.172,0.05258620689655172
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Value Improv,0.188,0.157,0.03087349397590361
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Value Improv,0.086,0.056,0.030081724917405663
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-check,Mid-sized (Programs),Value Improv,0.225,0.198,0.02711431070443382
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err5,Generated,Value Improv,0.211,0.191,0.020473022912047306
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err4,Generated,Value Improv,0.277,0.262,0.015628681379093734
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t4,Generated,Value Improv,0.142,0.126,0.015606157338440813
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-come,Generated,Value Improv,0.067,0.053,0.014068969685979378
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-love,Generated,Value Improv,0.067,0.053,0.014068969685979378
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Value Improv,0.221,0.207,0.013991081382385723
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Value Improv,0.080,0.066,0.01396512754278334
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Value Improv,0.128,0.114,0.013954820756261255
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Value Improv,0.011,0.000,0.011494252873563218
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Value Improv,0.105,0.094,0.010923535253227395
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Value Improv,0.062,0.056,0.006634078212290506
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Value Improv,0.008,0.004,0.003903915122534369
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Value Improv,0.510,0.507,0.002797383370631734
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp/interp,Generated,Value Improv,0.234,0.232,0.0021300491847720815
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Value Improv,0.319,0.336,-0.017329051251170846
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Value Improv,0.316,0.333,-0.017543859649122806
-"DMCFAE 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Value Improv,0.000,0.130,-0.12962962962962962
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Cont Prec,1.000,0.765,0.23529411764705888
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Abs Cont Prec,0.957,0.913,0.0434782608695653
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Abs Value Prec,0.968,0.919,0.049233947323119254
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Value Prec,0.980,0.945,0.03517241379310343
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Abs Value Prec,0.933,0.898,0.03438067684855006
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/scheduler/scheduler,Generated,Abs Value Prec,0.822,0.800,0.02178217821782169
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Abs Value Prec,0.924,0.906,0.018351780696220676
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Abs Value Prec,0.874,0.857,0.016420361247947546
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Abs Value Prec,0.864,0.859,0.0050426012867327286
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/yield/main,Mid-sized (Programs),Abs Value Prec,0.958,0.955,0.0037878787878787845
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-perfect1,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-perfect2,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Abs Value Prec,0.953,0.950,0.00340432960893855
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Abs Value Prec,0.963,0.961,0.0026638682596060725
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err4,Generated,Abs Value Prec,0.983,0.981,0.0018848660959710495
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,Mid-sized (Programs),Abs Value Prec,0.951,0.950,0.0012195121951219523
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t4,Generated,Abs Value Prec,0.929,0.928,0.0012059303397886634
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Abs Value Prec,0.938,0.937,0.0011447811447812262
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Abs Value Prec,0.958,0.960,-0.0016624327555290197
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Abs Value Prec,0.951,0.953,-0.0018006220330659684
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Abs Value Prec,0.961,0.966,-0.005460078768349419
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Abs Value Prec,0.950,0.957,-0.006896551724137945
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Abs Value Prec,0.939,0.946,-0.007284334588312347
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Abs Value Prec,0.924,0.934,-0.009798226249951636
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err5,Generated,Abs Value Prec,0.935,0.945,-0.010495195861049522
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/ukanren/q1,Generated,Abs Value Prec,0.788,0.798,-0.010747739455303496
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-come,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-love,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Abs Value Prec,0.930,0.943,-0.013571665011585576
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Abs Value Prec,0.867,0.880,-0.01376811594202898
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Abs Value Prec,0.729,0.807,-0.07806224899598402
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Cont Improv,0.471,0.000,0.47058823529411764
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Cont Improv,0.814,0.763,0.05084745762711873
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Cont Improv,0.826,0.783,0.04347826086956519
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/prime-sieve,Generated,Success/Fail,Timeout,Success,
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/send-recv,Generated,Success/Fail,Timeout,Success,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-check,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-perfect1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-perfect2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example4,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example1_2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example3,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/vec/main,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/yield/main,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example4,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example5,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err3,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err4,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err5,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t3,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t4,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-come,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-love,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/scheduler/scheduler,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/ukanren/q1,Generated,Success/Fail,Success,Timeout,
 "DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/ukanren/q2,Generated,Success/Fail,Success,Timeout,
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Value Improv,0.295,0.119,0.17533597140180843
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Value Improv,0.107,0.000,0.10666666666666667
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp/interp,Generated,Value Improv,0.234,0.152,0.08160024786026876
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Value Improv,0.510,0.453,0.05685143742468585
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Value Improv,0.247,0.204,0.04359819686469757
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Value Improv,0.086,0.056,0.030081724917405663
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err5,Generated,Value Improv,0.211,0.191,0.020473022912047306
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/err4,Generated,Value Improv,0.277,0.262,0.015628681379093734
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/interp2/t4,Generated,Value Improv,0.142,0.126,0.015606157338440813
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Value Improv,0.215,0.201,0.014297658862876261
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Value Improv,0.128,0.114,0.013954820756261255
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Value Improv,0.011,0.000,0.011494252873563218
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Value Improv,0.105,0.094,0.010923535253227395
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Value Improv,0.183,0.172,0.010919540229885033
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-come,Generated,Value Improv,0.067,0.057,0.01000392903557288
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/music/search-love,Generated,Value Improv,0.067,0.057,0.01000392903557288
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Value Improv,0.104,0.094,0.009698805041741684
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Value Improv,0.074,0.066,0.007830158217629973
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Value Improv,0.062,0.056,0.006634078212290506
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-check,Mid-sized (Programs),Value Improv,0.191,0.186,0.005382493440086122
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Value Improv,0.008,0.004,0.003903915122534369
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Value Improv,0.322,0.327,-0.004162191192266351
-"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Value Improv,0.010,0.084,-0.07392068273092368
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Cont Prec,1.000,0.765,0.23529411764705888
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Abs Cont Prec,0.884,0.837,0.046511627906976716
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Abs Value Prec,0.949,0.898,0.05123460943281977
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Abs Value Prec,0.980,0.945,0.03517241379310343
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/scheduler/scheduler,Generated,Abs Value Prec,0.822,0.800,0.02178217821782169
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Abs Value Prec,0.874,0.857,0.016420361247947546
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Abs Value Prec,0.967,0.957,0.009770114942528774
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Abs Value Prec,0.969,0.961,0.008798837584759411
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Abs Value Prec,0.864,0.859,0.0050426012867327286
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/yield/main,Mid-sized (Programs),Abs Value Prec,0.958,0.955,0.0037878787878787845
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-perfect1,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-perfect2,Mid-sized (Programs),Abs Value Prec,0.844,0.841,0.0035353535353535026
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Abs Value Prec,0.953,0.950,0.00340432960893855
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Abs Value Prec,0.968,0.966,0.0019366500258219954
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err4,Generated,Abs Value Prec,0.983,0.981,0.0018848660959710495
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,Mid-sized (Programs),Abs Value Prec,0.951,0.950,0.0012195121951219523
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t4,Generated,Abs Value Prec,0.929,0.928,0.0012059303397886634
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Abs Value Prec,0.942,0.943,-0.0011469862935138408
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Abs Value Prec,0.958,0.960,-0.0016624327555290197
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Abs Value Prec,0.951,0.953,-0.0018006220330659684
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Abs Value Prec,0.964,0.969,-0.005571965628356601
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp/interp,Generated,Abs Value Prec,0.924,0.934,-0.009798226249951636
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err5,Generated,Abs Value Prec,0.935,0.945,-0.010495195861049522
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-come,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-love,Generated,Abs Value Prec,0.926,0.939,-0.013373832623084558
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Abs Value Prec,0.930,0.943,-0.013571665011585576
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Abs Value Prec,0.938,0.952,-0.01367003367003361
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Abs Value Prec,0.867,0.880,-0.01376811594202898
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Abs Value Prec,0.781,0.819,-0.03802710843373491
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Cont Improv,0.471,0.000,0.47058823529411764
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Cont Improv,0.256,0.163,0.09302325581395349
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Cont Improv,0.000,0.032,-0.03225806451612903
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Cont Improv,0.814,0.864,-0.05084745762711862
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Success/Fail,Timeout,Success,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 1,1 vs KCFA 1",analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-check,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-perfect1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-perfect2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example4,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example1_2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example2,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example3,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/vec/main,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/yield/main,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example4,Generated,Success/Fail,Success,Timeout,
 "DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example5,Generated,Success/Fail,Success,Timeout,
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/build/mymakefile-example3,Generated,Value Improv,0.107,0.000,0.10666666666666667
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc1,Mid-sized (Programs),Value Improv,0.275,0.216,0.05971203660095539
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example1,Mid-sized (Programs),Value Improv,0.086,0.056,0.030081724917405663
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Value Improv,0.200,0.172,0.027586206896551724
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-check,Mid-sized (Programs),Value Improv,0.225,0.198,0.02711431070443382
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err5,Generated,Value Improv,0.211,0.191,0.020473022912047306
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err4,Generated,Value Improv,0.277,0.262,0.015628681379093734
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t4,Generated,Value Improv,0.142,0.126,0.015606157338440813
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-come,Generated,Value Improv,0.067,0.053,0.014068969685979378
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-love,Generated,Value Improv,0.067,0.053,0.014068969685979378
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example5,Mid-sized (Programs),Value Improv,0.221,0.207,0.013991081382385723
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/yield,Generated,Value Improv,0.080,0.066,0.01396512754278334
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/scoped/example3,Mid-sized (Programs),Value Improv,0.128,0.114,0.013954820756261255
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-coin,Mid-sized (Programs),Value Improv,0.011,0.000,0.011494252873563218
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/ambient/example0,Mid-sized (Programs),Value Improv,0.105,0.094,0.010923535253227395
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/coop-communication/spawn,Generated,Value Improv,0.062,0.056,0.006634078212290506
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/unix/example5,Mid-sized (Programs),Value Improv,0.008,0.004,0.003903915122534369
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-pc2,Mid-sized (Programs),Value Improv,0.510,0.507,0.002797383370631734
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp/interp,Generated,Value Improv,0.234,0.232,0.0021300491847720815
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Value Improv,0.319,0.336,-0.017329051251170846
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Value Improv,0.316,0.333,-0.017543859649122806
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/handlers/nim/example-gtree,Mid-sized (Programs),Value Improv,0.115,0.157,-0.04204317269076306
-"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Value Improv,0.000,0.130,-0.12962962962962962
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp/interp,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err3,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err4,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/err5,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t3,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/interp2/t4,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/burglar-mc,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/mini-ppl/drunk,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-come,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/music/search-love,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/scheduler/scheduler,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/ukanren/q1,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/koka-gen/ukanren/q2,Generated,Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/e1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/j/jump-anywhere/loop,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/m/monads-writer/solution1,Mid-sized (Programs),Success/Fail,Success,Timeout,
+"DMCFAR 2,2 vs KCFA 2",analysis/benchmarks/rosetta/rosetta/nums0/pr4rings/four-squares,Mid-sized (Programs),Success/Fail,Success,Timeout,

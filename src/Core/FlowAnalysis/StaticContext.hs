@@ -26,6 +26,7 @@ module Core.FlowAnalysis.StaticContext(
                           letDefBinding,letDefsOf,
                           isMain,
                           letBindingName, nextFvs, eConName,
+                          stableId,
                           fvs, fvvs, dfsTNames, dgsTNames, dgTNames, localFv
                         ) where
 import Core.Core as C
@@ -323,7 +324,6 @@ ppContextPath ctx =
     CaseCBody _ _ _ _ _ e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
     CaseCBranch _ c _ _ b -> ppContextPathRec ctx <+> parens (text (showExprKind (C.guardExpr $ head $ C.branchGuards b)))
     ExprCBasic _ c e -> ppContextPathRec ctx <+> parens (text (showExprKind e))
-
     _ -> ppContextPathRec ctx
 
 ppContextPathRec :: ExprContext -> Doc
@@ -346,6 +346,43 @@ ppContextPathRec ctx =
     CaseCGuard _ c _ _ _ _ -> ppContextPathRec c <+> text "->" <+> text "CaseGuard"
     ExprCBasic _ c e -> ppContextPathRec c <+> text "->" <+> text (show ctx)
     ExprPrim{} -> text "Primitive"
+
+stableId ctx = show $ ppContextPath ctx
+
+ppStableId :: ExprContext -> Doc
+ppStableId ctx =
+  case ctx of
+    LamCBody _ c tn e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    AppCLambda _ c e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    AppCParam _ c i e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    LetCBody _ c names e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    CaseCScrutinee _ c e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    CaseCGuard _ _ _ _ _ e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    CaseCBody _ _ _ _ _ e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    CaseCBranch _ c _ _ b -> ppStablePathId ctx <.> parens (text (showExprKind (C.guardExpr $ head $ C.branchGuards b)))
+    ExprCBasic _ c e -> ppStablePathId ctx <.> parens (text (showExprKind e))
+    _ -> ppStablePathId ctx
+
+ppStablePathId :: ExprContext -> Doc
+ppStablePathId ctx =
+  case ctx of
+    ModuleC _ _ n -> text "mod:" <.> text (show n)
+    DefCRec _ c i _ -> ppStablePathId c <.> text "." <.> text "drec" <.> pretty i
+    DefCNonRec _ c tn -> ppStablePathId c <.> text "." <.> text "dnonrec" <.> text (show tn)
+    DefCGroup _ c _ dg -> ppStablePathId c
+    LamCBody _ c tn e -> ppStablePathId c <.> text "." <.> text "lam"
+    AppCLambda _ c e -> ppStablePathId c <.> text "." <.> text "app-lam"
+    AppCParam _ c i e -> ppStablePathId c <.> text "." <.> text ("app-p" ++ show i)
+    LetCDefNonRec _ c _ -> ppStablePathId c <.> text "." <.> text ("lt" ++ show (defTName $ defOfCtx ctx))
+    LetCDefRec _ c i _ -> ppStablePathId c <.> text "." <.> text ("ltr" ++ show i)
+    LetCBody _ c names e -> ppStablePathId c <.> text "." <.> text "ltb"
+    LetCDefGroup _ c _ _ dg -> ppStablePathId c
+    CaseCScrutinee _ c e -> ppStablePathId c <.> text "." <.> text "casem"
+    CaseCBranch _ c _ i b -> ppStablePathId c <.> text "." <.> text "caseb" <.> pretty i
+    CaseCBody _ c _ _ _ _ -> ppStablePathId c <.> text "." <.> text "casebod"
+    CaseCGuard _ c _ _ _ _ -> ppStablePathId c <.> text "." <.> text "caseg"
+    ExprCBasic _ c e -> ppStablePathId c <.> text "." <.> text (show ctx)
+    ExprPrim{} -> text "p"
 
 lamVar :: Int -> ExprContext -> TName
 lamVar index ctx =
