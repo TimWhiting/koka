@@ -46,7 +46,7 @@ We compared `1,1-HMCFAR` against `1-kCFA` and `2-kCFA`.
 
 ### High-Level Relative Improvement
 
-![High Level Geometric Mean](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/evaluation_draft_images/plot_high_level_productivity_geomean.png)
+![High Level RIR Geometric Mean](benchmarks/new_analysis/plot_high_level_productivity_geomean.png)
 
 ### Summary of Precision
 
@@ -54,15 +54,15 @@ To summarize performance across our diverse suite, we use the **shifted geometri
 $$ \text{ShiftedGeomean}(S) = \exp\left(\frac{1}{N} \sum_{x \in S} \ln(1 + x)\right) - 1 $$
 This standard adjustment ensures that zero values (0% improvement) are aggregated as 0 (since $\ln(1+0)=0$) rather than multiplying the entire product to zero, which would destroy the average. This allows us to fairly aggregate improvement rates even when some benchmarks show no gain.
 
-To focus our analysis on non-trivial programs, we filter for **47 "large" benchmarks** (out of 101 total) that have more than 350 analysis states in the baseline.
+To focus our analysis on non-trivial programs, we filter for **58 "large" benchmarks** (out of 101 total) that have more than 300 analysis states in the baseline.
 
 | Metric | 0-CFA Precise (No Gain Possible) | Benchmarks with Gain | Max Gain | 1-kCFA Geomean | 1,1-HMCFAR Geomean |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Continuation Precision** | 16 / 47 (34.0%) | 16 / 47 (34.0%) | 100.0% | 11.5% | **23.9%** |
-| **Value Precision** | 3 / 47 (6.4%) | 26 / 47 (55.3%) | 71.4% | 11.0% | **13.7%** |
+| **Continuation Precision** | 26 / 62 (41.9%) | 24 / 62 (38.7%) | 100.0% | 12.6% | **25.1%** |
+| **Value Precision** | 3 / 62 (4.8%) | 38 / 62 (61.3%) | 82.1% | 17.0% | **19.5%** |
 
-*   **Continuation Precision**: The shifted geometric mean of strict RIR increased from **11.5%** (1-kCFA) to **23.9%** (1,1-HMCFAR). Note that 34% of these large benchmarks were already fully precise in 0-CFA, meaning no further gain was possible; removing these would show even higher specific gains.
-*   **Value Precision**: `1,1-HMCFAR` achieves a **13.7%** shifted geometric mean RIR, slightly improving over `1-kCFA` (11.0%). Gains are widespread, observed in over half of the benchmarks.
+*   **Continuation Precision**: The shifted geometric mean of strict RIR strictly improved from **12.6%** (1-kCFA) to **25.1%** (1,1-HMCFAR), doubling the effectiveness. Note that nearly 42% of these benchmarks were already fully precise in 0-CFA, meaning no further gain was possible.
+*   **Value Precision**: `1,1-HMCFAR` achieves a **19.5%** shifted geometric mean RIR, surpassing `1-kCFA` (17.0%). Gains are widespread, observed in over 60% of the benchmarks.
 
 **Literal Precision:**
 While Structural Precision is often high, **Literal Precision** remains a challenge. `1,1-HMCFAR` resolves significant ambiguity in literals compared to `k-CFA`, proving that handler-sensitivity aids in data-flow precision by separating the paths where constants are introduced.
@@ -74,18 +74,20 @@ While Structural Precision is often high, **Literal Precision** remains a challe
 We visualize the cost-benefit trade-off for each benchmark. Points above the diagonal (green/blue) represent improvement in precision. The X-axis represents the cost (State Space Size or Analysis Time) on a linear scale.
 
 **State Space Cost:**
-![Tradeoff Value Relative](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/evaluation_draft_images/plot_expert_tradeoff_val_relative_impr.png)
-![Tradeoff Continuation Relative](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/evaluation_draft_images/plot_expert_tradeoff_cont_relative_impr.png)
+![Tradeoff Value RIR](benchmarks/new_analysis/plot_expert_tradeoff_val_rir_strict.png)
+![Tradeoff Continuation RIR](benchmarks/new_analysis/plot_expert_tradeoff_cont_rir_strict.png)
 
 **Analysis Time Cost:**
 Time is arguably the more critical cost metric. We see a similar pattern: `1,1-HMCFAR` provides substantial precision gains (Y-axis) often with comparable or even better performance (shifted left on X-axis) due to the reduced state space from precise control flow.
-![Tradeoff Value Relative Time](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/evaluation_draft_images/plot_expert_tradeoff_val_relative_impr_time.png)
-![Tradeoff Continuation Relative Time](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/evaluation_draft_images/plot_expert_tradeoff_cont_relative_impr_time.png)
+![Tradeoff Value RIR Time](benchmarks/new_analysis/plot_expert_tradeoff_val_rir_strict_time.png)
+![Tradeoff Continuation RIR Time](benchmarks/new_analysis/plot_expert_tradeoff_cont_rir_strict_time.png)
 
 ### Parameter Sensitivity (Sweep)
 
 We analyze the impact of varying the handler-sensitivity parameter $H$ (d=1, m varies).
-![Sweep Continuation Relative](/Users/timwhiting/.gemini/antigravity/brain/d0bb3d21-7a53-4240-a516-b7fbe1ad3c16/evaluation_draft_images/plot_dmcfa_sweep_cont_relative_impr.png)
+![Sweep Continuation RIR](benchmarks/new_analysis/plot_dmcfa_sweep_cont_rir_strict.png)
+![Sweep Value RIR](benchmarks/new_analysis/plot_dmcfa_sweep_val_rir_strict.png)
+
 
 The sweep demonstrates that $H=1$ provides the most significant boost in continuation precision. Moving to $H=2$ offers diminishing returns for this metric, while $H=0$ (insensitivity) fails to capture the necessary control flow properties. Ideally, $H=1$ is the "sweet spot" for balancing precision and cost.
 

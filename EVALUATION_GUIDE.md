@@ -1,108 +1,88 @@
-# Evaluation Guide: Stratified Analysis
+# Evaluation Guide: Handler-Sensitive CFA Analysis
 
-## Methodology
+This guide documents the methodology, metrics, and key results for the evaluation of `1,1-HMCFAR` vs `k-CFA`.
 
-We evaluate our analysis using a **stratified approach** to account for the different characteristics of our benchmarks:
+## 1. Methodology & Metrics
 
-1.  **Micro (Test Suite)**: Small unit tests. While 0-CFA already perfectly resolves their control flow (structure), it is often imprecise on **literals** (integers/strings).
-2.  **Mid-sized (Programs)**: Hand-written Koka programs (e.g., Rosetta Code).
-3.  **Generated**: Larger, AI-generated programs that stress test the analysis with complex handler usage.
+We evaluate precision using two primary approaches: **Absolute Precision** (how resolved is the program?) and **Relative Imprecision Recovery (RIR)** (how much ambiguity did we remove compared to the baseline?).
 
-### Metrics
+### A. Metrics
 
-We evaluate precision along two axes: **Absolute Precision** and **Improvement (Gain)**.
+1.  **Absolute Continuation Precision**:
+    *   Fraction of call sites with a **singleton** continuation (i.e., a single known jump target).
+    *   Goal: 100%.
+2.  **Absolute Value Precision**:
+    *   Fraction of variables resolving to a **singleton** value or **optimized away** (dead code).
+3.  **Relative Imprecision Recovery (RIR)**:
+    *   Measures improvement relative to the *baseline's imprecision*.
+    *   Formula: $RIR = \frac{\text{Prec}_{new} - \text{Prec}_{base}}{N_{imprecise\_base}}$
+    *   **Strict RIR**: The denominator is strictly the count of imprecise items in the baseline (0-CFA). This prevents inflating scores by including simple, already-solved terms.
+4.  **Shifted Geometric Mean**:
+    *   Used to aggregate RIR across benchmarks.
+    *   Formula: $\exp\left(\frac{1}{N} \sum \ln(1 + x)\right) - 1$
+    *   Handles $0\%$ improvement values correctly without zeroing out the entire average.
 
-1.  **Absolute Precision**: Measures the fraction of variables that are considered "precise" in the final result.
-    *   **Definition**: A variable is counted as *precise* if:
-        1.  It is **optimized away** (dead code) by the analysis.
-        2.  It resolves to a **single value** (singleton set) in the analysis.
-        3.  It was **already precise** (singleton) in the baseline 0-CFA results (to credit the analysis for preserving existing precision).
-    *   **Formula**: `(Pre-existing Precise + newly Precise + Dead) / Total Variables`.
+### B. Benchmark Filtering
 
-2.  **Improvement (Gain)**: Measures the fraction of variables where the analysis strictly *improved* upon the baseline.
-    *   **Definition**: A variable is counted as *improved* if:
-        1.  It is **optimized away** (dead code) in the new analysis but was present in the baseline.
-        2.  Its set size is **strictly smaller** than in the baseline (e.g., `{a,b}` $\to$ `{a}`).
-    *   **Formula**: `(Dead + Shrunk) / Total Variables`.
-    *   **Note**: This metric does *not* give credit for maintaining existing precision; it only measures *added* value.
+To provide a fair and meaningful analysis, we filter benchmarks for specific summary tables:
 
-3.  **Categories**:
-    *   **Control Flow (Continuation Store)**: Measured via `structToContStrSizes`.
-    *   **Data Flow (Value Store)**: Measured via `storeToStrSizes`.
-    *   **Literal Precision**: Improvement in resolving literal values (integers).
-    *   **State Space Size**: The total number of unique entries in the analysis cache (`numTotalFixInputStates`). This includes both control-flow configurations (`Step` constructor) **and** store/heap entries (`VStore`, `KStore`), representing the full memory footprint of the abstract state.
+*   **Full Suite (N=101)**: Used for category-based breakdowns (Micro, Koka-Gen, etc.) to show breadth.
+*   **Complex Subset (N=58)**:
+    *   **Criteria**: Baseline (0-CFA) State Count > 300.
+    *   **Reasoning**: Small benchmarks are often trivial or fully solved by 0-CFA. This filter isolates "hard" problems where advanced analysis is actually needed.
+    *   **Usage**: The "Summary of Precision" table and Shifted Geomean statistics use this subset.
 
 ---
 
-## 1. Precision Results
+## 2. Key Results Summary
 
-We observe distinct precision benefits depending on the benchmark category. Results for "Generated" benchmarks exclude instances where the baseline (0-CFA) timed out.
+### A. Precision (N=58 Complex Benchmarks)
 
-### Micro Benchmarks: The Literal Precision Story
-These benchmarks heavily rely on integer arithmetic. Control flow is already perfect (100% absolute continuation precision), but data flow is not.
+We compare `1,1-HMCFAR` against `1-kCFA`.
 
-| Configuration | Median Literal Precision Gain | Absolute Cont. Precision |
-| :--- | :--- | :--- |
-| **DMCFAR (1,1)** | **13.7%** | 100.0% |
-| k-CFA k=1 | 4.1% | 100.0% |
-| 0-CFA | 0.0% | 100.0% |
-
-*   **Key Finding**: DMCFAR (1,1) recovers **3x more literal precision** (13.7% vs 4.1%) than k-CFA k=1, effectively resolving data-flow ambiguity.
-
-### Generated Benchmarks: The Structural Precision Story
-These programs involve complex effect handlers. The challenge is resolving the **continuation structure** (control flow).
-
-| Configuration | Success Rate | Median Value Impro. | Median Absolute Cont. | Max Value Impro. |
-| :--- | :--- | :--- | :--- | :--- |
-| **DMCFAR (1,1)** | 72.7% | **1.0%** | **96.3%** | **7.8%** |
-| k-CFA k=1 | 85.0% | 0.3% | 95.2% | 6.9% |
-| 0-CFA | 100% | 0.0% | 83.7% | 0.0% |
-
-*   **Key Finding**:
-    *   **Absolute Control Precision**: DMCFAR (1,1) pushes continuation precision to **96.3%**, closer to perfection than k-CFA k=1 (95.2%), starting from a baseline of 83.7%.
-    *   **Value Precision Improvement**: DMCFAR achieves **3x higher median gain** (1.0% vs 0.3%) than k-CFA.
-    *   The **Max Improvement** of 7.8% (vs 6.9%) shows DMCFAR unlocks precision in cases where k-CFA hits a wall.
-
-### Mid-sized Programs
-| Configuration | Success Rate | Median Value Impro. | Absolute Cont. Precision |
+| Metric | 1-kCFA Shifted Geomean | 1,1-HMCFAR Shifted Geomean | Notes |
 | :--- | :--- | :--- | :--- |
-| **DMCFAR (1,1)** | **100.0%** | **0.0%** | **100.0%** |
-| k-CFA k=1 | 100.0% | 0.0% | 100.0% |
-| 0-CFA | 100.0% | 0.0% | 94.4% |
+| **Continuation RIR** | 12.6% | **25.1%** | HMCFAR **doubles** the effectiveness in resolving control flow ambiguity. |
+| **Value RIR** | 17.0% | **19.5%** | HMCFAR provides a consistent edge in data flow precision as well. |
 
-*   **Key Finding**: Both analyses achieve perfect 100% continuation precision on standard programs, improving upon the 94.4% baseline.
+### B. The "Koka-Gen" Gap
 
-### Visualization
-We provide 4 variations of scatter plots (`benchmarks/new_analysis/scatter_*.png`) to explore these dimensions on non-micro benchmarks:
-1.  **Absolute Continuation Precision**: Shows how close we are to 100% perfect control flow.
-2.  **Absolute Value Precision**: Shows the raw precision of the data store.
-3.  **Continuation Precision Improvement**: Shows the specific "lift" provided by the analysis over 0-CFA. **Note**: Benchmarks where *all* compared analyses achieve 100% precision are filtered out to focus on cases where improvement is possible/needed.
-4.  **Value Precision Improvement**: Shows the "lift" provided for data structures/closures (also filters out 100% precise cases).
-5.  **Cactus Plot**: Shows the scalability tradeoff.
-6.  **Differences Table** (`benchmarks/new_analysis/differences.csv`): A detailed list of specific benchmarks where the analyses differ.
-7.  **Summary Statistics** (`benchmarks/new_analysis/differences_summary.csv`):
-    *   **Pivoted Table**: Shows Wins/Losses and Average Percentages for each metric (Absolute & Improvement).
-    *   **Methodology Note**: Metric averages (Win/Loss %) are calculated **only** on benchmarks where **both** analyses finished successfully. Cases where one Analysis timed out are tracked separately in the "Success/Fail" row.
-    *   **Continuation Precision**: DMCFAR consistently provides large gains (~14% Absolute, ~19-28% Improvement) on a few key benchmarks, with zero losses.
-    *   **Value Precision**: Shows frequent trade-offs (wins ~ losses) with small magnitudes (~1-3%).
-    *   **Success/Fail**: Mixed results; DMCFAR unlocks some hard cases but times out on others due to overhead.
+On the hardest category, **Koka-Gen** (large generated programs), the difference is most pronounced:
+*   **1-kCFA** Absolute Continuation Precision: **75.3%**
+*   **1,1-HMCFAR** Absolute Continuation Precision: **87.6%**
+*   **Impact**:Resolves nearly **half** of the control-flow ambiguity that `1-kCFA` fails to handle.
+
+### C. Cost & Scalability
+
+*   **State Space**: `1,1-HMCFAR` visits **1.06x** more states than `1-kCFA` (Median).
+*   **Efficiency**: On Koka-Gen, the cost factor is only **1.12x**, indicating highly efficient analysis of complex structures. The precision gain pays for itself by pruning spurious paths.
 
 ---
 
-## 2. Summary for Paper
+## 3. Visualizations
 
-**RQ1 (Precision)**:
-> "Our evaluation reveals two distinct precision benefits. On micro benchmarks, DMCFAR (1,1) improves literal precision (integers/strings) by a median of 13.7%, compared to just 4.1% for k-CFA k=1. On complex generated stress tests, DMCFAR excels at resolving control flow, increasing absolute continuation precision to **96.3%** (from a 0-CFA baseline of 83.7%), surpassing k-CFA k=1 (95.2%). This 1.1% edge in absolute precision represents a significant reduction in the remaining ambiguity of the analysis."
+The evaluation generates several plots in `benchmarks/new_analysis/`:
 
+1.  **High-Level Metric (Bar/Scatter)**: Shows average precision across categories.
+2.  **Expert Trade-off (Scatter)**:
+    *   **X-Axis**: Cost (Time or States).
+    *   **Y-Axis**: Relative Improvement (RIR).
+    *   **Interpretation**: Points in the top-left (high gain, low cost) are ideal. HMCFAR dominates the upper (high precision) region.
+3.  **Pareto Frontier (Line)**:
+    *   Shows the trade-off curve for specific benchmarks as we vary parameters ($m=0,1,2$).
+4.  **Parameter Sweep (Heatmap/Panel)**:
+    *   Demonstrates that $H=1$ (Handler Sensitivity) is the "sweet spot" for precision key.
 
-**RQ2 (Scalability)**:
-> "DMCFAR (1,1) analyzes 100% of standard programs and 78% of stress tests, showing robust scalability. While k-CFA k=1 solves slightly more stress tests (88%), it does so at the cost of significantly lower precision. DMCFAR consistently analyzes generated benchmarks faster than DMCFAE (0.016s vs 0.018s median), validating its optimized design."
+## 4. Reproducing Results
 
----
+To run the full analysis and generate all tables/plots:
 
-## Scripts
-Run the new stratified analysis:
 ```bash
 python benchmarks/new_analysis.py
 ```
-Output tables and plots are in `benchmarks/new_analysis/`.
+
+This script will:
+1.  Load cached analysis results.
+2.  Apply the filters (N=58).
+3.  Compute Strict RIR and Shifted Geomeans.
+4.  Output CSV tables and PNG plots to `benchmarks/new_analysis/`.

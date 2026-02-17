@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, geometric_mean, geometric_sd, get_complex_benchmarks, filter_common_benchmarks
+from plot_utils import load_results_with_baselines, geometric_mean, geometric_sd, get_large_benchmarks, filter_common_benchmarks
 
 # Load results
 print("Loading results with sophisticated metrics...")
 results = load_results_with_baselines("benchmarks/results-cached")
 df = pd.DataFrame(results)
 
-# Filter for complex benchmarks (0-CFA < 99%)
-complex_benchmarks = get_complex_benchmarks(df)
+# Filter for large benchmarks (States > 300)
+complex_benchmarks = get_large_benchmarks(df, threshold=300)
 df_complex = df[df['benchmarkName'].isin(complex_benchmarks)]
 
 # Define configurations of interest
@@ -41,7 +41,7 @@ for config in configs:
             'MetricType': 'Relative Imprecision Recovery (Strict) - Value',
             'Value': row.get('prec_val_rir_strict', 0.0),
             'Hits': row.get('prec_val_rir_strict_hits', 0),
-            'Total': row.get('prec_val_relative_total', 0) # Total is same: imprecise in base
+            'Total': row.get('baseline_val_imprecise', 0) # Total is same: imprecise in base
         })
 
         # Metric 4: Continuation Precision Improvement (Relative to Imprecise)
@@ -50,7 +50,7 @@ for config in configs:
             'MetricType': 'Relative Imprecision Recovery (Strict) - Continuation',
             'Value': row.get('prec_cont_rir_strict', 0.0),
             'Hits': row.get('prec_cont_rir_strict_hits', 0),
-            'Total': row.get('prec_cont_relative_total', 0)
+            'Total': row.get('baseline_cont_imprecise', 0)
         })
 
 
