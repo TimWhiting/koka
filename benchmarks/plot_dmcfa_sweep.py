@@ -68,7 +68,13 @@ def plot_sweep():
         'prec_cont_real': ('prec_cont_real_hits', 'prec_cont_real_total',
                            'Continuation Precision (Real)', 'cont_real', 'Real Precision (Pooled)'),
         'prec_val_real': ('prec_val_real_hits', 'prec_val_real_total',
-                          'Value Precision (Real)', 'val_real', 'Real Precision (Pooled)')
+                          'Value Precision (Real)', 'val_real', 'Real Precision (Pooled)'),
+                          
+        # New Relative Improvement Metrics (Denominator = Imprecise in Baseline)
+        'prec_val_relative': ('prec_val_relative_hits', 'prec_val_relative_total',
+                              'Value Precision improvement (Relative to Imprecise)', 'val_relative_impr', 'Pct of Baseline Imprecision Resolved'),
+        'prec_cont_relative': ('prec_cont_relative_hits', 'prec_cont_relative_total',
+                               'Continuation Precision Improvement (Relative to Imprecise)', 'cont_relative_impr', 'Pct of Baseline Imprecision Resolved')
     }
     
     sns.set_theme(style="whitegrid")

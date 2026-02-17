@@ -19,7 +19,9 @@ metrics_to_plot = [
     {'Name': 'Value Precision (Real)', 'Col': 'prec_val_real', 'File': 'plot_expert_tradeoff_real.png'},
     {'Name': 'Continuation Precision Improvement', 'Col': 'prod_k_str', 'File': 'plot_expert_tradeoff_cont_productivity.png'},
     {'Name': 'Continuation Precision (Absolute via Improvement)', 'Col': 'prec_cont_abs_impr', 'File': 'plot_expert_tradeoff_cont_abs_impr.png'},
-    {'Name': 'Continuation Precision (Real)', 'Col': 'prec_cont_real', 'File': 'plot_expert_tradeoff_cont_real.png'}
+    {'Name': 'Continuation Precision (Real)', 'Col': 'prec_cont_real', 'File': 'plot_expert_tradeoff_cont_real.png'},
+    {'Name': 'Value Precision Improvement (Relative to Imprecise)', 'Col': 'prec_val_relative', 'File': 'plot_expert_tradeoff_val_relative_impr.png'},
+    {'Name': 'Continuation Precision Improvement (Relative to Imprecise)', 'Col': 'prec_cont_relative', 'File': 'plot_expert_tradeoff_cont_relative_impr.png'}
 ]
 
 # Baseline: 1-kCFA (d=0, m=1)
@@ -52,6 +54,16 @@ for m_info in metrics_to_plot:
     # Calculate Gain and Ratio which were removed
     plot_df['Prec_Gain'] = plot_df['Precision_New'] - plot_df['Precision_Base']
     plot_df['Cost_Ratio'] = plot_df['Cost_New'] / plot_df['Cost_Base']
+    
+    # Filter for interesting benchmarks (like the old script)
+    # Show if useful difference in Precision (> 1%) OR useful difference in Cost (> 10%)
+    initial_len = len(plot_df)
+    plot_df = plot_df[
+        (plot_df['Prec_Gain'].abs() > 0.01) | 
+        (plot_df['Cost_Ratio'] < 0.9) | 
+        (plot_df['Cost_Ratio'] > 1.1)
+    ]
+    print(f"Filtered {initial_len} -> {len(plot_df)} interesting benchmarks (Diff > 1% or Cost Ratio > 10%).")
 
     plt.figure(figsize=(10, 6))
     sns.set_theme(style="whitegrid")
