@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, get_complex_benchmarks, geometric_mean
+from plot_utils import load_results_with_baselines, get_large_benchmarks, geometric_mean
 
 def plot_sweep():
     print("Loading results with standardized metrics...")
@@ -12,8 +12,8 @@ def plot_sweep():
     
     # Filter for complex benchmarks 
     # (Use the same definition as High Level plots for consistency)
-    complex_benchmarks = get_complex_benchmarks(df)
-    print(f"Filtering for {len(complex_benchmarks)} complex benchmarks.")
+    complex_benchmarks = get_large_benchmarks(df, threshold=300)
+    print(f"Filtering for {len(complex_benchmarks)} large benchmarks (States > 300).")
     df = df[df['benchmarkName'].isin(complex_benchmarks)]
 
     # Filter for DMCFAR runs only for the sweep
@@ -62,19 +62,19 @@ def plot_sweep():
     # Value: (Display Name, Filename Suffix, Y-Label)
     metrics_to_plot = {
         'prod_k_str': ('prod_k_str_hits', 'prod_k_str_total', 
-                       'Continuation Precision (Improvement)', 'cont_productivity', 'Relative Improvement (Pooled)'),
+                       'Continuation Precision (Shifted Geomean)', 'cont_productivity', 'Relative Improvement (Geomean)'),
         'prec_val_total': ('prec_val_total_hits', 'prec_val_total_total', 
-                           'Value Precision (Improvement)', 'val_productivity', 'Relative Improvement (Pooled)'),
+                           'Value Precision (Shifted Geomean)', 'val_productivity', 'Relative Improvement (Geomean)'),
         'prec_cont_real': ('prec_cont_real_hits', 'prec_cont_real_total',
                            'Continuation Precision (Real)', 'cont_real', 'Real Precision (Pooled)'),
         'prec_val_real': ('prec_val_real_hits', 'prec_val_real_total',
                           'Value Precision (Real)', 'val_real', 'Real Precision (Pooled)'),
                           
         # New Relative Imprecision Recovery (Strict)
-        'prec_val_rir_strict': ('prec_val_rir_strict_hits', 'prec_val_relative_total',
-                              'Value RIR (Strict)', 'val_rir_strict', 'Pct of Baseline Imprecision Resolved'),
-        'prec_cont_rir_strict': ('prec_cont_rir_strict_hits', 'prec_cont_relative_total',
-                               'Continuation RIR (Strict)', 'cont_rir_strict', 'Pct of Baseline Imprecision Resolved')
+        'prec_val_rir_strict': ('prec_val_rir_strict_hits', 'baseline_val_imprecise',
+                              'Value RIR (Shifted Geomean)', 'val_rir_strict', 'Pct of Baseline Imprecision Resolved'),
+        'prec_cont_rir_strict': ('prec_cont_rir_strict_hits', 'baseline_cont_imprecise',
+                               'Continuation RIR (Shifted Geomean)', 'cont_rir_strict', 'Pct of Baseline Imprecision Resolved')
     }
     
     sns.set_theme(style="whitegrid")
@@ -97,11 +97,21 @@ def plot_sweep():
         # This effectively calculates the Micro-Average (Weighted Mean)
         # Ratio = Sum(Hits) / Sum(Total) across all benchmarks in the group
         
-        # Groupby sums
-        sums = df_sweep.groupby(['m', 'h'])[[hits_col, total_col]].sum().reset_index()
+        # Calculate per-benchmark ratios first
+        # We need individual ratios to compute Geomean
+        df_sweep['ratio'] = df_sweep.apply(lambda row: row[hits_col] / row[total_col] if row[total_col] > 0 else 0.0, axis=1)
         
-        # Calculate ratio
-        sums[metric_key] = sums.apply(lambda row: row[hits_col] / row[total_col] if row[total_col] > 0 else 0.0, axis=1)
+        # Define Shifted Geomean Aggregator
+        def shifted_geomean_agg(series):
+            # val = improvement ratio
+            vals = series + 1.0
+            vals = vals[vals > 0]
+            if len(vals) == 0: return 0.0
+            return np.exp(np.mean(np.log(vals))) - 1.0
+
+        # Aggregate using Shifted Geomean
+        sums = df_sweep.groupby(['m', 'h'])['ratio'].apply(shifted_geomean_agg).reset_index()
+        sums.rename(columns={'ratio': metric_key}, inplace=True)
 
         # Calculate timeouts per group (within the complex set, before common filtering? 
         # Actually user wants to know if THIS config failed. 
