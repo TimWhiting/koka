@@ -296,7 +296,7 @@ doDoContinue res frame ctx =
                     Left newTree -> recur branches newTree
             case exprOfCtx parent of
               Case _ pats -> recur (zip pats branches) (TChangeV addr)
-          FDollar va -> do
+          FDollar _ va -> do
             res <- store va
             case res of
               AChangeClos cexpr cenv -> do
@@ -387,7 +387,7 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameHandle = do
       bod <- focusBody body
       -- trace ("Applying handle: " ++ show label ++ " with env " ++ show venv) $ return ()
       RV (res, newCtx) <- eval bod (limitEnv bodyenv (fvs body)) ctx
-      let h = Handler (contextId bod) label (arguments !! 1) (Just ret) (Just $ FDollar (arguments !! 2))
+      let h = Handler (contextId bod) label (arguments !! 1) (Just ret) (Just $ FDollar (contextId u) (arguments !! 2))
       handleEffects res venv (CtxId $ Left $ contextId bod) h newCtx
     _ -> doBottom
 doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
