@@ -46,7 +46,8 @@ We compared `1,1-HMCFAR` against `1-kCFA` and `2-kCFA`.
 
 ### High-Level Relative Improvement
 
-![High Level RIR Geometric Mean](benchmarks/new_analysis/plot_high_level_productivity_geomean.png)
+![High Level Continuation RIR](benchmarks/new_analysis/plot_categorical_cont_rir.png)
+![High Level Value RIR](benchmarks/new_analysis/plot_categorical_val_rir.png)
 
 ### Summary of Precision
 
@@ -63,6 +64,20 @@ To focus our analysis on non-trivial programs, we filter for **58 "large" benchm
 
 *   **Continuation Precision**: The shifted geometric mean of strict RIR strictly improved from **12.6%** (1-kCFA) to **25.1%** (1,1-HMCFAR), doubling the effectiveness. Note that nearly 42% of these benchmarks were already fully precise in 0-CFA, meaning no further gain was possible.
 *   **Value Precision**: `1,1-HMCFAR` achieves a **19.5%** shifted geometric mean RIR, surpassing `1-kCFA` (17.0%). Gains are widespread, observed in over 60% of the benchmarks.
+
+
+### Baseline Precision by Category (0-CFA)
+
+The following table shows the absolute precision of the `0-CFA` baseline across different benchmark categories. This context helps explain the variance in RIR improvement; categories with already high baseline precision (like Rosetta) have less room for improvement.
+
+| Category | 0-CFA Continuation Precision | 0-CFA Value Precision |
+| :--- | :--- | :--- |
+| **Koka-Gen** | 67.5% | 85.3% |
+| **Koka-Samples** | 77.1% | 87.4% |
+| **Micro-Suite** | 94.6% | 95.9% |
+| **Rosetta** | 92.2% | 89.4% |
+
+**Note on Rosetta:** The Rosetta Stone benchmarks show limited RIR improvement because they are already highly precise in 0-CFA (>92% Continuation Precision), leaving little ambiguity for 1-CFA or HMCFAR to resolve.
 
 **Literal Precision:**
 While Structural Precision is often high, **Literal Precision** remains a challenge. `1,1-HMCFAR` resolves significant ambiguity in literals compared to `k-CFA`, proving that handler-sensitivity aids in data-flow precision by separating the paths where constants are introduced.
