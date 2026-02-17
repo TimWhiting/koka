@@ -10,8 +10,13 @@ def generate_markdown():
 
     # 1. Identify Configurations
     # Group by variant, d, m to see what exists
-    # Filter out invalid or failed runs
-    valid_df = df[df['AbsContPrecision'].notna()].copy()
+    # Filter out invalid or failed runs, but KEEP timeouts
+    # We check if AbsContPrecision exists OR status is T/O
+    valid_df = df.copy()
+    if 'status' not in valid_df.columns:
+        valid_df['status'] = 'OK' # Default
+        
+    valid_df = valid_df[valid_df['AbsContPrecision'].notna() | (valid_df['status'] == 'T/O')]
     
     # Create a "Config Label" column for sorting/display
     def get_config_label(row):
@@ -21,6 +26,7 @@ def generate_markdown():
         if v == 'kcfa':
             return f"kCFA({m})"
         elif v == 'dmcfar':
+            if d == 0 and m == 0: return "0CFA"
             return f"H({d},{m})"
         return v # Fallback
 
@@ -28,11 +34,14 @@ def generate_markdown():
     
     # Filter out 'dmcfae' or other variants if they slipped through mapping
     valid_df = valid_df[valid_df['variant'].isin(['kcfa', 'dmcfar'])]
+    # Filter out kCFA(0) explicitly as we used H(0,0) -> 0CFA
+    valid_df = valid_df[valid_df['Config'] != 'kCFA(0)']
 
     # Get unique configs and sort them
     configs = sorted(valid_df['Config'].unique())
     
     def config_sort_key(c):
+        if c == '0CFA': return (-1, 0)
         # Prioritize kCFA
         # kCFA(k) -> (0, k)
         # H(h,k) -> (1, h, k)
@@ -81,6 +90,7 @@ def generate_markdown():
     pivot_states = valid_df.pivot_table(index='benchmarkName', columns='Config', values='States', aggfunc='first')
     pivot_time = valid_df.pivot_table(index='benchmarkName', columns='Config', values='Time', aggfunc='first')
     pivot_time = pivot_time * 1000 # Convert Seconds to Milliseconds
+    pivot_status = valid_df.pivot_table(index='benchmarkName', columns='Config', values='status', aggfunc='first')
     
     # 3. Format & Output
     # We need to process benchmarks in our standard sorted order
@@ -188,17 +198,38 @@ def generate_markdown():
             
             # Determine winner for H(1,1) vs kCFA(1)
             h_wins = False
-            if has_comparison and col_h in row_vals and col_k in row_vals:
-                val_h = row_vals[col_h]
-                val_k = row_vals[col_k]
-                if metric_type == "max":
-                    if val_h > val_k: h_wins = True
-                else: # min
-                    if val_h < val_k: h_wins = True
+            
+            # Check status of comparison columns
+            stat_h = pivot_status.loc[bench_full, col_h] if col_h in configs else 'Missing'
+            stat_k = pivot_status.loc[bench_full, col_k] if col_k in configs else 'Missing'
+            
+            if col_h in configs and col_k in configs:
+                # If H is OK and K is T/O -> Win
+                if stat_h == 'OK' and stat_k == 'T/O':
+                    h_wins = True
+                # If Both OK, compare values
+                elif stat_h == 'OK' and stat_k == 'OK':
+                    if col_h in row_vals and col_k in row_vals:
+                         val_h = row_vals[col_h]
+                         val_k = row_vals[col_k]
+                         if metric_type == "max":
+                             if val_h > val_k: h_wins = True
+                         else: # min
+                             if val_h < val_k: h_wins = True
 
             # Format cells
             formatted_vals = []
             for c in configs:
+                # Check status first
+                stat = None
+                try:
+                    stat = pivot_status.loc[bench_full, c]
+                except: pass
+                
+                if stat == 'T/O':
+                    formatted_vals.append("T/O")
+                    continue
+                
                 if c not in row_vals:
                     formatted_vals.append("-")
                     continue

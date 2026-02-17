@@ -58,16 +58,42 @@ for m_info in metrics_to_plot:
 
     # Draw lines
     for i, row in plot_df.iterrows():
-        color, alpha = get_tradeoff_color(row['Prec_Gain'], row['Cost_Ratio'])
+        # Check status
+        stat_base = row.get('Status_Base', 'Missing')
+        stat_new = row.get('Status_New', 'Missing')
         
-        p0 = (row['Cost_Base'], row['Precision_Base'])
-        p1 = (row['Cost_New'], row['Precision_New'])
+        has_base = stat_base == 'OK' and pd.notna(row.get('Cost_Base')) and pd.notna(row.get('Precision_Base'))
+        has_new = stat_new == 'OK' and pd.notna(row.get('Cost_New')) and pd.notna(row.get('Precision_New'))
         
-        plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=alpha, linewidth=1)
-        
-        # Plot points
-        plt.scatter(p0[0], p0[1], color='gray', s=10, alpha=0.5) # Base start
-        plt.scatter(p1[0], p1[1], color=color, s=20, alpha=0.8) # New end
+        if has_base and has_new:
+            # Full line
+            prec_gain = row['Precision_New'] - row['Precision_Base']
+            cost_ratio = row['Cost_New'] / row['Cost_Base'] if row['Cost_Base'] > 0 else 1.0 # Safety
+            
+            color, alpha = get_tradeoff_color(prec_gain, cost_ratio)
+            
+            p0 = (row['Cost_Base'], row['Precision_Base'])
+            p1 = (row['Cost_New'], row['Precision_New'])
+            
+            plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=0.3, linewidth=1)
+            
+            # Plot points
+            plt.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2) # Base start
+            plt.scatter(p1[0], p1[1], color=color, s=25, alpha=0.8, zorder=3) # New end
+            
+        elif has_base:
+            # Only Base succeeded
+            p0 = (row['Cost_Base'], row['Precision_Base'])
+            plt.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2)
+            # Optional: Mark that 'New' failed? User said "single points for the analysis that completed".
+            # If New is T/O, maybe a small red 'x' near it if we knew where? No.
+            
+        elif has_new:
+            # Only New succeeded (Base T/O) -> Win!
+            p1 = (row['Cost_New'], row['Precision_New'])
+            plt.scatter(p1[0], p1[1], color='green', s=200, marker='*', alpha=0.9, zorder=3) # Star for Win
+            
+        # If both failed or missing, do nothing
 
     # Improve axes
     plt.xscale('log')
