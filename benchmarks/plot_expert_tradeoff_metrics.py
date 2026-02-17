@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -12,37 +11,30 @@ print("Loading results with sophisticated metrics...")
 c_base = {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'}
 c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
 
-# Metrics mapping: {'DesiredName': 'ColumnNameInResults', 'Filename': 'savename'}
+# Metrics and Cost Configs
 metrics_to_plot = [
-    # 1. RIR (Strict Precision Recovery) - Replacing the old "Productivity" plots with Strict RIR logic
     {'Name': 'Value RIR (Strict)', 'Col': 'prec_val_rir_strict', 'File': 'plot_expert_tradeoff_productivity.png'},
     {'Name': 'Continuation RIR (Strict)', 'Col': 'prec_cont_rir_strict', 'File': 'plot_expert_tradeoff_cont_productivity.png'},
-
-    # 2. Absolute Precision (Real measured precision) - Keeping these as secondary/reference
     {'Name': 'Value Absolute Precision', 'Col': 'prec_val_real', 'File': 'plot_expert_tradeoff_real.png'},
     {'Name': 'Continuation Absolute Precision', 'Col': 'prec_cont_real', 'File': 'plot_expert_tradeoff_cont_real.png'}
 ]
 
-# Baseline: 1-kCFA (d=0, m=1)
-c_base = {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'}
-c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
+cost_configs = [
+    {'CostName': 'States', 'CostCol': 'States', 'XLabel': 'State Space Size', 'Suffix': ''},
+    {'CostName': 'Time', 'CostCol': 'Time', 'XLabel': 'Analysis Time (s)', 'Suffix': '_time'}
+]
 
 # Load results using shared util
-# This caches results so subsequent calls are fast
-print("Loading results with sophisticated metrics...")
 df_final = load_results_with_baselines()
+
+# Collect data for combined plots
+collected_data = {} # Key: (MetricName, CostName) -> DataFrame
 
 # Process each metric
 for m_info in metrics_to_plot:
     metric_name = m_info['Name']
     col_name = m_info['Col']
     base_filename = m_info['File']
-    
-    # Loop over Cost Metrics
-    cost_configs = [
-        {'CostName': 'States', 'CostCol': 'States', 'XLabel': 'State Space Size', 'Suffix': ''},
-        {'CostName': 'Time', 'CostCol': 'Time', 'XLabel': 'Analysis Time (s)', 'Suffix': '_time'}
-    ]
     
     for cost_cfg in cost_configs:
         cost_name = cost_cfg['CostName']
@@ -60,7 +52,6 @@ for m_info in metrics_to_plot:
         print(f"Plotting {metric_name} vs {cost_name}...")
         
         try:
-            # Pass metrics map expected by prepare_tradeoff_data
             metrics_map = {'Cost': cost_col, 'Precision': col_name}
             plot_df = prepare_tradeoff_data(df_final, c_base, c_new, metrics_map)
         except KeyError:
@@ -69,99 +60,139 @@ for m_info in metrics_to_plot:
 
         print(f"Plotting {len(plot_df)} common benchmarks.")
 
-        # Calculate Gain and Ratio which were removed
+        # Calculate Gain and Ratio
         plot_df['Prec_Gain'] = plot_df['Precision_New'] - plot_df['Precision_Base']
         
-        # Handle zero cost (e.g. Time = 0.0s) and NaNs
-        # Ensure float type
         cost_new = plot_df['Cost_New'].fillna(0.0).astype(float)
         cost_base = plot_df['Cost_Base'].fillna(0.0).astype(float)
         
-        # Use manual loop to avoid any pandas/numpy division issues
         cost_ratios = []
         for n, b in zip(cost_new, cost_base):
-            if b <= 1e-12: # Treat small epsilon as 0
-                r = 1.0 if n == 0 else 1e6 # Avoid infinity
+            if b <= 1e-12: 
+                r = 1.0 if n == 0 else 1e6
             else:
                 r = n / b
             cost_ratios.append(r)
             
         plot_df['Cost_Ratio'] = cost_ratios
         
-        print(f"Cost Base Range: {cost_base.min()} - {cost_base.max()}")
-        
-        # Filter for interesting benchmarks (like the old script)
-        # Show if useful difference in Precision (> 1%) OR useful difference in Cost (> 10%)
+        # Filter for interesting benchmarks
         initial_len = len(plot_df)
         plot_df = plot_df[
             (plot_df['Prec_Gain'].abs() > 0.01) | 
             (plot_df['Cost_Ratio'] < 0.9) | 
             (plot_df['Cost_Ratio'] > 1.1)
         ]
-        print(f"Filtered {initial_len} -> {len(plot_df)} interesting benchmarks (Diff > 1% or Cost Ratio > 10%).")
+        print(f"Filtered {initial_len} -> {len(plot_df)} interesting benchmarks.")
+        
+        # Store for combined
+        collected_data[(metric_name, cost_name)] = plot_df.copy()
 
-        plt.figure(figsize=(10, 6))
-        sns.set_theme(style="whitegrid")
+        # --- INDIVIDUAL PLOT ---
+        plt.figure(figsize=(7, 4))
+        sns.set_theme(style="whitegrid", font_scale=1.4)
 
-        # Draw lines
         for i, row in plot_df.iterrows():
-            # Check status
             stat_base = row.get('Status_Base', 'Missing')
             stat_new = row.get('Status_New', 'Missing')
-            
             has_base = stat_base == 'OK' and pd.notna(row.get('Cost_Base')) and pd.notna(row.get('Precision_Base'))
             has_new = stat_new == 'OK' and pd.notna(row.get('Cost_New')) and pd.notna(row.get('Precision_New'))
             
             if has_base and has_new:
-                # Full line
                 prec_gain = row['Precision_New'] - row['Precision_Base']
-                cost_ratio = row['Cost_New'] / row['Cost_Base'] if row['Cost_Base'] > 0 else 1.0 # Safety
+                cost_ratio = row['Cost_New'] / row['Cost_Base'] # Safety handled in prep? No, need check
+                if row['Cost_Base'] <= 1e-12: cost_ratio = 1.0
                 
                 color, alpha = get_tradeoff_color(prec_gain, cost_ratio)
-                
                 p0 = (row['Cost_Base'], row['Precision_Base'])
                 p1 = (row['Cost_New'], row['Precision_New'])
                 
                 plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=0.3, linewidth=1)
-                
-                # Plot points
-                plt.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2) # Base start
-                plt.scatter(p1[0], p1[1], color=color, s=25, alpha=0.8, zorder=3) # New end
+                plt.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2)
+                plt.scatter(p1[0], p1[1], color=color, s=25, alpha=0.8, zorder=3)
                 
             elif has_base:
-                # Only Base succeeded
                 p0 = (row['Cost_Base'], row['Precision_Base'])
                 plt.scatter(p0[0], p0[1], color='red', s=15, marker='*', alpha=0.5, zorder=2)
                 
             elif has_new:
-                # Only New succeeded (Base T/O) -> Win!
                 p1 = (row['Cost_New'], row['Precision_New'])
-                plt.scatter(p1[0], p1[1], color='green', s=200, marker='*', alpha=0.9, zorder=3) # Star for Win
-                
-            # If both failed or missing, do nothing
+                plt.scatter(p1[0], p1[1], color='green', s=200, marker='*', alpha=0.9, zorder=3)
 
-        # Improve axes
-        # plt.xscale('log') # REMOVED log scale as requested
         plt.xlabel(xlabel)
         plt.xscale('log')
-
         plt.ylabel(metric_name)
-        plt.title(f"Expert Trade-off: {cost_name} vs {metric_name}")
+        plt.title(f"{metric_name} vs {cost_name}")
 
-        # Add manual legend
-        from matplotlib.lines import Line2D
         legend_elements = [
-            Line2D([0], [0], color='green', lw=2, label='Win-Win (Better Prec, Lower Cost)'),
-            Line2D([0], [0], color='blue', lw=2, label='Trade-off (Better Prec, Higher Cost)'),
-            Line2D([0], [0], color='red', lw=2, label='Regression (Worse Prec)'),
-            Line2D([0], [0], color='gray', lw=2, label='Efficiency Change (Same Prec)'),
+            Line2D([0], [0], color='green', lw=2, label='Win-Win'),
+            Line2D([0], [0], color='blue', lw=2, label='Trade-off'),
+            Line2D([0], [0], color='red', lw=2, label='Regression'),
+            Line2D([0], [0], color='gray', lw=2, label='Efficiency'),
         ]
-        plt.legend(handles=legend_elements, loc='best')
+        plt.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
-        plt.tight_layout()
+        plt.tight_layout(pad=0.2)
         plt.savefig(f"benchmarks/new_analysis/{filename}")
         print(f"Saved benchmarks/new_analysis/{filename}")
+        plt.close()
 
+# --- COMBINED PLOTS ---
+def plot_combined_tradeoff(cost_name, suffix, xlabel):
+    print(f"Generating combined tradeoff plot for {cost_name}...")
+    fig, axs = plt.subplots(1, 2, figsize=(14, 4))
+    sns.set_theme(style="whitegrid", font_scale=1.4)
+    
+    metrics = [
+        ('Value RIR (Strict)', 'Value RIR', axs[0]),
+        ('Continuation RIR (Strict)', 'Continuation RIR', axs[1])
+    ]
+    
+    for metric_name, title, ax in metrics:
+        key = (metric_name, cost_name)
+        if key not in collected_data: continue
+        
+        plot_df = collected_data[key]
+        
+        for i, row in plot_df.iterrows():
+            stat_base = row.get('Status_Base', 'Missing')
+            stat_new = row.get('Status_New', 'Missing')
+            has_base = stat_base == 'OK' and pd.notna(row.get('Cost_Base')) and pd.notna(row.get('Precision_Base'))
+            has_new = stat_new == 'OK' and pd.notna(row.get('Cost_New')) and pd.notna(row.get('Precision_New'))
+            
+            if has_base and has_new:
+                prec_gain = row['Precision_New'] - row['Precision_Base']
+                cost_ratio = row['Cost_New'] / row['Cost_Base'] if row['Cost_Base'] > 1e-12 else 1.0
+                color, alpha = get_tradeoff_color(prec_gain, cost_ratio)
+                p0 = (row['Cost_Base'], row['Precision_Base'])
+                p1 = (row['Cost_New'], row['Precision_New'])
+                ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=0.3, linewidth=1)
+                ax.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2)
+                ax.scatter(p1[0], p1[1], color=color, s=25, alpha=0.8, zorder=3)
+            elif has_base:
+                p0 = (row['Cost_Base'], row['Precision_Base'])
+                ax.scatter(p0[0], p0[1], color='red', s=15, marker='*', alpha=0.5, zorder=2)
+            elif has_new:
+                p1 = (row['Cost_New'], row['Precision_New'])
+                ax.scatter(p1[0], p1[1], color='green', s=200, marker='*', alpha=0.9, zorder=3)
 
-# Do not run main logic again outside loop
-exit()
+        ax.set_title(title)
+        ax.set_ylabel("RIR" if ax == axs[0] else "")
+        ax.set_xlabel(xlabel)
+        ax.set_xscale('log')
+        
+    legend_elements = [
+        Line2D([0], [0], color='green', lw=2, label='Win-Win'),
+        Line2D([0], [0], color='blue', lw=2, label='Trade-off'),
+        Line2D([0], [0], color='red', lw=2, label='Regression'),
+        Line2D([0], [0], color='gray', lw=2, label='Efficiency'),
+    ]
+    fig.legend(handles=legend_elements, bbox_to_anchor=(1.02, 0.9), loc='upper left', borderaxespad=0.)
+    
+    plt.tight_layout(pad=0.2)
+    outfile = f"benchmarks/new_analysis/plot_expert_tradeoff_combined{suffix}.png"
+    plt.savefig(outfile, bbox_inches='tight')
+    print(f"Saved {outfile}")
+
+plot_combined_tradeoff('States', '', 'State Space Size')
+plot_combined_tradeoff('Time', '_time', 'Analysis Time (s)')

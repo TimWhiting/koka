@@ -140,6 +140,7 @@ data Frame =
         env :: VEnv
       }
   | FDollar {
+      dcontextId :: ExprContextId,
       vaddr :: Addr -- Precise closure address
   }
   | FResume {
@@ -269,9 +270,9 @@ frameId mp frame =
     FScrut parent _ _ -> "scrut@" ++ fromJust (M.lookup (contextId parent) mp)
     FApp _ left _ parent _ -> "app/" ++ show (length left) ++ "@" ++ fromJust (M.lookup (contextId parent) mp)
     FLet i _ j _ n _ parent _ -> "let/" ++ show i ++ "-" ++ show j ++ "/" ++ show n ++ "@" ++ fromJust (M.lookup (contextId parent) mp)
-    FDollar vaddr -> "dollar@" ++ vAddrId mp vaddr
+    FDollar ctx _ -> "dollar@" ++ fromJust (M.lookup ctx mp)
     FResume _ _ _ rctx -> "resume@" ++ fromJust (M.lookup rctx mp)
-    FRestoreDelim (DFrame _ b _) -> "restore@" ++ show b
+    FRestoreDelim (DFrame _ _ h@(Handler ctx nm _ _ _)) -> "restore@" ++ fromJust (M.lookup ctx mp)
     FRestoreDelim (DFrameLocal _ b (ctx, _) _) -> "restore-local@" ++ fromJust (M.lookup ctx mp)
     FMask ctx -> "mask@" ++ fromJust (M.lookup ctx mp)
 

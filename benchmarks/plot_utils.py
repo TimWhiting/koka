@@ -298,6 +298,7 @@ def compute_metrics(run, baseline_run=None):
     
     # Basic info
     metrics = {
+        'isTimeout': run.get('isTimeout', False),
         'status': "OK" if not run.get('isTimeout') else "T/O",
         'analysisTimes': run.get('analysisTimes', []),
         'Time': np.mean(run.get('analysisTimes', [0])) if run.get('analysisTimes') else 0.0,

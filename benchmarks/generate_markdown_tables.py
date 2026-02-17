@@ -16,7 +16,11 @@ def generate_markdown():
     if 'status' not in valid_df.columns:
         valid_df['status'] = 'OK' # Default
         
-    valid_df = valid_df[valid_df['AbsContPrecision'].notna() | (valid_df['status'] == 'T/O')]
+    # Filter out invalid or failed runs, but KEEP timeouts
+    # We check if 'prec_cont_rir_strict' OR 'prec_cont_real' exists OR status is T/O
+    # Note: 'prec_cont_real' is absolute precision relative to 0CFA base addresses, so it should exist if 0CFA exists
+    valid_df = valid_df[valid_df['prec_cont_rir_strict'].notna() | valid_df['prec_cont_real'].notna() | (valid_df['status'] == 'T/O')]
+
     
     # Create a "Config Label" column for sorting/display
     def get_config_label(row):
@@ -83,10 +87,14 @@ def generate_markdown():
     # Pivot Data
     # Index: Benchmark
     # Columns: Config
-    # Values: AbsContPrecision
+    # Values: RIR Metrics & Real Metrics
     
-    pivot_cont = valid_df.pivot_table(index='benchmarkName', columns='Config', values='AbsContPrecision', aggfunc='first')
-    pivot_lit = valid_df.pivot_table(index='benchmarkName', columns='Config', values='Lit_Prec', aggfunc='first')
+    pivot_cont_rir = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_cont_rir_strict', aggfunc='first')
+    pivot_val_rir = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_val_rir_strict', aggfunc='first')
+    
+    pivot_cont_real = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_cont_real', aggfunc='first')
+    pivot_val_real = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_val_real', aggfunc='first')
+    
     pivot_states = valid_df.pivot_table(index='benchmarkName', columns='Config', values='States', aggfunc='first')
     pivot_time = valid_df.pivot_table(index='benchmarkName', columns='Config', values='Time', aggfunc='first')
     pivot_time = pivot_time * 1000 # Convert Seconds to Milliseconds
@@ -96,7 +104,7 @@ def generate_markdown():
     # We need to process benchmarks in our standard sorted order
     
     # Get list of benchmarks from pivot (should be same)
-    benchmarks = pivot_cont.index.tolist()
+    benchmarks = pivot_cont_rir.index.tolist()
     
     # Categorize
     bs_data = []
@@ -212,10 +220,22 @@ def generate_markdown():
                     if col_h in row_vals and col_k in row_vals:
                          val_h = row_vals[col_h]
                          val_k = row_vals[col_k]
+                         
+                         # Check strict inequality
+                         is_better = False
                          if metric_type == "max":
-                             if val_h > val_k: h_wins = True
+                             if val_h > val_k: is_better = True
                          else: # min
-                             if val_h < val_k: h_wins = True
+                             if val_h < val_k: is_better = True
+                             
+                         # Check visual difference
+                         # Helper to format a single value
+                         def fmt(v):
+                             if use_int: return f"{v:.0f}"
+                             return f"{v:.{precision}f}"
+                             
+                         if is_better and fmt(val_h) != fmt(val_k):
+                             h_wins = True
 
             # Format cells
             formatted_vals = []
@@ -235,6 +255,11 @@ def generate_markdown():
                     continue
                 
                 val = row_vals[c]
+                
+                # Special Case: '0CFA' RIR should be 0.00 (Baseline)
+                # Even if dmcfar(0,0) improves over kcfa(0), in the table it IS the baseline.
+                if c == '0CFA' and "RIR" in title:
+                    val = 0.0
                 
                 # Format string
                 if use_int:
@@ -310,17 +335,23 @@ def generate_markdown():
     lines = []
     lines.append("# Appendix Tables\n")
     
-    # Table 1: Continuation Precision (Max is best)
-    lines.extend(generate_table("Table B1: Continuation Precision by Configuration", pivot_cont, "max", 2))
+    # Table 1: Continuation RIR (Max is best)
+    lines.extend(generate_table("Table B1: Continuation RIR (Strict) by Configuration", pivot_cont_rir, "max", 2))
     
-    # Table 2: Literal Precision (Max is best)
-    lines.extend(generate_table("Table B2: Literal Precision by Configuration", pivot_lit, "max", 2))
+    # Table 2: Value RIR (Max is best)
+    lines.extend(generate_table("Table B2: Value RIR (Strict) by Configuration", pivot_val_rir, "max", 2))
     
-    # Table 3: State Count (Min is best)
-    lines.extend(generate_table("Table B3: State Count (Complexity) by Configuration", pivot_states, "min", 0, True))
+    # Table 3: Continuation Real Precision (Base: 0CFA Addresses)
+    lines.extend(generate_table("Table B3: Continuation Real Precision by Configuration (Base: 0CFA)", pivot_cont_real, "max", 2))
+
+    # Table 4: Value Real Precision (Base: 0CFA Addresses)
+    lines.extend(generate_table("Table B4: Value Real Precision by Configuration (Base: 0CFA)", pivot_val_real, "max", 2))
+
+    # Table 5: State Count (Min is best)
+    lines.extend(generate_table("Table B5: State Count (Complexity) by Configuration", pivot_states, "min", 0, True))
     
-    # Table 4: Time (Min is best)
-    lines.extend(generate_table("Table B4: Analysis Time (ms) by Configuration", pivot_time, "min", 0, True))
+    # Table 6: Time (Min is best)
+    lines.extend(generate_table("Table B6: Analysis Time (ms) by Configuration", pivot_time, "min", 0, True))
 
     # Write to file
     with open("benchmarks/appendix_tables.md", "w") as f:

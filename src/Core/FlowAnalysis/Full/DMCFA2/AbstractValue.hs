@@ -166,7 +166,7 @@ frameId mp frame =
     FLet i _ j _ n _ parent _ -> "let/" ++ show i ++ "-" ++ show j ++ "/" ++ show n ++ "@" ++ fromJust (M.lookup (contextId parent) mp)
     FDollar ctx _ -> "dollar@" ++ fromJust (M.lookup ctx mp)
     FResume _ _ _ _ rctx -> "resume@" ++ fromJust (M.lookup rctx mp)
-    FRestoreDelim (DFrame _ b _) -> "restore@" ++ show b
+    FRestoreDelim (DFrame _ _ h@(Handler ctx nm _ _ _)) -> "restore@" ++ fromJust (M.lookup ctx mp)
     FRestoreDelim (DFrameLocal _ b (ctx, _) _) -> "restore-local@" ++ fromJust (M.lookup ctx mp)
     FMask ctx -> "mask@" ++ fromJust (M.lookup ctx mp)
 

@@ -81,8 +81,8 @@ for idx, row in subset.iterrows():
 
 plot_df = pd.DataFrame(plot_data)
 
-plt.figure(figsize=(10, 8))
-sns.set_theme(style="whitegrid")
+plt.figure(figsize=(7, 4))
+sns.set_theme(style="whitegrid", font_scale=1.4)
 
 # Scatterplot
 sns.scatterplot(data=plot_df, x='States', y='Precision', hue='Configuration', style='Configuration', s=100, palette="deep")
@@ -130,7 +130,7 @@ for bench in plot_df['Benchmark'].unique():
         if 'complex-layers' in bench:
             plt.text(d_pt['States'], d_pt['Precision'], 'complex-layers (HMCFAR)', fontsize=9, ha='left')
 
-
-plt.tight_layout()
+plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+plt.tight_layout(pad=0.2)
 plt.savefig("benchmarks/new_analysis/plot_expert_tradeoff.png")
 print("Saved plot_expert_tradeoff.png")
