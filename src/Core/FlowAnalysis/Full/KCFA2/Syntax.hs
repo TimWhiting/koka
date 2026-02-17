@@ -280,14 +280,14 @@ extractMetrics (cache, exprIds) (cacheExpected, _) =
 
     -- Maps
     storeToStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ vAddrId exprIds addr, sv) | (VStore addr, SValue sv) <- M.toList cache]
-    exprToValSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs))]
-    exprToValStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache , not $ onlyLit (resolveRValue (S.map fst vs))]
-    callToSemRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue vs) | (ctx, vs, c) <- callSites, not $ onlyLit (resolveRValue vs) ]
+    exprToValSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (fromJust (M.lookup (contextId c) exprIds), resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs))]
+    exprToValStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (fromJust (M.lookup (contextId c) exprIds), resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache , not $ onlyLit (resolveRValue (S.map fst vs))]
+    callToSemRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (fromJust (M.lookup (contextId c) exprIds), resolveRValue vs) | (ctx, vs, c) <- callSites, not $ onlyLit (resolveRValue vs) ]
     applyContSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId exprIds c, resolveRValue (S.map fst vs)) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs)) ]
     applyContStrSizes = M.map S.size $ M.fromListWith (<>) [ (show $ kAddrId exprIds c, S.map (kAddrId exprIds) (S.map snd vs)) | (KStore c, KValue vs) <- M.toList cache ]
     applyContRetSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ kAddrId exprIds c, resolveRValue (S.map fst vs)) | (Step (CApply c _ _), RValue vs) <- M.toList cache, not $ onlyLit (resolveRValue (S.map fst vs))  ]
-    callTargetSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue (S.map fst vs))]
-    callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (show $ contextId c, resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue (S.map fst vs)) ]
+    callTargetSemSizes = M.map semSizeOf $ M.fromListWith (<>) [ (fromJust (M.lookup (contextId c) exprIds), resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue (S.map fst vs))]
+    callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (fromJust (M.lookup (contextId c) exprIds), resolveRValue (S.map fst vs)) | (Step (CEval c _ _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue (S.map fst vs)) ]
 
     -- TODO: Literal values 
 
