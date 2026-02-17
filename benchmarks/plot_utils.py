@@ -368,8 +368,8 @@ def load_results_with_baselines(base_dir="benchmarks/results-cached"):
         # If not, relative metrics will be 0.
         
         for r in runs:
-            # Skip runs without metrics
-            if not r.get('storeMetrics'):
+            # Skip runs without metrics unless it's a timeout
+            if not r.get('storeMetrics') and not r.get('isTimeout'):
                 continue
                 
             m = compute_metrics(r, baseline)
@@ -419,7 +419,7 @@ def prepare_tradeoff_data(results, config1, config2, metrics):
     
     # Pivot
     pivot_cols = ['benchmarkName', 'Configuration']
-    value_cols = list(metrics.values())
+    value_cols = list(metrics.values()) + ['status'] # Add status
     
     # Pivot creates MultiIndex columns
     df_pivot = combined.pivot(index='benchmarkName', columns='Configuration', values=value_cols)
@@ -428,30 +428,27 @@ def prepare_tradeoff_data(results, config1, config2, metrics):
     df_pivot.columns = [f"{col[0]}_{col[1]}" for col in df_pivot.columns]
     df_pivot = df_pivot.reset_index()
     
-    # DEBUG
-    # print("Pivot Columns:", df_pivot.columns.tolist())
-    
     # Map back to generic names for easier plotting
-    # e.g., 'Cost_Base', 'Cost_New', 'Prec_Base', 'Prec_New'
     rename_map = {}
     for metric_name, col_name in metrics.items():
         # Check if columns exist
         base_col = f"{col_name}_{config1['label']}"
         new_col = f"{col_name}_{config2['label']}"
-        if base_col not in df_pivot.columns:
-             # This happens if one config is missing entirely or metric is missing
-             # print(f"Warning: {base_col} not found in pivot")
-             pass
-        else:
+        if base_col in df_pivot.columns:
              rename_map[base_col] = f"{metric_name}_Base"
-             
-        if new_col not in df_pivot.columns:
-             pass
-        else:
+        if new_col in df_pivot.columns:
              rename_map[new_col] = f"{metric_name}_New"
+             
+    # Map status
+    if f"status_{config1['label']}" in df_pivot.columns:
+        rename_map[f"status_{config1['label']}"] = "Status_Base"
+    if f"status_{config2['label']}" in df_pivot.columns:
+        rename_map[f"status_{config2['label']}"] = "Status_New"
     
     df_final = df_pivot.rename(columns=rename_map)
-    df_final = df_final.dropna() # Only keep benchmarks present in both
+    # Do NOT dropna() here, let the plotter handle partials
+    # df_final = df_final.dropna() 
+    
     
     # Calculate Gain and Ratio
     # Note: Cost_New/Cost_Base depends on metric direction
@@ -470,9 +467,9 @@ def get_tradeoff_color(prec_gain, cost_ratio):
     Blue: Trade-off (Better Prec & Higher Cost)
     Red: Regression (Worse Prec)
     """
-    if prec_gain < -0.01: # Worse Precision
+    if prec_gain < -0.005: # Worse Precision
         return 'red', 0.6
-    elif prec_gain > 0.01: # Better Precision
+    elif prec_gain > 0.005: # Better Precision
         if cost_ratio < 1.0:
             return 'green', 0.6 # Win-Win
         else:
