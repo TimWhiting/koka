@@ -82,7 +82,7 @@ runQueryAtRange bc build mod m d doQuery =
                 result <- do
                   mbRes <- do
                         let once = do
-                              timeout 6000000 $ do
+                              timeout 600000000 $ do
                                   tstart <- getCurrentTime
                                   -- trace (" Analyzing " ++ show name) $ return ()
                                   (l, _, analysisResult) <- runFixFinishC (emptyBasicEnv m d build True ()) s' $ do
