@@ -238,6 +238,61 @@ def calc_literal_relative_prod_stats(poly, base):
                 
     return hits, total_imprecise
 
+def calc_relative_prec_stats(metric, poly, base):
+    """
+    Calculates relative precision stats (hits, total_imprecise) relative to baseline.
+    Hit = Item was Imprecise in Base -> Became Strictly Precise (size <= 1) in Poly.
+    """
+    poly_map = poly.get(metric)
+    base_map = base.get(metric)
+    
+    if not base_map: 
+        if not poly_map:
+            return 0, 0
+        raise Exception("Do not call with empty baseline")
+    
+    hits = 0
+    total_imprecise = 0
+    
+    for x_id, base_val in base_map.items():
+        # Check if Base is Imprecise
+        if base_val == -1 or base_val > 1:
+            total_imprecise += 1
+            
+            # Check for Strict Precision (<= 1 or Missing/Dead)
+            poly_val = poly_map.get(x_id)
+            
+            if poly_val is None: # Dead
+                hits += 1
+            elif poly_val != -1 and poly_val <= 1:
+                hits += 1
+            
+    return hits, total_imprecise
+
+def calc_literal_relative_prec_stats(poly, base):
+    """
+    Calculates literal relative strict precision.
+    Hit = Literal Imprecise in Base -> Precise in Poly.
+    """
+    poly_map = poly.get('literal0CFAPrecise', {})
+    base_map = base.get('literal0CFAPrecise')
+    
+    if not base_map:
+        return 0, 0
+    
+    hits = 0
+    total_imprecise = 0
+    
+    for k, base_val in base_map.items():
+        if base_val is False: # Imprecise in Base
+            total_imprecise += 1
+            
+            # Check if now Precise (True) or Dead (Missing)
+            if k not in poly_map or poly_map[k] is True:
+                hits += 1
+                
+    return hits, total_imprecise
+
 def compute_metrics(run, baseline_run=None):
     """Computes precision metrics relative to baseline."""
     
@@ -321,15 +376,34 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_cont_relative_hits'] = c_rel_hits
         metrics['prec_cont_relative_total'] = c_rel_denom
         
-        # Literal Relative
-        l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
         
-        # Combined Value Relative
-        total_rel_hits = s_rel_hits + l_rel_hits
-        total_rel_denom = s_rel_denom + l_rel_denom
-        metrics['prec_val_relative'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
-        metrics['prec_val_relative_hits'] = total_rel_hits
-        metrics['prec_val_relative_total'] = total_rel_denom
+        metrics['prec_val_relative_impr'] = metrics['prec_val_relative'] # Alias for clarity
+        metrics['prec_val_relative_impr_hits'] = total_rel_hits
+        
+        metrics['prec_cont_relative_impr'] = metrics['prec_cont_relative'] # Alias for clarity
+        metrics['prec_cont_relative_impr_hits'] = c_rel_hits
+        
+        # --- Strict RIR (Recovery of Precision) ---
+        # Hit = Was Imprecise in Base -> Became Strictly Precise (size <= 1)
+        
+        # Store Relative Strict
+        s_rir_hits, s_rir_denom = calc_relative_prec_stats('storeToStrSizes', m, baseline)
+        
+        # Literal Relative Strict
+        l_rir_hits, l_rir_denom = calc_literal_relative_prec_stats(m, baseline)
+        
+        # Combined Value Strict RIR
+        total_rir_hits = s_rir_hits + l_rir_hits
+        total_rir_denom = s_rir_denom + l_rir_denom 
+        metrics['prec_val_rir_strict'] = total_rir_hits / total_rir_denom if total_rir_denom > 0 else 0.0
+        metrics['prec_val_rir_strict_hits'] = total_rir_hits
+        metrics['baseline_val_imprecise'] = total_rir_denom
+        
+        # Continuation Strict RIR
+        c_rir_hits, c_rir_denom = calc_relative_prec_stats('structToContStrSizes', m, baseline)
+        metrics['prec_cont_rir_strict'] = c_rir_hits / c_rir_denom if c_rir_denom > 0 else 0.0
+        metrics['prec_cont_rir_strict_hits'] = c_rir_hits
+        metrics['baseline_cont_imprecise'] = c_rir_denom
         
         # Continuation Relative
         c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
@@ -400,8 +474,30 @@ def compute_metrics(run, baseline_run=None):
         # metrics['numLitAddresses'] = l_total # Redundant
         metrics['literalHits'] = l_real_hits # Relative hits (should match precise count if baseline is self)
 
-
-
+        # --- NEW METRICS: IMPROVEMENT RATIOS (Factor over Baseline Hits) ---
+        # 1. Precise Ratio: Hits(New) / Hits(Base)
+        # Measures expansion of the "Fully Resolved" set.
+        
+        # Store + Lit Precise Hits (Base)
+        # We need to calculate hits for the BASELINE itself to get the denominator.
+        # Since 'baseline' is a dict of metrics, we treat it as "Poly" and itself as "Base" to count its own hits?
+        # Or simpler: The "Hits" for baseline is simply the count of items where size <= 1.
+        
+        s_base_hits, _ = calc_precise_stats('storeToStrSizes', baseline, baseline)
+        l_base_hits, _ = calc_literal_stats(baseline, baseline)
+        val_base_hits = s_base_hits + l_base_hits
+        
+        c_base_hits, _ = calc_precise_stats('structToContStrSizes', baseline, baseline)
+        
+        # Precise Ratio
+        metrics['impr_precise_val'] = total_real_hits / val_base_hits if val_base_hits > 0 else np.nan
+        metrics['impr_precise_cont'] = c_real_hits / c_base_hits if c_base_hits > 0 else np.nan
+        
+        # 2. Any Improvement Ratio: (PreciseNew + ImprovedNew) / Hits(Base)
+        # Measures expansion of "Useful Information" set relative to original useful set.
+        
+        metrics['impr_any_val'] = total_abs_impr_hits / val_base_hits if val_base_hits > 0 else np.nan
+        metrics['impr_any_cont'] = c_abs_impr_hits / c_base_hits if c_base_hits > 0 else np.nan
 
     else:
         metrics['prec_struct'] = 0.0
@@ -417,6 +513,16 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_cont_relative'] = 0.0
         metrics['prec_cont_relative_hits'] = 0
         metrics['prec_cont_relative_total'] = 0
+        
+        metrics['prec_val_relative_impr'] = 0.0
+        metrics['prec_cont_relative_impr'] = 0.0
+        metrics['prec_val_rir_strict'] = 0.0
+        metrics['prec_cont_rir_strict'] = 0.0
+        
+        metrics['impr_precise_val'] = 0.0
+        metrics['impr_precise_cont'] = 0.0
+        metrics['impr_any_val'] = 0.0
+        metrics['impr_any_cont'] = 0.0
 
     return metrics
 
@@ -485,14 +591,26 @@ def geometric_sd(data):
     return np.exp(np.std(log_data))
 
 def get_complex_benchmarks(df, threshold=0.99):
-    """Returns list of benchmark names where 0-CFA precision < threshold."""
+    """Returns list of benchmark names where 0-CFA precision < threshold (Union of Cont and Val)."""
+    cont = get_complex_cont_benchmarks(df, threshold)
+    val = get_complex_val_benchmarks(df, threshold)
+    return list(set(cont) | set(val))
+
+def get_complex_cont_benchmarks(df, threshold=0.99):
+    """Returns list of benchmarks where 0-CFA Continuation precision < threshold."""
     baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
-    if baseline.empty:
-        return df['benchmarkName'].unique()
-    
-    complex_bench = baseline[baseline['AbsContPrecision'] < threshold]['benchmarkName'].unique()
-    print(f"Identified {len(complex_bench)} complex benchmarks (0-CFA Prec < {threshold}).")
-    return complex_bench
+    if baseline.empty: return df['benchmarkName'].unique()
+    return baseline[baseline['AbsContPrecision'] < threshold]['benchmarkName'].unique()
+def get_large_benchmarks(df, threshold=200):
+    """Returns list of benchmarks where 0-CFA States > threshold."""
+    baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
+    if baseline.empty: return df['benchmarkName'].unique()
+    return baseline[baseline['States'] > threshold]['benchmarkName'].unique()
+def get_complex_val_benchmarks(df, threshold=0.99):
+    """Returns list of benchmarks where 0-CFA Value (Struct) precision < threshold."""
+    baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
+    if baseline.empty: return df['benchmarkName'].unique()
+    return baseline[baseline['AbsStructPrecision'] < threshold]['benchmarkName'].unique()
 
 def prepare_tradeoff_data(results, config1, config2, metrics):
     """
@@ -554,8 +672,14 @@ def prepare_tradeoff_data(results, config1, config2, metrics):
     # But usually ratio of New/Base is standard.
     # Precision Gain = New - Base
     
-    df_final['Prec_Gain'] = df_final['Precision_New'] - df_final['Precision_Base']
-    df_final['Cost_Ratio'] = df_final['Cost_New'] / df_final['Cost_Base']
+    if 'Precision_New' in df_final.columns and 'Precision_Base' in df_final.columns:
+        df_final['Prec_Gain'] = df_final['Precision_New'] - df_final['Precision_Base']
+    
+    if 'Cost_New' in df_final.columns and 'Cost_Base' in df_final.columns:
+        c_new = df_final['Cost_New'].fillna(0.0).astype(float)
+        c_base = df_final['Cost_Base'].fillna(0.0).astype(float)
+        c_base[c_base == 0] = 1e-9
+        df_final['Cost_Ratio'] = c_new / c_base
     
     return df_final
 
