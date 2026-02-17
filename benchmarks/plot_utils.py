@@ -743,7 +743,7 @@ def get_benchmark_category(bench_name):
     elif 'rosetta' in bench_name:
         return 'Rosetta'
     elif 'handlers' in bench_name:
-        return 'Handlers'
+        return 'Koka-Samples'
     elif 'suite' in bench_name:
         return 'Micro-Suite'
     else:
