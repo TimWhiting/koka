@@ -182,6 +182,62 @@ def calc_abs_impr_stats(metric, poly, base):
             
     return hits, total_relevant
 
+def calc_relative_prod_stats(metric, poly, base):
+    """
+    Calculates relative productivity stats (hits, total_imprecise) relative to baseline.
+    Denominator is only the number of IMPRECISE items in the baseline.
+    """
+    poly_map = poly.get(metric)
+    base_map = base.get(metric)
+    
+    if not base_map: 
+        if not poly_map:
+            return 0, 0
+        raise Exception("Do not call with empty baseline")
+    
+    hits = 0
+    total_imprecise = 0
+    
+    for x_id, base_val in base_map.items():
+        # Check if Base is Imprecise
+        if base_val == -1 or base_val > 1:
+            total_imprecise += 1
+            
+            # Check for improvement
+            poly_val = poly_map.get(x_id, 0)
+            
+            if base_val == -1:
+                if poly_val is not None and poly_val != -1:
+                    hits += 1
+            elif poly_val is not None and poly_val != -1 and poly_val < base_val:
+                hits += 1
+            
+    return hits, total_imprecise
+
+def calc_literal_relative_prod_stats(poly, base):
+    """
+    Calculates literal relative productivity.
+    Denominator is number of IMPRECISE literals in baseline.
+    """
+    poly_map = poly.get('literal0CFAPrecise', {})
+    base_map = base.get('literal0CFAPrecise')
+    
+    if not base_map:
+        return 0, 0
+    
+    hits = 0
+    total_imprecise = 0
+    
+    for k, base_val in base_map.items():
+        if base_val is False: # Imprecise in Base
+            total_imprecise += 1
+            
+            # Check if now Precise (True) or Dead (Missing)
+            if k not in poly_map or poly_map[k] is True:
+                hits += 1
+                
+    return hits, total_imprecise
+
 def compute_metrics(run, baseline_run=None):
     """Computes precision metrics relative to baseline."""
     
@@ -207,7 +263,7 @@ def compute_metrics(run, baseline_run=None):
 
     # Absolute Precision (for filtering)
     num_cont = m.get('numContAddresses', 0)
-    cont_single = m.get('cont0CFAStrSingletons', 0)
+    cont_single = m.get('contStrSingletons', 0)
     metrics['AbsContPrecision'] = cont_single / num_cont if num_cont > 0 else 1.0
     
     num_struct = m.get('numStructAddresses', 0)
@@ -243,6 +299,43 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_val_total'] = total_hits / total_items if total_items > 0 else 0.0
         metrics['prec_val_total_hits'] = total_hits
         metrics['prec_val_total_total'] = total_items
+        
+        # --- NEW METRICS: RELATIVE IMPROVEMENT (Effective Resolution Rate) ---
+        
+        # Store Relative
+        s_rel_hits, s_rel_denom = calc_relative_prod_stats('storeToStrSizes', m, baseline)
+        
+        # Literal Relative
+        l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
+        
+        # Combined Value Relative
+        total_rel_hits = s_rel_hits + l_rel_hits
+        total_rel_denom = s_rel_denom + l_rel_denom
+        metrics['prec_val_relative'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
+        metrics['prec_val_relative_hits'] = total_rel_hits
+        metrics['prec_val_relative_total'] = total_rel_denom
+        
+        # Continuation Relative
+        c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
+        metrics['prec_cont_relative'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
+        metrics['prec_cont_relative_hits'] = c_rel_hits
+        metrics['prec_cont_relative_total'] = c_rel_denom
+        
+        # Literal Relative
+        l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
+        
+        # Combined Value Relative
+        total_rel_hits = s_rel_hits + l_rel_hits
+        total_rel_denom = s_rel_denom + l_rel_denom
+        metrics['prec_val_relative'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
+        metrics['prec_val_relative_hits'] = total_rel_hits
+        metrics['prec_val_relative_total'] = total_rel_denom
+        
+        # Continuation Relative
+        c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
+        metrics['prec_cont_relative'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
+        metrics['prec_cont_relative_hits'] = c_rel_hits
+        metrics['prec_cont_relative_total'] = c_rel_denom
 
         # --- NEW METRICS ---
         
@@ -318,6 +411,12 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_val_abs_impr'] = 0.0
         metrics['prec_cont_real'] = 0.0
         metrics['prec_cont_abs_impr'] = 0.0
+        metrics['prec_val_relative'] = 0.0
+        metrics['prec_val_relative_hits'] = 0
+        metrics['prec_val_relative_total'] = 0
+        metrics['prec_cont_relative'] = 0.0
+        metrics['prec_cont_relative_hits'] = 0
+        metrics['prec_cont_relative_total'] = 0
 
     return metrics
 
