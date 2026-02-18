@@ -98,12 +98,7 @@ def get_stats():
     ].copy()
     
     if df_0cfa.empty:
-        # Fallback if 0-CFA is dmcfar 0,0 (unlikely for kcfa runs but possible)
-        df_0cfa = df[
-            (df['variant'] == 'dmcfar') & 
-            (df['d'] == 0) & 
-            (df['m'] == 0)
-        ].copy()
+        raise ValueError("No 0-CFA runs found.")
         
     print(f"Found {len(df_0cfa)} 0-CFA runs.")
     
@@ -143,7 +138,7 @@ def get_stats():
     else: 
         count_precise_cont = 0
             
-    # print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_cont} / {total_cont} ({count_precise_cont/total_cont*100:.1f}%)")
+    print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_cont} / {total_cont} ({count_precise_cont/total_cont*100:.1f}%)")
     print(f"Benchmarks with Gain: {count_gain_cont} / {total_cont} ({count_gain_cont/total_cont*100:.1f}%)")
     print(f"Max Gain: {max_gain_cont:.4f}")
     print(f"1-kCFA Geomean (Shifted): {geo_cont_base:.4f}")
@@ -181,9 +176,7 @@ def get_stats():
     else:
         count_precise_val = 0
             
-    print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_val} / {total_val} ({count_precise_val/total_val*100:.1f}%)")
-            
-    print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_val} / {total_val} ({count_precise_val/total_val*100:.1f}%)")
+    # print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_val} / {total_val} ({count_precise_val/total_val*100:.1f}%)")
     print(f"Benchmarks with Gain: {count_gain_val} / {total_val} ({count_gain_val/total_val*100:.1f}%)")
     print(f"Max Gain: {max_gain_val:.4f}")
     print(f"1-kCFA Geomean (Shifted): {geo_val_base:.4f}")

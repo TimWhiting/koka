@@ -68,9 +68,6 @@ import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
 import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainK)
 import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
 import Core.FlowAnalysis.Full.KCFAR.Syntax (evalMainKR)
-import Core.FlowAnalysis.Full.DMCFA2.Syntax (evalMain2)
-import Core.FlowAnalysis.Full.KCFA2.Syntax (evalMainK2)
-import Core.FlowAnalysis.Full.DMCFAR2.Syntax (evalMainR2)
 import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
 
@@ -374,10 +371,6 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m d
-                            --  liftIO $ evalMainR2 bc (\bc mn ->
-                            --      runBuild term flags $ do
-                            --        buildcTypeCheck (mn:buildcRoots bc) bc
-                            --    ) mod m d
                           else if kcfa flags then do
                              liftIO $ evalMainK bc (\bc mn ->
                                  runBuild term flags $ do
@@ -387,19 +380,11 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                             --      runBuild term flags $ do
                             --        buildcTypeCheck (mn:buildcRoots bc) bc
                             --    ) mod m 
-                            --  liftIO $ evalMainK2 bc (\bc mn ->
-                            --      runBuild term flags $ do
-                            --        buildcTypeCheck (mn:buildcRoots bc) bc
-                            --    ) mod m 
                           else do
                              liftIO $ evalMain bc (\bc mn ->
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m d
-                            --  liftIO $ evalMain2 bc (\bc mn ->
-                            --      runBuild term flags $ do
-                            --        buildcTypeCheck (mn:buildcRoots bc) bc
-                            --    ) mod m d
                           return ()
                     
                     mapM_ (\(d,m) -> runAnalysis d m) sens

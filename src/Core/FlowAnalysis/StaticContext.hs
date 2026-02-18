@@ -347,7 +347,7 @@ ppContextPathRec ctx =
     ExprCBasic _ c e -> ppContextPathRec c <+> text "->" <+> text (show ctx)
     ExprPrim{} -> text "Primitive"
 
-stableId ctx = show $ ppContextPath ctx
+stableId ctx = show $ ppStableId ctx
 
 ppStableId :: ExprContext -> Doc
 ppStableId ctx =

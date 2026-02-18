@@ -23,14 +23,17 @@ def generate_markdown():
 
     
     # Create a "Config Label" column for sorting/display
+
+    # Create a "Config Label" column for sorting/display
     def get_config_label(row):
         v = row['variant']
         d = row['d']
         m = row['m']
         if v == 'kcfa':
+            if m == 0: return "0CFA"
             return f"kCFA({m})"
         elif v == 'dmcfar':
-            if d == 0 and m == 0: return "0CFA"
+            if d == 0 and m == 0: return "H(0,0)"
             return f"H({d},{m})"
         return v # Fallback
 
@@ -38,8 +41,11 @@ def generate_markdown():
     
     # Filter out 'dmcfae' or other variants if they slipped through mapping
     valid_df = valid_df[valid_df['variant'].isin(['kcfa', 'dmcfar'])]
-    # Filter out kCFA(0) explicitly as we used H(0,0) -> 0CFA
-    valid_df = valid_df[valid_df['Config'] != 'kCFA(0)']
+    # Filter out H(0,0) to keep table clean? Or keep it?
+    # User said "Use KCFA(0) as baseline", implying 0CFA column should be KCFA.
+    # We can drop H(0,0) if it's redundant (Superset of 0CFA).
+    # valid_df = valid_df[valid_df['Config'] != 'H(0,0)']
+
 
     # Get unique configs and sort them
     configs = sorted(valid_df['Config'].unique())
@@ -156,16 +162,22 @@ def generate_markdown():
     meta_df = meta_df.sort_values(by=['Cat_Rank', 'SortSize'])
     
     # --- Helper Function for Table Generation ---
-    def generate_table(title, pivot_data, metric_type="max", precision=2, use_int=False):
+    def generate_table(title, pivot_data, metric_type="max", precision=2, use_int=False, prec_check_df=None):
         """
         Generates markdown lines for a table.
         metric_type: "max" (higher is better) or "min" (lower is better)
+        prec_check_df: Optional DF to check 0CFA precision (for RIR tables)
         """
         lines = []
         lines.append(f"\n## {title}\n")
         
+        # Filter configs for display
+        display_configs = configs.copy()
+        if "RIR" in title and "0CFA" in display_configs:
+            display_configs.remove("0CFA")
+            
         # Header
-        cols = ["Category", "Benchmark"] + configs
+        cols = ["Category", "Benchmark"] + display_configs
         header = "| " + " | ".join(cols) + " |"
         sep = "| " + " | ".join(["---"] * len(cols)) + " |"
         lines.append(header)
@@ -174,8 +186,6 @@ def generate_markdown():
         current_cat = None
         
         # Identify comparison columns
-        # We want to highlight H(1,1) if it beats kCFA(1)
-        # Assuming format 'H(1,1)' and 'kCFA(1)' from earlier
         col_h = 'H(1,1)'
         col_k = 'kCFA(1)'
         
@@ -188,21 +198,46 @@ def generate_markdown():
             cat_str = f"**{cat}**" if cat != current_cat else ""
             current_cat = cat
             
+            # Check for 0CFA Precision Special Case
+            is_already_precise = False
+            if prec_check_df is not None and '0CFA' in prec_check_df.columns:
+                try:
+                    p0 = prec_check_df.loc[bench_full, '0CFA']
+                    if pd.notna(p0) and p0 >= 0.999999:
+                        is_already_precise = True
+                except: pass
+            
+            if is_already_precise:
+                # Output special row
+                # User requested: | 0CFA Already Precise |||||| (no spaces between bars for Madoko merge)
+                # We format the first cell with space, then tight bars for the rest
+                special_val_str = " *0CFA Precise* " + "|" * (len(display_configs) - 1)
+                lines.append(f"| {cat_str} | {name} |{special_val_str}|")
+                continue
+
             # Get values for this row
             row_vals = {}
-            for c in configs:
+            for c in display_configs:
                 val = pivot_data.loc[bench_full, c]
                 if pd.notna(val):
                     row_vals[c] = val
             
-            # Find best value
+            # Find best value (among displayed configs? Or all? User probably wants comparison among displayed)
+            # Actually we should compare among all meaningful configs, but for RIR 0CFA is 0 so it doesn't matter for max.
+            # Let's stick to display_configs for row_vals to keep it consistent with the view.
+            
             best_val = None
-            if row_vals:
-                vals = list(row_vals.values())
+            # Filter candidates for best value (Exclude 0CFA and H(0,0))
+            candidate_vals = []
+            for c, v in row_vals.items():
+                if c not in ['0CFA', 'H(0,0)']:
+                    candidate_vals.append(v)
+            
+            if candidate_vals:
                 if metric_type == "max":
-                    best_val = max(vals)
+                    best_val = max(candidate_vals)
                 else:
-                    best_val = min(vals)
+                    best_val = min(candidate_vals)
             
             # Determine winner for H(1,1) vs kCFA(1)
             h_wins = False
@@ -211,7 +246,7 @@ def generate_markdown():
             stat_h = pivot_status.loc[bench_full, col_h] if col_h in configs else 'Missing'
             stat_k = pivot_status.loc[bench_full, col_k] if col_k in configs else 'Missing'
             
-            if col_h in configs and col_k in configs:
+            if col_h in display_configs and col_k in display_configs:
                 # If H is OK and K is T/O -> Win
                 if stat_h == 'OK' and stat_k == 'T/O':
                     h_wins = True
@@ -239,7 +274,7 @@ def generate_markdown():
 
             # Format cells
             formatted_vals = []
-            for c in configs:
+            for c in display_configs:
                 # Check status first
                 stat = None
                 try:
@@ -257,7 +292,6 @@ def generate_markdown():
                 val = row_vals[c]
                 
                 # Special Case: '0CFA' RIR should be 0.00 (Baseline)
-                # Even if dmcfar(0,0) improves over kcfa(0), in the table it IS the baseline.
                 if c == '0CFA' and "RIR" in title:
                     val = 0.0
                 
@@ -270,11 +304,13 @@ def generate_markdown():
                 # Bold if best
                 is_best = False
                 # Float comparison with tolerance
-                if best_val is not None:
+                if best_val is not None and c not in ['0CFA', 'H(0,0)']:
                     if abs(val - best_val) < 1e-9:
                         is_best = True
                 
                 if is_best:
+                    # Ignore 0.00 as "best" if all are 0.00? No, if none improved, all are best (tied).
+                    # But if we have 0CFA Precise case handled above, here it means 0CFA was imprecise but we failed to improve.
                     s_val = f"**{s_val}**"
                 
                 # Red if H(1,1) winner
@@ -286,7 +322,7 @@ def generate_markdown():
             lines.append(f"| {cat_str} | {name} | " + " | ".join(formatted_vals) + " |")
             
         # Averages Row
-        lines.append("| | **Averages** | " + " | ".join([""] * len(configs)) + " |")
+        lines.append("| | **Averages** | " + " | ".join([""] * len(display_configs)) + " |")
         
         for cat_name, _ in sorted(cat_order.items(), key=lambda x: x[1]):
             cat_benches = meta_df[meta_df['Category'] == cat_name]['Benchmark']
@@ -294,25 +330,58 @@ def generate_markdown():
             
             avg_vals = []
             # Calculate averages 
-            # Note: We don't bold/red averages usually, but user said "highlight best result".
-            # Usually strict formatting applies to data rows. I'll stick to bolding max average.
-            
-            # First calculate all averages
             cat_means = {}
-            for c in configs:
+            for c in display_configs:
                 try:
+                    # Filter for numeric?
+                    # Include all rows? Or exclude '0CFA Precise' rows?
+                    # Standard practice: Include all. For precise rows, RIR is 0.00.
+                    # pivot_data contains 0.00 for them? 
+                    # Yes, RIR calculation puts 0.00 if base imprecise is 0?
+                    # Wait, if base imprecise is 0, RIR = hits / 0 -> NaN or 0?
+                    # in plot_utils: "metrics['prec_val_rir_strict'] = total_rir_hits / total_rir_denom if total_rir_denom > 0 else 0.0"
+                    # So it's 0.0.
+                    # So average calculation is correct (includes them as 0.0).
+                    
                     m = pivot_data.loc[cat_benches, c].mean()
                     if pd.notna(m): cat_means[c] = m
                 except: pass
             
             # Find best average
+            # Find best average
             best_avg = None
-            if cat_means:
-                vals = list(cat_means.values())
-                if metric_type == "max": best_avg = max(vals)
-                else: best_avg = min(vals)
+            # Filter candidates for best average
+            candidate_avgs = []
+            for c, v in cat_means.items():
+                if c not in ['0CFA', 'H(0,0)']:
+                    candidate_avgs.append(v)
             
-            for c in configs:
+            if candidate_avgs:
+                if metric_type == "max": best_avg = max(candidate_avgs)
+                else: best_avg = min(candidate_avgs)
+            
+            # Determine winner for H(1,1) vs kCFA(1) in averages
+            avg_h_wins = False
+            
+            if col_h in display_configs and col_k in display_configs:
+                if col_h in cat_means and col_k in cat_means:
+                     val_h = cat_means[col_h]
+                     val_k = cat_means[col_k]
+                     
+                     is_better = False
+                     if metric_type == "max":
+                         if val_h > val_k: is_better = True
+                     else:
+                         if val_h < val_k: is_better = True
+                     
+                     def fmt(v):
+                         if use_int: return f"{v:.0f}"
+                         return f"{v:.{precision}f}"
+                         
+                     if is_better and fmt(val_h) != fmt(val_k):
+                         avg_h_wins = True
+
+            for c in display_configs:
                 if c not in cat_means:
                     avg_vals.append("-")
                     continue
@@ -322,8 +391,13 @@ def generate_markdown():
                 else: s_val = f"{val:.{precision}f}"
                 
                 # Bold best average
-                if best_avg is not None and abs(val - best_avg) < 1e-9:
-                    s_val = f"**{s_val}**"
+                if best_avg is not None and c not in ['0CFA', 'H(0,0)']:
+                    if abs(val - best_avg) < 1e-9:
+                        s_val = f"**{s_val}**"
+                
+                # Red if H(1,1) winner
+                if c == col_h and avg_h_wins:
+                    s_val = f"[{s_val}]{{.red}}"
                 
                 avg_vals.append(s_val)
                 
@@ -336,10 +410,12 @@ def generate_markdown():
     lines.append("# Appendix Tables\n")
     
     # Table 1: Continuation RIR (Max is best)
-    lines.extend(generate_table("Table B1: Continuation RIR (Strict) by Configuration", pivot_cont_rir, "max", 2))
+    # Pass pivot_cont_real to check for 0CFA precision
+    lines.extend(generate_table("Table B1: Continuation RIR (Strict) by Configuration", pivot_cont_rir, "max", 2, prec_check_df=pivot_cont_real))
     
     # Table 2: Value RIR (Max is best)
-    lines.extend(generate_table("Table B2: Value RIR (Strict) by Configuration", pivot_val_rir, "max", 2))
+    # Pass pivot_val_real to check for 0CFA precision
+    lines.extend(generate_table("Table B2: Value RIR (Strict) by Configuration", pivot_val_rir, "max", 2, prec_check_df=pivot_val_real))
     
     # Table 3: Continuation Real Precision (Base: 0CFA Addresses)
     lines.extend(generate_table("Table B3: Continuation Precision by Configuration (Base: 0CFA)", pivot_cont_real, "max", 2))
