@@ -134,6 +134,7 @@ def plot_sweep():
         
         plt.title(title)
         plt.ylabel(ylabel)
+        plt.xticks([0, 1, 2]) # Explicitly set x-ticks
         plt.legend(title="Handler Sensitivity (h)", bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         plt.tight_layout(pad=0.2)
         
@@ -173,6 +174,7 @@ def plot_sweep():
         ax.set_title(title)
         ax.set_ylabel("RIR" if ax == axs[0] else "")
         ax.set_xlabel("m")
+        ax.set_xticks([0, 1, 2]) # Explicitly set x-ticks
         
         for i, row in data.iterrows():
             if row['timeout_count'] > 0:

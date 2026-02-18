@@ -143,9 +143,7 @@ def get_stats():
     else: 
         count_precise_cont = 0
             
-    print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_cont} / {total_cont} ({count_precise_cont/total_cont*100:.1f}%)")
-            
-    print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_cont} / {total_cont} ({count_precise_cont/total_cont*100:.1f}%)")
+    # print(f"Benchmarks with 0-CFA Precise (No Gain Possible): {count_precise_cont} / {total_cont} ({count_precise_cont/total_cont*100:.1f}%)")
     print(f"Benchmarks with Gain: {count_gain_cont} / {total_cont} ({count_gain_cont/total_cont*100:.1f}%)")
     print(f"Max Gain: {max_gain_cont:.4f}")
     print(f"1-kCFA Geomean (Shifted): {geo_cont_base:.4f}")
