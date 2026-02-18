@@ -44,6 +44,7 @@ import Core.FlowAnalysis.Full.Report (StoreMetrics(..), PolyVariantMetrics (Poly
 import Data.Aeson
 import System.Directory (createDirectoryIfMissing)
 import qualified Data.ByteString.Lazy as BS
+import System.Mem (performGC)
 
 
 analyzeEach :: Show d => ExprContext -> (ExprContext -> FixAAMR a b c d) -> FixAAMR a b c d
@@ -70,7 +71,7 @@ runQueryAtRange bc build mod m doQuery =
     let s' = transformBasicState (const ()) (const S.empty) s
         values = collectPrograms (S.toList ctxs)
         recur :: [AProgram] -> IO (Int, Int)
-        recur l =
+        recur !l =
           case l of
             [] -> if nameModule (modName mod) `startsWith` "std/core" then
                 return (0, 0)
@@ -79,6 +80,7 @@ runQueryAtRange bc build mod m doQuery =
                 return (0, 0)
             (AProgram name mainCtx resCtx):rest ->
               do
+                performGC
                 result <- do
                   mbRes <- do
                         let once = do

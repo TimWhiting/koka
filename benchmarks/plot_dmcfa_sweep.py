@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, get_large_benchmarks, geometric_mean
-from matplotlib.lines import Line2D
+from plot_utils import load_results_with_baselines, get_large_benchmarks, geometric_mean, filter_common_benchmarks
 
 def plot_sweep():
     print("Loading results with standardized metrics...")
@@ -24,29 +24,14 @@ def plot_sweep():
     # Rename d -> h
     df_sweep['h'] = df_sweep['d']
     
-    # Common benchmarks logic
-    common_configs = []
+    # Define Sweep configurations for common intersection
+    sweep_configs = []
     for m_val in [0, 1, 2]:
         for h_val in [0, 1, 2]:
-             common_configs.append((m_val, h_val))
+             sweep_configs.append({'variant': 'dmcfar', 'd': h_val, 'm': m_val})
              
-    common_benchs = None
-    for m_val, h_val in common_configs:
-        if 'status' in df_sweep.columns:
-             subset = df_sweep[ (df_sweep['m'] == m_val) & (df_sweep['h'] == h_val) & (df_sweep['status'] == 'OK') ]
-        else:
-             subset = df_sweep[ (df_sweep['m'] == m_val) & (df_sweep['h'] == h_val) ]
-             
-        b_set = set(subset['benchmarkName'].unique())
-        if common_benchs is None:
-            common_benchs = b_set
-        else:
-            common_benchs = common_benchs.intersection(b_set)
-            
-    print(f"Intersection of benchmarks for m<=2, h<=2 (ignoring T/O): {len(common_benchs)}")
-    
-    # Filter main df to this intersection
-    df_sweep = df_sweep[ df_sweep['benchmarkName'].isin(common_benchs) ]
+    # Filter common benchmarks strictly (excluding timeouts)
+    df_sweep = filter_common_benchmarks(df_sweep, sweep_configs, exclude_timeouts=True)
     
     metrics_to_plot = {
         'prod_k_str': ('prod_k_str_hits', 'prod_k_str_total', 

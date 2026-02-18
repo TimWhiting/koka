@@ -261,7 +261,6 @@ data Handler =
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
-startDelimCtx = [CallDelim]
 startDynCtx = []
 startEnv = M.empty
 

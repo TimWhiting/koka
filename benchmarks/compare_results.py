@@ -6,69 +6,93 @@ def load_json(path):
         return json.load(f)
 
 def compare_metrics(file1, file2):
+    # Set up
     data1 = load_json(file1)
     data2 = load_json(file2)
-
-    # 1. Check structToContStrSizes
-    metric = "structToContStrSizes"
-    print(f"\n--- {metric} ---")
-    m1 = data1.get("storeMetrics", {}).get(metric, {})
-    m2 = data2.get("storeMetrics", {}).get(metric, {})
-
-    if not m1 and not m2:
-        print(f"Metric {metric} not found in storeMetrics.")
-    else:
-        # Check for keys in KCFA (m1) but missing in DMCFAR (m2)
-        missing_in_2 = 0
-        hits_from_missing = 0
-        
-        for k, v1 in m1.items():
-            if k not in m2:
-                missing_in_2 += 1
-                if v1 > 1:
-                    hits_from_missing += 1
-                    print(f"Key MISSING in DMCFAR (Dead/Precise): {k} | KCFA Value: {v1}")
-        
-        print(f"Total Missing in DMCFAR: {missing_in_2}")
-        print(f"Hits from Missing (KCFA > 1): {hits_from_missing}")
-
-    # 2. Check literal0CFAPrecise
-    metric = "literal0CFAPrecise"
-    print(f"\n--- {metric} ---")
-    # Note: literal0CFAPrecise is a top-level key in some versions or inside storeMetrics or elsewhere?
-    # Based on calc_literal_prod_stats, it seems to be in the root object passed to it.
-    # The 'm' passed to calc_literal_prod_stats might be the whole object or storeMetrics?
-    # Looking at plot_utils cleanup: m = compute_metrics(r, baseline) -> r is the run object.
-    # So literal0CFAPrecise is likely at the top level or inside storeMetrics.
     
-    m1 = data1.get(metric)
-    if m1 is None: m1 = data1.get("storeMetrics", {}).get(metric)
+    print(f"Comparing {file1} (KCFA) vs {file2} (DMCFAR)")
+
+    # Define metrics to check
+    # Based on plot_utils.py, RIR and Real Precision use:
+    # - storeToStrSizes (Store Precision)
+    # - structToContStrSizes (Continuation Precision)
+    # - literal0CFAPrecise (Literal Precision)
     
-    m2 = data2.get(metric)
-    if m2 is None: m2 = data2.get("storeMetrics", {}).get(metric)
-    
-    if not m1 and not m2:
-        print(f"Metric {metric} not found.")
-    else:
-        imprecise_in_kcfa = 0
-        improved_in_dmcfar = 0
-        dead_in_dmcfar = 0
+    metrics = ["storeToStrSizes", "structToContStrSizes", "literal0CFAPrecise"]
+
+    for metric in metrics:
+        print(f"\n--- Metric: {metric} ---")
         
-        for k, v1 in m1.items():
-            if v1 is False: # Imprecise in KCFA
-                imprecise_in_kcfa += 1
+        # Locate metric map
+        # It could be at top level or in storeMetrics
+        m1 = data1.get(metric)
+        if m1 is None: m1 = data1.get("storeMetrics", {}).get(metric)
+        
+        m2 = data2.get(metric)
+        if m2 is None: m2 = data2.get("storeMetrics", {}).get(metric)
+        
+        if m1 is None and m2 is None:
+            print("  (Metric not found in either file)")
+            continue
+            
+        m1 = m1 or {}
+        m2 = m2 or {}
+        
+        all_keys = set(m1.keys()) | set(m2.keys())
+        
+        diff_count = 0
+        missing_in_kcfa = 0
+        missing_in_dmcfar = 0
+        precise_in_dmcfar_wins = 0 # Missing in DMCFAR or <=1 in DMCFAR whilst >1 in KCFA
+        
+        print(f"  Total keys in union: {len(all_keys)}")
+        
+        for k in all_keys:
+            v1 = m1.get(k)
+            v2 = m2.get(k)
+            
+            # Helper for booleans (literal0CFAPrecise)
+            # Logic: False is Imprecise (>1 equivalent), True is Precise (<=1 equivalent)
+            if isinstance(v1, bool): v1 = 1 if v1 else 2 # True -> 1 (Precise), False -> 2 (Imprecise)
+            if isinstance(v2, bool): v2 = 1 if v2 else 2
+
+            # Check for missing
+            if v1 is None:
+                missing_in_kcfa += 1
+                # If missing in KCFA (Dead) but present in DMCFAR
+                # This could be a regression if DMCFAR > 1
+                if v2 > 1:
+                    print(f"  [REGRESSION] Key missing in KCFA (Dead/Precise) but Imprecise in DMCFAR: {k[:80]}... | DMCFAR: {v2}")
+                continue
                 
-                v2 = m2.get(k)
-                if v2 is None: # Missing in DMCFAR -> Dead -> Precise
-                    dead_in_dmcfar += 1
-                    print(f"Literal MISSING in DMCFAR (Dead): {k}")
-                elif v2 is True: # Precise in DMCFAR
-                    improved_in_dmcfar += 1
-                    print(f"Literal PRECISE in DMCFAR (Improved): {k}")
-        
-        print(f"Total Imprecise in KCFA: {imprecise_in_kcfa}")
-        print(f"  -> Dead in DMCFAR (Missing): {dead_in_dmcfar}")
-        print(f"  -> Improved in DMCFAR (True): {improved_in_dmcfar}")
+            if v2 is None:
+                missing_in_dmcfar += 1
+                # Missing in DMCFAR (Dead) -> Precise (Size 0)
+                # If KCFA was Imprecise (>1), this is a WIN for DMCFAR
+                if v1 > 1:
+                    precise_in_dmcfar_wins += 1
+                    print(f"  [PRECISION WIN] Key Imprecise in KCFA but Missing (Dead) in DMCFAR: {k[:80]}... | KCFA: {v1}")
+                continue
+            
+            # Both present
+            if v1 != v2:
+                diff_count += 1
+                # Check for precision difference
+                if v1 > 1 and v2 <= 1:
+                     precise_in_dmcfar_wins += 1
+                     print(f"  [PRECISION WIN] Key Imprecise in KCFA but Precise in DMCFAR: {k[:80]}... | KCFA: {v1} -> DMCFAR: {v2}")
+                elif v1 <= 1 and v2 > 1:
+                     print(f"  [REGRESSION] Key Precise in KCFA but Imprecise in DMCFAR: {k[:80]}... | KCFA: {v1} -> DMCFAR: {v2}")
+                else:
+                     # just different values (e.g. 2 vs 3, or bottom vs bottom?)
+                     # If both > 1, it's just different degrees of imprecision
+                     print(f"  [DIFF] Both Imprecise/Precise but different values: {k[:80]}... | KCFA: {v1} -> DMCFAR: {v2}")
+
+        print(f"  Summary for {metric}:")
+        print(f"    Missing in KCFA: {missing_in_kcfa}")
+        print(f"    Missing in DMCFAR: {missing_in_dmcfar}")
+        print(f"    Total Differences: {diff_count}")
+        print(f"    Precision Wins for DMCFAR (KCFA > 1, DMCFAR <= 1 or Missing): {precise_in_dmcfar_wins}")
 
 if __name__ == "__main__":
     compare_metrics(

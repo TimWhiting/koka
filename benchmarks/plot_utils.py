@@ -572,10 +572,11 @@ def load_results_with_baselines(base_dir="benchmarks/results-cached"):
         
         # Fallback to dmcfar d=0 m=1 if kcfa missing
         if not baseline:
-            for r in runs:
-                 if r.get('variant') == 'dmcfar' and str(r.get('d')) == '0' and str(r.get('m')) == '1':
-                     baseline = r
-                     break
+            raise Exception("No baseline found for benchmark: " + bench)
+            # for r in runs:
+            #      if r.get('variant') == 'dmcfar' and str(r.get('d')) == '0' and str(r.get('m')) == '1':
+            #          baseline = r
+            #          break
         
         # If no strict 0-CFA found, try to find "lowest" configuration?
         # Typically 0-CFA should exist if the suite was run.
@@ -714,10 +715,11 @@ def get_tradeoff_color(prec_gain, cost_ratio):
             return 'gray', 0.4 # Efficiency Loss (not quite Regression)
         return 'gray', 0.3
 
-def filter_common_benchmarks(df, config_list):
+def filter_common_benchmarks(df, config_list, exclude_timeouts=False):
     """
     Keeps only benchmarks that appear in all specified configurations.
     config_list: list of dicts {'variant': 'kcfa', 'd': 0, 'm': 0}
+    exclude_timeouts: if True, exclude benchmarks that timed out in ANY configuration.
     """
     common_bench = None
     
@@ -727,6 +729,10 @@ def filter_common_benchmarks(df, config_list):
             (df['d'] == config['d']) & 
             (df['m'] == config['m'])
         ]
+        
+        if exclude_timeouts and 'status' in df.columns:
+            subset = subset[subset['status'] != 'T/O']
+            
         benchs = set(subset['benchmarkName'].unique())
         
         if common_bench is None:
@@ -734,7 +740,7 @@ def filter_common_benchmarks(df, config_list):
         else:
             common_bench = common_bench.intersection(benchs)
             
-    print(f"Filtering: {len(common_bench)} benchmarks present in all {len(config_list)} configurations.")
+    print(f"Filtering (exclude_timeouts={exclude_timeouts}): {len(common_bench)} benchmarks present in all {len(config_list)} configurations.")
     return df[df['benchmarkName'].isin(common_bench)]
 
 def get_benchmark_category(bench_name):
