@@ -26,9 +26,7 @@ def plot_cactus():
         {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': 'k-CFA k=1'},
         {'variant': 'kcfa', 'd': 0, 'm': 2, 'label': 'k-CFA k=2'},
         {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': 'DMCFAR (1,1)'},
-        # {'variant': 'dmcfar', 'd': 1, 'm': 2, 'label': 'DMCFAR (1,2)'}, # Removed per user request
         {'variant': 'dmcfar', 'd': 2, 'm': 2, 'label': 'DMCFAR (2,2)'},
-        # {'variant': 'dmcfae', 'd': 1, 'm': 1, 'label': 'DMCFAE (1,1)'}, # Removed per user request
     ]
     
     # Flatten config fields for filtering

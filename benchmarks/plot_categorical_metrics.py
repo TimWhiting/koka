@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, get_benchmark_category, filter_common_benchmarks
+from plot_utils import load_results_with_baselines, get_benchmark_category, filter_common_benchmarks, get_large_benchmarks
 
 def shifted_geomean(series):
     """
@@ -38,8 +38,13 @@ def plot_categorical():
     
     # Filter for benchmarks present in ALL these configs
     # (To ensure fair comparison)
-    df_filtered = filter_common_benchmarks(df, configs)
+    df_filtered = filter_common_benchmarks(df, configs, exclude_timeouts=True)
     print(f"Common benchmarks: {len(df_filtered['benchmarkName'].unique())}")
+
+    # For the "All" aggregate, apply >300 0-CFA states filter
+    large_benchmarks = get_large_benchmarks(df, threshold=300)
+    df_filtered_large = df_filtered[df_filtered['benchmarkName'].isin(large_benchmarks)]
+    print(f"Large benchmarks for 'All' aggregate (States > 300): {len(df_filtered_large['benchmarkName'].unique())}")
     
     # Metrics to plot
     metrics = [
@@ -57,7 +62,7 @@ def plot_categorical():
         ('prec_cont_rir_strict', 'Continuation RIR', axs[1])
     ]
     
-    cat_order = ['Micro-Suite', 'Koka-Samples', 'Koka-Gen', 'All']
+    cat_order = ['Micro-Suite', 'Koka-Samples', 'Koka-Gen', 'All (>300 states)']
 
     for col, title, ax in metrics:
         print(f"Processing {title}...")
@@ -98,13 +103,21 @@ def plot_categorical():
                     'TimeoutCount': to_count
                 })
                 
-            # --- All Categories ---
-            all_val = shifted_geomean(subset[col])
-            total_to = len(full_subset[full_subset['status'] == 'T/O'])
-            
+            # --- All (>300 states) ---
+            # Use df_filtered_large so the "All" aggregate only includes non-trivial benchmarks
+            subset_large = df_filtered_large[
+                (df_filtered_large['variant'] == config['variant']) &
+                (df_filtered_large['d'] == config['d']) &
+                (df_filtered_large['m'] == config['m'])
+            ]
+            all_val = shifted_geomean(subset_large[col])
+            # Timeouts among large benchmarks for this config
+            full_large = full_subset[full_subset['benchmarkName'].isin(large_benchmarks)]
+            total_to = len(full_large[full_large['status'] == 'T/O'])
+
             plot_data.append({
-                'Category': 'All', 
-                'Configuration': config['label'], 
+                'Category': 'All (>300 states)',
+                'Configuration': config['label'],
                 'Value': all_val,
                 'TimeoutCount': total_to
             })

@@ -270,7 +270,6 @@ data Handler =
   deriving (Eq, Ord, Show)
 
 startStaticCtx = [CallTop]
-startDelimCtx = [CallDelim]
 startDynCtx = []
 
 lookupEnv :: HasCallStack => TName -> VEnv -> Maybe Addr
