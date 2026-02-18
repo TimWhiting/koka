@@ -338,17 +338,20 @@ def compute_metrics(run, baseline_run=None):
     if baseline_run and baseline_run.get('storeMetrics'):
         baseline = baseline_run['storeMetrics']
         
-        # prec_struct: Improvement in Store Structure
-        s_hits, s_total = calc_prod_stats('storeToStrSizes', m, baseline)
-        metrics['prec_struct'] = s_hits / s_total if s_total > 0 else 0.0
+        # prec_struct: Improvement in Store Structure (UNUSED)
+        # s_hits, s_total = calc_prod_stats('storeToStrSizes', m, baseline)
+        # metrics['prec_struct'] = s_hits / s_total if s_total > 0 else 0.0
         
-        # prod_k_str: Improvement in Continuation Structure
+        # prod_k_str: Improvement in Continuation Structure (Used in Sweep Productivity)
         metrics['prod_k_str'] = calc_prod('structToContStrSizes', m, baseline)
         
         # prec_val_total: Combined Store + Literal Improvement (Standard Productivity)
         # Fix: Use map-based calculation to ensure we only look at baseline scope
         l_hits, l_total = calc_literal_prod_stats(m, baseline)
         
+        # We need s_hits/s_total for prec_val_total, so calculate them if not done above
+        s_hits, s_total = calc_prod_stats('storeToStrSizes', m, baseline)
+
         total_hits = s_hits + l_hits
         total_items = s_total + l_total
         
@@ -357,32 +360,33 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_val_total_total'] = total_items
         
         # --- NEW METRICS: RELATIVE IMPROVEMENT (Effective Resolution Rate) ---
+        # (UNUSED - We use RIR Strict now)
         
         # Store Relative
-        s_rel_hits, s_rel_denom = calc_relative_prod_stats('storeToStrSizes', m, baseline)
+        # s_rel_hits, s_rel_denom = calc_relative_prod_stats('storeToStrSizes', m, baseline)
         
         # Literal Relative
-        l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
+        # l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
         
         # Combined Value Relative
-        total_rel_hits = s_rel_hits + l_rel_hits
-        total_rel_denom = s_rel_denom + l_rel_denom
-        metrics['prec_val_relative'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
-        metrics['prec_val_relative_hits'] = total_rel_hits
-        metrics['prec_val_relative_total'] = total_rel_denom
+        # total_rel_hits = s_rel_hits + l_rel_hits
+        # total_rel_denom = s_rel_denom + l_rel_denom
+        # metrics['prec_val_relative'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
+        # metrics['prec_val_relative_hits'] = total_rel_hits
+        # metrics['prec_val_relative_total'] = total_rel_denom
         
         # Continuation Relative
-        c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
-        metrics['prec_cont_relative'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
-        metrics['prec_cont_relative_hits'] = c_rel_hits
-        metrics['prec_cont_relative_total'] = c_rel_denom
+        # c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
+        # metrics['prec_cont_relative'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
+        # metrics['prec_cont_relative_hits'] = c_rel_hits
+        # metrics['prec_cont_relative_total'] = c_rel_denom
         
         
-        metrics['prec_val_relative_impr'] = metrics['prec_val_relative'] # Alias for clarity
-        metrics['prec_val_relative_impr_hits'] = total_rel_hits
+        # metrics['prec_val_relative_impr'] = metrics['prec_val_relative'] # Alias for clarity
+        # metrics['prec_val_relative_impr_hits'] = total_rel_hits
         
-        metrics['prec_cont_relative_impr'] = metrics['prec_cont_relative'] # Alias for clarity
-        metrics['prec_cont_relative_impr_hits'] = c_rel_hits
+        # metrics['prec_cont_relative_impr'] = metrics['prec_cont_relative'] # Alias for clarity
+        # metrics['prec_cont_relative_impr_hits'] = c_rel_hits
         
         # --- Strict RIR (Recovery of Precision) ---
         # Hit = Was Imprecise in Base -> Became Strictly Precise (size <= 1)
@@ -406,12 +410,6 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_cont_rir_strict_hits'] = c_rir_hits
         metrics['baseline_cont_imprecise'] = c_rir_denom
         
-        # Continuation Relative
-        c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
-        metrics['prec_cont_relative'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
-        metrics['prec_cont_relative_hits'] = c_rel_hits
-        metrics['prec_cont_relative_total'] = c_rel_denom
-
         # --- NEW METRICS ---
         
         # 1. Real Precision (Count <= 1 or Missing, relative to Baseline)
@@ -430,22 +428,22 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_val_real_hits'] = total_real_hits
         metrics['prec_val_real_total'] = total_real_denom
         
-        # 2. Absolute Improvement (Baseline Precision + Gain)
+        # 2. Absolute Improvement (Baseline Precision + Gain) (UNUSED)
         
         # Store Abs Impr
-        s_abs_impr_hits, s_total_abs = calc_abs_impr_stats('storeToStrSizes', m, baseline)
+        # s_abs_impr_hits, s_total_abs = calc_abs_impr_stats('storeToStrSizes', m, baseline)
         
         # Literal Abs Impr
         # For Literals, "Real Precision" IS "Absolute Improvement" logic
         # (Precise now means improved or already precise)
-        l_abs_impr_hits = l_real_hits
+        # l_abs_impr_hits = l_real_hits
         
         # Combined Value Abs Impr (Store + Literals)
-        total_abs_impr_hits = s_abs_impr_hits + l_abs_impr_hits
-        total_abs_denom = s_total_abs + l_total
-        metrics['prec_val_abs_impr'] = total_abs_impr_hits / total_abs_denom if total_abs_denom > 0 else 0.0
-        metrics['prec_val_abs_impr_hits'] = total_abs_impr_hits
-        metrics['prec_val_abs_impr_total'] = total_abs_denom
+        # total_abs_impr_hits = s_abs_impr_hits + l_abs_impr_hits
+        # total_abs_denom = s_total_abs + l_total
+        # metrics['prec_val_abs_impr'] = total_abs_impr_hits / total_abs_denom if total_abs_denom > 0 else 0.0
+        # metrics['prec_val_abs_impr_hits'] = total_abs_impr_hits
+        # metrics['prec_val_abs_impr_total'] = total_abs_denom
 
         # Continuation Real
         c_real_hits, c_real_total = calc_precise_stats('structToContStrSizes', m, baseline)
@@ -453,11 +451,11 @@ def compute_metrics(run, baseline_run=None):
         metrics['prec_cont_real_hits'] = c_real_hits
         metrics['prec_cont_real_total'] = c_real_total
 
-        # Continuation Absolute Improvement
-        c_abs_impr_hits, c_total = calc_abs_impr_stats('structToContStrSizes', m, baseline)
-        metrics['prec_cont_abs_impr'] = c_abs_impr_hits / c_total if c_total > 0 else 0.0
-        metrics['prec_cont_abs_impr_hits'] = c_abs_impr_hits
-        metrics['prec_cont_abs_impr_total'] = c_total
+        # Continuation Absolute Improvement (UNUSED)
+        # c_abs_impr_hits, c_total = calc_abs_impr_stats('structToContStrSizes', m, baseline)
+        # metrics['prec_cont_abs_impr'] = c_abs_impr_hits / c_total if c_total > 0 else 0.0
+        # metrics['prec_cont_abs_impr_hits'] = c_abs_impr_hits
+        # metrics['prec_cont_abs_impr_total'] = c_total
         
         # Continuation Productivity (Structure)
         # Note: 'prod_k_str' was calculated earlier, we need to add the counts
@@ -466,24 +464,19 @@ def compute_metrics(run, baseline_run=None):
         metrics['prod_k_str_total'] = k_total
         
         # Remove/Zero out intermediate single-component metrics to avoid confusion if not needed
-        # or keep them if useful for debugging, but ensure main ones are correct.
-        metrics['prec_struct_real'] = s_real_hits / s_real_total if s_real_total > 0 else 0.0
-        metrics['prec_struct_abs_impr'] = s_abs_impr_hits / s_total_abs if s_total_abs > 0 else 0.0
+        # metrics['prec_struct_real'] = s_real_hits / s_real_total if s_real_total > 0 else 0.0
+        # metrics['prec_struct_abs_impr'] = s_abs_impr_hits / s_total_abs if s_total_abs > 0 else 0.0
         
         
         # Add raw literal counts for debugging (Optional, now covered above)
         # metrics['numLitAddresses'] = l_total # Redundant
-        metrics['literalHits'] = l_real_hits # Relative hits (should match precise count if baseline is self)
+        # metrics['literalHits'] = l_real_hits # Relative hits (should match precise count if baseline is self)
 
         # --- NEW METRICS: IMPROVEMENT RATIOS (Factor over Baseline Hits) ---
         # 1. Precise Ratio: Hits(New) / Hits(Base)
         # Measures expansion of the "Fully Resolved" set.
         
         # Store + Lit Precise Hits (Base)
-        # We need to calculate hits for the BASELINE itself to get the denominator.
-        # Since 'baseline' is a dict of metrics, we treat it as "Poly" and itself as "Base" to count its own hits?
-        # Or simpler: The "Hits" for baseline is simply the count of items where size <= 1.
-        
         s_base_hits, _ = calc_precise_stats('storeToStrSizes', baseline, baseline)
         l_base_hits, _ = calc_literal_stats(baseline, baseline)
         val_base_hits = s_base_hits + l_base_hits
@@ -497,26 +490,41 @@ def compute_metrics(run, baseline_run=None):
         # 2. Any Improvement Ratio: (PreciseNew + ImprovedNew) / Hits(Base)
         # Measures expansion of "Useful Information" set relative to original useful set.
         
+        # USE: Real Hits + RIR Hits? No. 'Any Improvement' was defined as 'Absolute Improvement' (BasePrecise + Gained)
+        # Since we commented out 'Absolute Improvement', we need to recalculate it locally or uncomment if used here.
+        # 'prec_val_abs_impr' was used for 'impr_any_val'.
+        
+        # Recalculate 'Any Improvement' hits just for this metric (without storing the full metric if unused elsewhere)
+        # Store Abs Impr Hits
+        s_abs_impr_hits, _ = calc_abs_impr_stats('storeToStrSizes', m, baseline)
+        # Literal Abs Impr Hits (= Real Hits)
+        l_abs_impr_hits = l_real_hits
+        
+        total_abs_impr_hits = s_abs_impr_hits + l_abs_impr_hits
+        
+        # Cont Abs Impr Hits
+        c_abs_impr_hits, _ = calc_abs_impr_stats('structToContStrSizes', m, baseline)
+
         metrics['impr_any_val'] = total_abs_impr_hits / val_base_hits if val_base_hits > 0 else np.nan
         metrics['impr_any_cont'] = c_abs_impr_hits / c_base_hits if c_base_hits > 0 else np.nan
 
     else:
-        metrics['prec_struct'] = 0.0
+        # metrics['prec_struct'] = 0.0
         metrics['prod_k_str'] = 0.0
         metrics['prec_val_total'] = 0.0
         metrics['prec_val_real'] = 0.0
-        metrics['prec_val_abs_impr'] = 0.0
+        # metrics['prec_val_abs_impr'] = 0.0
         metrics['prec_cont_real'] = 0.0
-        metrics['prec_cont_abs_impr'] = 0.0
-        metrics['prec_val_relative'] = 0.0
-        metrics['prec_val_relative_hits'] = 0
-        metrics['prec_val_relative_total'] = 0
-        metrics['prec_cont_relative'] = 0.0
-        metrics['prec_cont_relative_hits'] = 0
-        metrics['prec_cont_relative_total'] = 0
+        # metrics['prec_cont_abs_impr'] = 0.0
+        # metrics['prec_val_relative'] = 0.0
+        # metrics['prec_val_relative_hits'] = 0
+        # metrics['prec_val_relative_total'] = 0
+        # metrics['prec_cont_relative'] = 0.0
+        # metrics['prec_cont_relative_hits'] = 0
+        # metrics['prec_cont_relative_total'] = 0
         
-        metrics['prec_val_relative_impr'] = 0.0
-        metrics['prec_cont_relative_impr'] = 0.0
+        # metrics['prec_val_relative_impr'] = 0.0
+        # metrics['prec_cont_relative_impr'] = 0.0
         metrics['prec_val_rir_strict'] = 0.0
         metrics['prec_cont_rir_strict'] = 0.0
         
@@ -741,9 +749,7 @@ def get_benchmark_category(bench_name):
     """
     if 'koka-gen' in bench_name:
         return 'Koka-Gen'
-    elif 'rosetta' in bench_name:
-        return 'Rosetta'
-    elif 'handlers' in bench_name:
+    elif 'rosetta' in bench_name or 'handlers' in bench_name:
         return 'Koka-Samples'
     elif 'suite' in bench_name:
         return 'Micro-Suite'
