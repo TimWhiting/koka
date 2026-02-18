@@ -342,10 +342,10 @@ def generate_markdown():
     lines.extend(generate_table("Table B2: Value RIR (Strict) by Configuration", pivot_val_rir, "max", 2))
     
     # Table 3: Continuation Real Precision (Base: 0CFA Addresses)
-    lines.extend(generate_table("Table B3: Continuation Real Precision by Configuration (Base: 0CFA)", pivot_cont_real, "max", 2))
+    lines.extend(generate_table("Table B3: Continuation Precision by Configuration (Base: 0CFA)", pivot_cont_real, "max", 2))
 
     # Table 4: Value Real Precision (Base: 0CFA Addresses)
-    lines.extend(generate_table("Table B4: Value Real Precision by Configuration (Base: 0CFA)", pivot_val_real, "max", 2))
+    lines.extend(generate_table("Table B4: Value Precision by Configuration (Base: 0CFA)", pivot_val_real, "max", 2))
 
     # Table 5: State Count (Min is best)
     lines.extend(generate_table("Table B5: State Count (Complexity) by Configuration", pivot_states, "min", 0, True))

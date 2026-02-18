@@ -17,7 +17,6 @@ CRITICAL_MAPS = {
 }
 
 # Regex for invalid keys (name:number), e.g., "exn:1906", "nim:1000"
-INVALID_KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_.\-]+:\d+$')
 
 def check_subset(base_data, new_data, filename):
     base_metrics = base_data.get('storeMetrics', {})
@@ -36,8 +35,8 @@ def check_subset(base_data, new_data, filename):
             base_map = {}
 
         # Filter keys to separate stable from invalid
-        new_stable_keys = {k for k in new_map.keys() if not INVALID_KEY_PATTERN.match(str(k))}
-        base_stable_keys = {k for k in base_map.keys() if not INVALID_KEY_PATTERN.match(str(k))}
+        new_stable_keys = {k for k in new_map.keys()}
+        base_stable_keys = {k for k in base_map.keys()}
         
         # Check subset: New Stable MUST be in Base Stable
         missing = new_stable_keys - base_stable_keys

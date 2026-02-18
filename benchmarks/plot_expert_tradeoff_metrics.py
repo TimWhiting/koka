@@ -9,7 +9,7 @@ from plot_utils import load_results_with_baselines, prepare_tradeoff_data, get_t
 print("Loading results with sophisticated metrics...")
 # Configs to compare
 c_base = {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'}
-c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'}
+c_new = {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': 'H(1,1)'}
 
 # Metrics and Cost Configs
 metrics_to_plot = [
@@ -108,16 +108,16 @@ for m_info in metrics_to_plot:
                 p1 = (row['Cost_New'], row['Precision_New'])
                 
                 plt.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=0.3, linewidth=1)
-                plt.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2)
-                plt.scatter(p1[0], p1[1], color=color, s=25, alpha=0.8, zorder=3)
+                plt.scatter(p0[0], p0[1], color='gray', s=20, marker='x', alpha=0.6, zorder=2)
+                plt.scatter(p1[0], p1[1], color=color, s=25, marker='o', alpha=0.8, zorder=3)
                 
             elif has_base:
                 p0 = (row['Cost_Base'], row['Precision_Base'])
-                plt.scatter(p0[0], p0[1], color='red', s=15, marker='*', alpha=0.5, zorder=2)
+                plt.scatter(p0[0], p0[1], color='red', s=20, marker='x', alpha=0.8, zorder=2)
                 
             elif has_new:
                 p1 = (row['Cost_New'], row['Precision_New'])
-                plt.scatter(p1[0], p1[1], color='green', s=200, marker='*', alpha=0.9, zorder=3)
+                plt.scatter(p1[0], p1[1], color='green', s=25, marker='o', alpha=0.9, zorder=3)
 
         plt.xlabel(xlabel)
         plt.xscale('log')
@@ -128,7 +128,9 @@ for m_info in metrics_to_plot:
             Line2D([0], [0], color='green', lw=2, label='Win-Win'),
             Line2D([0], [0], color='blue', lw=2, label='Trade-off'),
             Line2D([0], [0], color='red', lw=2, label='Regression'),
-            Line2D([0], [0], color='gray', lw=2, label='Efficiency'),
+            Line2D([0], [0], color='gray', lw=2, label='Similar Precision'),
+            Line2D([0], [0], marker='x', color='gray', label='1-kCFA', linestyle='None', markersize=8),
+            Line2D([0], [0], marker='o', color='gray', label='H(1,1)', linestyle='None', markersize=8),
         ]
         plt.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 
@@ -167,14 +169,14 @@ def plot_combined_tradeoff(cost_name, suffix, xlabel):
                 p0 = (row['Cost_Base'], row['Precision_Base'])
                 p1 = (row['Cost_New'], row['Precision_New'])
                 ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color=color, alpha=0.3, linewidth=1)
-                ax.scatter(p0[0], p0[1], color='gray', s=15, alpha=0.5, zorder=2)
-                ax.scatter(p1[0], p1[1], color=color, s=25, alpha=0.8, zorder=3)
+                ax.scatter(p0[0], p0[1], color='gray', s=20, marker='x', alpha=0.6, zorder=2)
+                ax.scatter(p1[0], p1[1], color=color, s=25, marker='o', alpha=0.8, zorder=3)
             elif has_base:
                 p0 = (row['Cost_Base'], row['Precision_Base'])
-                ax.scatter(p0[0], p0[1], color='red', s=15, marker='*', alpha=0.5, zorder=2)
+                ax.scatter(p0[0], p0[1], color='red', s=20, marker='x', alpha=0.8, zorder=2) # Base only
             elif has_new:
                 p1 = (row['Cost_New'], row['Precision_New'])
-                ax.scatter(p1[0], p1[1], color='green', s=200, marker='*', alpha=0.9, zorder=3)
+                ax.scatter(p1[0], p1[1], color='green', s=25, marker='o', alpha=0.9, zorder=3) # New only
 
         ax.set_title(title)
         ax.set_ylabel("RIR" if ax == axs[0] else "")
@@ -185,7 +187,9 @@ def plot_combined_tradeoff(cost_name, suffix, xlabel):
         Line2D([0], [0], color='green', lw=2, label='Win-Win'),
         Line2D([0], [0], color='blue', lw=2, label='Trade-off'),
         Line2D([0], [0], color='red', lw=2, label='Regression'),
-        Line2D([0], [0], color='gray', lw=2, label='Efficiency'),
+        Line2D([0], [0], color='gray', lw=2, label='Similar Precision'),
+        Line2D([0], [0], marker='x', color='gray', label='1-kCFA', linestyle='None', markersize=8),
+        Line2D([0], [0], marker='o', color='gray', label='H(1,1)', linestyle='None', markersize=8),
     ]
     fig.legend(handles=legend_elements, bbox_to_anchor=(1.02, 0.9), loc='upper left', borderaxespad=0.)
     

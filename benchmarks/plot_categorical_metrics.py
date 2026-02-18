@@ -29,9 +29,9 @@ def plot_categorical():
     configs = [
         {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'},
         {'variant': 'kcfa', 'd': 0, 'm': 2, 'label': '2-kCFA'},
-        {'variant': 'dmcfar', 'd': 1, 'm': 0, 'label': '1,0-HMCFAR'},
-        {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': '1,1-HMCFAR'},
-        {'variant': 'dmcfar', 'd': 1, 'm': 2, 'label': '1,2-HMCFAR'},
+        {'variant': 'dmcfar', 'd': 1, 'm': 0, 'label': 'H(1,0)'},
+        {'variant': 'dmcfar', 'd': 1, 'm': 1, 'label': 'H(1,1)'},
+        {'variant': 'dmcfar', 'd': 1, 'm': 2, 'label': 'H(1,2)'},
     ]
     
     config_labels = [c['label'] for c in configs]
@@ -57,7 +57,7 @@ def plot_categorical():
         ('prec_cont_rir_strict', 'Continuation RIR', axs[1])
     ]
     
-    cat_order = ['Micro-Suite', 'Koka-Samples', 'Rosetta', 'Koka-Gen', 'All']
+    cat_order = ['Micro-Suite', 'Koka-Samples', 'Koka-Gen', 'All']
 
     for col, title, ax in metrics:
         print(f"Processing {title}...")
