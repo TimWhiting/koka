@@ -156,7 +156,7 @@ def generate_markdown():
     meta_df = meta_df.sort_values(by=['Cat_Rank', 'ShortName'])
     
     # --- Helper Function for Table Generation ---
-    def generate_table(title, pivot_data, metric_type="max", precision=2, use_int=False, prec_check_df=None, avg_func='mean'):
+    def generate_table(title, pivot_data, metric_type="max", precision=4, use_int=False, prec_check_df=None, avg_func='mean'):
         """
         Generates markdown lines for a table.
         metric_type: "max" (higher is better) or "min" (lower is better)
@@ -255,26 +255,10 @@ def generate_markdown():
                     
                     if len(valid_vals) > 0:
                         best_val = max(valid_vals) if metric_type == "max" else min(valid_vals)
-                        if abs(val - best_val) < 1e-9:
+                        if abs(val - best_val) < 1e-9 and best_val > 0.0:
                             if c not in ['0CFA', 'H(0,0)'] or metric_type != 'geomean':
                                 s_val = f"**{s_val}**"
                     
-                    # Highlight degradations or specific comparisons?
-                    # For H(1,1) vs kCFA(1)
-                    if has_comparison and c == col_h:
-                         try:
-                             val_k = pivot_data.loc[bench_full, col_k]
-                             if pd.notna(val_k):
-                                 is_worse = False
-                                 if metric_type == "max":
-                                     if val < val_k - 1e-9: is_worse = True
-                                 else:
-                                     if val > val_k + 1e-9: is_worse = True
-                                     
-                                 if is_worse:
-                                     s_val = f"[{s_val}]{{.red}}"
-                         except: pass
-
                     row_vals.append(s_val)
                 except:
                     row_vals.append("-")
@@ -355,13 +339,9 @@ def generate_markdown():
                 else: s_val = f"{val:.{precision}f}"
                 
                 # Bold best average
-                if best_avg is not None and (avg_func != 'geomean' or c not in ['0CFA', 'H(0,0)']):
+                if best_avg is not None and best_avg > 0.0 and (avg_func != 'geomean' or c not in ['0CFA', 'H(0,0)']):
                     if abs(val - best_avg) < 1e-3:
                         s_val = f"**{s_val}**"
-                
-                # Red if H(1,1) winner
-                if c == col_h and avg_h_wins:
-                    s_val = f"[{s_val}]{{.red}}"
                 
                 avg_vals.append(s_val)
             
@@ -394,7 +374,7 @@ def generate_markdown():
     lines.extend(generate_table("Table B5: State Count (Complexity) by Configuration", pivot_states, "min", 0, True, avg_func='geomean'))
     
     # Table 6: Time (Min is best) -> Geomean
-    lines.extend(generate_table("Table B6: Analysis Time (ms) by Configuration", pivot_time, "min", 0, True, avg_func='geomean'))
+    lines.extend(generate_table("Table B6: Analysis Time (ms) by Configuration", pivot_time, "min", 2, True, avg_func='geomean'))
 
     # Write to file
     with open("benchmarks/appendix_tables.md", "w") as f:
