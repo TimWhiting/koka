@@ -27,10 +27,14 @@ def generate_markdown():
     # Create a "Config Label" column for sorting/display
     def get_config_label(row):
         v = row['variant']
-        d = row['d']
-        m = row['m']
+        d = int(row['d'])
+        m = int(row['m'])
+        
+        if v == 'dmcfae' and d == 0 and m == 0:
+            return "0CFA"
+            
         if v == 'kcfa':
-            if m == 0: return "0CFA"
+            if m == 0: return "kCFA(0)"
             return f"kCFA({m})"
         elif v == 'dmcfar':
             if d == 0 and m == 0: return "H(0,0)"
@@ -40,7 +44,7 @@ def generate_markdown():
     valid_df['Config'] = valid_df.apply(get_config_label, axis=1)
     
     # Filter out 'dmcfae' or other variants if they slipped through mapping
-    valid_df = valid_df[valid_df['variant'].isin(['kcfa', 'dmcfar'])]
+    valid_df = valid_df[valid_df['variant'].isin(['kcfa', 'dmcfar', 'dmcfae'])]
     # Filter out H(0,0) to keep table clean? Or keep it?
     # User said "Use KCFA(0) as baseline", implying 0CFA column should be KCFA.
     # We can drop H(0,0) if it's redundant (Superset of 0CFA).

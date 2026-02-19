@@ -15,14 +15,18 @@ def plot_sweep():
     print(f"Filtering for {len(complex_benchmarks)} large benchmarks (States > 300).")
     df = df[df['benchmarkName'].isin(complex_benchmarks)]
 
-    # Filter for DMCFAR runs only for the sweep
-    df_sweep = df[ (df['variant'] == 'dmcfar') ].copy()
+    # Filter for DMCFAR runs and DMCFAE (0CFA)
+    df_sweep = df[ (df['variant'] == 'dmcfar') | (df['variant'] == 'dmcfae') ].copy()
     
     # Filter out extreme parameter values
     df_sweep = df_sweep[ (df_sweep['m'] <= 5) & (df_sweep['d'] <= 2) ]
     
+    # Handle dmcfae as d=0 points if needed, or just let d passed through
     # Rename d -> h
     df_sweep['h'] = df_sweep['d']
+    
+    # Map dmcfae to dmcfar (e.g. dmcfae(0,0) becomes dmcfar(0,0) for the plot)
+    df_sweep.loc[df_sweep['variant'] == 'dmcfae', 'variant'] = 'dmcfar'
     
     # Define Sweep configurations for common intersection
     sweep_configs = []
