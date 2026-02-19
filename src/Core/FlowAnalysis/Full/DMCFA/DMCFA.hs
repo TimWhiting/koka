@@ -417,10 +417,10 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameHandle = do
       -- trace ("OPS " ++ show henv) $ return ()
       bod <- focusBody body
       -- trace ("Applying handle: " ++ show label ++ " with env " ++ showEnv venv) $ return ()
-      let newctx = newDelim d m ctx (CallApp $ contextId u) label
+      let newctx = newDelim d m ctx (CtxId $ Left $ contextId u) label
       res <- eval bod (limitEnv bodyenv (fvs body)) newctx
       let h = Handler (contextId bod) label (arguments !! 1) (Just ret) (Just $ FDollar (contextId u) (arguments !! 2))
-      returnV $ handleEffects res venv (CallApp $ contextId bod) h ctx
+      returnV $ handleEffects res venv (CtxId $ Left $ contextId bod) h ctx
     _ -> doBottom
 doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
   args <- mapM store arguments

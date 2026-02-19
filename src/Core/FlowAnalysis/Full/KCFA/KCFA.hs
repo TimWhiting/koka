@@ -260,9 +260,8 @@ doDoContinue res frame ctx =
                 doContinue ret (FApp n rest (res ++ [addr]) eApp venv) newCtx
           FLet groupIdx numGroups bindingIdx numBindings name resolved u venv -> do
             -- trace ("Applying Let " ++ show newctx ++ " env " ++ show venv) $ return ()
-            val <- store addr
             let env' = M.insert name (ctx, contextId u) venv -- We need to override the old name binding (in case it was in a different context)
-            extendStore (fromJust $ lookupEnv name env') val
+            rebind addr (fromJust $ lookupEnv name env')
             -- trace ("Binding " ++ show name ++ " to " ++ show val ++ " in " ++ show venv ) $ return ()
             -- trace ("Applying Let: " ++ show groupIdx ++ " " ++ show bindingIdx) $ return ()
             if isLetDefBindingFinished groupIdx bindingIdx u then do
@@ -456,7 +455,7 @@ doHandleEffects res venv bodId h@(Handler _ label hnd mbRet mbFrame) ctx = do
             let newEnv = foldl (\acc x -> M.insert x (newCtx, contextId op) acc) openv params
             -- trace ("Params: " ++ show (length args) ++ " " ++ show (length params)) $ return ()
             zipWithM_ rebind args (map (\n -> BindingAddr newCtx n (contextId op)) params)
-            if isTailOp opConName then do -- TODO: Add operation call context?
+            if isTailOp opConName then do 
               RV (res', retCtx') <- eval opBod (limitEnv newEnv (fvs opBod)) newCtx
               let kaddr = BindKImplicitAddr retCtx' venv (contextId opBod)
               extendStore kaddr (AChangeKont kOp venv h)
@@ -487,17 +486,17 @@ branchMatch branchCtx branch addr env ctx = do
     Right (bindings, tree) ->
       if isExprTrue (guardTest $ head (branchGuards branch)) then return $ Right (bindings, tree)
       else do
+        guard <- focusGuardExpr branchCtx
         let newEnv = foldl (\acc tname -> M.insert tname (ctx, contextId branchCtx) acc) env (M.keys bindings)
         mapM_ (\(tname, extend) ->
           extend (fromJust $ lookupEnv tname newEnv)
           ) (M.toList bindings)
-        guard <- focusGuardExpr branchCtx
-        trace "Branch Guard" $ return ()
+        -- trace "Branch Guard" $ return ()
         RV (RVAddr a, ctx') <- eval guard newEnv ctx -- TODO: Pass back the ctx'
         v <- store a
         case v of
           AChangeConstr conName _ | conName == nameTrue ->
-            return $ Right (M.empty, tree)
+            return $ Right (bindings, tree)
           _ -> return $ Left tree
 
 type Bindings r s e = (M.Map TName (Addr -> FixAAMR r s e ()), AChangeTree)
