@@ -367,8 +367,8 @@ doPrimitive nm achanges ctx u store extendStore = do
       _ -> doBottom
   else if nm == nameCoreStringToLower then
     case achanges of
-      [AChangeLit (LiteralChangeStringX (LChangeSingle (e, s)))] ->
-        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e, map toLower s)))
+      [AChangeLit (LiteralChangeStringX (LChangeSingle (e2, s)))] ->
+        return $ AChangeLit (LiteralChangeStringX (LChangeSingle (e2, map toLower s)))
       [AChangeLit (LiteralChangeStringX _)] ->
         return $ AChangeLit (LiteralChangeStringX LChangeTop)
       _ -> doBottom
