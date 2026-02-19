@@ -153,13 +153,7 @@ def generate_markdown():
     # To sort by size we need 0-CFA size.
     baseline_cfg = configs[0] # Assume first is 0-CFA/k=0
     
-    def get_size(row):
-        try:
-            return pivot_states.loc[row['Benchmark'], baseline_cfg]
-        except: return 0
-        
-    meta_df['SortSize'] = meta_df.apply(get_size, axis=1)
-    meta_df = meta_df.sort_values(by=['Cat_Rank', 'SortSize'])
+    meta_df = meta_df.sort_values(by=['Cat_Rank', 'ShortName'])
     
     # --- Helper Function for Table Generation ---
     def generate_table(title, pivot_data, metric_type="max", precision=2, use_int=False, prec_check_df=None, avg_func='mean'):
@@ -218,112 +212,77 @@ def generate_markdown():
 
             # Get values for this row
             row_vals = {}
-            for c in display_configs:
-                val = pivot_data.loc[bench_full, c]
-                if pd.notna(val):
-                    row_vals[c] = val
             
-            # Find best value (among displayed configs? Or all? User probably wants comparison among displayed)
-            # Actually we should compare among all meaningful configs, but for RIR 0CFA is 0 so it doesn't matter for max.
-            # Let's stick to display_configs for row_vals to keep it consistent with the view.
+            # Check if exists in pivot
+            if bench_full not in pivot_data.index:
+                continue
+                
+            row_vals = []
             
-            best_val = None
-            # Filter candidates for best value (Exclude 0CFA and H(0,0))
-            candidate_vals = []
-            for c, v in row_vals.items():
-                if c not in ['0CFA', 'H(0,0)']:
-                    candidate_vals.append(v)
-            
-            if candidate_vals:
-                if metric_type == "max":
-                    best_val = max(candidate_vals)
-                else:
-                    best_val = min(candidate_vals)
-            
-            # Determine winner for H(1,1) vs kCFA(1)
-            h_wins = False
-            
-            # Check status of comparison columns
-            stat_h = pivot_status.loc[bench_full, col_h] if col_h in configs else 'Missing'
-            stat_k = pivot_status.loc[bench_full, col_k] if col_k in configs else 'Missing'
-            
-            if col_h in display_configs and col_k in display_configs:
-                # If H is OK and K is T/O -> Win
-                if stat_h == 'OK' and stat_k == 'T/O':
-                    h_wins = True
-                # If Both OK, compare values
-                elif stat_h == 'OK' and stat_k == 'OK':
-                    if col_h in row_vals and col_k in row_vals:
-                         val_h = row_vals[col_h]
-                         val_k = row_vals[col_k]
-                         
-                         # Check strict inequality
-                         is_better = False
-                         if metric_type == "max":
-                             if val_h > val_k: is_better = True
-                         else: # min
-                             if val_h < val_k: is_better = True
-                             
-                         # Check visual difference
-                         # Helper to format a single value
-                         def fmt(v):
-                             if use_int: return f"{v:.0f}"
-                             return f"{v:.{precision}f}"
-                             
-                         if is_better and fmt(val_h) != fmt(val_k):
-                             h_wins = True
-
-            # Format cells
-            formatted_vals = []
-            for c in display_configs:
-                # Check status first
-                stat = None
+            # For 0CFA precision check (only populate if 0CFA is precise)
+            is_0cfa_precise = False
+            if prec_check_df is not None:
                 try:
-                    stat = pivot_status.loc[bench_full, c]
+                    val0 = prec_check_df.loc[bench_full, '0CFA']
+                    if val0 >= 0.999: is_0cfa_precise = True
                 except: pass
-                
-                if stat == 'T/O':
-                    formatted_vals.append("T/O")
-                    continue
-                
-                if c not in row_vals:
-                    formatted_vals.append("-")
-                    continue
-                
-                val = row_vals[c]
-                
-                # Special Case: '0CFA' RIR should be 0.00 (Baseline)
-                if c == '0CFA' and "RIR" in title:
-                    val = 0.0
-                
-                # Format string
-                if use_int:
-                    s_val = f"{val:.0f}"
-                else:
-                    s_val = f"{val:.{precision}f}"
-                
-                # Bold if best
-                is_best = False
-                # Float comparison with tolerance
-                if best_val is not None and c not in ['0CFA', 'H(0,0)']:
-                    if abs(val - best_val) < 1e-9:
-                        is_best = True
-                
-                if is_best:
-                    # Ignore 0.00 as "best" if all are 0.00? No, if none improved, all are best (tied).
-                    # But if we have 0CFA Precise case handled above, here it means 0CFA was imprecise but we failed to improve.
-                    s_val = f"**{s_val}**"
-                
-                # Red if H(1,1) winner
-                if c == col_h and h_wins:
-                    s_val = f"[{s_val}]{{.red}}"
-                
-                formatted_vals.append(s_val)
-                
-            lines.append(f"| {cat_str} | {name} | " + " | ".join(formatted_vals) + " |")
             
-        # Averages Row
-        lines.append("| | **Averages** | " + " | ".join([""] * len(display_configs)) + " |")
+            if is_0cfa_precise:
+                # Row is just "0CFA Precise"
+                row_vals = [f"*{display_configs[0]} Precise*"] + [""] * (len(display_configs)-1)
+                lines.append(f"| {cat_str} | {name} | " + " | ".join(row_vals) + " |")
+                continue
+
+            for c in display_configs:
+                if c not in pivot_data.columns: 
+                    row_vals.append("-")
+                    continue
+                
+                try:
+                    val = pivot_data.loc[bench_full, c]
+                    if pd.isna(val):
+                        row_vals.append("T/O") # Assume NaN is T/O for now or missing
+                        continue
+                        
+                    if use_int: s_val = f"{val:.0f}"
+                    else: s_val = f"{val:.{precision}f}"
+                    
+                    # Bolding Logic (best in category/row)
+                    # For this row, find best value across displayed configs
+                    row_data = pivot_data.loc[bench_full, display_configs]
+                    # Filter out NaNs
+                    valid_vals = row_data[pd.notna(row_data)].values
+                    
+                    if len(valid_vals) > 0:
+                        best_val = max(valid_vals) if metric_type == "max" else min(valid_vals)
+                        if abs(val - best_val) < 1e-9:
+                            if c not in ['0CFA', 'H(0,0)'] or metric_type != 'geomean':
+                                s_val = f"**{s_val}**"
+                    
+                    # Highlight degradations or specific comparisons?
+                    # For H(1,1) vs kCFA(1)
+                    if has_comparison and c == col_h:
+                         try:
+                             val_k = pivot_data.loc[bench_full, col_k]
+                             if pd.notna(val_k):
+                                 is_worse = False
+                                 if metric_type == "max":
+                                     if val < val_k - 1e-9: is_worse = True
+                                 else:
+                                     if val > val_k + 1e-9: is_worse = True
+                                     
+                                 if is_worse:
+                                     s_val = f"[{s_val}]{{.red}}"
+                         except: pass
+
+                    row_vals.append(s_val)
+                except:
+                    row_vals.append("-")
+            
+            lines.append(f"| {cat_str} | {name} | " + " | ".join(row_vals) + " |")
+
+        # Add Averages Row per Category
+        lines.append(f"| | **Averages** | " + " | ".join([""] * len(display_configs)) + " |")
         
         for cat_name, _ in sorted(cat_order.items(), key=lambda x: x[1]):
             cat_benches = meta_df[meta_df['Category'] == cat_name]['Benchmark']
@@ -396,8 +355,8 @@ def generate_markdown():
                 else: s_val = f"{val:.{precision}f}"
                 
                 # Bold best average
-                if best_avg is not None and c not in ['0CFA', 'H(0,0)']:
-                    if abs(val - best_avg) < 1e-9:
+                if best_avg is not None and (avg_func != 'geomean' or c not in ['0CFA', 'H(0,0)']):
+                    if abs(val - best_avg) < 1e-3:
                         s_val = f"**{s_val}**"
                 
                 # Red if H(1,1) winner
@@ -405,19 +364,18 @@ def generate_markdown():
                     s_val = f"[{s_val}]{{.red}}"
                 
                 avg_vals.append(s_val)
-                
+            
             avg_label = "Mean"
             if avg_func == 'geomean': avg_label = "Geomean"
             elif avg_func == 'shifted_geomean': avg_label = "Shifted Geomean"
 
             lines.append(f"| **{cat_name}** | {avg_label} | " + " | ".join(avg_vals) + " |")
             
+        lines.append("{breakable:true; font-size:xx-small; margin: 0em; padding: 0em}")
         return lines
 
     # Generate Markdown Lines
     lines = []
-    lines.append("# Appendix Tables\n")
-    
     # Table 1: Continuation RIR (Max is best) -> Shifted Geomean
     # Pass pivot_cont_real to check for 0CFA precision
     lines.extend(generate_table("Table B1: Continuation RIR (Strict) by Configuration", pivot_cont_rir, "max", 2, prec_check_df=pivot_cont_real, avg_func='shifted_geomean'))
