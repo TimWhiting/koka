@@ -16,7 +16,7 @@ df_complex = df[df['benchmarkName'].isin(complex_benchmarks)]
 
 # Define configurations of interest
 configs = [
-    {'variant': 'kcfa', 'd': 0, 'm': 0, 'label': '0-CFA'},
+    {'variant': 'dmcfae', 'd': 0, 'm': 0, 'label': '0-CFA'},
     {'variant': 'kcfa', 'd': 0, 'm': 1, 'label': '1-kCFA'},
     {'variant': 'kcfa', 'd': 0, 'm': 2, 'label': '2-kCFA'},
     {'variant': 'dmcfar', 'd': 1, 'm': 0, 'label': '1,0-HMCFAR'},

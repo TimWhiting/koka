@@ -84,18 +84,25 @@ def get_stats():
     print(f"Koka-Gen Mean Abs Cont Prec (1,1-HMCFAR): {koka_gen_abs['Precision_New'].mean():.3f}")
 
     print("\n--- 0-CFA Statistics by Category ---")
-    c_0cfa = {'variant': 'kcfa', 'd': 0, 'm': 0, 'label': '0-CFA'}
+    c_0cfa = {'variant': 'dmcfae', 'd': 0, 'm': 0, 'label': '0-CFA'}
     
     # We can use prepare_tradeoff_data to filter for just 0-CFA (comparing to itself or just extracting)
     # But simpler to just filter the dataframe directly since we loaded it
     df['Category'] = df['benchmarkName'].apply(get_benchmark_category)
     
-    # Filter for 0-CFA
+    # Filter for 0-CFA (try dmcfae first, then kcfa)
     df_0cfa = df[
-        (df['variant'] == 'kcfa') & 
+        (df['variant'] == 'dmcfae') & 
         (df['d'] == 0) & 
         (df['m'] == 0)
     ].copy()
+    
+    if df_0cfa.empty:
+        df_0cfa = df[
+            (df['variant'] == 'kcfa') & 
+            (df['d'] == 0) & 
+            (df['m'] == 0)
+        ].copy()
     
     if df_0cfa.empty:
         raise ValueError("No 0-CFA runs found.")

@@ -457,7 +457,7 @@ doHandleEffects res venv bodId h@(Handler _ label hnd mbRet mbFrame) ctx = do
             zipWithM_ rebind args (map (\n -> BindingAddr newCtx n (contextId op)) params)
             if isTailOp opConName then do 
               RV (res', retCtx') <- eval opBod (limitEnv newEnv (fvs opBod)) newCtx
-              let kaddr = BindKImplicitAddr retCtx' venv (contextId opBod)
+              let kaddr = BindKImplicitAddr retCtx' venv (contextId op)
               extendStore kaddr (AChangeKont kOp venv h)
               doContinue res' (FResume kaddr venv h (contextId opBod)) retCtx'
             else if isNeverOp opConName then do
