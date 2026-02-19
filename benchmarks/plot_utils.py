@@ -275,8 +275,9 @@ def calc_relative_prec_stats(metric, poly, base):
             
             if poly_val is None: # Dead
                 hits += 1
+                # print(f"Dead {x_id} {base_val} {poly_val}")
             elif poly_val != -1 and poly_val <= 1:
-                hits += 1
+                hits += 1    
             
     return hits, total_imprecise
 
@@ -374,23 +375,23 @@ def compute_metrics(run, baseline_run=None):
         # (UNUSED - We use RIR Strict now)
         
         # Store Relative
-        # s_rel_hits, s_rel_denom = calc_relative_prod_stats('storeToStrSizes', m, baseline)
+        s_rel_hits, s_rel_denom = calc_relative_prod_stats('storeToStrSizes', m, baseline)
         
         # Literal Relative
-        # l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
+        l_rel_hits, l_rel_denom = calc_literal_relative_prod_stats(m, baseline)
         
         # Combined Value Relative
-        # total_rel_hits = s_rel_hits + l_rel_hits
-        # total_rel_denom = s_rel_denom + l_rel_denom
-        # metrics['prec_val_relative'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
-        # metrics['prec_val_relative_hits'] = total_rel_hits
-        # metrics['prec_val_relative_total'] = total_rel_denom
+        total_rel_hits = s_rel_hits + l_rel_hits
+        total_rel_denom = s_rel_denom + l_rel_denom
+        metrics['prec_val_rir_impr'] = total_rel_hits / total_rel_denom if total_rel_denom > 0 else 0.0
+        metrics['prec_val_rir_impr_hits'] = total_rel_hits
+        metrics['prec_val_rir_impr_total'] = total_rel_denom
         
         # Continuation Relative
-        # c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
-        # metrics['prec_cont_relative'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
-        # metrics['prec_cont_relative_hits'] = c_rel_hits
-        # metrics['prec_cont_relative_total'] = c_rel_denom
+        c_rel_hits, c_rel_denom = calc_relative_prod_stats('structToContStrSizes', m, baseline)
+        metrics['prec_cont_rir_impr'] = c_rel_hits / c_rel_denom if c_rel_denom > 0 else 0.0
+        metrics['prec_cont_rir_impr_hits'] = c_rel_hits
+        metrics['prec_cont_rir_impr_total'] = c_rel_denom
         
         
         # metrics['prec_val_relative_impr'] = metrics['prec_val_relative'] # Alias for clarity
@@ -477,11 +478,6 @@ def compute_metrics(run, baseline_run=None):
         # Remove/Zero out intermediate single-component metrics to avoid confusion if not needed
         # metrics['prec_struct_real'] = s_real_hits / s_real_total if s_real_total > 0 else 0.0
         # metrics['prec_struct_abs_impr'] = s_abs_impr_hits / s_total_abs if s_total_abs > 0 else 0.0
-        
-        
-        # Add raw literal counts for debugging (Optional, now covered above)
-        # metrics['numLitAddresses'] = l_total # Redundant
-        # metrics['literalHits'] = l_real_hits # Relative hits (should match precise count if baseline is self)
 
         # --- NEW METRICS: IMPROVEMENT RATIOS (Factor over Baseline Hits) ---
         # 1. Precise Ratio: Hits(New) / Hits(Base)
@@ -527,12 +523,12 @@ def compute_metrics(run, baseline_run=None):
         # metrics['prec_val_abs_impr'] = 0.0
         metrics['prec_cont_real'] = 0.0
         # metrics['prec_cont_abs_impr'] = 0.0
-        # metrics['prec_val_relative'] = 0.0
-        # metrics['prec_val_relative_hits'] = 0
-        # metrics['prec_val_relative_total'] = 0
-        # metrics['prec_cont_relative'] = 0.0
-        # metrics['prec_cont_relative_hits'] = 0
-        # metrics['prec_cont_relative_total'] = 0
+        metrics['prec_val_rir_impr'] = 0.0
+        metrics['prec_val_rir_impr_hits'] = 0
+        metrics['prec_val_rir_impr_total'] = 0
+        metrics['prec_cont_rir_impr'] = 0.0
+        metrics['prec_cont_rir_impr_hits'] = 0
+        metrics['prec_cont_rir_impr_total'] = 0
         
         # metrics['prec_val_relative_impr'] = 0.0
         # metrics['prec_cont_relative_impr'] = 0.0
@@ -546,6 +542,61 @@ def compute_metrics(run, baseline_run=None):
 
     return metrics
 
+def sanitize_metrics(data):
+    """
+    Removes keys starting with "CI@" from storeToStrSizes and literal0CFAPrecise.
+    This ensures comparability between analyses that do not have these intermediate addresses.
+    KCFA has an advantage here (not merging at CI addresses), but is also much more expensive.
+    """
+    if isinstance(data, list):
+        print(f"Sanitizing list of {len(data)} items...")
+        for item in data:
+            sanitize_metrics(item)
+        return
+
+    if not data or 'storeMetrics' not in data:
+        return
+        
+    m = data['storeMetrics']
+    if not m: return
+    
+    # Debug: Check if we see CI keys
+    # has_ci = False
+    # if 'storeToStrSizes' in m and any(k.startswith("CI@") for k in m['storeToStrSizes']):
+    #     has_ci = True
+    #     print(f"Sanitizing {data.get('benchmarkName')} - Found CI keys")
+
+
+    # Filter storeToStrSizes
+    if 'storeToStrSizes' in m:
+        original = m['storeToStrSizes']
+        if original:
+             # keys errors
+             count = 0
+             new_map = {}
+             for k, v in original.items():
+                 if k.startswith("\"CI@"):
+                    count += 1
+                    # if count < 5: print(f"Removing {k}")
+                 else:
+                     new_map[k] = v
+             
+             if count > 0:
+                #  print(f"Removed {count} CI keys from storeToStrSizes for {data.get('benchmarkName')}")
+                 m['storeToStrSizes'] = new_map
+             
+    # Filter literal0CFAPrecise
+    if 'literal0CFAPrecise' in m:
+        original = m['literal0CFAPrecise']
+        if original:
+             m['literal0CFAPrecise'] = {k: v for k, v in original.items() if not k.startswith("CI@")}
+
+    # Filter structToContStrSizes
+    if 'structToContStrSizes' in m:
+        original = m['structToContStrSizes']
+        if original:
+             m['structToContStrSizes'] = {k: v for k, v in original.items() if not k.startswith("CI@")}
+
 def load_results_with_baselines(base_dir="benchmarks/results-cached"):
     """Loads results, identifies 0-CFA baselines, and calculates metrics."""
     # 1. Load all files
@@ -558,6 +609,7 @@ def load_results_with_baselines(base_dir="benchmarks/results-cached"):
                 try:
                     with open(os.path.join(root, file), 'r') as f:
                         data = json.load(f)
+                        sanitize_metrics(data)
                         data['filePath'] = os.path.join(root, file)
                         # Ensure d/m are strings or consistent
                         all_runs.append(data)
@@ -574,20 +626,16 @@ def load_results_with_baselines(base_dir="benchmarks/results-cached"):
     processed_results = []
     
     for bench, runs in runs_by_bench.items():
-        # Find baseline: kcfa d=0 m=0
+        # Find baseline: dmcfae d=0 m=0 (Highest Priority)
         baseline = None
         for r in runs:
-            if r.get('variant') == 'kcfa' and str(r.get('d')) == '0':
+            if r.get('variant') == 'dmcfae' and str(r.get('d')) == '0' and str(r.get('m')) == '0':
                 baseline = r
                 break
         
-        # Fallback to dmcfar d=0 m=1 if kcfa missing
+        # Fallback to kcfa d=0 m=0
         if not baseline:
-            raise Exception("No baseline found for benchmark: " + bench)
-            # for r in runs:
-            #      if r.get('variant') == 'dmcfar' and str(r.get('d')) == '0' and str(r.get('m')) == '1':
-            #          baseline = r
-            #          break
+            raise Exception(f"Baseline not found for {runs[0]['benchmarkName']}")
         
         # If no strict 0-CFA found, try to find "lowest" configuration?
         # Typically 0-CFA should exist if the suite was run.
@@ -619,17 +667,26 @@ def get_complex_benchmarks(df, threshold=0.99):
 
 def get_complex_cont_benchmarks(df, threshold=0.99):
     """Returns list of benchmarks where 0-CFA Continuation precision < threshold."""
-    baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
+    # Try dmcfae first, then kcfa
+    baseline = df[(df['variant'] == 'dmcfae') & (df['d'] == 0) & (df['m'] == 0)]
+    if baseline.empty:
+        baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
     if baseline.empty: return df['benchmarkName'].unique()
     return baseline[baseline['AbsContPrecision'] < threshold]['benchmarkName'].unique()
 def get_large_benchmarks(df, threshold=200):
     """Returns list of benchmarks where 0-CFA States > threshold."""
-    baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
+    # Try dmcfae first, then kcfa
+    baseline = df[(df['variant'] == 'dmcfae') & (df['d'] == 0) & (df['m'] == 0)]
+    if baseline.empty:
+        baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
     if baseline.empty: return df['benchmarkName'].unique()
     return baseline[baseline['States'] > threshold]['benchmarkName'].unique()
 def get_complex_val_benchmarks(df, threshold=0.99):
     """Returns list of benchmarks where 0-CFA Value (Struct) precision < threshold."""
-    baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
+    # Try dmcfae first, then kcfa
+    baseline = df[(df['variant'] == 'dmcfae') & (df['d'] == 0) & (df['m'] == 0)]
+    if baseline.empty:
+        baseline = df[(df['variant'] == 'kcfa') & (df['d'] == 0) & (df['m'] == 0)]
     if baseline.empty: return df['benchmarkName'].unique()
     return baseline[baseline['AbsStructPrecision'] < threshold]['benchmarkName'].unique()
 
