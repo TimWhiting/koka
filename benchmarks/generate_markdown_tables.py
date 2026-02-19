@@ -1,7 +1,7 @@
 
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, get_benchmark_category
+from plot_utils import load_results_with_baselines, get_benchmark_category, geometric_mean, shifted_geometric_mean
 
 def generate_markdown():
     print("Loading all results...")
@@ -95,14 +95,14 @@ def generate_markdown():
     # Columns: Config
     # Values: RIR Metrics & Real Metrics
     
-    pivot_cont_rir = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_cont_rir_strict', aggfunc='first')
-    pivot_val_rir = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_val_rir_strict', aggfunc='first')
+    pivot_cont_rir = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_cont_rir_strict', aggfunc='mean')
+    pivot_val_rir = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_val_rir_strict', aggfunc='mean')
     
-    pivot_cont_real = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_cont_real', aggfunc='first')
-    pivot_val_real = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_val_real', aggfunc='first')
+    pivot_cont_real = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_cont_real', aggfunc='mean')
+    pivot_val_real = valid_df.pivot_table(index='benchmarkName', columns='Config', values='prec_val_real', aggfunc='mean')
     
-    pivot_states = valid_df.pivot_table(index='benchmarkName', columns='Config', values='States', aggfunc='first')
-    pivot_time = valid_df.pivot_table(index='benchmarkName', columns='Config', values='Time', aggfunc='first')
+    pivot_states = valid_df.pivot_table(index='benchmarkName', columns='Config', values='States', aggfunc='mean')
+    pivot_time = valid_df.pivot_table(index='benchmarkName', columns='Config', values='Time', aggfunc='min')
     pivot_time = pivot_time * 1000 # Convert Seconds to Milliseconds
     pivot_status = valid_df.pivot_table(index='benchmarkName', columns='Config', values='status', aggfunc='first')
     
@@ -162,11 +162,12 @@ def generate_markdown():
     meta_df = meta_df.sort_values(by=['Cat_Rank', 'SortSize'])
     
     # --- Helper Function for Table Generation ---
-    def generate_table(title, pivot_data, metric_type="max", precision=2, use_int=False, prec_check_df=None):
+    def generate_table(title, pivot_data, metric_type="max", precision=2, use_int=False, prec_check_df=None, avg_func='mean'):
         """
         Generates markdown lines for a table.
         metric_type: "max" (higher is better) or "min" (lower is better)
         prec_check_df: Optional DF to check 0CFA precision (for RIR tables)
+        avg_func: 'mean', 'geomean', or 'shifted_geomean'
         """
         lines = []
         lines.append(f"\n## {title}\n")
@@ -326,24 +327,28 @@ def generate_markdown():
         
         for cat_name, _ in sorted(cat_order.items(), key=lambda x: x[1]):
             cat_benches = meta_df[meta_df['Category'] == cat_name]['Benchmark']
-            if cat_benches.empty: continue
+            # Filter benchmarks present in pivot_data
+            valid_benches = [b for b in cat_benches if b in pivot_data.index]
+            
+            if not valid_benches: continue
             
             avg_vals = []
             # Calculate averages 
             cat_means = {}
             for c in display_configs:
                 try:
-                    # Filter for numeric?
-                    # Include all rows? Or exclude '0CFA Precise' rows?
-                    # Standard practice: Include all. For precise rows, RIR is 0.00.
-                    # pivot_data contains 0.00 for them? 
-                    # Yes, RIR calculation puts 0.00 if base imprecise is 0?
-                    # Wait, if base imprecise is 0, RIR = hits / 0 -> NaN or 0?
-                    # in plot_utils: "metrics['prec_val_rir_strict'] = total_rir_hits / total_rir_denom if total_rir_denom > 0 else 0.0"
-                    # So it's 0.0.
-                    # So average calculation is correct (includes them as 0.0).
+                    if c not in pivot_data.columns: continue
                     
-                    m = pivot_data.loc[cat_benches, c].mean()
+                    series = pivot_data.loc[valid_benches, c]
+                    m = np.nan
+                    
+                    if avg_func == 'geomean':
+                         m = geometric_mean(series)
+                    elif avg_func == 'shifted_geomean':
+                         m = shifted_geometric_mean(series)
+                    else:
+                         m = series.mean()
+                         
                     if pd.notna(m): cat_means[c] = m
                 except: pass
             
@@ -401,7 +406,11 @@ def generate_markdown():
                 
                 avg_vals.append(s_val)
                 
-            lines.append(f"| **{cat_name}** | Average | " + " | ".join(avg_vals) + " |")
+            avg_label = "Mean"
+            if avg_func == 'geomean': avg_label = "Geomean"
+            elif avg_func == 'shifted_geomean': avg_label = "Shifted Geomean"
+
+            lines.append(f"| **{cat_name}** | {avg_label} | " + " | ".join(avg_vals) + " |")
             
         return lines
 
@@ -409,25 +418,25 @@ def generate_markdown():
     lines = []
     lines.append("# Appendix Tables\n")
     
-    # Table 1: Continuation RIR (Max is best)
+    # Table 1: Continuation RIR (Max is best) -> Shifted Geomean
     # Pass pivot_cont_real to check for 0CFA precision
-    lines.extend(generate_table("Table B1: Continuation RIR (Strict) by Configuration", pivot_cont_rir, "max", 2, prec_check_df=pivot_cont_real))
+    lines.extend(generate_table("Table B1: Continuation RIR (Strict) by Configuration", pivot_cont_rir, "max", 2, prec_check_df=pivot_cont_real, avg_func='shifted_geomean'))
     
-    # Table 2: Value RIR (Max is best)
+    # Table 2: Value RIR (Max is best) -> Shifted Geomean
     # Pass pivot_val_real to check for 0CFA precision
-    lines.extend(generate_table("Table B2: Value RIR (Strict) by Configuration", pivot_val_rir, "max", 2, prec_check_df=pivot_val_real))
+    lines.extend(generate_table("Table B2: Value RIR (Strict) by Configuration", pivot_val_rir, "max", 2, prec_check_df=pivot_val_real, avg_func='shifted_geomean'))
     
-    # Table 3: Continuation Real Precision (Base: 0CFA Addresses)
-    lines.extend(generate_table("Table B3: Continuation Precision by Configuration (Base: 0CFA)", pivot_cont_real, "max", 2))
+    # Table 3: Continuation Real Precision (Base: 0CFA Addresses) -> Shifted Geomean
+    lines.extend(generate_table("Table B3: Continuation Precision by Configuration (Base: 0CFA)", pivot_cont_real, "max", 2, avg_func='shifted_geomean'))
 
-    # Table 4: Value Real Precision (Base: 0CFA Addresses)
-    lines.extend(generate_table("Table B4: Value Precision by Configuration (Base: 0CFA)", pivot_val_real, "max", 2))
+    # Table 4: Value Real Precision (Base: 0CFA Addresses) -> Shifted Geomean
+    lines.extend(generate_table("Table B4: Value Precision by Configuration (Base: 0CFA)", pivot_val_real, "max", 2, avg_func='shifted_geomean'))
 
-    # Table 5: State Count (Min is best)
-    lines.extend(generate_table("Table B5: State Count (Complexity) by Configuration", pivot_states, "min", 0, True))
+    # Table 5: State Count (Min is best) -> Geomean
+    lines.extend(generate_table("Table B5: State Count (Complexity) by Configuration", pivot_states, "min", 0, True, avg_func='geomean'))
     
-    # Table 6: Time (Min is best)
-    lines.extend(generate_table("Table B6: Analysis Time (ms) by Configuration", pivot_time, "min", 0, True))
+    # Table 6: Time (Min is best) -> Geomean
+    lines.extend(generate_table("Table B6: Analysis Time (ms) by Configuration", pivot_time, "min", 0, True, avg_func='geomean'))
 
     # Write to file
     with open("benchmarks/appendix_tables.md", "w") as f:
