@@ -13,6 +13,17 @@ def geometric_mean(data):
         return np.nan
     return gmean(pos)
 
+def shifted_geometric_mean(data):
+    """
+    Calculates shifted geometric mean: exp(mean(log(x + 1))) - 1.
+    Useful for data that contains zeros (like RIR).
+    """
+    vals = pd.Series(data).copy()
+    vals = vals + 1.0
+    vals = vals[vals > 0]
+    if len(vals) == 0: return 0.0
+    return np.exp(np.mean(np.log(vals))) - 1.0
+
 def calc_precise_stats(metric, poly, base):
     """Calculates number of precise items (size <= 1) in poly map, relative to base keys."""
     base_map = base.get(metric)
