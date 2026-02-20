@@ -78,3 +78,5 @@ pub fun test : (xs : list<int>, y : int) -> int
  -> y;
  };
  };
+test/parc/parc15@kk(2, 3): type warning: Some branches in the match will never be reached: (std/core/types/Cons(_, _) : list<int> )
+ -> 2;

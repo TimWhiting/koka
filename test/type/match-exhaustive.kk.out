@@ -1,0 +1,28 @@
+type/match-exhaustive/exhaustive: (c : bool, d : bool) -> int
+type/match-exhaustive/exhaustive-bool-mixed: (x : (bool, bool)) -> int
+type/match-exhaustive/exhaustive-bools-full: (x : (bool, bool)) -> int
+type/match-exhaustive/exhaustive-cons: (x : list<int>) -> int
+type/match-exhaustive/exhaustive-list-lit: (xs : list<int>) -> int
+type/match-exhaustive/exhaustive-lit-wild: (x : int) -> int
+type/match-exhaustive/exhaustive-maybe-tuples: (x : (maybe<int>, maybe<int>)) -> int
+type/match-exhaustive/exhaustive-tri-split: (x : (bool, bool, bool)) -> int
+type/match-exhaustive/exhaustive-tuple-lit: (x : (int, bool)) -> int
+type/match-exhaustive/main: () -> int
+type/match-exhaustive/reverse-acc: forall<a> (acc : list<a>, ys : list<a>) -> list<a>
+type/match-exhaustive/reverse-append: forall<a> (xs : list<a>, tl : list<a>) -> list<a>
+test/type/match-exhaustive@kk(119, 3): type warning: expression has no effect and is unused
+ hint: did you forget an operator? or used "fun" instead of "fn"?
+test/type/match-exhaustive@kk(120, 3): type warning: expression has no effect and is unused
+ hint: did you forget an operator? or used "fun" instead of "fn"?
+test/type/match-exhaustive@kk(121, 3): type warning: expression has no effect and is unused
+ hint: did you forget an operator? or used "fun" instead of "fn"?
+test/type/match-exhaustive@kk(122, 3): type warning: expression has no effect and is unused
+ hint: did you forget an operator? or used "fun" instead of "fn"?
+test/type/match-exhaustive@kk(123, 3): type warning: expression has no effect and is unused
+ hint: did you forget an operator? or used "fun" instead of "fn"?
+test/type/match-exhaustive@kk(124, 3): type warning: expression has no effect and is unused
+ hint: did you forget an operator? or used "fun" instead of "fn"?
+test/type/match-exhaustive@kk(139, 5): type warning: pattern variable ys is unused (or a wrongly spelled constructor?)
+ hint: prepend an underscore to make it a wildcard pattern
+test/type/match-exhaustive@kk(138, 3): type warning: Some branches in the match will never be reached: (std/core/types/Cons(_, _) : list<int> )
+ -> 0;

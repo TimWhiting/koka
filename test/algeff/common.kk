@@ -48,7 +48,7 @@ effect input {
 
 fun hello() {
   val name = getstr()
-  println("Hello " + name + ", " + getstr())
+  println("Hello " ++ name ++ ", " ++ getstr())
 }
 
 val always-there = handler {
@@ -156,7 +156,7 @@ fun xor() : amb bool {
 
 val amb = handler {
   return (x)     -> [x]
-  ctl flip() -> resume(False) + resume(True)
+  ctl flip() -> resume(False) ++ resume(True)
 }
 
 fun test5() {
