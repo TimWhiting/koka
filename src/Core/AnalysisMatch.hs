@@ -190,7 +190,7 @@ instantiatePatCon tpRes conParams conTp
   = case splitFunScheme conTp of
       Nothing -> Nothing
       Just (tforall,tpars,eff,tres)
-        -> case runUnifyEx 0 (unify tpRes tres) of
+        -> case runUnifyEx 0 0 (unify tpRes tres) of
              (Right _, sub, _) -> Just ([sub |-> tpar | (_,tpar) <- tpars], sub |-> tres)
              _ -> Nothing
 

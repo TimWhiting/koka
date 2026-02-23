@@ -480,9 +480,9 @@ ppTypeVar env (TypeVar id kind flavour)
     = colorByKindDef env kind colorTypeVar $
       wrapKind (showKinds env) env kind $
       let flav = case flavour of
-                    Meta   -> text "_"
-                    Skolem -> if (coreIface env) then text "__" else text "$"
-                    _      -> empty in
+                    Meta _   -> text "_"
+                    Skolem _ -> if (coreIface env) then text "__" else text "$"
+                    _        -> empty in
       (if showFlavours env then flav else empty) <.>
          -- text (show id)
          nicePretty (nice env) id <.> (if (showIds env) then text ("=" ++ show id) else empty)

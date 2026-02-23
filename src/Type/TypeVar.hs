@@ -65,6 +65,9 @@ module Type.TypeVar
     -- * Effects
     posnegEffects,
 
+    -- * Level helpers
+    getTvLevel,
+
     -- * Requiring HasUnique
     freshTypeVar,
 
@@ -616,12 +619,24 @@ freshTypeVar kind flavour =
     id <-
       uniqueId
         ( case flavour of
-            Meta -> "_v"
-            Skolem -> "$v"
-            Bound -> "v"
+            Meta _   -> "_v"
+            Skolem _ -> "$v"
+            Bound    -> "v"
         )
     -- trace ("Type.TypeVar.freshTypeVar: " ++ show id) $
     return $ TypeVar id kind flavour
+
+{--------------------------------------------------------------------------
+  Level helpers
+--------------------------------------------------------------------------}
+
+-- | Get the level of a type variable (0 for Bound variables)
+getTvLevel :: TypeVar -> Level
+getTvLevel (TypeVar _ _ flavour)
+  = case flavour of
+      Meta level   -> level
+      Skolem level -> level
+      Bound        -> 0
 
 {--------------------------------------------------------------------------
   Equality between types

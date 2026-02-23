@@ -182,7 +182,7 @@ getCompletionInfo pos vf rmap uri lexemes = do
     completeChar line partial rng =
       return (CompletionInfo line pos partial rng (Just typeChar) CompletionKindFunction)
     completeList line partial rng =
-      let tyvar = TypeVar (-1) kindStar Skolem
+      let tyvar = TypeVar (-1) kindStar (Skolem 0)
           tvar  = TVar tyvar in
       return (CompletionInfo line pos partial rng (Just (TForall [tyvar] (TApp typeList [tvar]))) CompletionKindFunction)
     completeFunction line partial rnginsert rng resultOfFunction =
@@ -243,7 +243,7 @@ typeUnifies t1 t2 name =
   case t2 of
     Nothing -> True
     Just t2 ->
-      let (res, _, _) = (runUnifyEx 0 $ matchArguments True rangeNull tvsEmpty t1 [t2] [] Nothing)
+      let (res, _, _) = (runUnifyEx 0 0 $ matchArguments True rangeNull t1 [t2] [] Nothing)
           typeMatches = isRight res in
         -- if name == qualify nameSystemCore (newName "join") then trace ("t1: " ++ show t1 ++ " t2: " ++ show t2 ++ " " ++ show typeMatches) typeMatches
         -- else

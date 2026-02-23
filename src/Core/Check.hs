@@ -273,9 +273,9 @@ findConstrArgs fdoc tpScrutinee con
   = do tpCon <- lookupVar con
        -- Until we add qualifiers to constructor types, the list of predicates
        -- returned by instantiate' must always be empty
-       (_,tpConInst,_) <- Op.instantiateNoEx rangeNull tpCon
+       (_,tpConInst,_) <- Op.instantiateNoEx rangeNull tpCon 0
        let Just (tpArgs, eff, tpRes) = splitFunType tpConInst
-       ures <- runUnify (unify tpRes tpScrutinee)
+       ures <- runUnify 0 (unify tpRes tpScrutinee)
        case ures of
         (Left error, _)  -> showCheck "comparing scrutinee with branch type" "cannot unify" tpRes tpScrutinee fdoc
         (Right _, subst) -> return $ (subst |-> map snd tpArgs)
@@ -307,7 +307,7 @@ matchSubEff when fdoc eff1 eff2
 -- matches only.
 match :: String -> (Env -> Doc) -> Type -> Type -> Check ()
 match when fdoc a b
-  = do ures <- runUnify (unify a b)
+  = do ures <- runUnify 0 (unify a b)
        case ures of
          (Left error, _)  -> showCheck ("cannot unify (" ++ show error ++ ")") when a b fdoc
          (Right _, subst) -> if subIsNull subst

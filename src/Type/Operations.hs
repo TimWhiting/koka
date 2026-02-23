@@ -54,38 +54,38 @@ hasOptionalOrImplicits pars
 -- Instantiation
 --------------------------------------------------------------------------
 
--- | Instantiate a type
-instantiate :: (HasCallStack,HasUnique m) => Range -> Type -> m Rho
-instantiate range tp
-  = do (ids,rho,coref) <- instantiateNoEx range tp
+-- | Instantiate a type (using the given level for fresh meta-variables)
+instantiate :: (HasCallStack,HasUnique m) => Range -> Type -> Level -> m Rho
+instantiate range tp lv
+  = do (ids,rho,coref) <- instantiateNoEx range tp lv
        return rho
 
 -- | Instantiate a type and return the instantiated quantifiers, name/predicate pairs for evidence,
 -- the instantiated type, and a core transformer function (which applies type arguments and evidence)
-instantiateEx :: (HasCallStack,HasUnique m) => Range -> Type -> m ([TypeVar],Rho,Core.Expr -> Core.Expr)
-instantiateEx rng tp
-  = do (ids,rho,coref) <- instantiateExFl Meta rng tp
-       (erho,coreg) <- extend rho
+instantiateEx :: (HasCallStack,HasUnique m) => Range -> Type -> Level -> m ([TypeVar],Rho,Core.Expr -> Core.Expr)
+instantiateEx rng tp lv
+  = do (ids,rho,coref) <- instantiateExFl (Meta lv) rng tp
+       (erho,coreg) <- extend rho lv
        return (ids,erho, coreg . coref)
 
 -- | Instantiate a type and return the instantiated quantifiers, name/predicate pairs for evidence,
 -- the instantiated type, and a core transformer function (which applies type arguments and evidence)
-instantiateNoEx :: (HasCallStack,HasUnique m) => Range -> Type -> m ([TypeVar],Rho,Core.Expr -> Core.Expr)
-instantiateNoEx rng tp
-  = do (ids,rho,coref) <- instantiateExFl Meta rng tp
+instantiateNoEx :: (HasCallStack,HasUnique m) => Range -> Type -> Level -> m ([TypeVar],Rho,Core.Expr -> Core.Expr)
+instantiateNoEx rng tp lv
+  = do (ids,rho,coref) <- instantiateExFl (Meta lv) rng tp
        return (ids,rho,coref)
 
 -- | Ensure the result of function always gets an extensible effect type
 -- This is necessary to do on instantiation since we simplify such effect variables
 -- away during generalization. Effectively, the set of accepted programs does not
 -- change but the types look simpler to the user.
-extend :: (HasCallStack,HasUnique m) => Rho -> m (Rho, Core.Expr -> Core.Expr)
-extend tp
+extend :: (HasCallStack,HasUnique m) => Rho -> Level -> m (Rho, Core.Expr -> Core.Expr)
+extend tp lv
   = case expandSyn tp of
       TFun args eff res
         -> let (ls,tl) = extractOrderedEffect eff
            in if isEffectEmpty tl
-               then do tv <- freshTVar kindEffect Meta
+               then do tv <- freshTVar kindEffect (Meta lv)
                        let openEff = effectExtends ls tv
                            openTp  = TFun args openEff res
                        -- return (openTp, id)
@@ -95,17 +95,17 @@ extend tp
 
 
 -- | Skolemize a type
-skolemize :: (HasCallStack,HasUnique m) => Range -> Type -> m Rho
-skolemize range tp
-  = do (ids,rho,coref) <- skolemizeEx range tp
+skolemize :: (HasCallStack,HasUnique m) => Range -> Type -> Level -> m Rho
+skolemize range tp lv
+  = do (ids,rho,coref) <- skolemizeEx range tp lv
        return rho
 
 -- | Skolemize a type and return the instantiated quantifiers, name/predicate pairs for evidence,
 -- the instantiated type, and a core transformer function (which applies type arguments and evidence)
-skolemizeEx :: (HasCallStack,HasUnique m) => Range -> Type -> m ([TypeVar],Rho,Core.Expr -> Core.Expr)
-skolemizeEx rng tp
+skolemizeEx :: (HasCallStack,HasUnique m) => Range -> Type -> Level -> m ([TypeVar],Rho,Core.Expr -> Core.Expr)
+skolemizeEx rng tp lv
   = -- trace ("skolemizeEx: " ++ show tp) $
-    instantiateExFl Skolem rng tp
+    instantiateExFl (Skolem lv) rng tp
 
 
 -- | General instantiation for skolemize and instantiate
@@ -156,9 +156,9 @@ instantiateAnnot (Annot ids tp)
 -- Fresh type variables
 --------------------------------------------------------------------------
 -- | return fresh skolem variables
-freshSkolems :: HasUnique m => Kind -> Int -> m [Type]
-freshSkolems kind n
-  = freshTVars kind Skolem  n
+freshSkolems :: HasUnique m => Kind -> Level -> Int -> m [Type]
+freshSkolems kind lv n
+  = freshTVars kind (Skolem lv) n
 
 -- | return fresh type variables of a certain |Flavour|
 freshTVars :: HasUnique m => Kind -> Flavour -> Int -> m [Type]
@@ -171,11 +171,11 @@ freshTVar kind flavour
        return (TVar tv)
 
 
-freshEffect :: HasUnique m => m Effect
-freshEffect
-  = freshTVar kindEffect Meta
+freshEffect :: HasUnique m => Level -> m Effect
+freshEffect lv
+  = freshTVar kindEffect (Meta lv)
 
-freshStar :: HasUnique m => m Tau
-freshStar
-  = freshTVar kindStar Meta
+freshStar :: HasUnique m => Level -> m Tau
+freshStar lv
+  = freshTVar kindStar (Meta lv)
 

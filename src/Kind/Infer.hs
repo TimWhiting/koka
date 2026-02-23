@@ -1665,7 +1665,8 @@ resolveType idmap partialSyn userType
               return (quantifyType [tvar] tp')
       TpQuan QSome tname tp rng
         -> do tname' <- resolveTypeBinder "" tname
-              tvar   <- freshTypeVar tname' Meta
+              -- revisit: which level to use?
+              tvar   <- freshTypeVar tname' (Meta 10000)
               tp'    <- resolveType (M.insert (getName tname) tvar idmap) False tp
               -- trace ("Kind.Infer.Some") $
               return tp'

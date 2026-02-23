@@ -11,7 +11,7 @@
 {-# LANGUAGE InstanceSigs #-}
 module Type.Type (-- * Types
                     Type(..), Scheme, Sigma, Rho, Tau, Effect, InferType
-                  , Flavour(..)
+                  , Flavour(..), Level
                   , DataInfo(..), DataKind(..), ConInfo(..), SynInfo(..)
                   , dataInfoIsOpen, dataInfoIsExtend, dataInfoIsLiteral
                   , conInfoSize, conInfoScanCount
@@ -119,9 +119,14 @@ data TypeVar = TypeVar{ typevarId :: !Id
                       }
                       deriving (Show)
 
+-- | The level of a type variable, tracking let-nesting depth during inference.
+-- Used for efficient let-generalization and automatic skolem escape detection.
+type Level = Int
+
 -- | The flavour of a type variable. Types in a "Type.Assumption" (Gamma) and inferred types in "Core.Core"
 -- are always of the 'Bound' flavour. 'Meta' and 'Skolem' type variables only ever occur during type inference.
-data Flavour = Meta | Skolem | Bound
+-- Meta and Skolem carry a Level: the let-nesting depth at the time of creation.
+data Flavour = Meta Level | Skolem Level | Bound
              deriving (Eq, Ord, Show)
 
 -- | Type constants have a name and a kind
@@ -279,11 +284,11 @@ isBound tv   = typevarFlavour tv == Bound
 
 -- | Is a type variable 'Meta' (eg. unifiable)
 isMeta :: TypeVar -> Bool
-isMeta tv = typevarFlavour tv == Meta
+isMeta tv = case typevarFlavour tv of { Meta _ -> True; _ -> False }
 
 -- | Is a type variable a 'Skolem' (eq. not unifiable)
 isSkolem :: TypeVar -> Bool
-isSkolem tv = typevarFlavour tv == Skolem
+isSkolem tv = case typevarFlavour tv of { Skolem _ -> True; _ -> False }
 
 isMonoType :: Type -> Bool
 isMonoType tp
@@ -302,9 +307,7 @@ instance Eq TypeVar where
 instance Ord TypeVar where
   -- tv1 <  tv2      = (typeVarId tv1 < typeVarId tv2) || (typeVarId tv)
   -- tv1 <= tv2      = (typeVarId tv1 <= typeVarId tv2)
-  compare tv1 tv2 = case compare (typeVarId tv1) (typeVarId tv2) of
-                      -- EQ   -> compare (typevarFlavour tv1) (typevarFlavour tv2)
-                      ltgt -> ltgt
+  compare tv1 tv2 = compare (typevarId tv1) (typevarId tv2)
 
 
 
@@ -604,7 +607,7 @@ labelNameEx tp
       TCon tc -> (typeConName tc,0,[])
       TApp (TCon (TypeCon name _)) [htp] | (name == nameTpHandled || name == nameTpHandled1 || name == nameTpNHandled || name == nameTpNHandled1)
         -> labelNameEx htp -- use the handled effect name for handled<htp> types.
-      TApp (TCon tc) targs@(TVar (TypeVar id kind Skolem) : _)  | isKindScope kind
+      TApp (TCon tc) targs@(TVar (TypeVar id kind (Skolem _)) : _)  | isKindScope kind
         -> (typeConName tc, idNumber id, targs)
       TApp (TCon tc) targs  -> assertion ("non-expanded type synonym used as label") (typeConName tc /= nameEffectExtend) $
                                (typeConName tc,0,targs)

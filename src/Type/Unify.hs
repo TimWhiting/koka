@@ -45,10 +45,11 @@ trace s x =
     x
 
 -- | Do two types overlap on the argument types? Used to check for overlapping definitions of overloaded identifiers.
-overlaps :: Range -> Tvs -> Type -> Type -> Unify ()
-overlaps range free tp1 tp2
-  = do rho1 <- instantiate range tp1
-       rho2 <- instantiate range tp2
+overlaps :: Range -> Type -> Type -> Unify ()
+overlaps range tp1 tp2
+  = do lv <- getUnifyLevel
+       rho1 <- instantiate range tp1 lv
+       rho2 <- instantiate range tp2 lv
        case (splitFunType rho1, splitFunType rho2) of
          -- values always overlap
          (Nothing,_) -> return ()
@@ -82,9 +83,10 @@ overlaps range free tp1 tp2
 
 
 -- | Does a type have the given named arguments? Return the instantiated type if successful.
-matchNamed :: Bool -> Range -> Tvs -> Type -> Int -> [Name] -> Maybe Type -> Unify Rho
-matchNamed matchSome range free tp n {- given args -} named mbExpResTp
-  = do rho1 <- instantiate range tp
+matchNamed :: Bool -> Range -> Type -> Int -> [Name] -> Maybe Type -> Unify Rho
+matchNamed matchSome range tp n {- given args -} named mbExpResTp
+  = do lv <- getUnifyLevel
+       rho1 <- instantiate range tp lv
        case splitFunType rho1 of
          Nothing
           -> unifyError NoMatch
@@ -97,7 +99,7 @@ matchNamed matchSome range free tp n {- given args -} named mbExpResTp
                        then -- check if the result type matches
                             do case mbExpResTp of
                                  Nothing    -> return ()
-                                 Just expTp -> do subsume range free expTp resTp
+                                 Just expTp -> do subsume range expTp resTp
                                                   return ()
                                let rest = [(nm,tp) | (nm,tp) <- npars, not (nm `elem` named)]
                                if (matchSome || all isOptionalOrImplicit rest)
@@ -108,18 +110,19 @@ matchNamed matchSome range free tp n {- given args -} named mbExpResTp
 
 -- | Does a function type match the given arguments? if the first argument 'matchSome' is true,
 -- it is considered a match even if not all fixed arguments to the function are supplied
-matchArguments :: Bool -> Range -> Tvs -> Type -> [Type] -> [(Name,Type)] -> Maybe Type -> Unify Rho
-matchArguments matchSome range free tp fixed named mbExpResTp
-  = do rho1 <- instantiate range tp
+matchArguments :: Bool -> Range -> Type -> [Type] -> [(Name,Type)] -> Maybe Type -> Unify Rho
+matchArguments matchSome range tp fixed named mbExpResTp
+  = do lv <- getUnifyLevel
+       rho1 <- instantiate range tp lv
        case splitFunType rho1 of
          Nothing -> -- unifyError NoMatch
                     do resTp <- case mbExpResTp of
                                   Just rtp -> return rtp
-                                  Nothing  -> freshStar
-                       effTp <- freshEffect
+                                  Nothing  -> freshStar lv
+                       effTp <- freshEffect lv
                        let funTp = TFun ([(nameNil,tpar) | tpar <- fixed] ++ named)
                                         effTp resTp
-                       subsume range free tp funTp
+                       subsume range tp funTp
                        subst funTp
 
          Just (pars,_,resTp)
@@ -129,27 +132,27 @@ matchArguments matchSome range free tp fixed named mbExpResTp
                       -- subsume fixed parameters
                       let parsNotNamedArg = filter (\(nm,tp) -> nm `notElem` map fst named) pars
                       let (fpars,rest) = splitAt (length fixed) parsNotNamedArg
-                      mapM_  (\(tpar,targ) -> subsumeSubst range free (unOptional tpar) targ) (zip (map snd fpars) fixed)
+                      mapM_  (\(tpar,targ) -> subsumeSubst range (unOptional tpar) targ) (zip (map snd fpars) fixed)
                       -- subsume named parameters
                       mapM_ (\(name,targ) -> case lookup name pars of
                                                Nothing   -> unifyError NoMatch
-                                               Just tpar -> subsumeSubst range free (unOptional tpar) targ
+                                               Just tpar -> subsumeSubst range (unOptional tpar) targ
                             ) named
                       -- check if the result type matches
                       case mbExpResTp of
                         Nothing    -> return ()
-                        Just expTp -> do subsumeSubst range free expTp resTp
+                        Just expTp -> do subsumeSubst range expTp resTp
                                          return ()
                       -- check the rest is optional or implicit
                       if (matchSome || all isOptionalOrImplicit rest)
                         then do subst rho1
                         else unifyError NoMatch
 
-subsumeSubst :: Range -> Tvs -> Type -> Type -> Unify (Type,Rho, Core.Expr -> Core.Expr)
-subsumeSubst range free tp1 tp2
+subsumeSubst :: Range -> Type -> Type -> Unify (Type,Rho, Core.Expr -> Core.Expr)
+subsumeSubst range tp1 tp2
   = do stp1 <- subst tp1
        stp2 <- subst tp2
-       subsume range free stp1 stp2
+       subsume range stp1 stp2
 
 -- | See if two types match exactly up to renaming of free type variables
 matchShape :: Type -> Type -> Unify ()
@@ -166,7 +169,7 @@ matchShape tp1 tp2
 
 pureMatchShape :: Type -> Type -> Bool
 pureMatchShape tp1 tp2
-  = case runUnique 0 (runUnify (matchShape tp1 tp2)) of
+  = case runUnique 0 (runUnify 0 (matchShape tp1 tp2)) of
       ((Right (),sub),unique) -> -- trace ("match shape: " ++ show (pretty (tp1,tp2)))
                                  True
       _                       -> False
@@ -180,26 +183,30 @@ pureMatchShape tp1 tp2
 -- applied to the expression of type @t2@. Also returns a new type for the
 -- expected type @tp1@ where 'some' types have been properly substituted (and
 -- may be quantified).
-subsume :: HasCallStack => Range -> Tvs -> Type -> Type -> Unify (Type,Rho,Core.Expr -> Core.Expr)
-subsume range free tp1 tp2
+subsume :: HasCallStack => Range -> Type -> Type -> Unify (Type,Rho,Core.Expr -> Core.Expr)
+subsume range tp1 tp2
   = -- trace (" subsume: " ++ show (pretty tp1, pretty tp2) ++ ", free: " ++ show (map pretty (tvsList free))) $
     do -- skolemize,instantiate and unify
-       (sks,rho1,core1) <- skolemizeEx range tp1
-       (tvs,rho2,core2) <- instantiateEx range tp2
+       lv <- getUnifyLevel
+       (sks,rho1,core1) <- skolemizeEx range tp1 (lv + 1)
+       (tvs,rho2,core2) <- instantiateEx range tp2 (lv + 1)
        -- trace ("  subsume: " ++ show (pretty rho1, pretty rho2) ++ ", free: " ++ show (map pretty (tvsList free))) $ return ()
+       setUnifyLevel (lv + 1)
        unify rho2 rho1
+      --  setUnifyLevel lv
 
        -- escape check: no skolems should escape into the environment
        -- entailment check: predicates should be entailed
        -- todo: we should check for skolems since predicates with skolems must be entailed directly
        sub  <- getSubst
        --trace (" escape check: " ++ show (rho1,rho2) ++ " sub: " ++ show (subList sub)) $ return ()
-       let allfree = tvsUnion free (ftv tp1)
-           escaped = fsv $ [tp  | (tv,tp) <- subList sub, tvsMember tv allfree]
-       --trace (" escape check: skolems: " ++ show sks ++ " vs. escaped: " ++ show (tvsList escaped)) $ return ()
-       if (tvsDisjoint (tvsNew sks) escaped)
-         then return ()
-         else unifyError NoSubsume
+      -- Level koka does not need explicit skolem escape checks
+      --  let allfree = tvsUnion free (ftv tp1)
+      --      escaped = fsv $ [tp  | (tv,tp) <- subList sub, tvsMember tv allfree]
+      --  --trace (" escape check: skolems: " ++ show sks ++ " vs. escaped: " ++ show (tvsList escaped)) $ return ()
+      --  if (tvsDisjoint (tvsNew sks) escaped)
+      --    then return ()
+      --    else unifyError NoSubsume
 
        -- final type
        (vars,ssub) <- freshSub Bound sks
@@ -238,10 +245,10 @@ unify (TVar v1) (TVar v2) | v1 == v2
 -- unify t1@(TVar (TypeVar id1 _ Meta)) t2@(TVar (TypeVar id2 _ Meta)) | id1 < id2 -- arbitrary order
 --  = unify t2 t1
 
-unify (TVar tv@(TypeVar id kind Meta)) tp
+unify (TVar tv@(TypeVar id kind (Meta _))) tp
   = unifyTVar tv tp
 
-unify tp (TVar tv@(TypeVar id kind Meta))
+unify tp (TVar tv@(TypeVar id kind (Meta _)))
   = unifyTVar tv tp
 
 -- constants
@@ -320,7 +327,7 @@ unify tp1 (TSyn _ _ tp2)
   = unify tp1 tp2
 
 -- no match
-unify (TVar (TypeVar _ kind Skolem)) (TVar (TypeVar _ _ Skolem))
+unify (TVar (TypeVar _ kind (Skolem _))) (TVar (TypeVar _ _ (Skolem _)))
   = unifyError (NoMatchSkolem kind)
 
 unify tp1 tp2
@@ -330,7 +337,7 @@ unify tp1 tp2
 
 -- | Unify a type variable with a type
 unifyTVar :: HasCallStack => TypeVar -> Type -> Unify ()
-unifyTVar tv@(TypeVar id kind Meta) tp
+unifyTVar tv@(TypeVar id kind (Meta lv)) tp
   = let etp = expandSyn tp in
     if (tvsMember tv (fuv etp))
      then -- trace ("unifyTVar: " ++ show tv ++ ":=" ++ show tp ++ " is infinite") $
@@ -340,7 +347,7 @@ unifyTVar tv@(TypeVar id kind Meta) tp
      else case etp of
             TVar (TypeVar _ _ Bound)
               -> unifyError NoMatch -- can't unify with bound variables
-            TVar tv2@(TypeVar id2 _ Meta) | id <= id2
+            TVar tv2@(TypeVar id2 _ (Meta _)) | id <= id2
               -> if (id < id2)
                   then unifyTVar tv2 (TVar tv)
                   else return () -- todo: kind check?
@@ -348,13 +355,58 @@ unifyTVar tv@(TypeVar id kind Meta) tp
                   then trace ("unifyTVar: kinds: typevar var:\n" ++ show kind ++ "\nand:\n" ++ show (getKind tp) ++ "\ntype:\n" ++ show tp) $
                        unifyError NoMatchKind
                   else do -- trace ("unifyVar: " ++ show tv ++ ":=" ++ show tp) $ return ()
-                          extendSub tv tp
+                          ptp <- promote tp lv
+                          extendSub tv ptp
                           return ()
 
 unifyTVar tv tp
   = failure "Type.Unify.unifyTVar: called with skolem or bound variable"
 
 
+-- | Promote a type to a given level: recursively lower the level of any Meta type variables
+-- in @tp@ that have a level higher than @lv@, returning a new type with those variables
+-- replaced by fresh Meta variables at level @lv@.
+-- Skolem variables at a level higher than @lv@ are disallowed (they would escape their scope)
+-- and result in a @PromotionFailed@ error.
+promote :: Type -> Level -> Unify Type
+promote tp lv
+  = -- trace ("promoting: " ++ show tp ++ "@ level " ++ show lv) $ return ()
+    case tp of
+      TVar tv@(TypeVar _ kind (Meta lv2)) | lv2 > lv
+        -> do -- promote the type variable to the outer level
+              tv' <- freshTVar kind (Meta lv)
+              -- trace ("promote: " ++ show tp ++ " to level " ++ show lv ++ " as " ++ show tv') $ return ()
+              extendSub tv tv'
+              return tv'
+      TVar (TypeVar _ _ (Meta lv2)) | lv2 <= lv -> return tp
+      TVar (TypeVar _ _ (Skolem lv2)) | lv2 <= lv -> return tp
+      TVar (TypeVar _ _ Bound)       -> return tp
+      TApp t1 t2
+        -> do pts <- mapM (\t -> do st <- subst t
+                                    promote st lv) t2
+              return (TApp t1 pts)
+      TFun ts eff t
+        -> do params <- mapM (\(n,t) -> do st <- subst t
+                                           pt <- promote st lv
+                                           return (n,pt)) ts
+              st   <- subst t
+              pt   <- promote st lv
+              seff <- subst eff
+              peff <- promote seff lv
+              return (TFun params peff pt)
+      TSyn syn args t
+        -> do pargs <- mapM (\t -> do st <- subst t
+                                      promote st lv) args
+              st <- subst t
+              pt <- promote st lv
+              return (TSyn syn pargs pt)
+      TForall vars tp
+        -> do ptp <- promote tp lv
+              return (TForall vars ptp)
+      TCon _
+        -> return tp
+      _ -> -- trace ("promote FAILED: tp=" ++ show tp ++ " @ level " ++ show lv) $
+           unifyError PromotionFailed
 
 
 -- | Unify two equal lenght lists of types, and apply a substitution before each unification
@@ -377,16 +429,18 @@ unifyEffect tp1 tp2
        (ls2,tl2) <- extractNormalizeEffect tp2
        (ds1,ds2) <- unifyLabels ls1 ls2 (isEffectEmpty tl1) (isEffectEmpty tl2)
        case (expandSyn tl1, expandSyn tl2) of
-         (TVar (TypeVar id1 kind1 Meta), TVar (TypeVar id2 kind2 Meta)) | id1 == id2 && not (null ds1 && null ds2)
+         (TVar (TypeVar id1 kind1 (Meta _)), TVar (TypeVar id2 kind2 (Meta _))) | id1 == id2 && not (null ds1 && null ds2)
              -> do -- trace ("unifyEffect: unification of " ++ show (tp1,tp2) ++ " is infinite") $ return ()
                    unifyError Infinite
          _   -> do tail1 <- if null ds1 then return tl1
-                                        else do tv1 <- freshEffect
+                                        else do lv <- getUnifyLevel
+                                                tv1 <- freshTVar kindEffect (Meta lv)
                                                 unify tl1 (effectExtends ds1 tv1)
                                                 return tv1
                    stl2  <- subst tl2
                    tail2 <- if null ds2 then return stl2
-                                        else do tv2 <- freshEffect
+                                        else do lv <- getUnifyLevel
+                                                tv2 <- freshTVar kindEffect (Meta lv)
                                                 unify stl2 (effectExtends ds2 tv2)
                                                 return tv2
                    stail1 <- subst tail1
@@ -434,9 +488,8 @@ unifyLabels ls1 ls2 closed1 closed2
                     return (l2:ds1,ds2)
             EQ -> -- labels are equal
                   case (args1,args2) of
-                    ([TVar (TypeVar id1 kind1 sort1)], [TVar (TypeVar id2 kind2 sort2)])
-                       | isKindScope kind1 && isKindScope kind2 && id1 /= id2 &&
-                          sort1 == Skolem && sort2 == Skolem
+                    ([TVar (TypeVar id1 kind1 (Skolem _))], [TVar (TypeVar id2 kind2 (Skolem _))])
+                       | isKindScope kind1 && isKindScope kind2 && id1 /= id2
                       -> if (id1 < id2)
                            then do (ds1,ds2) <- unifyLabels ll1 ls2 closed1 closed2
                                    return (ds1,l1:ds2)
@@ -477,7 +530,7 @@ matchKind _ _ = False
 data Unify a  = Unify (St -> Res a)
 data Res a    = Ok !a !St
               | Err UnifyError !St
-data St       = St{ uniq :: !Int, sub :: !Sub }
+data St       = St{ uniq :: !Int, sub :: !Sub, ulevel :: !Level }
 
 data UnifyError
   = NoMatch
@@ -487,20 +540,24 @@ data UnifyError
   | NoSubsume
   | Infinite
   | NoArgMatch Int Int
+  | PromotionFailed
   deriving Show
 
-runUnifyEx :: Int -> Unify a -> (Either UnifyError a,Sub,Int)
-runUnifyEx i (Unify f)
-  = case f (St i subNull) of
-      Ok x (St j sub)    -> (Right x,sub,j)
-      Err err (St j sub) -> (Left err,sub,j)
+runUnifyEx :: Int -> Level -> Unify a -> (Either UnifyError a,Sub,Int)
+runUnifyEx i lv (Unify f)
+  = case f (St i subNull lv) of
+      Ok x (St j sub _)    -> (Right x,sub,j)
+      Err err (St j sub _) -> (Left err,sub,j)
 
-runUnify :: HasUnique m => Unify a -> m (Either UnifyError a,Sub)
-runUnify u
+runUnify :: HasUnique m => Level -> Unify a -> m (Either UnifyError a,Sub)
+runUnify lv u
   = do i <- unique
-       let (res,sub,j) = runUnifyEx i u
+       let (res,sub,j) = runUnifyEx i lv u
        setUnique j
        return (res,sub)
+
+getUnifyLevel :: Unify Level
+getUnifyLevel = Unify (\st -> Ok (ulevel st) st)
 
 instance HasUnique Unify where
   updateUnique f = Unify (\st -> Ok (uniq st) (st{ uniq = f (uniq st) }))
@@ -528,6 +585,10 @@ getSubst
 extendSub :: TypeVar -> Type -> Unify ()
 extendSub tv tp
   = Unify (\st -> Ok () (st{ sub = subExtend tv tp (sub st) }))
+
+setUnifyLevel :: Level -> Unify ()
+setUnifyLevel lv
+  = Unify (\st -> Ok () (st{ ulevel = lv }))
 
 unifyError :: UnifyError -> Unify a
 unifyError err

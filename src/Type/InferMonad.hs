@@ -46,6 +46,12 @@ module Type.InferMonad( Inf, InfGamma
                       , FixedArg
                       , fixedContext, fixedCountContext
 
+                      -- * Level
+                      , getLevel, setLevel
+
+                      -- * Fresh type variables (level-aware)
+                      , freshEffect, freshStar
+
                       -- * Misc.
                       , allowReturn, isReturnAllowed
                       , useHole, allowHole, disallowHole
@@ -66,7 +72,7 @@ module Type.InferMonad( Inf, InfGamma
                       , Context(..)
                       , inferUnify, inferUnifies
                       , inferSubsume
-                      , withSkolemized, checkSkolemEscape
+                      , withSkolemized
                       , substImplicitConstraints
                       , scopeImplicitConstraints
 
@@ -125,7 +131,7 @@ import qualified Type.Pretty as Pretty
 import qualified Core.Core as Core
 import Core.Pretty
 
-import Type.Operations hiding (instantiate, instantiateNoEx, instantiateEx)
+import Type.Operations hiding (instantiate, instantiateNoEx, instantiateEx, freshEffect, freshStar)
 import qualified Type.Operations as Op
 import Type.Assumption
 import Type.InfGamma
@@ -151,7 +157,10 @@ trace s x =
 generalize :: HasCallStack => Range -> Range -> Bool -> Inf (Rho,Effect,Core.Expr) -> Inf (Scheme,Effect,Core.Expr)
 generalize contextRange range close inf
   = (if close then id else scopeImplicitConstraints) $
-    do res <- inf
+    do lv <- getLevel
+       setLevel (lv + 1)
+       res <- inf
+       setLevel lv
        generalizeX contextRange range close res
 
 generalizeX :: HasCallStack => Range -> Range -> Bool -> (Rho,Effect,Core.Expr) -> Inf (Scheme,Effect,Core.Expr )
@@ -160,7 +169,10 @@ generalizeX contextRange range close (tp@(TForall _ _),eff,core0)
        seff <- subst eff
        if (tvsIsEmpty (fuv stp))
         then return (tp,seff,core0)
-        else do (rho,tvars,icore) <- instantiateNoEx range stp  -- instantiate first
+        else do lv <- getLevel
+                setLevel (lv + 1)
+                (rho,tvars,icore) <- instantiateNoEx range stp  -- instantiate first
+                setLevel lv
                 generalizeX contextRange range close (rho,seff,icore core0)
 
 generalizeX contextRange range close (rho0,eff0,bodycore0)
@@ -184,8 +196,9 @@ generalizeX contextRange range close (rho0,eff0,bodycore0)
        let free = tvsUnion free0 (fuv seff)
        nrho <- normalizeX close free srho
 
-       -- generalized type variables
-       let tvars = filter (\tv -> not (tvsMember tv free)) (ofuv nrho)
+       -- generalized type variables: use level comparison instead of freeInGamma traversal
+       lv <- getLevel
+       let tvars = filter (\tv -> getTvLevel tv > lv) (ofuv nrho)
 
       --  ics <- getImplicitConstraints
       --  traceDefDoc $ \penv -> text "generalize:" <+> Pretty.ppType penv nrho <+> text "|" <+> Pretty.ppType penv seff
@@ -226,10 +239,12 @@ instantiate = instantiateEx
 
 instantiateEx :: Range -> Scheme -> Inf (Rho,[TypeVar],Core.Expr -> Core.Expr)
 instantiateEx range tp | isRho tp
-  = do (rho,coref) <- Op.extend tp
+  = do lv <- getLevel
+       (rho,coref) <- Op.extend tp lv
        return (rho,[],coref)
 instantiateEx range tp
-  = do (tvars,rho,coref) <- Op.instantiateEx range tp
+  = do lv <- getLevel
+       (tvars,rho,coref) <- Op.instantiateEx range tp lv
        -- addPredicates ps
        return (rho, tvars, coref)
 
@@ -238,7 +253,8 @@ instantiateNoEx :: Range -> Scheme -> Inf (Rho,[TypeVar],Core.Expr -> Core.Expr)
 instantiateNoEx range tp | isRho tp
   = return (tp,[],id)
 instantiateNoEx range tp
-  = do (tvars,rho,coref) <- Op.instantiateNoEx range tp
+  = do lv <- getLevel
+       (tvars,rho,coref) <- Op.instantiateNoEx range tp lv
        -- addPredicates ps
        return (rho, tvars, coref)
 
@@ -258,7 +274,8 @@ isolate rng close free ics eff
                   if not (tvsMember h free) -- || and determineds --  not (.. || tvsMember h (ftv ics1))
                     then do -- we can isolate, and discharge the polyIcs hdiv predicates
                             -- traceDefDoc $ \penv -> text "can isolate:" <+> Pretty.ppType penv eff <+> text ", poly ics" <+> list (map (ppConstraint penv) polyIcs)
-                            tv <- freshEffect
+                            lv <- getLevel
+                            tv <- Op.freshEffect lv
                             if isLocal
                              then do -- trace ("isolate local") $ return ()
                                 varScope <- getScopeDepth
@@ -343,10 +360,11 @@ normalizeX close free tp
               return (TSyn syn targs t')
       TFun args eff res
         -> do (ls,tl) <- nofailUnify $ extractNormalizeEffect eff
+              level <- getLevel
               -- trace (" normalizeX: " ++ show (map pretty ls,pretty tl)) $ return ()
               eff'    <- case expandSyn tl of
                           -- remove tail variables in the result type
-                          (TVar tv) | close && isMeta tv && not (tvsMember tv free) && not (tvsMember tv (ftv (res:map snd args)))
+                          (TVar tv) | close && isMeta tv && getTvLevel tv > level && not (tvsMember tv (ftv (res:map snd args)))
                             -> do -- traceDefDoc $ \penv -> text "close effect:" <+> Pretty.ppType penv tp <-> text "  free:" <+> ppTvs penv free
                                   nofailUnify $ unify typeTotal tl
                                   (subst eff) -- (effectFixed ls)
@@ -499,10 +517,10 @@ inferUnifies context tps
 
 inferSubsume :: Context -> Range -> Type -> Type -> Inf (Type,Core.Expr -> Core.Expr)
 inferSubsume context range expected tp
-  = do free <- freeInGamma
+  = do -- free <- freeInGamma
        (sexp,stp) <- subst (expected,tp)
        -- trace ("inferSubsume: " ++ show (tupled [pretty sexp,pretty stp]) ++ " with free " ++ show (tvsList free)) $ return ()
-       res <- doUnify (subsume range free sexp stp)
+       res <- doUnify (subsume range sexp stp)
        case res of
          Right (t,_,coref)   -> do
                                     return (t,coref)
@@ -511,7 +529,8 @@ inferSubsume context range expected tp
 
 nofailUnify :: Unify a -> Inf a
 nofailUnify u
-  = do res <- runUnify u
+  = do lv <- getLevel
+       res <- runUnify lv u
        case res of
          (Right x,sub)
           -> do extendSub sub
@@ -522,47 +541,16 @@ nofailUnify u
 
 withSkolemized :: Range -> Type -> Maybe Doc -> (Type -> [TypeVar] -> Inf (a,Tvs)) -> Inf a
 withSkolemized rng tp mhint action
-  = do (xvars,xrho,_) <- Op.skolemizeEx rng tp
+  = do lv <- getLevel
+       (xvars,xrho,_) <- Op.skolemizeEx rng tp lv
        (x,extraFree)    <- -- trace ("withSkolemized: " ++ show xvars ) $
                            action xrho xvars
-       checkSkolemEscape rng xrho mhint xvars extraFree
+       -- checkSkolemEscape rng xrho mhint xvars extraFree
        return x
-       {-
-       --sub <- getSub
-       free <- freeInGamma
-       let allfree = tvsUnion free extraFree
-           --escaped = fsv $ [tp  | (tv,tp) <- subList sub, tvsMember tv allfree]
-       if (tvsDisjoint (tvsNew xvars) allfree)
-         then return ()
-         else do sxrho <- subst xrho
-                 let escaped = [v | v <- xvars, tvsMember v allfree]
-                 termError rng (text "abstract type(s) escape(s) into the context") (sxrho) (maybe [] (\hint -> [(text "hint",hint)]) mhint)
-       return x
-       -}
-
-checkSkolemEscape :: Range -> Type -> Maybe Doc -> [TypeVar] -> Tvs -> Inf ()
-checkSkolemEscape rng tp mhint [] extraFree
-  = return ()
-checkSkolemEscape rng tp mhint skolems extraFree
-  = do free <- freeInGamma
-       let allfree = tvsUnion free extraFree
-           --escaped = fsv $ [tp  | (tv,tp) <- subList sub, tvsMember tv allfree]
-       -- penv <- getPrettyEnv
-       -- trace (show (text "checkSkolemEscape:" <+> tupled [Pretty.ppType penv tp, pretty skolems, pretty (tvsList allfree)])) $
-       if (tvsDisjoint (tvsNew skolems) allfree)
-         then return ()
-         else do stp <- subst tp
-                 let escaped = [v | v <- skolems, tvsMember v allfree]
-                 termError rng (text "abstract type(s) escape(s) into the context") (stp)
-                               (maybe [(text "hint",text "give a higher-rank type annotation to a function parameter?")]
-                                      (\hint -> [(text "hint",hint)]) mhint)
-
-
-
-
 doUnify :: Unify a -> Inf (Either UnifyError a)
 doUnify u
-  = do res <- runUnify u
+  = do lv <- getLevel
+       res <- runUnify lv u
        case res of
          (Right x,sub)
           -> do extendSub sub
@@ -645,6 +633,7 @@ unifyError' env context range err tp1 tp2
                              then ("only functions can be applied",[])
                              else ("application has too " ++ (if (n > m) then "few" else "many") ++ " arguments"
                                   ,[(text "hint",text ("expecting " ++ show n ++ " argument" ++ (if n == 1 then "" else "s") ++ " but has been given " ++ show m))])
+          PromotionFailed -> ("promotion failed",[])
 
 
 typeError :: Range -> Range -> Doc -> Type -> [(Doc,Doc)] -> Inf ()
@@ -1376,28 +1365,31 @@ filterMatchNameContextEx range ctx candidates
   where
     matchType :: HasCallStack => Type -> (Name,NameInfo) -> Inf [(Name,NameInfo,Rho)]
     matchType expect (name,info)
-      = do free <- freeInGamma
+      = do -- free <- freeInGamma
            res <- do -- traceDefDoc $ \penv0 -> let penv = penv0{Pretty.showIds=True} in text "matchType:" <+> Pretty.ppName penv name <.> text "," <+> Pretty.ppType penv expect <+> text "~" <+> Pretty.ppType penv (infoType info)
-                     runUnify (subsume range free expect (infoType info))
+                     lv <- getLevel
+                     runUnify lv (subsume range expect (infoType info))
            case res of
              (Right (rho,_,_),_)  -> return [(name,info,rho)]
              (Left _,_)             -> return []
 
     matchNamedArgs :: Bool -> Int -> [Name] -> Maybe Type -> (Name,NameInfo) -> Inf [(Name,NameInfo,Rho)]
     matchNamedArgs matchSome n named mbResTp (name,info)
-      = do free <- freeInGamma
-           res <- runUnify (matchNamed matchSome range free (infoType info) n named mbResTp)
+      = do -- free <- freeInGamma
+           lv <- getLevel
+           res <- runUnify lv (matchNamed matchSome range (infoType info) n named mbResTp)
            case res of
              (Right rho,_)  -> return [(name,info,rho)]
              (Left _,_)     -> return []
 
     matchArgs :: Bool -> [Type] -> [(Name,Type)] -> Maybe Type -> (Name,NameInfo) -> Inf [(Name,NameInfo,Rho)]
     matchArgs matchSome fixed named mbResTp (name,info)
-      = do free <- freeInGamma
+      = do -- free <- freeInGamma
           --  traceDefDoc $ \penv -> text "  match args fixed:" <+> list [Pretty.ppType penv fix | fix <- fixed]
           --                                 <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
           --                                 <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
-           res <- runUnify (matchArguments matchSome range free (infoType info) fixed named mbResTp)
+           lv <- getLevel
+           res <- runUnify lv (matchArguments matchSome range (infoType info) fixed named mbResTp)
            case res of
              (Right rho,_) -> return [(name,info,rho)]
              (Left _,_)    -> return []
@@ -1469,7 +1461,7 @@ fixedContext propagated fresolved fixedCount named
        return (CtxFunTypes (fixedCount > length fresolved) fargs nargs (fmap fst propagated))
   where
     tvars :: Int -> Inf [Type]
-    tvars n  = mapM (\_ -> Op.freshStar) [1..n]
+    tvars n  = do lv <- getLevel; mapM (\_ -> Op.freshStar lv) [1..n]
 
     fixedGuessed :: [(Int,FixedArg)] -> Inf [Type]
     fixedGuessed xs   = fill 0 (sortBy (comparing fst) xs)
@@ -1483,7 +1475,7 @@ fixedContext propagated fresolved fixedCount named
 
     namedGuessed :: Inf [(Name,Type)]
     namedGuessed
-      = mapM (\name -> do { tv <- Op.freshStar; return (name,tv) }) named
+      = mapM (\name -> do { lv <- getLevel; tv <- Op.freshStar lv; return (name,tv) }) named
 
 implicitTypeContext :: Type -> NameContext
 implicitTypeContext tp
@@ -1706,10 +1698,10 @@ heapNeverContainedIn free hp0 tp
                                      _ -> getKind tcon /= kindHeap
           TVar tvar             -> case hp of
                                      TVar htv -> -- if we are generalizing htv but not tvar, tvar can never contain htv
-                                                 typevarFlavour tvar /= Meta ||
+                                                 not (isMeta tvar) ||
                                                  not (tvsMember htv free) && (tvsMember tvar free)
                                      _        -> -- but in all other case tvar might get a type containing htv
-                                                  typevarFlavour tvar /= Meta
+                                                  not (isMeta tvar)
 
 
 heapAlwaysContainedIn :: Tvs -> Type -> Type -> Bool
@@ -1776,7 +1768,8 @@ resolveHeapDivConstraint free ic
                                 -- not (tvsIsEmpty (ftv stp)))) -- conservative guess...
                               then return False
                               else do -- add div effect to tpEff
-                                      tv <- Op.freshEffect
+                                      lv <- getLevel
+                                      tv <- Op.freshEffect lv
                                       let divEff = effectExtend typeDivergent tv
                                       inferUnify (Infer (icContext ic)) (icRange ic) tpEff divEff
                                       return True
@@ -1824,13 +1817,14 @@ data St     = St{ uniq :: !Int
                 , iconstraintsGamma :: !InfGamma         -- adding a constraint adds an implicit local evidence variable
                 , holeAllowed :: !Bool                   -- is a hole allowed for a constructor context?
                 , mbRangeMap :: !(Maybe RangeMap)         -- used for errors and IDE integration
+                , level :: !Level                        -- current let-nesting level for type variable generalization
                 }
 
 
 runInfer :: Pretty.Env -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Bool -> Int -> Inf a -> Error b (a,Int,Maybe RangeMap)
 runInfer env mbrm syns newTypes imports assumption context allowInfiniteChains unique (Inf f)
   = case f (Env env context [] False newTypes syns assumption infgammaEmpty imports False False Nothing 0 0 allowInfiniteChains NM.empty)
-           (St unique subNull [] infgammaEmpty False mbrm) of
+           (St unique subNull [] infgammaEmpty False mbrm 0) of
       Err (rng,doc) warnings
         -> addWarnings (map (toWarning ErrType) warnings) (errorMsg (errorMessageKind ErrType rng doc))
       Ok x st warnings
@@ -2020,6 +2014,23 @@ getTermDoc term range
            -> return (text "implicit" <+> text term, doc)
          _ -> return (text term, docFromRange (Pretty.colors (prettyEnv env)) range)
 
+getLevel :: Inf Level
+getLevel
+  = level <$> getSt
+
+setLevel :: Level -> Inf ()
+setLevel lv
+  = do updateSt (\st -> st{ level = lv })
+       return ()
+
+-- | Create a fresh effect type variable at the current inference level
+freshEffect :: Inf Effect
+freshEffect = do lv <- getLevel; Op.freshEffect lv
+
+-- | Create a fresh star type variable at the current inference level
+freshStar :: Inf Tau
+freshStar = do lv <- getLevel; Op.freshStar lv
+
 useHole :: Inf Bool
 useHole
   = holeAllowed <$> updateSt (\st -> st{ holeAllowed = False } )
@@ -2166,8 +2177,9 @@ extendGamma isAlreadyCanonical defs inf
     checkNoOverlap :: Name -> Name -> NameInfo -> (Name,NameInfo) -> Inf ()
     checkNoOverlap ctx name info (name2,info2)
       = do checkCasingOverlap (infoRange info) name name2 info
-           free <- freeInGamma
-           res  <- runUnify (overlaps (infoRange info) free (infoType info) (infoType info2))
+           -- free <- freeInGamma
+           lv <- getLevel
+           res  <- runUnify lv (overlaps (infoRange info) (infoType info) (infoType info2))
            case fst res of
             Right _ ->
               do env <- getEnv
