@@ -139,3 +139,9 @@ fun exhaustive-cons(x: list<int>): int
     Cons(y, ys) -> y
     Cons -> 0
     _ -> 1
+
+type empty
+
+fun exhaustive-cons2(x : list<empty>): ()
+  match x
+    Nil -> ()
