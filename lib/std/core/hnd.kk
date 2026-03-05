@@ -288,6 +288,13 @@ pub noinline extern yield-extend(next : a -> e b ) : e b
   c  "kk_yield_extend"
   js "_yield_extend"
 
+pub noinline extern @always-mon(x: a): a
+  c inline "#1"
+  js inline "#1"
+pub noinline extern @never-mon(x: a): a
+  c inline "#1"
+  js inline "#1"
+
 pub inline fun yield-bind( x : a, next : a -> e b ) : e b
   if yielding() then yield-extend(next) else next(x)
 

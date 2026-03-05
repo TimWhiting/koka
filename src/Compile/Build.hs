@@ -70,6 +70,8 @@ import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
 import Core.FlowAnalysis.Full.KCFAR.Syntax (evalMainKR)
 import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
+import qualified Data.List as L
+import qualified Core.EffOpt as EffOpt
 
 
 {---------------------------------------------------------------
@@ -361,33 +363,7 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
-                  let h = flagsHash flags
-                      bc = seqString h $ BuildContext [modName mod] (mod:imports) h
-                  when (analyze flags) $ do
-                    let sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
-                    let runAnalysis d m = do
-                          if rebinding flags then do
-                             liftIO $ evalMainR bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m d
-                          else if kcfa flags then do
-                             liftIO $ evalMainK bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m 
-                            --  liftIO $ evalMainKR bc (\bc mn ->
-                            --      runBuild term flags $ do
-                            --        buildcTypeCheck (mn:buildcRoots bc) bc
-                            --    ) mod m 
-                          else do
-                             liftIO $ evalMain bc (\bc mn ->
-                                 runBuild term flags $ do
-                                   buildcTypeCheck (mn:buildcRoots bc) bc
-                               ) mod m d
-                          return ()
-                    
-                    mapM_ (\(d,m) -> runAnalysis d m) sens
+
                   -- let h = flagsHash flags
                   --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
                   -- liftIO $ constantPropagation (\bc m -> -- error "Should not require loading"
@@ -452,8 +428,49 @@ moduleTypeCheck parsedMap tcheckedMap
                                           , modRangeMap    = seqqMaybe mbRangeMap
                                           , modDefinitions = Just $! defsFromCore False core
                                           }
-                            phaseVerbose 3 "check done" $ \penv -> TP.ppName penv (modName mod')
-                            done mod'
+                            term <- getTerminal
+                            let h = flagsHash flags
+                                bc = seqString h $ BuildContext [modName mod'] (mod':imports) h
+                            mod'' <- if (analyze flags) then do
+                              let sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
+                              let runAnalysis d m = do
+                                    if rebinding flags then do
+                                      (done, result) <- liftIO $ evalMainR bc (\bc mn ->
+                                          runBuild term flags $ do
+                                            buildcTypeCheck (mn:buildcRoots bc) bc
+                                        ) mod' m d
+                                      -- liftIO $ putStrLn $ "[Build] Analysis done for " ++ show (modName mod') ++ 
+                                      --                     ", result size: " ++ show (M.size result)
+                                      -- Only optimize the user's module, not std/core dependencies
+                                      let isStdLib = "std/" `L.isPrefixOf` show (modName mod')
+                                      if isStdLib then
+                                        return mod'
+                                      else do
+                                        -- Apply analysis results immediately before other optimizations
+                                        let Just coreProg = modCore mod'
+                                            optimizedDefs = EffOpt.opt (modName mod') result (coreProgDefs coreProg)
+                                        return $! mod'{ modCore = Just $! coreProg{ coreProgDefs = optimizedDefs } }
+                                    else if kcfa flags then do
+                                      liftIO $ evalMainK bc (\bc mn ->
+                                          runBuild term flags $ do
+                                            buildcTypeCheck (mn:buildcRoots bc) bc
+                                        ) mod' m
+                                      return mod'
+                                      --  liftIO $ evalMainKR bc (\bc mn ->
+                                      --      runBuild term flags $ do
+                                      --        buildcTypeCheck (mn:buildcRoots bc) bc
+                                      --    ) mod m 
+                                    else do
+                                      liftIO $ evalMain bc (\bc mn ->
+                                          runBuild term flags $ do
+                                            buildcTypeCheck (mn:buildcRoots bc) bc
+                                        ) mod' m d
+                                      return mod'
+                              mods <- mapM (uncurry runAnalysis) sens
+                              return $ if null mods then mod' else last mods
+                             else return mod'
+                            phaseVerbose 3 "check done" $ \penv -> TP.ppName penv (modName mod'')
+                            done mod''
 
 
 -- Recursively load public imports from imported modules in a fixpoint

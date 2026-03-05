@@ -16,7 +16,6 @@ import Common.Name
 import Debug.Trace (trace)
 import Common.NamePrim (nameOpen, nameEffectOpen)
 import Data.Maybe (fromJust)
-import Compile.Module (Module(..))
 import Common.Failure (HasCallStack)
 import Type.Type (splitFunType, typeAny, Effect, typeUnit)
 import Control.Monad (foldM)
