@@ -128,7 +128,9 @@ data Flavour = Meta | Skolem | Bound
 data TypeCon = TypeCon{ typeconName :: !Name
                       , typeconKind :: !Kind
                       }
-                      deriving (Show)
+
+instance Show TypeCon where
+  show tc = show (typeconName tc) ++ "::" ++ show (typeconKind tc)
 
 -- | Type synonyms have an identifier, kind, and rank (= partial ordering among type synonyms)
 data TypeSyn = TypeSyn{ typesynName :: !Name

@@ -24,7 +24,7 @@ import Common.NamePrim( nameEffectOpen, nameToAny, nameReturn, nameOptionalNone
                        , nameBind, nameEvvIndex, nameClauseTailNoOp, isClauseTailName
                        , nameBox, nameUnbox, nameAssert
                        , nameAnd, nameOr, isNameTuple
-                       , nameCCtxCompose, nameCCtxComposeExtend, nameCCtxEmpty )
+                       , nameCCtxCompose, nameCCtxComposeExtend, nameCCtxEmpty, nameHandle, nameMaskAt, nameNamedHandle )
 
 import Common.Unique
 import Type.Type
@@ -220,9 +220,27 @@ topDown expr@(App (TypeApp (TypeLam tpars (Lam pars eff body)) targs) args rng)
   = do let tsub    = subNew (zip tpars targs)
        newNames <- -- trace ("topDown function app: " ++ show (zip tpars targs) ++ "\n expr:" ++ show expr) $
                    mapM uniqueTName [TName nm (tsub |-> tp) rng | (TName nm tp rng) <- pars]
-       let sub     = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]
-       let newexpr = (Let (zipWith makeDef newNames args) (sub |~> (substitute tsub body)))
-       -- trace (" topDown: new expr: " ++ show newexpr) $
+
+      --  let sub     = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]
+      --  let newexpr = (Let (zipWith makeDef newNames args) (sub |~> (substitute tsub body)))
+
+       let sub     = [(p,Var np InfoNone,arg) | (p,np,arg) <- zip3 pars newNames args]
+       let occ     = occurrences body
+       let (inlines, nonInlines) = partition (\(p, _, e) ->
+                                      let occInfo = M.lookup (getName p) occ
+                                      in case occInfo of
+                                        Just (Occur acnt _ _ vcnt) ->
+                                          -- trace (show e ++ "\n" ++ show (isTotal e)) 
+                                          acnt + vcnt == 1 && (isTotal e || (isOpenTotal e && whereOccurred p body OccurNoChangeEffect == OccurNoChangeEffect))
+                                        Just (Many n) -> False
+                                        Nothing -> False) sub -- TODO: Optimize non-used parameters.
+       let sub' = [(p,np) | (p, np, _) <- nonInlines]
+           sub'' = [(p,e) | (p, _, e) <- inlines]
+           body' = sub'' |~> (sub' |~> substitute tsub body)
+       let newexpr =
+            if null nonInlines then body'
+            else Let (zipWith makeDef (map (\(_, Var newName _, _) -> newName) nonInlines) (map (\(_, _, e) -> e) nonInlines)) body'
+      --  trace (" topDown: new expr: " ++ show newexpr) $ return ()
        return newexpr
   where
     makeDef (TName npar nparTp rng) arg
@@ -349,7 +367,8 @@ bottomUp (App (Lam pars eff body) args rng) | length pars == length args  && all
   = Let (zipWith makeDef pars args) body
   where
     makeDef (TName npar nparTp rng) arg
-      = DefNonRec (Def npar nparTp arg Private DefVal InlineAuto rangeNull "")
+      = -- (trace ("making def for: " ++ show npar ++ " " ++ show nparTp))
+        DefNonRec (Def npar nparTp arg Private DefVal InlineAuto rangeNull "")
 
     free parName
       = not (parName `S.member` fv args)
@@ -844,6 +863,37 @@ occurrencesOf name expr
 -- or more that two occurrences in different forms
 data Occur = Occur{ applyCount :: Int, typeArgsCount :: Int, argsCount :: Int, varCount :: Int }
            | Many { count :: Int }
+
+data OccurH = OccurNoChangeEffect
+             | NotOccurred
+             | OccurChangedEffect
+    deriving (Show, Eq)
+
+whereOccurred :: TName -> Expr -> OccurH -> OccurH
+whereOccurred tname expr context =
+  case expr of
+    Lam _ _ body -> recur body
+    Var x _ -> if x == tname then context else NotOccurred
+    Con{} -> NotOccurred
+    Lit{} -> NotOccurred
+    TypeLam _ body -> recur body
+    TypeApp body _ -> recur body
+    Let dgs body      -> foldr (merge . whereOccurredDefGroup) (recur body) dgs
+    Case scruts bs    -> foldr merge NotOccurred $ map recur scruts ++ map whereBranch bs
+    App (TypeApp (Var v _) targs) args rng -- Keep track if the name occurred under effect changing operations
+      | getName v `elem` [nameEffectOpen, nameHandle, nameMaskAt, nameNamedHandle] -> foldr (merge . recurUnderEffect) NotOccurred args
+    App f args rng       -> foldr merge NotOccurred (recur f : map recur args)
+  where
+    recur e = whereOccurred tname e context
+    recurUnderEffect e = whereOccurred tname e OccurChangedEffect
+    merge NotOccurred a = a
+    merge a NotOccurred = a
+    merge OccurChangedEffect _ = OccurChangedEffect
+    merge _ OccurChangedEffect = OccurChangedEffect
+    merge a b = a
+    whereBranch (Branch pat guard) = foldr (merge . whereGuard) NotOccurred guard
+    whereGuard (Guard e1 e2) = recur e1 `merge` recur e2
+    whereOccurredDefGroup (DefRec defs) = foldr (merge . recur . defExpr) NotOccurred defs
 
 instance Show Occur where
   show (Occur acnt m n vcnt) = show (acnt,m,n,vcnt)
