@@ -63,7 +63,7 @@ module Core.Core ( -- Data structures
                    , TNames
                    , splitFun
                    , splitTForall
-                   , isTotal
+                   , isTotal, isOpenTotal
                    -- * Data representation
                    , DataRepr(..), ConRepr(..)
                    , isConSingleton
@@ -843,6 +843,11 @@ isTotal expr
     isTotalBranch (Branch pat guards) = all isTotalGuard guards
     isTotalGuard (Guard test expr)    = isTotal test && isTotal expr
 
+isOpenTotal :: Expr -> Bool
+isOpenTotal expr
+ = case expr of
+     App (TypeApp (Var open _) _) [f] _ | getName open == nameEffectOpen -> isTotal f
+     _ -> False
 
 isTotalFun :: Expr -> Bool
 isTotalFun expr

@@ -28,6 +28,8 @@ module Kind.Kind( -- * Kinds
 
 import Common.Name
 import Common.NamePrim
+import Lib.PPrint (Doc, parens, Pretty (..), (<.>), (<+>), text, tupled)
+import Common.Failure (matchFailure)
 
 {--------------------------------------------------------------------------
   Kinds
@@ -36,7 +38,56 @@ import Common.NamePrim
 data Kind
   = KCon     !KindCon        -- ^ Kind constants: "*","->","!","H","P"
   | KApp     !Kind !Kind      -- ^ Application (only allowed for functions as yet)
-  deriving (Eq,Ord, Show)
+  deriving (Eq,Ord)
+
+instance Show Kind where
+  show k = show (ppKind2 precTop k)
+
+type Prec2 = Int
+
+precTop, precQuant,precArrow,precApp,precAtom :: Int
+precTop   = 0
+precQuant = 1
+precArrow = 2
+precApp   = 3
+precAtom  = 4
+
+pparens :: Prec2 -> Prec2 -> Doc -> Doc
+pparens context prec doc
+  | context >= prec = parens doc
+  | otherwise       = doc
+
+
+ppKind2 :: Prec2 -> Kind -> Doc
+ppKind2 prec kind
+  = case kind of
+      KCon name      -> pretty name
+      KApp (KApp (KCon name) k1) k2 | name == newName "->"
+                     -> pparens prec precArrow $
+                        case collectFunArgs k2 of
+                          [res] -> ppKind2 precArrow k1 <+> text "->" <+> ppKind2 (precArrow-1) res
+                          (args) -> commaParens (ppKind2 precTop) (k1:init args) <+> text "->" <+> ppKind2 (precArrow-1) (last args)
+                          
+      KApp k1 k2     -> pparens prec precApp $
+                        case collectArgs kind of
+                          (k:ks) -> ppKind2 (precApp-1) k <.> commaParens (ppKind2 precTop) ks
+                          _     -> matchFailure "Kind.Pretty.ppKind.KApp"
+
+  where
+    commaParens f xs
+      = tupled (map f xs)
+
+    collectFunArgs kind
+      = case kind of
+          KApp (KApp (KCon name) k1) k2 | name == newName "->"
+            -> k1 : collectFunArgs k2
+          _ -> [kind]
+          
+    collectArgs kind
+      = case kind of
+          KApp k1 k2  -> collectArgs k1 ++ [k2]
+          _           -> [kind]
+
 
 -- | Kind constant
 type KindCon  = Name
