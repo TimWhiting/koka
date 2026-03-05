@@ -68,6 +68,7 @@ library
       Core.CoreVar
       Core.CTail
       Core.Divergent
+      Core.EffOpt
       Core.FlowAnalysis.Demand.AbstractValue
       Core.FlowAnalysis.Demand.ConstantProp
       Core.FlowAnalysis.Demand.DemandAnalysis

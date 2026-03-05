@@ -59,6 +59,7 @@ module Common.NamePrim
           , nameMaskAt, nameMaskBuiltin
           , isClauseTailName, nameClauseTailNoOp
           , nameTpEvIndex, nameYielding, nameYieldExtend
+          , nameAlwaysMon, nameNeverMon
           , nameEvvIsAffine
           , nameInitially, nameFinally
 
@@ -363,6 +364,8 @@ nameOpenNone i  = coreHndName ("@open-none" ++ show i)
 nameOpen i      = coreHndName ("@open" ++ show i)
 nameEvvIsAffine = coreHndName ("@evv-is-affine")
 
+nameAlwaysMon   = coreHndName "@always-mon"
+nameNeverMon    = coreHndName "@never-mon"
 nameHandle      = coreHndName "@hhandle"
 nameNamedHandle = coreHndName "@named-handle"
 

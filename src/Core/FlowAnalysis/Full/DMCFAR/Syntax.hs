@@ -55,7 +55,7 @@ runQueryAtRange :: HasCallStack => BuildContext
   -> TypeChecker
   -> Module -> Int -> Int
   -> (ExprContext -> FixAAMR FixChange () () ())
-  -> IO Bool
+  -> IO (Bool, M.Map FixInput FixOutput)
 runQueryAtRange bc build mod m d doQuery =
   let runId = show m ++ "-" ++ show d in
   do
@@ -69,14 +69,14 @@ runQueryAtRange bc build mod m d doQuery =
                  getResults
     let s' = transformBasicState (const ()) (const S.empty) s
         values = collectPrograms (S.toList ctxs)
-        recur :: [AProgram] -> IO (Int, Int)
+        recur :: [AProgram] -> IO (Int, [M.Map FixInput FixOutput], Int)
         recur l =
           case l of
             [] -> if nameModule (modName mod) `startsWith` "std/core" then
-                return (0, 0)
+                return (0, [], 0)
               else
                 -- trace ("No analysis context found in " ++ nameModule (modName mod)) $
-                return (0, 0)
+                return (0, [], 0)
             (AProgram name mainCtx resCtx):rest ->
               do
                 result <- do
@@ -91,7 +91,7 @@ runQueryAtRange bc build mod m d doQuery =
                                                     -- trace ("Context: " ++ show (contextId ctx)) $ return ()
                                                     withEnv (\e -> e{currentModContext = ctx, currentContext = ctx}) $ doQuery mainCtx
                                                   ress' <- getCache
-                                                  exprs <- state0Id <$> getStateR                                                  
+                                                  exprs <- state0Id <$> getStateR
                                                   -- trace ("Finished Analyzing " ++ show name) $ return ()
                                                   -- trace ("result': " ++ show ress') $ return ()
                                                   return (ress', exprs)
@@ -133,7 +133,7 @@ runQueryAtRange bc build mod m d doQuery =
                       --         ++ show (length kSizes) ++ "," ++ show (sum kSizes) ++ "," ++ show (count (== 1) kSizes) ++ ","
                       --         ++ show (length sSizes) ++ "," ++ show (sum sSizes) ++ "," ++ show (count (== 1) sSizes) ++ ","
                       --         ++ showFixed True time1 ++ "," ++ showFixed True time2 ++ "," ++ showFixed True time3) $ return ()
-                      return $ Just (if preciseResult metrics then 1 else 0)
+                      return $ Just (if preciseResult metrics then 1 else 0, fst analysisResult)
                     Nothing -> do
                       let value = PolyVariantMetrics "dmcfar" d m (nameModule (modName mod) ++ "/" ++ name) [] True Nothing
                       BS.writeFile (dir ++ "/" ++ name ++ ".json") (encode (toJSON value))
@@ -141,13 +141,13 @@ runQueryAtRange bc build mod m d doQuery =
                       -- trace ("dmcfar," ++ nameModule (modName mod) ++ "/" ++ name ++ "," ++ show d ++ "," ++ show m ++
                       --          ",timeout,0,0,0,0,0,0,0,0,0,0,timeout,timeout,timeout") $ 
                       return Nothing
-                (total, timeouts) <- recur rest
+                (total, rest, timeouts) <- recur rest
                 case result of
-                  Just res -> return (res + total, timeouts)
-                  Nothing -> return (total, timeouts + 1)
+                  Just (res, m) -> return (res + total, m:rest, timeouts)
+                  Nothing -> return (total, rest, timeouts + 1)
 
     -- tstart <- getCurrentTime
-    (r, timeouts) <- recur values
+    (r, results, timeouts) <- recur values
     -- tend <- getCurrentTime
     -- let x :: Double
     --     x = fromIntegral r / fromIntegral (length values)
@@ -156,7 +156,7 @@ runQueryAtRange bc build mod m d doQuery =
     --   trace ("Result " ++ show r ++ " / " ++ show (length values)) $ return ()
     --   trace ("Result " ++ show (truncate' (x * 100) 2) ++ "%, time: " ++ show (diffUTCTime tend tstart)) $ return ()
     -- trace ("l: " ++ show (length l)) $ return ()
-    return $ not (null values)
+    return $ (not (null values), if null results then M.empty else head results)
 
 truncate' :: Double -> Int -> Double
 truncate' x n = fromIntegral (floor (x * t)) / t
@@ -189,6 +189,12 @@ compareResult (result, rMap) (expected, eMap) checked = do
     -- trace (" FAILED:\nGot: " ++ show result ++ "\nExpected:\n" ++ show expected) 
     False
 
+isAppVarExpr :: Expr -> Bool
+isAppVarExpr e =
+    case e of
+      C.App (C.Var _ _) _ _ -> True
+      C.App (C.TypeApp (C.Var _ _) _) _ _ -> True
+      _ -> False
 isAppExpr :: Expr -> Bool
 isAppExpr e =
     case e of
@@ -209,10 +215,17 @@ isIndirectAppFun e =
     AppCLambda _ _ (C.TypeApp (C.Var _ _) _) -> True
     _ -> False
 
+neverMon cache = 
+    M.filter (\vs -> all (\v -> case v of { RVAddr{} -> True; _ -> False }) vs) $
+      M.fromListWith (<>) [(e, out) | (Step (CContinue r f@(FApp _ [] _ e _) _), RValue out) <- M.toList cache, Just e' <- [maybeExprOfCtx e], isAppExpr e']
+alwaysMon cache = 
+  M.filter (\vs -> all (\v -> case v of { ROp{} -> True; _ -> False }) vs) $
+      M.fromListWith (<>) [(e, out) | (Step (CContinue r f@(FApp _ [] _ e _) _), RValue out) <- M.toList cache, Just e' <- [maybeExprOfCtx e], isAppExpr e']
+  
+
 extractMetrics :: (M.Map FixInput FixOutput, M.Map ExprContextId String) -> (M.Map FixInput FixOutput, M.Map ExprContextId String) -> StoreMetrics
 extractMetrics (cache, exprIds) (cacheExpected, _) =
   let
-
     -- Lookup helpers
     lookupVal :: Addr -> AbValue
     lookupVal UnitAddr = emptyAbValue -- Approximation
@@ -265,7 +278,7 @@ extractMetrics (cache, exprIds) (cacheExpected, _) =
     -- Context explosion metrics
     ctxsPerExpr = M.fromListWith S.union [(e, S.singleton ctx) | (Step (CEval e ctx), RValue val) <- M.toList cache]
     ctxsPerApply = M.fromListWith S.union [(kAddrId exprIds k, S.singleton ctx) | (Step (CApply k _ ctx), RValue val) <- M.toList cache]
-    
+
     exprContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerExpr]
     contContextHistogram = M.fromListWith (+) [(S.size ctxs, 1) | ctxs <- M.elems ctxsPerApply]
 
@@ -292,9 +305,9 @@ extractMetrics (cache, exprIds) (cacheExpected, _) =
     callTargetStrSizes = M.map abStructuralSize $ M.fromListWith (<>) [ (fromJust (M.lookup (contextId c) exprIds), resolveRValue vs) | (Step (CEval c _), RValue vs) <- M.toList cache, isIndirectAppFun c, not $ onlyLit (resolveRValue vs) ]
 
     -- TODO: Literal values
-    
+
     -- Total FixInput states
-    
+
     getValue cache addr addrsx =
           case M.lookup (VStore addr) cache of
             Just (SValue res) ->
@@ -313,7 +326,8 @@ extractMetrics (cache, exprIds) (cacheExpected, _) =
     numTotalFixInput = M.size cache
     numFixpoint = M.size $ M.filterWithKey (\k _ -> case k of Step{} -> True; _ -> False) cache
     !result = compareResult final expected S.empty
-  in StoreMetrics
+  in -- trace (intercalate "\n" (map (\(k, v) -> show (exprOfCtx k) ++ "\n" ++ intercalate ",\n" (map show (S.toList v)) ++ "\n\n") (M.toList (alwaysMon cache)))) $ 
+    StoreMetrics
       numStore numLit numStruct numCont callTargetCount numTotalFixInput numFixpoint result
       valSemSingletons contSemSingletons valStrSingletons contStrSingletons cont0CFAStrSingletons
       val0CFAStrSingletons combined0CFAStrSingletons
@@ -328,7 +342,7 @@ extractMetrics (cache, exprIds) (cacheExpected, _) =
 
 evalMainR :: BuildContext
   -> TypeChecker -> Module -> Int -> Int
-  -> IO Bool
+  -> IO (Bool, M.Map FixInput FixOutput)
 evalMainR bc build mod m d = do
   runQueryAtRange bc build mod m d $ \ctx -> do
     c <- inject ctx

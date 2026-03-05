@@ -109,6 +109,7 @@ coreOptimize flags newtypes gamma inlines coreProgram
           ctailOptimize penv newtypes gamma (optctailCtxPath flags)
 
         -- transform effects to explicit monadic binding (and resolve .open calls)
+        -- The @always-mon/@never-mon annotations have already been applied before any optimizations
         when (enableMon flags && not (isPrimitiveModule progName)) $
           -- trace (show progName ++ ": monadic transform") $
           do Core.Monadic.monTransform penv

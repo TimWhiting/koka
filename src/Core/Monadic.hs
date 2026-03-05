@@ -27,7 +27,7 @@ import Common.Unique
 import Common.NamePrim( nameEffectOpen,
                         nameReturn, nameDeref, nameByref,
                         nameTrue, nameFalse, nameTpBool, nameUnsafeTotal,
-                        nameBind
+                        nameBind, nameYieldExtend, nameAlwaysMon, nameNeverMon
                       )
 import Common.Syntax
 
@@ -43,9 +43,10 @@ import Core.Core
 import qualified Core.Core as Core
 import Core.Pretty
 import Core.CoreVar
+import Data.Maybe (fromMaybe)
 
 trace s x =
-   -- Lib.Trace.trace s
+   Lib.Trace.trace s
     x
 
 monTransform :: Pretty.Env -> CorePhase b ()
@@ -91,18 +92,20 @@ monExpr expr
 
 monExpr' :: Bool -> Expr -> Mon (TransX Expr Expr)
 monExpr' topLevel expr
-  = case expr of
+  = let simpleEnv = defaultEnv{noFullNames=True}
+    in -- rmtrace (show $ prettyExpr simpleEnv expr) $
+    case expr of
       -- optimized open binding
       -- note: we cannot just check for `isMonEffect effFrom` as the effFrom
       -- might be total but inside we may still need a monadic translation if `f`
       -- contains handlers itself for example.
       App (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f] rng0) args rng
-          | getName open == nameEffectOpen && not (isMonExpr f) -- not (isMonEffect effFrom)
+          | getName open == nameEffectOpen && not (isMonExpr f) -- not (isHandledRow effFrom))
           -> do args' <- mapM monExpr args
                 return $ \k -> applies args' (\argss -> k (App (App eopen [f] rng0) argss rng))
 
       App (TypeApp (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [f] rng0) targs) args rng
-          | getName open == nameEffectOpen && not (isMonExpr f) -- not (isMonEffect effFrom)
+          | getName open == nameEffectOpen && not (isMonExpr f) -- not (isHandledRow effFrom))
           -> do args' <- mapM monExpr args
                 return $ \k -> applies args' (\argss -> k (App (TypeApp (App eopen [f] rng0) targs) argss rng))
 
@@ -117,16 +120,144 @@ monExpr' topLevel expr
         -> do -- monTraceDoc $ \env -> text "not effectful lambda:" <+> niceType env eff
               body' <- monExpr body
               return $ \k -> k (Lam args eff (body' id))
+      App (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [freal] _) args rng | getName open == nameEffectOpen && not (isHandledRow effFrom) ->
+        do f' <- monExpr freal
+           args' <- mapM monExpr args
+           return $ \k -> f' (\ff ->
+                              applies args' (\argss ->
+                                k (App ff argss rng)
+                            ))
+      App (App (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [TypeApp (Var nm _) _] _) [freal] _) args rng | getName open == nameEffectOpen && getName nm == nameNeverMon ->
+        do f' <- monExpr freal
+           args' <- mapM monExpr args
+           return $ \k -> f' (\ff ->
+                              applies args' (\argss ->
+                                k (App ff argss rng)
+                            ))
+      App (App (App eopen@(TypeApp (Var open _) [effFrom,effTo,_,_]) [TypeApp (Var nm _) _] _) [freal] _) args rng | getName open == nameEffectOpen && getName nm == nameAlwaysMon ->
+        do f' <- monExpr freal
+           args' <- mapM monExpr args
+          --  trace "app always-mon" $ return ()
+           let ftp = typeOf freal
+           feff <- let (tvs,rho) = splitTypeScheme ftp -- can happen with: ambient control abort() : a
+                      in case splitFunType rho of
+                           Just(_,feff,_) -> return feff
+                           _ -> do monTraceDoc $ \env -> text "Core.Monadic.App: illegal application:" <+> ppType env ftp
+                                   failure ("Core.Monadic.App: illegal application: " ++ show (ppType defaultEnv ftp))
+          --  monTraceDoc $ \env -> text "app always-mon:" <+> prettyExpr env expr
+           nameY <- uniqueName "y"
+           nameDiscard <- uniqueName "discard"
+           return $ \k ->
+             let resTp = typeOf expr
+                 tnameY = TName nameY resTp Nothing
+                 contBody = k (Var tnameY InfoNone)
+                 cont = case contBody of
+                           -- optimize (fun(y) { let x = y in .. })
+                           Let [DefNonRec def@(Def{ defExpr = Var v _ })] body
+                            | getName v == nameY
+                             -> Lam [TName (defName def) (defType def) (Just $ defNameRange def)] feff body
+                           -- TODO: optimize (fun (y) { lift(expr) } )?
+                           body -> Lam [tnameY] feff body
+            in
+              f' (\ff ->
+                applies args' (\argss ->
+                  applyExtend resTp feff (typeOf contBody) (\e ->
+                    let def = Def nameDiscard resTp (App ff argss Nothing) Private DefVal InlineAuto (fromMaybe rangeNull rng) ""
+                    in Let [DefNonRec def] e)
+                    cont
+                  -- appBind resTp feff rng (typeOf contBody) ff argss cont
+              ))
+
+      -- Analysis-based annotations with TypeApp (polymorphic always-mon instantiated to specific type)
+      App (TypeApp (Var nm _) _) [freal] _ | getName nm == nameAlwaysMon ->
+        do f' <- monExpr freal
+           let ftp = typeOf freal
+           feff <- let (tvs,rho) = splitTypeScheme ftp
+                      in case splitFunType rho of
+                           Just(_,feff,_) -> return feff
+                           _ -> failure ("Core.Monadic.App: illegal always-mon application: " ++ show (ppType defaultEnv ftp))
+          --  monTrace ("app always-mon TypeApp variant: " ++ show (prettyExpr defaultEnv freal))
+           nameY <- uniqueName "y"
+           return $ \k ->
+             let resTp = typeOf expr
+                 tnameY = TName nameY resTp Nothing
+                 contBody = k (Var tnameY InfoNone)
+                 cont = Lam [tnameY] feff contBody
+             in f' (\ff -> applyExtend resTp feff (typeOf contBody) id cont) -- Simple version
+
+      -- Analysis-based annotations (transient simple Var applications)
+      App (Var nm _) [freal] _ | getName nm == nameAlwaysMon ->
+        do f' <- monExpr freal
+           let ftp = typeOf freal
+           feff <- let (tvs,rho) = splitTypeScheme ftp
+                      in case splitFunType rho of
+                           Just(_,feff,_) -> return feff
+                           _ -> failure ("Core.Monadic.App: illegal always-mon application: " ++ show (ppType defaultEnv ftp))
+          --  monTrace ("app always-mon variant: " ++ show (prettyExpr defaultEnv freal))
+           nameY <- uniqueName "y"
+           return $ \k ->
+             let resTp = typeOf expr
+                 tnameY = TName nameY resTp Nothing
+                 contBody = k (Var tnameY InfoNone)
+                 cont = Lam [tnameY] feff contBody
+             in f' (\ff -> applyExtend resTp feff (typeOf contBody) id cont) -- Simple version
+
+      App (Var nm _) [freal] _ | getName nm == nameNeverMon ->
+        do freal' <- monExpr freal
+           return $ \k -> freal' k
+
+      -- Nested never-mon: @never-mon(f) applied to arguments -- treat entire call as non-monadic
+      App (App (Var nm _) [freal] _) args rng | getName nm == nameNeverMon ->
+        do f' <- monExpr freal
+           args' <- mapM monExpr args
+          --  monTrace ("app nested never-mon: " ++ show (prettyExpr defaultEnv freal))
+           return $ \k -> f' (\ff ->
+                                applies args' (\argss ->
+                                  k (App ff argss rng)
+                              ))
+
+      -- Nested always-mon: @always-mon(f) applied to arguments
+      -- This can happen when the annotated function gets inlined and then applied
+      App (App (Var nm _) [freal] _) args rng | getName nm == nameAlwaysMon ->
+        do f' <- monExpr freal
+           args' <- mapM monExpr args
+           let ftp = typeOf freal
+           feff <- let (tvs,rho) = splitTypeScheme ftp
+                      in case splitFunType rho of
+                           Just(_,feff,_) -> return feff
+                           _ -> failure ("Core.Monadic.App: illegal nested always-mon application: " ++ show (ppType defaultEnv ftp))
+          --  monTrace ("app nested always-mon: " ++ show (prettyExpr defaultEnv freal))
+           nameY <- uniqueName "y"
+           nameDiscard <- uniqueName "discard"
+           return $ \k ->
+             let resTp = typeOf expr
+                 tnameY = TName nameY resTp Nothing
+                 contBody = k (Var tnameY InfoNone)
+                 cont = case contBody of
+                           -- optimize (fun(y) { let x = y in .. })
+                           Let [DefNonRec def@(Def{ defExpr = Var v _ })] body
+                            | getName v == nameY
+                             -> Lam [TName (defName def) (defType def) (Just $ defNameRange def)] feff body
+                           body -> Lam [tnameY] feff body
+             in f' (\ff ->
+                   applies args' (\argss ->
+                     applyExtend resTp feff (typeOf contBody) (\e ->
+                       let def = Def nameDiscard resTp (App ff argss Nothing) Private DefVal InlineAuto (fromMaybe rangeNull rng) ""
+                       in Let [DefNonRec def] e)
+                       cont
+                 ))
 
       App f args rng
         -> do f' <- monExpr f
               args' <- mapM monExpr args
-              let -- ff  = f' id
-                  ftp = typeOf f -- ff
-              feff <- let (tvs,rho) = splitTypeScheme ftp -- can happen with: ambient control abort() : a
+              let ftp = typeOf f
+              feff <- let (tvs,rho) = splitTypeScheme ftp
                       in case splitFunType rho of
                            Just(_,feff,_) -> return feff
-                           _ -> do monTraceDoc $ \env -> text "Core.Monadic.App: illegal application:" <+> ppType env ftp
+                           _ -> do monTrace ("Core.Monadic.App: illegal application: " ++ show (prettyExpr defaultEnv f) ++ " of type " ++ show (pretty ftp))
+                                   monTrace ("The full App expr: " ++ show (prettyExpr defaultEnv expr))
+                                   trace ("Core.Monadic.App: illegal application: " ++ show (prettyExpr defaultEnv f) ++ " of type " ++ show (pretty ftp)) $ return ()
+                                   trace ("The full App expr: " ++ show (prettyExpr defaultEnv expr)) $ return ()
                                    failure ("Core.Monadic.App: illegal application: " ++ show (ppType defaultEnv ftp))
               if ((not (isMonType ftp || isAlwaysMon f)) || isNeverMon f)
                then do monTraceDoc $ \env -> text "app non-mon: eff:" <+> pretty feff <+> text ", expr:" <+> prettyExpr env expr
@@ -134,24 +265,25 @@ monExpr' topLevel expr
                                             applies args' (\argss ->
                                               k (App ff argss rng)
                                           ))
-               else  do monTraceDoc $ \env -> text "app mon:" <+> prettyExpr env expr
-                        nameY <- uniqueName "y"
-                        return $ \k ->
-                          let resTp = typeOf expr
-                              tnameY = TName nameY resTp Nothing
-                              contBody = k (Var tnameY InfoNone)
-                              cont = case contBody of
-                                        -- optimize (fun(y) { let x = y in .. })
-                                       Let [DefNonRec def@(Def{ defExpr = Var v _ })] body
-                                        | getName v == nameY
-                                        -> Lam [TName (defName def) (defType def) (Just $ defNameRange def)] feff body
-                                       -- TODO: optimize (fun (y) { lift(expr) } )?
-                                       body -> Lam [tnameY] feff body
-                          in
-                          f' (\ff ->
-                            applies args' (\argss ->
-                              appBind resTp feff rng (typeOf contBody) ff argss cont
-                          ))
+              else do monTraceDoc $ \env -> text "app mon:" <+> prettyExpr env expr
+                      -- trace ("app mon: " ++ show (prettyExpr simpleEnv expr) ++ "\n" ++ show (ppType simpleEnv ftp) ++ "\n" ++ show (ppType simpleEnv feff) ++ "\n") $ return ()
+                      nameY <- uniqueName "y"
+                      return $ \k ->
+                        let resTp = typeOf expr
+                            tnameY = TName nameY resTp Nothing
+                            contBody = k (Var tnameY InfoNone)
+                            cont = case contBody of
+                                      -- optimize (fun(y) { let x = y in .. })
+                                      Let [DefNonRec def@(Def{ defExpr = Var v _ })] body
+                                       | getName v == nameY
+                                       -> Lam [TName (defName def) (defType def) (Just $ defNameRange def)] feff body
+                                      -- TODO: optimize (fun (y) { lift(expr) } )?
+                                      body -> Lam [tnameY] feff body
+                        in
+                        f' (\ff ->
+                          applies args' (\argss ->
+                            appBind resTp feff rng (typeOf contBody) ff argss cont
+                        ))
       Let defgs body
         -> monLetGroups defgs body
 
@@ -259,6 +391,9 @@ applyBind tpArg tpEff tpRes expr cont
       _ -> monMakeBind tpArg tpEff tpRes expr cont
            -- App (TypeApp (Var (TName nameBind typeBind) info) [tpArg, tpRes, tpEff]) [expr,cont]
 
+applyExtend :: Type -> Type -> Type -> (Expr -> Expr) -> Expr -> Expr
+applyExtend tpArg tpEff tpRes letExpr cont
+  = letExpr (monMakeExtend tpArg tpEff tpRes cont)
 
 monMakeBind :: Type -> Effect -> Type -> Expr -> Expr -> Expr
 monMakeBind tpArg tpEff tpRes arg next
@@ -266,11 +401,22 @@ monMakeBind tpArg tpEff tpRes arg next
   where
     info = Core.InfoArity 2 3 -- Core.InfoExternal [(CS,"Eff.Op.Bind<##1,##2>(#1,#2)"),(JS,"$std_core._bind(#1,#2)")]
 
+monMakeExtend tpArg tpEff tpRes next
+  = App (TypeApp (Var (TName nameYieldExtend typeExtend Nothing) info) [tpArg, tpRes, tpEff]) [next] Nothing
+  where
+    info = Core.InfoArity 1 2 -- Core.InfoExternal [(CS,"Eff.Op.Extend<##1,##2>(#1)"),(JS,"$std_core._extend(#1)")]
+
 typeBind :: Type
 typeBind
   = TForall [tvarA,tvarB,tvarE]
       (TFun [(nameNil,typeYld (TVar tvarA)),
              (nameNil,TFun [(nameNil,TVar tvarA)] (TVar tvarE) (typeYld (TVar tvarB)))]
+            (TVar tvarE) (typeYld (TVar tvarB)))
+
+typeExtend :: Type
+typeExtend
+  = TForall [tvarA,tvarB,tvarE]
+      (TFun [(nameNil,TFun [(nameNil,TVar tvarA)] (TVar tvarE) (typeYld (TVar tvarB)))]
             (TVar tvarE) (typeYld (TVar tvarB)))
 
 
@@ -297,7 +443,8 @@ isAlwaysMon :: Expr -> Bool
 isAlwaysMon expr
   = case expr of
       TypeApp e _ -> isAlwaysMon e
-      Var v _     -> -- getName v == nameYieldOp ||
+      Var v _     -> getName v == nameAlwaysMon ||
+                     -- getName v == nameYieldOp ||
                      getName v == nameUnsafeTotal -- TODO: remove these special cases?
                      -- getName v == namePerform 0
       _ -> False
@@ -307,7 +454,7 @@ isNeverMon :: Expr -> Bool
 isNeverMon expr
   = case expr of
       App eopen@(TypeApp (Var open _) [effFrom,effTo,tpFrom,tpTo]) [f] rng | getName open == nameEffectOpen
-        -> isTypeTotal effFrom  -- TODO: more cases? generally handler free
+        -> isTypeTotal effFrom || not (isHandledRow effFrom)-- TODO: more cases? generally handler free
       TypeApp e _ -> isNeverMon e
       Var v _     -> getName v == nameDeref -- canonicalName 1 nameDeref --TODO: remove special case?
       _ -> isTotal expr
@@ -317,6 +464,11 @@ isNeverMon expr
 isMonDef :: Def -> Bool
 isMonDef def
   = isMonType (defType def) || isMonExpr (defExpr def)
+
+isHandledRow :: Type -> Bool
+isHandledRow rho =
+  let (hd, tl) = extractHandledEffect rho
+  in any isHandledEffect hd || isEffectEmpty tl
 
 isMonExpr :: Expr -> Bool
 isMonExpr expr
@@ -422,7 +574,7 @@ isInBindContext
 monTraceDoc :: (Pretty.Env -> Doc) -> Mon ()
 monTraceDoc f
   = do env <- getEnv
-       monTrace (show (f (prettyEnv env)))
+       return ()-- monTrace (show (f (prettyEnv env)))
 
 monTrace :: String -> Mon ()
 monTrace msg
