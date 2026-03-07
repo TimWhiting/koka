@@ -148,12 +148,7 @@ hoverHandler
                       
                       responder $ Right $ J.InL rsp
                     Left(e) -> do
-                      let dualNewline str =
-                              case str of 
-                                '\n':rst -> '\n':'\n':dualNewline rst
-                                c:rst -> c:dualNewline rst
-                                [] -> [] 
-                      markdown <- prettyMarkdown (doc <.> text "\n\nError while running analysis:" <+> text (dualNewline (show e)))
+                      markdown <- prettyMarkdown (doc <.> text "\n\nAnalysis failed: it ran into a Koka feature that is not yet supported.")
                       let rsp = J.Hover (J.InL (J.mkMarkdown markdown)) (Just (toLspRange rng))
                       -- trace ("hover markdown:\n" ++ show markdown) $
                       
