@@ -57,10 +57,45 @@ void kk_uv_loop_run(kk_context_t* _ctx){
   }
 }
 
+static char* kk_uv_handle_type_str(uv_handle_t* handle) {
+  switch (handle->type) {
+    case UV_UNKNOWN_HANDLE: return "UNKNOWN";
+    case UV_ASYNC: return "ASYNC";
+    case UV_CHECK: return "CHECK";
+    case UV_FS_EVENT: return "FS_EVENT";
+    case UV_FS_POLL: return "FS_POLL";
+    case UV_HANDLE: return "HANDLE";
+    case UV_IDLE: return "IDLE";
+    case UV_NAMED_PIPE: return "NAMED_PIPE";
+    case UV_POLL: return "POLL";
+    case UV_PREPARE: return "PREPARE";
+    case UV_PROCESS: return "PROCESS";
+    case UV_STREAM: return "STREAM";
+    case UV_TCP: return "TCP";
+    case UV_TIMER: return "TIMER";
+    case UV_TTY: return "TTY";
+    case UV_UDP: return "UDP";
+    case UV_SIGNAL: return "SIGNAL";
+    case UV_FILE: return "FILE";
+    default: return "INVALID";
+  }
+}
+
+static void kk_uv_loop_walk_cb(uv_handle_t* handle, void* arg) {
+  const char* closing_msg = uv_is_closing(handle) ? " [CLOSING]" : "";
+  const char* active_msg = uv_is_active(handle) ? " [ACTIVE]" : "";
+  kk_warning_message(" - %s handle%s%s\n", kk_uv_handle_type_str(handle), active_msg, closing_msg);
+}
+
 static void kk_uv_loop_close(kk_context_t* _ctx) {
   int ret = uv_loop_close(uvloop());
   if (ret != 0) {
-    kk_warning_message("Event loop closed %s\n", uv_err_name(ret));
+    if (ret == UV_EBUSY) {
+      kk_warning_message("Event loop closed with open child handles:\n");
+      uv_walk(uvloop(), kk_uv_loop_walk_cb, NULL);
+    } else {
+      kk_warning_message("Event loop close returned error: %s\n", uv_err_name(ret));
+    }
   }
   kk_free(uvloop(), _ctx);
 }
