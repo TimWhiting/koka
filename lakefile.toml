@@ -1,0 +1,10 @@
+name = "Koka"
+version = "0.1.0"
+defaultTargets = ["koka"]
+
+[[lean_lib]]
+name = "Koka"
+
+[[lean_exe]]
+name = "koka"
+root = "Main"
