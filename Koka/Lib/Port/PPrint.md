@@ -22,6 +22,5 @@
 
 ## Notes
 - Core Wadler-style pretty printing engine is fully ported with functional parity.
-- **Partial**: Utility functions for inspecting document contents (`dcontains`, `dstartsWith`, `dendsWith`) and `makeMarkdown` are missing.
 - **Implementation**: Instead of Haskell's lazy `displayIO`, Lean uses `displayP` which interacts with the `Printer` typeclass abstractions.
 - Unit tests for basic combinators are in `Koka/Lib/Test/PPrint.lean`.

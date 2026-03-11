@@ -34,6 +34,21 @@ Some Haskell libraries or GHC-specific features do not have direct Lean equivale
 * `Common.Syntax`: Skipped `sepBySpace` and `memberDoc` which depend on `Lib.PPrint`. (To be added once `PPrint` is ported).
 * `Common.File`: Skipped `Async` or heavy OS-specific file time formats where Lean's `IO.FS.SystemTime` differs subtly, although basic IO wrappers were implemented.
 
+## Steps for Porting a File
+
+When porting a new Haskell source file to Lean, follow these steps systematically:
+- [ ] **Analyze Dependencies**: Check the Haskell `import` block. Ensure all internal dependencies have already been ported. For external dependencies (e.g., containers, text), map them to the corresponding Lean 4 `Std` or `Mathlib` structures (or mark as needing custom implementation).
+- [ ] **Create the Lean File**: Create the corresponding `.lean` file with the target namespace (e.g. `Koka.Lib.PPrint`).
+- [ ] **Include File Header**: Insert the mandated porting metadata header containing the original Haskell file path, commit hash, and date.
+- [ ] **Translate Types and Functions**: 
+  - Translate ADTs to `inductive` or `structure`.
+  - Translate functions, making use of `partial def` for non-structural recursion initially.
+  - Apply `panic!` for `error` calls and assertions.
+- [ ] **Resolve Errors**: Ensure the file builds successfully via `lake build Koka`.
+- [ ] **Create Audit Report**: Create an audit `<ModuleName>.md` within the relevant `Port/` directory. Create a table checking every function/type for lines, partial annotations, tests, and proofs.
+- [ ] **Update Master Checklist**: Add or update the module's row in `porting_audit.md`.
+- [ ] **Add Tests and Proofs**: (Optional but recommended) Provide `#eval` tests in a `Test/` file or semantic proofs in a `Proof/` file.
+
 ## Porting Audit Requirement
 After porting a module or adding significant functionality to an existing port, the following must be updated:
 1.  **Module Audit Report**: Update the corresponding `.md` file in the `Port/` directory (e.g., `Koka/Common/Port/Name.md`). Mark functions as ported, update line numbers if necessary, and note any implementation details.

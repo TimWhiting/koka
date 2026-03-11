@@ -2,7 +2,7 @@ import Koka.Lib.PPrint
 
 open Koka.Lib.PPrint
 
-def main : IO Unit := do
+def test_pprint : IO Unit := do
   let d := textP "hello" <+> textP "world"
   IO.println s!"Texts: {texts d}"
   IO.println s!"RTexts: {rtexts d}"
@@ -13,3 +13,5 @@ def main : IO Unit := do
 
   let mdDoc := makeMarkdown (textP "a" <--> textP "b")
   IO.println s!"Markdown output: {asString mdDoc}"
+
+#eval test_pprint

@@ -33,7 +33,6 @@
 
 ## Notes
 - **Partial**: `makeFreshHiddenName` is missing as it requires `Common.Range`.
-- **Partial**: `showBinary` and `showHexFloat` are missing.
 - **Porting decision**: `readTupled`/`showTupled` were omitted as they are legacy/deprecated in the current Haskell codebase.
 - Significant test coverage in `Koka/Common/Test/Name.lean`.
 - Some formal proofs for name property preservation in `Koka/Common/Proof/Name.lean`.

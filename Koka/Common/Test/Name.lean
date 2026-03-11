@@ -21,3 +21,11 @@ open Koka.Common.Name
 #guard fromValueOperationsName (toValueOperationName (newName "test")) == newName "test"
 #guard pathToModuleName "foo__bar" == newModuleName "foo_bar"
 #guard pathToModuleName "foo_dash_bar" == newModuleName "foo-bar"
+
+#eval showBinary 4 5
+#eval showBinary 8 0
+#eval showHexFloat 1.0
+#eval showHexFloat 0.0
+#eval showHexFloat (-0.5)
+#eval showHexFloat (0.0 / 0.0)
+#eval showHexFloat (1.0 / 0.0)
