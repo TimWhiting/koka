@@ -34,11 +34,8 @@ dependencies:
   - async
   - FloatingHex >= 0.5
   - hashable >= 1.4
-  # NOTE: process, directory, and isocline are not available on GHC JS backend
-  # These will need to be made conditional with arch(javascript) when building for JS
   - directory
   - process
-  - isocline >= 1.0.6
 
 library:
   other-extensions:
@@ -73,6 +70,8 @@ library:
         - src/Platform/cpp/Platform/cconsole.h
       include-dirs:
         - src/Platform/cpp/Platform
+      dependencies:
+        - isocline >= 1.0.6
 
 executables:
   koka:
@@ -99,6 +98,9 @@ executables:
       # - -fdistinct-constructor-tables
       # - '"-with-rtsopts=-N8 -l"'
       - '"-with-rtsopts=-N8"'
+    when:
+      - condition: arch(javascript)
+        buildable: false
 
   koka-plain:
     main: Main.hs
@@ -114,6 +116,9 @@ executables:
       # - -fdistinct-constructor-tables
       # - '"-with-rtsopts=-N8 -l"'
       - '"-with-rtsopts=-N8"'
+    when:
+      - condition: arch(javascript)
+        buildable: false
 
   koka-playground:
     main: Main.hs
@@ -143,4 +148,7 @@ tests:
       - process
       - regex-compat >= 0.95.2.1
       - json
+    when:
+      - condition: arch(javascript)
+        buildable: false
 
