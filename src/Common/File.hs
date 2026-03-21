@@ -8,6 +8,7 @@
 {-
     Internal errors and assertions.
 -}
+{-# OPTIONS -cpp #-}
 -----------------------------------------------------------------------------
 module Common.File(
                   -- * System
@@ -56,6 +57,7 @@ import Platform.Config  ( pathSep, pathDelimiter, sourceExtension, exeExtension 
 import qualified Platform.Runtime as B ( {- copyBinaryFile, -} exCatch )
 import Common.Failure   ( raiseIO, catchIO )
 
+#ifndef KOKA_WEB
 import System.IO
 import System.Process   ( system, rawSystem, createProcess, CreateProcess(..), proc, StdStream(..), waitForProcess )
 import System.Exit      ( ExitCode(..) )
@@ -64,6 +66,11 @@ import System.Directory ( doesFileExist, doesDirectoryExist
                         {- , copyFile, copyFileWithMetadata -}
                         , getCurrentDirectory, getDirectoryContents
                         , createDirectoryIfMissing, canonicalizePath, removeFile, getFileSize )
+#endif
+
+#ifdef KOKA_WEB
+import GHC.JS.Prim (JSVal, toJSString, fromJSString, toJSArray, fromJSArray, isNull, isUndefined)
+#endif
 
 import Debug.Trace
 import Platform.Filetime
@@ -181,7 +188,7 @@ undelimPaths xs
     normalize ps "" (c:cs)  | isSpace c
       = normalize ps "" cs
     -- directory on windows
-    normalize ps "" (c:':':cs)    
+    normalize ps "" (c:':':cs)
       = normalize ps (':':c:[]) cs
     -- normal
     normalize ps p xs
@@ -265,14 +272,38 @@ isPathDelimiter :: Char -> Bool
 isPathDelimiter c
   = (c == ';' || c == pathDelimiter)
 
+#ifdef KOKA_WEB
+getCwd :: IO FilePath
+getCwd = return "/"
+#else
 getCwd :: IO FilePath
 getCwd
    = realPath "."
+#endif
 
 {--------------------------------------------------------------------------
   system
 --------------------------------------------------------------------------}
 
+#ifdef KOKA_WEB
+runSystemRaw :: String -> IO ()
+runSystemRaw _ = raiseIO "command execution not available in browser"
+
+runSystem :: String -> IO ()
+runSystem _ = raiseIO "command execution not available in browser"
+
+runCmd :: String -> [String] -> IO ()
+runCmd _ _ = raiseIO "command execution not available in browser"
+
+runCmdRead :: [(String,String)] -> String -> [String] -> IO (String,String)
+runCmdRead _ _ _ = raiseIO "command execution not available in browser"
+
+runCmdEnv :: [(String,String)] -> String -> [String] -> IO ()
+runCmdEnv _ _ _ = raiseIO "command execution not available in browser"
+
+buildEnv :: [(String,String)] -> IO (Maybe [(String,String)])
+buildEnv _ = return Nothing
+#else
 runSystemRaw :: String -> IO ()
 runSystemRaw command
   = do -- putStrLn ("system: " ++ command)
@@ -328,6 +359,7 @@ buildEnv extraEnv
       else do oldEnv <- getEnvironment
               let newKeys = map fst extraEnv
               return (Just (extraEnv ++ filter (\(k,_) -> not (k `elem` newKeys)) oldEnv))
+#endif
 
 -- | Compare two file modification times (uses 0 for non-existing files)
 fileTimeCompare :: FilePath -> FilePath -> IO Ordering
@@ -345,6 +377,15 @@ maxFileTimes :: [FileTime] -> FileTime
 maxFileTimes times
   = foldr maxFileTime fileTime0 times
 
+#ifdef KOKA_WEB
+doesFileExistAndNotEmpty :: FilePath -> IO Bool
+doesFileExistAndNotEmpty fpath
+  = do exist <- js_doesFileExist fpath
+       if exist
+         then do sz <- js_getFileSize fpath
+                 return (sz > 0)
+         else return False
+#else
 doesFileExistAndNotEmpty :: FilePath -> IO Bool
 doesFileExistAndNotEmpty fpath
   = do exist <- doesFileExist fpath
@@ -358,18 +399,51 @@ doesFileExistAndNotEmpty fpath
          Nothing      -> return False
          Just content -> return (not (null content))
 -}
+#endif
 
+#ifdef KOKA_WEB
+readTextFile :: FilePath -> IO (Maybe String)
+readTextFile fpath
+  = do result <- js_vfsReadFile (toJSString fpath)
+       if isNull result || isUndefined result
+         then return Nothing
+         else return (Just (fromJSString result))
+#else
 readTextFile :: FilePath -> IO (Maybe String)
 readTextFile fpath
   = B.exCatch (do content <- readFile fpath
                   return (if null content then Just content else (seq (last content) $ Just content)))
               (\exn -> -- trace ("reading file " ++ fpath ++ " exception: " ++ exn)
                    return Nothing)
+#endif
 
+#ifdef KOKA_WEB
+writeTextFile :: FilePath -> String -> IO ()
+writeTextFile fpath content
+  = js_vfsWriteFile (toJSString fpath) (toJSString content)
+#else
 writeTextFile :: FilePath -> String -> IO ()
 writeTextFile fpath content
   = writeFile fpath content
+#endif
 
+#ifdef KOKA_WEB
+copyTextFile :: FilePath -> FilePath -> IO ()
+copyTextFile src dest
+  = if src == dest then return ()
+    else do mbContent <- readTextFile src
+            case mbContent of
+              Just content -> writeTextFile dest content
+              Nothing      -> error ("could not copy file " ++ show src ++ " to " ++ show dest)
+
+copyTextFileWith :: FilePath -> FilePath -> (String -> String) -> IO ()
+copyTextFileWith src dest transform
+  = if src == dest then return ()
+    else do mbContent <- readTextFile src
+            case mbContent of
+              Just content -> writeTextFile dest (transform content)
+              Nothing      -> error ("could not copy file " ++ show src ++ " to " ++ show dest)
+#else
 copyTextFile :: FilePath -> FilePath -> IO ()
 copyTextFile src dest
   = copyTextFileWith src dest id
@@ -390,7 +464,12 @@ copyTextFileWith src dest transform
                       writeFile dest (transform content)
                       setFileTime dest ftime)
             (error ("could not copy file " ++ show src ++ " to " ++ show dest))
+#endif
 
+#ifdef KOKA_WEB
+copyBinaryFile :: FilePath -> FilePath -> IO ()
+copyBinaryFile src dest = copyTextFile src dest  -- no binary distinction on JS
+#else
 copyBinaryFile :: FilePath -> FilePath -> IO ()
 copyBinaryFile src dest
   = if (src == dest)
@@ -406,6 +485,7 @@ copyBinaryFile src dest
                        hPutStr hdest content
                 setFileTime dest ftime)
             (error ("could not copy file " ++ show src ++ " to " ++ show dest))
+#endif
 
 copyBinaryIfNewer :: Bool -> FilePath -> FilePath -> IO ()
 copyBinaryIfNewer always srcName outName
@@ -435,13 +515,23 @@ copyTextIfNewerWith always srcName outName transform
         then do copyTextFileWith srcName outName transform
         else do return ()
 
+#ifdef KOKA_WEB
+removeFileIfExists :: FilePath -> IO ()
+removeFileIfExists fname = js_vfsRemoveFile (toJSString fname)
+#else
 removeFileIfExists :: FilePath -> IO ()
 removeFileIfExists fname
   = B.exCatch (removeFile fname)
               (\exn -> return ())
+#endif
 
+#ifdef KOKA_WEB
+getProgramPath :: IO FilePath
+getProgramPath = return "/koka"
+#else
 getProgramPath :: IO FilePath
 getProgramPath = getExecutablePath
+#endif
 
 commonPathPrefix :: FilePath -> FilePath -> FilePath
 commonPathPrefix s1 s2
@@ -522,6 +612,44 @@ searchPathsSuffixes :: [FilePath] -> [String] -> [String] -> String -> IO (Maybe
 searchPathsSuffixes paths exts suffixes name
   = fmap (fmap (\(root,name) -> joinPath root name)) (searchPathsEx paths (filter (not.null) exts) suffixes name)
 
+#ifdef KOKA_WEB
+searchPathsCanonical :: FilePath -> [FilePath] -> [String] -> [String] -> String -> IO (Maybe (FilePath,FilePath))
+searchPathsCanonical relativeDir paths exts suffixes name
+  = do let searchPaths = if isAbsolute name then [""]
+                         else if null relativeDir then paths
+                         else (normalize relativeDir : paths)
+       search (concatMap (\dir -> map (\n -> (dir,n)) nameext) searchPaths)
+  where
+    search [] = return Nothing
+    search ((dir,fname):xs)
+      = do let fullName = joinPath dir fname
+           exist <- js_doesFileExist fullName
+           if exist
+             then return $ Just $! getMaximalPrefixPath paths (normalize fullName)
+             else search xs
+    nameext
+      = concatMap (\fname -> fname : map (fname++) exts) $
+        map (\suffix -> (notext nname) ++ suffix ++ (extname nname)) ("" : suffixes)
+    nname
+      = joinPaths $ dropWhile (==".") $ splitPath name
+
+searchPathsEx :: [FilePath] -> [String] -> [String] -> String -> IO (Maybe (FilePath,FilePath))
+searchPathsEx path exts suffixes name
+  = search (concatMap (\dir -> map (\n -> (dir,n)) nameext) ("":path))
+  where
+    search [] = return Nothing
+    search ((dir,fname):xs)
+      = do let fullName = joinPath dir fname
+           exist <- js_doesFileExist fullName
+           if exist
+             then return (Just (dir,fname))
+             else search xs
+    nameext
+      = concatMap (\fname -> fname : map (fname++) exts) $
+        map (\suffix -> (notext nname) ++ suffix ++ (extname nname)) ("" : suffixes)
+    nname
+      = joinPaths $ dropWhile (==".") $ splitPath name
+#else
 searchPathsCanonical :: FilePath -> [FilePath] -> [String] -> [String] -> String -> IO (Maybe (FilePath,FilePath))
 searchPathsCanonical relativeDir paths exts suffixes name
   = do searchPaths <- if isAbsolute name then return [""]
@@ -568,6 +696,7 @@ searchPathsEx path exts suffixes name
 
     nname
       = joinPaths $ dropWhile (==".") $ splitPath name
+#endif
 
 
 -- | Make a file path relative to a set of given paths: return the (maximal) root and stem
@@ -580,6 +709,13 @@ makeRelativeToPaths paths fname
 
 
 
+#ifdef KOKA_WEB
+getEnvPaths :: String -> IO [FilePath]
+getEnvPaths _ = return []
+
+getEnvVar :: String -> IO String
+getEnvVar _ = return ""
+#else
 getEnvPaths :: String -> IO [FilePath]
 getEnvPaths name
   = do{ xs <- getEnvVar name
@@ -593,15 +729,24 @@ getEnvVar name
        case lookup (map toLower name) (map (\(k,v) -> (map toLower k,v)) env) of
          Just val -> return val
          Nothing  -> return ""
+#endif
 
+#ifdef KOKA_WEB
+realPath :: FilePath -> IO FilePath
+realPath fpath = return (normalize fpath)
+#else
 realPath :: FilePath -> IO FilePath
 realPath fpath
   = do fullpath <- if onWindows && fpath `startsWith` "//"
                      then return fpath              -- on windows leave network paths alone as Haskell's `normalise` removes double `//` :-(
                      else canonicalizePath fpath
        return (normalize fullpath)
+#endif
 
-
+#ifdef KOKA_WEB
+searchProgram :: FilePath -> IO (Maybe FilePath)
+searchProgram _ = return Nothing
+#else
 searchProgram :: FilePath -> IO (Maybe FilePath)
 searchProgram ""
   = return Nothing
@@ -613,6 +758,7 @@ searchProgram fname | isAbsolute fname || fname `startsWith` "."
 searchProgram fname
   = do paths  <- getEnvPaths "PATH"
        searchPaths paths [exeExtension] fname
+#endif
 
 
 {-
@@ -632,3 +778,38 @@ splitPath xs
           (':':cs)       -> normalize (reverse p:ps) "" cs
           (c:cs)         -> normalize ps (c:p) cs
 -}
+
+#ifdef KOKA_WEB
+-- JS VFS FFI declarations
+
+foreign import javascript unsafe "((p) => { return globalThis.kokaVFS.fileExists(p); })"
+  js_vfsFileExistsRaw :: JSVal -> IO Bool
+
+foreign import javascript unsafe "((p) => { return globalThis.kokaVFS.fileSize(p); })"
+  js_vfsFileSizeRaw :: JSVal -> IO Int
+
+foreign import javascript unsafe "((p,c) => { globalThis.kokaVFS.writeFile(p,c); })"
+  js_vfsWriteFileRaw :: JSVal -> JSVal -> IO ()
+
+foreign import javascript unsafe "((p) => { globalThis.kokaVFS.removeFile(p); })"
+  js_vfsRemoveFileRaw :: JSVal -> IO ()
+
+foreign import javascript interruptible "((p,cont) => { var r = globalThis.kokaVFS.readFile(p); if (r && typeof r.then === 'function') { r.then(function(v){ cont(v); }); } else { cont(r); } })"
+  js_vfsReadFileRaw :: JSVal -> IO JSVal
+
+-- Wrapper functions that handle String <-> JSVal conversion
+js_doesFileExist :: FilePath -> IO Bool
+js_doesFileExist fpath = js_vfsFileExistsRaw (toJSString fpath)
+
+js_getFileSize :: FilePath -> IO Int
+js_getFileSize fpath = js_vfsFileSizeRaw (toJSString fpath)
+
+js_vfsReadFile :: JSVal -> IO JSVal
+js_vfsReadFile = js_vfsReadFileRaw
+
+js_vfsWriteFile :: JSVal -> JSVal -> IO ()
+js_vfsWriteFile = js_vfsWriteFileRaw
+
+js_vfsRemoveFile :: JSVal -> IO ()
+js_vfsRemoveFile jsPath = js_vfsRemoveFileRaw jsPath
+#endif

@@ -27,16 +27,18 @@ dependencies:
   - array
   - bytestring
   - containers
-  - directory
   - mtl
   - parsec
-  - process
   - text
   - time
   - async
-  - isocline >= 1.0.6
   - FloatingHex >= 0.5
   - hashable >= 1.4
+  # NOTE: process, directory, and isocline are not available on GHC JS backend
+  # These will need to be made conditional with arch(javascript) when building for JS
+  - directory
+  - process
+  - isocline >= 1.0.6
 
 library:
   other-extensions:
@@ -44,12 +46,6 @@ library:
     - OverloadedStrings
   source-dirs:
     - src
-    - src/Platform/cpp
-  c-sources:
-    - src/Platform/cpp/Platform/cconsole.c
-    - src/Platform/cpp/Platform/cconsole.h
-  include-dirs:
-    - src/Platform/cpp/Platform
   build-tools:
     - alex
   ghc-options:
@@ -67,6 +63,16 @@ library:
       cpp-options: -DWINDOWS
     - condition: os(darwin)
       cpp-options: -DDARWIN
+    - condition: arch(javascript)
+      source-dirs: src/Platform/js
+      cpp-options: -DKOKA_WEB
+    - condition: "!arch(javascript)"
+      source-dirs: src/Platform/cpp
+      c-sources:
+        - src/Platform/cpp/Platform/cconsole.c
+        - src/Platform/cpp/Platform/cconsole.h
+      include-dirs:
+        - src/Platform/cpp/Platform
 
 executables:
   koka:
@@ -108,6 +114,17 @@ executables:
       # - -fdistinct-constructor-tables
       # - '"-with-rtsopts=-N8 -l"'
       - '"-with-rtsopts=-N8"'
+
+  koka-playground:
+    main: Main.hs
+    source-dirs: src/Main/playground
+    dependencies:
+      - koka
+    ghc-options:
+      - -O2
+    when:
+      - condition: "!arch(javascript)"
+        buildable: false
 
 tests:
   koka-test:

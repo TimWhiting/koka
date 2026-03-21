@@ -10,6 +10,7 @@
     Only the color of 'stdout' is influenced by these functions.
 -}
 -----------------------------------------------------------------------------
+{-# OPTIONS -cpp #-}
 module Lib.Printer(
       -- * Color
       Color(..)
@@ -45,7 +46,9 @@ import qualified Data.Text.IO as T
 
 import Debug.Trace
 
+#ifndef KOKA_WEB
 import System.Console.Isocline( withTerm, termWriteLn, termWrite, termFlush )
+#endif
 
 {--------------------------------------------------------------------------
   Printer
@@ -201,11 +204,19 @@ data AnsiConsole = AnsiConsole{ fcolor    :: Color
                               }
 
 instance Printer AnsiPrinter where
+#ifdef KOKA_WEB
+  write p s             = putStr s
+  writeText p s         = T.putStr s
+  writeLn p s           = putStrLn s
+  writeTextLn p s       = T.putStrLn s
+  flush p               = hFlush stdout
+#else
   write p s             = termWrite s -- putStr s
   writeText p s         = termWrite (T.unpack s) -- T.putStr s
   writeLn p s           = termWriteLn s -- putStrLn s
   writeTextLn p s       = termWriteLn (T.unpack s) -- T.putStrLn s
   flush p               = termFlush -- hFlush stdout
+#endif
   withColor p c io      = ansiWithConsole p (\con -> con{ fcolor = c }) io
   withBackColor p c io  = ansiWithConsole p (\con -> con{ bcolor = c }) io
   withReverse p r io    = ansiWithConsole p (\con -> con{ invert = r }) io
@@ -287,7 +298,11 @@ ansiSetConsole (Ansi varAnsi) f
 ansiEscapeIO :: [T.Text] -> IO ()
 ansiEscapeIO xs
   | null xs   = return ()
+#ifdef KOKA_WEB
+  | otherwise = return ()  -- no ANSI escape sequences on JS
+#else
   | otherwise = termWrite (T.unpack {-T.putStr-} (ansiEscape xs))
+#endif
 
 
 

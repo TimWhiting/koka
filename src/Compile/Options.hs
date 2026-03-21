@@ -31,6 +31,7 @@ module Compile.Options( -- * Command line options
                        , flagsHash
                        , phaseVerboseIO
                        , Terminal(..)
+                       , playgroundFlags, playgroundOptions
                        ) where
 
 import Debug.Trace
@@ -404,6 +405,32 @@ flagsNull
           ""      -- main entry name (null for default for each target)
           ""      -- main target name (null for default)
           Nothing -- no base flags
+
+-- | Pre-configured flags for the browser playground.
+-- Bypasses all filesystem/environment queries in processInitialOptions.
+playgroundFlags :: Flags
+playgroundFlags = flagsNull
+  { target        = JS JsWeb
+  , targetOS      = "web"
+  , targetArch    = "javascript"
+  , buildDir      = "/.koka"
+  , localBinDir   = "/koka"
+  , localDir      = "/"
+  , localLibDir   = "/lib"
+  , localShareDir = "/share"
+  , includePath   = ["/", "/share/lib"]
+  , evaluate      = False
+  , library       = False
+  , ccompPath     = ""
+  , editor        = ""
+  , verbose       = 0
+  , console       = ""
+  , rebuild       = False
+  }
+
+-- | Pre-configured options for the playground, with derived options applied.
+playgroundOptions :: (Flags, Mode)
+playgroundOptions = (processDerivedOptions playgroundFlags playgroundFlags, ModeCompiler [])
 
 isHelp Help = True
 isHelp _    = False
