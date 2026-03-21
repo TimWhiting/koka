@@ -19,6 +19,7 @@ import GHC.JS.Prim           ( JSVal, toJSString, fromJSString )
 import GHC.JS.Foreign.Callback ( Callback, asyncCallback1, asyncCallback2 )
 
 import Control.Monad          ( when )
+import Data.IORef             ( IORef, newIORef, readIORef, modifyIORef )
 import Data.List              ( intersperse )
 
 import Lib.PPrint
@@ -54,8 +55,9 @@ compileHandler jsModName jsSource = do
 -- Returns a JSON string with either the generated JS code or error messages.
 compileToJS :: String -> String -> IO String
 compileToJS moduleName sourceText = do
+  errRef <- newIORef []
   let flags = playgroundFlags
-      term  = silentTerminal
+      term  = silentTerminal errRef
       sourcePath = virtualMount ++ "/" ++ moduleName ++ ".kk"
       content    = stringToBString sourceText
   (mbResult, _) <- runBuildIO term flags False $ do
@@ -65,15 +67,15 @@ compileToJS moduleName sourceText = do
          buildc2 <- buildcBuildEx False [] [] buildc1
          buildcThrowOnError buildc2
          return (buildc2, ())
+  errs <- readIORef errRef
   case mbResult of
     Just _  -> return "{\"success\": true}"
-    Nothing -> return "{\"success\": false}"
+    Nothing -> return ("{\"success\": false, \"errors\": " ++ show (reverse errs) ++ "}")
 
--- | A terminal that discards all output.
--- Errors are collected in the Build monad's error state.
-silentTerminal :: Terminal
-silentTerminal
-  = Terminal (\_ -> return ())     -- error handler (errors collected in Build monad)
+-- | A terminal that collects errors into an IORef.
+silentTerminal :: IORef [String] -> Terminal
+silentTerminal errRef
+  = Terminal (\err -> modifyIORef errRef (show err :))  -- error handler
              (\_ -> return ())     -- trace
              (\_ -> return ())     -- progress
              (\_ -> return ())     -- phase info
