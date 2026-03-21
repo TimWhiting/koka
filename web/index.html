@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Koka Playground</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary:    #1e1e1e;
+      --bg-secondary:  #252526;
+      --bg-tertiary:   #2d2d2d;
+      --bg-toolbar:    #333333;
+      --border:        #3c3c3c;
+      --text-primary:  #d4d4d4;
+      --text-muted:    #858585;
+      --accent:        #0e639c;
+      --accent-hover:  #1177bb;
+      --success:       #4caf50;
+      --error:         #f44336;
+      --warning:       #ff9800;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', 'SF Pro Text', system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 16px;
+      background: var(--bg-toolbar);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      height: 44px;
+    }
+
+    #toolbar .logo {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+      margin-right: 8px;
+    }
+
+    #toolbar .logo span {
+      color: #569cd6;
+    }
+
+    #btn-run {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    #btn-run:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    #btn-run:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #btn-run .icon {
+      font-size: 11px;
+    }
+
+    #status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    #status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    #status-dot.loading  { background: var(--warning); animation: pulse 1s infinite; }
+    #status-dot.ready    { background: var(--success); }
+    #status-dot.error    { background: var(--error); }
+    #status-dot.running  { background: var(--warning); animation: pulse 0.5s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .spacer { flex: 1; }
+
+    /* ── Main split pane ── */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Left pane: Koka source ── */
+    #pane-source {
+      display: flex;
+      flex-direction: column;
+      width: 60%;
+      min-width: 200px;
+      border-right: 1px solid var(--border);
+    }
+
+    /* ── Right pane: output split ── */
+    #pane-output {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    /* ── Pane header labels ── */
+    .pane-header {
+      display: flex;
+      align-items: center;
+      padding: 4px 12px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      flex-shrink: 0;
+      height: 28px;
+      user-select: none;
+    }
+
+    /* ── Monaco containers ── */
+    .editor-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── JS output pane (top-right) ── */
+    #pane-js {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      border-bottom: 1px solid var(--border);
+      min-height: 80px;
+    }
+
+    /* ── Execution output pane (bottom-right) ── */
+    #pane-console {
+      display: flex;
+      flex-direction: column;
+      height: 220px;
+      min-height: 60px;
+      flex-shrink: 0;
+    }
+
+    /* ── Console output area ── */
+    #console-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      background: var(--bg-primary);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    #console-output:empty::before {
+      content: "No output yet. Press Compile & Run to execute your program.";
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .console-line { display: block; }
+    .console-line.stdout { color: var(--text-primary); }
+    .console-line.stderr { color: #f48771; }
+    .console-line.info   { color: #9cdcfe; }
+    .console-line.separator {
+      color: var(--border);
+      border-top: 1px solid var(--border);
+      margin: 4px 0;
+      font-size: 0;
+      height: 0;
+    }
+
+    /* ── Resize handle ── */
+    #resize-handle {
+      width: 4px;
+      background: var(--border);
+      cursor: col-resize;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    #resize-handle:hover, #resize-handle.dragging {
+      background: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Toolbar -->
+    <div id="toolbar">
+      <span class="logo">Koka <span>Playground</span></span>
+      <button id="btn-run" title="Compile and run the program (Ctrl+Enter)">
+        <span class="icon">&#x25B6;</span>
+        Compile &amp; Run
+      </button>
+      <div id="status">
+        <span id="status-dot" class="loading"></span>
+        <span id="status-text">Loading compiler…</span>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <!-- Main area -->
+    <div id="main">
+      <!-- Left: Koka source editor -->
+      <div id="pane-source">
+        <div class="pane-header">Koka Source</div>
+        <div class="editor-container" id="editor-source"></div>
+      </div>
+
+      <!-- Drag handle -->
+      <div id="resize-handle"></div>
+
+      <!-- Right: JS output + console -->
+      <div id="pane-output">
+        <!-- Top-right: compiled JS -->
+        <div id="pane-js">
+          <div class="pane-header">Compiled JavaScript</div>
+          <div class="editor-container" id="editor-js"></div>
+        </div>
+
+        <!-- Bottom-right: execution output -->
+        <div id="pane-console">
+          <div class="pane-header">Execution Output</div>
+          <div id="console-output"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
