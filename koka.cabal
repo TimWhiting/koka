@@ -154,7 +154,7 @@ library
   if os(darwin)
     cpp-options: -DDARWIN
   if arch(javascript)
-    other-modules:
+    exposed-modules:
         Platform.Config
         Platform.Console
         Platform.Filetime
@@ -165,8 +165,10 @@ library
     hs-source-dirs:
         src/Platform/js
     cpp-options: -DKOKA_WEB
+    js-sources:
+        jsbits/vfs.js
   if !arch(javascript)
-    other-modules:
+    exposed-modules:
         Platform.Config
         Platform.Console
         Platform.Filetime

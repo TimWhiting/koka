@@ -9,10 +9,13 @@
     Syntax coloring
 -}
 -----------------------------------------------------------------------------
+{-# OPTIONS -cpp #-}
 module Syntax.Highlight( Context(..), Nesting(..), Token(..), TokenComment(..)
                        , highlight
                        , highlightPrint
+#ifndef KOKA_WEB
                        , highlightInput
+#endif
                        -- * Low level primitives
                        , highlightLexemes, highlightLexeme
                        , commentFlatten
@@ -32,6 +35,7 @@ import Syntax.Lexeme   ( Lexeme(..), Lex(..), lexemeIsWhite, isTypeVar)
 import Syntax.Lexer    ( lexer )
 import Syntax.Layout   ( combineLineComments )
 
+#ifndef KOKA_WEB
 -----------------------------------------------------------
 -- Syntax highlighting for readline
 -----------------------------------------------------------
@@ -75,6 +79,7 @@ fmtAttr cscheme tok lexeme display
       = case color of
           ColorDefault -> ""
           _            -> "ansi-color=" ++ show (fromEnum color)
+#endif
 
 -----------------------------------------------------------
 -- Easy syntax highlighting

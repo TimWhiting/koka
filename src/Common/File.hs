@@ -782,19 +782,19 @@ splitPath xs
 #ifdef KOKA_WEB
 -- JS VFS FFI declarations
 
-foreign import javascript unsafe "((p) => { return globalThis.kokaVFS.fileExists(p); })"
+foreign import javascript unsafe "h$kokaVfsFileExists"
   js_vfsFileExistsRaw :: JSVal -> IO Bool
 
-foreign import javascript unsafe "((p) => { return globalThis.kokaVFS.fileSize(p); })"
+foreign import javascript unsafe "h$kokaVfsFileSize"
   js_vfsFileSizeRaw :: JSVal -> IO Int
 
-foreign import javascript unsafe "((p,c) => { globalThis.kokaVFS.writeFile(p,c); })"
+foreign import javascript unsafe "h$kokaVfsWriteFile"
   js_vfsWriteFileRaw :: JSVal -> JSVal -> IO ()
 
-foreign import javascript unsafe "((p) => { globalThis.kokaVFS.removeFile(p); })"
+foreign import javascript unsafe "h$kokaVfsRemoveFile"
   js_vfsRemoveFileRaw :: JSVal -> IO ()
 
-foreign import javascript interruptible "((p,cont) => { var r = globalThis.kokaVFS.readFile(p); if (r && typeof r.then === 'function') { r.then(function(v){ cont(v); }); } else { cont(r); } })"
+foreign import javascript safe "h$kokaVfsReadFile"
   js_vfsReadFileRaw :: JSVal -> IO JSVal
 
 -- Wrapper functions that handle String <-> JSVal conversion

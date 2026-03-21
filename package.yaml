@@ -63,6 +63,15 @@ library:
     - condition: arch(javascript)
       source-dirs: src/Platform/js
       cpp-options: -DKOKA_WEB
+      js-sources: jsbits/vfs.js
+      exposed-modules:
+        - Platform.Config
+        - Platform.Console
+        - Platform.Filetime
+        - Platform.GetOptions
+        - Platform.ReadLine
+        - Platform.Runtime
+        - Platform.Var
     - condition: "!arch(javascript)"
       source-dirs: src/Platform/cpp
       c-sources:
@@ -72,6 +81,14 @@ library:
         - src/Platform/cpp/Platform
       dependencies:
         - isocline >= 1.0.6
+      exposed-modules:
+        - Platform.Config
+        - Platform.Console
+        - Platform.Filetime
+        - Platform.GetOptions
+        - Platform.ReadLine
+        - Platform.Runtime
+        - Platform.Var
 
 executables:
   koka:
