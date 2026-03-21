@@ -1,13 +1,8 @@
 // VFS bridge functions for the Koka playground
 // Called from Haskell via foreign import javascript
 
-function h$kokaVfsReadFile(p, cont) {
-  var r = globalThis.kokaVFS.readFile(p);
-  if (r && r.then) {
-    r.then(cont);
-  } else {
-    cont(r);
-  }
+function h$kokaVfsReadFile(p) {
+  return globalThis.kokaVFS.readFile(p);
 }
 
 function h$kokaVfsFileExists(p) {
@@ -35,6 +30,7 @@ function h$kokaSetResult(s) {
   globalThis.kokaResult = s;
 }
 
-function h$kokaKeepAlive(cont) {
-  // Never call cont - keeps the Haskell runtime alive for callbacks
+function h$kokaKeepAlive() {
+  // Return a Promise that never resolves - keeps the Haskell runtime alive
+  return new Promise(function() {});
 }
