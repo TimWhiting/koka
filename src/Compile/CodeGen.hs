@@ -4,6 +4,7 @@
 -- This is free software; you can redistribute it and/or modify it under the
 -- terms of the Apache License, Version 2.0. A copy of the License can be
 -- found in the LICENSE file at the root of this distribution.
+{-# OPTIONS -cpp #-}
 -----------------------------------------------------------------------------
 module Compile.CodeGen ( codeGen, Link, LinkResult(..), noLink ) where
 
@@ -13,7 +14,11 @@ import Data.Maybe
 import Data.List
 import Data.Either
 import Control.Monad
+#ifdef KOKA_WEB
+import GHC.JS.Prim (JSVal, toJSString)
+#else
 import System.Directory ( doesFileExist, doesDirectoryExist, createDirectoryIfMissing )
+#endif
 
 import Platform.Config        ( version, exeExtension, dllExtension, libPrefix, libExtension, pathSep, sourceExtension )
 
@@ -48,6 +53,20 @@ import Compile.Module( Definitions(..), Module(..), modCoreImports )
 import Compile.TypeCheck( importMapFromCoreImports )    -- todo: break this dependency?
 import Type.InferMonad (traceDefDoc)
 
+
+#ifdef KOKA_WEB
+doesFileExist :: FilePath -> IO Bool
+doesFileExist fpath = js_vfsFileExistsRaw (toJSString fpath)
+
+doesDirectoryExist :: FilePath -> IO Bool
+doesDirectoryExist _ = return True
+
+createDirectoryIfMissing :: Bool -> FilePath -> IO ()
+createDirectoryIfMissing _ _ = return ()
+
+foreign import javascript unsafe "h$kokaVfsFileExists"
+  js_vfsFileExistsRaw :: JSVal -> IO Bool
+#endif
 
 data LinkResult = LinkDone
                 | LinkExe{ linkExePath :: !FilePath, linkRun :: !(IO ()) }
