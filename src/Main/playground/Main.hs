@@ -64,7 +64,7 @@ compileToJS moduleName sourceText = do
       do -- Build: lex, parse, type check, optimize, codegen
          buildc2 <- buildcBuildEx False [] [] buildc1
          buildcThrowOnError buildc2
-         return ()
+         return (buildc2, ())
   case mbResult of
     Just _  -> return "{\"success\": true}"
     Nothing -> return "{\"success\": false}"
@@ -80,16 +80,16 @@ silentTerminal
              (\_ -> return ())     -- general info
 
 -- JS FFI: register the compiler callback on globalThis
-foreign import javascript unsafe "((cb) => { globalThis.kokaCompile = cb; })"
+foreign import javascript unsafe "h$kokaSetCompiler"
   js_setCompiler :: Callback (JSVal -> JSVal -> IO ()) -> IO ()
 
 -- JS FFI: set the compilation result on globalThis
-foreign import javascript unsafe "((s) => { globalThis.kokaResult = s; })"
+foreign import javascript unsafe "h$kokaSetResult"
   js_setResult :: JSVal -> IO ()
 
 -- JS FFI: keep the Haskell runtime alive (block forever)
 -- The runtime needs to stay alive to handle callbacks.
-foreign import javascript interruptible "((cont) => { /* never call cont — keep runtime alive */ })"
+foreign import javascript safe "h$kokaKeepAlive"
   js_keepAlive :: IO ()
 
 #else

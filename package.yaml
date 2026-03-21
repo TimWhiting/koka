@@ -147,6 +147,9 @@ executables:
     when:
       - condition: "!arch(javascript)"
         buildable: false
+      - condition: arch(javascript)
+        cpp-options: -DKOKA_WEB
+        js-sources: jsbits/vfs.js
 
 tests:
   koka-test:

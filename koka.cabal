@@ -286,6 +286,10 @@ executable koka-playground
   default-language: Haskell2010
   if !arch(javascript)
     buildable: False
+  if arch(javascript)
+    cpp-options: -DKOKA_WEB
+    js-sources:
+        jsbits/vfs.js
 
 test-suite koka-test
   type: exitcode-stdio-1.0

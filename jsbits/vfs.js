@@ -25,3 +25,16 @@ function h$kokaVfsWriteFile(p, c) {
 function h$kokaVfsRemoveFile(p) {
   globalThis.kokaVFS.removeFile(p);
 }
+
+// Playground entry point functions
+function h$kokaSetCompiler(cb) {
+  globalThis.kokaCompile = cb;
+}
+
+function h$kokaSetResult(s) {
+  globalThis.kokaResult = s;
+}
+
+function h$kokaKeepAlive(cont) {
+  // Never call cont - keeps the Haskell runtime alive for callbacks
+}

@@ -36,6 +36,3 @@ constraints:
 constraints:
   hashable ==1.4.7.0
 
--- GHC JS cross-compiler paths
-with-compiler: /Users/timwhiting/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc
-with-hc-pkg: /Users/timwhiting/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc-pkg
