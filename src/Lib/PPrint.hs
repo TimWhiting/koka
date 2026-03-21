@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 ------------------------------------------------------------------------------
 -- Copyright 2012-2021, Microsoft Research, Daan Leijen.
 --
@@ -68,6 +69,9 @@ module Lib.PPrint
 
 
 import System.IO           -- (Handle,hPutStr,hPutChar,stdout,openFile,hClose)
+#ifdef KOKA_WEB
+import Common.File (writeTextFile)
+#endif
 import Lib.Printer
 import Platform.Runtime( finally )
 
@@ -634,10 +638,16 @@ writeDoc :: FilePath -> Doc -> IO ()
 writeDoc fpath doc
   = writeDocW defaultWidth fpath doc
 
+#ifdef KOKA_WEB
+writeDocW :: Int -> FilePath -> Doc -> IO ()
+writeDocW width fpath doc
+  = writeTextFile fpath (displayS (renderPretty 0.8 width doc) "")
+#else
 writeDocW :: Int -> FilePath -> Doc -> IO ()
 writeDocW width fpath doc
   = do h <- openFile fpath WriteMode
        hPutDocW width h doc `finally` hClose h
+#endif
 
 
 -----------------------------------------------------------
