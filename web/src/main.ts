@@ -53,6 +53,39 @@ globalThis.Module = {
   printErr: (_text: string) => { /* suppress compiler stderr noise */ },
 };
 
+// ── Samples that don't work on the JS backend ────────────────────────────────
+const EXCLUDED_SAMPLES = new Set([
+  'samples/basic/rbtree.kk',        // FBIP BigInt bug in JS backend
+  'samples/basic/rbtree-fbip.kk',   // same FBIP BigInt bug
+  'samples/learn/lazycons.kk',      // experimental lazy constructors, not supported on web
+]);
+
+// ── Module name encoding ─────────────────────────────────────────────────────
+// Matches Koka's asciiEncode for module names:
+//   / → _    (module separator)
+//   - → _dash_  (unless followed by alphanumeric in non-module context)
+//   _ → __
+function kokaModuleToFilename(moduleName: string): string {
+  let result = '';
+  for (let i = 0; i < moduleName.length; i++) {
+    const c = moduleName[i];
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
+      result += c;
+    } else if (c === '/') {
+      result += '_';
+    } else if (c === '-') {
+      result += '_dash_';
+    } else if (c === '_') {
+      result += '__';
+    } else if (c === '.') {
+      result += '_dot_';
+    } else {
+      result += c;
+    }
+  }
+  return result;
+}
+
 // ── Default sample program ────────────────────────────────────────────────────
 
 const DEFAULT_SOURCE = `module main
@@ -256,6 +289,12 @@ function renderTabs(): void {
 
 const fileBrowser = new FileBrowser(elFileBrowserTree, {
   onFileSelect: async (path, content, name) => {
+    // Handle the web-compatible all.kk
+    if (path === 'all-web') {
+      await preloadSamplesDirectory(path);
+      openFile('all.kk', ALL_WEB_SAMPLE, 'all (web).kk');
+      return;
+    }
     // If opening a sample, preload sibling samples into VFS for module resolution
     if (path.startsWith('samples/') && content) {
       await preloadSamplesDirectory(path);
@@ -267,7 +306,8 @@ const fileBrowser = new FileBrowser(elFileBrowserTree, {
     appendConsole(`Viewing ${name}`, 'info');
   },
   onDirectoryExpand: async (entry) => {
-    return fetchGitHubDirectory('koka-lang', 'koka', entry.path);
+    const entries = await fetchGitHubDirectory('koka-lang', 'koka', entry.path);
+    return entries.filter(e => !EXCLUDED_SAMPLES.has(e.path));
   },
 });
 
@@ -321,10 +361,85 @@ fileBrowser.addSection('Samples', []);
 fileBrowser.addSection('Open Files', []);
 fileBrowser.addSection('VFS', []);
 
+// Web-compatible "all samples" that excludes broken ones
+const ALL_WEB_SAMPLE = `// Run all web-compatible sample programs
+module all
+
+import basic/caesar
+import basic/fibonacci
+import basic/garsia-wachs
+
+import learn/basic
+import learn/handler
+import learn/with
+import learn/qualifiers
+import learn/implicits
+import learn/contexts
+import learn/fip
+
+import handlers/ambient
+import handlers/basic
+import handlers/nim
+import handlers/vec
+import handlers/yield
+import handlers/parser
+import handlers/scoped
+import handlers/unix
+
+import handlers/named/ask
+import handlers/named/ask-poly
+import handlers/named/file
+import handlers/named/file-scoped
+import handlers/named/heap
+import handlers/named/unify
+
+fun run( name : string, action : () -> <console|e> a ) : <console|e> ()
+  println("run " ++ name ++ "\\n--------------------------")
+  action()
+  println("")
+
+pub fun main()
+  // basic
+  run("caesar",caesar/main)
+  run("fibonacci",fibonacci/main)
+  run("garsia-wachs",garsia-wachs/main)
+
+  // learn
+  run("basic",learn/basic/main)
+  run("contexts",contexts/main)
+  run("handler",learn/handler/main)
+  run("fip",fip/main)
+  run("implicits",implicits/main)
+  run("qualifiers",qualifiers/main)
+  run("with",learn/with/main)
+
+  // named handlers
+  run("ask-poly",handlers/named/ask-poly/main)
+  run("heap",handlers/named/heap/main)
+  run("unify",handlers/named/unify/main)
+  run("ask",handlers/named/ask/main)
+
+  // handlers
+  run("ambient",ambient/main)
+  run("nim",nim/main)
+  run("parser",parser/main)
+  run("scoped",scoped/main)
+  run("vec",vec/main)
+  run("yield",handlers/yield/main)
+  run("unix",unix/main)
+`;
+
 // Load samples from GitHub asynchronously
 void loadKokaSamples()
   .then((entries) => {
-    fileBrowser.updateSection('Samples', entries);
+    // Add our web-compatible all.kk at the top
+    const allEntry: FileEntry = {
+      name: 'all (web).kk',
+      path: 'all-web',
+      type: 'file',
+      // Content provided inline, no download_url needed
+    };
+    fileBrowser.updateSection('Samples', [allEntry, ...entries.filter(e => !EXCLUDED_SAMPLES.has(e.path))]);
   })
   .catch(() => {
     fileBrowser.updateSection('Samples', [
@@ -567,7 +682,7 @@ void (async () => {
     }
 
     // Koka converts module paths like 'handlers/ambient' to 'handlers_ambient.mjs'
-    const expectedFilename = moduleName.replace(/\//g, '_') + '.mjs';
+    const expectedFilename = kokaModuleToFilename(moduleName) + '.mjs';
     for (const [path, code] of generatedMjs) {
       const filename = path.split('/').pop() ?? path;
       if (filename === expectedFilename || filename === 'main.mjs') {
@@ -583,7 +698,7 @@ void (async () => {
     await runKokaModules(
       vfs.getPrecompiledMjs(),
       generatedMjs,
-      moduleName.replace(/\//g, '_'),
+      kokaModuleToFilename(moduleName),
       (text) => appendConsole(text, 'stdout'),
       (text) => appendConsole(text, 'stderr'),
     );
