@@ -2,175 +2,206 @@ name: Build Koka Playground
 
 on:
   push:
-    branches: [feature/ghcjs-playground]
+    branches: [feature/ghcjs-playground, dev]
+  pull_request:
+    branches: [dev]
   workflow_dispatch:
-    inputs:
-      koka_version:
-        description: 'Koka version tag or branch to build'
-        required: false
-        default: 'dev'
 
-env:
-  GHC_VERSION: '9.12.2'
-  EMSCRIPTEN_VERSION: '3.1.51'
-  CABAL_VERSION: '3.16.1.0'
+# Only one playground build at a time
+concurrency:
+  group: playground-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build-compiler:
-    name: Build Koka JS Compiler
+  build:
+    name: Build Playground
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache GHC JS cross-compiler
-        id: cache-ghc-js
-        uses: actions/cache@v4
-        with:
-          path: ~/ghc-js-build/_build/stage1
-          key: ghc-js-${{ env.GHC_VERSION }}-emscripten-${{ env.EMSCRIPTEN_VERSION }}
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y autoconf automake python3 nodejs npm
-
-      - name: Setup GHC (bootstrap compiler)
-        uses: haskell-actions/setup@v2
-        with:
-          ghc-version: '9.10'
-          cabal-version: ${{ env.CABAL_VERSION }}
+      # ── Setup toolchains ──────────────────────────────────────────────
 
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: ${{ env.EMSCRIPTEN_VERSION }}
+          version: 3.1.51
+
+      - name: Setup GHC + Cabal (bootstrap)
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.10'
+          cabal-version: '3.16'
+
+      - name: Install hpack
+        run: cabal install hpack --overwrite-policy=always
+
+      # ── Cache GHC JS cross-compiler ──────────────────────────────────
+
+      - name: Cache GHC JS cross-compiler
+        id: cache-ghcjs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/ghc-js-build/_build/stage1
+          key: ghcjs-9.12-emsdk-3.1.51-${{ runner.os }}
+          restore-keys: |
+            ghcjs-9.12-emsdk-3.1.51-
 
       - name: Build GHC JS cross-compiler
-        if: steps.cache-ghc-js.outputs.cache-hit != 'true'
+        if: steps.cache-ghcjs.outputs.cache-hit != 'true'
         run: |
           git clone --recurse-submodules --depth=1 \
-            --branch ghc-${{ env.GHC_VERSION }}-release \
+            --branch ghc-9.12 \
             https://gitlab.haskell.org/ghc/ghc.git ~/ghc-js-build
           cd ~/ghc-js-build
           ./boot
           emconfigure ./configure --target=javascript-unknown-ghcjs
           hadrian/build -j$(nproc) --flavour=quick --bignum=native --docs=none
 
-      - name: Verify GHC JS compiler
+          # Fix base unit-id in settings if missing
+          GHC_PKG=~/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc-pkg
+          BASE_ID=$($GHC_PKG field base id 2>/dev/null | awk '{print $2}')
+          if [ -n "$BASE_ID" ] && ! grep -q "base unit-id" ~/ghc-js-build/_build/stage1/lib/settings; then
+            sed -i "s/\]$/,(\"base unit-id\", \"$BASE_ID\")\n]/" ~/ghc-js-build/_build/stage1/lib/settings
+          fi
+
+          # Symlink ghc-pkg for cabal discovery
+          ln -sf $GHC_PKG ~/ghc-js-build/_build/stage1/bin/ghc-pkg
+          $GHC_PKG recache
+
+      - name: Verify GHC JS
         run: ~/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc --version
 
-      - name: Setup cabal for cross-compilation
-        run: |
-          # Add head.hackage if needed
-          cabal update
-          # Symlink ghc-pkg for cabal discovery
-          ln -sf ~/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc-pkg \
-                 ~/ghc-js-build/_build/stage1/bin/ghc-pkg
+      # ── Cache cabal packages ─────────────────────────────────────────
+
+      - name: Cache cabal packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: cabal-js-${{ hashFiles('koka.cabal', 'package.yaml', 'cabal.project*') }}
+          restore-keys: cabal-js-
+
+      # ── Build Koka for JS ────────────────────────────────────────────
+
+      - name: Generate cabal file
+        run: hpack
+
+      - name: Update cabal index
+        run: cabal update
 
       - name: Build Koka library + playground
         run: |
           export PATH=~/ghc-js-build/_build/stage1/bin:$PATH
-          hpack
           cabal build lib:koka exe:koka-playground \
             --with-compiler=javascript-unknown-ghcjs-ghc
 
       - name: Patch JS output
         run: |
-          # Copy RTS WASM
           cp ~/ghc-js-build/_build/stage1/rts/build/a.wasm ghc-rts.wasm
           ./scripts/patch-jsexe.sh
 
+      # ── Precompile std library ───────────────────────────────────────
+
+      - name: Build native Koka (for precompiling stdlib)
+        run: |
+          cabal build exe:koka-plain
+
       - name: Precompile std library
         run: |
-          # Build native compiler for precompiling
-          cabal build exe:koka-plain
           KOKA=$(cabal list-bin koka-plain)
           $KOKA --target=js --outputdir=precompiled --library lib/std/core.kk
+
+      # ── Build web frontend ───────────────────────────────────────────
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Build web frontend
         run: |
           cd web
-          npm install
+          npm ci
           npm run build
+
+      # ── Assemble static site ─────────────────────────────────────────
 
       - name: Assemble deployment
         run: |
           mkdir -p deploy
-          JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d)
 
-          # Compiler JS (unminified — brotli compression does the heavy lifting)
-          cp $JSEXE/all.js deploy/all.js
-          cp $JSEXE/koka-playground.wasm deploy/
+          # Find jsexe output directory
+          JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d | head -1)
 
-          # Web frontend
+          # Web frontend (built by Vite)
           cp -r web/dist/* deploy/
 
-          # Stdlib sources + precompiled interfaces
+          # Compiler JS bundle
+          cp "$JSEXE/all.js" deploy/all.js
+          cp "$JSEXE/koka-playground.wasm" deploy/koka-playground.wasm
+
+          # Stdlib sources (needed by compiler for inline externs)
+          mkdir -p deploy/lib
           cp -r lib/std deploy/lib/std
+
+          # Precompiled interfaces + runtime modules
           mkdir -p deploy/precompiled
           cp precompiled/*.kki precompiled/*.mjs deploy/precompiled/
 
           # Generate manifests
           cd deploy
-          find lib/std -type f | sed 's|lib/||' | sort | python3 -c \
-            "import sys,json; print(json.dumps([l.strip() for l in sys.stdin]))" > stdlib-manifest.json
-          ls precompiled/ | python3 -c \
-            "import sys,json; print(json.dumps(sorted([l.strip() for l in sys.stdin])))" > precompiled-manifest.json
+          python3 -c "
+          import json, os
+          files = []
+          for root, dirs, fnames in os.walk('lib/std'):
+              for f in fnames:
+                  files.append(os.path.join(root, f).replace('lib/', ''))
+          print(json.dumps(sorted(files)))
+          " > stdlib-manifest.json
 
-          # Compress
-          find . -name "*.js" -o -name "*.mjs" -o -name "*.kki" -o -name "*.kk" | while read f; do
-            gzip -k -9 "$f"
-            brotli -k -9 "$f" 2>/dev/null || true
-          done
+          ls precompiled/ | python3 -c "
+          import sys, json
+          print(json.dumps(sorted([l.strip() for l in sys.stdin])))
+          " > precompiled-manifest.json
 
-          echo "Deployment size:"
-          du -sh .
-          echo "Compressed JS:"
-          ls -lh all.js all.js.gz all.js.br 2>/dev/null
+          echo "=== Deployment ==="
+          echo "Total size: $(du -sh . | cut -f1)"
+          echo "all.js: $(du -h all.js | cut -f1)"
+          echo "precompiled: $(du -sh precompiled | cut -f1)"
+          echo "lib: $(du -sh lib | cut -f1)"
+          echo "web assets: $(du -sh *.html *.js assets/ 2>/dev/null | head -5)"
 
-      - name: Upload deployment artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: koka-playground-${{ github.sha }}
-          path: deploy/
-          retention-days: 30
+          path: deploy
 
-      - name: Upload compiler bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: koka-compiler-js-${{ github.sha }}
-          path: |
-            deploy/all.js
-            deploy/all.js.gz
-            deploy/all.js.br
-            deploy/koka-playground.wasm
-          retention-days: 90
+  # ── Deploy to GitHub Pages ───────────────────────────────────────────
 
-  deploy-pages:
+  deploy:
     name: Deploy to GitHub Pages
-    needs: build-compiler
+    needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/feature/ghcjs-playground'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/ghcjs-playground' || github.ref == 'refs/heads/dev')
+
     permissions:
       pages: write
       id-token: write
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: koka-playground-${{ github.sha }}
-          path: deploy
-
-      - uses: actions/configure-pages@v4
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: deploy
-
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
