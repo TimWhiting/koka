@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head><title>Koka Playground Test</title></head>
+<body>
+<h1>Koka Compiler in the Browser</h1>
+<textarea id="source" style="width:80%; height:200px; font-family:monospace; font-size:14px;">module main
+
+fun main()
+  println("Hello from Koka in the browser!")
+</textarea>
+<br>
+<button id="btn-compile" onclick="doCompile()" disabled>Compile &amp; Run</button>
+<span id="status" style="margin-left:10px; color:#888;">Loading compiler...</span>
+<pre id="log" style="font-family: monospace; white-space: pre-wrap; font-size: 12px; background: #1e1e1e; color: #d4d4d4; padding: 10px; max-height: 500px; overflow-y: auto;"></pre>
+
+<script>
+// ── Logging ──────────────────────────────────────────────────────────────────
+function log(msg) {
+  document.getElementById('log').textContent += msg + '\n';
+}
+function clearLog() {
+  document.getElementById('log').textContent = '';
+}
+function setStatus(msg) {
+  document.getElementById('status').textContent = msg;
+}
+
+// ── VFS ──────────────────────────────────────────────────────────────────────
+var vfsFiles = {};
+
+globalThis.kokaVFS = {
+  readFile: function(p) {
+    if (vfsFiles[p]) return vfsFiles[p].content;
+    return null;
+  },
+  fileExists: function(p) {
+    return !!vfsFiles[p];
+  },
+  fileTime: function(p) { return vfsFiles[p] ? vfsFiles[p].time : 0; },
+  writeFile: function(p, c) {
+    vfsFiles[p] = { content: c, time: Date.now() };
+  },
+  listDir: function(p) { return []; },
+  createDir: function(p) {},
+  dirExists: function(p) { return true; },
+  fileSize: function(p) { return vfsFiles[p] ? vfsFiles[p].content.length : 0; },
+  removeFile: function(p) { delete vfsFiles[p]; },
+};
+
+// ── Emscripten setup ─────────────────────────────────────────────────────────
+globalThis.Module = {
+  print: function(text) { log('[stdout] ' + text); },
+  printErr: function(text) { /* suppress compiler stderr */ },
+};
+
+// ── Preloading ───────────────────────────────────────────────────────────────
+
+// The compiler looks for .kki at: /.koka/v3.2.4/js-debug-HASH/std_core.kki
+// and source at: /share/lib/std/core.kk
+// We preload both so it doesn't need to recompile std
+
+var stdlibLoaded = false;
+var precompiledMjs = {}; // path -> content for runtime use
+
+async function preloadAll() {
+  setStatus('Loading stdlib...');
+
+  // 1. Load source files (needed for inline extern parsing)
+  var manifestResp = await fetch('stdlib-manifest.json');
+  var manifest = await manifestResp.json();
+
+  await Promise.all(manifest.map(async function(f) {
+    try {
+      var r = await fetch('lib/' + f);
+      if (r.ok) {
+        var text = await r.text();
+        vfsFiles['/share/lib/' + f] = { content: text, time: Date.now() };
+      }
+    } catch(e) {}
+  }));
+
+  // 2. Load precompiled .kki and .mjs files
+  // .kki goes to /lib/js-debug/ (the localLibDir + buildLibVariant path)
+  // .mjs is stored for runtime execution
+  var precompiledResp = await fetch('precompiled-manifest.json');
+  var precompiled = await precompiledResp.json();
+  var kkiTime = Date.now() + 100000; // far future so compiler considers them fresh
+
+  await Promise.all(precompiled.map(async function(f) {
+    try {
+      var r = await fetch('precompiled/' + f);
+      if (r.ok) {
+        var text = await r.text();
+        if (f.endsWith('.kki')) {
+          // Place in lib interface path (localLibDir + buildLibVariant)
+          vfsFiles['/lib/js-debug/' + f] = { content: text, time: kkiTime };
+        }
+        if (f.endsWith('.mjs')) {
+          // Store for runtime use
+          precompiledMjs[f] = text;
+        }
+      }
+    } catch(e) {}
+  }));
+
+  stdlibLoaded = true;
+  log('Loaded ' + manifest.length + ' source files + ' + precompiled.length + ' precompiled files');
+}
+
+// ── Compiler readiness ───────────────────────────────────────────────────────
+var compilerReady = false;
+
+async function init() {
+  await preloadAll();
+  setStatus('Waiting for compiler JS to load...');
+
+  // Poll for compiler
+  await new Promise(function(resolve) {
+    var poll = setInterval(function() {
+      if (typeof globalThis.kokaCompile === 'function') {
+        clearInterval(poll);
+        resolve();
+      }
+    }, 200);
+  });
+
+  compilerReady = true;
+  setStatus('Ready');
+  document.getElementById('btn-compile').disabled = false;
+  log('Compiler ready!');
+}
+
+// ── Compile & Run ────────────────────────────────────────────────────────────
+
+async function doCompile() {
+  if (!compilerReady) return;
+  clearLog();
+  setStatus('Compiling...');
+  document.getElementById('btn-compile').disabled = true;
+
+  var source = document.getElementById('source').value;
+
+  // Clear previous compilation output (user module only)
+  for (var p in vfsFiles) {
+    if (p.endsWith('/main.mjs') || p.endsWith('/main.kki')) {
+      delete vfsFiles[p];
+    }
+  }
+
+  globalThis.kokaResult = undefined;
+
+  try {
+    globalThis.kokaCompile('main', source);
+
+    // Wait for result
+    var result = await new Promise(function(resolve, reject) {
+      var t = 0;
+      var poll = setInterval(function() {
+        t += 50;
+        if (globalThis.kokaResult !== undefined) {
+          clearInterval(poll);
+          resolve(globalThis.kokaResult);
+        } else if (t > 30000) {
+          clearInterval(poll);
+          reject(new Error('Compilation timed out'));
+        }
+      }, 50);
+    });
+
+    var parsed = JSON.parse(result);
+
+    if (!parsed.success) {
+      setStatus('Compilation failed');
+      log('=== Compilation Errors ===');
+      (parsed.errors || []).forEach(function(e) { log(e); });
+      document.getElementById('btn-compile').disabled = false;
+      return;
+    }
+
+    log('Compilation successful!');
+
+    // Collect the generated main.mjs from VFS
+    var mainMjs = null;
+    for (var p in vfsFiles) {
+      if (p.endsWith('/main.mjs')) {
+        mainMjs = vfsFiles[p].content;
+        break;
+      }
+    }
+
+    if (!mainMjs) {
+      log('No main.mjs generated');
+      setStatus('Ready');
+      document.getElementById('btn-compile').disabled = false;
+      return;
+    }
+
+    log('Generated main.mjs: ' + mainMjs.length + ' chars');
+    setStatus('Running...');
+
+    // Run the program
+    await runProgram(mainMjs);
+
+  } catch(e) {
+    log('ERROR: ' + e.message);
+  }
+
+  setStatus('Ready');
+  document.getElementById('btn-compile').disabled = false;
+}
+
+// ── Run ──────────────────────────────────────────────────────────────────────
+
+async function runProgram(mainCode) {
+  // Build all modules: precompiled std + generated main
+  var allModules = {};
+
+  // Add precompiled std .mjs modules
+  for (var name in precompiledMjs) {
+    allModules[name] = precompiledMjs[name];
+  }
+
+  // Add the generated main module
+  allModules['main.mjs'] = mainCode;
+
+  // Resolve imports and create blob URLs in topological order
+  // Koka generates: import * as $std_core from './std_core.mjs'
+  var blobUrls = {};
+  var remaining = Object.keys(allModules);
+  var maxRounds = 30;
+
+  for (var round = 0; round < maxRounds && remaining.length > 0; round++) {
+    var nextRemaining = [];
+    for (var name of remaining) {
+      var code = allModules[name];
+      var allResolved = true;
+
+      var rewritten = code.replace(/from\s+['"]\.\/([^'"]+)['"]/g, function(match, importName) {
+        if (blobUrls[importName]) {
+          return "from '" + blobUrls[importName] + "'";
+        } else if (allModules[importName]) {
+          allResolved = false;
+          return match;
+        }
+        return match;
+      });
+
+      if (allResolved) {
+        var blob = new Blob([rewritten], { type: 'application/javascript' });
+        blobUrls[name] = URL.createObjectURL(blob);
+      } else {
+        nextRemaining.push(name);
+      }
+    }
+    remaining = nextRemaining;
+  }
+
+  if (remaining.length > 0) {
+    log('Warning: unresolved modules: ' + remaining.join(', '));
+  }
+
+  // Patch console to capture output
+  var origLog = console.log;
+  var origError = console.error;
+  console.log = function() {
+    log(Array.prototype.slice.call(arguments).map(String).join(' '));
+    origLog.apply(console, arguments);
+  };
+  console.error = function() {
+    log('[error] ' + Array.prototype.slice.call(arguments).map(String).join(' '));
+    origError.apply(console, arguments);
+  };
+
+  try {
+    if (!blobUrls['main.mjs']) {
+      log('Error: could not resolve main module imports');
+      return;
+    }
+    log('');
+    log('=== Output ===');
+    var mod = await import(blobUrls['main.mjs']);
+    if (mod.main) {
+      await mod.main();
+    }
+  } catch(e) {
+    log('[runtime error] ' + e.message);
+    if (e.stack) log(e.stack.split('\n').slice(0,3).join('\n'));
+  } finally {
+    console.log = origLog;
+    console.error = origError;
+    for (var name in blobUrls) { URL.revokeObjectURL(blobUrls[name]); }
+  }
+}
+
+// ── Start ────────────────────────────────────────────────────────────────────
+init();
+</script>
+<script src="all.js" defer></script>
+</body>
+</html>
