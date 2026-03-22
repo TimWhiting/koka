@@ -46,6 +46,7 @@ jobs:
           cabal update
           cabal install happy --overwrite-policy=always
           cabal install alex hpack --overwrite-policy=always
+          echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
       # ── Cache GHC JS cross-compiler ──────────────────────────────────
 
