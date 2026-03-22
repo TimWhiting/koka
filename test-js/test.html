@@ -53,9 +53,14 @@ globalThis.kokaVFS = {
     return null;
   },
   fileExists: function(p) {
-    if (vfsFiles[p]) return true;
+    if (vfsFiles[p]) {
+      if (document.getElementById('log-vfs').checked && (p.endsWith('.kki') || p.endsWith('.mjs'))) {
+        compilerLog('[vfs HIT] ' + p);
+      }
+      return true;
+    }
     if (document.getElementById('log-vfs').checked) {
-      if (p.endsWith('.kki') || p.endsWith('.mjs')) compilerLog('[vfs miss] ' + p);
+      if (p.includes('/lib/') || p.endsWith('.kki') || p.endsWith('.mjs')) compilerLog('[vfs miss] ' + p);
     }
     return false;
   },

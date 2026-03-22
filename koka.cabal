@@ -157,6 +157,7 @@ library
     exposed-modules:
         Platform.Config
         Platform.Console
+        Platform.FileIO
         Platform.Filetime
         Platform.GetOptions
         Platform.ReadLine
@@ -171,6 +172,7 @@ library
     exposed-modules:
         Platform.Config
         Platform.Console
+        Platform.FileIO
         Platform.Filetime
         Platform.GetOptions
         Platform.ReadLine

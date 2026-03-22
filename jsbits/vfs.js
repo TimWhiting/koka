@@ -21,6 +21,10 @@ function h$kokaVfsRemoveFile(p) {
   globalThis.kokaVFS.removeFile(p);
 }
 
+function h$kokaVfsFileTime(p) {
+  return globalThis.kokaVFS.fileTime(p);
+}
+
 // Playground entry point functions
 function h$kokaSetCompiler(cb) {
   globalThis.kokaCompile = cb;

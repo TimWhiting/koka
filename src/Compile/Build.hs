@@ -44,7 +44,7 @@ import Control.Concurrent.QSem
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Concurrent.Chan
 import Control.Concurrent
-import System.Directory ( doesFileExist )
+import Platform.FileIO ( doesFileExist )
 
 import Lib.Scc( scc )
 import Lib.PPrint

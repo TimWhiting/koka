@@ -7,7 +7,7 @@
 -----------------------------------------------------------------------------
 {-
     Reading file times.
-    (GHC JavaScript backend variant: IO functions are stubbed)
+    (GHC JavaScript backend variant: delegates to kokaVFS.fileTime via FFI)
 -}
 -----------------------------------------------------------------------------
 module Platform.Filetime( FileTime
@@ -22,6 +22,7 @@ module Platform.Filetime( FileTime
 
 import qualified Data.Time as T
 import qualified Data.Ratio as R
+import GHC.JS.Prim (JSVal, toJSString)
 import Platform.Runtime( exCatch )
 
 type FileTime = T.UTCTime
@@ -46,17 +47,35 @@ diffTimeToPicoseconds :: T.DiffTime -> Integer
 diffTimeToPicoseconds t
   = R.numerator (toRational t * 1000000000000)
 
--- | Returns the file modification time or 0 if it does not exist.
+-- | Returns the file modification time or fileTime0 if it does not exist.
+-- Delegates to globalThis.kokaVFS.fileTime which returns milliseconds since epoch.
 getFileTime :: FilePath -> IO FileTime
-getFileTime _fname
-  = return fileTime0
+getFileTime fname
+  = do ms <- js_vfsFileTime (toJSString fname)
+       if ms <= 0
+         then return fileTime0
+         else return (msToUTCTime ms)
 
--- | Set the file modification time
+-- | Set the file modification time (no-op on JS, VFS is managed by frontend)
 setFileTime :: FilePath -> FileTime -> IO ()
 setFileTime _fname _ftime
   = return ()
 
--- | returns the file modification time or the current time if it does not exist.
+-- | Returns the file modification time or the current time if it does not exist.
 getFileTimeOrCurrent :: FilePath -> IO FileTime
-getFileTimeOrCurrent _fname
-  = getCurrentTime
+getFileTimeOrCurrent fname
+  = do t <- getFileTime fname
+       if t == fileTime0 then getCurrentTime else return t
+
+-- Convert milliseconds since epoch to UTCTime
+msToUTCTime :: Double -> T.UTCTime
+msToUTCTime ms =
+  let secs = ms / 1000.0
+      days = floor (secs / 86400.0) :: Integer
+      dayFrac = secs - fromIntegral (days * 86400)
+      -- POSIX epoch is Modified Julian Day 40587
+      mjd = T.ModifiedJulianDay (days + 40587)
+  in T.UTCTime mjd (T.picosecondsToDiffTime (round (dayFrac * 1e12)))
+
+foreign import javascript unsafe "h$kokaVfsFileTime"
+  js_vfsFileTime :: JSVal -> IO Double
