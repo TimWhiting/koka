@@ -41,7 +41,7 @@ jobs:
       - name: Setup GHC + Cabal + Stack
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: '9.10'
+          ghc-version: '9.12'
           cabal-version: '3.16'
           enable-stack: true
           stack-version: 'latest'
@@ -78,18 +78,11 @@ jobs:
 
       - name: Build Koka library + playground
         run: |
-          cabal build lib:koka exe:koka-playground
+          cabal build lib:koka koka:exe:koka-playground \
+            --with-compiler=javascript-unknown-ghcjs-ghc \
+            --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
 
-      - name: Patch JS output
-        run: |
-          # Find RTS wasm from ghcup-installed GHC
-          GHC_LIBDIR=$(javascript-unknown-ghcjs-ghc --print-libdir)
-          find "$(dirname "$GHC_LIBDIR")" -name "a.wasm" -path "*/rts/*" 2>/dev/null | head -1 | xargs -I{} cp {} ghc-rts.wasm
-          # If not found in the ghcup tree, check dist-newstyle
-          if [ ! -f ghc-rts.wasm ]; then
-            find dist-newstyle -name "a.wasm" 2>/dev/null | head -1 | xargs -I{} cp {} ghc-rts.wasm
-          fi
-          ./scripts/patch-jsexe.sh
+      # GHC 9.12.2 embeds valid WASM as base64 data URI — no patching needed!
 
       # ── Precompile std library ───────────────────────────────────────
 
@@ -124,11 +117,10 @@ jobs:
           # Web frontend
           cp -r web/dist/* deploy/
 
-          # Compiler JS bundle
+          # Compiler JS bundle (no patching needed with GHC 9.12.2)
           cp "$JSEXE/all.js" deploy/all.js
-          cp "$JSEXE/koka-playground.wasm" deploy/koka-playground.wasm
 
-          # Stdlib sources
+          # Stdlib sources (needed for inline externs)
           mkdir -p deploy/lib
           cp -r lib/std deploy/lib/std
 

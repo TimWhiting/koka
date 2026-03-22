@@ -1,6 +1,8 @@
 # Koka Playground — Browser-Based Compiler
 
-This directory contains the infrastructure for compiling the Koka compiler to JavaScript using GHC's JavaScript backend, enabling an in-browser playground where users can edit, compile, and run Koka programs.
+Compile, edit, and run Koka programs directly in the browser. The Koka compiler
+itself runs as JavaScript (compiled via GHC's JS backend), with a Monaco-based
+editor frontend.
 
 ## Architecture
 
@@ -12,142 +14,161 @@ This directory contains the infrastructure for compiling the Koka compiler to Ja
                │ globalThis.kokaVFS / kokaCompile
 ┌──────────────▼──────────────────────┐
 │  Koka Compiler (GHC JS backend)    │
-│  All 108 modules compiled to JS    │
+│  All 109 modules compiled to JS    │
 │  Platform/js/ stubs for IO         │
 │  VFS-backed file operations        │
 └─────────────────────────────────────┘
 ```
 
-The JS/TS frontend is the orchestrator:
-1. Populates `globalThis.kokaVFS` with source files and cached `.kki` interfaces
-2. Calls `globalThis.kokaCompile(moduleName, sourceText)`
-3. Reads generated `.mjs` output from VFS
-4. Executes the compiled JavaScript
+## Quick Start (Local Development)
 
-The Haskell compiler runs in the browser, reading/writing through the VFS instead of the real filesystem.
+### Prerequisites
 
-## Prerequisites
+- **Emscripten 3.1.74** — required by GHC JS 9.12.2
+- **GHC 9.12.2** (native) — for bootstrap and native builds
+- **GHC JS cross-compiler** — installed via ghcup
+- **Node.js 18+** — for testing and web frontend
+- **cabal 3.16+**, **stack**, **hpack**
 
-### GHC JavaScript Cross-Compiler
-
-The GHC JS backend must be built from source (no pre-built binaries for macOS ARM):
+### Install GHC JS Cross-Compiler
 
 ```bash
-# Install prerequisites
-brew install autoconf automake python
-# Ensure emscripten is installed (https://emscripten.org/docs/getting_started/)
-source ~/emsdk/emsdk_env.sh
+# Install emscripten 3.1.74
+cd ~/emsdk
+./emsdk install 3.1.74
+./emsdk activate 3.1.74
+source ./emsdk_env.sh
 
-# Clone GHC (shallow)
-git clone --recurse-submodules --depth=1 https://gitlab.haskell.org/ghc/ghc.git ~/ghc-js-build
-cd ~/ghc-js-build
+# Install GHC JS via ghcup
+ghcup config add-release-channel cross
+emconfigure ghcup install ghc --set javascript-unknown-ghcjs-9.12.2
 
-# Configure for JS target (requires GHC 9.10+ as bootstrap compiler)
-./boot
-emconfigure ./configure --target=javascript-unknown-ghcjs GHC=$(which ghc)
-
-# Build (~20 minutes on M1)
-hadrian/build -j12 --flavour=quick --bignum=native --docs=none
-
-# The cross-compiler is at:
-# ~/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc
+# Verify
+javascript-unknown-ghcjs-ghc --version
 ```
 
-**Note:** If the GHC `settings` file is missing a `"base unit-id"` entry, add it manually:
-```bash
-# Get the base unit-id
-~/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc-pkg field base id
-# Add to settings file (before the closing `]`):
-# ,("base unit-id", "base-4.XX.0.0-inplace")
-```
-
-### Other Requirements
-
-- **cabal-install** 3.16+ (for GHC 9.15 compatibility)
-- **hpack** (for regenerating `.cabal` from `package.yaml`)
-- **Node.js** 18+ (for testing the compiled output)
-- **Emscripten SDK** (for the GHC JS build)
-
-## Building the Koka Library for JavaScript
+### Build the Compiler for JavaScript
 
 ```bash
-cd /path/to/koka  # this worktree
+# Generate cabal file from package.yaml
+hpack
 
-# Ensure GHC JS is on PATH
-export PATH=~/ghc-js-build/_build/stage1/bin:$PATH
-
-# Update cabal index (needs head.hackage for GHC 9.15 compat)
-cabal update
-
-# Build the library
-cabal build lib:koka
+# Build the library and playground executable
+cabal build lib:koka koka:exe:koka-playground \
+  --with-compiler=javascript-unknown-ghcjs-ghc \
+  --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
 ```
 
-The `cabal.project.local` is pre-configured with:
-- `head.hackage` repository overlay (for GHC HEAD-compatible packages)
-- `allow-newer` for base library version constraints
-- Cross-compiler paths
+GHC 9.12.2 produces valid output with no post-processing needed.
 
-## Building the Playground Executable
+### Precompile Standard Library
 
 ```bash
-cabal build exe:koka-playground
+# Build native koka for precompiling
+stack build koka:exe:koka-plain --fast
+
+# Precompile std/core to .kki + .mjs
+KOKA=$(stack exec -- which koka-plain)
+mkdir -p precompiled
+$KOKA --target=js --outputdir=precompiled --library lib/std/core.kk
 ```
 
-This produces a JavaScript file that can be loaded in Node.js or a browser.
-
-## Testing with Node.js
+### Run the Web Frontend
 
 ```bash
-cd test-js/
-node test-playground.js
+# Set up dev symlinks
+JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d | head -1)
+mkdir -p web/public
+ln -sf $JSEXE/all.js web/public/all.js
+ln -sf $(pwd)/lib web/public/lib
+ln -sf $(pwd)/precompiled web/public/precompiled
+
+# Generate manifests
+python3 -c "
+import json, os
+files = []
+for root, dirs, fnames in os.walk('lib/std'):
+    if '/v1/' in root: continue
+    for f in fnames:
+        files.append(os.path.join(root, f).replace('lib/', ''))
+print(json.dumps(sorted(files)))
+" > web/public/stdlib-manifest.json
+
+ls precompiled/ | python3 -c "
+import sys, json
+print(json.dumps(sorted([l.strip() for l in sys.stdin])))
+" > web/public/precompiled-manifest.json
+
+# Start dev server
+cd web && npm install && npx vite --host
 ```
 
-See `test-js/README.md` for details.
-
-## Web Frontend
+### Test with Node.js
 
 ```bash
-cd web/
-npm install
-npm run dev
+node test-js/run.cjs                    # Hello World
+node test-js/run.cjs samples/basic/fibonacci.kk  # Specific file
 ```
 
-Opens a local dev server with the Monaco-based playground editor.
+## CI / Deployment
+
+The GitHub Actions workflow (`.github/workflows/playground.yml`):
+
+1. Installs GHC JS 9.12.2 via ghcup (~2 min, pre-built bindist)
+2. Builds Koka library + playground for JS target
+3. Precompiles std library with native Koka
+4. Builds the Vite web frontend
+5. Assembles a static site and deploys to GitHub Pages
+
+Enable deployment: repo Settings → Pages → Source: **GitHub Actions**
+
+The playground will be at `https://<username>.github.io/koka/`
 
 ## Project Structure
 
 ```
 ├── src/
-│   ├── Platform/js/          # JS-specific Platform stubs (7 modules)
-│   ├── Common/File.hs        # CPP-guarded for VFS on JS
-│   ├── Syntax/Highlight.hs   # CPP-guarded (no Isocline on JS)
-│   ├── Lib/Printer.hs        # CPP-guarded (no Isocline on JS)
+│   ├── Platform/js/          # JS-specific Platform modules (8 modules)
+│   │   ├── FileIO.hs         # VFS-backed doesFileExist, readTextFile, etc.
+│   │   ├── Filetime.hs       # VFS-backed file times via FFI
+│   │   ├── Console.hs        # No-op console stubs
+│   │   ├── ReadLine.hs       # No-op REPL stubs
+│   │   ├── Runtime.hs        # Standard GHC exception handling
+│   │   ├── Var.hs            # IORef-based (single-threaded JS)
+│   │   ├── Config.hs         # Hardcoded web config
+│   │   └── GetOptions.hs     # Re-export GetOpt
+│   ├── Common/File.hs        # Delegates IO to Platform.FileIO (no CPP guards)
 │   ├── Compile/Options.hs    # playgroundFlags for browser config
 │   └── Main/playground/      # JS entry point (callback registration)
 ├── jsbits/
 │   └── vfs.js                # JS VFS bridge functions for FFI
-├── web/                      # TypeScript + Monaco playground frontend
+├── web/                      # TypeScript + Vite + Monaco playground
 │   ├── src/
-│   │   ├── main.ts           # Editor + compile/run wiring
+│   │   ├── main.ts           # Editor, compile/run, file browser
 │   │   ├── vfs.ts            # KokaVFS class (globalThis.kokaVFS)
-│   │   ├── koka-lang.ts      # Monarch tokenizer (from TextMate grammar)
+│   │   ├── koka-lang.ts      # TextMate grammar + Monarch fallback
+│   │   ├── module-runner.ts  # ES module execution via blob URLs
+│   │   ├── file-browser.ts   # Tree view with GitHub integration
+│   │   ├── github-integration.ts  # Fetch samples, load/save Gists
 │   │   └── lsp-adapter.ts    # LSP provider scaffold
 │   └── index.html
-├── cabal.project.local       # head.hackage + GHC JS compiler paths
-├── package.yaml              # arch(javascript) conditionals
-└── PLAYGROUND.md             # This file
+├── test-js/
+│   └── run.cjs               # Node.js end-to-end test
+├── .github/workflows/
+│   └── playground.yml         # CI: build + deploy to GitHub Pages
+└── PLAYGROUND.md              # This file
 ```
 
 ## How It Works
 
 ### Virtual Filesystem (VFS)
 
-The compiler's IO operations are redirected through a global `kokaVFS` object:
+The compiler's IO operations go through `Platform.FileIO` which on the JS
+target delegates to `globalThis.kokaVFS` via FFI:
 
 ```javascript
 globalThis.kokaVFS = {
-  readFile:   (path) => string | null | Promise,
+  readFile:   (path) => string | null,
   fileExists: (path) => boolean,
   fileTime:   (path) => number,  // ms since epoch
   writeFile:  (path, content) => void,
@@ -159,28 +180,31 @@ globalThis.kokaVFS = {
 };
 ```
 
-On the JS target, `Common/File.hs` functions like `readTextFile`, `doesFileExist`, etc. call through to these VFS functions via FFI (defined in `jsbits/vfs.js`).
+### Precompiled Standard Library
+
+The `.kki` interface files are placed at `/lib/js-debug/` in the VFS with
+far-future timestamps. The compiler recognizes these as cached and skips
+recompilation — only the user's module is parsed, type-checked, and code-generated.
 
 ### Platform Abstraction
 
-The `src/Platform/js/` directory provides browser-compatible implementations:
-- **Console.hs** — no-op color stubs (no terminal in browser)
-- **ReadLine.hs** — no-op REPL stubs
-- **Filetime.hs** — stubbed file times (VFS handles freshness)
-- **Runtime.hs** — standard GHC exception handling (no C FFI)
-- **Var.hs** — IORef-based (single-threaded JS)
+All platform-specific IO is in `Platform/` modules (no CPP in caller code):
+- `Platform.FileIO` — filesystem operations (VFS on JS, System.Directory on native)
+- `Platform.Filetime` — file modification times (VFS on JS, Data.Time on native)
+- `Platform.Console` — terminal colors (no-op on JS)
+- `Platform.ReadLine` — REPL input (no-op on JS)
 
-### Build Configuration
+### GHC JS Backend Notes
 
-The `package.yaml` uses `arch(javascript)` conditionals to:
-- Swap `src/Platform/cpp` for `src/Platform/js`
-- Define `-DKOKA_WEB` CPP flag
-- Include `jsbits/vfs.js` as JS sources
-- Mark native-only executables (koka, koka-plain, koka-test) as not buildable
-- Remove `isocline` dependency (native terminal library)
+- **GHC 9.12.2** with **emscripten 3.1.74** produces valid output with no patching
+- The embedded WASM is a base64 data URI with zero imports
+- Output is ~44MB uncompressed, ~2.3MB with brotli (served automatically by CDNs)
+- Minification is counterproductive — repetitive GHC output compresses better unminified
 
-## Known Issues
+### Known Limitations
 
-- **Int overflow warnings** in `Type/Infer.hs` — JS backend uses 32-bit Int; some literal constants exceed this range. Functionally harmless for most programs but may affect edge cases with very large integer literals.
-- **No Template Haskell** — `lsp-types` package can't be used on JS backend. LSP features will use direct function calls instead of the LSP protocol.
-- **GHC 9.15 (HEAD)** — Using bleeding-edge GHC; some packages need `head.hackage` overlay. Will stabilize when GHC 9.12 bindists support JS on aarch64-darwin.
+- **Int overflow**: JS backend uses 32-bit Int; some literals in `Type/Infer.hs` overflow (warnings only)
+- **FBIP samples**: `rbtree.kk` and `rbtree-fbip.kk` crash with BigInt errors (JS backend bug)
+- **Lazy constructors**: `lazycons.kk` not supported on web
+- **No Template Haskell**: `lsp-types` package can't be used on JS backend
+- **No LSP server**: Full LSP requires packages that depend on TH; future work will expose query functions directly
