@@ -55,6 +55,7 @@ globalThis.Module = {
 
 // ── Samples that don't work on the JS backend ────────────────────────────────
 const EXCLUDED_SAMPLES = new Set([
+  'samples/all.kk',                 // replaced by web-compatible version
   'samples/basic/rbtree.kk',        // FBIP BigInt bug in JS backend
   'samples/basic/rbtree-fbip.kk',   // same FBIP BigInt bug
   'samples/learn/lazycons.kk',      // experimental lazy constructors, not supported on web
