@@ -7,9 +7,24 @@
 const fs = require('fs');
 const path = require('path');
 
-const JSEXE = path.join(__dirname, '..', 'dist-newstyle', 'build', 'javascript-ghcjs',
-  'ghc-9.15.20260321', 'koka-3.2.4', 'x', 'koka-playground', 'build',
-  'koka-playground', 'koka-playground.jsexe');
+// Auto-detect jsexe directory
+function findJsexe() {
+  const base = path.join(__dirname, '..', 'dist-newstyle', 'build', 'javascript-ghcjs');
+  if (!fs.existsSync(base)) return null;
+  for (const ghcVer of fs.readdirSync(base)) {
+    const jsexe = path.join(base, ghcVer, 'koka-3.2.4', 'x', 'koka-playground',
+      'build', 'koka-playground', 'koka-playground.jsexe');
+    if (fs.existsSync(path.join(jsexe, 'all.js'))) return jsexe;
+  }
+  return null;
+}
+const JSEXE = findJsexe();
+if (!JSEXE) {
+  console.error('Could not find koka-playground.jsexe. Build first with:');
+  console.error('  cabal build lib:koka exe:koka-playground --with-compiler=javascript-unknown-ghcjs-ghc --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg');
+  process.exit(1);
+}
+console.log('Using:', JSEXE);
 
 const LIB = path.join(__dirname, '..', 'lib');
 const PRECOMPILED = path.join(__dirname, '..', 'precompiled');
@@ -87,7 +102,7 @@ globalThis.kokaOnCompilerLog = function(msg) {
   console.log('[compiler] ' + msg);
 };
 
-globalThis.kokaVerbose = 3;
+globalThis.kokaVerbose = 1;
 
 // ── Load and run ─────────────────────────────────────────────────────────────
 
@@ -106,38 +121,8 @@ preloadStdlib();
 console.log('');
 console.log('Loading compiler...');
 
-// Load the patched all.js
-// The Emscripten async createWasm needs to run, so we use a different approach:
-// Load individual files instead of all.js to avoid the Emscripten WASM issue
-
-// Actually, for Node.js we need the WASM file available.
-// Copy it to the expected location and provide the right Module config.
-const wasmPath = path.join(JSEXE, 'koka-playground.wasm');
-if (!fs.existsSync(wasmPath)) {
-  const rtsWasm = path.join(__dirname, '..', 'ghc-rts.wasm');
-  if (fs.existsSync(rtsWasm)) {
-    fs.copyFileSync(rtsWasm, wasmPath);
-  }
-}
-
-// Override fetch to handle relative paths (WASM loading)
-const origFetch = globalThis.fetch;
-globalThis.fetch = async function(url, ...args) {
-  if (typeof url === 'string' && !url.startsWith('http')) {
-    const filePath = path.join(JSEXE, url);
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath);
-      return {
-        ok: true,
-        arrayBuffer: async () => data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
-        text: async () => data.toString('utf-8'),
-      };
-    }
-    return { ok: false };
-  }
-  if (origFetch) return origFetch(url, ...args);
-  return { ok: false };
-};
+// GHC 9.12.2+ embeds WASM as base64 data URI — no external file needed.
+// But Node.js fetch doesn't handle data URIs, so polyfill it.
 
 // Make require available globally (Emscripten code in all.js uses it)
 globalThis.require = require;
