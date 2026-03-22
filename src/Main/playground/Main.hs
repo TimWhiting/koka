@@ -56,7 +56,8 @@ compileHandler jsModName jsSource = do
 compileToJS :: String -> String -> IO String
 compileToJS moduleName sourceText = do
   errRef <- newIORef []
-  let flags = playgroundFlags
+  v <- js_getVerbose
+  let flags = playgroundFlags{ verbose = v }
       term  = playgroundTerminal errRef
       sourcePath = virtualMount ++ "/" ++ moduleName ++ ".kk"
       content    = stringToBString sourceText
@@ -88,6 +89,10 @@ foreign import javascript unsafe "h$kokaSetCompiler"
 -- JS FFI: set the compilation result on globalThis
 foreign import javascript unsafe "h$kokaSetResult"
   js_setResult :: JSVal -> IO ()
+
+-- JS FFI: get verbosity level from JS
+foreign import javascript unsafe "h$kokaGetVerbose"
+  js_getVerbose :: IO Int
 
 -- JS FFI: send compiler log message to JS
 foreign import javascript unsafe "h$kokaLogCompiler"

@@ -30,6 +30,10 @@ function h$kokaSetResult(s) {
   globalThis.kokaResult = s;
 }
 
+function h$kokaGetVerbose() {
+  return globalThis.kokaVerbose || 0;
+}
+
 function h$kokaLogCompiler(msg) {
   if (globalThis.kokaOnCompilerLog) {
     globalThis.kokaOnCompilerLog(msg);

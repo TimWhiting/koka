@@ -10,6 +10,16 @@ fun main()
 </textarea>
 <br>
 <button id="btn-compile" onclick="doCompile()" disabled>Compile &amp; Run</button>
+<label style="margin-left:15px; font-size:13px;">Verbose:
+  <select id="verbose-level">
+    <option value="0">0 (quiet)</option>
+    <option value="1" selected>1 (phases)</option>
+    <option value="2">2 (detail)</option>
+    <option value="3">3 (trace)</option>
+  </select>
+</label>
+<label style="margin-left:10px; font-size:13px;"><input type="checkbox" id="log-vfs"> Log VFS</label>
+<label style="margin-left:10px; font-size:13px;"><input type="checkbox" id="rebuild-all"> Force rebuild</label>
 <span id="status" style="margin-left:10px; color:#888;">Loading compiler...</span>
 <div style="display:flex; gap:10px; margin-top:10px;">
   <div style="flex:1;">
@@ -43,7 +53,11 @@ globalThis.kokaVFS = {
     return null;
   },
   fileExists: function(p) {
-    return !!vfsFiles[p];
+    if (vfsFiles[p]) return true;
+    if (document.getElementById('log-vfs').checked) {
+      if (p.endsWith('.kki') || p.endsWith('.mjs')) compilerLog('[vfs miss] ' + p);
+    }
+    return false;
   },
   fileTime: function(p) { return vfsFiles[p] ? vfsFiles[p].time : 0; },
   writeFile: function(p, c) {
@@ -175,7 +189,8 @@ async function doCompile() {
   globalThis.kokaResult = undefined;
 
   try {
-    globalThis.kokaCompile('main', source);
+    globalThis.kokaVerbose = parseInt(document.getElementById('verbose-level').value) || 0;
+  globalThis.kokaCompile('main', source);
 
     // Wait for result
     var result = await new Promise(function(resolve, reject) {
