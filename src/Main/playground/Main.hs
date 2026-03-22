@@ -103,14 +103,76 @@ foreign import javascript unsafe "h$kokaLogCompiler"
 foreign import javascript safe "h$kokaKeepAlive"
   js_keepAlive :: IO ()
 
+#elif defined(KOKA_WASM)
+
+-- WASM build: compile from stdin or command-line argument, write to stdout.
+-- Uses WASI filesystem for VFS operations.
+
+import Control.Monad          ( when )
+import Data.IORef             ( IORef, newIORef, readIORef, modifyIORef )
+import System.IO              ( hPutStrLn, stderr, hFlush, stdout )
+import System.Environment     ( getArgs )
+
+import Lib.PPrint
+import Lib.Printer
+
+import Common.Name
+import Common.Error
+import Common.ColorScheme
+import Common.Range           ( BString, stringToBString )
+
+import Compile.Options        ( playgroundFlags, Flags(..), Terminal(..) )
+import Compile.BuildContext
+import Compile.Build          ( virtualMount )
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [moduleName, sourceText] -> do
+      result <- compileToJS moduleName sourceText
+      putStrLn result
+      hFlush stdout
+    [moduleName] -> do
+      sourceText <- getContents
+      result <- compileToJS moduleName sourceText
+      putStrLn result
+      hFlush stdout
+    _ -> do
+      hPutStrLn stderr "Usage: koka-playground <module-name> [source-text]"
+      hPutStrLn stderr "  Or pipe source via stdin: echo 'module main ...' | koka-playground main"
+
+compileToJS :: String -> String -> IO String
+compileToJS moduleName sourceText = do
+  errRef <- newIORef []
+  let flags = playgroundFlags{ verbose = 0 }
+      term  = Terminal (\err -> modifyIORef errRef (show err :))
+                       (\_ -> return ())
+                       (\_ -> return ())
+                       (\_ -> return ())
+                       (\_ -> return ())
+      sourcePath = virtualMount ++ "/" ++ moduleName ++ ".kk"
+      content    = stringToBString sourceText
+  (mbResult, _) <- runBuildIO term flags False $ do
+    let buildc0 = buildcEmpty flags
+    withVirtualModule sourcePath content buildc0 $ \mainModName buildc1 ->
+      do buildc2 <- buildcBuildEx False [] [] buildc1
+         buildcThrowOnError buildc2
+         return (buildc2, ())
+  errs <- readIORef errRef
+  case mbResult of
+    Just _  -> return "{\"success\": true}"
+    Nothing -> return ("{\"success\": false, \"errors\": " ++ show (reverse errs) ++ "}")
+
 #else
 
--- Native build: this executable is not useful outside the JS backend.
+-- Native build: this executable is not useful outside the JS/WASM backend.
 import System.IO (hPutStrLn, stderr)
 
 main :: IO ()
 main = do
-  hPutStrLn stderr "koka-playground is only available when built with the GHC JavaScript backend."
+  hPutStrLn stderr "koka-playground is only available when built with the GHC JavaScript or WASM backend."
   hPutStrLn stderr "Build with: cabal build --with-compiler=javascript-unknown-ghcjs-ghc koka-playground"
+  hPutStrLn stderr "       or:  cabal build --with-compiler=wasm32-wasi-ghc koka-playground"
 
 #endif

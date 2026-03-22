@@ -60,6 +60,7 @@ library:
       cpp-options: -DWINDOWS
     - condition: os(darwin)
       cpp-options: -DDARWIN
+    # ── Platform: GHC JS backend ──
     - condition: arch(javascript)
       source-dirs: src/Platform/js
       cpp-options: -DKOKA_WEB
@@ -73,7 +74,21 @@ library:
         - Platform.ReadLine
         - Platform.Runtime
         - Platform.Var
-    - condition: "!arch(javascript)"
+    # ── Platform: GHC WASM backend ──
+    - condition: arch(wasm32)
+      source-dirs: src/Platform/wasm
+      cpp-options: -DKOKA_WASM
+      exposed-modules:
+        - Platform.Config
+        - Platform.Console
+        - Platform.FileIO
+        - Platform.Filetime
+        - Platform.GetOptions
+        - Platform.ReadLine
+        - Platform.Runtime
+        - Platform.Var
+    # ── Platform: Native (default) ──
+    - condition: "!arch(javascript) && !arch(wasm32)"
       source-dirs: src/Platform/cpp
       c-sources:
         - src/Platform/cpp/Platform/cconsole.c
@@ -118,7 +133,7 @@ executables:
       # - '"-with-rtsopts=-N8 -l"'
       - '"-with-rtsopts=-N8"'
     when:
-      - condition: arch(javascript)
+      - condition: "arch(javascript) || arch(wasm32)"
         buildable: false
 
   koka-plain:
@@ -136,7 +151,7 @@ executables:
       # - '"-with-rtsopts=-N8 -l"'
       - '"-with-rtsopts=-N8"'
     when:
-      - condition: arch(javascript)
+      - condition: "arch(javascript) || arch(wasm32)"
         buildable: false
 
   koka-playground:
@@ -147,8 +162,13 @@ executables:
     ghc-options:
       - -O2
     when:
-      - condition: "!arch(javascript)"
+      - condition: "!arch(javascript) && !arch(wasm32)"
         buildable: false
+      - condition: arch(javascript)
+        cpp-options: -DKOKA_WEB
+        js-sources: jsbits/vfs.js
+      - condition: arch(wasm32)
+        cpp-options: -DKOKA_WASM
       - condition: arch(javascript)
         cpp-options: -DKOKA_WEB
         js-sources: jsbits/vfs.js
@@ -171,6 +191,6 @@ tests:
       - regex-compat >= 0.95.2.1
       - json
     when:
-      - condition: arch(javascript)
+      - condition: "arch(javascript) || arch(wasm32)"
         buildable: false
 

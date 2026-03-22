@@ -46,7 +46,7 @@ import qualified Data.Text.IO as T
 
 import Debug.Trace
 
-#ifndef KOKA_WEB
+#if !defined(KOKA_WEB) && !defined(KOKA_WASM)
 import System.Console.Isocline( withTerm, termWriteLn, termWrite, termFlush )
 #endif
 
@@ -204,7 +204,7 @@ data AnsiConsole = AnsiConsole{ fcolor    :: Color
                               }
 
 instance Printer AnsiPrinter where
-#ifdef KOKA_WEB
+#if defined(KOKA_WEB) || defined(KOKA_WASM)
   write p s             = putStr s
   writeText p s         = T.putStr s
   writeLn p s           = putStrLn s
@@ -298,7 +298,7 @@ ansiSetConsole (Ansi varAnsi) f
 ansiEscapeIO :: [T.Text] -> IO ()
 ansiEscapeIO xs
   | null xs   = return ()
-#ifdef KOKA_WEB
+#if defined(KOKA_WEB) || defined(KOKA_WASM)
   | otherwise = return ()  -- no ANSI escape sequences on JS
 #else
   | otherwise = termWrite (T.unpack {-T.putStr-} (ansiEscape xs))

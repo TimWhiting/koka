@@ -168,7 +168,20 @@ library
     cpp-options: -DKOKA_WEB
     js-sources:
         jsbits/vfs.js
-  if !arch(javascript)
+  if arch(wasm32)
+    exposed-modules:
+        Platform.Config
+        Platform.Console
+        Platform.FileIO
+        Platform.Filetime
+        Platform.GetOptions
+        Platform.ReadLine
+        Platform.Runtime
+        Platform.Var
+    hs-source-dirs:
+        src/Platform/wasm
+    cpp-options: -DKOKA_WASM
+  if !arch(javascript) && !arch(wasm32)
     exposed-modules:
         Platform.Config
         Platform.Console
@@ -234,7 +247,7 @@ executable koka
     , text-rope
     , time
   default-language: Haskell2010
-  if arch(javascript)
+  if arch(javascript) || arch(wasm32)
     buildable: False
 
 executable koka-plain
@@ -260,7 +273,7 @@ executable koka-plain
     , text
     , time
   default-language: Haskell2010
-  if arch(javascript)
+  if arch(javascript) || arch(wasm32)
     buildable: False
 
 executable koka-playground
@@ -286,8 +299,14 @@ executable koka-playground
     , text
     , time
   default-language: Haskell2010
-  if !arch(javascript)
+  if !arch(javascript) && !arch(wasm32)
     buildable: False
+  if arch(javascript)
+    cpp-options: -DKOKA_WEB
+    js-sources:
+        jsbits/vfs.js
+  if arch(wasm32)
+    cpp-options: -DKOKA_WASM
   if arch(javascript)
     cpp-options: -DKOKA_WEB
     js-sources:
@@ -322,5 +341,5 @@ test-suite koka-test
     , text
     , time
   default-language: Haskell2010
-  if arch(javascript)
+  if arch(javascript) || arch(wasm32)
     buildable: False

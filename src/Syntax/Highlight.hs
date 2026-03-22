@@ -13,7 +13,7 @@
 module Syntax.Highlight( Context(..), Nesting(..), Token(..), TokenComment(..)
                        , highlight
                        , highlightPrint
-#ifndef KOKA_WEB
+#if !defined(KOKA_WEB) && !defined(KOKA_WASM)
                        , highlightInput
 #endif
                        -- * Low level primitives
@@ -35,7 +35,7 @@ import Syntax.Lexeme   ( Lexeme(..), Lex(..), lexemeIsWhite, isTypeVar)
 import Syntax.Lexer    ( lexer )
 import Syntax.Layout   ( combineLineComments )
 
-#ifndef KOKA_WEB
+#if !defined(KOKA_WEB) && !defined(KOKA_WASM)
 -----------------------------------------------------------
 -- Syntax highlighting for readline
 -----------------------------------------------------------
