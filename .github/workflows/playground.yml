@@ -43,9 +43,11 @@ jobs:
 
       - name: Install build tools
         run: |
+          export PATH="$HOME/.cabal/bin:$PATH"
           cabal update
           cabal install happy --overwrite-policy=always
-          cabal install alex hpack --overwrite-policy=always
+          cabal install alex --overwrite-policy=always
+          cabal install hpack --overwrite-policy=always
           echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
       # ── Cache GHC JS cross-compiler ──────────────────────────────────
