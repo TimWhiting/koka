@@ -43,10 +43,9 @@ jobs:
 
       - name: Install build tools
         run: |
+          sudo apt-get install -y alex happy
           export PATH="$HOME/.cabal/bin:$PATH"
           cabal update
-          cabal install happy --overwrite-policy=always
-          cabal install alex --overwrite-policy=always
           cabal install hpack --overwrite-policy=always
           echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
