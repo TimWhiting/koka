@@ -24,8 +24,8 @@ import {
   type KokaLanguageService,
 } from './lsp-adapter';
 import { runKokaModules } from './module-runner';
-import { FileBrowser, type FileEntry } from './file-browser';
-import { loadKokaSamples } from './github-integration';
+import { FileBrowser, buildFileTree, type FileEntry } from './file-browser';
+import { loadKokaSamples, fetchGitHubDirectory } from './github-integration';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -258,6 +258,14 @@ const fileBrowser = new FileBrowser(elFileBrowserTree, {
   onFileSelect: (path, content, name) => {
     openFile(path, content, name);
   },
+  onJsFileSelect: (_path, content, name) => {
+    jsEditor.setValue(content);
+    appendConsole(`Viewing ${name}`, 'info');
+  },
+  onDirectoryExpand: async (entry) => {
+    // Lazy-load directory contents from GitHub
+    return fetchGitHubDirectory('koka-lang', 'koka', entry.path);
+  },
 });
 
 // Placeholder samples section
@@ -289,15 +297,11 @@ function refreshOpenFilesSection(): void {
 /** Refresh the VFS section in the file browser (debug listing) */
 function refreshVfsSection(): void {
   const written = vfs.getWrittenFiles();
-  const entries: FileEntry[] = [];
-  for (const [path] of written) {
-    const name = path.split('/').pop() ?? path;
-    // Only show interesting files to keep the list manageable
-    if (path.endsWith('.kk') || path.endsWith('.mjs') || path.endsWith('.kki')) {
-      entries.push({ name, path, type: 'file' });
-    }
-  }
-  fileBrowser.updateSection('VFS', entries);
+  // Build a proper tree, only showing compiler output (not preloaded stdlib)
+  const tree = buildFileTree(written, (path) =>
+    path.includes('.koka/') && (path.endsWith('.mjs') || path.endsWith('.kki'))
+  );
+  fileBrowser.updateSection('VFS Output', tree);
 }
 
 // ── File browser toggle ───────────────────────────────────────────────────────

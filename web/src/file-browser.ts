@@ -2,7 +2,7 @@
  * file-browser.ts
  *
  * A collapsible file browser sidebar for the Koka playground.
- * Renders three sections: Samples, Open Files, and VFS (debug).
+ * Supports lazy-loading directory contents and nested tree rendering.
  */
 
 export interface FileEntry {
@@ -12,11 +12,17 @@ export interface FileEntry {
   children?: FileEntry[];
   /** Optional raw download URL (e.g. from GitHub API) */
   download_url?: string;
+  /** If true, children need to be fetched on expand */
+  lazyLoad?: boolean;
 }
 
 export interface FileBrowserConfig {
-  /** Called when the user clicks a file entry */
+  /** Called when the user clicks a .kk file */
   onFileSelect: (path: string, content: string, name: string) => void;
+  /** Called when the user clicks a .mjs/.js file (shows in JS output pane) */
+  onJsFileSelect?: (path: string, content: string, name: string) => void;
+  /** Called to lazily load directory children (e.g. from GitHub API) */
+  onDirectoryExpand?: (entry: FileEntry) => Promise<FileEntry[]>;
 }
 
 interface Section {
@@ -36,13 +42,11 @@ export class FileBrowser {
     this.container.classList.add('file-browser');
   }
 
-  /** Add a new named section. */
   addSection(title: string, entries: FileEntry[]): void {
     this.sections.set(title, { title, entries, collapsed: false });
     this.render();
   }
 
-  /** Replace entries in an existing section (creates it if absent). */
   updateSection(title: string, entries: FileEntry[]): void {
     const existing = this.sections.get(title);
     if (existing) {
@@ -53,20 +57,15 @@ export class FileBrowser {
     this.render();
   }
 
-  /** Re-render the entire file browser. */
   render(): void {
     this.container.innerHTML = '';
-
     for (const section of this.sections.values()) {
       const sectionEl = document.createElement('div');
       sectionEl.className = 'fb-section';
 
-      // Section header
       const headerEl = document.createElement('div');
       headerEl.className = 'fb-section-header';
       headerEl.setAttribute('role', 'button');
-      headerEl.setAttribute('tabindex', '0');
-      headerEl.setAttribute('aria-expanded', String(!section.collapsed));
 
       const arrow = document.createElement('span');
       arrow.className = 'fb-arrow';
@@ -79,24 +78,17 @@ export class FileBrowser {
       headerEl.appendChild(arrow);
       headerEl.appendChild(titleEl);
 
-      const toggleCollapse = (): void => {
-        section.collapsed = !section.collapsed;
-        arrow.textContent = section.collapsed ? '▸' : '▾';
-        headerEl.setAttribute('aria-expanded', String(!section.collapsed));
-        bodyEl.style.display = section.collapsed ? 'none' : '';
-      };
-
-      headerEl.addEventListener('click', toggleCollapse);
-      headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCollapse(); }
-      });
-
-      sectionEl.appendChild(headerEl);
-
-      // Section body (tree)
       const bodyEl = document.createElement('div');
       bodyEl.className = 'fb-section-body';
       if (section.collapsed) bodyEl.style.display = 'none';
+
+      headerEl.addEventListener('click', () => {
+        section.collapsed = !section.collapsed;
+        arrow.textContent = section.collapsed ? '▸' : '▾';
+        bodyEl.style.display = section.collapsed ? 'none' : '';
+      });
+
+      sectionEl.appendChild(headerEl);
 
       if (section.entries.length === 0) {
         const empty = document.createElement('div');
@@ -115,6 +107,8 @@ export class FileBrowser {
   }
 
   private renderEntry(entry: FileEntry, depth: number): HTMLElement {
+    const wrapper = document.createElement('div');
+
     const item = document.createElement('div');
     item.className = 'fb-item';
     item.style.paddingLeft = `${8 + depth * 14}px`;
@@ -123,67 +117,143 @@ export class FileBrowser {
     const icon = document.createElement('span');
     icon.className = 'fb-item-icon';
 
-    if (entry.type === 'directory') {
-      icon.textContent = '📁';
-      item.classList.add('fb-item-dir');
-    } else {
-      icon.textContent = '📄';
-      item.classList.add('fb-item-file');
-    }
-
     const nameEl = document.createElement('span');
     nameEl.className = 'fb-item-name';
     nameEl.textContent = entry.name;
 
     item.appendChild(icon);
     item.appendChild(nameEl);
+    wrapper.appendChild(item);
 
-    if (entry.type === 'directory' && entry.children) {
-      let open = false;
+    if (entry.type === 'directory') {
+      icon.textContent = '📁';
+      item.classList.add('fb-item-dir');
+
       const childrenContainer = document.createElement('div');
-      childrenContainer.className = 'fb-children';
       childrenContainer.style.display = 'none';
+      let expanded = false;
+      let loaded = !!entry.children;
 
-      item.addEventListener('click', (e: MouseEvent) => {
-        e.stopPropagation();
-        open = !open;
-        icon.textContent = open ? '📂' : '📁';
-        childrenContainer.style.display = open ? '' : 'none';
-      });
-
-      for (const child of entry.children) {
-        childrenContainer.appendChild(this.renderEntry(child, depth + 1));
+      // Pre-render children if available
+      if (entry.children) {
+        for (const child of entry.children) {
+          childrenContainer.appendChild(this.renderEntry(child, depth + 1));
+        }
       }
 
-      // Wrap item and children together
-      const wrapper = document.createElement('div');
-      wrapper.appendChild(item);
+      item.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        expanded = !expanded;
+        icon.textContent = expanded ? '📂' : '📁';
+        childrenContainer.style.display = expanded ? '' : 'none';
+
+        // Lazy load on first expand
+        if (expanded && !loaded && this.config.onDirectoryExpand) {
+          const loadingEl = document.createElement('div');
+          loadingEl.className = 'fb-empty';
+          loadingEl.textContent = 'Loading...';
+          childrenContainer.appendChild(loadingEl);
+
+          try {
+            const children = await this.config.onDirectoryExpand(entry);
+            entry.children = children;
+            loaded = true;
+            childrenContainer.innerHTML = '';
+            for (const child of children) {
+              childrenContainer.appendChild(this.renderEntry(child, depth + 1));
+            }
+          } catch {
+            childrenContainer.innerHTML = '';
+            const errEl = document.createElement('div');
+            errEl.className = 'fb-empty';
+            errEl.textContent = '(failed to load)';
+            childrenContainer.appendChild(errEl);
+          }
+        }
+      });
+
       wrapper.appendChild(childrenContainer);
-      return wrapper;
-    } else if (entry.type === 'file') {
-      item.setAttribute('role', 'button');
-      item.setAttribute('tabindex', '0');
+    } else {
+      // File
+      const isJs = entry.name.endsWith('.mjs') || entry.name.endsWith('.js');
+      const isKk = entry.name.endsWith('.kk') || entry.name.endsWith('.kki');
+      icon.textContent = isJs ? '🟨' : isKk ? '📄' : '📄';
       item.classList.add('fb-item-clickable');
 
-      const handleSelect = (): void => {
+      item.addEventListener('click', () => {
         if (entry.download_url) {
-          // Fetch the file content from GitHub
           fetch(entry.download_url)
             .then((r) => r.text())
-            .then((content) => { this.config.onFileSelect(entry.path, content, entry.name); })
-            .catch(() => { this.config.onFileSelect(entry.path, `// Could not load ${entry.name}`, entry.name); });
+            .then((content) => {
+              if (isJs && this.config.onJsFileSelect) {
+                this.config.onJsFileSelect(entry.path, content, entry.name);
+              } else {
+                this.config.onFileSelect(entry.path, content, entry.name);
+              }
+            })
+            .catch(() => {
+              this.config.onFileSelect(entry.path, `// Could not load ${entry.name}`, entry.name);
+            });
         } else {
-          // For VFS / open files, content is stored in path for now
-          this.config.onFileSelect(entry.path, '', entry.name);
+          // VFS file — content is available directly
+          if (isJs && this.config.onJsFileSelect) {
+            this.config.onJsFileSelect(entry.path, entry.content ?? '', entry.name);
+          } else {
+            this.config.onFileSelect(entry.path, entry.content ?? '', entry.name);
+          }
         }
-      };
-
-      item.addEventListener('click', handleSelect);
-      item.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(); }
       });
     }
 
-    return item;
+    return wrapper;
   }
+}
+
+/** Build a tree structure from flat VFS paths */
+export function buildFileTree(files: Map<string, string>, filter?: (path: string) => boolean): FileEntry[] {
+  const root: FileEntry = { name: '', path: '', type: 'directory', children: [] };
+
+  for (const [path, content] of files) {
+    if (filter && !filter(path)) continue;
+
+    const parts = path.split('/').filter(Boolean);
+    let current = root;
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const isLast = i === parts.length - 1;
+
+      if (isLast) {
+        current.children!.push({
+          name: part,
+          path: path,
+          type: 'file',
+          content: content,
+        } as FileEntry & { content: string });
+      } else {
+        let dir = current.children!.find(
+          (c) => c.type === 'directory' && c.name === part,
+        );
+        if (!dir) {
+          dir = { name: part, path: parts.slice(0, i + 1).join('/'), type: 'directory', children: [] };
+          current.children!.push(dir);
+        }
+        current = dir;
+      }
+    }
+  }
+
+  // Sort: directories first, then alphabetical
+  function sortTree(entries: FileEntry[]): void {
+    entries.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const e of entries) {
+      if (e.children) sortTree(e.children);
+    }
+  }
+
+  sortTree(root.children!);
+  return root.children!;
 }
