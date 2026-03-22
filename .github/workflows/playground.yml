@@ -33,14 +33,18 @@ jobs:
         with:
           version: 3.1.51
 
-      - name: Setup GHC + Cabal (bootstrap)
+      - name: Setup GHC + Cabal + Stack (bootstrap)
         uses: haskell-actions/setup@v2
         with:
           ghc-version: '9.10'
           cabal-version: '3.16'
+          enable-stack: true
+          stack-version: 'latest'
 
-      - name: Install hpack
-        run: cabal install hpack --overwrite-policy=always
+      - name: Install build tools
+        run: |
+          cabal update
+          cabal install hpack alex happy --overwrite-policy=always
 
       # ── Cache GHC JS cross-compiler ──────────────────────────────────
 
@@ -50,15 +54,14 @@ jobs:
         with:
           path: |
             ~/ghc-js-build/_build/stage1
-          key: ghcjs-9.12-emsdk-3.1.51-${{ runner.os }}
+          key: ghcjs-head-emsdk-3.1.51-${{ runner.os }}
           restore-keys: |
-            ghcjs-9.12-emsdk-3.1.51-
+            ghcjs-head-emsdk-3.1.51-
 
       - name: Build GHC JS cross-compiler
         if: steps.cache-ghcjs.outputs.cache-hit != 'true'
         run: |
           git clone --recurse-submodules --depth=1 \
-            --branch ghc-9.12 \
             https://gitlab.haskell.org/ghc/ghc.git ~/ghc-js-build
           cd ~/ghc-js-build
           ./boot
@@ -69,7 +72,7 @@ jobs:
           GHC_PKG=~/ghc-js-build/_build/stage1/bin/javascript-unknown-ghcjs-ghc-pkg
           BASE_ID=$($GHC_PKG field base id 2>/dev/null | awk '{print $2}')
           if [ -n "$BASE_ID" ] && ! grep -q "base unit-id" ~/ghc-js-build/_build/stage1/lib/settings; then
-            sed -i "s/\]$/,(\"base unit-id\", \"$BASE_ID\")\n]/" ~/ghc-js-build/_build/stage1/lib/settings
+            sed -i "s/\]$/,\(\"base unit-id\", \"$BASE_ID\"\)\n]/" ~/ghc-js-build/_build/stage1/lib/settings
           fi
 
           # Symlink ghc-pkg for cabal discovery
@@ -93,10 +96,33 @@ jobs:
       # ── Build Koka for JS ────────────────────────────────────────────
 
       - name: Generate cabal file
-        run: hpack
+        run: |
+          export PATH=$HOME/.cabal/bin:$PATH
+          hpack
 
-      - name: Update cabal index
-        run: cabal update
+      - name: Setup cabal for JS cross-compilation
+        run: |
+          cabal update
+          # Create cabal.project.local with head.hackage for GHC HEAD compatibility
+          cat > cabal.project.local << 'CABALEOF'
+          repository head.hackage.ghc.haskell.org
+             url: https://ghc.gitlab.haskell.org/head.hackage/
+             secure: True
+             key-threshold: 3
+             root-keys:
+                 26021a13b401500c8eb2761ca95c61f2d625bfef951b939a8124ed12ecf07329
+                 7541f32a4ccca4f97aea3b22f5e593ba2c0267546016b992dfadcd2fe944e55d
+                 f76d08be13e9a61a377a85e2fb63f4c5435d40f8feb3e12eb05905edb8cdea89
+          allow-newer:
+            Cabal, base, binary, bytestring, containers, deepseq,
+            ghc, ghc-bignum, ghc-boot, ghc-boot-th, ghc-prim,
+            integer-gmp, template-haskell, text, time
+          constraints:
+            base installed, ghc installed, ghc-bignum installed,
+            ghc-prim installed, integer-gmp installed, template-haskell installed
+          constraints: hashable ==1.4.7.0
+          CABALEOF
+          cabal update  # re-update to pick up head.hackage
 
       - name: Build Koka library + playground
         run: |
@@ -111,13 +137,12 @@ jobs:
 
       # ── Precompile std library ───────────────────────────────────────
 
-      - name: Build native Koka (for precompiling stdlib)
+      - name: Build native Koka + precompile stdlib
         run: |
-          cabal build exe:koka-plain
-
-      - name: Precompile std library
-        run: |
-          KOKA=$(cabal list-bin koka-plain)
+          # Build native koka-plain using stack (avoids conflict with JS cabal config)
+          stack build koka:exe:koka-plain --fast --no-terminal
+          KOKA=$(stack exec -- which koka-plain)
+          mkdir -p precompiled
           $KOKA --target=js --outputdir=precompiled --library lib/std/core.kk
 
       # ── Build web frontend ───────────────────────────────────────────
