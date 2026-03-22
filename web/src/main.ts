@@ -293,7 +293,7 @@ const fileBrowser = new FileBrowser(elFileBrowserTree, {
     // Handle the web-compatible all.kk
     if (path === 'all-web') {
       await preloadSamplesDirectory(path);
-      openFile('all.kk', ALL_WEB_SAMPLE, 'all (web).kk');
+      openFile('all.kk', ALL_WEB_SAMPLE, 'all.kk');
       return;
     }
     // If opening a sample, preload sibling samples into VFS for module resolution
@@ -435,7 +435,7 @@ void loadKokaSamples()
   .then((entries) => {
     // Add our web-compatible all.kk at the top
     const allEntry: FileEntry = {
-      name: 'all (web).kk',
+      name: 'all.kk',
       path: 'all-web',
       type: 'file',
       // Content provided inline, no download_url needed
