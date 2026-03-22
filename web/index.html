@@ -36,6 +36,7 @@
       overflow: hidden;
     }
 
+    /* ── App shell ── */
     #app {
       display: flex;
       flex-direction: column;
@@ -53,6 +54,7 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
       height: 44px;
+      z-index: 10;
     }
 
     #toolbar .logo {
@@ -83,20 +85,34 @@
       white-space: nowrap;
     }
 
-    #btn-run:hover:not(:disabled) {
-      background: var(--accent-hover);
+    #btn-run:hover:not(:disabled) { background: var(--accent-hover); }
+    #btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
+    #btn-run .icon { font-size: 11px; }
+
+    /* ── File browser toggle ── */
+    #btn-filebrowser {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
     }
 
-    #btn-run:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    #btn-filebrowser:hover,
+    #btn-filebrowser.active {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
     }
 
-    #btn-run .icon {
-      font-size: 11px;
-    }
-
-    /* ── Toolbar controls (verbose, log-vfs) ── */
+    /* ── Toolbar controls ── */
     .toolbar-label {
       display: flex;
       align-items: center;
@@ -150,11 +166,234 @@
 
     .spacer { flex: 1; }
 
-    /* ── Main split pane ── */
-    #main {
+    /* ── Workspace (below toolbar, above compiler log) ── */
+    #workspace {
       display: flex;
+      flex-direction: row;
       flex: 1;
       overflow: hidden;
+      min-height: 0;
+    }
+
+    /* ── File browser sidebar ── */
+    #file-browser-panel {
+      display: flex;
+      flex-direction: column;
+      width: 220px;
+      min-width: 140px;
+      max-width: 400px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: width 0.2s ease;
+    }
+
+    #file-browser-panel.collapsed {
+      width: 0 !important;
+      min-width: 0;
+      border-right: none;
+    }
+
+    #file-browser-panel .panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 8px 12px 6px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    #file-browser-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* ── File browser tree styles ── */
+    .file-browser {
+      width: 100%;
+    }
+
+    .fb-section {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .fb-section-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      user-select: none;
+      background: var(--bg-secondary);
+    }
+
+    .fb-section-header:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .fb-arrow {
+      font-size: 10px;
+      width: 12px;
+      text-align: center;
+    }
+
+    .fb-section-title {
+      flex: 1;
+    }
+
+    .fb-empty {
+      padding: 4px 16px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .fb-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      font-size: 12px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      user-select: none;
+    }
+
+    .fb-item-clickable {
+      cursor: pointer;
+    }
+
+    .fb-item-clickable:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .fb-item-dir {
+      cursor: pointer;
+    }
+
+    .fb-item-dir:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .fb-item-icon {
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .fb-item-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    /* ── Editor area (middle) ── */
+    #editor-area {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* ── Tab bar ── */
+    #tab-bar {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      height: 35px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    #tab-bar::-webkit-scrollbar {
+      height: 3px;
+    }
+
+    #tab-bar::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    #tab-bar::-webkit-scrollbar-thumb {
+      background: var(--border);
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+      user-select: none;
+      transition: color 0.1s;
+      min-width: 80px;
+      max-width: 180px;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    .tab.active {
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .tab-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .tab-close {
+      font-size: 14px;
+      line-height: 1;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity 0.1s;
+      flex-shrink: 0;
+      border-radius: 2px;
+      padding: 1px 2px;
+    }
+
+    .tab:hover .tab-close,
+    .tab.active .tab-close {
+      opacity: 1;
+    }
+
+    .tab-close:hover {
+      color: var(--error);
+      background: rgba(244, 67, 54, 0.15);
+    }
+
+    /* ── Editor panels row (source | handle | output) ── */
+    #editor-panels {
+      display: flex;
+      flex-direction: row;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
     }
 
     /* ── Left pane: Koka source ── */
@@ -163,15 +402,34 @@
       flex-direction: column;
       width: 50%;
       min-width: 200px;
-      border-right: 1px solid var(--border);
     }
 
-    /* ── Right pane: output split ── */
+    /* ── Right pane: JS output + program output ── */
     #pane-output {
       display: flex;
       flex-direction: column;
       flex: 1;
       min-width: 150px;
+      overflow: hidden;
+    }
+
+    /* ── JS output sub-pane (top-right) ── */
+    #pane-js {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 80px;
+      overflow: hidden;
+    }
+
+    /* ── Execution output sub-pane (bottom-right) ── */
+    #pane-console {
+      display: flex;
+      flex-direction: column;
+      height: 180px;
+      min-height: 60px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
     }
 
     /* ── Pane header labels ── */
@@ -196,34 +454,6 @@
       flex: 1;
       overflow: hidden;
       position: relative;
-    }
-
-    /* ── JS output pane (top-right) ── */
-    #pane-js {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      border-bottom: 1px solid var(--border);
-      min-height: 80px;
-    }
-
-    /* ── Execution output pane (bottom-right) ── */
-    #pane-console {
-      display: flex;
-      flex-direction: column;
-      height: 200px;
-      min-height: 60px;
-      flex-shrink: 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    /* ── Compiler log pane (bottom of right column) ── */
-    #pane-compiler-log {
-      display: flex;
-      flex-direction: column;
-      height: 150px;
-      min-height: 40px;
-      flex-shrink: 0;
     }
 
     /* ── Console / log output areas ── */
@@ -270,8 +500,8 @@
       height: 0;
     }
 
-    /* ── Resize handle ── */
-    #resize-handle {
+    /* ── Horizontal resize handle (source | output split) ── */
+    #resize-handle-h {
       width: 4px;
       background: var(--border);
       cursor: col-resize;
@@ -279,7 +509,99 @@
       transition: background 0.15s;
     }
 
-    #resize-handle:hover, #resize-handle.dragging {
+    #resize-handle-h:hover,
+    #resize-handle-h.dragging {
+      background: var(--accent);
+    }
+
+    /* ── Vertical resize handle (JS output | console split) ── */
+    #resize-handle-v {
+      height: 4px;
+      background: var(--border);
+      cursor: row-resize;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    #resize-handle-v:hover,
+    #resize-handle-v.dragging {
+      background: var(--accent);
+    }
+
+    /* ── File-browser resize handle ── */
+    #resize-handle-fb {
+      width: 4px;
+      background: var(--border);
+      cursor: col-resize;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    #resize-handle-fb:hover,
+    #resize-handle-fb.dragging {
+      background: var(--accent);
+    }
+
+    /* ── Compiler log bottom bar ── */
+    #compiler-log-area {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      background: #1a1a2e;
+    }
+
+    #compiler-log-area.collapsed #compiler-log-body {
+      display: none;
+    }
+
+    #compiler-log-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+      height: 26px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #compiler-log-toggle:hover {
+      color: var(--text-primary);
+      background: var(--bg-tertiary);
+    }
+
+    #compiler-log-toggle-arrow {
+      font-size: 10px;
+    }
+
+    #compiler-log-body {
+      display: flex;
+      flex-direction: column;
+      height: 120px;
+      min-height: 40px;
+      overflow: hidden;
+    }
+
+    /* ── Compiler log vertical resize handle ── */
+    #resize-handle-log {
+      height: 4px;
+      background: var(--border);
+      cursor: row-resize;
+      flex-shrink: 0;
+      order: -1; /* sits above the log body */
+      transition: background 0.15s;
+    }
+
+    #resize-handle-log:hover,
+    #resize-handle-log.dragging {
       background: var(--accent);
     }
   </style>
@@ -288,16 +610,23 @@
   <div id="app">
     <!-- Toolbar -->
     <div id="toolbar">
+      <!-- File browser toggle -->
+      <button id="btn-filebrowser" title="Toggle file browser (Ctrl+B)" class="active">&#x2630;</button>
+
       <span class="logo">Koka <span>Playground</span></span>
+
       <button id="btn-run" title="Compile and run the program (Ctrl+Enter)">
         <span class="icon">&#x25B6;</span>
         Compile &amp; Run
       </button>
+
       <div id="status">
         <span id="status-dot" class="loading"></span>
         <span id="status-text">Loading compiler…</span>
       </div>
+
       <div class="spacer"></div>
+
       <!-- Verbose level -->
       <label class="toolbar-label" title="Compiler verbosity level">
         Verbose:
@@ -308,6 +637,7 @@
           <option value="3">3 (trace)</option>
         </select>
       </label>
+
       <!-- Log VFS -->
       <label class="toolbar-label" title="Log VFS file hits and misses to the compiler log">
         <input type="checkbox" id="log-vfs" />
@@ -315,36 +645,72 @@
       </label>
     </div>
 
-    <!-- Main area -->
-    <div id="main">
-      <!-- Left: Koka source editor -->
-      <div id="pane-source">
-        <div class="pane-header">Koka Source</div>
-        <div class="editor-container" id="editor-source"></div>
+    <!-- Workspace: file browser + editor area -->
+    <div id="workspace">
+
+      <!-- File browser sidebar -->
+      <div id="file-browser-panel">
+        <div class="panel-title">Explorer</div>
+        <div id="file-browser-scroll">
+          <div id="file-browser-tree"></div>
+        </div>
       </div>
 
-      <!-- Drag handle -->
-      <div id="resize-handle"></div>
+      <!-- File browser <-> editor resize handle -->
+      <div id="resize-handle-fb"></div>
 
-      <!-- Right: JS output + execution output + compiler log -->
-      <div id="pane-output">
-        <!-- Top-right: compiled JS -->
-        <div id="pane-js">
-          <div class="pane-header">Compiled JavaScript</div>
-          <div class="editor-container" id="editor-js"></div>
+      <!-- Editor area: tabs + panels -->
+      <div id="editor-area">
+        <!-- Tab bar -->
+        <div id="tab-bar">
+          <!-- Tabs are injected here by main.ts -->
         </div>
 
-        <!-- Middle-right: execution output -->
-        <div id="pane-console">
-          <div class="pane-header">Execution Output</div>
-          <div id="console-output"></div>
-        </div>
+        <!-- Editor panels row -->
+        <div id="editor-panels">
+          <!-- Left: Koka source editor -->
+          <div id="pane-source">
+            <div class="editor-container" id="editor-source"></div>
+          </div>
 
-        <!-- Bottom-right: compiler log -->
-        <div id="pane-compiler-log">
-          <div class="pane-header">Compiler Log</div>
-          <div id="compiler-log-output"></div>
+          <!-- Horizontal drag handle -->
+          <div id="resize-handle-h"></div>
+
+          <!-- Right: JS output + execution output (vertically split) -->
+          <div id="pane-output">
+            <!-- Top-right: compiled JS -->
+            <div id="pane-js">
+              <div class="pane-header">Compiled JavaScript</div>
+              <div class="editor-container" id="editor-js"></div>
+            </div>
+
+            <!-- Vertical drag handle -->
+            <div id="resize-handle-v"></div>
+
+            <!-- Bottom-right: execution output -->
+            <div id="pane-console">
+              <div class="pane-header">Execution Output</div>
+              <div id="console-output"></div>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Compiler log — full width, collapsible bottom bar -->
+    <div id="compiler-log-area">
+      <!-- Resize handle (drag to change height) -->
+      <div id="resize-handle-log"></div>
+
+      <!-- Toggle bar -->
+      <div id="compiler-log-toggle">
+        <span id="compiler-log-toggle-arrow">▾</span>
+        Compiler Log
+      </div>
+
+      <!-- Log body -->
+      <div id="compiler-log-body">
+        <div id="compiler-log-output"></div>
       </div>
     </div>
   </div>

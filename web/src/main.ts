@@ -13,6 +13,7 @@
  *  - Poll for globalThis.kokaCompile and enable the run button when ready
  *  - Wire up "Compile & Run" using the actual compiler pipeline
  *  - Capture and display execution output via blob-URL ES module execution
+ *  - Manage the file browser, tab bar, and resizable panels
  */
 
 import * as monaco from 'monaco-editor';
@@ -23,6 +24,8 @@ import {
   type KokaLanguageService,
 } from './lsp-adapter';
 import { runKokaModules } from './module-runner';
+import { FileBrowser, type FileEntry } from './file-browser';
+import { loadKokaSamples } from './github-integration';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,8 +47,6 @@ declare global {
 // ── Emscripten Module setup ───────────────────────────────────────────────────
 //
 // Must be set BEFORE all.js (loaded by the hosting page) runs.
-// We create it here so that when the hosting page's <script src="all.js"> fires
-// it already finds globalThis.Module with the right callbacks.
 //
 globalThis.Module = {
   print:    (text: string) => appendCompilerLog('[stdout] ' + text),
@@ -62,15 +63,24 @@ fun main()
 
 // ── DOM references ────────────────────────────────────────────────────────────
 
-const elSourceContainer = document.getElementById('editor-source')!;
-const elJsContainer     = document.getElementById('editor-js')!;
-const elConsole         = document.getElementById('console-output')!;
-const elCompilerLog     = document.getElementById('compiler-log-output')!;
-const elBtnRun          = document.getElementById('btn-run') as HTMLButtonElement;
-const elStatusDot       = document.getElementById('status-dot')!;
-const elStatusText      = document.getElementById('status-text')!;
-const elVerboseSelect   = document.getElementById('verbose-level') as HTMLSelectElement;
-const elLogVfsCheckbox  = document.getElementById('log-vfs') as HTMLInputElement;
+const elSourceContainer    = document.getElementById('editor-source')!;
+const elJsContainer        = document.getElementById('editor-js')!;
+const elConsole            = document.getElementById('console-output')!;
+const elCompilerLog        = document.getElementById('compiler-log-output')!;
+const elBtnRun             = document.getElementById('btn-run') as HTMLButtonElement;
+const elStatusDot          = document.getElementById('status-dot')!;
+const elStatusText         = document.getElementById('status-text')!;
+const elVerboseSelect      = document.getElementById('verbose-level') as HTMLSelectElement;
+const elLogVfsCheckbox     = document.getElementById('log-vfs') as HTMLInputElement;
+const elTabBar             = document.getElementById('tab-bar')!;
+const elBtnFileBrowser     = document.getElementById('btn-filebrowser') as HTMLButtonElement;
+const elFileBrowserPanel   = document.getElementById('file-browser-panel')!;
+const elFileBrowserTree    = document.getElementById('file-browser-tree')!;
+const elCompilerLogArea    = document.getElementById('compiler-log-area')!;
+const elCompilerLogToggle  = document.getElementById('compiler-log-toggle')!;
+const elCompilerLogBody    = document.getElementById('compiler-log-body')!;
+const elCompilerLogArrow   = document.getElementById('compiler-log-toggle-arrow')!;
+const elResizeHandleLog    = document.getElementById('resize-handle-log')!;
 
 // ── Status helper ─────────────────────────────────────────────────────────────
 
@@ -107,6 +117,11 @@ function clearCompilerLog(): void {
 function appendCompilerLog(msg: string): void {
   elCompilerLog.textContent += msg + '\n';
   elCompilerLog.scrollTop = elCompilerLog.scrollHeight;
+  // Auto-expand the log when there's output
+  if (elCompilerLogArea.classList.contains('collapsed')) {
+    elCompilerLogArea.classList.remove('collapsed');
+    elCompilerLogArrow.textContent = '▾';
+  }
 }
 
 // Register the compiler log callback so the compiler can stream messages
@@ -119,25 +134,224 @@ globalThis.kokaOnCompilerLog = (msg: string) => {
 const vfs = new KokaVFS();
 vfs.install();
 
-// Keep VFS logVfs in sync with the checkbox
 if (elLogVfsCheckbox) {
   elLogVfsCheckbox.addEventListener('change', () => {
     vfs.logVfs = elLogVfsCheckbox.checked;
   });
 }
 
+// ── Tab management ────────────────────────────────────────────────────────────
+
+interface TabEntry {
+  id: string;
+  name: string;
+  path: string;
+  model: monaco.editor.ITextModel;
+}
+
+const openTabs = new Map<string, TabEntry>();
+let activeTabId: string | null = null;
+
+/** Generate a unique tab ID */
+function makeTabId(): string {
+  return 'tab-' + Math.random().toString(36).slice(2, 9);
+}
+
+/** Create a new tab (or switch to existing one with same path) */
+function openFile(path: string, content: string, name: string): void {
+  // Check if already open by path
+  for (const tab of openTabs.values()) {
+    if (tab.path === path) {
+      switchTab(tab.id);
+      return;
+    }
+  }
+
+  const id = makeTabId();
+  const uri = monaco.Uri.parse(`koka://playground/${path}`);
+  let model = monaco.editor.getModel(uri);
+  if (!model) {
+    const language = path.endsWith('.kk') || path.endsWith('.kki')
+      ? KOKA_LANGUAGE_ID
+      : 'plaintext';
+    model = monaco.editor.createModel(content, language, uri);
+  } else {
+    model.setValue(content);
+  }
+
+  openTabs.set(id, { id, name, path, model });
+  renderTabs();
+  switchTab(id);
+}
+
+/** Close a tab by ID */
+function closeTab(id: string): void {
+  const tab = openTabs.get(id);
+  if (!tab) return;
+
+  // Don't destroy the model if it's the default tab — just reset content
+  openTabs.delete(id);
+
+  if (activeTabId === id) {
+    // Switch to another tab, or create a fallback
+    const remaining = [...openTabs.keys()];
+    if (remaining.length > 0) {
+      switchTab(remaining[remaining.length - 1]);
+    } else {
+      // Reopen default
+      openFile('main.kk', DEFAULT_SOURCE, 'main.kk');
+      return; // openFile calls renderTabs + switchTab
+    }
+  }
+
+  renderTabs();
+}
+
+/** Switch editor to the given tab */
+function switchTab(id: string): void {
+  const tab = openTabs.get(id);
+  if (!tab) return;
+  activeTabId = id;
+
+  if (sourceEditor) {
+    sourceEditor.setModel(tab.model);
+  }
+
+  renderTabs();
+}
+
+/** Re-render the tab bar DOM */
+function renderTabs(): void {
+  elTabBar.innerHTML = '';
+  for (const tab of openTabs.values()) {
+    const tabEl = document.createElement('div');
+    tabEl.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+    tabEl.setAttribute('data-tab-id', tab.id);
+    tabEl.setAttribute('title', tab.path);
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'tab-name';
+    nameEl.textContent = tab.name;
+
+    const closeEl = document.createElement('span');
+    closeEl.className = 'tab-close';
+    closeEl.textContent = '×';
+    closeEl.setAttribute('title', 'Close tab');
+
+    closeEl.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation();
+      closeTab(tab.id);
+    });
+
+    tabEl.appendChild(nameEl);
+    tabEl.appendChild(closeEl);
+
+    tabEl.addEventListener('click', () => { switchTab(tab.id); });
+
+    elTabBar.appendChild(tabEl);
+  }
+}
+
+// ── File browser setup ────────────────────────────────────────────────────────
+
+const fileBrowser = new FileBrowser(elFileBrowserTree, {
+  onFileSelect: (path, content, name) => {
+    openFile(path, content, name);
+  },
+});
+
+// Placeholder samples section
+fileBrowser.addSection('Samples', []);
+fileBrowser.addSection('Open Files', []);
+fileBrowser.addSection('VFS', []);
+
+// Load samples from GitHub asynchronously
+void loadKokaSamples()
+  .then((entries) => {
+    fileBrowser.updateSection('Samples', entries);
+  })
+  .catch(() => {
+    fileBrowser.updateSection('Samples', [
+      { name: 'hello.kk', path: 'samples/hello.kk', type: 'file' },
+      { name: 'fibonacci.kk', path: 'samples/fibonacci.kk', type: 'file' },
+    ]);
+  });
+
+/** Refresh the Open Files section in the file browser */
+function refreshOpenFilesSection(): void {
+  const entries: FileEntry[] = [];
+  for (const tab of openTabs.values()) {
+    entries.push({ name: tab.name, path: tab.path, type: 'file' });
+  }
+  fileBrowser.updateSection('Open Files', entries);
+}
+
+/** Refresh the VFS section in the file browser (debug listing) */
+function refreshVfsSection(): void {
+  const written = vfs.getWrittenFiles();
+  const entries: FileEntry[] = [];
+  for (const [path] of written) {
+    const name = path.split('/').pop() ?? path;
+    // Only show interesting files to keep the list manageable
+    if (path.endsWith('.kk') || path.endsWith('.mjs') || path.endsWith('.kki')) {
+      entries.push({ name, path, type: 'file' });
+    }
+  }
+  fileBrowser.updateSection('VFS', entries);
+}
+
+// ── File browser toggle ───────────────────────────────────────────────────────
+
+function setFileBrowserVisible(visible: boolean): void {
+  if (visible) {
+    elFileBrowserPanel.classList.remove('collapsed');
+    elBtnFileBrowser.classList.add('active');
+  } else {
+    elFileBrowserPanel.classList.add('collapsed');
+    elBtnFileBrowser.classList.remove('active');
+  }
+  // Trigger Monaco layout update after transition
+  setTimeout(() => {
+    sourceEditor?.layout();
+    jsEditor?.layout();
+  }, 220);
+}
+
+elBtnFileBrowser.addEventListener('click', () => {
+  const isVisible = !elFileBrowserPanel.classList.contains('collapsed');
+  setFileBrowserVisible(!isVisible);
+});
+
+// ── Compiler log collapse/expand ──────────────────────────────────────────────
+
+elCompilerLogToggle.addEventListener('click', () => {
+  const collapsed = elCompilerLogArea.classList.toggle('collapsed');
+  elCompilerLogArrow.textContent = collapsed ? '▸' : '▾';
+  // Give Monaco a moment to adapt
+  setTimeout(() => {
+    sourceEditor?.layout();
+    jsEditor?.layout();
+  }, 50);
+});
+
 // ── Main async initialisation ─────────────────────────────────────────────────
+
+// These are used before the async block below, so we declare them here.
+// eslint-disable-next-line prefer-const
+let sourceEditor: monaco.editor.IStandaloneCodeEditor = null!;
+// eslint-disable-next-line prefer-const
+let jsEditor: monaco.editor.IStandaloneCodeEditor = null!;
 
 void (async () => {
   // Register the Koka language before creating editors
   await registerKokaLanguage(monaco);
 
-  // ── LSP adapter (scaffold — Haskell functions not yet wired up) ───────────
+  // ── LSP adapter (scaffold) ─────────────────────────────────────────────
   const kokaService: KokaLanguageService = {};
   registerLanguageProviders(monaco, KOKA_LANGUAGE_ID, kokaService);
   globalThis.kokaService = kokaService;
 
-  // ── Editor options ─────────────────────────────────────────────────────────
+  // ── Editor options ─────────────────────────────────────────────────────
 
   const EDITOR_COMMON_OPTIONS: monaco.editor.IEditorConstructionOptions = {
     theme: 'vs-dark',
@@ -153,7 +367,7 @@ void (async () => {
     automaticLayout: true,
   };
 
-  const sourceEditor = monaco.editor.create(elSourceContainer, {
+  sourceEditor = monaco.editor.create(elSourceContainer, {
     ...EDITOR_COMMON_OPTIONS,
     value: DEFAULT_SOURCE,
     language: KOKA_LANGUAGE_ID,
@@ -162,7 +376,7 @@ void (async () => {
     wordWrap: 'off',
   });
 
-  const jsEditor = monaco.editor.create(elJsContainer, {
+  jsEditor = monaco.editor.create(elJsContainer, {
     ...EDITOR_COMMON_OPTIONS,
     value: '',
     language: 'javascript',
@@ -172,18 +386,30 @@ void (async () => {
     scrollBeyondLastLine: false,
   });
 
-  // ── Keyboard shortcut: Ctrl+Enter / Cmd+Enter to compile & run ─────────────
+  // ── Open default tab ───────────────────────────────────────────────────
+  //
+  // We must create the tab after sourceEditor exists so switchTab can call
+  // sourceEditor.setModel().
+  openFile('main.kk', DEFAULT_SOURCE, 'main.kk');
+
+  // ── Keyboard shortcut: Ctrl+Enter / Cmd+Enter to compile & run ─────────
 
   sourceEditor.addCommand(
     monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
     () => { void compileAndRun(); },
   );
 
-  // ── Preloading ─────────────────────────────────────────────────────────────
-  //
-  // We detect the base URL from the current page location.  When the hosting
-  // page is the koka-playground.jsexe/index.html the manifests live alongside
-  // it; when using the Vite dev server the manifests are served from public/.
+  // ── Ctrl+B to toggle file browser ──────────────────────────────────────
+
+  sourceEditor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB,
+    () => {
+      const isVisible = !elFileBrowserPanel.classList.contains('collapsed');
+      setFileBrowserVisible(!isVisible);
+    },
+  );
+
+  // ── Preloading ─────────────────────────────────────────────────────────
 
   elBtnRun.disabled = true;
   setStatus('loading', 'Loading stdlib…');
@@ -206,10 +432,7 @@ void (async () => {
 
   setStatus('loading', 'Waiting for compiler…');
 
-  // ── Compiler availability polling ──────────────────────────────────────────
-  //
-  // all.js is loaded by the hosting page via a <script> tag.  We poll until
-  // globalThis.kokaCompile becomes available.
+  // ── Compiler availability polling ──────────────────────────────────────
 
   function watchCompilerReady(): void {
     const check = (): void => {
@@ -226,7 +449,7 @@ void (async () => {
 
   watchCompilerReady();
 
-  // ── Compile ────────────────────────────────────────────────────────────────
+  // ── Compile ────────────────────────────────────────────────────────────
 
   /**
    * Invoke the Koka compiler on the current editor source.
@@ -238,23 +461,16 @@ void (async () => {
       return null;
     }
 
-    // Apply verbose level from toolbar
     globalThis.kokaVerbose = parseInt(elVerboseSelect?.value ?? '1', 10) || 0;
 
-    // Clear previous compilation artifacts from VFS
     vfs.clearGenerated();
-
-    // Reset the result slot
     globalThis.kokaResult = undefined;
 
-    // Derive module name from "module <name>" declaration or fall back to "main"
     const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
     const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
 
-    // Kick off compilation (async — spawns Haskell thread internally)
     globalThis.kokaCompile(moduleName, sourceText);
 
-    // Poll for result (set by the compiler on globalThis.kokaResult)
     const resultJson = await new Promise<string>((resolve, reject) => {
       let elapsed = 0;
       const poll = setInterval(() => {
@@ -288,13 +504,8 @@ void (async () => {
     return moduleName;
   }
 
-  // ── Run ────────────────────────────────────────────────────────────────────
+  // ── Run ────────────────────────────────────────────────────────────────
 
-  /**
-   * Execute the compiled ES modules.
-   * Collects generated .mjs from VFS plus precompiled stdlib .mjs, then
-   * runs them via blob-URL dynamic imports.
-   */
   async function run(moduleName: string): Promise<void> {
     const generatedMjs = vfs.getGeneratedMjs();
 
@@ -303,7 +514,6 @@ void (async () => {
       return;
     }
 
-    // Show the main generated module in the JS editor
     for (const [path, code] of generatedMjs) {
       const filename = path.split('/').pop() ?? path;
       if (filename === moduleName + '.mjs' || filename === 'main.mjs') {
@@ -323,9 +533,12 @@ void (async () => {
       (text) => appendConsole(text, 'stdout'),
       (text) => appendConsole(text, 'stderr'),
     );
+
+    // Refresh VFS section after compilation
+    refreshVfsSection();
   }
 
-  // ── Compile & Run ──────────────────────────────────────────────────────────
+  // ── Compile & Run ──────────────────────────────────────────────────────
 
   async function compileAndRun(): Promise<void> {
     if (elBtnRun.disabled) return;
@@ -335,6 +548,7 @@ void (async () => {
     elBtnRun.disabled = true;
     setStatus('running', 'Compiling…');
 
+    // Always compile from the active tab's content
     const sourceText = sourceEditor.getValue();
 
     try {
@@ -360,19 +574,19 @@ void (async () => {
     elBtnRun.disabled = false;
   }
 
-  // ── Button handler ─────────────────────────────────────────────────────────
+  // ── Button handler ─────────────────────────────────────────────────────
 
   elBtnRun.addEventListener('click', () => { void compileAndRun(); });
 
-  // ── Drag-to-resize panes ───────────────────────────────────────────────────
+  // ── Drag-to-resize: horizontal (source | output) ───────────────────────
 
-  (function setupResizeHandle(): void {
-    const handle     = document.getElementById('resize-handle')!;
+  (function setupHorizontalResize(): void {
+    const handle     = document.getElementById('resize-handle-h')!;
     const paneSource = document.getElementById('pane-source')!;
-    const main       = document.getElementById('main')!;
+    const panels     = document.getElementById('editor-panels')!;
 
-    let dragging = false;
-    let startX = 0;
+    let dragging   = false;
+    let startX     = 0;
     let startWidth = 0;
 
     handle.addEventListener('mousedown', (e: MouseEvent) => {
@@ -387,7 +601,7 @@ void (async () => {
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!dragging) return;
-      const totalWidth = main.getBoundingClientRect().width;
+      const totalWidth = panels.getBoundingClientRect().width;
       const delta      = e.clientX - startX;
       const newWidth   = Math.min(
         Math.max(startWidth + delta, 200),
@@ -406,4 +620,131 @@ void (async () => {
       document.body.style.userSelect = '';
     });
   })();
+
+  // ── Drag-to-resize: vertical (JS output | console) ────────────────────
+
+  (function setupVerticalResize(): void {
+    const handle     = document.getElementById('resize-handle-v')!;
+    const paneConsole = document.getElementById('pane-console')!;
+    const paneOutput  = document.getElementById('pane-output')!;
+
+    let dragging    = false;
+    let startY      = 0;
+    let startHeight = 0;
+
+    handle.addEventListener('mousedown', (e: MouseEvent) => {
+      dragging    = true;
+      startY      = e.clientY;
+      startHeight = paneConsole.getBoundingClientRect().height;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!dragging) return;
+      const totalHeight = paneOutput.getBoundingClientRect().height;
+      const delta       = startY - e.clientY;
+      const newHeight   = Math.min(
+        Math.max(startHeight + delta, 60),
+        totalHeight - 80,
+      );
+      paneConsole.style.height = `${newHeight}px`;
+      jsEditor.layout();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
+
+  // ── Drag-to-resize: file browser width ────────────────────────────────
+
+  (function setupFileBrowserResize(): void {
+    const handle = document.getElementById('resize-handle-fb')!;
+    const panel  = document.getElementById('file-browser-panel')!;
+
+    let dragging   = false;
+    let startX     = 0;
+    let startWidth = 0;
+
+    handle.addEventListener('mousedown', (e: MouseEvent) => {
+      if (panel.classList.contains('collapsed')) return;
+      dragging   = true;
+      startX     = e.clientX;
+      startWidth = panel.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!dragging) return;
+      const delta    = e.clientX - startX;
+      const newWidth = Math.min(Math.max(startWidth + delta, 140), 500);
+      panel.style.width = `${newWidth}px`;
+      sourceEditor.layout();
+      jsEditor.layout();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
+
+  // ── Drag-to-resize: compiler log height ───────────────────────────────
+
+  (function setupCompilerLogResize(): void {
+    const handle  = elResizeHandleLog;
+    const logBody = elCompilerLogBody;
+
+    let dragging    = false;
+    let startY      = 0;
+    let startHeight = 0;
+
+    handle.addEventListener('mousedown', (e: MouseEvent) => {
+      if (elCompilerLogArea.classList.contains('collapsed')) return;
+      dragging    = true;
+      startY      = e.clientY;
+      startHeight = logBody.getBoundingClientRect().height;
+      handle.classList.add('dragging');
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!dragging) return;
+      const delta     = startY - e.clientY;
+      const newHeight = Math.min(Math.max(startHeight + delta, 40), 500);
+      logBody.style.height = `${newHeight}px`;
+      sourceEditor.layout();
+      jsEditor.layout();
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
+
+  // ── Keep "Open Files" section in sync with tabs ────────────────────────
+
+  // Use a MutationObserver on the tab bar to keep the file browser in sync
+  new MutationObserver(() => { refreshOpenFilesSection(); })
+    .observe(elTabBar, { childList: true });
+
 })();
