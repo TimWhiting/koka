@@ -118,27 +118,35 @@ async function setupTextMateTokenizer(monacoInstance: typeof Monaco): Promise<vo
 
 /** Map TextMate scope names to Monaco token types */
 function tmScopesToMonacoScope(scopes: string[]): string {
-  // Walk scopes from most specific to least, map to Monaco token types
+  // TextMate scopes can have multiple space-separated names per scope level.
+  // Check ALL scope names, preferring semantic scopes over punctuation.
+  // First pass: look for semantic tokens across all scopes
   for (let i = scopes.length - 1; i >= 0; i--) {
-    const scope = scopes[i];
-    if (scope.startsWith('comment')) return 'comment';
-    if (scope.startsWith('string')) return 'string';
-    if (scope.startsWith('constant.numeric')) return 'number';
-    if (scope.startsWith('constant.character')) return 'string.char';
-    if (scope.startsWith('keyword.control')) return 'keyword.control';
-    if (scope.startsWith('keyword.declaration') || scope.startsWith('keyword.other.declaration'))
-      return 'keyword.declaration';
-    if (scope.startsWith('keyword')) return 'keyword';
-    if (scope.startsWith('storage.type')) return 'type';
-    if (scope.startsWith('entity.name.function')) return 'entity.name.function';
-    if (scope.startsWith('entity.name.type')) return 'type.identifier';
-    if (scope.startsWith('entity.name.tag')) return 'type.identifier'; // constructors
-    if (scope.startsWith('entity.name')) return 'identifier';
-    if (scope.startsWith('variable.parameter')) return 'variable.parameter';
-    if (scope.startsWith('variable')) return 'variable';
-    if (scope.startsWith('support.type')) return 'type.identifier';
-    if (scope.startsWith('punctuation')) return 'delimiter';
-    if (scope.startsWith('meta.type')) return 'type';
+    const parts = scopes[i].split(/\s+/);
+    for (const scope of parts) {
+      if (scope.startsWith('comment')) return 'comment';
+      if (scope.startsWith('string')) return 'string';
+      if (scope.startsWith('constant.numeric')) return 'number';
+      if (scope.startsWith('constant.character')) return 'string.char';
+      if (scope.startsWith('keyword.control')) return 'keyword.control';
+      if (scope.startsWith('keyword.declaration') || scope.startsWith('keyword.other'))
+        return 'keyword.declaration';
+      if (scope.startsWith('keyword')) return 'keyword';
+      if (scope.startsWith('storage.type')) return 'type';
+      if (scope.startsWith('entity.name.function')) return 'entity.name.function';
+      if (scope.startsWith('entity.name.type')) return 'type.identifier';
+      if (scope.startsWith('entity.name.tag')) return 'type.identifier';
+      if (scope.startsWith('entity.name')) return 'identifier';
+      if (scope.startsWith('variable.parameter')) return 'variable.parameter';
+      if (scope.startsWith('variable')) return 'variable';
+      if (scope.startsWith('support.type')) return 'type.identifier';
+      if (scope.startsWith('markup.italic')) return 'comment';
+      if (scope.startsWith('meta.type')) return 'type';
+    }
+  }
+  // Second pass: punctuation (lowest priority)
+  for (let i = scopes.length - 1; i >= 0; i--) {
+    if (scopes[i].includes('punctuation')) return 'delimiter';
   }
   return '';
 }
