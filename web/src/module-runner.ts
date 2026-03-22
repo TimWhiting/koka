@@ -109,7 +109,27 @@ export async function runKokaModules(
     return;
   }
 
-  // ── Patch console to capture output ──────────────────────────────────────
+  // ── Set up output capture ────────────────────────────────────────────────
+  //
+  // Koka's std/core/console detects "browser" and writes to a DOM element
+  // (#koka-console-out) instead of console.log. We create a hidden element
+  // to capture that output, plus patch console.log for any direct calls.
+
+  // Create hidden capture element
+  let kokaConsoleOut = document.getElementById('koka-console-out');
+  const createdConsoleOut = !kokaConsoleOut;
+  if (!kokaConsoleOut) {
+    const konsolDiv = document.createElement('div');
+    konsolDiv.id = 'koka-console';
+    konsolDiv.style.display = 'none';
+    kokaConsoleOut = document.createElement('div');
+    kokaConsoleOut.id = 'koka-console-out';
+    konsolDiv.appendChild(kokaConsoleOut);
+    document.body.appendChild(konsolDiv);
+  }
+  kokaConsoleOut.innerHTML = '';
+
+  // Also patch console.log for any direct output
   const origLog   = console.log;
   const origError = console.error;
   const origWarn  = console.warn;
@@ -128,17 +148,14 @@ export async function runKokaModules(
   };
 
   try {
-    onOutput('');
-    onOutput('=== Output ===');
-    onOutput(`Loading ${Object.keys(blobUrls).length} modules...`);
     const mod = await import(/* @vite-ignore */ blobUrls[mainFilename]);
-    onOutput(`Module loaded. Exports: ${Object.keys(mod).join(', ')}`);
     if (typeof mod.main === 'function') {
-      onOutput('Calling main()...');
       await mod.main();
-      onOutput('main() returned.');
-    } else {
-      onOutput('No main() function found in module exports.');
+    }
+
+    // Collect output from the DOM element (Koka browser runtime writes there)
+    if (kokaConsoleOut && kokaConsoleOut.textContent) {
+      onOutput(kokaConsoleOut.textContent);
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -151,6 +168,10 @@ export async function runKokaModules(
     console.log   = origLog;
     console.error = origError;
     console.warn  = origWarn;
+    // Clean up the hidden console element
+    if (createdConsoleOut) {
+      document.getElementById('koka-console')?.remove();
+    }
     for (const url of Object.values(blobUrls)) URL.revokeObjectURL(url);
   }
 }
