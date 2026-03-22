@@ -182,19 +182,19 @@ export async function registerKokaLanguage(monaco: typeof Monaco): Promise<void>
 
         // fun / fn / ctl / ret + optional module path + name
         [
-          /((?:(?:inline|noinline)\s+)?(?:tail\s+)?(?:(?:fip|fbip)(?:\(\d+\))?\s+)?(?:fun|fn|ctl|ret))\s+((?:[@a-z][\w\-@]*\/#?)*)([@a-z][\w\-@]*'*)/,
+          /((?:(?:inline|noinline)\s+)?(?:tail\s+)?(?:(?:fip|fbip)(?:\(\d+\))?\s+)?(?:fun|fn|ctl|ret))\s+((?:[a-z@][\w\-]*\/#?)*)([a-z@][\w\-]*'*)/,
           ['keyword.declaration.function', 'entity.name.variable', 'entity.name.function'],
         ],
 
         // extern + optional module path + name
         [
-          /((?:(?:inline|noinline)\s+)?(?:(?:fip|fbip)\s+)?extern)\s+((?:[@a-z][\w\-@]*\/#?)*)([@a-z][\w\-@]*'*)?/,
+          /((?:(?:inline|noinline)\s+)?(?:(?:fip|fbip)\s+)?extern)\s+((?:[a-z@][\w\-]*\/#?)*)([a-z@][\w\-]*'*)?/,
           ['keyword.declaration.function', 'entity.name.variable', 'entity.name.function'],
         ],
 
         // val (top-level or inline) + name
         [
-          /((?:(?:inline|noinline)\s+)?val)\s+((?:[@a-z][\w\-@]*\/#?)*)([@a-z][\w\-@]*'*)?/,
+          /((?:(?:inline|noinline)\s+)?val)\s+((?:[a-z@][\w\-]*\/#?)*)([a-z@][\w\-]*'*)?/,
           ['keyword.declaration', 'entity.name.variable', 'entity.name.function'],
         ],
 
@@ -218,13 +218,13 @@ export async function registerKokaLanguage(monaco: typeof Monaco): Promise<void>
 
         // type / effect / struct / alias declarations — enter type-annotation state
         [
-          /((?:(?:value|reference|open|extend|rec|co|lazy(?:\s+tail)?(?:\s+(?:fip|fbip)(?:\(\d+\))?)?)?)\s*type|(?:named\s+)?(?:scoped\s+)?(?:linear\s+)?(?:rec\s+)?(?:effect|ambient))\s+(?!fn|fun|val|raw|final|ctl|ret)((?:[@a-z][\w\-@]*\/#?)*)(@?[a-z][\w\-@]*'*)/,
+          /((?:(?:value|reference|open|extend|rec|co|lazy(?:\s+tail)?(?:\s+(?:fip|fbip)(?:\(\d+\))?)?)?)\s*type|(?:named\s+)?(?:scoped\s+)?(?:linear\s+)?(?:rec\s+)?(?:effect|ambient))\s+(?!fn|fun|val|raw|final|ctl|ret)((?:[a-z@][\w\-]*\/#?)*)(@?[a-z][\w\-]*'*)/,
           ['keyword.declaration.type', 'entity.name.variable', 'support.type'],
         ],
 
         // struct <name>
         [
-          /((?:(?:value|ref)\s*)?struct)\s+((?:[@a-z][\w\-@]*\/#?)*)(@?[a-z][\w\-@]*'*)/,
+          /((?:(?:value|ref)\s*)?struct)\s+((?:[a-z@][\w\-]*\/#?)*)(@?[a-z][\w\-]*'*)/,
           ['keyword.declaration', 'entity.name.variable', 'support.type'],
         ],
 
@@ -263,22 +263,22 @@ export async function registerKokaLanguage(monaco: typeof Monaco): Promise<void>
         ],
 
         // ── Module-qualified constructor:  foo/bar/Baz ─────────────────
-        [/((?:[@a-z][\w\-@]*\/#?)+)(@?[A-Z][\w\-@]*'*)/, ['entity.name.variable', 'entity.name.tag']],
+        [/((?:[a-z@][\w\-]*\/#?)+)(@?[A-Z][\w\-]*'*)/, ['entity.name.variable', 'entity.name.tag']],
 
         // ── Module-qualified operator:  foo/bar/(++) ───────────────────
-        [/((?:[@a-z][\w\-@]*\/#?)+)(\([^\n\r)]+\))/, ['entity.name.variable', 'source.operator']],
+        [/((?:[a-z@][\w\-]*\/#?)+)(\([^\n\r)]+\))/, ['entity.name.variable', 'source.operator']],
 
         // ── Module-qualified identifier:  foo/bar/baz ──────────────────
-        [/([?]?(?:[@a-z][\w\-@]*\/#?)+)(@?[a-z][\w\-@]*'*)/, ['entity.name.variable', 'source']],
+        [/([?]?(?:[a-z@][\w\-]*\/#?)+)(@?[a-z][\w\-]*'*)/, ['entity.name.variable', 'source']],
 
         // ── Constructors (start with upper-case) ───────────────────────
-        [/@?[A-Z][\w\-@]*'*/, 'entity.name.tag'],
+        [/@?[A-Z][\w\-]*'*/, 'entity.name.tag'],
 
         // ── Wildcard ────────────────────────────────────────────────────
-        [/@?_[\w\-@]*'*/, 'source.wildcard'],
+        [/@?_[\w\-]*'*/, 'source.wildcard'],
 
         // ── Plain identifiers ───────────────────────────────────────────
-        [/@?[a-z][\w\-@]*'*/, 'source'],
+        [/@?[a-z][\w\-]*'*/, 'source'],
 
         // ── Reserved operators (from reservedop in the grammar) ─────────
         [/(=|=>|->|<-|\||\.+|::|:=)(?![$%&*+!/\\\^~=.:\-?|<>])/, 'keyword'],
@@ -366,7 +366,7 @@ export async function registerKokaLanguage(monaco: typeof Monaco): Promise<void>
         [/\b(forall|exists|some|with|in|iff|when|is|if)(?![\w\-])/, 'keyword.other'],
 
         // Module-qualified type name
-        [/([@a-z][\w\-@]*'*\/#?)+/, 'entity.name.variable'],
+        [/([a-z@][\w\-]*'*\/#?)+/, 'entity.name.variable'],
 
         // Type variable (lowercase single letter or _name)
         [/([_]?[a-z][0-9]*|_[\w\-]*'*|self)(?!\w)/, 'markup.italic'],
@@ -375,7 +375,7 @@ export async function registerKokaLanguage(monaco: typeof Monaco): Promise<void>
         [/[A-Z](?![\w\-])/, 'support.type'],
 
         // Named type identifier (lowercase, multi-char)
-        [/[$]?[@a-z][\w\-@]*'*/, 'support.type'],
+        [/[$]?[a-z@][\w\-]*'*/, 'support.type'],
 
         // Type-level punctuation
         [/[;,]|:(?!:)/, 'support.type'],
@@ -413,10 +413,10 @@ export async function registerKokaLanguage(monaco: typeof Monaco): Promise<void>
         [/[ \t]+/, 'support.type'],
         [/(->|::?|\.)(?![$%&*+@!\\\^~=.:\-?|<>])/, 'support.type'],
         [/\b(forall|exists|some|with|in|iff|when|is|if)(?![\w\-])/, 'keyword.other'],
-        [/([@a-z][\w\-@]*'*\/#?)+/, 'entity.name.variable'],
+        [/([a-z@][\w\-]*'*\/#?)+/, 'entity.name.variable'],
         [/([_]?[a-z][0-9]*|_[\w\-]*'*|self)(?!\w)/, 'markup.italic'],
         [/[A-Z](?![\w\-])/, 'support.type'],
-        [/[$]?[@a-z][\w\-@]*'*/, 'support.type'],
+        [/[$]?[a-z@][\w\-]*'*/, 'support.type'],
         [/[;,:]/, 'support.type'],
         [/\/\*/, 'comment.block', '@blockComment'],
         [/\/\/.*$/, 'comment.line'],

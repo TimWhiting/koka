@@ -349,8 +349,30 @@
     </div>
   </div>
 
+  <!-- Set up globals BEFORE compiler loads -->
+  <script>
+    // Minimal VFS stub — the real VFS replaces this when main.ts loads
+    if (!globalThis.kokaVFS) {
+      globalThis.kokaVFS = {
+        readFile: function() { return null; },
+        fileExists: function() { return false; },
+        fileTime: function() { return 0; },
+        writeFile: function() {},
+        listDir: function() { return []; },
+        createDir: function() {},
+        dirExists: function() { return true; },
+        fileSize: function() { return 0; },
+        removeFile: function() {},
+      };
+    }
+    // Emscripten Module config
+    globalThis.Module = {
+      print: function() {},
+      printErr: function() {},
+    };
+  </script>
   <script type="module" src="/src/main.ts"></script>
-  <!-- Koka compiler bundle — loaded after web app sets up globals -->
+  <!-- Koka compiler bundle — loads after globals are ready -->
   <script src="all.js" defer></script>
 </body>
 </html>
