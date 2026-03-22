@@ -11,7 +11,16 @@ fun main()
 <br>
 <button id="btn-compile" onclick="doCompile()" disabled>Compile &amp; Run</button>
 <span id="status" style="margin-left:10px; color:#888;">Loading compiler...</span>
-<pre id="log" style="font-family: monospace; white-space: pre-wrap; font-size: 12px; background: #1e1e1e; color: #d4d4d4; padding: 10px; max-height: 500px; overflow-y: auto;"></pre>
+<div style="display:flex; gap:10px; margin-top:10px;">
+  <div style="flex:1;">
+    <b>Output</b>
+    <pre id="log" style="font-family: monospace; white-space: pre-wrap; font-size: 12px; background: #1e1e1e; color: #d4d4d4; padding: 10px; height: 300px; overflow-y: auto;"></pre>
+  </div>
+  <div style="flex:1;">
+    <b>Compiler Log</b>
+    <pre id="compiler-log" style="font-family: monospace; white-space: pre-wrap; font-size: 11px; background: #1a1a2e; color: #a0a0c0; padding: 10px; height: 300px; overflow-y: auto;"></pre>
+  </div>
+</div>
 
 <script>
 // ── Logging ──────────────────────────────────────────────────────────────────
@@ -47,10 +56,25 @@ globalThis.kokaVFS = {
   removeFile: function(p) { delete vfsFiles[p]; },
 };
 
+// ── Compiler log ─────────────────────────────────────────────────────────────
+function compilerLog(msg) {
+  var el = document.getElementById('compiler-log');
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+function clearCompilerLog() {
+  document.getElementById('compiler-log').textContent = '';
+}
+
+// Register the compiler log callback
+globalThis.kokaOnCompilerLog = function(msg) {
+  compilerLog(msg);
+};
+
 // ── Emscripten setup ─────────────────────────────────────────────────────────
 globalThis.Module = {
   print: function(text) { log('[stdout] ' + text); },
-  printErr: function(text) { /* suppress compiler stderr */ },
+  printErr: function(text) { log('[stderr] ' + text); /* suppress compiler stderr */ },
 };
 
 // ── Preloading ───────────────────────────────────────────────────────────────
@@ -135,6 +159,7 @@ async function init() {
 async function doCompile() {
   if (!compilerReady) return;
   clearLog();
+  clearCompilerLog();
   setStatus('Compiling...');
   document.getElementById('btn-compile').disabled = true;
 

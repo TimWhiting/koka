@@ -30,6 +30,12 @@ function h$kokaSetResult(s) {
   globalThis.kokaResult = s;
 }
 
+function h$kokaLogCompiler(msg) {
+  if (globalThis.kokaOnCompilerLog) {
+    globalThis.kokaOnCompilerLog(msg);
+  }
+}
+
 function h$kokaKeepAlive() {
   // Return a Promise that never resolves - keeps the Haskell runtime alive
   return new Promise(function() {});

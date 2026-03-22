@@ -57,7 +57,7 @@ compileToJS :: String -> String -> IO String
 compileToJS moduleName sourceText = do
   errRef <- newIORef []
   let flags = playgroundFlags
-      term  = silentTerminal errRef
+      term  = playgroundTerminal errRef
       sourcePath = virtualMount ++ "/" ++ moduleName ++ ".kk"
       content    = stringToBString sourceText
   (mbResult, _) <- runBuildIO term flags False $ do
@@ -72,14 +72,14 @@ compileToJS moduleName sourceText = do
     Just _  -> return "{\"success\": true}"
     Nothing -> return ("{\"success\": false, \"errors\": " ++ show (reverse errs) ++ "}")
 
--- | A terminal that collects errors into an IORef.
-silentTerminal :: IORef [String] -> Terminal
-silentTerminal errRef
+-- | A terminal that collects errors and sends phase/trace messages to JS.
+playgroundTerminal :: IORef [String] -> Terminal
+playgroundTerminal errRef
   = Terminal (\err -> modifyIORef errRef (show err :))  -- error handler
-             (\_ -> return ())     -- trace
-             (\_ -> return ())     -- progress
-             (\_ -> return ())     -- phase info
-             (\_ -> return ())     -- general info
+             (\msg -> js_logCompiler (toJSString msg))  -- trace
+             (\_ -> return ())                           -- progress
+             (\doc -> js_logCompiler (toJSString (show doc)))  -- phase info
+             (\doc -> js_logCompiler (toJSString (show doc)))  -- general info
 
 -- JS FFI: register the compiler callback on globalThis
 foreign import javascript unsafe "h$kokaSetCompiler"
@@ -88,6 +88,10 @@ foreign import javascript unsafe "h$kokaSetCompiler"
 -- JS FFI: set the compilation result on globalThis
 foreign import javascript unsafe "h$kokaSetResult"
   js_setResult :: JSVal -> IO ()
+
+-- JS FFI: send compiler log message to JS
+foreign import javascript unsafe "h$kokaLogCompiler"
+  js_logCompiler :: JSVal -> IO ()
 
 -- JS FFI: keep the Haskell runtime alive (block forever)
 -- The runtime needs to stay alive to handle callbacks.
