@@ -36,3 +36,4 @@ test/bench
 scratch
 .vite
 precompiled/
+ghc-rts.wasm
