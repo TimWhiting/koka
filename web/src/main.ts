@@ -4,12 +4,15 @@
  * Koka Playground entry point.
  *
  * Responsibilities:
+ *  - Set up globalThis.Module (Emscripten print callbacks) BEFORE all.js runs
  *  - Boot the Monaco editor (Koka source + read-only JS output)
  *  - Install the VFS as globalThis.kokaVFS
- *  - Register the Koka language (async — future WASM loading path)
+ *  - Preload stdlib sources and precompiled .kki/.mjs files
+ *  - Register the Koka language (Monaco syntax highlighting)
  *  - Set up the LSP adapter scaffold (globalThis.kokaService)
- *  - Wire up "Compile & Run" (calls globalThis.kokaCompile if available)
- *  - Capture and display execution output
+ *  - Poll for globalThis.kokaCompile and enable the run button when ready
+ *  - Wire up "Compile & Run" using the actual compiler pipeline
+ *  - Capture and display execution output via blob-URL ES module execution
  */
 
 import * as monaco from 'monaco-editor';
@@ -19,19 +22,35 @@ import {
   registerLanguageProviders,
   type KokaLanguageService,
 } from './lsp-adapter';
+import { runKokaModules } from './module-runner';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-/** Shape of the compiler function the WASM/JS bundle exposes. */
-type KokaCompileFn = (
-  moduleName: string,
-  sourceText: string,
-) => string | Promise<string>;
-
 declare global {
-  var kokaCompile:  KokaCompileFn       | undefined; // eslint-disable-line no-var
-  var kokaService:  KokaLanguageService | undefined; // eslint-disable-line no-var
+  // eslint-disable-next-line no-var
+  var kokaCompile:         ((moduleName: string, sourceText: string) => void) | undefined;
+  // eslint-disable-next-line no-var
+  var kokaResult:          string | undefined;
+  // eslint-disable-next-line no-var
+  var kokaVerbose:         number | undefined;
+  // eslint-disable-next-line no-var
+  var kokaOnCompilerLog:   ((msg: string) => void) | undefined;
+  // eslint-disable-next-line no-var
+  var kokaService:         KokaLanguageService | undefined;
+  // eslint-disable-next-line no-var
+  var Module:              { print?: (t: string) => void; printErr?: (t: string) => void } | undefined;
 }
+
+// ── Emscripten Module setup ───────────────────────────────────────────────────
+//
+// Must be set BEFORE all.js (loaded by the hosting page) runs.
+// We create it here so that when the hosting page's <script src="all.js"> fires
+// it already finds globalThis.Module with the right callbacks.
+//
+globalThis.Module = {
+  print:    (text: string) => appendCompilerLog('[stdout] ' + text),
+  printErr: (_text: string) => { /* suppress compiler stderr noise */ },
+};
 
 // ── Default sample program ────────────────────────────────────────────────────
 
@@ -46,9 +65,12 @@ fun main()
 const elSourceContainer = document.getElementById('editor-source')!;
 const elJsContainer     = document.getElementById('editor-js')!;
 const elConsole         = document.getElementById('console-output')!;
+const elCompilerLog     = document.getElementById('compiler-log-output')!;
 const elBtnRun          = document.getElementById('btn-run') as HTMLButtonElement;
 const elStatusDot       = document.getElementById('status-dot')!;
 const elStatusText      = document.getElementById('status-text')!;
+const elVerboseSelect   = document.getElementById('verbose-level') as HTMLSelectElement;
+const elLogVfsCheckbox  = document.getElementById('log-vfs') as HTMLInputElement;
 
 // ── Status helper ─────────────────────────────────────────────────────────────
 
@@ -76,25 +98,41 @@ function appendConsole(
   elConsole.scrollTop = elConsole.scrollHeight;
 }
 
+// ── Compiler log helper ───────────────────────────────────────────────────────
+
+function clearCompilerLog(): void {
+  elCompilerLog.textContent = '';
+}
+
+function appendCompilerLog(msg: string): void {
+  elCompilerLog.textContent += msg + '\n';
+  elCompilerLog.scrollTop = elCompilerLog.scrollHeight;
+}
+
+// Register the compiler log callback so the compiler can stream messages
+globalThis.kokaOnCompilerLog = (msg: string) => {
+  appendCompilerLog(msg);
+};
+
 // ── VFS setup ─────────────────────────────────────────────────────────────────
 
-const vfs = new KokaVFS('/stdlib');
+const vfs = new KokaVFS();
 vfs.install();
 
+// Keep VFS logVfs in sync with the checkbox
+if (elLogVfsCheckbox) {
+  elLogVfsCheckbox.addEventListener('change', () => {
+    vfs.logVfs = elLogVfsCheckbox.checked;
+  });
+}
+
 // ── Main async initialisation ─────────────────────────────────────────────────
-//
-// registerKokaLanguage is async so that a future TextMate / WASM loading path
-// can be added without restructuring this file.  Everything that depends on
-// the editors is nested inside the IIFE.
 
 void (async () => {
   // Register the Koka language before creating editors
   await registerKokaLanguage(monaco);
 
   // ── LSP adapter (scaffold — Haskell functions not yet wired up) ───────────
-  //
-  // The service object is mutable: the compiler bundle assigns functions to
-  // its fields at runtime via globalThis.kokaService.
   const kokaService: KokaLanguageService = {};
   registerLanguageProviders(monaco, KOKA_LANGUAGE_ID, kokaService);
   globalThis.kokaService = kokaService;
@@ -141,17 +179,44 @@ void (async () => {
     () => { void compileAndRun(); },
   );
 
-  // ── Compiler availability polling ──────────────────────────────────────────
+  // ── Preloading ─────────────────────────────────────────────────────────────
+  //
+  // We detect the base URL from the current page location.  When the hosting
+  // page is the koka-playground.jsexe/index.html the manifests live alongside
+  // it; when using the Vite dev server the manifests are served from public/.
 
-  /**
-   * Polls globalThis.kokaCompile until it becomes available, then marks the
-   * playground as ready.
-   */
+  elBtnRun.disabled = true;
+  setStatus('loading', 'Loading stdlib…');
+
+  try {
+    const [srcCount, preCount] = await Promise.all([
+      vfs.preloadSources('', 'stdlib-manifest.json')
+        .catch((e: unknown) => { appendCompilerLog('[warn] stdlib preload: ' + String(e)); return 0; }),
+      vfs.preloadPrecompiled('', 'precompiled-manifest.json')
+        .catch((e: unknown) => { appendCompilerLog('[warn] precompiled preload: ' + String(e)); return 0; }),
+    ]);
+
+    appendConsole(
+      `Loaded ${srcCount} stdlib source files + ${preCount} precompiled files.`,
+      'info',
+    );
+  } catch (e: unknown) {
+    appendConsole('Warning: could not preload stdlib: ' + String(e), 'info');
+  }
+
+  setStatus('loading', 'Waiting for compiler…');
+
+  // ── Compiler availability polling ──────────────────────────────────────────
+  //
+  // all.js is loaded by the hosting page via a <script> tag.  We poll until
+  // globalThis.kokaCompile becomes available.
+
   function watchCompilerReady(): void {
     const check = (): void => {
       if (typeof globalThis.kokaCompile === 'function') {
         setStatus('ready', 'Compiler ready');
         elBtnRun.disabled = false;
+        appendConsole('Compiler ready!', 'info');
       } else {
         setTimeout(check, 500);
       }
@@ -159,99 +224,105 @@ void (async () => {
     check();
   }
 
-  // Initially disable the button until the compiler is ready
-  elBtnRun.disabled = true;
-  setStatus('loading', 'Loading compiler…');
   watchCompilerReady();
 
   // ── Compile ────────────────────────────────────────────────────────────────
 
   /**
-   * Populate the VFS with the editor content and invoke the compiler.
-   * Returns the generated .mjs text, or null on failure.
+   * Invoke the Koka compiler on the current editor source.
+   * Returns the generated main module name on success, or null on failure.
    */
-  async function compile(): Promise<string | null> {
-    const sourceText = sourceEditor.getValue();
-
-    // Derive a module name from the first "module <name>" declaration, or fall
-    // back to "main".
-    const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
-    const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
-
-    // Write the source into the VFS so the compiler can read it
-    const sourcePath = `/${moduleName.replace(/\//g, '/')}.kk`;
-    vfs.addFile(sourcePath, sourceText);
-
+  async function compile(sourceText: string): Promise<string | null> {
     if (typeof globalThis.kokaCompile !== 'function') {
       appendConsole('Compiler not yet loaded. Please wait…', 'info');
       return null;
     }
 
-    try {
-      // The compiler writes its output (.mjs) into the VFS via vfs.writeFile.
-      // Some implementations also return the output directly.
-      const result = await Promise.resolve(
-        globalThis.kokaCompile(moduleName, sourceText),
-      );
+    // Apply verbose level from toolbar
+    globalThis.kokaVerbose = parseInt(elVerboseSelect?.value ?? '1', 10) || 0;
 
-      // Prefer the return value; fall back to scanning the VFS for *.mjs
-      if (result && result.trim().length > 0) {
-        return result;
-      }
+    // Clear previous compilation artifacts from VFS
+    vfs.clearGenerated();
 
-      // Scan VFS for generated .mjs files
-      const written = vfs.getWrittenFiles();
-      for (const [path, content] of written) {
-        if (path.endsWith('.mjs') || path.endsWith('.js')) {
-          return content;
+    // Reset the result slot
+    globalThis.kokaResult = undefined;
+
+    // Derive module name from "module <name>" declaration or fall back to "main"
+    const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
+    const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
+
+    // Kick off compilation (async — spawns Haskell thread internally)
+    globalThis.kokaCompile(moduleName, sourceText);
+
+    // Poll for result (set by the compiler on globalThis.kokaResult)
+    const resultJson = await new Promise<string>((resolve, reject) => {
+      let elapsed = 0;
+      const poll = setInterval(() => {
+        elapsed += 50;
+        if (globalThis.kokaResult !== undefined) {
+          clearInterval(poll);
+          resolve(globalThis.kokaResult as string);
+        } else if (elapsed > 30_000) {
+          clearInterval(poll);
+          reject(new Error('Compilation timed out after 30 s'));
         }
-      }
+      }, 50);
+    });
 
-      return null;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      appendConsole(`Compilation error: ${msg}`, 'stderr');
+    let parsed: { success: boolean; errors?: string[] };
+    try {
+      parsed = JSON.parse(resultJson) as typeof parsed;
+    } catch {
+      appendConsole('Error: could not parse compiler result: ' + resultJson, 'stderr');
       return null;
     }
+
+    if (!parsed.success) {
+      appendConsole('=== Compilation Errors ===', 'stderr');
+      for (const err of parsed.errors ?? []) {
+        appendConsole(err, 'stderr');
+      }
+      return null;
+    }
+
+    return moduleName;
   }
 
   // ── Run ────────────────────────────────────────────────────────────────────
 
   /**
-   * Execute generated JavaScript in an isolated context.
-   * Captures console.log / console.error and redirects to the output pane.
+   * Execute the compiled ES modules.
+   * Collects generated .mjs from VFS plus precompiled stdlib .mjs, then
+   * runs them via blob-URL dynamic imports.
    */
-  function run(js: string): void {
-    // Patch console so we can capture output
-    const origLog   = console.log;
-    const origError = console.error;
-    const origWarn  = console.warn;
+  async function run(moduleName: string): Promise<void> {
+    const generatedMjs = vfs.getGeneratedMjs();
 
-    console.log = (...args: unknown[]) => {
-      origLog(...args);
-      appendConsole(args.map(String).join(' '), 'stdout');
-    };
-    console.error = (...args: unknown[]) => {
-      origError(...args);
-      appendConsole(args.map(String).join(' '), 'stderr');
-    };
-    console.warn = (...args: unknown[]) => {
-      origWarn(...args);
-      appendConsole(args.map(String).join(' '), 'info');
-    };
-
-    try {
-      // eslint-disable-next-line no-new-func
-      const fn = new Function(js);
-      fn();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      appendConsole(`Runtime error: ${msg}`, 'stderr');
-    } finally {
-      console.log   = origLog;
-      console.error = origError;
-      console.warn  = origWarn;
+    if (generatedMjs.size === 0) {
+      appendConsole('No .mjs output found after compilation.', 'stderr');
+      return;
     }
+
+    // Show the main generated module in the JS editor
+    for (const [path, code] of generatedMjs) {
+      const filename = path.split('/').pop() ?? path;
+      if (filename === moduleName + '.mjs' || filename === 'main.mjs') {
+        jsEditor.setValue(code);
+        appendConsole(
+          `Generated ${filename}: ${code.length} chars`,
+          'info',
+        );
+        break;
+      }
+    }
+
+    await runKokaModules(
+      vfs.getPrecompiledMjs(),
+      generatedMjs,
+      moduleName,
+      (text) => appendConsole(text, 'stdout'),
+      (text) => appendConsole(text, 'stderr'),
+    );
   }
 
   // ── Compile & Run ──────────────────────────────────────────────────────────
@@ -260,24 +331,30 @@ void (async () => {
     if (elBtnRun.disabled) return;
 
     clearConsole();
+    clearCompilerLog();
     elBtnRun.disabled = true;
     setStatus('running', 'Compiling…');
 
-    const js = await compile();
+    const sourceText = sourceEditor.getValue();
 
-    if (js === null) {
-      setStatus('error', 'Compilation failed');
-      elBtnRun.disabled = false;
-      return;
+    try {
+      const moduleName = await compile(sourceText);
+
+      if (moduleName === null) {
+        setStatus('error', 'Compilation failed');
+        elBtnRun.disabled = false;
+        return;
+      }
+
+      appendConsole('Compilation successful!', 'info');
+      setStatus('running', 'Running…');
+
+      await run(moduleName);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      appendConsole('ERROR: ' + msg, 'stderr');
+      setStatus('error', 'Error');
     }
-
-    // Display compiled JS in the output editor
-    jsEditor.setValue(js);
-
-    setStatus('running', 'Running…');
-    appendConsole('── Program output ──────────────────────────────', 'info');
-
-    run(js);
 
     setStatus('ready', 'Compiler ready');
     elBtnRun.disabled = false;
@@ -317,7 +394,6 @@ void (async () => {
         totalWidth - 200,
       );
       paneSource.style.width = `${newWidth}px`;
-      // Notify Monaco of the resize
       sourceEditor.layout();
       jsEditor.layout();
     });
