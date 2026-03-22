@@ -35,6 +35,10 @@ export class FileBrowser {
   private container: HTMLElement;
   private config: FileBrowserConfig;
   private sections: Map<string, Section> = new Map();
+  /** Track which paths are expanded so they survive re-renders */
+  private expandedPaths: Set<string> = new Set();
+  /** Track per-section DOM elements for targeted updates */
+  private sectionElements: Map<string, HTMLElement> = new Map();
 
   constructor(container: HTMLElement, config: FileBrowserConfig) {
     this.container = container;
@@ -44,7 +48,7 @@ export class FileBrowser {
 
   addSection(title: string, entries: FileEntry[]): void {
     this.sections.set(title, { title, entries, collapsed: false });
-    this.render();
+    this.renderSection(title);
   }
 
   updateSection(title: string, entries: FileEntry[]): void {
@@ -54,12 +58,36 @@ export class FileBrowser {
     } else {
       this.sections.set(title, { title, entries, collapsed: false });
     }
-    this.render();
+    this.renderSection(title);
+  }
+
+  /** Re-render only one section, preserving others */
+  private renderSection(title: string): void {
+    const section = this.sections.get(title);
+    if (!section) return;
+
+    const newEl = this.buildSectionElement(section);
+
+    const existingEl = this.sectionElements.get(title);
+    if (existingEl && existingEl.parentNode) {
+      existingEl.parentNode.replaceChild(newEl, existingEl);
+    } else {
+      this.container.appendChild(newEl);
+    }
+    this.sectionElements.set(title, newEl);
   }
 
   render(): void {
     this.container.innerHTML = '';
+    this.sectionElements.clear();
     for (const section of this.sections.values()) {
+      const el = this.buildSectionElement(section);
+      this.container.appendChild(el);
+      this.sectionElements.set(section.title, el);
+    }
+  }
+
+  private buildSectionElement(section: Section): HTMLElement {
       const sectionEl = document.createElement('div');
       sectionEl.className = 'fb-section';
 
@@ -102,8 +130,7 @@ export class FileBrowser {
       }
 
       sectionEl.appendChild(bodyEl);
-      this.container.appendChild(sectionEl);
-    }
+      return sectionEl;
   }
 
   private renderEntry(entry: FileEntry, depth: number): HTMLElement {
@@ -130,8 +157,9 @@ export class FileBrowser {
       item.classList.add('fb-item-dir');
 
       const childrenContainer = document.createElement('div');
-      childrenContainer.style.display = 'none';
-      let expanded = false;
+      let expanded = this.expandedPaths.has(entry.path);
+      childrenContainer.style.display = expanded ? '' : 'none';
+      icon.textContent = expanded ? '📂' : '📁';
       let loaded = !!entry.children;
 
       // Pre-render children if available
@@ -144,6 +172,8 @@ export class FileBrowser {
       item.addEventListener('click', async (e) => {
         e.stopPropagation();
         expanded = !expanded;
+        if (expanded) this.expandedPaths.add(entry.path);
+        else this.expandedPaths.delete(entry.path);
         icon.textContent = expanded ? '📂' : '📁';
         childrenContainer.style.display = expanded ? '' : 'none';
 
