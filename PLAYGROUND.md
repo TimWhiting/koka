@@ -206,5 +206,5 @@ All platform-specific IO is in `Platform/` modules (no CPP in caller code):
 - **Int overflow**: JS backend uses 32-bit Int; some literals in `Type/Infer.hs` overflow (warnings only)
 - **FBIP samples**: `rbtree.kk` and `rbtree-fbip.kk` crash with BigInt errors (JS backend bug)
 - **Lazy constructors**: `lazycons.kk` not supported on web
-- **No Template Haskell**: `lsp-types` package can't be used on JS backend
-- **No LSP server**: Full LSP requires packages that depend on TH; future work will expose query functions directly
+- **No Template Haskell (yet)**: The JS cross-compiler lacks the external interpreter (IServ) needed to run TH splices at compile time. The WASM backend has this working, so it's technically feasible — just not implemented yet for JS. This prevents using packages like `lsp-types` that depend on TH.
+- **No LSP server**: Due to the TH limitation above; future work will either enable TH or expose compiler query functions directly via JS FFI.
