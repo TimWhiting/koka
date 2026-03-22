@@ -10,7 +10,6 @@
 -}
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -funbox-strict-fields #-}
-{-# OPTIONS -cpp #-}
 module Common.Range
           ( Pos(..), makePos, minPos, maxPos
           , posMove8, posMoves8, posNull
@@ -35,11 +34,7 @@ module Common.Range
 
 -- import Lib.Trace
 import Lib.PPrint( Pretty(pretty), text )
-#ifdef KOKA_WEB
 import Common.File(relativeToPath, readTextFile)
-#else
-import Common.File(relativeToPath)
-#endif
 import Common.Failure( assertion, catchIO, HasCallStack )
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BC
@@ -65,27 +60,15 @@ bstringToString bstr
 
 stringToBString str = T.encodeUtf8 (T.pack str)
 
-#ifdef KOKA_WEB
 readInput :: HasCallStack => FilePath -> IO BString
 readInput fname
   = do mbContent <- readTextFile fname
        case mbContent of
          Just s  -> let input = stringToBString s
                     in case BC.unpack $ B.take 3 input of
-                         "\xEF\xBB\xBF" -> return (B.drop 3 input)
+                         "\xEF\xBB\xBF" -> return (B.drop 3 input) -- remove BOM
                          _              -> return input
          Nothing -> error ("unable to read " ++ fname)
-
-#else
-readInput :: HasCallStack => FilePath -> IO BString
-readInput fname
-  = do input <- B.readFile fname `catchIO` (\err -> error ("unable to read " ++ fname))
-       -- input <- withBinaryFile fname ReadMode $ \h -> B.hGetContents h
-       -- trace ("input bytes: " ++ show (map (\c -> showHex (fromEnum c) "") (take 400 (BC.unpack input)))) $
-       case BC.unpack $ B.take 3 input of
-         "\xEF\xBB\xBF" -> return (B.drop 3 input) -- remove BOM
-         _              -> return input
-#endif
 
 utfDecode :: B.ByteString -> T.Text
 utfDecode bs
