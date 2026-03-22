@@ -89,27 +89,6 @@ jobs:
           KOKA=$(cabal list-bin koka-plain)
           $KOKA --target=js --outputdir=precompiled --library lib/std/core.kk
 
-      - name: Optimize with Google Closure Compiler
-        run: |
-          JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d)
-          npm install -g google-closure-compiler
-          google-closure-compiler \
-            --compilation_level ADVANCED_OPTIMIZATIONS \
-            --externs $JSEXE/all.externs.js \
-            --js $JSEXE/all.js \
-            --js_output_file $JSEXE/all.min.js \
-            --language_in ECMASCRIPT_2020 \
-            --language_out ECMASCRIPT_2020 || true
-          # Fall back to simple minification if ADVANCED fails
-          if [ ! -f "$JSEXE/all.min.js" ]; then
-            google-closure-compiler \
-              --compilation_level SIMPLE_OPTIMIZATIONS \
-              --js $JSEXE/all.js \
-              --js_output_file $JSEXE/all.min.js || cp $JSEXE/all.js $JSEXE/all.min.js
-          fi
-          echo "Original: $(wc -c < $JSEXE/all.js) bytes"
-          echo "Minified: $(wc -c < $JSEXE/all.min.js) bytes"
-
       - name: Build web frontend
         run: |
           cd web
@@ -121,12 +100,8 @@ jobs:
           mkdir -p deploy
           JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d)
 
-          # Compiler JS (use minified if available)
-          if [ -f "$JSEXE/all.min.js" ]; then
-            cp $JSEXE/all.min.js deploy/all.js
-          else
-            cp $JSEXE/all.js deploy/all.js
-          fi
+          # Compiler JS (unminified — brotli compression does the heavy lifting)
+          cp $JSEXE/all.js deploy/all.js
           cp $JSEXE/koka-playground.wasm deploy/
 
           # Web frontend
