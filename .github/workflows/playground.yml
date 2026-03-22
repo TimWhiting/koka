@@ -44,7 +44,8 @@ jobs:
       - name: Install build tools
         run: |
           cabal update
-          cabal install hpack alex happy --overwrite-policy=always
+          cabal install happy --overwrite-policy=always
+          cabal install alex hpack --overwrite-policy=always
 
       # ── Cache GHC JS cross-compiler ──────────────────────────────────
 
