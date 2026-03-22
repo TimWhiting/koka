@@ -34,3 +34,5 @@ bench
 test/bench
 .koka
 scratch
+.vite
+precompiled/
