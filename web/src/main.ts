@@ -255,7 +255,11 @@ function renderTabs(): void {
 // ── File browser setup ────────────────────────────────────────────────────────
 
 const fileBrowser = new FileBrowser(elFileBrowserTree, {
-  onFileSelect: (path, content, name) => {
+  onFileSelect: async (path, content, name) => {
+    // If opening a sample, preload sibling samples into VFS for module resolution
+    if (path.startsWith('samples/') && content) {
+      await preloadSamplesDirectory(path);
+    }
     openFile(path, content, name);
   },
   onJsFileSelect: (_path, content, name) => {
@@ -263,10 +267,54 @@ const fileBrowser = new FileBrowser(elFileBrowserTree, {
     appendConsole(`Viewing ${name}`, 'info');
   },
   onDirectoryExpand: async (entry) => {
-    // Lazy-load directory contents from GitHub
     return fetchGitHubDirectory('koka-lang', 'koka', entry.path);
   },
 });
+
+/** Preload all .kk files from the samples directory tree into VFS.
+ *  This enables module resolution for samples that import each other
+ *  (e.g. all.kk imports basic/caesar, learn/basic, etc.)
+ */
+const samplesPreloaded = new Set<string>();
+async function preloadSamplesDirectory(openedPath: string): Promise<void> {
+  // Only preload once
+  if (samplesPreloaded.has('all')) return;
+  samplesPreloaded.add('all');
+
+  appendConsole('Preloading sample files for module resolution...', 'info');
+
+  try {
+    // Recursively fetch all .kk files under samples/
+    async function loadDir(dirPath: string): Promise<void> {
+      const entries = await fetchGitHubDirectory('koka-lang', 'koka', dirPath);
+      const promises: Promise<void>[] = [];
+
+      for (const entry of entries) {
+        if (entry.type === 'directory') {
+          promises.push(loadDir(entry.path));
+        } else if (entry.name.endsWith('.kk') && entry.download_url) {
+          promises.push(
+            fetch(entry.download_url)
+              .then((r) => r.text())
+              .then((text) => {
+                // Place at root so "basic/caesar" resolves to "/basic/caesar.kk"
+                const vfsPath = '/' + entry.path.replace('samples/', '');
+                vfs.addFile(vfsPath, text);
+              })
+              .catch(() => { /* ignore individual failures */ })
+          );
+        }
+      }
+
+      await Promise.all(promises);
+    }
+
+    await loadDir('samples');
+    appendConsole('Sample files preloaded.', 'info');
+  } catch (e) {
+    appendConsole('Warning: could not preload all sample files.', 'info');
+  }
+}
 
 // Placeholder samples section
 fileBrowser.addSection('Samples', []);
