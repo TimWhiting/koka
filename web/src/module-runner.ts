@@ -154,8 +154,19 @@ export async function runKokaModules(
     }
 
     // Collect output from the DOM element (Koka browser runtime writes there)
-    if (kokaConsoleOut && kokaConsoleOut.textContent) {
-      onOutput(kokaConsoleOut.textContent);
+    // The runtime uses innerHTML with <br> for newlines, so convert back
+    if (kokaConsoleOut && kokaConsoleOut.innerHTML) {
+      const lines = kokaConsoleOut.innerHTML
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]*>/g, '')  // strip any other HTML tags
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'");
+      for (const line of lines.split('\n')) {
+        if (line) onOutput(line);
+      }
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
