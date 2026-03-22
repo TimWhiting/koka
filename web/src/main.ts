@@ -566,9 +566,11 @@ void (async () => {
       return;
     }
 
+    // Koka converts module paths like 'handlers/ambient' to 'handlers_ambient.mjs'
+    const expectedFilename = moduleName.replace(/\//g, '_') + '.mjs';
     for (const [path, code] of generatedMjs) {
       const filename = path.split('/').pop() ?? path;
-      if (filename === moduleName + '.mjs' || filename === 'main.mjs') {
+      if (filename === expectedFilename || filename === 'main.mjs') {
         jsEditor.setValue(code);
         appendConsole(
           `Generated ${filename}: ${code.length} chars`,
@@ -581,7 +583,7 @@ void (async () => {
     await runKokaModules(
       vfs.getPrecompiledMjs(),
       generatedMjs,
-      moduleName,
+      moduleName.replace(/\//g, '_'),
       (text) => appendConsole(text, 'stdout'),
       (text) => appendConsole(text, 'stderr'),
     );
