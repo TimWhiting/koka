@@ -130,9 +130,15 @@ export async function runKokaModules(
   try {
     onOutput('');
     onOutput('=== Output ===');
+    onOutput(`Loading ${Object.keys(blobUrls).length} modules...`);
     const mod = await import(/* @vite-ignore */ blobUrls[mainFilename]);
+    onOutput(`Module loaded. Exports: ${Object.keys(mod).join(', ')}`);
     if (typeof mod.main === 'function') {
+      onOutput('Calling main()...');
       await mod.main();
+      onOutput('main() returned.');
+    } else {
+      onOutput('No main() function found in module exports.');
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
