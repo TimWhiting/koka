@@ -9,4 +9,7 @@ export default defineConfig({
   optimizeDeps: {
     include: ['monaco-editor'],
   },
+  // In dev, use `web/public/` for static assets (all.js, precompiled/, lib/, manifests)
+  // In production, these are assembled by the CI pipeline into the same dist/ folder
+  publicDir: 'public',
 });
