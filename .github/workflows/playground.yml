@@ -17,8 +17,8 @@ permissions:
   id-token: write
 
 env:
-  GHCJS_VERSION: 'javascript-unknown-ghcjs-9.10.0.20240413'
-  EMSCRIPTEN_VERSION: '3.1.57'
+  GHCJS_VERSION: 'javascript-unknown-ghcjs-9.12.2'
+  EMSCRIPTEN_VERSION: '3.1.74'
 
 jobs:
   build:
@@ -48,9 +48,8 @@ jobs:
 
       - name: Install GHC JS cross-compiler via ghcup
         run: |
-          # Following https://www.haskell.org/ghcup/guide/#cross-support
-          # and https://github.com/BinderDavid/ghc-javascript-ci
-          ghcup config add-release-channel https://raw.githubusercontent.com/haskell/ghcup-metadata/develop/ghcup-cross-0.0.8.yaml
+          # https://www.haskell.org/ghcup/guide/#cross-support
+          ghcup config add-release-channel cross
           emconfigure ghcup install ghc --set ${{ env.GHCJS_VERSION }}
           javascript-unknown-ghcjs-ghc --version
 
