@@ -5,7 +5,8 @@
  * on the page. Lazily loaded on first compile request.
  */
 
-import { createWasmCompiler, type WasmCompileResult } from '../wasm-runner';
+import { createWasmCompiler } from '../wasm-runner';
+import { runKokaModules } from '../module-runner';
 
 export interface SharedCompiler {
   compile: (moduleName: string, sourceText: string) => Promise<CompileResult>;
@@ -153,73 +154,32 @@ async function loadStdlib(baseUrl: string): Promise<{
   return { sources, precompiled };
 }
 
-// ── Module execution ────────────────────────────────────────────────────────
-
-function kokaModuleToFilename(moduleName: string): string {
-  let result = '';
-  for (const c of moduleName) {
-    if (/[a-zA-Z0-9]/.test(c)) result += c;
-    else if (c === '/') result += '_';
-    else if (c === '-') result += '_dash_';
-    else if (c === '_') result += '__';
-    else if (c === '.') result += '_dot_';
-    else result += c;
-  }
-  return result;
-}
+// ── Module execution (delegates to module-runner.ts) ────────────────────────
 
 async function runModules(
   moduleName: string,
   generatedFiles: Map<string, string>,
   precompiled: Map<string, string>,
 ): Promise<string> {
-  const moduleUrls = new Map<string, string>();
-
-  // Add precompiled .mjs
+  // Filter to .mjs files only
+  const precompiledMjs = new Map<string, string>();
   for (const [name, content] of precompiled) {
-    if (name.endsWith('.mjs')) {
-      const blob = new Blob([content], { type: 'application/javascript' });
-      moduleUrls.set(name, URL.createObjectURL(blob));
-    }
+    if (name.endsWith('.mjs')) precompiledMjs.set(name, content);
   }
 
-  // Add generated .mjs (override precompiled)
-  for (const [path, content] of generatedFiles) {
-    if (path.endsWith('.mjs')) {
-      const name = path.split('/').pop()!;
-      const blob = new Blob([content], { type: 'application/javascript' });
-      moduleUrls.set(name, URL.createObjectURL(blob));
-    }
+  const outputLines: string[] = [];
+  const errorLines: string[] = [];
+
+  await runKokaModules(
+    precompiledMjs,
+    generatedFiles,
+    moduleName,
+    (text) => outputLines.push(text),
+    (text) => errorLines.push(text),
+  );
+
+  if (errorLines.length > 0) {
+    return [...outputLines, ...errorLines.map(e => `Error: ${e}`)].join('\n');
   }
-
-  const mainFilename = kokaModuleToFilename(moduleName) + '.mjs';
-  const mainAtFilename = kokaModuleToFilename(moduleName) + '__main.mjs';
-  const mainUrl = moduleUrls.get(mainAtFilename) || moduleUrls.get(mainFilename);
-
-  if (!mainUrl) {
-    return `Error: could not find compiled module ${mainFilename}`;
-  }
-
-  // Capture output via #koka-console-out
-  const captureEl = document.createElement('div');
-  captureEl.id = 'koka-console-out';
-  captureEl.style.display = 'none';
-  document.body.appendChild(captureEl);
-
-  try {
-    const mainModule = await import(/* @vite-ignore */ mainUrl);
-    if (typeof mainModule.main === 'function') {
-      await mainModule.main();
-    } else if (typeof mainModule.default === 'function') {
-      await mainModule.default();
-    }
-
-    return captureEl.innerHTML
-      .replace(/<br\s*\/?>/g, '\n')
-      .replace(/<[^>]+>/g, '')
-      .trim();
-  } finally {
-    captureEl.remove();
-    for (const url of moduleUrls.values()) URL.revokeObjectURL(url);
-  }
+  return outputLines.join('\n');
 }
