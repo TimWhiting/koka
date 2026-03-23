@@ -252,6 +252,17 @@ export async function startLspClient(
     messageTransports: { reader, writer },
   });
 
+  // Forward window/logMessage notifications to the onLog callback
+  // These contain compiler phase info (parse, check, etc.) with ANSI colors.
+  // Must be registered before start() so we capture initial type-check phases.
+  if (options.onLog) {
+    const log = options.onLog;
+    client.onNotification('window/logMessage', (params: { message: string; type: number }) => {
+      const plain = params.message.replace(/\u001b\[[0-9;]*m/g, '').trim();
+      if (plain) log(plain);
+    });
+  }
+
   await client.start();
 
   // Send dark/light theme to the LSP server for colored markdown
@@ -264,17 +275,6 @@ export async function startLspClient(
     });
   } catch {
     // koka/set-colors is optional — ignore errors
-  }
-
-  // Forward window/logMessage notifications to the onLog callback
-  // These contain compiler phase info (parse, check, etc.) with ANSI colors
-  if (options.onLog) {
-    const log = options.onLog;
-    client.onNotification('window/logMessage', (params: { message: string; type: number }) => {
-      // Strip ANSI escape codes for plain text display
-      const plain = params.message.replace(/\u001b\[[0-9;]*m/g, '').trim();
-      if (plain) log(plain);
-    });
   }
 
   return {
