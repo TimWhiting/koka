@@ -338,7 +338,8 @@ self.onmessage = async (e: MessageEvent) => {
       stdinFile.stdoutCapture = stdoutCapture;
 
       const wasi = new WASI(
-        ['koka-lsp', '--language-server', '--lsstdio', '--sharedir=/share', '--target=js', '--builddir=/lib'],
+        ['koka-lsp', '--language-server', '--lsstdio', '--sharedir=/share', '--target=js', '--builddir=/lib',
+         `-v${msg.verbose ?? 0}`],
         [],
         [
           stdinFile as unknown as OpenFile,           // fd 0: stdin

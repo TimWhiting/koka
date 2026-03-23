@@ -117,6 +117,8 @@ export interface LspClientOptions {
   vfs: KokaVFS;
   /** Called for LSP server log messages (stderr) */
   onLog?: (text: string) => void;
+  /** Verbosity level (0=quiet, 1=phases, 2=detail, 3=trace) */
+  verbose?: number;
 }
 
 export interface LspCompileResult {
@@ -217,6 +219,7 @@ export async function startLspClient(
       type: 'init',
       wasmUrl: options.wasmUrl,
       files: Array.from(vfsFiles.entries()),
+      verbose: options.verbose ?? 0,
     });
   });
 

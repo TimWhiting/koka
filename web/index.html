@@ -630,11 +630,12 @@
       <div class="spacer"></div>
 
       <!-- Backend selector -->
-      <label class="toolbar-label" title="Compiler backend">
+      <label class="toolbar-label" title="Compiler backend for compile & run">
         Backend:
         <select id="backend-select">
+          <option value="lsp" selected>LSP (WASM)</option>
+          <option value="wasm">Standalone WASM</option>
           <option value="js">JavaScript</option>
-          <option value="wasm" selected>WASM</option>
         </select>
       </label>
 
@@ -649,11 +650,6 @@
         </select>
       </label>
 
-      <!-- Log VFS -->
-      <label class="toolbar-label" title="Log VFS file hits and misses to the compiler log">
-        <input type="checkbox" id="log-vfs" />
-        Log VFS
-      </label>
     </div>
 
     <!-- Workspace: file browser + editor area -->
@@ -750,6 +746,6 @@
   </script>
   <script type="module" src="/src/main.ts"></script>
   <!-- Koka compiler bundle — loads after globals are ready -->
-  <script src="all.js" defer></script>
+  <!-- all.js (GHC JS backend) loaded dynamically when JS backend is selected -->
 </body>
 </html>

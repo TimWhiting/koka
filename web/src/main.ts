@@ -35,7 +35,7 @@ import { startLspClient, type LspClientHandle } from './lsp-client';
 import type * as MonacoTypes from '@codingame/monaco-vscode-editor-api';
 let monaco: typeof MonacoTypes;
 
-type BackendType = 'js' | 'wasm';
+type BackendType = 'lsp' | 'wasm' | 'js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -52,14 +52,7 @@ declare global {
   var Module:              { print?: (t: string) => void; printErr?: (t: string) => void } | undefined;
 }
 
-// ── Emscripten Module setup ───────────────────────────────────────────────────
-//
-// Must be set BEFORE all.js (loaded by the hosting page) runs.
-//
-globalThis.Module = {
-  print:    (text: string) => appendCompilerLog('[stdout] ' + text),
-  printErr: (_text: string) => { /* suppress compiler stderr noise */ },
-};
+// ── Emscripten Module setup is done lazily when JS backend is selected ────────
 
 // ── Samples that don't work on the JS backend ────────────────────────────────
 const EXCLUDED_SAMPLES = new Set([
@@ -113,7 +106,6 @@ const elBtnRun             = document.getElementById('btn-run') as HTMLButtonEle
 const elStatusDot          = document.getElementById('status-dot')!;
 const elStatusText         = document.getElementById('status-text')!;
 const elVerboseSelect      = document.getElementById('verbose-level') as HTMLSelectElement;
-const elLogVfsCheckbox     = document.getElementById('log-vfs') as HTMLInputElement;
 const elTabBar             = document.getElementById('tab-bar')!;
 const elBtnFileBrowser     = document.getElementById('btn-filebrowser') as HTMLButtonElement;
 const elFileBrowserPanel   = document.getElementById('file-browser-panel')!;
@@ -176,11 +168,6 @@ globalThis.kokaOnCompilerLog = (msg: string) => {
 const vfs = new KokaVFS();
 vfs.install();
 
-if (elLogVfsCheckbox) {
-  elLogVfsCheckbox.addEventListener('change', () => {
-    vfs.logVfs = elLogVfsCheckbox.checked;
-  });
-}
 
 // ── Tab management ────────────────────────────────────────────────────────────
 
@@ -693,28 +680,10 @@ void (async () => {
     return wasmLoading;
   }
 
-  // ── Compiler availability polling ──────────────────────────────────────
-
-  setStatus('loading', 'Waiting for compiler…');
-
-  function watchCompilerReady(): void {
-    // Enable button immediately — WASM loads lazily, JS polls
-    elBtnRun.disabled = false;
-    setStatus('ready', 'Ready');
-
-    const check = (): void => {
-      if (typeof globalThis.kokaCompile === 'function') {
-        setStatus('ready', 'Compiler ready');
-        appendConsole('JS compiler ready!', 'info');
-        return;
-      } else {
-        setTimeout(check, 500);
-      }
-    };
-    check();
-  }
-
-  watchCompilerReady();
+  // ── Compiler ready ─────────────────────────────────────────────────────
+  // Compilers load lazily — enable the run button immediately
+  elBtnRun.disabled = false;
+  setStatus('ready', 'Ready');
 
   // ── Compile ────────────────────────────────────────────────────────────
 
@@ -725,20 +694,35 @@ void (async () => {
   async function compile(sourceText: string): Promise<string | null> {
     const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
     const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
+    const backend = getBackend();
 
-    // Try LSP compilation first (uses cached type-check state)
-    if (lspHandle) {
-      const result = await compileWithLsp(moduleName);
-      if (result !== null) return result;
-      // LSP compile failed — fall back to standalone compiler
-      appendCompilerLog('LSP compile failed, falling back to standalone compiler');
+    // LSP backend (default): compile via the running LSP server
+    if (backend === 'lsp') {
+      if (lspHandle) {
+        const result = await compileWithLsp(moduleName);
+        if (result !== null) return result;
+      } else {
+        appendCompilerLog('LSP not yet ready, waiting...');
+        // Wait up to 60s for the LSP to become available
+        for (let i = 0; i < 120 && !lspHandle; i++) {
+          await new Promise(r => setTimeout(r, 500));
+        }
+        if (lspHandle) {
+          const result = await compileWithLsp(moduleName);
+          if (result !== null) return result;
+        }
+        appendCompilerLog('LSP unavailable, falling back to standalone WASM compiler');
+      }
+      // LSP failed — fall through to WASM
+      return compileWithWasm(moduleName, sourceText);
     }
 
-    // Fall back to standalone compilers
-    const backend = getBackend();
+    // Standalone WASM compiler
     if (backend === 'wasm') {
       return compileWithWasm(moduleName, sourceText);
     }
+
+    // JS compiler (loads all.js on demand)
     return compileWithJs(moduleName, sourceText);
   }
 
@@ -771,9 +755,47 @@ void (async () => {
     }
   }
 
+  let jsLoading: Promise<void> | null = null;
+
+  async function ensureJsCompiler(): Promise<boolean> {
+    if (typeof globalThis.kokaCompile === 'function') return true;
+    if (!jsLoading) {
+      jsLoading = new Promise<void>((resolve, reject) => {
+        appendCompilerLog('Loading JS compiler (all.js)...');
+        // Set up Emscripten print callbacks before loading
+        globalThis.Module = {
+          print: (text: string) => appendCompilerLog('[stdout] ' + text),
+          printErr: (_text: string) => { /* suppress */ },
+        };
+        const script = document.createElement('script');
+        script.src = 'all.js';
+        script.onload = () => {
+          // Poll for kokaCompile to become available
+          const check = (): void => {
+            if (typeof globalThis.kokaCompile === 'function') {
+              appendCompilerLog('JS compiler loaded');
+              resolve();
+            } else {
+              setTimeout(check, 200);
+            }
+          };
+          check();
+        };
+        script.onerror = () => reject(new Error('Failed to load all.js'));
+        document.head.appendChild(script);
+      });
+    }
+    try {
+      await jsLoading;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function compileWithJs(moduleName: string, sourceText: string): Promise<string | null> {
-    if (typeof globalThis.kokaCompile !== 'function') {
-      appendConsole('JS compiler not yet loaded. Please wait…', 'info');
+    if (!await ensureJsCompiler()) {
+      appendConsole('JS compiler failed to load.', 'stderr');
       return null;
     }
 
@@ -1108,6 +1130,7 @@ void (async () => {
     startLspClient({
       wasmUrl: lspWasmUrl,
       vfs,
+      verbose: parseInt(elVerboseSelect?.value ?? '0', 10) || 0,
       onLog: (text: string) => {
         // Filter out noisy debug messages, show only meaningful ones
         if (text.includes('WithSeverity') || text.includes('Failed to parse config')) return;
