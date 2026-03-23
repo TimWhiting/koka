@@ -133,9 +133,7 @@ class LspStdoutCapture {
   private readonly decoder = new TextDecoder();
 
   fd_write(data: Uint8Array): { ret: number; nwritten: number } {
-    const text = this.decoder.decode(data, { stream: true });
-    self.postMessage({ type: 'log', text: `[stdout] fd_write ${data.byteLength} bytes: ${text.substring(0, 100)}` });
-    this.buffer += text;
+    this.buffer += this.decoder.decode(data, { stream: true });
     this.parseMessages();
     return { ret: 0, nwritten: data.byteLength };
   }
@@ -284,6 +282,7 @@ self.onmessage = async (e: MessageEvent) => {
           new PreopenDirectory('/share/lib', shareLibDir.contents as Map<string, File | Directory>),
           new PreopenDirectory('/lib', libDir.contents as Map<string, File | Directory>),
         ],
+        { debug: false },
       );
 
       // Send the shared buffer to the main thread so it can write to stdin

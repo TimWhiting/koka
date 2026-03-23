@@ -1032,13 +1032,14 @@ void (async () => {
       wasmUrl: lspWasmUrl,
       vfs,
       onLog: (text: string) => {
-        console.log('[LSP]', text);
+        // Filter out noisy debug messages, show only meaningful ones
+        if (text.includes('WithSeverity') || text.includes('Failed to parse config')) return;
+        if (text.trim()) appendCompilerLog('[LSP] ' + text);
       },
-    }).then((client) => {
-      console.log('Koka LSP client started');
-      appendCompilerLog('[LSP] Language server started');
+    }).then((_client) => {
+      appendCompilerLog('[LSP] Language server ready');
     }).catch((err) => {
-      console.warn('LSP failed to start:', err);
+      console.warn('[LSP] Failed to start:', err);
       appendCompilerLog('[LSP] Failed to start: ' + String(err));
     });
   } else {
