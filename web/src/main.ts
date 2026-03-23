@@ -145,11 +145,17 @@ function appendConsole(
 // ── Compiler log helper ───────────────────────────────────────────────────────
 
 function clearCompilerLog(): void {
-  elCompilerLog.textContent = '';
+  elCompilerLog.innerHTML = '';
 }
 
+import AnsiToHtml from 'ansi-to-html';
+const ansiConverter = new AnsiToHtml({ escapeXML: true });
+
 function appendCompilerLog(msg: string): void {
-  elCompilerLog.textContent += msg + '\n';
+  const html = ansiConverter.toHtml(msg);
+  const line = document.createElement('div');
+  line.innerHTML = html;
+  elCompilerLog.appendChild(line);
   elCompilerLog.scrollTop = elCompilerLog.scrollHeight;
   // Auto-expand the log when there's output
   if (elCompilerLogArea.classList.contains('collapsed')) {

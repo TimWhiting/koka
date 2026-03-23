@@ -258,8 +258,8 @@ export async function startLspClient(
   if (options.onLog) {
     const log = options.onLog;
     client.onNotification('window/logMessage', (params: { message: string; type: number }) => {
-      const plain = params.message.replace(/\u001b\[[0-9;]*m/g, '').trim();
-      if (plain) log(plain);
+      const msg = params.message.trim();
+      if (msg) log(msg);
     });
   }
 
