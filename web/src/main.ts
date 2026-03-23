@@ -916,7 +916,6 @@ void (async () => {
     if (elBtnRun.disabled) return;
 
     clearConsole();
-    clearCompilerLog();
     elBtnRun.disabled = true;
     setStatus('running', 'Compiling…');
 
