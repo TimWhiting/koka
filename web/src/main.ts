@@ -732,7 +732,8 @@ void (async () => {
       appendCompilerLog('Compiling via LSP...');
       // The LSP expects a file path, not a module name
       const filePath = '/' + moduleName.replace(/\./g, '/') + '.kk';
-      const result = await lspHandle.compile(filePath);
+      const verbosity = parseInt(elVerboseSelect?.value ?? '1', 10);
+      const result = await lspHandle.compile(filePath, `-v${verbosity}`);
 
       if (!result.success) {
         return null;
@@ -1130,7 +1131,7 @@ void (async () => {
     startLspClient({
       wasmUrl: lspWasmUrl,
       vfs,
-      verbose: parseInt(elVerboseSelect?.value ?? '0', 10) || 0,
+      verbose: parseInt(elVerboseSelect?.value ?? '1', 10),
       onLog: (text: string) => {
         // Filter out noisy debug messages, show only meaningful ones
         if (text.includes('WithSeverity') || text.includes('Failed to parse config')) return;

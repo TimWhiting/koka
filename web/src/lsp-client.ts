@@ -266,6 +266,17 @@ export async function startLspClient(
     // koka/set-colors is optional — ignore errors
   }
 
+  // Forward window/logMessage notifications to the onLog callback
+  // These contain compiler phase info (parse, check, etc.) with ANSI colors
+  if (options.onLog) {
+    const log = options.onLog;
+    client.onNotification('window/logMessage', (params: { message: string; type: number }) => {
+      // Strip ANSI escape codes for plain text display
+      const plain = params.message.replace(/\u001b\[[0-9;]*m/g, '').trim();
+      if (plain) log(plain);
+    });
+  }
+
   return {
     client,
     compile: (filePath: string, additionalArgs?: string) =>
