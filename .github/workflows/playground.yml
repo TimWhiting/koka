@@ -40,30 +40,62 @@ jobs:
           enable-stack: true
           stack-version: 'latest'
 
+      # Cache ghc-wasm-meta toolchain (~2 min to bootstrap)
+      - name: Cache GHC WASM toolchain
+        id: cache-ghc-wasm
+        uses: actions/cache@v4
+        with:
+          path: ~/.ghc-wasm
+          key: ghc-wasm-${{ env.GHC_WASM_META_FLAVOUR }}-v1
+
       - name: Install GHC WASM backend
+        if: steps.cache-ghc-wasm.outputs.cache-hit != 'true'
         run: |
           curl -sL "https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/raw/master/bootstrap.sh" | \
             FLAVOUR=${{ env.GHC_WASM_META_FLAVOUR }} sh
+
+      - name: Verify GHC WASM
+        run: |
           source ~/.ghc-wasm/env
           wasm32-wasi-ghc --version
 
+      # Cache hpack + alex binaries (~7 min to compile)
+      - name: Cache hpack + alex
+        id: cache-tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cabal/bin
+          key: cabal-tools-${{ runner.os }}-ghc9.12-v1
+
       - name: Install hpack + alex
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
-          export PATH="$HOME/.cabal/bin:$PATH"
           cabal update
           cabal install hpack alex --overwrite-policy=always
-          echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
-      # ── Cache ──────────────────────────────────────────────────────────
+      - name: Add cabal bin to PATH
+        run: echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
-      - name: Cache cabal packages
+      # Cache WASM cabal store + dist-newstyle (incremental builds)
+      - name: Cache WASM cabal packages
         uses: actions/cache@v4
         with:
           path: |
             ~/.cabal/store
             dist-newstyle
-          key: cabal-wasm-${{ env.GHC_WASM_META_FLAVOUR }}-${{ hashFiles('package.yaml') }}
+          key: cabal-wasm-${{ env.GHC_WASM_META_FLAVOUR }}-${{ hashFiles('package.yaml', 'cabal.project') }}
           restore-keys: cabal-wasm-${{ env.GHC_WASM_META_FLAVOUR }}-
+
+      # Cache stack work for native build (but NOT precompiled output —
+      # precompiled .kki/.mjs depend on both stdlib source and compiler code)
+      - name: Cache stack
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: stack-${{ hashFiles('package.yaml', 'stack.yaml', 'stack.yaml.lock') }}
+          restore-keys: stack-
 
       # ── Build WASM binaries ────────────────────────────────────────────
 
@@ -94,8 +126,9 @@ jobs:
         run: |
           stack build koka:exe:koka-plain --fast --no-terminal
           KOKA=$(stack exec -- which koka-plain)
-          mkdir -p precompiled
+          rm -rf precompiled && mkdir -p precompiled
           $KOKA --target=js --outputdir=precompiled --library lib/toc.kk
+          echo "Precompiled $(ls precompiled/*.kki | wc -l) .kki files"
 
       # ── Build web frontend ───────────────────────────────────────────
 
@@ -103,6 +136,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
 
       - name: Build web frontend
         run: |
