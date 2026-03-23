@@ -545,6 +545,7 @@ void (async () => {
     lineNumbers: 'on',
     glyphMargin: false,
     folding: true,
+    fixedOverflowWidgets: true,
     automaticLayout: true,
   };
 

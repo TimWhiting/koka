@@ -272,7 +272,7 @@ self.onmessage = async (e: MessageEvent) => {
       const stdoutCapture = new LspStdoutCapture();
 
       const wasi = new WASI(
-        ['koka-lsp', '--language-server', '--lsstdio'],
+        ['koka-lsp', '--language-server', '--lsstdio', '--sharedir=/share'],
         [],
         [
           stdinFile as unknown as OpenFile,           // fd 0: stdin
