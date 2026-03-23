@@ -40,10 +40,36 @@ class BlockingStdinFile {
   private sharedBuffer: SharedArrayBuffer;
   private pendingData: Uint8Array = new Uint8Array(0);
   private offset = 0;
+  /** Reference to stdout capture for tracking compile request IDs */
+  public stdoutCapture: LspStdoutCapture | null = null;
+  private incomingBuffer = '';
+  private readonly textDecoder = new TextDecoder();
 
   constructor(sharedBuffer: SharedArrayBuffer) {
     this.sharedBuffer = sharedBuffer;
     this.flagView = new Int32Array(sharedBuffer, 0, 2);
+  }
+
+  /** Scan incoming data for koka/compile request IDs */
+  private trackCompileRequests(data: Uint8Array): void {
+    if (!this.stdoutCapture) return;
+    this.incomingBuffer += this.textDecoder.decode(data, { stream: true });
+    // Try to find JSON-RPC messages containing koka/compile
+    // Simple heuristic: look for the pattern in the accumulated buffer
+    const re = /"id"\s*:\s*(\d+).*"method"\s*:\s*"workspace\/executeCommand".*"koka\/compile/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(this.incomingBuffer)) !== null) {
+      this.stdoutCapture.compileRequestIds.add(parseInt(m[1], 10));
+    }
+    // Also check for koka/compileFunction
+    const re2 = /"id"\s*:\s*(\d+).*"method"\s*:\s*"workspace\/executeCommand".*"koka\/compileFunction/g;
+    while ((m = re2.exec(this.incomingBuffer)) !== null) {
+      this.stdoutCapture.compileRequestIds.add(parseInt(m[1], 10));
+    }
+    // Keep buffer bounded — only keep last 4KB
+    if (this.incomingBuffer.length > 4096) {
+      this.incomingBuffer = this.incomingBuffer.slice(-2048);
+    }
   }
 
   fd_read(len: number): { ret: number; data: Uint8Array } {
@@ -53,25 +79,16 @@ class BlockingStdinFile {
       const toRead = Math.min(len, available);
       const data = this.pendingData.slice(this.offset, this.offset + toRead);
       this.offset += toRead;
-      this.hasReadData = true;
       return { ret: 0, data };
     }
 
     // Check if new data is available (non-blocking first)
     let flag = Atomics.load(this.flagView, 0);
     if (flag !== 1) {
-      // No data right now. Block with a short timeout so the GHC RTS
-      // scheduler can run other green threads (e.g. sendServer writing
-      // responses to stdout). If no data arrives within the timeout,
-      // return empty — hGetSome in Haskell treats empty as "no data yet"
-      // and the attoparsec Partial continuation can finalize the parse.
-      // The LSP ioLoop will then call hGetSome again for the next message.
+      // Short timeout to let GHC green threads run (e.g. sendServer)
       Atomics.wait(this.flagView, 0, 0, 10);
       flag = Atomics.load(this.flagView, 0);
       if (flag !== 1) {
-        // Still no data — return empty. The Haskell BS.hGetSome handles
-        // this by having the GHC RTS retry (it doesn't treat it as EOF
-        // when the handle is still open and non-blocking IO is in effect).
         return { ret: 0, data: new Uint8Array(0) };
       }
     }
@@ -84,6 +101,9 @@ class BlockingStdinFile {
 
     Atomics.store(this.flagView, 0, 0);
     Atomics.notify(this.flagView, 0);
+
+    // Track incoming koka/compile requests so stdout can attach generated files
+    this.trackCompileRequests(this.pendingData);
 
     const toRead = Math.min(len, this.pendingData.length);
     const data = this.pendingData.slice(0, toRead);
@@ -127,10 +147,19 @@ class BlockingStdinFile {
 /**
  * Captures stdout bytes and parses LSP Content-Length framed messages.
  * Forwards complete JSON-RPC messages back to the main thread via postMessage.
+ *
+ * When a koka/compile response is detected, also collects generated files
+ * from the WASI filesystem and sends them alongside the response.
  */
 class LspStdoutCapture {
   private buffer = '';
   private readonly decoder = new TextDecoder();
+  /** Set of request IDs that are koka/compile or koka/compileFunction */
+  public compileRequestIds: Set<number> = new Set();
+  /** Reference to the WASI lib directory (where generated files go) */
+  public libContents: Map<string, File | Directory> | null = null;
+  /** Reference to the WASI root directory */
+  public rootContents: Map<string, File | Directory> | null = null;
 
   fd_write(data: Uint8Array): { ret: number; nwritten: number } {
     this.buffer += this.decoder.decode(data, { stream: true });
@@ -140,14 +169,12 @@ class LspStdoutCapture {
 
   private parseMessages(): void {
     while (true) {
-      // Look for Content-Length header
       const headerEnd = this.buffer.indexOf('\r\n\r\n');
       if (headerEnd === -1) break;
 
       const headerSection = this.buffer.substring(0, headerEnd);
       const match = headerSection.match(/Content-Length:\s*(\d+)/i);
       if (!match) {
-        // Malformed — skip past this header
         this.buffer = this.buffer.substring(headerEnd + 4);
         continue;
       }
@@ -156,15 +183,38 @@ class LspStdoutCapture {
       const bodyStart = headerEnd + 4;
       const bodyEnd = bodyStart + contentLength;
 
-      if (this.buffer.length < bodyEnd) {
-        // Not enough data yet — wait for more
-        break;
-      }
+      if (this.buffer.length < bodyEnd) break;
 
       const body = this.buffer.substring(bodyStart, bodyEnd);
       this.buffer = this.buffer.substring(bodyEnd);
 
-      // Send parsed JSON-RPC message to main thread
+      // Check if this is a response to a koka/compile request
+      try {
+        const msg = JSON.parse(body);
+        if (msg.id !== undefined && this.compileRequestIds.has(msg.id)) {
+          this.compileRequestIds.delete(msg.id);
+          // Collect generated files from the WASI filesystem
+          const generatedFiles = new Map<string, string>();
+          const textDecoder = new TextDecoder();
+          // Scan all WASI mount points for generated files
+          if (this.libContents && this.libContents.size > 0) {
+            const libDir = new Directory(this.libContents);
+            collectFilesFromDir(libDir, '/lib', generatedFiles, textDecoder);
+          }
+          if (this.rootContents && this.rootContents.size > 0) {
+            const rootDir = new Directory(this.rootContents);
+            collectFilesFromDir(rootDir, '/', generatedFiles, textDecoder);
+          }
+          // Send response with generated files attached
+          self.postMessage({
+            type: 'response',
+            data: body,
+            generatedFiles: Array.from(generatedFiles.entries()),
+          });
+          continue;
+        }
+      } catch { /* not JSON, send as-is */ }
+
       self.postMessage({ type: 'response', data: body });
     }
   }
@@ -234,6 +284,20 @@ function buildDirectoryTree(files: Map<string, string>): Directory {
   return new Directory(root);
 }
 
+function collectFilesFromDir(
+  dir: Directory, prefix: string,
+  out: Map<string, string>, decoder: TextDecoder,
+): void {
+  for (const [name, entry] of dir.contents) {
+    const path = prefix ? prefix + '/' + name : name;
+    if (entry instanceof File) {
+      out.set(path, decoder.decode(entry.data));
+    } else if (entry instanceof Directory) {
+      collectFilesFromDir(entry, path, out, decoder);
+    }
+  }
+}
+
 // ── Worker message handler ──────────────────────────────────────────────────
 
 let wasmModule: WebAssembly.Module | null = null;
@@ -268,6 +332,10 @@ self.onmessage = async (e: MessageEvent) => {
       // Create blocking stdin and capturing stdout
       const stdinFile = new BlockingStdinFile(sharedBuffer);
       const stdoutCapture = new LspStdoutCapture();
+      // Wire up cross-references for compile file collection
+      stdoutCapture.libContents = libDir.contents as Map<string, File | Directory>;
+      stdoutCapture.rootContents = rootDir.contents as Map<string, File | Directory>;
+      stdinFile.stdoutCapture = stdoutCapture;
 
       const wasi = new WASI(
         ['koka-lsp', '--language-server', '--lsstdio', '--sharedir=/share', '--target=js', '--builddir=/lib'],

@@ -29,7 +29,7 @@ import { runKokaModules } from './module-runner';
 import { FileBrowser, buildFileTree, type FileEntry } from './file-browser';
 import { loadKokaSamples, fetchGitHubDirectory } from './github-integration';
 import { createWasmCompiler } from './wasm-runner';
-import { startLspClient } from './lsp-client';
+import { startLspClient, type LspClientHandle } from './lsp-client';
 
 // Monaco is imported dynamically after initServices() — see async IIFE below
 import type * as MonacoTypes from '@codingame/monaco-vscode-editor-api';
@@ -517,6 +517,7 @@ elCompilerLogToggle.addEventListener('click', () => {
 let sourceEditor: MonacoTypes.editor.IStandaloneCodeEditor = null!;
 // eslint-disable-next-line prefer-const
 let jsEditor: MonacoTypes.editor.IStandaloneCodeEditor = null!;
+let lspHandle: LspClientHandle | null = null;
 
 void (async () => {
   // Initialize VSCode services BEFORE importing monaco-vscode-editor-api.
@@ -573,6 +574,44 @@ void (async () => {
   // We must create the tab after sourceEditor exists so switchTab can call
   // sourceEditor.setModel().
   openFile('main.kk', DEFAULT_SOURCE, 'main.kk');
+
+  // ── Code lenses: "Run" buttons above fun main() / test / example ──────
+
+  monaco.languages.registerCodeLensProvider(KOKA_LANGUAGE_ID, {
+    provideCodeLenses(model) {
+      const text = model.getValue();
+      // Match fun main(), fun test/...(), fun example/...()
+      // In the playground, visibility doesn't matter — allow pub or not
+      const re = /(?:(?<=\n)|^)(?:pub\s+)?fun\s+(main|test\/?[\w-]*|example\/?[\w-]*)\(\s*\)/g;
+      const lenses: MonacoTypes.languages.CodeLens[] = [];
+      let match: RegExpExecArray | null;
+      while ((match = re.exec(text)) !== null) {
+        const pos = model.getPositionAt(match.index);
+        const range = {
+          startLineNumber: pos.lineNumber,
+          startColumn: pos.column,
+          endLineNumber: pos.lineNumber,
+          endColumn: pos.column + match[0].length,
+        };
+        lenses.push({
+          range,
+          command: {
+            id: 'koka.compileAndRun',
+            title: match[1] === 'main' ? '▶ Run' : `▶ Run ${match[1]}`,
+            tooltip: 'Compile and run this function',
+          },
+        });
+      }
+      return { lenses, dispose() {} };
+    },
+  });
+
+  // Register the compile-and-run command for code lenses
+  // With @codingame/monaco-vscode-api, commands must be registered via vscode API
+  const vscode = await import('vscode');
+  vscode.commands.registerCommand('koka.compileAndRun', () => {
+    void compileAndRun();
+  });
 
   // ── Keyboard shortcut: Ctrl+Enter / Cmd+Enter to compile & run ─────────
 
@@ -686,12 +725,50 @@ void (async () => {
   async function compile(sourceText: string): Promise<string | null> {
     const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
     const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
-    const backend = getBackend();
 
+    // Try LSP compilation first (uses cached type-check state)
+    if (lspHandle) {
+      const result = await compileWithLsp(moduleName);
+      if (result !== null) return result;
+      // LSP compile failed — fall back to standalone compiler
+      appendCompilerLog('LSP compile failed, falling back to standalone compiler');
+    }
+
+    // Fall back to standalone compilers
+    const backend = getBackend();
     if (backend === 'wasm') {
       return compileWithWasm(moduleName, sourceText);
     }
     return compileWithJs(moduleName, sourceText);
+  }
+
+  async function compileWithLsp(moduleName: string): Promise<string | null> {
+    if (!lspHandle) return null;
+    try {
+      appendCompilerLog('Compiling via LSP...');
+      // The LSP expects a file path, not a module name
+      const filePath = '/' + moduleName.replace(/\./g, '/') + '.kk';
+      const result = await lspHandle.compile(filePath);
+
+      if (!result.success) {
+        return null;
+      }
+
+      // Store generated files into VFS for the module runner
+      for (const [path, content] of result.generatedFiles) {
+        // Only store .mjs files for running
+        if (path.endsWith('.mjs')) {
+          const vfsPath = '/.koka/' + path;
+          vfs.addFile(vfsPath, content);
+        }
+      }
+
+      appendCompilerLog(`LSP compiled: ${result.generatedFiles.size} files generated`);
+      return moduleName;
+    } catch (err) {
+      console.warn('LSP compile error:', err);
+      return null;
+    }
   }
 
   async function compileWithJs(moduleName: string, sourceText: string): Promise<string | null> {
@@ -1036,7 +1113,8 @@ void (async () => {
         if (text.includes('WithSeverity') || text.includes('Failed to parse config')) return;
         if (text.trim()) appendCompilerLog('[LSP] ' + text);
       },
-    }).then((_client) => {
+    }).then((handle) => {
+      lspHandle = handle;
       appendCompilerLog('[LSP] Language server ready');
     }).catch((err) => {
       console.warn('[LSP] Failed to start:', err);

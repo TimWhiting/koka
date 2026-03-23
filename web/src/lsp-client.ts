@@ -30,6 +30,8 @@ import type { KokaVFS } from './vfs';
 class WorkerMessageReader extends AbstractMessageReader implements MessageReader {
   private callback: DataCallback | null = null;
   private readonly worker: Worker;
+  /** Pending generated files from koka/compile responses, keyed by response ID */
+  public pendingGeneratedFiles: Map<number, Map<string, string>> = new Map();
 
   constructor(worker: Worker) {
     super();
@@ -38,6 +40,13 @@ class WorkerMessageReader extends AbstractMessageReader implements MessageReader
       if (e.data.type === 'response' && this.callback) {
         try {
           const msg = JSON.parse(e.data.data) as Message;
+          // If this response includes generated files, stash them
+          if (e.data.generatedFiles) {
+            const id = (msg as { id?: number }).id;
+            if (id !== undefined) {
+              this.pendingGeneratedFiles.set(id, new Map(e.data.generatedFiles));
+            }
+          }
           this.callback(msg);
         } catch (err) {
           this.fireError(err as Error);
@@ -110,13 +119,56 @@ export interface LspClientOptions {
   onLog?: (text: string) => void;
 }
 
+export interface LspCompileResult {
+  success: boolean;
+  /** Path to the generated executable (from the LSP response) */
+  exePath: string | null;
+  /** Generated files from the WASI filesystem (path → content) */
+  generatedFiles: Map<string, string>;
+}
+
+/**
+ * Compile a file via the LSP's koka/compile command.
+ * Returns generated files from the WASI filesystem.
+ */
+export async function compileViaLsp(
+  client: MonacoLanguageClient,
+  reader: WorkerMessageReader,
+  filePath: string,
+  additionalArgs: string = '',
+): Promise<LspCompileResult> {
+  const result = await client.sendRequest(ExecuteCommandRequest.type, {
+    command: 'koka/compile',
+    arguments: [filePath, additionalArgs],
+  });
+
+  // The response ID was captured by the reader
+  // Find the most recent generated files
+  const lastId = Math.max(...reader.pendingGeneratedFiles.keys(), -1);
+  const generatedFiles = reader.pendingGeneratedFiles.get(lastId) ?? new Map<string, string>();
+  reader.pendingGeneratedFiles.delete(lastId);
+
+  const exePath = typeof result === 'string' ? result : null;
+  return {
+    success: exePath !== null,
+    exePath,
+    generatedFiles,
+  };
+}
+
+export interface LspClientHandle {
+  client: MonacoLanguageClient;
+  /** Compile a file via the LSP and return generated files */
+  compile: (filePath: string, additionalArgs?: string) => Promise<LspCompileResult>;
+}
+
 /**
  * Start the WASM LSP server in a Web Worker and connect MonacoLanguageClient.
- * Returns the client instance (already started).
+ * Returns a handle with the client and a compile function.
  */
 export async function startLspClient(
   options: LspClientOptions,
-): Promise<MonacoLanguageClient> {
+): Promise<LspClientHandle> {
   // Check for SharedArrayBuffer support
   if (typeof SharedArrayBuffer === 'undefined') {
     throw new Error(
@@ -211,5 +263,9 @@ export async function startLspClient(
     // koka/set-colors is optional — ignore errors
   }
 
-  return client;
+  return {
+    client,
+    compile: (filePath: string, additionalArgs?: string) =>
+      compileViaLsp(client, reader, filePath, additionalArgs ?? ''),
+  };
 }
