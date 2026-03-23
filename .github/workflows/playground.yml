@@ -47,11 +47,11 @@ jobs:
           source ~/.ghc-wasm/env
           wasm32-wasi-ghc --version
 
-      - name: Install hpack
+      - name: Install hpack + alex
         run: |
           export PATH="$HOME/.cabal/bin:$PATH"
           cabal update
-          cabal install hpack --overwrite-policy=always
+          cabal install hpack alex --overwrite-policy=always
           echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
       # ── Cache ──────────────────────────────────────────────────────────
