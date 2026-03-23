@@ -30,7 +30,7 @@ import Common.Error
 import Common.ColorScheme
 import Common.Range           ( BString, stringToBString )
 
-import Compile.Options        ( playgroundFlags, playgroundOptions, Flags(..), Terminal(..) )
+import Compile.Options        ( playgroundFlags, playgroundOptions, parseOptions, Flags(..), Mode(..), Terminal(..) )
 import Compile.BuildContext
 import Compile.Build          ( virtualMount )
 
@@ -48,39 +48,32 @@ compileHandler :: JSVal -> JSVal -> IO ()
 compileHandler jsModName jsSource = do
   let modName = fromJSString jsModName
       source  = fromJSString jsSource
-  result <- compileToJS modName source
-  js_setResult (toJSString result)
-
--- | Compile a Koka source string to JavaScript.
--- Returns a JSON string with either the generated JS code or error messages.
-compileToJS :: String -> String -> IO String
-compileToJS moduleName sourceText = do
-  errRef <- newIORef []
   v <- js_getVerbose
   let flags = playgroundFlags{ verbose = v }
-      term  = playgroundTerminal errRef
+  result <- compileToJS flags modName source
+  js_setResult (toJSString result)
+
+compileToJS :: Flags -> String -> String -> IO String
+compileToJS flags0 moduleName sourceText = do
+  errRef <- newIORef []
+  let flags = flags0{ verbose = if verbose flags0 > 0 then verbose flags0 else 1 }
+      term  = Terminal (\err -> modifyIORef errRef (show err :))
+                       (\msg -> js_logCompiler (toJSString msg))
+                       (\_ -> return ())
+                       (\doc -> js_logCompiler (toJSString (show doc)))
+                       (\doc -> js_logCompiler (toJSString (show doc)))
       sourcePath = virtualMount ++ "/" ++ moduleName ++ ".kk"
       content    = stringToBString sourceText
   (mbResult, _) <- runBuildIO term flags False $ do
     let buildc0 = buildcEmpty flags
     withVirtualModule sourcePath content buildc0 $ \mainModName buildc1 ->
-      do -- Build: lex, parse, type check, optimize, codegen
-         buildc2 <- buildcBuildEx False [] [] buildc1
+      do buildc2 <- buildcBuildEx False [] [] buildc1
          buildcThrowOnError buildc2
          return (buildc2, ())
   errs <- readIORef errRef
   case mbResult of
     Just _  -> return "{\"success\": true}"
     Nothing -> return ("{\"success\": false, \"errors\": " ++ show (reverse errs) ++ "}")
-
--- | A terminal that collects errors and sends phase/trace messages to JS.
-playgroundTerminal :: IORef [String] -> Terminal
-playgroundTerminal errRef
-  = Terminal (\err -> modifyIORef errRef (show err :))  -- error handler
-             (\msg -> js_logCompiler (toJSString msg))  -- trace
-             (\_ -> return ())                           -- progress
-             (\doc -> js_logCompiler (toJSString (show doc)))  -- phase info
-             (\doc -> js_logCompiler (toJSString (show doc)))  -- general info
 
 -- JS FFI: register the compiler callback on globalThis
 foreign import javascript unsafe "h$kokaSetCompiler"
@@ -121,31 +114,29 @@ import Common.Error
 import Common.ColorScheme
 import Common.Range           ( BString, stringToBString )
 
-import Compile.Options        ( playgroundFlags, Flags(..), Terminal(..) )
+import Compile.Options        ( playgroundFlags, parseOptions, Flags(..), Mode(..), Terminal(..) )
 import Compile.BuildContext
 import Compile.Build          ( virtualMount )
 
 main :: IO ()
 main = do
   args <- getArgs
-  case args of
-    [moduleName, sourceText] -> do
-      result <- compileToJS moduleName sourceText
-      putStrLn result
-      hFlush stdout
-    [moduleName] -> do
-      sourceText <- getContents
-      result <- compileToJS moduleName sourceText
-      putStrLn result
-      hFlush stdout
-    _ -> do
-      hPutStrLn stderr "Usage: koka-playground <module-name> [source-text]"
-      hPutStrLn stderr "  Or pipe source via stdin: echo 'module main ...' | koka-playground main"
+  -- Use parseOptions with playgroundFlags as the base to support all standard flags
+  -- (e.g. --main-entry=<name>, -v<N>, --target=js, etc.)
+  -- The remaining "files" from parseOptions become positional args (module name).
+  let (flags0, moduleName) = case parseOptions playgroundFlags args of
+        Right (flags, ModeCompiler (f:_)) -> (flags, f)
+        Right (flags, _)                  -> (flags, "main")
+        Left err                          -> error err
+  sourceText <- getContents
+  result <- compileToJS flags0 moduleName sourceText
+  putStrLn result
+  hFlush stdout
 
-compileToJS :: String -> String -> IO String
-compileToJS moduleName sourceText = do
+compileToJS :: Flags -> String -> String -> IO String
+compileToJS flags0 moduleName sourceText = do
   errRef <- newIORef []
-  let flags = playgroundFlags{ verbose = 1 }
+  let flags = flags0{ verbose = if verbose flags0 > 0 then verbose flags0 else 1 }
       term  = Terminal (\err -> modifyIORef errRef (show err :))
                        (\msg -> hPutStrLn stderr msg >> hFlush stderr)
                        (\_ -> return ())

@@ -25,12 +25,18 @@ export interface ModuleSet {
  * @param onOutput        Callback for stdout lines
  * @param onError         Callback for stderr lines
  */
+/**
+ * @param entryFunction  Optional entry function name (e.g. 'example/counter').
+ *                       If not provided, calls 'main'. Koka encodes names:
+ *                       '/' → '_fs_', '-' → '_dash_', '_' → '__'
+ */
 export async function runKokaModules(
   precompiledMjs: Map<string, string>,
   generatedMjs: Map<string, string>,
   mainModuleName: string,
   onOutput: (text: string) => void,
   onError: (text: string) => void,
+  entryFunction?: string,
 ): Promise<void> {
   // Combine all modules: precompiled std + freshly generated
   const allModules: ModuleSet = {};
@@ -149,8 +155,12 @@ export async function runKokaModules(
 
   try {
     const mod = await import(/* @vite-ignore */ blobUrls[mainFilename]);
-    if (typeof mod.main === 'function') {
-      await mod.main();
+    // Determine which export to call.
+    // Koka's asciiEncode for exports (isModule=false): '/' → '_fs_', '-' → '_dash_', '_' → '__'
+    const fnName = entryFunction ? kokaEncodeName(entryFunction) : 'main';
+    const fn = mod[fnName] ?? mod.main;
+    if (typeof fn === 'function') {
+      await fn();
     }
 
     // Collect output from the DOM element (Koka browser runtime writes there)
@@ -185,6 +195,35 @@ export async function runKokaModules(
     }
     for (const url of Object.values(blobUrls)) URL.revokeObjectURL(url);
   }
+}
+
+/**
+ * Encode a Koka name as it appears in JS exports (isModule=false encoding).
+ * Matches Koka's asciiEncode from Common/Name.hs:
+ *   '/' → '_fs_', '-' → '_dash_' (or '_' before alnum), '_' → '__', '.' → '_dot_'
+ */
+function kokaEncodeName(name: string): string {
+  let result = '';
+  for (let i = 0; i < name.length; i++) {
+    const c = name[i];
+    const next = name[i + 1] ?? ' ';
+    if (/[a-zA-Z0-9]/.test(c)) {
+      result += c;
+    } else if (c === '/' ) {
+      result += '_fs_';
+    } else if (c === '-' && /[a-zA-Z0-9]/.test(next)) {
+      result += '_';
+    } else if (c === '-') {
+      result += '_dash_';
+    } else if (c === '_') {
+      result += '__';
+    } else if (c === '.') {
+      result += '_dot_';
+    } else {
+      result += c;
+    }
+  }
+  return result;
 }
 
 /** Extract the bare filename from a path or return as-is. */

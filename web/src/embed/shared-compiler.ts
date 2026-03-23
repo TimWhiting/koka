@@ -9,8 +9,8 @@ import { createWasmCompiler } from '../wasm-runner';
 import { runKokaModules } from '../module-runner';
 
 export interface SharedCompiler {
-  compile: (moduleName: string, sourceText: string) => Promise<CompileResult>;
-  run: (moduleName: string, generatedFiles: Map<string, string>) => Promise<string>;
+  compile: (moduleName: string, sourceText: string, extraArgs?: string[]) => Promise<CompileResult>;
+  run: (moduleName: string, generatedFiles: Map<string, string>, entryFunction?: string) => Promise<string>;
 }
 
 export interface CompileResult {
@@ -67,12 +67,12 @@ async function initCompiler(): Promise<SharedCompiler | null> {
     });
 
     return {
-      compile: async (moduleName, sourceText) => {
+      compile: async (moduleName, sourceText, extraArgs?) => {
         // Add user source to VFS temporarily
         const userPath = '/' + moduleName.replace(/\./g, '/') + '.kk';
         vfsFiles.set(userPath, sourceText);
 
-        const result = await compileFn(moduleName, sourceText);
+        const result = await compileFn(moduleName, sourceText, extraArgs);
 
         // Clean up user source
         vfsFiles.delete(userPath);
@@ -84,8 +84,8 @@ async function initCompiler(): Promise<SharedCompiler | null> {
           generatedFiles: result.generatedFiles,
         };
       },
-      run: (moduleName, generatedFiles) =>
-        runModules(moduleName, generatedFiles, precompiled),
+      run: (moduleName, generatedFiles, entryFunction?) =>
+        runModules(moduleName, generatedFiles, precompiled, entryFunction),
     };
   } catch (err) {
     console.error('[koka-editor] Failed to initialize compiler:', err);
@@ -160,6 +160,7 @@ async function runModules(
   moduleName: string,
   generatedFiles: Map<string, string>,
   precompiled: Map<string, string>,
+  entryFunction?: string,
 ): Promise<string> {
   // Filter to .mjs files only
   const precompiledMjs = new Map<string, string>();
@@ -176,6 +177,7 @@ async function runModules(
     moduleName,
     (text) => outputLines.push(text),
     (text) => errorLines.push(text),
+    entryFunction,
   );
 
   if (errorLines.length > 0) {

@@ -49,7 +49,8 @@ self.onmessage = async (e: MessageEvent) => {
 
     try {
       const allFiles = new Map<string, string>(msg.files);
-      const result = runCompiler(wasmModule, msg.moduleName, msg.sourceText, allFiles);
+      const extraArgs: string[] = msg.extraArgs ?? [];
+      const result = runCompiler(wasmModule, msg.moduleName, msg.sourceText, allFiles, extraArgs);
       self.postMessage({
         type: 'result',
         success: result.success,
@@ -69,6 +70,7 @@ function runCompiler(
   moduleName: string,
   sourceText: string,
   allFiles: Map<string, string>,
+  extraArgs: string[] = [],
 ): { success: boolean; stdout: string; stderr: string; generatedFiles: Map<string, string> } {
   // Build WASI filesystem
   const shareLibFiles = new Map<string, string>();
@@ -98,7 +100,7 @@ function runCompiler(
   const stderrLines: string[] = [];
 
   const wasi = new WASI(
-    ['koka-playground', moduleName],
+    ['koka-playground', ...extraArgs, moduleName],
     [],
     [
       new OpenFile(stdinFile),
@@ -113,6 +115,7 @@ function runCompiler(
       new PreopenDirectory('/lib', libDir.contents as Map<string, File | Directory>),
       new PreopenDirectory('/.koka', outputContents),
     ],
+    { debug: false },
   );
 
   const instance = new WebAssembly.Instance(module, {

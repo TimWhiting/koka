@@ -32,6 +32,7 @@ module Compile.Options( -- * Command line options
                        , phaseVerboseIO
                        , Terminal(..)
                        , playgroundFlags, playgroundOptions
+                       , parseOptions
                        ) where
 
 import Debug.Trace

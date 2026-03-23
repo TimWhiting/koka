@@ -26,7 +26,7 @@ export interface WasmCompileResult {
  * Returns a compile function that streams log output in real time.
  */
 export async function createWasmCompiler(config: WasmCompilerConfig): Promise<
-  (moduleName: string, sourceText: string) => Promise<WasmCompileResult>
+  (moduleName: string, sourceText: string, extraArgs?: string[]) => Promise<WasmCompileResult>
 > {
   // Create worker from the wasm-worker module
   const worker = new Worker(
@@ -50,7 +50,7 @@ export async function createWasmCompiler(config: WasmCompilerConfig): Promise<
   });
 
   // Return compile function
-  return (moduleName: string, sourceText: string): Promise<WasmCompileResult> => {
+  return (moduleName: string, sourceText: string, extraArgs?: string[]): Promise<WasmCompileResult> => {
     return new Promise((resolve, reject) => {
       const handler = (e: MessageEvent) => {
         const msg = e.data;
@@ -88,6 +88,7 @@ export async function createWasmCompiler(config: WasmCompilerConfig): Promise<
         moduleName,
         sourceText,
         files: Array.from(allFiles.entries()),
+        extraArgs: extraArgs ?? [],
       });
     });
   };

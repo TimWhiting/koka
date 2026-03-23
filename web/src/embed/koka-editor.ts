@@ -305,13 +305,22 @@ export class KokaEditorElement extends HTMLElement {
       const moduleMatch = code.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
       const moduleName = moduleMatch ? moduleMatch[1] : 'main';
 
+      // Detect the entry point function
+      const entryMatch = code.match(/(?:pub\s+)?fun\s+(main|test\/?[\w-]*|example\/?[\w-]*)\(\s*\)/);
+      const entryName = entryMatch ? entryMatch[1] : 'main';
+
       const compiler = await getSharedCompiler();
       if (!compiler) {
         this.showOutput('WASM compiler not available.', 'error');
         return;
       }
 
-      const result = await compiler.compile(moduleName, code);
+      const extraArgs: string[] = [];
+      if (entryName !== 'main') {
+        extraArgs.push(`--main-entry=${entryName}`);
+      }
+
+      const result = await compiler.compile(moduleName, code, extraArgs);
 
       if (!result.success) {
         let errorMsg = 'Compilation failed.';
@@ -326,7 +335,11 @@ export class KokaEditorElement extends HTMLElement {
       }
 
       // Run the compiled output
-      const output = await compiler.run(moduleName, result.generatedFiles);
+      const output = await compiler.run(
+        moduleName,
+        result.generatedFiles,
+        entryName !== 'main' ? entryName : undefined,
+      );
       this.showOutput(output || '(no output)', 'stdout');
 
     } catch (err) {
