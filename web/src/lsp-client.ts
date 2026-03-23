@@ -233,7 +233,7 @@ export async function startLspClient(
         supportHtml: true,
       },
       middleware: {
-        executeCommand: async (command: string, args: unknown[], next: (...a: unknown[]) => unknown) => {
+        executeCommand: async (command: string, args: any[], next: any) => {
           if (command === 'koka/signature-help/set-context') {
             // Set context on the backend, then trigger Monaco's parameter hints
             await next(command, args);

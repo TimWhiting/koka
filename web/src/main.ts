@@ -646,7 +646,7 @@ void (async () => {
 
   // ── WASM compiler setup ──────────────────────────────────────────────
 
-  type WasmCompileFn = (moduleName: string, sourceText: string) => Promise<{ success: boolean; stdout: string; stderr: string }>;
+  type WasmCompileFn = (moduleName: string, sourceText: string) => Promise<{ success: boolean; stdout: string; stderr: string; generatedFiles: Map<string, string> }>;
   let wasmCompile: WasmCompileFn | null = null;
   let wasmLoading: Promise<WasmCompileFn | null> | null = null;
 
@@ -811,7 +811,7 @@ void (async () => {
     vfs.clearGenerated();
     (globalThis as Record<string, unknown>).kokaResult = undefined;
 
-    globalThis.kokaCompile(moduleName, sourceText);
+    globalThis.kokaCompile!(moduleName, sourceText);
 
     const resultJson = await new Promise<string>((resolve, reject) => {
       let elapsed = 0;

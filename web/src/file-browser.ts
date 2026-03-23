@@ -14,6 +14,8 @@ export interface FileEntry {
   download_url?: string;
   /** If true, children need to be fetched on expand */
   lazyLoad?: boolean;
+  /** File content if available (e.g. from VFS) */
+  content?: string;
 }
 
 export interface FileBrowserConfig {
