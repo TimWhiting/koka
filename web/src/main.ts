@@ -9,24 +9,31 @@
  *  - Install the VFS as globalThis.kokaVFS
  *  - Preload stdlib sources and precompiled .kki/.mjs files
  *  - Register the Koka language (Monaco syntax highlighting)
- *  - Set up the LSP adapter scaffold (globalThis.kokaService)
+ *  - Start the WASM LSP server (hover, completion, diagnostics, etc.)
  *  - Poll for globalThis.kokaCompile and enable the run button when ready
  *  - Wire up "Compile & Run" using the actual compiler pipeline
  *  - Capture and display execution output via blob-URL ES module execution
  *  - Manage the file browser, tab bar, and resizable panels
  */
 
-import * as monaco from 'monaco-editor';
+// Monaco + LSP initialization: initServices() must be called BEFORE
+// @codingame/monaco-vscode-editor-api is imported (it triggers auto-init).
+// initServices already imports vscode/localExtensionHost internally.
+import { initServices } from 'monaco-languageclient/vscode/services';
+import { useWorkerFactory } from 'monaco-languageclient/workerFactory';
+
+// Non-monaco imports (safe to be static)
 import { KokaVFS } from './vfs';
 import { registerKokaLanguage, KOKA_LANGUAGE_ID } from './koka-lang';
-import {
-  registerLanguageProviders,
-  type KokaLanguageService,
-} from './lsp-adapter';
 import { runKokaModules } from './module-runner';
 import { FileBrowser, buildFileTree, type FileEntry } from './file-browser';
 import { loadKokaSamples, fetchGitHubDirectory } from './github-integration';
 import { createWasmCompiler } from './wasm-runner';
+import { startLspClient } from './lsp-client';
+
+// Monaco is imported dynamically after initServices() — see async IIFE below
+import type * as MonacoTypes from '@codingame/monaco-vscode-editor-api';
+let monaco: typeof MonacoTypes;
 
 type BackendType = 'js' | 'wasm';
 
@@ -41,8 +48,6 @@ declare global {
   var kokaVerbose:         number | undefined;
   // eslint-disable-next-line no-var
   var kokaOnCompilerLog:   ((msg: string) => void) | undefined;
-  // eslint-disable-next-line no-var
-  var kokaService:         KokaLanguageService | undefined;
   // eslint-disable-next-line no-var
   var Module:              { print?: (t: string) => void; printErr?: (t: string) => void } | undefined;
 }
@@ -183,7 +188,7 @@ interface TabEntry {
   id: string;
   name: string;
   path: string;
-  model: monaco.editor.ITextModel;
+  model: MonacoTypes.editor.ITextModel;
 }
 
 const openTabs = new Map<string, TabEntry>();
@@ -205,7 +210,7 @@ function openFile(path: string, content: string, name: string): void {
   }
 
   const id = makeTabId();
-  const uri = monaco.Uri.parse(`koka://playground/${path}`);
+  const uri = monaco.Uri.parse(`inmemory://playground/${path}`);
   let model = monaco.editor.getModel(uri);
   if (!model) {
     const language = path.endsWith('.kk') || path.endsWith('.kki')
@@ -509,23 +514,28 @@ elCompilerLogToggle.addEventListener('click', () => {
 
 // These are used before the async block below, so we declare them here.
 // eslint-disable-next-line prefer-const
-let sourceEditor: monaco.editor.IStandaloneCodeEditor = null!;
+let sourceEditor: MonacoTypes.editor.IStandaloneCodeEditor = null!;
 // eslint-disable-next-line prefer-const
-let jsEditor: monaco.editor.IStandaloneCodeEditor = null!;
+let jsEditor: MonacoTypes.editor.IStandaloneCodeEditor = null!;
 
 void (async () => {
+  // Initialize VSCode services BEFORE importing monaco-vscode-editor-api.
+  // This ensures the extension host is registered and the default API is created.
+  useWorkerFactory({});
+  await initServices({});
+
+  // Now dynamically import monaco (after services are initialized)
+  monaco = await import('@codingame/monaco-vscode-editor-api');
+
   // Register the Koka language before creating editors
   await registerKokaLanguage(monaco);
 
-  // ── LSP adapter (scaffold) ─────────────────────────────────────────────
-  const kokaService: KokaLanguageService = {};
-  registerLanguageProviders(monaco, KOKA_LANGUAGE_ID, kokaService);
-  globalThis.kokaService = kokaService;
-
   // ── Editor options ─────────────────────────────────────────────────────
 
-  const EDITOR_COMMON_OPTIONS: monaco.editor.IEditorConstructionOptions = {
-    theme: 'vs-dark',
+  // Set the theme via the editor API (works with both vanilla and @codingame)
+  monaco.editor.setTheme('vs-dark');
+
+  const EDITOR_COMMON_OPTIONS: MonacoTypes.editor.IEditorConstructionOptions = {
     fontSize: 14,
     fontFamily: "'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace",
     fontLigatures: true,
@@ -1007,5 +1017,35 @@ void (async () => {
   // Use a MutationObserver on the tab bar to keep the file browser in sync
   new MutationObserver(() => { refreshOpenFilesSection(); })
     .observe(elTabBar, { childList: true });
+
+  // ── LSP client (WASM) ───────────────────────────────────────────────────
+  //
+  // Start the Koka LSP server in a Web Worker if SharedArrayBuffer is
+  // available (requires Cross-Origin Isolation via coi-serviceworker).
+  // The LSP provides hover, completion, diagnostics, go-to-definition, etc.
+
+  if (typeof SharedArrayBuffer !== 'undefined') {
+    const lspWasmUrl = new URL('/koka-lsp.wasm', window.location.href).href;
+
+    startLspClient({
+      wasmUrl: lspWasmUrl,
+      vfs,
+      onLog: (text: string) => {
+        console.log('[LSP]', text);
+      },
+    }).then((client) => {
+      console.log('Koka LSP client started');
+      appendCompilerLog('[LSP] Language server started');
+    }).catch((err) => {
+      console.warn('LSP failed to start:', err);
+      appendCompilerLog('[LSP] Failed to start: ' + String(err));
+    });
+  } else {
+    console.warn(
+      'SharedArrayBuffer not available — LSP features disabled. ' +
+      'Page needs Cross-Origin-Opener-Policy: same-origin and ' +
+      'Cross-Origin-Embedder-Policy: require-corp headers.'
+    );
+  }
 
 })();

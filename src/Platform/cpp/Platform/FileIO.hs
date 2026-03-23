@@ -32,6 +32,9 @@ module Platform.FileIO(
   , getEnvVar
   , getEnvPaths
   , getProgramPath
+    -- * Home/temp directories
+  , getHomeDirectory
+  , getTemporaryDirectory
     -- * Process execution
   , runSystem, runSystemRaw, runCmd, runCmdRead, runCmdEnv
   ) where
@@ -39,7 +42,8 @@ module Platform.FileIO(
 import System.IO
 import System.Directory( doesFileExist, doesDirectoryExist, createDirectoryIfMissing
                        , getCurrentDirectory, canonicalizePath, removeFile
-                       , getFileSize )
+                       , getFileSize
+                       , getHomeDirectory, getTemporaryDirectory )
 import System.Process   ( system, rawSystem, createProcess, CreateProcess(..)
                         , proc, StdStream(..), waitForProcess )
 import System.Exit      ( ExitCode(..) )

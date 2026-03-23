@@ -8,7 +8,7 @@
  * Falls back to a basic Monarch tokenizer if TextMate loading fails.
  */
 
-import type * as Monaco from 'monaco-editor';
+import type * as Monaco from '@codingame/monaco-vscode-editor-api';
 import { Registry, parseRawGrammar, type IGrammar } from 'vscode-textmate';
 import { createOnigScanner, createOnigString, loadWASM } from 'vscode-oniguruma';
 // The grammar JSON is copied from support/vscode/koka.language-koka/syntaxes/koka.json

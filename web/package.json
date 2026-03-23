@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "^0.4.2",
+    "coi-serviceworker": "^0.1.7",
     "monaco-editor": "^0.52.0",
     "monaco-languageclient": "^9.0.0",
     "vscode-languageclient": "^9.0.0",

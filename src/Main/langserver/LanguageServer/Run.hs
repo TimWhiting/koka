@@ -22,6 +22,13 @@ import GHC.IO.Handle (BufferMode(NoBuffering), hSetBuffering)
 import GHC.IO.StdHandles (stdin, stdout, stderr)
 import System.IO (hPutStrLn)
 import Control.Monad (void, forever, when, guard)
+#if defined(KOKA_WASM)
+import Control.Concurrent (threadDelay)
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
+import Data.ByteString.Builder.Extra (defaultChunkSize)
+import System.IO (hFlush, utf8, hSetEncoding)
+#endif
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.STM ( atomically )
 import Control.Concurrent.STM.TChan ( newTChan, readTChan, TChan )
@@ -50,11 +57,20 @@ import System.IO.Error (isDoesNotExistError)
 runLanguageServer :: Flags -> [FilePath] -> IO ()
 runLanguageServer flags files = do
 #if defined(KOKA_WASM)
-  -- WASM/WASI only supports stdio
+  -- WASM/WASI: use stdio with a retrying stdin reader.
+  -- On WASI, fd_read may return 0 bytes (no data yet) rather than blocking.
+  -- The LSP parser (attoparsec) treats 0 bytes as end-of-input and fails.
+  -- We retry with a short delay until real data is available.
   hSetBuffering stdout NoBuffering
   hSetBuffering stderr NoBuffering
   hSetBuffering stdin NoBuffering
-  runLanguageServerWithHandles stdin stdout
+  let wasiStdinRead = do
+        bs <- BS.hGetSome stdin defaultChunkSize
+        if BS.null bs
+          then do threadDelay 10000  -- 10ms delay, yields to GHC scheduler
+                  wasiStdinRead      -- retry
+          else return bs
+  runLanguageServerWith wasiStdinRead stdout
 #else
   when (not useStdio && languageServerPort flags == -1) $ do
     hPutStrLn stderr "No port specified for language server.\nUse --lsport=<port> to specify a port or --lsstdio to use stdio."
@@ -75,6 +91,41 @@ runLanguageServer flags files = do
 #endif
   where
     useStdio = languageServerStdio flags
+#if defined(KOKA_WASM)
+    runLanguageServerWith clientIn outHandle = do
+      -- Create a new language server state
+      state <- newLSStateVar flags
+      messageChan <- liftIO $ messages <$> readMVar state
+      progressChan <- liftIO $ progress <$> readMVar state
+      rin <- atomically newTChan :: IO (TChan ReactorInput)
+      hSetBuffering outHandle NoBuffering
+      hSetEncoding outHandle utf8
+      let clientOut out = BSL.hPut outHandle out >> hFlush outHandle
+      void $
+        runServerWith
+          ioLogger
+          lspLogger
+          clientIn
+          clientOut
+          $
+          ServerDefinition
+            { parseConfig = const $ const $ Right (),
+              onConfigChange = const $ pure (),
+              defaultConfig = (),
+              configSection = T.pack "koka",
+              doInitialize = \env _ -> forkIO (reactor rin) >> forkIO (messageHandler messageChan env state) >> forkIO (progressHandler progressChan env state) >> pure (Right env),
+              staticHandlers = \_caps -> lspHandlers rin,
+              interpretHandler = \env -> Iso (\lsm -> runLSM lsm state env) liftIO,
+              options =
+                defaultOptions
+                  { optTextDocumentSync = Just syncOptions,
+                    optExecuteCommandCommands = Just [T.pack "koka/compile", T.pack "koka/compileFunction", T.pack "koka/signature-help/set-context", T.pack "koka/set-colors"],
+                    optCompletionTriggerCharacters = Just ['.', ':', '/', ' ', ']', '}'],
+                    optSignatureHelpTriggerCharacters = Just ['(', ','],
+                    optSignatureHelpRetriggerCharacters = Just [')']
+                  }
+            }
+#endif
     runLanguageServerWithHandles inHandle outHandle = do
       -- Create a new language server state
       state <- newLSStateVar flags

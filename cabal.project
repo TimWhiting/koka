@@ -1,1 +1,8 @@
 packages: .
+
+-- Forked lsp package with optional websockets support
+-- (websockets depends on network which can't build on WASI)
+optional-packages: /tmp/lsp-fork/lsp/lsp.cabal
+                   /tmp/lsp-fork/lsp-types/lsp-types.cabal
+
+constraints: lsp -websockets

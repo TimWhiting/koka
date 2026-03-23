@@ -30,6 +30,9 @@ module Platform.FileIO(
   , getEnvVar
   , getEnvPaths
   , getProgramPath
+    -- * Home/temp directories
+  , getHomeDirectory
+  , getTemporaryDirectory
     -- * Process execution
   , runSystem, runSystemRaw, runCmd, runCmdRead, runCmdEnv
   ) where
@@ -93,6 +96,14 @@ getEnvPaths _ = return []
 
 getProgramPath :: IO FilePath
 getProgramPath = return "/koka"
+
+-- ── Home/temp directories (stubbed for WASI) ─────────────────────────────────
+
+getHomeDirectory :: IO FilePath
+getHomeDirectory = return "/"
+
+getTemporaryDirectory :: IO FilePath
+getTemporaryDirectory = return "/tmp"
 
 -- ── Process execution (NOT available in WASI) ────────────────────────────────
 
