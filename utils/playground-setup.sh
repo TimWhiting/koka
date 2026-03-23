@@ -3,9 +3,10 @@
 # Run from the project root directory.
 #
 # Usage:
-#   ./utils/playground-setup.sh          # Full setup (JS + WASM + precompile + web)
-#   ./utils/playground-setup.sh js       # JS backend only
-#   ./utils/playground-setup.sh wasm     # WASM backend only
+#   ./utils/playground-setup.sh          # Full setup (WASM + precompile + web)
+#   ./utils/playground-setup.sh wasm     # WASM backend only (compiler + LSP)
+#   ./utils/playground-setup.sh js       # JS backend only (fallback)
+#   ./utils/playground-setup.sh lsp      # LSP WASM binary only
 #   ./utils/playground-setup.sh web      # Web frontend only (copies assets + starts dev server)
 #   ./utils/playground-setup.sh precompile  # Precompile stdlib only
 #   ./utils/playground-setup.sh deploy   # Copy all assets to web/public (no build)
@@ -28,9 +29,9 @@ err()  { echo -e "${RED}[setup]${NC} $1"; }
 
 hpack 2>/dev/null || { err "hpack not found. Install via: cabal install hpack"; exit 1; }
 
-# ── Build JS backend ────────────────────────────────────────────────────────
+# ── Build JS backend (fallback, optional) ──────────────────────────────────
 
-if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "js" ]; then
+if [ "$BACKEND" = "js" ]; then
   info "Building Koka for JS backend..."
   cabal build lib:koka koka:exe:koka-playground \
     --with-compiler=javascript-unknown-ghcjs-ghc \
@@ -38,33 +39,41 @@ if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "js" ]; then
   info "JS build done."
 fi
 
-# ── Build WASM backend ──────────────────────────────────────────────────────
+# ── Build WASM backend (compiler + LSP) ────────────────────────────────────
 
-if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "wasm" ]; then
+if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "wasm" ] || [ "$BACKEND" = "lsp" ]; then
   if [ -f ~/.ghc-wasm/env ]; then source ~/.ghc-wasm/env; fi
   if command -v wasm32-wasi-ghc &>/dev/null; then
-    info "Building Koka for WASM backend..."
-    cabal build lib:koka koka:exe:koka-playground \
-      --with-compiler=wasm32-wasi-ghc \
-      --with-hc-pkg=wasm32-wasi-ghc-pkg
-
-    WASM=$(find dist-newstyle -name "koka-playground.wasm" -path "*/wasm32-wasi/*" | head -1)
-    WASM_OPT="${WASM%.wasm}.opt.wasm"
-
-    # Optimize with wasm-opt
     WASM_OPT_BIN=$(command -v wasm-opt 2>/dev/null || echo ~/.ghc-wasm/binaryen/bin/wasm-opt)
-    if [ -x "$WASM_OPT_BIN" ]; then
-      info "Optimizing WASM with wasm-opt -Oz..."
-      "$WASM_OPT_BIN" -Oz "$WASM" -o "$WASM_OPT"
-      info "Optimized: $(du -h "$WASM_OPT" | cut -f1) (from $(du -h "$WASM" | cut -f1))"
-    else
-      warn "wasm-opt not found, using unoptimized WASM"
-      cp "$WASM" "$WASM_OPT"
+
+    if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "wasm" ]; then
+      info "Building Koka playground for WASM backend..."
+      wasm32-wasi-cabal build lib:koka koka:exe:koka-playground
+
+      WASM=$(find dist-newstyle -name "koka-playground.wasm" -path "*/wasm32-wasi/*" | head -1)
+      if [ -n "$WASM" ] && [ -x "$WASM_OPT_BIN" ]; then
+        info "Optimizing playground WASM with wasm-opt -Oz..."
+        "$WASM_OPT_BIN" -Oz "$WASM" -o "${WASM%.wasm}.opt.wasm"
+        info "Optimized: $(du -h "${WASM%.wasm}.opt.wasm" | cut -f1) (from $(du -h "$WASM" | cut -f1))"
+      fi
+      info "WASM playground build done."
     fi
-    info "WASM build done."
+
+    if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "lsp" ]; then
+      info "Building Koka LSP server for WASM..."
+      wasm32-wasi-cabal build koka:exe:koka-lsp-wasm
+
+      LSPWASM=$(find dist-newstyle -name "koka-lsp-wasm.wasm" -path "*/wasm32-wasi/*" | head -1)
+      if [ -n "$LSPWASM" ] && [ -x "$WASM_OPT_BIN" ]; then
+        info "Optimizing LSP WASM with wasm-opt -Oz..."
+        "$WASM_OPT_BIN" -Oz "$LSPWASM" -o "${LSPWASM%.wasm}.opt.wasm"
+        info "Optimized: $(du -h "${LSPWASM%.wasm}.opt.wasm" | cut -f1) (from $(du -h "$LSPWASM" | cut -f1))"
+      fi
+      info "WASM LSP build done."
+    fi
   else
     warn "wasm32-wasi-ghc not found, skipping WASM backend."
-    warn "Install via: curl https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/raw/master/bootstrap.sh | sh"
+    warn "Install via: FLAVOUR=9.12 sh <(curl https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/raw/master/bootstrap.sh)"
   fi
 fi
 
@@ -87,22 +96,37 @@ if [ "$BACKEND" = "all" ] || [ "$BACKEND" = "web" ] || [ "$BACKEND" = "deploy" ]
   info "Deploying assets to web/public/..."
   mkdir -p web/public/lib web/public/precompiled
 
-  # JS compiler bundle
+  # JS compiler bundle (optional fallback — only if built)
   JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d 2>/dev/null | head -1)
   if [ -n "$JSEXE" ] && [ -f "$JSEXE/all.js" ]; then
     cp "$JSEXE/all.js" web/public/all.js
     info "Copied JS bundle: $(du -h web/public/all.js | cut -f1)"
   else
-    warn "JS bundle not found. Build with: ./utils/playground-setup.sh js"
+    info "JS bundle not found (optional — LSP is the default backend)"
   fi
 
   # WASM compiler binary (optimized)
   WASM_OPT=$(find dist-newstyle -name "koka-playground.opt.wasm" -path "*/wasm32-wasi/*" 2>/dev/null | head -1)
   if [ -n "$WASM_OPT" ] && [ -f "$WASM_OPT" ]; then
     cp "$WASM_OPT" web/public/koka-playground.wasm
-    info "Copied WASM: $(du -h web/public/koka-playground.wasm | cut -f1)"
+    info "Copied WASM compiler: $(du -h web/public/koka-playground.wasm | cut -f1)"
   else
-    warn "WASM binary not found. Build with: ./utils/playground-setup.sh wasm"
+    warn "WASM compiler binary not found. Build with: ./utils/playground-setup.sh wasm"
+  fi
+
+  # WASM LSP binary (optimized)
+  LSP_OPT=$(find dist-newstyle -name "koka-lsp-wasm.opt.wasm" -path "*/wasm32-wasi/*" 2>/dev/null | head -1)
+  if [ -n "$LSP_OPT" ] && [ -f "$LSP_OPT" ]; then
+    cp "$LSP_OPT" web/public/koka-lsp.wasm
+    info "Copied WASM LSP: $(du -h web/public/koka-lsp.wasm | cut -f1)"
+  else
+    warn "WASM LSP binary not found. Build with: ./utils/playground-setup.sh lsp"
+  fi
+
+  # coi-serviceworker (for SharedArrayBuffer support on static hosting)
+  if [ -f web/node_modules/coi-serviceworker/coi-serviceworker.min.js ]; then
+    cp web/node_modules/coi-serviceworker/coi-serviceworker.min.js web/public/coi-serviceworker.js
+    info "Copied coi-serviceworker.js"
   fi
 
   # Stdlib sources (needed by compiler for inline externs)

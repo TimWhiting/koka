@@ -17,14 +17,13 @@ permissions:
   id-token: write
 
 env:
-  GHCJS_VERSION: 'javascript-unknown-ghcjs-9.12.2'
-  EMSCRIPTEN_VERSION: '3.1.74'
+  GHC_WASM_META_FLAVOUR: '9.12'
 
 jobs:
   build:
     name: Build Playground
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -32,11 +31,6 @@ jobs:
           submodules: recursive
 
       # ── Setup toolchains ──────────────────────────────────────────────
-
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: ${{ env.EMSCRIPTEN_VERSION }}
 
       - name: Setup GHC + Cabal + Stack
         uses: haskell-actions/setup@v2
@@ -46,12 +40,12 @@ jobs:
           enable-stack: true
           stack-version: 'latest'
 
-      - name: Install GHC JS cross-compiler via ghcup
+      - name: Install GHC WASM backend
         run: |
-          # https://www.haskell.org/ghcup/guide/#cross-support
-          ghcup config add-release-channel cross
-          emconfigure ghcup install ghc --set ${{ env.GHCJS_VERSION }}
-          javascript-unknown-ghcjs-ghc --version
+          curl -sL "https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/raw/master/bootstrap.sh" | \
+            FLAVOUR=${{ env.GHC_WASM_META_FLAVOUR }} sh
+          source ~/.ghc-wasm/env
+          wasm32-wasi-ghc --version
 
       - name: Install hpack
         run: |
@@ -60,7 +54,7 @@ jobs:
           cabal install hpack --overwrite-policy=always
           echo "$HOME/.cabal/bin" >> $GITHUB_PATH
 
-      # ── Cache cabal packages ─────────────────────────────────────────
+      # ── Cache ──────────────────────────────────────────────────────────
 
       - name: Cache cabal packages
         uses: actions/cache@v4
@@ -68,21 +62,31 @@ jobs:
           path: |
             ~/.cabal/store
             dist-newstyle
-          key: cabal-js-${{ env.GHCJS_VERSION }}-${{ hashFiles('package.yaml') }}
-          restore-keys: cabal-js-${{ env.GHCJS_VERSION }}-
+          key: cabal-wasm-${{ env.GHC_WASM_META_FLAVOUR }}-${{ hashFiles('package.yaml') }}
+          restore-keys: cabal-wasm-${{ env.GHC_WASM_META_FLAVOUR }}-
 
-      # ── Build Koka for JS ────────────────────────────────────────────
+      # ── Build WASM binaries ────────────────────────────────────────────
 
       - name: Generate cabal file
         run: hpack
 
-      - name: Build Koka library + playground
+      - name: Build WASM compiler + LSP
         run: |
-          cabal build lib:koka koka:exe:koka-playground \
-            --with-compiler=javascript-unknown-ghcjs-ghc \
-            --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
+          source ~/.ghc-wasm/env
+          wasm32-wasi-cabal build lib:koka koka:exe:koka-playground koka:exe:koka-lsp-wasm
 
-      # GHC 9.12.2 embeds valid WASM as base64 data URI — no patching needed!
+      - name: Optimize WASM binaries
+        run: |
+          source ~/.ghc-wasm/env
+          WASM_OPT=~/.ghc-wasm/binaryen/bin/wasm-opt
+
+          PLAYGROUND=$(find dist-newstyle -name "koka-playground.wasm" -path "*/wasm32-wasi/*" | head -1)
+          $WASM_OPT -Oz "$PLAYGROUND" -o "${PLAYGROUND%.wasm}.opt.wasm"
+          echo "Playground: $(du -h "${PLAYGROUND%.wasm}.opt.wasm" | cut -f1) (from $(du -h "$PLAYGROUND" | cut -f1))"
+
+          LSP=$(find dist-newstyle -name "koka-lsp-wasm.wasm" -path "*/wasm32-wasi/*" | head -1)
+          $WASM_OPT -Oz "$LSP" -o "${LSP%.wasm}.opt.wasm"
+          echo "LSP: $(du -h "${LSP%.wasm}.opt.wasm" | cut -f1) (from $(du -h "$LSP" | cut -f1))"
 
       # ── Precompile std library ───────────────────────────────────────
 
@@ -91,7 +95,7 @@ jobs:
           stack build koka:exe:koka-plain --fast --no-terminal
           KOKA=$(stack exec -- which koka-plain)
           mkdir -p precompiled
-          $KOKA --target=js --outputdir=precompiled --library lib/std/core.kk
+          $KOKA --target=js --outputdir=precompiled --library lib/toc.kk
 
       # ── Build web frontend ───────────────────────────────────────────
 
@@ -112,13 +116,19 @@ jobs:
         run: |
           mkdir -p deploy
 
-          JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d | head -1)
-
           # Web frontend
           cp -r web/dist/* deploy/
 
-          # Compiler JS bundle (no patching needed with GHC 9.12.2)
-          cp "$JSEXE/all.js" deploy/all.js
+          # WASM compiler binary
+          WASM_OPT=$(find dist-newstyle -name "koka-playground.opt.wasm" -path "*/wasm32-wasi/*" | head -1)
+          cp "$WASM_OPT" deploy/koka-playground.wasm
+
+          # WASM LSP binary
+          LSP_OPT=$(find dist-newstyle -name "koka-lsp-wasm.opt.wasm" -path "*/wasm32-wasi/*" | head -1)
+          cp "$LSP_OPT" deploy/koka-lsp.wasm
+
+          # coi-serviceworker for SharedArrayBuffer support
+          cp web/node_modules/coi-serviceworker/coi-serviceworker.min.js deploy/coi-serviceworker.js
 
           # Stdlib sources (needed for inline externs)
           mkdir -p deploy/lib
@@ -146,7 +156,7 @@ jobs:
 
           echo "=== Deployment ==="
           du -sh .
-          du -h all.js
+          du -h koka-playground.wasm koka-lsp.wasm
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

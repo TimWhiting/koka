@@ -1,210 +1,186 @@
-# Koka Playground — Browser-Based Compiler
+# Koka Playground — Browser-Based Compiler & LSP
 
-Compile, edit, and run Koka programs directly in the browser. The Koka compiler
-itself runs as JavaScript (compiled via GHC's JS backend), with a Monaco-based
-editor frontend.
+Compile, edit, and run Koka programs directly in the browser with full IDE
+features (hover, completion, diagnostics, go-to-definition). The Koka compiler
+and LSP server run as WASM in Web Workers.
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│  Web Frontend (web/)                │
-│  Monaco editor + VFS + compile/run  │
-└──────────────┬──────────────────────┘
-               │ globalThis.kokaVFS / kokaCompile
-┌──────────────▼──────────────────────┐
-│  Koka Compiler (GHC JS backend)    │
-│  All 109 modules compiled to JS    │
-│  Platform/js/ stubs for IO         │
-│  VFS-backed file operations        │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│  Web Frontend (web/)                    │
+│  Monaco editor + @codingame/vscode-api  │
+│  Code lenses, file browser, VFS        │
+└────┬─────────────────────┬──────────────┘
+     │ LSP (JSON-RPC)      │ Compile & Run
+┌────▼──────────┐   ┌──────▼──────────────┐
+│ LSP Worker    │   │ Compiler Worker     │
+│ koka-lsp.wasm │   │ koka-playground.wasm│
+│ SharedArrayBuf│   │ (fallback)          │
+│ stdin/stdout  │   │                     │
+└───────────────┘   └─────────────────────┘
 ```
+
+**Default flow:** LSP (WASM) handles type-checking, hover, completion, diagnostics,
+AND compilation via `koka/compile`. Falls back to standalone WASM compiler if needed.
+JS backend (`all.js`) loads on demand only when explicitly selected.
 
 ## Quick Start (Local Development)
 
 ### Prerequisites
 
-- **Emscripten 3.1.74** — required by GHC JS 9.12.2
-- **GHC 9.12.2** (native) — for bootstrap and native builds
-- **GHC JS cross-compiler** — installed via ghcup
-- **Node.js 18+** — for testing and web frontend
+- **GHC WASM 9.12** — via ghc-wasm-meta bootstrap
+- **GHC 9.12** (native) — for precompiling stdlib
+- **Node.js 18+** — for web frontend
 - **cabal 3.16+**, **stack**, **hpack**
 
-### Install GHC JS Cross-Compiler
+### Install GHC WASM Backend
 
 ```bash
-# Install emscripten 3.1.74
-cd ~/emsdk
-./emsdk install 3.1.74
-./emsdk activate 3.1.74
-source ./emsdk_env.sh
-
-# Install GHC JS via ghcup
-ghcup config add-release-channel cross
-emconfigure ghcup install ghc --set javascript-unknown-ghcjs-9.12.2
-
-# Verify
-javascript-unknown-ghcjs-ghc --version
+# Install GHC WASM via ghc-wasm-meta
+FLAVOUR=9.12 sh <(curl -sL https://gitlab.haskell.org/ghc/ghc-wasm-meta/-/raw/master/bootstrap.sh)
+source ~/.ghc-wasm/env
+wasm32-wasi-ghc --version
 ```
 
-### Build the Compiler for JavaScript
+### One-Command Setup
 
 ```bash
-# Generate cabal file from package.yaml
+./utils/playground-setup.sh        # Build everything + deploy assets
+cd web && npm install && npx vite --host
+```
+
+### Step-by-Step Build
+
+```bash
+# Generate cabal file
 hpack
 
-# Build the library and playground executable
-cabal build lib:koka koka:exe:koka-playground \
-  --with-compiler=javascript-unknown-ghcjs-ghc \
-  --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
-```
+# Build WASM compiler + LSP server
+source ~/.ghc-wasm/env
+wasm32-wasi-cabal build lib:koka koka:exe:koka-playground koka:exe:koka-lsp-wasm
 
-GHC 9.12.2 produces valid output with no post-processing needed.
+# Optimize with wasm-opt
+~/.ghc-wasm/binaryen/bin/wasm-opt -Oz \
+  $(find dist-newstyle -name "koka-playground.wasm" -path "*/wasm32-wasi/*" | head -1) \
+  -o web/public/koka-playground.wasm
 
-### Precompile Standard Library
+~/.ghc-wasm/binaryen/bin/wasm-opt -Oz \
+  $(find dist-newstyle -name "koka-lsp-wasm.wasm" -path "*/wasm32-wasi/*" | head -1) \
+  -o web/public/koka-lsp.wasm
 
-```bash
-# Build native koka for precompiling
+# Precompile stdlib (uses native compiler)
 stack build koka:exe:koka-plain --fast
+$(stack exec -- which koka-plain) --target=js --outputdir=precompiled --library lib/toc.kk
 
-# Precompile std/core to .kki + .mjs
-KOKA=$(stack exec -- which koka-plain)
-mkdir -p precompiled
-$KOKA --target=js --outputdir=precompiled --library lib/std/core.kk
-```
-
-### Run the Web Frontend
-
-```bash
-# Set up dev symlinks
-JSEXE=$(find dist-newstyle -name "koka-playground.jsexe" -type d | head -1)
-mkdir -p web/public
-ln -sf $JSEXE/all.js web/public/all.js
-ln -sf $(pwd)/lib web/public/lib
-ln -sf $(pwd)/precompiled web/public/precompiled
-
-# Generate manifests
-python3 -c "
-import json, os
-files = []
-for root, dirs, fnames in os.walk('lib/std'):
-    if '/v1/' in root: continue
-    for f in fnames:
-        files.append(os.path.join(root, f).replace('lib/', ''))
-print(json.dumps(sorted(files)))
-" > web/public/stdlib-manifest.json
-
-ls precompiled/ | python3 -c "
-import sys, json
-print(json.dumps(sorted([l.strip() for l in sys.stdin])))
-" > web/public/precompiled-manifest.json
+# Deploy assets + generate manifests
+./utils/playground-setup.sh deploy
 
 # Start dev server
 cd web && npm install && npx vite --host
 ```
 
-### Test with Node.js
+### Optional: JS Backend (Fallback)
+
+The JS backend is optional. Build only if you need it as a fallback:
 
 ```bash
-node test-js/run.cjs                    # Hello World
-node test-js/run.cjs samples/basic/fibonacci.kk  # Specific file
+# Requires emscripten 3.1.74 + GHC JS 9.12.2
+source ~/emsdk/emsdk_env.sh
+ghcup config add-release-channel cross
+emconfigure ghcup install ghc --set javascript-unknown-ghcjs-9.12.2
+
+cabal build lib:koka koka:exe:koka-playground \
+  --with-compiler=javascript-unknown-ghcjs-ghc \
+  --with-hc-pkg=javascript-unknown-ghcjs-ghc-pkg
 ```
+
+## LSP Server
+
+The Koka LSP server runs in the browser via WASM, providing:
+
+- **Hover** — type signatures + documentation
+- **Completion** — function/type/module completion
+- **Diagnostics** — real-time error checking
+- **Go-to-definition** — navigate to definitions
+- **Document symbols** — outline view
+- **Inlay hints** — inferred types
+- **Folding ranges** — code folding
+- **Code lenses** — "▶ Run" buttons above `fun main()`, `fun test/...()`, `fun example/...()`
+- **Compile & run** — `koka/compile` command generates JS, module-runner executes
+
+### LSP Architecture
+
+The LSP uses a forked `lsp` Haskell package with a `-websockets` flag to exclude
+the `network` dependency (which can't build on WASI).
+
+Communication uses `SharedArrayBuffer` + `Atomics.wait` for stdin (requires
+Cross-Origin Isolation via `coi-serviceworker`). The Haskell `wasiStdinRead`
+retries with `threadDelay` when `fd_read` returns empty, allowing GHC green
+threads to run (e.g., the `sendServer` thread that writes responses).
+
+Key files:
+- `web/src/lsp-worker.ts` — Web Worker with WASI, blocking stdin, LSP stdout capture
+- `web/src/lsp-client.ts` — MonacoLanguageClient with custom MessageReader/Writer
+- `src/Main/langserver/LanguageServer/Run.hs` — WASM branch with retrying stdin
+- `src/Main/langserver/LanguageServer/Conversions.hs` — `inmemory://` URI handling
+- `/tmp/lsp-fork/lsp/` — Forked `lsp` package with `-websockets` flag
 
 ## CI / Deployment
 
 The GitHub Actions workflow (`.github/workflows/playground.yml`):
 
-1. Installs GHC JS 9.12.2 via ghcup (~2 min, pre-built bindist)
-2. Builds Koka library + playground for JS target
-3. Precompiles std library with native Koka
-4. Builds the Vite web frontend
-5. Assembles a static site and deploys to GitHub Pages
+1. Installs GHC WASM 9.12 via ghc-wasm-meta bootstrap
+2. Builds Koka library, playground compiler, and LSP server for WASM
+3. Optimizes both WASM binaries with `wasm-opt -Oz`
+4. Precompiles std library with native Koka
+5. Builds the Vite web frontend
+6. Assembles a static site with `coi-serviceworker` and deploys to GitHub Pages
 
 Enable deployment: repo Settings → Pages → Source: **GitHub Actions**
-
-The playground will be at `https://<username>.github.io/koka/`
 
 ## Project Structure
 
 ```
 ├── src/
 │   ├── Platform/js/          # JS-specific Platform modules (8 modules)
-│   │   ├── FileIO.hs         # VFS-backed doesFileExist, readTextFile, etc.
-│   │   ├── Filetime.hs       # VFS-backed file times via FFI
-│   │   ├── Console.hs        # No-op console stubs
-│   │   ├── ReadLine.hs       # No-op REPL stubs
-│   │   ├── Runtime.hs        # Standard GHC exception handling
-│   │   ├── Var.hs            # IORef-based (single-threaded JS)
-│   │   ├── Config.hs         # Hardcoded web config
-│   │   └── GetOptions.hs     # Re-export GetOpt
+│   ├── Platform/wasm/        # WASM-specific Platform modules (8 modules)
+│   ├── Platform/cpp/         # Native Platform modules (default)
 │   ├── Common/File.hs        # Delegates IO to Platform.FileIO (no CPP guards)
 │   ├── Compile/Options.hs    # playgroundFlags for browser config
-│   └── Main/playground/      # JS entry point (callback registration)
+│   └── Main/
+│       ├── playground/       # Playground entry point (JS/WASM)
+│       └── langserver/       # LSP server (shared with native + WASM)
+│           └── LanguageServer/
+│               ├── Run.hs    # WASM branch: runServerWith + retrying stdin
+│               ├── Conversions.hs  # inmemory:// URI support
+│               └── Monad.hs  # VFS suffix matching for inmemory:// URIs
 ├── jsbits/
 │   └── vfs.js                # JS VFS bridge functions for FFI
 ├── web/                      # TypeScript + Vite + Monaco playground
 │   ├── src/
-│   │   ├── main.ts           # Editor, compile/run, file browser
+│   │   ├── main.ts           # Editor, compile/run, file browser, LSP startup
 │   │   ├── vfs.ts            # KokaVFS class (globalThis.kokaVFS)
+│   │   ├── lsp-worker.ts     # Web Worker: WASI LSP with SharedArrayBuffer stdin
+│   │   ├── lsp-client.ts     # MonacoLanguageClient bridge + compile API
+│   │   ├── wasm-runner.ts    # Standalone WASM compiler (fallback)
+│   │   ├── wasm-worker.ts    # Web Worker: standalone WASM compiler
 │   │   ├── koka-lang.ts      # TextMate grammar + Monarch fallback
 │   │   ├── module-runner.ts  # ES module execution via blob URLs
 │   │   ├── file-browser.ts   # Tree view with GitHub integration
-│   │   ├── github-integration.ts  # Fetch samples, load/save Gists
-│   │   └── lsp-adapter.ts    # LSP provider scaffold
-│   └── index.html
-├── test-js/
-│   └── run.cjs               # Node.js end-to-end test
+│   │   └── github-integration.ts  # Fetch samples, load/save Gists
+│   ├── index.html
+│   └── public/               # Static assets (WASM binaries, stdlib, etc.)
 ├── .github/workflows/
-│   └── playground.yml         # CI: build + deploy to GitHub Pages
-└── PLAYGROUND.md              # This file
+│   └── playground.yml        # CI: build WASM + LSP + deploy to GitHub Pages
+└── PLAYGROUND.md             # This file
 ```
 
-## How It Works
+## Known Limitations
 
-### Virtual Filesystem (VFS)
-
-The compiler's IO operations go through `Platform.FileIO` which on the JS
-target delegates to `globalThis.kokaVFS` via FFI:
-
-```javascript
-globalThis.kokaVFS = {
-  readFile:   (path) => string | null,
-  fileExists: (path) => boolean,
-  fileTime:   (path) => number,  // ms since epoch
-  writeFile:  (path, content) => void,
-  listDir:    (path) => string[],
-  createDir:  (path) => void,
-  dirExists:  (path) => boolean,
-  fileSize:   (path) => number,
-  removeFile: (path) => void,
-};
-```
-
-### Precompiled Standard Library
-
-The `.kki` interface files are placed at `/lib/js-debug/` in the VFS with
-far-future timestamps. The compiler recognizes these as cached and skips
-recompilation — only the user's module is parsed, type-checked, and code-generated.
-
-### Platform Abstraction
-
-All platform-specific IO is in `Platform/` modules (no CPP in caller code):
-- `Platform.FileIO` — filesystem operations (VFS on JS, System.Directory on native)
-- `Platform.Filetime` — file modification times (VFS on JS, Data.Time on native)
-- `Platform.Console` — terminal colors (no-op on JS)
-- `Platform.ReadLine` — REPL input (no-op on JS)
-
-### GHC JS Backend Notes
-
-- **GHC 9.12.2** with **emscripten 3.1.74** produces valid output with no patching
-- The embedded WASM is a base64 data URI with zero imports
-- Output is ~44MB uncompressed, ~2.3MB with brotli (served automatically by CDNs)
-- Minification is counterproductive — repetitive GHC output compresses better unminified
-
-### Known Limitations
-
-- **Int overflow**: JS backend uses 32-bit Int; some literals in `Type/Infer.hs` overflow (warnings only)
-- **FBIP samples**: `rbtree.kk` and `rbtree-fbip.kk` crash with BigInt errors (JS backend bug)
+- **Initial type-check is slow** (~30s on WASM) — the LSP recompiles `std/core` from source on first file open because `.kki` files don't contain range maps. Subsequent edits are fast.
+- **Int overflow**: WASM/JS backends use 32-bit Int; some literals overflow (warnings only)
+- **FBIP samples**: `rbtree.kk` and `rbtree-fbip.kk` crash with BigInt errors
 - **Lazy constructors**: `lazycons.kk` not supported on web
-- **No Template Haskell (yet)**: The JS cross-compiler lacks the external interpreter (IServ) needed to run TH splices at compile time. The WASM backend has this working, so it's technically feasible — just not implemented yet for JS. This prevents using packages like `lsp-types` that depend on TH.
-- **No LSP server**: Due to the TH limitation above; future work will either enable TH or expose compiler query functions directly via JS FFI.
+- **SharedArrayBuffer**: Requires Cross-Origin Isolation headers (handled by `coi-serviceworker`)
+- **No C compiler warnings**: `gcc not found` — harmless, C backend not used in browser
