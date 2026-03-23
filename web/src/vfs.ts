@@ -71,6 +71,15 @@ export class KokaVFS {
   }
 
   /** Return every file written by the compiler (all files in VFS). */
+  /** Return all files in the VFS */
+  getAllFiles(): Map<string, string> {
+    const out = new Map<string, string>();
+    for (const [k, v] of this.files) {
+      out.set(k, v.content);
+    }
+    return out;
+  }
+
   getWrittenFiles(): Map<string, string> {
     const out = new Map<string, string>();
     for (const [k, v] of this.files) {

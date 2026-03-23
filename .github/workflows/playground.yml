@@ -103,7 +103,7 @@ jobs:
       - name: Build web frontend
         run: |
           cd web
-          npm ci
+          npm install
           npm run build
 
       # ── Assemble static site ─────────────────────────────────────────

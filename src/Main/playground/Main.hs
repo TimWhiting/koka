@@ -145,12 +145,12 @@ main = do
 compileToJS :: String -> String -> IO String
 compileToJS moduleName sourceText = do
   errRef <- newIORef []
-  let flags = playgroundFlags{ verbose = 0 }
+  let flags = playgroundFlags{ verbose = 1 }
       term  = Terminal (\err -> modifyIORef errRef (show err :))
+                       (\msg -> hPutStrLn stderr msg >> hFlush stderr)
                        (\_ -> return ())
-                       (\_ -> return ())
-                       (\_ -> return ())
-                       (\_ -> return ())
+                       (\doc -> hPutStrLn stderr (show doc) >> hFlush stderr)
+                       (\doc -> hPutStrLn stderr (show doc) >> hFlush stderr)
       sourcePath = virtualMount ++ "/" ++ moduleName ++ ".kk"
       content    = stringToBString sourceText
   (mbResult, _) <- runBuildIO term flags False $ do

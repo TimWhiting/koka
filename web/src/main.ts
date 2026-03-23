@@ -26,6 +26,9 @@ import {
 import { runKokaModules } from './module-runner';
 import { FileBrowser, buildFileTree, type FileEntry } from './file-browser';
 import { loadKokaSamples, fetchGitHubDirectory } from './github-integration';
+import { createWasmCompiler } from './wasm-runner';
+
+type BackendType = 'js' | 'wasm';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -598,16 +601,62 @@ void (async () => {
     appendConsole('Warning: could not preload stdlib: ' + String(e), 'info');
   }
 
-  setStatus('loading', 'Waiting for compiler…');
+  // ── WASM compiler setup ──────────────────────────────────────────────
+
+  type WasmCompileFn = (moduleName: string, sourceText: string) => Promise<{ success: boolean; stdout: string; stderr: string }>;
+  let wasmCompile: WasmCompileFn | null = null;
+  let wasmLoading: Promise<WasmCompileFn | null> | null = null;
+
+  const elBackendSelect = document.getElementById('backend-select') as HTMLSelectElement | null;
+
+  function getBackend(): BackendType {
+    return (elBackendSelect?.value as BackendType) ?? 'js';
+  }
+
+  /** Lazily load the WASM compiler on first use */
+  async function ensureWasmCompiler(): Promise<WasmCompileFn | null> {
+    if (wasmCompile) return wasmCompile;
+    if (wasmLoading) return wasmLoading;
+
+    wasmLoading = (async () => {
+      try {
+        appendCompilerLog('[wasm] Loading WASM compiler...');
+        setStatus('loading', 'Loading WASM compiler…');
+        const fn = await createWasmCompiler({
+          wasmUrl: new URL('koka-playground.wasm', window.location.href).href,
+          getAllFiles: () => vfs.getAllFiles(),
+          onLog: (text) => appendCompilerLog(text),
+        });
+        wasmCompile = fn;
+        appendCompilerLog('[wasm] WASM compiler loaded (' +
+          (await fetch('koka-playground.wasm').then(r => r.headers.get('content-length') || '?')) + ' bytes)');
+        setStatus('ready', 'Compiler ready');
+        return fn;
+      } catch (e) {
+        appendCompilerLog('[wasm] WASM compiler not available: ' + String(e));
+        appendConsole('WASM compiler failed to load: ' + String(e), 'stderr');
+        wasmLoading = null; // allow retry
+        return null;
+      }
+    })();
+
+    return wasmLoading;
+  }
 
   // ── Compiler availability polling ──────────────────────────────────────
 
+  setStatus('loading', 'Waiting for compiler…');
+
   function watchCompilerReady(): void {
+    // Enable button immediately — WASM loads lazily, JS polls
+    elBtnRun.disabled = false;
+    setStatus('ready', 'Ready');
+
     const check = (): void => {
       if (typeof globalThis.kokaCompile === 'function') {
         setStatus('ready', 'Compiler ready');
-        elBtnRun.disabled = false;
-        appendConsole('Compiler ready!', 'info');
+        appendConsole('JS compiler ready!', 'info');
+        return;
       } else {
         setTimeout(check, 500);
       }
@@ -624,18 +673,26 @@ void (async () => {
    * Returns the generated main module name on success, or null on failure.
    */
   async function compile(sourceText: string): Promise<string | null> {
+    const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
+    const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
+    const backend = getBackend();
+
+    if (backend === 'wasm') {
+      return compileWithWasm(moduleName, sourceText);
+    }
+    return compileWithJs(moduleName, sourceText);
+  }
+
+  async function compileWithJs(moduleName: string, sourceText: string): Promise<string | null> {
     if (typeof globalThis.kokaCompile !== 'function') {
-      appendConsole('Compiler not yet loaded. Please wait…', 'info');
+      appendConsole('JS compiler not yet loaded. Please wait…', 'info');
       return null;
     }
 
-    globalThis.kokaVerbose = parseInt(elVerboseSelect?.value ?? '1', 10) || 0;
+    (globalThis as Record<string, unknown>).kokaVerbose = parseInt(elVerboseSelect?.value ?? '1', 10) || 0;
 
     vfs.clearGenerated();
-    globalThis.kokaResult = undefined;
-
-    const moduleMatch = sourceText.match(/^\s*module\s+([a-zA-Z][a-zA-Z0-9_/-]*)/m);
-    const moduleName  = moduleMatch ? moduleMatch[1] : 'main';
+    (globalThis as Record<string, unknown>).kokaResult = undefined;
 
     globalThis.kokaCompile(moduleName, sourceText);
 
@@ -643,9 +700,9 @@ void (async () => {
       let elapsed = 0;
       const poll = setInterval(() => {
         elapsed += 50;
-        if (globalThis.kokaResult !== undefined) {
+        if ((globalThis as Record<string, unknown>).kokaResult !== undefined) {
           clearInterval(poll);
-          resolve(globalThis.kokaResult as string);
+          resolve((globalThis as Record<string, unknown>).kokaResult as string);
         } else if (elapsed > 30_000) {
           clearInterval(poll);
           reject(new Error('Compilation timed out after 30 s'));
@@ -669,6 +726,40 @@ void (async () => {
       return null;
     }
 
+    return moduleName;
+  }
+
+  async function compileWithWasm(moduleName: string, sourceText: string): Promise<string | null> {
+    const compiler = await ensureWasmCompiler();
+    if (!compiler) {
+      appendConsole('WASM compiler not available. Switch to JS backend.', 'stderr');
+      return null;
+    }
+
+    appendConsole('Compiling with WASM backend...', 'info');
+    // Compilation runs in a Web Worker — log output streams in real time
+    const result = await compiler(moduleName, sourceText);
+
+    if (!result.success) {
+      appendConsole('=== Compilation Errors ===', 'stderr');
+      try {
+        const parsed = JSON.parse(result.stdout);
+        for (const err of parsed.errors ?? []) {
+          appendConsole(err, 'stderr');
+        }
+      } catch {
+        appendConsole(result.stdout || '(no error details)', 'stderr');
+      }
+      return null;
+    }
+
+    // Store generated files into VFS for the module runner and VFS browser
+    for (const [path, content] of result.generatedFiles) {
+      const vfsPath = '/.koka/' + path;
+      vfs.addFile(vfsPath, content);
+    }
+
+    appendConsole(`Generated ${result.generatedFiles.size} files`, 'info');
     return moduleName;
   }
 

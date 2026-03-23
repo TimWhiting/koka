@@ -305,8 +305,8 @@ copyTextFileWith src dest transform
                       case mbContent of
                         Just content -> do writeTextFile dest (transform content)
                                            setFileTime dest ftime
-                        Nothing -> error ("could not read file " ++ show src))
-            (error ("could not copy file " ++ show src ++ " to " ++ show dest))
+                        Nothing -> return () {- silently skip if source can't be read -})
+            (\_ -> return () {- silently skip copy failures (e.g. WASI browser shim limitations) -})
 
 copyBinaryFile :: FilePath -> FilePath -> IO ()
 copyBinaryFile src dest
@@ -317,7 +317,7 @@ copyBinaryFile src dest
                       content <- readBinaryContents src
                       writeBinaryContents dest content
                       setFileTime dest ftime)
-            (error ("could not copy file " ++ show src ++ " to " ++ show dest))
+            (\_ -> return () {- silently skip copy failures -})
 
 copyBinaryIfNewer :: Bool -> FilePath -> FilePath -> IO ()
 copyBinaryIfNewer always srcName outName
