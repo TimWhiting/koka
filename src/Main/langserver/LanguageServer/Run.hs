@@ -9,6 +9,7 @@
 -----------------------------------------------------------------------------
 -- The language server's main module
 -----------------------------------------------------------------------------
+{-# OPTIONS -cpp #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
@@ -34,8 +35,10 @@ import qualified Language.LSP.Protocol.Types as J
 import qualified Language.LSP.Protocol.Message as J
 import qualified Language.LSP.Server as J
 import Language.LSP.Logging (defaultClientLogger)
+#if !defined(KOKA_WASM)
 import Network.Simple.TCP ( connect )
 import Network.Socket ( socketToHandle )
+#endif
 import LanguageServer.Handlers ( lspHandlers, ReactorInput(..) )
 import LanguageServer.Monad (newLSStateVar, runLSM, LSM, getLSState, LSState (messages, progress), getProgress, updateSignatureContext, SignatureContext(..))
 import Compile.Options (Flags (languageServerPort, languageServerStdio))
@@ -46,6 +49,13 @@ import System.IO.Error (isDoesNotExistError)
 
 runLanguageServer :: Flags -> [FilePath] -> IO ()
 runLanguageServer flags files = do
+#if defined(KOKA_WASM)
+  -- WASM/WASI only supports stdio
+  hSetBuffering stdout NoBuffering
+  hSetBuffering stderr NoBuffering
+  hSetBuffering stdin NoBuffering
+  runLanguageServerWithHandles stdin stdout
+#else
   when (not useStdio && languageServerPort flags == -1) $ do
     hPutStrLn stderr "No port specified for language server.\nUse --lsport=<port> to specify a port or --lsstdio to use stdio."
     exitFailure
@@ -62,6 +72,7 @@ runLanguageServer flags files = do
             handle <- socketToHandle socket ReadWriteMode
             runLanguageServerWithHandles handle handle))
          (\_ -> die $ "nothing was listening on port " ++ show (languageServerPort flags))
+#endif
   where
     useStdio = languageServerStdio flags
     runLanguageServerWithHandles inHandle outHandle = do

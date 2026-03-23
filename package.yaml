@@ -173,6 +173,26 @@ executables:
         cpp-options: -DKOKA_WEB
         js-sources: jsbits/vfs.js
 
+  koka-lsp-wasm:
+    main: Main.hs
+    source-dirs:
+      - src/Main/langserver
+    dependencies:
+      - aeson
+      - async
+      - co-log-core
+      - koka
+      - lens
+      - lsp
+      - text-rope
+      - stm
+    cpp-options: -DKOKA_WASM
+    ghc-options:
+      - -O2
+    when:
+      - condition: "!arch(wasm32)"
+        buildable: false
+
 tests:
   koka-test:
     main: Spec.hs
