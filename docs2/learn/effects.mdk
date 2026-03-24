@@ -1,0 +1,166 @@
+Title: Effects — Learn Koka
+[INCLUDE=../sidebar-sub.mdk]
+
+```koka {.hidden}
+import std/num/random
+```
+
+# Effects { .heading-no-number }
+
+This is the core of Koka. Every function's type includes the effects it may perform.
+
+---
+
+## Effect Types
+
+```unchecked
+fun square   : (int) -> int            // total (pure)
+fun divide   : (int, int) -> exn int   // may throw
+fun turing   : (tape) -> div int       // may diverge
+fun greet    : (string) -> console ()  // may print
+```
+
+Effects combine in _rows_:
+
+```unchecked
+fun risky : (int) -> <console, exn> int
+```
+
+The row `<console, exn>` means "may print and may throw." A function with
+no effects has effect `<>` (total), which is usually omitted.
+
+---
+
+## Effect Polymorphism
+
+Higher-order functions propagate their argument's effects:
+
+```unchecked
+map : (list<a>, (a) -> e b) -> e list<b>
+```
+
+The effect variable `e` means: whatever effects the mapped function has,
+`map` has too. If you map a pure function, the result is pure.
+
+---
+
+## Defining Effects
+
+Declare an effect with its operations:
+
+```koka
+effect emit
+  fun emit( msg : string ) : ()
+```
+
+Any function calling `emit(...)` must carry `:emit` in its type:
+
+```koka
+fun log-work() : emit ()
+  emit("starting")
+  emit("done")
+```
+
+---
+
+## Writing Handlers
+
+A handler provides the implementation for each operation:
+
+```koka
+fun collect( action : () -> <emit|e> a ) : e (a, list<string>)
+  var msgs := []
+  with handler
+    fun emit(msg) msgs := Cons(msg, msgs)
+  val result = action()
+  (result, msgs.reverse)
+
+fun example-collect()
+  val (_, msgs) = collect(log-work)
+  msgs.foreach(println)
+```
+
+The handler _discharges_ the `:emit` effect -- after `collect`, it no
+longer appears in the type.
+
+---
+
+## `ctl` vs `fun` vs `val` Operations
+
+| Kind | Behavior | Use when |
+|------|----------|----------|
+| `fun` | Tail-resumptive -- implicitly resumes | The handler just transforms and continues |
+| `ctl` | Gets explicit `resume` -- may resume 0, 1, or many times | You need control flow (exceptions, backtracking) |
+| `val` | Dynamically-bound value -- no resumption | You want scoped configuration |
+
+```koka
+// ctl: exception-like, never resumes
+effect raise
+  ctl raise( msg : string ) : a
+
+fun safe-divide( x : int, y : int ) : raise int
+  if y == 0 then raise("division by zero")
+  x / y
+
+fun catch-example() : console ()
+  with ctl raise(msg) println("caught: " ++ msg)
+  println(safe-divide(10, 0).show)
+```
+
+```koka
+// val: dynamically scoped value
+effect val width : int
+
+fun format() : width string
+  val w = width
+  if w > 40 then "wide" else "narrow"
+
+fun example-width()
+  with val width = 80
+  println(format())
+```
+
+---
+
+## Handler Composition
+
+Handler order matters. With state inside choice, each branch gets
+independent state. With state outside choice, branches share state.
+
+```koka
+effect choice
+  ctl choice() : bool
+
+fun xor() : <choice, emit> ()
+  val p = choice()
+  val q = choice()
+  if p != q then emit("true") else emit("false")
+```
+
+You can handle effects in different orders to get different semantics,
+without changing the code that uses them.
+
+---
+
+## Exceptions as Library Code
+
+Koka's built-in `:exn` effect is defined as ordinary library code:
+
+```unchecked
+effect exn
+  final ctl throw-exn( exn : exception ) : a
+
+fun try( action : () -> <exn|e> a ) : e error<a>
+  with final ctl throw-exn(exn) Error(exn)
+  Ok(action())
+```
+
+There is nothing special about exceptions -- they use the same handler
+mechanism available to any user.
+
+---
+
+[-> Performance](fbip.html){.learn}
+
+~ end content
+~ end main-layout

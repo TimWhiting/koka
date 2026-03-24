@@ -1,0 +1,315 @@
+Title: Functions — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+
+# Functions { .heading-no-number }
+
+```koka {.hidden}
+import std/num/float64
+```
+
+Functions are at the heart of Koka. In this section we look at how to declare them,
+pass them around, and use Koka's distinctive syntax features to keep code concise.
+
+---
+
+## Declaring Functions
+
+Use `fun` to declare a named function. The body is indented:
+
+```koka
+fun square( x : int ) : int
+  x * x
+
+fun example1()
+  println(square(5).show)   // 25
+```
+
+The last expression in the body is the **return value** — no `return` keyword needed
+(though you can use `return` for early exits).
+
+---
+
+## Multiple Parameters
+
+Functions can have as many parameters as needed:
+
+```koka
+fun add( x : int, y : int ) : int
+  x + y
+
+fun clamp( value : int, lo : int, hi : int ) : int
+  if value < lo then lo
+  elif value > hi then hi
+  else value
+
+fun example2()
+  println(clamp(15, 0, 10).show)   // 10
+```
+
+---
+
+## Dot Notation
+
+Koka has no methods or objects — just functions. But `x.f(y)` is sugar for `f(x, y)`:
+
+```koka
+fun double( x : int ) : int
+  x * 2
+
+fun example3()
+  println(5.double.show)          // same as println(show(double(5)))
+  println(5.double.double.show)   // chaining: 20
+```
+
+This lets you write any function as if it were a method on its first argument,
+and chain multiple calls left-to-right — much more readable than deeply nested calls.
+Unlike object-oriented methods, nothing special is attached to the data type itself:
+you extend a type simply by writing another plain function that takes that type as its first argument.
+
+---
+
+## Optional and Default Parameters
+
+Parameters can have default values, making them optional at the call site:
+
+```koka
+fun greet( name : string, greeting : string = "Hello" ) : string
+  greeting ++ ", " ++ name ++ "!"
+
+fun example4()
+  println(greet("Alice"))                    // Hello, Alice!
+  println(greet("Bob", greeting = "Hi"))     // Hi, Bob!
+```
+
+You can also use _named arguments_ to pass parameters out of order:
+
+```koka
+fun example-param()
+  greet( greeting = "Hey", name = "Carol" ).println
+```
+
+---
+
+## Anonymous Functions with `fn`
+
+Anonymous (unnamed) functions use `fn`:
+
+```koka
+fun apply-twice( f : int -> int, x : int ) : int
+  f(f(x))
+
+fun example5()
+  val addThree = fn(x) x + 3
+  println(apply-twice(addThree, 10).show)   // 16
+```
+
+Functions are _first-class values_ in Koka — you can pass them as arguments,
+return them from functions, and store them in `val` bindings.
+
+---
+
+## Trailing Lambdas
+
+When the last argument to a function is an anonymous function, you can place it
+_after_ the closing parenthesis — or even drop the parentheses entirely:
+
+```koka
+fun apply-twice-trailing( x : int, f : int -> int) : int
+  f(f(x))
+
+fun example6()
+  // These are all equivalent:
+  println(show(apply-twice-trailing(0, fn(x) x + 1)))
+  println(show(apply-twice-trailing(0) fn(x) x + 1))
+```
+
+This is especially useful with higher-order functions like `map` and `for`:
+
+```koka
+fun example-map()
+  list(1,5).map fn(i)
+    println(i.show)
+```
+
+And if the lambda just forwards its argument, you can often pass the function directly.
+For example, `for(1,10,println)` is equivalent to `for(1,10) fn(i) println(i)`.
+
+---
+
+## Zero-Argument Lambdas: `{ ... }`
+
+A pair of braces `{ ... }` is shorthand for a zero-argument anonymous function `fn() { ... }`.
+This lets library functions look like built-in control flow:
+
+```koka
+fun my-repeat( n : int, action : () -> <div|e> () ) : <div|e> ()
+  if n <= 0 then ()
+  else
+    action()
+    my-repeat(n - 1, action)
+
+fun example7()
+  my-repeat(3)
+    println("hi")
+  // prints: hi hi hi
+```
+
+Even `while` is just a plain function — not a special keyword:
+
+```koka
+fun example8()
+  var i := 1
+  while { i <= 5 }
+    println(i.show)
+    i := i + 1
+```
+
+The braces around `i <= 5` prevent it from being evaluated immediately —
+the condition is a suspended computation re-evaluated each iteration.
+Parentheses evaluate an expression before the function call; braces suspend it so it may be run later,
+never run, or run more than once. This is why Koka's braces are sometimes described as _suspenders_.
+
+---
+
+## The `with` Statement
+
+The `with` statement is a powerful way to avoid callback nesting. It takes the
+remaining statements in the function and passes them as the last argument:
+
+```koka
+fun example-with()
+  with repeat(3)
+  println("hi")
+// expands to: repeat(3, fn(){ println("hi") })
+```
+
+Binding a value from the called function works too:
+
+```koka
+fun example-with2()
+  with x <- list(1,10).foreach
+  println(x.show)
+// expands to: list(1,10).foreach(fn(x){ println(x.show) })
+```
+
+We'll see `with` used extensively with effect handlers in later chapters.
+It is a little reminiscent of Haskell's `do` notation, but operationally you can think of it as
+closing over the rest of the lexical scope and passing that closure as the final argument.
+
+---
+
+## Local Functions
+
+You can define helper functions inside other functions:
+
+```koka
+fun scale-and-sum( xs : list<int>, factor : int ) : int
+  fun scale(x)
+    x * factor
+  xs.map(scale).sum
+
+fun example9()
+  println(scale-and-sum([1,2,3], 10).show)   // 60
+```
+
+Local functions can close over the surrounding scope — `scale` uses `factor`
+from the enclosing `scale-and-sum` function.
+
+## A Larger Example: Caesar Encoding
+
+The same style scales to bigger examples too. The traditional Caesar cipher is small enough to read in one sitting,
+but rich enough to show local helpers, mapping over strings, and dot notation working together:
+
+```koka
+fun encode( s : string, shift : int ) : string
+  fun encode-char(c)
+    if c < 'a' || c > 'z' then return c
+    val base = (c - 'a').int
+    val rot  = (base + shift) % 26
+    (rot.char + 'a')
+  s.map(encode-char)
+
+fun caesar( s : string ) : string
+  s.encode(3)
+```
+
+This is also a good example of where explicit parameter annotations help: operations like `map` work over multiple
+data types in Koka, and the `s : string` annotation makes the intended interpretation immediately clear.
+
+In particular, `map` is available on both `list` and `string`, so this can become ambiguous if the
+parameter annotation is removed:
+
+```unchecked
+fun encode( s, shift : int ) : string
+  s.map( fn(c) c )
+```
+
+Keeping `s : string` on `encode` avoids that ambiguity and yields clearer type errors when editing.
+
+If you want to go beyond fixed-shift encoding, you can also _crack_ Caesar-encoded text using frequency analysis.
+This is adapted from a classic example in Graham Hutton's book _Programming in Haskell_.
+
+```unchecked
+import std/num/float64
+```
+```koka
+// The letter frequency table for English
+val english = [8.2,1.5,2.8,4.3,12.7,2.2,
+               2.0,6.1,7.0,0.2,0.8,4.0,2.4,
+               6.7,7.5,1.9,0.1,6.0,6.3,9.1,
+               2.8,1.0,2.4,0.2,2.0,0.1]
+
+fun percent( n : int, m : int ) : float64
+  100.0 * (n.float64 / m.float64)
+
+fun rotate( xs : list<a>, n : int ) : list<a>
+  xs.drop(n) ++ xs.take(n)
+
+fun freqs( s : string ) : list<float64>
+  val lowers = list('a','z')
+  val occurs = lowers.map( fn(c) s.count(c.string) )
+  val total  = occurs.sum
+  occurs.map( fn(i) percent(i,total) )
+
+fun chisqr( xs : list<float64>, ys : list<float64> ) : float64
+  zipwith(xs,ys, fn(x,y) ((x - y)^2.0)/y ).foldr(0.0,(+))
+
+fun uncaesar( s : string ) : string
+  val table  = freqs(s)
+  val chitab = list(0,25).map fn(n)
+                 chisqr( table.rotate(n), english )
+
+  val min    = chitab.minimum()
+  val shift  = chitab.index-of( fn(f) f == min ).negate
+  s.encode( shift )
+
+fun test-uncaesar()
+  println( uncaesar( "nrnd lv d ixq odqjxdjh" ) )
+```
+
+Try it directly in the REPL:
+
+```unchecked
+> :l samples/basic/caesar.kk
+```
+
+---
+
+## Summary
+
+In this section you learned:
+- Declaring functions with `fun`
+- Dot notation: `x.f(y)` = `f(x, y)`
+- Optional/named parameters with default values
+- Anonymous functions with `fn`
+- Trailing lambdas and `{ }` suspenders for control-flow style
+- The `with` statement
+- Local functions and closures
+
+---
+
+[← Getting Started](getting-started.html){.learn}
+[→ Next: Lists & Recursion](lists.html){.learn}
+
+~ end content
+~ end main-layout

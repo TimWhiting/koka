@@ -1,0 +1,38 @@
+Title: Learn Koka
+[INCLUDE=../sidebar-sub.mdk]
+
+# Learn Koka { .heading-no-number }
+
+A fast-paced introduction for experienced programmers. Each page is
+self-contained with runnable examples. If you prefer a thorough,
+progressive treatment, see [The Koka Book](../tutorial/index.html).
+
+---
+
+## What Makes Koka Different?
+
+Koka is a functional language where every side effect is tracked in the
+type system. Functions declare exactly what they can do -- print, throw,
+mutate state -- and the compiler enforces it. Effects are resolved using
+_effect handlers_, which let you define control abstractions like
+exceptions, generators, or async/await as ordinary library code.
+
+Koka compiles to C without a garbage collector, using _Perceus_ reference
+counting and _reuse analysis_ to turn functional code into efficient
+in-place updates.
+
+---
+
+## Pages
+
+1. [Basics](basics.html) -- syntax, functions, dot notation, `with`
+2. [Types](types.html) -- algebraic data types, structs, pattern matching
+3. [Effects](effects.html) -- effect types, handlers, custom effects
+4. [Performance](fbip.html) -- Perceus, FBIP, reuse analysis
+
+---
+
+[-> Basics](basics.html){.learn}
+
+~ end content
+~ end main-layout

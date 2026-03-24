@@ -1,0 +1,246 @@
+Title: Your Own Types — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+
+# Your Own Types { .heading-no-number }
+
+So far we've used built-in types like `int`, `string`, and `list`. Now let's define
+our own types to model the data our programs work with.
+
+---
+```koka
+import std/num/float64
+```
+
+## Structs: Named Fields
+
+A `struct` groups related values together under a name:
+
+```koka
+struct point
+  x : int
+  y : int
+
+fun example1()
+  val p = Point(3, 4)
+  println(p.x.show ++ ", " ++ p.y.show)   // 3, 4
+```
+
+Koka automatically generates:
+- A constructor `Point(x, y)` (uppercase name of the struct)
+- Field accessors: `p.x`, `p.y` (dot notation, just regular functions)
+
+### Named and Default Constructor Arguments
+
+You can use named arguments in the constructor:
+
+```koka
+struct person
+  name : string
+  age  : int
+  email : string = ""   // default value
+
+fun example2()
+  val alice = Person(name = "Alice", age = 30)
+  val bob   = Person("Bob", 25, email = "bob@example.com")
+  println(alice.name)    // Alice
+  println(bob.email)     // bob@example.com
+```
+
+### Updating Structs
+
+All structs are **immutable**. To produce a changed copy, use the application syntax —
+passing named fields to override:
+
+```koka
+fun have-birthday( p : person ) : person
+  p( age = p.age + 1 )
+
+fun example3()
+  val alice = Person("Alice", 30)
+  val older = alice.have-birthday
+  println(older.age.show)   // 31
+  println(alice.age.show)   // 30 — original unchanged!
+```
+
+The expression `p(age = p.age + 1)` creates a new `:person` equal to `p` with `age` updated.
+There is no special record-update subsystem behind this: Koka keeps to its "functions all the way down"
+style, where named/default arguments and ordinary function application explain the feature.
+
+You can think of a `struct` as convenient syntax for a regular single-constructor algebraic data type.
+For example, the earlier `person` declaration corresponds closely to a `type` with one constructor `Person`.
+
+In desugared form, this is the same shape:
+
+```unchecked
+struct person
+  age : int
+  name : string
+  realname : string = name
+
+// roughly equivalent to:
+type person
+  Person
+    age : int
+    name : string
+    realname : string = name
+```
+
+---
+
+## Sum Types: Multiple Shapes
+
+Sometimes a value can be one of several different things. A `type` with multiple
+constructors represents this:
+
+```koka
+type shape
+  Circle( radius   : float64 )
+  Rectangle( width : float64, height : float64 )
+  Triangle( base   : float64, height : float64 )
+```
+
+Values are created with the constructor name:
+
+```koka
+fun area( s : shape ) : float64
+  match s
+    Circle(r)        -> 3.14159 * r * r
+    Rectangle(w, h)  -> w * h
+    Triangle(b, h)   -> 0.5 * b * h
+
+fun example4()
+  val c = Circle(5.0)
+  val r = Rectangle(4.0, 6.0)
+  println(area(c).show)   // ~78.5
+  println(area(r).show)   // 24.0
+```
+
+The `match` expression branches on which constructor was used. The compiler
+checks that every constructor is handled — if you add `Triangle` later and
+forget to update `area`, you get a compile-time warning.
+
+Some built-in types are just small special cases of the same idea:
+
+- `void` has no constructors, so there are no values of type `void`
+- `()` has exactly one constructor `()`
+- `bool` has exactly two constructors: `False` and `True`
+
+---
+
+## Pattern Matching in Depth
+
+Patterns can:
+
+**Bind variables** — name the fields you need:
+```koka
+fun describe( s : shape ) : string
+  match s
+    Circle(r)        -> "circle with radius " ++ r.show
+    Rectangle(w, h)  -> "rectangle " ++ w.show ++ " x " ++ h.show
+    _                -> "other shape"
+```
+
+**Use guards** — add boolean conditions after `|`:
+```koka
+fun classify-circle( s : shape ) : string
+  match s
+    Circle(r) | r > 10.0 -> "large circle"
+    Circle(r) | r > 1.0  -> "medium circle"
+    Circle(_)             -> "small circle"
+    _                     -> "not a circle"
+```
+
+**Nest patterns** — destructure values within values:
+```koka
+fun first-two( xs : list<int> ) : string
+  match xs
+    Cons(a, Cons(b, _)) -> "first two: " ++ a.show ++ ", " ++ b.show
+    Cons(a, Nil)        -> "only one: " ++ a.show
+    Nil                 -> "empty"
+```
+
+---
+
+## Recursive Types
+
+Types can refer to themselves, enabling tree-like structures:
+
+```koka
+type tree<a>
+  Leaf
+  Node( left : tree<a>, value : a, right : tree<a> )
+
+fun tree-sum( t : tree<int> ) : int
+  match t
+    Leaf           -> 0
+    Node(l, v, r)  -> tree-sum(l) + v + tree-sum(r)
+
+fun example5()
+  val t = Node(Node(Leaf, 1, Leaf), 2, Node(Leaf, 3, Leaf))
+  println(tree-sum(t).show)   // 6
+```
+
+This is the same algebraic style used by Koka's standard `list<a>` type: a list is either empty (`Nil`) or a
+head element paired with another list (`Cons`). Accessors are generated for named constructor fields just as
+they are for struct fields.
+
+For reasoning about recursion, Koka distinguishes declaration forms:
+
+- `type` for finite inductive data types
+- `co type` for covariant recursive definitions (the type appears in )
+- `div type` for unrestricted recursive definitions
+
+Most everyday modeling uses plain `type`; the other forms are for advanced recursive encodings.
+
+---
+
+## `maybe<a>`: Optional Values
+
+Koka's standard library has `maybe<a>` for values that might not exist:
+
+```unchecked
+type maybe<a>
+  Nothing
+  Just( value : a )
+```
+
+Instead of returning a special "null" or "sentinel" value, functions return
+`Nothing` or `Just(x)`:
+
+```unchecked
+fun safe-divide( x : int, y : int ) : maybe<int>
+  if y == 0 then Nothing
+  else Just(x / y)
+
+fun example6()
+  match safe-divide(10, 2)
+    Just(n) -> println(n.show)    // 5
+    Nothing -> println("error")
+
+  // Or use .default to provide a fallback:
+  println(safe-divide(10, 0).default(42).show)   // 42
+```
+
+---
+
+## Summary
+
+In this section you learned:
+- `struct` for grouping named fields together
+- Constructor naming (uppercase), field accessors, default values
+- Updating structs with the application syntax `p(field = value)`
+- `type` with multiple constructors for "one of many" values
+- Pattern matching: binding, guards, nesting
+- Recursive types for tree structures
+- `maybe<a>` for optional values
+
+> For details on value types, boxing, and runtime representation, see the
+> [Types & Representation Reference](../reference/type-and-representation.html).
+
+---
+
+[← Lists & Recursion](lists.html){.learn}
+[→ Next: Side Effects](effects.html){.learn}
+
+~ end content
+~ end main-layout

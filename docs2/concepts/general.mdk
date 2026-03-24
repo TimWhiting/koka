@@ -1,0 +1,84 @@
+Title: Koka
+[INCLUDE=../sidebar-sub.mdk]
+
+
+
+
+
+
+# Minimal but General { .heading-no-number }
+
+The name Koka (効果) comes from the Japanese word for _effect_ -- a fitting name
+for a language whose central idea is tracking and handling effects.
+
+Koka has a small core of orthogonal, well-studied language features — first-class
+functions, a polymorphic type- and effect system, algebraic data types, and effect
+handlers. Each of these is as general and _composable_ as possible, so the language
+avoids needing "special" extensions for each new use case.
+
+Where Haskell distinguishes itself through pure-vs-monadic programming and Rust
+through borrow checking, Koka distinguishes itself through _effect typing_,
+_effect handlers_, and _Perceus_ memory management. These three features work
+together: effect types make programs easier to reason about, handlers make
+them composable, and Perceus makes them fast.
+
+## Control Flow as Function Calls
+
+```koka {.aside}
+fun hello-ten()
+  var i := 0
+  while { i < 10 }
+    println("hello")
+    i := i + 1
+```
+
+As an example of this _min-gen_ design principle, Koka implements most
+control-flow primitives as regular function calls. An anonymous function
+without arguments can be written using just braces, as `{ <body> }`.
+Moreover, using brace elision, any indented block automatically gets curly braces.
+
+We can write a `while` loop using regular function calls as shown in the
+example, where the call to `while` is desugared to
+`while( fn(){ i < 10 }, fn(){ ... } )`.
+
+This naturally leads to _consistency_: an expression between _parentheses_
+is always evaluated before a function call, whereas an expression between
+_braces_ (ah, _suspenders_!) is suspended and may never be evaluated or
+evaluated more than once (as in our `while` predicate). This is
+inconsistent in most other languages where the predicate of a `while` loop
+is written in parentheses but may be evaluated many times.
+
+## Dot Selection
+
+In Koka, `x.f(y)` is exactly the same as `f(x, y)`. This makes it easy to
+extend any type with new "methods" — just write a new function whose first
+parameter has that type. In most object-oriented languages you would need to
+modify the class definition itself.
+
+```koka
+fun main()
+  "hello world".to-upper.println
+  // Equivalent to: println(to-upper("hello world"))
+```
+
+## The `with` Statement
+
+The `with` statement transforms nested callback-style code into a linear
+sequence of statements, making effect handlers and resource management read
+naturally:
+
+```koka
+effect hello-effect
+  fun hello() : ()
+fun hello-with()
+  with handler
+    fun hello() println("hello from handler!")
+  hello()
+```
+---
+[Start with the Functional Foundations Path](../tutorial/getting-started.html){.learn}
+> **Deep Dive**: See [Perceus & FBIP](../concepts/perceus-and-fbip.html) to connect these ideas to high-performance execution.
+[Back to Home](../index.html){.learn}
+
+~ end content
+~ end main-layout

@@ -1,0 +1,353 @@
+Title: Effect Semantics Reference — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# Effect Semantics Reference { .heading-no-number }
+
+This page is a precise semantics-oriented reference for effect rows, handler ordering, masking, and resumptions.
+
+---
+
+## Effect Row Syntax
+
+Every Koka function type includes an effect row between the arguments and the result type.
+An effect row is a comma-separated list of effect labels enclosed in angle brackets, optionally
+ending with a tail variable:
+
+```unchecked
+(a) -> <exn,console|e> b    // two concrete labels plus a polymorphic tail `e`
+(a) -> <exn> b              // single concrete label, closed row
+(a) -> exn b                // equivalent: angle brackets optional for a single label
+(a) -> <> b                 // empty row: total function (no effects)
+(a) -> total b              // equivalent: `total` is the empty effect row
+(a) -> e b                  // fully polymorphic effect
+```
+
+**Tail variables.** The `|e` suffix makes the row open (polymorphic). Without it, the row is closed
+and the function uses exactly those effects. Open rows unify by extending either side:
+
+```unchecked
+<exn|e>  ~  <exn,console|e'>     // unifies with e := <console|e'>
+```
+
+**Wildcard variables.** A leading underscore (`_e`, `_a`, or just `_`) denotes an inferred but
+not necessarily polymorphic type variable. This is useful when you want inference to fill in the
+effect row without committing to full polymorphism:
+
+```unchecked
+fun log-or-fail(msg : string) : _ ()
+// The `_` lets Koka infer the exact effect row at each call site.
+```
+
+---
+
+## Effect Inference
+
+Koka infers effect rows automatically. Programmers rarely need to write effect annotations
+except for public API signatures.
+
+**Structural rows.** Effect rows are structural, not nominal. The order of labels does not matter:
+`<exn,console>` and `<console,exn>` denote the same effect. Row unification works by matching
+labels: to unify two rows, Koka finds each label from one row in the other and unifies their
+type parameters, collecting any remaining labels into the tail.
+
+**Minimal rows.** The inferred row is always the minimal set of effects actually used.
+If a function calls only pure operations, its effect is `total` even if you do not annotate it.
+
+```koka
+fun add(x : int, y : int) : int   // inferred effect: total (empty row)
+  x + y
+```
+
+**Polymorphic propagation.** Higher-order functions like `map` propagate their argument's effects:
+
+```unchecked
+map : (xs : list<a>, f : (a) -> e b) -> e list<b>
+```
+
+If `f` is total, `map` is total. If `f` uses `:console`, the call to `map` has effect `:console`.
+
+---
+
+## Duplicate Labels
+
+Duplicate effect labels in a row are meaningful. They are not collapsed; each occurrence
+tracks a distinct handler layer. This arises naturally in nested handler settings.
+
+When two handlers for the same effect label are installed, the innermost handler handles
+operations first. The outer handler remains available and handles operations that escape
+the inner handler's scope:
+
+```unchecked
+fun double-raise( action : () -> <raise,raise|e> a ) : <raise|e> a
+  with ctl raise(msg) raise("wrapped: " ++ msg)   // inner handler
+  action()   // action sees two `raise` layers
+```
+
+Here `action` has two `:raise` labels in its effect row. When `action` calls `raise`,
+the inner handler intercepts it. That handler itself calls `raise`, which is handled by
+the outer (second) `:raise` layer. The two `:raise` labels in the row precisely record
+this nesting.
+
+Duplicate labels also appear when using `mask` (see [Masking](#sec-masking) below) and
+when building higher-order handler combinators like `catch`:
+
+```unchecked
+fun catch( hnd : (string) -> e a, action : () -> <raise|e> a ) : e a
+  with ctl raise(msg) hnd(msg)
+  action()
+```
+
+If `e` already contains `:raise`, the inner action runs under two `:raise` handlers,
+and the types reflect this accurately.
+
+---
+
+## Handler Operational Semantics
+
+When an operation is called, the runtime searches the handler stack outward from the call
+site for the nearest matching handler. What happens next depends on the operation kind:
+
+| Operation kind | Stack search | Continuation | Handler runs at |
+|---|---|---|---|
+| `ctl` | Nearest match | Captured up to handler frame | Handler frame |
+| `fun` | Nearest match | Not captured (tail-resumptive) | In place (like a virtual call) |
+| `val` | Nearest match | Not applicable | Value returned directly |
+| `final ctl` | Nearest match | Discarded (finalized) | Handler frame |
+| `raw ctl` | Nearest match | Exposed via `rcontext` | Handler frame |
+
+For `ctl` operations, the continuation from the call site up to the handler frame is captured
+as a first-class value (the `resume` function). The handler body executes at the handler frame
+with the captured continuation available.
+
+For `fun` operations, no continuation is captured. The handler body runs in place and its
+return value is delivered directly back to the call site. This is semantically equivalent to
+a `ctl` that calls `resume` exactly once as its last action, but is implemented more efficiently
+(no allocation of a continuation object).
+
+For `val` operations, the stored value is returned directly to the call site. No handler body
+runs at call time; the value was fixed when the handler was installed.
+
+---
+
+## Resumption Semantics
+
+The different operation kinds constrain how and whether the continuation is resumed:
+
+### `fun` operations
+
+Always resume exactly once, tail-resumptively. The return value of the handler body becomes
+the result at the call site. No continuation is captured, so there is no `resume` function
+in scope. This makes `fun` operations as efficient as virtual method dispatch.
+
+```unchecked
+effect fun ask() : int
+
+fun reader( value : int, action : () -> <ask|e> a ) : e a
+  with fun ask() value    // returns `value` directly to each call site
+  action()
+```
+
+### `ctl` operations
+
+Capture the continuation up to the handler frame. The handler body receives an implicit
+`resume` function and may call it zero, one, or multiple times:
+
+- **Zero** resumptions: the handler discards the continuation (like an exception).
+- **One** resumption: normal linear control flow through the handler.
+- **Multiple** resumptions: the continuation is invoked more than once (backtracking, scheduling).
+
+```unchecked
+effect ctl choice() : bool
+
+// Zero resumptions: discard
+with ctl choice() True
+
+// One resumption: linear
+with ctl choice() resume(True)
+
+// Multiple resumptions: backtracking
+with ctl choice() resume(False) ++ resume(True)
+```
+
+Each call to `resume` re-executes the continuation from the operation call site forward.
+
+### `final ctl` operations
+
+Never resume. The handler takes over entirely, and the continuation is finalized (all
+`finally` handlers in the captured frames are run for cleanup). Use `final ctl` when
+the operation is known to never continue, such as exceptions:
+
+```unchecked
+effect ctl raise( msg : string ) : a
+
+fun abort( action : () -> <raise|e> a ) : e maybe<a>
+  with final ctl raise(_msg) Nothing
+  Just(action())
+```
+
+### `val` operations
+
+Always resume with a fixed value. The value is set when the handler is installed and
+returned at every use site. There is no handler body that runs per call:
+
+```unchecked
+effect val width : int
+
+with val width = 80
+// every occurrence of `width` in scope evaluates to 80
+```
+
+---
+
+## Handler Ordering { #sec-handler-ordering }
+
+When multiple handlers are installed, the order determines semantics. The outermost handler's
+`return` clause and continuation boundary define how inner effects are interpreted.
+
+The classic demonstration is state combined with nondeterminism:
+
+```unchecked
+effect fun get() : int
+effect fun set( x : int ) : ()
+
+effect ctl choice() : bool
+
+fun pstate( init : int, action : () -> <get,set,div|e> a ) : <div|e> (a,int)
+  var st := init
+  with handler
+    return(x)  (x,st)
+    fun get()  st
+    fun set(i) st := i
+  action()
+
+fun choice-all(action : () -> <choice|e> a) : e list<a>
+  with handler
+    return(x)    [x]
+    ctl choice() resume(False) ++ resume(True)
+  action()
+
+fun coin() : <get,set,choice> int
+  val x = get()
+  set(x + 1)
+  val p = choice()
+  if p then x else 0 - x
+```
+
+**State outside choice (global state):**
+
+```unchecked
+fun state-outside() : div (list<int>,int)
+  with pstate(1)
+  with choice-all
+  coin()
+// Result: ([1,-2], 3)
+// State is shared across both branches. After the first branch increments
+// state to 2, the second branch sees 2 and increments it to 3.
+```
+
+**Choice outside state (transactional state):**
+
+```unchecked
+fun choice-outside() : div list<(int,int)>
+  with choice-all
+  with pstate(1)
+  coin()
+// Result: [(1,2),(-1,2)]
+// Each branch gets its own independent copy of state, starting from 1.
+// The branches do not interfere with each other.
+```
+
+The rule is: the outermost handler's continuation boundary determines what is "inside" the
+continuation captured by inner `ctl` operations. When `choice` is inside `pstate`, each `resume`
+call re-enters the same shared mutable state. When `pstate` is inside `choice`, the `var st`
+binding is part of the captured continuation and is duplicated per branch.
+
+---
+
+## Masking { #sec-masking }
+
+`mask<l>` skips the innermost handler for effect label `l` and routes the operation to
+the next handler outward in the stack. This intentionally introduces a duplicate label in the
+effect type of the masked expression.
+
+```unchecked
+effect fun emit( msg : string ) : ()
+
+fun emit-quoted( action : () -> <emit|e> a ) : <emit|e> a
+  with fun emit(msg) emit("\"" ++ msg ++ "\"")   // calls outer emit
+  action()
+```
+
+In `emit-quoted`, the handler body calls `emit` itself, which routes to the next `:emit`
+handler outward. This is implicit: the handler body runs in a context where its own handler
+has been "peeled off." Explicit masking with `mask<l>` achieves the same routing from inside
+the action:
+
+```unchecked
+fun use-outer-emit() : <emit|e> ()
+  with fun emit(msg) println("inner: " ++ msg)
+  // Skip the inner emit handler and call the outer one directly:
+  mask<emit>{ emit("hello") }
+```
+
+**`override`.** Replaces the innermost handler for a label entirely, so the inner action sees
+only the new handler (not the old one underneath). The effect type stays clean with a single label:
+
+```unchecked
+fun emit-loud( action : () -> <emit|e> a ) : <emit|e> a
+  with override fun emit(msg) emit(msg.to-upper)
+  action()
+```
+
+Without `override`, this would expose two `:emit` labels in the action's type.
+
+**`mask behind`.** The low-level primitive underlying `override`. While `mask<l>` skips the
+innermost handler and targets the next one out, `mask behind` routes an operation behind the
+current handler frame. Plain `mask` is insufficient to implement `override` modularly because
+`override` needs to interpose on operations and then forward to the same logical position.
+`mask behind` provides this capability. Most user code should use `override` directly.
+
+---
+
+## Effect Aliases
+
+Koka defines several standard effect aliases for common combinations:
+
+| Alias | Expansion | Meaning |
+|---|---|---|
+| `total` | `<>` | No effects; pure total function |
+| `exn` | (primitive) | May raise an exception |
+| `div` | (primitive) | May diverge (non-termination) |
+| `pure` | `<exn,div>` | May throw or diverge, but no other side effects |
+| `ndet` | (primitive) | Non-deterministic |
+| `alloc<h>` | (primitive) | May allocate in heap `h` |
+| `read<h>` | (primitive) | May read from heap `h` |
+| `write<h>` | (primitive) | May write to heap `h` |
+| `st<h>` | `<alloc<h>,read<h>,write<h>>` | Full mutable state in heap `h` |
+| `io` | `<st<global>,exn,div,ndet,console,...>` | General I/O (the kitchen sink) |
+
+The `:st<h>` alias is particularly important. When `h` does not escape its scope, Koka can
+discharge the heap effect entirely via `runst`, proving the computation is observationally pure
+despite using mutable references internally.
+
+The `:io` effect is deliberately broad. Functions that perform I/O are not expected to have
+precise effect rows; `:io` serves as a convenient upper bound.
+
+---
+
+## Operational Counterparts
+
+For construct-level operational guidance on `raw ctl`, resource finalization (`finally`/`initially`),
+linear effects, and named/scoped handlers, see
+[Advanced Handlers Reference](handlers-advanced.html).
+
+---
+
+## See Also
+
+- [Effect Handlers](../guides/effect-handlers.html){.learn}
+- [Advanced Effect Handlers](../guides/advanced-handlers.html){.learn}
+- [Effect Types](../guides/effect-types.html){.learn}
+
+~ end content
+~ end main-layout

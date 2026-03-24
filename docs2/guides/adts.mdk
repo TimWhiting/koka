@@ -1,0 +1,173 @@
+Title: Algebraic Data Types — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Algebraic Data Types { .heading-no-number }
+
+> For a progressive introduction, see [The Koka Book: Your Own Types](../tutorial/types.html).
+> This guide is a quick-reference for data modeling patterns.
+
+Koka supports rich user-defined types: records (`struct`), sum types with multiple
+constructors (`type`), and combinations of the two. Pattern matching lets you
+destructure any of these cleanly. This guide covers the full range of type definitions
+available in Koka.
+
+---
+
+## Structs
+
+A `struct` defines a product type with named fields. Koka auto-generates a constructor function and field accessors:
+
+```koka
+struct person
+  age : int
+  name : string
+  realname : string = name
+
+val brian = Person( 29, "Brian" )
+```
+
+Fields can have default values (`realname = name`). The constructor accepts both positional and named arguments:
+
+```koka
+val alice = Person( name = "Alice", age = 30 )
+```
+
+Field accessors use dot notation (`brian.age` is just `age(brian)`):
+
+```koka
+fun example-fields()
+  println(brian.name ++ " is " ++ brian.age.show ++ " years old")
+```
+
+### Updating Structs
+
+All structs (and all Koka data) are _immutable_. To produce a modified version, use the
+_application syntax_ on a value — passing named fields to override:
+
+```koka
+
+val brian = Person( 29, "Brian" )
+////
+fun birthday( p : person ) : person
+  p( age = p.age + 1 )
+
+fun example-birthday()
+  println( brian.birthday.age )
+```
+
+The expression `p(age = p.age + 1)` creates a new `:person` value equal to `p` but
+with `age` incremented. This is the standard, idiomatic way to produce updated
+values in Koka — no mutation, no special update syntax, just function application.
+
+---
+
+
+## Sum Types (Alternatives)
+
+A `type` declaration with multiple constructors is a _sum type_ (a.k.a. union or variant):
+
+```koka
+type color
+  Red
+  Green
+  Blue
+```
+
+Constructors can carry data:
+
+```koka
+type number
+  Infinity
+  Integer( i : int )
+```
+
+Create values as `Integer(42)` or `Infinity`.
+
+---
+
+## Polymorphic and Recursive Types
+
+Types can be parameterized and recursive. The standard list type is:
+
+```unchecked
+type list<a>
+  Nil
+  Cons{ head : a; tail : list<a> }
+```
+
+Access named fields with dot notation: `Cons(1,Nil).head` evaluates to `1`.
+
+---
+
+## Pattern Matching
+
+Use `match` to deconstruct ADT values:
+
+```koka
+fun describe(c : color) : string
+  match c
+    Red   -> "red"
+    Green -> "green"
+    Blue  -> "blue"
+```
+
+Patterns can bind variables and nest arbitrarily:
+
+```koka
+fun head-of-list(xs : list<int>) : string
+  match xs
+    Nil       -> "empty"
+    Cons(x,_) -> "first element: " ++ x.show
+```
+
+Koka warns on non-exhaustive patterns at compile time.
+
+---
+
+## The `struct` / `type` Relationship
+
+`struct` is syntactic sugar for a `type` with a single constructor:
+
+```unchecked
+// These are equivalent:
+struct person { age : int; name : string }
+
+type person
+  Person { age : int; name : string }
+```
+
+---
+
+## Special Built-in Types
+
+| Type | Constructors | Notes |
+|------|-------------|-------|
+| `bool` | `True`, `False` | Boolean |
+| `()` | `()` | Unit (one value) |
+| `void` | _(none)_ | Uninhabited type |
+| `list<a>` | `Nil`, `Cons` | Singly-linked list |
+| `maybe<a>` | `Nothing`, `Just(a)` | Optional value |
+
+---
+
+## Value Types
+
+Small, non-recursive structs are automatically stack-allocated as value types.
+You can force this with the `value` keyword:
+
+```koka
+value struct argb{ alpha: int; color-red: int; color-green: int; color-blue: int }
+```
+
+Value types avoid heap allocation and reference counting overhead for small data.
+
+---
+
+## See Also
+
+- [Pattern Matching](pattern-matching.html){.learn}
+- [Types & Inference](types.html){.learn}
+- [Functions & Dot Notation](functions.html){.learn}
+
+~ end content
+~ end main-layout

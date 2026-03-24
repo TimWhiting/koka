@@ -1,0 +1,38 @@
+Title: Koka 2.6.0 Released — Koka Blog
+[INCLUDE=../sidebar-sub.mdk]
+
+# Koka 2.6.0 Released { .heading-no-number }
+
+~ begin blog-meta
+**December 2023** · Language, Release
+~ end blog-meta
+
+---
+
+Koka 2.6.0 introduces first-class constructor contexts and expanded support for fully-in-place (FIP) programming, plus initial VS Code support.
+
+---
+
+## First-Class Constructor Contexts
+
+Koka now supports **first-class constructor contexts**, which significantly improves the efficiency of various standard library functions like `partition`. This technique allows for more efficient recursive data structure manipulation.
+
+## Fully In-Place (FIP)
+
+We have expanded the use of `fip` and `fbip` annotations across `std/core`. These annotations allow the compiler to verify that operations are performed in-place, ensuring performance and memory usage for these functions when used with unique values.
+
+## Initial VS Code Support
+
+Initial language support for VS Code is now available, featuring:
+- **Type Information and Go-to Definition**: Navigate and understand your code more easily.
+- **Code Lenses**: Run `main`, `test`, or `example` functions directly from the editor.
+- **Automatic Installation**: The VS Code extension can now automatically install the latest Koka compiler.
+
+Special thanks to [Tim Whiting](https://github.com/TimWhiting) and [Fredrik Wieczerkowski](https://github.com/fwcd) for all their work on making this possible!
+
+---
+
+[← Back to Blog](index.html){.learn}
+
+~ end content
+~ end main-layout

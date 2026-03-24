@@ -1,0 +1,132 @@
+Title: Types — Learn Koka
+[INCLUDE=../sidebar-sub.mdk]
+
+# Types { .heading-no-number }
+
+---
+
+## Structs
+
+A `struct` is a product type with named fields:
+
+```koka
+struct person
+  name : string
+  age  : int
+
+fun example-person()
+  val p = Person("Alice", 30)
+  println(p.name ++ " is " ++ p.age.show)
+```
+
+Structs are immutable. Update with a functional copy:
+
+```koka
+fun birthday( p : person ) : person
+  p(age = p.age + 1)
+```
+
+---
+
+## Sum Types
+
+Use `type` for tagged unions (algebraic data types):
+
+```koka
+type color
+  Red
+  Green
+  Blue
+
+type maybe-int
+  Nothing-int
+  Just-int( value : int )
+```
+
+Koka has a built-in polymorphic `maybe<a>`:
+
+```unchecked
+type maybe<a>
+  Nothing
+  Just( value : a )
+```
+
+---
+
+## Pattern Matching
+
+Deconstruct values with `match`:
+
+```koka
+fun show-color( c : color ) : string
+  match c
+    Red   -> "red"
+    Green -> "green"
+    Blue  -> "blue"
+
+fun example-color()
+  println(show-color(Red))
+```
+
+Patterns can be nested and use guards:
+
+```unchecked
+type shape
+  Circle( radius : float64 )
+  Rect( w : float64, h : float64 )
+
+fun area( s : shape ) : float64
+  match s
+    Circle(r) -> 3.14159 * r * r
+    Rect(w, h) -> w * h
+
+fun example-area()
+  println(area(Circle(5.0)).show)
+```
+
+The compiler checks exhaustiveness -- missing cases are a compile error.
+
+---
+
+## Recursive Types
+
+```koka
+type tree<a>
+  Leaf
+  Node( left : tree<a>, value : a, right : tree<a> )
+
+fun tree/show( t : tree<int> ) : string
+  match t
+    Leaf -> "."
+    Node(l, v, r) -> "(" ++ l.show ++ " " ++ v.show ++ " " ++ r.show ++ ")"
+
+fun example-tree()
+  val t = Node(Node(Leaf, 1, Leaf), 2, Node(Leaf, 3, Leaf))
+  println(t.show)
+```
+
+---
+
+## Type Inference
+
+Koka infers types pervasively. You can annotate when you want clarity or
+when inference needs help (e.g., with overloaded functions):
+
+```koka
+fun double( x : int ) : int    // explicit
+  x + x
+
+fun triple( x : int )          // return type inferred
+  x + x + x
+
+fun example-infer()
+  println(double(5).show)
+  println(triple(5).show)
+```
+
+---
+
+[-> Effects](effects.html){.learn}
+
+~ end content
+~ end main-layout

@@ -124,7 +124,9 @@ trim s
 
 isLiteralDoc :: FileName -> Bool
 isLiteralDoc fname
-  = endsWith fname (sourceExtension ++ ".md") ||
+  = endsWith fname ".md" ||
+    endsWith fname ".mdk" ||
+    endsWith fname (sourceExtension ++ ".md") ||
     endsWith fname (sourceExtension ++ ".mdk")
 
 {--------------------------------------------------------------------------

@@ -1,0 +1,162 @@
+Title: Implicits — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Implicit Parameters { .heading-no-number }
+
+> [!NOTE]
+> Implicit parameters are an experimental feature in Koka. The design may change.
+> Read the [Static Overloading](overloading.html) guide first — implicits build directly on that.
+
+Implicit parameters let you mark a function parameter with `?` so the compiler can automatically
+supply it from the surrounding scope using type-directed disambiguation. This reduces boilerplate
+for common patterns like equality, comparison, and show — without requiring type classes or instances.
+
+---
+
+## The Problem: Explicit Threading
+
+Suppose you want a generic list equality function. Without implicits, you must pass the element equality function explicitly at every call site:
+
+```koka
+fun int/eq( x : int, y : int ) : bool
+  (x == y)
+
+fun list-eq-explicit( xs : list<a>, ys : list<a>, eq : (a,a) -> bool ) : bool
+  match xs
+    Cons(x,xx) -> match ys
+      Cons(y,yy) | eq(x,y) -> list-eq-explicit(xx, yy, eq)
+      _           -> False
+    Nil -> ys.is-nil
+
+fun example()
+  list-eq-explicit([1,2], [1,2], eq)  // Koka picks int/eq from context
+```
+
+This works, but becomes tedious when the equality function must be threaded through many layers.
+
+---
+
+## Implicit Parameters with `?`
+
+Mark a parameter with `?` to make it _implicit_. The compiler fills it in automatically from
+any in-scope function with a matching name and type:
+
+```koka
+fun list-eq( xs : list<a>, ys : list<a>, ?eq : (a,a) -> bool ) : bool
+  match xs
+    Cons(x,xx) -> match ys
+      Cons(y,yy) | eq(x,y) -> list-eq(xx,yy)
+      _           -> False
+    Nil -> ys.is-nil
+
+fun example2()
+  list-eq( [1,2], [1,2] )   // ?eq resolved to int/eq automatically
+```
+
+In the recursive call `list-eq(xx,yy)`, the `?eq` parameter is resolved to the local `eq`
+parameter itself — no manual threading needed.
+
+---
+
+## Propagating Implicits
+
+When a function needs an implicit parameter it doesn't have locally, it can declare `?eq` to
+let the compiler propagate it further:
+
+```koka
+fun list/eq( xs : list<a>, ys : list<a>, ?eq : (a,a) -> bool ) : bool
+  match xs
+    Cons(x,xx) -> match ys
+      Cons(y,yy) | eq(x,y) -> eq(xx,yy)
+      _           -> False
+    Nil -> ys.is-nil
+
+fun example4()
+  eq([1,2], [1,2])   // resolves to list/eq (which then resolves ?eq to int/eq)
+```
+
+Implicit resolution is _recursive_: `list/eq` is resolved first, then its own `?eq` is resolved.
+
+---
+
+## Providing Implicits Explicitly
+
+You can always pass an implicit parameter explicitly when needed:
+
+```koka
+fun example-implicits()
+  // with named syntax:
+  list-eq( [], [], ?eq = int/eq )
+
+  // positionally:
+  list-eq( [], [], int/eq )
+
+  // with an expression:
+  list-eq( [1,2], [1,2], !int/eq(_,_) )
+```
+
+This is useful when the implicit cannot be resolved automatically (e.g. for empty lists where the
+element type is unknown).
+
+---
+
+## Multiple Implicits of the Same Name
+
+When a function needs two implicit parameters that would both resolve to the same name (e.g. `eq`
+for both element types in a tuple), further qualify the parameter names:
+
+```koka
+fun tuple/eq( (x1,y1) : (a,b), (x2,y2) : (a,b), ?a/eq : (a,a) -> bool, ?b/eq : (b,b) -> bool ) : bool
+  eq(x1,x2) && eq(y1,y2)
+```
+
+Both `?a/eq` and `?b/eq` resolve using the unqualified name `eq`, but they are distinct parameters
+with unique qualified names `?a/eq` and `?b/eq`.
+
+---
+
+## Conversions via Implicits
+
+When resolving `?eq`, the compiler also considers functions that _produce_ an `eq` function given
+further implicit parameters. This allows defining derived instances:
+
+```koka
+fun default/compare/eq( x : a, y : a, ?compare : (a,a) -> order )
+  compare(x,y) == Eq
+
+fun string/compare( x : string, y : string ) : order
+  cmp(x,y)
+
+fun example6()
+  eq( ["hi"], ["there"] )
+  // resolves: list/eq(_,_, ?eq = default/compare/eq(_,_, ?compare = string/compare))
+```
+
+The `default/` namespace is treated as lower-priority — if a direct `eq` exists, it wins
+over a derived one via `default/compare/eq`.
+
+---
+
+## Implicits vs Type Classes
+
+| | Type Classes (Haskell/Lean) | Implicit Parameters (Koka) |
+|---|---|---|
+| Resolution | Type-driven at compile time | Type-driven at compile time |
+| Syntax | `deriving`, `instance` | `?param` prefix |
+| Customization | Named instances, newtype wrapping | Pass explicitly at call site |
+| Semantics | Can't run without types | Fully qualified names have untyped semantics |
+| Complexity | Large design space | Minimal extension to existing overloading |
+
+Koka's design goal is to be the _C of FP_ — powerful enough to express common patterns,
+without the complexity of a full type class system.
+
+---
+
+## See Also
+
+- [Static Overloading](overloading.html){.learn}
+- [Effect Types](effect-types.html){.learn}
+- [Types & Inference](types.html){.learn}
+
+~ end content
+~ end main-layout

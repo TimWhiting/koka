@@ -1,0 +1,26 @@
+Title: Concepts — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# Concepts { .heading-no-number }
+
+Use this section to understand why Koka is designed the way it is.
+These pages explain language principles, not step-by-step tasks.
+
+---
+
+## In This Section
+
+- [Minimal but General](general.html) — the design philosophy behind a small but expressive core
+- [Effect Types & Handlers](effects-and-handlers.html) — why effects are tracked and how handlers generalize control flow
+- [Perceus & FBIP](perceus-and-fbip.html) — how Koka achieves predictable performance without GC pauses
+
+---
+
+## Read This Next
+
+- New to Koka? Start with [Learn Koka](../learn/index.html) or [The Koka Book](../tutorial/index.html)
+- Need to complete a task? Go to [How-to Guides](../guides/index.html)
+- Need exact language details? Go to [Reference](../reference/index.html)
+
+~ end content
+~ end main-layout

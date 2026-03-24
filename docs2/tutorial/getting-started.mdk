@@ -1,0 +1,273 @@
+Title: Getting Started — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+
+# Getting Started { .heading-no-number }
+
+Let's write our first Koka program.
+
+---
+
+```koka {.hidden}
+import std/num/float64
+```
+
+## Hello, World!
+
+Create a file called `hello.kk` with this content:
+
+```koka
+fun main()
+  println("Hello, world!")
+```
+
+Run it with:
+
+```unchecked
+koka hello.kk
+```
+
+You should see `Hello, world!` printed to the terminal.
+
+A few things to notice right away:
+
+- Functions are declared with `fun`
+- The body is **indented** — no curly braces needed (though you can use them)
+- `println` is a standard library function
+
+If you use VS Code with the Koka extension, public functions named `main`, `example...`, or
+`test...` also get run/debug CodeLens actions directly in the editor.
+
+---
+
+## Running Files and Samples
+
+You can compile any installed sample directly from the command line. For example, the Caesar
+cipher sample compiles as:
+
+```unchecked
+$ koka samples/basic/caesar.kk
+compile: samples/basic/caesar.kk
+loading: std/core
+loading: std/core/types
+...
+check  : samples/basic/caesar
+linking: samples_basic_caesar
+created: .koka/.../samples_basic_caesar
+```
+
+Running the produced executable prints:
+
+```unchecked
+$ .koka/.../samples_basic_caesar
+plain  : Koka is a well-typed language
+encoded: Krnd lv d zhoo-wbshg odqjxdjh
+cracked: Koka is a well-typed language
+```
+
+The exact build directory depends on your platform and backend, but the workflow is always the same:
+compile with `koka ...`, then run the produced executable.
+
+---
+
+## Expressions and Values
+
+Koka is built around _expressions_ — everything that produces a value.
+Open the REPL (`koka`) and try a few:
+
+```unchecked
+> 1 + 2
+3
+> "hello" ++ " " ++ "world"
+"hello world"
+> True && False
+False
+```
+
+Operators like `++` (string concatenation) and `&&` (boolean and) work as you'd expect.
+
+The REPL also supports useful commands for inspecting and loading code:
+
+```unchecked
+> :t "hi"
+string
+
+> :t println("hi")
+console ()
+
+> :l samples/basic/fibonacci
+> main()
+...
+```
+
+Use `:t` to inspect the inferred type of an expression, and `:l` to load a file or sample module.
+
+For performance-oriented experiments, the REPL can also show elapsed timings and reload quickly:
+
+```unchecked
+> :set --showtime
+> :l samples/basic/rbtree.kk
+> main()
+...
+420000
+info: elapsed: ...
+
+> :set -O2
+> :r
+> main()
+...
+420000
+info: elapsed: ...
+```
+
+This is a convenient loop for comparing debug and optimized runs without leaving the REPL.
+
+---
+
+## Basic Types
+
+Koka's most common built-in types:
+
+| Type | Examples | Description |
+|------|---------|-------------|
+| `int` | `42`, `-7`, `0` | Arbitrary precision integer |
+| `float64` | `3.14`, `-0.5` | 64-bit floating point |
+| `string` | `"hello"` | Text string |
+| `bool` | `True`, `False` | Boolean |
+| `char` | `'a'`, `'\n'` | Unicode character |
+
+The `show` function converts most values to a string:
+
+```unchecked
+import std/num/float64
+```
+```koka
+fun example1()
+  println(42.show)
+  println((3.14).show)
+  println(True.show)
+```
+
+---
+
+## `val` — Naming Values
+
+Use `val` to give a name to a value within a function:
+
+```koka
+fun example2()
+  val greeting = "Hello"
+  val name     = "world"
+  println(greeting ++ ", " ++ name ++ "!")
+```
+
+`val` bindings are **immutable** — once set, the value never changes. This is
+the default in Koka and most functional languages.
+
+---
+
+## `var` — Mutable Variables
+
+When you truly need to update a value, use `var` with `:=` for assignment:
+
+```koka
+fun example3()
+  var count := 0
+  count := count + 1
+  count := count + 1
+  println(count.show)   // prints 2
+```
+
+`var` is the exception, not the rule — most code in Koka uses `val` or function
+parameters and never mutates anything.
+
+---
+
+## Conditionals
+
+Koka's `if` is an _expression_ — it produces a value:
+
+```koka
+fun describe(n : int) : string
+  if n < 0 then "negative"
+  elif n == 0 then "zero"
+  else "positive"
+
+fun example4()
+  println(describe(-3))
+  println(describe(0))
+  println(describe(5))
+```
+
+Because `if` is an expression, both branches must have the same type.
+
+---
+
+## Type Annotations
+
+Koka infers types automatically — you saw `describe` above already has type
+annotations on its parameter and return type. These are optional but good practice:
+
+```koka
+fun add( x : int, y : int ) : int
+  x + y
+```
+
+If you leave them off, Koka still infers the types — hover over identifiers in VS Code
+to see what was inferred.
+
+In practice it is still a good habit to annotate function parameters and return types:
+it improves documentation, gives clearer compiler feedback, and can help disambiguate overloaded library functions.
+
+---
+
+## The `unit` Type
+
+Some functions perform an action but don't return a meaningful value.
+They return `()`, pronounced _unit_, which is Koka's equivalent of `void`:
+
+```koka
+fun greet( name : string ) : console ()
+  println("Hello, " ++ name ++ "!")
+```
+
+The `: ()` return type annotation can also be omitted when returning unit.
+
+---
+
+## Working with the REPL
+
+The REPL is useful for exploring types and testing expressions interactively.
+Here are the most useful commands:
+
+```unchecked
+> :l samples/basic/caesar       // load a file
+> :t encode                     // show the type of a function
+> encode(3,"hello")             // evaluate an expression
+> :r                            // reload after editing
+> :set --showtime               // show execution time
+> :set -O2                      // optimize
+> :q                            // quit
+```
+
+Use `:t` frequently -- it shows the inferred effect type, which is how
+you verify that Koka is tracking effects correctly.
+
+---
+
+## Summary
+
+In this section you learned:
+- How to write and run a Koka program
+- How to compile and run installed sample programs from the command line
+- How to use the REPL commands `:t`, `:l`, `:r`, and `:set`
+- The basic built-in types: `int`, `float64`, `string`, `bool`, `char`
+- `val` for immutable names, `var` for mutable variables
+- `if`/`elif`/`else` as expressions
+- Type annotations (and that inference makes them optional)
+
+---
+
+[→ Next: Functions](functions.html){.learn}
+
+~ end content
+~ end main-layout

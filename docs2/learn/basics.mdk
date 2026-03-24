@@ -1,0 +1,131 @@
+Title: Basics — Learn Koka
+[INCLUDE=../sidebar-sub.mdk]
+
+# Basics { .heading-no-number }
+
+---
+
+## Functions
+
+Functions are declared with `fun`. The body is indented; no braces needed.
+
+```koka
+fun square( x : int ) : int
+  x * x
+
+fun example-square()
+  println(square(7).show)
+```
+
+Type annotations are optional -- Koka infers them. Hover over identifiers
+in VS Code to see inferred types.
+
+---
+
+## Dot Notation
+
+`x.f(y)` is sugar for `f(x, y)`. This lets you chain calls naturally:
+
+```koka
+fun example-dot()
+  "hello world".to-upper.println
+```
+
+Any function can be a "method" on its first argument -- no class system required.
+This also means you can extend any type by writing a new function.
+
+---
+
+## Trailing Lambdas
+
+A function's last argument can be written as an indented block after the call:
+
+```koka
+fun example-trailing()
+  [1, 2, 3].map fn(x)
+    x * x
+```
+
+If the lambda takes no arguments, just use braces:
+
+```koka
+fun example-repeat()
+  repeat(3)
+    println("hello!")
+```
+
+This is how `while`, `repeat`, and other control flow works -- they are
+ordinary functions, not special syntax.
+
+---
+
+## Braces as Suspension
+
+An expression in parentheses is evaluated _before_ the call. An expression
+in braces is _suspended_ -- it may be evaluated zero, one, or many times:
+
+```unchecked
+while { i < 10 }    // condition re-evaluated each iteration
+  println("hello")
+```
+
+This is consistent: `while` is a regular function taking two suspended arguments.
+
+---
+
+## The `with` Statement
+
+`with` turns a trailing-lambda call into a scoping construct. Instead of:
+
+```unchecked
+handle-errors( fn()
+  do-work()
+)
+```
+
+Write:
+
+```unchecked
+with handle-errors
+do-work()
+```
+
+Everything after `with` becomes the function body passed to the handler.
+This is the key syntactic mechanism for effect handlers.
+
+---
+
+## Optional and Named Parameters
+
+```koka
+fun greet( name : string, greeting : string = "Hello" )
+  println(greeting ++ ", " ++ name ++ "!")
+
+fun example-greet()
+  greet("World")
+  greet("World", greeting = "Hi")
+```
+
+---
+
+## Local Mutable Variables
+
+`var` declares a locally mutable variable. Its state cannot escape:
+
+```koka
+fun sum-list( xs : list<int> ) : int
+  var total := 0
+  xs.foreach fn(x)
+    total := total + x
+  total
+```
+
+The inferred type is `total int` -- no state effect leaks out.
+Koka automatically discharges local state at the function boundary.
+
+---
+
+[-> Types](types.html){.learn}
+
+~ end content
+~ end main-layout

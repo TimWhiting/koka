@@ -1,0 +1,73 @@
+Title: Koka Programming Language
+[INCLUDE=sidebar.mdk]
+
+
+
+~ begin hero { .heading-no-number }
+
+# Koka { .title }
+
+~ subtitle
+A Functional Language with Effect Types, Handlers, and Perceus Memory Management
+~
+
+~ end hero
+
+[Install](install.html){.learn}
+[Learn Koka](learn/index.html){.learn}
+[The Koka Book](tutorial/index.html){.learn}
+[Github](https://github.com/koka-lang/koka){.learn}
+
+<hr>
+**Note**: Koka is a research language under active development.
+The language is stable and the compiler implements the full specification.
+The main things lacking at the moment are (async) libraries and package management.
+<hr>
+
+## Why Koka? { #why .heading-no-number }
+~ begin banners
+~ banner
+
+#### Minimal but General
+The core of Koka consists of a small set of well-studied language
+features, like first-class functions, a polymorphic type- and effect
+system, algebraic data types, and effect handlers. Each of these is
+composable and avoids the addition of
+"special" extensions by being as general as possible.
+
+[Read about generality](concepts/general.html){.learn}
+~
+~ banner
+
+#### Algebraic Effects & Handlers
+Koka tracks the (side) _effects_ of every function in its type,
+giving Koka rock-solid semantics with a direct correspondence to
+well-studied mathematical foundations.
+Effects are resolved using _effect handlers_, which let you define
+advanced control abstractions -- like async/await, exceptions,
+generators, or ambient state -- as ordinary user libraries.
+
+[Read about effect types and handlers](concepts/effects-and-handlers.html){.learn}
+~
+
+~ banner
+
+#### Predictable Performance with Perceus & FBIP
+Instead of a traditional garbage collector, Koka uses _Perceus_ -- an advanced
+compilation method for precise reference counting.
+This deterministic memory management enables _reuse analysis_: Koka optimizes
+functional-style programs to use in-place updates when possible.
+This lets you write safe, functional algorithms that compile into
+high-performance imperative machine code, a paradigm we call _Functional But In-Place_ (FBIP).
+
+[Read about Perceus and FBIP](concepts/perceus-and-fbip.html){.learn}
+~
+~ banner
+
+#### Learn More
+[Read more about these core concepts](concepts/index.html){.learn}
+~
+~ end banners
+
+~ end content
+~ end main-layout

@@ -1,0 +1,116 @@
+Title: Capstone: A Calculator — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+```koka {.hidden}
+[INCLUDE=calculator.kk:imports]
+```
+
+# Capstone Part 1: Basic Calculator { .heading-no-number }
+
+We'll pull together everything we've learned to build a 
+simple calculator. This project shows how Koka uses algebraic data types for 
+structure and effect handlers for control flow and dependency injection.
+
+By the end of this section, you'll have a calculator that handles basic variables,
+detects errors like division by zero, and uses an exception-style mechanism to 
+handle failures.
+
+---
+
+## 1. Defining the Expression Tree
+
+Most imperative programs use a parser to turn strings into trees. In Koka, we model
+that tree directly using a recursive `type`:
+
+```koka
+[INCLUDE=calculator.kk:exp]
+```
+
+This represents an **Abstract Syntax Tree (AST)**. For example, `(x + 5) / y` would be
+represented as `Div(Add(Var("x"), Val(5)), Var("y"))`.
+
+---
+
+## 2. Defining our Effects
+
+A calculator needs a few extra things for our interactive program:
+1.  **State**: To look up what `x` or `y` currently equals.
+2.  **Failure**: To stop if someone tries to `Div(..., Val(0))`.
+
+Instead of passing a list of variables into every function manually, we define these
+as **Effects**:
+
+```koka
+[INCLUDE=calculator.kk:effects]
+```
+
+---
+
+## 3. The Evaluator
+
+Now we write `eval`. Notice how we use `raise` to jump out of nested 
+evaluations. We still use `if/else` to detect errors, but we don't have to 
+manually propagate errors (like `Nothing` or `Left err`) through every 
+level of the recursion:
+
+```koka
+[INCLUDE=calculator.kk:eval]
+```
+
+Because `eval` uses `lookup` and `raise`, its effect type is `<calculator>`.
+
+---
+
+## 4. Running with Handlers
+
+To run the calculator, we wrap it in handlers. This is where we decide **how** to
+handle variables and errors.
+
+```koka
+[INCLUDE=calculator.kk:run-calc]
+```
+
+---
+
+## 5. Basic Exception Handling
+
+Effect handlers are particularly useful for making control flow more readable 
+in interactive contexts. If the user enters a bad expression, we can choose to
+abruptly terminate the evaluation and report the error.
+
+In Koka, we can place the `error` handler *outside* the part of the code that 
+evaluates the expression:
+
+```koka
+[INCLUDE=calculator.kk:repl]
+```
+
+When `raise` is called, the current evaluation is aborted, the error message
+is printed, and the loop starts again. In most languages, this would require 
+throwing a native exception or deeply nesting `try/catch` blocks.
+
+---
+
+## Summary
+
+In this capstone, you built a system that:
+- Uses **ADTs** to model data structure.
+- Uses **Recursion** to traverse that structure.
+- Uses **Effect Handlers** to decouple the evaluator from the 
+  implementation of variable storage and error handling.
+
+You've now seen how Koka's effect system can be used to structure a program. 
+From here, you can explore the [How-to Guides](../guides/index.html) to 
+learn about low-level performance, C interop, and the Perceus memory 
+management system.
+
+---
+
+You can [download the full source code here](calculator.kk).
+
+---
+
+[← Writing Your Own Effects](custom-effects.html){.learn}
+[→ Next: Advanced Interactive Calculator](calculator-interactive.html){.learn}
+
+~ end content
+~ end main-layout

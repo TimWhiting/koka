@@ -1,0 +1,324 @@
+Title: Type & Representation Reference — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# Type & Representation Reference { .heading-no-number }
+
+This page focuses on type-level forms and runtime representation choices.
+
+---
+
+## Struct Desugaring
+
+A `struct` corresponds closely to a single-constructor `type` with generated constructors/accessors.
+
+```unchecked
+struct person
+  age : int
+  name : string
+```
+
+Conceptually corresponds to:
+
+```unchecked
+type person
+  Person
+    age : int
+    name : string
+```
+
+---
+
+## Recursive Type Forms
+
+Koka distinguishes declaration forms for recursion semantics:
+
+- `type`: finite inductive definitions
+- `co type`: covariant recursive types (where the type itself appears as an argument to a stored function for example).
+- `div type`: unrestricted recursive definitions
+
+Use `type` by default; prefer the others only when modeling demands it.
+
+---
+
+## Abstract Types
+
+The `abstract` keyword prevents a type's constructors from being used outside the
+defining module. This is useful for types that maintain internal invariants or
+whose representation is managed by the runtime.
+
+```unchecked
+abstract struct sslice
+  str : string
+  start : ssize_t
+  len   : ssize_t
+```
+
+When a type is declared `abstract`:
+
+- Constructors are **not exported** from the module, so external code cannot
+  create or pattern-match values of the type directly.
+- The compiler does **not** auto-generate a `copy` function or value accessors
+  for the type.
+- The defining module typically exposes smart constructors and accessor
+  functions that enforce the necessary invariants.
+
+Use `abstract` whenever field values must satisfy a relationship that arbitrary
+construction could violate, or when the runtime owns the representation (e.g.
+foreign types).
+
+---
+
+## Open and Extensible Types
+
+An `open type` declaration allows constructors to be added from outside the
+defining module via `extend type`. This is the mechanism behind extensible
+exception information in the standard library.
+
+```koka
+open type exception-info
+  ExnError
+  ExnAssert
+```
+
+Any other module can then extend the type with additional constructors:
+
+```koka
+extend type exception-info
+  ExnMyCustom(detail : string)
+```
+
+Key points about open types:
+
+- Because the set of constructors is not known at compile time, pattern matching
+  on an open type is always **non-exhaustive**. A match expression must therefore
+  be used in a context that allows the `:exn` effect (so the compiler can raise
+  a pattern-match failure at runtime).
+- The standard library uses this pattern for `exception-info`, allowing
+  libraries to define their own structured exception payloads without modifying
+  the core module.
+- Open types are best reserved for truly extensible domains; for fixed sets of
+  alternatives, prefer a regular `type` so the compiler can check exhaustiveness.
+
+---
+
+## Type Aliases
+
+Type aliases introduce a new name for an existing type. They are fully
+transparent: any methods or functions defined on the original type remain
+accessible through the alias.
+
+```unchecked
+alias pure = <div,exn>
+```
+
+Aliases can be parametric and may involve effect rows:
+
+```unchecked
+alias st<h> = <alloc<h>,read<h>,write<h>>
+```
+
+With this alias, a function signature like `fun foo() : st<h> int` is
+equivalent to `fun foo() : <alloc<h>,read<h>,write<h>> int`.
+
+Because aliases are transparent, you never need to wrap or unwrap values -- the
+alias name is simply a shorthand that the compiler expands during type checking.
+
+---
+
+## Generated Functions
+
+When you declare a `struct` or `type`, the compiler automatically generates
+several helper functions.
+
+### The `copy` function
+
+For each `struct` (or single-constructor `type`), the compiler generates a
+`copy` function that creates a shallow copy with zero or more fields updated
+using named parameters:
+
+```koka
+struct person
+  age : int
+  name : string
+
+fun main()
+  val p = Person(25, "Alice")
+  val q = p(age = p.age + 1)   // functional update via copy
+  println(q.age.show)           // prints "26"
+```
+
+### Constructor predicates (`is-<constructor>`)
+
+For every constructor, the compiler generates a Boolean predicate whose name is
+`is-` followed by the lowercased constructor name:
+
+```koka
+fun show-head(xs : list<int>) : string
+  if xs.is-cons then xs.head.show
+  else "empty"
+```
+
+Common examples: `is-nil`, `is-cons`, `is-just`, `is-nothing`.
+
+### Field accessors
+
+When **all** constructors of a type share a field with the same name and type,
+the compiler generates an accessor function for that field. For single-constructor
+types (including `struct`), every field gets an accessor.
+
+> **Note:** Pattern matching is generally more efficient than calling generated
+> accessor functions, especially when you need multiple fields at once, because
+> the compiler can optimise a single match into direct field extraction.
+
+---
+
+## Local `var` Escape Rules
+
+`var` bindings in Koka are **not** first-class mutable references. A `var` is
+always dereferenced automatically wherever it is read, and it cannot escape its
+lexical scope through a closure.
+
+```koka
+fun count()
+  var x := 0
+  x := x + 1
+  x := x + 1
+  x   // ok: reads the current value (2)
+```
+
+However, returning a closure that captures a `var` is rejected:
+
+```unchecked
+fun wrong() : (() -> console ())
+  var x := 1
+  fn()
+    x := x + 1; println(x.show)   // rejected: x would escape its scope
+```
+
+The compiler rejects this because `x` would need to outlive the activation of
+`wrong`, but `var` storage is stack-allocated. This restriction is what allows
+the compiler to automatically insert a `run` transformation that discharges the
+local state effect, keeping the type system sound without requiring explicit
+heap allocation.
+
+If you genuinely need mutable state that outlives the current scope, use a
+`ref` value instead (see below).
+
+---
+
+## Borrowed Parameters
+
+In performance-sensitive code, you can mark a parameter as _borrowed_ with the
+`^` prefix. A borrowed parameter tells the compiler that the caller retains
+ownership, so the callee does not need to increment or decrement the reference
+count:
+
+```unchecked
+fun f(^x : list<int>) : int
+  match x
+    Cons(h, _) -> h
+    Nil        -> 0
+```
+
+Key considerations:
+
+- A borrowed parameter stays alive for the **entire duration** of the function
+  call, because the caller's reference keeps it live.
+- Borrowing avoids reference-counting overhead on function entry and exit,
+  which can matter in tight loops over large data structures.
+- Use with caution: if you store a borrowed value into a longer-lived data
+  structure, the compiler may still need to insert reference-count operations,
+  or the program may behave unexpectedly.
+- The compiler already infers borrowing in many common cases; the `^` annotation
+  is mainly useful when you want to guarantee it or guide the optimiser.
+
+---
+
+## References and Heap Effects
+
+While `var` provides stack-allocated local mutability, `ref` values are
+heap-allocated mutable references that can be shared and stored in data
+structures.
+
+### Creating and using references
+
+```koka
+fun reference-example()
+  val r = ref(42)      // create a new reference with initial value 42
+  val v = !r           // dereference: v == 42
+  r := v + 1           // assign a new value
+  println((!r).show)   // prints "43"
+```
+
+### Type and effects
+
+A reference has type `ref<h,a>` where `h` is a _heap type variable_ that
+identifies which heap the reference lives in, and `a` is the type of the
+stored value.
+
+Operations on references require specific effects:
+
+| Operation              | Syntax      | Effect        |
+|------------------------|-------------|---------------|
+| Create a reference     | `ref(v)`    | `alloc<h>`    |
+| Dereference (read)     | `!r`        | `read<h>`     |
+| Assign (write)         | `r := v`    | `write<h>`    |
+
+The standard library defines a convenient alias for the combination:
+
+```unchecked
+alias st<h> = <alloc<h>,read<h>,write<h>>
+```
+
+### Discharging state with `run`
+
+The `run` function (analogous to Haskell's `runST`) can discharge the `st<h>`
+effect when the heap type variable `h` is polymorphic -- meaning no references
+allocated inside can escape to the outside:
+
+```unchecked
+fun run(action : forall<h> () -> <st<h>> a) : a
+```
+
+Because `h` is universally quantified, the type system guarantees that no
+`ref<h,a>` value can appear in the result type `a`, so it is safe to discard
+the heap after `action` completes.
+
+For `var` bindings, the compiler inserts this `run` transformation
+automatically. For explicit `ref` values you may need to call `run` yourself
+when the references do not escape.
+
+---
+
+## Value Types, Boxing, and Specialization
+
+Small non-recursive types can be represented by value.
+Generic contexts may require boxing; specialization can reduce allocation/indirection in hot paths.
+
+For example, a generic list of tuples can force boxed tuple payloads:
+
+```unchecked
+[(1, True), (2, False)]
+```
+
+One specialization strategy is to replace that generic representation with a dedicated
+data type that stores fields directly:
+
+```unchecked
+type mylist
+  MyCons{ head1 : int; head2 : bool; mytail : mylist }
+  MyNil
+```
+
+This can avoid tuple boxing indirections in performance-sensitive code.
+
+---
+
+## See Also
+
+- [Types Annotations & Type Inference](../guides/types.html){.learn}
+- [Your Own Types](../tutorial/types.html){.learn}
+- [Performance & FBIP](../guides/performance-fbip.html){.learn}
+
+~ end content
+~ end main-layout

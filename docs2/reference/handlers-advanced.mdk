@@ -1,0 +1,309 @@
+Title: Advanced Handlers Reference — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# Advanced Handlers Reference { .heading-no-number }
+
+Precise reference for advanced handler constructs: resource finalization,
+raw control, final operations, linear effects, and named/scoped handlers.
+For semantics topics like masking, duplicate labels, and handler ordering,
+see the [Effect Semantics Reference](effect-semantics.html).
+
+---
+
+## `finally` and `initially` { #sec-finally }
+
+Effect handlers introduce three resumption cases for any operation:
+
+1. **Never resumed** -- the handler takes over entirely (exception-like).
+2. **Resumed once** -- normal linear control flow.
+3. **Resumed more than once** -- backtracking, probabilistic branching, etc.
+
+Resource cleanup must be correct in all three cases. Koka provides `finally`
+and `initially` to handle this.
+
+### `finally`
+
+`finally` registers a cleanup function that runs both on normal return
+and when unwinding due to a non-resuming operation. Signature:
+
+```unchecked
+fun finally( cleanup : () -> e (), action : () -> e a ) : e a
+```
+
+Used with `with` syntax:
+
+```koka
+fun test-finally()
+  with finally{ println("exiting..") }
+  println("entering..")
+  throw("oops") + 42
+```
+
+Output:
+
+```unchecked
+entering..
+exiting..
+uncaught exception: oops
+```
+
+The `finally` function serves the same role as `defer` in other languages,
+but is an ordinary Koka function rather than a special construct.
+
+A typical resource pattern using `finally`:
+
+```unchecked
+fun with-file( path : string, action : () -> <fread,exn,filesys|e> a ) : <exn,filesys|e> a
+  val h = fopen(path)
+  with finally
+    hclose(h)
+  with fun fread()
+    hreadline(h)
+  action()
+```
+
+Here `hclose(h)` runs whether `action` returns normally or an exception
+unwinds past this point.
+
+### `initially`
+
+`initially` registers a function that is called on first evaluation,
+and called again each time a resumption is resumed more than once.
+Signature:
+
+```unchecked
+fun initially( init : (int) -> e (), action : () -> e a ) : e a
+```
+
+The `init` function receives a count: `0` on first evaluation, and an
+incrementing value on each subsequent multi-resumption. This lets you
+duplicate or re-acquire resources for each branch of a multi-shot resumption.
+
+### Combined usage
+
+Together, `finally` and `initially` cover all three resumption cases:
+
+- **Never resumed**: `finally` runs cleanup during unwinding.
+- **Resumed once**: `finally` runs cleanup on normal return.
+- **Resumed more than once**: `initially` re-acquires the resource for
+  each extra resumption; `finally` cleans up each copy independently.
+
+---
+
+## `raw ctl` { #sec-raw-ctl }
+
+A `raw ctl` operation does **not** automatically finalize its captured
+continuation. Unlike regular `ctl`, which finalizes on non-resumption,
+`raw ctl` leaves the programmer in full control of the continuation lifecycle.
+
+### Syntax
+
+```unchecked
+effect my-effect
+  raw ctl my-op( args ) : result-type
+```
+
+### The `rcontext` binding
+
+Inside a `raw ctl` clause, an implicit `rcontext` value is bound. It provides
+two operations:
+
+- **`rcontext.resume(x)`** -- resume the captured continuation with value `x`.
+  Equivalent to `resume(x)` in a regular `ctl`, but without automatic finalization
+  on the non-resumed path.
+- **`rcontext.finalize`** -- explicitly run all `finally` handlers registered
+  in the captured continuation. Use this to clean up resources when you decide
+  not to resume.
+
+### First-class storage
+
+The `rcontext` value can be stored as a first-class value -- passed to other
+functions, stored in data structures, and resumed or finalized later from a
+completely different scope. This enables patterns like:
+
+- Coroutines and cooperative scheduling (store multiple continuations, resume them in turn).
+- Async/await (store the continuation, resume it when an I/O result arrives).
+- Custom resource pools (finalize continuations that are no longer needed).
+
+### Programmer responsibility
+
+With `raw ctl`, the programmer must ensure that every captured continuation is
+eventually either resumed or finalized. Failing to do so leaks resources
+registered with `finally`. Regular `ctl` is preferred unless you specifically
+need deferred or externally-managed resumption.
+
+---
+
+## `final ctl` { #sec-final-ctl }
+
+A `final ctl` operation declares that the handler never resumes the
+continuation. The handler takes over control entirely, similar to
+exception handling.
+
+### Syntax
+
+```unchecked
+effect my-effect
+  final ctl my-op( args ) : a
+```
+
+The return type of the operation is `a` (fully polymorphic) because the
+operation never returns to the call site -- it can unify with any expected type.
+
+### Efficiency
+
+Because the runtime knows at compile time that the continuation will never be
+resumed, `final ctl` avoids capturing the continuation altogether. This makes
+it more efficient than a regular `ctl` operation that happens not to resume.
+
+### Example
+
+```koka
+effect abort
+  final ctl abort( msg : string ) : a
+
+fun safe-div( x : int, y : int ) : abort int
+  if y == 0 then abort("division by zero")
+  else x / y
+
+fun test-abort()
+  with final ctl abort(msg) println("aborted: " ++ msg)
+  println(safe-div(10, 0).show)
+```
+
+Use `final ctl` for exception-like patterns, early exit, and any operation
+where resumption is never intended.
+
+---
+
+## Linear Effects { #sec-linear }
+
+A `linear effect` declares that all its operations are tail-resumptive
+(resume exactly once, in tail position) and only use linear effects themselves.
+
+### Declaration
+
+```unchecked
+linear effect my-state
+  fun get() : int
+  fun set( x : int ) : ()
+```
+
+### Constraints
+
+- Every operation must call `resume` exactly once.
+- Operations can only invoke other linear effects.
+- `ctl` operations are not permitted -- only `fun` (tail-resumptive) operations.
+
+### Benefits
+
+Linear effects remove the monadic translation overhead that general effect
+handlers require. Code using only linear effects compiles to more compact
+and efficient output, comparable to direct-style imperative code.
+
+### Builtin linear effects
+
+Several builtin effects are effectively linear:
+
+- `:st` -- mutable state (references, arrays)
+- `:console` -- console I/O
+- `:filesys` -- file system operations
+- `:net` -- network operations
+
+These effects resume exactly once and benefit from the same efficient
+compilation as user-declared linear effects.
+
+---
+
+## Named and Scoped Handlers { #sec-named }
+
+Standard effect handlers are identified by their effect label. When you need
+multiple handlers for the same effect type active simultaneously -- for example,
+two open files -- named handlers provide lexical disambiguation.
+
+### `named effect`
+
+A `named effect` declares an effect whose handler instances are distinct values:
+
+```unchecked
+named effect file
+  fun read-line() : string
+  fun write-line( s : string ) : ()
+```
+
+### `named handler`
+
+A `named handler` creates a handler instance bound to a variable. Use the
+`with` ... `<- named handler` syntax:
+
+```unchecked
+fun file( fname : string, action : (file) -> <filesys,exn|e> a ) : <filesys,exn|e> a
+  val h = fopen(fname)
+  with f <- named handler
+    fun read-line()
+      hreadline(h)
+    fun write-line(s)
+      hwriteline(h, s)
+  with finally
+    hclose(h)
+  action(f)
+```
+
+The variable `f` is a handler instance of type `file` that can be passed
+to `action`. The caller uses it to direct operations to a specific handler:
+
+```unchecked
+fun copy-file( src : string, dst : string ) : <filesys,exn> ()
+  with s <- file(src)
+  with d <- file(dst)
+  // s.read-line() targets the src handler; d.write-line() targets dst
+  val line = s.read-line()
+  d.write-line(line)
+```
+
+Without named handlers, both files would share the same `file` effect label
+and there would be no way to distinguish which handler should receive an operation.
+
+### `scoped effect` { #sec-scoped }
+
+A `scoped effect` prevents handler instances from escaping their lexical scope.
+The effect is parameterized by a scope type variable of kind `::S`:
+
+```unchecked
+scoped effect file<s::S>
+  fun read-line() : string
+  fun write-line( s : string ) : ()
+```
+
+The handler function uses rank-2 polymorphism to ensure the scope variable
+does not unify with anything outside the handler body:
+
+```unchecked
+fun file( fname : string, action : forall<s> file<s> -> <scope<s>|e> a ) : e a
+```
+
+The `scope<s>` effect in the action type ties the handler instance lifetime
+to the lexical scope of the handler. Attempting to return a `file<s>` value
+from `action` is a type error because `s` cannot escape its `forall`.
+
+### Scope polymorphism
+
+The type `forall<s> file<s> -> <scope<s>|e> a` is the key pattern. It means:
+
+- The action receives a `file<s>` for some fresh scope `s`.
+- The action may perform `scope<s>` effects (which tie it to this handler).
+- The result type `a` does not mention `s`, so the handler instance cannot leak.
+
+This is analogous to the `ST` monad's rank-2 type in Haskell (`runST`), but
+applied to effect handlers.
+
+---
+
+## See Also
+
+- [Advanced Effect Handlers](../guides/advanced-handlers.html){.learn}
+- [Effect Semantics Reference](effect-semantics.html){.learn}
+- [Language Specification](spec.html){.learn}
+
+~ end content
+~ end main-layout

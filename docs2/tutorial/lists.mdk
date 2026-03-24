@@ -1,0 +1,208 @@
+Title: Lists & Recursion — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+
+# Lists & Recursion { .heading-no-number }
+
+Lists are one of the most fundamental data structures in functional programming.
+We'll learn how to create and process lists — including writing
+our own recursive functions over them.
+
+---
+
+## Creating Lists
+
+Square brackets create a list literal:
+
+```koka
+fun example1()
+  val nums = [1, 2, 3, 4, 5]
+  val words = ["hello", "world"]
+  val empty : list<int> = []
+  println(nums.length.show)   // 5
+```
+
+The standard library also has `list(lo, hi)` which generates `[lo, lo+1, ..., hi]`:
+
+```koka
+fun example2()
+  println(list(1, 5).show)   // [1, 2, 3, 4, 5]
+```
+
+---
+
+## The List Type
+
+A `list<a>` is either:
+- **`Nil`** — the empty list
+- **`Cons(head, tail)`** — an element `head` of type `a` followed by a `tail : list<a>`
+
+This recursive structure means lists are naturally processed with recursion.
+
+---
+
+## Pattern Matching on Lists
+
+The `match` expression lets you branch on whether a list is empty or not:
+
+```koka
+fun describe(xs : list<int>) : string
+  match xs
+    Nil        -> "empty"
+    Cons(x, _) -> "starts with " ++ x.show
+```
+
+This is _exhaustive_ — the compiler warns if you forget a case.
+
+---
+
+## Writing Recursive Functions
+
+Let's write our own `sum` function that adds up all elements in a list:
+
+```koka
+fun my-sum( xs : list<int> ) : int
+  match xs
+    Nil         -> 0               // base case: empty list sums to 0
+    Cons(x, rest) -> x + my-sum(rest)  // recursive case: add head to sum of tail
+
+fun example3()
+  println(my-sum([1, 2, 3, 4, 5]).show)   // 15
+```
+
+This pattern — matching on `Nil` (base case) and `Cons` (recursive case) — is the
+standard way to process a list.
+
+---
+
+## Building Lists
+
+To build a new list, use `Cons` to prepend an element:
+
+```koka
+fun my-reverse( xs : list<int> ) : list<int>
+  fun go( remaining, acc )
+    match remaining
+      Nil         -> acc
+      Cons(x, rest) -> go(rest, Cons(x, acc))
+  go(xs, [])
+
+fun example4()
+  println(my-reverse([1, 2, 3]).show)   // [3, 2, 1]
+```
+
+The inner `go` function uses an _accumulator_ — a common technique for making
+recursion tail-recursive (so it doesn't overflow the stack on long lists).
+
+---
+
+## `map`: Transforming Every Element
+
+The `map` function applies a function to every element of a list:
+
+```koka
+fun example5()
+  val doubled = [1, 2, 3, 4, 5].map(fn(x) x * 2)
+  println(doubled.show)   // [2, 4, 6, 8, 10]
+```
+
+With a trailing lambda, this reads very naturally:
+
+```koka
+fun example6()
+  val squares = list(1, 5).map fn(x)
+    x * x
+  println(squares.show)   // [1, 4, 9, 16, 25]
+```
+
+How would you implement `map` yourself? Here's one way:
+
+```koka
+fun my-map( xs : list<a>, f : a -> b ) : list<b>
+  match xs
+    Nil           -> []
+    Cons(x, rest) -> Cons(f(x), my-map(rest, f))
+```
+
+---
+
+## `filter`: Keeping Some Elements
+
+`filter` keeps only the elements that satisfy a predicate:
+
+```koka
+fun example7()
+  val evens = list(1, 10).filter(fn(x) x % 2 == 0)
+  println(evens.show)   // [2, 4, 6, 8, 10]
+```
+
+---
+
+## `foldl`: Reducing a List to a Value
+
+`foldl` (_fold left_) combines all elements using a function and a starting value:
+
+```koka
+fun example8()
+  val total = [1, 2, 3, 4, 5].foldl(0, fn(acc, x) acc + x)
+  println(total.show)   // 15
+
+  val product = [1, 2, 3, 4, 5].foldl(1, fn(acc, x) acc * x)
+  println(product.show)  // 120
+```
+
+`foldl(init, f)` starts with `init` and applies `f(acc, element)` from left to right.
+Most list-reduction operations can be expressed as a fold.
+
+---
+
+## Chaining List Operations
+
+The real power comes from composing `map`, `filter`, and `fold` with dot notation:
+
+```koka
+fun example9()
+  val result = list(1, 20)
+                 .filter(fn(x) x % 2 == 0)   // keep evens: [2,4,...,20]
+                 .map(fn(x) x * x)            // square them: [4,16,...,400]
+                 .foldl(0, (+))               // sum: 1540
+  println(result.show)
+```
+
+--- 
+
+## Useful List Functions
+
+The standard library has many list functions:
+
+| Function | Description |
+|----------|-------------|
+| `xs.length` | Number of elements |
+| `xs.head` | First element (returns `maybe<a>`) |
+| `xs.tail` | All but first (returns `maybe<list<a>>`) |
+| `xs.take(n)` | First `n` elements |
+| `xs.drop(n)` | All but first `n` elements |
+| `xs.reverse` | Reversed list |
+| `xs.concat` | Flatten a `list<list<a>>` |
+| `xs.zip(ys)` | Pair up elements: `list<(a,b)>` |
+| `xs.foreach(f)` | Apply `f` to each element for its effect |
+| `xs ++ ys` | Append two lists |
+
+---
+
+## Summary
+
+In this section you learned:
+- Creating lists with `[...]` and `list(lo, hi)`
+- The `Nil`/`Cons` structure of lists
+- Writing recursive functions with `match` on `Nil` and `Cons`
+- The accumulator pattern for tail-recursive list processing
+- `map`, `filter`, `foldl` for transforming and reducing lists
+- Chaining operations with dot notation
+
+---
+
+[← Functions](functions.html){.learn}
+[→ Next: Your Own Types](types.html){.learn}
+
+~ end content
+~ end main-layout

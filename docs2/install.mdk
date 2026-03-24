@@ -1,0 +1,83 @@
+Title: Install Koka
+[INCLUDE=sidebar.mdk]
+
+# Install Koka { #install .heading-no-number }
+
+### Install with the VS Code editor
+
+[![vscode-install]](https://marketplace.visualstudio.com/items?itemName=koka.language-koka)
+
+[vscode-install]: images/vscode-install.png "VS Code Extension Installation" { .floatright; height:200px; }
+
+The easiest way to start with Koka is to open [VS Code](https://code.visualstudio.com/)
+and install the Koka extension.
+Go to the extension panel, search for `Koka` and
+install the official extension as shown on the right.
+
+Installing the extension also prompts to install
+the latest Koka compiler on your platform
+(available for Windows x64, MacOS x64 and arm64, and Linux x64).
+
+Once installed, the samples directory is opened. You can also open this
+manually from the command panel (`Ctrl/Cmd+Shift+P`),
+and running the `Koka: Open samples` command.
+Open for example the `basic/caesar.kk` file:
+When you click `run debug` (or `optimized`) Koka compiles and runs the function,
+showing the output in the VS Code terminal.
+
+Public functions named `main`, `example...`, and `test...` get these run/debug actions directly
+in the editor, so you can execute many tutorial and sample snippets without leaving VS Code.
+
+![vscode-caesar]
+
+Press and hold `ctrl+alt` (or `ctrl+option` on MacOS) to show inlay hints -- showing inferred
+types, fully qualified names, and implicit arguments.
+
+~ begin flexrow { margin-top:2em; align-items:center; }
+![vscode-inlay-off]
+&quad;versus&quad;
+![vscode-inlay-on]
+~ end flexrow
+
+[vscode-caesar]: images/vscode-caesar.png "VS Code caesar examples" { width:60%; min-width:400px; }
+[vscode-inlay-off]: images/vscode-inlay-off.png "VS Code example without inlay hints" { height:4em; min-width:200px; }
+[vscode-inlay-on]:  images/vscode-inlay-on.png "VS Code example with inlay hints on" { height:4em; min-width:200px; }
+
+
+### Manual Installation
+
+On Windows (x64), open a `cmd` prompt and use:
+
+``` { .bash }
+curl -sSL -o %tmp%\install-koka.bat https://github.com/koka-lang/koka/releases/latest/download/install.bat && %tmp%\install-koka.bat
+```
+
+On Linux (x64) and macOS (x64, arm64 (M1/M2)), you can install Koka using:
+
+``` { .bash }
+curl -sSL https://github.com/koka-lang/koka/releases/latest/download/install.sh | sh
+```
+
+(If you previously installed Koka on macOS using `brew`, do an `brew uninstall koka` first).
+On other platforms it is usually easy to build Koka from [source](https://github.com/koka-lang/koka#build-from-source) instead.
+
+### Verify the installation
+
+A quick check is to start the interactive compiler:
+
+``` { .bash }
+koka
+```
+
+You should see the Koka REPL banner and a prompt like:
+
+```unchecked
+welcome to the koka interactive compiler
+...
+>
+```
+
+Type `:q` to exit.
+
+~ end content
+~ end main-layout

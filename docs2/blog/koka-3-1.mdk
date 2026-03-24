@@ -1,0 +1,56 @@
+Title: Koka 3.1.x Released — Koka Blog
+[INCLUDE=../sidebar-sub.mdk]
+
+# Koka 3.1.x Released { .heading-no-number }
+
+~ begin blog-meta
+**July 2025** · Language, Release
+~ end blog-meta
+
+---
+
+The Koka 3.1.x releases bring significant improvements to compile times, language server integration, and language syntax, culminating in the 3.1.3 release.
+
+---
+
+## Highly Concurrent Builds
+
+Koka 3.1.0 introduced a highly concurrent building system, resulting in **much faster build times** for large projects. This makes iterative development in Koka noticeably snappier.
+
+## Applier Syntax
+
+Koka 3.1.3 introduces the applier syntax `.()`. Writing `x.f.(42)` is now syntactic sugar for `(x.f)(42)`. This is especially convenient when you need to call a function that is stored in a struct field, resolving the ambiguity between function application and dot-accessor chaining.
+
+## Lazy Constructors
+
+Support for **lazy constructors** has landed! This allows for efficient, first-order laziness. Check out the `samples/learn/lazycons.kk` example in the compiler distribution, and read the PLDI'25 paper on ["First-order Laziness"](https://antonlorenzen.de/papers/lazycons.pdf) by Anton Lorenzen, Daan Leijen, Wouter Swierstra, and Sam Lindley.
+
+## Declaration Syntax Refinements
+
+Koka 3.1.3 changes several declaration keywords:
+- **Reference Types**: Declare reference types using `reference type` (instead of `ref type`).
+- **Divergent Types**: Declare divergent types as `div type` or `div effect` (instead of `rec type/effect`).
+
+## Improved Language Server
+
+The Koka Language Server now supports the `stdio` protocol via the `--language-server --lsstdio` flags, improving compatibility with various editors. Additional VS Code integration fixes ensure optimized compilation directly from the editor.
+
+## Named Effects Redesign
+
+We've completely redesigned the internal generation of **named effects** to match the formal systems more closely. You can find updated examples in the `samples/handlers/named` directory.
+
+## Community & Research
+
+Koka continues to be a platform for innovative research:
+
+- **Effect Handlers Talk**: Watch the [talk](https://www.college-de-france.fr/fr/agenda/seminaire/structures-de-controle-de-goto-aux-effets-algebriques/design-and-compilation-of-efficient-effect-handlers-in-the-koka-language) on the design and compilation of efficient effect handlers in Koka, given as part of Xavier Leroy's lecture series at the Collège de France.
+- **BST Research**: Read the PLDI'24 paper on ["The Functional Essence of Binary Search Trees"](https://www.microsoft.com/en-us/research/uploads/prodnew/2024/05/fiptree-full.pdf) by Anton Lorenzen, Daan Leijen, Sam Lindley, and Wouter Swierstra.
+
+Special thanks to [Xia Li-yao](https://github.com/Lysxia), [Eduardo García Maleta](https://github.com/egmaleta), and [@samosica](https://github.com/samosica) for their various fixes and contributions!
+
+---
+
+[← Back to Blog](index.html){.learn}
+
+~ end content
+~ end main-layout

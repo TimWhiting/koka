@@ -1,0 +1,237 @@
+Title: Advanced Effect Handlers — Koka Topic Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Advanced Effect Handlers { .heading-no-number }
+
+This guide covers advanced techniques for working with effect handlers in Koka,
+including side-effect isolation, resource control, and scoped handlers.
+
+---
+
+## Side-effect Isolation { #sec-isolate }
+
+One of the strengths of Koka's effect system is the ability to strictly isolate state.
+The `runst` function represents isolated state (reference cells). When a stateful
+computation completes without returning any stateful references, it is considered pure.
+
+---
+
+## Duplicate Labels and `catch` Typing { #sec-duplicate-labels }
+
+Duplicate effect labels are sometimes intentional. A common place this shows up is when
+building reusable higher-order handler combinators like `catch`:
+
+```koka
+effect raise
+  ctl raise( msg : string ) : a
+
+fun catch( hnd : (string) -> e a, action : () -> <raise|e> a ) : e a
+  with ctl raise(msg) hnd(msg)
+  action()
+```
+
+If another `raise` handler is already in scope, the inner one handles the closest `raise`
+first, and the outer one remains available. Thinking in terms of a handler stack makes this
+behavior predictable and explains why duplicate labels are not inherently ambiguous.
+
+---
+
+## Multiple Resumptions { #sec-multi-resume }
+
+Since `resume` is a first-class function (well, almost, see [raw control](#sec-rcontrol)),
+it is possible to invoke it more than once. This can be used to
+implement backtracking or probabilistic programming models.
+
+A common example of multiple resumptions is the `:choice` effect:
+
+```koka
+effect ctl choice() : bool
+
+fun xor() : choice bool
+  val p = choice()
+  val q = choice()
+  if p then !q else q
+```
+
+We can resume multiple times, once with `False` and once with `True`,
+to return *all* possible outcomes:
+
+```koka
+fun choice-all(action : () -> <choice|e> a) : e list<a>
+  with handler
+    return(x)    [x]
+    ctl choice() resume(False) ++ resume(True)
+  action()
+```
+
+---
+
+## Masking Effects { #sec-mask }
+
+Use `mask<l>` when you need to skip the innermost handler for label `l` and target the next
+handler outwards. In nested handlers for the same label, this gives explicit control over where
+an operation is routed.
+
+```unchecked
+effect fun emit( msg : string ) : ()
+
+fun emit-quoted( action : () -> <emit|e> a ) : <emit|e> a
+  with fun emit(msg) emit("\"" ++ msg ++ "\"")
+  action()
+
+fun emit-raw-outside() : <emit|e> ()
+  with fun emit(msg) println("outer: " ++ msg)
+  with emit-quoted
+  // Skip the innermost emit handler, go directly to the outer one.
+  mask<emit>(emit("hello"))
+```
+
+Type-wise, `mask<l>` can expose duplicate labels because one handler is skipped while another
+for the same label remains in scope. This is one of the few places where duplicate labels are
+an intentional part of the design.
+
+Masking is useful but should stay rare: most code should use ordinary handler abstraction first.
+Reach for `mask` when writing low-level handler libraries where routing to a specific outer
+handler is required.
+
+---
+
+## Effect Abstraction with Masking { #sec-mask-abstraction }
+
+Masking can hide internal effect management from clients of higher-order helpers.
+Conceptually, a `mask-print` helper can catch internal exceptions while preserving a clean outer
+effect surface for the caller.
+
+```unchecked
+fun mask-print( doc : string, action : () -> <raise,emit|e> () ) : <emit|e> ()
+  with ctl raise(msg)
+    emit(doc ++ ": " ++ msg)
+    ()
+  // Forward emits to outer context, but avoid exposing internal raise handling details.
+  mask<emit>(action())
+```
+
+Without masking in this style of abstraction, handled effects can leak into public types of
+higher-order utilities.
+
+---
+
+## State as a Combined Effect { #sec-state-combined }
+
+State can be modeled directly from handlers, where reads and writes are routed through explicit
+operations and masking controls which state layer is addressed.
+
+```unchecked
+effect ctl peek() : a
+effect ctl poke(x:a) : ()
+
+fun state-via-handlers( init : a, action : () -> <peek,poke|e> b ) : e (b,a)
+  var st := init
+  with handler
+    return(x)    (x,st)
+    ctl peek()   resume(st)
+    ctl poke(x)  st := x; resume(())
+  action()
+```
+
+This perspective is useful for understanding semantics and composition, but it can also create
+deeper handler stacks in heavily abstracted code. In practice, prefer direct handlers first and
+introduce masking/state encodings when you specifically need their extra expressiveness.
+
+---
+
+## `mask behind` and `override` Internals { #sec-mask-behind }
+
+`override` is the ergonomic way to replace an existing handler. At a lower level, this behavior
+cannot be reproduced modularly with plain `mask` alone; it requires a primitive often described
+as `mask behind`, which routes an operation behind the current handler frame.
+
+Most users should treat this as implementation detail:
+
+- Use `override` in normal code.
+- Use `mask` for selective routing to an outer handler.
+- Reserve `mask behind` concepts for low-level handler-library design.
+
+---
+
+## Initially and Finally { #sec-resource }
+
+With arbitrary effect handlers we need to be careful when interacting with external
+resources like files. Operations can never resume (like exceptions),
+resume exactly once (giving the usual linear control flow), or resume more than once.
+
+To robustly handle these different cases, Koka provides the `finally` and `initially`
+functions. `finally` takes a function that is executed when returning normally, or
+when unwinding for a non-resuming operation:
+
+```koka
+fun test-finally()
+  with finally{ println("exiting..") }
+  println("entering..")
+  throw("oops") + 42
+```
+
+Running `test-finally()` prints:
+
+```unchecked
+entering..
+exiting..
+uncaught exception: oops
+```
+
+This is a nice example of Koka's "minimal but general" style: where other languages add a
+special `defer` construct, Koka can express the same cleanup pattern as an ordinary function
+used with `with`.
+
+```unchecked
+type fhandle
+fun fopen( path : string )   : <exn,filesys> fhandle
+fun hreadline( h : fhandle ) : <exn,filesys> string
+fun hclose( h : fhandle )    : <exn,filesys> ()
+effect fun fread() : string
+
+// Robust file handling with finally
+fun with-file( path : string, action : () -> <fread,exn,filesys|e> a ) : <exn,filesys|e> a
+  val h = fopen(path)
+  with finally
+    hclose(h)
+  with fun fread()
+    hreadline(h)
+  action()
+```
+
+Another way to work with multiple resumptions is to use the `initially` function,
+which is called the first time it is evaluated, and subsequently every time a resumption
+is resumed more than once.
+
+---
+
+## Raw Control { #sec-rcontrol }
+
+Use `raw ctl` for raw control operations which do not automatically
+finalize. With `raw ctl` one can use the implicitly bound
+resumption context `rcontext` to either resume (as `rcontext.resume(x)`),
+or to finalize a resumption (as `rcontext.finalize`) which runs all
+`finally` handlers to clean up resources.
+
+This allows one to store an `rcontext` as a first class value to resume or finalize later
+even from a different scope.
+
+---
+
+## Linear Effects { #sec-linear }
+
+Use `linear effect` to declare effects whose operations are always tail-resumptive
+and use only linear effects themselves (and thus resume exactly once).
+This removes monadic translation for such effects and can make code that uses
+only linear effects more compact and efficient.
+
+---
+
+## Named and Scoped Handlers { #sec-namedh }
+
+Koka supports named and scoped handlers for distinguishing identical effects.
+See the `samples/handlers/named` directory for examples.
+
+~ end content
+~ end main-layout

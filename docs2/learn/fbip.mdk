@@ -1,0 +1,110 @@
+Title: Performance — Learn Koka
+[INCLUDE=../sidebar-sub.mdk]
+
+# Performance & FBIP { .heading-no-number }
+
+Koka compiles to C without a garbage collector. Here is how.
+
+---
+
+## Perceus Reference Counting
+
+Koka uses _Perceus_, a compile-time reference counting scheme. The compiler
+inserts precise `dup`/`drop` operations so that at runtime, each value is
+freed exactly when its last reference disappears. There is no tracing GC,
+no pause times, and no runtime system overhead.
+
+---
+
+## Reuse Analysis
+
+When a constructor is uniquely owned (reference count = 1) and the code
+pattern-matches it, then rebuilds a constructor of the same size, Perceus
+can _reuse_ the memory in-place. This turns functional code into
+efficient imperative updates automatically.
+
+```unchecked
+fun map( xs : list<a>, f : a -> e b ) : e list<b>
+  match xs
+    Cons(x, xx) -> Cons(f(x), xx.map(f))
+    Nil         -> Nil
+```
+
+When `xs` is unique, each `Cons` cell is reused in-place -- no allocation,
+no deallocation. The generated code is equivalent to an imperative
+in-place loop.
+
+---
+
+## FBIP Keywords
+
+Annotate functions with optimization contracts:
+
+| Keyword | Guarantee |
+|---------|-----------|
+| `fip` | No allocation/deallocation in the unique fast path, constant stack |
+| `fip(n)` | Like `fip` but allows `n` constructor allocations |
+| `fbip` | No allocation in the unique fast path (stack use allowed) |
+| `fbip(n)` | Like `fbip` but `n` allocations allowed |
+| `tail` | Constant stack space (tail-call guarantee) |
+
+The compiler verifies these contracts -- if the code doesn't satisfy
+them, you get a compile error.
+
+---
+
+## Example: In-Place List Reversal
+
+```koka
+fip fun reverse-acc( xs : list<a>, acc : list<a> ) : list<a>
+  match xs
+    Cons(x, xx) -> reverse-acc(xx, Cons(x, acc))
+    Nil         -> acc
+```
+
+When `xs` is unique, each `Cons` cell is destructured and immediately
+reused for the accumulator. Zero allocations, constant stack.
+
+---
+
+## Example: Red-Black Tree Insertion
+
+Red-black tree rebalancing is the canonical FBIP example. The key insight:
+every branch that pattern-matches a `Node` rebuilds a `Node` of the
+same size, so the compiler can reuse in-place:
+
+```unchecked
+fip(1) fun ins( t : tree, k : int, v : bool ) : tree
+  match t
+    Node(Red, l, kx, vx, r) | ...
+    Node(Black, l, kx, vx, r) | ...
+    Leaf -> Node(Red, Leaf, k, v, Leaf)   // fip(1): one new node
+```
+
+The `fip(1)` annotation confirms: at most one new `Node` is allocated
+(the new leaf), and all existing nodes are reused.
+
+---
+
+## TRMC: Tail Recursion Modulo Cons
+
+For functions that build a result list recursively (like `map`), Koka
+applies _tail-recursion modulo cons_ (TRMC). This transforms the
+recursion into an in-place loop that fills in the tail pointer of each
+`Cons` cell as it goes, avoiding stack growth.
+
+---
+
+## Further Reading
+
+- [The Koka Book: FBIP](../tutorial/fbip.html) -- progressive introduction
+- [FBIP How-to Guide](../guides/fbip.html) -- practical recipes
+- [Perceus & FBIP Concepts](../concepts/perceus-and-fbip.html) -- design rationale
+- [Performance Optimization Guide](../guides/performance-fbip.html) -- optimization checklist
+
+---
+
+[-> Back to Learn Koka](index.html){.learn}
+
+~ end content
+~ end main-layout

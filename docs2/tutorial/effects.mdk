@@ -1,0 +1,220 @@
+Title: Side Effects — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+
+# Side Effects { .heading-no-number }
+
+Koka's most distinctive feature is how it handles _side effects_. In most languages,
+a function can quietly do anything behind the scenes — write to a file, throw an exception,
+or access global state — and you'd never know from its type signature. In Koka, every
+effect a function can perform is described in its type.
+
+---
+
+## What Is a Side Effect?
+
+A _side effect_ is anything a function does beyond computing a return value:
+
+- Printing to the console (`:console`)
+- Throwing an exception (`:exn`)
+- Non-termination or recursion (`:div`)
+- Random number generation (`:random`)
+- Reading or writing files (`:filesys`)
+- Heap-allocated mutable state (`:st<h>`)
+
+In Koka, these are tracked as _effect labels_ in the function's type.
+
+---
+
+## Effect Types in Practice
+
+You've been working with effects all along. Look at the type of `println`:
+
+```unchecked
+println : (string) -> console ()
+```
+
+The `: console` in the return type means "`println` performs console I/O." 
+A function that calls `println` must also declare the `:console` effect:
+
+```koka
+fun greet( name : string ) : console ()
+  println("Hello, " ++ name ++ "!")
+```
+
+If you don't write the annotation, Koka infers it for you. Hover over `greet` in 
+VS Code to see the inferred type.
+
+---
+
+## The Total Effect: Pure Functions
+
+A function with **no effects** — just computes a value — has the _total_ effect `<>`,
+which is usually omitted from the type signature:
+
+```koka
+fun square( x : int ) : int   // same as : <> int
+  x * x
+```
+
+The type system guarantees that `square` cannot throw, print, loop forever, 
+or touch any global state. This is a strong guarantee you get for free.
+
+Recursive functions are a good example of where effect inference stays conservative. For example,
+a straightforward recursive Fibonacci function is inferred as `:div` because the compiler does not
+generally try to prove that arbitrary recursion always terminates.
+
+---
+
+## Effect Rows: Combining Effects
+
+Functions often perform more than one effect. Effects are combined in an _effect row_:
+
+```koka
+fun debug-divide( x : int, y : int ) : <console, exn> int
+  if y == 0 then
+    println("Error: division by zero!")
+    throw("div-by-zero")
+  else
+    println("Dividing " ++ x.show ++ " by " ++ y.show)
+    x / y
+```
+
+The effect row `<console, exn>` means this function can both print to the console
+and throw exceptions.
+
+---
+
+## Effects Are Polymorphic
+
+Higher-order functions like `map` don't know what effects the function they receive
+will perform. They use an _effect variable_ `e`:
+
+```unchecked
+map : (list<a>, (a) -> e b) -> e list<b>
+```
+
+Here `e` stands for "whatever effects the mapping function uses." If you map a
+`:console` function over a list, the result type includes `:console`. If you map
+a pure function, the result is pure. The effects _propagate automatically_.
+
+---
+
+## Handling Effects
+
+Effects must be _handled_ before they reach your program's entry point.
+For built-in effects like `:console` and `:div`, the runtime handles them
+automatically. But other effects need an explicit _handler_ that provides
+their implementation.
+
+Koka's exception system is a good example. In the standard library, the
+`:exn` effect is defined as:
+
+```unchecked
+effect exn
+  final ctl throw-exn( exn : exception ) : a
+```
+
+This declares an effect with a single control operation `throw-exn`. The
+convenient `throw` function that you call in user code is just a wrapper:
+
+```unchecked
+fun throw( message : string ) : exn a
+  throw-exn(Exception(message, ExnError))
+```
+
+And `try` is a handler — it catches the `throw-exn` operation and converts
+it to an `error` value:
+
+```unchecked
+fun try( action : () -> <exn|e> a ) : e error<a>
+  with final ctl throw-exn(exn) Error(exn)
+  Ok(action())
+```
+
+Here is what is going on: the `with` installs a handler for the `:exn`
+effect. If the `action` completes normally, the result is wrapped in `Ok`.
+If `throw-exn` is called, the handler intercepts it and returns `Error(exn)`
+instead. After `try`, the `:exn` effect is _discharged_ — it no longer
+appears in the result type.
+
+Let's use this in practice:
+
+```koka
+fun safe-head( xs : list<int> ) : exn int
+  match xs
+    Nil      -> throw("empty list")
+    Cons(x,_) -> x
+
+fun main() : console ()
+  val result = try{ safe-head([]) }
+  match result
+    Ok(n)    -> println("got: " ++ n.show)
+    Error(e) -> println("error: " ++ e.message)
+```
+
+The key insight is: **there is nothing special about exceptions in Koka**.
+The `:exn` effect, `throw`, and `try` are all ordinary library definitions
+built on the same effect handler mechanism available to any user. The core
+language provides the general mechanism; libraries like `std/core/exn`
+provide convenient abstractions on top. In the [next chapter](custom-effects.html)
+we will define our own effects and write custom handlers.
+
+---
+
+## Local Mutable State with `var`
+
+We saw `var` earlier. Under the hood, Koka's `var` declarations are local and
+scoped — their state effects are automatically contained within the function:
+
+```koka
+fun count-evens( xs : list<int> ) : int
+  var count := 0
+  xs.foreach fn(x)
+    if x % 2 == 0 then count := count + 1
+  count
+
+fun example-count()
+  println(count-evens([1, 2, 3, 4, 5, 6]).show)   // 3
+```
+
+The mutable `count` is local to `count-evens` — it doesn't leak outside.
+The state effect (`:st<h>`) is discharged automatically at the function boundary.
+
+This local-state discipline matters when handlers resume computations. Koka's local `var` state is scoped
+so it behaves correctly under resumptions, instead of leaking updates globally across unrelated branches.
+
+---
+
+## Reading the Effect Signature
+
+By now you can decode most effect signatures:
+
+```unchecked
+fun process( xs : list<int>, f : int -> <console,exn|e> string ) : <console,exn|e> list<string>
+```
+
+Reading this: "`process` takes a list and a function `f`. Whatever effects `f` has
+(at least `:console` and `:exn`, but possibly more via `|e`), `process` will have
+the same effects."
+
+The `|e` is a _row tail variable_ meaning "and possibly more effects."
+
+---
+
+## Summary
+
+In this section you learned:
+- Every side effect appears as a label in the function's return type
+- Pure functions have effect `<>` (usually omitted)
+- Effects combine in rows: `<console, exn, div>`
+- Effect variables `e` let higher-order functions propagate their argument's effects
+- Handlers discharge effects — they provide the implementation
+- `var` state is locally scoped and automatically discharged
+
+---
+
+[← Your Own Types](types.html){.learn}
+[→ Next: Writing Your Own Effects](custom-effects.html){.learn}
+
+~ end content
+~ end main-layout

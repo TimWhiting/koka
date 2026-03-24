@@ -1,0 +1,181 @@
+Title: Pattern Matching — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Pattern Matching { .heading-no-number }
+
+Pattern matching in Koka lets you deconstruct values and branch on their shape in a single, concise expression. It works on all algebraic data types — enumerations, structs, recursive types, and tuples — and the compiler warns you about non-exhaustive matches at compile time.
+
+---
+
+## Basic `match`
+
+Use `match` to inspect a value and bind its parts:
+
+```koka
+type color
+  Red
+  Green
+  Blue
+
+fun describe(c : color) : string
+  match c
+    Red   -> "red"
+    Green -> "green"
+    Blue  -> "blue"
+```
+
+Each branch is a _pattern_ followed by `->` and a result expression.
+
+---
+
+## Matching with Data
+
+Constructors that carry data can bind their fields in the pattern:
+
+```koka
+type number
+  Infinity
+  Integer( i : int )
+
+fun show-number( n : number ) : string
+  match n
+    Infinity   -> "infinity"
+    Integer(i) -> "integer: " ++ i.show
+```
+
+Unused fields are matched with `_` (wildcard):
+
+```koka
+fun head-of-list(xs : list<int>) : string
+  match xs
+    Nil       -> "empty"
+    Cons(x,_) -> "first: " ++ x.show
+```
+
+---
+
+## Guards
+
+Branches can include a boolean _guard_ after `|`:
+
+```koka
+fun classify(n : int) : string
+  match n
+    i | i < 0  -> "negative"
+    0           -> "zero"
+    i | i < 10 -> "small"
+    _           -> "large"
+```
+
+If the guard fails, matching continues to the next branch.
+
+---
+
+## `as` Bindings: Naming a Subpattern
+
+Use `name as pattern` to bind a name to a matched value _and_ simultaneously test an inner pattern.
+The `name` is bound to the sub-expression; the `pattern` must also match.
+
+The key use case is when you need **both a subvalue and its contents** in the same branch.
+For example, to get the second element of a list while also keeping the tail:
+
+```koka
+fun drop-and-keep-tail(xs : list<int>) : maybe<(int, list<int>)>
+  match xs
+    Cons(_, rest as Cons(x, _)) -> Just((x, rest))
+    _ -> Nothing
+```
+
+Here `rest as Cons(x, _)` binds `rest` to the whole tail, while simultaneously checking that
+the tail is non-empty and binding `x` to its head. Both names are available in the branch body.
+
+Without `as`, you'd have to match twice or reconstruct the list:
+
+```koka
+fun drop-and-keep-tail2(xs : list<int>) : maybe<(int, list<int>)>
+  match xs
+    Cons(_, Cons(x, rest)) -> Just((x, Cons(x, rest)))  // have to reconstruct!
+    _ -> Nothing
+```
+
+---
+
+## Named Field Patterns
+
+When a constructor has named fields, you can match by field name using `field = pattern`
+inside the constructor argument list. Unmentioned fields are implicitly wildcarded:
+
+```koka
+struct person
+  age  : int
+  name : string
+
+fun is-adult(p : person) : bool
+  match p
+    Person(age = a) | a >= 18 -> True
+    _                          -> False
+
+fun greet(p : person) : string
+  match p
+    Person(name = n, age = a) -> "Hello " ++ n ++ ", age " ++ a.show
+```
+
+Named field patterns avoid having to match positionally — you only name the fields you need.
+
+---
+
+## Nested Patterns
+
+Patterns can nest arbitrarily deep:
+
+```koka
+fun sum-pairs(xs : list<(int,int)>) : int
+  match xs
+    Nil             -> 0
+    Cons((a,b), rest) -> a + b + sum-pairs(rest)
+```
+
+---
+
+## Matching Structs
+
+Named struct fields can be matched positionally, or you can use dot access after binding:
+
+```koka
+struct point { x : int; y : int }
+
+fun on-origin(p : point) : bool
+  match p
+    Point(0, 0) -> True
+    _           -> False
+```
+
+---
+
+## Exhaustiveness
+
+Koka checks that all possible constructors are covered. If you miss one, the compiler warns you. This helps catch bugs when you add a new constructor to a type later.
+
+---
+
+## `match` as an Expression
+
+`match` is an expression and can appear anywhere:
+
+```koka
+fun max-list(xs : list<int>) : maybe<int>
+  match xs
+    Nil        -> Nothing
+    Cons(x,Nil) -> Just(x)
+    Cons(x,rest) -> Just(max(x, max-list(rest).default(x)))
+```
+
+---
+
+## See Also
+
+- [Algebraic Data Types](adts.html){.learn}
+- [Functions & Dot Notation](functions.html){.learn}
+
+~ end content
+~ end main-layout

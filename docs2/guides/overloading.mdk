@@ -1,0 +1,128 @@
+Title: Static Overloading — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Static Overloading { .heading-no-number }
+
+Koka supports _static overloading_: multiple functions (or values) can share the same name,
+and the compiler uses type information to pick the right one at every call site.
+This is done entirely through _qualified names_ — there are no type classes or
+instances involved.
+
+---
+
+## How It Works: Qualified Names
+
+Every definition in Koka has a _fully qualified name_ built from its module path:
+
+```unchecked
+std/core/int/show     // the show function for int
+std/core/list/map     // the map function for lists
+```
+
+When you write a plain name like `show`, the compiler searches all in-scope modules
+and uses the argument types to pick the right one. You can always spell out the
+full qualifier when you need to be explicit:
+
+```koka
+fun example-explicit()
+  [1,2].std/core/list/map(std/core/int/show)
+```
+
+Or use a shorter partial qualifier:
+
+```koka
+fun example-semi-explicit()
+  [1,2].list/map(core/int/show)
+```
+
+In practice, you almost never need to write qualifiers by hand — the compiler
+resolves them for you, and IDEs show the resolved names as inlay hints
+(`Ctrl+Alt` in VS Code).
+
+---
+
+## Defining Overloaded Functions
+
+You can define multiple top-level functions with the same short name in the same module
+using _local qualification_: prefix the function name with a type name and a `/`:
+
+```koka
+fun int/foo(i : int) : int
+  i + 1
+
+fun string/foo(s : string) : int
+  s.count
+```
+
+Both are called `foo` by their unqualified name. The compiler picks between
+them based on the argument type:
+
+```koka
+pub fun main()
+  println(foo(41))           // resolves to int/foo
+  println(foo("hello"))      // resolves to string/foo
+```
+
+---
+
+## Type-Directed Disambiguation
+
+Koka uses the _types of arguments_ to disambiguate overloaded names automatically.
+No type annotations at the call site are usually needed:
+
+```koka
+fun example3()
+  foo(11) + foo("hi there")
+```
+
+When the argument type is known, the right `foo` is selected statically.
+
+### When Disambiguation Fails
+
+If the compiler cannot infer enough type information, it reports an ambiguity.
+You can resolve this by adding a type annotation:
+
+```koka
+fun example4a(x : int)   // annotation on x resolves foo(x) to int/foo
+  foo(x) + foo("hi there")
+```
+
+Or by writing a partial qualifier explicitly:
+
+```koka
+fun example4b(x)
+  int/foo(x) + foo("hi there")  // int/foo is explicit; the other is inferred
+```
+
+---
+
+## Why Not Type Classes?
+
+Koka's overloading is simpler than Haskell-style type classes in one important way:
+a Koka program with fully qualified names has an **untyped dynamic semantics** —
+you can run it without knowing any types at all.
+
+This is not true for type classes. Consider `show []` in Haskell: the _behaviour_
+changes depending on the type of `[]` (e.g. `[Char]` vs `[Int]`), so you cannot
+execute it without type information. In Koka, which `show` is called is encoded
+directly in the fully-qualified name, so overloading is purely a _convenience_
+on top of exact disambiguation.
+
+---
+
+## Combining Overloading with Implicits
+
+Static overloading is often combined with _implicit parameters_ to achieve
+flexible ad-hoc polymorphism similar to type classes but without the machinery.
+[Read about implicits](implicits.html){.learn}
+
+---
+
+## See Also
+
+- [Functions & Dot Notation](functions.html){.learn}
+- [Types & Inference](types.html){.learn}
+- [Implicits](implicits.html){.learn}
+
+~ end content
+~ end main-layout

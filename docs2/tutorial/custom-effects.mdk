@@ -1,0 +1,342 @@
+Title: Writing Your Own Effects — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+
+```koka {.hidden}
+import std/num/random
+```
+
+# Writing Your Own Effects { .heading-no-number }
+
+In the previous chapter we saw that Koka tracks effects in types and that
+handlers implement effects. Now we'll write our own effects from scratch —
+and discover that this lets us define entirely new control-flow abstractions
+as ordinary library code.
+
+---
+
+## Defining an Effect
+
+Use the `effect` keyword to declare a new effect and its _operations_:
+
+```koka
+effect emit
+  fun emit( msg : string ) : ()
+```
+
+This declares an effect `:emit` with one operation, also called `emit`. Any function
+that calls `emit(...)` must carry the `:emit` effect in its type:
+
+```koka
+fun log-example0() : emit ()
+  emit("starting...")
+  emit("step 1")
+  emit("done!")
+```
+
+Notice `log-example0` doesn't decide _how_ emitted messages are handled.
+That decision is deferred to whoever _calls_ `log-example0`.
+
+---
+
+## Writing a Handler
+
+A handler provides the implementation for each operation. Use `with handler`:
+
+```koka
+fun log-example() : emit ()
+  emit("starting...")
+  emit("done!")
+
+fun example1()
+  with handler
+    fun emit(msg) println("[LOG] " ++ msg)
+  log-example()
+```
+
+Running this prints:
+```unchecked
+[LOG] starting...
+[LOG] done!
+```
+
+The handler intercepts each `emit` call and runs the provided body.
+
+---
+
+## Swapping Implementations
+
+The same `log-example` function works with any handler. Let's collect all messages
+into a list instead of printing them:
+
+```koka
+fun collect-messages( action : () -> <emit|e> () ) : e list<string>
+  var messages := []
+  with handler
+    return(x)     messages.reverse
+    fun emit(msg) messages := Cons(msg, messages)
+  action()
+
+fun example2()
+  val msgs = collect-messages(log-example)
+  println(msgs.show)   // ["starting...", "done!"]
+```
+
+The `return` clause in the handler transforms the final value — when `action()` finishes
+normally, the handler returns `messages.reverse` instead of `()`.
+
+---
+
+## Effect Abstraction
+
+You can store a handler in a `val` and reuse it:
+
+```koka
+val silent = handler
+  fun emit(_) ()   // discard all messages
+
+fun example6()
+  with silent
+  log-example()   // prints nothing
+```
+
+This is the same as any other first-class function value — it just happens to
+implement an effect.
+
+---
+
+## Value Operations: Dynamic Binding
+
+A common pattern is a value that flows through all code in scope without
+being threaded as a parameter. For example, a pretty printer that needs
+a display width:
+
+```koka
+effect val width : int
+
+fun pretty-line( line : string ) : width string
+  line.truncate(width)
+
+fun pretty-example()
+  with val width = 40
+  println(pretty-line("hello, a long world of documentation strings!"))
+```
+
+The `effect val` declaration creates an operation that behaves like a
+dynamically scoped variable. Any function in scope can read `width`
+without it being passed explicitly, and the type system tracks the
+`:width` effect. Under the hood, `with val width = 40` desugars to
+`with fun width() 40` -- it is just a tail-resumptive handler that
+always returns the same value.
+
+---
+
+## A State Handler
+
+Let's build a state effect from scratch. We need two operations,
+`get` and `set`:
+
+```koka
+effect state<a>
+  fun get() : a
+  fun set( x : a ) : ()
+```
+
+A function that uses state:
+
+```koka
+fun sumdown( sum : int = 0 ) : <state<int>,div> int
+  val i = get()
+  if i <= 0 then sum
+  else
+    set(i - 1)
+    sumdown(sum + i)
+```
+
+The handler uses a local `var` to hold the state:
+
+```koka
+fun state( init : a, action : () -> <state<a>,div|e> b ) : <div|e> b
+  var st := init
+  with handler
+    fun get()  st
+    fun set(i) st := i
+  action()
+
+fun state-example()
+  println(state(10){ sumdown() }.show)   // 55
+```
+
+We can also return the final state alongside the result by adding a
+`return` clause:
+
+```koka
+fun pstate( init : a, action : () -> <state<a>,div|e> b ) : <div|e> (b, a)
+  var st := init
+  with handler
+    return(x)  (x, st)
+    fun get()  st
+    fun set(i) st := i
+  action()
+
+fun pstate-example()
+  println(pstate(10){ sumdown() }.show)   // (55, 0)
+```
+
+The `return` clause transforms the final value -- when the action completes,
+the handler pairs it with the final state.
+
+---
+
+## Composing Handlers
+
+Effect handlers compose freely. This is one of their fundamental advantages
+over monads (which need transformers) or `call/cc` (which is not delimited).
+
+Suppose we have a function that raises an error on odd state:
+
+```koka
+fun no-odds() : <raise,state<int>> int
+  val i = get()
+  if i.is-odd then raise("no odds")
+  else
+    set(i / 2)
+    i
+```
+
+We can handle both effects by composing handlers:
+
+```koka
+fun state-raise(init) : div (maybe<int>, int)
+  with pstate(init)
+  with catch-as-maybe
+  no-odds()
+```
+
+The order matters: `pstate` is the outer handler, so the result type is
+`(maybe<int>, int)` -- a pair of the maybe-result and the final state.
+The state reflects whatever happened up to the point `raise` was called.
+
+---
+
+## Effects That Resume
+
+Some effects need to _resume_ execution at the call site — they're not just interruptions.
+Use `ctl` (control) instead of `fun` for these:
+
+```koka
+effect ask
+  ctl ask() : int
+
+fun ask-twice() : ask int
+  ask() + ask()
+
+fun example3()
+  with ctl ask() resume(21)
+  println(ask-twice().show)   // 42
+```
+
+When `ask()` is called, the handler intercepts it and calls `resume(21)` — which
+continues execution at the call site with the value `21`. Since `ask-twice` calls
+`ask()` twice, `resume` runs twice, and the result is `42`.
+
+Think of it this way: `fun` operations work like function calls (always return),
+while `ctl` operations work like coroutines that can be resumed with a value.
+
+You can also resume with effectful values supplied by another effect:
+
+```unchecked
+import std/num/random
+```
+```koka
+fun ask-random() : random int
+  with ctl ask() resume(random-int())
+  ask-twice()
+```
+
+---
+
+## A Real Example: Exceptions
+
+Let's build our own exception effect from scratch:
+
+```koka
+effect raise
+  final ctl raise( msg : string ) : a
+
+fun safe-divide( x : int, y : int ) : raise int
+  if y == 0 then raise("division by zero")
+  else x / y
+
+// Handler 1: print and return default
+fun catch-with-default( action : () -> <raise,console|e> int ) : <console|e> int
+  with final ctl raise(msg)
+    println("caught: " ++ msg)
+    -1
+  action()
+
+// Handler 2: wrap result in maybe
+fun catch-as-maybe( action : () -> <raise|e> a ) : e maybe<a>
+  with handler
+    return(x)           Just(x)
+    final ctl raise(_)  Nothing
+  action()
+
+fun example4()
+  println(show(catch-with-default{ safe-divide(10, 0) }))    // caught: division by zero \n -1
+  println(show(catch-as-maybe{ safe-divide(10, 2) }))         // Just(5)
+  println(show(catch-as-maybe{ safe-divide(10, 0) }))         // Nothing
+```
+
+`final ctl` marks an operation that never resumes — the handler takes over entirely.
+This is more efficient for exceptions (no need to save a resumption).
+
+---
+
+## A Real Example: Backtracking
+
+Effects can resume _more than once_ to explore multiple possibilities:
+
+```koka
+effect ctl choice() : bool
+
+fun xor() : choice bool
+  val p = choice()
+  val q = choice()
+  if p then !q else q
+
+fun all-choices( action : () -> <choice|e> a ) : e list<a>
+  with handler
+    return(x)    [x]
+    ctl choice() resume(False) ++ resume(True)
+  action()
+
+fun example5()
+  println(all-choices(xor).show)   // [False, True, True, False]
+```
+
+The handler calls `resume` twice — once with `False` and once with `True` — collecting
+all possible results. This is backtracking search, implemented as a library!
+
+---
+
+## Summary
+
+In this section you learned:
+- Defining effects with `effect` and `ctl`/`fun`/`val` operations
+- Writing handlers with `with handler`
+- The `return` clause to transform the final value
+- `fun` for tail-resumptive operations (always resume once)
+- `val` for dynamically scoped values
+- `ctl` for general control operations (can resume any number of times)
+- `final ctl` for non-resuming operations like exceptions
+- Building a state handler from scratch with `get`/`set`
+- Composing handlers freely, where ordering determines semantics
+- Effects as a unifying mechanism for exceptions, state, backtracking, and more
+
+---
+
+[← Side Effects](effects.html){.learn}
+[→ Next: Capstone: A Calculator](calculator.html){.learn}
+
+~ end content
+~ end main-layout

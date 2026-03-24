@@ -1,0 +1,185 @@
+Title: Functions & Dot Notation — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Functions & Dot Notation { .heading-no-number }
+
+> For a progressive introduction, see [The Koka Book: Functions](../tutorial/functions.html).
+> This guide is a quick-reference for syntax patterns.
+
+Functions are the core building block of Koka programs. This guide covers function declaration, dot notation, anonymous functions, trailing lambdas, and the `with` statement.
+
+---
+
+## Declaring Functions
+
+Functions are declared with the `fun` keyword:
+
+```koka
+fun encode( s : string, shift : int )
+  fun encode-char(c)
+    if c < 'a' || c > 'z' then return c
+    val base = (c - 'a').int
+    val rot  = (base + shift) % 26
+    (rot.char + 'a')
+  s.map(encode-char)
+
+fun caesar( s : string ) : string
+  s.encode( 3 )
+```
+
+**Key points:**
+- The last expression in a function body is its return value — no `return` keyword needed.
+- Local functions like `encode-char` are first-class and can be passed around.
+- Indented blocks implicitly get curly braces (_brace elision_).
+
+---
+
+## Dot Notation
+
+Koka is _function-oriented_: `x.f(y)` is simply syntactic sugar for `f(x, y)`.
+The first argument _becomes_ the object, and you can chain calls naturally:
+
+```koka
+fun showit( s : string )
+  s.encode(3).count.println
+```
+
+This desugars to `println(count(encode(s, 3)))`. The advantage over OOP methods
+is that you can extend any type with new "methods" just by writing a plain function
+that takes that type as its first argument — no class hierarchy needed.
+
+---
+
+## Optional and Named Parameters
+
+Koka supports both optional and named parameters at call sites:
+
+```koka
+fun sublist( xs : list<a>, start : int, len : int = xs.length ) : list<a>
+  if start <= 0 return xs.take(len)
+  match xs
+    Nil        -> Nil
+    Cons(_,xx) -> xx.sublist(start - 1, len)
+```
+
+The `len` parameter has a default value of `xs.length`, making it optional.
+Named parameters allow reordering at the call site:
+
+```unchekced
+fun replace-all( s : string, pattern : string, repl : string ) : string
+```
+
+```koka
+fun example-reorder()
+  "hi there".replace-all( repl="world", pattern="there" )
+```
+
+If you hover over `sublist` in an IDE, the optional `len` parameter appears as an optional
+integer parameter (`? int`) in the full inferred type.
+
+---
+
+## Anonymous Functions and Trailing Lambdas
+
+Anonymous functions use the `fn` keyword:
+
+```koka
+fun encode2( s : string, shift : int )
+  s.map( fn(c)
+    if c < 'a' || c > 'z' then return c
+    val base = (c - 'a').int
+    val rot  = (base + shift) % 26
+    (rot.char + 'a')
+  )
+```
+
+As a convenience, anonymous functions can _follow_ the function call as a
+**trailing lambda**, making higher-order code read like built-in control flow:
+
+```koka
+fun print10()
+  for(1,10) fn(i)
+    println(i)
+```
+
+This desugars to `for(1, 10, fn(i){ println(i) })`.
+
+Zero-argument anonymous functions can use plain braces `{}`:
+
+```koka
+fun printhi10()
+  repeat(10)
+    println("hi")
+```
+
+This desugars to `repeat(10, fn(){ println("hi") })`. Even `while` is just a
+regular function, not a built-in:
+
+```koka
+fun print11()
+  var i := 10
+  while { i >= 0 }
+    println(i)
+    i := i - 1
+```
+
+The braces `{ i >= 0 }` suspend evaluation so the predicate is re-evaluated each iteration.
+
+---
+
+## The `with` Statement
+
+The `with` statement puts all following statements into a function block and passes
+it as the last argument. This avoids deeply nested closures:
+
+```koka
+fun twice(f)
+  f(); f()
+
+// Without with — nested:
+fun test-nested()
+  twice(fn(){ twice(fn(){ println("hi") }) })
+
+// With with — linear:
+fun test-with()
+  with twice
+  with twice
+  println("hi")
+```
+
+You can also bind a variable from the `with` expression:
+
+```koka
+fun test-with2()
+  with x <- list(1,10).foreach
+  println(x)
+```
+
+This desugars to `list(1,10).foreach(fn(x){ println(x) })`.
+
+The `with` statement is especially powerful combined with effect handlers:
+
+```koka
+effect fun emit(msg : string) : ()
+
+fun hello() : emit ()
+  emit("hello world!")
+
+fun hello-console()
+  with handler
+    fun emit(msg) println(msg)
+  hello()
+```
+
+Here `with handler{ ... }` installs a handler that intercepts `emit` calls and
+routes them to `println`. [Read more about effect handlers](../guides/effect-handlers.html){.learn}
+
+---
+
+## See Also
+
+- [Types & Inference](types.html){.learn}
+- [Effect Types](effect-types.html){.learn}
+
+~ end content
+~ end main-layout

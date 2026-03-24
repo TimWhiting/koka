@@ -1,0 +1,725 @@
+@import url('https://fonts.googleapis.com/css?family=Nunito:400,400italic,700,700italic');
+
+:root {
+  --primary-color: #007bb6;
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --header-color: #222222;
+  --subtitle-color: #555555;
+  --border-color: #e5e5e5;
+  --code-bg: #f4f3f2;
+  --banner-bg: #fdfdfd;
+  --hero-bg: var(--code-bg);
+  --sidebar-hover-bg: rgba(0, 0, 0, 0.03);
+  --tooltip-bg: #ffffff;
+  --tooltip-color: #333333;
+  --tooltip-border: #dddddd;
+  --koka-kw: #8d29ba;
+  --koka-st: #a31515;
+  --koka-tp: #005f5f;
+  --koka-co: #7b3814;
+  --koka-mo: #811f3f;
+  --koka-nu: #098658;
+  --koka-cm: #6e7681;
+  --koka-op: #000000;
+  --koka-lq: #808080;
+  --koka-po: #808080;
+  --koka-er: #e81123;
+  --koka-wn: #267f99;
+  --link-color: var(--primary-color);
+  --link-hover-color: #005a86;
+  --on-primary-color: #ffffff;
+  --primary-color-hover: #005a86;
+  --button-border-color: rgba(0, 0, 0, 0.1);
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --page-gutter: 20px;
+  --ui-padding-y: 8px;
+  --ui-padding-x: 12px;
+  --radius-sm: 4px;
+  --radius-lg: 12px;
+  --duration-fast: 0.2s;
+  --duration-base: 0.3s;
+  --easing-standard: ease;
+  --layout-max-width: 1400px;
+  --layout-sidebar-width: 220px;
+  --mobile-top-offset: 60px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+[data-theme='dark'] {
+  --bg-color: #1f1f1f;   /* VS Code Dark Modern Background */
+  --text-color: #cccccc;
+  --header-color: #ffffff;
+  --subtitle-color: #9d9d9d;
+  --border-color: #333333;
+  --code-bg: #1f1f1f;
+  --banner-bg: #2d2d2d;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+  --tooltip-bg: #2d2d2d;
+  --tooltip-color: #cccccc;
+  --tooltip-border: #454545;
+  --koka-kw: #569cd6;    /* Keywords: Purple */
+  --koka-st: #ce9178;    /* Strings: Salmon/Orange */
+  --koka-tp: #4ec9b0;    /* Types: Teal */
+  --koka-co: #DCDCAA;    /* Constructors: Bright Goldenrod */
+  --koka-mo: #9cdcfe;    /* Modules: Light Blue */
+  --koka-nu: #b5cea8;    /* Numbers: Muted Green */
+  --koka-cm: #6a9955;    /* Comments: Green */
+  --koka-op: #C586C0;
+  --koka-lq: #6e7681;
+  --koka-po: #6e7681;
+  --koka-er: #f85149;
+  --koka-wn: #4ec9b0;
+  --link-color: #58a6ff;   /* Brighter blue for dark mode */
+  --link-hover-color: #a5d6ff;
+  --on-primary-color: #ffffff;
+  --primary-color-hover: #2f81f7;
+  --button-border-color: rgba(255, 255, 255, 0.15);
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme='light']) {
+    background-color: #1f1f1f;
+  }
+
+  html:not([data-theme='light']) body.madoko,
+  html:not([data-theme='light']) .madoko div.body {
+    background-color: #1f1f1f !important;
+    color: #cccccc !important;
+  }
+}
+
+html {
+  font-size: 112.5%; /* Increase base font size (18px if default is 16px) */
+  background-color: var(--bg-color);
+  transition: background-color var(--duration-base) var(--easing-standard);
+}
+
+/* Hide body until JS has set up theme and sidebar to prevent flashes */
+body.madoko:not(.ready),
+.madoko div.body:not(.ready) {
+  opacity: 0 !important;
+}
+
+body.madoko,
+.madoko div.body {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color) !important;
+  background-color: var(--bg-color) !important; /* Force dark mode background */
+  max-width: var(--layout-max-width) !important;
+  /* Wider for the grid */
+  margin: 0 auto !important;
+  padding: 0 var(--page-gutter) !important;
+  transition: background-color var(--duration-base) var(--easing-standard), color var(--duration-base) var(--easing-standard);
+  overflow: visible !important; /* Allow tooltips to escape both horizontally and vertically */
+}
+
+.madoko .main-layout,
+.madoko div.body>.main-layout {
+  display: grid !important;
+  grid-template-columns: var(--layout-sidebar-width) minmax(0, 1fr) !important;
+  /* Slightly wider sidebar for larger text */
+  grid-template-areas: "sidebar content" !important;
+  gap: var(--page-gutter) !important;
+  /* Increased gap */
+  align-items: start !important;
+  overflow: visible !important; /* Ensure children like tooltips aren't clipped */
+}
+
+@media (max-width: 768px) {
+
+  .madoko .main-layout,
+  .madoko div.body>.main-layout {
+    display: block !important;
+    /* Switch from grid on mobile to resolve whitespace */
+    padding-top: var(--mobile-top-offset) !important;
+  }
+}
+
+/* Ensure code blocks and pre elements don't cause overflow */
+.madoko pre,
+.madoko code,
+.madoko .token {
+  max-width: 100% !important;
+  /* overflow-x: auto !important; -- Removed as it clips tooltips */
+  overflow: visible !important;
+  white-space: pre-wrap !important;
+  /* Wrap long lines */
+  word-break: break-all !important;
+}
+
+/* --- Responsive Sidebar & Mobile Nav --- */
+
+/* Hamburger Toggle (Hidden by default) */
+.mobile-nav-toggle {
+  display: none;
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 1001;
+  background: var(--primary-color);
+  color: var(--on-primary-color);
+  border: none;
+  padding: var(--ui-padding-y) var(--ui-padding-x);
+  border-radius: var(--radius-sm);
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .mobile-nav-toggle {
+    display: block !important;
+  }
+
+  /* Centered modal sidebar when open */
+  .madoko .sidebar.open,
+  .madoko div.body>.main-layout>.sidebar.open,
+  .sidebar.open {
+    opacity: 1 !important;
+    transform: translateX(-50%) translateY(-50%) scale(1) !important;
+    pointer-events: auto !important;
+  }
+
+  .madoko .sidebar,
+  .madoko div.body>.main-layout>.sidebar {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    width: 85vw !important;
+    max-width: 340px !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    background: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    z-index: 1000 !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: var(--space-lg) !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    /* Hidden by default — centered but invisible */
+    opacity: 0 !important;
+    transform: translateX(-50%) translateY(-50%) scale(0.95) !important;
+    pointer-events: none !important;
+    transition: opacity var(--duration-fast) var(--easing-standard), transform var(--duration-fast) var(--easing-standard), background-color var(--duration-base) var(--easing-standard), color var(--duration-base) var(--easing-standard) !important;
+  }
+
+  /* Overlay when sidebar is open */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+    transition: background var(--duration-base) var(--easing-standard);
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+  }
+
+  /* Lock body scroll when sidebar open */
+  body.sidebar-open {
+    overflow: hidden !important;
+  }
+}
+
+@media (min-width: 769px) {
+
+  .madoko .sidebar,
+  .madoko div.body>.main-layout>.sidebar {
+    grid-area: sidebar !important;
+    border-right: 1px solid var(--border-color) !important;
+    padding: var(--space-sm) var(--space-xs) var(--space-lg) 0 !important;
+    /* Reduced right padding */
+    height: 100vh !important;
+    position: sticky !important;
+    top: 0 !important;
+    overflow-y: auto !important;
+    font-size: 0.95rem !important;
+  }
+}
+
+@media (min-width: 769px) {
+
+  .madoko .sidebar,
+  .madoko div.body>.main-layout>.sidebar {
+    display: block !important;
+    /* Visible by default on desktop */
+  }
+}
+
+.madoko .content,
+.madoko div.body>.main-layout>.content {
+  grid-area: content !important;
+  max-width: 100% !important;
+  /* Allow the content to fill the flexible grid cell */
+  min-width: 0 !important;
+  /* Stop content from pushing past the grid */
+  margin: 0 !important;
+  padding: var(--space-sm) 0 !important;
+  overflow-wrap: break-word !important;
+  /* Wrap long URLs/text */
+  overflow: visible !important; /* CRITICAL for tooltips */
+}
+
+.madoko .sidebar ul {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}
+
+/* Base style for nested lists - hide by default if collapsed */
+.madoko .sidebar ul ul {
+  padding-left: 1.2rem !important;
+  margin-top: 0.25rem !important;
+  transition: all var(--duration-base) var(--easing-standard);
+}
+
+/* Hide nested lists when .hidden class is present */
+.madoko .sidebar ul.hidden {
+  display: none !important;
+}
+
+.madoko .sidebar li {
+  margin-bottom: var(--space-xs) !important;
+  position: relative;
+  transition: background-color var(--duration-fast) var(--easing-standard);
+}
+
+/* Make section headers look clickable */
+.madoko .sidebar li:has(ul) {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.madoko .sidebar li:has(ul):hover {
+  background-color: var(--sidebar-hover-bg);
+}
+
+/* Caret styling */
+.madoko .sidebar .caret {
+  user-select: none;
+  display: inline-block;
+  width: 1rem;
+  text-align: center;
+  margin-right: var(--space-xs);
+  transition: transform var(--duration-fast) var(--easing-standard);
+  color: var(--primary-color);
+  font-size: 0.8rem;
+}
+
+/* Caret icon (right-pointing triangle) */
+.madoko .sidebar .caret::before {
+  content: "\25B6";
+}
+
+/* Rotate caret when active */
+.madoko .sidebar li.active>.caret {
+  transform: rotate(90deg);
+}
+
+/* Optional: visually distinguish active items */
+.madoko .sidebar li.active>a,
+.madoko .sidebar li.active>strong {
+  color: var(--primary-color) !important;
+}
+
+
+
+.madoko .sidebar a {
+  text-decoration: none !important;
+  color: var(--text-color) !important;
+}
+
+.madoko .sidebar a:hover {
+  color: var(--primary-color) !important;
+}
+
+/* Highlight the currently active page link */
+.madoko .sidebar a.active-page {
+  color: var(--primary-color) !important;
+  font-weight: bold !important;
+  border-left: 3px solid var(--primary-color);
+  padding-left: 0.4rem;
+}
+
+/* Global Content Links */
+.madoko .content a:not(.learn):not(.pp) {
+  color: var(--link-color) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--duration-fast) var(--easing-standard), color var(--duration-fast) var(--easing-standard);
+}
+
+.madoko .content a:not(.learn):not(.pp):hover {
+  color: var(--link-hover-color) !important;
+  border-bottom-color: var(--link-hover-color);
+}
+
+.madoko .sidebar-title {
+  font-size: 1.4rem !important;
+  margin-bottom: var(--space-md) !important;
+  border-bottom: none !important;
+}
+
+.madoko .sidebar-title a {
+  color: var(--primary-color) !important;
+  font-weight: bold !important;
+}
+
+.sidebar-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: var(--space-md) !important;
+  min-height: 48px; /* Ensure enough height for alignment */
+}
+
+.sidebar-header .sidebar-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Theme-specific Logos */
+.logo-dark {
+  display: none !important;
+}
+
+[data-theme='dark'] .logo-light {
+  display: none !important;
+}
+
+[data-theme='dark'] .logo-dark {
+  display: inline-block !important;
+}
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: calc(var(--space-xs) / 2) var(--space-xs);
+  font-size: 1.2rem;
+  color: var(--text-color);
+  transition: all var(--duration-fast) var(--easing-standard);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: var(--sidebar-hover-bg);
+  border-color: var(--primary-color);
+}
+
+
+
+/* --- Content Adjustments --- */
+.madoko .hero {
+  text-align: center;
+  padding: 5rem var(--space-sm);
+  background: var(--hero-bg);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
+  /* Width fix for hero inside grid */
+  width: auto !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.madoko h2,
+.madoko h3 {
+  color: var(--header-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+  margin-top: 2em;
+}
+
+/* Hide numbers on headers if specified */
+.madoko h1.heading-no-number::before,
+.madoko h2.heading-no-number::before {
+  content: "" !important;
+  margin-right: 0 !important;
+}
+
+/* ... existing banner styles ... */
+
+.banners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+}
+
+.banner {
+  flex: 1 1 300px;
+  padding: var(--space-md);
+  background: var(--banner-bg);
+  border-radius: var(--radius-sm);
+  /* More classic Koka style */
+  border: 1px solid var(--border-color);
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.banner .learn {
+  margin-top: auto !important;
+  align-self: flex-end !important;
+}
+
+.banner h4 {
+  margin-top: 0;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.learn {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--primary-color);
+  color: var(--on-primary-color) !important;
+  text-decoration: none !important;
+  border-radius: var(--radius-sm);
+  font-weight: bold;
+  margin-right: var(--space-xs);
+  border: 1px solid var(--button-border-color);
+}
+
+.learn:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* Mobile Sidebar Specific Overrides */
+@media (max-width: 768px) {
+  .madoko .sidebar.open {
+    left: 0 !important;
+  }
+}
+
+/* Landing Page Hero */
+.hero {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 5rem var(--space-sm);
+  background: var(--hero-bg);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: var(--space-lg);
+  margin-left: calc(-1 * var(--page-gutter));
+  margin-right: calc(-1 * var(--page-gutter));
+}
+
+.hero .title {
+  border: none;
+  font-size: 4rem;
+  margin: 0;
+  color: var(--primary-color);
+  font-weight: 800;
+}
+
+.hero .subtitle {
+  font-size: 1.4rem;
+  color: var(--subtitle-color);
+  margin-top: 0.5rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.4;
+}
+
+/* Koka Code Highlighting: hide plaincode when nicecode is shown */
+.plaincode {
+  display: none !important;
+}
+
+.nicecode {
+  display: block !important;
+}
+
+/* Koka Syntax Highlighting Colors */
+.koka .type,
+.koka .tp {
+  color: var(--koka-tp) !important;
+}
+
+.koka .keyword,
+.koka .kw {
+  color: var(--koka-kw) !important;
+}
+
+.koka .string,
+.koka .st {
+  color: var(--koka-st) !important;
+}
+
+.koka .module,
+.koka .mo {
+  color: var(--koka-mo) !important;
+}
+
+.koka .number,
+.koka .nu {
+  color: var(--koka-nu) !important;
+}
+
+.koka .constructor,
+.koka .co {
+  color: var(--koka-co) !important;
+}
+
+.koka .namespace {
+  color: var(--koka-mo) !important;
+}
+
+.koka .comment {
+  color: var(--koka-cm) !important;
+}
+
+.koka .localqualifier,
+.koka .lq {
+  color: var(--koka-lq) !important;
+}
+
+.koka .postfix {
+  color: var(--koka-po) !important;
+}
+
+.koka a.pp {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.koka .error {
+  border-bottom: 2px dotted var(--koka-er);
+}
+
+.koka .warning {
+  border-bottom: 2px dotted var(--koka-wn);
+}
+
+.koka .type.typeparam,
+.koka .tp.tpp {
+  color: var(--koka-tp);
+  opacity: 0.8;
+}
+
+.koka .type.typevar,
+.koka .tp.tv {
+  font-style: italic;
+  color: var(--koka-tp);
+}
+
+.koka .type.keyword.operator,
+.koka .tp.kw.op {
+  color: var(--koka-op);
+}
+
+.koka .decl.alias,
+.koka .decl.alias .koka .keywordop {
+  color: var(--koka-tp);
+}
+
+.koka .emph {
+  font-style: italic;
+}
+
+.koka .minus {
+  font-weight: bold;
+}
+
+.koka .fslash {
+  font-size: 90%;
+}
+
+/* Tooltips */
+.pc {
+  display: none;
+}
+
+.pp:hover .pc,
+code.koka .pp:hover .pc,
+pre.koka .pp:hover .pc {
+  display: block;
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--ui-padding-y) var(--ui-padding-x);
+  background: var(--tooltip-bg);
+  /* White background like the website */
+  color: var(--tooltip-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  white-space: pre;
+  z-index: 9999;
+  min-width: 200px;
+  max-width: min(800px, calc(100vw - 16px));
+  line-height: 1.4;
+  border: 1px solid var(--tooltip-border);
+  box-shadow: var(--shadow-md);
+  font-family: 'Roboto Mono', Courier, monospace;
+}
+
+/* Maintain original syntax highlighting inside tooltips */
+.pc .type,
+.pc .tp {
+  color: var(--koka-tp) !important
+}
+
+.pc .keyword,
+.pc .kw {
+  color: var(--koka-kw) !important
+}
+
+.pc .string,
+.pc .st {
+  color: var(--koka-st) !important
+}
+
+.pc .module,
+.pc .mo {
+  color: var(--koka-mo) !important
+}
+
+.pc .constructor,
+.pc .co {
+  color: var(--koka-co) !important
+}
+
+.pc .comment {
+  color: var(--koka-cm) !important
+}
+
+.pc .number,
+.pc .nu {
+  color: var(--koka-nu) !important
+}
+
+.pp {
+  position: relative;
+  text-decoration: none !important;
+  color: inherit !important;
+}

@@ -1,0 +1,216 @@
+Title: Types & Inference — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Type Annotations & Type Inference { .heading-no-number }
+
+> For a progressive introduction, see [The Koka Book: Side Effects](../tutorial/effects.html).
+> This guide focuses on type annotations, references, and state.
+
+This guide covers how Koka's type system works: how to write type annotations,
+how the type inference engine fills them in when omitted, and how _effect types_
+track side-effects in function signatures.
+
+> [!NOTE]
+> This page is about the _type system_ — annotations, inference, and effects.
+> For how to _define_ your own types (structs, sum types), see
+> [Algebraic Data Types](adts.html).
+
+---
+
+```koka {.hidden}
+import std/num/random 
+```
+
+## Basic Type Annotations
+
+Function parameter types and return types are written with `: type`:
+
+```koka
+fun square( x : int ) : int
+  x * x
+```
+
+Local variable types are usually inferred:
+
+```koka
+fun encode( s : string, shift : int )
+  s.list.map fn(c)
+    if c < 'a' || c > 'z' then return c
+    val base = (c - 'a').int   // inferred: int
+    val rot  = (base + shift) % 26  // inferred: int
+    (rot.char + 'a')
+```
+
+Hover over identifiers in an IDE or the online playground to see inferred types.
+
+---
+
+## Effect Types
+
+Every function in Koka carries an _effect_ in its type, describing what side-effects it may perform. The general shape is:
+
+```unchecked
+(args) -> <effects> result
+```
+
+The absence of effects is `:total` (pure functions with no side-effects):
+
+```koka
+fun square1( x : int ) : total int   { x*x }
+```
+
+The `:total` effect is usually omitted — writing `: int` as the return type implies `:total`.
+
+Other built-in effects:
+
+| Effect | Meaning |
+|--------|---------|
+| `total` | Pure, always terminates |
+| `exn` | May raise an exception |
+| `div` | May not terminate (diverge) |
+| `console` | May write to the console |
+| `ndet` | Non-deterministic |
+| `io` | Unrestricted I/O |
+| `st<h>` | Stateful (heap `h`) |
+
+```koka
+fun square2( x : int ) : console int { println( "side-effect!" ); x*x }
+fun square3( x : int ) : div int     { x * square3( x ) }
+fun square4( x : int ) : exn int     { throw( "oops" ); x*x }
+```
+
+---
+
+## Wildcard Effects
+
+If you don't want to spell out the full effect, use `_` or `_e` as a wildcard:
+
+```koka
+fun square6( x : int ) : _e int
+  println("I didn't write down the effect")
+  x*x
+```
+
+Hover over `square6` to see what `_e` was inferred as.
+
+---
+
+## Combining Effects
+
+Functions can have multiple effects written as a row `<e1, e2, ...>`:
+
+```unchecked
+import std/num/random 
+```
+```koka
+fun combine-effects()
+  val i = srandom-int() // ndet
+  throw("oops")         // exn
+  combine-effects()     // div
+```
+
+Koka infers the combined effect `<div,exn,ndet>` (or `:io` in some contexts). The built-in alias `:pure = <div,exn>` represents Haskell-style "purity with exceptions".
+
+---
+
+## Polymorphic Effects
+
+Functions can be _polymorphic_ over effects. For example, `map` works for both pure and effectful functions:
+
+```unchecked
+map : (xs : list<a>, f : (a) -> e b) -> e list<b>
+```
+
+The effect `e` of the result matches the effect of the function `f` passed in. If `f` is `total`, `map` is `total`. If `f` uses `:console`, so does `map`.
+
+The `while` loop is a plain function, polymorphic over effects:
+
+```unchecked
+while : ( pred : () -> <div|e> bool, action : () -> <div|e> () ) -> <div|e> ()
+```
+
+The `<div|e>` notation means `div` _plus_ an open row `e` of zero or more additional effects — not just one specific effect. The full effect is the union of `div` and whatever `e` turns out to be.
+
+When this appears in a _parameter_ type (like the `pred` and `action` arguments above), it means the passed function may be called in a context that has _at most_ those effects — but the actual function might need fewer. Koka infers the tightest effect row that satisfies all constraints at the call site, so you rarely need to think about this explicitly.
+
+---
+
+## Value Types vs Reference Types
+
+By default, all data types in Koka are immutable and heap-allocated. Small non-recursive types are automatically treated as _value types_ and passed on the stack:
+
+```koka
+value struct argb{ alpha: int; color-red: int; color-green: int; color-blue: int }
+```
+
+The `value` keyword forces stack allocation. This avoids heap allocation and reference counting overhead for small data.
+
+---
+
+## Local Mutable State and Effect Erasure
+
+Koka's `var` keyword declares a _local mutable variable_ scoped to the current function.
+When the state cannot escape the function, Koka automatically discharges the stateful effect,
+making the function appear pure from the outside:
+
+```koka
+fun fib2(n)
+  var x := 0
+  var y := 1
+  repeat(n)
+    val y0 = y
+    y := x + y
+    x := y0
+  x
+```
+
+Even though `fib2` mutates `x` and `y` internally, its inferred type is `total int` — the
+state is fully local and cannot escape. Koka automatically applies `run` (similar to
+Haskell's `runST`) to discharge the `:st<h>` effect.
+
+> [!NOTE]
+> This automatic effect erasure applies only to `var`-based local state. First-class
+> heap references created with `ref(...)` retain their `:st<h>` effect, since a reference
+> value could escape and be observed by callers. However, if you know your `ref` values
+> don't escape, you can manually call `run` to discharge the `:st<h>` effect yourself.
+
+Local `var` variables also cannot be passed to other functions (they are always dereferenced
+on use), and their lifetime cannot exceed their lexical scope — properties that make the
+automatic `run` transformation safe.
+
+By contrast, first-class heap references really are values that can escape. A direct translation of
+the classic mutable Fibonacci loop looks like this:
+
+```koka
+fun fib3(n)
+  val x = ref(0)
+  val y = ref(1)
+  repeat(n)
+    val y0 = !y
+    y := !x + !y
+    x := y0
+  !x
+```
+
+This style is sometimes necessary because references are first-class, but local `var` bindings are usually
+preferred when possible: they are syntactically lighter, and their scoped semantics interact better with
+effect handlers and resumptions.
+
+At the type level, references live in a heap `h`, and stateful effects are grouped under `st<h>`.
+More specifically, allocation contributes `heap<h>`, reading contributes `read<h>`, and mutation contributes
+`write<h>`. In most user-facing signatures these are discussed together via the alias `st<h>`.
+
+A concrete larger example is Garsia-Wachs tree construction in
+`samples/basic/garsia-wachs.kk`: it uses internal mutable references across helper functions,
+while still presenting a pure interface at the top level.
+
+---
+
+## See Also
+
+- [Functions & Dot Notation](functions.html){.learn}
+- [Algebraic Data Types](adts.html){.learn}
+- [Effect Types](effect-types.html){.learn}
+
+~ end content
+~ end main-layout
