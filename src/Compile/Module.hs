@@ -66,6 +66,7 @@ data ModulePhase
   | PhaseParsed         -- modProgram
   | PhaseTypedError
   | PhaseTyped          -- modCore, modRangeMap, modDefines
+  | PhaseAnalyzed       -- module is globally analyzed and optimized via whole-program analysis
   | PhaseIfaceLoaded    -- interface is loaded, but the inline definitions are not yet parsed
   | PhaseOptimized      -- compiled and optimized core, modCore is updated, modInlines
   | PhaseCodeGen        -- compiled to backend code (.c,.js files)
@@ -276,6 +277,7 @@ phaseProgress latest =
     PhaseParsed         -> "parsing..."
     PhaseTypedError     -> "encountered a type error"
     PhaseTyped          -> "type checking..."
+    PhaseAnalyzed       -> "analyzing globally..."
     PhaseIfaceLoaded    -> "loading interface..."
     PhaseOptimized      -> "optimizing..."
     PhaseCodeGen        -> "generating code..."

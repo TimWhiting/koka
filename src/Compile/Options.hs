@@ -863,7 +863,17 @@ processInitialOptions flags0 opts
                             ModeLanguageServer _ -> flags1{genRangeMap = True, targetArch = arch }
                             _                    -> flags1{targetArch = arch}
               buildDir <- getKokaBuildDir (buildDir flags) (evaluate flags)
-              buildTag <- if (null (buildTag flags)) then getDefaultBuildTag else return (buildTag flags)
+              buildTag0 <- if (null (buildTag flags)) then getDefaultBuildTag else return (buildTag flags)
+              let getModeFiles m = case m of
+                                     ModeCompiler fs -> fs
+                                     ModeInteractive fs -> fs
+                                     ModeLanguageServer fs -> fs
+                                     _ -> []
+                  fpaTag = if not (analyze flags) then "" else
+                             "-fpa" ++ case getModeFiles mode of
+                                         (f:_) -> "-" ++ basename f
+                                         _     -> ""
+              let buildTag = buildTag0 ++ fpaTag
               ed   <- if (null (editor flags))
                       then detectEditor
                       else return (editor flags)

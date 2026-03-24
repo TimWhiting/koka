@@ -17,15 +17,11 @@ module Compile.Build( Build
                       , virtualMount
                       , searchSourceFile
                       ) where
-
 import Debug.Trace
 import Data.Char
 import Data.Maybe
 import Data.List
 import Data.Either
-import Data.IORef
-import Control.Exception
-import Control.Applicative
 import Control.Monad          ( ap, when, foldM )
 import qualified Control.Monad.Fail as F
 import Control.Concurrent.QSem
@@ -72,6 +68,9 @@ import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
 import qualified Data.List as L
 import qualified Core.EffOpt as EffOpt
+import qualified Data.Map.Strict as Map
+import Control.Concurrent.MVar
+import Core.FlowAnalysis.Full.DMCFAR.Monad (FixInput, FixOutput)
 
 
 {---------------------------------------------------------------
@@ -92,20 +91,69 @@ modulesFullBuild rebuild forced mainEntries cachedImports roots
 -- Given a complete list of modules in build order (and main entry points), build them all.
 modulesBuild :: [Name] -> [Module] -> Build [Module]
 modulesBuild mainEntries modules
-  = -- phaseTimed 2 "build" (\_ -> Lib.PPrint.empty) $ -- (list (map (pretty . modName) modules))
-    do parsedMap   <- modmapCreate modules
-       tcheckedMap <- modmapCreate modules
-       optimizedMap<- modmapCreate modules
-       codegenMap  <- modmapCreate modules
-       linkedMap   <- modmapCreate modules
-       let buildOrder = map modName modules
-       compiled    <- seqList buildOrder $
-                      withTotalWork (workNeeded PhaseLinked modules) $
-                      mapConcurrentModules
-                       (moduleCompile mainEntries parsedMap tcheckedMap optimizedMap codegenMap linkedMap buildOrder)
-                       modules
-       -- mapM_ modmapClear [tcheckedMap,optimizedMap,codegenMap,linkedMap]
-       return compiled -- modulesFlushErrors compiled
+  = do  parsedMap   <- modmapCreate modules
+        tcheckedMap <- modmapCreate modules
+        optimizedMap<- modmapCreate modules
+        codegenMap  <- modmapCreate modules
+        linkedMap   <- modmapCreate modules
+        flags       <- getFlags
+        analysisResultVar  <- liftIO newEmptyMVar
+        let buildOrder = map modName modules
+        
+        tcheckedMods <- withTotalWork (workNeeded PhaseTyped modules) $
+                        mapConcurrentModules (moduleTypeCheck parsedMap tcheckedMap) modules
+        
+        when (analyze flags || kcfa flags) $ do
+          -- All modules in tcheckedMods are guaranteed to be at least PhaseTyped
+          case mainEntries of
+            [mainEntry] -> do
+              let mainModName = qualifier mainEntry
+                  mbMainMod = L.find (\m -> modName m == mainModName) tcheckedMods
+              case mbMainMod of
+                Just mainMod -> do
+                  term <- getTerminal
+                  let h = flagsHash flags
+                      bc = seqString h $ BuildContext mainEntries tcheckedMods h
+                      sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
+                  
+                  let runAnalysis (d,m) = do
+                        if rebinding flags then do
+                          (_, result) <- liftIO $ evalMainR bc (\bctx mn ->
+                              runBuild term flags{ rebuild = False, analyze = False, kcfa = False } $ do
+                                buildcTypeCheck (mn:buildcRoots bctx) bctx
+                            ) mainMod m d
+                          return result
+                        else if kcfa flags then do
+                          liftIO $ evalMainK bc (\bctx mn ->
+                              runBuild term flags{ rebuild = False, analyze = False, kcfa = False } $ do
+                                buildcTypeCheck (mn:buildcRoots bctx) bctx
+                            ) mainMod m
+                          return Map.empty
+                        else do
+                          liftIO $ evalMain bc (\bctx mn ->
+                              runBuild term flags{ rebuild = False, analyze = False, kcfa = False } $ do
+                                buildcTypeCheck (mn:buildcRoots bctx) bctx
+                            ) mainMod m d
+                          return Map.empty
+                  
+                  results <- mapM runAnalysis sens
+                  let mergedResult = Map.unions results
+                  liftIO $ putStrLn $ "[FPA] Global analysis complete. Result size: " ++ show (Map.size mergedResult)
+                  seq (Map.size mergedResult) $ return () -- force map structure
+                  liftIO $ putMVar analysisResultVar mergedResult
+                Nothing -> do
+                  liftIO $ putMVar analysisResultVar Map.empty
+                  error $ "FPA: Could not find main module " ++ show mainModName
+            _ -> do
+              liftIO $ putMVar analysisResultVar Map.empty
+              error "FPA: Exactly one main entry point is required for global analysis."
+        
+        compiled    <- seqList buildOrder $
+                       withTotalWork (workNeeded PhaseLinked modules) $
+                       mapConcurrentModules
+                        (moduleCompile mainEntries parsedMap tcheckedMap optimizedMap codegenMap linkedMap analysisResultVar buildOrder)
+                        tcheckedMods
+        return compiled
 
 -- Given a complete list of modules in build order, type check them all.
 modulesTypeCheck :: [Module] -> Build [Module]
@@ -169,7 +217,8 @@ type ModuleMap = M.NameMap (MVar Module)
 -- signal a module is done with a compilation phase and unblock all pending reads.
 modmapPut :: ModuleMap -> Module -> Build ()
 modmapPut modmap mod
-  = seq mod $ liftIO $ putMVar ((M.!) modmap (modName mod)) mod
+  = seq mod $ do _ <- modmapTryPut modmap mod
+                 return ()
 
 -- signal a module is done with a compilation phase and unblock all pending reads.
 -- only the first call succeeds but subsequent ones will not block (useful for exception handling)
@@ -223,10 +272,10 @@ moduleZero = moduleNull nameNil
   Compile a module (type check, core compile, codegen, and link)
 ---------------------------------------------------------------}
 
-moduleCompile :: HasCallStack => [Name] -> ModuleMap -> ModuleMap -> ModuleMap -> ModuleMap -> ModuleMap -> [ModuleName] -> Module -> Build Module
-moduleCompile mainEntries parsedMap tcheckedMap optimizedMap codegenMap linkedMap buildOrder
+moduleCompile :: HasCallStack => [Name] -> ModuleMap -> ModuleMap -> ModuleMap -> ModuleMap -> ModuleMap -> MVar (Map.Map FixInput FixOutput) -> [ModuleName] -> Module -> Build Module
+moduleCompile mainEntries parsedMap tcheckedMap optimizedMap codegenMap linkedMap analysisResultVar buildOrder
   = moduleGuard PhaseCodeGen PhaseLinked linkedMap (\(_,_,mod) -> mod) id
-                (moduleCodeGen mainEntries parsedMap tcheckedMap optimizedMap codegenMap)
+                (moduleCodeGen mainEntries parsedMap tcheckedMap optimizedMap codegenMap analysisResultVar)
     $ \done (fullLink,link,mod) ->
      do -- wait for all required imports to be codegen'd
         -- However, for a final exe we need to wait for the imports to be _linked_ as well (so we use linkedMap instead of codegenMap).
@@ -266,10 +315,10 @@ orderByBuildOrder buildOrder mods
   Code generation (.c,.js)
 ---------------------------------------------------------------}
 
-moduleCodeGen :: HasCallStack => [Name] -> ModuleMap -> ModuleMap -> ModuleMap -> ModuleMap -> Module -> Build (Bool, Link, Module)
-moduleCodeGen mainEntries parsedMap tcheckedMap optimizedMap codegenMap
+moduleCodeGen :: HasCallStack => [Name] -> ModuleMap -> ModuleMap -> ModuleMap -> ModuleMap -> MVar (Map.Map FixInput FixOutput) -> Module -> Build (Bool, Link, Module)
+moduleCodeGen mainEntries parsedMap tcheckedMap optimizedMap codegenMap analysisResultVar
   = moduleGuard PhaseOptimized PhaseCodeGen codegenMap (\mod -> mod) (\mod -> (False,noLink,mod))
-                (moduleOptimize parsedMap tcheckedMap optimizedMap) $ \done mod ->
+                (moduleOptimize mainEntries parsedMap tcheckedMap optimizedMap analysisResultVar) $ \done mod ->
     do -- wait for all required imports to be optimized (no need to wait for codegen!)
        -- trace ("mod import names: " ++ show (modImportNames mod)) (return ())
        imports <- moduleWaitForImports False optimizedMap [] (modImportNames mod)
@@ -330,11 +379,11 @@ moduleWaitForImports recurse modmap alreadyDone0 importNames
   like perceus ref counting etc.)
 ---------------------------------------------------------------}
 
-moduleOptimize :: ModuleMap -> ModuleMap -> ModuleMap -> Module -> Build Module
-moduleOptimize parsedMap tcheckedMap optimizedMap
+moduleOptimize :: [Name] -> ModuleMap -> ModuleMap -> ModuleMap -> MVar (Map.Map FixInput FixOutput) -> Module -> Build Module
+moduleOptimize mainEntries parsedMap tcheckedMap optimizedMap analysisResultVar
   = moduleGuard PhaseTyped PhaseOptimized optimizedMap id id (moduleTypeCheck parsedMap tcheckedMap) $ \done mod ->
      do -- wait for imports to be optimized (and include imports needed for inline definitions)
-        imports <- moduleWaitForInlineImports optimizedMap (modImportNames mod)
+        imports <- moduleWaitForInlineImports optimizedMap (modName mod) (modImportNames mod)
         if any (\m -> modPhase m < PhaseOptimized) imports
           then done mod  -- dependencies had errors (todo: we could keep going if the import has (previously computed) core?)
           else if modPhase mod == PhaseIfaceLoaded
@@ -357,12 +406,24 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                                            , modInlines = Right inlines
                                            }
             else -- core compile
-              do  phaseVerbose 2 "optimize" $ \penv -> TP.ppName penv (modName mod) -- <.> text ": imported:" <+> list (map (pretty . modName) imports)
-                  flags <- getFlags
+              do  flags <- getFlags
+                  -- WAIT for global analysis result if FPA enabled
+                  mergedResult <- if (analyze flags || kcfa flags) 
+                                  then liftIO $ readMVar analysisResultVar
+                                  else return Map.empty
+                  
+                  let mod' = if Map.null mergedResult then mod
+                             else case modCore mod of
+                                    Just coreProg -> 
+                                      let optimizedDefs = EffOpt.opt (modName mod) mergedResult (coreProgDefs coreProg)
+                                      in mod{ modCore = Just $! coreProg{ coreProgDefs = optimizedDefs } }
+                                    Nothing -> mod
+
+                  phaseVerbose 2 "optimize" $ \penv -> TP.ppName penv (modName mod') -- <.> text ": imported:" <+> list (map (pretty . modName) imports)
                   term <- getTerminal
-                  let defs    = defsFromModules (mod:imports)  -- todo: optimize by reusing the defs from the type check?
+                  let defs    = defsFromModules (mod':imports)  -- todo: optimize by reusing the defs from the type check?
                       inlines = inlinesFromModules imports
-                  (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
+                  (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod'))
 
                   -- let h = flagsHash flags
                   --     bc = seqString h $ BuildContext [modName mod] (mod:imports) h
@@ -381,17 +442,32 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
 
 
 -- Import also modules required for checking inlined definitions from direct imports.
-moduleWaitForInlineImports :: HasCallStack => ModuleMap -> [ModuleName] -> Build [Module]
-moduleWaitForInlineImports modmap importNames
+moduleWaitForInlineImports modmap currentModName importNames
   = do -- wait for imported modules to be compiled
-       -- trace ("import inline names: " ++ show importNames) (return ())
        imports <- mapM (modmapRead modmap) importNames
-       let extras = nub $ [Core.importName imp | mod <- imports, hasInlines (modInlines mod),
-                                                  -- consider all of its imports too to ensure we can check its inline definitions
-                                                  imp <- modCoreImports mod,
-                                                  not (Core.importName imp `elem` importNames)]
-       extraImports <- mapM (modmapRead modmap) extras
-       return $! seqqList $ (extraImports ++ imports)
+       let extrasWithSource = [ (Core.importName imp, modName mod) 
+                              | mod <- imports, hasInlines (modInlines mod),
+                                imp <- modCoreImports mod,
+                                let impName = Core.importName imp,
+                                not (impName `elem` importNames),
+                                impName /= currentModName ] -- avoid self-wait?
+           
+           -- Debug: see what we are skipping or what is being added
+           allExtras = nub [ Core.importName imp 
+                           | mod <- imports, hasInlines (modInlines mod),
+                             imp <- modCoreImports mod,
+                             let impName = Core.importName imp,
+                             not (impName `elem` importNames) ]
+       
+       when (currentModName `elem` allExtras) $ do
+          liftIO $ putStrLn $ "[FPA] !! DETECTED SELF-WAIT in " ++ show currentModName
+          -- let sources = [ mname | (iname, mname) <- extrasWithSource, iname == currentModName ] 
+          mapM_ (\m -> liftIO $ putStrLn $ "[FPA]   " ++ show (modName m) ++ " core imports: " ++ show (modImportNames m)) imports
+
+       let extras = nub (map fst extrasWithSource)
+       if null extras then return imports
+       else do extraImports <- mapM (modmapRead modmap) extras
+               return $! seqqList $ (extraImports ++ imports)
   where
     hasInlines (Right []) = False
     hasInlines _          = True
@@ -428,49 +504,10 @@ moduleTypeCheck parsedMap tcheckedMap
                                           , modRangeMap    = seqqMaybe mbRangeMap
                                           , modDefinitions = Just $! defsFromCore False core
                                           }
-                            term <- getTerminal
-                            let h = flagsHash flags
-                                bc = seqString h $ BuildContext [modName mod'] (mod':imports) h
-                            mod'' <- if (analyze flags) then do
-                              let sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
-                              let runAnalysis d m = do
-                                    if rebinding flags then do
-                                      (done, result) <- liftIO $ evalMainR bc (\bc mn ->
-                                          runBuild term flags $ do
-                                            buildcTypeCheck (mn:buildcRoots bc) bc
-                                        ) mod' m d
-                                      -- liftIO $ putStrLn $ "[Build] Analysis done for " ++ show (modName mod') ++ 
-                                      --                     ", result size: " ++ show (M.size result)
-                                      -- Only optimize the user's module, not std/core dependencies
-                                      let isStdLib = "std/" `L.isPrefixOf` show (modName mod')
-                                      if isStdLib then
-                                        return mod'
-                                      else do
-                                        -- Apply analysis results immediately before other optimizations
-                                        let Just coreProg = modCore mod'
-                                            optimizedDefs = EffOpt.opt (modName mod') result (coreProgDefs coreProg)
-                                        return $! mod'{ modCore = Just $! coreProg{ coreProgDefs = optimizedDefs } }
-                                    else if kcfa flags then do
-                                      liftIO $ evalMainK bc (\bc mn ->
-                                          runBuild term flags $ do
-                                            buildcTypeCheck (mn:buildcRoots bc) bc
-                                        ) mod' m
-                                      return mod'
-                                      --  liftIO $ evalMainKR bc (\bc mn ->
-                                      --      runBuild term flags $ do
-                                      --        buildcTypeCheck (mn:buildcRoots bc) bc
-                                      --    ) mod m 
-                                    else do
-                                      liftIO $ evalMain bc (\bc mn ->
-                                          runBuild term flags $ do
-                                            buildcTypeCheck (mn:buildcRoots bc) bc
-                                        ) mod' m d
-                                      return mod'
-                              mods <- mapM (uncurry runAnalysis) sens
-                              return $ if null mods then mod' else last mods
-                             else return mod'
-                            phaseVerbose 3 "check done" $ \penv -> TP.ppName penv (modName mod'')
-                            done mod''
+                            phaseVerbose 3 "check done" $ \penv -> TP.ppName penv (modName mod')
+                            done mod'
+
+
 
 
 -- Recursively load public imports from imported modules in a fixpoint

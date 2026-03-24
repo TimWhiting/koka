@@ -20,6 +20,7 @@ module Core.CoreVar ( HasExprVar, (|~>)
 import qualified Data.Set as S
 import Data.Maybe
 import Common.Name
+import Common.NamePrim (nameAlwaysMon, nameNeverMon)
 import Common.Range
 import Common.Failure
 import Type.Type
@@ -47,7 +48,8 @@ extractDepsFromDefs defs
 
 extractDepsFromExpr :: Expr -> S.Set ModuleName
 extractDepsFromExpr expr
-  = let varmods  = S.map (qualifier . getName) (fv expr)
+  = let vnames   = S.toList (fv expr)
+        varmods  = S.fromList [qualifier (getName n) | n <- vnames, getName n /= nameAlwaysMon && getName n /= nameNeverMon]
         tconmods = S.map (qualifier . typeconName) (ftc expr)
     in S.filter (\name -> not (nameIsNil name)) (S.union varmods tconmods)
 

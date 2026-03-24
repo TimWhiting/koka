@@ -9,10 +9,11 @@ fun s2(ls2: list<int>): list<int>
 fun analyze()
   val x1 = s2([1, 2, 3])
 
-  val xaslkdfj = 1 + 2
+  val x = 1 + 2
   
-  val y = xaslkdfj * 4
+  val y = x * 4
   
-  val z = y - (y + xaslkdfj)
+  val z = y - (y + x)
   
-  x1.sum
+  val result = x1.sum
+  println(result)
