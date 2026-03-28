@@ -12,6 +12,7 @@ This file tracks the audit status of all ported modules. Detailed reports can be
 | `IdMap` | Completed | 1 | 1 | 0 | 0 | [IdMap.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/IdMap.md) |
 | `IdNice` | Completed | 5 | 5 | 0 | 0 | [IdNice.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/IdNice.md) |
 | `Syntax` | Completed | 36 | 36 | 2 | 0 | [Syntax.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/Syntax.md) |
+| `Error` | Completed | 46 | 46 | 0 | 0 | [Error.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/Error.md) |
 | `File` | Partial | 38 | 32 | 6 | 0 | [File.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/File.md) |
 | `Name` | Completed | 83 | 82 | 10 | 5 | [Name.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/Name.md) |
 | `NamePrim` | Completed | 150 | 150 | 0 | 0 | [NamePrim.md](file:///Users/timwhiting/koka-lean/Koka/Common/Port/NamePrim.md) |
@@ -24,7 +25,11 @@ This file tracks the audit status of all ported modules. Detailed reports can be
 | `JSON` | Completed | 11 | 11 | 0 | 0 | [JSON.md](file:///Users/timwhiting/koka-lean/Koka/Lib/Port/JSON.md) |
 | `Trace` | Completed | 9 | 9 | 0 | 0 | [Trace.md](file:///Users/timwhiting/koka-lean/Koka/Lib/Port/Trace.md) |
 | `Kind` | Completed | 31 | 31 | 0 | 0 | [Kind.md](file:///Users/timwhiting/koka-lean/Koka/Kind/Port/Kind.md) |
+| `ImportMap` | Completed | 9 | 9 | 1 | 0 | [ImportMap.md](file:///Users/timwhiting/koka-lean/Koka/Kind/Port/ImportMap.md) |
+| `Pretty` | Completed | 16 | 16 | 1 | 0 | [Pretty.md](file:///Users/timwhiting/koka-lean/Koka/Kind/Port/Pretty.md) |
 | `Lexeme` | Completed | 17 | 17 | 0 | 0 | [Lexeme.md](file:///Users/timwhiting/koka-lean/Koka/Syntax/Port/Lexeme.md) |
+| `Layout` | Completed | 34 | 33 | 0 | 0 | [Layout.md](file:///Users/timwhiting/koka-lean/Koka/Syntax/Port/Layout.md) |
+| `Syntax` | Completed | 47 | 47 | 0 | 0 | [Syntax.md](file:///Users/timwhiting/koka-lean/Koka/Syntax/Port/Syntax.md) |
 | `Config` | Completed | 13 | 13 | 0 | 0 | [Config.md](file:///Users/timwhiting/koka-lean/Koka/Platform/Port/Config.md) |
 | `GetOptions` | Completed | 5 | 5 | 0 | 0 | [GetOptions.md](file:///Users/timwhiting/koka-lean/Koka/Platform/Port/GetOptions.md) |
 | `Runtime` | Completed | 4 | 4 | 0 | 0 | [Runtime.md](file:///Users/timwhiting/koka-lean/Koka/Platform/Port/Runtime.md) |
@@ -51,9 +56,9 @@ This file tracks the audit status of all ported modules. Detailed reports can be
 
 ## Summary
 
-- **Total Modules Ported**: 14
-- **Modules with Full Parity**: 13
+- **Total Modules Ported**: 25+
+- **Modules with Full Parity**: 24+
 - **Modules with Partial Parity**: 1 (`File`)
-- **Total Functions Ported**: ~265
+- **Total Functions Ported**: ~600+
 - **Modules with Tests**: 6
 - **Modules with Proofs**: 3
