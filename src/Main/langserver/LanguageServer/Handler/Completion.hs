@@ -243,7 +243,7 @@ typeUnifies t1 t2 name =
   case t2 of
     Nothing -> True
     Just t2 ->
-      let (res, _, _) = (runUnifyEx 0 0 $ matchArguments True rangeNull t1 [t2] [] Nothing)
+      let (res, _, _) = (runUnifyEx 0 0 $ matchArguments True rangeNull t1 [t2] [] Nothing 0)
           typeMatches = isRight res in
         -- if name == qualify nameSystemCore (newName "join") then trace ("t1: " ++ show t1 ++ " t2: " ++ show t2 ++ " " ++ show typeMatches) typeMatches
         -- else

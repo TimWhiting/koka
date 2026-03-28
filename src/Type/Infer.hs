@@ -1455,7 +1455,7 @@ inferLam topLevel propagated expect bindersL body0 rng
     disallowHole $
     -- scopeImplicitConstraints $
     do level <- getLevel
-       setLevel (level + 1)
+       setLevel (level + 1) 
        (ftp,_,fcore) <- maybeGeneralize rng (getRange body0) expect $ infBody isNamed
        --  -- traceDefDoc $ \env -> text " inferExpr.Lam: generalized fun type:" <+> ppType env ftp -- <+> text (show fcore)
        eff <- freshEffect
@@ -1465,7 +1465,8 @@ inferLam topLevel propagated expect bindersL body0 rng
      do -- traceDoc $ \env -> text "infer lam:" <+> pretty (map binderName bindersL) <+> pretty (show expect) <+> text ", propagated:" <+> ppProp env propagated <+> text (if isNamed then "(named)" else "")
         (bindersX,unpackImplicitss) <- unzip <$> mapM inferImplicitParam bindersL
         let body = foldr (\f x -> f x) body0 unpackImplicitss
-
+        level <- getLevel
+        setLevel (level + 1)
         (propArgs,propEff,propBody,skolems,expectBody) <- matchFun (length bindersX) propagated
         -- traceDoc $ \env -> text "  prop eff:" <+> ppProp env propEff
 
@@ -1543,12 +1544,13 @@ inferLam topLevel propagated expect bindersL body0 rng
         -- check skolem escape (should this be after generalize?)
         -- when (not topLevel) $
         --   -- traceDefDoc $ \penv -> text " inferExpr.Lam: check skolems:" <+> ppType penv sftp0 <+> text ", " <+> pretty skolems <.> text ", in effect" <+> ppType penv topEff
-        --   checkSkolemEscape rng sftp0 Nothing skolems tvsEmpty  -- TODO: not having this check improves error messages but is it really safe?
+        -- Level koka does not require explicit skolem escape check
+        -- checkSkolemEscape rng sftp0 Nothing skolems tvsEmpty  -- TODO: not having this check improves error messages but is it really safe?
 
 
         -- substitute back skolems to meta variables
         lv <- getLevel
-        (sktvars,subSkolems) <- Op.freshSub (Meta lv) skolems
+        (sktvars,subSkolems) <- Op.freshSub (Meta (lv + 1)) skolems
         let -- subSkolems = subNew -- (zip skolems ftvars)
             --                    [(tv,TVar tv{typevarFlavour=Meta}) | tv <- skolems]
             sftp1 = subSkolems |-> sftp0
@@ -1575,7 +1577,7 @@ inferLam topLevel propagated expect bindersL body0 rng
                                                           )) [] True))
                 (zip binders0 parTypes2)
 
-
+        setLevel level
         return (sftp1, typeTotal, bodyCore3)
 
         -- -- traceDefDoc $ \penv -> text "inferExpr.Lam: type: " <+> ppType penv ftp
@@ -1941,7 +1943,7 @@ inferPattern patkind matchType branchRange (PatCon name patterns0 nameRange rang
            (pcore,coreGuards) <-
                if (null xvars)
                   then return (Core.PatCon (Core.TName qname conRho) cpatterns repr (map snd conParTps) [] conResTp coninfo False, coreGuards0)
-                  else do (bindExists,subExists) <- Op.freshSub Bound xvars
+                  else do (bindExists,subExists) <- Op.freshSub Bound xvars -- TODO: LEVEL STUFF HERE!!!
                           let -- bindExists = [(TypeVar id kind Bound) | (TypeVar id kind _) <- xvars]
                               -- subExists  = subNew [(TypeVar id kind Skolem, TVar (TypeVar id kind Bound)) | TypeVar id kind _ <- bindExists]
                               pcore      = Core.PatCon (Core.TName qname conRho) (subExists |-> cpatterns) repr (subExists |-> (map snd conParTps)) bindExists conResTp coninfo False
@@ -1959,11 +1961,11 @@ inferPattern patkind matchType branchRange (PatCon name patterns0 nameRange rang
            return res
 
     useSkolemizedCon coninfo gconTp range nameRange cont
-      = do conResTp <- freshStar
+      = do lv <- getLevel
+           conResTp <- freshStar
            let conExistsTp = TForall (conInfoExists coninfo) (if (null (conInfoParams coninfo)) then conResTp else TFun (conInfoParams coninfo) typeTotal conResTp)
            withSkolemized range conExistsTp Nothing $ \conXRho0 xvars ->
-            do lv <- getLevel
-               conXRho <- Op.instantiate nameRange (TForall (conInfoForalls coninfo) conXRho0) lv
+            do conXRho <- Op.instantiate nameRange (TForall (conInfoForalls coninfo) conXRho0) lv
                (iconRho,_,_)  <- instantiate nameRange gconTp
                -- traceDoc $ \env -> text " conXRho:" <+> ppType env conXRho <+> text ", versus iconRho:" <+> ppType env iconRho
                inferUnify (checkOp range) nameRange conXRho iconRho
@@ -2415,9 +2417,10 @@ matchFunTypeArgs context fun tp fresolved fixed named
        TVar tv             -> do if (null named)  -- TODO: take fresolved into account
                                   then return ()
                                   else infError range (text "cannot used named arguments on an inferred function" <-> text " hint: annotate the parameters")
-                                 targs <- mapM (\name -> do{ tv <- freshStar; return (name,tv)}) ([nameNil | a <- fixed] ++ map (fst . fst) named)
-                                 teff  <- freshEffect
-                                 tres  <- freshStar
+                                 let level = getTvLevel tv
+                                 targs <- mapM (\name -> do{ tv <- Op.freshStar level; return (name,tv)}) ([nameNil | a <- fixed] ++ map (fst . fst) named)
+                                 teff  <- Op.freshEffect level
+                                 tres  <- Op.freshStar level
                                  -- trace ("Type.matchFunType: " ++ show tv ++ ": " ++ show (targs,teff,tres)) $
                                  extendSub (subSingle tv (TFun targs teff tres))
                                  return (zip [0..] (map (\x -> ArgExpr x False) (fixed ++ map snd named)), targs,teff,tres,Core.App)
@@ -2628,9 +2631,11 @@ maybeInstantiateOrGeneralize contextRange range expect inf
   = case expect of
       Generalized close  -> do
         level <- getLevel
+        -- trace ("\nlevel in maybeInstantiateOrGeneralize" ++ show level) $ return ()
         setLevel (level - 1)
+        --  traceDoc $ \env -> text "maybeInstantiateOrGeneralize: generalize" <+> ppType env tp <+> text "at level: " <+> pretty level
         t <- generalize contextRange range close inf
-        setLevel level 
+        setLevel level
         return t
       Instantiated       -> do (tp,eff,core) <- inf
                                (itp,_,icore) <- instantiate range tp
@@ -2646,8 +2651,8 @@ matchFun nArgs mbType
       Just (tp,rng) -> do -- (rho,_,_) <- instantiate rng tp
                           -- let skolems = []
                           -- traceDoc $ \penv -> text "matchFun: " <+> ppType penv{showKinds=True,showIds=True} tp <+> text "at" <+> pretty rng
-                          lv <- getLevel
-                          (skolems,rho,_) <- Op.skolemizeEx rng tp lv
+                          level <- getLevel
+                          (skolems,rho,_) <- Op.skolemizeEx rng tp level
                           -- traceDoc $ \penv -> text "skolemized: " <+> ppType penv rho
                           -- let sub = subNew [(tv,TVar (tv{typevarFlavour=Meta})) | tv <- skolems]
                           case splitFunType rho of

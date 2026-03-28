@@ -16,7 +16,7 @@
 
     - Expand all synonyms (i.e., replace @id(int)@ by @id(int) == int@)
 
-    - Transate type definition groups and externals to Core.
+    - Translate type definition groups and externals to Core.
 -}
 -----------------------------------------------------------------------------
 

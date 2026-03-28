@@ -210,6 +210,7 @@ generalizeX contextRange range close (rho0,eff0,bodycore0)
         then do return (nrho,seff,bodycore1)
         else do -- create fresh type variables for the bounds
                 -- important to avoid duplicate names (`test/algeff/exn3`)
+                let tvars = filter (\tv -> getTvLevel tv > lv) (ofuv nrho)
                 (bvars,bsub) <- freshSub Bound tvars
                 let (TForall [] rho5) = bsub |-> (TForall [] nrho)
                     -- core
@@ -520,7 +521,8 @@ inferSubsume context range expected tp
   = do -- free <- freeInGamma
        (sexp,stp) <- subst (expected,tp)
        -- trace ("inferSubsume: " ++ show (tupled [pretty sexp,pretty stp]) ++ " with free " ++ show (tvsList free)) $ return ()
-       res <- doUnify (subsume range sexp stp)
+       level <- getLevel 
+       res <- doUnify (subsume range sexp stp level)
        case res of
          Right (t,_,coref)   -> do
                                     return (t,coref)
@@ -1368,7 +1370,7 @@ filterMatchNameContextEx range ctx candidates
       = do -- free <- freeInGamma
            res <- do -- traceDefDoc $ \penv0 -> let penv = penv0{Pretty.showIds=True} in text "matchType:" <+> Pretty.ppName penv name <.> text "," <+> Pretty.ppType penv expect <+> text "~" <+> Pretty.ppType penv (infoType info)
                      lv <- getLevel
-                     runUnify lv (subsume range expect (infoType info))
+                     runUnify lv (subsume range expect (infoType info) lv)
            case res of
              (Right (rho,_,_),_)  -> return [(name,info,rho)]
              (Left _,_)             -> return []
@@ -1377,7 +1379,7 @@ filterMatchNameContextEx range ctx candidates
     matchNamedArgs matchSome n named mbResTp (name,info)
       = do -- free <- freeInGamma
            lv <- getLevel
-           res <- runUnify lv (matchNamed matchSome range (infoType info) n named mbResTp)
+           res <- runUnify lv (matchNamed matchSome range (infoType info) n named mbResTp lv)
            case res of
              (Right rho,_)  -> return [(name,info,rho)]
              (Left _,_)     -> return []
@@ -1389,7 +1391,7 @@ filterMatchNameContextEx range ctx candidates
           --                                 <+> text ", named" <+> list [Pretty.ppParam penv nametp | nametp <- named]
           --                                 <+> text "on" <+> Pretty.ppParam penv (name,infoType info)
            lv <- getLevel
-           res <- runUnify lv (matchArguments matchSome range (infoType info) fixed named mbResTp)
+           res <- runUnify lv (matchArguments matchSome range (infoType info) fixed named mbResTp lv)
            case res of
              (Right rho,_) -> return [(name,info,rho)]
              (Left _,_)    -> return []
@@ -2179,7 +2181,7 @@ extendGamma isAlreadyCanonical defs inf
       = do checkCasingOverlap (infoRange info) name name2 info
            -- free <- freeInGamma
            lv <- getLevel
-           res  <- runUnify lv (overlaps (infoRange info) (infoType info) (infoType info2))
+           res  <- runUnify lv (overlaps (infoRange info) (infoType info) (infoType info2) lv)
            case fst res of
             Right _ ->
               do env <- getEnv
