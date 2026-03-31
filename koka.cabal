@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -316,6 +316,7 @@ executable koka-lsp-wasm
     , containers
     , directory
     , hashable >=1.4
+    , intern
     , isocline >=1.0.6
     , koka
     , lens
@@ -328,6 +329,7 @@ executable koka-lsp-wasm
     , text-rope
     , time
     , transformers
+    , unordered-containers
   default-language: Haskell2010
   if !arch(wasm32)
     buildable: False
@@ -372,6 +374,7 @@ executable koka-playground
   ghc-options: -O2
   build-depends:
       FloatingHex >=0.5
+    , aeson
     , array
     , async
     , base >=4.9
@@ -379,6 +382,7 @@ executable koka-playground
     , containers
     , directory
     , hashable >=1.4
+    , intern
     , isocline >=1.0.6
     , koka
     , mtl
@@ -387,6 +391,7 @@ executable koka-playground
     , text
     , time
     , transformers
+    , unordered-containers
   default-language: Haskell2010
   if !arch(wasm32)
     buildable: False
