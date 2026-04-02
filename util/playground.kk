@@ -131,6 +131,43 @@ fun do-precompile() : io ()
   info("Precompiling all std libraries...")
   ensure-dir("precompiled".path)
   run-or-fail(koka ++ " --target=js --outputdir=precompiled --library lib/toc.kk")
+
+  // Precompile community std libraries (fixpoint, data, etc.)
+  val community-std = "/Users/timwhiting/koka-community/std/std".path
+  val community-include = " --include=/Users/timwhiting/koka-community/std"
+  if is-directory(community-std) then
+    info("Precompiling community std libraries...")
+    val community-files = [
+      "std/core-extras", "std/fixpoint/lattice", "std/fixpoint/fixpoint-memo",
+      "std/data/rb-map", "std/data/rb-set", "std/data/rbtree", "std/data/rbtree-bu",
+      "std/data/tree-common", "std/data/intern"
+    ]
+    val community-args = community-files.map(fn(f) "/Users/timwhiting/koka-community/std/" ++ f ++ ".kk").join(" ")
+    run-or-fail(koka ++ " -l --target=js --outputdir=precompiled" ++ community-include ++ " " ++ community-args,
+      "Failed to precompile community std")
+
+  // Precompile type-level library
+  val type-level-include = " --include=/Users/timwhiting/koka-community/type-level --include=/Users/timwhiting/koka-community/std"
+  if is-directory("../../../koka-community/type-level/type-level".path) then
+    info("Precompiling type-level library...")
+    val tl-files = ["type-level/nil", "type-level/list", "type-level/structs", "type-level/con-info"]
+    val tl-args = tl-files.map(fn(f) "../../../koka-community/type-level/" ++ f ++ ".kk").join(" ")
+    run-or-fail(koka ++ " -l --target=js --outputdir=precompiled" ++ community-include ++ type-level-include ++ " " ++ tl-args,
+      "Failed to precompile type-level")
+
+  // Precompile koka-redex library
+  val redex-include = " --include=/Users/timwhiting/koka-community/type-level --include=/Users/timwhiting/koka-community/std --include=/Users/timwhiting/research/koka-redex"
+  if is-directory("/Users/timwhiting/research/koka-redex/koka-redex".path) then
+    info("Precompiling koka-redex library...")
+    val redex-files = [
+      "koka-redex/term", "koka-redex/logic", "koka-redex/pattern", "koka-redex/syntax",
+      "koka-redex/forward", "koka-redex/forward-bridge", "koka-redex/derive",
+      "koka-redex/latex", "koka-redex/markdown"
+    ]
+    val redex-args = redex-files.map(fn(f) "/Users/timwhiting/research/koka-redex/" ++ f ++ ".kk").join(" ")
+    run-or-fail(koka ++ " -l --target=js --outputdir=precompiled" ++ community-include ++ type-level-include ++ redex-include ++ " " ++ redex-args,
+      "Failed to precompile koka-redex")
+
   // Precompile samples (discovered from filesystem, excluding broken ones)
   val samples = collect-samples("samples".path)
   if samples.is-cons then
@@ -179,7 +216,7 @@ fun deploy() : io ()
   // Community std libraries (fixpoint, rb-map, etc.)
   val community-std = "../koka-community/std/std".path
   if is-directory(community-std) then
-    val community-dirs = ["fixpoint", "data"]
+    val community-dirs = ["fixpoint", "data", "inline"]
     community-dirs.foreach fn(d)
       copy-directory(community-std / d, pdir / "lib" / "std" / d)
     val community-files = ["core-extras.kk"]
