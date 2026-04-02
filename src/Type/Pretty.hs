@@ -459,9 +459,11 @@ ppNamePlain env name
      then name
      else if (context env == qualifier name || alwaysUnqualify env)
             then unqualify name
-            else if (isSystemCoreName name && not (coreIface env))
-                   then shortenSystemCoreName name
-                   else importsAlias name (importsMap env)
+            else if (coreIface env && isWildcard (unqualify name))
+                   then unqualify name  -- wildcards are never valid qualified names in .kki files
+                   else if (isSystemCoreName name && not (coreIface env))
+                          then shortenSystemCoreName name
+                          else importsAlias name (importsMap env)
 
 
 

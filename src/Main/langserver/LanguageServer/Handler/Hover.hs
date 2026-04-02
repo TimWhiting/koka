@@ -66,7 +66,7 @@ hoverHandler
               -- trace ("hover: found rng info: " ++ show rngInfo) $
               do penv <- getPrettyEnvFor modname
                  mods <- lookupModulePaths
-                 let doc = formatRangeInfoHover penv mods rngInfo
+                 let doc = formatRangeInfoHover penv{alwaysUnqualify = True} mods rngInfo
                  markdown <- prettyMarkdown doc
                  let rsp = J.Hover (J.InL (J.mkMarkdown markdown)) (Just (toLspRange rng))
                  -- trace ("hover markdown:\n" ++ show markdown) $
