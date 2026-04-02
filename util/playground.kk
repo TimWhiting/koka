@@ -176,6 +176,36 @@ fun deploy() : io ()
   copy-directory("lib/std".path, pdir / "lib" / "std")
   info("Copied stdlib sources")
 
+  // Community std libraries (fixpoint, rb-map, etc.)
+  val community-std = "../koka-community/std/std".path
+  if is-directory(community-std) then
+    val community-dirs = ["fixpoint", "data"]
+    community-dirs.foreach fn(d)
+      copy-directory(community-std / d, pdir / "lib" / "std" / d)
+    val community-files = ["core-extras.kk"]
+    community-files.foreach fn(f)
+      if is-file(community-std / f) then
+        copy-file(community-std / f, pdir / "lib" / "std" / f)
+    info("Copied community std libraries")
+  else
+    warn("Community std not found at " ++ community-std.string)
+
+  // Type-level library
+  val type-level-src = "../koka-community/type-level/type-level".path
+  if is-directory(type-level-src) then
+    copy-directory(type-level-src, pdir / "lib" / "type-level")
+    info("Copied type-level library")
+  else
+    warn("Type-level library not found at " ++ type-level-src.string)
+
+  // Koka-redex library
+  val koka-redex-src = "../koka-redex/koka-redex".path
+  if is-directory(koka-redex-src) then
+    copy-directory(koka-redex-src, pdir / "lib" / "koka-redex")
+    info("Copied koka-redex library")
+  else
+    warn("Koka-redex library not found at " ++ koka-redex-src.string)
+
   // Sample sources
   copy-directory("samples".path, pdir / "samples")
   info("Copied sample sources")
@@ -217,7 +247,8 @@ fun generate-manifest( dir : path, manifest-path : path, path-prefix : string, e
 
 fun generate-manifests() : io ()
   val pdir = web-public
-  generate-manifest(pdir / "lib" / "std", pdir / "stdlib-manifest.json", (pdir / "lib").string ++ "/")
+  // Include all libraries: std/, type-level/, koka-redex/
+  generate-manifest(pdir / "lib", pdir / "stdlib-manifest.json", (pdir / "lib").string ++ "/")
   generate-manifest(pdir / "precompiled", pdir / "precompiled-manifest.json", (pdir / "precompiled").string ++ "/")
   generate-manifest(pdir / "samples", pdir / "samples-manifest.json", (pdir / "samples").string ++ "/", ".kk")
 
