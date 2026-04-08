@@ -144,7 +144,7 @@ static void kk_async_loop_close(kk_context_t* _ctx) {
 ////////////////////////////////////////////////////// 
 kk_box_t kk_set_timeout(kk_function_t cb, int64_t time, kk_context_t* _ctx) {
   kk_uv_timer__timer t = kk_uv_timer_timer_init(_ctx);
-  if (!kk_std_core_exn__is_Ok(kk_uv_timer_start(t, time, 0, cb, _ctx), _ctx)) {
+  if (!kk_std_core_types__is_Ok(kk_uv_timer_start(t, time, 0, cb, _ctx), _ctx)) {
     kk_fatal_error(EFAULT, "Failed to start timeout timer");
   }
   return kk_uv_timer__timer_box(t, _ctx);

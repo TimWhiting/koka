@@ -76,7 +76,7 @@ kk_std_core_exn__error kk_wasm_timer_start(kk_uv_timer__timer timer, int64_t tim
   timer_info->callback = callback;
   timer_info->repeat_ms = repeat;
   timer_info->timer = start_timer(timer_info, timeout, repeat);
-  return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), kk_context());
+  return kk_std_core_types__new_Ok(kk_unit_box(kk_Unit), kk_context());
 }
 
 #else
@@ -134,7 +134,7 @@ kk_std_core_exn__error kk_libuv_timer_start(kk_uv_timer__timer timer, int64_t ti
     kk_function_drop(callback, kk_context());
     return kk_uv_error_from_errno(status, kk_context());
   } else {
-    return kk_std_core_exn__new_Ok(kk_unit_box(kk_Unit), kk_context());
+    return kk_std_core_types__new_Ok(kk_unit_box(kk_Unit), kk_context());
   }
 }
 
