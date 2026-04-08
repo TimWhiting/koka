@@ -46,8 +46,7 @@ kk_std_core_exn__error kk_uv_error_from_errno( int err, kk_context_t* ctx );
       uv_handle_t *uv_handle = (uv_handle_t *)(&kk_handle->uv); \
       /* the callback should have been cleaned up prior to this point */ \
       kk_assert_internal(kk_function_is_null(kk_handle->callback, kk_context())); \
-      /* block will be freed by kk_uv_handle_close_callback after uv has cleaned up its state */ \
-      uv_handle->data = block; \
+      /* free uv_handle using kk_uv_handle_close_callback after uv has cleaned up its state */ \
       uv_close(uv_handle, &kk_uv_handle_close_callback); \
   } \
   /* box a C struct into an `any` koka type */ \
@@ -59,9 +58,7 @@ kk_std_core_exn__error kk_uv_error_from_errno( int err, kk_context_t* ctx );
 // This handles actually freeing the memory when the uv_handle is closed
 static inline void kk_uv_handle_close_callback(uv_handle_t* handle) {
   kk_context_t* _ctx = kk_get_context();
-  if (kk_likely(handle->data != NULL)) {
-    kk_free(handle->data, kk_context()); // Free the box memory
-  }
+  kk_assert_internal(handle->data == NULL);
   kk_free(handle, kk_context()); // Free the struct memory 
 }
 

@@ -89,7 +89,7 @@ kk_uv_timer__timer kk_libuv_timer_init(kk_context_t* _ctx) {
   handle->callback = kk_function_null(kk_context());
   // Wrap the uv / kk struct in a reference counted box value type
   kk_uv_timer__timer t = kk_uv_timer__new_Timer(kk_timer_box(handle, _ctx), _ctx);
-  uv_timer_init(uvloop(), &handle->uv); // Timer initialization never fails
+  uv_timer_init(uvloop(), &(handle->uv)); // Timer initialization never fails
   return t;
 }
 
