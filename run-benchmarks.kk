@@ -23,7 +23,7 @@ type analysis
 
 fun sensitivities(a: analysis)
   match a
-    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))).remove(fn(e) e == (0,0)) // ++  
+    DMCFAR -> list(0,2).flatmap( fn(d) list(0,2).map( fn(m) (d,m))).remove(fn(e) e == (0,0)) // ++
                 // [(100,2000)] // ++ [(20, 2), (2, 20), (100, 100)] 
     DMCFAE -> list(0,0).flatmap( fn(d) list(0, 0).map( fn(m) (d,m))) // ++ 
                 //  [(100,2000)]// ++ [(20, 2), (2, 20), (100, 100)]

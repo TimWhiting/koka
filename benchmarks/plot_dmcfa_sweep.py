@@ -3,11 +3,13 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, get_large_benchmarks, geometric_mean, filter_common_benchmarks
+from plot_utils import load_results_with_baselines, resolve_results_dir, get_large_benchmarks, geometric_mean, filter_common_benchmarks
 
 def plot_sweep():
+    import os
+    os.makedirs("benchmarks/images", exist_ok=True)
     print("Loading results with standardized metrics...")
-    results = load_results_with_baselines("benchmarks/results-cached")
+    results = load_results_with_baselines(resolve_results_dir())
     df = pd.DataFrame(results)
     
     # Filter for complex benchmarks 
@@ -90,47 +92,8 @@ def plot_sweep():
         sums = pd.merge(sums, timeout_counts, on=['m', 'h'], how='left')
         sums['timeout_count'] = sums['timeout_count'].fillna(0).astype(int)
         
-        # Store for combined
+        # Store for combined RIR plot
         collected_data[metric_key] = sums.copy()
-
-        # --- INDIVIDUAL PLOT ---
-        plt.figure(figsize=(8, 6))
-        sns.set_theme(style="whitegrid", font_scale=1.4)
-        
-        sns.lineplot(data=sums, x='m', y=metric_key, hue='h', style='h', 
-                     markers=True, palette=palette, linewidth=2.5, markersize=8)
-        
-        y_data_max = sums[metric_key].max()
-        if pd.isna(y_data_max) or y_data_max == 0: y_data_max = 0.1
-        y_top = y_data_max * 1.1
-        if 'real' in suffix: y_top = max(y_top, 1.05)
-             
-        num_h = len(unique_h)
-        step = y_top * 0.08 
-        y_bottom = - (step * (num_h + 0.5))
-        
-        plt.ylim(y_bottom, y_top)
-        
-        for i, row in sums.iterrows():
-            if row['timeout_count'] > 0:
-                h_val = row['h']
-                color = color_map.get(h_val, 'black')
-                try: h_idx = unique_h.index(h_val)
-                except: h_idx = 0
-                y_pos = - (step * (h_idx + 0.8))
-                plt.text(row['m'], y_pos, f"{row['timeout_count']}", 
-                         color=color, fontsize=10, ha='center', va='center', fontweight='bold')
-        
-        plt.title(title)
-        plt.ylabel(ylabel)
-        plt.xticks([0, 1, 2]) # Explicitly set x-ticks
-        plt.legend(title="Handler Sensitivity (h)", bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        plt.tight_layout(pad=0.2)
-        
-        outfile = f"benchmarks/new_analysis/plot_dmcfa_sweep_{suffix}.png"
-        plt.savefig(outfile)
-        print(f"Saved {outfile}")
-        plt.close()
 
     # --- COMBINED RIR PLOT ---
     print("Generating combined RIR sweep plot...")
@@ -182,7 +145,7 @@ def plot_sweep():
     fig.legend(handles=legend_elements, title="Handler Sensitivity", bbox_to_anchor=(1.02, 0.9), loc='upper left', borderaxespad=0.)
     
     plt.tight_layout(pad=0.2)
-    outfile = "benchmarks/new_analysis/plot_dmcfa_sweep_combined_rir.png"
+    outfile = "benchmarks/images/plot_dmcfa_sweep_combined_rir.png"
     plt.savefig(outfile, bbox_inches='tight')
     print(f"Saved {outfile}")
 

@@ -48,3 +48,5 @@ __pycache__
 .venv
 benchmarks/results
 *.prof
+.worktrees
+.lake/
