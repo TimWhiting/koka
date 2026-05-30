@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import load_results_with_baselines, get_benchmark_category, filter_common_benchmarks, get_large_benchmarks
+from plot_utils import load_results_with_baselines, resolve_results_dir, get_benchmark_category, filter_common_benchmarks, get_large_benchmarks
 
 def shifted_geomean(series):
     """
@@ -16,7 +16,7 @@ def shifted_geomean(series):
 
 def plot_categorical():
     print("Loading results...")
-    results = load_results_with_baselines("benchmarks/results-cached")
+    results = load_results_with_baselines(resolve_results_dir())
     df = pd.DataFrame(results)
     
     # Tag Categories
@@ -208,7 +208,9 @@ def plot_categorical():
 
     plt.tight_layout(pad=0.2)
     
-    outfile = "benchmarks/new_analysis/plot_categorical_combined.png"
+    import os
+    os.makedirs("benchmarks/images", exist_ok=True)
+    outfile = "benchmarks/images/plot_categorical_combined.png"
     plt.savefig(outfile, bbox_inches='tight')
     print(f"Saved {outfile}")
 

@@ -1,0 +1,73 @@
+\documentclass[border=8pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{libertine}
+\usepackage[libertine]{newtxmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathreplacing, calc}
+
+\begin{document}
+\begin{tikzpicture}[
+    node distance=3.6cm,
+    sembox/.style={
+      rectangle, rounded corners=3pt, draw, thick,
+      minimum height=1.5cm, minimum width=2.4cm,
+      font=\small\strut, align=center
+    },
+    proofdevice/.style={
+      sembox, draw=black!40, dashed, fill=white
+    },
+    arr/.style={-{Stealth[length=5pt]}, thick},
+    lbl/.style={font=\scriptsize, align=center, fill=white, inner sep=1pt},
+    loc/.style={font=\tiny\itshape, text=black!45},
+    dirloc/.style={font=\tiny\itshape, text=black!45, fill=white, inner sep=0pt},
+  ]
+
+  % Nodes (single row)
+  \node[sembox] (bp)   {B\&P\\[-1pt]{\footnotesize (substitution)}\\[-1pt]$\Downarrow_{\mathit{bp}}$};
+  \node[sembox, right=of bp] (conc) {Concrete\\[-1pt]{\footnotesize (env/store)}\\[-1pt]$\Downarrow_{\mathit{eval}}$};
+  \node[proofdevice, right=of conc] (fresh) {Fresh-Guarded\\[-1pt]{\footnotesize (proof device)}\\[-1pt]$\Downarrow^{\kappa\tau f}_{\mathit{eval}}$};
+  \node[sembox, right=of fresh] (ts) {Timestamped\\[-1pt]{\footnotesize (paper)}\\[-1pt]$\Downarrow^{\kappa\tau}_{\mathit{eval}}$};
+  \node[sembox, right=of ts] (abs) {Abstract\\[-1pt]{\footnotesize (finite)}\\[-1pt]$\widehat{\Downarrow^{\kappa\tau}_{\mathit{eval}}}$};
+
+  % B&P <-> Concrete
+  \draw[arr] ([yshift= 3pt] bp.east) -- ([yshift= 3pt] conc.west)
+    node[lbl, midway, above=2pt] {Completeness};
+  \draw[arr] ([yshift=-3pt] conc.west) -- ([yshift=-3pt] bp.east)
+    node[lbl, midway, below=2pt] {Soundness};
+  \node[dirloc, above] at ($(bp)!0.5!(conc) + (0,0.55)$) {673\,\textnormal{+}\,617 loc};
+  \node[loc] at ($(bp)!0.5!(conc) + (0,-1.1)$) {+ 1.3k shared};
+
+  % Concrete <-> Fresh-Guarded
+  \draw[arr] ([yshift= 3pt] conc.east) -- ([yshift= 3pt] fresh.west)
+    node[lbl, midway, above=2pt] {Completeness};
+  \draw[arr] ([yshift=-3pt] fresh.west) -- ([yshift=-3pt] conc.east)
+    node[lbl, midway, below=2pt] {Soundness};
+  \node[dirloc, above] at ($(conc)!0.5!(fresh) + (0,0.55)$) {3.9k\,\textnormal{+}\,1.2k loc};
+  \node[loc] at ($(conc)!0.5!(fresh) + (0,-1.1)$) {+ 0.5k shared};
+
+  % Fresh-Guarded <-> Timestamped
+  \draw[arr] ([yshift= 3pt] fresh.east) -- ([yshift= 3pt] ts.west)
+    node[lbl, midway, above=2pt] {Completeness};
+  \draw[arr] ([yshift=-3pt] ts.west) -- ([yshift=-3pt] fresh.east)
+    node[lbl, midway, below=2pt] {Soundness (freshness)};
+  \node[dirloc, above] at ($(fresh)!0.5!(ts) + (0,0.55)$) {71\,\textnormal{+}\,2.4k loc};
+  \node[loc] at ($(fresh)!0.5!(ts) + (0,-1.1)$) {+ 3.2k shared};
+
+  % Timestamped -> Abstract (one direction only)
+  \draw[arr] (ts.east) -- (abs.west)
+    node[lbl, midway, below=2pt] {Soundness};
+  \node[dirloc, above] at ($(ts)!0.5!(abs) + (0,0.55)$) {627 loc};
+
+  % Component line counts below boxes
+  \node[loc] at ($(bp) + (0,-1.1)$) {926 loc};
+  \node[loc] at ($(conc) + (0,-1.1)$) {819 loc};
+  \node[loc] at ($(fresh) + (0,-1.1)$) {807 loc};
+  \node[loc] at ($(ts) + (0,-1.1)$) {372 loc};
+  \node[loc] at ($(abs) + (0,-1.1)$) {272 loc};
+
+  % Grand total
+  \node[font=\footnotesize, text=black!55] at ($(fresh)!0.5!(ts) + (0,-1.8)$)
+    {3.2k definitions\enspace$+$\enspace 14.7k proofs\enspace$=$\enspace 18k Lean 4};
+
+\end{tikzpicture}
+\end{document}

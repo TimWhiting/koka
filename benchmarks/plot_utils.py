@@ -405,9 +405,14 @@ def compute_metrics(run, baseline_run=None):
         
         # Store Relative Strict
         s_rir_hits, s_rir_denom = calc_relative_prec_stats('storeToStrSizes', m, baseline)
-        
+        # if s_rir_denom > 0 and run.get('m') == 2:
+        #     print(f"Store RIR Strict: {s_rir_hits} hits out of {s_rir_denom} imprecise items in baseline.")
         # Literal Relative Strict
         l_rir_hits, l_rir_denom = calc_literal_relative_prec_stats(m, baseline)
+        # if l_rir_denom > 0 and run.get('m') == 2:
+        #     print(m.get('literal0CFAPrecise', {}))
+        #     print(baseline.get('literal0CFAPrecise', {}))
+        #     print(f"Literal RIR Strict: {l_rir_hits} hits out of {l_rir_denom} imprecise literals in baseline.")
         
         # Combined Value Strict RIR
         total_rir_hits = s_rir_hits + l_rir_hits
@@ -597,7 +602,21 @@ def sanitize_metrics(data):
         if original:
              m['structToContStrSizes'] = {k: v for k, v in original.items() if not k.startswith("CI@")}
 
-def load_results_with_baselines(base_dir="benchmarks/results-cached"):
+def resolve_results_dir(preferred="benchmarks/results", fallback="benchmarks/results-cached"):
+    """Return preferred if it contains JSON files, else fall back to cached reference data."""
+    import os
+    has_data = any(
+        f.endswith(".json")
+        for _, _, files in os.walk(preferred)
+        for f in files
+    ) if os.path.isdir(preferred) else False
+    if has_data:
+        return preferred
+    print(f"No results found in '{preferred}'; using cached reference data from '{fallback}'.")
+    print("Run the benchmarks first (Step 4 in the README) to test reproducibility.")
+    return fallback
+
+def load_results_with_baselines(base_dir="benchmarks/results"):
     """Loads results, identifies 0-CFA baselines, and calculates metrics."""
     # 1. Load all files
     all_runs = []
