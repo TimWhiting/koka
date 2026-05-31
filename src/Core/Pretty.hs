@@ -136,7 +136,7 @@ ppImportProvenance env prov
       ImportTypes    -> keyword env " type"
       ImportCompiler -> keyword env " inline"
 
-prettyExternalImport env tp (ExternalImport imports _)
+prettyExternalImport env tp (ExternalImport imports tpl _)
   = -- prettyComment env (importModDoc imp) $
     -- trace ("external imports: target: " ++ show target ++ ": " ++ show imports) $
     case filter (\(key,_) -> key /= "include-inline" && key /= "header-include-inline") imports of
@@ -181,7 +181,7 @@ prettyExternal env (External name tp pinfos body vis fip nameRng doc)
   --   prettyEntries entries             = text "{" <-> tab (vcat (map prettyEntry entries)) <-> text "};"
   --   prettyEntry (tpl,content)        = ppTargetPlatformMin env tpl <.> keyword env "inline" <+> prettyLit env (LitString content) <.> semi
 
-prettyExternal env (ExternalImport imports range)
+prettyExternal env (ExternalImport imports tpl range)
   = empty
 
   {-
