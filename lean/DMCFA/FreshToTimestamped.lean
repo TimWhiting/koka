@@ -6,7 +6,7 @@
 -/
 
 import DMCFA.FreshSemantics
-import DMCFA.NaiveSemantics
+import DMCFA.TimestampedSemantics
 
 namespace DMCFA
 

@@ -9,7 +9,7 @@
   store satisfies FreshInvariant.
 -/
 
-import DMCFA.FreshToNaive
+import DMCFA.FreshToTimestamped
 import DMCFA.FreshnessSimulation
 
 namespace DMCFA

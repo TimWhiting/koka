@@ -9,7 +9,7 @@
   - WellFormedValue6, StoreChainWF, FreshInvariant6
 -/
 
-import DMCFA.NaiveSemantics
+import DMCFA.TimestampedSemantics
 import DMCFA.FreshSemantics
 import DMCFA.TimeOrder
 import DMCFA.UniqueLabels

@@ -18,7 +18,7 @@ import DMCFA.FreshnessLemmas
 import DMCFA.Correspondence
 import DMCFA.Semantics
 import DMCFA.Lemmas
-import DMCFA.NaiveToFresh
+import DMCFA.TimestampedToFresh
 
 set_option maxHeartbeats 800000
 

@@ -7,7 +7,7 @@
   This is a purely semantic property — it doesn't require freshness/WellLabeled.
 -/
 
-import DMCFA.NaiveSemantics
+import DMCFA.TimestampedSemantics
 
 namespace DMCFA
 

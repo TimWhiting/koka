@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -91,11 +91,6 @@ library
       Core.FlowAnalysis.Full.KCFA.Monad
       Core.FlowAnalysis.Full.KCFA.Primitives
       Core.FlowAnalysis.Full.KCFA.Syntax
-      Core.FlowAnalysis.Full.KCFAR.AbstractValue
-      Core.FlowAnalysis.Full.KCFAR.KCFA
-      Core.FlowAnalysis.Full.KCFAR.Monad
-      Core.FlowAnalysis.Full.KCFAR.Primitives
-      Core.FlowAnalysis.Full.KCFAR.Syntax
       Core.FlowAnalysis.Full.PrimComm
       Core.FlowAnalysis.Full.PrimitivesOld
       Core.FlowAnalysis.Full.Report

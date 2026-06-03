@@ -67,7 +67,6 @@ import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
 import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainK)
 import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
-import Core.FlowAnalysis.Full.KCFAR.Syntax (evalMainKR)
 import Core.Pretty (prettyCore)
 import Type.Pretty (defaultEnv)
 
@@ -376,10 +375,6 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                                  runBuild term flags $ do
                                    buildcTypeCheck (mn:buildcRoots bc) bc
                                ) mod m 
-                            --  liftIO $ evalMainKR bc (\bc mn ->
-                            --      runBuild term flags $ do
-                            --        buildcTypeCheck (mn:buildcRoots bc) bc
-                            --    ) mod m 
                           else do
                              liftIO $ evalMain bc (\bc mn ->
                                  runBuild term flags $ do

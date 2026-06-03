@@ -110,7 +110,7 @@ def main():
     if results_empty:
         print(
             f"No results found in {RESULTS_DIR}. "
-            "Run the benchmarks first (Step 4 in the README), "
+            "Run the benchmarks first (Step 3 in the README), "
             "or this step can be skipped."
         )
         sys.exit(0)
