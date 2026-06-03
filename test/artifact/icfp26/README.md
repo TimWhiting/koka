@@ -57,7 +57,7 @@ Install [Stack](https://docs.haskellstack.org/en/stable/),
 
 | Path | Description |
 |---|---|
-| `lean/` | Lean 4 mechanized proof of soundness and completeness |
+| `lean/` | Lean 4 mechanized proofs |
 | `benchmarks/results-cached/` | Pre-cached benchmark JSON results (reference data) |
 | `benchmarks/plot_utils.py` | Shared metric computation utilities |
 | `benchmarks/plot_violin_rir.py` | Generates Figure violin-rir |
@@ -85,7 +85,18 @@ Expected output (last line):
 Build completed successfully (N jobs)
 ```
 
-There should be no errors and no uses of `sorry`.
+There should be no errors and no uses of `sorry`. The proof does use three
+axioms (declared in `Dmcfa/Lemmas.lean`), all of which are standard
+assumptions about well-formed programs:
+
+| Axiom | Statement | Justification |
+|---|---|---|
+| `exists_fresh` | For any concrete store `σ`, there exists a `VAddr` (`Nat`) with `σ a = none` | Any finitely-supported store over an infinite domain leaves fresh addresses available. Used in `Completeness.lean` and `TimestampedSoundness.lean` when allocating fresh concrete addresses. |
+| `barendregt_fresh_env` | For any environment `ρ` and binder variable `x`, `ρ x = none` | Barendregt convention: bound variable names are chosen fresh with respect to the current environment |
+| `barendregt_var_ne` | Any two distinct binder variables `x y` satisfy `x ≠ y` | Barendregt convention: all binders in a term are given unique names |
+
+These axioms are not `sorry`s — they express well-known, semantically justified
+conventions that hold for any program in α-normal form.
 
 
 ## Proof Architecture

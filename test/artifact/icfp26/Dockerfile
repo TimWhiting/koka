@@ -58,6 +58,7 @@ RUN pip3 install --break-system-packages matplotlib numpy pandas scipy seaborn
 # Build the Lean proof (fetches and compiles mathlib; cached in this Docker layer)
 WORKDIR /root/koka/lean
 RUN elan toolchain install "$(cat lean-toolchain)"
+RUN lake update
 RUN lake build
 
 # Environment
