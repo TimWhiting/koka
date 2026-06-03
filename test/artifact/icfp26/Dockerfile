@@ -47,7 +47,7 @@ WORKDIR /root
 COPY . /root/koka
 
 WORKDIR /root/koka
-RUN stack build --fast
+RUN stack build
 
 # Compile the standard libraries
 RUN stack exec koka -- util/link-std.kk
