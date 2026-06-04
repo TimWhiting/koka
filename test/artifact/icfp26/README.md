@@ -1,7 +1,8 @@
 # ICFP 2026 Artifact: HMCFA — A Precise and Practical Big-Step Control Flow Analysis for Effect Handlers
 
-[dockerhub]: https://hub.docker.com/repository/docker/timwhiting/icfp26-hmcfa/general
-[Zenodo]:    https://zenodo.org/records/TODO
+[dockerhub]: https://hub.docker.com/repository/docker/whitim/icfp26-hmcfa/general
+[Zenodo]:    https://doi.org/10.5281/zenodo.20517722
+
 
 > **Naming note:** The analysis is called HMCFA in the paper (H = Handler/delimiter sensitivity).
 > Internal scripts and the Lean proof use the earlier working name DMCFA; the names refer to the same system and can be treated as synonyms throughout.
@@ -15,9 +16,9 @@ The image includes a pre-built Koka compiler, the mechanized Lean 4 proof with c
 Pull from [Docker Hub][dockerhub]:
 
 ```
-> docker pull timwhiting/icfp26-hmcfa:1.0-x64      # x86-64 (Linux, Windows, Intel Mac)
-> docker pull timwhiting/icfp26-hmcfa:1.0-arm64    # arm64 (Apple silicon)
-> docker run -it timwhiting/icfp26-hmcfa:1.0-arm64
+> docker pull whitim/icfp26-hmcfa:1.0-x64      # x86-64 (Linux, Windows, Intel Mac)
+> docker pull whitim/icfp26-hmcfa:1.0-arm64    # arm64 (Apple silicon)
+> docker run -it whitim/icfp26-hmcfa:1.0-arm64
 ```
 
 Or load from the [Zenodo] archive:
@@ -25,7 +26,7 @@ Or load from the [Zenodo] archive:
 ```
 > gunzip icfp26-hmcfa-1.0-x64.tar.gz
 > docker load -i icfp26-hmcfa-1.0-x64.tar
-> docker run -it timwhiting/icfp26-hmcfa:1.0-x64
+> docker run -it whitim/icfp26-hmcfa:1.0-x64
 ```
 
 Once inside, the working directory is `/root/koka`.
@@ -199,7 +200,7 @@ The scripts automatically load from `benchmarks/results/` if you have run Step 3
 To inspect the figures on your host machine, start the container with a name, run the plotting scripts, then copy and remove:
 
 ```
-> docker run -it --name icfp26 timwhiting/icfp26-hmcfa:1.0-arm64
+> docker run -it --name icfp26 whitim/icfp26-hmcfa:1.0-arm64
 # ... run the plotting scripts inside, then exit ...
 > docker cp icfp26:/root/koka/benchmarks/images ./icfp26-images
 > docker rm icfp26
@@ -208,7 +209,7 @@ To inspect the figures on your host machine, start the container with a name, ru
 Or mount a host directory so figures appear on your host directly:
 
 ```
-> docker run -it -v $(pwd)/icfp26-images:/root/koka/benchmarks/images timwhiting/icfp26-hmcfa:1.0-arm64
+> docker run -it -v $(pwd)/icfp26-images:/root/koka/benchmarks/images whitim/icfp26-hmcfa:1.0-arm64
 ```
 
 
