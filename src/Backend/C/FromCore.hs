@@ -1868,7 +1868,7 @@ genPure expr
                         body   = (App expr [Var name InfoNone | name <- tnames])
                     genLambda tnames eff body
             _ -> case info of
-                   InfoExternal formats -> genInlineExternal name formats []
+                   InfoExternal format -> genInlineExternal name format []
                    _ -> return (ppName (getName name))
      Con name info
        | getName name == nameTrue -> return (text "true")
@@ -2156,26 +2156,26 @@ genAppInline f args
 -- Externals
 ---------------------------------------------------------------------------------
 
-extractExtern :: Expr -> Maybe (TName,[(TargetPlatform,String)])
+extractExtern :: Expr -> Maybe (TName,String)
 extractExtern expr
   = case expr of
-      TypeApp (Var tname (InfoExternal formats)) targs -> Just (tname,formats)
-      Var tname (InfoExternal formats) -> Just (tname,formats)
+      TypeApp (Var tname (InfoExternal format)) targs -> Just (tname,format)
+      Var tname (InfoExternal format) -> Just (tname,format)
       _ -> Nothing
 
 -- inlined external sometimes  needs wrapping in a applied function block
-genInlineExternal :: TName -> [(TargetPlatform,String)] -> [Doc] -> Asm Doc
-genInlineExternal tname formats argDocs
-  = do (decls,doc) <- genExprExternal tname formats argDocs
+genInlineExternal :: TName -> String -> [Doc] -> Asm Doc
+genInlineExternal tname format argDocs
+  = do (decls,doc) <- genExprExternal tname format argDocs
        if (null decls)
         then return doc
         else error ("Backend.C.FromCore.genInlineExternal: TODO: inline external declarations: " ++ show (vcat (decls++[doc])))
 
 -- generate external: needs to add try blocks for primitives that can throw exceptions
-genExprExternal :: TName -> [(TargetPlatform,String)] -> [Doc] -> Asm ([Doc],Doc)
+genExprExternal :: TName -> String -> [Doc] -> Asm ([Doc],Doc)
 
 -- special case box/unbox
-genExprExternal tname formats [argDoc] | getName tname == nameBox || getName tname == nameUnbox
+genExprExternal tname format [argDoc] | getName tname == nameBox || getName tname == nameUnbox
   = let isBox = (getName tname == nameBox)
         tp    = case typeOf tname of
                   TFun [(_,fromTp)] _ toTp -> if (isBox) then fromTp else toTp
@@ -2185,7 +2185,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameBox || getName tna
 
 
 -- special case dropn
-genExprExternal tname formats [argDoc,scanDoc] | getName tname == nameDrop
+genExprExternal tname format [argDoc,scanDoc] | getName tname == nameDrop
   = let isDup = (getName tname == nameDup)
         tp    = case typeOf tname of
                   TFun [(_,fromTp),(_,_)] _ toTp -> fromTp
@@ -2212,7 +2212,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameDup || getName tna
     in return ([], call)
 
 -- special case is-unique
-genExprExternal tname formats [argDoc] | getName tname == nameIsUnique
+genExprExternal tname format [argDoc] | getName tname == nameIsUnique
   = let tp    = case typeOf tname of
                   TFun [(_,fromTp)] _ toTp -> fromTp
                   _ -> failure $ ("Backend.C.genExprExternal.is_unique: expecting function type: " ++ show tname ++ ": " ++ show (pretty (typeOf tname)))
@@ -2220,7 +2220,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameIsUnique
     in return ([], call)
 
 -- special case free
-genExprExternal tname formats [argDoc] | getName tname == nameFree
+genExprExternal tname format [argDoc] | getName tname == nameFree
   = let tp    = case typeOf tname of
                   TFun [(_,fromTp)] _ toTp -> fromTp
                   _ -> failure $ ("Backend.C.genExprExternal.free: expecting function type: " ++ show tname ++ ": " ++ show (pretty (typeOf tname)))
@@ -2228,7 +2228,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameFree
     in return ([], call)
 
 -- special case decref
-genExprExternal tname formats [argDoc] | getName tname == nameDecRef
+genExprExternal tname format [argDoc] | getName tname == nameDecRef
   = let tp    = case typeOf tname of
                   TFun [(_,fromTp)] _ toTp -> fromTp
                   _ -> failure $ ("Backend.C.genExprExternal.decref: expecting function type: " ++ show tname ++ ": " ++ show (pretty (typeOf tname)))
@@ -2236,7 +2236,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameDecRef
     in return ([], call)
 
 -- special case reuse
-genExprExternal tname formats [argDoc] | getName tname == nameReuse
+genExprExternal tname format [argDoc] | getName tname == nameReuse
   = let tp    = case typeOf tname of
                   TFun [(_,fromTp)] _ toTp -> fromTp
                   _ -> failure $ ("Backend.C.genExprExternal.reuse: expecting function type: " ++ show tname ++ ": " ++ show (pretty (typeOf tname)))
@@ -2244,7 +2244,7 @@ genExprExternal tname formats [argDoc] | getName tname == nameReuse
     in return ([], call)
 
 -- special case: cfield hole
-genExprExternal tname formats [] | getName tname == nameCCtxHoleCreate
+genExprExternal tname format [] | getName tname == nameCCtxHoleCreate
   = return ([], genHoleCall (resultType (typeOf tname))) -- ppType (resultType (typeOf tname)) <.> text "_hole()")
 
 {-
@@ -2254,10 +2254,10 @@ genExprExternal tname formats [fieldDoc,argDoc] | getName tname == nameCFieldSet
 -}
 
 -- normal external
-genExprExternal tname formats argDocs0
+genExprExternal tname format argDocs0
   = do
       let name = getName tname
-          format = getFormat tname formats
+          -- format = getFormat tname formats
           argDocs = map (\argDoc -> if (all (\c -> isAlphaNum c || c == '_') (asString argDoc)) then argDoc else parens argDoc) argDocs0
       return $ case map (\fmt -> ppExternalF name fmt argDocs) $ lines format of
           [] -> ([],empty)
@@ -2280,13 +2280,13 @@ genExprExternal tname formats argDocs0
     ppExternalF name (x:xs)  args
      = char x <.> ppExternalF name xs args
 
-getFormat :: TName -> [(TargetPlatform,String)] -> String
-getFormat tname formats
-  = case lookupBestTarget (targetPlatformFromTarget (C CDefault)) formats of  -- TODO: pass real ctarget from flags
-      Nothing -> -- failure ("backend does not support external in " ++ show tname ++ ": " ++ show formats)
-                 trace( "warning: C backend does not support external in " ++ show tname ++ " looking in " ++ show formats ) $
-                      ("kk_unsupported_external(\"" ++ (show tname) ++ "\")")
-      Just s -> s
+-- getFormat :: TName -> [(TargetPlatform,String)] -> String
+-- getFormat tname formats
+--   = case lookupBestTarget (targetPlatformFromTarget (C CDefault)) formats of  -- TODO: pass real ctarget from flags
+--       Nothing -> -- failure ("backend does not support external in " ++ show tname ++ ": " ++ show formats)
+--                  trace( "warning: C backend does not support external in " ++ show tname ++ " looking in " ++ show formats ) $
+--                       ("kk_unsupported_external(\"" ++ (show tname) ++ "\")")
+--       Just s -> s
 
 genDefName :: TName -> Asm Doc
 genDefName tname
@@ -2316,16 +2316,16 @@ genCommentTName (TName n t)
 extractExternal  :: Expr -> Maybe (TName, String, [Expr])
 extractExternal expr
   = case expr of
-      App (TypeApp (Var tname (InfoExternal formats)) targs) args
-        -> Just (tname, format tname formats, args)
-      App var@(Var tname (InfoExternal formats)) args
-        -> Just (tname, format tname formats, args)
+      App (TypeApp (Var tname (InfoExternal format)) targs) args
+        -> Just (tname, format, args)
+      App var@(Var tname (InfoExternal format)) args
+        -> Just (tname, format, args)
       _ -> Nothing
-  where
-    format tn fs
-      = case lookupBestTarget (targetPlatformFromTarget (C CDefault)) fs of  -- TODO: pass real target from flags
-          Nothing -> failure ("backend does not support external in " ++ show tn ++ show fs)
-          Just s -> s
+  -- where
+  --   format tn fs
+  --     = case lookupBestTarget (targetPlatformFromTarget (C CDefault)) fs of  -- TODO: pass real target from flags
+  --         Nothing -> failure ("backend does not support external in " ++ show tn ++ show fs)
+  --         Just s -> s
 
 isFunExpr :: Expr -> Bool
 isFunExpr expr
