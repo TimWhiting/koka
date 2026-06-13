@@ -1,8 +1,0 @@
-(module
-  analysis/benchmarks/suite/recursion/h-main
-  (define analysis/benchmarks/suite/recursion/h-main/h-expr
-    (λ ()
-      (analysis/benchmarks/suite/recursion/main)))
-  (define analysis/benchmarks/suite/recursion/h-main/h-main
-    (λ ()
-      (analysis/benchmarks/suite/recursion/h-main/h-expr))))

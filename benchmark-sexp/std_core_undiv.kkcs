@@ -1,5 +1,0 @@
-(module
-  std/core/undiv
-  (define std/core/undiv/pretend-no-div
-    (λ (action)
-      ((std/core/undiv/pretend-nodiv-cast action)))))

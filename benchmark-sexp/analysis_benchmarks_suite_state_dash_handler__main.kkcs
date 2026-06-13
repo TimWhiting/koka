@@ -1,8 +1,0 @@
-(module
-  analysis/benchmarks/suite/state-handler/h-main
-  (define analysis/benchmarks/suite/state-handler/h-main/h-expr
-    (λ ()
-      (analysis/benchmarks/suite/state-handler/main)))
-  (define analysis/benchmarks/suite/state-handler/h-main/h-main
-    (λ ()
-      (analysis/benchmarks/suite/state-handler/h-main/h-expr))))

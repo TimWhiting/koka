@@ -64,7 +64,7 @@ The 5 PASSes correspond to the 5 example programs in `suite/basic`.
 Install [Stack](https://docs.haskellstack.org/en/stable/), [elan](https://github.com/leanprover/elan), and Python 3 (with pip), then:
 
 ```
-> git clone --recursive https://github.com/koka-lang/koka -b final-cfa koka
+> git clone --recursive https://github.com/koka-lang/koka -b artifact/hmcfa koka
 > cd koka
 > stack build
 > stack exec koka -- util/link-std.kk
@@ -108,15 +108,54 @@ Build completed successfully (N jobs)
 ```
 
 There should be no errors and no uses of `sorry`.
-The proof uses three axioms (declared in `DMCFA/Lemmas.lean`), all standard assumptions about well-formed programs:
+The development uses a **single** non-standard axiom:
 
 | Axiom | Statement | Justification |
 |---|---|---|
-| `exists_fresh` | For any concrete store `σ`, there exists a `VAddr` (`Nat`) with `σ a = none` | Any finitely-supported store over an infinite domain leaves fresh addresses available. Used in `Completeness.lean` and `TimestampedSoundness.lean` when allocating fresh concrete addresses. |
-| `barendregt_fresh_env` | For any environment `ρ` and binder variable `x`, `ρ x = none` | Barendregt convention: bound variables are chosen fresh with respect to the current environment. |
-| `barendregt_var_ne` | Any two distinct binder variables `x y` satisfy `x ≠ y` | Barendregt convention: all binders in a term are given unique names. |
+| `exists_fresh` / `LN.exists_fresh` | For any concrete store `σ`, there exists a `VAddr` (`Nat`) with `σ a = none` | Any finitely-supported store over the infinite address space leaves fresh addresses available. Used when allocating fresh concrete addresses. |
 
-These axioms hold for any program in α-normal form.
+Everything else reduces to Lean 4's three standard foundational axioms
+(`propext`, `Classical.choice`, `Quot.sound`) — the same basis as the entire
+Lean / Mathlib ecosystem.
+
+### Two representations of binders
+
+The development uses two binder representations, split along the proof chain:
+
+- The **concrete Bauer–Pretnar ↔ ANF equivalence** (the leftmost link) is proved
+  in a **locally-nameless** representation: bound variables are de Bruijn indices
+  on both sides and environments are address *stacks* rather than named maps.
+  This is exactly the part of the proof where a binding is substituted into a
+  computation, so a positional representation keeps that reasoning clean. It
+  lives in the `DMCFA/LN*.lean` files (`LN.soundness`, `LN.completeness_combined`).
+- The **rest of the chain** (Concrete → Fresh-Guarded → Timestamped → Abstract)
+  uses ordinary **named** variables, since those steps relate machine
+  configurations and never substitute into a binder.
+
+Representing the concrete equivalence's binders positionally keeps the
+substitution reasoning entirely structural: pushing onto an environment stack
+never overwrites an existing entry, so the only freshness obligation anywhere in
+the development is allocating a fresh *store* address (`exists_fresh`, above).
+
+A rule-by-rule check that the locally-nameless semantics faithfully match the
+paper's concrete ANF rules and the Bauer–Pretnar big-step rules is provided in
+[`lean/DMCFA/LN_SEMANTICS_AUDIT.md`](../../../lean/DMCFA/LN_SEMANTICS_AUDIT.md)
+and
+[`lean/DMCFA/LNBP_SEMANTICS_AUDIT.md`](../../../lean/DMCFA/LNBP_SEMANTICS_AUDIT.md).
+
+### Verifying that no other axioms are used
+
+To independently confirm that no top-level theorem depends on any axiom beyond
+the ones above, run:
+
+```
+> cd lean && lake env lean DMCFA/AxiomAudit.lean && cd ..
+```
+
+This invokes Lean's `#print axioms` on each top-level theorem and prints the
+complete set of axioms it transitively depends on. Every line should list only
+`propext`, `Classical.choice`, `Quot.sound`, and `exists_fresh` /
+`LN.exists_fresh` — and nothing else.
 
 
 ## Proof Architecture
@@ -130,8 +169,9 @@ B&P            Concrete        Fresh-Guarded     Timestamped      Abstract
     ⇓_bp           ⇓_eval          ⇓^κτf_eval        ⇓^κτ_eval       ⇓̂^κτ_eval
     ←——————————————→   ←—————————————————→   ←——————————————→   ————————→
      sound/complete      sound/complete         sound/complete    soundness
-      ~700+600 loc        ~4k+1.2k loc           ~70+2.4k loc     ~600 loc
-       +~1.3k shared       +~0.5k shared          +~3.2k shared
+      ~550+660 loc        ~4k+1.2k loc           ~70+2.4k loc     ~600 loc
+     (locally nameless)    +~0.5k shared          +~3.2k shared
+       +~1k shared
 ```
 
 **B&P (Bauer and Pretnar)** is a standard substitution-based big-step semantics used as a specification.
@@ -143,8 +183,8 @@ Key top-level theorems:
 
 | Theorem | File | Statement |
 |---|---|---|
-| `soundness` | `Soundness.lean` | Concrete eval → B&P eval |
-| `completeness_open'` | `Completeness.lean` | B&P eval → Concrete eval |
+| `LN.soundness` | `LNSoundness.lean` | Concrete eval → B&P eval (locally nameless) |
+| `LN.completeness_combined` | `LNCompleteness.lean` | B&P eval → Concrete eval (locally nameless) |
 | `simulation` | `FreshnessSimulation.lean` | Concrete → Fresh-Guarded (freshness invariant) |
 | `naive_to_strict_from_empty` | `TimestampedToFresh.lean` | Address Freshness (Theorem 3 of paper) |
 | `fresh_to_concrete` | `TimestampedSoundness.lean` | Fresh-Guarded → Timestamped (soundness) |
@@ -155,12 +195,18 @@ Key top-level theorems:
 
 | File | Role | ~Lines |
 |---|---|---|
-| `Syntax.lean`, `BPSyntax.lean` | ANF and B&P syntax definitions | ~300 + ~750 |
-| `Semantics.lean`, `BPSemantics.lean` | Concrete and B&P operational semantics | ~450 + ~175 |
-| `Components.lean`, `Lemmas.lean` | Store/env/continuation components & lemmas | ~100 + ~1200 |
-| `Equivalence.lean`, `Correspondence.lean` | B&P ↔ Concrete term and value equivalences | ~160 + ~460 |
-| `Soundness.lean` | Concrete → B&P soundness | ~620 |
-| `Completeness.lean` | B&P → Concrete completeness | ~670 |
+| `Syntax.lean` | ANF syntax definitions | ~300 |
+| `Semantics.lean` | Concrete (env/store) operational semantics | ~450 |
+| `Components.lean`, `Lemmas.lean` | Store/env/continuation components & concrete utility lemmas | ~100 + ~140 |
+| `Correspondence.lean` | Value/term correspondence relations (timestamped chain) | ~460 |
+| **Locally-nameless concrete equivalence (B&P ↔ ANF):** | | |
+| `LNSyntax.lean`, `LNBPSyntax.lean` | Locally-nameless ANF and B&P syntax (de Bruijn) | ~150 + ~670 |
+| `LNComponents.lean`, `LNSemantics.lean` | LN concrete machine components and semantics | ~115 + ~440 |
+| `LNBPSemantics.lean` | LN B&P big-step semantics | ~175 |
+| `LNEquivalence.lean`, `LNLemmas.lean` | LN B&P ↔ ANF equivalence relations & lemmas | ~185 + ~1050 |
+| `LNSoundness.lean` | LN Concrete → B&P soundness | ~555 |
+| `LNCompleteness.lean` | LN B&P → Concrete completeness | ~660 |
+| `AxiomAudit.lean` | `#print axioms` for every top-level theorem | ~35 |
 | `FreshSemantics.lean`, `FreshnessLemmas.lean` | Fresh-Guarded semantics and supporting lemmas | ~450 + ~1100 |
 | `FreshnessSimulation.lean` | Concrete → Fresh-Guarded simulation (largest file) | ~2400 |
 | `TimestampedToFresh.lean`, `FreshToTimestamped.lean` | Bridge lemmas between timestamped/fresh-guarded | ~110 + ~70 |

@@ -1,9 +1,0 @@
-(module
-  samples/all/h-main
-  (define samples/all/h-main/h-expr
-    (λ ()
-      (samples/all/main)))
-  (define samples/all/h-main/h-main
-    (λ ()
-      (std/core/h-default-exn (λ ()
-        (samples/all/h-main/h-expr))))))
