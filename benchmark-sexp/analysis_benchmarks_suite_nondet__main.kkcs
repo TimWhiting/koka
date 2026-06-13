@@ -1,8 +1,0 @@
-(module
-  analysis/benchmarks/suite/nondet/h-main
-  (define analysis/benchmarks/suite/nondet/h-main/h-expr
-    (λ ()
-      (analysis/benchmarks/suite/nondet/main)))
-  (define analysis/benchmarks/suite/nondet/h-main/h-main
-    (λ ()
-      (analysis/benchmarks/suite/nondet/h-main/h-expr))))

@@ -1,8 +1,0 @@
-(module
-  samples/basic/fibonacci/h-main
-  (define samples/basic/fibonacci/h-main/h-expr
-    (λ ()
-      (samples/basic/fibonacci/main ())))
-  (define samples/basic/fibonacci/h-main/h-main
-    (λ ()
-      (samples/basic/fibonacci/h-main/h-expr ()))))

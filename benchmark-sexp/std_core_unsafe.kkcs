@@ -1,8 +1,0 @@
-(module
-  std/core/unsafe
-  (define std/core/unsafe/unsafe-total
-    (λ (action)
-      ((std/core/unsafe/unsafe-total-cast action))))
-  (define std/core/unsafe/pretend-no-ndet
-    (λ (action)
-      ((std/core/unsafe/unsafe-total-cast action)))))

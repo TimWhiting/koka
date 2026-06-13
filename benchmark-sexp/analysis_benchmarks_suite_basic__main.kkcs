@@ -1,8 +1,0 @@
-(module
-  analysis/benchmarks/suite/basic/h-main
-  (define analysis/benchmarks/suite/basic/h-main/h-expr
-    (λ ()
-      (analysis/benchmarks/suite/basic/main)))
-  (define analysis/benchmarks/suite/basic/h-main/h-main
-    (λ ()
-      (analysis/benchmarks/suite/basic/h-main/h-expr))))

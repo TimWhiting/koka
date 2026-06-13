@@ -1,8 +1,0 @@
-(module
-  analysis/benchmarks/suite/complex-flow/h-main
-  (define analysis/benchmarks/suite/complex-flow/h-main/h-expr
-    (λ ()
-      (analysis/benchmarks/suite/complex-flow/main)))
-  (define analysis/benchmarks/suite/complex-flow/h-main/h-main
-    (λ ()
-      (analysis/benchmarks/suite/complex-flow/h-main/h-expr))))

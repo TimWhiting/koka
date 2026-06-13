@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(stack build:*)",
-      "Bash(stack exec koka:*)"
+      "Bash(stack exec koka:*)",
+      "mcp__plugin_serena_serena__get_diagnostics_for_file",
+      "mcp__plugin_serena_serena__get_symbols_overview",
+      "Bash(lake build *)",
+      "Bash(find / -path /proc -prune -o -name \"Basic.lean\" -path \"*Init/Data/String*\" -print)",
+      "Bash(find / -path /proc -prune -o -name \"*.lean\" -path \"*Init/Data/String*\" -print)",
+      "Bash(jobs)"
     ]
   }
 }

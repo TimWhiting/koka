@@ -1,8 +1,0 @@
-(module
-  analysis/benchmarks/suite/multi-effect/h-main
-  (define analysis/benchmarks/suite/multi-effect/h-main/h-expr
-    (λ ()
-      (analysis/benchmarks/suite/multi-effect/main)))
-  (define analysis/benchmarks/suite/multi-effect/h-main/h-main
-    (λ ()
-      (analysis/benchmarks/suite/multi-effect/h-main/h-expr))))
