@@ -135,12 +135,12 @@ private theorem soundness_allN (n : Nat) :
             have h_c2_fvs := bp_letRec_fvs_c2 h_closed
             have h_lam_closed : (BPLN.Expr.lam (BPLN.Comp.letRec c1_bp c1_bp)).fvs = [] := by
               simp [h_c1_fvs]
-            have h_c1_mono : CompEquiv (Store.extend σ a_rec (Denotable.closure ⟨e1_anf, ρ, some a_rec⟩)) ρ 2 c1_bp e1_anf :=
+            have h_c1_mono : CompEquiv (Store.extend σ a_rec (Denotable.closure ⟨1, e1_anf, ρ, some a_rec⟩)) ρ 2 c1_bp e1_anf :=
               comp_equiv_extend_store h_c1_equiv h_fresh
-            have h_rec_val : ValueEquiv (Store.extend σ a_rec (Denotable.closure ⟨e1_anf, ρ, some a_rec⟩))
-                (BPLN.Expr.lam (BPLN.Comp.letRec c1_bp c1_bp)) (Denotable.closure ⟨e1_anf, ρ, some a_rec⟩) :=
+            have h_rec_val : ValueEquiv (Store.extend σ a_rec (Denotable.closure ⟨1, e1_anf, ρ, some a_rec⟩))
+                (BPLN.Expr.lam (BPLN.Comp.letRec c1_bp c1_bp)) (Denotable.closure ⟨1, e1_anf, ρ, some a_rec⟩) :=
               .rec_lambda h_c1_mono (by simp [Store.extend])
-            have h_c2_mono : CompEquiv (Store.extend σ a_rec (Denotable.closure ⟨e1_anf, ρ, some a_rec⟩)) ρ 1 c2_bp e2_anf :=
+            have h_c2_mono : CompEquiv (Store.extend σ a_rec (Denotable.closure ⟨1, e1_anf, ρ, some a_rec⟩)) ρ 1 c2_bp e2_anf :=
               comp_equiv_extend_store h_c2_equiv h_fresh
             subst h_sigma_let
             have h_subst := comp_equiv_open_binding (n := 0) h_c2_mono h_rec_val h_lam_closed h_fresh_av
@@ -212,8 +212,8 @@ private theorem soundness_allN (n : Nat) :
           have h_subst_closed := BPLN.Comp.fvs_open_closed (k := 0) h_c2_fvs h_e'_closed
           obtain ⟨r, h_bp, h_res⟩ := (soundness_allN _).1 _ _ _ _ _ _ h_eval_body h_subst h_subst_closed
           exact ⟨r, .match_succ h_bp, h_res⟩
-    | .eval_funApp_clos h_fun h_args h_fresh_addrs h_distinct h_as_len h_sigma h_rho h_body =>
-      rename_i f_ae e_body_anf ρ_lam selfAddr aes ds as_v σ_new ρ_new _
+    | .eval_funApp_clos h_fun h_arity h_args h_fresh_addrs h_distinct h_as_len h_sigma h_rho h_body =>
+      rename_i f_ae arity e_body_anf ρ_lam selfAddr aes ds as_v σ_new ρ_new _
       cases h_equiv with
       | funApp h_e1 h_e2 =>
         rename_i e1_bp e2_bp ae2
@@ -255,7 +255,7 @@ private theorem soundness_allN (n : Nat) :
           have h_step1 :=
             comp_equiv_open_binding (n := 1) h_c1_equiv h_arg_val h_e2_closed h_a_fresh
           have h_store_af1 : (Store.extend σ as_v[0]! ds[0]!) a_f =
-              some (Denotable.closure ⟨e_body_anf, ρ_lam, some a_f⟩) := by
+              some (Denotable.closure ⟨1, e_body_anf, ρ_lam, some a_f⟩) := by
             rw [Store.extend_preserves _ _ _ _ h_ne_af_av]; exact h_store_f
           have h_val_lam1 :=
             value_equiv_extend_store (d_new := ds[0]!)

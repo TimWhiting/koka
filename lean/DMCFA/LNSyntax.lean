@@ -11,9 +11,14 @@
   a variable is *pushing* an address, never overwriting an existing name, so
   there is no notion of "shadowing" or "freshness w.r.t. ρ's domain" at all.
 
-  - `AExp.lam e_body` binds 1 (the parameter = `bvar 0` in `e_body`).
-  - `CExp.funDef e1` binds 2 in `e1` (`bvar 0` = the function's own
-    parameter, `bvar 1` = the recursive name), mirroring `BP.Comp.letRec`.
+  - `AExp.lam k e_body` binds `k` (the parameters = `bvar 0 .. bvar (k-1)` in
+    `e_body`). The arity `k` is the de Bruijn analog of the named `lam`'s
+    parameter *list* (a list of names collapses to its length once names become
+    positions); the syntax is fully n-ary. B&P, being single-argument, only ever
+    instantiates `k = 1` via the equivalence relation.
+  - `CExp.funDef k e1` binds `k+1` in `e1` (`bvar 0 .. bvar (k-1)` = the
+    function's `k` parameters, `bvar k` = the recursive name), mirroring
+    `BP.Comp.letRec` (which uses `k = 1`).
   - `Exp.letE ce e cont` binds 1 in `cont` (`bvar 0` = the bound value).
   - `Branch.branch .succ e`: `e` binds 1 (`bvar 0` = the predecessor).
     All other constructor labels bind 0.
@@ -39,7 +44,7 @@ mutual
 /-- Atomic expressions - can be evaluated without computation -/
 inductive AExp where
   | bvar : Nat → AExp                     -- de Bruijn reference (also used for "Var"-position args)
-  | lam : Exp → AExp                       -- fn(x) e_body, binds 1
+  | lam : Nat → Exp → AExp                 -- fn(x̄) e_body, binds `arity` (de Bruijn analog of `List Var`)
   | con : ConLabel → AExp                  -- Constants
   | succE : AExp → AExp                    -- S(ae) - constructor applied to a variable reference
 
@@ -50,7 +55,7 @@ inductive CExp where
   | opApp : OpName → AExp → CExp            -- op(ae) operation application - store unchanged
   | matchE : AExp → List Branch → CExp      -- match(ae){b}
   | handler : Handler → Exp → Label → CExp  -- handler{h}(e_body) with label for handler frame
-  | funDef : Exp → CExp                     -- fun(x) e1 (recursive def; e1 binds 2)
+  | funDef : Nat → Exp → CExp               -- fun(x̄) e1 (recursive def; e1 binds arity+1: params then self)
 
 /-- Top-level expressions (ANF) -/
 inductive Exp where
@@ -91,7 +96,7 @@ mutual
 @[grind =] def aexpLcAt (n : Nat) (ae : AExp) : Prop :=
   match ae with
   | .bvar i => i < n
-  | .lam e => expLcAt (n+1) e
+  | .lam k e => expLcAt (n+k) e
   | .con _ => True
   | .succE ae => aexpLcAt n ae
 termination_by sizeOf ae
@@ -103,7 +108,7 @@ termination_by sizeOf ae
   | .opApp _ ae => aexpLcAt n ae
   | .matchE ae bs => aexpLcAt n ae ∧ branchesLcAt n bs
   | .handler ⟨ret, ops⟩ e _l_h => expLcAt (n+1) ret ∧ opsLcAt (n+1) ops ∧ expLcAt n e
-  | .funDef e1 => expLcAt (n+2) e1
+  | .funDef k e1 => expLcAt (n+k+1) e1
 termination_by sizeOf ce
 
 @[grind =] def expLcAt (n : Nat) (e : Exp) : Prop :=

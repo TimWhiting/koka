@@ -103,10 +103,10 @@ theorem eval_cexp_store_mono
     ∀ a d, σ a = some d → σ' a = some d :=
   match h with
   | .eval_atomic _ => fun _ _ h_in => h_in
-  | .eval_funApp_clos _ _ h_fresh _ _ h_σ _ h_eval =>
+  | .eval_funApp_clos _ _ _ h_fresh _ _ h_σ _ h_eval =>
     fun a d h_in => by
       apply eval_store_mono h_eval; subst h_σ
-      rename_i ds as_v _ _ _ _ _ _
+      rename_i ds as_v _ _ _ _ _ _ _
       have h_ne : ∀ p ∈ as_v.zip ds, p.1 ≠ a := by
         intro ⟨a', d'⟩ h_mem h_eq; subst h_eq
         exact absurd ((List.forall₂_iff_zip.mp h_fresh).2 h_mem) (by simp [h_in])

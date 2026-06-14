@@ -94,7 +94,7 @@ All scripts are run from the **Koka repository root** (`/root/koka` in Docker).
 
 # Step 1 — Verify the Lean Proof
 
-The `lean/` directory contains approximately 18k lines of Lean 4 (roughly 3k definitions + 15k proof lines) mechanizing the correctness of HMCFA.
+The `lean/` directory contains approximately 20k lines of Lean 4 (roughly 3k definitions + 17k proof lines) mechanizing the correctness of HMCFA.
 In Docker, Mathlib is already compiled and this step takes only a few seconds.
 
 ```
@@ -136,6 +136,16 @@ Representing the concrete equivalence's binders positionally keeps the
 substitution reasoning entirely structural: pushing onto an environment stack
 never overwrites an existing entry, so the only freshness obligation anywhere in
 the development is allocating a fresh *store* address (`exists_fresh`, above).
+
+The two concrete machines (the locally-nameless one on the left and the named
+one used by the rest of the chain) are connected by a machine-checked
+**bidirectional simulation** in [`lean/DMCFA/LNBridge.lean`](../../../lean/DMCFA/LNBridge.lean):
+`Bridge.sim_forward` and `Bridge.sim_backward` relate a named ANF evaluation to
+the locally-nameless evaluation of its de Bruijn translation (`toLN`), for
+well-formed source programs (`WFExp` — the usual binder-hygiene conditions a
+compiler's ANF satisfies). So the whole B&P → Abstract story composes through a
+single concrete semantics rather than meeting at it informally. Both directions
+depend only on the standard Lean axioms.
 
 A rule-by-rule check that the locally-nameless semantics faithfully match the
 paper's concrete ANF rules and the Bauer–Pretnar big-step rules is provided in
@@ -185,6 +195,7 @@ Key top-level theorems:
 |---|---|---|
 | `LN.soundness` | `LNSoundness.lean` | Concrete eval → B&P eval (locally nameless) |
 | `LN.completeness_combined` | `LNCompleteness.lean` | B&P eval → Concrete eval (locally nameless) |
+| `Bridge.sim_forward` / `Bridge.sim_backward` | `LNBridge.lean` | Named concrete eval ↔ locally-nameless concrete eval of the de Bruijn translation (well-formed programs) |
 | `simulation` | `FreshnessSimulation.lean` | Concrete → Fresh-Guarded (freshness invariant) |
 | `naive_to_strict_from_empty` | `TimestampedToFresh.lean` | Address Freshness (Theorem 3 of paper) |
 | `fresh_to_concrete` | `TimestampedSoundness.lean` | Fresh-Guarded → Timestamped (soundness) |
@@ -206,6 +217,7 @@ Key top-level theorems:
 | `LNEquivalence.lean`, `LNLemmas.lean` | LN B&P ↔ ANF equivalence relations & lemmas | ~185 + ~1050 |
 | `LNSoundness.lean` | LN Concrete → B&P soundness | ~555 |
 | `LNCompleteness.lean` | LN B&P → Concrete completeness | ~660 |
+| `LNBridge.lean` | Locally-nameless ↔ named concrete simulation (de Bruijn translation + bidirectional bridge) | ~1400 |
 | `AxiomAudit.lean` | `#print axioms` for every top-level theorem | ~35 |
 | `FreshSemantics.lean`, `FreshnessLemmas.lean` | Fresh-Guarded semantics and supporting lemmas | ~450 + ~1100 |
 | `FreshnessSimulation.lean` | Concrete → Fresh-Guarded simulation (largest file) | ~2400 |

@@ -34,7 +34,7 @@ structure EvalResult where
   | .bvar i => do
       let a ← ρ.lookup i
       σ a
-  | .lam e => some (.closure ⟨e, ρ, none⟩)
+  | .lam k e => some (.closure ⟨k, e, ρ, none⟩)
   | .con c => some (.conLabel c)
   | .succE ae => do
       let a ← evalAddr ae ρ
@@ -93,7 +93,8 @@ inductive EvalCExp : CExp → Env → Store → Value → Store → Prop where
   For a recursive closure (`selfAddr = some a_f`), `a_f` is pushed *after* the call-time
   arguments, giving `bvar 0 = self, bvar 1.. = args` (matching B&P-LN's `letRec` convention). -/
   | eval_funApp_clos :
-      evalAtomic f ρ σ = some (Denotable.closure ⟨e_body, ρ_lam, selfAddr⟩) →
+      evalAtomic f ρ σ = some (Denotable.closure ⟨arity, e_body, ρ_lam, selfAddr⟩) →
+      arity = aes.length →  -- application supplies exactly `arity` arguments
       List.Forall₂ (fun ae d => evalAtomic ae ρ σ = some d) aes ds →
       List.Forall₂ (fun a (_ : Denotable) => σ a = none) as_v ds →  -- addresses fresh in σ
       as_v.Nodup →  -- distinct
@@ -123,9 +124,9 @@ inductive EvalCExp : CExp → Env → Store → Value → Store → Prop where
   with the call-time argument as `bvar 1`. -/
   | eval_fun :
       σ a_v = none →
-      v_f = Denotable.closure ⟨e1, ρ, some a_v⟩ →
+      v_f = Denotable.closure ⟨arity, e1, ρ, some a_v⟩ →
       σ' = σ.extend a_v v_f →
-      EvalCExp (CExp.funDef e1) ρ σ (Value.den v_f) σ'
+      EvalCExp (CExp.funDef arity e1) ρ σ (Value.den v_f) σ'
 
   /-- [eval-match]: match expression -/
   | eval_match :
@@ -237,7 +238,8 @@ inductive EvalCExpN : Nat → CExp → Env → Store → Value → Store → Pro
       evalAtomic ae ρ σ = some d →
       EvalCExpN 0 (CExp.atomic ae) ρ σ (Value.den d) σ
   | eval_funApp_clos :
-      evalAtomic f ρ σ = some (Denotable.closure ⟨e_body, ρ_lam, selfAddr⟩) →
+      evalAtomic f ρ σ = some (Denotable.closure ⟨arity, e_body, ρ_lam, selfAddr⟩) →
+      arity = aes.length →
       List.Forall₂ (fun ae d => evalAtomic ae ρ σ = some d) aes ds →
       List.Forall₂ (fun a (_ : Denotable) => σ a = none) as_v ds →
       as_v.Nodup →
@@ -259,9 +261,9 @@ inductive EvalCExpN : Nat → CExp → Env → Store → Value → Store → Pro
       EvalCExpN (n1 + n2 + 1) (CExp.funApp f [ae]) ρ σ v'' σ''
   | eval_fun :
       σ a_v = none →
-      v_f = Denotable.closure ⟨e1, ρ, some a_v⟩ →
+      v_f = Denotable.closure ⟨arity, e1, ρ, some a_v⟩ →
       σ' = σ.extend a_v v_f →
-      EvalCExpN 0 (CExp.funDef e1) ρ σ (Value.den v_f) σ'
+      EvalCExpN 0 (CExp.funDef arity e1) ρ σ (Value.den v_f) σ'
   | eval_match :
       evalAtomic ae ρ σ = some d →
       d = Denotable.conLabel c →
@@ -342,9 +344,9 @@ theorem eval_exp_to_N (h : EvalExp e ρ σ v σ') : ∃ n, EvalExpN n e ρ σ v 
 theorem eval_cexp_to_N (h : EvalCExp ce ρ σ v σ') : ∃ n, EvalCExpN n ce ρ σ v σ' :=
   match h with
   | .eval_atomic h1 => ⟨0, .eval_atomic h1⟩
-  | .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 h8 =>
-    let ⟨n, hn⟩ := eval_exp_to_N h8
-    ⟨n + 1, .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 hn⟩
+  | .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 h8 h9 =>
+    let ⟨n, hn⟩ := eval_exp_to_N h9
+    ⟨n + 1, .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 h8 hn⟩
   | .eval_opApp h1 => ⟨0, .eval_opApp h1⟩
   | .eval_funApp_kont h1 h2 h3 h4 =>
     let ⟨n1, hn1⟩ := apply_kont_to_N h3
@@ -403,8 +405,8 @@ theorem eval_expN_to (h : EvalExpN n e ρ σ v σ') : EvalExp e ρ σ v σ' :=
 theorem eval_cexpN_to (h : EvalCExpN n ce ρ σ v σ') : EvalCExp ce ρ σ v σ' :=
   match h with
   | .eval_atomic h1 => .eval_atomic h1
-  | .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 h8 =>
-    .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 (eval_expN_to h8)
+  | .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 h8 h9 =>
+    .eval_funApp_clos h1 h2 h3 h4 h5 h6 h7 h8 (eval_expN_to h9)
   | .eval_opApp h1 => .eval_opApp h1
   | .eval_funApp_kont h1 h2 h3 h4 =>
     .eval_funApp_kont h1 h2 (apply_kontN_to h3) (handle_valueN_to h4)

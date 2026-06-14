@@ -36,13 +36,18 @@ other indices up by one). -/
 /-- Resolve a de Bruijn index against the address stack. -/
 @[grind =] def Env.lookup (ρ : Env) (i : Nat) : Option VAddr := ρ.stack[i]?
 
-/-- Closure: body and captured environment, plus an optional self-address for
-recursive closures. The body binds 1 or 2 more variables than `env` accounts
-for: the call-time parameter (`bvar 0` in `body`), and -- if `selfAddr` is
-present -- the closure's own address as `bvar 1` (pushed *after* the
-parameter at call time, mirroring B&P-LN's `bvar 0 ↦ self, bvar 1 ↦ arg`
-convention for `letRec`). -/
+/-- Closure: arity, body and captured environment, plus an optional self-address
+for recursive closures. `arity` is the number of call-time parameters (the
+de Bruijn analog of the named closure's parameter *list*; a single-argument
+lambda has `arity = 1`). At call time the body sees, innermost-first:
+  * non-recursive (`selfAddr = none`): the `arity` arguments at `bvar 0 ..
+    bvar (arity-1)` (`Env.pushMany`);
+  * recursive (`selfAddr = some a_f`): the closure's own address at `bvar 0`
+    and the `arity` arguments at `bvar 1 .. bvar arity` -- self is pushed
+    *after* the arguments (`(pushMany args).push a_f`), landing at the front,
+    mirroring B&P-LN's `letRec` convention `bvar 0 ↦ self, bvar 1 ↦ arg`. -/
 structure Closure where
+  arity : Nat
   body : Exp
   env : Env
   selfAddr : Option VAddr := none
