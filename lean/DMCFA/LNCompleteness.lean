@@ -371,7 +371,7 @@ private theorem completeness_combinedN {n : Nat} (h_eval : BPLN.EvalN n c r) :
             obtain ⟨v, σ', h_eval, h_res⟩ := ih_comp _ _ _ h_open h_open_closed
             exact ⟨v, σ',
               EvalExp.eval_tail (EvalCExp.eval_funApp_clos (ds := [d_arg]) (as_v := [a_arg])
-                h_atomic1 (.cons h_atomic2 .nil) (.cons h_fresh_arg .nil)
+                h_atomic1 rfl (.cons h_atomic2 .nil) (.cons h_fresh_arg .nil)
                 (List.nodup_singleton _) rfl rfl rfl h_eval),
               h_res⟩
           | rec_lambda h_c1_mono h_store_af =>
@@ -388,7 +388,7 @@ private theorem completeness_combinedN {n : Nat} (h_eval : BPLN.EvalN n c r) :
             have h_step1 :=
               comp_equiv_open_binding (n := 1) h_c1_mono h_val_arg h_fvs_e2 h_fresh_arg
             have h_store_af1 : (Store.extend σ a_arg d_arg) a_f =
-                some (Denotable.closure ⟨e1_anf, ρ_clos, some a_f⟩) := by
+                some (Denotable.closure ⟨1, e1_anf, ρ_clos, some a_f⟩) := by
               rw [Store.extend_preserves _ _ _ _ h_ne_af_aarg]; exact h_store_af
             have h_val_lam1 :=
               value_equiv_extend_store (d_new := d_arg)
@@ -410,7 +410,7 @@ private theorem completeness_combinedN {n : Nat} (h_eval : BPLN.EvalN n c r) :
             obtain ⟨v, σ', h_eval, h_res⟩ := ih_comp' _ _ _ h_step2 h_open_closed'
             exact ⟨v, σ',
               EvalExp.eval_tail (EvalCExp.eval_funApp_clos (ds := [d_arg]) (as_v := [a_arg])
-                h_atomic1 (.cons h_atomic2 .nil) (.cons h_fresh_arg .nil)
+                h_atomic1 rfl (.cons h_atomic2 .nil) (.cons h_fresh_arg .nil)
                 (List.nodup_singleton _) rfl rfl rfl h_eval),
               h_res⟩
           | kont h_hdl_equiv h_kont_equiv =>
@@ -447,15 +447,15 @@ private theorem completeness_combinedN {n : Nat} (h_eval : BPLN.EvalN n c r) :
         have h_c2_fvs := bp_letRec_fvs_c2 h_closed
         have h_lam_closed : (BPLN.Expr.lam (BPLN.Comp.letRec c1_bp c1_bp)).fvs = [] := by
           simp [h_c1_fvs]
-        have h_c1_mono : CompEquiv (Store.extend σ a_f (Denotable.closure ⟨e1_anf, ρ, some a_f⟩)) ρ 2 c1_bp e1_anf :=
+        have h_c1_mono : CompEquiv (Store.extend σ a_f (Denotable.closure ⟨1, e1_anf, ρ, some a_f⟩)) ρ 2 c1_bp e1_anf :=
           comp_equiv_extend_store h_c1 h_fresh_af
-        have h_val_rec : ValueEquiv (Store.extend σ a_f (Denotable.closure ⟨e1_anf, ρ, some a_f⟩))
+        have h_val_rec : ValueEquiv (Store.extend σ a_f (Denotable.closure ⟨1, e1_anf, ρ, some a_f⟩))
             (BPLN.Expr.lam (BPLN.Comp.letRec c1_bp c1_bp))
-            (Denotable.closure ⟨e1_anf, ρ, some a_f⟩) :=
+            (Denotable.closure ⟨1, e1_anf, ρ, some a_f⟩) :=
           .rec_lambda h_c1_mono (by simp [Store.extend])
-        have h_c2_mono : CompEquiv (Store.extend σ a_f (Denotable.closure ⟨e1_anf, ρ, some a_f⟩)) ρ 1 c2_bp e2_anf :=
+        have h_c2_mono : CompEquiv (Store.extend σ a_f (Denotable.closure ⟨1, e1_anf, ρ, some a_f⟩)) ρ 1 c2_bp e2_anf :=
           comp_equiv_extend_store h_c2 h_fresh_af
-        obtain ⟨a_v, h_fresh_av⟩ := exists_fresh (Store.extend σ a_f (Denotable.closure ⟨e1_anf, ρ, some a_f⟩))
+        obtain ⟨a_v, h_fresh_av⟩ := exists_fresh (Store.extend σ a_f (Denotable.closure ⟨1, e1_anf, ρ, some a_f⟩))
         have h_open := comp_equiv_open_binding (n := 0) h_c2_mono h_val_rec h_lam_closed h_fresh_av
         have h_open_closed := BPLN.Comp.fvs_open_closed (k := 0) h_c2_fvs h_lam_closed
         obtain ⟨v, σ', h_eval, h_res⟩ := ih_comp _ _ _ h_open h_open_closed

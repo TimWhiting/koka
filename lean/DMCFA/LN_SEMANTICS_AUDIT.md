@@ -44,7 +44,7 @@ Lean `evalAtomic : AExp → Env → Store → Option Denotable`:
 |---|---|---|
 | `A(x, ρ, σ) = σ(ρ(x))` | `\| .bvar i => do let a ← ρ.lookup i; σ a` | ✓ `ρ(x)` = `ρ.lookup i`, then store deref |
 | `A(c(x̄), ρ, σ) = (c, ρ(x̄))` | `\| .con c => some (.conLabel c)` and `\| .succE ae => do let a ← evalAddr ae ρ; let _ ← σ a; some (.succVal a)` | ✓ specialized to nullary `c` and unary `S(x)` (the address `a = ρ(x)`) |
-| `A(fn(xs) e_body, ρ_λ, σ) = (xs, e_body, ρ_λ)` | `\| .lam e => some (.closure ⟨e, ρ, none⟩)` | ✓ captures the current env, no `selfAddr` |
+| `A(fn(xs) e_body, ρ_λ, σ) = (xs, e_body, ρ_λ)` | `\| .lam k e => some (.closure ⟨k, e, ρ, none⟩)` | ✓ captures the current env, no `selfAddr`; the arity `k` is the de Bruijn analog of the parameter list `xs` (so `k = ∣xs∣`), and is fully n-ary |
 
 The auxiliary `evalAddr ae ρ` (used for the `S(x)`/`op(x)` argument positions)
 returns `ρ.lookup i` for `bvar i` — i.e. `ρ(x)` — and is undefined otherwise. ✓
@@ -126,7 +126,8 @@ way); see §4.
 ```
 ```lean
 | eval_funApp_clos :
-    evalAtomic f ρ σ = some (Denotable.closure ⟨e_body, ρ_lam, selfAddr⟩) →
+    evalAtomic f ρ σ = some (Denotable.closure ⟨arity, e_body, ρ_lam, selfAddr⟩) →
+    arity = aes.length →   -- application supplies exactly `arity` args (cf. named `xs.length = aes.length`)
     List.Forall₂ (fun ae d => evalAtomic ae ρ σ = some d) aes ds →
     List.Forall₂ (fun a _ => σ a = none) as_v ds →
     as_v.Nodup →

@@ -26,6 +26,13 @@ open DMCFA
 #print axioms DMCFA.LN.soundness               -- concrete ANF eval -> B&P eval
 #print axioms DMCFA.LN.completeness_combined    -- B&P eval -> concrete ANF eval
 
+/-! Concrete-LN <-> Concrete-named bridge: connects the locally-nameless concrete
+    machine (left of the chain) to the named concrete machine (right of the
+    chain), so the whole B&P -> Abstract story composes through one concrete
+    semantics. Holds for well-formed source programs (`WFExp`). -/
+#print axioms DMCFA.Bridge.sim_forward               -- named concrete eval -> LN concrete eval (of the translation)
+#print axioms DMCFA.Bridge.sim_backward              -- LN concrete eval (of the translation) -> named concrete eval
+
 /-! Concrete -> Fresh-Guarded -> Timestamped -> Abstract chain. -/
 #print axioms DMCFA.simulation                       -- concrete -> fresh-guarded
 #print axioms DMCFA.naive_to_strict_from_empty       -- address freshness (paper Thm 3)

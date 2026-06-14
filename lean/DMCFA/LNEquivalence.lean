@@ -46,13 +46,13 @@ inductive ValueEquiv : Store → BPLN.Expr → Denotable → Prop where
   -- Tier 2: closures
   | lambda :
       CompEquiv σ ρ 1 c e_body →
-      ValueEquiv σ (BPLN.Expr.lam c) (Denotable.closure ⟨e_body, ρ, none⟩)
+      ValueEquiv σ (BPLN.Expr.lam c) (Denotable.closure ⟨1, e_body, ρ, none⟩)
   | rec_lambda :
       CompEquiv σ ρ 2 c1 e1 →
-      σ a_f = some (Denotable.closure ⟨e1, ρ, some a_f⟩) →
+      σ a_f = some (Denotable.closure ⟨1, e1, ρ, some a_f⟩) →
       ValueEquiv σ
         (BPLN.Expr.lam (BPLN.Comp.letRec c1 c1))
-        (Denotable.closure ⟨e1, ρ, some a_f⟩)
+        (Denotable.closure ⟨1, e1, ρ, some a_f⟩)
   -- Tier 3: continuation closures
   | kont :
       HandlerEquiv σ ρ 0 h h_anf →
@@ -78,7 +78,7 @@ inductive ExprEquiv : Store → Env → Nat → BPLN.Expr → AExp → Prop wher
       ExprEquiv σ ρ n (BPLN.Expr.succ e) (AExp.succE (AExp.bvar i))
   | lam :
       CompEquiv σ ρ (n + 1) c e_body →
-      ExprEquiv σ ρ n (BPLN.Expr.lam c) (AExp.lam e_body)
+      ExprEquiv σ ρ n (BPLN.Expr.lam c) (AExp.lam 1 e_body)
   /-- An already-resolved index: B&P carries the substituted value `e_bp`;
   ANF's `bvar i` (`i ≥ n`) resolves via `ρ` to the same value. -/
   | var_subst :
@@ -102,7 +102,7 @@ inductive CompEquiv : Store → Env → Nat → BPLN.Comp → Exp → Prop where
   | letRec :
       CompEquiv σ ρ (n + 2) c1 e1 →
       CompEquiv σ ρ (n + 1) c2 e2 →
-      CompEquiv σ ρ n (BPLN.Comp.letRec c1 c2) (Exp.letE (CExp.funDef e1) e2 l)
+      CompEquiv σ ρ n (BPLN.Comp.letRec c1 c2) (Exp.letE (CExp.funDef 1 e1) e2 l)
 
 /-- Complex expression equivalence: B&P computation ↔ ANF complex expression, at depth `n`. -/
 inductive CompEquivCExp : Store → Env → Nat → BPLN.Comp → CExp → Prop where
