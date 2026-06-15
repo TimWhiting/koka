@@ -1870,7 +1870,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
             exact h_cdf_enc (.kont k) (by simp [TAddr.time]; exact hk ▸ .refl)
           have h_cdf_handle_σ₁ : ∀ l ∈ hdl_kc.allLabels, CallDescFresh tσ₁ t_handle l := by
             intro l _ a ha
-            by_contra h_ne; push_neg at h_ne
+            by_contra h_ne; push Not at h_ne
             have h_orig := h_cdf_enc a ((Descendant.call l (Descendant.refl (t := t_handle))).trans ha)
             have h_changed : tσ₁ a ≠ tσ a := by rw [h_orig]; exact h_ne
             have h_tmk_suf := h_desc_apply a h_changed
@@ -1881,7 +1881,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
             intro l hl a tk ha
             have h_l_ne : l ≠ l_enc := fun h_eq =>
               h_not_handler_l_enc (h_eq ▸ h_handlerLabels_consistent hdl_kc l hl)
-            by_contra h_ne; push_neg at h_ne
+            by_contra h_ne; push Not at h_ne
             have h_desc_of_t : Descendant t_handle a.time :=
               (Descendant.appKont l tk Descendant.refl).trans ha
             have h_orig := h_cdf_enc a h_desc_of_t
@@ -1987,7 +1987,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
           fun l hl => by simp only [CExp.handlerLabels]; exact Finset.mem_union_left _ (Finset.mem_union_right _ hl)
         have h_pres_at_t : ∀ a, a.time = t → tσ₁ a = tσ a := by
           intro a hat
-          by_contra h_ne; push_neg at h_ne
+          by_contra h_ne; push Not at h_ne
           have h_desc := h_wb_body.descendant h_ne
           rw [hat] at h_desc
           exact not_descendant_of_handler_ext h_desc
@@ -2007,14 +2007,14 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
           fun l hl => h_hdf_sub l (h_hdl_handlerLabels_sub hl)
         have h_cdf_mid : ∀ l ∈ hdl.allLabels, CallDescFresh tσ₁ t l := by
           intro l hl a ha
-          by_contra h_ne; push_neg at h_ne
+          by_contra h_ne; push Not at h_ne
           have h_orig := h_cdf_orig l hl a ha
           have h_changed : tσ₁ a ≠ tσ a := by rw [h_orig]; exact h_ne
           have h_desc := h_wb_body.descendant h_changed
           exact Descendant.call_handler_disjoint ha h_desc.tmk_suffix
         have h_hdf_mid : ∀ l ∈ hdl.handlerLabels, HandlerDescFresh tσ₁ t l := by
           intro l hl a tk ha
-          by_contra h_ne; push_neg at h_ne
+          by_contra h_ne; push Not at h_ne
           have h_orig := h_hdf_orig l hl a tk ha
           have h_changed : tσ₁ a ≠ tσ a := by rw [h_orig]; exact h_ne
           have h_desc := h_wb_body.descendant h_changed
@@ -3123,7 +3123,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
                   (fun c h => by cases h; exact h_wfp)
                   (fun y e ρ h => by
                     cases h
-                    by_contra h_ne; push_neg at h_ne
+                    by_contra h_ne; push Not at h_ne
                     have h_σ_none := h_tmk_fresh (.val ⟨y, t_restored⟩) (List.suffix_refl _)
                     have h_changed : tσ₁ (.val ⟨y, t_restored⟩) ≠ tσ (.val ⟨y, t_restored⟩) := by
                       rw [h_σ_none]; exact h_ne
@@ -3138,7 +3138,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
                           (Finset.mem_union_left _ (Finset.mem_singleton_self _)) hx_mem
                       · cases hk_eq)
                   (fun k hk hlk _hlet => by
-                    by_contra h_ne; push_neg at h_ne
+                    by_contra h_ne; push Not at h_ne
                     have h_σ_none := h_tmk_fresh (.kont k) (by simp [TAddr.time]; rw [hk])
                     have h_changed : tσ₁ (.kont k) ≠ tσ (.kont k) := by rw [h_σ_none]; exact h_ne
                     cases h_fr : a_next with
@@ -3159,7 +3159,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
                   (fun y e ρ h => by cases h; exact h_y_notin_body y rfl)
                   (fun y e ρ h => by
                     cases h; intro x hx
-                    by_contra h_ne; push_neg at h_ne
+                    by_contra h_ne; push Not at h_ne
                     have h_σ_none := h_tmk_fresh (.val ⟨x, t_restored⟩) (List.suffix_refl _)
                     have h_changed : tσ₁ (.val ⟨x, t_restored⟩) ≠ tσ (.val ⟨x, t_restored⟩) := by
                       rw [h_σ_none]; exact h_ne
@@ -3175,7 +3175,7 @@ theorem fresh_concrete (isHandlerLabel : Label → Prop)
                       · cases hk_eq)
                   (fun y e ρ h => by
                     cases h; intro l hl k hk hlk
-                    by_contra h_ne; push_neg at h_ne
+                    by_contra h_ne; push Not at h_ne
                     have h_σ_none := h_tmk_fresh (.kont k) (by simp [TAddr.time]; rw [hk])
                     have h_changed : tσ₁ (.kont k) ≠ tσ (.kont k) := by rw [h_σ_none]; exact h_ne
                     cases h_fr : a_next with

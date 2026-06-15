@@ -511,7 +511,7 @@ theorem kont_equiv_extend_store :
   intro h hf; exact kont_equiv_store_mono h (store_extend_preserves_of_fresh σ a_new d_new hf)
 
 /-- If `σ.extend a1 d` maps `a2` to `none`, then `σ a2 = none`. -/
-@[simp, grind ->] theorem Store.fresh_of_fresh_extend {σ : Store} {a1 a2 : VAddr} {d : Denotable}
+@[grind ->] theorem Store.fresh_of_fresh_extend {σ : Store} {a1 a2 : VAddr} {d : Denotable}
     (h_fresh_ext : (σ.extend a1 d) a2 = none) :
     σ a2 = none := by grind
 
@@ -807,15 +807,15 @@ end -- mutual open_binding_addr
 
 /-! ## ValueEquiv inversion helpers -/
 
-@[simp, grind ->] theorem value_equiv_true_inv :
+@[grind ->] theorem value_equiv_true_inv :
     ValueEquiv σ BPLN.Expr.true_ d → d = Denotable.conLabel ConLabel.true_ := by
   intro h; cases h; rfl
 
-@[simp, grind ->]theorem value_equiv_false_inv :
+@[grind ->] theorem value_equiv_false_inv :
     ValueEquiv σ BPLN.Expr.false_ d → d = Denotable.conLabel ConLabel.false_ := by
   intro h; cases h; rfl
 
-@[simp, grind ->] theorem value_equiv_zero_inv :
+@[grind ->] theorem value_equiv_zero_inv :
     ValueEquiv σ BPLN.Expr.zero d → d = Denotable.conLabel ConLabel.zero := by
   intro h; cases h; rfl
 

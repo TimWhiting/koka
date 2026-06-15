@@ -97,7 +97,7 @@ theorem StoreReflects.val_fresh {α : VAddr → TVAddr} {tσ : TStore} {σ : Sto
     (h_no_preimage : ∀ a, σ a ≠ none → α a ≠ ta) :
     tσ (.val ta) = none := by
   by_contra h_ne
-  push_neg at h_ne
+  push Not at h_ne
   obtain ⟨a, ha, hα⟩ := h ta h_ne
   exact h_no_preimage a ha hα
 

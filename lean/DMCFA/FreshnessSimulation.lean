@@ -914,7 +914,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
           h_apply h_wf_d_arg h_d_chain_arg hinv h_tmk_fresh_apply h_chain_f
       -- Freshness preservation through inner P_Apply
       have h_pres_apply : ∀ a, a.time.tmk = t.tmk → σ₁ a = σ a := by
-        intro a hat; by_contra h_ne; push_neg at h_ne
+        intro a hat; by_contra h_ne; push Not at h_ne
         have h_desc := h_desc_apply a h_ne
         rw [hat] at h_desc
         obtain ⟨px, hpx⟩ := h_desc
@@ -941,7 +941,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
       -- l_enc :: t.tk), making the suffix match impossible.
       have h_cdf_handle_σ₁ : ∀ l ∈ hdl.allLabels, CallDescFresh σ₁ t_handle l := by
         intro l _ a ha
-        by_contra h_ne; push_neg at h_ne
+        by_contra h_ne; push Not at h_ne
         have h_orig := h_cdf_enc a ((Descendant.call l (Descendant.refl (t := t_handle))).trans ha)
         have h_changed : σ₁ a ≠ σ a := by rw [h_orig]; exact h_ne
         have h_tmk_suf := h_desc_apply a h_changed
@@ -961,7 +961,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
         have h_l_ne : l ≠ l_enc := fun h_eq =>
           h_not_handler_l_enc (h_eq ▸ h_handlerLabels_consistent hdl l hl)
         -- l ≠ l_enc: suffix equality on tmk entries gives contradiction
-        by_contra h_ne; push_neg at h_ne
+        by_contra h_ne; push Not at h_ne
         have h_desc_of_t : Descendant t_handle a.time :=
           (Descendant.appKont l tk Descendant.refl).trans ha
         have h_orig := h_cdf_enc a h_desc_of_t
@@ -1051,7 +1051,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
         simp [CExp.topAllocVars]
       have h_pres_at_t : ∀ a, a.time = t → σ_mid a = σ a := by
         intro a hat
-        by_contra h_ne; push_neg at h_ne
+        by_contra h_ne; push Not at h_ne
         have h_desc := h_wb_body.descendant h_ne
         rw [hat] at h_desc
         exact not_descendant_of_handler_ext h_desc
@@ -1073,14 +1073,14 @@ theorem simulation (isHandlerLabel : Label → Prop)
         fun l hl => h_hdf_sub l (h_hdl_handlerLabels_sub hl)
       have h_cdf_mid : ∀ l ∈ hdl.allLabels, CallDescFresh σ_mid t l := by
         intro l hl a ha
-        by_contra h_ne; push_neg at h_ne
+        by_contra h_ne; push Not at h_ne
         have h_orig := h_cdf_orig l hl a ha
         have h_changed : σ_mid a ≠ σ a := by rw [h_orig]; exact h_ne
         have h_desc := h_wb_body.descendant h_changed
         exact Descendant.call_handler_disjoint ha h_desc.tmk_suffix
       have h_hdf_mid : ∀ l ∈ hdl.handlerLabels, HandlerDescFresh σ_mid t l := by
         intro l hl a tk ha
-        by_contra h_ne; push_neg at h_ne
+        by_contra h_ne; push Not at h_ne
         have h_orig := h_hdf_orig l hl a tk ha
         have h_changed : σ_mid a ≠ σ a := by rw [h_orig]; exact h_ne
         have h_desc := h_wb_body.descendant h_changed
@@ -1631,7 +1631,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
             (fun c h => by cases h; exact h_wfp) -- WF body
             (by -- y fresh: apply doesn't write at y (disjoint from chainVars)
                 intro y e ρ h; cases h
-                by_contra h_ne; push_neg at h_ne
+                by_contra h_ne; push Not at h_ne
                 have h_σ_none := h_tmk_fresh (.val ⟨y, ⟨n1r.frame.time.tk, tmk⟩⟩) (List.suffix_refl _)
                 have h_ne2 : σ1r (.val ⟨y, ⟨n1r.frame.time.tk, tmk⟩⟩) ≠ σ (.val ⟨y, ⟨n1r.frame.time.tk, tmk⟩⟩) := by
                   rw [h_σ_none]; exact h_ne
@@ -1650,7 +1650,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
                   · cases hk_eq)
             (by -- kont fresh: n1r.frame.label ∉ sameTkLabels (from h_lnb_stk)
                 intro k hk hlk hlet
-                by_contra h_ne; push_neg at h_ne
+                by_contra h_ne; push Not at h_ne
                 have h_σ_none := h_tmk_fresh (.kont k) (by simp [TAddr.time]; rw [hk])
                 have h_ne2 : σ1r (.kont k) ≠ σ (.kont k) := by rw [h_σ_none]; exact h_ne
                 cases h_fr2 : fr with
@@ -1677,7 +1677,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
             (fun y e ρ h => by cases h; exact h_y_notin_body y rfl) -- y notin body
             (by -- body var fresh: same pattern
                 intro y e ρ h; cases h; intro x hx
-                by_contra h_ne; push_neg at h_ne
+                by_contra h_ne; push Not at h_ne
                 have h_σ_none := h_tmk_fresh (.val ⟨x, ⟨n1r.frame.time.tk, tmk⟩⟩) (List.suffix_refl _)
                 have h_ne2 : σ1r (.val ⟨x, ⟨n1r.frame.time.tk, tmk⟩⟩) ≠ σ (.val ⟨x, ⟨n1r.frame.time.tk, tmk⟩⟩) := by
                   rw [h_σ_none]; exact h_ne
@@ -1696,7 +1696,7 @@ theorem simulation (isHandlerLabel : Label → Prop)
                   · cases hk_eq)
             (by -- body kont fresh: l ∈ body.allLabels, disjoint from sameTkLabels
                 intro y e ρ h; cases h; intro l hl k hk hlk
-                by_contra h_ne; push_neg at h_ne
+                by_contra h_ne; push Not at h_ne
                 have h_σ_none := h_tmk_fresh (.kont k) (by simp [TAddr.time]; rw [hk])
                 have h_ne2 : σ1r (.kont k) ≠ σ (.kont k) := by rw [h_σ_none]; exact h_ne
                 cases h_fr2 : fr with

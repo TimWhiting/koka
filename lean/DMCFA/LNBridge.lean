@@ -661,7 +661,7 @@ private theorem findOp_mem {ops : List (OpName × Var × Exp)} {op : OpName} {x 
     simp only [List.findSome?] at h
     by_cases hop : op' = op
     · subst hop
-      simp only [if_pos rfl] at h
+      simp only [reduceIte] at h
       obtain ⟨rfl, rfl⟩ := Prod.mk.injEq .. ▸ Option.some.inj h
       exact List.mem_cons_self ..
     · simp only [if_neg hop] at h
