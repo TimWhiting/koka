@@ -398,7 +398,7 @@ theorem val_addr_fresh_of_time_not_entered (hinv : OrderInvariant σ entered)
     (h_not : t ∉ entered) (x : Var) :
     σ (.val ⟨x, t⟩) = none := by
   by_contra h
-  push_neg at h
+  push Not at h
   have := hinv (.val ⟨x, t⟩) h
   simp [TAddr.time] at this
   exact h_not this
@@ -408,7 +408,7 @@ theorem kont_addr_fresh_of_time_not_entered (hinv : OrderInvariant σ entered)
     (h_not : t ∉ entered) (k : TKAddr) (h_time : k.frame.time = t) :
     σ (.kont k) = none := by
   by_contra h
-  push_neg at h
+  push Not at h
   have := hinv (.kont k) h
   simp [TAddr.time] at this
   rw [h_time] at this
@@ -528,13 +528,13 @@ theorem handlerKontFresh_extend_kont_let (h : HandlerKontFresh σ t used)
 /-- LetKontFresh from full freshness -/
 theorem letKontFresh_of_fresh (h : fresh σ t) : LetKontFresh σ t ∅ := by
   intro k hk _ _
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   exact h (.kont k) h_ne (by simp [TAddr.time]; exact hk)
 
 /-- HandlerKontFresh from full freshness -/
 theorem handlerKontFresh_of_fresh (h : fresh σ t) : HandlerKontFresh σ t ∅ := by
   intro k hk _ _
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   exact h (.kont k) h_ne (by simp [TAddr.time]; exact hk)
 
 /-- LetKontFresh from not-entered -/
@@ -668,12 +668,12 @@ theorem StorePreservation.kontFreshExcept (h : StorePreservation σ σ' t)
 
 theorem valFreshExcept_of_fresh (h : fresh σ t) : ValFreshExcept σ t ∅ := by
   intro x _
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   exact h (.val ⟨x, t⟩) h_ne rfl
 
 theorem kontFreshExcept_of_fresh (h : fresh σ t) : KontFreshExcept σ t ∅ := by
   intro k hk _
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   exact h (.kont k) h_ne (by simp [TAddr.time]; exact hk)
 
 /-! ### Val extension at same time: adds name to used set -/

@@ -1007,7 +1007,7 @@ theorem WriteBound.descendant (h : WriteBound σ σ' t vars letLabels handlerLab
 theorem WriteBound.val_fresh (h : WriteBound σ σ' t vars letLabels handlerLabels descLabels)
     {x : Var} (hx : x ∉ vars) (hfresh : σ (.val ⟨x, t⟩) = none) :
     σ' (.val ⟨x, t⟩) = none := by
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   have ⟨h_at_t, _⟩ := h (.val ⟨x, t⟩) (by rw [ne_eq]; intro heq; rw [heq] at h_ne; exact h_ne hfresh)
   rcases h_at_t rfl with ⟨x', hx_eq, hx_mem⟩ | ⟨k, hk_eq, _⟩ | ⟨k, hk_eq, _⟩
   · cases hx_eq; exact hx hx_mem
@@ -1018,7 +1018,7 @@ theorem WriteBound.let_kont_fresh (h : WriteBound σ σ' t vars letLabels handle
     {k : TKAddr} (hk : k.frame.time = t) (hlet : k.frame.content.isLetFrame = true)
     (hl : k.frame.label ∉ letLabels) (hfresh : σ (.kont k) = none) :
     σ' (.kont k) = none := by
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   have ⟨h_at_t, _⟩ := h (.kont k) (by rw [ne_eq]; intro heq; rw [heq] at h_ne; exact h_ne hfresh)
   rcases h_at_t hk with ⟨x, hx_eq, _⟩ | ⟨k', hk_eq, _, hk_mem⟩ | ⟨k', hk_eq, hk_handler, _⟩
   · cases hx_eq
@@ -1029,7 +1029,7 @@ theorem WriteBound.kont_fresh (h : WriteBound σ σ' t vars letLabels handlerLab
     {k : TKAddr} (hk : k.frame.time = t) (hl_let : k.frame.label ∉ letLabels)
     (hl_handler : k.frame.label ∉ handlerLabels) (hfresh : σ (.kont k) = none) :
     σ' (.kont k) = none := by
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   have ⟨h_at_t, _⟩ := h (.kont k) (by rw [ne_eq]; intro heq; rw [heq] at h_ne; exact h_ne hfresh)
   rcases h_at_t hk with ⟨x, hx_eq, _⟩ | ⟨k', hk_eq, _, hk_mem⟩ | ⟨k', hk_eq, _, hk_mem⟩
   · cases hx_eq
@@ -1040,7 +1040,7 @@ theorem WriteBound.callDescFresh (h : WriteBound σ σ' t vars letLabels handler
     {l : Label} (hl : l ∉ descLabels) (h_cdf : CallDescFresh σ t l) :
     CallDescFresh σ' t l := by
   intro a ha
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   have h_changed : σ' a ≠ σ a := by rw [h_cdf a ha]; exact h_ne
   have h_ne_t : a.time ≠ t := fun heq => by subst heq; exact not_descendant_of_call_ext ha
   obtain ⟨_, hdv⟩ := h a h_changed
@@ -1051,7 +1051,7 @@ theorem WriteBound.handlerDescFresh (h : WriteBound σ σ' t vars letLabels hand
     {l : Label} (hl : l ∉ descLabels) (h_hdf : HandlerDescFresh σ t l) :
     HandlerDescFresh σ' t l := by
   intro a tk ha
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   have h_changed : σ' a ≠ σ a := by rw [h_hdf a tk ha]; exact h_ne
   have h_ne_t : a.time ≠ t := fun heq => by subst heq; exact not_descendant_of_handler_ext ha
   obtain ⟨_, hdv⟩ := h a h_changed
@@ -1062,7 +1062,7 @@ theorem WriteBound.descFresh (h : WriteBound σ σ' t vars letLabels handlerLabe
     {l : Label} (hl : l ∉ descLabels) (h_df : DescFresh σ t l) :
     DescFresh σ' t l := by
   intro a ha
-  by_contra h_ne; push_neg at h_ne
+  by_contra h_ne; push Not at h_ne
   have h_changed : σ' a ≠ σ a := by rw [h_df a ha]; exact h_ne
   have h_ne_t : a.time ≠ t := fun heq => by subst heq; exact ha.ne rfl
   obtain ⟨_, hdv⟩ := h a h_changed

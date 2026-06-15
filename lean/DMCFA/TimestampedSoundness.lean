@@ -459,7 +459,7 @@ private theorem sound_foldl_extend
       -- Assemble: cons a_v onto as_tl
       simp only [List.zip_cons_cons, List.foldl_cons]
       refine ⟨a_v :: as_tl, by simp; omega,
-        .cons (by by_contra h; push_neg at h; exact absurd h_fresh_v (h_mono₀ _ h)) h_fresh_tl,
+        .cons (by by_contra h; push Not at h; exact absurd h_fresh_v (h_mono₀ _ h)) h_fresh_tl,
         .cons h_fresh_v (by
           -- Transfer freshness: as_tl fresh in σ₀.extend a_v d_hd → fresh in σ₀
           -- Actually h_fresh_σ₁_tl gives freshness in σ₀.extend a_v d_hd
