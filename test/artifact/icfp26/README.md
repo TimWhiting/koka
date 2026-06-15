@@ -174,18 +174,18 @@ The proof proceeds through a chain of four semantics connected by pairwise sound
 The diagram below (also included as [`lean/equivalence-diagram.pdf`](../../../lean/equivalence-diagram.pdf)) illustrates the structure:
 
 ```
-B&P            Concrete        Fresh-Guarded     Timestamped      Abstract
-(substitution) (env/store)     (proof device)    (paper)          (finite)
-    ⇓_bp           ⇓_eval          ⇓^κτf_eval        ⇓^κτ_eval       ⇓̂^κτ_eval
-    ←——————————————→   ←—————————————————→   ←——————————————→   ————————→
-     sound/complete      sound/complete         sound/complete    soundness
-      ~550+660 loc        ~4k+1.2k loc           ~70+2.4k loc     ~600 loc
-     (locally nameless)    +~0.5k shared          +~3.2k shared
-       +~1k shared
+B&P          Concrete (LN)   Concrete (named)  Fresh-Guarded   Timestamped   Abstract
+(subst.)     (de Bruijn)     (env/store)       (proof device)  (paper)       (finite)
+  ⇓_bp          ⇓_eval          ⇓_eval           ⇓^κτf_eval      ⇓^κτ_eval     ⇓̂^κτ_eval
+  ←———————————→  ←——bridge——→    ←———————————→    ←———————————→   ——————————→
+  sound/complete sound/complete  sound/complete   sound/complete  soundness
+  (loc. nameless) ~1.5k loc      ~3.9k+1.2k loc   ~0.1k+2.4k loc  ~0.6k loc
+  ~0.7k+0.6k loc  (WF progs)     +~0.5k shared    +~3.2k shared
+  +~1.2k shared
 ```
 
 **B&P (Bauer and Pretnar)** is a standard substitution-based big-step semantics used as a specification.
-**Concrete** is the environment/store big-step semantics formalised in the paper.
+**Concrete** is the environment/store big-step semantics formalised in the paper; it appears in two representations — **locally nameless** (de Bruijn, connected to B&P) and **named** (connected to the rest of the chain) — linked by the machine-checked bridge (`sim_forward`/`sim_backward`).
 **Fresh-Guarded** is an intermediate proof device that adds freshness side-conditions to timestamps, making it easier to lift results to the paper's **Timestamped** semantics.
 The final step abstracts the timestamped semantics into the finite **Abstract** domain used by HMCFA.
 
