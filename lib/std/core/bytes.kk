@@ -17,6 +17,7 @@ import std/core/show
 import std/core/vector
 import std/core/string
 import std/core/list
+import std/core/unsafe
 
 extern import 
   js file "inline/bytes.js"
@@ -169,6 +170,24 @@ pub fun @index( ^b : bytes, i : int): exn int
 pub fun assign( bs : bytes, i : int, value : int ) : exn bytes
   if i < 0 || i >= bs.length then throw("index out of bounds", ExnRange)
   bs.unsafe-assign(i.ssize_t,value.uint8)
+
+// A single byte (low 8 bits of `b`).
+// `unsafe-assign` only skips the bounds check (index 0 is valid here); it is
+// copy-on-write w.r.t. sharing, and this buffer is freshly allocated (unique)
+// regardless, so value semantics hold.
+pub fun byte( b : int ) : bytes
+  unsafe-bytes(1).unsafe-assign(0.ssize_t, b.uint8)
+
+// Build bytes from a list of byte values (low 8 bits of each).
+// The accumulator is freshly allocated and threaded linearly, so every
+// `unsafe-assign` is on a uniquely-owned buffer (indices are in range by
+// construction).
+pub fun list/bytes( xs : list<int> ) : bytes
+  fun go( ys : list<int>, i : int, acc : bytes ) : div bytes
+    match ys
+      Nil           -> acc
+      Cons(y, rest) -> go(rest, i + 1, acc.unsafe-assign(i.ssize_t, y.uint8))
+  unsafe-total { go(xs, 0, unsafe-bytes(xs.length)) }
 
 
 

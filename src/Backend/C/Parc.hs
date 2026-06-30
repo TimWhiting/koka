@@ -1012,7 +1012,11 @@ getDataInfo' newtypes tp
       Nothing   -> Nothing
       Just name | name == nameTpBox -> Nothing
       Just name -> case newtypesLookupAny name newtypes of
-                      Nothing -> failure $ "Core.Parc.getDataDefInfo: cannot find type: " ++ show name -- ++ "\n" ++ show newtypes
+                      -- Abstract/extern types (e.g. `any`) and not-yet-expanded aliases to them
+                      -- have no datatype entry; they are boxed, so treat as opaque. (Matches
+                      -- ParcReuse's tolerant lookup.) Previously this `failure`d, which broke
+                      -- incremental builds through the `event-loop = any` alias in std/async.
+                      Nothing -> Nothing
                       Just di -> -- trace ("datainfo of " ++ show (pretty tp) ++ " = " ++ show di) $
                                  Just di
 

@@ -64,7 +64,7 @@ pub alias event-loop = any
 // and a resumption function, and returns either an error or a dispose function.
 // The resumption gets the `:await-result` (cancel, exception, or regular result) and
 // whether this is the last time the resumption is called (`isdone`).
-pub alias await-setup<a> = (evloop : event-loop, resume : (result:await-result<a>, isdone:bool) -> ioc ()) -> ioc error<dispose-fn>
+pub alias await-setup<a> = (evloop : any, resume : (result:await-result<a>, isdone:bool) -> ioc ()) -> ioc error<dispose-fn>
 
 // An await result is either canceled, an exception, or a regular return value.
 pub type await-result<a>
