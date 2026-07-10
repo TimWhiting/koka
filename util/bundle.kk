@@ -169,6 +169,12 @@ fun bundle( prefixdir : path, extrametadir : string, solibsdir : string, cc : st
   // copy-file-to-dir("kklib/CMakeLists.txt".path, kklibdir)
   // copy-file-to-dir("kklib/kkmain.cmake".path, kklibdir)
 
+  // Copy wasi-web runner templates (run.mjs/index.html for `--target=wasi-web`;
+  // resolved by the compiler at `<sharedir>/support/wasi-web`, mirroring this
+  // same relative path in a dev checkout where sharedir is the repo root)
+  println("copy wasi-web templates...")
+  copy-directory("support/wasi-web".path, sharedir / "support" / "wasi-web")
+
   // Copy kklib binaries
   [Debug,DRelease,Release].foreach fn(v)
     println("copying standard library: " ++ v.show)

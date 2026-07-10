@@ -1,0 +1,55 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>{{MODULE}} — koka wasi-web</title>
+<!--
+  Browser leg of a koka wasi-web build. Rev 3: `--target=wasi-web` emits a
+  plain wasm32-wasip1 core module -- no jco, no component model, no import
+  map for bare specifiers. WASI is provided by @bjorn3/browser_wasi_shim,
+  vendored (committed, zero-install) under ./vendor/browser_wasi_shim/.
+  Serve this directory with any static file server, e.g.
+  `python3 -m http.server`, and open it in a browser; stdout/stderr are
+  mirrored into the page below and also go to the devtools console.
+-->
+<pre id="out">running {{MODULE}}...</pre>
+<script type="module">
+  import { WASI, File, OpenFile, ConsoleStdout } from "./vendor/browser_wasi_shim/index.js";
+  import * as timers from "./timers.js";
+
+  const out = document.getElementById("out");
+  const lines = [];
+  const print = (prefix, msg) => { lines.push(msg); console.log(prefix, msg); out.textContent = lines.join("\n"); };
+
+  const args = ["{{MODULE}}"];
+  const env = [];
+  const fds = [
+    new OpenFile(new File([])), // stdin
+    ConsoleStdout.lineBuffered((msg) => print("[stdout]", msg)),
+    ConsoleStdout.lineBuffered((msg) => print("[stderr]", msg)),
+  ];
+  const wasi = new WASI(args, env, fds);
+
+  try {
+    const wasm = await WebAssembly.compileStreaming(fetch("./{{MODULE}}.wasm"));
+    const instance = await WebAssembly.instantiate(wasm, {
+      wasi_snapshot_preview1: wasi.wasiImport,
+      "koka:async/timers": timers,
+    });
+
+    // hand timers.js the instance before starting the guest, same
+    // registry/setter pattern as run.mjs -- see support/wasi-web/timers.js.
+    timers.setInstance(instance);
+
+    const exitCode = wasi.start(instance);
+
+    const loopDone = instance.exports["koka:async/loop-done"];
+    if (typeof loopDone === "function" && !loopDone()) {
+      const iv = setInterval(() => {
+        if (loopDone()) clearInterval(iv);
+      }, 50);
+    }
+    if (lines.length === 0) out.textContent = `(no output, exit code ${exitCode})`;
+  } catch (e) {
+    out.textContent = "error: " + e;
+    console.error(e);
+  }
+</script>
