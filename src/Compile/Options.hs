@@ -33,16 +33,18 @@ module Compile.Options( -- * Command line options
                        , parseOptions
                        , flagsNull
                        , targetPlatformFromFlags, targetFromFlags, platformFromFlags
+                       , findWasiSdk
                        ) where
 
 import Debug.Trace
 import Data.Char              ( toLower, toUpper, isAlpha, isSpace, isDigit )
-import Data.List              ( intersperse, isInfixOf, nub )
+import Data.List              ( intersperse, isInfixOf, nub, sortBy, isPrefixOf )
 import Data.Hashable
-import Control.Monad          ( when )
+import Control.Monad          ( when, filterM )
 import Control.Concurrent     ( myThreadId )
 import qualified System.Info  ( os, arch )
 import System.Environment     ( getArgs )
+import System.Directory       ( getDirectoryContents )
 import Platform.FileIO        ( doesFileExist, doesDirectoryExist, getHomeDirectory, getTemporaryDirectory )
 import Platform.GetOptions
 import Platform.Config
@@ -174,6 +176,7 @@ data Flags
          , csc              :: !FileName
          , node             :: !FileName
          , wasmrun          :: !FileName
+         , wasisdk          :: !FileName
          , cmake            :: !FileName
          , cmakeArgs        :: !String
          , ccompPath        :: !FilePath
@@ -323,6 +326,7 @@ flagsNull
           "csc"
           "node"
           "wasmtime"
+          ""       -- wasisdk
           "cmake"
           ""       -- cmake args
 
@@ -461,6 +465,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , option []    ["csc"]             (ReqArg cscFlag "cmd")          "use <cmd> as the csharp backend compiler "
  , option []    ["node"]            (ReqArg nodeFlag "cmd")         "use <cmd> to execute node"
  , option []    ["wasmrun"]         (ReqArg wasmrunFlag "cmd")      "use <cmd> to execute wasm"
+ , option []    ["wasisdk"]         (ReqArg wasisdkFlag "dir")      "use wasi-sdk installed at <dir>"
  , option []    ["editor"]          (ReqArg editorFlag "cmd")       "use <cmd> as editor"
  , option []    ["stack"]           (ReqArg stackFlag "size")       "set stack size (0 for platform default)"
  , option []    ["heap"]            (ReqArg heapFlag "size")        "set reserved heap size (0 for platform default)"
@@ -680,6 +685,9 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
   wasmrunFlag s
     = Flag (\f -> f{ wasmrun = s })
 
+  wasisdkFlag s
+    = Flag (\f -> f{ wasisdk = s })
+
   editorFlag s
     = Flag (\f -> f{ editor = s })
 
@@ -852,8 +860,21 @@ processInitialOptions flags0 opts
 
               normalizedIncludes <- mapM realPath ("." : (localShareDir ++ "/lib") : includePath flags)
 
+              -- wasi-sdk (native clang toolchain for wasi targets): resolve the sdk root
+              -- and, unless the user overrode --cc, point the cc at its bin/clang.
+              wasiSdkDir <- if isTargetWasi (target flags)
+                              then do r <- findWasiSdk flags
+                                      case r of
+                                        Left msg  -> raiseIO msg
+                                        Right sdk -> return sdk
+                              else return (wasisdk flags)
+
               -- cc
-              ccmd <- if (ccompPath flags == "") then detectCC (target flags)
+              ccmd <- if isTargetWasi (target flags)
+                        then if (ccompPath flags == "")
+                               then return (joinPath wasiSdkDir (joinPath "bin" "clang"))
+                               else return (ccompPath flags)
+                      else if (ccompPath flags == "") then detectCC (target flags)
                       else if (ccompPath flags == "mingw") then return "gcc"
                       else return (ccompPath flags)
               (cc,asan) <- ccFromPath flags ccmd
@@ -870,6 +891,7 @@ processInitialOptions flags0 opts
                                   ccomp       = cc,
                                   asan        = asan,
                                   editor      = ed,
+                                  wasisdk     = wasiSdkDir,
                                   includePath = normalizedIncludes,
                                   genRangeMap = outHtml flags > 0 || genRangeMap flags
                               }
@@ -1103,6 +1125,8 @@ targetExeExtension target
       C Wasm   -> ".wasm"
       C WasmJs -> ".js"
       C WasmWeb-> ".html"
+      C Wasi   -> ".wasm"
+      C WasiWeb-> ".wasm"
       C _      -> exeExtension
       JS JsWeb -> ".html"
       JS _     -> ".mjs"
@@ -1113,6 +1137,8 @@ targetObjExtension target
       C Wasm   -> ".o"
       C WasmJs -> ".o"
       C WasmWeb-> ".o"
+      C Wasi   -> ".o"
+      C WasiWeb-> ".o"
       C _      -> objExtension
       JS _     -> ".mjs"
       _        -> objExtension
@@ -1122,6 +1148,8 @@ targetLibFile target fname
       C Wasm   -> "lib" ++ fname ++ ".a"
       C WasmJs -> "lib" ++ fname ++ ".a"
       C WasmWeb-> "lib" ++ fname ++ ".a"
+      C Wasi   -> "lib" ++ fname ++ ".a"
+      C WasiWeb-> "lib" ++ fname ++ ".a"
       C _      -> libPrefix ++ fname ++ libExtension
       JS _     -> fname ++ ".mjs" -- ?
       _        -> libPrefix ++ fname ++ libExtension
@@ -1167,6 +1195,8 @@ buildLibVariant flags
                         Wasm   -> "-wasm" ++ show (8*sizePtr (platform flags))
                         WasmJs -> "-wasmjs"
                         WasmWeb-> "-wasmweb"
+                        Wasi   -> "-wasi"
+                        WasiWeb-> "-wasiweb"
                         _      | platformHasCompressedFields (platform flags)
                                -> "-" ++ targetArch flags ++ "c"
                                | otherwise -> "")
@@ -1286,6 +1316,23 @@ ccFromPath flags path
 
                      }
         generic = gcc{ ccFlagsWarn = [] }
+        wasiTriple = case target flags of
+                       C WasiWeb -> "wasm32-wasip1"  -- plain core module (command model, `_start`); see Rev 3 of the wasi-native design doc
+                       _         -> "wasm32-wasip3"  -- C Wasi (and default)
+        -- ccName is "wasi-clang" for both C Wasi and C WasiWeb targets; do not
+        -- use ccName alone as a build-dir key. buildLibVariant disambiguates
+        -- their build dirs via a ctarget suffix (-wasi/-wasiweb) instead.
+        wasicc  = (ccGcc "wasi-clang" path False)
+                     { ccFlagsWarn    = words "-Wno-cast-qual -Wno-undef -Wno-reserved-id-macro -Wno-unused-macros -Wno-cast-align",
+                       ccFlagsCompile = ccFlagsCompile gcc ++ ["--target=" ++ wasiTriple],
+                       ccFlagsLink    = ccFlagsLink gcc ++ ["--target=" ++ wasiTriple],
+                       ccFlagStack    = (\stksize -> if stksize > 0 then ["-Wl,-z,stack-size=" ++ show stksize] else []),
+                       ccFlagHeap     = (\_ -> []),   -- wasm memory grows on demand
+                       ccTargetExe    = (\out -> ["-o", out ++ targetExeExtension (target flags)]),
+                       ccTargetObj    = (\fname -> ["-o", (notext fname) ++ targetObjExtension (target flags)]),
+                       ccObjFile      = (\fname -> fname ++ targetObjExtension (target flags)),
+                       ccLibFile      = (\fname -> targetLibFile (target flags) fname)
+                     }
         msvc    = ccMsvc name path
         clangcl = msvc{ ccFlagsWarn = ["-Wno-everything"] ++ ccFlagsWarn clang ++
                                       words "-Wno-extra-semi-stmt -Wno-extra-semi -Wno-float-equal",
@@ -1293,7 +1340,8 @@ ccFromPath flags path
                         ccFlagsCompile = ["-D__clang_msvc__"] ++ ccFlagsCompile msvc
                       }
 
-        cc0     | (name `startsWith` "clang-cl") = clangcl
+        cc0     | isTargetWasi (target flags) = wasicc  -- the wasi-sdk clang is named plain "clang"; dispatch on target, not basename
+                | (name `startsWith` "clang-cl") = clangcl
                 | (name `startsWith` "mingw") = mingw
                 | (name `startsWith` "emcc") = emcc
                 | (name `startsWith` "clang" || name `startsWith` "musl-clang") = clang
@@ -1460,6 +1508,78 @@ findCC paths (name:rest)
          Just path -> return (name,path)
 
 
+
+-- | Find a usable wasi-sdk installation.
+-- Probe order: `--wasisdk=<dir>` flag, `WASI_SDK_PATH` env var, `/opt/wasi-sdk`,
+-- then `$HOME/wasi-sdk-*` directories (newest version first). An installation
+-- is valid if it has `bin/clang` and a `share/wasi-sysroot` directory, and its
+-- `VERSION` file reports major version >= 34.
+findWasiSdk :: Flags -> IO (Either String FilePath)
+findWasiSdk flags
+  = do env   <- getEnvVar "WASI_SDK_PATH"
+       home  <- getHomeDirectory
+       globs <- listDirsMatching home "wasi-sdk-"
+       let candidates = [wasisdk flags | not (null (wasisdk flags))] ++
+                         [env | not (null env)] ++
+                         ["/opt/wasi-sdk"] ++ globs
+       found <- filterM validWasiSdk candidates
+       case found of
+         (sdk:_) -> do ver <- readVersionFile (sdk ++ "/VERSION")
+                       if versionMajor ver >= 34
+                         then return (Right sdk)
+                         else return (Left ("wasi-sdk at " ++ sdk ++ " is version " ++ ver ++ " but >= 34 is required"))
+         []      -> return (Left ("cannot find a wasi-sdk installation.\n" ++
+                                   "  hint: download from <https://github.com/WebAssembly/wasi-sdk/releases> and set WASI_SDK_PATH (or use --wasisdk=<dir>)"))
+  where
+    validWasiSdk dir
+      = do c <- doesFileExist (dir ++ "/bin/clang")
+           s <- doesDirectoryExist (dir ++ "/share/wasi-sysroot")
+           return (c && s)
+
+-- | List sub-directories of `parent` whose name starts with `prefix` (and is
+-- strictly longer than `prefix`), sorted with the highest version-ish key first.
+listDirsMatching :: FilePath -> String -> IO [FilePath]
+listDirsMatching parent prefix
+  = do exists <- doesDirectoryExist parent
+       if not exists then return []
+         else do entries <- getDirectoryContents parent
+                 let names = filter (\n -> prefix `isPrefixOf` n && length n > length prefix) entries
+                 dirs <- filterM (\n -> doesDirectoryExist (parent ++ "/" ++ n)) names
+                 let keyed = [(versionKey (drop (length prefix) n), parent ++ "/" ++ n) | n <- dirs]
+                 return (map snd (sortBy (\(k1,_) (k2,_) -> compare k2 k1) keyed))
+
+-- | Extract a list of the numeric components of a version-ish string, e.g.
+-- "34.0-rc.1" -> [34,0,1], for approximate newest-first sorting.
+versionKey :: String -> [Int]
+versionKey s
+  = case s of
+      []                 -> []
+      (c:cs) | isDigit c -> let (digits,rest) = span isDigit s in read digits : versionKey rest
+             | otherwise -> versionKey cs
+
+-- | Read the first line of a wasi-sdk VERSION file, stripping a leading
+-- "wasi-sdk-" prefix if present (e.g. "34.0-rc.1" or "wasi-sdk-25.0" -> "25.0").
+-- Returns "" if the file cannot be read.
+readVersionFile :: FilePath -> IO String
+readVersionFile path
+  = do exists <- doesFileExist path
+       if not exists then return ""
+         else readIt `catchIO` (\_ -> return "")
+  where
+    readIt = do contents <- readFile path
+                case lines contents of
+                  (l:_) -> let v = dropWasiPrefix (trimStr l) in length v `seq` return v
+                  []    -> return ""
+    dropWasiPrefix s = if "wasi-sdk-" `isPrefixOf` s then drop (length "wasi-sdk-") s else s
+    trimStr = dropWhileTrail isSpace . dropWhile isSpace
+    dropWhileTrail p = reverse . dropWhile p . reverse
+
+-- | The leading integer of a version string, e.g. "34.0-rc.1" -> 34.
+versionMajor :: String -> Int
+versionMajor ver
+  = case takeWhile isDigit ver of
+      "" -> 0
+      ds -> read ds
 
 detectEditor :: IO String
 detectEditor
