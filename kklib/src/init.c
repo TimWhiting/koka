@@ -402,7 +402,12 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
   Debugger
 --------------------------------------------------------------------------------------------------*/
 
+// wasi-libc has no real signal support (its <signal.h> is a hard #error unless
+// you opt in to the emulated-signal shim); emscripten's wasi flavor does provide
+// a usable <signal.h> though, so only skip the include for the real wasi-sdk target.
+#if !(defined(__wasi__) && !defined(__EMSCRIPTEN__))
 #include <signal.h>
+#endif
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx) {
   kk_unused(ctx);
