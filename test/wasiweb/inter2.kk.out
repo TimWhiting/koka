@@ -1,0 +1,7 @@
+main-start
+start A
+start B
+done A
+done B
+result A,B
+main-end

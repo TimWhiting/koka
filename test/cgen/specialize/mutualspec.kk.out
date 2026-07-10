@@ -1,0 +1,58 @@
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/node<int>, mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/node<int>>, list<mutualspec-lib/html<int>>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel@xxx : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel@xxx : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/node<int>, mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/node<int>>, list<mutualspec-lib/html<int>>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (mutualspec-lib/html<int>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (list<mutualspec-lib/html<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel@xxx : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel@xxx : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@lift-xxx: (sel : int, list<int>) -> list<mutualspec-lib/html<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, list<mutualspec-lib/node<int>>, mutualspec-lib/node<int>) -> io list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <ioc,exn> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, list<mutualspec-lib/node<int>>, mutualspec-lib/node<int>) -> io list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-lib/node<int>, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (int, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> mutualspec-lib/node<int>
+cgen/specialize/mutualspec/@mlift-xxx: (mutualspec-4
+lib/node<int>, list<mutualspec-lib/node<int>>) -> <alloc<global>,console,div,exn,fsys,ndet,net,read<global>,ui,write<global>> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (list<mutualspec-lib/html<int>>, mutualspec-lib/node<int>) -> <ioc,exn> list<mutualspec-lib/node<int>>
+cgen/specialize/mutualspec/@mlift-xxx: (t2 : mutualspec-lib/node<int>) -> <ioc,exn> ()
+cgen/specialize/mutualspec/@mlift-xxx: (t1 : mutualspec-lib/node<int>) -> <ioc,exn> ()
+cgen/specialize/mutualspec/@mlift-xxx: (t0 : mutualspec-lib/node<int>) -> <ioc,exn> ()
+cgen/specialize/mutualspec/main: () -> io ()
+cgen/specialize/mutualspec/view: (sel : int) -> mutualspec-lib/html<int>

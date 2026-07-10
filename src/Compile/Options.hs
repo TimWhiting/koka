@@ -177,6 +177,7 @@ data Flags
          , node             :: !FileName
          , wasmrun          :: !FileName
          , wasisdk          :: !FileName
+         , wasiThreads      :: !Bool
          , cmake            :: !FileName
          , cmakeArgs        :: !String
          , ccompPath        :: !FilePath
@@ -327,6 +328,7 @@ flagsNull
           "node"
           "wasmtime"
           ""       -- wasisdk
+          False    -- wasiThreads
           "cmake"
           ""       -- cmake args
 
@@ -466,6 +468,7 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , option []    ["node"]            (ReqArg nodeFlag "cmd")         "use <cmd> to execute node"
  , option []    ["wasmrun"]         (ReqArg wasmrunFlag "cmd")      "use <cmd> to execute wasm"
  , option []    ["wasisdk"]         (ReqArg wasisdkFlag "dir")      "use wasi-sdk installed at <dir>"
+ , flag   []    ["wasithreads"]     (\b f -> f{wasiThreads=b})      "enable threads on wasi targets (needs COOP/COEP headers on wasi-web)"
  , option []    ["editor"]          (ReqArg editorFlag "cmd")       "use <cmd> as editor"
  , option []    ["stack"]           (ReqArg stackFlag "size")       "set stack size (0 for platform default)"
  , option []    ["heap"]            (ReqArg heapFlag "size")        "set reserved heap size (0 for platform default)"
@@ -1195,13 +1198,14 @@ buildLibVariant flags
                         Wasm   -> "-wasm" ++ show (8*sizePtr (platform flags))
                         WasmJs -> "-wasmjs"
                         WasmWeb-> "-wasmweb"
-                        Wasi   -> "-wasi"
-                        WasiWeb-> "-wasiweb"
+                        Wasi   -> "-wasi" ++ threadsSuffix
+                        WasiWeb-> "-wasiweb" ++ threadsSuffix
                         _      | platformHasCompressedFields (platform flags)
                                -> "-" ++ targetArch flags ++ "c"
                                | otherwise -> "")
                  JS _  -> "js"
                  _     -> show (target flags)
+        threadsSuffix = if wasiThreads flags then "-threads" else ""
     in pre ++ "-" ++ show (buildType flags)
 
 
@@ -1298,7 +1302,7 @@ ccFromPath flags path
                        ccFlagStack = (\stksize -> if stksize > 0 then ["-Wl,--stack," ++ show stksize] else [])
                      }
         emcc    = (ccGcc name path False)
-                     { ccFlagsCompile = ccFlagsCompile gcc ++ ["-D__wasi__"],
+                     { ccFlagsCompile = ccFlagsCompile gcc ++ ["-D__wasi__","-DMI_DEBUG=0"],
                        ccFlagsLink = ccFlagsLink gcc ++ ["-sWASM_BIGINT=1","-sEXPORTED_RUNTIME_METHODS=ccall,cwrap"],
                        ccFlagStack = (\stksize -> if stksize == 0 then [] else ["-s","TOTAL_STACK=" ++ show stksize]),
                        ccFlagHeap  = (\hpsize -> if hpsize == 0 then [] else ["-s","TOTAL_MEMORY=" ++ show hpsize]),
@@ -1316,16 +1320,43 @@ ccFromPath flags path
 
                      }
         generic = gcc{ ccFlagsWarn = [] }
-        wasiTriple = case target flags of
-                       C WasiWeb -> "wasm32-wasip1"  -- plain core module (command model, `_start`); see Rev 3 of the wasi-native design doc
-                       _         -> "wasm32-wasip3"  -- C Wasi (and default)
+        wasiTriple
+          -- threads exist only for the wasip1 sysroot (wasi-threads proposal:
+          -- pthreads over wasi_thread_spawn + shared linear memory) -- both
+          -- targets drop to p1 when threads are requested
+          | wasiThreads flags = "wasm32-wasip1-threads"
+          | otherwise
+          = case target flags of
+              C WasiWeb -> "wasm32-wasip1"  -- plain core module (command model, `_start`); see Rev 3 of the wasi-native design doc
+              _         -> "wasm32-wasip3"  -- C Wasi (and default)
+        -- shared memory must declare a maximum; memory is imported so the
+        -- (browser) host can create one `WebAssembly.Memory{shared:true}` for
+        -- the module and its worker threads
+        wasiThreadFlags
+          | wasiThreads flags = ["-pthread"]
+          | otherwise         = []
+        wasiThreadLinkFlags
+          | wasiThreads flags
+          = let maxmem = if heapSize flags > 0 then heapSize flags else 1024*1024*1024
+            in ["-pthread","-Wl,--import-memory,--export-memory,--max-memory=" ++ show maxmem
+               -- pin the import's minimum so the JS host can create a matching
+               -- shared memory without wasm type reflection (64MB = 1024 pages;
+               -- must agree with memoryJson in CodeGen.wasiWebPostLink)
+               ,"-Wl,--initial-memory=67108864"]
+          | otherwise = []
         -- ccName is "wasi-clang" for both C Wasi and C WasiWeb targets; do not
         -- use ccName alone as a build-dir key. buildLibVariant disambiguates
         -- their build dirs via a ctarget suffix (-wasi/-wasiweb) instead.
         wasicc  = (ccGcc "wasi-clang" path False)
                      { ccFlagsWarn    = words "-Wno-cast-qual -Wno-undef -Wno-reserved-id-macro -Wno-unused-macros -Wno-cast-align",
-                       ccFlagsCompile = ccFlagsCompile gcc ++ ["--target=" ++ wasiTriple],
-                       ccFlagsLink    = ccFlagsLink gcc ++ ["--target=" ++ wasiTriple],
+                       -- no host-cpu tuning for wasm: clang rejects -march=/-mtune for wasm32 targets
+                       ccFlagsOpt     = (\_opt _cpuArch -> []),
+                       -- MI_DEBUG=0: build mimalloc itself in release mode on wasm even in
+                       -- koka debug builds (kklib's own asserts are unaffected) -- mi's debug
+                       -- diagnostics are noisy on wasi (its prim conservatively reports fresh,
+                       -- spec-zeroed wasm memory as non-zero, tripping a page-map warning).
+                       ccFlagsCompile = ccFlagsCompile gcc ++ ["--target=" ++ wasiTriple, "-DMI_DEBUG=0"] ++ wasiThreadFlags,
+                       ccFlagsLink    = ccFlagsLink gcc ++ ["--target=" ++ wasiTriple] ++ wasiThreadLinkFlags,
                        ccFlagStack    = (\stksize -> if stksize > 0 then ["-Wl,-z,stack-size=" ++ show stksize] else []),
                        ccFlagHeap     = (\_ -> []),   -- wasm memory grows on demand
                        ccTargetExe    = (\out -> ["-o", out ++ targetExeExtension (target flags)]),

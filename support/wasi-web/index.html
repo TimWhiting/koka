@@ -30,9 +30,30 @@
 
   try {
     const wasm = await WebAssembly.compileStreaming(fetch("./{{MODULE}}.wasm"));
+
+    // This generic page only supplies WASI + koka:async/timers. A program
+    // that imports more (e.g. `koka:dom` from a DOM sample) needs its own
+    // host page providing those imports -- diagnose that up front instead of
+    // failing with an opaque instantiation TypeError.
+    const provided = new Set(["wasi_snapshot_preview1", "koka:async/timers", "env", "wasi"]);
+    const missing = [...new Set(WebAssembly.Module.imports(wasm)
+                        .map((i) => i.module).filter((m) => !provided.has(m)))];
+    if (missing.length > 0) {
+      throw new Error(
+        `this program imports [${missing.join(", ")}] which this generic host page does not provide.\n` +
+        `Use the sample's own host page instead (e.g. for the framework/dom demos, run its build.sh and serve the staged out/ directory it prints -- not this build directory).`);
+    }
+
+    // --wasithreads builds import shared memory + a thread-spawn hook; the
+    // shim is loaded on demand so plain builds need no extra files
+    const threaded = WebAssembly.Module.imports(wasm).some((i) => i.kind === "memory");
+    const threads = threaded
+      ? (await import("./wasi-threads.js")).threadSupport(wasm, new URL("./wasi-worker.js", import.meta.url))
+      : null;
     const instance = await WebAssembly.instantiate(wasm, {
       wasi_snapshot_preview1: wasi.wasiImport,
       "koka:async/timers": timers,
+      ...(threads ? threads.imports : {}),
     });
 
     // hand timers.js the instance before starting the guest, same

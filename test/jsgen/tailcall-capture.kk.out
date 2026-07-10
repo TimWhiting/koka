@@ -1,0 +1,6 @@
+closure 1 sees n=1
+closure 2 sees n=2
+closure 3 sees n=3
+matched closure sees x=7
+matched closure sees x=8
+matched closure sees x=9

@@ -1,0 +1,136 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koka SPA (framework demo)</title>
+<!--
+  Host page for the web-ui SPA demo: all runtime wiring lives in the shared
+  web-ui-host.js (staged by `koka -e build.kk`); this page is just the app
+  root, the demo's CSS, and its self-driving verification hook.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  /* the app shell paints the whole viewport with the theme; the body only
+     sets type — width constraints live on the shell's inner container */
+  html, body { margin: 0; padding: 0; }
+  body { font: 15px/1.5 system-ui, sans-serif; }
+  header h1 { font-size: 1.3rem; margin: 0 0 .25rem; }
+  nav { display: flex; gap: 1rem; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); padding-bottom: .5rem; margin-bottom: 1rem; }
+  nav a { text-decoration: none; font-weight: 600; }
+  section h2 { font-size: 1.05rem; margin: .2rem 0 .6rem; }
+  .todo input { padding: .35rem .5rem; margin-right: .4rem; }
+  button { padding: .3rem .7rem; margin-right: .3rem; cursor: pointer; }
+  #items { list-style: none; padding: 0; min-height: 1em; }
+  #items li { display: flex; align-items: center; gap: .5rem; padding: .25rem 0; }
+  #items li span { flex: 1; }
+  .done span { text-decoration: line-through; opacity: .55; }
+  .counter .row { display: flex; align-items: center; gap: .75rem; margin: .5rem 0; }
+  .count { font-size: 1.4rem; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: center; }
+  footer { margin-top: 1.5rem; font-size: .8rem; opacity: .6; }
+</style>
+<div id="app"></div>
+
+<script type="module">
+  import { runKoka } from "./web-ui-host.js";
+  await runKoka("./app.wasm", { debug: true });  // the verify driver reads kokaDebug
+
+  // ---- auto-verification hook (headless --dump-dom asserts on the title) --
+  // Drive the whole app: route to todos, add/toggle/delete items; route to
+  // counter, click + twice and fire the async +10; route home (todos page
+  // unmounts -- its slots must free); route BACK to todos (model-driven
+  // rebuild: state preserved). All assertions composed into document.title.
+  const tick = (ms = 30) => new Promise((r) => setTimeout(r, ms));
+  const go = async (hash) => { window.location.hash = hash; await tick(); };
+  const typeInto = (text) => {
+    const inp = document.getElementById("new");
+    inp.value = text;
+    inp.dispatchEvent(new Event("input"));
+  };
+  const liveSlots = window.kokaDebug.live;
+
+  await tick();                       // initial HashChanged settles
+  // coordinate payload: synthetic click at a known position on the home page
+  document.getElementById("clickbox").dispatchEvent(
+    new MouseEvent("click", { clientX: 42, clientY: 17, bubbles: true }));
+  const coords = document.getElementById("clickbox").textContent.includes("42,17")
+    ? "yes" : `no(${document.getElementById("clickbox").textContent})`;
+
+  await go("#/todos");
+  typeInto("alpha"); document.getElementById("add").click();
+  typeInto("beta");  document.getElementById("add").click();
+  // Enter-to-add (OnEvent/on-key payload path): third item via the keyboard
+  typeInto("gamma");
+  document.getElementById("new").dispatchEvent(
+    new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  // keyed-reconciliation proof: reorder must MOVE the existing rows (order
+  // flips) without creating or destroying any element/listener slots.
+  const firstLabel = () => document.querySelector("#items li span")?.textContent ?? "?";
+  const beforeRev = firstLabel();
+  const slotsBeforeRev = liveSlots();
+  document.getElementById("reverse").click();
+  const flipped = firstLabel() !== beforeRev;
+  const keyedReuse = flipped && liveSlots() === slotsBeforeRev
+    ? "yes" : `no(flip=${flipped},slots=${slotsBeforeRev}->${liveSlots()})`;
+  document.getElementById("reverse").click();   // restore order
+
+  // LIS-minimal moves: patching with UNCHANGED order (a toggle only flips a
+  // class) must perform ZERO DOM relocations.
+  const movesBeforeToggle = window.__kokaMoves;
+  document.querySelectorAll("#items li .toggle")[0].click();
+  document.querySelectorAll("#items li .toggle")[0].click();  // toggle back
+  const stable = window.__kokaMoves === movesBeforeToggle
+    ? "yes" : `no(+${window.__kokaMoves - movesBeforeToggle})`;
+
+  // drag/drop reorder (payload path): drag the LAST row onto the FIRST --
+  // the dragged row moves before the target; keyed diff moves nodes, so
+  // slots stay constant.
+  const rows = () => document.querySelectorAll("#items li");
+  const dragBefore = rows().length;
+  const dt = new DataTransfer();
+  // real pipeline: fire dragstart on the source row and let the wired
+  // filler populate dataTransfer (nothing set manually here)
+  rows()[rows().length - 1].dispatchEvent(
+    new DragEvent("dragstart", { dataTransfer: dt, bubbles: true }));
+  const slotsBeforeDrag = liveSlots();
+  const firstBeforeDrag = firstLabel();
+  rows()[0].dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true }));
+  const dragMoved = firstLabel() !== firstBeforeDrag && rows().length === dragBefore;
+  const dragOk = dragMoved && liveSlots() === slotsBeforeDrag
+    ? "yes" : `no(moved=${dragMoved},slots=${slotsBeforeDrag}->${liveSlots()})`;
+
+  document.querySelectorAll("#items li .toggle")[0].click();
+  document.querySelectorAll("#items li .delete")[1].click();
+  const todosCount = document.getElementById("count")?.textContent ?? "?";  // expect 1/2 done
+  const slotsOnTodos = liveSlots();
+
+  await go("#/counter");
+  const slotsAfterLeave = liveSlots();
+  document.getElementById("inc").click();
+  document.getElementById("inc").click();
+  document.getElementById("slow").click();
+  await tick(700);                    // async +10 lands as a message
+  const counterText = document.getElementById("count")?.textContent ?? "?";
+
+  await go("#/todos");                // model-driven rebuild
+  const backCount = document.getElementById("count")?.textContent ?? "?";
+
+  // theming via algebraic effects: toggling re-handles the views with the
+  // other palette, so the shell's inline background must change
+  const bgBefore = document.getElementById("shell")?.style.background ?? "?";
+  document.getElementById("themebtn").click();
+  await tick();
+  const bgAfter = document.getElementById("shell")?.style.background ?? "?";
+  const themeOk = bgBefore !== "?" && bgAfter !== "?" && bgBefore !== bgAfter
+    ? "yes" : `no(${bgBefore}->${bgAfter})`;
+
+  // slot accounting only exists on the wasi-web backend (externref table);
+  // the jsweb host shim marks its debug API as a stub
+  const routeFreed = window.kokaDebug.stub ? "n/a"
+                   : slotsAfterLeave < slotsOnTodos ? "yes"
+                   : `no(${slotsOnTodos}->${slotsAfterLeave})`;
+  if (routeFreed !== "yes") console.table(window.kokaDebug.slots());
+  // leak detector: no live slot may reference a node detached from the
+  // document (a Koka value still owning DOM the page cannot show)
+  const stray = window.kokaDebug.detached();
+  const detachedOk = stray.length === 0 ? "0" : `${stray.length}(${stray.map((s) => s.what).join(",")})`;
+  document.title = `spa:todos=${todosCount};counter=${counterText};routefreed=${routeFreed};back=${backCount};keyed=${keyedReuse};drag=${dragOk};coords=${coords};stable=${stable};theme=${themeOk};detached=${detachedOk}`;
+</script>

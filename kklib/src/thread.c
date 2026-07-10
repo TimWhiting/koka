@@ -361,9 +361,17 @@ static void kk_task_group_init(void) {
 
 kk_promise_t kk_task_schedule( kk_function_t fun, kk_context_t* ctx ) {
   pthread_once( &task_group_once, &kk_task_group_init );
-  kk_assert(task_group != NULL);
+  if (task_group == NULL) {
+    // no threads on this host (e.g. `pthread_create` fails on a wasi-threads
+    // build running under a host without thread-spawn support): degrade
+    // gracefully by running the task synchronously on the calling thread
+    kk_promise_t p = kk_promise_alloc(ctx);
+    kk_box_dup(p,ctx);
+    kk_promise_set( p, kk_function_call(kk_box_t, (kk_function_t, kk_context_t*), fun, (fun, ctx), ctx), ctx );
+    return p;
+  }
   kk_block_mark_shared( kk_datatype_as_ptr(fun,ctx), ctx);  // mark everything reachable from the task as shared
-  if (ctx->task_group == NULL) { 
+  if (ctx->task_group == NULL) {
     ctx->task_group = task_group; // let main thread participate instead of blocking on a promise.get
   }
   return kk_task_group_schedule( task_group, fun, ctx );

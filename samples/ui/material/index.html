@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koka × Material 3</title>
+<style> html, body { margin: 0; padding: 0; background: #fffbff; } </style>
+<div id="app"></div>
+<script type="module">
+  import { runKoka } from "./web-ui-host.js";
+  await runKoka("./app.wasm");
+</script>

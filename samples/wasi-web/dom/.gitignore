@@ -1,0 +1,4 @@
+# build.sh output: regenerate via ./build.sh (jco-transpiled JS, vendored
+# node_modules/preview2-shim, the linked .wasm, and koka's own intermediate
+# .c/.o files are all derived, not hand-written).
+/out/

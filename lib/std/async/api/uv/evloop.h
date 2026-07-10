@@ -77,3 +77,14 @@ kk_std_core_exn__error kk_result_ok( kk_box_t val, kk_context_t* ctx );
 kk_std_core_exn__error kk_result_uv_req_dispose( uv_req_t* req, void* arg, kk_uv_req_dispose_fun_t* dispose, kk_context_t* ctx );  
 kk_std_core_exn__error kk_result_uv_req_dispose0( uv_req_t* req, kk_context_t* ctx ); // use `kk_uv_req_dispose`
 kk_std_core_exn__error kk_error_from_uv_errno( int uv_err, kk_context_t* ctx );
+
+// ---------------------
+// External-wait integration (the libuv "embed" pattern; see evloop.c): a host
+// UI toolkit that must own the thread's sleep (GLFW/Cocoa) installs a waiter +
+// wake; the running loop switches to alternating uv_run(NOWAIT) with the
+// host's wait. `kk_uv_external_signal_*` parks/wakes one strand on host input.
+
+typedef void (kk_uv_external_wait_fun)(int64_t timeout_ms);
+void kk_uv_loop_install_external_wait( kk_uv_external_wait_fun* wait, void (*wake)(void) );
+kk_std_core_exn__error kk_uv_external_signal_setup( kk_uv_loop_t loop, kk_function_t cb, kk_context_t* ctx );
+void kk_uv_external_signal_trigger(void);

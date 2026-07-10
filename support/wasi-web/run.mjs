@@ -21,9 +21,39 @@ const wasi = new WASI({
 });
 
 const wasmBytes = await readFile(new URL("./{{MODULE}}.wasm", import.meta.url));
-const { instance } = await WebAssembly.instantiate(wasmBytes, {
+const wasmModule = await WebAssembly.compile(wasmBytes);
+
+// This generic runner only supplies WASI + koka:async/timers. A program that
+// imports more (e.g. `koka:dom` from a DOM/browser sample) needs its own host
+// (usually a browser page) providing those imports -- diagnose that up front
+// instead of failing with an opaque instantiation TypeError.
+{
+  const provided = new Set(["wasi_snapshot_preview1", "koka:async/timers", "env", "wasi"]);
+  const missing = [...new Set(WebAssembly.Module.imports(wasmModule)
+                      .map((i) => i.module).filter((m) => !provided.has(m)))];
+  if (missing.length > 0) {
+    console.error(`error: this program imports [${missing.join(", ")}] which this generic node runner does not provide.`);
+    console.error(`hint : browser/DOM programs need their sample's own host page -- run its build.sh and serve the staged out/ directory it prints.`);
+    process.exit(1);
+  }
+}
+
+// --wasithreads builds import shared memory + wasi.thread-spawn. node's
+// builtin `node:wasi` cannot host wasi-threads, so under node a threaded
+// build runs single-threaded: we supply the memory it asks for and a spawn
+// hook that always fails (pthread_create sees EAGAIN). Use the browser
+// (index.html + serve.py) for actual threads.
+const MEMORY = {{MEMORY}};
+const importsMemory = WebAssembly.Module.imports(wasmModule).some((i) => i.kind === "memory");
+const threadImports = importsMemory
+  ? { env: { memory: new WebAssembly.Memory(MEMORY) },
+      wasi: { "thread-spawn": (_arg) => { console.error("[run.mjs] thread-spawn refused: node:wasi cannot host wasi-threads; use the browser host"); return -1; } } }
+  : {};
+
+const instance = await WebAssembly.instantiate(wasmModule, {
   wasi_snapshot_preview1: wasi.wasiImport,
   "koka:async/timers": timers,
+  ...threadImports,
 });
 
 // std/async's wasiweb evloop needs to call back into this instance's

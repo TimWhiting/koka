@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ui test live</title>
+<style> html, body { margin: 0; padding: 0; background: #16161e; } </style>
+<div id="app"></div>
+<script type="module">
+  // the live test drives itself; the pass/fail probe is document.title
+  // (uitest:pass:N / uitest:fail:N/M -- set by ui/test-live's test-report)
+  // mirror console into the DOM so --dump-dom shows the check report
+  const mirror = document.createElement("pre"); mirror.id = "log";
+  document.body.append(mirror);
+  const olog = console.log.bind(console);
+  console.log = (...a) => { mirror.textContent += a.join(" ") + "\n"; olog(...a); };
+  const oerr = console.error.bind(console);
+  console.error = (...a) => { mirror.textContent += "[err] " + a.join(" ") + "\n"; oerr(...a); };
+  import("./web-ui-host.js").then(({ runKoka }) => runKoka("./app.wasm"));
+</script>

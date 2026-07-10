@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koka × transform3d + images</title>
+<style> html, body { margin: 0; padding: 0; background: #16161e; } </style>
+<div id="app"></div>
+<script type="module">
+  import { runKoka } from "./web-ui-host.js";
+  await runKoka("./app.wasm");
+</script>
+<script type="module">
+  // optional self-driver: open with ?drive. Clicks the flip card and reports
+  // whether a matrix3d(...) transform shows up (the transform3d pixel-check
+  // proxy on the web side) and whether the <img> tags are present.
+  if (new URLSearchParams(location.search).has("drive")) {
+    const tick = (ms = 80) => new Promise(r => setTimeout(r, ms));
+    const app = document.getElementById("app");
+    const divs = () => [...document.querySelectorAll("div")];
+    const clickEl = el => { if (!el) return; const r = el.getBoundingClientRect();
+      app.dispatchEvent(new MouseEvent("click", { clientX: r.x + r.width/2, clientY: r.y + r.height/2, bubbles: true })); };
+    await tick(400);
+    const hasMatrixBefore = divs().some(d => (d.getAttribute("style") || "").includes("matrix3d("));
+    const cardDiv = divs().find(d => d.textContent.includes("Front"));
+    clickEl(cardDiv);
+    await tick(700);
+    const hasBack = divs().some(d => d.textContent.trim() === "Back");
+    const imgCount = document.querySelectorAll("img").length;
+    document.title = `gallery:matrix=${hasMatrixBefore ? "yes" : "no"};back=${hasBack ? "yes" : "no"};imgs=${imgCount}`;
+  }
+</script>

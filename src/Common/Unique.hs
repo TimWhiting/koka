@@ -13,7 +13,7 @@ module Common.Unique( -- * Unique
                      HasUnique(updateUnique,setUnique,unique,uniques,uniqueId,uniqueIds,uniqueName,uniqueNameFrom)
                    -- ** Instances
                    , Unique, runUnique, runUniqueWith, liftUnique, withUnique
-                   , UniqueT, runUniqueT
+                   , UniqueT(..), runUniqueT
                    ) where
 
 import Common.Id   ( Id, genId, idNumber )

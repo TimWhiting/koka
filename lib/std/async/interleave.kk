@@ -89,7 +89,31 @@ pub fun list/interleaved(xs : list<() -> <async|e> a> ) : <async|e> list<a>
   xs.interleave-list(True)
 
 
-// Interleave a list of actions
+// Interleave with dynamic forking: run `main` with a `fork` function that
+// adds a new strand to the SAME interleaving at any point (also from within
+// other strands, or from tasks that were themselves forked). Intended for
+// supervisor-style runtimes (e.g. a UI event loop) whose main strand never
+// returns: forking never nests handler scopes, so the stack stays flat no
+// matter how many strands are started over time.
+pub fun forking( main : (fork : (action : () -> <async|e> ()) -> ioc ()) -> <async|e> () ) : <async|e> ()
+  with pretend-no-ndet
+  val forkch = channel()   // of `() -> <async|e> ()` fork actions
+  with strand-actions(True)
+  with pretend-no-div
+  interleave-strands-ex(True) fn(interleave)
+    interleave
+      with mask<strands,ndet,div>
+      main( fn(action) forkch.emit-io(action) )
+    interleave
+      fun dispatch()
+        val t = with mask<strands,div> in forkch.receive
+        interleave
+          with mask<strands,ndet,div>
+          t()
+        dispatch()
+      dispatch()
+
+// Interleave a list of actions 
 fun list/interleave-list(xs : list<() -> <async|e> a>, needall : bool ) : <async,ndet|e> list<a>
   with strand-list(needall)
   interleave-strand-list(xs,needall)

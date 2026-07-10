@@ -1,0 +1,134 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>koka wasi-web DOM demo</title>
+<!--
+  Browser leg of the samples/wasi-web/dom demo (see build.sh/readme.md).
+
+  Rev 3 / Core Task 2: plain wasm32-wasip1 core module, no component model,
+  no jco, no import map for bare specifiers -- WASI is provided by
+  @bjorn3/browser_wasi_shim, vendored (copied here by the compiler's own
+  wasi-web post-link step, see support/wasi-web/index.html for the generic
+  template this file forks) under ./vendor/browser_wasi_shim/.
+
+  `koka:dom` is implemented directly below as plain functions taking/
+  returning *real* DOM objects -- `__externref_t` values on the wasm side,
+  ordinary JS object references here. There is no handle table, no `Map`,
+  anywhere in this file: `get-element-by-id` just returns the element (or
+  `null`, which the wasm<->JS boundary turns into a null externref on its
+  own) straight from `document.getElementById`; the wasm side is the one
+  that owns a table (jsobj.c, Perceus-refcounted, see dom.kk's `element`)
+  mapping those externrefs to small integers it can put inside a Koka value.
+  See ../readme.md for the full story.
+-->
+<button id="btn">click me</button>
+<p>counter: <span id="counter">(not started)</span></p>
+<!--
+  Slot-recycling proof target (see jsobj.c's `live-slots` export and
+  demo.kk's `touch-tmp`): looked up once, used once, and dropped -- never
+  otherwise touched by this page.
+-->
+<div id="tmp" style="display:none">(tmp)</div>
+<pre id="out"></pre>
+
+<script type="module">
+  import { WASI, File, OpenFile, ConsoleStdout } from "./vendor/browser_wasi_shim/index.js";
+  import * as timers from "./timers.js";
+
+  const out = document.getElementById("out");
+  const lines = [];
+  const print = (prefix, msg) => { lines.push(msg); console.log(prefix, msg); out.textContent = lines.join("\n"); };
+
+  const args = ["demo"];
+  const env = [];
+  const fds = [
+    new OpenFile(new File([])), // stdin
+    ConsoleStdout.lineBuffered((msg) => print("[stdout]", msg)),
+    ConsoleStdout.lineBuffered((msg) => print("[stderr]", msg)),
+  ];
+  const wasi = new WASI(args, env, fds);
+
+  // ---- koka:dom host implementation -------------------------------------
+  // Registry/setter pattern (see support/wasi-web/timers.js): the wasm
+  // instance doesn't exist yet when this module's import object is built
+  // (import objects are supplied to `WebAssembly.instantiate` *before* it
+  // returns an instance), so `add-event-listener`'s callback and `decode`
+  // close over a `let instance` set right after instantiation, below --
+  // exactly the same "hand the instance back in" shape `timers.js` uses for
+  // `koka:async/timers`, just inlined here since this import object is
+  // small and page-local rather than a shared file.
+  let instance = null;
+  const decoder = new TextDecoder();
+
+  function decode(ptr, len) {
+    // `instance.exports.memory` is the wasi command module's linear memory,
+    // exported automatically by wasi-libc/clang for every wasm32-wasip1
+    // build -- the same memory `ptr` (a plain i32 offset) indexes into on
+    // the guest side (see dom.c's `kk_string_buf_borrow`-based marshaling).
+    const bytes = new Uint8Array(instance.exports.memory.buffer, ptr, len);
+    return decoder.decode(bytes);
+  }
+
+  const dom = {
+    // Real DOM object in/out -- no handle table. `document.getElementById`
+    // already returns `null` for "not found", and the wasm<->JS boundary
+    // turns a JS `null` returned in an externref position into a null
+    // externref on its own (`dom.c` checks
+    // `__builtin_wasm_ref_is_null_extern` on the way back in).
+    "get-element-by-id": (ptr, len) => document.getElementById(decode(ptr, len)),
+    "set-inner-text": (el, ptr, len) => { if (el != null) el.textContent = decode(ptr, len); },
+    "add-event-listener": (el, ptr, len, listenerId) => {
+      if (el == null) return;
+      // `listenerId` crosses as a wasm `u64`, surfaced to JS as a `BigInt`
+      // -- passed straight through to `dispatch-event` unchanged.
+      el.addEventListener(decode(ptr, len), () => {
+        instance.exports["koka:dom/dispatch-event"](listenerId);
+      });
+    },
+  };
+
+  try {
+    const wasm = await WebAssembly.compileStreaming(fetch("./demo.wasm"));
+    // `WebAssembly.instantiate(module, importObject)` (a *compiled* Module,
+    // not raw bytes) resolves directly to the Instance -- not `{instance,
+    // module}` (that shape is only for the raw-bytes overload).
+    instance = await WebAssembly.instantiate(wasm, {
+      wasi_snapshot_preview1: wasi.wasiImport,
+      "koka:async/timers": timers,
+      "koka:dom": dom,
+    });
+
+    // hand timers.js the instance before starting the guest, same
+    // registry/setter pattern as run.mjs/support/wasi-web/index.html (this
+    // demo never actually schedules a timer, but `evloop.c`'s
+    // `koka:async/timers` import still has to be satisfiable at
+    // instantiation time since dom.kk transitively imports std/async).
+    timers.setInstance(instance);
+
+    const exitCode = wasi.start(instance);
+
+    const loopDone = instance.exports["koka:async/loop-done"];
+    if (typeof loopDone === "function" && !loopDone()) {
+      const iv = setInterval(() => {
+        if (loopDone()) clearInterval(iv);
+      }, 50);
+    }
+    if (lines.length === 0) out.textContent = `(no output, exit code ${exitCode})`;
+  } catch (e) {
+    out.textContent = "error: " + e;
+    console.error(e);
+    throw e;
+  }
+
+  // Auto-verification hook: dispatch two synthetic clicks on #btn (the same
+  // element demo.kk's `main` registered a `koka:dom` "click" listener on),
+  // then mirror #counter's live text and the wasm-side slot count into the
+  // page title so a headless browser's `--dump-dom` can assert on both
+  // without any further DOM inspection.
+  const btn = document.getElementById("btn");
+  const counter = document.getElementById("counter");
+  btn.click();
+  btn.click();
+  const liveSlots = instance.exports["koka:dom/live-slots"];
+  const slots = typeof liveSlots === "function" ? liveSlots() : -1;
+  document.title = "counter=" + counter.textContent + ";slots=" + slots;
+</script>

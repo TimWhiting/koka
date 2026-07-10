@@ -1,0 +1,85 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koka × ui — overlays</title>
+<style> html, body { margin: 0; padding: 0; background: #16161e; } </style>
+<div id="app"></div>
+<script type="module">
+  import { runKoka } from "./web-ui-host.js";
+  await runKoka("./app.wasm");
+</script>
+<script type="module">
+  // optional self-driver for headless testing: open with ?drive. Exercises the
+  // overlay layer end to end: a cursor-anchored context menu (on-click-at), an
+  // item click that dispatches + closes, a scrim (outside) click that dismisses,
+  // and a modal dialog with a dimmed scrim.
+  if (new URLSearchParams(location.search).has("drive")) {
+    const tick = (ms = 80) => new Promise(r => setTimeout(r, ms));
+    const divs = () => [...document.querySelectorAll("div")];
+    const hasText = t => divs().some(d => d.textContent === t);
+    const hasSub  = t => divs().some(d => d.textContent.includes(t));
+    const clickable = t => divs().find(d => d.textContent === t && d.style.cursor === "pointer");
+    // Input is COORDINATE-based now (root hit-testing, same as native): dispatch a
+    // click at a real viewport point; the app hit-tests the laid-out tree there.
+    const app = document.getElementById("app");
+    const clickPt = (x, y) => app.dispatchEvent(new MouseEvent("click", { clientX: x, clientY: y, bubbles: true }));
+    const clickEl = el => { if (!el) return; const r = el.getBoundingClientRect(); clickPt(r.x + r.width/2, r.y + r.height/2); };
+    const rightClickEl = el => { if (!el) return; const r = el.getBoundingClientRect();
+      app.dispatchEvent(new MouseEvent("contextmenu", { clientX: r.x + r.width/2, clientY: r.y + r.height/2, bubbles: true })); };
+    await tick(700);
+
+    // 1. context menu: RIGHT-click the target box (at its real center) -> on-context-at.
+    // Re-query each time: a re-render replaces the DOM node.
+    const openMenu = () => rightClickEl(clickable("Right-click for a context menu"));
+    openMenu();
+    await tick();
+    const menuOpen = hasText("Cut") ? "yes" : "no";      // the menu painted over the main view
+
+    // 2. click a menu item -> dispatch + close.
+    clickEl(clickable("Cut")); await tick();
+    const picked = hasSub("picked Cut") ? "yes" : "no";
+    const menuClosed = !hasText("Cut") ? "yes" : "no";
+
+    // 3. reopen, then click OUTSIDE the small menu (top-left corner) -> scrim dismisses.
+    openMenu();
+    await tick();
+    clickPt(8, 8);
+    await tick();
+    const scrimDismissed = (!hasText("Cut") && hasSub("dismissed")) ? "yes" : "no";
+
+    // 4. dropdown -> its own menu of sort options.
+    clickEl(clickable("Sort  ▾")); await tick();
+    const dropdownOpen = hasText("Date") ? "yes" : "no";
+    clickEl(clickable("Date")); await tick();
+    const sorted = hasSub("sorted by Date") ? "yes" : "no";
+
+    // 5. modal dialog with a dimmed scrim.
+    clickEl(clickable("Open dialog")); await tick();
+    const dialogOpen = hasText("Dialog title") ? "yes" : "no";
+    const dim = divs().some(d => /rgba\(0,\s*0,\s*0,\s*0\.4\)/.test(d.style.background)) ? "yes" : "no";
+    clickEl(clickable("Close")); await tick();
+    const dialogClosed = !hasText("Dialog title") ? "yes" : "no";
+
+    // 6. drag & drop (unified ghost model): mousedown on the chip, move to the
+    // bin, mouseup -> hit-drop dispatches Dropped. Re-query the bin after moves
+    // (a re-render replaces the node).
+    const center = el => { const r = el.getBoundingClientRect(); return [r.x + r.width/2, r.y + r.height/2]; };
+    const mouse = (type, x, y) => app.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: y, bubbles: true }));
+    const chip = divs().find(d => d.textContent === "▤ Drag me");  // drag source: cursor:grab, not pointer
+    const bin0 = divs().find(d => d.textContent === "Drop here");
+    let dropped = "no";
+    if (chip && bin0) {
+      const [cx, cy] = center(chip);
+      const [bx, by] = center(bin0);
+      mouse("mousedown", cx, cy); await tick();
+      mouse("mousemove", (cx+bx)/2, (cy+by)/2); await tick();
+      mouse("mousemove", bx, by); await tick();
+      mouse("mouseup", bx, by); await tick();
+      dropped = hasSub("dropped card") ? "yes" : "no";
+    }
+
+    document.title = `overlay:menu=${menuOpen};pick=${picked};menuclosed=${menuClosed}`
+      + `;scrim=${scrimDismissed};dropdown=${dropdownOpen};sorted=${sorted}`
+      + `;dialog=${dialogOpen};dim=${dim};dialogclosed=${dialogClosed};drop=${dropped}`;
+  }
+</script>

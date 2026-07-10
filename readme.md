@@ -109,6 +109,10 @@ Unix. The following programs are required to build Koka:
   instructions (Koka can find vcpkg automatically if installed to `~/vcpkg`).
 * Optional: [nodejs](http://nodejs.org) if using the Javascript backend.
 * Optional: [emscripten] and [wasmtime] if using the Wasm backend.
+* Optional: [wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases) (≥ 34) for the native
+  `--target=wasi` (standalone, runs via [wasmtime]) and `--target=wasi-web` (browser/node,
+  no emscripten) backends; `wasi-web` also needs [nodejs](http://nodejs.org) ≥ 24.
+  See `samples/wasi-web/dom/readme.md` for a browser DOM interop demo.
 * Optional: On Windows it is recommended to install the [clang][winclang] C compiler (use `LLVM-<version>-win64.exe`), or the [Visual Studio](https://visualstudio.microsoft.com/downloads/) C compiler.
 * On Windows, first set the console codepage to UTF8 to avoid build errors with stack: **`$ chcp 65001`**.
 

@@ -415,8 +415,9 @@ codeGenLinkExe term flags stksize clink mainExe
             -> do return (LinkExe mainTarget
                             (runCommand term flags ([wasmrun flags,mainTarget] ++ mainflags)))
           C Wasi
-            -> do return (LinkExe mainTarget
-                            (runCommand term flags ([wasmrun flags,mainTarget] ++ mainflags)))
+            -> do let wasmtimeFlags = if wasiThreads flags then ["-S","threads=y"] else []
+                  return (LinkExe mainTarget
+                            (runCommand term flags ([wasmrun flags] ++ wasmtimeFlags ++ [mainTarget] ++ mainflags)))
           C WasmWeb
             -> do return (LinkExe mainTarget
                             (runSystemEcho term flags (dquote mainTarget ++ " &")))
@@ -448,13 +449,28 @@ wasiWebPostLink term flags mainTarget
   = do let outDir       = dirname mainTarget
            moduleBase   = notext (notdir mainTarget)
            templatesDir = localShareDir flags ++ "/support/wasi-web/"
-           subst        = replaceAll "{{MODULE}}" moduleBase
+           -- shared-memory descriptor for --wasithreads builds: must match the
+           -- linker's --initial-memory / --max-memory (Options.hs wasiThreadLinkFlags)
+           maxmemPages  = (if heapSize flags > 0 then heapSize flags else 1024*1024*1024) `div` 65536
+           memoryJson   = if wasiThreads flags
+                            then "{ initial: 1024, maximum: " ++ show maxmemPages ++ ", shared: true }"
+                            else "null"
+           subst        = replaceAll "{{MODULE}}" moduleBase . replaceAll "{{MEMORY}}" memoryJson
            runMjs       = joinPath outDir "run.mjs"
 
        createDirectoryIfMissing True outDir
        copyTextFileWith (templatesDir ++ "run.mjs")    runMjs                         subst
        copyTextFileWith (templatesDir ++ "index.html") (joinPath outDir "index.html") subst
        copyBinaryFile   (templatesDir ++ "timers.js")  (joinPath outDir "timers.js")
+       -- COOP/COEP dev server: threaded builds (SharedArrayBuffer) need the
+       -- cross-origin-isolation headers a plain static server cannot send
+       copyBinaryFile   (templatesDir ++ "serve.py")   (joinPath outDir "serve.py")
+       -- wasi-threads host support: worker + spawn/shared-memory shim (the
+       -- {{MEMORY}} substitution turns them off for non-threaded builds)
+       copyTextFileWith (templatesDir ++ "wasi-threads.js") (joinPath outDir "wasi-threads.js") subst
+       copyTextFileWith (templatesDir ++ "wasi-worker.js")  (joinPath outDir "wasi-worker.js")  subst
+       -- host runtime for lib/web-ui apps (koka:dom imports, debug API)
+       copyBinaryFile   (templatesDir ++ "web-ui-host.js") (joinPath outDir "web-ui-host.js")
 
        -- vendor @bjorn3/browser_wasi_shim (committed under
        -- support/wasi-web/vendor/browser_wasi_shim/) next to index.html so the
