@@ -60,6 +60,7 @@ import async/internal
 import async/api/evloop
   [host=libc|jsnode]    async/api/uv/evloop        // libuv for C or node for javascript
   [host=jsweb|wasmweb]  async/api/web/evloop       // javascript or wasm (emscripten) in a browser
+  [host=wasi-web]       async/api/wasiweb/evloop   // wasm32-wasip1 core module, inverted (JS-driven) event loop
   // todo: wasm standalone using wasi
 
 
