@@ -67,11 +67,10 @@ static void kk_uv_compute_after_cb(uv_work_t* req, int status) {
   kk_uv_compute_t* w = (kk_uv_compute_t*)req;
   void* resume_ptr = w->resume;
   w->resume = NULL;
-  if (resume_ptr != NULL) {
+  if (resume_ptr != NULL && w->ran) {
     // normal delivery on the loop thread; `resume` consumes both itself and the boxed result
     kk_function_t resume = kk_datatype_from_ptr((kk_ptr_t)resume_ptr, ctx);
-    kk_box_t res = (w->ran ? w->result : kk_box_any(ctx));
-    kk_function_call(kk_unit_t, (kk_function_t, kk_box_t, kk_context_t*), resume, (resume, res, ctx), ctx);
+    kk_function_call(kk_unit_t, (kk_function_t, kk_box_t, kk_context_t*), resume, (resume, w->result, ctx), ctx);
   }
   else {
     // disposed/canceled before delivery: release anything still held
