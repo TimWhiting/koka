@@ -396,8 +396,7 @@ kk_decl_export void kk_string_literal_init(kk_string_t* p, kk_ssize_t len, const
   if (kk_datatype_is_ptr(s.bytes)) {
     kk_block_make_stuck(kk_datatype_as_ptr(s.bytes, ctx));
   }
-  kk_intb_t expected = kk_datatype_null().dbox;
-  if (!kk_atomic_cas_strong_acq_rel((_Atomic(kk_intb_t)*)&(p->bytes.dbox), &expected, s.bytes.dbox)) {
+  if (!kk_datatype_atomic_publish(&p->bytes, s.bytes)) {
     // another thread won the initialization: discard ours (un-stick, then drop)
     if (kk_datatype_is_ptr(s.bytes)) {
       kk_block_refcount_set(kk_datatype_as_ptr(s.bytes, ctx), 0);

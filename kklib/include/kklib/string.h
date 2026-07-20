@@ -134,17 +134,10 @@ static inline kk_string_t kk_string_empty() {
 // One-time thread-safe initialization (function-local literals can be first used by
 // two threads concurrently); the literal's refcount is made STUCK so cross-thread
 // dup/drop of the shared static is a no-op (see `kk_string_literal_init`).
-// The fast-path check is an ACQUIRE atomic load: it pairs with the release-CAS
-// publish in `kk_string_literal_init` so the string bytes written before the
-// publish are visible when we dereference through the loaded pointer (a plain
-// load here would formally be a C11 data race; relaxed would need to rely on
-// the address dependency which C11 only guarantees under `consume`, which
-// compilers promote to acquire anyway -- so acquire is the honest choice and
-// free on x86 / a single `ldar` on arm). The successful CAS is the ONLY write
-// to the slot (a failed CAS is just a load), so once non-null is observed here
-// no further writes exist and subsequent plain reads of `name` are race-free.
+// The fast-path check uses `kk_datatype_atomic_load_acquire` to pair with the
+// release-CAS publish in `kk_string_literal_init`; see that helper's doc comment.
 #define kk_init_string_literal(name,ctx) \
-  if (kk_atomic_load_acquire((_Atomic(kk_intb_t)*)&(name.bytes.dbox)) == kk_datatype_null().dbox) { kk_string_literal_init(&name, _static_len_##name, _static_##name, ctx); }
+  if (kk_datatype_is_null(kk_datatype_atomic_load_acquire(&name.bytes))) { kk_string_literal_init(&name, _static_len_##name, _static_##name, ctx); }
 
 #define kk_define_string_literal(decl,name,len,chars,ctx) \
   kk_declare_string_literal(decl,name,len,chars); \

@@ -1328,6 +1328,25 @@ static inline bool kk_datatype_is_null(kk_datatype_t d) {
   return kk_datatype_eq(d, kk_datatype_null());
 }
 
+// Atomic access to a datatype slot that is published at most once, going
+// null -> value by a single successful `kk_datatype_atomic_publish` (used for
+// lazily initialized statics like string literals). The acquire load pairs
+// with the release CAS so everything written before the publish is visible
+// through the loaded value; once non-null is observed the slot is immutable
+// and plain reads are race-free.
+static inline kk_datatype_t kk_datatype_atomic_load_acquire( kk_datatype_t* p ) {
+  kk_datatype_t d;
+  d.dbox = kk_atomic_load_acquire((_Atomic(kk_intb_t)*)&(p->dbox));
+  return d;
+}
+
+// Publish `d` into a null slot; returns `false` if another thread already
+// published (the slot keeps the winner's value and `d` should be discarded).
+static inline bool kk_datatype_atomic_publish( kk_datatype_t* p, kk_datatype_t d ) {
+  kk_intb_t expected = kk_datatype_null().dbox;
+  return kk_atomic_cas_strong_acq_rel((_Atomic(kk_intb_t)*)&(p->dbox), &expected, d.dbox);
+}
+
 static inline kk_datatype_t kk_datatype_unbox(kk_box_t b) {
   kk_datatype_t d = { b.box };
   return d;
