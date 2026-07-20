@@ -35,6 +35,12 @@ import async/async
 // threadpool + uv_thread); every JavaScript/Wasm host degrades to a cooperative
 // strand. `pub import` re-exports the backend's portable surface -- `xchannel`,
 // `xsender`, `spawn-thread`, `native-threads` -- through `std/async/thread`.
+//
+// Note on `spawn-thread`: workers are DETACHED -- there is no join handle and
+// process exit does NOT wait for spawned workers; signal completion through an
+// `xchannel` if work must finish before the main loop drains. On hosts without
+// OS threads (js/wasm) `spawn-thread` is a no-op (the body is not run); gate
+// threaded topologies on `native-threads()`.
 pub import async/api/thread
   [host=libc]                          async/api/uv/thread
   [host=jsnode|jsweb|wasmweb] async/api/coop/thread

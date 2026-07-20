@@ -53,11 +53,16 @@ pub fun xchannel/try-xreceive( x : xchannel<a> ) : <async,ndet> maybe<a>
   x.chan.try-receive
 
 // No native handle to close on a cooperative host; a no-op for API parity.
+// (Unlike native, emits after `close` still deliver here -- but on a correctly
+// gated single-threaded host nothing emits after close anyway.)
 pub fun xchannel/close( x : xchannel<a> ) : ioc ()
   ()
 
-// No OS threads here: gated out by `native-threads()`. If a caller ignores the
-// gate and calls this, it is a no-op (the body never runs) -- deliberately inert
-// rather than throwing, since it is never reached on a correctly-gated path.
+// No OS threads here: gated out by `native-threads()`. On js/wasm hosts this is
+// a TRUE no-op: the body is NOT run (not even inline -- running it inline would
+// silently change concurrency semantics and can deadlock, e.g. a body that
+// `xreceive`s values the caller only emits after `spawn-thread` returns).
+// Deliberately inert rather than throwing, since it is never reached on a
+// correctly-gated path: check `native-threads()` before relying on a worker.
 pub fun spawn-thread( body : () -> <async,ioc> () ) : ioc ()
-  println("std/async: spawn-thread has no effect on this host (no OS threads)")
+  ()
