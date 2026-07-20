@@ -134,6 +134,7 @@ typedef struct kk_xchan_s {
   uv_mutex_t   mutex;
   kk_xnode_t*  head;     // FIFO queue head/tail, guarded by `mutex`
   kk_xnode_t*  tail;
+  bool         closed;   // guarded by `mutex`; set by `kk_xchan_close` BEFORE uv_close
   void*        deliver;  // (box) -> ioc () block ptr; OWNER-thread ref (delivers into the Koka channel)
 } kk_xchan_t;
 
@@ -156,15 +157,22 @@ static void kk_xchan_async_cb(uv_async_t* async) {
   }
 }
 
-// after uv_close completes (owner thread): drop anything still held, then free
+// after uv_close completes (owner thread): drop any queued values and the
+// deliver ref. The struct and its mutex are deliberately NOT freed: a worker
+// thread may still hold a (unrefcounted) sender and race an `xemit` against the
+// close -- emit-after-close takes the mutex, sees `closed`, and safely drops the
+// value, which requires the mutex (and the flag) to stay valid for the process
+// lifetime. This is a small one-time leak per closed channel, the same
+// process-lifetime trade-off as stuck string literals and static constants.
 static void kk_xchan_close_cb(uv_handle_t* h) {
   kk_xchan_t* c = (kk_xchan_t*)h;
   kk_context_t* ctx = kk_get_context();
-  uv_mutex_destroy(&c->mutex);
-  kk_xnode_t* n = c->head;
+  uv_mutex_lock(&c->mutex);
+  kk_xnode_t* n = c->head; c->head = NULL; c->tail = NULL;
+  uv_mutex_unlock(&c->mutex);
   while (n != NULL) { kk_xnode_t* next = n->next; kk_box_drop(n->value, ctx); kk_free(n, ctx); n = next; }
   if (c->deliver != NULL) kk_datatype_drop(kk_datatype_from_ptr((kk_ptr_t)c->deliver, ctx), ctx);
-  kk_free(c, ctx);
+  c->deliver = NULL;
 }
 
 // noop dispose for the creation await (the channel outlives the await -- its
@@ -194,29 +202,49 @@ kk_std_core_exn__error kk_xchan_create(kk_uv_loop_t loop, kk_function_t deliver,
   return kk_result_uv_handle_dispose(NULL, NULL, &kk_xchan_noop_dispose, ctx);
 }
 
-// Close the channel from the OWNER thread (the loop that created it): uv_close the
-// async handle, then `close_cb` drains any queued values, drops the deliver, and
-// frees the struct. Owner-thread only, so no cross-thread free. Callers must
-// ensure no other thread `xemit`s after close (senders then dangle).
+// Close the channel from the OWNER thread (the loop that created it): set the
+// `closed` flag under the mutex (so any concurrent `xemit` either got its wake in
+// before us, or sees the flag and no-ops), then uv_close the async handle;
+// `close_cb` drops any queued values and the deliver ref. Emits that arrive
+// after close are safe no-ops that drop the value (see `kk_xchan_emit`); closing
+// twice is likewise a no-op.
 kk_unit_t kk_xchan_close(kk_box_t xcbox, kk_context_t* ctx) {
   kk_xchan_t* c = (kk_xchan_t*)kk_cptr_unbox_borrowed(xcbox, ctx);
-  uv_close((uv_handle_t*)&c->async, kk_xchan_close_cb);
+  uv_mutex_lock(&c->mutex);
+  bool was_closed = c->closed;
+  c->closed = true;
+  uv_mutex_unlock(&c->mutex);
+  if (!was_closed) {
+    uv_close((uv_handle_t*)&c->async, kk_xchan_close_cb);
+  }
   kk_box_drop(xcbox, ctx);
   return kk_Unit;
 }
 
 // Emit `value` into the channel from ANY thread: mark it thread-shared, enqueue
-// under the mutex, and wake the owner loop.
+// under the mutex, and wake the owner loop. The `closed` check and the
+// `uv_async_send` both happen INSIDE the critical section: `kk_xchan_close` sets
+// `closed` under the same mutex before it calls uv_close, so we can never call
+// uv_async_send on a closed (or closing) handle -- either our send completes
+// before close takes the lock, or we see `closed` and safely drop the value
+// (emit-after-close is a documented no-op, matching the error-free style of the
+// rest of this channel API).
 kk_unit_t kk_xchan_emit(kk_box_t xcbox, kk_box_t value, kk_context_t* ctx) {
   kk_xchan_t* c = (kk_xchan_t*)kk_cptr_unbox_borrowed(xcbox, ctx);
   kk_box_mark_shared(value, ctx);
-  kk_xnode_t* n = (kk_xnode_t*)kk_malloc(sizeof(kk_xnode_t), ctx);
-  n->next = NULL; n->value = value;   // ownership of `value` transferred to the node
   uv_mutex_lock(&c->mutex);
-  if (c->tail != NULL) c->tail->next = n; else c->head = n;
-  c->tail = n;
-  uv_mutex_unlock(&c->mutex);
-  uv_async_send(&c->async);
+  if (c->closed) {
+    uv_mutex_unlock(&c->mutex);
+    kk_box_drop(value, ctx);          // emit-after-close: drop the value, no wake
+  }
+  else {
+    kk_xnode_t* n = (kk_xnode_t*)kk_malloc(sizeof(kk_xnode_t), ctx);
+    n->next = NULL; n->value = value; // ownership of `value` transferred to the node
+    if (c->tail != NULL) c->tail->next = n; else c->head = n;
+    c->tail = n;
+    uv_async_send(&c->async);
+    uv_mutex_unlock(&c->mutex);
+  }
   kk_box_drop(xcbox, ctx);            // drop this (dup'd) channel reference
   return kk_Unit;
 }
@@ -246,6 +274,9 @@ static void kk_thread_entry(void* arg) {
 }
 
 // Spawn an OS thread that runs `body` (a `() -> ioc ()` that wraps `async(...)`).
+// The `uv_thread_t` is deliberately discarded: workers are DETACHED (never
+// joined), and process exit does not wait for them -- see the doc comment on
+// `spawn-thread` in thread.kk. Completion must be signaled through a channel.
 kk_unit_t kk_spawn_thread(kk_function_t body, kk_context_t* ctx) {
   // `body` crosses to the new thread -> mark its reachable graph thread-shared
   kk_block_mark_shared(kk_datatype_as_ptr(body, ctx), ctx);

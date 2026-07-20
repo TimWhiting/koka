@@ -78,8 +78,10 @@ pub fun xchannel() : async xchannel<a>
 
 // Emit `value` from ANY thread through the SENDER (thread-safe). Marks the value
 // thread-shared and wakes the owner loop; a waiting `xreceive` resumes there. No
-// observable Koka effect (the queue+wake is invisible to the caller). Give a
-// worker `x.sender` -- never the whole `xchannel` (which holds the Koka channel).
+// observable Koka effect (the queue+wake is invisible to the caller). If the
+// channel has been `close`d, the emit is a safe no-op and the value is dropped.
+// Give a worker `x.sender` -- never the whole `xchannel` (which holds the Koka
+// channel).
 pub fun xsender/xemit( s : xsender<a>, value : a ) : ioc ()
   xchan-emit-prim(s.xc, value)
 
@@ -99,8 +101,12 @@ pub fun xchannel/try-xreceive( x : xchannel<a> ) : <async,ndet> maybe<a>
 
 // Close the channel from the OWNER thread. The handle is unrefcounted (not Koka
 // memory), so it does not free on drop -- call this to close the uv_async handle
-// (letting a finite program's loop drain) once no thread will `xemit` again. An
-// app that runs for its whole lifetime need not call it.
+// (letting a finite program's loop drain) once the channel is no longer needed.
+// Closing is safe against racing senders: any `xemit` after (or concurrent with)
+// the close is a safe no-op that drops the emitted value, and closing twice is a
+// no-op too. (The small C-side handle is kept alive for the process so late
+// senders never touch freed memory.) An app that runs for its whole lifetime
+// need not call it.
 pub fun xchannel/close( x : xchannel<a> ) : ioc ()
   xchan-close-prim(x.xc)
 
@@ -120,6 +126,13 @@ fun thread-main( body : () -> <async,ioc> () ) : ioc ()
 // `body` is a real async context: it may `wait`, `spawn`, `xreceive`/`xemit`, etc.
 // The thread runs until `body`'s loop drains (no active handles), then exits.
 // Cross-thread communication is via `xchannel`/`xsender` (thread-safe channels).
+//
+// The worker is DETACHED: there is no join handle, and process exit does NOT
+// wait for spawned workers -- when the main async loop drains and `main`
+// returns, the process exits and any still-running workers are terminated
+// mid-flight. If work must complete before exit, make the main loop wait for a
+// completion message from the worker (e.g. `xreceive` a done-signal, as the
+// bounded-channel layer does).
 pub fun spawn-thread( body : () -> <async,ioc> () ) : ioc ()
   spawn-thread-prim(fn() thread-main(body))
 
