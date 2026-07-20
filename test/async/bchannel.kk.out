@@ -1,2 +1,1 @@
-received: 100, in order: True
-sum: 5050
+async/bchannel/main: () -> <ioc,std/async/async/async> ()
