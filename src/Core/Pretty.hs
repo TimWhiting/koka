@@ -107,7 +107,7 @@ prettyCore env0 eguard inlineDefs core@(Core modName imports fixDefs typeDefGrou
 
     signatures   = extractSignatures core
     importedSyns = extractImportedSynonyms (coreProgName core) signatures
-    extraImports1 = map extractImportsFromSynInfo importedSyns
+    extraImports1 = map extractImportsFromSynInfo (filter (not . nameIsNil . qualifier . synInfoName) importedSyns)
     extraImports2 = extractImportFromSignatures signatures
     usedImports = extendImportMap (extraImports1 ++ extraImports2) (importsMap env0)
 
@@ -432,7 +432,8 @@ prettyGuard env (Guard test expr)
 
 prettyPatterns :: Env -> [Pattern] -> (Env,[Doc])
 prettyPatterns env pats
-  = foldl f (env,[]) pats
+  = let (env',docs) = foldl f (env,[]) pats
+    in (env', reverse docs)  -- foldl accumulates in reverse; restore source order (essential for .kki inline defs!)
   where
     f (env,docs) pat = let (env',doc) = prettyPattern env{expandSynonyms=True} pat
                        in (env',doc:docs)
@@ -552,7 +553,7 @@ extractImportFromSignatures sigs
 extractDepsFromSignatures :: Signatures -> [ModuleName]
 extractDepsFromSignatures sigs
   = let sigmods = S.map (qualifier . typeconName) (ftc sigs)
-    in S.toList sigmods
+    in filter (not . nameIsNil) (S.toList sigmods)  -- unqualified typecons (skolems/existentials) induce no import
 
 extractImportsFromSynInfo :: SynInfo -> Import
 extractImportsFromSynInfo syn
