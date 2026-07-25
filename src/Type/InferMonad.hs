@@ -2278,8 +2278,13 @@ lookupInfName name
        case infgammaLookup (unqualify name) (infgamma env) of
          Right (name,info)  -> return (Just (name,infoType info))
          Left []            -> return Nothing
-         Left infos -> do def <- currentDefName
-                          failure ("InferMonad.lookupInfName: ambigous local? " ++ show def ++ ": " ++ show name ++ ":\n" ++ unlines (map show infos))
+         Left infos -> -- multiple locals share the fully unqualified name (e.g. mutually recursive
+                       -- locally-qualified definitions like `expr/unreturn` and `let/unreturn`);
+                       -- prefer the match with the same locally qualified name (module stripped)
+                       case filter (\(qname,_) -> unqualify qname == unqualify name) infos of
+                         [(qname,info)] -> return (Just (qname,infoType info))
+                         _ -> do def <- currentDefName
+                                 failure ("InferMonad.lookupInfName: ambigous local? " ++ show def ++ ": " ++ show name ++ ":\n" ++ unlines (map show infos))
 
 
 findDataInfo :: Name -> Inf DataInfo
