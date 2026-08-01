@@ -10,7 +10,6 @@
 module async/os/net
 
 import std/async
-pub import std/async/internal   // re-export event-loop alias (Parc needs the def downstream)
 import std/num/int32
 import async/api/uv/net
 

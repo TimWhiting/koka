@@ -133,7 +133,7 @@ pub fun await1-noexn( label : string = "", setup : (resume : (a) -> ioc () ) -> 
   
 // Convenience function for async functions where the setup cannot fail. In that case
 // the result will never be an error.
-fun await-noexn( label : string = "", setup : (evloop : any, resume : (a) -> ioc ()) -> ioc dispose-fn ) : async a  
+fun await-noexn( label : string = "", setup : (evloop : event-loop, resume : (a) -> ioc ()) -> ioc dispose-fn ) : async a  
   val res = setup/await-error( label, fn(evloop,resume) setup(evloop,resume).Ok )   
   match res
     Ok(x)      -> x
@@ -149,7 +149,7 @@ pub fun await1( label : string = "", setup : (resume : (a) -> ioc () ) -> ioc er
   setup/await(label) fn(_evloop,resume) setup(fn(x) resume(Ok(x)))
 
 // Await with the exception effect
-pub fun setup/await( label : string = "", setup : (evloop : any, resume : error<a> -> ioc ()) -> ioc error<dispose-fn> ) : <async,exn> a  
+pub fun setup/await( label : string = "", setup : (evloop : event-loop, resume : error<a> -> ioc ()) -> ioc error<dispose-fn> ) : <async,exn> a  
   await-error1(label,setup).untry
 
 // Primitive await: call `setup` to set up an asynchronous callback with the host platform. 
@@ -158,12 +158,12 @@ pub fun setup/await( label : string = "", setup : (evloop : any, resume : error<
 // The `setup` function returns either an error, or a `dispose` funcion that is invoked on cancellation 
 // to dispose of any resources (see the implementation of `wait`).
 // The `resume` is invoked exactly once (either on the async completion callback, or on cancelation)
-pub fun setup/await-error( label : string, setup : (evloop : any, resume : (a) -> ioc ()) -> ioc error<dispose-fn> ) : async error<a>
+pub fun setup/await-error( label : string, setup : (evloop : event-loop, resume : (a) -> ioc ()) -> ioc error<dispose-fn> ) : async error<a>
   val res = do-await(fn(evloop,resume) { setup(evloop, fn(res) resume(Result(res),True)) }, async-scope, label)
   res.error
 
 
-pub fun setup/await-error1( label : string, setup : (evloop : any, resume : error<a> -> ioc ()) -> ioc error<dispose-fn> ) : async error<a>
+pub fun setup/await-error1( label : string, setup : (evloop : event-loop, resume : error<a> -> ioc ()) -> ioc error<dispose-fn> ) : async error<a>
   val res = do-await(fn(evloop,resume) { setup(evloop, fn(eres) resume(eres.await-result,True)) }, async-scope, label)
   res.error
 
@@ -183,7 +183,7 @@ fun await-result/error( res : await-result<a>, ?label : string ) : discontinue e
 extend type exception-info
   ExnSync
 
-pub fun do-sync( action : (evloop : any) -> ioc error<()>, label : string = "" ) : <exn,async> ()
+pub fun do-sync( action : (evloop : event-loop) -> ioc error<()>, label : string = "" ) : <exn,async> ()
   val res = do-await(fn(evloop,resume) { 
                         match action(evloop)
                           Error(err) -> Error(err) 
@@ -221,7 +221,7 @@ fun remove( xs : list<await-resumption>, scope : async-scope ) : list<await-resu
 
 // The outer `:async` effect handler. This is automatically applied by the compiler
 // around the `main` function if it has an `:async` effect.
-fun async-evloop(evloop : any, action : () -> <async,ioc> () ) : ioc ()
+fun async-evloop(evloop : event-loop, action : () -> <async,ioc> () ) : ioc ()
   // Outstanding async requests
   val outstanding : ref<global,list<await-resumption>> = ref([])
 
