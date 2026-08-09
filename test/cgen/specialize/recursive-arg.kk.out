@@ -30,6 +30,7 @@ cgen/specialize/recursive-arg/@mlift-xxx: (body : fexpr, c : string, e : fenv, i
 cgen/specialize/recursive-arg/@mlift-xxx: (body : fexpr, c : string, e : fenv, int) -> <exn,div,viol-flag> rv
 cgen/specialize/recursive-arg/@mlift-xxx: (rv, list<rv>) -> <div,exn,viol-flag> list<rv>
 cgen/specialize/recursive-arg/@mlift-xxx: (list<fexpr>, e : fenv, rv) -> <pure,viol-flag> list<rv>
+cgen/specialize/recursive-arg/@mlift-xxx: (string) -> <console,exn,div> ()
 cgen/specialize/recursive-arg/@mlift-xxx: (int) -> ()
 cgen/specialize/recursive-arg/@mlift-xxx: (rv) -> pure ()
 cgen/specialize/recursive-arg/@mlift-xxx: forall<h> (first : local-var<h,string>, knd : string, string) -> <local<h>,div,exn> ()
