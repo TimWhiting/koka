@@ -56,7 +56,7 @@ pub fun collapse-ndet( action : () -> <ndet,ndet|e> a ) : <ndet|e> a
 // The results may vary on the backend or compiler optimizations but the function pretends to be `:total`.
 // Note also that value types always compare unequal since each value will be boxed fresh in the heap
 // when calling this function.
-pub noinline extern unsafe-ptr-eq( x : a, y : a ) : bool
+pub inline extern unsafe-ptr-eq( ^x : a, ^y : a ) : bool
   c  inline "kk_box_eq(#1,#2)"
   cs inline "Object.ReferenceEquals(#1,#2)"
   js inline "Object.is(#1,#2)"
