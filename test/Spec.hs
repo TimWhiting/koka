@@ -289,6 +289,9 @@ main = do
   -- precompile mpat-lib so test/cgen/mpat.kk deterministically loads it from the .kki
   -- (checks the inline-definition pattern roundtrip; see mpat-lib.kk)
   runKoka stdcfg "" "test/cgen/mpat-lib.kk"
+  -- precompile specbox-lib so test/cgen/specbox.kk loads it from the .kki
+  -- (both carry a -O2 .flags file so they share one build directory)
+  runKoka stdcfg "" "test/cgen/specbox-lib.kk"
   runKoka stdcfg{flags = "--target=js":(flags stdcfg)} "" "util/link-test.kk" -- precompiled js libraries as well
   putStrLn "ok."
   let spec = if target options == "names"
