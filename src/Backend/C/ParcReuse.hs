@@ -222,6 +222,14 @@ ruLet' :: Def -> Reuse (Reused -> ([TName], Expr -> Expr))
 ruLet' def
   = withCurrentDef def $
       case defExpr def of
+          -- A closure is never a valid reuse donor: its size is not determined by
+          -- its type (two functions of the same signature can capture different
+          -- numbers of free variables), and `kk_block_alloc_at` does NOT check
+          -- the donor's usable size -- it re-stamps the header with the new
+          -- size, so reusing an undersized block silently corrupts the heap.
+          App var@(Var name _) (Var tname _ : _maybe_scanfields)
+            | getName name == nameDrop && isFunTName tname
+            -> return (\_reused -> ([], makeDefsLet [def]))
           App var@(Var name _) (Var tname _ : _maybe_scanfields) | getName name == nameDrop
             -> do ru <- ruMakeAvailable tname
                   scan <- ruGetScan tname
@@ -230,7 +238,7 @@ ruLet' def
                       Just ru | ru `S.member` reused
                         -> let assign = case scan of
                                  Just scan -> genDropReuse tname (makeInt32 (toInteger scan))
-                                 Nothing -> genReuseAddress tname
+                                 Nothing   -> genReuseAddress tname
                            in ([ru], makeDefsLet [makeDef nameNil $ genReuseAssignWith ru assign])
                       _ -> ([], makeDefsLet [def]))
           -- See makeDropSpecial:
@@ -513,6 +521,12 @@ genDup name
 
 
 
+
+isFunTName :: TName -> Bool
+isFunTName tname
+  = case splitFunScheme (typeOf tname) of
+      Just _  -> True
+      Nothing -> False
 
 -- Generate a reuse of a constructor
 genDropReuse :: TName -> Expr {- : int32 -} -> Expr
