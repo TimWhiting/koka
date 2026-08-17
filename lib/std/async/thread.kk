@@ -49,5 +49,5 @@ pub import async/api/thread
 // cooperative strand (web/wasm), and await its result on the current async loop
 // without blocking it. Other strands (timers, subscriptions, animations) keep
 // running while `work` executes.  Its result is marked thread-shared before it crosses back.
-pub fun compute( work : () -> ioc a ) : <async|ioc> a
+pub fun compute( work : () -> ioc a ) : <async,ioc> a
   await-compute(work)

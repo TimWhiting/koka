@@ -27,7 +27,7 @@ extern compute-prim( evloop : any, work : () -> ioc a, resume : (a) -> ioc () ) 
   c "kk_uv_queue_work"
 
 // Run `work` on a worker thread and await its result on the current loop.
-pub fun await-compute( work : () -> ioc a ) : <async|ioc> a
+pub fun await-compute( work : () -> ioc a ) : <async,ioc> a
   match setup/await-error("compute", fn(evloop, resume) compute-prim(evloop, work, resume))
     Ok(x)      -> x
     Error(exn) -> impossible("async/compute: failed to queue work: " ++ exn.show)
