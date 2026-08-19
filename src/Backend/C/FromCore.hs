@@ -104,9 +104,34 @@ genModule separateMain buildType sourceDir penv platform newtypes borrowed0 enab
             doneSignature = text "void" <+> ppName (qualify (coreProgName core) (newName "@done")) <.> parameters []
             currentModuleInclude = text "#include" <+> dquotes (text (moduleNameToPath (coreProgName core)) <.> text ".h")
 
-        emitToInit $ vcat $ [text "static bool _kk_initialized = false;"
-                            ,text "if (_kk_initialized) return;"
-                            ,text "_kk_initialized = true;"]
+        -- Thread-safe module-init guard. The previous plain `static bool _kk_initialized`
+        -- double-checked-init has no synchronization: safe as long as a program never runs
+        -- generated Koka code from more than one OS thread before a module's first use, but
+        -- any concurrent Koka workload (e.g. std/async spawn-thread, or an embedder driving
+        -- Koka from multiple native threads) can have two threads both pass the unguarded
+        -- `if (_kk_initialized) return;` check before either publishes `true`, and both then
+        -- (re)build this module's toplevel constants -- e.g. two threads racing to build and
+        -- overwrite the same list/vector/closure global, one freeing cells the other is still
+        -- reading. This is a DISTINCT gap from the existing kk_box_mark_static/kk_block_make_stuck/
+        -- kk_string_literal_init fix (pr/uv-thread-safety): that secures already-initialized
+        -- globals against concurrent READS, but not concurrent ENTRY into the initializer
+        -- itself. Found via a Koka-in-Koka self-hosted port whose compiler genuinely runs
+        -- codegen for multiple modules concurrently on real OS threads and hit this as an
+        -- EXC_BAD_ACCESS memcmp on a corrupted string pointer (a `reserved` keyword list built
+        -- twice concurrently).
+        --
+        -- CAS-guarded instead: the losing thread(s) spin-wait for the winner to finish (not
+        -- just skip past), since the rest of this function's initializers may depend on the
+        -- toplevel constants this init constructs.
+        emitToInit $ vcat $ [text "static _Atomic(int32_t) _kk_init_state = 0; // 0=not started, 1=in progress, 2=done"
+                            ,text "{ int32_t _kk_init_expected = 0;"
+                            ,text "  if (kk_atomic_cas_strong_acq_rel(&_kk_init_state, &_kk_init_expected, 1)) {"
+                            ,text "    // this thread won the race and performs initialization below"
+                            ,text "  } else {"
+                            ,text "    while (kk_atomic_load_acquire(&_kk_init_state) != 2) { kk_atomic_yield(); }"
+                            ,text "    return;"
+                            ,text "  }"
+                            ,text "}"]
                             ++ map initImport (coreProgImports core)
                             ++
                             [text "#if defined(KK_CUSTOM_INIT)"
@@ -131,6 +156,10 @@ genModule separateMain buildType sourceDir penv platform newtypes borrowed0 enab
         genTypeDefs (coreProgTypeDefs core)
         emitToH (linebreak <.> text "// value declarations")
         genTopGroups (coreProgDefs core)
+
+        -- publish "done" only after every emitToInit call above (this module's own toplevel
+        -- constants, plus its dependency @init calls) has completed -- see the CAS guard above.
+        emitToInit (text "kk_atomic_store_release(&_kk_init_state, 2);")
 
         emitToDone $ vcat [text "static bool _kk_done = false;"
                           ,text "if (_kk_done) return;"
