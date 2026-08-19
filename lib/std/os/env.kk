@@ -17,8 +17,6 @@ import std/os/path
 
 pub alias env = list<(string,string)>
 
-val environ : delayed<<ndet>,env> = delay{ os-get-env().list.to-tuples }
-
 fun to-tuples( xs : list<string> ) : env
   match(xs)
     Cons(name,Cons(value,xx)) -> Cons((name,value), xx.to-tuples)
@@ -29,16 +27,22 @@ extern os-get-env() : ndet vector<string>    // vector as [name1,value1,...,name
   c "kk_os_get_env"
   js inline "(typeof process !== 'undefined' ? (function(){ var env = []; Object.keys(process.env).forEach(function(name){ env.push(name); env.push(process.env[name]); }); return env; })() : [])"
 
-// Get the environment variables for this program
+// Get the environment variables for this program.
+// NOT cached: `os-get-env` is a cheap fresh read of the process environment
+// (no internal static state on the C side), and a `delay`-memoized cache here
+// would be the SAME thread-unsafe-shared-global class of bug already found
+// and fixed once for `compiler/syntax/lex.kk`'s `reserved-names` (a `delay`
+// thunk's memoization mutates a shared block; concurrent forcers from
+// different OS threads race on that mutation) and again for a Koka-in-Koka
+// self-hosted port's module-init guards (see koka-community/compiler's
+// `pr/uv-thread-safety`-adjacent fixes) -- `get-env-value` is called from
+// codegen, which that port runs concurrently across worker threads.
 pub fun get-env() : ndet env
-  environ.force
+  os-get-env().list.to-tuples
 
 // Returns the value of an environment variable `name` (or `Nothing` if not present)
 pub fun get-env-value( name : string ) : ndet maybe<string>
   get-env().lookup(fn(nm){ nm == name })
-
-val argv : delayed<<ndet>,list<string>> =
-  delay{ os-get-argv().list }
 
 extern os-get-argv() : ndet vector<string>
   c  "kk_os_get_argv"
@@ -48,8 +52,9 @@ extern os-get-argv() : ndet vector<string>
 
 // The unprocessed command line that was used to start this program.
 // On ''Node'' the first arguments will often be of the form `["node","interactive.js",...]`.
+// NOT cached -- see `get-env`'s doc comment; same reasoning applies here.
 pub fun get-argv() : ndet list<string>
-  argv.force
+  os-get-argv().list
 
 
 // Return the arguments that were passed to program itself.
