@@ -104,9 +104,31 @@ genModule separateMain buildType sourceDir penv platform newtypes borrowed0 enab
             doneSignature = text "void" <+> ppName (qualify (coreProgName core) (newName "@done")) <.> parameters []
             currentModuleInclude = text "#include" <+> dquotes (text (moduleNameToPath (coreProgName core)) <.> text ".h")
 
-        emitToInit $ vcat $ [text "static bool _kk_initialized = false;"
-                            ,text "if (_kk_initialized) return;"
-                            ,text "_kk_initialized = true;"]
+        -- `@init` may be entered concurrently, since generated code is reachable from
+        -- more than one OS thread. Two invariants must hold:
+        --
+        --  1. The initializers run exactly once. Every toplevel constant this module
+        --     builds is a shared mutable global until it is built; two threads running
+        --     the initializers concurrently would each construct and overwrite them,
+        --     one freeing cells the other still holds.
+        --  2. A thread that observes initialization as complete also observes every
+        --     write the initializing thread made. `@init` continues past this guard
+        --     into the dependencies' `@init` calls and this module's own constants, so
+        --     a thread that returns early must not proceed on unpublished memory.
+        --
+        -- A three-state atomic (0 not started, 1 in progress, 2 done) gives both: the
+        -- CAS winner initializes and release-stores `2` once every initializer below has
+        -- run; the losers acquire-load until they see `2`. They must WAIT rather than
+        -- return, or invariant 2 is lost.
+        emitToInit $ vcat $ [text "static _Atomic(int32_t) _kk_init_state = 0; // 0=not started, 1=in progress, 2=done"
+                            ,text "{ int32_t _kk_init_expected = 0;"
+                            ,text "  if (kk_atomic_cas_strong_acq_rel(&_kk_init_state, &_kk_init_expected, 1)) {"
+                            ,text "    // this thread won the race and performs initialization below"
+                            ,text "  } else {"
+                            ,text "    while (kk_atomic_load_acquire(&_kk_init_state) != 2) { kk_atomic_yield(); }"
+                            ,text "    return;"
+                            ,text "  }"
+                            ,text "}"]
                             ++ map initImport (coreProgImports core)
                             ++
                             [text "#if defined(KK_CUSTOM_INIT)"
@@ -131,6 +153,10 @@ genModule separateMain buildType sourceDir penv platform newtypes borrowed0 enab
         genTypeDefs (coreProgTypeDefs core)
         emitToH (linebreak <.> text "// value declarations")
         genTopGroups (coreProgDefs core)
+
+        -- Release-publish `done` only after every emitToInit above (the dependencies'
+        -- `@init` calls and this module's own constants) has run; waiters acquire-load it.
+        emitToInit (text "kk_atomic_store_release(&_kk_init_state, 2);")
 
         emitToDone $ vcat [text "static bool _kk_done = false;"
                           ,text "if (_kk_done) return;"
