@@ -33,7 +33,8 @@ private theorem Forall₂_left_mem {R : α → β → Prop} {l₁ : List α} {l�
 
 /-- Store monotonicity: extending store preserves existing mappings -/
 @[simp] theorem Store.extend_preserves (σ : Store) (a : VAddr) (d : Denotable)
-    (a' : VAddr) (h : a' ≠ a) : (σ.extend a d) a' = σ a' := by grind
+    (a' : VAddr) (h : a' ≠ a) : (σ.extend a d) a' = σ a' := by
+  simp [Store.extend, h]
 
 /-- Extending a store with the value it already holds at `a` is a no-op. -/
 theorem Store.extend_self {σ : Store} {a : VAddr} {d : Denotable} (h : σ a = some d) :
@@ -453,7 +454,15 @@ end -- mutual store monotonicity
 
 @[grind <-] private theorem store_extend_preserves_of_fresh (σ : Store) (a_new : VAddr) (d_new : Denotable)
     (h_fresh : σ a_new = none) :
-    ∀ a d, σ a = some d → (Store.extend σ a_new d_new) a = some d := by grind
+    ∀ a d, σ a = some d → (Store.extend σ a_new d_new) a = some d := by
+  intro a d h
+  simp only [Store.extend]
+  split
+  · rename_i heq
+    subst heq
+    simp_all
+  · rename_i hne
+    exact h
 
 theorem value_equiv_extend_store :
     ValueEquiv σ e_bp d →

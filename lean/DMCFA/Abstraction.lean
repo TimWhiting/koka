@@ -36,7 +36,7 @@ private theorem nodupKeys_map_snd {α : Type*} {β : Type*}
   rwa [this]
 
 /-- Map a function over the values of a constant-type Finmap -/
-noncomputable def Finmap.mapVal {α : Type*} {β : Type*} [DecidableEq α]
+def Finmap.mapVal {α : Type*} {β : Type*} [DecidableEq α]
     (f : β → β) (m : Finmap (fun _ : α => β)) : Finmap (fun _ : α => β) :=
   ⟨m.entries.map (fun ⟨k, v⟩ => ⟨k, f v⟩), nodupKeys_map_snd f m.entries m.nodupKeys⟩
 
@@ -69,7 +69,7 @@ theorem Finmap.mapVal_insert {α : Type*} {β : Type*} [DecidableEq α]
 /-! ## Abstract Environment -/
 
 /-- Abstract environment: pointwise abstraction of addresses -/
-noncomputable def absTEnv (m h : Nat) (ρ : TEnv) : TEnv :=
+def absTEnv (m h : Nat) (ρ : TEnv) : TEnv :=
   Finmap.mapVal (absTVAddr m h) ρ
 
 /-- Abstraction commutes with env lookup -/
@@ -84,20 +84,20 @@ theorem absTEnv_extend (m h : Nat) (ρ : TEnv) (x : Var) (a : TVAddr) :
   exact Finmap.mapVal_insert (absTVAddr m h) ρ x a
 
 /-- Abstract a frame content -/
-noncomputable def absTFrameContent (m h : Nat) : TFrameContent → TFrameContent
+def absTFrameContent (m h : Nat) : TFrameContent → TFrameContent
   | .letFrame ⟨xs, body, ρ, h_nd⟩ => .letFrame ⟨xs, body, absTEnv m h ρ, h_nd⟩
   | .handlerFrame hdl ρ => .handlerFrame hdl (absTEnv m h ρ)
 
 /-- Abstract a timed frame -/
-noncomputable def absTimedFrame (m h : Nat) (ψ : TimedFrame) : TimedFrame :=
+def absTimedFrame (m h : Nat) (ψ : TimedFrame) : TimedFrame :=
   ⟨absTFrameContent m h ψ.content, absTime m h ψ.time, ψ.label⟩
 
 /-- Abstract a continuation address -/
-noncomputable def absTKAddr (m h : Nat) (a : TKAddr) : TKAddr :=
+def absTKAddr (m h : Nat) (a : TKAddr) : TKAddr :=
   ⟨absTimedFrame m h a.frame, a.op⟩
 
 /-- Abstract a unified address -/
-noncomputable def absTAddr (m h : Nat) (a : TAddr) : TAddr :=
+def absTAddr (m h : Nat) (a : TAddr) : TAddr :=
   match a with
   | .val va => .val (absTVAddr m h va)
   | .kont ka => .kont (absTKAddr m h ka)
@@ -105,14 +105,14 @@ noncomputable def absTAddr (m h : Nat) (a : TAddr) : TAddr :=
 mutual
 
 /-- Abstract a denotable -/
-noncomputable def absTDenotable (m h : Nat) : TDenotable → TDenotable
+def absTDenotable (m h : Nat) : TDenotable → TDenotable
   | .closure ⟨xs, body, ρ, h_nd⟩ => .closure ⟨xs, body, absTEnv m h ρ, h_nd⟩
   | .kontClosure hdl ρ a_κ => .kontClosure hdl (absTEnv m h ρ) (a_κ.map (absTKAddr m h))
   | .conLabel c => .conLabel c
   | .succVal a => .succVal (absTVAddr m h a)
 
 /-- Abstract a value -/
-noncomputable def absTValue (m h : Nat) : TValue → TValue
+def absTValue (m h : Nat) : TValue → TValue
   | .den d => .den (absTDenotable m h d)
   | .suspended op as_v a_κ =>
       .suspended op (as_v.map (absTVAddr m h)) (a_κ.map (absTKAddr m h))
@@ -120,13 +120,13 @@ noncomputable def absTValue (m h : Nat) : TValue → TValue
 end
 
 /-- Abstract a storable -/
-noncomputable def absTStorable (m h : Nat) : TStorable → TStorable
+def absTStorable (m h : Nat) : TStorable → TStorable
   | .denotable d => .denotable (absTDenotable m h d)
   | .kontLink next => .kontLink (next.map (absTKAddr m h))
 
 /-- Abstract a concrete (timestamped) store into an abstract store.
     Collects all values at addresses that truncate to the same abstract address. -/
-noncomputable def absStore (m h : Nat) (σ : TStore) : AStore :=
+def absStore (m h : Nat) (σ : TStore) : AStore :=
   fun â => { s' | ∃ a s, σ a = some s ∧ absTAddr m h a = â ∧ s' = absTStorable m h s }
 
 /-! ## Store ordering -/
