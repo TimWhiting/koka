@@ -15,8 +15,7 @@
   a bidirectional simulation between the two evaluation relations.
 
   STATUS: complete, no `sorry`; imported by the package root (`DMCFA.lean`) and
-  covered by `DMCFA/AxiomAudit.lean`. Depends only on Lean's standard axioms
-  (`propext`, `Classical.choice`, `Quot.sound`).
+  covered by `DMCFA/AxiomAudit.lean`, which reports its transitive axioms.
 
   PROVEN (no sorry):
     * `toLN*`            — the full name→de-Bruijn translation.

@@ -4,18 +4,10 @@
   Run with:  `lake env lean DMCFA/AxiomAudit.lean`
 
   For each top-level theorem, `#print axioms` reports the complete set of
-  axioms it transitively depends on. The expected output is, for every
-  theorem, ONLY:
-
-    - `propext`, `Classical.choice`, `Quot.sound`  — Lean 4's three standard
-      foundational axioms (the basis of the entire Lean/Mathlib ecosystem); and
-    - `exists_fresh` / `LN.exists_fresh`  — "for any finitely-supported store
-      over the infinite address space, a fresh address exists" (manifestly
-      sound).
-
-  In particular NO `barendregt_fresh_env` / `barendregt_var_ne` appears: the
-  concrete B&P <-> ANF equivalence is now proved in a fully locally-nameless
-  representation (`DMCFA.LN.*`), which removes those two axioms entirely.
+  axioms it transitively depends on. Inspect the output for project-specific
+  assumptions such as `exists_fresh` / `LN.exists_fresh` and for any classical
+  axioms. The concrete B&P <-> ANF equivalence is
+  proved in a fully locally-nameless representation (`DMCFA.LN.*`).
 -/
 import DMCFA
 
