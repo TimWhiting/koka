@@ -213,7 +213,7 @@ topDown expr@(App app@(TypeApp (Var _ (InfoExternal "#1")) _) [arg])
 
 -- Direct function applications
 topDown expr@(App (Lam pars eff body) args) | length pars == length args
-  = do newNames <- mapM uniqueTName pars
+  = do newNames <- mapM (uniqueTNameAvoiding (boundNames body)) pars
        let sub = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]
            expr' = makeLet (zipWith makeDef newNames args) (sub |~> body)
        return expr'
@@ -227,7 +227,7 @@ topDown expr@(App (TypeApp (TypeLam tpars (Lam pars eff body)) targs) args)
   | length pars == length args && length tpars == length targs
   = do let tsub    = subNew (zip tpars targs)
        newNames <- -- trace ("topDown function app: " ++ show (zip tpars targs) ++ "\n expr:" ++ show expr) $
-                   mapM uniqueTName [TName nm (tsub |-> tp) | (TName nm tp) <- pars]
+                   mapM (uniqueTNameAvoiding (boundNames body)) [TName nm (tsub |-> tp) | (TName nm tp) <- pars]
        let sub     = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]
        let newexpr = (Let (zipWith makeDef newNames args) (sub |~> (substitute tsub body)))
        -- trace (" topDown: new expr: " ++ show newexpr) $
@@ -920,6 +920,34 @@ shadowSub :: TNames -> [(TName,Expr)] -> [(TName,Expr)]
 shadowSub bound sub
   = [(name,e) | (name,e) <- sub, not (S.member name bound)]
 
+-- A fresh name that is also not in `avoid`. `unique` is fresh only with respect
+-- to this module's counter, but an inlined body's binders were named by another
+-- module's counter, which starts from the same base, so a substituted name can
+-- be captured by one of them.
+uniqueTNameAvoiding :: TNames -> TName -> Simp TName
+uniqueTNameAvoiding avoid tname
+  = do tname' <- uniqueTName tname
+       if (tname' `S.member` avoid)
+         then uniqueTNameAvoiding avoid tname
+         else return tname'
+
+
+-- The names bound anywhere inside an expression (`bv` is not defined on `Expr`).
+boundNames :: Expr -> TNames
+boundNames expr
+  = case expr of
+      Lam pars _ body   -> S.fromList pars `S.union` boundNames body
+      App f as          -> S.unions (boundNames f : map boundNames as)
+      TypeLam _ body    -> boundNames body
+      TypeApp body _    -> boundNames body
+      Let dgs body      -> S.fromList (map defTName (flattenDefGroups dgs))
+                             `S.union` S.unions (map (boundNames . defExpr) (flattenDefGroups dgs))
+                             `S.union` boundNames body
+      Case scruts bs    -> S.unions (map boundNames scruts ++ map boundNamesBranch bs)
+      _                 -> S.empty
+  where
+    boundNamesBranch (Branch pats guards)
+      = bv pats `S.union` S.unions [boundNames t `S.union` boundNames e | Guard t e <- guards]
 
 {--------------------------------------------------------------------------
   Simplify Monad
