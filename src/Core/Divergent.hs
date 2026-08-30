@@ -68,12 +68,40 @@ isDivFun name [] body
   = True
 isDivFun name pars body
   = let (_,calls) = runDiv name pars (divExpr body)
-        orders    = map transpose (permutations (transpose calls)) 
-        divergent = not (any isAnOrder orders)
         isAnOrder cs
           = all (\call -> case dropWhile (==Eq) call of
                             (Lt:_) -> True
                             _      -> False) cs
+
+        -- The search is over ORDERINGS of the parameters, so it is factorial in
+        -- the arity: a 12-parameter recursive function is 479,001,600 orderings.
+        -- Laziness keeps that cheap whenever some ordering works, because `any`
+        -- short-circuits -- but when none does, every ordering is examined.
+        --
+        -- Only a parameter that decreases in some call can supply the `Lt` an
+        -- ordering needs. One that never does is either transparent to
+        -- `dropWhile (==Eq)` or must sit after every call's `Lt`, so parking it at
+        -- the end is always safe: dropping such parameters cannot change the
+        -- answer, only the size of the search.
+        --
+        -- That reasoning holds only when every recursive call supplies the same
+        -- number of arguments. Rows are ragged when the function is referenced as
+        -- a value rather than called (`addCall name [Unknown]` below) or applied
+        -- partially, and `transpose` re-packs a ragged matrix instead of keeping
+        -- each call's entries together -- so there we search unpruned.
+        uniform   = case map length calls of
+                      []     -> True
+                      (l:ls) -> all (==l) ls
+        cols      = transpose calls
+        kept      = filter (any (==Lt)) cols
+        search    = if uniform then kept else cols
+        orders    = map transpose (permutations search)
+        divergent = if uniform && null kept && not (null calls)
+                      -- nothing decreases anywhere, so no ordering can work.
+                      -- Explicit because `transpose []` drops every call and
+                      -- `all` over none is vacuously True.
+                      then True
+                      else not (any isAnOrder orders)
 
         -- call      = foldr (zipWith max) (replicate (length pars) Lt) calls
         -- divergent = (head (sort call) /= Lt)
