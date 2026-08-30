@@ -33,7 +33,11 @@ abstract value struct bslice
 pub val empty = Bslice(empty,0,0)
 
 // Is a slice empty?
-pub fun is-empty( slice : bslice ) : bool
+// Borrows: this only reads `len`, so there is no reason to take ownership of the
+// backing bytes and immediately drop them again. On a hot path (the lexer tests
+// this once per input character) the dup/drop pair was costing more than the
+// test.
+pub fun is-empty( ^slice : bslice ) : bool
   slice.len <= 0
 
 // Create a byte slice from bytes
