@@ -266,9 +266,11 @@ static void kk_cpu_init(void)
 // The thread local context; usually passed explicitly for efficiency.
 static kk_decl_thread kk_context_t* context;
 
-static struct { kk_block_t _block; /* kk_integer_t cfc; */ } kk_evv_empty_static = {
-  { KK_HEADER_STATIC(0,KK_TAG_EVV_VECTOR) }  // , { ((~KK_UB(0))^0x02) /*==-1 smallint*/}
-};
+// NOT `static`: `kk_evv_empty` inlines to this address (see kklib.h) instead of
+// calling in here. There must be exactly ONE of these -- `kk_evv_is_empty` and
+// `kk_evv_eq` compare pointers -- which is why it cannot just be defined in the
+// header, where every translation unit would get its own copy.
+kk_block_t kk_evv_empty_static_block = { KK_HEADER_STATIC(0,KK_TAG_EVV_VECTOR) };
 
 struct kk_evv_s {
   kk_block_t _block;
@@ -284,9 +286,10 @@ kk_datatype_ptr_t kk_evv_empty_singleton(kk_context_t* ctx) {
   // concurrent NON-atomic dup/drop from multiple threads -- which manifests as
   // effect-handler / continuation memory corruption once a second async loop runs
   // on its own OS thread (see std/async spawn-thread).
-  struct kk_evv_s* evv = (struct kk_evv_s*)&kk_evv_empty_static;
-  kk_base_type_dup_as(struct kk_evv_s*, evv);   // no-op on a stuck refcount
-  return kk_datatype_from_base(evv, ctx);
+  // Kept as an exported function for any out-of-tree caller; in-tree,
+  // `kk_evv_empty` inlines to the address directly. No dup: the refcount is
+  // stuck, so dup/drop on it are no-ops by construction.
+  return kk_datatype_from_ptr(&kk_evv_empty_static_block, ctx);
 }
 
 

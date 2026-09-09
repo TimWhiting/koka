@@ -510,6 +510,14 @@ kk_decl_export void kk_warning_message(const char* msg, ...);
 kk_decl_export void kk_info_message(const char* msg, ...);
 kk_decl_export void kk_unsupported_external(const char* msg);
 
+// The single statically-allocated empty evidence vector. Exposed so
+// `kk_evv_empty` (std/core/inline/hnd.h) can inline to its address rather than
+// calling into kklib: `@open-none` wraps every effect operation in
+// `evv-swap-create0(); ..; evv-set(w)`, so that call ran twice per operation
+// purely to hand back a constant -- 4.5% of self time in a profile of interface
+// parsing. Its refcount is stuck, so no dup is needed either.
+kk_decl_export kk_block_t kk_evv_empty_static_block;
+
 kk_decl_export kk_datatype_ptr_t kk_evv_empty_singleton(kk_context_t* ctx);
 
 
