@@ -59,6 +59,20 @@ pub fun last( b : bytes, n : int = 1 ) : bslice
 pub fun bytes( Bslice(b,start,len) : bslice ) : bytes
   b.subbytes( start, len )
 
+// The number of bytes in the slice. Borrows, like `is-empty`.
+pub fun length( ^slice : bslice ) : int
+  slice.len
+
+// The byte at `i` bytes from the start of the slice, or `-1` when out of range.
+//
+// BORROWS the slice: a scanner reads one byte per input character, and taking
+// ownership only to drop it again costs more than the read. This lets a DFA keep
+// a single slice plus an integer offset in its state instead of several slices,
+// which is what makes the per-character update pure integer arithmetic.
+pub fun byte-at( ^slice : bslice, i : int ) : int
+  val Bslice(b, start, len) = slice
+  if i < 0 || i >= len then -1 else b.unsafe-index((start + i).ssize_t).int
+
 // If the slice is not empty,
 // return the first byte, and a new slice that is advanced by 1.
 pub fun next( Bslice(b,start,len) : bslice ) : maybe2<int, bslice>
