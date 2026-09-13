@@ -25,6 +25,7 @@ import Data.Char( isSpace )
 import qualified Data.Map as M
 import Platform.Config( programName )
 import Data.List( partition )
+import Data.Maybe( isNothing )
 import Lib.PPrint
 import Common.Name
 import Common.NamePrim( isNameTpTuple, nameTpOptional, nameEffectExtend, nameTpTotal, nameEffectEmpty,
@@ -470,14 +471,28 @@ ppNamePlain env name
 
 
 ppSynonym :: Env -> TypeSyn -> [Tau] -> Doc -> Doc
-ppSynonym env (TypeSyn name kind rank _) args tpdoc
-  = (if (expandSynonyms env)
+ppSynonym env (TypeSyn name kind rank mbInfo) args tpdoc
+  -- An interface must carry enough to rebuild what was written. A synonym
+  -- normally travels as a NAME here plus a `local alias` declaration in the
+  -- header, but that header is built by `extractImportedSynonyms`, which can
+  -- only declare a synonym it has a `SynInfo` for. A `TSyn` carrying `Nothing`
+  -- (`typeCCtx` builds `std/core/types/ctx` that way) is declared NOWHERE, and
+  -- printing only its name loses the expansion: read back, `envType` yields a
+  -- bare `TCon` that `Parc.getDataDefInfo` then fails on.
+  --
+  -- The expansion is right here in `tpdoc`, so emit it inline for exactly that
+  -- case. `parseCore`'s `psynonym` already reads `name<args> == rank body` back
+  -- into a TSyn with no table lookup, so an interface written this way needs no
+  -- synonyms from its dependencies to be read.
+  = (if expand
       then parens
       else if (null args)
        then id
        else pparens (prec env) precApp) $
     ppType env{prec=precTop} (TApp (TCon (TypeCon name kind)) args) <.>
-    if (expandSynonyms env) then text " == " <.> pretty rank <+> tpdoc else empty
+    if expand then text " == " <.> pretty rank <+> tpdoc else empty
+  where
+    expand = expandSynonyms env || (coreIface env && isNothing mbInfo)
 
 ppTypeVar :: Env -> TypeVar -> Doc
 ppTypeVar env (TypeVar id kind flavour)

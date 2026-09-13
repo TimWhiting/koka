@@ -105,7 +105,14 @@ prettyCore env0 eguard inlineDefs core@(Core modName imports fixDefs typeDefGrou
     env  = env1{ expandSynonyms = False }
     envX = env1{ showKinds = True, expandSynonyms = True }
 
-    signatures   = extractSignatures core
+    -- Synonyms used ONLY in the inline section were never declared: the
+    -- section is rendered from `inlineDefs`, which this function receives
+    -- separately from the core, while `extractSignatures` covers only
+    -- externals and defs. Read back undeclared, such a type degrades to a bare
+    -- `TCon` that `Parc.getDataDefInfo` fails on. Together with the
+    -- `Nothing`-info case handled in `Type.Pretty.ppSynonym`, this is what lets
+    -- an interface be read with no synonyms seeded from its dependencies.
+    signatures   = extractSignatures core ++ concatMap (inlineExprTypes . inlineExpr) inlineDefs
     importedSyns = extractImportedSynonyms (coreProgName core) signatures
     extraImports1 = map extractImportsFromSynInfo (filter (not . nameIsNil . qualifier . synInfoName) importedSyns)
     extraImports2 = extractImportFromSignatures signatures
@@ -600,6 +607,34 @@ extractImportsFromSynonyms imps syns
 
 -- extract from type signatures the synonyms so we can compress .kki files
 -- by locally defining imported synonyms
+-- | Every type mentioned anywhere in an expression. Used to declare the
+-- synonyms an interface's INLINE SECTION mentions, not just those in top-level
+-- signatures.
+inlineExprTypes :: Expr -> [Type]
+inlineExprTypes expr
+  = case expr of
+      Lam tnames eff body -> eff : map typeOf tnames ++ inlineExprTypes body
+      Var tname _         -> [typeOf tname]
+      App f args          -> inlineExprTypes f ++ concatMap inlineExprTypes args
+      TypeLam _ body      -> inlineExprTypes body
+      TypeApp f tps       -> tps ++ inlineExprTypes f
+      Con tname _         -> [typeOf tname]
+      Lit _               -> []
+      Let dgs body        -> concatMap defTps (flattenDefGroups dgs) ++ inlineExprTypes body
+      Case exprs bs       -> concatMap inlineExprTypes exprs ++ concatMap branchTps bs
+  where
+    defTps d = defType d : inlineExprTypes (defExpr d)
+    branchTps (Branch pats guards)
+      = concatMap patTps pats ++ concatMap guardTps guards
+    guardTps (Guard test body) = inlineExprTypes test ++ inlineExprTypes body
+    patTps pat
+      = case pat of
+          PatCon{patConName=tname, patConPatterns=pats, patTypeArgs=targs, patTypeRes=tres}
+            -> typeOf tname : tres : targs ++ concatMap patTps pats
+          PatVar{patName=tname, patPattern=sub}
+            -> typeOf tname : patTps sub
+          _ -> []
+
 extractImportedSynonyms :: ModuleName -> Signatures -> [SynInfo]
 extractImportedSynonyms progName sigs
   = let syns = filter (\info -> progName /= qualifier (synInfoName info)) $
