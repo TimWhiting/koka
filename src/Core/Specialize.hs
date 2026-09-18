@@ -432,7 +432,17 @@ replaceCall name expr0 sort bools args mybeTypeArgs
           sspecBody <- uniqueSimplify defaultEnv False False 1 10 specBody
           -- trace ("specializing " <> show name <> " -> " <> show (getName specTName)) $ return ()
 
-          let specDef = Def specName specType sspecBody Private sort InlineAuto rangeNull
+          -- The specialized parameters are gone from the new definition, so their
+          -- parameter infos must go too. Reusing `sort` as-is shifts a `Borrow` onto
+          -- whichever parameter now sits in that slot: for `map(xs, ^f)` specialized
+          -- on `f`, TRMC then appends its accumulator into the borrowed slot. A
+          -- borrowed accumulator is dup'ed (so every extend copies the context --
+          -- quadratic) and dropped after the recursive call (so no tail call -- O(n)
+          -- C stack): `list(1,200000).map(fn(x) x + 1)` segfaulted.
+          let specSort = case sort of
+                           DefFun pinfos fip -> DefFun (fst (partitionBools bools pinfos)) fip
+                           _                 -> sort
+              specDef = Def specName specType sspecBody Private specSort InlineAuto rangeNull
                          $ "// specialized: " <> show name <> ", on parameters " <> concat (intersperse ", " (map show speccedParams)) <> ", using:\n" <>
                            comment (unlines [show param <> " = " <> show arg | (param,arg) <- zip speccedParams speccedArgs])
 
