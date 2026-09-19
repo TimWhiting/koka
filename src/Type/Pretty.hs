@@ -459,7 +459,7 @@ ppNamePlain env name
      else if (context env == qualifier name) -- || alwaysUnqualify env)
        then pp (unqualify name)
        else if (coreIface env) -- emit .kki file?
-         -- wildcards are never valid qualified names in .kki files (upstream 9c1273db5)
+         -- a wildcard type variable is never a valid qualified name in a .kki file
          then (if isWildcard (unqualify name) then pp (unqualify name) else pp name)
          else if (isSystemCoreName name)
            then pp (shortenSystemCoreName name)
@@ -472,18 +472,8 @@ ppNamePlain env name
 
 ppSynonym :: Env -> TypeSyn -> [Tau] -> Doc -> Doc
 ppSynonym env (TypeSyn name kind rank mbInfo) args tpdoc
-  -- An interface must carry enough to rebuild what was written. A synonym
-  -- normally travels as a NAME here plus a `local alias` declaration in the
-  -- header, but that header is built by `extractImportedSynonyms`, which can
-  -- only declare a synonym it has a `SynInfo` for. A `TSyn` carrying `Nothing`
-  -- (`typeCCtx` builds `std/core/types/ctx` that way) is declared NOWHERE, and
-  -- printing only its name loses the expansion: read back, `envType` yields a
-  -- bare `TCon` that `Parc.getDataDefInfo` then fails on.
-  --
-  -- The expansion is right here in `tpdoc`, so emit it inline for exactly that
-  -- case. `parseCore`'s `psynonym` already reads `name<args> == rank body` back
-  -- into a TSyn with no table lookup, so an interface written this way needs no
-  -- synonyms from its dependencies to be read.
+  -- In an interface, a synonym without a `SynInfo` (such as `std/core/types/ctx`)
+  -- is declared nowhere, so it is printed with its expansion.
   = (if expand
       then parens
       else if (null args)

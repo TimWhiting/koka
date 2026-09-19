@@ -217,8 +217,10 @@ prettyTypeDefGroup env (TypeDefGroup defs)
     vcat (map (prettyTypeDef env) defs)
 
 prettyTypeDef :: Env -> TypeDef -> Doc
+-- Interfaces declare private synonyms too: signatures and inline bodies are
+-- printed unexpanded, so an importer must be able to expand every synonym in them.
 prettyTypeDef env (Synonym synInfo  )
-  = ppSynInfo env False True True synInfo <.> semi
+  = ppSynInfo env False (not (coreIface env)) True synInfo <.> semi
 
 prettyTypeDef env (Data dataInfo)
   = -- keyword env "type" <+> prettyVis env vis <.> ppDataInfo env True dataInfo
@@ -380,9 +382,7 @@ prettyExpr env (TypeApp expr tps)
 -- Literals and constants
 prettyExpr env (Con tname repr)
   = -- prettyTName env tname
-    -- serialize the constructor-context path: it is stamped on this
-    -- occurrence's repr (not the constructor's global info), so without
-    -- this marker an interface round-trip would lose it
+    -- the context path is part of this occurrence's repr, so interfaces must carry it
     case (if coreIface env then conReprCtxPath repr else Nothing) of
       Just (CtxField fld)
         -> keyword env "@cpath" <.> parens (prettyLit env (LitString (showTupled (getName fld)))) <+> prettyVar env tname
@@ -446,7 +446,7 @@ prettyGuard env (Guard test expr)
 prettyPatterns :: Env -> [Pattern] -> (Env,[Doc])
 prettyPatterns env pats
   = let (env',docs) = foldl f (env,[]) pats
-    in (env', reverse docs)  -- foldl accumulates in reverse; restore source order (essential for .kki inline defs!)
+    in (env', reverse docs)  -- foldl builds the list in reverse
   where
     f (env,docs) pat = let (env',doc) = prettyPattern env{expandSynonyms=True} pat
                        in (env',doc:docs)
@@ -566,7 +566,7 @@ extractImportFromSignatures sigs
 extractDepsFromSignatures :: Signatures -> [ModuleName]
 extractDepsFromSignatures sigs
   = let sigmods = S.map (qualifier . typeconName) (ftc sigs)
-    in filter (not . nameIsNil) (S.toList sigmods)  -- unqualified typecons (skolems/existentials) induce no import
+    in filter (not . nameIsNil) (S.toList sigmods)  -- unqualified type constructors (skolems) need no import
 
 extractImportsFromSynInfo :: SynInfo -> Import
 extractImportsFromSynInfo syn

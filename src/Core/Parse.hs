@@ -518,9 +518,8 @@ parseCon env
                     _ -> infoRepr con
        return $ Con (TName name (infoType con)) repr
 
--- `@cpath("<field>")` before a constructor marks a node of a constructor
--- context, with `<field>` the field on the path to the hole (the `conCtxPath`
--- stamped on this occurrence's ConRepr by `AnalysisCCtx`/`CTail`).
+-- `@cpath("<field>")` before a constructor: the field on the path to the hole
+-- of a constructor context (`conCtxPath`).
 parseCPath :: LexParser CtxPath
 parseCPath
   = do specialId "@cpath"
