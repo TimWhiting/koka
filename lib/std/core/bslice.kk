@@ -86,7 +86,7 @@ pub fun next( Bslice(b,start,len) : bslice ) : maybe2<int, bslice>
 pub fun advance( Bslice(b,start,len) : bslice, count : int) : bslice
   val total    = b.length
   val newstart = clamp(start + count, 0, total)
-  val newlen   = max(len, total - newstart)
+  val newlen   = min(len, total - newstart)
   Bslice(b,newstart,newlen)
 
 // O(1). Extend a byte slice range by `count` bytes up to the end of the byte slice.
