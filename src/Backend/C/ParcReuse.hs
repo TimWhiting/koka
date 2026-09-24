@@ -18,7 +18,7 @@ import Control.Monad
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Char
-import Data.Maybe (catMaybes, maybeToList)
+import Data.Maybe (catMaybes, maybeToList, isJust)
 import Data.List (isSuffixOf)
 import qualified Data.Set as S
 import qualified Data.Map as Map
@@ -222,14 +222,6 @@ ruLet' :: Def -> Reuse (Reused -> ([TName], Expr -> Expr))
 ruLet' def
   = withCurrentDef def $
       case defExpr def of
-          -- A closure is never a valid reuse donor: its size is not determined by
-          -- its type (two functions of the same signature can capture different
-          -- numbers of free variables), and `kk_block_alloc_at` does NOT check
-          -- the donor's usable size -- it re-stamps the header with the new
-          -- size, so reusing an undersized block silently corrupts the heap.
-          App var@(Var name _) (Var tname _ : _maybe_scanfields)
-            | getName name == nameDrop && isFunTName tname
-            -> return (\_reused -> ([], makeDefsLet [def]))
           App var@(Var name _) (Var tname _ : _maybe_scanfields) | getName name == nameDrop
             -> do ru <- ruMakeAvailable tname
                   scan <- ruGetScan tname
@@ -238,7 +230,7 @@ ruLet' def
                       Just ru | ru `S.member` reused
                         -> let assign = case scan of
                                  Just scan -> genDropReuse tname (makeInt32 (toInteger scan))
-                                 Nothing   -> genReuseAddress tname
+                                 Nothing -> genReuseAddress tname
                            in ([ru], makeDefsLet [makeDef nameNil $ genReuseAssignWith ru assign])
                       _ -> ([], makeDefsLet [def]))
           -- See makeDropSpecial:
@@ -521,12 +513,6 @@ genDup name
 
 
 
-
-isFunTName :: TName -> Bool
-isFunTName tname
-  = case splitFunScheme (typeOf tname) of
-      Just _  -> True
-      Nothing -> False
 
 -- Generate a reuse of a constructor
 genDropReuse :: TName -> Expr {- : int32 -} -> Expr
@@ -894,8 +880,13 @@ getRuFixedDataAllocSize dataType
        platform <- getPlatform
        pure $ getFixedDataAllocSize platform newtypes dataType
 
+-- | The allocation size of a value of this type, when every constructor has the same one.
+-- A function value has none: its size depends on what the closure captures, and
+-- `getDataInfo` would otherwise answer with the size of its result type.
 getFixedDataAllocSize :: Platform -> Newtypes -> Type -> Maybe (Int, Int)
 getFixedDataAllocSize platform newtypes dataType
+  | isJust (splitFunScheme dataType) = Nothing
+  | otherwise
   = case getDataInfo newtypes dataType of
       Nothing -> Nothing
       Just (dataName,dataInfo)
