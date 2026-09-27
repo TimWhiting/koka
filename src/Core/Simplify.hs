@@ -205,7 +205,7 @@ topDown expr@(App app@(TypeApp (Var _ (InfoExternal "#1")) _) [arg])
 
 -- Direct function applications
 topDown expr@(App (Lam pars eff body) args) | length pars == length args
-  = do newNames <- mapM uniqueTName pars
+  = do newNames <- mapM (uniqueTNameAvoiding (boundNames body)) pars
        let sub = [(p,Var np InfoNone) | (p,np) <- zip pars newNames]
            expr' = makeLet (zipWith makeDef newNames args) (sub |~> body)
        return expr'
@@ -245,7 +245,25 @@ topDown (Case [Case scruts0 branches0] branches1) | doesNotDuplicate
 
     doesNotDuplicate
       = hasSingleBranch branches0 ||
-        length (filter (simplifiesOn branches1) branches0) + 1 >= length branches0
+        (length (filter (simplifiesOn branches1) branches0) + 1 >= length branches0
+          -- Each inner branch that does not collapse keeps a full copy of the
+          -- outer branches (branches1). When branches1 is itself large -- e.g.
+          -- the tail of an `if/elif` chain whose conditions use `&&` (each `&&`
+          -- becomes a nested case in the scrutinee) -- this duplication is
+          -- applied at every level of the chain and compounds to 2^n, blowing
+          -- up the core size. Only take this slack when branches1 is small, so
+          -- the transform cannot duplicate a large continuation.
+          && sizeOfBranches branches1 <= maxCaseOfCaseDup)
+
+    -- maximum size of the outer branches that we are willing to copy into a
+    -- non-collapsing inner branch during case-of-case
+    maxCaseOfCaseDup :: Int
+    maxCaseOfCaseDup = 25
+
+    sizeOfBranches :: [Branch] -> Int
+    sizeOfBranches bs
+      = sum [ sizeOfExpr test + sizeOfExpr expr
+            | Branch _ guards <- bs, Guard test expr <- guards ]
 
     hasSingleBranch :: [Branch] -> Bool
     hasSingleBranch branches
@@ -907,6 +925,45 @@ uniqueTName (TName name tp)
   = do i <- unique
        return (TName (toUniqueName i name) tp)
 
+-- A fresh name that also avoids `avoid`.
+--
+-- `unique` alone is only fresh with respect to THIS module's counter, which is
+-- not enough when substituting into an inlined body: that body was compiled in
+-- another module, its internal binders carry names minted by that module's
+-- counter, and both counters start from the same base (see `runInfer`/
+-- `coreOptimize`, both 10000). A "fresh" name can therefore collide with a
+-- binder inside the body, and the substituted occurrences are then captured by
+-- it -- silently miscompiling the function.
+--
+-- Observed as `pad-left` returning the fill instead of the padded string: the
+-- parameter substitution minted `s@0@10011`, which is exactly the name of the
+-- local `pad-left`'s own body uses for `fill.string`.
+uniqueTNameAvoiding :: TNames -> TName -> Simp TName
+uniqueTNameAvoiding avoid tname
+  = do tname' <- uniqueTName tname
+       if (tname' `S.member` avoid)
+         then uniqueTNameAvoiding avoid tname
+         else return tname'
+
+
+-- The names bound anywhere inside an expression. `bv` is not defined on Expr,
+-- and this is used to keep freshly minted names clear of an inlined body's own
+-- binders (see `uniqueTNameAvoiding`).
+boundNames :: Expr -> TNames
+boundNames expr
+  = case expr of
+      Lam pars _ body   -> S.fromList pars `S.union` boundNames body
+      App f as          -> S.unions (boundNames f : map boundNames as)
+      TypeLam _ body    -> boundNames body
+      TypeApp body _    -> boundNames body
+      Let dgs body      -> S.fromList (map defTName (flattenDefGroups dgs))
+                             `S.union` S.unions (map (boundNames . defExpr) (flattenDefGroups dgs))
+                             `S.union` boundNames body
+      Case scruts bs    -> S.unions (map boundNames scruts ++ map boundNamesBranch bs)
+      _                 -> S.empty
+  where
+    boundNamesBranch (Branch pats guards)
+      = bv pats `S.union` S.unions [boundNames t `S.union` boundNames e | Guard t e <- guards]
 
 {--------------------------------------------------------------------------
   Simplify Monad

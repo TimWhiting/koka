@@ -111,6 +111,17 @@ static inline bool kk_refcount_is_thread_shared(kk_refcount_t rc) {
 }
 
 // Is the reference unique, or are there (possibly) references from other threads? (includes static variables)
+// Sticky/stuck refcounts (see refcount.c). A block with a stuck refcount is a
+// process-lifetime static shared across threads: dup and drop are semantically
+// no-ops on it. They were still routed out-of-line to kk_block_check_dup/drop,
+// because a stuck refcount is negative and so takes the `rc <= 0` slow path --
+// so every dup/drop of a static cost a real call (measured 3.4ns -> 1.6ns per
+// dup+drop pair once tested inline). The test below is only ever reached on
+// that slow path, so ordinary blocks (rc > 0) pay nothing.
+#define KK_RC_STUCK          INT32_MIN
+#define KK_RC_STICKY         (KK_RC_STUCK + 0x10000000)
+#define KK_RC_STICKY_DROP    (KK_RC_STUCK + 0x20000000)
+
 static inline bool kk_refcount_is_unique_or_thread_shared(kk_refcount_t rc) {
   return (rc <= 0);
 }
@@ -499,6 +510,14 @@ kk_decl_export void kk_warning_message(const char* msg, ...);
 kk_decl_export void kk_info_message(const char* msg, ...);
 kk_decl_export void kk_unsupported_external(const char* msg);
 
+// The single statically-allocated empty evidence vector. Exposed so
+// `kk_evv_empty` (std/core/inline/hnd.h) can inline to its address rather than
+// calling into kklib: `@open-none` wraps every effect operation in
+// `evv-swap-create0(); ..; evv-set(w)`, so that call ran twice per operation
+// purely to hand back a constant -- 4.5% of self time in a profile of interface
+// parsing. Its refcount is stuck, so no dup is needed either.
+kk_decl_export kk_block_t kk_evv_empty_static_block;
+
 kk_decl_export kk_datatype_ptr_t kk_evv_empty_singleton(kk_context_t* ctx);
 
 
@@ -753,6 +772,7 @@ static inline kk_block_t* kk_block_dup(kk_block_t* b) {
   kk_assert_internal(kk_block_is_valid(b));
   const kk_refcount_t rc = kk_block_refcount(b);
   if kk_unlikely(kk_refcount_is_thread_shared(rc)) {  // (signed)rc < 0
+    if (rc <= KK_RC_STICKY) return b;                 // sticky/stuck: dup is a no-op
     return kk_block_check_dup(b, rc);                 // thread-shared or sticky (overflow) ?
   }
   else {
@@ -766,6 +786,7 @@ static inline void kk_block_drop(kk_block_t* b, kk_context_t* ctx) {
   kk_assert_internal(kk_block_is_valid(b));
   const kk_refcount_t rc = kk_block_refcount(b);
   if (kk_refcount_is_unique_or_thread_shared(rc)) {  // (signed)rc <= 0
+    if (rc <= KK_RC_STICKY_DROP) return;             // sticky/stuck: drop is a no-op
     kk_block_check_drop(b, rc, ctx);    // thread-shared, sticky (overflowed), or can be freed?
   }
   else {
@@ -928,6 +949,9 @@ static inline void kk_reuse_drop(kk_reuse_t r, kk_context_t* ctx) {
 kk_decl_export void        kk_block_mark_shared(kk_block_t* b, kk_context_t* ctx);
 kk_decl_export void        kk_box_mark_shared(kk_box_t b, kk_context_t* ctx);
 kk_decl_export void        kk_box_mark_shared_recx(kk_box_t b, kk_context_t* ctx);
+kk_decl_export void        kk_block_make_stuck(kk_block_t* b);  // refcount becomes stuck: dup/drop no-ops, never freed (for process-lifetime globals)
+kk_decl_export void        kk_block_mark_static(kk_block_t* b, kk_context_t* ctx);  // mark a reachable graph stuck (toplevel constants)
+kk_decl_export void        kk_box_mark_static(kk_box_t b, kk_context_t* ctx);
 
 
 /*--------------------------------------------------------------------------------------
@@ -1289,6 +1313,25 @@ static inline kk_datatype_t kk_datatype_null(void) {
 
 static inline bool kk_datatype_is_null(kk_datatype_t d) {
   return kk_datatype_eq(d, kk_datatype_null());
+}
+
+// Atomic access to a datatype slot that is published at most once, going
+// null -> value by a single successful `kk_datatype_atomic_publish` (used for
+// lazily initialized statics like string literals). The acquire load pairs
+// with the release CAS so everything written before the publish is visible
+// through the loaded value; once non-null is observed the slot is immutable
+// and plain reads are race-free.
+static inline kk_datatype_t kk_datatype_atomic_load_acquire( kk_datatype_t* p ) {
+  kk_datatype_t d;
+  d.dbox = kk_atomic_load_acquire((_Atomic(kk_intb_t)*)&(p->dbox));
+  return d;
+}
+
+// Publish `d` into a null slot; returns `false` if another thread already
+// published (the slot keeps the winner's value and `d` should be discarded).
+static inline bool kk_datatype_atomic_publish( kk_datatype_t* p, kk_datatype_t d ) {
+  kk_intb_t expected = kk_datatype_null().dbox;
+  return kk_atomic_cas_strong_acq_rel((_Atomic(kk_intb_t)*)&(p->dbox), &expected, d.dbox);
 }
 
 static inline kk_datatype_t kk_datatype_unbox(kk_box_t b) {

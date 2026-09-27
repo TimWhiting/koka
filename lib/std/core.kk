@@ -77,6 +77,9 @@ pub alias ioc-total = <ndet,console,net,fsys,ui,st<global>>
 // The `:ioc` effect ("I/O as in C") is used for functions that perform arbitrary I/O operations, but raise no exceptions
 pub alias ioc = <div,ioc-total>
 
+// Deprecated: use `:ioc` instead
+pub alias io-noexn = ioc
+
 // The `:io` effect is used for functions that perform arbitrary I/O operations.
 pub alias io = <exn,ioc>
 

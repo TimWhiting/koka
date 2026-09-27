@@ -13,8 +13,10 @@ import Data.List (transpose, foldl', intersect, intersperse)
 import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Reader
+import Control.Monad( forM )
+import qualified Data.Map.Strict as M
 import Control.Arrow ((***))
-import Data.Monoid((<>), Alt(..), Endo(..))
+import Data.Monoid((<>), Alt(..), Any(..), Endo(..))
 import Data.Maybe (mapMaybe, fromMaybe, catMaybes, isJust, fromJust)
 import Data.Function
 
@@ -35,7 +37,7 @@ import Core.Core
 import Core.CoreVar
 import Core.Pretty ()
 import Core.Simplify
-import Type.Type (splitFunScheme, Effect, Type, TypeVar, eqType, eqTypes)
+import Type.Type (splitFunScheme, Effect, Type(..), TypeVar, eqType, eqTypes)
 import Type.TypeVar
 import Type.Pretty
 import Lib.Trace
@@ -73,9 +75,31 @@ import Lib.Trace
 --------------------------------------------------------------------------}
 
 data ReadState = ReadState
-  { inlines :: Inlines
-  , penv    :: Env
+  { inlines   :: Inlines
+  , penv      :: Env
+  , specStack :: M.Map Name Int
+      -- minimum instantiation weight per function in the current
+      -- specialization ancestry: an ancestor is only specialized again at a
+      -- strictly smaller weight (the decreasing measure of implicit
+      -- inference, see isDecreasingChain in Type/InferMonad.hs). Multi-step
+      -- specialization at shrinking types (twostep-large2) still works;
+      -- mutually recursive groups that respecialize each other at the same
+      -- types terminate after one round.
   }
+
+-- instantiation weight of a call: constructor count of its type arguments
+-- (TVar counts 0); mirrors `weight` in Type/InferMonad.hs.
+specWeight :: [Type] -> Int
+specWeight tps = sum (map weightType tps)
+  where
+    weightType tp
+      = case tp of
+          TForall _ t          -> weightType t
+          TFun tpars teff tres -> sum (map (weightType . snd) tpars) + weightType teff + weightType tres
+          TApp t targs         -> weightType t + sum (map weightType targs)
+          TSyn _ _ t           -> weightType t
+          TCon _               -> 1
+          TVar _               -> 0
 type SpecM = UniqueT (Reader ReadState)
 
 runSpecM :: Int -> ReadState -> SpecM a -> (a, Int)
@@ -92,8 +116,14 @@ specialize :: Inlines -> Env -> CorePhase b ()
 specialize specEnv penv
   = liftCorePhaseUniq  $ \uniq defs ->
     -- TODO: use uniqe int to generate names and remove call to uniquefyDefGroups?
-    let (defs', u') = runSpecM (uniq+100) (ReadState specEnv penv) (mapM specOneDefGroup defs)
+    let (defs', u') = runSpecM (uniq+100) (ReadState specEnv penv M.empty) (mapM specOneDefGroup defs)
     in (uniquefyDefGroups defs', u')
+
+localSpec :: (ReadState -> ReadState) -> SpecM a -> SpecM a
+localSpec f = hoistUniqueT (local f)
+
+specLookupStack :: SpecM (M.Map Name Int)
+specLookupStack = lift $ asks specStack
 
 speclookup :: Name -> SpecM (Maybe InlineDef)
 speclookup name
@@ -112,23 +142,59 @@ specOneDef def
 -- forceExpr e = foldExpr (const (+1)) 0 e `seq` e
 
 specOneExpr :: Name -> Expr -> SpecM Expr
-specOneExpr thisDefName
-  = rewriteTopDownM $ \e ->
-    case e of
-      App (Var (TName name _) _) args
-        -> go name e
-      App (TypeApp (Var (TName name _) _) typVars) args
-        -> go name e
-      e -> pure e
+specOneExpr thisDefName = descend
   where
-    go name e
+    -- own recursion (instead of rewriteTopDownM) so the ancestry stack
+    -- scopes over the descent into freshly created specialization bodies
+    descend e
+      = case e of
+          App (Var (TName name _) _) args
+            -> go name [] e
+          App (TypeApp (Var (TName name _) _) typVars) args
+            -> go name typVars e
+          _ -> descendChildren e
+
+    descendChildren e
+      = case e of
+          Lam params eff body -> Lam params eff <$> descend body
+          Var _ _             -> pure e
+          App fun xs          -> liftA2 App (descend fun) (mapM descend xs)
+          TypeLam types body  -> TypeLam types <$> descend body
+          TypeApp expr types  -> (\fexpr -> TypeApp fexpr types) <$> descend expr
+          Con _ _             -> pure e
+          Lit _               -> pure e
+          Let binders body    -> do newBinders <- forM binders $ \binder ->
+                                      case binder of
+                                        DefNonRec def -> do fexpr <- descend (defExpr def)
+                                                            return (DefNonRec def{ defExpr = fexpr })
+                                        DefRec defs   -> do fdefs <- forM defs $ \def ->
+                                                              do fexpr <- descend (defExpr def)
+                                                                 return def{ defExpr = fexpr }
+                                                            return (DefRec fdefs)
+                                    Let newBinders <$> descend body
+          Case exprs branches -> do fexprs <- mapM descend exprs
+                                    fbranches <- forM branches $ \(Branch pat guards) ->
+                                      do fguards <- forM guards $ \(Guard test guardExpr) ->
+                                           liftA2 Guard (descend test) (descend guardExpr)
+                                         return (Branch pat fguards)
+                                    return (Case fexprs fbranches)
+
+    go name typeArgs e
        = do mbSpecDef <- speclookup name
+            stack <- specLookupStack
+            let w = specWeight typeArgs
+                decreasing = case M.lookup name stack of
+                               Nothing -> True     -- not an ancestor
+                               Just w0 -> w < w0   -- only at strictly smaller instantiation
             case mbSpecDef of
-              Nothing -> pure e
+              Nothing -> descendChildren e
               Just specDef
-                | inlineName specDef /= thisDefName -> -- trace ("specialize " <> show (inlineName specDef) <> " in " <> show thisDefName) $
-                                                       specOneCall specDef e   -- don't specialize ourselves
-                | otherwise -> pure e
+                | inlineName specDef /= thisDefName  -- don't specialize ourselves
+                  && decreasing                      -- ancestors only at strictly smaller instantiated types
+                -> do e' <- specOneCall specDef e
+                      localSpec (\rs -> rs{ specStack = M.insertWith min (inlineName specDef) w (specStack rs) }) $
+                        descendChildren e'
+                | otherwise -> descendChildren e
 
 filterBools :: [Bool] -> [a] -> [a]
 filterBools bools as
@@ -148,11 +214,11 @@ specOneCall inlineDef@(InlineDef{ inlineName=specName, inlineExpr=specExpr, inli
       App (Var (TName name _) _) args
        | gArgs <- goodArgs specArgs args
        , any isJust gArgs
-        -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) Nothing
+        -> fromMaybe e <$> replaceCall specName specExpr sort specArgs (newArgs gArgs args) Nothing
       App (TypeApp (Var (TName name ty) _) typeArgs) args
        | gArgs <- goodArgs specArgs args
        , any isJust gArgs
-        -> replaceCall specName specExpr sort specArgs (newArgs gArgs args) $ Just typeArgs
+        -> fromMaybe e <$> replaceCall specName specExpr sort specArgs (newArgs gArgs args) (Just typeArgs)
       _ -> return e
 
   where newArgs gArgs args = zipWith fromMaybe args gArgs
@@ -240,8 +306,7 @@ specInnerCalls from to isSpecParam specParamNames expr
         all eqVar (zip specParamNames args)
 
     eqVar (name,Var v _)  = name == v
-    eqVar (name,arg)      = trace ("specialize: specInnerCalls: argument does not match: " ++ show name ++ " as " ++ show arg) $
-                            False
+    eqVar (name,arg)      = False  -- the recursive call does not pass the specialized parameter unchanged; leave it (and decline to specialize in replaceCall)
 
     sicAppTo args
       = App varTo (map sicExpr (filterBools (map not isSpecParam) args))
@@ -301,7 +366,8 @@ comment = unlines . map ("// " ++) . lines
 -- 3. Only then, replace the recursive calls to f in the body (specInnerCalls)
 -- The important thing is that we don't try to get the type of the body at the same time as replacing the recursive calls
 -- since the type of the body depends on the type of the functions that it calls and vice versa
-replaceCall :: Name -> Expr -> DefSort -> [Bool] -> [Expr] -> Maybe [Type] -> SpecM Expr
+-- returns Nothing if the call should not be specialized after all
+replaceCall :: Name -> Expr -> DefSort -> [Bool] -> [Expr] -> Maybe [Type] -> SpecM (Maybe Expr)
 replaceCall name expr0 sort bools args mybeTypeArgs
   = do
       expr <- uniquefyExprU expr0
@@ -328,23 +394,59 @@ replaceCall name expr0 sort bools args mybeTypeArgs
       specName <- uniqueName "spec"
       let specType  = typeOf specBody0
           specTName = TName specName specType
-          specBody  = case specBody0 of
+          (specBody,specInnerBody)
+                    = case specBody0 of
                         Lam args eff (Let specArgs body)
                           -> -- uniquefyExpr $
-                             Lam args eff $
-                               (Let specArgs $
-                                specInnerCalls (TName name (typeOf expr)) specTName bools speccedParams body)
+                             let sbody = specInnerCalls (TName name (typeOf expr)) specTName bools speccedParams body
+                             in (Lam args eff (Let specArgs sbody), sbody)
                         _ -> failure "Specialize.replaceCall: Unexpected output from specialize pass"
 
-      -- simplify so the new specialized arguments are potentially inlined unlocking potential further specialization
-      sspecBody <- uniqueSimplify defaultEnv False False 1 10 specBody
-      -- trace ("\n// ----start--------\n// specializing " <> show name <> " to parameters " <> show speccedParams <> " with args " <> comment (show speccedArgs) <> "\n// specTName: " <> show (getName specTName) <> ", specBody0: \n" <> show specBody <> "\n\n, sspecBody: \n" <> show sspecBody <> "\n// ---- start recurse---") $ return ()
+      -- A recursive call to the original definition that could not be rewritten to call the
+      -- specialized definition (specInnerCalls requires that the specialized parameters are
+      -- passed along unchanged, which is guaranteed for definitions validated by
+      -- makeSpecialize, but not for the ones added by multiStepInlines) remains as a call to
+      -- the original in the specialized body. That is fine as long as that residual call is
+      -- not specializable itself: but if it has a 'good' argument in a specializable position
+      -- (e.g. `fexec-loop( fset(e,...), ...)` where the total `fset` stays applied under an
+      -- `@open` instead of being beta-reduced), then specOneExpr -- a top-down rewrite that
+      -- descends into the result -- would specialize that residual call again, recreating the
+      -- same residual call from the same inline definition inside yet another specialized
+      -- definition, and so on forever while the core keeps growing. Decline to specialize
+      -- such calls. Residual calls that only become specializable after simplification (e.g.
+      -- a specialized argument that itself calls the original, as in specializing `repeatN`
+      -- on `fn() repeatN(10,f)`) are fine: those arguments come from the call site and shrink
+      -- with every specialization step, so that recursion terminates.
+      let hasSpecializableResidual body = getAny $ flip foldMapExpr body $ \e ->
+            case e of
+              App (Var (TName n _) _) rargs
+                | n == name -> Any (any isJust (goodArgs bools rargs))
+              App (TypeApp (Var (TName n _) _) _) rargs
+                | n == name -> Any (any isJust (goodArgs bools rargs))
+              _             -> mempty
 
-      let specDef = Def specName specType sspecBody Private sort InlineAuto rangeNull
-                     $ "// specialized: " <> show name <> ", on parameters " <> concat (intersperse ", " (map show speccedParams)) <> ", using:\n" <>
-                       comment (unlines [show param <> " = " <> show arg | (param,arg) <- zip speccedParams speccedArgs])
+      if hasSpecializableResidual specInnerBody
+        then return Nothing
+        else do
+          -- simplify so the new specialized arguments are potentially inlined unlocking potential further specialization
+          sspecBody <- uniqueSimplify defaultEnv False False 1 10 specBody
+          -- trace ("specializing " <> show name <> " -> " <> show (getName specTName)) $ return ()
 
-      return $ Let [DefRec [specDef]] (App (Var (defTName specDef) InfoNone) newArgs)
+          -- The specialized parameters are gone from the new definition, so their
+          -- parameter infos must go too. Reusing `sort` as-is shifts a `Borrow` onto
+          -- whichever parameter now sits in that slot: for `map(xs, ^f)` specialized
+          -- on `f`, TRMC then appends its accumulator into the borrowed slot. A
+          -- borrowed accumulator is dup'ed (so every extend copies the context --
+          -- quadratic) and dropped after the recursive call (so no tail call -- O(n)
+          -- C stack): `list(1,200000).map(fn(x) x + 1)` segfaulted.
+          let specSort = case sort of
+                           DefFun pinfos fip -> DefFun (fst (partitionBools bools pinfos)) fip
+                           _                 -> sort
+              specDef = Def specName specType sspecBody Private specSort InlineAuto rangeNull
+                         $ "// specialized: " <> show name <> ", on parameters " <> concat (intersperse ", " (map show speccedParams)) <> ", using:\n" <>
+                           comment (unlines [show param <> " = " <> show arg | (param,arg) <- zip speccedParams speccedArgs])
+
+          return $ Just $ Let [DefRec [specDef]] (App (Var (defTName specDef) InfoNone) newArgs)
 
 fnTypeParams :: Expr -> [TypeVar]
 fnTypeParams (TypeLam typeParams _) = typeParams

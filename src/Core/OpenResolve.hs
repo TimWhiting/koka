@@ -16,6 +16,7 @@ module Core.OpenResolve(  openResolve ) where
 import qualified Lib.Trace
 import Control.Monad
 import Control.Applicative
+import Data.Maybe( isJust )
 
 import Lib.PPrint
 import Common.Failure
@@ -177,12 +178,10 @@ resOpen (Env penv gamma) eopen effFrom effTo tpFrom tpTo@(TFun targs _ tres) exp
              in case lsFrom of
                  []  -> -- no handled effect, use cast
                         case lsTo of
-                          [] -> trace ("  no handled effect, in no handled effect context: use cast")
+                          [] | matchType tlFrom tlTo -> trace ("  no handled effect, in no handled effect context: use cast")
                                 expr
-                          _  -> trace ("  no handled effect; use none: " ++ show expr) $
-                                if (isHandlerFree expr)
-                                 then trace ("***  remove open-none") $  -- fully total with using any operations that need evidence; just leave it as is
-                                      expr
+                          _  -> trace ("  no handled effect but different tails; use none: " ++ show expr) $
+                                if isHandlerFree expr then expr
                                 else if (n <= 4)
                                  then wrapper (resolve (nameOpenNone n)) []  -- fails in perf1c with exceeded stack size if --optmaxdup < 500 (since it prevents a tailcall)
                                       -- expr  -- fails in nim as it evidence is not cleared
@@ -223,8 +222,13 @@ matchLabels (l1:ls1) (l2:ls2) = (labelName l1 == labelName l2) && matchLabels ls
 matchLabels [] []             = True
 matchLabels _ _               = False
 
--- is a function expression handler free? : meaning if invoked,
--- it will never need evidence (invoke an operation) or change the evidence (use a handler).
+-- | Can a call of this function expression skip `open-none`, running under the
+-- caller's evidence vector instead of an empty one? Only if the call can never
+-- look up evidence: code compiled for a closed row finds evidence at static
+-- offsets into its own row, so it must not run under extra evidence. It can do
+-- that by installing a handler, or by running any Koka code whose row is closed.
+-- A function's type rules out neither, so an unknown function is never handler
+-- free, whatever module it is in.
 isHandlerFree :: Expr -> Bool
 isHandlerFree expr
   = case expr of
@@ -232,19 +236,22 @@ isHandlerFree expr
       TypeApp body targs -> isHandlerFree body
       Lam pars eff body  -> not (containsHandledEffect eff) && isHandlerFree body
       App f args         -> all isHandlerFree (f:args)
-      Var vname (Core.InfoExternal{})
-                  -> case handlerFreeFunType (typeOf vname) of
-                       Nothing  -> True
-                       Just ok  -> ok
-      Var vname _ -> case handlerFreeFunType (typeOf vname) of
-                       Nothing   -> True
-                       Just ok   -> ok && (isSystemCoreName (getName vname))
+      -- an external runs no Koka code of its own, but may call a function it is
+      -- passed; the identity (`#1`, the casts) calls nothing
+      Var vname (Core.InfoExternal format)
+                  -> case splitFunScheme (typeOf vname) of
+                       Just (_,pars,eff,_) -> not (containsHandledEffect eff) && (format == "#1" || not (any (mentionsFun . snd) pars))
+                       Nothing             -> True
+      Var vname _ -> not (isJust (splitFunScheme (typeOf vname)))
       Con{} -> True
       Lit{} -> True
       _     -> False
 
-handlerFreeFunType :: Type -> Maybe Bool
-handlerFreeFunType tp
-  = case splitFunScheme tp of
-      Just (_,_,eff,_) -> Just (not (containsHandledEffect eff))
-      _ -> Nothing
+mentionsFun :: Type -> Bool
+mentionsFun tp
+  = case expandSyn tp of
+      TFun{}         -> True
+      TForall _ t    -> mentionsFun t
+      TApp t ts      -> any mentionsFun (t:ts)
+      _              -> False
+

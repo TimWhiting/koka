@@ -87,14 +87,18 @@ pmodule srcName
 
                   externImports <- semis externImportDecl
                   fixs <- semis fixDecl
-                  (_,env1)       <- semisEnv (envInitial name srcName impMap) localAlias
-                  -- env2 is the env THREADED through the local aliases and type
-                  -- declarations by semisEnv, so it already carries every synonym
-                  -- they declare -- there is nothing left to rebuild here. (It used
-                  -- to be rebuilt from env1, which has not seen the type
-                  -- declarations and so is missing theirs.) Type parameters are
-                  -- scoped to their own declaration and do not leak into it.
-                  (tdefs,env2)   <- semisEnv env1 typeDecl
+                  (impsyns,env1) <- semisEnv (envInitial name srcName impMap) localAlias
+                  (tdefs,envT)   <- semisEnv env1 typeDecl
+                  -- add synonyms
+                  --
+                  -- NB: keep envT, the env THREADED through typeDecl -- it carries the
+                  -- type bindings the definitions below resolve against. (Ids now come
+                  -- from PState, so they no longer depend on how env is threaded.)
+                  let syns = concatMap (\td -> case td of
+                                                 Synonym info  -> [info]
+                                                 _             -> []) tdefs
+                      env2 = envT{ syns = synonymsNew (impsyns ++ syns) }
+
                   defs      <- semis (defDecl env2)
                   externals <- semis (externDecl env2)
                   inlines   <- do special "//.inline-section" <?> ""
@@ -508,9 +512,23 @@ parseMatch env
 
 parseCon :: Env -> LexParser Expr
 parseCon env
-  = do name <- qualifiedConId
+  = do cpath <- parseCPath
+       name <- qualifiedConId
        con  <- envLookupCon env name
-       return $ Con (TName name (infoType con)) (infoRepr con)
+       let repr = case cpath of
+                    CtxField _ | conReprHasCtxPath (infoRepr con)
+                      -> (infoRepr con){ conCtxPath = cpath }
+                    _ -> infoRepr con
+       return $ Con (TName name (infoType con)) repr
+
+-- `@cpath("<field>")` before a constructor: the field on the path to the hole
+-- of a constructor context (`conCtxPath`).
+parseCPath :: LexParser CtxPath
+parseCPath
+  = do specialId "@cpath"
+       (s,_) <- parens stringLit
+       return (CtxField (TName (readQualified s) typeAny))
+  <|> return CtxNone
 
 parseVar :: Env -> LexParser Expr
 parseVar env

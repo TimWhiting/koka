@@ -105,11 +105,16 @@ prettyCore env0 eguard inlineDefs core@(Core modName imports fixDefs typeDefGrou
     env  = env1{ expandSynonyms = False }
     envX = env1{ showKinds = True, expandSynonyms = True }
 
-    -- also scan bodies written to .inline-section: a synonym used only on a nested
-    -- binder there (never in the def's own signature) needs mirroring too
-    signatures   = extractSignatures core ++ concatMap (fts . inlineExpr) inlineDefs
+    -- Synonyms used ONLY in the inline section were never declared: the
+    -- section is rendered from `inlineDefs`, which this function receives
+    -- separately from the core, while `extractSignatures` covers only
+    -- externals and defs. Read back undeclared, such a type degrades to a bare
+    -- `TCon` that `Parc.getDataDefInfo` fails on. Together with the
+    -- `Nothing`-info case handled in `Type.Pretty.ppSynonym`, this is what lets
+    -- an interface be read with no synonyms seeded from its dependencies.
+    signatures   = extractSignatures core ++ concatMap (inlineExprTypes . inlineExpr) inlineDefs
     importedSyns = extractImportedSynonyms (coreProgName core) signatures
-    extraImports1 = map extractImportsFromSynInfo importedSyns
+    extraImports1 = map extractImportsFromSynInfo (filter (not . nameIsNil . qualifier . synInfoName) importedSyns)
     extraImports2 = extractImportFromSignatures signatures
     usedImports = extendImportMap (extraImports1 ++ extraImports2) (importsMap env0)
 
@@ -136,7 +141,7 @@ ppImportProvenance env prov
       ImportTypes    -> keyword env " type"
       ImportCompiler -> keyword env " inline"
 
-prettyExternalImport env tp (ExternalImport imports tpl _)
+prettyExternalImport env tp (ExternalImport imports _)
   = -- prettyComment env (importModDoc imp) $
     -- trace ("external imports: target: " ++ show target ++ ": " ++ show imports) $
     case filter (\(key,_) -> key /= "include-inline" && key /= "header-include-inline") imports of
@@ -181,7 +186,7 @@ prettyExternal env (External name tp pinfos body vis fip nameRng doc)
   --   prettyEntries entries             = text "{" <-> tab (vcat (map prettyEntry entries)) <-> text "};"
   --   prettyEntry (tpl,content)        = ppTargetPlatformMin env tpl <.> keyword env "inline" <+> prettyLit env (LitString content) <.> semi
 
-prettyExternal env (ExternalImport imports tpl range)
+prettyExternal env (ExternalImport imports range)
   = empty
 
   {-
@@ -212,8 +217,10 @@ prettyTypeDefGroup env (TypeDefGroup defs)
     vcat (map (prettyTypeDef env) defs)
 
 prettyTypeDef :: Env -> TypeDef -> Doc
+-- Interfaces declare private synonyms too: signatures and inline bodies are
+-- printed unexpanded, so an importer must be able to expand every synonym in them.
 prettyTypeDef env (Synonym synInfo  )
-  = ppSynInfo env False True True synInfo <.> semi
+  = ppSynInfo env False (not (coreIface env)) True synInfo <.> semi
 
 prettyTypeDef env (Data dataInfo)
   = -- keyword env "type" <+> prettyVis env vis <.> ppDataInfo env True dataInfo
@@ -375,7 +382,11 @@ prettyExpr env (TypeApp expr tps)
 -- Literals and constants
 prettyExpr env (Con tname repr)
   = -- prettyTName env tname
-    prettyVar env tname
+    -- the context path is part of this occurrence's repr, so interfaces must carry it
+    case (if coreIface env then conReprCtxPath repr else Nothing) of
+      Just (CtxField fld)
+        -> keyword env "@cpath" <.> parens (prettyLit env (LitString (showTupled (getName fld)))) <+> prettyVar env tname
+      _ -> prettyVar env tname
 
 prettyExpr env (Lit lit)
   = prettyLit env lit
@@ -434,7 +445,8 @@ prettyGuard env (Guard test expr)
 
 prettyPatterns :: Env -> [Pattern] -> (Env,[Doc])
 prettyPatterns env pats
-  = foldl f (env,[]) pats
+  = let (env',docs) = foldl f (env,[]) pats
+    in (env', reverse docs)  -- foldl builds the list in reverse
   where
     f (env,docs) pat = let (env',doc) = prettyPattern env{expandSynonyms=True} pat
                        in (env',doc:docs)
@@ -554,7 +566,7 @@ extractImportFromSignatures sigs
 extractDepsFromSignatures :: Signatures -> [ModuleName]
 extractDepsFromSignatures sigs
   = let sigmods = S.map (qualifier . typeconName) (ftc sigs)
-    in S.toList sigmods
+    in filter (not . nameIsNil) (S.toList sigmods)  -- unqualified type constructors (skolems) need no import
 
 extractImportsFromSynInfo :: SynInfo -> Import
 extractImportsFromSynInfo syn
@@ -595,6 +607,34 @@ extractImportsFromSynonyms imps syns
 
 -- extract from type signatures the synonyms so we can compress .kki files
 -- by locally defining imported synonyms
+-- | Every type mentioned anywhere in an expression. Used to declare the
+-- synonyms an interface's INLINE SECTION mentions, not just those in top-level
+-- signatures.
+inlineExprTypes :: Expr -> [Type]
+inlineExprTypes expr
+  = case expr of
+      Lam tnames eff body -> eff : map typeOf tnames ++ inlineExprTypes body
+      Var tname _         -> [typeOf tname]
+      App f args          -> inlineExprTypes f ++ concatMap inlineExprTypes args
+      TypeLam _ body      -> inlineExprTypes body
+      TypeApp f tps       -> tps ++ inlineExprTypes f
+      Con tname _         -> [typeOf tname]
+      Lit _               -> []
+      Let dgs body        -> concatMap defTps (flattenDefGroups dgs) ++ inlineExprTypes body
+      Case exprs bs       -> concatMap inlineExprTypes exprs ++ concatMap branchTps bs
+  where
+    defTps d = defType d : inlineExprTypes (defExpr d)
+    branchTps (Branch pats guards)
+      = concatMap patTps pats ++ concatMap guardTps guards
+    guardTps (Guard test body) = inlineExprTypes test ++ inlineExprTypes body
+    patTps pat
+      = case pat of
+          PatCon{patConName=tname, patConPatterns=pats, patTypeArgs=targs, patTypeRes=tres}
+            -> typeOf tname : tres : targs ++ concatMap patTps pats
+          PatVar{patName=tname, patPattern=sub}
+            -> typeOf tname : patTps sub
+          _ -> []
+
 extractImportedSynonyms :: ModuleName -> Signatures -> [SynInfo]
 extractImportedSynonyms progName sigs
   = let syns = filter (\info -> progName /= qualifier (synInfoName info)) $
@@ -640,11 +680,6 @@ instance HasTypeVar DefGroup where
         DefRec defs   -> ftc defs
         DefNonRec def -> ftc def
 
-  fts defGroup
-    = case defGroup of
-        DefRec defs   -> fts defs
-        DefNonRec def -> fts def
-
 
 instance HasTypeVar Def where
   sub `substitute` (Def name scheme expr vis isVal inl nameRng doc)
@@ -658,9 +693,6 @@ instance HasTypeVar Def where
 
   ftc (Def name scheme expr vis isVal inl nameRng doc)
     = tcsUnion (ftc scheme) (ftc expr)
-
-  fts (Def name scheme expr vis isVal inl nameRng doc)
-    = fts scheme ++ fts expr
 
 instance HasTypeVar Expr where
   sub `substitute` expr
@@ -715,18 +747,6 @@ instance HasTypeVar Expr where
                   Case exprs branches -> ftc exprs `tcsUnion` ftc branches
       in tcs
 
-  fts expr
-    = case expr of
-        Lam tname eff expr -> fts tname ++ fts eff ++ fts expr
-        Var tname info     -> fts tname
-        App a b            -> fts a ++ fts b
-        TypeLam tvs expr   -> fts expr
-        TypeApp expr tp    -> fts expr ++ fts tp
-        Con tname repr     -> fts tname
-        Lit lit            -> []
-        Let defGroups expr -> fts defGroups ++ fts expr
-        Case exprs branches -> fts exprs ++ fts branches
-
 instance HasTypeVar Branch where
   sub `substitute` (Branch patterns guards)
     = let sub' = subRemove (tvsList (btv patterns)) sub
@@ -741,9 +761,6 @@ instance HasTypeVar Branch where
   ftc (Branch patterns guards)
     = tcsUnion (ftc patterns) (ftc guards)
 
-  fts (Branch patterns guards)
-    = fts patterns ++ fts guards
-
 instance HasTypeVar Guard where
   sub `substitute` (Guard test expr)
     = Guard (sub `substitute` test) (sub `substitute` expr)
@@ -756,9 +773,6 @@ instance HasTypeVar Guard where
 
   ftc (Guard test expr)
     = ftc test `tcsUnion` ftc expr
-
-  fts (Guard test expr)
-    = fts test ++ fts expr
 
 instance HasTypeVar Pattern where
   sub `substitute` pat
@@ -796,13 +810,6 @@ instance HasTypeVar Pattern where
       in -- trace ("ftc :" ++ show (tvsList (tvs)) ++ ", in pattern: " ++ show pat) $
          tcs
 
-  fts pat
-    = case pat of
-        PatVar tname pat    -> fts tname ++ fts pat
-        PatCon tname args _ targs exists tres _ _ -> fts tname ++ fts args ++ fts targs ++ fts tres
-        PatWild             -> []
-        PatLit lit          -> []
-
 instance HasTypeVar TName where
   sub `substitute` (TName name tp)
     = TName name (sub `substitute` tp)
@@ -810,7 +817,5 @@ instance HasTypeVar TName where
     = ftv tp
   btv (TName name tp)
     = btv tp
-  fts (TName name tp)
-    = fts tp
   ftc (TName name tp)
     = ftc tp

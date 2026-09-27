@@ -50,6 +50,8 @@ pub import std/async/async
 pub import std/async/channel
 pub import std/async/interleave
 pub import std/async/os/file
+pub import std/async/thread
+pub import std/async/bchannel
 
 pub fun main()
   println("toc")
