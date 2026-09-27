@@ -198,11 +198,25 @@ instance HasExprVar Expr where
       TypeApp expr tp      -> TypeApp (sub |~> expr) tp
       Con tname repr       -> expr
       Lit lit              -> expr
-      Let defGroups expr   -> let defnames = map defName (flattenDefGroups defGroups)
-                                  sub' = [(name,e) | (name,e) <- sub, all (getName name /=) defnames]
-                              in Let (sub |~> defGroups) (sub' |~> expr)
+      Let defGroups expr   -> let (defGroups',sub') = substDefGroups sub defGroups
+                              in Let defGroups' (sub' |~> expr)
       Case expr branches   -> Case (sub |~> expr) (sub |~> branches)
 
+
+-- Substitute into a let's definition groups in order: a group that binds a
+-- name shadows it for the groups after it and for the body, so the substitution
+-- stops there. Names are not always unique (a fresh name can coincide with a
+-- binder minted by another counter), and substituting past a rebinding captures
+-- its occurrences. Returns the substitution left for the body.
+substDefGroups :: [(TName,Expr)] -> DefGroups -> (DefGroups,[(TName,Expr)])
+substDefGroups sub []
+  = ([],sub)
+substDefGroups sub (dg:dgs)
+  = let dg'   = sub |~> dg
+        names = map defName (flattenDefGroups [dg])
+        sub1  = [(name,e) | (name,e) <- sub, all (getName name /=) names]
+        (dgs',sub2) = substDefGroups sub1 dgs
+    in (dg':dgs', sub2)
 
 instance HasExprVar Branch where
   sub |~> (Branch patterns guards)
