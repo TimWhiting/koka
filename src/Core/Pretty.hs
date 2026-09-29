@@ -110,7 +110,7 @@ prettyCore env0 eguard inlineDefs core@(Core modName imports fixDefs typeDefGrou
     -- binder there (never in the def's own signature) needs mirroring too
     signatures   = extractSignatures core ++ concatMap (fts . inlineExpr) inlineDefs
     importedSyns = extractImportedSynonyms (coreProgName core) signatures
-    extraImports1 = map extractImportsFromSynInfo importedSyns
+    extraImports1 = map extractImportsFromSynInfo (filter (not . nameIsNil . qualifier . synInfoName) importedSyns)
     extraImports2 = extractImportFromSignatures signatures
     usedImports = extendImportMap (extraImports1 ++ extraImports2) (importsMap env0)
 
@@ -558,7 +558,7 @@ extractImportFromSignatures sigs
 extractDepsFromSignatures :: Signatures -> [ModuleName]
 extractDepsFromSignatures sigs
   = let sigmods = S.map (qualifier . typeconName) (ftc sigs)
-    in S.toList sigmods
+    in filter (not . nameIsNil) (S.toList sigmods)  -- unqualified type constructors (skolems) need no import
 
 extractImportsFromSynInfo :: SynInfo -> Import
 extractImportsFromSynInfo syn
