@@ -31,7 +31,9 @@ static inline void kk_evv_drop(kk_evv_t evv, kk_context_t* ctx) {
 }
 
 static inline kk_evv_t kk_evv_empty(kk_context_t* ctx) {
-  return kk_evv_empty_singleton(ctx);
+  // the address of a link-time constant; no call, and no dup because the
+  // block's refcount is stuck (see kk_evv_empty_static_block in kklib.h)
+  return kk_datatype_from_ptr(&kk_evv_empty_static_block, ctx);
 }
 
 static inline bool kk_evv_is_empty(kk_evv_t evv, kk_context_t* ctx) {  // todo: optimize

@@ -266,9 +266,11 @@ static void kk_cpu_init(void)
 // The thread local context; usually passed explicitly for efficiency.
 static kk_decl_thread kk_context_t* context;
 
-static struct { kk_block_t _block; /* kk_integer_t cfc; */ } kk_evv_empty_static = {
-  { KK_HEADER_STATIC(0,KK_TAG_EVV_VECTOR) }  // , { ((~KK_UB(0))^0x02) /*==-1 smallint*/}
-};
+// NOT `static`: `kk_evv_empty` inlines to this address (see kklib.h) instead of
+// calling in here. There must be exactly ONE of these -- `kk_evv_is_empty` and
+// `kk_evv_eq` compare pointers -- which is why it cannot just be defined in the
+// header, where every translation unit would get its own copy.
+kk_block_t kk_evv_empty_static_block = { KK_HEADER_STATIC(0,KK_TAG_EVV_VECTOR) };
 
 struct kk_evv_s {
   kk_block_t _block;
@@ -276,13 +278,12 @@ struct kk_evv_s {
 };
 
 kk_datatype_ptr_t kk_evv_empty_singleton(kk_context_t* ctx) {
-  static struct kk_evv_s* evv = NULL;
-  if (evv == NULL) {
-    evv = kk_block_alloc_as(struct kk_evv_s, 0, KK_TAG_EVV_VECTOR, ctx);
-    // evv->cfc = kk_integer_from_small(-1);
-  }
-  kk_base_type_dup_as(struct kk_evv_s*, evv);
-  return kk_datatype_from_base(evv, ctx);
+  // The empty evidence vector is shared by every thread (each `ctx->evv` starts
+  // here and every handler push/pop dups and drops it), so it is statically
+  // allocated with a stuck refcount: dup and drop are no-ops and it is never
+  // freed. An ordinary refcount would be corrupted by concurrent non-atomic
+  // updates. `kk_evv_empty` inlines to this address directly.
+  return kk_datatype_from_ptr(&kk_evv_empty_static_block, ctx);
 }
 
 
