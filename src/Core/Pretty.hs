@@ -376,7 +376,11 @@ prettyExpr env (TypeApp expr tps)
 -- Literals and constants
 prettyExpr env (Con tname repr)
   = -- prettyTName env tname
-    prettyVar env tname
+    -- the context path is part of this occurrence's repr, so interfaces must carry it
+    case (if coreIface env then conReprCtxPath repr else Nothing) of
+      Just (CtxField fld)
+        -> keyword env "@cpath" <.> parens (prettyLit env (LitString (showTupled (getName fld)))) <+> prettyVar env tname
+      _ -> prettyVar env tname
 
 prettyExpr env (Lit lit)
   = prettyLit env lit
