@@ -459,7 +459,8 @@ ppNamePlain env name
      else if (context env == qualifier name) -- || alwaysUnqualify env)
        then pp (unqualify name)
        else if (coreIface env) -- emit .kki file?
-         then pp name
+         -- a wildcard type variable is never a valid qualified name in a .kki file
+         then (if isWildcard (unqualify name) then pp (unqualify name) else pp name)
          else if (isSystemCoreName name)
            then pp (shortenSystemCoreName name)
            else let name' = removeCommonPrefix (context env) name
