@@ -52,6 +52,7 @@ pub import std/async/interleave
 pub import std/async/os/file
 // used only by tests; listed so they are built once rather than by each test concurrently
 pub import std/async/thread
+pub import std/async/bchannel
 
 pub fun main()
   println("toc")
