@@ -1,0 +1,3 @@
+6
+test/parc-dup-sink/wildcard-and-shift@kk(12, 5): type warning: pattern variable b is unused (or a wrongly spelled constructor?)
+ hint: start with an underscore to make it a wildcard pattern

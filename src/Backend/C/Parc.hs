@@ -77,6 +77,7 @@ parcDef :: Bool -> Def -> Parc Def
 parcDef topLevel def
   = (if topLevel then isolated_ else id) $
     withCurrentDef def $
+    withPending tnamesEmpty $   -- a deferred dup may only be claimed by the nested match itself
     do -- parcTrace "enter def"
        expr <- (if topLevel then parcTopLevelExpr (defSort def) else parcExpr) (defExpr def)
        return def{defExpr=expr}
@@ -184,6 +185,7 @@ parcLam expr parsSet body
   = do let caps = freeLocals expr
        (body', _) <- isolateWith S.empty
                        $ withOwned S.empty
+                       $ withPending tnamesEmpty   -- a deferred dup may only be claimed by the nested match itself
                        $ ownedInScope (S.union caps parsSet)
                        $ parcExpr body
        dups <- foldMapM useTName caps
@@ -255,10 +257,14 @@ parcGuard scrutinees pats live (Guard test expr)
   = do ownedPats <- map snd <$> filterM (\(s, _) -> isOwned s) (zip scrutinees pats)
        let ownedPvs = bv ownedPats
        let pvs = bv pats
-       scoped pvs $ extendOwned ownedPvs $
+       -- dups deferred to this guard by an enclosing match (see `pending`)
+       inherited <- getPending
+       scoped pvs $ extendOwned ownedPvs $ withPending tnamesEmpty $
          do let shapes = inferShapes scrutinees pats  -- create alias map for the pattern
             extendShapes shapes $ -- merge with current alias map
-              do (expr', liveInThisBranch) <- isolateWith live $ parcExpr expr
+              do -- this guard's own pattern dups that can be deferred into a nested match
+                 deferred <- deferrableInto scrutinees pats expr
+                 (expr', liveInThisBranch) <- isolateWith live $ withPending deferred $ parcExpr expr
                  -- A guard `test` may reference variables that are not bound by the pattern and
                  -- not used in the branch body (e.g. `... | info.field -> body` where `body` does
                  -- not use `info`). Such variables must stay live into the match so they are not
@@ -269,15 +275,67 @@ parcGuard scrutinees pats live (Guard test expr)
                  markLives (liveInThisBranch `S.union` testFvs)
                  test' <- withOwned S.empty $ parcExpr test
                  return $ \liveInSomeBranch -> scoped pvs $ extendOwned ownedPvs $ extendShapes shapes $ do
-                  let dups = S.intersection ownedPvs liveInThisBranch
-                  drops <- filterM isOwned (S.toList $ liveInSomeBranch \\ liveInThisBranch)
+                  -- this guard's own pattern dups, MINUS the ones deferred into the
+                  -- nested match, PLUS the ones inherited from the enclosing match.
+                  let inheritedDups = S.intersection inherited liveInThisBranch
+                      ownDups       = S.intersection (ownedPvs \\ deferred) liveInThisBranch
+                      dups          = S.union ownDups inheritedDups
+                  -- an inherited variable is still owned by the enclosing match, whose
+                  -- drop of the scrutinee releases it, so it must not be dropped here
+                  drops <- filterM isOwned (S.toList $ (liveInSomeBranch \\ liveInThisBranch) \\ inherited)
                   -- special case for a lazy match in lazy-eval where we do not dup the children (which is unsafe in general) (generated in Kind/Infer/synLazyEval)
+                  -- (inherited dups are not the lazy value's children and must survive)
                   -- parcTrace $ "parc: scrutinees: " ++ show (map showTName scrutinees) ++ ", drops: " ++ show drops
                   let (dups1,drops1) = case scrutinees of
                                         [lazyName] | hiddenNameStartsWith (getName lazyName) "lazy" && null drops
-                                          -> (tnamesEmpty,tnamesEmpty)
+                                          -> (inheritedDups,tnamesEmpty)
                                         _ -> (dups,S.fromList drops)
                   Guard test' <$> parcGuardRC dups1 drops1 expr'
+
+-- | The pattern variables of this guard whose dups may be deferred into the
+-- branches of an immediately nested match (see `pending`), so that they meet the
+-- enclosing scrutinee's drop in the same `optimizeDupDrops` call and cancel.
+-- Exactly one branch runs and only a branch that uses a variable dups it, so the
+-- dynamic dup count never rises. Sound only when:
+--
+--  * the body is (lets over) a `Case` whose branches are the only guards that
+--    see `pending`;
+--  * the scrutinee occurs free in the nested branches, so its drop cannot run
+--    before the deferred dups;
+--  * the variable is not used before the branches (in the lets or scrutinees);
+--  * every branch guard is trivially true, since a failing test falls through;
+--  * neither match is lazy: `parcGuard` discards the dups of a lazy match's
+--    children.
+deferrableInto :: [TName] -> [Pattern] -> Expr -> Parc TNames
+deferrableInto scrutinees pats body
+  | any isLazyMatchName scrutinees = return tnamesEmpty
+  | otherwise
+  = case stripLets body of
+      Just (defs, cscruts, brs)
+        | not (null brs), all trivialGuards brs, not (any isLazyMatchExpr cscruts)
+          -> do let liveIntoBranches = S.unions (map fv brs)
+                    usedEarly = S.unions (map fv cscruts ++ map (fv . defExpr) defs)
+                -- keep only the patterns whose scrutinee is owned here (so its
+                -- children are ours to dup at all) and still live in the nested
+                -- branches (so its drop cannot precede the deferred dups)
+                keep <- filterM (\(s,_) -> isOwned s)
+                          [sp | sp@(s,_) <- zip scrutinees pats, S.member s liveIntoBranches]
+                return (bv (map snd keep) \\ usedEarly)
+      _ -> return tnamesEmpty
+  where
+    isLazyMatchName tname     = hiddenNameStartsWith (getName tname) "lazy"
+    isLazyMatchExpr (Var t _) = isLazyMatchName t
+    isLazyMatchExpr _         = False
+    trivialGuards (Branch _ gs) = all (isExprTrue . guardTest) gs
+    stripLets expr
+      = case expr of
+          Let dgs body' -> case stripLets body' of
+                             Just (defs, cscruts, brs) -> Just (concatMap defsOf dgs ++ defs, cscruts, brs)
+                             Nothing -> Nothing
+          Case cscruts brs -> Just ([], cscruts, brs)
+          _ -> Nothing
+    defsOf (DefNonRec d) = [d]
+    defsOf (DefRec ds)   = ds
 
 type Dups     = TNames
 type Drops    = TNames
@@ -799,7 +857,12 @@ data Env = Env { currentDef :: [Def],
                  enableSpec:: Bool,
                  owned     :: Owned,
                  shapeMap  :: ShapeMap,
-                 borrowed  :: Borrowed
+                 borrowed  :: Borrowed,
+                 -- pattern variables of an enclosing match whose dups are deferred to
+                 -- the guards of the immediately nested match; `parcGuard`, `parcDef`
+                 -- and `parcLam` clear it everywhere else, so no variable is dup'ed at
+                 -- two levels
+                 pending   :: TNames
                }
 
 type Live = TNames
@@ -830,7 +893,7 @@ getSt = get
 runParc :: Pretty.Env -> Platform -> Newtypes -> Borrowed -> Bool -> Parc a -> Unique a
 runParc penv platform newtypes borrowed enableSpecialize (Parc action)
   = withUnique $ \u ->
-      let env = Env [] penv platform newtypes enableSpecialize S.empty M.empty borrowed
+      let env = Env [] penv platform newtypes enableSpecialize S.empty M.empty borrowed S.empty
           st = ParcState u S.empty
           (val, st') = runState (runReaderT action env) st
        in (val, uniq st')
@@ -869,6 +932,13 @@ getPlatform = platform <$> getEnv
 
 getOwned :: Parc Owned
 getOwned = owned <$> getEnv
+
+getPending :: Parc TNames
+getPending = pending <$> getEnv
+
+-- Replace (never extend) the deferred set: see `pending`.
+withPending :: TNames -> Parc a -> Parc a
+withPending tns = withEnv (\e -> e { pending = tns })
 
 updateOwned :: (Owned -> Owned) -> Parc a -> Parc a
 updateOwned f = withEnv (\e -> e { owned = f (owned e) })
