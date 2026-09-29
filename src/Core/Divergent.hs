@@ -68,12 +68,26 @@ isDivFun name [] body
   = True
 isDivFun name pars body
   = let (_,calls) = runDiv name pars (divExpr body)
-        orders    = map transpose (permutations (transpose calls)) 
-        divergent = not (any isAnOrder orders)
         isAnOrder cs
           = all (\call -> case dropWhile (==Eq) call of
                             (Lt:_) -> True
                             _      -> False) cs
+
+        -- The search is over orderings of the parameters, factorial in the arity.
+        -- A parameter that never decreases cannot supply the `Lt` an ordering
+        -- needs, so it is left out -- but only when every call has the same number
+        -- of arguments, since `transpose` re-packs ragged rows.
+        uniform   = case map length calls of
+                      []     -> True
+                      (l:ls) -> all (==l) ls
+        cols      = transpose calls
+        kept      = filter (any (==Lt)) cols
+        search    = if uniform then kept else cols
+        orders    = map transpose (permutations search)
+        divergent = if uniform && null kept && not (null calls)
+                      -- nothing ever decreases (`transpose []` would drop every call)
+                      then True
+                      else not (any isAnOrder orders)
 
         -- call      = foldr (zipWith max) (replicate (length pars) Lt) calls
         -- divergent = (head (sort call) /= Lt)
