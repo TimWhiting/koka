@@ -63,6 +63,7 @@ import Type.Pretty
 import Type.Assumption
 import Type.TypeVar
 import qualified Type.Operations as Op
+import qualified Type.Unify as Unify
 import Type.InferMonad
 
 import qualified Core.CoreVar as CoreVar
@@ -415,17 +416,8 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                           coreX <- subst simexpr
                           -- traceDoc $ \penv -> prettyExpr penv coreX
                           (mvars,msub) <- Op.freshSub Bound tvars
-                          let -- coreX = simplify expr -- coref0 (Core.defExpr coreDef)
-                              -- mvars = [TypeVar id kind Bound | TypeVar id kind _ <- tvars]
-                              -- msub  = subNew (zip tvars (map TVar mvars))
-
-
-                              resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX,
-                                                        Core.TypeApp (Core.Var (Core.TName ({- unqualify -} name) (resTp1)) info)
-                                                                      (map TVar mvars))] -- TODO: check: was `tvars` TODO: wrong for unannotated polymorphic recursion: see codegen/wrong/rec2
-                                          (msub |-> coreX)
-
-                              resCoreY = Core.addTypeLambdas mvars resCoreX
+                          resCoreX <- replaceRecCalls name resTp1 info (msub |-> coreX) -- TODO: wrong for unannotated polymorphic recursion: see codegen/wrong/rec2
+                          let resCoreY = Core.addTypeLambdas mvars resCoreX
                               -- TODO: check: this was:
                               -- bsub  = subNew (zip mvars (map TVar tvars))
                               -- resCoreY = Core.TypeLam tvars (bsub |-> resCoreX)
@@ -441,14 +433,14 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
                        do assumedTpX <- normalize True assumedTp >>= subst -- resTp0
                           simResCore1 <- return resCore1 -- liftUnique $ uniqueSimplify penv False False 1 0 resCore1
                           coreX <- subst simResCore1
-                          let resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX, Core.Var (Core.TName ({- unqualify -} name) resTp1) info)] coreX
+                          resCoreX <- replaceRecCalls name resTp1 info coreX
                           return (resTp1, resCoreX)
                   _  -- ensure we insert the right info  (test: static/div2-ack)
                     -> -- trace "  rec normal" $
                        do assumedTpX <- normalize True assumedTp >>= subst
                           simResCore1 <- return resCore1 -- liftUnique $ uniqueSimplify penv False False 1 0 resCore1
                           coreX <- subst simResCore1
-                          let resCoreX = (CoreVar.|~>) [(Core.TName ({- unqualify -} name) assumedTpX, Core.Var (Core.TName ({- unqualify -} name) resTp1) info)] coreX
+                          resCoreX <- replaceRecCalls name resTp1 info coreX
                           return (resTp1, resCoreX)
                   --(Nothing,_)
                   --   ->    return (resTp1,resCore1) -- (CoreVar.|~>) [(unqualify name, Core.Var (Core.TName (unqualify name) resTp1) Core.InfoNone)] resCore1
@@ -460,6 +452,35 @@ inferRecDef2 topLevel coreDef divergent (def,mbAssumed)
         return (coreDef2)
 
 
+
+-- | Replace the recursive calls in the body of `name` by calls at its generalized
+-- type `tp`. A call keeps its own instantiation: its type arguments are those
+-- that instantiate `tp` at the call's type. They cannot be reused as they are,
+-- since the type the body was checked at can quantify in another order (an
+-- annotation), or over an effect row that `tp` closes.
+replaceRecCalls :: Name -> Type -> Core.VarInfo -> Core.Expr -> Inf Core.Expr
+replaceRecCalls name tp info expr
+  = case [occTp | Core.TName occName occTp <- Core.tnamesList (CoreVar.fv expr), occName == name] of
+      [] -> return expr
+      (occTp:_)
+        -> do let (occVars,occRho) = splitTypeScheme occTp
+                  (genVars,genRho) = splitTypeScheme tp
+              (occMetas,occSub) <- Op.freshSub Meta occVars
+              (genMetas,genSub) <- Op.freshSub Meta genVars
+              -- a meta variable cannot unify with a bound one, so the free variables are skolems meanwhile
+              let rigid = [tv | tv <- tvsList (ftv occRho `tvsUnion` ftv genRho), not (tv `elem` (occVars ++ genVars))]
+              (skolems,toSkolem) <- Op.freshSub Skolem rigid
+              let fromSkolem = subNew (zip skolems (map TVar rigid))
+              (res,sub0) <- Unify.runUnify (Unify.unify (toSkolem |-> (genSub |-> genRho)) (toSkolem |-> (occSub |-> occRho)))
+              case res of
+                Left _ -> failure ("Type.Infer.replaceRecCalls: recursive call does not match the generalized type: " ++ show name)
+                Right () -> return ()
+              let callTypeArgs mbTypeArgs
+                    = let targs = maybe [] id mbTypeArgs
+                          argSub = subNew [(tv,targ) | (occMeta,targ) <- zip occMetas targs, TVar tv <- [sub0 |-> TVar occMeta]]
+                      in assertion ("Type.Infer.replaceRecCalls: type arguments: " ++ show name) (length targs == length occMetas) $
+                         [fromSkolem |-> (argSub |-> (sub0 |-> TVar genMeta)) | genMeta <- genMetas]
+              return (CoreVar.substOccurrences [(Core.TName name occTp, \mbTypeArgs -> Core.makeTypeApp (Core.Var (Core.TName name tp) info) (callTypeArgs mbTypeArgs))] expr)
 
 inferDef :: Bool -> Expect -> Def Type -> Inf Core.Def
 inferDef topLevel expect (Def (ValueBinder name mbTp expr nameRng vrng) rng vis sort inl doc)
