@@ -159,11 +159,9 @@ instance HasExpVar Pattern where
   Term-substitutions
 --------------------------------------------------------------------------}
 
--- | A substitution that replaces an occurrence of a variable together with the
--- type arguments it is applied to: the replacement for `x` gets `Just targs` for
--- `TypeApp (Var x) targs`, and replaces that whole application, and `Nothing` for
--- an unapplied `Var x`.
-type OccSubst = [(TName, Maybe [Type] -> Expr)]
+-- | A substitution that rewrites each occurrence of a variable: the replacement
+-- for `x` gets the occurrence, `Var x`, or `TypeApp (Var x) targs` as a whole.
+type OccSubst = [(TName, Expr -> Expr)]
 
 class HasExprVar a where
   -- | Substitute variables; an occurrence keeps the type arguments it is applied to.
@@ -176,11 +174,11 @@ class HasExprVar a where
   -- occurrences.
   substOccurrences :: OccSubst -> a -> a
 
-keepTypeArgs :: Expr -> Maybe [Type] -> Expr
-keepTypeArgs e mbTypeArgs
-  = case mbTypeArgs of
-      Just targs -> TypeApp e targs
-      Nothing    -> e
+keepTypeArgs :: Expr -> Expr -> Expr
+keepTypeArgs e occurrence
+  = case occurrence of
+      TypeApp _ targs -> TypeApp e targs
+      _               -> e
 
 -- | The substitution without the names a binder rebinds.
 unbindNames :: [Name] -> OccSubst -> OccSubst
@@ -214,10 +212,10 @@ instance HasExprVar Expr where
                               let sub' = [(name,e) | (name,e) <- sub, all (name /=) tnames]
                               in Lam tnames eff (substOccurrences sub' expr)
       Var tname info       -> case lookup tname sub of
-                                Just replace -> replace Nothing
+                                Just replace -> replace expr
                                 Nothing      -> expr
-      TypeApp (Var tname info) targs | Just replace <- lookup tname sub
-                           -> replace (Just targs)
+      TypeApp (Var tname _) _ | Just replace <- lookup tname sub
+                           -> replace expr
       App e1 e2            -> App (substOccurrences sub e1) (substOccurrences sub e2)
       TypeLam typeVars exp -> {- assertion ("CoreVar.HasExprVar.Expr.|~>.TypeLam: typevars: " ++ show typeVars ++ ",\n sub: " ++ show sub ++ "\n expr:" ++ show expr)
                                         (all (\tv -> not (tvsMember tv (ftv (map snd sub)))) typeVars
