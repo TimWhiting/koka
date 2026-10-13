@@ -14,6 +14,7 @@ import { KokaConfig } from './workspace-config'
 import { CancellationToken, DebugConfiguration, DebugConfigurationProvider, ProviderResult, WorkspaceFolder } from 'vscode'
 import { KokaDebugSession } from './debugger'
 import { KokaLanguageServer } from './lang-server'
+import { HmcfaView } from './hmcfa-view'
 import { MainCodeLensProvider } from './code-lens'
 
 
@@ -365,6 +366,11 @@ function createCommands(
       vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(resource), launchConfig as vscode.DebugConfiguration)
     }),
 
+    // Show the results of the full HMCFA analysis for the current file in an interactive view beside the editor
+    hmcfaView,
+    vscode.commands.registerCommand('koka.showHMCFA', () => hmcfaView.show(context)),
+    vscode.commands.registerCommand('koka.setHMCFASensitivity', () => hmcfaView.pickSensitivity()),
+
     // Show LSP output
     vscode.commands.registerCommand('koka.showLSPOutput', async () => {
       languageServer!.showOutputChannel()
@@ -441,3 +447,6 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
       return new vscode.DebugAdapterInlineImplementation(new KokaDebugSession(this.config, languageServer!.languageClient))
   }
 }
+
+// The interactive view of the HMCFA analysis results; it asks the current language server to run the analysis.
+const hmcfaView = new HmcfaView(async (filePath, m, d) => languageServer?.hmcfaReport(filePath, m, d))

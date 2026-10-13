@@ -14,7 +14,7 @@ module Core.FlowAnalysis.StaticContext(
                           contextId,contextOf,exprOfCtx,modCtx,ppContextPath,
                           enclosingDef,enclosingLambda,
                           maybeExprOfCtx, isTrueExpr, isFalseExpr,
-                          rangesOverlap,
+                          rangesOverlap, closestRange,
                           lamVar,lamVarName,lamNames,
                           showDg,showDef,showCtxExpr,
                           branchContainsBinding,

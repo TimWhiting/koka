@@ -244,6 +244,8 @@ data Flags
          , rebinding      :: !Bool -- perform full program analysis with rebinding
          , kcfa           :: !Bool -- perform k-cfa analysis
          , sweep          :: !Bool -- do a sweep of analysis sensitivities
+         , hmcfaView      :: !Bool -- print a readable report of the HMCFA results
+         , hmcfaGenerated :: !Bool -- include compiler-generated code in the HMCFA report
          , sensitivities  :: ![(Int,Int)] -- sensitivities for analysis
          } deriving (Eq,Show)
 
@@ -400,6 +402,8 @@ flagsNull
           False   -- do not do rebinding by default
           False   -- do not do k-cfa by default
           False   -- no sweep by default
+          False   -- no hmcfa report by default
+          False   -- hide generated code in the hmcfa report
           []      -- sensitivities
 
 
@@ -509,6 +513,8 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , option []    ["sensitivity"]    (ReqArg (\s -> Flag (\f -> f{sensitivities = read s : sensitivities f})) "(d,m)") "add analysis sensitivity (d,m)"
  , flag   []    ["kcfa"]           (\b f -> f{analyze=b, kcfa=b, rebuild=b})              "enable k-cfa analysis"
  , flag   []    ["sweep"]          (\b f -> f{sweep=b})              "analysis sweep"
+ , flag   []    ["hmcfa-view"]     (\b f -> f{hmcfaView=b, rebuild=b}) "print a readable report of the HMCFA analysis results"
+ , flag   []    ["hmcfa-generated"] (\b f -> f{hmcfaGenerated=b}) "include compiler-generated code in the HMCFA report"
  , emptyline
 
  -- hidden

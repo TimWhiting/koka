@@ -718,10 +718,10 @@ instance HasTypeVar Expr where
     = case expr of
         Lam tname eff expr -> fts tname ++ fts eff ++ fts expr
         Var tname info     -> fts tname
-        App a b            -> fts a ++ fts b
+        App a b _            -> fts a ++ fts b
         TypeLam tvs expr   -> fts expr
         TypeApp expr tp    -> fts expr ++ fts tp
-        Con tname repr     -> fts tname
+        Con tname repr _     -> fts tname
         Lit lit            -> []
         Let defGroups expr -> fts defGroups ++ fts expr
         Case exprs branches -> fts exprs ++ fts branches
@@ -809,7 +809,7 @@ instance HasTypeVar TName where
     = ftv tp
   btv (TName name tp _)
     = btv tp
-  fts (TName name tp)
+  fts (TName name tp _)
     = fts tp
   ftc (TName name tp _)
     = ftc tp

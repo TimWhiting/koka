@@ -36,6 +36,11 @@ import LanguageServer.Conversions( filePathToUri )
 import LanguageServer.Handler.TextDocument (rebuildUri)
 
 import Compile.Options (Flags (outFinalPath), commandLineHelp, processExtraOptions)
+import Compile.BuildMonad (runBuild)
+import Compile.BuildContext (buildcTypeCheck)
+import Core.FlowAnalysis.Full.DMCFA.View (hmcfaJson)
+import qualified Data.ByteString.Lazy as BL
+import Control.Exception (catch, SomeException)
 
 
 
@@ -85,6 +90,30 @@ commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp ->
           setProgress Nothing
           -- Send the executable file location back to the client in case it wants to run it
           resp $ Right $ case res of {Just exePath -> J.InL $ Json.String $ T.pack exePath; Nothing -> J.InR J.Null}
+      _ -> parameterError
+  else if command == "koka/hmcfa" then
+    case commandParams of
+      -- koka/hmcfa filePath m d: run the full HMCFA analysis on a file and return the results as JSON
+      -- (see Core.FlowAnalysis.Full.DMCFA.View). `m` is the number of call sites and `d` the number of
+      -- handler levels kept in a timestamp. On failure the result is an object with an `error` field.
+      Just (Json.String filePath : Json.Number m : Json.Number d : _) -> do
+        let uri = J.toNormalizedUri (filePathToUri (T.unpack filePath))
+            failed msg = Json.object [ "error" Json..= (msg :: String) ]
+        mbName <- lookupModuleName uri
+        mbMod  <- case mbName of
+                    Just (_,modname) -> lookupModule modname
+                    Nothing          -> return Nothing
+        case mbMod of
+          Nothing  -> resp $ Right $ J.InL $ failed "The file is not loaded: open it and wait for it to type check first."
+          Just mod -> withProgress (T.pack "Analyzing " <> filePath) Nothing J.NotCancellable $ \_ -> do
+            buildContext <- getBuildContext
+            term  <- getTerminal
+            flags <- getFlags
+            res <- liftIO $ (do report <- hmcfaJson buildContext (\bc mn -> runBuild term flags (buildcTypeCheck [mn] bc))
+                                                    mod (truncate m) (truncate d)
+                                BL.length (Json.encode report) `seq` return report)
+                            `catch` (\e -> return (failed (show (e :: SomeException))))
+            resp $ Right $ J.InL res
       _ -> parameterError
   else if command == "koka/signature-help/set-context" then
     case commandParams of

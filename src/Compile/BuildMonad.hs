@@ -15,7 +15,7 @@ module Compile.BuildMonad(
     , liftIO, liftError, liftIOError, checkedDefault, addErrors
     , getFlags, getPrettyEnv, getTerminal, getColorScheme
     , addErrorMessageKind, addWarningMessage
-    , withVFS
+    , withVFS, getVFS
     , withTotalWork, workNeeded, onBuildException, buildFinally
     , phaseCompleted
     , sequentialIO, pooledIO
@@ -23,6 +23,7 @@ module Compile.BuildMonad(
     , mapConcurrentModules
   ) where
 
+import qualified Data.Map.Strict as M
 import Compile.Module
 import Common.Name
 import Compile.Options
@@ -379,6 +380,9 @@ throwErrorKind :: ErrorKind -> (TP.Env -> Doc) -> Build a
 throwErrorKind ekind doc
   = do rng <- getCurrentRange
        throwError (\penv -> errorMessageKind ekind rng (doc penv))
+
+getVFS :: Build VFS
+getVFS = envVFS <$> getEnv
 
 getEnv :: Build Env
 getEnv

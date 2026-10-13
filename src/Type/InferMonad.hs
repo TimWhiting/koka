@@ -104,7 +104,8 @@ import Lib.PPrint
 import Common.Range hiding (Pos)
 import Common.Unique
 import Common.Failure
-import Common.Error
+import Common.Error hiding (Error(..))
+import Common.Error (Error)
 import Common.Syntax( Visibility(..), DefSort(..), TargetPlatform)
 import Common.File(endsWith,normalizeWith, seqqList)
 import Common.Name

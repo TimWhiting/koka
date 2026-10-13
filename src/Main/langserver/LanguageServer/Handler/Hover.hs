@@ -34,7 +34,7 @@ import Common.Range (showFullRange)
 import Common.Name (nameNil, ModuleName)
 import Common.ColorScheme (ColorScheme (colorNameQual, colorSource), Color (Gray))
 import Compile.Module (modRangeMap, modLexemes, Module (modSourcePath, modCoreUnopt))
-import Compile.Options (Flags, colorSchemeFromFlags, prettyEnvFromFlags)
+import Compile.Options (Flags, colorSchemeFromFlags, prettyEnvFromFlags, targetPlatformFromFlags)
 import Compile.BuildMonad(runBuild)
 import Compile.BuildContext(buildcTypeCheck)
 import Kind.Kind(isKindEffect,isKindHandled,isKindHandled1,isKindLabel)
@@ -119,7 +119,7 @@ hoverHandler
                  let doc = formatRangeInfoHover penv mods rngInfo
                  tstart <- liftIO getCurrentTime
                  liftIO $ createDirectoryIfMissing True "scratch/debug"
-                 liftIO $ writeFile "scratch/debug/hover.kk" $ show (prettyCore defaultEnv (C CDefault) [] (fromJust $ modCoreUnopt (fromJust mod)))
+                 liftIO $ writeFile "scratch/debug/hover.kk" $ show (prettyCore defaultEnv (targetPlatformFromFlags flags) [] (fromJust $ modCoreUnopt (fromJust mod)))
                  !res <- liftIO $ trace ("Running eval for position " ++ show pos) $ 
                            do
                             (do 

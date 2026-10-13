@@ -134,6 +134,7 @@ serverDef flags rin state messageChan progressChan =
             , T.pack "koka/compileFunction"
             , T.pack "koka/signature-help/set-context"
             , T.pack "koka/set-colors"
+            , T.pack "koka/hmcfa"
             ],
           optCompletionTriggerCharacters = Just ['.', ':', '/', ' ', ']', '}'],
           optSignatureHelpTriggerCharacters = Just ['(', ',', ' '],

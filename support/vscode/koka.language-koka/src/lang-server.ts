@@ -187,6 +187,14 @@ export class KokaLanguageServer {
     await this.languageClient!.sendRequest(ExecuteCommandRequest.type, {command: "koka/set-colors", arguments: [{mode: isDark ? "dark": "light"}]})
   }
 
+  // Run the full HMCFA analysis on a file. Returns the results as structured data (see hmcfa-view.ts).
+  // `m` call sites and `d` handler levels are kept in each timestamp.
+  async hmcfaReport(filePath : string, m : number, d : number) : Promise<any | undefined> {
+    if (!this.languageClient) return undefined
+    const result = await this.languageClient.sendRequest(ExecuteCommandRequest.type, {command: "koka/hmcfa", arguments: [filePath, m, d]})
+    return result ?? undefined
+  }
+
   async dispose() {
     try {
       this.traceOutputChannel?.dispose()

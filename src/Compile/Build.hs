@@ -65,6 +65,7 @@ import Core.Core (Core(coreProgDefs))
 import GHC.IORef (atomicSwapIORef)
 import Core.FlowAnalysis.Demand.ConstantProp (constantPropagation)
 import Core.FlowAnalysis.Full.DMCFA.Syntax (evalMain)
+import Core.FlowAnalysis.Full.DMCFA.View (hmcfaReport)
 import Core.FlowAnalysis.Full.KCFA.Syntax (evalMainK)
 import Core.FlowAnalysis.Full.DMCFAR.Syntax (evalMainR)
 import Core.Pretty (prettyCore)
@@ -365,6 +366,12 @@ moduleOptimize parsedMap tcheckedMap optimizedMap
                   (core,inlineDefs) <- liftError $ coreOptimize flags (defsNewtypes defs) (defsGamma defs) inlines (fromJust (modCore mod))
                   let h = flagsHash flags
                       bc = seqString h $ BuildContext [modName mod] (mod:imports) h
+                  when (hmcfaView flags && not (nameModule (modName mod) `startsWith` "std/") && not ('@' `elem` nameModule (modName mod))) $ do
+                    let sens = if null (sensitivities flags) then [(1,1)] else sensitivities flags
+                    mapM_ (\(d,m) -> liftIO $ do
+                              report <- hmcfaReport bc (\bc mn -> runBuild term flags $ buildcTypeCheck (mn:buildcRoots bc) bc) mod m d (hmcfaGenerated flags)
+                              putStrLn report
+                          ) sens
                   when (analyze flags) $ do
                     let sens = if null (sensitivities flags) then [(1,2)] else sensitivities flags
                     let runAnalysis d m = do
@@ -1008,7 +1015,7 @@ coreReset core
 throwModuleNotFound :: ModuleName -> FilePath -> Range -> Name -> Build a
 throwModuleNotFound parent relativeDir range name
   = do flags <- getFlags
-       vfs <- envVFS <$> getEnv       
+       vfs <- getVFS       
        throwError (\penv -> errorMessageKind ErrBuild range (errorNotFound relativeDir flags colorModule "module" vfs 
                               (pretty name <.> 
                                 (if nameIsNil parent 
@@ -1021,7 +1028,7 @@ throwModuleNotFound parent relativeDir range name
 throwFileNotFound :: FilePath -> Build a
 throwFileNotFound name
   = do flags <- getFlags
-       vfs <- envVFS <$> getEnv       
+       vfs <- getVFS       
        throwError (\penv -> errorMessageKind ErrBuild rangeNull (errorNotFound "" flags colorSource "" vfs (text name)))
 
 errorNotFound :: FilePath -> Flags -> (ColorScheme -> Color) -> [Char] -> VFS -> Doc -> Doc

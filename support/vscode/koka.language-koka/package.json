@@ -193,6 +193,18 @@
           "description": "The call sensitivity amount.",
           "order": 14
         },
+        "koka.analysis.handlerSensitivity": {
+          "type": "number",
+          "default": 1,
+          "description": "The number of handler levels the HMCFA analysis keeps in a timestamp.",
+          "order": 14
+        },
+        "koka.analysis.showGenerated": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show compiler-generated code by default in the HMCFA analysis view.",
+          "order": 14
+        },
         "koka.analysis.gas": {
           "type": "number",
           "default": -1,
@@ -211,6 +223,15 @@
       {
         "command": "koka.installCompiler",
         "title": "Koka: Install the latest compiler"
+      },
+      {
+        "command": "koka.showHMCFA",
+        "title": "Koka: Show HMCFA Analysis",
+        "icon": "$(telescope)"
+      },
+      {
+        "command": "koka.setHMCFASensitivity",
+        "title": "Koka: Set HMCFA Sensitivity"
       },
       {
         "command": "koka.whatsnew",
@@ -253,6 +274,15 @@
         "enablement": "koka.advancedCommands"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "koka.showHMCFA",
+          "when": "resourceLangId == koka",
+          "group": "navigation"
+        }
+      ]
+    },
     "debuggers": [
       {
         "type": "koka",

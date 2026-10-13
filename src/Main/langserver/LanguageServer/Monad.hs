@@ -75,9 +75,8 @@ import Syntax.Lexeme( Lexeme )
 import Kind.ImportMap (importsEmpty)
 import qualified Type.Pretty as TP
 import Compile.Options (Flags (..), flagsHash, prettyEnvFromFlags, verbose, Terminal(..))
-import Compile.Build(VFS,vfsFromList)
 import Compile.BuildContext
-import Compile.BuildMonad(buildcLookupModule)
+import Compile.BuildMonad(VFS,vfsFromList,buildcLookupModule)
 import Compile.Module
 import LanguageServer.Conversions ({-toLspUri,-} fromLspUri)
 
