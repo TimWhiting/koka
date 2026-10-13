@@ -315,8 +315,17 @@ topDown (App f args)
   where
     floatLetApp f args
       = let (fbinds,fexpr)   = floatLet f
-            (abindss,aexprs) = unzip (map floatLet args)
-        in makeLet (concat (fbinds:abindss)) (App fexpr aexprs)  -- note: assume unique bindings!
+            (abinds,aexprs)  = floatArgs (isTotal fexpr) args
+        in makeLet (fbinds ++ abinds) (App fexpr aexprs)  -- note: assume unique bindings!
+
+    -- an argument's bindings move before the function and the earlier
+    -- arguments, so they may float only while all of those are total:
+    -- `f(g(), let x = h() in x)` must still call `g` before `h`
+    floatArgs canFloat []           = ([],[])
+    floatArgs canFloat (arg:args)
+      = let (binds,arg')   = if canFloat then floatLet arg else ([],arg)
+            (binds',args') = floatArgs (canFloat && isTotal arg') args
+        in (binds ++ binds', arg':args')
 
     floatLet (Let binds body)     = let (binds',body') = floatLet body in (binds ++ binds', body')
     floatLet expr                 = ([],expr)
