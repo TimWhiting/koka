@@ -402,6 +402,21 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
                                 emitToH (text "#define" <+> ppName name <+> parens (text "(double)" <.> parens flt))
                         _ -> do doc <- genStat (ResultAssign (TName name tp) Nothing) (defBody)
                                 emitToInit (block doc)  -- must be scoped to avoid name clashes
+                                -- Mark the heap part of a toplevel constant static (stuck refcounts): it
+                                -- lives in a C static that any thread may dup and drop, and non-atomic
+                                -- refcounts would race. `dup;box;mark;drop-box` covers reference types
+                                -- (box reinterprets; the drop is a no-op once stuck) and value structs
+                                -- (box allocates a wrapper, a small one-time leak at init).
+                                let needsMark = case cType tp of
+                                                  CFun _ _  -> True
+                                                  CBox      -> True
+                                                  CData _   -> True
+                                                  CPrim val -> val `elem` ["kk_integer_t","kk_bytes_t","kk_string_t","kk_vector_t","kk_evv_t","kk_ref_t","kk_box_t"]
+                                when needsMark $
+                                  emitToInit $ case cType tp of
+                                    CBox -> text "kk_box_mark_static" <.> arguments [ppName name] <.> semi
+                                    _    -> text "{ kk_box_t _kk_c = " <.> genBoxCall tp (genDupCall tp (ppName name))
+                                            <.> text "; kk_box_mark_static(_kk_c, kk_context()); kk_box_drop(_kk_c, kk_context()); }"
                                 case genDupDropCall False {-drop-} tp (ppName name) of
                                   []   -> return ()
                                   docs -> emitToDone (hcat docs <.> semi)
