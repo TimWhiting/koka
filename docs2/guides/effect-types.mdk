@@ -1,0 +1,185 @@
+Title: Effect Types — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+
+```koka {.hidden}
+import std/num/random
+```
+
+# Effect Types { .heading-no-number }
+
+> For a progressive introduction, see [The Koka Book: Side Effects](../tutorial/effects.html)
+> and [Writing Your Own Effects](../tutorial/custom-effects.html).
+> This guide covers effect declarations, operation kinds, and formal semantics.
+
+Effect types are one of Koka's most distinctive features. Every function carries its effects in its type, and Koka refuses to compile code that uses an effect without handling it. This makes side effects explicit, modular, and composable.
+
+---
+
+## Declaring an Effect
+
+An effect is declared with the `effect` keyword, followed by one or more _operations_:
+
+```koka
+effect raise
+  ctl raise( msg : string ) : a
+```
+
+This declares an effect `:raise` with one control operation `raise`. The return type `:a` is polymorphic — `raise` can be used anywhere a value of any type is expected (it never actually returns one).
+
+### Shorthand for Single-Operation Effects
+
+When the effect and its sole operation share a name, you can write:
+
+```unchecked
+effect ctl raise( msg : string ) : a
+// equivalent to:
+effect raise { ctl raise( msg : string ) : a }
+```
+
+---
+
+## Operation Kinds
+
+Koka has three kinds of operations, each with different resumption semantics:
+
+| Kind | Syntax | Description |
+|------|--------|-------------|
+| Control | `ctl` | General: may resume 0, 1, or many times |
+| Function | `fun` | Tail-resumptive: always resumes exactly once as final act |
+| Value | `val` | Dynamically-bound read-only value |
+
+Use `fun` operations whenever possible — they are much more efficient (similar to virtual method calls) and the compiler can verify they always resume:
+
+```koka
+effect state<a>
+  fun get() : a
+  fun set( x : a ) : ()
+```
+
+Use `val` to dynamically bind a constant:
+
+```unchecked
+effect val width : int
+```
+
+Then `width` can be used as if it were a regular variable anywhere in scope.
+
+---
+
+## Using Effects
+
+Once an effect is declared, its operations can be used in functions. The effect appears automatically in the function's type:
+
+```unchecked
+effect raise
+  ctl raise( msg : string ) : a
+```
+```koka
+fun safe-divide( x : int, y : int ) : raise int
+  if y == 0 then raise("div-by-zero") else x / y
+```
+
+The `: raise int` return type means this function _requires_ a `:raise` handler somewhere up the call stack.
+
+---
+
+## Effect Rows (Combining Effects)
+
+Often, a function contains multiple effects. Multiple effects are combined as a _row_:
+
+```unchecked
+fun do-things() : <raise, console, div> int
+```
+
+Effect rows are unordered sets. We can use the notation `: <l|e>` to extend an effect `:e` with another effect
+`:l`. This is used for example in the `while` function which has type:
+`while : ( pred : () -> <div|e> bool, action : () -> <div|e> () ) -> <div|e> ()`.
+
+When effects are inferred at the call-site, Koka automatically unifies effect rows and infers the minimal required row. It extends the effects until they match, taking the union of the effects.
+
+For example:
+
+```unchecked
+import std/num/random
+```
+```koka
+fun looptest() : <exn,ndet,div> ()
+  while { is-odd(srandom-int()) }
+    throw("odd")
+```
+
+Here the predicate contributes non-determinism, the body contributes exceptions,
+and `while` itself contributes divergence. Koka unifies these at the call site into a single effect row.
+
+---
+
+## Polymorphic Effects
+
+Functions can be polymorphic over effects using row variables:
+
+```unchecked
+map : (xs : list<a>, f : (a) -> e b) -> e list<b>
+```
+
+Here `e` is a row variable standing for any effect row. If `f` is pure, `map` is pure; if `f` uses `:console`, so does `map`.
+
+---
+
+## `val` Operations: Dynamic Binding
+
+Value operations behave like dynamically scoped variables:
+
+```koka
+effect val width : int
+
+fun pretty-internal( line : string ) : width string
+  line.truncate(width)
+
+fun pretty-thin(d : string) : string
+  with val width = 40
+  pretty-internal(d)
+```
+
+No plumbing needed — `width` flows automatically to any function in scope that requires it.
+
+---
+
+## Semantics of Effects
+
+The inferred effects are not just considered as some extra type information on
+functions. Through the inference of effects, Koka has a very
+strong connection to its denotational semantics. In particular, _the full type
+of a Koka function corresponds directly to the type signature of the
+mathematical function that describes its denotational semantics_. For example,
+using &#x301A;`:t`&#x301B; to translate a type `:t` into its corresponding
+mathematical type signature, we have:
+
+| Koka Type | | Mathematical Type |
+|---|---|---|
+|&#x301A;`:int -> total int `&#x301B;        | =&nbsp;&nbsp; | $\mathbb{Z} \rightarrow \mathbb{Z}$                              |
+|&#x301A;`:int -> exn int `&#x301B;          | =             | $\mathbb{Z} \rightarrow (\mathbb{Z} + 1)$ |
+|&#x301A;`:int -> pure int `&#x301B;         | =             | $\mathbb{Z} \rightarrow (\mathbb{Z} + 1)_\bot$ |
+|&#x301A;`:int -> <st<h>,pure> int `&#x301B; | =             | $(\mathbb{Z} \times \mathbb{H}) \rightarrow ((\mathbb{Z} + 1) \times \mathbb{H})_\bot$ |
+
+From the above correspondence, we can immediately see that
+a `:total` function is truly total in the mathematical sense, while a stateful
+function (`:st<h>`) that can raise exceptions or not terminate (`:pure`)
+takes an implicit heap parameter, and either does not terminate ($\bot$) or
+returns an updated heap together with either a value or an exception ($1$).
+
+This layered correspondence is what makes effect types so useful for equational reasoning.
+In many languages, even the most basic semantics already assume mutation, exceptions, and divergence.
+In Koka, you can reason about a total function as a genuine mathematical function, and then add
+effects one layer at a time only where they are actually present.
+
+---
+
+## See Also
+
+- [Effect Handlers](effect-handlers.html){.learn}
+- [Types & Inference](types.html){.learn}
+- [Implicits](implicits.html){.learn}
+
+~ end content
+~ end main-layout

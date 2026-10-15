@@ -1,0 +1,54 @@
+Title: Blog — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# Blog { .heading-no-number }
+
+Stay up to date with Koka language news: releases, research, community highlights,
+and deep dives into language features.
+
+---
+
+## Posts
+
+~ begin blog-list
+
+### [Koka 3.2 Released](koka-3-2.html) {.blog-title}
+**August 2025** · Language, Release
+
+The 3.2 release introduces underscore syntax for concise eta-expansion, a more robust implicit resolving algorithm, and support for phantom implicits.
+
+[Read more →](koka-3-2.html){.blog-read-more}
+
+---
+
+### [Koka 3.1 Released](koka-3-1.html) {.blog-title}
+**July 2025** · Language, Release
+
+The 3.1 release brings much faster build times via highly concurrent compilation, introduces the applier syntax and lazy constructors, and refines declaration syntax.
+
+[Read more →](koka-3-1.html){.blog-read-more}
+
+---
+
+### [Koka 3.0 Released](koka-3-0.html) {.blog-title}
+**January 2024** · Language, Release
+
+The 3.0 release introduces experimental support for implicit parameters and locally qualified names, with major VS Code integration improvements.
+
+[Read more →](koka-3-0.html){.blog-read-more}
+
+---
+
+### [Koka 2.6 Released](koka-2-6.html) {.blog-title}
+**December 2023** · Language, Release
+
+Koka 2.6.0 introduces first-class constructor contexts, expanded support for fully-in-place (FIP) programming, and initial VS Code language support.
+
+[Read more →](koka-2-6.html){.blog-read-more}
+
+---
+
+~ end blog-list
+
+~ end content
+~ end main-layout

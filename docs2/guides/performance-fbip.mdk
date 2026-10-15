@@ -1,0 +1,143 @@
+Title: Performance & FBIP — Koka How-to Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+# Performance & FBIP { .heading-no-number }
+
+> For the concepts behind Perceus and FBIP, see [Perceus & FBIP](../concepts/perceus-and-fbip.html).
+> For FBIP programming patterns with code examples, see [Memory Management](fbip.html).
+> This guide is a practical optimization checklist.
+
+---
+
+## Performance Workflow
+
+1. Get baseline behavior working and correct.
+2. Run representative inputs to establish a performance baseline.
+3. Use the REPL timing loop for quick comparisons:
+   ```unchecked
+   > :set --showtime
+   > :l mymodule
+   > main()
+   info: elapsed: 1.23s
+   > :set -O2
+   > :r
+   > main()
+   info: elapsed: 0.45s
+   ```
+4. Refactor hot paths toward FBIP-friendly structure.
+5. Add `tail`, `fbip`, or `fip` annotations to verify optimization contracts.
+
+---
+
+## Choosing an Annotation
+
+| Annotation | Guarantee | When to use |
+|-----------|-----------|-------------|
+| `tail` | Constant stack space | Any recursive function you want to loop efficiently |
+| `fbip` | No allocation in the unique fast path | Functions where you expect in-place reuse |
+| `fbip(n)` | Like `fbip` but `n` allocations allowed | Functions that create a bounded number of new nodes |
+| `fip` | No allocation/deallocation, constant stack | The strictest: true in-place with no stack growth |
+| `fip(n)` | Like `fip` but `n` allocations allowed | Insertion into a tree (one new leaf node) |
+
+Start with `tail` (easiest to satisfy). Then try `fbip`. Only use `fip` when
+you need the strongest guarantee and the algorithm naturally supports it.
+
+If the compiler rejects your annotation, it will tell you why -- usually a
+branch that allocates without a matching destructor, or a recursive call that
+isn't in tail position.
+
+---
+
+## Reuse Checklist
+
+For in-place reuse to happen, look for branches that:
+
+1. Pattern-match a constructor (destructuring it)
+2. Rebuild a constructor **of the same size** in the result
+
+When the matched value is uniquely owned (refcount = 1), the compiler
+reuses the memory cell in-place. When shared, it copies.
+
+**Good** -- constructor sizes match:
+```unchecked
+fun map( xs : list<a>, f : a -> e b ) : e list<b>
+  match xs
+    Cons(x, xx) -> Cons(f(x), map(xx, f))   // Cons -> Cons: same size
+    Nil         -> Nil
+```
+
+**Bad** -- sizes don't match:
+```unchecked
+fun expand( xs : list<a> ) : list<a>
+  match xs
+    Cons(x, xx) -> Cons(x, Cons(x, expand(xx)))  // one Cons -> two Cons: extra allocation
+    Nil         -> Nil
+```
+
+---
+
+## Common Pitfalls
+
+### Sharing prevents reuse
+If you bind a value to a name and use it in multiple places, it becomes
+shared (refcount > 1) and cannot be reused in-place:
+
+```unchecked
+fun bad( xs : list<int> ) : list<int>
+  val ys = xs          // ys and xs now share
+  ys.map(fn(x) x + 1) // cannot reuse in-place
+```
+
+### Boxing overhead
+Generic containers (like `list<(int,bool)>`) box their elements. For
+performance-sensitive code, consider a specialized type:
+
+```unchecked
+type int-bool-list
+  IBCons( x : int, y : bool, tail : int-bool-list )
+  IBNil
+```
+
+### Unnecessary intermediate structures
+Chaining `.map(...).filter(...).map(...)` creates intermediate lists.
+Consider fusing into a single traversal with `flatmap` or a custom fold.
+
+---
+
+## Mutually Recursive Functions
+
+For mutually recursive functions, making one a local function helps both
+divergence analysis and fip verification:
+
+```unchecked
+// Instead of:
+fun f(x) ... g(x) ...
+fun g(x) ... f(x) ...
+
+// Prefer:
+fun f(x)
+  fun g-local(x) ... f(x) ...
+  ... g-local(x) ...
+```
+
+---
+
+## Zipper/Visitor Pattern
+
+For traversals that need constant stack space, model pending work as an
+explicit data structure (a zipper or visitor). This replaces the call stack
+with a heap-allocated structure that can be processed in a tail-recursive loop.
+
+See the Morris traversal example in [Memory Management](fbip.html) for a
+concrete implementation.
+
+---
+
+## See Also
+
+- [Perceus & FBIP](../concepts/perceus-and-fbip.html){.learn}
+- [Memory Management](fbip.html){.learn}
+- [REPL & Tooling Reference](../reference/repl-and-tooling.html){.learn}
+
+~ end content
+~ end main-layout

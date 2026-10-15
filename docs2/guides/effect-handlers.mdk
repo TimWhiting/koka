@@ -1,0 +1,356 @@
+Title: Effect Handlers — Koka Feature Guide
+[INCLUDE=../sidebar-sub.mdk]
+
+```koka {.hidden}
+import std/num/random
+```
+
+# Effect Handlers { .heading-no-number }
+
+> For a progressive introduction, see [The Koka Book: Writing Your Own Effects](../tutorial/custom-effects.html).
+> This guide covers handler patterns, composition, and advanced techniques.
+
+Effect handlers give a _concrete implementation_ to abstract effect operations.
+They are the mechanism for defining custom control flow — exceptions, iterators,
+async/await, state, backtracking, and more — all as user-defined library functions.
+
+---
+
+## Basic Handling
+
+A handler provides definitions for each operation of an effect. Use the `with handler` syntax
+(or the abbreviated `with ctl` / `with fun` / `with val` for single-operation effects):
+
+```koka
+effect raise
+  ctl raise( msg : string ) : a
+
+fun safe-divide( x : int, y : int ) : raise int
+  if y == 0 then raise("div-by-zero") else x / y
+
+fun raise-const() : int
+  with ctl raise(msg) 42
+  8 + safe-divide(1, 0)
+```
+
+When `raise` is called inside `safe-divide`, execution yields back to the innermost handler,
+which discards the continuation and returns `42` directly.
+
+A `handler{ ... }` expression is itself a function that expects an action to run under the handler.
+That is why it works so naturally with `with`: `with handler ...` is just a convenient way to pass
+the rest of the scope as the handler's final function argument.
+
+---
+
+## Resuming
+
+The real power of effect handlers is `resume`: returning a value back to the call site and continuing:
+
+```koka
+effect ask<a>
+  ctl ask() : a
+
+fun add-twice() : ask<int> int
+  ask() + ask()
+
+fun ask-const() : int
+  with ctl ask() resume(21)
+  add-twice()  // evaluates to 42
+```
+
+The handler intercepts each `ask()`, calls `resume(21)` to continue with `21`, and the two
+asks add up to `42`. The handler runs twice, once for each call to `ask`.
+
+The handler can also resume with an effectful result. For example, we can provide random values:
+
+```unchecked
+import std/num/random
+```
+```koka
+fun ask-random() : random int
+  with ctl ask() resume(random-int())
+  add-twice()
+```
+
+Sometimes a handler should stop resuming after some budget is exhausted. The classic
+`ask-once` pattern resumes the first request and rejects subsequent requests:
+
+```koka
+fun ask-once( action : () -> <ask<int>,raise|e> int ) : <raise|e> int
+  var used := False
+  with handler
+    ctl ask()
+      if used then raise("ask-once: no more fuel")
+      else
+        used := True
+        resume(42)
+  action()
+```
+
+This demonstrates that a `ctl` handler can choose to resume zero times, once, or many times.
+
+---
+
+## `fun` Operations: Tail-Resumptive
+
+Most handlers resume exactly once as their final action. Use `fun` instead of `ctl` for these —
+it's the same semantics but more efficient (like a virtual method call, no continuation capture):
+
+```koka
+fun ask-const2() : int
+  with fun ask() 21
+  add-twice()
+```
+
+You can also declare the operation as `fun` in the effect definition to enforce this at the definition site:
+
+```unchecked
+effect ask<a>
+  fun ask() : a
+```
+
+Under the hood, the compiler uses evidence passing to route operations to the right handler.
+For tail-resumptive `fun` operations this becomes close to a direct virtual-method-style call,
+without capturing a continuation.
+
+---
+
+## `val` Operations: Dynamic Binding
+
+`val` operations provide a dynamically-scoped constant — essentially a typed global that is
+safely scoped to the handler:
+
+```koka
+effect val width : int
+
+fun pretty-internal( line : string ) : width string
+  line.truncate(width)
+
+fun pretty-thin(d : string) : string
+  with val width = 40
+  pretty-internal(d)
+```
+
+---
+
+## The `return` Clause
+
+Handlers can also transform the _final return value_ of their scope using a `return` clause:
+
+```koka
+fun raise-maybe( action : () -> <raise|e> a ) : e maybe<a>
+  with handler
+    return(x)      Just(x)
+    ctl raise(msg) Nothing
+  action()
+```
+
+If the action completes normally, `return(x)` wraps the result in `Just`. If `raise` is called,
+control transfers immediately to `Nothing`.
+
+---
+
+## Abstracting Handlers
+
+A `handler{ ... }` expression is itself a first-class function value — it takes an action and runs it under the handler. When a handler-function does nothing but install the handler and call the action, you can store it directly as a `val` instead:
+
+```koka
+effect fun emit( msg : string ) : ()
+
+// Directly store the handler as a value — no wrapper function needed:
+val emit-console = handler
+  fun emit(msg) println(msg)
+```
+
+This is completely equivalent to writing:
+
+```unchecked
+fun emit-console(action)
+  with fun emit(msg) println(msg)
+  action()
+```
+
+More generally, the `with handler` form desugars to calling a handler value with a final function block,
+so the two styles are operationally the same.
+
+As another reusable abstraction, we can define a generic `catch` helper:
+
+```koka
+fun catch( hnd : (string) -> e a, action : () -> <raise|e> a ) : e a
+  with ctl raise(msg) hnd(msg)
+  action()
+
+fun catch-example()
+  with catch( fn(msg){ println("error: " ++ msg); 42 } )
+  safe-divide(1,0)
+```
+
+Use the expanded form when the handler needs other state in its scope (like an initial state):
+
+```koka
+fun emit-collect( action : () -> <emit|e> () ) : e string
+  var lines := []
+  with handler
+    return(x)     lines.reverse.join("\n")
+    fun emit(msg) lines := Cons(msg,lines)
+  action()
+```
+
+Both forms work identically with `with`:
+
+```koka
+fun ehello() : emit ()
+  emit("hello")
+  emit("world")
+
+fun run-hello()
+  with emit-console
+  ehello()   // prints hello, world
+```
+
+---
+
+## Composing Handlers
+
+Handlers compose freely — just stack them with `with`:
+
+```koka
+effect state<a>
+  fun get() : a
+  fun set( x : a ) : ()
+
+fun pstate( init : a, action : () -> <state<a>,div|e> b ) : <div|e> (b,a)
+  var st := init
+  with handler
+    return(x)  (x,st)       // pair with the final state
+    fun get()  st
+    fun set(i) st := i
+  action()
+
+// Same behavior, factored into two handlers:
+fun pstate2( init : a, action : () -> <state<a>,div|e> b ) : <div|e> (b,a)
+  var st := init
+  with handler
+    fun get()  st
+    fun set(i) st := i
+  with handler
+    return(x) (x,st)
+  action()
+
+fun no-odds() : <raise, state<int>> int
+  val i = get()
+  if i.is-odd then raise("no odds")
+  else set(i / 2); i
+
+// State wraps exceptions: final state preserved even on exception
+fun state-then-raise(init) : div (maybe<int>, int)
+  with pstate(init)
+  with raise-maybe
+  no-odds()
+
+// Exception wraps state: transactional — state lost on exception
+fun raise-then-state(init) : div maybe<(int,int)>
+  with raise-maybe
+  with pstate(init)
+  no-odds()
+```
+
+The _order_ of handlers matters: it determines whether state is preserved across exceptions (like a heap) or discarded (like a transaction).
+
+The `pstate2` variant above is useful when you want to emphasize that operation handling and
+result post-processing are orthogonal: the first handler implements `get` / `set`, while the second
+handler only transforms the final return value.
+
+This free composability is one of the major strengths of handlers: they have simple Hindley-Milner types,
+their scope is delimited by the handler itself, and they compose directly without needing a special transformer stack.
+
+---
+
+## Multiple Resumptions
+
+A `ctl` handler can call `resume` more than once to implement backtracking:
+
+```koka
+effect ctl choice() : bool
+
+fun choice-all(action : () -> <choice|e> a) : e list<a>
+  with handler
+    return(x)    [x]
+    ctl choice() resume(False) ++ resume(True)
+  action()
+```
+
+In this example `choice-all` explores both branches and returns all results as a list.
+
+A simple alternate handler is to resolve choices randomly:
+
+```koka
+fun choice-random(action : () -> <choice,random|e> a) : <random|e> a
+  with fun choice() random-bool()
+  action()
+```
+
+Now `choice-random(xor)` returns either `True` or `False` depending on the random choices.
+
+Multiple resumptions are useful beyond backtracking search: they are also a natural basis for schedulers and
+probabilistic programming models where one computation branches into many possible continuations.
+
+They also interact in subtle ways with state. Consider:
+
+```unchecked
+fun surprising() : <choice,state<int>> bool
+  val p = choice()
+  val i = get()
+  set(i+1)
+  if i>0 && p then xor() else False
+
+fun state-choice() : div (list<bool>,int)
+  pstate(0)
+    choice-all(surprising)
+
+fun choice-state() : div list<(bool,int)>
+  choice-all
+    pstate(0,surprising)
+```
+
+The order of handlers changes the result:
+ 
+- In $state-choice$, outer state behaves like one global store across all resumption strands.
+- In $choice-state$, inner state behaves transactionally per strand.
+
+In the legacy example, this gives $state-choice() = ([False,False,True,True,False],2)$ and
+$choice-state() = [(False,1),(False,1)]$.
+
+This is also why local `var` state must be saved and restored with resumptions: if it behaved like a
+single shared mutable cell across all strands, side effects would leak between independent branches.
+
+---
+
+## Overriding
+
+Use `override` to replace a handler that's already in scope, without exposing the old one to `action`:
+
+```koka
+fun emit-quoted1( action : () -> <emit,emit|e> a ) : <emit|e> a
+  with fun emit(msg) emit("\"" ++ msg ++ "\"")
+  action()
+```
+
+This works, but it exposes in the type that `action` runs under two `emit` handlers. `override`
+keeps the type simpler and hides the replaced handler from the inner action:
+
+```koka
+fun emit-quoted( action : () -> <emit|e> a ) : <emit|e> a
+  with override fun emit(msg) emit("\"" ++ msg ++ "\"")
+  action()
+```
+
+---
+
+## See Also
+
+- [Effect Types](effect-types.html){.learn}
+- [Functions & Dot Notation](functions.html){.learn}
+
+~ end content
+~ end main-layout

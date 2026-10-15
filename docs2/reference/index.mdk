@@ -1,0 +1,29 @@
+Title: Reference — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# Reference { .heading-no-number }
+
+Precise, authoritative lookup for every language feature. Organized for
+scanning and searching, not for reading cover-to-cover.
+
+---
+
+## Language
+
+- [Language Specification](spec.html) -- formal grammar (BNF)
+- [Effect Semantics](effect-semantics.html) -- effect rows, handler ordering, masking
+- [Types & Representation](type-and-representation.html) -- value types, references, boxing
+- [Advanced Handlers](handlers-advanced.html) -- finally, raw control, linear effects, scoped handlers
+- [REPL & Tooling](repl-and-tooling.html) -- commands, compiler flags, VS Code
+
+---
+
+## See Also
+
+- [Learn Koka](../learn/index.html) -- condensed quickstart
+- [The Koka Book](../tutorial/index.html) -- progressive introduction
+- [How-to Guides](../guides/index.html) -- task-oriented recipes
+- [Concepts](../concepts/index.html) -- design rationale
+
+~ end content
+~ end main-layout

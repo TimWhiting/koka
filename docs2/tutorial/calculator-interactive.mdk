@@ -1,0 +1,104 @@
+ Title: Advanced Interactive Calculator — Koka Tutorial
+[INCLUDE=../sidebar-sub.mdk]
+```koka {.hidden}
+[INCLUDE=calculator-interactive.kk:imports]
+[INCLUDE=calculator-interactive.kk:exp]
+```
+
+# Advanced Interactive Calculator { .heading-no-number }
+
+Previously, we used effect handlers like traditional exceptions: 
+when an error occurred, we aborted the calculation and started the loop again.
+
+Now, we'll explore "real" error recovery using **resumption**. 
+Instead of stopping, we'll pause the calculation, ask the user for help, 
+and then **resume** from exactly where we left off.
+
+---
+
+## 1. Defining the Parser
+
+Parsing strings into expressions is easy with Koka's `std/text/parse` 
+library. We use a set of "parser combinators" to describe the grammar 
+of our expressions directly in the code:
+
+```koka
+[INCLUDE=calculator-interactive.kk:parser]
+```
+
+These parsers handle operator precedence (multiplication before 
+addition) and nesting with parentheses.
+
+---
+
+## 2. Resumable Effects
+
+To allow resumption, we change our effect operations from `fun` or `final ctl` 
+to standard `ctl`. We also change `lookup` to return an `int` directly, because 
+the handler will now guarantee a value is provided:
+
+```koka
+[INCLUDE=calculator-interactive.kk:effects]
+```
+
+Notice that `eval` becomes even simpler now that `lookup` returns a plain `int`:
+
+```koka
+[INCLUDE=calculator-interactive.kk:eval]
+```
+
+---
+
+## 3. Robust Interactive Recovery
+
+Now, let's write a handler that actually interacts with the user. If a 
+variable is missing or an error occurs, we'll use a helper function to 
+loop until the user provides a valid number, and then `resume` the 
+evaluator.
+
+```koka
+[INCLUDE=calculator-interactive.kk:interactive]
+```
+
+### How Resumption Works
+
+When `eval` hits an issue—like a missing variable or division by 
+zero—it calls an operation on the `calculator` effect. The handler:
+1.  Intercepts the call.
+2.  Discovers the specific problem (e.g., `n` is missing).
+3.  Uses `read-int-loop()` to ask the user for a valid number.
+4.  Calls `resume(v)`.
+
+The calculation then **continues exactly where it was**, as if the 
+operation had just returned that value normally. The evaluator doesn't even know 
+it was paused!
+
+This allows the calculation to finish gracefully instead of crashing or 
+returning a hardcoded fallback value.
+
+---
+
+## Summary
+
+This is the true power of effect handlers: they aren't just for 
+"throwing" errors, but for **abstracting control flow**. By using 
+`ctl` and `resume`, you can:
+- Build interactive debuggers.
+- Implement backtracking search.
+- Create robust systems that can "fix" errors on the fly.
+
+You've now completed the Koka tutorial! You're ready to dive into the 
+detailed [How-to Guides](../guides/index.html) or start building 
+your own "effective" applications.
+
+---
+
+You can [download the advanced source code here](calculator-interactive.kk).
+
+---
+
+[← Basic Calculator](calculator.html){.learn}
+[→ How-to Guides](../guides/index.html){.learn}
+
+~ end content
+~ end main-layout

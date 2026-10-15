@@ -1,0 +1,129 @@
+Title: REPL & Tooling Reference — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# REPL & Tooling Reference { .heading-no-number }
+
+---
+
+## Starting Koka
+
+```unchecked
+koka                     # start the REPL
+koka myfile.kk           # compile and run
+koka -e myfile.kk        # compile, run, then exit
+koka -c myfile.kk        # compile only (generate C)
+```
+
+---
+
+## REPL Commands
+
+| Command | Description |
+|---------|-------------|
+| `:l <file>` | Load a module or file |
+| `:r` | Reload the currently loaded module |
+| `:t <expr>` | Show the inferred type of an expression |
+| `:k <type>` | Show the kind of a type |
+| `:set <options>` | Set compiler or runtime options |
+| `:q` | Quit the REPL |
+| `<expr>` | Evaluate an expression and print the result |
+
+### Examples
+
+```unchecked
+> :l samples/basic/caesar
+> :t encode
+encode : (s : string, shift : int) -> total string
+> encode(3, "hello")
+"khoor"
+> :r
+```
+
+---
+
+## Compiler Flags
+
+Common flags for `:set` in the REPL or on the command line:
+
+| Flag | Description |
+|------|-------------|
+| `-O0` | No optimization (default for REPL) |
+| `-O2` | Full optimization |
+| `--showtime` | Show elapsed time after each evaluation |
+| `--showtypesigs` | Show inferred type signatures |
+| `--html` | Generate HTML with type tooltips |
+| `-c` | Compile only, do not run |
+| `-e` | Execute and exit |
+| `-v` | Verbose output |
+| `-v0` | Suppress output |
+| `--target=c` | Target C backend (default) |
+| `--target=js` | Target JavaScript backend |
+| `--outputdir=<dir>` | Set output directory for generated files |
+
+---
+
+## Timing and Optimization Loop
+
+A typical workflow for benchmarking:
+
+```unchecked
+> :set --showtime
+> :l samples/basic/rbtree
+> main()
+...
+info: elapsed: 0.626s
+
+> :set -O2
+> :r
+> main()
+...
+info: elapsed: 0.312s
+```
+
+---
+
+## VS Code Integration
+
+The [Koka VS Code extension](https://marketplace.visualstudio.com/items?itemName=koka.language-koka) provides:
+
+- **Syntax highlighting** for `.kk` files
+- **Type tooltips** on hover (shows inferred types and effects)
+- **CodeLens** for functions named `main`, `example...`, and `test...` (run/debug buttons)
+- **Error diagnostics** inline
+- **Implicit resolution display**: `Ctrl+Alt` shows inferred implicits and qualified identifiers
+
+Use CodeLens for quick iteration. Fall back to the REPL when you need
+`:set` option experimentation, timing comparisons, or manual load/reload control.
+
+---
+
+## Command-Line Compilation
+
+```unchecked
+# Compile and run
+koka samples/basic/caesar.kk
+
+# Compile with optimization
+koka -O2 samples/basic/rbtree.kk
+
+# Compile to JavaScript
+koka --target=js myfile.kk
+
+# Just type-check
+koka -c myfile.kk
+```
+
+Koka compiles `.kk` files to C (or JS), then compiles the C to a native
+executable. The generated files are placed in a `.koka` build directory
+by default.
+
+---
+
+## See Also
+
+- [Install](../install.html){.learn}
+- [Getting Started](../tutorial/getting-started.html){.learn}
+- [Performance & FBIP](../guides/performance-fbip.html){.learn}
+
+~ end content
+~ end main-layout

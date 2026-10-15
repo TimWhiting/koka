@@ -1,0 +1,174 @@
+Title: Effect Types & Handlers
+[INCLUDE=../sidebar-sub.mdk]
+
+# Effect Types & Handlers { .heading-no-number }
+
+Koka tracks the _effects_ of every function in its type, giving Koka
+rock-solid semantics with a direct correspondence to well-studied
+mathematical foundations. These effects are resolved using _effect handlers_,
+which let you define advanced control abstractions -- like async/await,
+exceptions, generators, or ambient state -- as ordinary user libraries
+rather than baked-in language features.
+
+## Effect Types
+
+Most functional languages are "pure by default" but lack a way to
+distinguish between _kinds_ of side effects. A Haskell function in `IO`
+might print, throw, mutate state, or launch missiles -- the type does
+not say which. Koka makes every effect explicit in the type signature,
+so you can see at a glance what a function can do.
+
+This precision pays off in three ways. First, you can reason about
+functions by their types: a `:total` function is truly total in the
+mathematical sense, and a function with only `:console` can only print.
+Second, the compiler uses effect information for optimization --
+reordering computations and reusing memory when it knows effects are
+absent. Third, effects compose freely without the lifting boilerplate
+that monad transformer stacks require.
+
+### The Effect System in Action
+Every function in Koka has a type of the form `(args) -> <effects> result`.
+For example:
+```unchecked
+fun sqr    : (int) -> total int       // total: mathematical total function    
+fun divide : (int,int) -> exn int     // exn: may raise an exception (partial)  
+fun turing : (tape) -> div int        // div: may not terminate (diverge)  
+fun print  : (string) -> console ()   // console: may write to the console  
+fun rand   : () -> ndet int           // ndet: non-deterministic  
+```
+
+#### Total (Pure) Functions
+A function without any effect is called `:total` and corresponds to
+mathematically total functions -- a good place to be.
+```koka
+fun square(n : int) : total int
+  n * n
+```
+
+#### Deterministic Effects
+Effects like state (`st<h>`) or exceptions (`exn`) are tracked.
+The combination of `:exn` and `:div` is called `:pure` as that corresponds to
+Haskell's notion of purity. On top of that we find mutability (as `:st`)
+up to full non-deterministic side effects in `:io`.
+
+```koka
+fun divide(x : int, y : int) : exn int
+  if y == 0 then throw("division by zero") else x / y
+```
+
+#### Divergence and Non-determinism
+Koka even tracks if a function might not terminate (`div`) or if it uses non-deterministic choice (`ndet`).
+```koka
+fun loop() : div ()
+  loop()
+```
+
+### Denotational Correspondence
+
+The inferred effects are not just extra type information. Koka's full
+function type corresponds directly to its mathematical denotational
+semantics. Using &#x301A;`:t`&#x301B; to denote the mathematical
+translation of a type `:t`:
+
+| Koka Type | | Mathematical Type |
+|---|---|---|
+|&#x301A;`:int -> total int `&#x301B;        | =&nbsp;&nbsp; | $\mathbb{Z} \rightarrow \mathbb{Z}$                              |
+|&#x301A;`:int -> exn int `&#x301B;          | =             | $\mathbb{Z} \rightarrow (\mathbb{Z} + 1)$ |
+|&#x301A;`:int -> pure int `&#x301B;         | =             | $\mathbb{Z} \rightarrow (\mathbb{Z} + 1)_\bot$ |
+|&#x301A;`:int -> <st<h>,pure> int `&#x301B; | =             | $(\mathbb{Z} \times \mathbb{H}) \rightarrow ((\mathbb{Z} + 1) \times \mathbb{H})_\bot$ |
+
+A `:total` function is truly total in the mathematical sense. A stateful
+function (`:st<h>`) takes an implicit heap and returns an updated heap.
+This layered correspondence is what makes effect types so useful for
+equational reasoning: you can reason about a total function as a genuine
+mathematical function, and add effects one layer at a time only where
+they are actually present.
+
+### Effect Polymorphism
+Koka functions can be polymorphic over effects. This means a higher-order function like `map` can work with both pure and effectful functions.
+```koka
+// map : (list<a>, (a) -> e b) -> e list<b>
+fun increment-all(lx : list<int>) : total list<int>
+  lx.map(fn(i) i + 1)
+```
+In the example above, `map` automatically infers that since the provided function is `total`, the resulting `increment-all` is also `total`.
+
+## Effect Handlers
+
+Effect handlers are Koka's most powerful generalization, providing a clean way to define complex control flow abstractions as library-defined functions. Instead of building-in things like `async/await`, `exceptions`, or `generators` into the compiler, Koka provides a single general mechanism that can implement all of these—and much more.
+
+### What are Effect Handlers?
+Effect handlers are often compared to `try`/`catch` blocks, but much more powerful. While `try`/`catch` is limited to handling exceptions and quitting, an effect handler provides:
+
+1.  **Resumption:** Handlers can *resume* the computation after handling an effect, providing a result back to the caller.
+
+2.  **Context:** Handlers can carry state along with them, allowing for more complex abstractions (like ambient state or backtracking).
+
+3.  **Composability:** Handlers can be composed in any order, and their effects are tracked by the type system.
+
+### The Three Components
+
+- **Effect Definition:** Defines a new effect with one or more operations.
+
+- **Raising the Effect:** A function calls an operation from the defined effect.
+
+- **Handling the Effect:** A block of code is wrapped in a `with` or `handle` statement that specifies how each operation should be handled.
+
+#### Defining an Effect
+Here is an example of an effect definition with
+one _control_ (`ctl`) operation to yield `:int` values:
+```koka
+effect yield
+  ctl yield( i : int ) : bool
+```
+
+#### Raising an Effect
+Once the effect is declared, we can use it 
+for example to yield the elements of a list:
+```koka
+fun traverse( xs : list<int> ) : yield () 
+  match xs 
+    Cons(x,xx) -> if yield(x) then traverse(xx) else ()
+    Nil        -> ()
+```
+The `traverse` function calls `yield` and therefore gets the `:yield` effect in its type,
+and if we want to use `traverse`, we need to _handle_ the `:yield` effect. 
+
+#### Handling an Effect
+This is much like defining an exception handler, except we can receive values (here an `:int`),
+and we can _resume_ to the call-site with a result (here, with a boolean that determines if we keep traversing):
+```koka
+fun print-elems() : console () 
+  with ctl yield(i)
+    println("yielded " ++ i.show)
+    resume(i<=2)
+  traverse([1,2,3,4])
+```
+The `with` statement dynamically binds the handler for `yield` control operation over the
+rest of the scope, in this case `traverse([1,2,3,4])`. 
+Every time `yield` is called, our control handler is called, prints the current value,
+and resumes to the call-site with a boolean result.
+The dynamic binding here is quite safe since we still use static typing! Indeed,
+the handler discharges the `:yield` effect -- and replaces
+it with a `:console` effect (due to `println`). When we run the example, we get:
+````
+yielded: 1
+yielded: 2
+yielded: 3
+```` 
+
+### Advanced Patterns
+Effect handlers can be used for:
+
+- **Async/Await:** Decoupling asynchronous computations from their executors.
+
+- **Backtracking:** Using non-deterministic choice to find solutions to search problems.
+
+- **Iterators:** Creating powerful, stateful iterators that can skip or repeat elements.
+Effect handlers make it easy to separate the *intent* of an operation from its *implementation*.
+---
+[Try the Effects Tutorial Path](../tutorial/effects.html){.learn}
+[Apply it in How-to Guides](../guides/effect-handlers.html){.learn}
+
+~ end content
+~ end main-layout

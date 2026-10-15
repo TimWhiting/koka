@@ -1,0 +1,61 @@
+Title: The Koka Book
+[INCLUDE=../sidebar-sub.mdk]
+
+# The Koka Book { .heading-no-number }
+
+A comprehensive, progressive introduction to the Koka programming language.
+Each chapter builds on the previous, taking you from your first program to
+effect handlers and high-performance functional programming.
+
+> For a faster, condensed introduction, see [Learn Koka](../learn/index.html).
+
+---
+
+## What Is Koka?
+
+Koka is a _functional_ programming language with a clean, expressive syntax
+and a remarkable type system. Its most distinctive feature is that **every
+side effect a function can perform is visible in its type**. Want to know if
+a function can throw an exception? Modify state? Write to a file? The type
+tells you -- no searching through documentation required.
+
+Despite this expressiveness, Koka code often reads like familiar imperative code,
+thanks to features like _local mutable state_, _dot notation_, _brace elision_, and _trailing lambdas_
+that we'll explore throughout this book.
+
+---
+
+## How to Follow Along
+
+To run code interactively, start the Koka REPL:
+
+```unchecked
+koka
+```
+
+Or run a file directly:
+
+```unchecked
+koka -e myfile.kk
+```
+
+---
+
+## Chapters
+
+1. [Getting Started](getting-started.html) -- values, expressions, and your first Koka program
+2. [Functions](functions.html) -- composition, lambdas, dot notation, and the `with` statement
+3. [Lists & Recursion](lists.html) -- processing collections functionally
+4. [Your Own Types](types.html) -- structs, sum types, and data modeling
+5. [Side Effects](effects.html) -- reading and reasoning about effect types
+6. [Writing Your Own Effects](custom-effects.html) -- defining and handling custom effects
+7. Capstone: [Basic Calculator](calculator.html) | [Interactive Calculator](calculator-interactive.html)
+
+> Experienced FP programmers may skim chapters 1-4 and focus on 5-7.
+
+---
+
+[-> Getting Started](getting-started.html){.learn}
+
+~ end content
+~ end main-layout

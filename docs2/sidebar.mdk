@@ -1,0 +1,91 @@
+Heading Depth: 0
+Colorizer: lang/koka.json
+Colorizer: lang/unchecked.json
+.unchecked {
+  language: koka;
+}
+Css: styles/modern.css
+Script: scripts/docs.js
+Bibliography: koka.bib
+
+<script>
+(function() {
+    try {
+        var savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "light" || savedTheme === "dark") {
+            document.documentElement.setAttribute("data-theme", savedTheme);
+        }
+    }
+    catch (e) {
+        // Ignore localStorage access errors.
+    }
+})();
+</script>
+
+~ begin main-layout
+<button class="mobile-nav-toggle">☰</button>
+<div class="sidebar-overlay"></div>
+~ begin sidebar
+~ begin sidebar-header { .sidebar-header }
+### [![koka-logo]{.logo-light} ![koka-logo-dark]{.logo-dark} Koka](index.html) {.sidebar-title}
+
+<button id="theme-toggle" class="theme-toggle" title="Toggle dark mode">
+  <span class="icon-sun">☀️</span>
+  <span class="icon-moon" style="display:none;">🌙</span>
+</button>
+~ end sidebar-header
+
+[koka-logo]: images/koka-logo-filled-light.svg { height:40px; vertical-align:middle; margin-right:10px; margin-bottom:4px; }
+[koka-logo-dark]: images/koka-logo-filled-dark.svg { height:40px; vertical-align:middle; margin-right:10px; margin-bottom:4px; }
+
+*   [Install](install.html)
+*   **Learn Koka**
+    *   [Overview](learn/index.html)
+    *   [Basics](learn/basics.html)
+    *   [Types](learn/types.html)
+    *   [Effects](learn/effects.html)
+    *   [Performance](learn/fbip.html)
+*   **The Koka Book**
+    *   [Overview](tutorial/index.html)
+    *   [1. Getting Started](tutorial/getting-started.html)
+    *   [2. Functions](tutorial/functions.html)
+    *   [3. Lists & Recursion](tutorial/lists.html)
+    *   [4. Your Own Types](tutorial/types.html)
+    *   [5. Side Effects](tutorial/effects.html)
+    *   [6. Custom Effects](tutorial/custom-effects.html)
+    *   [7. Calculator](tutorial/calculator.html)
+    *   [7b. Interactive Calculator](tutorial/calculator-interactive.html)
+*   **How-to Guides**
+    *   [How-to Overview](guides/index.html)
+    *   [Functions & Dot Notation](guides/functions.html)
+    *   [Algebraic Data Types](guides/adts.html)
+    *   [Pattern Matching](guides/pattern-matching.html)
+    *   [Types & Inference](guides/types.html)
+    *   [Static Overloading](guides/overloading.html)
+    *   [Implicits](guides/implicits.html)
+    *   [Effect Types](guides/effect-types.html)
+    *   [Effect Handlers](guides/effect-handlers.html)
+    *   [Advanced Handlers](guides/advanced-handlers.html)
+    *   [Memory Management](guides/fbip.html)
+    *   [Performance & FBIP](guides/performance-fbip.html)
+*   **Concepts**
+    *   [Concepts Overview](concepts/index.html)
+    *   [Minimal but General](concepts/general.html)
+    *   [Effect Types & Handlers](concepts/effects-and-handlers.html)
+    *   [Perceus & FBIP](concepts/perceus-and-fbip.html)
+*   **Reference**
+    *   [Reference Overview](reference/index.html)
+    *   [Language Specification](reference/spec.html)
+    *   [REPL & Tooling](reference/repl-and-tooling.html)
+    *   [Effect Semantics](reference/effect-semantics.html)
+    *   [Types & Representation](reference/type-and-representation.html)
+    *   [Advanced Handlers](reference/handlers-advanced.html)
+*   **Blog**
+    *   [All Posts](blog/index.html)
+    *   [Koka 3.2.x](blog/koka-3-2.html)
+    *   [Koka 3.1.2](blog/koka-3-1.html)
+    *   [Koka 3.0.x](blog/koka-3-0.html)
+    *   [Koka 2.6.0](blog/koka-2-6.html)
+~ end sidebar
+
+~ begin content

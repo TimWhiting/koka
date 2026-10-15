@@ -1,0 +1,42 @@
+Title: How-to Guides — Koka Programming Language
+[INCLUDE=../sidebar-sub.mdk]
+
+# How-to Guides { .heading-no-number }
+
+Task-oriented recipes for working programmers. Each guide answers a
+specific "How do I...?" question. For progressive learning, see
+[Learn Koka](../learn/index.html) or [The Koka Book](../tutorial/index.html).
+
+---
+
+## Core Language
+
+- [Functions & Dot Notation](functions.html) -- syntax patterns and the `with` statement
+- [Algebraic Data Types](adts.html) -- data modeling with structs and sum types
+- [Pattern Matching](pattern-matching.html) -- guards, nested patterns, `as` bindings
+- [Types & Inference](types.html) -- annotations, references, state, and value types
+- [Static Overloading](overloading.html) -- qualified names and type-directed disambiguation
+- [Implicit Parameters](implicits.html) -- the `?` parameter mechanism
+
+## Effects & Control Flow
+
+- [Effect Types](effect-types.html) -- declaring effects, operation kinds, effect rows
+- [Effect Handlers](effect-handlers.html) -- handler patterns, composition, and recipes
+- [Advanced Handlers](advanced-handlers.html) -- masking, resource management, raw control
+
+## Performance & Interop
+
+- [Memory Management](fbip.html) -- Perceus, FBIP, and reuse analysis
+- [Performance & FBIP](performance-fbip.html) -- optimization checklist and decision guide
+
+---
+
+## See Also
+
+- [Learn Koka](../learn/index.html) -- condensed quickstart for experienced programmers
+- [The Koka Book](../tutorial/index.html) -- comprehensive progressive introduction
+- [Concepts](../concepts/index.html) -- design rationale and theory
+- [Reference](../reference/index.html) -- precise language specification
+
+~ end content
+~ end main-layout

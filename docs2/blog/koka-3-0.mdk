@@ -1,0 +1,39 @@
+Title: Koka 3.0.x Released — Koka Blog
+[INCLUDE=../sidebar-sub.mdk]
+
+# Koka 3.0.x Released { .heading-no-number }
+
+~ begin blog-meta
+**January 2024** · Language, Release
+~ end blog-meta
+
+---
+
+The Koka 3.0.x series introduces experimental support for implicit parameters and locally qualified names, alongside major improvements to the VS Code integration.
+
+---
+
+## Implicit Parameters
+
+Koka 3.0.1 introduces **implicit parameters**, an experimental feature that allows for parameterized overloading of operations like equality and show.
+
+## Locally Qualified Names
+
+This release introduces **locally qualified names**, always enabling references to (overloaded) identifiers explicitly. This helps resolve ambiguities without full qualification.
+
+## VS Code Integration
+
+Major improvements have landed for the VS Code integration:
+- **Inlay Hints**: Press and hold `ctrl+alt` (or `ctrl+option` on macOS) to show inferred types, fully qualified names, and implicit arguments.
+- **Revised Hover Information**: Improved hover and inlay information for better developer productivity.
+
+## Standard Library Refinement
+
+In v3.0.4, `std/core` has been revised and split into separate modules for better organization and maintenance.
+
+---
+
+[← Back to Blog](index.html){.learn}
+
+~ end content
+~ end main-layout

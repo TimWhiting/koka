@@ -1,0 +1,152 @@
+Title: Perceus & FBIP
+[INCLUDE=../sidebar-sub.mdk]
+
+# Perceus & FBIP { .heading-no-number }
+
+Perceus is an advanced compilation method for reference counting that enables **Functional But In-Place (FBIP)** programming.
+This combination allows Koka to compile directly to C code without a garbage collector, while optimizing functional algorithms to use efficient in-place mutations.
+
+## Perceus Reference Counting
+Perceus is the compiler optimized reference counting technique that Koka
+uses for automatic memory management. This (together
+with evidence passing)
+enables Koka to compile directly to plain C code without needing a
+garbage collector or runtime system.
+
+Perceus uses extensive static analysis to aggressively optimize the
+reference counts. Here the strong semantic foundation of Koka helps a
+lot: inductive data types cannot form cycles, and potential sharing
+across threads can be reliably determined.
+
+Normally we need to make a fundamental choice when managing memory: 
+
+- We either use manual memory management (C, C++, Rust) and we get 
+  the best performance but at a significant programming burden,
+- Or, we use garbage collection (OCaml, C#, Java, Go, etc.) but
+  but now we need a runtime system and pay a price in performance,
+  memory usage, and unpredictable latencies.
+
+With Perceus, we hope to cross this gap and our goal is to 
+be within 2x of the performance of C/C++. Initial benchmarks are
+encouraging and show Koka to be close to C performance on various
+memory intensive benchmarks.
+
+One concrete example is purely functional insertion into a red-black tree. Compiling the sample with
+optimizations gives:
+
+The sample lives in `samples/basic/rbtree.kk`, next to a `rbtree.cpp` comparison implementation.
+
+```unchecked
+$ koka -O2 -o kk-rbtree samples/basic/rbtree.kk
+...
+$ time ./kk-rbtree
+420000
+real    0m0.626s
+```
+
+Compared to a C++ implementation using `std::map`:
+
+```unchecked
+$ clang++ --std=c++17 -o cpp-rbtree -O3 .../samples/basic/rbtree.cpp
+$ time ./cpp-rbtree
+420000
+real    0m0.667s
+```
+
+The point is not that Koka always beats C++, but that a purely functional implementation can end up with
+very similar fast paths once Perceus has turned the unique case into mostly in-place updates.
+
+[See benchmarks](https://github.com/koka-lang/koka#Benchmarks)
+{.learn}
+
+[Read the Perceus technical report](https://www.microsoft.com/en-us/research/publication/perceus-garbage-free-reference-counting-with-reuse/)
+{.learn}
+
+## Functional But In-Place (FBIP)
+
+Perceus also performs _reuse analysis_ as part of reference
+counting analysis. This pairs pattern matches with constructors of the
+same size and reuses them _in-place_ if possible. Take for example,
+the `map` function over lists:
+```koka 
+fun map-fbip( xs : list<a>, f : a -> e b ) : e list<b>
+  match xs
+    Cons(x,xx) -> Cons( f(x), map-fbip(xx,f) )
+    Nil        -> Nil
+```
+
+Here the matched `Cons` can be reused by the new `Cons`
+in the branch. This means if we map over a list that is not shared, 
+like `list(1,100000).map(sqr).sum`,
+then the list is updated _in-place_ without any extra allocation.
+This is very effective for many functional style programs.
+
+Moreover, the Koka compiler also implements _tail-recursion modulo cons_ (TRMC)
+and instead of using a recursive call, the function is eventually optimized 
+into an in-place updating loop for the fast path.
+
+If you prefer an imperative mental model, TRMC is the step that turns a structurally recursive function into
+the kind of tight loop you would normally write by hand in C, while preserving the functional source program.
+
+Importantly, the reuse optimization is guaranteed
+and a programmer can see when the optimization applies.
+This leads to a new programming technique we call FBIP:
+_functional but in-place_. Just like tail-recursion allows us
+to express loops with regular function calls, reuse analysis 
+allows us to express many imperative algorithms in a purely
+functional style. 
+
+Two classic examples are worth keeping in mind:
+
+- **Tree rebalancing:** in the red-black tree sample, pattern matches and same-sized constructor allocations line up so unique trees can be rebalanced largely in place. In the fast path, matched `Node` constructors are effectively paired with rebuilt `Node` constructors of the same size.
+- **Morris-style traversal:** even tree traversals that would normally need an explicit stack can often be reformulated so reuse analysis turns the fast path into a tight loop with no extra heap allocation or extra traversal stack.
+
+### Tree Rebalancing in More Detail
+
+The red-black tree sample is useful because it is both a standard purely functional algorithm and a good stress test
+for reuse analysis. A red-black tree maintains two invariants:
+
+- every root-to-leaf path has the same number of black nodes
+- a red node never has a red child
+
+Together these invariants keep the tree balanced. Okasaki-style functional insertion maintains them by rebuilding only
+the local path around the inserted node and rebalancing when needed. In source form this looks like ordinary persistent
+functional code; after inlining the balancing helpers, the important property is that matched `Node` constructors line up
+with rebuilt `Node` constructors of the same size.
+
+That is exactly the shape Perceus can exploit. In the unique case, the fast path reuses those `Node`s in place, so the
+generated code looks much closer to an imperative rebalancing routine than the source would suggest. In the persistent
+case, the same program still behaves correctly by copying only the shared spine and reusing any unshared parts.
+
+### Morris Traversal, Functionally
+
+An in-order tree walk is another good FBIP example because the obvious functional version is not tail-recursive and would
+normally use stack space proportional to tree depth. Historically, Knuth posed the problem of doing in-order traversal with
+no extra stack or heap, and Morris gave an elegant imperative solution that temporarily rewires the tree through
+right-threading. That imperative algorithm is subtle because its correctness depends on invariants over intermediate graph
+shapes, not just ordinary tree structure.
+
+The FBIP approach keeps the same operational goal but makes the intermediate structure explicit. Instead of mutating
+pointers to remember where to return, we model the pending work as a visitor value. Conceptually, this is a zipper-like
+representation of the rest of the traversal state.
+
+The important insight for reuse analysis is that the traversal progresses through same-sized states:
+
+- `Bin` nodes are visited into `BinR`
+- `BinR` states become `BinL`
+- `BinL` states reconstruct `Bin`
+
+Because these states are all the same size, the unique fast path can overlay them on the same memory. Combined with tail
+calls, this lets the compiler generate a tight loop with no extra heap allocation and no extra traversal stack, while the
+source remains purely functional and still adapts gracefully to shared input trees.
+
+[Learn more about how to ensure your code is fbip](../guides/fbip.html){.learn}
+
+[Read the paper on fully in-place functional programming](https://www.microsoft.com/en-us/research/publication/fbip-functional-but-in-place-programming/)
+{.learn}
+
+[Read the paper on generalized tail-recursion modulo cons](https://www.microsoft.com/en-us/research/publication/generalized-tail-recursion-modulo-cons/)
+{.learn}
+
+~ end content
+~ end main-layout

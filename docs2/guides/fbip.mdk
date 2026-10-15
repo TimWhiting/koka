@@ -1,0 +1,159 @@
+Title: Koka Memory Management
+[INCLUDE=../sidebar-sub.mdk]
+
+# Memory Management { .heading-no-number }
+
+> For design rationale, see [Perceus & FBIP Concepts](../concepts/perceus-and-fbip.html).
+> This guide covers practical FBIP programming patterns.
+
+Details on how Koka optimizes memory through reference counting and FBIP.
+
+## Perceus GC
+Perceus is a precise reference counting garbage collection technique. It is efficient, predictable, and allows for specialized optimizations like **FBIP**.
+
+## FBIP (Functional But In-Place)
+FBIP is a unique strength of Koka. It allows you to write purely functional code that the compiler automatically transforms into efficient in-place updates when objects are uniquely owned.
+The `fip` keyword can be used to ensure that a function does not allocate or deallocate memory (if non-borrowed parameters are unique) and uses constant stack space.
+
+Just like tail-call optimization lets you describe loops with regular function calls, FBIP lets you describe many in-place imperative algorithms with ordinary functional pattern matching and reconstruction.
+
+### Example: Reversing a list in-place
+If the input list `xs` is unique at runtime, Each `Cons` cell is reused and updated in-place:
+```koka
+fip fun rev-acc( xs : list<a>, acc : list<a> ) : list<a>
+  match xs
+    Cons(x,xx) -> rev-acc(xx, Cons(x,acc))
+    Nil        -> acc
+fip fun rev( xs : list<a> ) : list<a>
+  rev-acc(xs,[])
+```
+
+### Allocation Bound: `fip(n)`
+You can use `fip(n)` to allow a function to allocate at most `n` constructors. This is useful for operations like tree insertion where you might need to allocate exactly one new node.
+```koka
+type tree<k>
+  Tip
+  Bin(left: tree<k>, key: k, right: tree<k>)
+
+fip(1) fun insert( t : tree<int>, k : int ) : tree<int>
+  match t
+    Bin(l,x,r) -> if (x==k) then Bin(l,k,r)
+                  elif (x < k) then Bin(l,x,insert(r,k))
+                  else Bin(insert(l,k),x,r)
+    Tip        -> Bin(Tip,k,Tip)
+```
+
+This is the same style used by more advanced tree algorithms such as balanced insertion into red-black trees:
+for a unique tree, only the genuinely new spine needs allocation, while matched nodes of the same size can be reused in place.
+
+For shared or persistent trees, the same functional program adapts gracefully by copying just the shared path rather than the entire structure.
+
+### Red-Black Tree Rebalancing
+
+The sample `samples/basic/rbtree.kk` is a canonical FBIP case study. A red-black tree maintains two core invariants:
+
+- every root-to-leaf path contains the same number of black nodes
+- a red node never has a red child
+
+Functional insertion preserves these invariants with local rebuilding and balancing in the style popularized by Okasaki.
+In outline:
+
+```unchecked
+type color
+  Red
+  Black
+
+type tree
+  Leaf
+  Node(color: color, left: tree, key: int, value: bool, right: tree)
+```
+
+```unchecked
+fun balance-left( l : tree, k : int, v : bool, r : tree ): tree
+  match l
+    Node(_, Node(Red, lx, kx, vx, rx), ky, vy, ry)
+      -> Node(Red, Node(Black, lx, kx, vx, rx), ky, vy, Node(Black, ry, k, v, r))
+    ...
+```
+
+After inlining the balancing helpers, the crucial FBIP property becomes visible: each matched `Node` corresponds to a
+rebuilt `Node` of the same size. In the unique case, those nodes can be reused in place. In the persistent case, only the
+shared spine is copied, and unshared subtrees still reuse their existing storage.
+
+### Morris Traversal via an Explicit Visitor
+
+An in-order traversal like
+
+```unchecked
+fun tmap-inorder( t : tree, f : int -> int ) : tree
+  match t
+    Bin(l,x,r) -> Bin( l.tmap-inorder(f), f(x), r.tmap-inorder(f) )
+    Tip        -> Tip
+```
+
+already benefits from reuse when `t` is unique, but it is not tail-recursive and therefore still uses stack space.
+
+The Morris-traversal tradition asks for an in-order walk with no extra stack or heap. In imperative form this is usually
+done by temporarily threading the tree. The FBIP version keeps the same idea but makes the pending traversal state
+explicit as a visitor structure instead of implicit pointer rewiring:
+
+```unchecked
+type visitor
+  Done
+  BinR( right : tree, value : int, visit : visitor )
+  BinL( left  : tree, value : int, visit : visitor )
+
+type direction
+  Up
+  Down
+```
+
+This visitor is zipper-like: it represents the rest of the traversal after focusing on the current subtree.
+
+We start with an empty visitor and walk downward:
+
+```unchecked
+fun tmap( f : int -> int, t : tree, visit : visitor, d : direction )
+  match d
+    Down -> match t
+      Bin(l,x,r) -> tmap(f,l,BinR(r,x,visit),Down)  // A
+      Tip        -> tmap(f,Tip,visit,Up)            // B
+    Up -> match visit
+      Done        -> t                              // C
+      BinR(r,x,v) -> tmap(f,r,BinL(t,f(x),v),Down) // D
+      BinL(l,x,v) -> tmap(f,Bin(l,x,t),v,Up)       // E
+```
+
+Operationally:
+
+- `A`: descend the left spine and remember the right subtree in `BinR`
+- `B`: once the left spine ends, start moving upward
+- `C`: when the visitor is `Done`, the traversal is complete
+- `D`: visit the saved node value in-order and switch to a `BinL` state while traversing the right subtree
+- `E`: rebuild the tree node and continue upward
+
+This is the key same-size transition chain for reuse analysis:
+
+- `Bin` -> `BinR`
+- `BinR` -> `BinL`
+- `BinL` -> `Bin`
+
+Because each step preserves size, a unique tree can be updated in place with no extra heap allocation. And because the
+calls are tail calls, the compiled fast path also avoids extra traversal stack space.
+
+### Reading Reuse Opportunities
+
+The key thing to look for is whether a branch pattern-matches a constructor and then allocates a constructor of the same size in the result.
+When that happens, Perceus can often overlay the new node onto the old one in the unique case.
+
+This idea also applies to traversal-style programs. A tree walk that looks recursive in source may still compile to a tight loop once reuse analysis and TRMC have simplified the unique fast path.
+
+## FBIP vs FIP
+
+- `fip`: No allocation/deallocation, constant stack.
+
+- `fbip`: No allocation, but allows deallocation and arbitrary stack space.
+For more details, see the paper [FP^2: Fully in-Place Functional Programming](https://www.microsoft.com/en-us/research/uploads/prod/2023/05/fip-tr-v2.pdf).
+
+~ end content
+~ end main-layout
