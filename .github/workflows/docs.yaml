@@ -1,0 +1,193 @@
+# Builds the documentation (doc/spec and the standard library) and publishes it
+# to the gh-pages branch with util/publish-docs.sh, which describes the layout:
+#
+#   https://koka-lang.github.io/koka/doc/         the newest stable release (the default)
+#   https://koka-lang.github.io/koka/stable/doc/  the newest stable release
+#   https://koka-lang.github.io/koka/dev/doc/     the dev branch
+#   https://koka-lang.github.io/koka/<tag>/doc/   every release tag
+#   https://koka-lang.github.io/koka/versions.html
+#
+# A push to dev publishes dev; a release tag publishes its own directory, and
+# also doc/ and stable/ when it is the newest stable tag (vX.Y.Z, highest
+# version), so tagging a fix release of an older version or a prerelease does
+# not replace the current docs. Everything else on gh-pages (the root redirect,
+# playground/) is left alone.
+#
+# A manual run with a `tag` input (re)publishes that release tag: the docs of
+# the tag's sources and compiler, built and placed by this branch's
+# util/docs.kk and util/publish-docs.sh, which is how releases from before this
+# workflow get their directories. Without the input, a manual run on dev
+# publishes dev and on any other branch only builds.
+#
+# Pull requests that touch the documentation only build it. A fork publishes to
+# its own gh-pages when its repository variable DEPLOY_DOCS is `true`.
+
+name: Docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish, e.g. v3.2.9 (empty: the selected branch)'
+        required: false
+        default: ''
+  push:
+    branches: [dev]
+    tags: ['v*']
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'doc/**'
+      - 'util/docs.kk'
+      - 'util/publish-docs.sh'
+      - '.github/workflows/docs.yaml'
+
+concurrency:
+  # manual runs for several tags from one branch must not cancel each other
+  group: ${{ github.workflow }}-${{ inputs.tag || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      channel: ${{ steps.channel.outputs.channel }}
+      latest: ${{ steps.channel.outputs.latest }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.sha }}
+          submodules: true
+
+      # the build and publish scripts of the commit that runs the workflow, also
+      # for a release tag from before these scripts existed
+      - name: Checkout the docs scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: .docs-tools
+          sparse-checkout: |
+            util/docs.kk
+            util/publish-docs.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Build compiler
+        uses: freckle/stack-action@c5b62aa4c722658775d1c53d501a21bca1d28c5a #v5.7.29
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+        with:
+          test: false
+          stack-build-arguments: "--fast"
+          cache-save-always: true
+
+      # Madoko renders the math to SVG with latex and dvisvgm; without them it
+      # leaves the formulas as raw TeX and still succeeds.
+      - name: Install Madoko and LaTeX
+        run: |
+          npm install -g madoko
+          # madoko 1.2.3 (the latest) defines \dimeval, which newer LaTeX kernels also
+          # define, so every math snippet fails with "Command \dimeval already defined"
+          sed -i 's/\\dimeval\b/\\dimevalx/g' "$(npm root -g)/madoko/styles/madoko2.sty"
+          grep -q 'dimevalx' "$(npm root -g)/madoko/styles/madoko2.sty"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base texlive-latex-recommended texlive-latex-extra \
+            texlive-fonts-recommended texlive-science lmodern dvisvgm
+
+      - name: Select the channel
+        id: channel
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          latest=
+          tag=$INPUT_TAG
+          if [ -z "$tag" ] && [ "$GITHUB_REF_TYPE" = tag ]; then tag=$GITHUB_REF_NAME; fi
+          if [ -n "$tag" ]; then
+            case "$tag" in v*) ;; *) echo "not a release tag: $tag"; exit 1 ;; esac
+            newest=$(git ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' \
+                     | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+            echo "newest stable tag: $newest"
+            channel=$tag
+            version=${tag#v}
+            if [ "$tag" = "$newest" ]; then latest=latest; fi
+          elif [ "$GITHUB_REF_NAME" = dev ]; then
+            channel=dev
+            version="$(stack exec koka -- --version | sed -n 's/^version: *//p')-dev+${GITHUB_SHA::9}"
+          else # a pull request, or a manual run on another branch: build only
+            channel=
+            version=
+          fi
+          echo "channel: $channel, latest: $latest, version: $version"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # util/docs.kk runs `koka` itself, so the built compiler goes on the PATH.
+      - name: Build documentation
+        run: |
+          echo "$(stack path --local-install-root)/bin" >> "$GITHUB_PATH"
+          export PATH="$(stack path --local-install-root)/bin:$PATH"
+          # run from util/ as always: the compilers of v3.2.x cannot build an entry point
+          # in .docs-tools/ ("could not find module: docs")
+          cp .docs-tools/util/docs.kk util/docs.kk
+          stack exec koka -- -e util/docs.kk -- --publish \
+            ${{ steps.channel.outputs.version && format('--version={0}', steps.channel.outputs.version) || '' }} \
+            --relative \
+            --pubdir=_site
+          test -f _site/book.html && test -f _site/std_core.html
+          # madoko still succeeds when it cannot render math, so check that the formulas became SVG
+          n=$(grep -o 'math-render-svg' _site/book.html | wc -l)
+          echo "rendered formulas in book.html: $n"
+          [ "$n" -gt 0 ]
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: _site
+
+  deploy:
+    name: Publish to gh-pages
+    needs: build
+    if: github.event_name != 'pull_request' && needs.build.outputs.channel != '' && (github.repository == 'koka-lang/koka' || vars.DEPLOY_DOCS == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # one publish at a time: releases and dev both push to gh-pages
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout the publish script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: src
+          sparse-checkout: util/publish-docs.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: pages
+
+      - name: Download documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: docs
+          path: _site
+
+      - name: Commit and push
+        run: |
+          sh src/util/publish-docs.sh _site pages "${{ needs.build.outputs.channel }}" ${{ needs.build.outputs.latest }}
+          cd pages
+          git add -A
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "docs: ${{ needs.build.outputs.channel }} (${GITHUB_SHA::9})"
+          git push origin HEAD:gh-pages
