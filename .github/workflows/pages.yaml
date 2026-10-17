@@ -38,8 +38,7 @@ on:
         required: false
         default: ''
   push:
-    branches: [dev]
-    tags: ['v*']
+    branches: [dev, pages-test-dev]
   pull_request:
     branches: [dev]
 
@@ -86,7 +85,7 @@ jobs:
             channel=$tag
             version=${tag#v}
             if [ "$tag" = "$newest" ]; then latest=latest; fi
-          elif [ "$GITHUB_REF_NAME" = dev ] && [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+          elif [ "$GITHUB_REF_NAME" = pages-test-dev ] && [ "$GITHUB_EVENT_NAME" != pull_request ]; then
             channel=dev
             version="$(sed -n 's/^version: *//p' package.yaml)-dev+${GITHUB_SHA::9}"
           else # a pull request, or a manual run on another branch: build only
