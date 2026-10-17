@@ -20,6 +20,8 @@ struct iflags
   publish  : bool  = False
   version  : string = ""
   speconly : bool  = False
+  site     : string = "https://koka-lang.github.io/koka/doc/"
+  pubdir   : string = "../koka-pages/doc"
 
 
 val flag-descs : list<flag<iflags>> =
@@ -29,10 +31,16 @@ val flag-descs : list<flag<iflags>> =
     f(speconly = b)
   fun set-version( f : iflags, s : string ) : iflags
     f(version = s)
+  fun set-site( f : iflags, s : string ) : iflags
+    f(site = s)
+  fun set-pubdir( f : iflags, s : string ) : iflags
+    f(pubdir = s)
 
-  [ Flag( "p", ["publish"], Bool(set-publish), "publish to ../koka-pages directory" ),
+  [ Flag( "p", ["publish"], Bool(set-publish), "publish to the --pubdir directory" ),
     Flag( "v", ["version"], Req(set-version,"<version>"), "latest koka version" ),
-    Flag( "s", ["speconly"], Bool(set-speconly), "specification only")
+    Flag( "s", ["speconly"], Bool(set-speconly), "specification only"),
+    Flag( "", ["site"], Req(set-site,"<url>"), "url the published documentation is served from (default: https://koka-lang.github.io/koka/doc/)" ),
+    Flag( "", ["pubdir"], Req(set-pubdir,"<dir>"), "directory to publish to (default: ../koka-pages/doc)" )
   ]
 
 
@@ -47,11 +55,9 @@ fun process-flags() : <ndet,console> maybe<iflags>
 pub fun main()
   match process-flags()
     Nothing -> ()
-    Just(flags) -> build(flags.publish, flags.version || get-compiler-version(), flags.speconly)
+    Just(flags) -> build(flags.publish, flags.version || get-compiler-version(), flags.speconly, flags.site, flags.pubdir.path)
 
-fun build( publish : bool, version : string, speconly : bool ) : io ()
-  val docsite  = "https://koka-lang.github.io/koka/doc/"
-  val doclocal = "../koka-pages/doc".path
+fun build( publish : bool, version : string, speconly : bool, docsite : string, doclocal : path ) : io ()
 
   val outspec  = ".koka/spec".path;
   //val outspec   = outspecx ++ "js-debug"

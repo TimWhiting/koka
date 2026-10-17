@@ -1,0 +1,154 @@
+# Builds the documentation (doc/spec and the standard library) and publishes it
+# to the gh-pages branch:
+#
+#   tag vX.Y.Z -> doc/       https://koka-lang.github.io/koka/doc/      (latest release)
+#   dev        -> dev/doc/   https://koka-lang.github.io/koka/dev/doc/  (development)
+#
+# Everything else on gh-pages (the root redirect, playground/) is left alone.
+# Release docs are copied over the existing doc/ without deleting, as publishing
+# by hand did, so pages of earlier releases stay reachable; dev/doc/ is
+# replaced, since only the current dev branch is published there. A release tag
+# is published only while it is the newest stable tag, so tagging a fix release
+# of an older version does not replace the current docs; prerelease tags
+# (v3.2.8-alpha) are not published.
+#
+# Pull requests that touch the documentation only build it. A fork publishes to
+# its own gh-pages when its repository variable DEPLOY_DOCS is `true`.
+
+name: Docs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'doc/**'
+      - 'util/docs.kk'
+      - '.github/workflows/docs.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      dir: ${{ steps.channel.outputs.dir }}
+      publish: ${{ steps.channel.outputs.publish }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Build compiler
+        uses: freckle/stack-action@c5b62aa4c722658775d1c53d501a21bca1d28c5a #v5.7.29
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+        with:
+          test: false
+          stack-build-arguments: "--fast"
+          cache-save-always: true
+
+      # Madoko renders the math to SVG with latex and dvisvgm; without them it
+      # leaves the formulas as raw TeX and still succeeds.
+      - name: Install Madoko and LaTeX
+        run: |
+          npm install -g madoko
+          # madoko 1.2.3 (the latest) defines \dimeval, which newer LaTeX kernels also
+          # define, so every math snippet fails with "Command \dimeval already defined"
+          sed -i 's/\\dimeval\b/\\dimevalx/g' "$(npm root -g)/madoko/styles/madoko2.sty"
+          grep -q 'dimevalx' "$(npm root -g)/madoko/styles/madoko2.sty"
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base texlive-latex-recommended texlive-latex-extra \
+            texlive-fonts-recommended texlive-science lmodern dvisvgm
+
+      - name: Select the channel
+        id: channel
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            newest=$(git ls-remote --tags --refs origin 'v*' | sed 's|.*refs/tags/||' \
+                     | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+            echo "newest stable tag: $newest"
+            echo "dir=doc" >> "$GITHUB_OUTPUT"
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            if [ "$GITHUB_REF_NAME" = "$newest" ]; then publish=true; else publish=false; fi
+          elif [ "$GITHUB_REF_NAME" = dev ]; then
+            echo "dir=dev/doc" >> "$GITHUB_OUTPUT"
+            echo "version=$(stack exec koka -- --version | sed -n 's/^version: *//p')-dev+${GITHUB_SHA::9}" >> "$GITHUB_OUTPUT"
+            publish=true
+          else # a pull request, or a manual run on another branch: build only
+            echo "dir=dev/doc" >> "$GITHUB_OUTPUT"
+            echo "version=" >> "$GITHUB_OUTPUT"
+            publish=false
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "publish: $publish"
+          echo "site=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/" >> "$GITHUB_OUTPUT"
+
+      # util/docs.kk runs `koka` itself, so the built compiler goes on the PATH.
+      - name: Build documentation
+        run: |
+          echo "$(stack path --local-install-root)/bin" >> "$GITHUB_PATH"
+          export PATH="$(stack path --local-install-root)/bin:$PATH"
+          stack exec koka -- -e util/docs.kk -- --publish \
+            ${{ steps.channel.outputs.version && format('--version={0}', steps.channel.outputs.version) || '' }} \
+            --site=${{ steps.channel.outputs.site }}${{ steps.channel.outputs.dir }}/ \
+            --pubdir=_site
+          test -f _site/book.html && test -f _site/std_core.html
+          # madoko still succeeds when it cannot render math, so check that the formulas became SVG
+          n=$(grep -o 'math-render-svg' _site/book.html | wc -l)
+          echo "rendered formulas in book.html: $n"
+          [ "$n" -gt 0 ]
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: _site
+
+  deploy:
+    name: Publish to gh-pages
+    needs: build
+    if: github.event_name != 'pull_request' && needs.build.outputs.publish == 'true' && (github.repository == 'koka-lang/koka' || vars.DEPLOY_DOCS == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # one publish at a time: releases and dev both push to gh-pages
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: pages
+
+      - name: Download documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: docs
+          path: _site
+
+      - name: Commit and push
+        run: |
+          dir=${{ needs.build.outputs.dir }}
+          mkdir -p "pages/$dir"
+          if [ "$dir" = doc ]; then rsync -a _site/ "pages/$dir/"; else rsync -a --delete _site/ "pages/$dir/"; fi
+          cd pages
+          git add -A "$dir"
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "docs: $GITHUB_REF_NAME ${GITHUB_SHA::9}"
+          git push origin HEAD:gh-pages
