@@ -13,6 +13,7 @@
 #   dev/                the dev branch
 #   <tag>/              every release tag, e.g. v3.2.9/
 #   versions.html       the list of all of them (and versions.json, for a version switcher)
+#   index.html          a redirect to doc/
 #
 # Each channel directory holds doc/ and, for versions that have it, playground/.
 # `latest` marks the tag as the newest stable release, which also places it in
@@ -32,11 +33,6 @@ put() {
   mkdir -p "$2"
   # source maps double the size of a playground (35 of 90 MB) and are not needed to run it
   rsync -a ${3:-} --exclude '*.map' "$1/" "$2/"
-}
-
-# redirect <dir>: <dir>/ leads to its documentation
-redirect() {
-  printf '%s\n' '<!DOCTYPE html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=doc/index.html"><a href="doc/index.html">Koka documentation</a>' > "$1/index.html"
 }
 
 place() {
@@ -64,7 +60,6 @@ place() {
   for t in $targets; do
     [ -z "$docs" ] || put "$docs" "$site/$t/doc" --delete
     [ -z "$playground" ] || put "$playground" "$site/$t/playground" --delete
-    redirect "$site/$t"
   done
   if [ -n "$latest" ]; then
     echo "$channel" > "$site/stable/version.txt"
@@ -79,16 +74,39 @@ links() {
   if [ -f "$site/$1/playground/index.html" ]; then printf ' &middot; <a href="%s/playground/">playground</a>' "$1"; fi
 }
 
+# page_start <title>: the start of a generated page
+page_start() {
+  printf '%s\n' '<!DOCTYPE html>' '<html lang="en"><head><meta charset="utf-8">' \
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' \
+    "<title>$1</title>" \
+    '<style>body{font-family:system-ui,sans-serif;max-width:40em;margin:2em auto;padding:0 1em;line-height:1.7}td{padding-right:1.5em}td.v{font-weight:600}</style>' \
+    "</head><body><h1>$1</h1>"
+}
+
 index() {
   site=$1
   stable=$(cat "$site/stable/version.txt" 2>/dev/null || true)
   tags=$(cd "$site" && ls -d v*/doc 2>/dev/null | sed 's|/doc$||' | sort -rV)
+  # The root leads to the default documentation. Relative, so that a fork's
+  # site leads to its own pages; the script keeps the #fragment.
+  printf '%s\n' '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' \
+    '<meta http-equiv="refresh" content="1; url=doc/index.html"><title>Koka</title>' \
+    '<script>location.replace("doc/index.html" + location.hash)</script>' \
+    '</head><body><a href="doc/index.html">The Koka Programming Language</a></body></html>' > "$site/index.html"
+  # A channel directory gets a landing page rather than a redirect: an instant
+  # redirect is what phishing pages look like to browsers' safe-browsing checks.
+  for c in stable dev $tags; do
+    [ -d "$site/$c/doc" ] || continue
+    label=$c; [ "$c" = stable ] && label="stable ($stable)"; [ "$c" = dev ] && label="dev (development version)"
+    {
+      page_start "Koka $label"
+      printf '<p>%s</p>\n' "$(links "$c" | sed "s|href=\"$c/|href=\"|g")"
+      printf '%s\n' '<p><a href="../versions.html">All versions</a></p></body></html>'
+    } > "$site/$c/index.html"
+  done
   {
-    printf '%s\n' '<!DOCTYPE html>' '<html lang="en"><head><meta charset="utf-8">' \
-      '<meta name="viewport" content="width=device-width, initial-scale=1">' \
-      '<title>Koka versions</title>' \
-      '<style>body{font-family:system-ui,sans-serif;max-width:40em;margin:2em auto;padding:0 1em;line-height:1.7}td{padding-right:1.5em}td.v{font-weight:600}</style>' \
-      '</head><body><h1>Koka versions</h1><table>'
+    page_start "Koka versions"
+    printf '%s\n' '<table>'
     if [ -n "$stable" ]; then printf '<tr><td class="v">stable</td><td>%s</td><td>%s</td></tr>\n' "$stable" "$(links stable)"; fi
     if [ -d "$site/dev/doc" ]; then printf '<tr><td class="v">dev</td><td>development</td><td>%s</td></tr>\n' "$(links dev)"; fi
     for t in $tags; do printf '<tr><td class="v">%s</td><td></td><td>%s</td></tr>\n' "$t" "$(links "$t")"; done
