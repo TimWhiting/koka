@@ -1,0 +1,29 @@
+--- a/coop-communication.kk
++++ b/coop-communication.kk
+@@ -69,7 +69,7 @@
+ 
+   // --- The Handler ---
+   fun handle-comm(action)
+-    handle({mask<local>(action)})
++    handle(action)
+       return(_) ()
+       ctl shutdown()
+         ready := []
+@@ -78,7 +78,7 @@
+         enqueue( Task(fn() resume(())) )
+ 
+       ctl spawn(child)
+-        val child-task = fn() handle-comm(child)
++        val child-task = fn() handle-comm(fn() mask<local>{ child() })
+         val parent-task = fn() { val k = resume(()); k() }
+         enqueue( Task(child-task) )
+         enqueue( Task(parent-task) )
+@@ -123,7 +123,7 @@
+             channels := channels ++ [Channel-state(key, [], [k])]
+ 
+   // --- Bootstrap ---
+-  val main-task = handle-comm(main1)
++  val main-task = handle-comm(fn() mask<local>{ main1() })
+   enqueue( Task(fn() main-task()) )
+   while {!done}
+     run-loop()

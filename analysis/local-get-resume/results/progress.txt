@@ -1,0 +1,599 @@
+shared handlers/ambient --dmcfae (0,0) exit=0 2s
+    idle% start=93.66 end=95.23 waited=0s
+shared handlers/unix --dmcfae (0,0) exit=0 2s
+    idle% start=97.51 end=97.32 waited=0s
+shared handlers/scoped --dmcfae (0,0) exit=0 22s
+    idle% start=97.27 end=96.68 waited=0s
+shared suite/complex-flow --dmcfae (0,0) exit=0 2s
+    idle% start=97.0 end=97.62 waited=0s
+shared handlers/vec --dmcfae (0,0) exit=0 2s
+    idle% start=96.10 end=98.6 waited=0s
+shared handlers/nim --dmcfae (0,0) exit=0 45s
+    idle% start=95.83 end=98.7 waited=0s
+shared rosetta/rosetta/nums0/pr4rings --dmcfae (0,0) exit=0 2s
+    idle% start=97.69 end=98.0 waited=0s
+shared rosetta/rosetta/j/jump-anywhere --dmcfae (0,0) exit=0 2s
+    idle% start=96.93 end=97.38 waited=0s
+shared rosetta/rosetta/m/monads-writer --dmcfae (0,0) exit=0 2s
+    idle% start=96.24 end=96.83 waited=0s
+shared koka-gen/mini-ppl --dmcfae (0,0) exit=0 2s
+    idle% start=97.33 end=98.0 waited=0s
+shared koka-gen/music --dmcfae (0,0) exit=0 2s
+    idle% start=98.4 end=96.60 waited=0s
+lose handlers/ambient --dmcfar (1,0) exit=0 1s
+    idle% start=96.36 end=96.97 waited=0s
+add handlers/ambient --dmcfar (1,0) exit=0 2s
+    idle% start=96.88 end=97.21 waited=0s
+keep handlers/ambient --dmcfar (1,0) exit=0 2s
+    idle% start=96.24 end=97.69 waited=0s
+lose handlers/unix --dmcfar (1,0) exit=0 2s
+    idle% start=97.24 end=98.14 waited=0s
+add handlers/unix --dmcfar (1,0) exit=0 1s
+    idle% start=98.12 end=96.13 waited=0s
+keep handlers/unix --dmcfar (1,0) exit=0 2s
+    idle% start=95.75 end=96.83 waited=0s
+lose handlers/scoped --dmcfar (1,0) exit=0 3s
+    idle% start=94.48 end=96.68 waited=0s
+add handlers/scoped --dmcfar (1,0) exit=0 3s
+    idle% start=96.35 end=97.71 waited=0s
+keep handlers/scoped --dmcfar (1,0) exit=0 3s
+    idle% start=95.2 end=97.74 waited=0s
+lose suite/complex-flow --dmcfar (1,0) exit=0 2s
+    idle% start=83.62 end=95.27 waited=0s
+add suite/complex-flow --dmcfar (1,0) exit=0 2s
+    idle% start=97.10 end=97.88 waited=0s
+keep suite/complex-flow --dmcfar (1,0) exit=0 2s
+    idle% start=93.95 end=96.77 waited=0s
+lose handlers/vec --dmcfar (1,0) exit=0 2s
+    idle% start=96.67 end=96.57 waited=0s
+add handlers/vec --dmcfar (1,0) exit=0 2s
+    idle% start=95.44 end=98.1 waited=0s
+keep handlers/vec --dmcfar (1,0) exit=0 2s
+    idle% start=97.43 end=98.0 waited=0s
+lose handlers/nim --dmcfar (1,0) exit=0 2s
+    idle% start=97.30 end=97.36 waited=0s
+add handlers/nim --dmcfar (1,0) exit=0 3s
+    idle% start=97.86 end=96.75 waited=0s
+keep handlers/nim --dmcfar (1,0) exit=0 2s
+    idle% start=95.99 end=95.53 waited=0s
+lose rosetta/rosetta/nums0/pr4rings --dmcfar (1,0) exit=0 2s
+    idle% start=95.99 end=96.86 waited=0s
+add rosetta/rosetta/nums0/pr4rings --dmcfar (1,0) exit=0 2s
+    idle% start=92.14 end=97.52 waited=0s
+keep rosetta/rosetta/nums0/pr4rings --dmcfar (1,0) exit=0 2s
+    idle% start=97.23 end=98.7 waited=0s
+lose rosetta/rosetta/j/jump-anywhere --dmcfar (1,0) exit=0 2s
+    idle% start=98.4 end=96.77 waited=0s
+add rosetta/rosetta/j/jump-anywhere --dmcfar (1,0) exit=0 2s
+    idle% start=97.4 end=96.50 waited=0s
+keep rosetta/rosetta/j/jump-anywhere --dmcfar (1,0) exit=0 2s
+    idle% start=95.26 end=98.6 waited=0s
+lose rosetta/rosetta/m/monads-writer --dmcfar (1,0) exit=0 2s
+    idle% start=96.82 end=97.95 waited=0s
+add rosetta/rosetta/m/monads-writer --dmcfar (1,0) exit=0 2s
+    idle% start=97.93 end=97.61 waited=0s
+keep rosetta/rosetta/m/monads-writer --dmcfar (1,0) exit=0 2s
+    idle% start=96.76 end=95.82 waited=0s
+lose koka-gen/mini-ppl --dmcfar (1,0) exit=0 2s
+    idle% start=95.94 end=96.51 waited=0s
+add koka-gen/mini-ppl --dmcfar (1,0) exit=0 3s
+    idle% start=97.13 end=97.20 waited=0s
+keep koka-gen/mini-ppl --dmcfar (1,0) exit=0 2s
+    idle% start=96.27 end=97.19 waited=0s
+lose koka-gen/music --dmcfar (1,0) exit=0 2s
+    idle% start=96.76 end=96.97 waited=0s
+add koka-gen/music --dmcfar (1,0) exit=0 2s
+    idle% start=96.80 end=95.17 waited=0s
+keep koka-gen/music --dmcfar (1,0) exit=0 2s
+    idle% start=95.90 end=94.3 waited=0s
+lose handlers/ambient --dmcfar (1,1) exit=0 2s
+    idle% start=95.38 end=94.23 waited=0s
+add handlers/ambient --dmcfar (1,1) exit=0 2s
+    idle% start=95.97 end=96.77 waited=0s
+keep handlers/ambient --dmcfar (1,1) exit=0 2s
+    idle% start=96.84 end=93.14 waited=0s
+lose handlers/unix --dmcfar (1,1) exit=0 2s
+    idle% start=96.96 end=95.80 waited=0s
+add handlers/unix --dmcfar (1,1) exit=0 2s
+    idle% start=95.10 end=95.81 waited=0s
+keep handlers/unix --dmcfar (1,1) exit=0 2s
+    idle% start=94.97 end=95.69 waited=0s
+lose handlers/scoped --dmcfar (1,1) exit=0 2s
+    idle% start=95.69 end=95.35 waited=0s
+add handlers/scoped --dmcfar (1,1) exit=0 3s
+    idle% start=95.87 end=95.39 waited=0s
+keep handlers/scoped --dmcfar (1,1) exit=0 3s
+    idle% start=95.84 end=95.63 waited=0s
+lose suite/complex-flow --dmcfar (1,1) exit=0 2s
+    idle% start=96.4 end=96.71 waited=0s
+add suite/complex-flow --dmcfar (1,1) exit=0 2s
+    idle% start=96.78 end=96.69 waited=0s
+keep suite/complex-flow --dmcfar (1,1) exit=0 2s
+    idle% start=96.10 end=95.11 waited=0s
+lose handlers/vec --dmcfar (1,1) exit=0 1s
+    idle% start=94.19 end=95.69 waited=0s
+add handlers/vec --dmcfar (1,1) exit=0 2s
+    idle% start=94.63 end=97.2 waited=0s
+keep handlers/vec --dmcfar (1,1) exit=0 2s
+    idle% start=97.23 end=96.70 waited=0s
+lose handlers/nim --dmcfar (1,1) exit=0 3s
+    idle% start=97.22 end=96.94 waited=0s
+add handlers/nim --dmcfar (1,1) exit=0 2s
+    idle% start=90.8 end=96.29 waited=0s
+keep handlers/nim --dmcfar (1,1) exit=0 2s
+    idle% start=96.22 end=93.69 waited=0s
+lose rosetta/rosetta/nums0/pr4rings --dmcfar (1,1) exit=0 1s
+    idle% start=96.10 end=96.0 waited=0s
+add rosetta/rosetta/nums0/pr4rings --dmcfar (1,1) exit=0 2s
+    idle% start=94.55 end=96.48 waited=0s
+keep rosetta/rosetta/nums0/pr4rings --dmcfar (1,1) exit=0 2s
+    idle% start=96.85 end=96.44 waited=0s
+lose rosetta/rosetta/j/jump-anywhere --dmcfar (1,1) exit=0 2s
+    idle% start=94.3 end=95.51 waited=0s
+add rosetta/rosetta/j/jump-anywhere --dmcfar (1,1) exit=0 2s
+    idle% start=95.7 end=95.70 waited=0s
+keep rosetta/rosetta/j/jump-anywhere --dmcfar (1,1) exit=0 2s
+    idle% start=87.4 end=96.36 waited=0s
+lose rosetta/rosetta/m/monads-writer --dmcfar (1,1) exit=0 2s
+    idle% start=95.85 end=95.0 waited=0s
+add rosetta/rosetta/m/monads-writer --dmcfar (1,1) exit=0 2s
+    idle% start=96.72 end=96.28 waited=0s
+keep rosetta/rosetta/m/monads-writer --dmcfar (1,1) exit=0 2s
+    idle% start=94.77 end=95.89 waited=0s
+lose koka-gen/mini-ppl --dmcfar (1,1) exit=0 3s
+    idle% start=85.36 end=83.38 waited=45s
+add koka-gen/mini-ppl --dmcfar (1,1) exit=0 3s
+    idle% start=83.97 end=83.95 waited=0s
+keep koka-gen/mini-ppl --dmcfar (1,1) exit=0 2s
+    idle% start=83.99 end=84.17 waited=0s
+lose koka-gen/music --dmcfar (1,1) exit=0 2s
+    idle% start=82.96 end=82.37 waited=0s
+add koka-gen/music --dmcfar (1,1) exit=0 2s
+    idle% start=78.72 end=82.18 waited=0s
+keep koka-gen/music --dmcfar (1,1) exit=0 2s
+    idle% start=82.74 end=83.29 waited=0s
+lose handlers/ambient --dmcfar (1,2) exit=0 2s
+    idle% start=89.47 end=90.15 waited=0s
+add handlers/ambient --dmcfar (1,2) exit=0 2s
+    idle% start=89.1 end=89.42 waited=0s
+keep handlers/ambient --dmcfar (1,2) exit=0 2s
+    idle% start=88.12 end=90.27 waited=0s
+lose handlers/unix --dmcfar (1,2) exit=0 2s
+    idle% start=89.37 end=90.59 waited=0s
+add handlers/unix --dmcfar (1,2) exit=0 2s
+    idle% start=90.34 end=89.37 waited=0s
+keep handlers/unix --dmcfar (1,2) exit=0 2s
+    idle% start=90.28 end=89.13 waited=0s
+lose handlers/scoped --dmcfar (1,2) exit=0 3s
+    idle% start=87.66 end=89.93 waited=0s
+add handlers/scoped --dmcfar (1,2) exit=0 3s
+    idle% start=88.64 end=90.57 waited=0s
+keep handlers/scoped --dmcfar (1,2) exit=0 3s
+    idle% start=90.19 end=90.13 waited=0s
+lose suite/complex-flow --dmcfar (1,2) exit=0 1s
+    idle% start=90.43 end=89.58 waited=0s
+add suite/complex-flow --dmcfar (1,2) exit=0 2s
+    idle% start=86.7 end=88.90 waited=0s
+keep suite/complex-flow --dmcfar (1,2) exit=0 2s
+    idle% start=87.97 end=90.22 waited=0s
+lose handlers/vec --dmcfar (1,2) exit=0 2s
+    idle% start=89.38 end=92.43 waited=0s
+add handlers/vec --dmcfar (1,2) exit=0 2s
+    idle% start=89.17 end=90.36 waited=0s
+keep handlers/vec --dmcfar (1,2) exit=0 2s
+    idle% start=89.46 end=90.54 waited=0s
+lose handlers/nim --dmcfar (1,2) exit=0 3s
+    idle% start=89.28 end=89.22 waited=0s
+add handlers/nim --dmcfar (1,2) exit=0 2s
+    idle% start=89.14 end=89.3 waited=0s
+keep handlers/nim --dmcfar (1,2) exit=0 2s
+    idle% start=89.67 end=98.11 waited=0s
+lose rosetta/rosetta/nums0/pr4rings --dmcfar (1,2) exit=0 13s
+    idle% start=97.84 end=97.58 waited=0s
+add rosetta/rosetta/nums0/pr4rings --dmcfar (1,2) exit=0 6s
+    idle% start=98.34 end=97.76 waited=0s
+keep rosetta/rosetta/nums0/pr4rings --dmcfar (1,2) exit=0 8s
+    idle% start=97.70 end=98.17 waited=0s
+lose rosetta/rosetta/j/jump-anywhere --dmcfar (1,2) exit=0 2s
+    idle% start=98.25 end=96.13 waited=0s
+add rosetta/rosetta/j/jump-anywhere --dmcfar (1,2) exit=0 2s
+    idle% start=96.71 end=96.76 waited=0s
+keep rosetta/rosetta/j/jump-anywhere --dmcfar (1,2) exit=0 2s
+    idle% start=97.23 end=98.7 waited=0s
+lose rosetta/rosetta/m/monads-writer --dmcfar (1,2) exit=0 2s
+    idle% start=98.17 end=97.91 waited=0s
+add rosetta/rosetta/m/monads-writer --dmcfar (1,2) exit=0 2s
+    idle% start=97.66 end=97.30 waited=0s
+keep rosetta/rosetta/m/monads-writer --dmcfar (1,2) exit=0 2s
+    idle% start=97.10 end=97.21 waited=0s
+lose koka-gen/mini-ppl --dmcfar (1,2) exit=0 3s
+    idle% start=98.27 end=97.57 waited=0s
+add koka-gen/mini-ppl --dmcfar (1,2) exit=0 3s
+    idle% start=98.12 end=98.7 waited=0s
+keep koka-gen/mini-ppl --dmcfar (1,2) exit=0 3s
+    idle% start=96.79 end=98.12 waited=0s
+lose koka-gen/music --dmcfar (1,2) exit=0 2s
+    idle% start=98.17 end=97.38 waited=0s
+add koka-gen/music --dmcfar (1,2) exit=0 2s
+    idle% start=95.75 end=96.37 waited=0s
+keep koka-gen/music --dmcfar (1,2) exit=0 2s
+    idle% start=96.40 end=97.79 waited=0s
+lose handlers/ambient --dmcfar (2,0) exit=0 2s
+    idle% start=96.74 end=97.4 waited=0s
+add handlers/ambient --dmcfar (2,0) exit=0 2s
+    idle% start=95.71 end=98.21 waited=0s
+keep handlers/ambient --dmcfar (2,0) exit=0 2s
+    idle% start=98.18 end=98.12 waited=0s
+lose handlers/unix --dmcfar (2,0) exit=0 2s
+    idle% start=96.90 end=98.14 waited=0s
+add handlers/unix --dmcfar (2,0) exit=0 2s
+    idle% start=97.92 end=96.83 waited=0s
+keep handlers/unix --dmcfar (2,0) exit=0 2s
+    idle% start=94.65 end=96.65 waited=0s
+lose handlers/scoped --dmcfar (2,0) exit=0 4s
+    idle% start=97.34 end=97.5 waited=0s
+add handlers/scoped --dmcfar (2,0) exit=0 5s
+    idle% start=96.95 end=98.9 waited=0s
+keep handlers/scoped --dmcfar (2,0) exit=0 5s
+    idle% start=98.12 end=98.20 waited=0s
+lose suite/complex-flow --dmcfar (2,0) exit=0 2s
+    idle% start=98.12 end=98.15 waited=0s
+add suite/complex-flow --dmcfar (2,0) exit=0 2s
+    idle% start=97.8 end=97.41 waited=0s
+keep suite/complex-flow --dmcfar (2,0) exit=0 1s
+    idle% start=96.60 end=96.94 waited=0s
+lose handlers/vec --dmcfar (2,0) exit=0 2s
+    idle% start=95.98 end=98.10 waited=0s
+add handlers/vec --dmcfar (2,0) exit=0 2s
+    idle% start=98.18 end=97.46 waited=0s
+keep handlers/vec --dmcfar (2,0) exit=0 2s
+    idle% start=96.58 end=98.26 waited=0s
+lose handlers/nim --dmcfar (2,0) exit=0 2s
+    idle% start=96.86 end=96.96 waited=0s
+add handlers/nim --dmcfar (2,0) exit=0 3s
+    idle% start=96.80 end=96.24 waited=0s
+keep handlers/nim --dmcfar (2,0) exit=0 2s
+    idle% start=96.78 end=97.39 waited=0s
+lose rosetta/rosetta/nums0/pr4rings --dmcfar (2,0) exit=0 1s
+    idle% start=98.6 end=97.84 waited=0s
+add rosetta/rosetta/nums0/pr4rings --dmcfar (2,0) exit=0 2s
+    idle% start=98.10 end=97.2 waited=0s
+keep rosetta/rosetta/nums0/pr4rings --dmcfar (2,0) exit=0 2s
+    idle% start=98.31 end=97.1 waited=0s
+lose rosetta/rosetta/j/jump-anywhere --dmcfar (2,0) exit=0 2s
+    idle% start=97.8 end=97.14 waited=0s
+add rosetta/rosetta/j/jump-anywhere --dmcfar (2,0) exit=0 2s
+    idle% start=97.30 end=98.23 waited=0s
+keep rosetta/rosetta/j/jump-anywhere --dmcfar (2,0) exit=0 2s
+    idle% start=97.7 end=97.82 waited=0s
+lose rosetta/rosetta/m/monads-writer --dmcfar (2,0) exit=0 2s
+    idle% start=97.28 end=98.11 waited=0s
+add rosetta/rosetta/m/monads-writer --dmcfar (2,0) exit=0 2s
+    idle% start=97.41 end=96.39 waited=0s
+keep rosetta/rosetta/m/monads-writer --dmcfar (2,0) exit=0 2s
+    idle% start=94.97 end=97.13 waited=0s
+lose koka-gen/mini-ppl --dmcfar (2,0) exit=0 2s
+    idle% start=96.82 end=98.1 waited=0s
+add koka-gen/mini-ppl --dmcfar (2,0) exit=0 3s
+    idle% start=96.82 end=98.13 waited=0s
+keep koka-gen/mini-ppl --dmcfar (2,0) exit=0 3s
+    idle% start=98.8 end=97.98 waited=0s
+lose koka-gen/music --dmcfar (2,0) exit=0 2s
+    idle% start=95.61 end=97.16 waited=0s
+add koka-gen/music --dmcfar (2,0) exit=0 2s
+    idle% start=96.83 end=97.7 waited=0s
+keep koka-gen/music --dmcfar (2,0) exit=0 2s
+    idle% start=96.77 end=98.18 waited=0s
+lose handlers/ambient --dmcfar (2,1) exit=0 2s
+    idle% start=95.60 end=96.7 waited=0s
+add handlers/ambient --dmcfar (2,1) exit=0 2s
+    idle% start=97.27 end=98.17 waited=0s
+keep handlers/ambient --dmcfar (2,1) exit=0 2s
+    idle% start=98.15 end=98.22 waited=0s
+lose handlers/unix --dmcfar (2,1) exit=0 2s
+    idle% start=98.4 end=94.82 waited=0s
+add handlers/unix --dmcfar (2,1) exit=0 2s
+    idle% start=95.68 end=96.69 waited=0s
+keep handlers/unix --dmcfar (2,1) exit=0 2s
+    idle% start=96.48 end=98.31 waited=0s
+lose handlers/scoped --dmcfar (2,1) exit=0 6s
+    idle% start=98.21 end=97.2 waited=0s
+add handlers/scoped --dmcfar (2,1) exit=0 8s
+    idle% start=98.5 end=98.6 waited=0s
+keep handlers/scoped --dmcfar (2,1) exit=0 8s
+    idle% start=97.41 end=96.48 waited=0s
+lose suite/complex-flow --dmcfar (2,1) exit=0 2s
+    idle% start=96.82 end=96.88 waited=0s
+add suite/complex-flow --dmcfar (2,1) exit=0 2s
+    idle% start=96.98 end=98.10 waited=0s
+keep suite/complex-flow --dmcfar (2,1) exit=0 2s
+    idle% start=98.22 end=98.27 waited=0s
+lose handlers/vec --dmcfar (2,1) exit=0 2s
+    idle% start=97.3 end=98.5 waited=0s
+add handlers/vec --dmcfar (2,1) exit=0 2s
+    idle% start=97.20 end=97.1 waited=0s
+keep handlers/vec --dmcfar (2,1) exit=0 2s
+    idle% start=96.75 end=96.90 waited=0s
+lose handlers/nim --dmcfar (2,1) exit=0 2s
+    idle% start=97.3 end=98.0 waited=0s
+add handlers/nim --dmcfar (2,1) exit=0 3s
+    idle% start=96.88 end=98.12 waited=0s
+keep handlers/nim --dmcfar (2,1) exit=0 2s
+    idle% start=97.34 end=98.17 waited=0s
+lose rosetta/rosetta/nums0/pr4rings --dmcfar (2,1) exit=0 2s
+    idle% start=97.10 end=98.16 waited=0s
+add rosetta/rosetta/nums0/pr4rings --dmcfar (2,1) exit=0 2s
+    idle% start=96.30 end=96.94 waited=0s
+keep rosetta/rosetta/nums0/pr4rings --dmcfar (2,1) exit=0 2s
+    idle% start=97.3 end=97.13 waited=0s
+lose rosetta/rosetta/j/jump-anywhere --dmcfar (2,1) exit=0 1s
+    idle% start=97.14 end=98.8 waited=0s
+add rosetta/rosetta/j/jump-anywhere --dmcfar (2,1) exit=0 2s
+    idle% start=98.32 end=98.13 waited=0s
+keep rosetta/rosetta/j/jump-anywhere --dmcfar (2,1) exit=0 2s
+    idle% start=98.8 end=97.4 waited=0s
+lose rosetta/rosetta/m/monads-writer --dmcfar (2,1) exit=0 2s
+    idle% start=95.85 end=95.90 waited=0s
+add rosetta/rosetta/m/monads-writer --dmcfar (2,1) exit=0 2s
+    idle% start=96.89 end=97.79 waited=0s
+keep rosetta/rosetta/m/monads-writer --dmcfar (2,1) exit=0 2s
+    idle% start=98.20 end=97.89 waited=0s
+lose koka-gen/mini-ppl --dmcfar (2,1) exit=0 3s
+    idle% start=94.84 end=96.67 waited=0s
+add koka-gen/mini-ppl --dmcfar (2,1) exit=0 3s
+    idle% start=95.94 end=97.18 waited=0s
+keep koka-gen/mini-ppl --dmcfar (2,1) exit=0 3s
+    idle% start=95.70 end=97.11 waited=0s
+lose koka-gen/music --dmcfar (2,1) exit=0 2s
+    idle% start=95.99 end=98.8 waited=0s
+add koka-gen/music --dmcfar (2,1) exit=0 2s
+    idle% start=97.53 end=96.35 waited=0s
+keep koka-gen/music --dmcfar (2,1) exit=0 2s
+    idle% start=96.74 end=96.88 waited=0s
+lose handlers/ambient --dmcfar (2,2) exit=0 2s
+    idle% start=98.13 end=97.83 waited=0s
+add handlers/ambient --dmcfar (2,2) exit=0 1s
+    idle% start=96.71 end=97.58 waited=0s
+keep handlers/ambient --dmcfar (2,2) exit=0 2s
+    idle% start=96.48 end=96.65 waited=0s
+lose handlers/unix --dmcfar (2,2) exit=0 2s
+    idle% start=96.94 end=97.43 waited=0s
+add handlers/unix --dmcfar (2,2) exit=0 2s
+    idle% start=96.89 end=95.14 waited=0s
+keep handlers/unix --dmcfar (2,2) exit=0 2s
+    idle% start=97.80 end=98.8 waited=0s
+lose handlers/scoped --dmcfar (2,2) exit=0 25s
+    idle% start=96.18 end=97.95 waited=0s
+add handlers/scoped --dmcfar (2,2) exit=0 32s
+    idle% start=98.9 end=96.16 waited=0s
+keep handlers/scoped --dmcfar (2,2) exit=0 44s
+    idle% start=95.23 end=97.10 waited=0s
+lose suite/complex-flow --dmcfar (2,2) exit=0 1s
+    idle% start=97.5 end=97.60 waited=0s
+add suite/complex-flow --dmcfar (2,2) exit=0 2s
+    idle% start=96.65 end=98.3 waited=0s
+keep suite/complex-flow --dmcfar (2,2) exit=0 2s
+    idle% start=96.27 end=98.4 waited=0s
+lose handlers/vec --dmcfar (2,2) exit=0 2s
+    idle% start=97.40 end=96.89 waited=0s
+add handlers/vec --dmcfar (2,2) exit=0 2s
+    idle% start=96.84 end=97.1 waited=0s
+keep handlers/vec --dmcfar (2,2) exit=0 2s
+    idle% start=95.52 end=98.23 waited=0s
+lose handlers/nim --dmcfar (2,2) exit=0 2s
+    idle% start=97.56 end=98.15 waited=0s
+add handlers/nim --dmcfar (2,2) exit=0 2s
+    idle% start=98.14 end=97.95 waited=0s
+keep handlers/nim --dmcfar (2,2) exit=0 2s
+    idle% start=96.68 end=98.16 waited=0s
+lose rosetta/rosetta/nums0/pr4rings --dmcfar (2,2) exit=0 14s
+    idle% start=97.96 end=97.50 waited=0s
+add rosetta/rosetta/nums0/pr4rings --dmcfar (2,2) exit=0 6s
+    idle% start=96.60 end=95.98 waited=0s
+keep rosetta/rosetta/nums0/pr4rings --dmcfar (2,2) exit=0 8s
+    idle% start=97.81 end=96.87 waited=0s
+lose rosetta/rosetta/j/jump-anywhere --dmcfar (2,2) exit=0 1s
+    idle% start=97.20 end=98.4 waited=0s
+add rosetta/rosetta/j/jump-anywhere --dmcfar (2,2) exit=0 2s
+    idle% start=96.83 end=97.59 waited=0s
+keep rosetta/rosetta/j/jump-anywhere --dmcfar (2,2) exit=0 2s
+    idle% start=96.86 end=97.99 waited=0s
+lose rosetta/rosetta/m/monads-writer --dmcfar (2,2) exit=0 2s
+    idle% start=96.33 end=97.9 waited=0s
+add rosetta/rosetta/m/monads-writer --dmcfar (2,2) exit=0 2s
+    idle% start=97.8 end=96.31 waited=0s
+keep rosetta/rosetta/m/monads-writer --dmcfar (2,2) exit=0 2s
+    idle% start=97.1 end=97.75 waited=0s
+lose koka-gen/mini-ppl --dmcfar (2,2) exit=0 3s
+    idle% start=98.5 end=98.8 waited=0s
+add koka-gen/mini-ppl --dmcfar (2,2) exit=0 3s
+    idle% start=98.8 end=97.6 waited=0s
+keep koka-gen/mini-ppl --dmcfar (2,2) exit=0 3s
+    idle% start=97.99 end=98.5 waited=0s
+lose koka-gen/music --dmcfar (2,2) exit=0 2s
+    idle% start=98.0 end=97.94 waited=0s
+add koka-gen/music --dmcfar (2,2) exit=0 2s
+    idle% start=97.42 end=96.6 waited=0s
+keep koka-gen/music --dmcfar (2,2) exit=0 2s
+    idle% start=95.70 end=96.89 waited=0s
+shared handlers/ambient --dmcfar (0,1) exit=0 1s
+    idle% start=96.96 end=97.9 waited=0s
+shared handlers/ambient --kcfa (0,1) exit=0 2s
+    idle% start=96.42 end=96.82 waited=0s
+shared handlers/unix --dmcfar (0,1) exit=0 2s
+    idle% start=97.17 end=98.3 waited=0s
+shared handlers/unix --kcfa (0,1) exit=0 2s
+    idle% start=97.87 end=98.8 waited=0s
+shared handlers/scoped --dmcfar (0,1) exit=0 2s
+    idle% start=96.65 end=98.9 waited=0s
+shared handlers/scoped --kcfa (0,1) exit=0 3s
+    idle% start=95.86 end=98.10 waited=0s
+shared suite/complex-flow --dmcfar (0,1) exit=0 2s
+    idle% start=98.11 end=97.0 waited=0s
+shared suite/complex-flow --kcfa (0,1) exit=0 2s
+    idle% start=95.62 end=97.11 waited=0s
+shared handlers/vec --dmcfar (0,1) exit=0 2s
+    idle% start=97.0 end=98.17 waited=0s
+shared handlers/vec --kcfa (0,1) exit=0 2s
+    idle% start=96.89 end=96.35 waited=0s
+shared handlers/nim --dmcfar (0,1) exit=0 3s
+    idle% start=97.74 end=98.8 waited=0s
+shared handlers/nim --kcfa (0,1) exit=0 2s
+    idle% start=93.35 end=97.38 waited=0s
+shared rosetta/rosetta/nums0/pr4rings --dmcfar (0,1) exit=0 2s
+    idle% start=96.73 end=96.44 waited=0s
+shared rosetta/rosetta/nums0/pr4rings --kcfa (0,1) exit=0 2s
+    idle% start=97.4 end=97.97 waited=0s
+shared rosetta/rosetta/j/jump-anywhere --dmcfar (0,1) exit=0 1s
+    idle% start=96.76 end=97.11 waited=0s
+shared rosetta/rosetta/j/jump-anywhere --kcfa (0,1) exit=0 2s
+    idle% start=98.15 end=98.2 waited=0s
+shared rosetta/rosetta/m/monads-writer --dmcfar (0,1) exit=0 2s
+    idle% start=97.7 end=97.23 waited=0s
+shared rosetta/rosetta/m/monads-writer --kcfa (0,1) exit=0 1s
+    idle% start=96.32 end=96.90 waited=0s
+shared koka-gen/mini-ppl --dmcfar (0,1) exit=0 3s
+    idle% start=98.31 end=97.42 waited=0s
+shared koka-gen/mini-ppl --kcfa (0,1) exit=0 9s
+    idle% start=97.20 end=96.75 waited=0s
+shared koka-gen/music --dmcfar (0,1) exit=0 2s
+    idle% start=98.16 end=96.95 waited=0s
+shared koka-gen/music --kcfa (0,1) exit=0 2s
+    idle% start=96.53 end=96.54 waited=0s
+shared handlers/ambient --dmcfar (0,2) exit=0 2s
+    idle% start=97.48 end=98.6 waited=0s
+shared handlers/ambient --kcfa (0,2) exit=0 2s
+    idle% start=96.1 end=96.72 waited=0s
+shared handlers/unix --dmcfar (0,2) exit=0 2s
+    idle% start=97.2 end=97.3 waited=0s
+shared handlers/unix --kcfa (0,2) exit=0 2s
+    idle% start=97.8 end=98.17 waited=0s
+shared handlers/scoped --dmcfar (0,2) exit=0 2s
+    idle% start=97.53 end=97.88 waited=0s
+shared handlers/scoped --kcfa (0,2) exit=0 3s
+    idle% start=98.27 end=98.18 waited=0s
+shared suite/complex-flow --dmcfar (0,2) exit=0 2s
+    idle% start=98.24 end=98.8 waited=0s
+shared suite/complex-flow --kcfa (0,2) exit=0 2s
+    idle% start=98.36 end=97.4 waited=0s
+shared handlers/vec --dmcfar (0,2) exit=0 2s
+    idle% start=96.96 end=97.3 waited=0s
+shared handlers/vec --kcfa (0,2) exit=0 2s
+    idle% start=97.8 end=97.94 waited=0s
+shared handlers/nim --dmcfar (0,2) exit=0 2s
+    idle% start=97.98 end=98.8 waited=0s
+shared handlers/nim --kcfa (0,2) exit=0 3s
+    idle% start=96.75 end=98.1 waited=0s
+shared rosetta/rosetta/nums0/pr4rings --dmcfar (0,2) exit=0 2s
+    idle% start=98.8 end=97.93 waited=0s
+shared rosetta/rosetta/nums0/pr4rings --kcfa (0,2) exit=0 3s
+    idle% start=96.22 end=95.87 waited=0s
+shared rosetta/rosetta/j/jump-anywhere --dmcfar (0,2) exit=0 2s
+    idle% start=97.12 end=96.84 waited=0s
+shared rosetta/rosetta/j/jump-anywhere --kcfa (0,2) exit=0 1s
+    idle% start=95.83 end=98.4 waited=0s
+shared rosetta/rosetta/m/monads-writer --dmcfar (0,2) exit=0 2s
+    idle% start=97.46 end=98.18 waited=0s
+shared rosetta/rosetta/m/monads-writer --kcfa (0,2) exit=0 2s
+    idle% start=98.18 end=97.87 waited=0s
+shared koka-gen/mini-ppl --dmcfar (0,2) exit=0 2s
+    idle% start=96.2 end=85.98 waited=0s
+shared koka-gen/mini-ppl --kcfa (0,2) exit=0 3s
+    idle% start=95.81 end=91.70 waited=0s
+shared koka-gen/music --dmcfar (0,2) exit=0 2s
+    idle% start=94.49 end=92.28 waited=0s
+shared koka-gen/music --kcfa (0,2) exit=0 2s
+    idle% start=89.66 end=90.86 waited=0s
+shared koka-gen/build --dmcfae (0,0) exit=0 3s
+    idle% start=91.97 end=94.23 waited=0s
+shared koka-gen/coop-communication --dmcfae (0,0) exit=0 7s
+    idle% start=93.23 end=91.70 waited=0s
+lose koka-gen/build --dmcfar (1,0) exit=0 13s
+    idle% start=91.29 end=95.49 waited=0s
+add koka-gen/build --dmcfar (1,0) exit=0 4s
+    idle% start=97.41 end=92.91 waited=0s
+keep koka-gen/build --dmcfar (1,0) exit=0 3s
+    idle% start=94.72 end=92.65 waited=0s
+lose koka-gen/coop-communication --dmcfar (1,0) exit=0 6s
+    idle% start=92.18 end=95.84 waited=0s
+add koka-gen/coop-communication --dmcfar (1,0) exit=0 4s
+    idle% start=97.59 end=97.5 waited=0s
+keep koka-gen/coop-communication --dmcfar (1,0) exit=0 3s
+    idle% start=96.60 end=97.6 waited=0s
+lose koka-gen/build --dmcfar (1,1) exit=0 380s
+    idle% start=95.99 end=91.39 waited=0s
+add koka-gen/build --dmcfar (1,1) exit=0 77s
+    idle% start=92.36 end=93.64 waited=0s
+keep koka-gen/build --dmcfar (1,1) exit=0 79s
+    idle% start=93.20 end=94.94 waited=0s
+lose koka-gen/coop-communication --dmcfar (1,1) exit=0 66s
+    idle% start=96.76 end=93.92 waited=0s
+add koka-gen/coop-communication --dmcfar (1,1) exit=0 6s
+    idle% start=94.61 end=97.33 waited=0s
+keep koka-gen/coop-communication --dmcfar (1,1) exit=0 6s
+    idle% start=95.77 end=97.14 waited=0s
+lose koka-gen/build --dmcfar (1,2) exit=0 1344s
+    idle% start=96.32 end=97.77 waited=0s
+add koka-gen/build --dmcfar (1,2) exit=0 225s
+    idle% start=98.10 end=97.2 waited=0s
+keep koka-gen/build --dmcfar (1,2) exit=0 262s
+    idle% start=97.57 end=97.7 waited=0s
+lose koka-gen/coop-communication --dmcfar (1,2) exit=0 1516s
+    idle% start=97.0 end=90.31 waited=0s
+add koka-gen/coop-communication --dmcfar (1,2) exit=0 76s
+    idle% start=90.77 end=97.2 waited=0s
+keep koka-gen/coop-communication --dmcfar (1,2) exit=0 76s
+    idle% start=90.50 end=92.34 waited=0s
+lose koka-gen/build --dmcfar (2,0) exit=0 16s
+    idle% start=90.75 end=94.28 waited=0s
+add koka-gen/build --dmcfar (2,0) exit=0 6s
+    idle% start=92.3 end=94.33 waited=0s
+keep koka-gen/build --dmcfar (2,0) exit=0 6s
+    idle% start=91.94 end=91.76 waited=0s
+lose koka-gen/coop-communication --dmcfar (2,0) exit=0 14s
+    idle% start=90.72 end=96.60 waited=0s
+add koka-gen/coop-communication --dmcfar (2,0) exit=0 4s
+    idle% start=97.21 end=97.60 waited=0s
+keep koka-gen/coop-communication --dmcfar (2,0) exit=0 4s
+    idle% start=97.42 end=97.60 waited=0s
+lose koka-gen/build --dmcfar (2,1) exit=0 588s
+    idle% start=97.65 end=96.20 waited=0s
+add koka-gen/build --dmcfar (2,1) exit=0 116s
+    idle% start=95.84 end=93.21 waited=0s
+keep koka-gen/build --dmcfar (2,1) exit=0 120s
+    idle% start=97.7 end=95.85 waited=0s
+lose koka-gen/coop-communication --dmcfar (2,1) exit=0 144s
+    idle% start=95.41 end=96.38 waited=0s
+add koka-gen/coop-communication --dmcfar (2,1) exit=0 8s
+    idle% start=96.64 end=96.96 waited=0s
+keep koka-gen/coop-communication --dmcfar (2,1) exit=0 8s
+    idle% start=94.93 end=94.71 waited=0s
+lose koka-gen/build --dmcfar (2,2) exit=0 1336s
+    idle% start=95.90 end=95.99 waited=0s
+add koka-gen/build --dmcfar (2,2) exit=0 300s
+    idle% start=96.66 end=96.44 waited=0s
+keep koka-gen/build --dmcfar (2,2) exit=0 770s
+    idle% start=94.79 end=90.66 waited=0s
+lose koka-gen/coop-communication --dmcfar (2,2) exit=0 1008s
+    idle% start=91.87 end=97.38 waited=0s
+add koka-gen/coop-communication --dmcfar (2,2) exit=0 65s
+    idle% start=97.25 end=97.89 waited=0s
+keep koka-gen/coop-communication --dmcfar (2,2) exit=0 65s
+    idle% start=97.71 end=93.17 waited=0s
+shared koka-gen/build --dmcfar (0,1) exit=0 56s
+    idle% start=94.11 end=97.22 waited=0s
+shared koka-gen/build --kcfa (0,1) exit=0 6s
+    idle% start=97.11 end=93.60 waited=0s
+shared koka-gen/coop-communication --dmcfar (0,1) exit=0 28s
+    idle% start=91.71 end=96.26 waited=0s
+shared koka-gen/coop-communication --kcfa (0,1) exit=0 17s
+    idle% start=97.25 end=97.57 waited=0s
+shared koka-gen/build --dmcfar (0,2) exit=0 113s
+    idle% start=97.43 end=97.34 waited=0s
+shared koka-gen/build --kcfa (0,2) exit=0 2403s
+    idle% start=93.54 end=94.48 waited=0s
+shared koka-gen/coop-communication --dmcfar (0,2) exit=0 683s
+    idle% start=96.7 end=94.83 waited=0s
+shared koka-gen/coop-communication --kcfa (0,2) exit=0 60s
+    idle% start=94.58 end=97.17 waited=0s
+ALL DONE Fri Oct 23 10:33:00 MDT 2026

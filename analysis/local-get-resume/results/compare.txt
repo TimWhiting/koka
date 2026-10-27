@@ -1,0 +1,201 @@
+Benchmark examples: 44 (from 13 programs)
+
+## Strict RIR vs 0CFA DMCFA, per configuration (shifted geomean over finished examples)
+
+        Value RIR lose  Cont RIR lose  T/O lose  n lose  Value RIR add  Cont RIR add  T/O add  n add  Value RIR keep  Cont RIR keep  T/O keep  n keep
+config                                                                                                                                               
+1-kCFA           0.058          0.092         0      44          0.058         0.092        0     44           0.058          0.092         0      44
+2-kCFA           0.086          0.121         4      44          0.086         0.121        4     44           0.086          0.121         4      44
+H(0,1)           0.068          0.103         0      44          0.068         0.103        0     44           0.068          0.103         0      44
+H(0,2)           0.101          0.103         1      44          0.101         0.103        1     44           0.101          0.103         1      44
+H(1,0)           0.050          0.133         0      44          0.051         0.133        0     44           0.051          0.133         0      44
+H(1,1)           0.084          0.148         0      44          0.084         0.148        0     44           0.084          0.148         0      44
+H(1,2)           0.118          0.167         0      44          0.118         0.167        0     44           0.119          0.167         0      44
+H(2,0)           0.052          0.133         0      44          0.051         0.135        0     44           0.051          0.135         0      44
+H(2,1)           0.088          0.148         0      44          0.086         0.150        0     44           0.086          0.150         0      44
+H(2,2)           0.127          0.162         2      44          0.122         0.168        0     44           0.123          0.168         0      44
+
+## Same, only examples finished in all three modes
+
+        examples  Value RIR lose  Value RIR add  Value RIR keep  Cont RIR lose  Cont RIR add  Cont RIR keep  Median states lose  Total time (s) lose  Median states add  Total time (s) add  Median states keep  Total time (s) keep
+config                                                                                                                                                                                                                              
+1-kCFA        44           0.058          0.058           0.058          0.092         0.092          0.092            1178.000                8.143           1178.000               8.143            1178.000                8.143
+2-kCFA        40           0.086          0.086           0.086          0.121         0.121          0.121            1188.000               19.646           1188.000              19.646            1188.000               19.646
+H(0,1)        44           0.068          0.068           0.068          0.103         0.103          0.103            1110.500               26.349           1110.500              26.349            1110.500               26.349
+H(0,2)        43           0.101          0.101           0.101          0.103         0.103          0.103            1466.000               64.275           1466.000              64.275            1466.000               64.275
+H(1,0)        44           0.050          0.051           0.051          0.133         0.133          0.133            1142.500                4.663           1087.000               0.869            1084.000                0.868
+H(1,1)        44           0.084          0.084           0.084          0.148         0.148          0.148            1178.000              147.597           1147.500              26.439            1144.000               27.252
+H(1,2)        44           0.118          0.118           0.119          0.167         0.167          0.167            1745.500              955.397           1711.000             100.835            1711.000              113.753
+H(2,0)        44           0.052          0.051           0.051          0.133         0.135          0.135            1142.500                9.088           1093.000               2.646            1087.500                2.709
+H(2,1)        44           0.088          0.086           0.086          0.148         0.150          0.150            1180.000              243.439           1157.000              41.342            1150.500               42.724
+H(2,2)        42           0.127          0.128           0.129          0.162         0.163          0.163            1711.000              391.063           1578.500              63.791            1570.500              171.329
+
+## Per example, where the modes differ (Value RIR / Cont RIR / States, T/O = timeout)
+
+example                                                 config  lose                   add                    keep                  
+handlers/scoped/example2                                H(1,0)  0.15/0.62/2332         0.15/0.62/2511         0.15/0.62/2510        
+handlers/scoped/example2                                H(1,1)  0.15/0.62/3774         0.15/0.62/3994         0.15/0.62/3994        
+handlers/scoped/example2                                H(1,2)  0.15/0.62/4604         0.15/0.62/4714         0.15/0.62/4965        
+handlers/scoped/example2                                H(2,0)  0.15/0.62/8774         0.15/0.62/10932        0.15/0.62/10931       
+handlers/scoped/example2                                H(2,1)  0.15/0.62/21761        0.15/0.62/24377        0.15/0.62/24377       
+handlers/scoped/example2                                H(2,2)  0.15/0.62/103345       0.15/0.62/118132       0.15/0.62/133140      
+handlers/scoped/example3                                H(1,0)  0.18/0.83/1416         0.18/0.83/1407         0.18/0.83/1406        
+handlers/scoped/example3                                H(1,1)  0.18/0.83/1725         0.18/0.83/1721         0.18/0.83/1721        
+handlers/scoped/example3                                H(1,2)  0.18/0.83/2773         0.18/0.83/2585         0.18/0.83/2585        
+handlers/scoped/example3                                H(2,0)  0.18/0.83/1793         0.18/0.83/1857         0.18/0.83/1856        
+handlers/scoped/example3                                H(2,1)  0.18/0.83/2178         0.18/0.83/2232         0.18/0.83/2232        
+handlers/scoped/example3                                H(2,2)  0.18/0.83/3600         0.18/0.83/3221         0.18/0.83/3221        
+handlers/scoped/example4                                H(1,0)  0.31/0.84/1846         0.31/0.84/1754         0.31/0.84/1754        
+handlers/scoped/example4                                H(1,1)  0.79/1.00/1062         0.79/1.00/1059         0.79/1.00/1059        
+handlers/scoped/example4                                H(1,2)  0.79/1.00/1069         0.79/1.00/1066         0.79/1.00/1066        
+handlers/scoped/example4                                H(2,0)  0.31/0.84/2348         0.31/0.84/2419         0.31/0.84/2419        
+handlers/scoped/example4                                H(2,1)  0.79/1.00/1066         0.79/1.00/1063         0.79/1.00/1063        
+handlers/scoped/example4                                H(2,2)  0.79/1.00/1073         0.79/1.00/1070         0.79/1.00/1070        
+handlers/scoped/example5                                H(1,0)  0.00/0.00/3941         0.00/0.00/3866         0.00/0.00/3866        
+handlers/scoped/example5                                H(1,1)  0.16/0.00/4046         0.16/0.00/3877         0.16/0.00/3877        
+handlers/scoped/example5                                H(1,2)  0.16/0.00/8999         0.16/0.00/6536         0.16/0.00/6536        
+handlers/scoped/example5                                H(2,0)  0.00/0.00/5208         0.00/0.00/5618         0.00/0.00/5618        
+handlers/scoped/example5                                H(2,1)  0.16/0.00/4065         0.16/0.00/3974         0.16/0.00/3974        
+handlers/scoped/example5                                H(2,2)  0.16/0.00/7325         0.16/0.00/7320         0.16/0.00/7320        
+handlers/unix/example1                                  H(1,0)  0.00/0.00/468          0.00/0.00/435          0.00/0.00/432         
+handlers/unix/example1                                  H(1,1)  0.00/0.00/481          0.00/0.00/441          0.00/0.00/438         
+handlers/unix/example1                                  H(1,2)  0.00/0.00/446          0.00/0.00/446          0.00/0.00/440         
+handlers/unix/example1                                  H(2,0)  0.00/0.00/528          0.00/0.00/437          0.00/0.00/434         
+handlers/unix/example1                                  H(2,1)  0.00/0.00/541          0.00/0.00/443          0.00/0.00/440         
+handlers/unix/example1                                  H(2,2)  0.00/0.00/446          0.00/0.00/446          0.00/0.00/440         
+handlers/unix/example1_2                                H(1,0)  0.00/0.00/523          0.00/0.00/453          0.00/0.00/450         
+handlers/unix/example1_2                                H(1,1)  0.00/0.00/508          0.00/0.00/464          0.00/0.00/461         
+handlers/unix/example1_2                                H(1,2)  0.00/0.00/469          0.00/0.00/469          0.00/0.00/463         
+handlers/unix/example1_2                                H(2,0)  0.00/0.00/581          0.00/0.00/455          0.00/0.00/452         
+handlers/unix/example1_2                                H(2,1)  0.00/0.00/564          0.00/0.00/466          0.00/0.00/463         
+handlers/unix/example1_2                                H(2,2)  0.00/0.00/469          0.00/0.00/469          0.00/0.00/463         
+handlers/unix/example2                                  H(1,0)  0.00/0.00/455          0.00/0.00/455          0.00/0.00/452         
+handlers/unix/example2                                  H(1,1)  0.00/0.00/461          0.00/0.00/461          0.00/0.00/458         
+handlers/unix/example2                                  H(1,2)  0.00/0.00/461          0.00/0.00/461          0.00/0.00/458         
+handlers/unix/example2                                  H(2,0)  0.00/0.00/455          0.00/0.00/455          0.00/0.00/452         
+handlers/unix/example2                                  H(2,1)  0.00/0.00/461          0.00/0.00/461          0.00/0.00/458         
+handlers/unix/example2                                  H(2,2)  0.00/0.00/461          0.00/0.00/461          0.00/0.00/458         
+handlers/unix/example3                                  H(1,0)  0.00/0.00/727          0.00/0.00/694          0.00/0.00/691         
+handlers/unix/example3                                  H(1,1)  0.00/0.00/741          0.00/0.00/701          0.00/0.00/698         
+handlers/unix/example3                                  H(1,2)  0.00/0.00/704          0.00/0.00/704          0.00/0.00/698         
+handlers/unix/example3                                  H(2,0)  0.00/0.00/731          0.00/0.00/694          0.00/0.00/691         
+handlers/unix/example3                                  H(2,1)  0.00/0.00/745          0.00/0.00/701          0.00/0.00/698         
+handlers/unix/example3                                  H(2,2)  0.00/0.00/704          0.00/0.00/704          0.00/0.00/698         
+handlers/unix/example5                                  H(1,0)  0.05/0.00/1446         0.05/0.00/1521         0.05/0.00/1512        
+handlers/unix/example5                                  H(1,1)  0.05/0.00/1612         0.05/0.00/1681         0.05/0.00/1672        
+handlers/unix/example5                                  H(1,2)  0.05/0.00/2367         0.05/0.00/2696         0.05/0.00/2812        
+handlers/unix/example5                                  H(2,0)  0.05/0.00/1655         0.05/0.00/1731         0.05/0.00/1728        
+handlers/unix/example5                                  H(2,1)  0.05/0.00/1881         0.05/0.00/1951         0.05/0.00/1948        
+handlers/unix/example5                                  H(2,2)  0.05/0.00/2843         0.05/0.00/4375         0.05/0.00/4513        
+handlers/vec/main                                       H(1,0)  0.00/0.00/567          0.00/0.00/565          0.00/0.00/561         
+handlers/vec/main                                       H(1,1)  0.00/0.00/579          0.00/0.00/576          0.00/0.00/572         
+handlers/vec/main                                       H(1,2)  0.00/0.00/579          0.00/0.00/579          0.00/0.00/572         
+handlers/vec/main                                       H(2,0)  0.00/0.00/567          0.00/0.00/565          0.00/0.00/561         
+handlers/vec/main                                       H(2,1)  0.00/0.00/579          0.00/0.00/576          0.00/0.00/572         
+handlers/vec/main                                       H(2,2)  0.00/0.00/579          0.00/0.00/579          0.00/0.00/572         
+koka-gen/build/mymakefile-example1                      H(1,0)  0.00/0.00/4302         0.00/0.00/3316         0.00/0.00/3372        
+koka-gen/build/mymakefile-example1                      H(1,1)  0.00/0.08/26414        0.00/0.08/17761        0.00/0.08/18306       
+koka-gen/build/mymakefile-example1                      H(1,2)  0.00/0.08/59503        0.00/0.08/34206        0.00/0.08/37964       
+koka-gen/build/mymakefile-example1                      H(2,0)  0.00/0.00/5193         0.00/0.00/5237         0.00/0.00/5455        
+koka-gen/build/mymakefile-example1                      H(2,1)  0.00/0.08/31023        0.00/0.08/21974        0.00/0.08/22826       
+koka-gen/build/mymakefile-example1                      H(2,2)  0.00/0.08/83471        0.00/0.08/39791        0.00/0.08/66476       
+koka-gen/build/mymakefile-example2                      H(1,0)  0.00/0.00/4258         0.00/0.00/3273         0.00/0.00/3329        
+koka-gen/build/mymakefile-example2                      H(1,1)  0.00/0.08/26358        0.00/0.08/17718        0.00/0.08/18263       
+koka-gen/build/mymakefile-example2                      H(1,2)  0.00/0.08/59428        0.00/0.08/34153        0.00/0.08/37905       
+koka-gen/build/mymakefile-example2                      H(2,0)  0.00/0.00/5145         0.00/0.00/5188         0.00/0.00/5406        
+koka-gen/build/mymakefile-example2                      H(2,1)  0.00/0.08/30961        0.00/0.08/21928        0.00/0.08/22780       
+koka-gen/build/mymakefile-example2                      H(2,2)  0.00/0.08/86884        0.00/0.08/46743        0.00/0.08/69489       
+koka-gen/build/mymakefile-example3                      H(1,0)  0.46/1.00/821          0.46/1.00/818          0.46/1.00/817         
+koka-gen/build/mymakefile-example3                      H(1,1)  0.46/1.00/896          0.46/1.00/885          0.46/1.00/884         
+koka-gen/build/mymakefile-example3                      H(1,2)  0.46/1.00/896          0.46/1.00/886          0.46/1.00/884         
+koka-gen/build/mymakefile-example3                      H(2,0)  0.46/1.00/821          0.46/1.00/829          0.46/1.00/817         
+koka-gen/build/mymakefile-example3                      H(2,1)  0.46/1.00/896          0.46/1.00/896          0.46/1.00/884         
+koka-gen/build/mymakefile-example3                      H(2,2)  0.46/1.00/896          0.46/1.00/896          0.46/1.00/884         
+koka-gen/build/mymakefile-example4                      H(1,0)  0.01/0.00/5056         0.01/0.00/4070         0.01/0.00/4126        
+koka-gen/build/mymakefile-example4                      H(1,1)  0.01/0.00/20024        0.01/0.00/13590        0.01/0.00/14129       
+koka-gen/build/mymakefile-example4                      H(1,2)  0.01/0.00/49857        0.01/0.00/27660        0.01/0.00/31327       
+koka-gen/build/mymakefile-example4                      H(2,0)  0.01/0.00/6335         0.01/0.00/6369         0.01/0.00/6587        
+koka-gen/build/mymakefile-example4                      H(2,1)  0.01/0.00/23514        0.01/0.00/15863        0.01/0.00/16697       
+koka-gen/build/mymakefile-example4                      H(2,2)  T/O                    0.01/0.00/35628        0.01/0.00/55030       
+koka-gen/build/mymakefile-example5                      H(1,0)  0.01/0.00/5056         0.01/0.00/4070         0.01/0.00/4126        
+koka-gen/build/mymakefile-example5                      H(1,1)  0.01/0.00/20024        0.01/0.00/13590        0.01/0.00/14129       
+koka-gen/build/mymakefile-example5                      H(1,2)  0.86/1.00/1291         0.86/1.00/1281         0.86/1.00/1278        
+koka-gen/build/mymakefile-example5                      H(2,0)  0.01/0.00/6335         0.01/0.00/6369         0.01/0.00/6587        
+koka-gen/build/mymakefile-example5                      H(2,1)  0.01/0.00/23514        0.01/0.00/15863        0.01/0.00/16697       
+koka-gen/build/mymakefile-example5                      H(2,2)  0.86/1.00/1291         0.86/1.00/1291         0.86/1.00/1278        
+koka-gen/coop-communication/prime-sieve                 H(1,0)  0.00/0.62/8871         0.00/0.62/3972         0.00/0.62/3958        
+koka-gen/coop-communication/prime-sieve                 H(1,1)  0.00/0.62/27085        0.00/0.62/10970        0.00/0.62/10981       
+koka-gen/coop-communication/prime-sieve                 H(1,2)  0.00/0.62/184933       0.00/0.62/42281        0.00/0.62/45503       
+koka-gen/coop-communication/prime-sieve                 H(2,0)  0.04/0.62/22748        0.00/0.62/7323         0.00/0.62/7176        
+koka-gen/coop-communication/prime-sieve                 H(2,1)  0.04/0.62/56055        0.00/0.62/13537        0.00/0.62/13203       
+koka-gen/coop-communication/prime-sieve                 H(2,2)  T/O                    0.00/0.62/48018        0.00/0.62/44362       
+koka-gen/coop-communication/send-recv                   H(1,0)  0.00/0.39/6968         0.00/0.39/3297         0.00/0.39/3283        
+koka-gen/coop-communication/send-recv                   H(1,1)  0.00/0.39/22745        0.00/0.39/7463         0.00/0.39/7474        
+koka-gen/coop-communication/send-recv                   H(1,2)  0.23/0.39/105945       0.23/0.39/15875        0.23/0.39/16593       
+koka-gen/coop-communication/send-recv                   H(2,0)  0.07/0.39/12347        0.00/0.46/4173         0.00/0.46/4073        
+koka-gen/coop-communication/send-recv                   H(2,1)  0.07/0.39/34894        0.00/0.46/7190         0.00/0.46/7040        
+koka-gen/coop-communication/send-recv                   H(2,2)  0.30/0.39/139901       0.36/0.46/10810        0.36/0.46/10785       
+koka-gen/coop-communication/spawn                       H(1,0)  0.00/0.25/2100         0.00/0.25/1370         0.00/0.25/1360        
+koka-gen/coop-communication/spawn                       H(1,1)  0.00/0.25/2864         0.00/0.25/1857         0.00/0.25/1845        
+koka-gen/coop-communication/spawn                       H(1,2)  0.00/0.25/3600         0.00/0.25/2247         0.00/0.25/2231        
+koka-gen/coop-communication/spawn                       H(2,0)  0.00/0.25/2713         0.00/0.25/1384         0.00/0.25/1367        
+koka-gen/coop-communication/spawn                       H(2,1)  0.00/0.25/3625         0.00/0.25/1879         0.00/0.25/1856        
+koka-gen/coop-communication/spawn                       H(2,2)  0.00/0.25/5774         0.00/0.25/2322         0.00/0.25/2292        
+koka-gen/coop-communication/yield                       H(1,0)  0.00/0.00/1516         0.00/0.00/1039         0.00/0.00/1033        
+koka-gen/coop-communication/yield                       H(1,1)  0.00/0.00/1760         0.00/0.00/1236         0.00/0.00/1229        
+koka-gen/coop-communication/yield                       H(1,2)  0.14/0.00/2137         0.14/0.00/1409         0.14/0.00/1400        
+koka-gen/coop-communication/yield                       H(2,0)  0.00/0.00/2038         0.00/0.00/1051         0.00/0.00/1040        
+koka-gen/coop-communication/yield                       H(2,1)  0.00/0.00/2278         0.00/0.00/1251         0.00/0.00/1238        
+koka-gen/coop-communication/yield                       H(2,2)  0.14/0.00/2740         0.14/0.00/1463         0.14/0.00/1447        
+koka-gen/mini-ppl/burglar                               H(1,0)  0.00/0.00/2700         0.00/0.00/2744         0.00/0.00/2744        
+koka-gen/mini-ppl/burglar                               H(1,1)  0.00/0.00/3745         0.00/0.00/3788         0.00/0.00/3788        
+koka-gen/mini-ppl/burglar                               H(1,2)  0.00/0.00/5246         0.00/0.00/5240         0.00/0.00/5241        
+koka-gen/mini-ppl/burglar                               H(2,0)  0.00/0.00/2806         0.00/0.00/2907         0.00/0.00/2907        
+koka-gen/mini-ppl/burglar                               H(2,1)  0.06/0.00/3952         0.06/0.00/4050         0.06/0.00/4050        
+koka-gen/mini-ppl/burglar                               H(2,2)  0.06/0.00/6089         0.06/0.00/6070         0.06/0.00/6317        
+koka-gen/mini-ppl/burglar-mc                            H(1,0)  0.00/0.00/3838         0.00/0.00/3536         0.00/0.00/3525        
+koka-gen/mini-ppl/burglar-mc                            H(1,1)  0.00/0.00/4983         0.00/0.00/5598         0.00/0.00/5561        
+koka-gen/mini-ppl/burglar-mc                            H(1,2)  0.00/0.00/7947         0.00/0.00/7650         0.00/0.00/7814        
+koka-gen/mini-ppl/burglar-mc                            H(2,0)  0.00/0.00/5637         0.00/0.00/4608         0.00/0.00/4606        
+koka-gen/mini-ppl/burglar-mc                            H(2,1)  0.00/0.00/7772         0.00/0.00/9376         0.00/0.00/9374        
+koka-gen/mini-ppl/burglar-mc                            H(2,2)  0.00/0.00/14164        0.00/0.00/13517        0.00/0.00/15007       
+koka-gen/mini-ppl/drunk                                 H(1,0)  0.00/0.00/2968         0.00/0.00/3046         0.00/0.00/3033        
+koka-gen/mini-ppl/drunk                                 H(1,1)  0.09/0.00/3170         0.09/0.00/3213         0.09/0.00/3213        
+koka-gen/mini-ppl/drunk                                 H(1,2)  0.11/0.00/4397         0.11/0.00/4402         0.11/0.00/4402        
+koka-gen/mini-ppl/drunk                                 H(2,0)  0.00/0.00/3293         0.00/0.00/4762         0.00/0.00/4762        
+koka-gen/mini-ppl/drunk                                 H(2,1)  0.09/0.00/3187         0.09/0.00/3285         0.09/0.00/3285        
+koka-gen/mini-ppl/drunk                                 H(2,2)  0.11/0.00/4568         0.11/0.00/4532         0.11/0.00/4771        
+koka-gen/music/search-come                              H(1,0)  0.00/0.00/1924         0.02/0.00/2140         0.02/0.00/2134        
+koka-gen/music/search-come                              H(1,1)  0.02/0.00/2948         0.03/0.00/3040         0.03/0.00/3034        
+koka-gen/music/search-come                              H(1,2)  0.03/0.00/4066         0.03/0.00/4024         0.05/0.00/4146        
+koka-gen/music/search-come                              H(2,0)  0.00/0.00/1974         0.02/0.00/2190         0.02/0.00/2184        
+koka-gen/music/search-come                              H(2,1)  0.02/0.00/2957         0.03/0.00/3049         0.03/0.00/3043        
+koka-gen/music/search-come                              H(2,2)  0.03/0.00/4080         0.03/0.00/4038         0.05/0.00/4160        
+koka-gen/music/search-love                              H(1,0)  0.00/0.00/1924         0.02/0.00/2140         0.02/0.00/2134        
+koka-gen/music/search-love                              H(1,1)  0.02/0.00/2948         0.03/0.00/3040         0.03/0.00/3034        
+koka-gen/music/search-love                              H(1,2)  0.03/0.00/4066         0.03/0.00/4024         0.05/0.00/4146        
+koka-gen/music/search-love                              H(2,0)  0.00/0.00/1974         0.02/0.00/2190         0.02/0.00/2184        
+koka-gen/music/search-love                              H(2,1)  0.02/0.00/2957         0.03/0.00/3049         0.03/0.00/3043        
+koka-gen/music/search-love                              H(2,2)  0.03/0.00/4080         0.03/0.00/4038         0.05/0.00/4160        
+rosetta/rosetta/j/jump-anywhere/loop                    H(1,0)  0.00/0.00/1502         0.00/0.00/1574         0.00/0.00/1504        
+rosetta/rosetta/j/jump-anywhere/loop                    H(1,1)  0.00/0.00/1881         0.00/0.00/1995         0.00/0.00/1883        
+rosetta/rosetta/j/jump-anywhere/loop                    H(1,2)  0.00/0.00/2600         0.00/0.00/2702         0.00/0.00/2602        
+rosetta/rosetta/j/jump-anywhere/loop                    H(2,0)  0.00/0.00/2012         0.00/0.00/2416         0.00/0.00/1833        
+rosetta/rosetta/j/jump-anywhere/loop                    H(2,1)  0.00/0.00/1924         0.00/0.00/2655         0.00/0.00/2015        
+rosetta/rosetta/j/jump-anywhere/loop                    H(2,2)  0.00/0.00/2304         0.00/0.00/3082         0.00/0.00/2406        
+rosetta/rosetta/m/monads-writer/solution1               H(1,0)  0.00/0.00/1271         0.00/0.00/1273         0.00/0.00/1273        
+rosetta/rosetta/m/monads-writer/solution1               H(2,0)  0.00/0.00/1271         0.00/0.00/1273         0.00/0.00/1273        
+rosetta/rosetta/nums0/pr4rings/four-squares             H(1,0)  0.00/0.00/2520         0.00/0.00/2674         0.00/0.00/1782        
+rosetta/rosetta/nums0/pr4rings/four-squares             H(1,1)  0.00/0.00/3424         0.00/0.00/3768         0.00/0.00/3761        
+rosetta/rosetta/nums0/pr4rings/four-squares             H(1,2)  0.00/0.00/57650        0.00/0.00/29679        0.00/0.00/34816       
+rosetta/rosetta/nums0/pr4rings/four-squares             H(2,0)  0.00/0.00/2520         0.00/0.00/2674         0.00/0.00/1782        
+rosetta/rosetta/nums0/pr4rings/four-squares             H(2,1)  0.00/0.00/3424         0.00/0.00/3768         0.00/0.00/3761        
+rosetta/rosetta/nums0/pr4rings/four-squares             H(2,2)  0.00/0.00/57650        0.00/0.00/29679        0.00/0.00/34816       
+suite/complex-flow/complex-layers                       H(1,0)  0.00/0.00/767          0.00/0.00/878          0.00/0.00/863         
+suite/complex-flow/complex-layers                       H(1,1)  0.00/0.40/727          0.00/0.40/665          0.00/0.40/663         
+suite/complex-flow/complex-layers                       H(1,2)  0.25/0.40/687          0.25/0.40/685          0.25/0.40/683         
+suite/complex-flow/complex-layers                       H(2,0)  0.00/0.00/782          0.00/0.00/895          0.00/0.00/878         
+suite/complex-flow/complex-layers                       H(2,1)  0.00/0.40/728          0.00/0.40/665          0.00/0.40/663         
+suite/complex-flow/complex-layers                       H(2,2)  0.25/0.40/687          0.25/0.40/685          0.25/0.40/683         
+
+164 (example, configuration) pairs differ between modes.

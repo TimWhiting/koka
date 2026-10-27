@@ -36,6 +36,7 @@ import Core.FlowAnalysis.Monad (FixAR)
 import Common.File
 import Data.Char (toUpper, toLower)
 import Numeric (showFFloat, showEFloat, readHex)
+import Text.Read (readMaybe)
 
 trueCon ::  AChange
 trueCon = AChangeConstr nameTrue []
@@ -301,8 +302,13 @@ doPrimitive nm achanges ctx u store extendStore = do
             _ -> return nothingCon
         else do
           let addr = ConImplicitAddr justValueName ctx u
-          extendStore addr (AChangeLit $ LiteralChangeIntX (LChangeSingle (e1, read s)))
-          return $ justCon addr typeInt
+          case readMaybe s of
+            Just v -> do
+              extendStore addr (AChangeLit $ LiteralChangeIntX (LChangeSingle (e1, v)))
+              return $ justCon addr typeInt
+            Nothing -> do -- not a plain decimal (`+1`, `1_000`, `0x1f`, or not a number): either answer
+              extendStore addr (AChangeLit $ LiteralChangeIntX LChangeTop)
+              each [return nothingCon, return $ justCon addr typeInt]
       [AChangeLit (LiteralChangeStringX _), AChangeConstr conMatch _] -> do
         let addr = ConImplicitAddr justValueName ctx u
         extendStore addr (AChangeLit $ LiteralChangeIntX LChangeTop)

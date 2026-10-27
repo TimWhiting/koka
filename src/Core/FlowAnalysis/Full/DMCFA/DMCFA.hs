@@ -447,6 +447,14 @@ doHandlerPrimitive n addr arguments venv ctx u | n == nameLocalVar = do
         returnV $ eval bod newEnv ctx
 localEff = True
 
+-- | The dynamic context of a local variable's body, found in the context of an operation performed inside it:
+-- its levels from the variable's own (innermost) level outwards, or the fallback if that level is not there.
+localBodyDyn :: Name -> CombinedCtx -> DynamicCtx -> DynamicCtx
+localBodyDyn x opCtx fallback
+  = case dropWhile (\((_, nm), _) -> nm /= x) (dynamic opCtx) of
+      []   -> fallback
+      dyn  -> dyn
+
 doHandleLocal :: HasCallStack => RValue -> VEnv -> Call -> (ExprContextId, TName) -> Addr -> CombinedCtx -> FixAAMR r s e FixChange
 doHandleLocal res venv bodId (id, varName) valAddr retCtx = do
   case res of
@@ -455,7 +463,12 @@ doHandleLocal res venv bodId (id, varName) valAddr retCtx = do
       extendKStore kOp knext
       case dval of
         DVal hName opName oExpr args oCtx | hName == getName varName && opName == nameLocalGet -> do
-          res <- apply kOp valAddr (dynamic retCtx)
+          -- Resume with the dynamic context the read happened in, from the variable's own level outwards: the
+          -- context of the variable's body (handlers inside it are re-entered by the continuation's frames).
+          -- Resuming with `dynamic retCtx` (the context outside the variable) loses the variable's level and every
+          -- level outside it; adding a new level would push older levels off. If the level was already pushed off
+          -- (more than d levels), fall back to the context outside the variable.
+          res <- apply kOp valAddr (localBodyDyn (getName varName) oCtx (dynamic retCtx))
           returnV $ handleLocal res venv bodId (id, varName) valAddr retCtx
         DVal hName opName oExpr [newAddr] oCtx | hName == getName varName && opName == nameLocalSet -> do
           -- v <- store newAddr
