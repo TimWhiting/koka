@@ -1,26 +1,4 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-<meta http-equiv="refresh" content="1;URL='https://koka-lang.github.io/koka/doc/index.html'" />
-<title>Koka Redirect</title>
-<script>
-// use a script for redirection as well so we can maintain the hash
-if (window.location != null && typeof window.location.replace === "function") {
-  var url = "https://koka-lang.github.io/koka/doc/index.html";
-  if (window.location.hash) {
-    url += window.location.hash;  
-  }
-  window.location.replace(url);  
-}
-</script>
-</head>
-
-<body class="koka doc body" style="margin:1em 10%">
-
-
-<p>This page is <a href="https://koka-lang.github.io/koka/doc/index.html">redirected</a>.</p>
-
-</body>
-</html>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="1; url=doc/index.html"><title>Koka</title>
+<script>location.replace("doc/index.html" + location.hash)</script>
+</head><body><a href="doc/index.html">The Koka Programming Language</a></body></html>
