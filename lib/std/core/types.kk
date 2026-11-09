@@ -388,9 +388,23 @@ pub inline extern ref/update<h,a>( ^ref : ref<h,a>, update : a -> a): <read<h>,w
   js inline "((#1).value = (#2)((#1).value))"
 
 // Replace the value of a local variable with `update(value)`, as `ref/update`.
-pub inline extern local-var/update<h,a>( ^ref : local-var<h,a>, update : a -> a): <local<h>> ()
-  c  "kk_ref_update_borrow"
-  js inline "((#1).value = (#2)((#1).value))"
+// `x := e` on a local variable `x` that occurs in a total `e` compiles to
+// `update(x, fn(x) e)`. It is an inline function, not an external, so the
+// optimizer removes the function argument and `i := i + 1` is a load and a store.
+pub inline fun local-var/update<h,a>( ^ref : local-var<h,a>, update : a -> a): <local<h>> ()
+  @local-put(std/core/types/@byref(ref), update(@local-take(std/core/types/@byref(ref))))
+
+// _Internal_: move the value out of a local variable without a reference count.
+// The variable holds a stale value until `@local-put` stores the next one, which
+// is safe only when nothing can read it in between (as in `local-var/update`).
+pub inline extern @local-take<h,a>( ^ref : local-var<h,a> ) : <local<h>> a
+  c  inline "kk_ref_take_borrow(#1,kk_context())"
+  js inline "((#1).value)"
+
+// _Internal_: store the value taken by `@local-take` without dropping the old one.
+pub inline extern @local-put<h,a>( ^ref : local-var<h,a>, value : a ) : <local<h>> ()
+  c  inline "kk_ref_put_borrow(#1,#2,kk_context())"
+  js inline "((#1).value = #2)"
 
 // If a heap effect is unobservable, the heap effect can be erased by using the `run` fun.
 // See also: _State in Haskell, by Simon Peyton Jones and John Launchbury_.

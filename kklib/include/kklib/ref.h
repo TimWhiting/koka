@@ -84,6 +84,33 @@ static inline kk_unit_t kk_ref_set_borrow(kk_ref_t r, kk_box_t value, kk_context
   return kk_Unit;
 }
 
+// `kk_ref_take_borrow` moves the value out of a reference that is not thread
+// shared, and `kk_ref_put_borrow` stores the next one without dropping the moved
+// value; between the two the reference holds a stale value and must not be read.
+// On a thread-shared reference they are a `get` (dup) and a `set` (drop), so a
+// take/put pair is correct either way.
+static inline kk_box_t kk_ref_take_borrow(kk_ref_t _r, kk_context_t* ctx) {
+  struct kk_ref_s* r = kk_datatype_as_assert(struct kk_ref_s*, _r, KK_TAG_REF, ctx);
+  if kk_likely(!kk_block_is_thread_shared(&r->_block)) {
+    kk_box_t b; b.box = kk_atomic_load_relaxed(&r->value);
+    return b;
+  }
+  else {
+    return kk_ref_get_thread_shared(r,ctx);
+  }
+}
+
+static inline kk_unit_t kk_ref_put_borrow(kk_ref_t _r, kk_box_t value, kk_context_t* ctx) {
+  struct kk_ref_s* r = kk_datatype_as_assert(struct kk_ref_s*, _r, KK_TAG_REF, ctx);
+  if kk_likely(!kk_block_is_thread_shared(&r->_block)) {
+    kk_atomic_store_relaxed(&r->value, value.box);
+  }
+  else {
+    kk_box_drop(kk_ref_swap_thread_shared_borrow(r, value, ctx), ctx);
+  }
+  return kk_Unit;
+}
+
 // In Koka we can constrain the argument of f to be a local-scope reference.
 static inline kk_box_t kk_ref_modify(kk_ref_t r, kk_function_t f, kk_context_t* ctx) {
   return kk_function_call(kk_box_t,(kk_function_t,kk_ref_t,kk_context_t*),f,(f,r,ctx),ctx);

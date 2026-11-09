@@ -2222,7 +2222,8 @@ extendInfGammaEx topLevel ignores tnames inf
                       Right (cname,info2) | cname /= nameReturn  -- TODO: adapt to multiple matches?
                         -> do checkCasingOverlap range name cname info2
                               env <- getEnv
-                              if (not (isHiddenName name) && show name /= "resume" && show name /= "resume-shallow" && not (name `elem` ignores))
+                              -- a binder without a range is generated and shadows on purpose
+                              if (not (isHiddenName name) && show name /= "resume" && show name /= "resume-shallow" && not (name `elem` ignores) && range /= rangeNull)
                                then infWarning range (Pretty.ppName (prettyEnv env) name <+> text "shadows an earlier local definition or parameter")
                                else return ()
                       _ -> return ()
