@@ -28,6 +28,7 @@ jobs:
     name: Bundle (${{ inputs.release || github.ref_name }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false   # one platform failing should not cancel the others' bundles
       matrix:
         branch: [dev]  # v3.2.8
         # macOS 15 is latest for x64, default now is arm64
@@ -86,9 +87,10 @@ jobs:
         if: endsWith(env.RELEASE, '-cfa')
         shell: bash
         run: |
-          shopt -s globstar nullglob   # a glob, not find: on Windows `find` can be find.exe
+          # a glob, not find (on Windows `find` can be find.exe); bundles are bundle/<version>/koka-<version>-<os>-<arch>.tar.gz
           ls bundle/*
-          for f in bundle/**/koka-v*.tar.gz; do
+          for f in bundle/*/koka-v*.tar.gz; do
+            [ -e "$f" ] || continue
             dir=$(dirname "$f"); rest=$(basename "$f" | sed -E 's/^koka-v[0-9.]+-//')
             mv -v "$f" "$dir/koka-$RELEASE-$rest"
           done
