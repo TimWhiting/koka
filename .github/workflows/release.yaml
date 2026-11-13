@@ -1,4 +1,7 @@
 on:
+  push:
+    tags:
+      - 'v*-cfa'       # releases of the control-flow-analysis fork, e.g. v3.2.9-cfa
   workflow_dispatch:   # so we can run the workflow manually as well
     inputs:
       release:
@@ -15,14 +18,14 @@ permissions:
   contents: write
 
 env:
-  RELEASE: ${{ inputs.release }}
+  RELEASE: ${{ inputs.release || github.ref_name }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
 name: Release
 jobs:
   build:
-    name: Bundle (${{ inputs.release }}, ${{ matrix.os }})
+    name: Bundle (${{ inputs.release || github.ref_name }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -77,6 +80,18 @@ jobs:
         run: |
           stack exec koka -- -e -O2 util/bundle
 
+      # Name the bundles after the release (the -cfa tags differ from the compiler's own version, which the bundle
+      # keeps inside so the compiler finds its libraries); install.sh/install.bat download koka-<release>-<os>-<arch>.tar.gz
+      - name: Name bundles after the release
+        if: endsWith(env.RELEASE, '-cfa')
+        shell: bash
+        run: |
+          for f in $(find bundle -name 'koka-v*.tar.gz'); do
+            dir=$(dirname "$f"); rest=$(basename "$f" | sed -E 's/^koka-v[0-9.]+-//')
+            mv "$f" "$dir/koka-$RELEASE-$rest"
+          done
+          find bundle -name '*.tar.gz'
+
       # VS code extension
       - name: Package VS code extension (Windows x64)
         if: runner.os == 'Windows' && runner.arch == 'X64' # only build extension if tagged with a version
@@ -95,8 +110,9 @@ jobs:
             bundle/**/*.tar.gz
             support/vscode/koka.language-koka/*.vsix
             util/install.bat
-          draft: true
-          body_path: util/release.md
+          draft: ${{ !endsWith(env.RELEASE, '-cfa') }}
+          prerelease: ${{ endsWith(env.RELEASE, '-cfa') }}
+          body_path: ${{ endsWith(env.RELEASE, '-cfa') && 'util/release-cfa.md' || 'util/release.md' }}
 
       - name: Release install scripts
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
@@ -105,6 +121,7 @@ jobs:
           name: ${{ env.RELEASE }}
           files: | # Only add install file on Linux to avoid line ending issues: https://github.com/koka-lang/koka/issues/742
             util/install.sh
-          draft: true
-          body_path: util/release.md
+          draft: ${{ !endsWith(env.RELEASE, '-cfa') }}
+          prerelease: ${{ endsWith(env.RELEASE, '-cfa') }}
+          body_path: ${{ endsWith(env.RELEASE, '-cfa') && 'util/release-cfa.md' || 'util/release.md' }}
 

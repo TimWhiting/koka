@@ -5,6 +5,7 @@ on:
       - dev
     tags:
       - 'v*'
+      - '!v*-cfa'    # the fork's releases are built by release.yaml
   pull_request:
     branches:
       - dev
