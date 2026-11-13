@@ -2,7 +2,9 @@ Koka with **control-flow analysis**: HMCFA (Whiting & Germane, ICFP 2026) and De
 ESOP 2025), on top of Koka `dev` after the v3.2.9 release (the compiler reports itself as Koka 3.3.0).
 
 This is a research build, not an official Koka release. It installs side by side with the official Koka if you give it
-its own prefix.
+its own prefix. If the installer offers to uninstall an official Koka it finds, answer no.
+
+`--minimal` (Linux, macOS) and `--vscode` (Windows) skip installing the Marketplace extension.
 
 ### Install the compiler
 
@@ -15,7 +17,7 @@ curl -sSL https://github.com/TimWhiting/koka/releases/download/v3.2.9-cfa/instal
 Windows (cmd): download `install.bat` from this release and run
 
 ```bat
-install.bat --version v3.2.9-cfa -p %LOCALAPPDATA%\koka-cfa
+install.bat --vscode --version v3.2.9-cfa --prefix %LOCALAPPDATA%\koka-cfa
 ```
 
 ### Install the VS Code extension
