@@ -87,7 +87,7 @@ jobs:
         shell: bash
         run: |
           shopt -s globstar nullglob   # a glob, not find: on Windows `find` can be find.exe
-          ls -R bundle | head -20
+          ls bundle/*
           for f in bundle/**/koka-v*.tar.gz; do
             dir=$(dirname "$f"); rest=$(basename "$f" | sed -E 's/^koka-v[0-9.]+-//')
             mv -v "$f" "$dir/koka-$RELEASE-$rest"
