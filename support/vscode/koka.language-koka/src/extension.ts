@@ -449,4 +449,4 @@ class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory 
 }
 
 // The interactive view of the HMCFA analysis results; it asks the current language server to run the analysis.
-const hmcfaView = new HmcfaView(async (filePath, m, d) => languageServer?.hmcfaReport(filePath, m, d))
+const hmcfaView = new HmcfaView(async (filePath, m, h, variant, entry) => languageServer?.hmcfaReport(filePath, m, h, variant, entry))

@@ -246,6 +246,8 @@ data Flags
          , sweep          :: !Bool -- do a sweep of analysis sensitivities
          , hmcfaView      :: !Bool -- print a readable report of the HMCFA results
          , hmcfaGenerated :: !Bool -- include compiler-generated code in the HMCFA report
+         , hmcfaRebinding :: !Bool -- report on the DMCFAR variant of the analysis (with rebinding) instead of DMCFA
+         , hmcfaEntry     :: !String -- the entry point the HMCFA report analyzes ("" for the default ones)
          , sensitivities  :: ![(Int,Int)] -- sensitivities for analysis
          } deriving (Eq,Show)
 
@@ -404,6 +406,8 @@ flagsNull
           False   -- no sweep by default
           False   -- no hmcfa report by default
           False   -- hide generated code in the hmcfa report
+          False   -- report on DMCFA, not DMCFAR
+          ""      -- the default entry points
           []      -- sensitivities
 
 
@@ -510,11 +514,13 @@ options = (\(xss,yss) -> (concat xss, concat yss)) $ unzip
  , flag   []    ["checkcore"]      (\b f -> f{coreCheck=b})         "check generated core"
  , flag   []    ["dmcfae"]          (\b f -> f{analyze=b, rebuild=b})           "full program analysis"
  , flag   []    ["dmcfar"]         (\b f -> f{analyze=b, rebinding=b, rebuild=b})         "full program analysis with rebinding"
- , option []    ["sensitivity"]    (ReqArg (\s -> Flag (\f -> f{sensitivities = read s : sensitivities f})) "(d,m)") "add analysis sensitivity (d,m)"
+ , option []    ["sensitivity"]    (ReqArg (\s -> Flag (\f -> f{sensitivities = read s : sensitivities f})) "(h,m)") "add analysis sensitivity (h,m): h handler levels and m call sites"
  , flag   []    ["kcfa"]           (\b f -> f{analyze=b, kcfa=b, rebuild=b})              "enable k-cfa analysis"
  , flag   []    ["sweep"]          (\b f -> f{sweep=b})              "analysis sweep"
  , flag   []    ["hmcfa-view"]     (\b f -> f{hmcfaView=b, rebuild=b}) "print a readable report of the HMCFA analysis results"
  , flag   []    ["hmcfa-generated"] (\b f -> f{hmcfaGenerated=b}) "include compiler-generated code in the HMCFA report"
+ , option []    ["hmcfa-entry"]    (ReqArg (\s -> Flag (\f -> f{hmcfaEntry = s})) "name") "analyze this entry point (a top-level function without parameters) in the HMCFA report"
+ , flag   []    ["hmcfa-rebinding"] (\b f -> f{hmcfaRebinding=b}) "report on the DMCFAR variant of the analysis (with rebinding)"
  , emptyline
 
  -- hidden

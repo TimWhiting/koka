@@ -480,6 +480,8 @@ closestRange ctx =
              Nothing -> closestRange c
         _ -> closestRange c
     ExprCBasic _ c _ -> closestRange c
+    DefCGroup _ c _ _ -> closestRange c
+    LetCDefGroup _ c _ _ _ -> closestRange c
     ExprPrim _ e -> rangeNull
 
 

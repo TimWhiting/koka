@@ -19,6 +19,7 @@ maintainer: daan@microsoft.com
 
 extra-source-files:
   - readme.md
+  - src/Core/FlowAnalysis/Full/HMCFAView.inc
 
 description: Please see the README on GitHub at <https://github.com/koka-lang/koka#readme>
 

@@ -16,6 +16,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     readme.md
+    src/Core/FlowAnalysis/Full/HMCFAView.inc
 
 source-repository head
   type: git
@@ -87,6 +88,7 @@ library
       Core.FlowAnalysis.Full.DMCFAR.Monad
       Core.FlowAnalysis.Full.DMCFAR.Primitives
       Core.FlowAnalysis.Full.DMCFAR.Syntax
+      Core.FlowAnalysis.Full.DMCFAR.View
       Core.FlowAnalysis.Full.KCFA.AbstractValue
       Core.FlowAnalysis.Full.KCFA.KCFA
       Core.FlowAnalysis.Full.KCFA.Monad

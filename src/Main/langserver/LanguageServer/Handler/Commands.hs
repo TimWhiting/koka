@@ -38,7 +38,8 @@ import LanguageServer.Handler.TextDocument (rebuildUri)
 import Compile.Options (Flags (outFinalPath), commandLineHelp, processExtraOptions)
 import Compile.BuildMonad (runBuild)
 import Compile.BuildContext (buildcTypeCheck)
-import Core.FlowAnalysis.Full.DMCFA.View (hmcfaJson)
+import qualified Core.FlowAnalysis.Full.DMCFA.View as DMCFAView
+import qualified Core.FlowAnalysis.Full.DMCFAR.View as DMCFARView
 import qualified Data.ByteString.Lazy as BL
 import Control.Exception (catch, SomeException)
 
@@ -93,10 +94,18 @@ commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp ->
       _ -> parameterError
   else if command == "koka/hmcfa" then
     case commandParams of
-      -- koka/hmcfa filePath m d: run the full HMCFA analysis on a file and return the results as JSON
-      -- (see Core.FlowAnalysis.Full.DMCFA.View). `m` is the number of call sites and `d` the number of
-      -- handler levels kept in a timestamp. On failure the result is an object with an `error` field.
-      Just (Json.String filePath : Json.Number m : Json.Number d : _) -> do
+      -- koka/hmcfa filePath m h [variant [entry]]: run the full HMCFA analysis on a file and return the results as JSON
+      -- (see Core.FlowAnalysis.Full.DMCFA.View). `m` is the number of call sites and `h` the number of
+      -- handler levels kept in a timestamp; `variant` is "dmcfa" (the default) or "dmcfar" (with rebinding);
+      -- `entry` names the entry point to analyze (a top-level function without parameters; "" for the default).
+      -- On failure the result is an object with an `error` field.
+      Just (Json.String filePath : Json.Number m : Json.Number h : rest) -> do
+        let hmcfaJson = case rest of
+                          (Json.String "dmcfar" : _) -> DMCFARView.hmcfaJson
+                          _                          -> DMCFAView.hmcfaJson
+            entry = case rest of
+                      (_ : Json.String e : _) | not (T.null e) -> Just (T.unpack e)
+                      _ -> Nothing
         let uri = J.toNormalizedUri (filePathToUri (T.unpack filePath))
             failed msg = Json.object [ "error" Json..= (msg :: String) ]
         mbName <- lookupModuleName uri
@@ -110,7 +119,7 @@ commandHandler = requestHandler J.SMethod_WorkspaceExecuteCommand $ \req resp ->
             term  <- getTerminal
             flags <- getFlags
             res <- liftIO $ (do report <- hmcfaJson buildContext (\bc mn -> runBuild term flags (buildcTypeCheck [mn] bc))
-                                                    mod (truncate m) (truncate d)
+                                                    mod (truncate m) (truncate h) entry
                                 BL.length (Json.encode report) `seq` return report)
                             `catch` (\e -> return (failed (show (e :: SomeException))))
             resp $ Right $ J.InL res

@@ -188,10 +188,10 @@ export class KokaLanguageServer {
   }
 
   // Run the full HMCFA analysis on a file. Returns the results as structured data (see hmcfa-view.ts).
-  // `m` call sites and `d` handler levels are kept in each timestamp.
-  async hmcfaReport(filePath : string, m : number, d : number) : Promise<any | undefined> {
+  // `m` call sites and `h` handler levels are kept in each timestamp; `entry` is the entry point ("" for the default ones).
+  async hmcfaReport(filePath : string, m : number, h : number, variant : string, entry : string) : Promise<any | undefined> {
     if (!this.languageClient) return undefined
-    const result = await this.languageClient.sendRequest(ExecuteCommandRequest.type, {command: "koka/hmcfa", arguments: [filePath, m, d]})
+    const result = await this.languageClient.sendRequest(ExecuteCommandRequest.type, {command: "koka/hmcfa", arguments: [filePath, m, h, variant, entry]})
     return result ?? undefined
   }
 

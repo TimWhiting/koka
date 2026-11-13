@@ -190,13 +190,21 @@
         "koka.analysis.callSensitivity": {
           "type": "number",
           "default": 0,
-          "description": "The call sensitivity amount.",
+          "description": "m: the number of call sites the HMCFA analysis keeps in a timestamp.",
           "order": 14
         },
         "koka.analysis.handlerSensitivity": {
           "type": "number",
           "default": 1,
-          "description": "The number of handler levels the HMCFA analysis keeps in a timestamp.",
+          "description": "h: the number of handler levels the HMCFA analysis keeps in a timestamp.",
+          "order": 14
+        },
+        "koka.analysis.variant": {
+          "type": "string",
+          "enum": ["dmcfa", "dmcfar"],
+          "enumDescriptions": ["DMCFA", "DMCFAR: DMCFA with rebinding"],
+          "default": "dmcfa",
+          "description": "Which variant of the HMCFA analysis the analysis view runs.",
           "order": 14
         },
         "koka.analysis.showGenerated": {
