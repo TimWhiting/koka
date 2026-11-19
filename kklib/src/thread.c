@@ -128,6 +128,46 @@ static int pthread_once(pthread_once_t* once, void (*init)(void)) {
 }
 
 /*---------------------------------------------------------------------------
+  Bare metal: one core and no scheduler. Locks are no-ops, `once` runs
+  inline, and there are no threads to start or to wait for.
+---------------------------------------------------------------------------*/
+#elif KK_BAREMETAL
+#include <errno.h>
+typedef int kk_bm_handle_t;
+#define pthread_t                   kk_bm_handle_t
+#define pthread_mutex_t             kk_bm_handle_t
+#define pthread_cond_t              kk_bm_handle_t
+#define pthread_once_t              kk_bm_handle_t
+#define PTHREAD_ONCE_INIT           0
+#define pthread_mutex_init(m,attr)  (*(m) = 0, 0)
+#define pthread_mutex_destroy(m)    ((void)(m), 0)
+#define pthread_mutex_lock(m)       ((void)(m), 0)
+#define pthread_mutex_unlock(m)     ((void)(m), 0)
+#define pthread_cond_init(c,attr)   (*(c) = 0, 0)
+#define pthread_cond_destroy(c)     ((void)(c), 0)
+#define pthread_cond_signal(c)      ((void)(c), 0)
+#define pthread_cond_broadcast(c)   ((void)(c), 0)
+
+static int pthread_once(pthread_once_t* once, void (*init)(void)) {
+  if (*once == 0) { *once = 1; init(); }
+  return 0;
+}
+static int pthread_create(pthread_t* thread, void* attr, void* (*action)(void*), void* arg) {
+  kk_unused(thread); kk_unused(attr); kk_unused(action); kk_unused(arg);
+  return ENOSYS;
+}
+static void pthread_join_void(pthread_t thread) {
+  kk_unused(thread);
+}
+// Waiting can only mean waiting for another thread, which can never come.
+static int kk_bm_wait(void) {
+  kk_fatal_error(EDEADLK, "blocking wait on a single-threaded bare-metal target");
+  return EDEADLK;
+}
+#define pthread_cond_wait(c,m)          ((void)(c), (void)(m), kk_bm_wait())
+#define pthread_cond_timedwait(c,m,t)   ((void)(c), (void)(m), (void)(t), kk_bm_wait())
+
+/*---------------------------------------------------------------------------
   Other systems use posix threads
 ---------------------------------------------------------------------------*/
 #else

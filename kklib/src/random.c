@@ -369,6 +369,8 @@ static uint64_t kk_os_random_weak(void) {
     x ^= (uint64_t)(pcount.QuadPart);
   #elif defined(__APPLE__)
     x ^= mach_absolute_time();
+  #elif KK_BAREMETAL
+    x ^= (uint64_t)kk_baremetal_nsecs();
   #else
     struct timespec time;
     #if defined(CLOCK_MONOTONIC)
