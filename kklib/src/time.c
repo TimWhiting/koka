@@ -79,7 +79,19 @@ kk_duration_t kk_duration_from_nsecs(int64_t nsecs) {
   Timer ticks
 --------------------------------------------------------------------------------------------------*/
 
-#ifdef WIN32
+#if KK_BAREMETAL
+#include <time.h>
+// The board supplies the clock by defining `kk_baremetal_nsecs` (e.g. from
+// `time_us_64()` on a Pico). The weak default uses the C library's `clock()`,
+// which QEMU semihosting implements with centisecond resolution.
+kk_decl_export __attribute__((weak)) int64_t kk_baremetal_nsecs(void) {
+  return (int64_t)clock() * (KK_NSECS_PER_SEC / CLOCKS_PER_SEC);
+}
+static kk_duration_t kk_timer_ticks_prim(kk_context_t* ctx) {
+  if (ctx->timer_freq == 0) { ctx->timer_freq = KK_NSECS_PER_SEC; }
+  return kk_duration_from_nsecs(kk_baremetal_nsecs());
+}
+#elif defined(WIN32)
 #include <Windows.h>
 static kk_duration_t kk_timer_ticks_prim(kk_context_t* ctx) {
   LARGE_INTEGER t;
@@ -179,7 +191,13 @@ kk_decl_export kk_asecs_t kk_timer_resolution(kk_context_t* ctx) {
   Current Time
 --------------------------------------------------------------------------------------------------*/
 
-#ifdef WIN32
+#if KK_BAREMETAL
+// No wall clock: report time since boot.
+static kk_duration_t kk_time_unix_now_prim(kk_context_t* ctx) {
+  if (ctx->time_freq == 0) { ctx->time_freq = KK_NSECS_PER_SEC; }
+  return kk_duration_from_nsecs(kk_baremetal_nsecs());
+}
+#elif defined(WIN32)
 #define KK_100NSECS_PER_SEC  KK_I64(10000000)
 #define KK_UNIX_EPOCH        KK_I64(11644473600)  // seconds since 1601-01-01 UTC to 1970-01-01 (Unix epoch)
 static kk_duration_t kk_time_unix_now_prim(kk_context_t* ctx) {

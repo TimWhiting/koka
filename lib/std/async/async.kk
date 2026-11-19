@@ -58,6 +58,7 @@ import std/time/duration
 import async/internal
 
 import async/api/evloop
+  [buildcfg=baremetal]  async/api/baremetal/evloop // microcontrollers without an OS (KK_BAREMETAL)
   [host=libc|jsnode]    async/api/uv/evloop        // libuv for C or node for javascript
   [host=jsweb|wasmweb]  async/api/web/evloop       // javascript or wasm (emscripten) in a browser
   // todo: wasm standalone using wasi

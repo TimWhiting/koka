@@ -526,6 +526,20 @@ static kk_string_t os_direntry_name(dir_entry* entry, kk_context_t* ctx) {
   }
 }
 
+#elif KK_BAREMETAL
+// No file system to list.
+#define dir_cursor int
+#define dir_entry  int
+static bool os_findnext(dir_cursor d, dir_entry* entry, int* err) {
+  kk_unused(d); kk_unused(entry); *err = ENOSYS; return false;
+}
+static bool os_findfirst(kk_string_t path, dir_cursor* d, dir_entry* entry, int* err, kk_context_t* ctx) {
+  kk_unused(path); kk_unused(ctx); kk_unused(d); kk_unused(entry); *err = ENOSYS; return false;
+}
+static void os_findclose(dir_cursor d) { kk_unused(d); }
+static kk_string_t os_direntry_name(dir_entry* entry, kk_context_t* ctx) {
+  kk_unused(entry); return kk_string_empty();
+}
 #else
 #include <sys/types.h>
 #include <dirent.h>

@@ -188,6 +188,18 @@
 #define kk_decl_export     kk_decl_externc
 #endif
 
+// Bare-metal targets (e.g. arm-none-eabi with newlib on a microcontroller):
+// a single core, and no OS threads, directories or processes.
+// Define KK_BAREMETAL to 0 or 1 to override the detection.
+#ifndef KK_BAREMETAL
+#if !defined(_WIN32) && !defined(__unix__) && !defined(__unix) && !defined(__APPLE__) \
+    && !defined(__EMSCRIPTEN__) && !defined(__wasi__) && !defined(__CYGWIN__) && !defined(__HAIKU__)
+#define KK_BAREMETAL 1
+#else
+#define KK_BAREMETAL 0
+#endif
+#endif
+
 #if defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wunused-value"
@@ -224,6 +236,11 @@
 #define kk_decl_hot
 #define kk_decl_align(a)
 #define kk_decl_thread        __thread
+#endif
+
+#if KK_BAREMETAL  // single-threaded: thread-locals are plain globals
+#undef  kk_decl_thread
+#define kk_decl_thread
 #endif
 
 
@@ -425,6 +442,26 @@ static inline size_t kk_to_size_t(kk_ssize_t sz) {
 #else
 // use standard inttypes on other platforms.
 #include <inttypes.h>
+// newlib's inttypes.h, used with GCC's freestanding stdint.h, may leave these out
+#if !defined(PRId64)
+#define PRId64 "lld"
+#define PRIu64 "llu"
+#define PRIx64 "llx"
+#define PRIX64 "llX"
+#endif
+#if !defined(PRId32)
+#if (__INT32_MAX__ == __LONG_MAX__)
+#define PRId32 "ld"
+#define PRIu32 "lu"
+#define PRIx32 "lx"
+#define PRIX32 "lX"
+#else
+#define PRId32 "d"
+#define PRIu32 "u"
+#define PRIx32 "x"
+#define PRIX32 "X"
+#endif
+#endif
 #define PRIdI64        PRId64
 #define PRIuI64        PRIu64
 #define PRIxI64        PRIx64

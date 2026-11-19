@@ -40,4 +40,7 @@
 #include "thread.c"
 #include "time.c"
 #include "vector.c"
+#if KK_BAREMETAL
+#include "baremetal.c"
+#endif
 

@@ -495,6 +495,9 @@ kk_decl_export void          kk_main_end(kk_context_t* ctx);
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx);
 kk_decl_export void kk_fatal_error(int err, const char* msg, ...);
+#if KK_BAREMETAL
+kk_decl_export int64_t kk_baremetal_nsecs(void);  // monotonic clock, supplied by the board (weak default in time.c)
+#endif
 kk_decl_export void kk_warning_message(const char* msg, ...);
 kk_decl_export void kk_info_message(const char* msg, ...);
 kk_decl_export void kk_unsupported_external(const char* msg);
