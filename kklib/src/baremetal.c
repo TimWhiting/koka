@@ -16,33 +16,61 @@
 #include <time.h>
 
 /* 64-bit atomics. Cores like the Cortex-M0+/M33 have no 64-bit atomic
-   instructions and newlib ships no libatomic. Koka runs single-threaded on
-   these targets and its heap is never touched from interrupt handlers, so
-   plain loads and stores are sufficient. */
+   instructions (32-bit atomics compile to LDREX/STREX and need nothing here)
+   and newlib ships no libatomic. Koka runs on a single core on these targets,
+   so the only possible interference is an interrupt handler: on M-profile
+   cores each operation runs with interrupts masked (PRIMASK), which makes it
+   atomic with respect to everything on that core. Running Koka on two cores
+   at once would need a hardware spinlock here instead. */
+#if defined(__ARM_ARCH_PROFILE) && (__ARM_ARCH_PROFILE == 'M')
+static inline uint32_t kk_bm_irq_save(void) {
+  uint32_t primask;
+  __asm volatile ("mrs %0, primask\n\tcpsid i" : "=r"(primask) :: "memory");
+  return primask;
+}
+static inline void kk_bm_irq_restore(uint32_t primask) {
+  __asm volatile ("msr primask, %0" :: "r"(primask) : "memory");
+}
+#else
+static inline uint32_t kk_bm_irq_save(void) { return 0; }
+static inline void kk_bm_irq_restore(uint32_t primask) { kk_unused(primask); }
+#endif
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wbuiltin-declaration-mismatch"
 __attribute__((weak)) uint64_t __atomic_load_8(const volatile void* p, int order) {
-  kk_unused(order); return *(const volatile uint64_t*)p;
+  kk_unused(order);
+  uint32_t m = kk_bm_irq_save(); uint64_t v = *(const volatile uint64_t*)p; kk_bm_irq_restore(m);
+  return v;
 }
 __attribute__((weak)) void __atomic_store_8(volatile void* p, uint64_t v, int order) {
-  kk_unused(order); *(volatile uint64_t*)p = v;
+  kk_unused(order);
+  uint32_t m = kk_bm_irq_save(); *(volatile uint64_t*)p = v; kk_bm_irq_restore(m);
 }
 __attribute__((weak)) uint64_t __atomic_exchange_8(volatile void* p, uint64_t v, int order) {
-  kk_unused(order); uint64_t old = *(volatile uint64_t*)p; *(volatile uint64_t*)p = v; return old;
+  kk_unused(order);
+  uint32_t m = kk_bm_irq_save(); uint64_t old = *(volatile uint64_t*)p; *(volatile uint64_t*)p = v; kk_bm_irq_restore(m);
+  return old;
 }
 __attribute__((weak)) uint64_t __atomic_fetch_add_8(volatile void* p, uint64_t v, int order) {
-  kk_unused(order); uint64_t old = *(volatile uint64_t*)p; *(volatile uint64_t*)p = old + v; return old;
+  kk_unused(order);
+  uint32_t m = kk_bm_irq_save(); uint64_t old = *(volatile uint64_t*)p; *(volatile uint64_t*)p = old + v; kk_bm_irq_restore(m);
+  return old;
 }
 __attribute__((weak)) uint64_t __atomic_fetch_sub_8(volatile void* p, uint64_t v, int order) {
-  kk_unused(order); uint64_t old = *(volatile uint64_t*)p; *(volatile uint64_t*)p = old - v; return old;
+  kk_unused(order);
+  uint32_t m = kk_bm_irq_save(); uint64_t old = *(volatile uint64_t*)p; *(volatile uint64_t*)p = old - v; kk_bm_irq_restore(m);
+  return old;
 }
 __attribute__((weak)) bool __atomic_compare_exchange_8(volatile void* p, void* expected, uint64_t desired,
                                                          bool weak, int success, int failure) {
   kk_unused(weak); kk_unused(success); kk_unused(failure);
+  uint32_t m = kk_bm_irq_save();
   uint64_t cur = *(volatile uint64_t*)p;
-  if (cur == *(uint64_t*)expected) { *(volatile uint64_t*)p = desired; return true; }
-  *(uint64_t*)expected = cur;
-  return false;
+  bool ok = (cur == *(uint64_t*)expected);
+  if (ok) { *(volatile uint64_t*)p = desired; } else { *(uint64_t*)expected = cur; }
+  kk_bm_irq_restore(m);
+  return ok;
 }
 #pragma GCC diagnostic pop
 
