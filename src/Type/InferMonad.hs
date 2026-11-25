@@ -61,7 +61,7 @@ module Type.InferMonad( Inf, InfGamma
                       , resolveImplicitConstraintsUsedBy
                       , instantiate, instantiateNoEx, instantiateEx
                       , checkCasing
-                      , normalize
+                      , normalize, normalizeX
                       , getNewtypes
                       , getTargetPlatform
 

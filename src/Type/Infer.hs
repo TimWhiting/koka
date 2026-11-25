@@ -179,7 +179,9 @@ inferDefGroup topLevel (DefRec defs0) cont
                       let monoGroups = regroup monoCoreDefs1
                       when topLevel (mapM_ checkRecVal monoGroups)
                       mapM_ addDivergentEffect [cdefs | Core.DefRec cdefs <- monoGroups, analyzeDivergence cdefs]
-                      monoCoreDefs <- generalizeRecDefs monoCoreDefs1
+                      -- the wildcards of the signatures are inferred with their members later: they stay open
+                      sigFree <- fmap ftv (subst (map (infoType . snd) sigInfgamma))
+                      monoCoreDefs <- generalizeRecDefs sigFree monoCoreDefs1
                       -- a member with a full signature is in `gamma` already; a second entry would make it ambiguous
                       let monoInferred = filter (\cdef -> isNothing (lookup (Core.defName cdef) gamma)) monoCoreDefs
                       sigCoreDefs0 <- extendInfGammaEx topLevel [] sigInfgamma $ extendInfGammaCore topLevel [Core.DefRec monoInferred] $
@@ -189,8 +191,13 @@ inferDefGroup topLevel (DefRec defs0) cont
                           sigNames = map Core.defName sigCoreDefs0
                       when topLevel (mapM_ checkRecVal groups)
                       mapM_ addDivergentEffect [filter ((`elem` sigNames) . Core.defName) cdefs | Core.DefRec cdefs <- groups, analyzeDivergence cdefs]
-                      sigCoreDefs  <- generalizeRecDefs sigCoreDefs0
+                      -- variables the other members still share (through those wildcards) are generalized below, jointly
+                      monoFree <- fmap ftv (subst (map Core.defType monoCoreDefs))
+                      sigCoreDefs  <- generalizeRecDefs monoFree sigCoreDefs0
                       return (monoCoreDefs,sigCoreDefs)
+       (monoCoreDefs,sigCoreDefs) <- if null sigCoreDefs || null monoCoreDefs then return (monoCoreDefs,sigCoreDefs)
+                                      else do gdefs <- generalizeRecDefs tvsEmpty (monoCoreDefs ++ sigCoreDefs)
+                                              return (splitAt (length monoCoreDefs) gdefs)
        -- re-analyze the mutual recursive groups
        coreGroups0 <- subst (regroup (monoCoreDefs ++ sigCoreDefs))
        coreGroups2 <- mapMDefs (\cdef -> return cdef{ Core.defSort = if topLevel || CoreVar.isTopLevel cdef then Core.defSort cdef else DefVal }) coreGroups0
@@ -341,12 +348,14 @@ addDivergentEffect coreDefs
 
 -- | Generalize recursive definitions over their inference variables (in front of their own quantifiers).
 -- They use each other at exactly those variables, so each use becomes a type application to them.
-generalizeRecDefs :: [Core.Def] -> Inf [Core.Def]
-generalizeRecDefs coreDefs0
+-- The variables in `keep` are still in use elsewhere, as if they were free in the environment.
+generalizeRecDefs :: Tvs -> [Core.Def] -> Inf [Core.Def]
+generalizeRecDefs keep coreDefs0
   = do coreDefs <- placeRecEvidence coreDefs0
-       nrhos <- mapM (\cdef -> subst (snd (splitTypeScheme (Core.defType cdef))) >>= normalize True) coreDefs
+       free0 <- freeInGamma
+       let free = tvsUnion free0 keep
+       nrhos <- mapM (\cdef -> subst (snd (splitTypeScheme (Core.defType cdef))) >>= normalizeX True free) coreDefs
        rhos  <- subst nrhos  -- closing the effect of one member can change the types of others
-       free  <- freeInGamma
        let tvarss = [[tv | tv <- ofuv rho, not (tvsMember tv free)] | rho <- rhos]
            uses   = [(Core.defTName cdef, Core.makeTypeApp (Core.Var (Core.defTName cdef) Core.InfoNone) (map TVar tvars))
                     | (cdef,tvars) <- zip coreDefs tvarss]
