@@ -22,9 +22,6 @@ fun check( name : string, cond : bool )
 fun check-ids( name : string, got : list<int>, want : list<int> )
   check(name ++ " (got " ++ got.show ++ ", want " ++ want.show ++ ")", got == want)
 
-fun contains( xs : list<int>, x : int ) : bool
-  xs.any(fn(y) y == x)
-
 pub fun main()
   with-keytree
     // shape:

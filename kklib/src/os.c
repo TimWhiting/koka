@@ -28,7 +28,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#if !defined(__wasi__)   // no process model on wasi (see kk_os_run_command)
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #endif
