@@ -37,7 +37,7 @@ import Core.Core
 import Core.CoreVar
 import Core.Pretty ()
 import Core.Simplify
-import Type.Type (splitFunScheme, Effect, Type(..), TypeVar, eqType, eqTypes)
+import Type.Type (splitFunScheme, Effect, Type(..), TypeVar(..), Flavour(..), eqType, eqTypes)
 import Type.TypeVar
 import Type.Pretty
 import Lib.Trace
@@ -367,7 +367,15 @@ comment = unlines . map ("// " ++) . lines
 replaceCall :: Name -> Expr -> DefSort -> [Bool] -> [Expr] -> Maybe [Type] -> SpecM (Maybe Expr)
 replaceCall name expr0 sort bools args mybeTypeArgs
   = do
-      expr <- uniquefyExprU expr0
+      -- the type arguments can mention bound type variables of the caller with the same ids as the
+      -- callee's type parameters (e.g. when both are compiled in this session), and a substitution
+      -- must not map a variable that occurs in its range: rename the parameters apart first
+      expr <- do e <- uniquefyExprU expr0
+                 case (mybeTypeArgs, e) of
+                   (Just _, TypeLam tparams body)
+                     -> do fresh <- mapM (\tv -> freshTypeVar (typevarKind tv) Bound) tparams
+                           return (TypeLam fresh (subNew (zip tparams (map TVar fresh)) |-> body))
+                   _ -> return e
 
       -- extract the specialized parameters
       let ((newParams, newArgs), (speccedParams, speccedArgs))
