@@ -341,10 +341,102 @@ export async function runKoka(wasmUrl, opts = {}) {
   const threads = threaded
     ? (await import("./wasi-threads.js")).threadSupport(wasm, new URL("./wasi-worker.js", import.meta.url))
     : null;
+  // "koka:net" (lib/web-ui/api/wasiweb/net.c): connections are event targets,
+  // so everything they report flows back through dom's add-listener.
+  const net = {
+    "ws-open": (ptr, len) => new WebSocket(decode(ptr, len)),
+    "ws-send": (ws, ptr, len) => { if (ws.readyState === WebSocket.OPEN) ws.send(decode(ptr, len)); },
+    "ws-close": (ws) => { ws.close(); },
+    "fetch-start": (mptr, mlen, uptr, ulen, hptr, hlen, bptr, blen, timeoutMs) => {
+      const method = decode(mptr, mlen), url = decode(uptr, ulen), body = decode(bptr, blen);
+      const headers = {};
+      for (const line of decode(hptr, hlen).split("\n")) {
+        const i = line.indexOf(":");
+        if (i > 0) headers[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+      }
+      const target = new EventTarget();
+      const done = (status, text) => {
+        const ev = new Event("done");
+        ev.status = status;
+        ev.text = text;
+        target.dispatchEvent(ev);
+      };
+      const init = { method, headers };
+      if (timeoutMs > 0) init.signal = AbortSignal.timeout(timeoutMs);
+      if (method !== "GET" && method !== "HEAD") init.body = body;
+      fetch(url, init).then(
+        async (r) => done(r.status, await r.text()),
+        (err) => done(0, String(err)));
+      return target;
+    },
+  };
+
+  // "koka:store" (lib/web-ui/api/wasiweb/store.c): localStorage under a
+  // per-page prefix, and local files. Reads return {has, value} objects that
+  // the wasm side reads with dom's get-prop/num-prop.
+  const storePrefix = "koka:" + location.pathname + ":";
+  const store = {
+    "get": (kptr, klen) => {
+      let v = null;
+      try { v = localStorage.getItem(storePrefix + decode(kptr, klen)); } catch (e) {}
+      return { has: v === null ? 0 : 1, value: v === null ? "" : v };
+    },
+    "set": (kptr, klen, vptr, vlen) => {
+      try { localStorage.setItem(storePrefix + decode(kptr, klen), decode(vptr, vlen)); } catch (e) {}
+    },
+    "remove": (kptr, klen) => {
+      try { localStorage.removeItem(storePrefix + decode(kptr, klen)); } catch (e) {}
+    },
+    "keys": (pptr, plen) => {
+      const prefix = storePrefix + decode(pptr, plen), out = [];
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k.startsWith(prefix)) out.push(k.slice(storePrefix.length));
+        }
+      } catch (e) {}
+      return { value: JSON.stringify(out.sort()) };
+    },
+    "pick-files": (aptr, alen, directory) => {
+      const target = new EventTarget();
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+      const accept = decode(aptr, alen);
+      if (accept) input.accept = accept;
+      if (directory) input.webkitdirectory = true;
+      const finish = (files) => {
+        const ev = new Event("done");
+        ev.files = JSON.stringify(files);
+        target.dispatchEvent(ev);
+      };
+      input.addEventListener("change", async () => {
+        const files = [];
+        for (const f of input.files) {
+          files.push({ name: f.name, path: f.webkitRelativePath || f.name, text: await f.text() });
+        }
+        finish(files);
+      });
+      input.addEventListener("cancel", () => finish([]));
+      input.click();
+      return target;
+    },
+    "download": (nptr, nlen, tptr, tlen) => {
+      const url = URL.createObjectURL(new Blob([decode(tptr, tlen)], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = decode(nptr, nlen);
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    },
+  };
+
   instance = await WebAssembly.instantiate(wasm, {
     wasi_snapshot_preview1: wasi.wasiImport,
     "koka:async/timers": timers,
     "koka:dom": dom,
+    "koka:net": net,
+    "koka:store": store,
     ...(threads ? threads.imports : {}),
   });
   timers.setInstance(instance);
