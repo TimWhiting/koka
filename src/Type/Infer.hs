@@ -180,7 +180,9 @@ inferDefGroup topLevel (DefRec defs0) cont
                       when topLevel (mapM_ checkRecVal monoGroups)
                       mapM_ addDivergentEffect [cdefs | Core.DefRec cdefs <- monoGroups, analyzeDivergence cdefs]
                       monoCoreDefs <- generalizeRecDefs monoCoreDefs1
-                      sigCoreDefs0 <- extendInfGammaEx topLevel [] sigInfgamma $ extendInfGammaCore topLevel [Core.DefRec monoCoreDefs] $
+                      -- a member with a full signature is in `gamma` already; a second entry would make it ambiguous
+                      let monoInferred = filter (\cdef -> isNothing (lookup (Core.defName cdef) gamma)) monoCoreDefs
+                      sigCoreDefs0 <- extendInfGammaEx topLevel [] sigInfgamma $ extendInfGammaCore topLevel [Core.DefRec monoInferred] $
                                       mapM (\def -> inferDef topLevel Instantiated def >>= fixCanonicalName True) sigDefs
                       -- signatures in a divergent group must include `div` (the other members already have it if needed)
                       let groups   = regroup (monoCoreDefs ++ sigCoreDefs0)
