@@ -13,6 +13,9 @@
 // #include <stdio.h>  // debug
 
 #include <uv.h>
+#ifndef _WIN32
+#include <sys/select.h>   // the external-wait watcher thread (see below)
+#endif
 
 kk_std_core_exn__error kk_result_ok( kk_box_t val, kk_context_t* ctx ) {
   return kk_std_core_types__new_Ok(val,ctx);
@@ -153,7 +156,10 @@ kk_std_core_exn__error kk_result_uv_handle( uv_handle_t* h, kk_context_t* ctx ) 
   return kk_result_ok(kk_cptr_box(h,ctx),ctx);  // not freed, treat as an opaque value and free explicitly
 }
 
+long kk_uv_live_handles = 0;   // leak triage (read from the impeller shim stats)
+
 int kk_uv_handle_create( size_t sz, kk_function_t cb, uv_handle_t** phandle, kk_context_t* ctx ) {
+  kk_uv_live_handles++;
   uv_handle_t* h = *phandle = (uv_handle_t*)kk_zalloc(sz,ctx);
   if (h==NULL) {
     kk_function_drop(cb,ctx);
@@ -166,6 +172,7 @@ int kk_uv_handle_create( size_t sz, kk_function_t cb, uv_handle_t** phandle, kk_
 }
 
 void kk_uv_handle_free(uv_handle_t* h, kk_context_t* ctx) {
+  kk_uv_live_handles--;
   if (h->data != NULL) {
     // drop the callback (just in case, should have been set NULL already in handle_close/callback)
     kk_datatype_drop( kk_datatype_from_ptr((kk_ptr_t)(h->data),ctx), ctx );
@@ -324,11 +331,118 @@ static void kk_uv_loop_done(kk_uv_loop_t loop, kk_context_t* ctx) {
   kk_box_drop(loop,ctx);
 }
 
+// -----------------------------------------------------
+// External-wait integration (the libuv "embed" pattern). A host UI toolkit
+// whose event wait must own the thread's sleep (GLFW/Cocoa: events only
+// arrive on the main thread, inside ITS wait) installs an external waiter:
+// the loop then alternates `uv_run(NOWAIT)` with the host's wait, passing
+// `uv_backend_timeout` so uv timers still fire on time. A watcher thread
+// select()s on the loop's backend fd and calls the host's `wake` when uv
+// work becomes ready from elsewhere (uv_async sends from other threads,
+// threadpool completions), so nothing is stranded while the host sleeps.
+// Install from within a running callback: it uv_stop()s the current
+// uv_run(DEFAULT), and the runner below switches over.
+
+static _Thread_local uv_loop_t* kk_uv_running_loop = NULL;
+static _Thread_local kk_uv_external_wait_fun* kk_uv_external_wait = NULL;
+
+static uv_thread_t kk_uv_embed_thread;
+static uv_sem_t    kk_uv_embed_sem;
+static volatile int kk_uv_embed_stop = 0;
+static uv_loop_t*  kk_uv_embed_loop = NULL;
+static void (*kk_uv_embed_wake)(void) = NULL;   // read by the watcher thread
+
+static void kk_uv_embed_runner(void* arg) {
+  uv_loop_t* loop = (uv_loop_t*)arg;
+  while (!kk_uv_embed_stop) {
+    int fd = uv_backend_fd(loop);
+    if (fd < 0) break;
+    fd_set rfds; FD_ZERO(&rfds); FD_SET(fd, &rfds);
+    struct timeval tv = { 0, 500000 };            // bounded stop-flag latency
+    int r = select(fd + 1, &rfds, NULL, NULL, &tv);
+    if (kk_uv_embed_stop) break;
+    if (r > 0) {
+      if (kk_uv_embed_wake != NULL) kk_uv_embed_wake();
+      uv_sem_wait(&kk_uv_embed_sem);              // one wake per loop iteration
+    }
+  }
+}
+
+void kk_uv_loop_install_external_wait(kk_uv_external_wait_fun* wait, void (*wake)(void)) {
+  kk_uv_external_wait = wait;
+  kk_uv_embed_wake = wake;
+  // the runner starts the watcher lazily on its first hybrid iteration (an
+  // install may run BEFORE uv_run does -- strands start executing at fork);
+  // if the loop is already running inside uv_run(DEFAULT), unwind it now
+  if (kk_uv_running_loop != NULL) uv_stop(kk_uv_running_loop);
+}
+
+// the external signal: ONE pending single-shot uv_async a host can trigger.
+// Used to park a strand until the host has input -- same single-shot callback
+// shape as the timer above (the callback consumes the handle). A PROCESS
+// global (not thread-local): uv_async_send is thread-safe, so a platform
+// thread (GLFW main) can wake the render thread's parked pump.
+static uv_async_t* kk_uv_external_signal = NULL;
+
+static void kk_uv_external_signal_cb(uv_async_t* a) {
+  if (kk_uv_external_signal == a) kk_uv_external_signal = NULL;
+  kk_uv_handle_callback((uv_handle_t*)a);
+}
+
+static void kk_uv_external_signal_dispose(uv_handle_t* h, void* arg, kk_context_t* ctx) {
+  kk_unused(arg); kk_unused(ctx);
+  if ((uv_handle_t*)kk_uv_external_signal == h) kk_uv_external_signal = NULL;
+  kk_uv_handle_close(h);
+}
+
+kk_std_core_exn__error kk_uv_external_signal_setup(kk_uv_loop_t loop, kk_function_t cb, kk_context_t* ctx) {
+  uv_async_t* a;
+  int err = kk_uv_handle_create(sizeof(uv_async_t), cb, (uv_handle_t**)&a, ctx);
+  if (err!=0) return kk_error_from_uv_errno(err,ctx);
+  err = uv_async_init(kk_uv_loop(loop,ctx), a, &kk_uv_external_signal_cb);
+  if (err!=0) { kk_uv_handle_free((uv_handle_t*)a,ctx); return kk_error_from_uv_errno(err,ctx); }
+  kk_uv_external_signal = a;
+  return kk_result_uv_handle_dispose((uv_handle_t*)a, NULL, &kk_uv_external_signal_dispose, ctx);
+}
+
+void kk_uv_external_signal_trigger(void) {
+  if (kk_uv_external_signal != NULL) uv_async_send(kk_uv_external_signal);
+}
+
 void kk_uv_loop_run(kk_uv_loop_t loop, kk_context_t* ctx) {
   uv_loop_t* const uvloop = kk_uv_loop(loop,ctx);
   int ret = UV_UNKNOWN_HANDLE;
   if (uvloop!=NULL) {
-    ret = uv_run(uvloop,UV_RUN_DEFAULT);
+    kk_uv_running_loop = uvloop;
+    for(;;) {
+      if (kk_uv_external_wait == NULL) {
+        ret = uv_run(uvloop,UV_RUN_DEFAULT);
+        if (kk_uv_external_wait == NULL) break;  // finished normally
+        // a callback installed an external waiter (and uv_stop'ed us): go hybrid
+      }
+      else {
+        if (kk_uv_embed_loop != uvloop) {        // first hybrid iteration: start the watcher
+          kk_uv_embed_loop = uvloop;
+          kk_uv_embed_stop = 0;
+          uv_sem_init(&kk_uv_embed_sem, 0);
+          uv_thread_create(&kk_uv_embed_thread, &kk_uv_embed_runner, uvloop);
+        }
+        uv_run(uvloop, UV_RUN_NOWAIT);
+        if (!uv_loop_alive(uvloop)) { ret = 0; break; }
+        kk_uv_external_wait((int64_t)uv_backend_timeout(uvloop));
+        uv_sem_post(&kk_uv_embed_sem);           // let the watcher re-arm
+      }
+    }
+    kk_uv_running_loop = NULL;
+    if (kk_uv_embed_loop == uvloop && kk_uv_embed_loop != NULL) {
+      kk_uv_embed_stop = 1;
+      uv_sem_post(&kk_uv_embed_sem);
+      uv_thread_join(&kk_uv_embed_thread);
+      uv_sem_destroy(&kk_uv_embed_sem);
+      kk_uv_embed_loop = NULL;
+      kk_uv_external_wait = NULL;
+      kk_uv_embed_wake = NULL;
+    }
   }
   if (ret!=0){
     kk_warning_message("event loop closed: %s\n", uv_strerror(ret));

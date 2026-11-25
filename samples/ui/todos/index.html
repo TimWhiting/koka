@@ -1,0 +1,58 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koka × ui — SPA</title>
+<style> html, body { margin: 0; padding: 0; background: #16161e; } </style>
+<div id="app"></div>
+<script type="module">
+  import { runKoka } from "./web-ui-host.js";
+  await runKoka("./app.wasm");
+</script>
+<script type="module">
+  // optional self-driver for headless testing: open with ?drive
+  if (new URLSearchParams(location.search).has("drive")) {
+    const tick = (ms = 60) => new Promise(r => setTimeout(r, ms));
+    // input is coordinate-based now (root hit-testing, like native): click at an
+    // element's real center. (Links keep a real <a>, inputs a real <input>.)
+    const clickEl = el => { if (!el) return; const r = el.getBoundingClientRect();
+      document.getElementById("app").dispatchEvent(new MouseEvent("click", { clientX: r.x + r.width/2, clientY: r.y + r.height/2, bubbles: true })); };
+    // navigation is now hash routing: click the real <a> link for the Todos
+    // route (exercises link -> hashchange -> route-sub), and deep-link to the
+    // Counter route by setting the hash directly (exercises hash -> render).
+    const clickLink = async (path) => {
+      const a = document.querySelector(`a[href="#/${path}"]`);
+      if (a) { a.click(); await tick(); return true; }
+      return false;
+    };
+    await tick(800);
+    // ephemeral state (ui/state): toggle the expander open THEN closed and
+    // confirm the body appears then disappears -- writes go through on-act, not
+    // the model, and the header must keep responding across re-renders.
+    const findExp = () => [...document.querySelectorAll("div")].find(d => d.style.cursor === "pointer" && d.textContent.includes("Ephemeral state demo"));
+    const bodyShown = () => [...document.querySelectorAll("div")].some(d => d.textContent.includes("Open/closed lives"));
+    clickEl(findExp()); await tick();
+    const opened = bodyShown();
+    clickEl(findExp()); await tick();
+    const closed = !bodyShown();
+    const expandOk = (opened && closed) ? "yes" : "no";
+    await clickLink("todos");
+    const inp = document.querySelector("input");
+    if (inp) {
+      for (const label of ["alpha", "beta"]) {
+        inp.value = label; inp.dispatchEvent(new Event("input")); await tick();
+        inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); await tick();
+      }
+    }
+    const added = [...document.querySelectorAll("div")]
+      .filter(d => d.textContent === "alpha" || d.textContent === "beta").length;
+    for (const el of document.querySelectorAll("div")) {
+      if (el.textContent === "done" && el.style.cursor === "pointer") { clickEl(el); break; }
+    }
+    await tick();
+    const done = [...document.querySelectorAll("div")].some(d => d.textContent === "undo") ? "yes" : "no";
+    location.hash = "#/counter";   // deep-link to the counter route
+    await tick();
+    const hasCounter = [...document.querySelectorAll("div")].some(d => d.textContent === "counter") ? "yes" : "no";
+    document.title = `ui-spa:added=${added};done=${done};counter=${hasCounter};expand=${expandOk}`;
+  }
+</script>

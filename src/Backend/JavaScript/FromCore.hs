@@ -229,6 +229,10 @@ tryFunDef name comment expr
     genFunDef' name params comm body
       = do let args = map ( ppName . getName ) params
                isTailCall = body `isTailCalling` name
+           -- a tail call turns the body into a `while(1)` whose `var`s are shared
+           -- by every iteration; lambdas that outlive their iteration must hold
+           -- COPIES of what they captured (see `captureLoopLams`)
+           body <- if isTailCall then captureLoopLams S.empty body else return body
            bodyDoc <- (if isTailCall then withStatement else id)
                       (genStat (ResultReturn (Just name) params) body)
            return   $ text "function" <+> ppName (unqualify name)
@@ -384,41 +388,129 @@ tryTailCall result expr
     -- if local variables are captured inside a tailcalling function argument,
     -- we need to capture it by value (instead of reference since we will overwrite the local variables on a tailcall)
     -- we do this by wrapping the argument inside another function application.
+    -- (`captureLoopLams` has already done this for the lambdas in a tail-recursive
+    --  body, so this is now the belt to that braces; it is kept because it also
+    --  covers a tail call reached from a body we did not rewrite.)
     tailCallArg :: Expr -> Asm Expr
     tailCallArg expr
-      = let captured = filter (not . isQualified . getName) $ tnamesList $ capturedVar expr
-        in if (null captured)
-            then return expr
-            else -- trace ("Backend.JavaScript.FromCore.tailCall: capture: " ++ show captured ++ ":\n" ++ show expr) $
-                 do ns <- mapM (newVarName . show) captured
-                    let cnames = [TName cn tp | (cn,TName _ tp) <- zip ns captured]
-                        sub    = [(n,Var cn InfoNone) | (n,cn) <- zip captured cnames]
-                    return $ App (Lam cnames typeTotal (sub |~> expr)) [Var arg InfoNone | arg <- captured]
+      = captureByValue S.empty expr
 
-    capturedVar :: Expr -> TNames
-    capturedVar expr
-      = case expr of
-          Lam _ _  _  -> fv expr  -- we only care about captures inside a lambda
-          Let bgs body -> S.unions (capturedVar body : map capturedDefGroup bgs)
-          Case es bs   -> S.unions (map capturedVar es ++ map capturedBranch bs)
-          App f args   -> S.unions (capturedVar f : map capturedVar args)
-          TypeLam _ e  -> capturedVar e
-          TypeApp e _  -> capturedVar e
-          _            -> S.empty
+-- | Capture a lambda's free LOCAL variables by value, by wrapping it in an
+-- immediately-applied function: `(function(c){ return <expr> })(x)`.
+-- Names in `avoid` are left alone (see `captureLoopLams`).
+captureByValue :: TNames -> Expr -> Asm Expr
+captureByValue avoid expr
+  = let captured = filter (\tn -> not (isQualified (getName tn)) && not (S.member tn avoid))
+                   $ tnamesList $ capturedVar expr
+    in if (null captured)
+        then return expr
+        else -- trace ("Backend.JavaScript.FromCore.tailCall: capture: " ++ show captured ++ ":\n" ++ show expr) $
+             do ns <- mapM (newVarName . show) captured
+                let cnames = [TName cn tp | (cn,TName _ tp) <- zip ns captured]
+                    sub    = [(n,Var cn InfoNone) | (n,cn) <- zip captured cnames]
+                return $ App (Lam cnames typeTotal (sub |~> expr)) [Var arg InfoNone | arg <- captured]
 
-    capturedDefGroup bg
+-- | Copy the loop-carried locals of every lambda created inside a tail-call loop.
+--
+-- A tail-recursive function is compiled to `{ tailcall: while(1) { ... } }` whose
+-- bindings are function-scoped `var`s REUSED by every iteration. Koka semantics
+-- give each recursive call its own bindings, so a closure that outlives the
+-- iteration that made it -- forked as a strand, registered as a callback, stored
+-- in a ref -- must keep that iteration's values. Capturing the `var` by reference
+-- instead means it sees a LATER iteration's value, or `undefined` when the next
+-- iteration suspends before assigning (which is what a supervisor loop of the
+-- shape `val w = ch.receive; fork(fn() use(w)); loop()` does every time).
+--
+-- The C backend has no such hazard and needs no such pass: it lambda-lifts every
+-- closure into a struct and copies the captured values in at creation, which is
+-- why its own `tailCallArg` is commented out as unnecessary (Backend/C/FromCore.hs).
+-- Wrapping is the JS spelling of that same copy, so the two backends agree.
+--
+-- Not wrapped: a lambda applied on the spot (it cannot outlive the iteration,
+-- though its body may still build one that does), and the names bound by an
+-- enclosing local `DefRec` -- copying a local recursive function's own name would
+-- read its `var` before the assignment that defines it.
+captureLoopLams :: TNames -> Expr -> Asm Expr
+captureLoopLams avoid expr
+  = case expr of
+      Lam _ _ _      -> captureByValue avoid expr
+      TypeLam tvs e  -> do e' <- captureLoopLams avoid e
+                           return (TypeLam tvs e')
+      TypeApp e tps  -> do e' <- captureLoopLams avoid e
+                           return (TypeApp e' tps)
+      App f args     -> do f'    <- captureAppliedFun avoid f
+                           args' <- mapM (captureLoopLams avoid) args
+                           return (App f' args')
+      Let bgs body   -> do bgs'  <- mapM (captureDefGroup avoid) bgs
+                           body' <- captureLoopLams avoid body
+                           return (Let bgs' body')
+      Case es bs     -> do es' <- mapM (captureLoopLams avoid) es
+                           bs' <- mapM (captureLoopBranch avoid) bs
+                           return (Case es' bs')
+      _              -> return expr
+  where
+    -- the head of an application runs immediately, so it needs no copy of its
+    -- own -- but keep descending, its body can still create an escaping lambda
+    captureAppliedFun av f
+      = case f of
+          Lam ps eff b  -> do b' <- captureLoopLams av b
+                              return (Lam ps eff b')
+          TypeLam tvs e -> do e' <- captureAppliedFun av e
+                              return (TypeLam tvs e')
+          TypeApp e tps -> do e' <- captureAppliedFun av e
+                              return (TypeApp e' tps)
+          _             -> captureLoopLams av f
+
+    -- INSIDE a DefRec its own names stay by-reference: the group's `var`s are
+    -- still being defined, so copying one would read it before its assignment.
+    -- Everywhere AFTER the group they are ordinary assigned locals, and are
+    -- copied like any other -- so the avoid set does not escape the group.
+    captureDefGroup av bg
       = case bg of
-          DefRec defs  -> S.difference (S.unions (map capturedDef defs)) (bv defs)
-          DefNonRec def-> capturedDef def
+          DefRec defs   -> do defs' <- mapM (captureDefE (S.union av (bv defs))) defs
+                              return (DefRec defs')
+          DefNonRec def -> do def' <- captureDefE av def
+                              return (DefNonRec def')
 
-    capturedDef def
-      = capturedVar (defExpr def)
+    captureDefE av def
+      = do e' <- captureLoopLams av (defExpr def)
+           return def{ defExpr = e' }
 
-    capturedBranch (Branch pat grds)
-      = S.difference (S.unions (map capturedGuard grds)) (bv pat)
+    -- pattern binders are ordinary loop-carried locals (bound before the guard
+    -- runs), so they are copied like any other -- nothing to avoid here
+    captureLoopBranch av (Branch pat grds)
+      = do grds' <- mapM (captureLoopGuard av) grds
+           return (Branch pat grds')
 
-    capturedGuard (Guard test expr)
-      = S.union (capturedVar test) (capturedVar expr)
+    captureLoopGuard av (Guard test e)
+      = do test' <- captureLoopLams av test
+           e'    <- captureLoopLams av e
+           return (Guard test' e')
+
+capturedVar :: Expr -> TNames
+capturedVar expr
+  = case expr of
+      Lam _ _  _  -> fv expr  -- we only care about captures inside a lambda
+      Let bgs body -> S.unions (capturedVar body : map capturedDefGroup bgs)
+      Case es bs   -> S.unions (map capturedVar es ++ map capturedBranch bs)
+      App f args   -> S.unions (capturedVar f : map capturedVar args)
+      TypeLam _ e  -> capturedVar e
+      TypeApp e _  -> capturedVar e
+      _            -> S.empty
+
+capturedDefGroup bg
+  = case bg of
+      DefRec defs  -> S.difference (S.unions (map capturedDef defs)) (bv defs)
+      DefNonRec def-> capturedDef def
+
+capturedDef def
+  = capturedVar (defExpr def)
+
+capturedBranch (Branch pat grds)
+  = S.difference (S.unions (map capturedGuard grds)) (bv pat)
+
+capturedGuard (Guard test expr)
+  = S.union (capturedVar test) (capturedVar expr)
 
 -- | Generates a statement from an expression by applying a return context (deeply) inside
 genStat :: Result -> Expr -> Asm Doc

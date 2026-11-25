@@ -31,7 +31,7 @@ test/test*.kk
 *.i
 *.s
 /*.cmake
-bench
+# (removed bare `bench` — it wrongly ignored lib/ui/bench + lib/web-ui/bench, the framework benches)
 test/bench
 .koka
 scratch
@@ -41,3 +41,4 @@ precompiled/
 ghc-rts.wasm
 SETUP.md
 cabal.project.local
+out-js/

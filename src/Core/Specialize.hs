@@ -13,6 +13,8 @@ import Data.List (transpose, foldl', intersect, intersperse)
 import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Reader
+import Control.Monad( forM )
+import qualified Data.Map.Strict as M
 import Control.Arrow ((***))
 import Data.Monoid((<>), Alt(..), Endo(..))
 import Data.Maybe (mapMaybe, fromMaybe, catMaybes, isJust, fromJust)
@@ -35,7 +37,7 @@ import Core.Core
 import Core.CoreVar
 import Core.Pretty ()
 import Core.Simplify
-import Type.Type (splitFunScheme, Effect, Type, TypeVar, eqType, eqTypes)
+import Type.Type (splitFunScheme, Effect, Type(..), TypeVar, eqType, eqTypes)
 import Type.TypeVar
 import Type.Pretty
 import Lib.Trace
@@ -73,9 +75,39 @@ import Lib.Trace
 --------------------------------------------------------------------------}
 
 data ReadState = ReadState
-  { inlines :: Inlines
-  , penv    :: Env
+  { inlines   :: Inlines
+  , penv      :: Env
+  , specStack :: M.Map Name Int
+      -- for each function in the current specialization ancestry: the
+      -- MINIMUM instantiation weight it was specialized at. A function may
+      -- be specialized again under its own specialization only at a
+      -- strictly smaller instantiated type (constructor count, the same
+      -- decreasing measure implicit-parameter inference uses -- see
+      -- isDecreasingChain in Type/InferMonad.hs). Legitimate multi-step
+      -- specialization shrinks the instantiation each step (e.g. repeatN at
+      -- list<list<int>> then list<int> then int, see
+      -- test/cgen/specialize/twostep-large2) so it is admitted, while a
+      -- mutual-recursion cycle (build -> patch -> patch-kids -> build ...)
+      -- re-instantiates at the SAME types each lap -- each lap also mints a
+      -- fresh spec name, so no cache can catch it -- and is cut off after
+      -- one round. The measure is a natural number and must strictly
+      -- decrease, so specialization terminates.
   }
+
+-- instantiation weight of a specialized call: the constructor count of its
+-- type arguments (TVar counts 0: an uninstantiated variable can only get
+-- smaller). Mirrors `weight` in Type/InferMonad.hs (implicit inference).
+specWeight :: [Type] -> Int
+specWeight tps = sum (map weightType tps)
+  where
+    weightType tp
+      = case tp of
+          TForall _ t          -> weightType t
+          TFun tpars teff tres -> sum (map (weightType . snd) tpars) + weightType teff + weightType tres
+          TApp t targs         -> weightType t + sum (map weightType targs)
+          TSyn _ _ t           -> weightType t
+          TCon _               -> 1
+          TVar _               -> 0
 type SpecM = UniqueT (Reader ReadState)
 
 runSpecM :: Int -> ReadState -> SpecM a -> (a, Int)
@@ -92,8 +124,14 @@ specialize :: Inlines -> Env -> CorePhase b ()
 specialize specEnv penv
   = liftCorePhaseUniq  $ \uniq defs ->
     -- TODO: use uniqe int to generate names and remove call to uniquefyDefGroups?
-    let (defs', u') = runSpecM (uniq+100) (ReadState specEnv penv) (mapM specOneDefGroup defs)
+    let (defs', u') = runSpecM (uniq+100) (ReadState specEnv penv M.empty) (mapM specOneDefGroup defs)
     in (uniquefyDefGroups defs', u')
+
+localSpec :: (ReadState -> ReadState) -> SpecM a -> SpecM a
+localSpec f (UniqueT g) = UniqueT (\i -> local f (g i))
+
+specLookupStack :: SpecM (M.Map Name Int)
+specLookupStack = lift $ asks specStack
 
 speclookup :: Name -> SpecM (Maybe InlineDef)
 speclookup name
@@ -112,23 +150,61 @@ specOneDef def
 -- forceExpr e = foldExpr (const (+1)) 0 e `seq` e
 
 specOneExpr :: Name -> Expr -> SpecM Expr
-specOneExpr thisDefName
-  = rewriteTopDownM $ \e ->
-    case e of
-      App (Var (TName name _) _) args
-        -> go name e
-      App (TypeApp (Var (TName name _) _) typVars) args
-        -> go name e
-      e -> pure e
+specOneExpr thisDefName = descend
   where
-    go name e
+    -- one top-down step with our own recursion (instead of rewriteTopDownM)
+    -- so that after specializing a call we can traverse the RESULT with the
+    -- specialized name pushed on the ancestry stack -- cutting the infinite
+    -- mutual-recursion specialization cycle (build -> patch -> ... -> build)
+    descend e
+      = case e of
+          App (Var (TName name _) _) args
+            -> go name [] e
+          App (TypeApp (Var (TName name _) _) typVars) args
+            -> go name typVars e
+          _ -> descendChildren e
+
+    descendChildren e
+      = case e of
+          Lam params eff body -> Lam params eff <$> descend body
+          Var _ _             -> pure e
+          App fun xs          -> liftA2 App (descend fun) (mapM descend xs)
+          TypeLam types body  -> TypeLam types <$> descend body
+          TypeApp expr types  -> (\fexpr -> TypeApp fexpr types) <$> descend expr
+          Con _ _             -> pure e
+          Lit _               -> pure e
+          Let binders body    -> do newBinders <- forM binders $ \binder ->
+                                      case binder of
+                                        DefNonRec def -> do fexpr <- descend (defExpr def)
+                                                            return (DefNonRec def{ defExpr = fexpr })
+                                        DefRec defs   -> do fdefs <- forM defs $ \def ->
+                                                              do fexpr <- descend (defExpr def)
+                                                                 return def{ defExpr = fexpr }
+                                                            return (DefRec fdefs)
+                                    Let newBinders <$> descend body
+          Case exprs branches -> do fexprs <- mapM descend exprs
+                                    fbranches <- forM branches $ \(Branch pat guards) ->
+                                      do fguards <- forM guards $ \(Guard test guardExpr) ->
+                                           liftA2 Guard (descend test) (descend guardExpr)
+                                         return (Branch pat fguards)
+                                    return (Case fexprs fbranches)
+
+    go name typeArgs e
        = do mbSpecDef <- speclookup name
+            stack <- specLookupStack
+            let w = specWeight typeArgs
+                decreasing = case M.lookup name stack of
+                               Nothing -> True     -- not an ancestor
+                               Just w0 -> w < w0   -- only at strictly smaller instantiation
             case mbSpecDef of
-              Nothing -> pure e
+              Nothing -> descendChildren e
               Just specDef
-                | inlineName specDef /= thisDefName -> -- trace ("specialize " <> show (inlineName specDef) <> " in " <> show thisDefName) $
-                                                       specOneCall specDef e   -- don't specialize ourselves
-                | otherwise -> pure e
+                | inlineName specDef /= thisDefName  -- don't specialize ourselves
+                  && decreasing                      -- ancestors only at strictly smaller instantiated types
+                -> do e' <- specOneCall specDef e
+                      localSpec (\rs -> rs{ specStack = M.insertWith min (inlineName specDef) w (specStack rs) }) $
+                        descendChildren e'
+                | otherwise -> descendChildren e
 
 filterBools :: [Bool] -> [a] -> [a]
 filterBools bools as
@@ -338,7 +414,7 @@ replaceCall name expr0 sort bools args mybeTypeArgs
 
       -- simplify so the new specialized arguments are potentially inlined unlocking potential further specialization
       sspecBody <- uniqueSimplify defaultEnv False False 1 10 specBody
-      -- trace ("\n// ----start--------\n// specializing " <> show name <> " to parameters " <> show speccedParams <> " with args " <> comment (show speccedArgs) <> "\n// specTName: " <> show (getName specTName) <> ", specBody0: \n" <> show specBody <> "\n\n, sspecBody: \n" <> show sspecBody <> "\n// ---- start recurse---") $ return ()
+      -- trace ("specializing " <> show name <> " -> " <> show (getName specTName)) $ return ()
 
       -- the specialized parameters are gone, so their parameter infos must go too:
       -- reusing `sort` shifts a borrow onto whichever parameter takes that position

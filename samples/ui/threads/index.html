@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koka × threads</title>
+<style> html, body { margin: 0; padding: 0; background: #16161e; } </style>
+<div id="app"></div>
+<script type="module">
+  import { runKoka } from "./web-ui-host.js";
+  await runKoka("./app.wasm");
+</script>
+<script type="module">
+  // optional self-driver: open with ?drive. Exercises the data-offload path --
+  // press Compute, and the fib(38) result comes back as a message (on a worker
+  // thread natively; on web via a cooperative strand). Asserts the result lands
+  // and that the FPS meter is live (the UI-thread frame clock).
+  if (new URLSearchParams(location.search).has("drive")) {
+    const tick = (ms = 80) => new Promise(r => setTimeout(r, ms));
+    const divs = () => [...document.querySelectorAll("div")];
+    const hasSub = t => divs().some(d => d.textContent.includes(t));
+    const app = document.getElementById("app");
+    const clickEl = el => { if (!el) return; const r = el.getBoundingClientRect();
+      app.dispatchEvent(new MouseEvent("click", { clientX: r.x + r.width/2, clientY: r.y + r.height/2, bubbles: true })); };
+    const fpsNow = () => {
+      const d = divs().find(x => /^\d+ fps$/.test(x.textContent.trim()));
+      return d ? parseInt(d.textContent) || 0 : 0;
+    };
+    await tick(600);
+    clickEl(divs().find(d => d.textContent === "Animate"));   // start the bouncing bar
+    await tick(800);
+    const ranBefore = fpsNow() > 0;                       // the frame clock is live
+    clickEl(divs().find(d => d.textContent === "Compute fib(38)"));
+    // poll for the offloaded result (fib(38) = 39088169)
+    let got = false;
+    for (let i = 0; i < 60 && !got; i++) { await tick(100); got = hasSub("fib(38) = 39088169"); }
+    document.title = `threads:result=${got ? "yes" : "no"};ticked=${ranBefore ? "yes" : "no"}`;
+  }
+</script>

@@ -71,10 +71,10 @@ externalNames
 -- Generate C code from System-F core language
 --------------------------------------------------------------------------
 
-cFromCore :: Bool -> BuildType -> FilePath -> Pretty.Env -> Platform -> Newtypes -> Borrowed -> Int -> Bool -> Bool -> Bool -> Bool -> Bool -> Int -> Maybe (Name,Bool) -> String -> Core -> (Doc,Doc,Maybe Doc,Core)
-cFromCore separateMain buildType sourceDir penv0 platform newtypes borrowed uniq enableReuse enableSpecialize enableReuseSpecialize enableBorrowInference eagerPatBind stackSize mbMain mainName core
+cFromCore :: Bool -> Bool -> BuildType -> FilePath -> Pretty.Env -> Platform -> Newtypes -> Borrowed -> Int -> Bool -> Bool -> Bool -> Bool -> Bool -> Int -> Maybe (Name,Bool) -> String -> Core -> (Doc,Doc,Maybe Doc,Core)
+cFromCore isWasiWeb separateMain buildType sourceDir penv0 platform newtypes borrowed uniq enableReuse enableSpecialize enableReuseSpecialize enableBorrowInference eagerPatBind stackSize mbMain mainName core
   = case runAsm uniq (Env moduleName moduleName False penv externalNames newtypes platform eagerPatBind)
-           (genModule separateMain buildType sourceDir penv platform newtypes borrowed enableReuse enableSpecialize enableReuseSpecialize enableBorrowInference stackSize mbMain mainName core) of
+           (genModule isWasiWeb separateMain buildType sourceDir penv platform newtypes borrowed enableReuse enableSpecialize enableReuseSpecialize enableBorrowInference stackSize mbMain mainName core) of
       ((bcore,mainDoc),cdoc,hdoc) -> (cdoc,hdoc,mainDoc,bcore)
   where
     moduleName = coreProgName core
@@ -86,8 +86,8 @@ contextDoc = text "_ctx"
 contextParam :: Doc
 contextParam = text "kk_context_t* _ctx"
 
-genModule :: Bool -> BuildType -> FilePath -> Pretty.Env -> Platform -> Newtypes -> Borrowed -> Bool -> Bool -> Bool -> Bool -> Int -> Maybe (Name,Bool) -> String -> Core -> Asm (Core,Maybe Doc)
-genModule separateMain buildType sourceDir penv platform newtypes borrowed0 enableReuse enableSpecialize enableReuseSpecialize enableBorrowInference stackSize mbMain mainName core0
+genModule :: Bool -> Bool -> BuildType -> FilePath -> Pretty.Env -> Platform -> Newtypes -> Borrowed -> Bool -> Bool -> Bool -> Bool -> Int -> Maybe (Name,Bool) -> String -> Core -> Asm (Core,Maybe Doc)
+genModule isWasiWeb separateMain buildType sourceDir penv platform newtypes borrowed0 enableReuse enableSpecialize enableReuseSpecialize enableBorrowInference stackSize mbMain mainName core0
   =  do core <- liftUnique (do bcore <- boxCore core0            -- box/unbox transform
                                let borrowed = borrowedExtendICore bcore borrowed0
                                pcore <- parcCore penv platform newtypes borrowed enableSpecialize bcore -- precise automatic reference counting
@@ -150,7 +150,7 @@ genModule separateMain buildType sourceDir penv platform newtypes borrowed0 enab
                   <-> doneSignature
                   <.> block done
 
-        let mainDoc = genMain (if separateMain then [headComment,currentModuleInclude] else [])
+        let mainDoc = genMain isWasiWeb (if separateMain then [headComment,currentModuleInclude] else [])
                               (coreProgName core) platform stackSize mbMain mainName
         case mainDoc of
           Just doc | not separateMain -> emitToC doc
@@ -228,14 +228,16 @@ importExternalInclude buildType sourceDir ext
       _ -> []
 
 
-genMain :: [Doc] -> Name -> Platform -> Int -> Maybe (Name,Bool) -> String -> Maybe Doc
-genMain header progName platform stackSize Nothing mainName = Nothing
-genMain header progName platform stackSize (Just (name,_)) mainName
+genMain :: Bool -> [Doc] -> Name -> Platform -> Int -> Maybe (Name,Bool) -> String -> Maybe Doc
+genMain isWasiWeb header progName platform stackSize Nothing mainName = Nothing
+genMain isWasiWeb header progName platform stackSize (Just (name,_)) mainName
   = Just $ vcat $ header ++
     [ text "\n// main library entry points", mainInit, mainRun, mainDone] ++
+    keepaliveDecl ++
     [ text "\nstatic void" <+> mainAtExitName <.> text "(void)" <+> block (vcat [
             text "kk_context_t* _ctx = kk_get_context();",
-            ctxcall mainDoneName
+            if isWasiWeb then text ("if (!" ++ keepaliveTest ++ ")") <+> block (ctxcall mainDoneName)
+                         else ctxcall mainDoneName
           ])
     , text "\n// main program entry point"
     , text "// `kk_main_start`/`kk_main_end` are only called for passing command line arguments and process timing"
@@ -247,11 +249,29 @@ genMain header progName platform stackSize (Just (name,_)) mainName
       , text "kk_context_t* _ctx = kk_main_start(argc, argv);"
       , ctxcall mainInitName <+> text "atexit" <.> parens (text "&" <.> mainAtExitName) <.> semi
       , ctxcall mainRunName
-      , ctxcall mainDoneName <+> text "kk_main_end(_ctx);"
+      , if isWasiWeb then text ("if (!" ++ keepaliveTest ++ ")") <+> block (ctxcall mainDoneName <+> text "kk_main_end(_ctx);")
+                     else ctxcall mainDoneName <+> text "kk_main_end(_ctx);"
       , text "return 0;"
       ])
     ]
   where
+    -- `kk_main_keepalive` is only ever *defined* (in
+    -- `lib/std/async/api/wasiweb/evloop.c`) when the program transitively
+    -- imports `std/async` on `--target=wasi-web`; declaring it here as a
+    -- weak symbol lets wasm-ld/wasm-component-ld resolve it to that
+    -- definition when the translation unit is linked in, or to a null
+    -- function pointer otherwise (e.g. a synchronous wasi-web program that
+    -- never touches `std/async`) -- so the guard below also checks the
+    -- symbol's address before calling through it. A plain, unconditional
+    -- `true` guard (i.e. no keepalive) is used for every other C target:
+    -- kklib itself no longer knows anything about this wasi-web-specific
+    -- concept.
+    keepaliveDecl
+      = if isWasiWeb
+          then [text "\nextern __attribute__((weak)) bool kk_main_keepalive(kk_context_t* _ctx);"]
+          else []
+    keepaliveTest
+      = "(&kk_main_keepalive != NULL && kk_main_keepalive(_ctx))"
     mainDoneName = text (mainName ++ "_done")
     mainInitName = text (mainName ++ "_init")
     mainRunName  = text (mainName ++ "_run")
@@ -402,6 +422,26 @@ genTopDefDecl genSig inlineC def@(Def name tp defBody vis sort inl rng comm)
                                 emitToH (text "#define" <+> ppName name <+> parens (text "(double)" <.> parens flt))
                         _ -> do doc <- genStat (ResultAssign (TName name tp) Nothing) (defBody)
                                 emitToInit (block doc)  -- must be scoped to avoid name clashes
+                                -- Mark the heap-allocated part of a toplevel constant as STATIC (stuck
+                                -- refcounts, like a compile-time static): these live in C statics and are
+                                -- dup/dropped by ANY thread that runs this module's code, so plain
+                                -- (non-atomic) refcounts race across threads (lost increment -> premature
+                                -- free -> heap corruption). String literals are made stuck at init already;
+                                -- computed constants are ordinary heap blocks and need this. (Same issue
+                                -- class as the shared kk_evv_empty_singleton.) `dup;box;mark;drop-box`
+                                -- covers both reference types (box is a reinterpret; the trailing drop is a
+                                -- no-op once stuck) and value structs (box allocates a wrapper owning the
+                                -- dup'd fields; the stuck wrapper is a small one-time leak at init).
+                                let needsMark = case cType tp of
+                                                  CFun _ _  -> True
+                                                  CBox      -> True
+                                                  CData _   -> True
+                                                  CPrim val -> val `elem` ["kk_integer_t","kk_bytes_t","kk_string_t","kk_vector_t","kk_evv_t","kk_ref_t","kk_box_t"]
+                                when needsMark $
+                                  emitToInit $ case cType tp of
+                                    CBox -> text "kk_box_mark_static" <.> arguments [ppName name] <.> semi
+                                    _    -> text "{ kk_box_t _kk_c = " <.> genBoxCall tp (genDupCall tp (ppName name))
+                                            <.> text "; kk_box_mark_static(_kk_c, kk_context()); kk_box_drop(_kk_c, kk_context()); }"
                                 case genDupDropCall False {-drop-} tp (ppName name) of
                                   []   -> return ()
                                   docs -> emitToDone (hcat docs <.> semi)

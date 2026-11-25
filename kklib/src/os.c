@@ -28,7 +28,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#if !defined(__wasi__)   // no process model on wasi (see kk_os_run_command)
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #include <fcntl.h>
 #endif
@@ -612,6 +614,22 @@ kk_decl_export int kk_os_list_directory(kk_string_t dir, kk_vector_t* contents, 
   Run system command
 --------------------------------------------------------------------------------------------------*/
 
+#if defined(__wasi__) && !defined(__EMSCRIPTEN__)
+// wasi (wasm32-wasip3/wasip2) has no process model: there is no fork/exec, no
+// popen/pclose, and no system(). Report "not supported" rather than pulling in
+// the emulated-signal shim just for WIFEXITED/WEXITSTATUS/WIFSIGNALED/WTERMSIG.
+kk_decl_export int kk_os_run_command(kk_string_t cmd, kk_string_t* output, kk_context_t* ctx) {
+  kk_string_drop(cmd, ctx);
+  *output = kk_string_empty();
+  return ENOSYS;
+}
+
+kk_decl_export int kk_os_run_system(kk_string_t cmd, kk_context_t* ctx) {
+  kk_string_drop(cmd, ctx);
+  // no subprocesses on wasi: match system()'s cannot-run convention (-1); callers see a failed exit code
+  return -1;
+}
+#else
 kk_decl_export int kk_os_run_command(kk_string_t cmd, kk_string_t* output, kk_context_t* ctx) {
   FILE* f = NULL;
 #if defined(WIN32)
@@ -652,7 +670,7 @@ kk_decl_export int kk_os_run_system(kk_string_t cmd, kk_context_t* ctx) {
     int status = system(ccmd);
     if (WIFEXITED(status)) {
       exitcode = WEXITSTATUS(status);
-    } else if (WIFSIGNALED(status)) { 
+    } else if (WIFSIGNALED(status)) {
       exitcode = -WTERMSIG(status); // Like Haskell, return negative code for signal termination
     } else {
       // Technically WIFSTOPPED(status) can happen, but only if the process is being traced, or the call was done with WUNTRACED.
@@ -663,6 +681,7 @@ kk_decl_export int kk_os_run_system(kk_string_t cmd, kk_context_t* ctx) {
   kk_string_drop(cmd, ctx);
   return exitcode;
 }
+#endif
 
 
 

@@ -276,12 +276,16 @@ struct kk_evv_s {
 };
 
 kk_datatype_ptr_t kk_evv_empty_singleton(kk_context_t* ctx) {
-  static struct kk_evv_s* evv = NULL;
-  if (evv == NULL) {
-    evv = kk_block_alloc_as(struct kk_evv_s, 0, KK_TAG_EVV_VECTOR, ctx);
-    // evv->cfc = kk_integer_from_small(-1);
-  }
-  kk_base_type_dup_as(struct kk_evv_s*, evv);
+  // Use the STATICALLY-allocated empty evidence vector (`KK_HEADER_STATIC` gives it
+  // a "stuck" refcount == RC_STUCK, so dup/drop are no-ops and it is never freed).
+  // This singleton is shared across ALL threads: every thread's `ctx->evv` starts
+  // here and every handler push/pop dup/drops the empty evv. A heap block with an
+  // ordinary refcount (the previous `kk_block_alloc_as` version) is corrupted by
+  // concurrent NON-atomic dup/drop from multiple threads -- which manifests as
+  // effect-handler / continuation memory corruption once a second async loop runs
+  // on its own OS thread (see std/async spawn-thread).
+  struct kk_evv_s* evv = (struct kk_evv_s*)&kk_evv_empty_static;
+  kk_base_type_dup_as(struct kk_evv_s*, evv);   // no-op on a stuck refcount
   return kk_datatype_from_base(evv, ctx);
 }
 
@@ -402,7 +406,12 @@ kk_decl_export void  kk_main_end(kk_context_t* ctx) {
   Debugger
 --------------------------------------------------------------------------------------------------*/
 
+// wasi-libc has no real signal support (its <signal.h> is a hard #error unless
+// you opt in to the emulated-signal shim); emscripten's wasi flavor does provide
+// a usable <signal.h> though, so only skip the include for the real wasi-sdk target.
+#if !(defined(__wasi__) && !defined(__EMSCRIPTEN__))
 #include <signal.h>
+#endif
 
 kk_decl_export void kk_debugger_break(kk_context_t* ctx) {
   kk_unused(ctx);

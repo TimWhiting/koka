@@ -14,6 +14,7 @@ import Data.List
 import Data.Either
 import Control.Monad
 import Platform.FileIO ( doesFileExist, doesDirectoryExist, createDirectoryIfMissing )
+import System.Directory        ( getDirectoryContents )
 
 import Platform.Config        ( version, exeExtension, dllExtension, libPrefix, libExtension, pathSep, sourceExtension )
 
@@ -284,7 +285,7 @@ codeGenC sourceFile newtypes borrowed0 imported unique0 term flags sequential en
                             Just (name,tp) -> Just (name,isAsyncFunction tp)
                             _              -> Nothing
       -- generate C
-      let (cdoc,hdoc,_,bcore) = cFromCore False
+      let (cdoc,hdoc,_,bcore) = cFromCore (targetFromFlags flags == C WasiWeb) False
                                           (buildType flags) sourceDir (prettyEnvFromFlags flags) (platformFromFlags flags)
                                           newtypes borrowed0 unique0 (parcReuse flags) (parcSpecialize flags) (parcReuseSpec flags)
                                           (parcBorrowInference flags) (optEagerPatBind flags) (stackSize flags) mbEntry
@@ -355,11 +356,11 @@ codeGenLinkC term flags sequential cc progName imported outBase clibs
 
             libpaths = map (\lib -> outName (ccLibFile cc lib)) libs
 
-            stksize = if (stackSize flags == 0 && (onWindows || isTargetWasm (targetFromFlags flags)))
-                        then 8*1024*1024    -- default to 8Mb on windows and wasi
+            stksize = if (stackSize flags == 0 && (onWindows || isTargetWasm (targetFromFlags flags) || isTargetWasi (targetFromFlags flags)))
+                        then 8*1024*1024    -- default to 8Mb on windows, wasm, and wasi
                         else stackSize flags
             hpsize  = if (heapSize flags == 0 && isTargetWasm (targetFromFlags flags))
-                        then 1024*1024*1024 -- default to 1Gb on wasi
+                        then 1024*1024*1024 -- default to 1Gb on wasm (emscripten); wasi's heap flag is a no-op
                         else heapSize flags
 
             linkFlags = [ ccFlagsLink cc
@@ -413,9 +414,17 @@ codeGenLinkExe term flags stksize clink mainExe
           C Wasm
             -> do return (LinkExe mainTarget
                             (runCommand term flags ([wasmrun flags,mainTarget] ++ mainflags)))
+          C Wasi
+            -> do let wasmtimeFlags = if wasiThreads flags then ["-S","threads=y"] else []
+                  return (LinkExe mainTarget
+                            (runCommand term flags ([wasmrun flags] ++ wasmtimeFlags ++ [mainTarget] ++ mainflags)))
           C WasmWeb
             -> do return (LinkExe mainTarget
                             (runSystemEcho term flags (dquote mainTarget ++ " &")))
+          C WasiWeb
+            -> do runMjs <- wasiWebPostLink term flags mainTarget
+                  return (LinkExe mainTarget
+                            (runCommand term flags ([node flags,runMjs] ++ mainflags)))
           C WasmJs
             -> do let nodeStack = if (stksize == 0) then 100000 else (stksize `div` 1024)
                   return (LinkExe mainTarget
@@ -423,6 +432,77 @@ codeGenLinkExe term flags stksize clink mainExe
           _ -> do return (LinkExe mainTarget
                             (runCommand term flags ([mainExe] ++ mainflags)))
 
+
+{---------------------------------------------------------------
+  wasi-web: node/browser runner package for a plain wasm32-wasip1 core module
+---------------------------------------------------------------}
+
+-- Post-link step for `--target=wasi-web`: the linked `.wasm` is already a
+-- plain wasm32-wasip1 core module (command model, `_start` export) -- no
+-- transpilation step is needed (no jco, no component model). Just drop the
+-- `run.mjs` / `timers.js` / `index.html` runner templates (and, for the
+-- browser, the vendored `browser_wasi_shim`) next to it, substituting
+-- `{{MODULE}}` with the wasm file's basename. Returns the path to `run.mjs`
+-- (to be executed with `node`).
+wasiWebPostLink :: Terminal -> Flags -> FilePath -> IO FilePath
+wasiWebPostLink term flags mainTarget
+  = do let outDir       = dirname mainTarget
+           moduleBase   = notext (notdir mainTarget)
+           templatesDir = localShareDir flags ++ "/support/wasi-web/"
+           -- shared-memory descriptor for --wasithreads builds: must match the
+           -- linker's --initial-memory / --max-memory (Options.hs wasiThreadLinkFlags)
+           maxmemPages  = (if heapSize flags > 0 then heapSize flags else 1024*1024*1024) `div` 65536
+           memoryJson   = if wasiThreads flags
+                            then "{ initial: 1024, maximum: " ++ show maxmemPages ++ ", shared: true }"
+                            else "null"
+           subst        = replaceAll "{{MODULE}}" moduleBase . replaceAll "{{MEMORY}}" memoryJson
+           runMjs       = joinPath outDir "run.mjs"
+
+       createDirectoryIfMissing True outDir
+       copyTextFileWith (templatesDir ++ "run.mjs")    runMjs                         subst
+       copyTextFileWith (templatesDir ++ "index.html") (joinPath outDir "index.html") subst
+       copyBinaryFile   (templatesDir ++ "timers.js")  (joinPath outDir "timers.js")
+       -- COOP/COEP dev server: threaded builds (SharedArrayBuffer) need the
+       -- cross-origin-isolation headers a plain static server cannot send
+       copyBinaryFile   (templatesDir ++ "serve.py")   (joinPath outDir "serve.py")
+       -- wasi-threads host support: worker + spawn/shared-memory shim (the
+       -- {{MEMORY}} substitution turns them off for non-threaded builds)
+       copyTextFileWith (templatesDir ++ "wasi-threads.js") (joinPath outDir "wasi-threads.js") subst
+       copyTextFileWith (templatesDir ++ "wasi-worker.js")  (joinPath outDir "wasi-worker.js")  subst
+       -- host runtime for lib/web-ui apps (koka:dom imports, debug API)
+       copyBinaryFile   (templatesDir ++ "web-ui-host.js") (joinPath outDir "web-ui-host.js")
+
+       -- vendor @bjorn3/browser_wasi_shim (committed under
+       -- support/wasi-web/vendor/browser_wasi_shim/) next to index.html so the
+       -- browser page needs no `npm install` step.
+       let vendorSrc = templatesDir ++ "vendor"
+           vendorDst = joinPath outDir "vendor"
+       vendorExists <- doesDirectoryExist vendorSrc
+       when vendorExists $ copyDirectoryRec vendorSrc vendorDst
+
+       return runMjs
+
+-- Simple non-overlapping string substitution (used for the {{MODULE}} template marker).
+replaceAll :: String -> String -> String -> String
+replaceAll needle repl = go
+  where
+    go [] = []
+    go s@(c:cs)
+      | needle `isPrefixOf` s = repl ++ go (drop (length needle) s)
+      | otherwise             = c : go cs
+
+-- Recursively copy a directory tree (used to vendor browser_wasi_shim next to
+-- the emitted index.html).
+copyDirectoryRec :: FilePath -> FilePath -> IO ()
+copyDirectoryRec src dst
+  = do createDirectoryIfMissing True dst
+       entries <- getDirectoryContents src
+       forM_ (filter (`notElem` [".",".."]) entries) $ \entry ->
+         do let s = joinPath src entry
+                d = joinPath dst entry
+            isDir <- doesDirectoryExist s
+            if isDir then copyDirectoryRec s d
+                     else copyBinaryFile s d
 
 
 -- Run the C compiler

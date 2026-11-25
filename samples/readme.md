@@ -4,6 +4,10 @@
   describes a particular feature of Koka, like `with`-syntax, implicit parameters, local qualification, etc.
 * `handlers`: examples of algebraic effect handlers.
 * `basic`: some small Koka programs that demonstrate various features.  
+* `wasi-web`: running Koka in the browser as a plain WebAssembly module with the
+  `--target=wasi-web` backend — see `wasi-web/dom/readme.md` for a DOM interop demo
+  where Koka drives browser elements through Perceus-owned references
+  (requires [wasi-sdk](https://github.com/WebAssembly/wasi-sdk/releases) ≥ 34 and node ≥ 24).
 
 ## VS Code integration
 

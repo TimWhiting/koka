@@ -18,7 +18,7 @@ module Common.Syntax( Visibility(..)
                     , ParamInfo(..)
                     , DefInline(..)
                     , Fip(..), FipAlloc(..), fipSubsumes, fipIsTail, fipAlloc, noFip, isNoFip, isFipTop, fipMax, fipTop, fipBot, fipNoAlloc
-                    , Target(..), CTarget(..), JsTarget(..), isTargetC, isTargetJS, isTargetWasm
+                    , Target(..), CTarget(..), JsTarget(..), isTargetC, isTargetJS, isTargetWasm, isTargetWasi
                     , isPublic, isPrivate
                     , DataDef(..)
                     , dataDefIsOpen, dataDefIsExtend, dataDefIsValue, dataDefSize, dataDefIsNormal, dataDefIsLazy
@@ -67,7 +67,7 @@ import Common.File(splitOn)
 
 --------------------------------------------------------------------------}
 data JsTarget = JsDefault | JsNode | JsWeb                deriving (Eq,Ord)
-data CTarget  = CDefault | LibC | Wasm | WasmJs | WasmWeb deriving (Eq,Ord)
+data CTarget  = CDefault | LibC | Wasm | WasmJs | WasmWeb | Wasi | WasiWeb deriving (Eq,Ord)
 
 data Target = Default | CS | JS !JsTarget| C !CTarget | Unsupported    deriving (Eq,Ord)
 
@@ -85,6 +85,13 @@ isTargetWasm target
       C WasmWeb -> True
       _         -> False
 
+isTargetWasi :: Target -> Bool
+isTargetWasi target
+  = case target of
+      C Wasi    -> True
+      C WasiWeb -> True
+      _         -> False
+
 
 unsupportedExternal :: String -> String
 unsupportedExternal fname
@@ -98,6 +105,8 @@ instance Show Target where
                 C Wasm    -> "wasm"
                 C WasmJs  -> "wasmjs"
                 C WasmWeb -> "wasmweb"
+                C Wasi    -> "wasi"
+                C WasiWeb -> "wasi-web"
                 JS JsNode -> "jsnode"
                 JS JsWeb  -> "jsweb"
                 JS JsDefault -> "js"
@@ -201,6 +210,8 @@ instance Show TargetPlatform where
             C Wasm    -> ["host=wasm"]
             C WasmJs  -> ["host=wasmjs"]
             C WasmWeb -> ["host=wasmweb"]
+            C Wasi    -> ["host=wasi"]
+            C WasiWeb -> ["host=wasi-web"]
             JS JsNode -> ["host=jsnode"]
             JS JsWeb  -> ["host=jsweb"]
             _         -> []
@@ -230,6 +241,8 @@ hostIds = [
   ("wasm",C Wasm),
   ("wasmjs",C WasmJs),
   ("wasmweb",C WasmWeb),
+  ("wasi",C Wasi),
+  ("wasi-web",C WasiWeb),
   ("jsnode",JS JsNode),
   ("jsweb",JS JsWeb)
   ]
@@ -278,6 +291,8 @@ targetPlatformIds = [
   ("wasm64", targetPlatformDefault{ tplTarget=C Wasm, tplPlatform=platform64 }),
   ("wasmjs", targetPlatformDefault{ tplTarget=C WasmJs, tplPlatform=platform32 }),
   ("wasmweb",targetPlatformDefault{ tplTarget=C WasmWeb, tplPlatform=platform32 }),
+  ("wasi",   targetPlatformDefault{ tplTarget=C Wasi, tplPlatform=platform32 }),
+  ("wasi-web",targetPlatformDefault{ tplTarget=C WasiWeb, tplPlatform=platform32 }),
   ("cs",     targetPlatformDefault{ tplTarget=CS, tplPlatform=platformCS })
   ]
 
