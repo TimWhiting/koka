@@ -77,6 +77,9 @@ module Type.InferMonad( Inf, InfGamma
                       , termError
                       , infError, infWarning
                       , withHiddenTermDoc, inHiddenTermDoc
+                      , withUpdateParam, getUpdateParam
+                      , solveMaxEffectsFor
+                      , UpdateCheck(..), addUpdateCheck, withUpdateChecks, isImplicitConstraintEvidenceName
 
                       -- run-local
                       , withLocalScope, withNoLocalScope, localScopeDepth
@@ -110,7 +113,8 @@ import Common.File(endsWith,normalizeWith, seqqList)
 import Common.Name
 import Common.NamePrim(nameTpVoid,nameTpPure,nameTpIO,nameTpIOC,nameTpST,nameTpAsync,
                        nameTpRead,nameTpWrite,nameTypeHeapDiv,nameHeapDiv,nameEvHeapDiv,nameEvHeapNoDiv,
-                       nameReturn,nameTpLocal, nameCopy)
+                       nameReturn,nameTpLocal, nameTpLocalVar, nameCopy,
+                       nameTypeMaxEffects,nameEvMaxEffects,nameMaxEffects)
 
 import qualified Common.NameMap as NM
 
@@ -1609,7 +1613,8 @@ ppConstraint penv ic
 
 implicitConstraints :: [(Name,Name -> Type -> Maybe (Tvs -> ImplicitConstraint -> Inf Bool, Tvs -> ImplicitConstraint -> Inf (Core.Expr, Type)))]
 implicitConstraints
-  = [(nameHeapDiv, checkHeapDivConstraint)]
+  = [(nameHeapDiv, checkHeapDivConstraint)
+    ,(nameMaxEffects, checkMaxEffectsConstraint)]
 
 checkImplicitConstraint :: Name -> Type -> Range -> Range -> Inf (Maybe (TypedArg, ImplicitConstraint))
 checkImplicitConstraint name tp rangeContext range
@@ -1665,6 +1670,147 @@ tryResolveImplicitConstraints close free
                      tryResolve (def:defs, acc) ics
              else tryResolve (defs, ic:acc) ics
 
+
+
+-- | Solve the pending `max-effects` constraints with evidence in `evs`, determined or not; a flexible
+-- tail of an effect they constrain is closed. The `hdiv` constraints with evidence in `evs` whose value
+-- type already contains the heap are solved first, so the `div` they add is in the effect before it is
+-- closed. (That a value type never contains the heap is only known once its type is generalized.)
+-- Returns a function that binds the evidence.
+solveMaxEffectsFor :: [Name] -> Inf (Core.Expr -> Core.Expr)
+solveMaxEffectsFor evs
+  = do bindHDiv <- mapImplicitConstraints $ \ics -> solve hdivAlways [] [] ics
+       bindMax  <- mapImplicitConstraints $ \ics -> solve (\ic -> return (icName ic == nameMaxEffects)) [] [] ics
+       return (bindHDiv . bindMax)
+  where
+    hdivAlways ic
+      | icName ic == nameHeapDiv
+        = do tp <- implicitConstraintType ic
+             case expandSyn tp of
+               TApp _ [tpHeap,tpVal,_] -> return (heapAlwaysContainedIn tvsEmpty tpHeap tpVal)
+               _                       -> return False
+      | otherwise = return False
+
+    solve select defs acc []
+      = return (Core.makeDefsLet (reverse defs), reverse acc)
+    solve select defs acc (ic:ics)
+      = do selected <- if icEvidence ic `elem` evs then select ic else return False
+           if selected
+             then do (ev,tp) <- (icSolve ic) tvsEmpty ic
+                     solvedImplicitConstraint (icEvidence ic) tp
+                     solve select (Core.makeTDef (Core.TName (icEvidence ic) tp) ev : defs) acc ics
+             else solve select defs (ic:acc) ics
+
+
+addUpdateCheck :: UpdateCheck -> Inf ()
+addUpdateCheck uc
+  = do updateSt (\st -> st{ updateChecks = uc : updateChecks st })
+       return ()
+
+-- | Run the update checks of a block (the argument of `run-local`): a variable used in the update
+-- of `x`, or the value of `x` itself (`ucIsValue`), may not have a type that mentions the heap of `x`.
+-- A later assignment `f ::= fn() x` in the block can still give `f` such a type, so the checks wait
+-- for the end of the block, where the heap is generalized: after it, no type can mention the heap.
+-- The checks of an inner block have run at its own end. Every local variable is in a block (the
+-- parser wraps a block with a `var` in `run-local`), so every check runs.
+withUpdateChecks :: Inf a -> Inf a
+withUpdateChecks inf
+  = do outer <- updateChecks <$> updateSt (\st -> st{ updateChecks = [] })
+       x   <- inf
+       ucs <- updateChecks <$> updateSt (\st -> st{ updateChecks = outer })
+       runUpdateChecks ucs
+       return x
+
+runUpdateChecks :: [UpdateCheck] -> Inf ()
+runUpdateChecks ucs
+  = mapM_ check (reverse ucs)
+  where
+    check uc
+      = do heap <- subst (ucHeap uc)
+           tp   <- subst (ucType uc)
+           let content = case expandSyn tp of
+                           TApp (TCon tc) [_,t] | typeConName tc == nameTpLocalVar -> t  -- a local variable: its value
+                           _ -> tp
+               x = show (unqualify (ucVar uc))
+           case expandSyn heap of
+             TVar tv | tvsMember tv (ftv content)
+               -> do penv <- getPrettyEnv
+                     infError (ucRange uc) $
+                       (if ucIsValue uc
+                         then text x <+> text "cannot be updated in place"
+                              <-> text " because: its type" <+> Pretty.niceType penv content <+> text "uses the local variables in its scope, so its value could read or write" <+> text x
+                         else text (show (unqualify (ucName uc))) <+> text "cannot be used while" <+> text x <+> text "is updated"
+                              <-> text " because: its type" <+> Pretty.niceType penv content <+> text "uses the local variables in the scope of" <+> text x <.> text ", so it could read or write" <+> text x)
+                       <-> text " hint   :" <+> text ("use `" ++ x ++ " ::= ...` to assign it")
+             _ -> return ()
+
+
+{--------------------------------------------------------------------------
+  maximal effect constraints
+--------------------------------------------------------------------------}
+
+-- | `max-effects<e,m>`: every label of the effect `e` is in the closed effect row `m`. It is solved
+-- when the arguments of the call that needs it are inferred, so `e` is the exact effect of those
+-- arguments and not yet the effect of the context (see `Type.Infer.inferApp`).
+checkMaxEffectsConstraint :: Name -> Type -> Maybe (Tvs -> ImplicitConstraint -> Inf Bool, Tvs -> ImplicitConstraint -> Inf (Core.Expr, Type))
+checkMaxEffectsConstraint name tp
+  = case expandSyn tp of
+      TApp (TCon tcon) [_,_] | typeConName tcon == nameTypeMaxEffects
+        -> Just (canResolveMaxEffects,resolveMaxEffects)
+      _ -> Nothing
+
+-- Determined once no more labels can be added to `e`: its tail is closed, rigid, or a flexible
+-- variable that occurs nowhere else.
+canResolveMaxEffects :: Tvs -> ImplicitConstraint -> Inf Bool
+canResolveMaxEffects free ic
+  = do tp <- implicitConstraintType ic
+       case expandSyn tp of
+         TApp _ [eff,_]
+           -> do let (_,tl) = extractOrderedEffect eff
+                 return $ case expandSyn tl of
+                            TVar tv | typevarFlavour tv == Meta -> not (tvsMember tv free)
+                            _ -> True
+         _ -> return False
+
+resolveMaxEffects :: Tvs -> ImplicitConstraint -> Inf (Core.Expr, Type)
+resolveMaxEffects free ic
+  = do tp <- implicitConstraintType ic
+       case expandSyn tp of
+         TApp _ [eff,maxEff]
+           -> do penv <- getPrettyEnv
+                 let (ls,tl)   = extractOrderedEffect eff
+                     (mls,mtl) = extractOrderedEffect maxEff
+                     -- an effect with the allowed effects, its type variables named as in other messages
+                     notAllowedDoc l msg
+                       = do sl <- subst l
+                            smaxEff <- subst maxEff
+                            let [dl,dmax] = Pretty.niceTypes penv [sl,smaxEff]
+                            return (text "the effect" <+> dl <+> text msg <-> text " allowed :" <+> dmax)
+                 when (not (isEffectEmpty mtl)) $
+                   infError (icRange ic) (text "the maximal effect" <+> Pretty.niceType penv maxEff <+> text "must be a closed effect row")
+                 -- each label is one of the allowed labels (unifying a heap, as a label in an effect row does)
+                 let notAllowed l = do doc <- notAllowedDoc l "is not allowed here"
+                                       infError (icRange ic) doc
+                 mapM_ (\l -> case filter (\m -> labelName m == labelName l) mls of
+                                (m:_) -> do res <- doUnify (unify l m)
+                                            case res of
+                                              Right () -> return ()
+                                              Left _   -> notAllowed l
+                                []    -> notAllowed l) ls
+                 case expandSyn tl of
+                   TVar tv | typevarFlavour tv == Meta
+                     -> inferUnify (Check "the effect is not allowed here" (icContext ic)) (icRange ic) tl effectEmpty
+                   _ | isEffectEmpty tl -> return ()
+                     | otherwise
+                     -> do doc <- notAllowedDoc tl "may contain effects that are not allowed here"
+                           infError (icRange ic) $
+                             doc <-> text " hint    : add a `?max-effects` parameter to the enclosing function"
+                 (cname,_,cinfo) <- resolveNameEx isInfoCon Nothing nameEvMaxEffects CtxNone (icContext ic) (icRange ic)
+                 seff    <- subst eff
+                 smaxEff <- subst maxEff
+                 stp     <- subst tp
+                 return (Core.TypeApp (coreExprFromNameInfo cname cinfo) [seff,smaxEff], stp)
+         _ -> failure "Type.InferMonad.resolveMaxEffects: not a max-effects constraint"
 
 
 {--------------------------------------------------------------------------
@@ -1794,6 +1940,7 @@ data Env    = Env{ prettyEnv :: !Pretty.Env
                  , returnAllowed :: !Bool
                  , inLhs :: !Bool
                  , hiddenTermDoc :: !(Maybe (Range,Doc))
+                 , updateParam :: !(Maybe (Name,Range,Type)) -- the parameter of the update function of `x := e`, and the local heap of `x`
                  , localDepth :: !Int   -- number of run-local scope's
                  , scopeNestingDepth :: !Int   -- nested scope level
                  , allowInfiniteChains :: !Bool
@@ -1806,13 +1953,20 @@ data St     = St{ uniq :: !Int
                 , iconstraintsGamma :: !InfGamma         -- adding a constraint adds an implicit local evidence variable
                 , holeAllowed :: !Bool                   -- is a hole allowed for a constructor context?
                 , mbRangeMap :: !(Maybe RangeMap)         -- used for errors and IDE integration
+                , updateChecks :: ![UpdateCheck]         -- checked at the end of a top-level definition
                 }
+
+-- | While `x := e` updates `x`, `x` holds its moved value. The variable `name` is free in `e`. If the
+-- effect of `e` contains `local<h>` for the local heap `h` of `x`, the type of `name` must not mention
+-- `h`: a closure (or a value holding one) with that heap in its type may read or write `x`. Without
+-- that label, `e` cannot read or write any variable in the scope of `x`.
+data UpdateCheck = UpdateCheck{ ucVar :: Name, ucHeap :: Type, ucName :: Name, ucType :: Type, ucIsValue :: Bool, ucRange :: Range }
 
 
 runInfer :: Pretty.Env -> TargetPlatform -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Bool -> Int -> Inf a -> Error b (a,Int,Maybe RangeMap)
 runInfer env tpl mbrm syns newTypes imports assumption context allowInfiniteChains unique (Inf f)
-  = case f (Env env context [] False newTypes syns assumption infgammaEmpty imports False False Nothing 0 0 allowInfiniteChains NM.empty tpl)
-           (St unique subNull [] infgammaEmpty False mbrm) of
+  = case f (Env env context [] False newTypes syns assumption infgammaEmpty imports False False Nothing Nothing 0 0 allowInfiniteChains NM.empty tpl)
+           (St unique subNull [] infgammaEmpty False mbrm []) of
       Err (rng,doc) warnings
         -> addWarnings (map (toWarning ErrType) warnings) (errorMsg (errorMessageKind ErrType rng doc))
       Ok x st warnings
@@ -1983,6 +2137,17 @@ withLhs inf
 withHiddenTermDoc :: Range -> Doc -> Inf a -> Inf a
 withHiddenTermDoc range doc inf
   = withEnv (\env -> env{ hiddenTermDoc = Just (range,doc) }) inf
+
+-- | The parameter (name and range) of the update function of `x := e`: it shadows `x` on
+-- purpose, so it gets no shadowing warning.
+withUpdateParam :: Name -> Range -> Type -> Inf a -> Inf a
+withUpdateParam name range heap inf
+  = withEnv (\env -> env{ updateParam = Just (name,range,heap) }) inf
+
+getUpdateParam :: Inf (Maybe (Name,Range,Type))
+getUpdateParam
+  = do env <- getEnv
+       return (updateParam env)
 
 inHiddenTermDoc :: Inf Bool
 inHiddenTermDoc
@@ -2222,7 +2387,7 @@ extendInfGammaEx topLevel ignores tnames inf
                       Right (cname,info2) | cname /= nameReturn  -- TODO: adapt to multiple matches?
                         -> do checkCasingOverlap range name cname info2
                               env <- getEnv
-                              if (not (isHiddenName name) && show name /= "resume" && show name /= "resume-shallow" && not (name `elem` ignores))
+                              if (not (isHiddenName name) && show name /= "resume" && show name /= "resume-shallow" && not (name `elem` ignores) && fmap (\(n,r,_) -> (n,r)) (updateParam env) /= Just (name,range))
                                then infWarning range (Pretty.ppName (prettyEnv env) name <+> text "shadows an earlier local definition or parameter")
                                else return ()
                       _ -> return ()

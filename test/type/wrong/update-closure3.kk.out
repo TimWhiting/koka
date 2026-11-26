@@ -1,0 +1,3 @@
+test/type/wrong/update-closure3@kk(5,42): type error: h cannot be used while x is updated
+ because: its type () -> (local<$h>) int uses the local variables in the scope of x, so it could read or write x
+ hint : use `x ::= @@@` to assign it

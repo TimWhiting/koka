@@ -1,0 +1,3 @@
+test/type/wrong/update-value@kk(6, 9): type error: fs cannot be updated in place
+ because: its type list<() -> <local<$h>,div|_e> int> uses the local variables in its scope, so its value could read or write fs
+ hint : use `fs ::= @@@` to assign it
