@@ -1,0 +1,2 @@
+type/update-lambda/f: () -> list<int>
+type/update-lambda/main: () -> console ()

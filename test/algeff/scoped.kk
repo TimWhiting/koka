@@ -115,18 +115,18 @@ fun collect(action) {
       if (flip()) then x else {
         match(q) {
           Nil -> fail()
-          Cons(p,ps) -> { q := ps; p() }
+          Cons(p,ps) -> { q ::= ps; p() }
         }
       }
     }
     ctl fail   -> {
       match(q) {
         Nil -> fail()
-        Cons(p,ps) -> { q := ps; p() }
+        Cons(p,ps) -> { q ::= ps; p() }
       }
     }
     ctl flip() -> {
-      q := Cons({resume(False)},q)
+      q ::= Cons({resume(False)},q)
       resume(True)
       // resume(True,{resume(False,p))
     }

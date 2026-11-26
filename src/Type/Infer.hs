@@ -16,7 +16,7 @@
 module Type.Infer (inferTypes, coreVarInfoFromNameInfo ) where
 
 import Lib.Trace hiding (traceDoc)
-import Data.List(partition,sortBy,sortOn,intersperse)
+import Data.List(partition,sortBy,sortOn,intersperse,nubBy)
 import qualified Data.List(find)
 import Data.Ord(comparing)
 import Data.Maybe(catMaybes,isJust)
@@ -27,14 +27,14 @@ import Common.Failure
 import Common.Error
 import Common.Name
 import Common.NamePrim( nameTpOptional, nameOptional, nameOptionalNone, nameCopy, nameTpDelay
-                      , nameReturn, nameRef, nameByref, nameDeref, nameAssign
+                      , nameReturn, nameRef, nameByref, nameDeref, nameAssign, nameAssignSet
                       , nameRefSet, nameTpUnit, nameTuple
                       , namePatternMatchError, nameSystemCore
                       , nameTpHandled, nameTpHandled1, nameTpNHandled1, nameTpNHandled
                       , nameToAny, nameFalse, nameTrue
                       , nameCons, nameListNil, nameVector
                       , nameTpPartial
-                      , nameTpLocalVar, nameTpLocal, nameRunLocal, nameLocalGet, nameLocalSet, nameLocalNew, nameLocalVar
+                      , nameTpLocalVar, nameTpLocal, nameRunLocal, nameLocalGet, nameLocalSet, nameLocalNew, nameLocalVar, nameLocalUpdate, nameMaxEffects, nameTypeMaxEffects
                       , nameClause, nameIdentity
                       , nameMaskAt, nameMaskBuiltin, nameEvvIndex, nameHTag, nameTpHTag, nameTpEv
                       , nameInternalInt32, nameOr, nameAnd, nameEffectOpen
@@ -523,7 +523,7 @@ inferExpr propagated expect (App (Var name _ nameRng) [(_,expr)] rng)  | name ==
                           return (resTp, eff, Core.App (Core.Var (Core.TName nameReturn typeReturn)
                                                 (Core.InfoExternal "return #1")) [core])  -- TODO: fragile
 -- | Assign expression
-inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,rexpr)] rng) | name == nameAssign
+inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,rexpr)] rng) | name == nameAssign || name == nameAssignSet
   = case lval of
       App fun args lrng  -- array[i] := e
           -> do xargs <- case args of
@@ -537,7 +537,7 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
                           _ -> return args
                 inferExpr propagated expect (App fun (xargs ++ [(Nothing,rexpr)]) rng)
       Var target _ lrng
-        -> do (_,gtp,_) <- resolveName target Nothing lrng
+        -> do (tqname,gtp,_) <- resolveName target Nothing lrng
               (tp,_,_) <- instantiateEx lrng gtp
               -- traceDoc $ \penv -> text "setting:" <+> pretty target <+> text ":" <+> ppType penv tp
               nameSet <- if (isTypeLocalVar tp)
@@ -545,8 +545,25 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
                            else do r <- freshRefType
                                    inferUnify (checkAssign rng) lrng r tp
                                    return nameRefSet
-              inferExpr propagated expect
-                        (App (Var nameSet False arng) [(Nothing,App (Var nameByref False (before lrng)) [lhs] lrng), rhs] rng)
+              let byrefLhs  = (Nothing,App (Var nameByref False (before lrng)) [lhs] lrng)
+                  assignSet = inferExpr propagated expect (App (Var nameSet False arng) [byrefLhs, rhs] rng)
+              -- `x := e` on a local variable is `@local-update(x, fn(x) e)`: the update passes
+              -- the current value with its ownership, so a unique value is updated in place instead of
+              -- copied because the variable still holds it. `e` may only use effects in `ioc` (which no
+              -- handler can intercept) and the local variables in the scope of `x`, and the update
+              -- checks (`addUpdateChecks`) ensure it cannot read or write `x` itself while it holds the
+              -- moved value.
+              -- `x ::= e` is the plain `local-set(x, e)`. The parameter has the name of the variable's
+              -- definition, so it shadows the variable on purpose (and gets no warning).
+              -- On a reference both are `set`.
+              if (isTypeLocalVar tp && name == nameAssign)
+                then do let updater = Lam [ValueBinder tqname Nothing Nothing lrng lrng] rexpr False (getRange rexpr)
+                        let heap = case expandSyn tp of
+                                     TApp _ [h,_] -> h
+                                     _            -> failure "Type.Infer.inferExpr.assign: local-var without a heap"
+                        withUpdateParam tqname lrng heap $ inferExpr propagated expect
+                          (App (Var nameLocalUpdate False arng) [byrefLhs, (Nothing,updater)] rng)
+                else assignSet
 
       _ -> errorAssignable
   where
@@ -1220,7 +1237,7 @@ inferApp propagated expect fun nargs rng
                                     let parArgs = zip (map snd pars) (map snd iargs)
                                     res <- case (fun) of
                                             (Var name _ _) | name == nameRunLocal
-                                              -> withLocalScope $
+                                              -> withLocalScope $ withUpdateChecks $
                                                  inferArgsN (checkLocalScope rng) rng parArgs
                                             _ -> inferArgsN (Infer rng) rng parArgs
                                     free1 <- freeInGamma
@@ -1228,8 +1245,32 @@ inferApp propagated expect fun nargs rng
                                     -- traceDefDoc $ \penv -> text "done propagate:" <+> ppType penv sftp1 <.> comma <+> ppTvs penv free1
                                     return res
 
+           -- The `max-effects` constraints of the call are solved right after its arguments, while the
+           -- effect they constrain is still the exact effect of those arguments (with the `div` of the
+           -- determined `hdiv` constraints of the arguments).
+           evCoref <- solveMaxEffectsFor
+                        [Core.getName tn | tn <- Core.tnamesList (CoreVar.freeLocals coreArgs), isImplicitConstraintEvidenceName (Core.getName tn)]
+
+           -- A function with a `max-effects` parameter now has the closed effect of its arguments
+           -- at this call: open it to the effect of the context, as any function with a closed effect.
+           spars    <- mapM (subst . snd) pars
+           sfunEff  <- subst funEff
+           (fcore1,funEff1)
+             <- let (ls,tl) = extractOrderedEffect sfunEff
+                in if (any isMaxEffectsType spars && isEffectEmpty tl)
+                     then do -- a label of the arguments may equal one of the function itself (as
+                             -- `local<h>` for `x := e` reading a variable in the scope of `x`)
+                             openEff <- effectExtends (nubBy matchType ls) <$> Op.freshEffect
+                             sftp1   <- subst ftp
+                             case splitFunType sftp1 of
+                               Just (fpars,_,fres) -> return (Core.openEffectExpr sfunEff openEff sftp1 (TFun fpars openEff fres) fcore, openEff)
+                               _                   -> return (fcore,funEff)
+                     else return (fcore,funEff)
+
            -- ensure arguments are evaluated in the declaration order
-           core <- case shortCircuit fcore coreArgs of
+           core <- fmap evCoref $
+                   let fcore = fcore1 in
+                   case shortCircuit fcore coreArgs of
                     Just cexpr -> return cexpr
                     Nothing ->
                       -- ensure named arguments are evaluated in the correct order
@@ -1250,7 +1291,7 @@ inferApp propagated expect fun nargs rng
            -- take top effect
            -- todo: sub effecting should add core terms
            topEff <- inferUnifies (checkEffect rng) ((getRange fun, eff1) : zip (map (getRangeArg . snd) iargs) effArgs)
-           inferUnify (checkEffectSubsume rng) (getRange fun) funEff topEff
+           inferUnify (checkEffectSubsume rng) (getRange fun) funEff1 topEff
            -- traceDoc $ \env -> (text " ** effects: " <+> tupled (map (ppType env) ([topEff, funEff, eff1] ++ effArgs)))
 
            -- instantiate or generalize result type
@@ -1401,6 +1442,13 @@ inferLam topLevel propagated expect bindersL body0 rng
         let optPars   = zip (map binderName binders1) parTypes2 -- (map binderName binders1) parTypes2
             bodyCore1 = Core.addLambdas optPars topEff (Core.Lam [] topEff (coref core))
         bodyCore2 <- subst bodyCore1
+        updParam <- getUpdateParam
+        let isUpdateFun = case (bindersL,updParam) of
+                            ([b],Just (var,vrng,_)) -> var == binderName b && vrng == binderNameRange b
+                            _                       -> False
+        case updParam of
+          Just (var,_,heap) | isUpdateFun -> addUpdateChecks var heap (head parTypes2) rng bodyCore2
+          _ -> return ()
         let pars = optPars
                   {- zipWith renameImplicitParams bindersL optPars
                   where
@@ -1412,6 +1460,13 @@ inferLam topLevel propagated expect bindersL body0 rng
                         in (pname, parTp) -}
 
         sftp0 <- subst (typeFun pars topEff tp)
+        -- a function written in the right-hand side of `x := e` may not capture a local variable in the
+        -- heap of `x` (see `addUpdateChecks`)
+        case updParam of
+          Just (var,_,heap) | not isUpdateFun
+            -> mapM_ (\(Core.TName name tp) -> when (isTypeLocalVar tp) $ addUpdateCheck (UpdateCheck var heap name tp UpdateCapture rng))
+                     (Core.tnamesList (CoreVar.freeLocals bodyCore2))
+          _ -> return ()
         -- check skolem escape (should this be after generalize?)
         when (not topLevel) $
           -- traceDefDoc $ \penv -> text " inferExpr.Lam: check skolems:" <+> ppType penv sftp0 <+> text ", " <+> pretty skolems <.> text ", in effect" <+> ppType penv topEff
@@ -2079,6 +2134,36 @@ checkOptionalTotal = Check "default value expression must be total"
 checkInject     = Check "inject expects a parameter-less function argument"
 
 checkEffect        = Infer
+
+-- The update function `fn(x) e` of `x := e` runs while `x` holds its moved value. Its parameter
+-- hides `x`, so `e` can only reach `x` through a qualified name, or by calling a function whose type
+-- mentions the local heap of `x`. Such a function is a free variable of the update function (its
+-- Core's free variables are exactly the variables bound outside `e`), a value held in one or in `x`
+-- itself, or a function written in `e`. Which local variables a function captures is not tracked
+-- through values, so each value from outside `e` is rejected when its type mentions the heap at all,
+-- and a function written in `e` is rejected when it captures a local variable in the heap
+-- (`inferLam`); its type cannot tell, as it shares the effect of its context. The local variables of
+-- the scope can only be read and written directly in `e`. The checks run at the end of the block of
+-- `x` (`withUpdateChecks`).
+addUpdateChecks :: Name -> Type -> Type -> Range -> Core.Expr -> Inf ()
+addUpdateChecks var heap valueTp rng core
+  = do addUpdateCheck (UpdateCheck var heap var valueTp UpdateValue rng)
+       mapM_ check (Core.tnamesList (CoreVar.freeLocals core))
+  where
+    check (Core.TName name tp)
+      | name == var
+        = infError rng (text "the right-hand side cannot refer to" <+> text (show (unqualify var)) <+> text "while it is updated")
+      | isImplicitConstraintEvidenceName name  -- its type names the heap in the `max-effects` bound
+        = return ()
+      | otherwise
+        = addUpdateCheck (UpdateCheck var heap name tp UpdateUse rng)
+
+isMaxEffectsType :: Type -> Bool
+isMaxEffectsType tp
+  = case expandSyn tp of
+      TApp (TCon tc) [_,_] -> typeConName tc == nameTypeMaxEffects
+      _ -> False
+
 checkEffectSubsume = Check "effect cannot be subsumed"
 
 checkReturnResult  = Check "function returns values of different types"

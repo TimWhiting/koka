@@ -1,0 +1,3 @@
+test/type/wrong/update-capture@kk(6,16): type error: this function cannot use y while xs is updated
+ because: the functions in the right-hand side of xs := @@@ can use the local variables in the scope of xs only directly
+ hint : use `xs ::= @@@` to assign it
