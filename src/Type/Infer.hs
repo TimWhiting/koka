@@ -524,7 +524,18 @@ inferExpr propagated expect (App (Var name _ nameRng) [(_,expr)] rng)  | name ==
                                                 (Core.InfoExternal "return #1")) [core])  -- TODO: fragile
 -- | Assign expression
 inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,rexpr)] rng) | name == nameAssign
-  = case lval of
+  = case findReturn rexpr of
+      Just retRng
+        -> do contextError (getRange rexpr) retRng (text "a return is not allowed in the right-hand side of an assignment")
+                [(text "because", text "the right-hand side must produce the assigned value")]
+              return (typeUnit,typeTotal,unitCore)
+      Nothing
+        -> inferAssign
+  where
+    unitCore = Core.Con (Core.TName (nameTuple 0) typeUnit) (Core.ConEnum nameTpUnit Core.DataEnum valueReprZero 0)
+
+    inferAssign
+     = case lval of
       App fun args lrng  -- array[i] := e
           -> do xargs <- case args of
                           ((mbName,arg@(Var target _ vrng)) : rest)  -- var_vec[i] := e   TODO: perhaps unsafe for general use?
@@ -549,10 +560,10 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
                         (App (Var nameSet False arng) [(Nothing,App (Var nameByref False (before lrng)) [lhs] lrng), rhs] rng)
 
       _ -> errorAssignable
-  where
+
     errorAssignable
       = do contextError rng (getRange lval) (text "not an assignable expression") [(text "because",text "an assignable expression must be an application, index expression, or variable")]
-           return (typeUnit,typeTotal,Core.Con (Core.TName (nameTuple 0) typeUnit) (Core.ConEnum nameTpUnit Core.DataEnum valueReprZero 0))
+           return (typeUnit,typeTotal,unitCore)
 
     checkAssign
       = Check "an assignable identifier must have a reference type"
@@ -2590,6 +2601,30 @@ unzipx4 acc1 acc2 acc3 acc4 ((x,y,z,zz):xs) = unzipx4 (x:acc1) (y:acc2) (z:acc3)
 
 ppProp env Nothing = text "(nothing)"
 ppProp env (Just (tp,_))  = ppType env tp
+
+-- | The range of a `return` in the expression outside any lambda in it. Such a `return` cannot
+-- be translated by `Core.UnReturn` in the right-hand side of an assignment.
+findReturn :: Expr Type -> Maybe Range
+findReturn expr
+  = case expr of
+      App (Var name _ rng) _ _ | name == nameReturn -> Just rng
+      Lam _ _ _ _                -> Nothing
+      Let defs body _            -> firstJust (map findReturnDef (flattenDefGroups' defs) ++ [findReturn body])
+      Bind def body _            -> firstJust [findReturnDef def, findReturn body]
+      App fun nargs _            -> firstJust (map findReturn (fun : map snd nargs))
+      Ann e _ _                  -> findReturn e
+      Case e brs _ _             -> firstJust (findReturn e : [r | b <- branchGuards' brs, r <- b])
+      Parens e _ _ _             -> findReturn e
+      Inject _ e _ _             -> findReturn e
+      _                          -> Nothing
+  where
+    firstJust xs = case [r | Just r <- xs] of
+                     (r:_) -> Just r
+                     []    -> Nothing
+    branchGuards' brs = [[findReturn g, findReturn e'] | b <- brs, Guard g e' <- branchGuards b]
+    findReturnDef d = findReturn (binderExpr (defBinder d))
+    flattenDefGroups' (DefRec defs) = defs
+    flattenDefGroups' (DefNonRec d) = [d]
 
 
 usesLocals :: S.NameSet -> Expr Type -> Bool
