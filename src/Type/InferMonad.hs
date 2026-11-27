@@ -77,7 +77,7 @@ module Type.InferMonad( Inf, InfGamma
                       , termError
                       , infError, infWarning
                       , withHiddenTermDoc, inHiddenTermDoc
-                      , withUpdateParam
+                      , withUpdateParam, addUpdateSite, swapUpdateSites
                       , solveMaxEffectsFor, isImplicitConstraintEvidenceName
 
                       -- run-local
@@ -116,6 +116,7 @@ import Common.NamePrim(nameTpVoid,nameTpPure,nameTpIO,nameTpIOC,nameTpST,nameTpA
                        nameTypeMaxEffects,nameEvMaxEffects,nameMaxEffects)
 
 import qualified Common.NameMap as NM
+import Type.UpdateReach( UpdateSite )
 
 -- import Common.Syntax( DefSort(..) )
 import Common.ColorScheme
@@ -1913,13 +1914,14 @@ data St     = St{ uniq :: !Int
                 , iconstraintsGamma :: !InfGamma         -- adding a constraint adds an implicit local evidence variable
                 , holeAllowed :: !Bool                   -- is a hole allowed for a constructor context?
                 , mbRangeMap :: !(Maybe RangeMap)         -- used for errors and IDE integration
+                , updateSites :: ![UpdateSite]           -- the updates `x := e` of the current block
                 }
 
 
 runInfer :: Pretty.Env -> TargetPlatform -> Maybe RangeMap -> Synonyms -> Newtypes -> ImportMap -> Gamma -> Name -> Bool -> Int -> Inf a -> Error b (a,Int,Maybe RangeMap)
 runInfer env tpl mbrm syns newTypes imports assumption context allowInfiniteChains unique (Inf f)
   = case f (Env env context [] False newTypes syns assumption infgammaEmpty imports False False Nothing Nothing 0 0 allowInfiniteChains NM.empty tpl)
-           (St unique subNull [] infgammaEmpty False mbrm) of
+           (St unique subNull [] infgammaEmpty False mbrm []) of
       Err (rng,doc) warnings
         -> addWarnings (map (toWarning ErrType) warnings) (errorMsg (errorMessageKind ErrType rng doc))
       Ok x st warnings
@@ -2096,6 +2098,18 @@ withHiddenTermDoc range doc inf
 withUpdateParam :: Name -> Range -> Inf a -> Inf a
 withUpdateParam name range inf
   = withEnv (\env -> env{ updateParam = Just (name,range) }) inf
+
+-- | Record an update `x := e` of the current block; it is checked at the end of the block.
+addUpdateSite :: UpdateSite -> Inf ()
+addUpdateSite site
+  = do updateSt (\st -> st{ updateSites = site : updateSites st })
+       return ()
+
+-- | Replace the recorded updates, returning the previous ones (in source order).
+swapUpdateSites :: [UpdateSite] -> Inf [UpdateSite]
+swapUpdateSites sites
+  = do st <- updateSt (\st -> st{ updateSites = sites })
+       return (reverse (updateSites st))
 
 inHiddenTermDoc :: Inf Bool
 inHiddenTermDoc

@@ -418,8 +418,8 @@ pub inline extern @open-local<a,b,h,e>( f : a -> e b ) : (a -> <local<h>|e> b)
 
 // Move the value out of a local variable without a reference count. The variable
 // holds a stale value until `@unsafe-local-put` stores the next one, so nothing may
-// read it in between: `@local-update` is the only user, and its `update` cannot
-// use the local variables.
+// read it in between: `@local-update` is the only user, and the compiler checks
+// that its `update` cannot use the variable (`Type.UpdateReach`).
 pub inline extern @unsafe-local-take<h,a>( ^ref : local-var<h,a> ) : <local<h>> a
   c  inline "kk_ref_unsafe_take_borrow(#1,kk_context())"
   js inline "((#1).value)"
@@ -431,10 +431,10 @@ pub inline extern @unsafe-local-put<h,a>( ^ref : local-var<h,a>, value : a ) : <
 
 // `x := e` on a local variable `x` compiles to `@local-update(x, fn(x) e)`. The value of `x` is
 // passed with its ownership, so a unique value is updated in place. `e` may use any effect in
-// `:ioc`: none of these can be intercepted by a handler, so `e` runs to completion exactly once,
-// and `e` cannot use the local variables in the scope of `x` (their effect is `local<h>`), so it
-// cannot read or write `x` while its value is moved.
-pub inline fun @local-update<h,a,e>( ^ref : local-var<h,a>, update : a -> e a, ?max-effects : max-effects<e,ioc> ) : <local<h>|e> ()
+// `:ioc` (none of which a handler can intercept, so `e` runs to completion exactly once) and the
+// local variables in the scope of `x`; the compiler checks that `e` cannot read or write `x`
+// itself while its value is moved.
+pub inline fun @local-update<h,a,e>( ^ref : local-var<h,a>, update : a -> e a, ?max-effects : max-effects<e,<local<h>|ioc>> ) : <local<h>|e> ()
   @unsafe-local-put(std/core/types/@byref(ref), @open-local(update)(@unsafe-local-take(std/core/types/@byref(ref))))
 
 // If a heap effect is unobservable, the heap effect can be erased by using the `run` fun.

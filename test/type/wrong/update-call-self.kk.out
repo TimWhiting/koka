@@ -1,0 +1,5 @@
+test/type/wrong/update-call-self@kk(7, 3): type error: the right-hand side of x := @@@ may read or write x while it is updated
+ because: k may be or hold a function that uses x
+ hint : use `x ::= @@@` to assign it
+test/type/wrong/update-call-self@kk(5, 7): type warning: k shadows an earlier local definition or parameter
+test/type/wrong/update-call-self@kk(5, 7): type warning: k shadows an earlier local definition or parameter

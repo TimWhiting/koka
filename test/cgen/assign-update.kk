@@ -1,10 +1,10 @@
-// `x := e` updates `x` in place, with an `e` that may use the effects in `ioc` but not the other
-// local variables; `x ::= e` assigns any `e` (here: one that reads another local, or may throw)
+// `x := e` updates `x` in place, with an `e` that may use the effects in `ioc` and the other local
+// variables; `x ::= e` assigns any `e` (here: one that may throw)
 fun counter( n : int ) : div int
   var i := 0
   var s := 0
   while { i < n }
-    s ::= s + i
+    s := s + i
     i := i + 1
   s
 
@@ -17,7 +17,7 @@ fun main()
   xs := xs.map(fn(x) x * 2)
   println(xs)
   var ys := [4]
-  xs ::= xs ++ ys
+  xs := xs ++ ys
   println(xs)
   xs ::= xs.map(fn(x) if x > 10 then throw("too big") else x)
   println(xs)

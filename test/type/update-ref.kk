@@ -1,5 +1,5 @@
 // How the heap of a reference read in the right-hand side of `x := e` is matched against the
-// bound `ioc`, where the only reference heap is `global` (`st<global>` in `ioc`).
+// bound `<local<h>|ioc>`, where the only reference heap is `global` (`st<global>` in `ioc`).
 
 // A reference in the global heap is allowed as is.
 fun global-ref( r : ref<global,int> ) : <st<global>,div> int

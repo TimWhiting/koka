@@ -1,0 +1,3 @@
+test/type/wrong/update-call-value@kk(5, 3): type error: the right-hand side of fs := @@@ may read or write fs while it is updated
+ because: the value of fs may hold a function that uses fs
+ hint : use `fs ::= @@@` to assign it

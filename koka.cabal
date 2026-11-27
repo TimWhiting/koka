@@ -123,6 +123,7 @@ library
       Type.Type
       Type.TypeVar
       Type.Unify
+      Type.UpdateReach
   other-modules:
       Paths_koka
   hs-source-dirs:

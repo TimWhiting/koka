@@ -1,0 +1,3 @@
+test/type/wrong/update-call@kk(5, 3): type error: the right-hand side of xs := @@@ may read or write xs while it is updated
+ because: this function may call a function that uses xs
+ hint : use `xs ::= @@@` to assign it

@@ -64,6 +64,7 @@ import Type.Assumption
 import Type.TypeVar
 import qualified Type.Operations as Op
 import Type.InferMonad
+import Type.UpdateReach( UpdateSite(..), checkBlockUpdates )
 
 import qualified Core.CoreVar as CoreVar
 import Core.AnalysisMatch( analyzeBranches )
@@ -549,16 +550,19 @@ inferExpr propagated expect (App assign@(Var name _ arng) [lhs@(_,lval),rhs@(_,r
                   assignSet = inferExpr propagated expect (App (Var nameSet False arng) [byrefLhs, rhs] rng)
               -- `x := e` on a local variable is `@local-update(x, fn(x) e)`: the update passes
               -- the current value with its ownership, so a unique value is updated in place instead of
-              -- copied because the variable still holds it. `e` may only use effects in `ioc` (which no
-              -- handler can intercept): it cannot use the local variables in the scope of `x`, so it
-              -- cannot read or write `x` itself while it holds the moved value.
+              -- copied because the variable still holds it. `e` may only use the effects in `ioc` (which
+              -- no handler can intercept) and the local variables in the scope of `x`; at the end of the
+              -- block, `Type.UpdateReach` checks that it cannot read or write `x` itself while it holds
+              -- the moved value.
               -- `x ::= e` is the plain `local-set(x, e)`. The parameter has the name of the variable's
               -- definition, so it shadows the variable on purpose (and gets no warning).
               -- On a reference both are `set`.
               if (isTypeLocalVar tp && name == nameAssign)
                 then do let updater = Lam [ValueBinder tqname Nothing Nothing lrng lrng] rexpr False (getRange rexpr)
-                        withUpdateParam tqname lrng $ inferExpr propagated expect
-                          (App (Var nameLocalUpdate False arng) [byrefLhs, (Nothing,updater)] rng)
+                        res@(_,_,core) <- withUpdateParam tqname lrng $ inferExpr propagated expect
+                                            (App (Var nameLocalUpdate False arng) [byrefLhs, (Nothing,updater)] rng)
+                        addUpdateSite (UpdateSite tqname rng core)
+                        return res
                 else assignSet
 
       _ -> errorAssignable
@@ -1234,7 +1238,11 @@ inferApp propagated expect fun nargs rng
                                     res <- case (fun) of
                                             (Var name _ _) | name == nameRunLocal
                                               -> withLocalScope $
-                                                 inferArgsN (checkLocalScope rng) rng parArgs
+                                                 do outer <- swapUpdateSites []
+                                                    res@(_,cargs) <- inferArgsN (checkLocalScope rng) rng parArgs
+                                                    sites <- swapUpdateSites outer
+                                                    checkUpdates cargs sites
+                                                    return res
                                             _ -> inferArgsN (Infer rng) rng parArgs
                                     free1 <- freeInGamma
                                     sftp1 <- subst sftp
@@ -2627,6 +2635,17 @@ unzipx4 acc1 acc2 acc3 acc4 ((x,y,z,zz):xs) = unzipx4 (x:acc1) (y:acc2) (z:acc3)
 ppProp env Nothing = text "(nothing)"
 ppProp env (Just (tp,_))  = ppType env tp
 
+
+-- | Check the updates `x := e` of a block (the argument of `local-scope`) once its types are known
+-- (`Type.UpdateReach`).
+checkUpdates :: [Core.Expr] -> [UpdateSite] -> Inf ()
+checkUpdates [block] sites | not (null sites)
+  = do sblock <- subst block
+       case checkBlockUpdates sblock sites of
+         ((rng,doc):_) -> infError rng doc
+         []            -> return ()
+checkUpdates _ _
+  = return ()
 
 -- | Is this the type of a `max-effects` constraint parameter?
 isMaxEffectsType :: Type -> Bool

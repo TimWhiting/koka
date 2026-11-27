@@ -1,5 +1,4 @@
-// The right-hand side of `x := e` can use any effect in `ioc` and define functions, as long as it
-// does not use the other local variables in the scope of `x`.
+// The right-hand side of `x := e` can use any effect in `ioc` and define functions.
 fun spin(n : int) : div int
   if n <= 0 then 0 else spin(n - 1)
 
